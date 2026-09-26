@@ -69,7 +69,8 @@ export const CommandRequestSchema = z.object({
   positionals: z.record(z.string(), z.unknown()).default({}),
 });
 
-export type CommandRequest = z.infer<typeof CommandRequestSchema>;
+type CommandRequest = z.infer<typeof CommandRequestSchema>;
+export type { CommandRequest };
 
 /**
  * A streamed renet event, forwarded verbatim from the machine.
@@ -89,7 +90,8 @@ export const WireEventSchema = z.object({
   data: z.unknown().optional(),
 });
 
-export type WireEvent = z.infer<typeof WireEventSchema>;
+type WireEvent = z.infer<typeof WireEventSchema>;
+export type { WireEvent };
 
 /** The execution envelope, mirroring the CLI's ExecuteResult. */
 export const WireResultSchema = z.object({
@@ -121,7 +123,8 @@ export const WireResultSchema = z.object({
     .optional(),
 });
 
-export type WireResult = z.infer<typeof WireResultSchema>;
+type WireResult = z.infer<typeof WireResultSchema>;
+export type { WireResult };
 
 /**
  * One line of the response stream.
@@ -155,6 +158,13 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
      * `rdc repo status` shows; without it the client would have nothing to say.
      */
     stdout: z.string().optional(),
+    /**
+     * The command's stdout as base64, sent in place of `stdout` when the command
+     * wrote raw bytes (`repo cat` of a binary file). A client writes the decoded
+     * bytes verbatim; carrying them as a JSON string would corrupt anything that
+     * is not valid UTF-8.
+     */
+    stdoutBase64: z.string().optional(),
     stderr: z.string().optional(),
   }),
   z.object({
@@ -165,7 +175,8 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 
-export type StreamLine = z.infer<typeof StreamLineSchema>;
+type StreamLine = z.infer<typeof StreamLineSchema>;
+export type { StreamLine };
 
 /** Body of a 409 version-mismatch response. */
 export const VersionMismatchSchema = z.object({
@@ -175,7 +186,8 @@ export const VersionMismatchSchema = z.object({
   executorCliVersion: z.string(),
 });
 
-export type VersionMismatch = z.infer<typeof VersionMismatchSchema>;
+type VersionMismatch = z.infer<typeof VersionMismatchSchema>;
+export type { VersionMismatch };
 
 /** What `GET /v1/server-info` returns. Lets a client check compatibility up front. */
 export const ServerInfoSchema = z.object({
@@ -186,7 +198,8 @@ export const ServerInfoSchema = z.object({
   scope: z.object({ orgId: z.string(), teamId: z.string() }).optional(),
 });
 
-export type ServerInfo = z.infer<typeof ServerInfoSchema>;
+type ServerInfo = z.infer<typeof ServerInfoSchema>;
+export type { ServerInfo };
 
 /** Route paths, shared so client and server cannot drift. */
 export const PROXY_ROUTES = {

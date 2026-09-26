@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-branch.sh blob ec2529722f1aff8ab3af512c1e0a5a315bf9a7cb
+exit: 0
+--- stdout ---
+63:git fetch origin "+refs/heads/${BASE_BRANCH}:refs/remotes/origin/${BASE_BRANCH}" --quiet
+--- stderr ---

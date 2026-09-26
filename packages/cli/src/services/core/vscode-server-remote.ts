@@ -3,7 +3,7 @@
  * servers (`rdc vscode connect --browser`, `rdc vscode serve ...`).
  *
  * Two SSH trust paths are used deliberately:
- *  - INSTALL runs over the TEAM key with sudo — it writes the shared
+ *  - INSTALL runs over the TEAM key with sudo, it writes the shared
  *    read-only install under /usr/lib/rediacc/vscode via the hidden
  *    `renet vscode-server install` command (download + sha256 + untar).
  *  - LAUNCH/STATUS/STOP run over the REPO key, which lands in the
@@ -127,7 +127,7 @@ export async function ensureServerInstalled(
  * State dir for a provider inside the overlay home (single-quoted shell-safe).
  * Includes the repository GUID: every repo's overlay home mounts at the
  * IDENTICAL `/home/rediacc`, so without the guid the state-dir path string is
- * the same across all repos — making `find_server_pids` (which matches that
+ * the same across all repos, making `find_server_pids` (which matches that
  * path in /proc cmdlines) cross-match servers from other repos and reuse the
  * wrong one. The guid makes the path string unique per repo.
  */
@@ -138,12 +138,12 @@ function stateDirExpr(provider: VSCodeServerProvider, repoGuid: string | undefin
 }
 
 /**
- * Shell snippet defining `find_server_pids` — every PID whose /proc cmdline
+ * Shell snippet defining `find_server_pids`, every PID whose /proc cmdline
  * carries BOTH the provider install dir AND this server's state dir.
  *
  * The recorded `$!` pidfile is unreliable: openvscode's launcher re-execs /
  * forks, so the recorded PID exits while the real server (a child with a
- * different PID) keeps running — which made the old pid-only stop report
+ * different PID) keeps running, which made the old pid-only stop report
  * "not running" and leak a port-bound, data-dir-locking zombie every render.
  * Matching on the immutable `--server-data-dir <state>` argument (unique per
  * repo+provider) finds the actual server regardless of fork/re-exec. Excludes

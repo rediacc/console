@@ -26,9 +26,9 @@ export interface RepoFunctionMessages {
  * dispatched against a datastore the repo does not live on while the config recorded
  * the right one: the config and the machine described two different places, silently.
  *
- * Deriving it HERE, once, is the point. The alternative — asking each of up, down,
+ * Deriving it HERE, once, is the point. The alternative, asking each of up, down,
  * status, validate, ownership, template and every future verb to remember to declare
- * it — is the obligation they had already all forgotten. A verb cannot forget what it
+ * it, is the obligation they had already all forgotten. A verb cannot forget what it
  * does not have to do.
  *
  * Placement lives on the repo FAMILY, not the per-tag record, so a fork resolves to
@@ -99,8 +99,7 @@ export async function executeRepoFunction(
   });
 
   if (result.success) {
-    // Steps are rendered in real-time by the onStdout step detector.
-    // Just show "Total: Xs" at the end.
+    // Steps are rendered in real-time by the onStdout step detector. Just show "Total: Xs" at the end.
     if (result.allSteps && result.allSteps.length > 0) {
       const totalMs = result.allSteps.reduce((sum, s) => sum + s.duration_ms, 0);
       outputService.info(`\nTotal: ${formatStepDuration(totalMs)}`);

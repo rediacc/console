@@ -27,7 +27,7 @@ This guide walks you through finding the root cause of errors showing up in prod
    - `INVALID_TOKEN` — API token is malformed or revoked
    - `STRIPE_WEBHOOK_SIGNATURE_INVALID` — Stripe signature verification failed
 
-   These codes make it easy to distinguish between "expected" errors (user mistakes) and real bugs.
+These codes make it easy to distinguish between "expected" errors (user mistakes) and real bugs.
 
 8. **For non-critical errors, look at span events instead of span errors.** Some operations are fire-and-forget: if they fail, the request still succeeds. These show up as span events, not span-level errors. In the trace detail, expand the parent span and look for events named `non_critical_error`. Check the `error.context` attribute to understand what failed:
    - `webhook.email` — a transactional email (welcome, cancellation, payment failed) was not sent

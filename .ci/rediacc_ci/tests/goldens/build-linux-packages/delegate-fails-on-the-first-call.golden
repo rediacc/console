@@ -1,0 +1,9 @@
+# twin .ci/scripts/build/build-linux-packages.sh blob 2e21617dc5eeed091a89917aa35c43cb41edad7a
+exit: 3
+--- stdout ---
+--- stderr ---
+fake build-linux-pkg: refusing call 1
+--- calls ---
+call: build-linux-pkg --binary dist/cli/rdc-linux-x64 --version 1.2.3 --arch amd64 --format deb --output dist/packages
+cwd: .
+--- packages ---

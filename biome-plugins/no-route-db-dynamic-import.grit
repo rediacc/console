@@ -1,0 +1,10 @@
+// Replaces the ESLint `no-restricted-syntax` entries at eslint.config/packages.js:105-112 (selectors: `ImportExpression[source.value=/\.\.\/(db|db\/)/]` and `ImportExpression[source.value=/drizzle/]`). Bans a dynamic `import()` of the database layer or drizzle-orm from a route handler. Scoped to `private/account/src/routes/**` (excluding `test.ts`) by the `includes` on the plugin reference in biome.json, matching the ESLint file scope.
+language js
+
+`import($path)` where {
+    $path <: r".*(?:\.\./db|drizzle).*",
+    register_diagnostic(
+        span = $path,
+        message = "Dynamic imports from the database layer are not allowed in routes."
+    )
+}

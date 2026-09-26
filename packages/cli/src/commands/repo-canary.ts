@@ -1,12 +1,12 @@
 /**
- * `rdc repo canary` — release-ladder rung 2 (spec 05 §2) as MANAGED STATE on the
+ * `rdc repo canary`, release-ladder rung 2 (spec 05 §2) as MANAGED STATE on the
  * repo (R2-F17 / spec §4.4): exactly ONE canary per repo, so every leaf is keyed
  * by the repo REF and the canary's name is derived from it. Every release-class
  * mutation first takes the rung-0 group snapshot (universal undo). Orchestration
  * lives in services/cluster/repo-release.ts.
  *
  * `canary` is a PURE GROUP (no bare action): `create` is a real subcommand. That
- * is what dissolves bug #37 — an actionable parent binds its own options even
+ * is what dissolves bug #37, an actionable parent binds its own options even
  * when they trail a subcommand, which is why the old bare form had to spell its
  * weight `--initial-weight` to keep out of `canary weight`'s way. With no parent
  * options left there is no collision to carry, and the flag is `--weight` again.

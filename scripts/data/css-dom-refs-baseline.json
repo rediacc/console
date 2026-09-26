@@ -1,5 +1,5 @@
 {
-  "note": "shrink-only; see scripts/check-css-dom-refs.ts",
+  "note": "shrink-only; see scripts/gates/check-css-dom-refs.ts",
   "orphans": [
     "blog-newsletter-cta",
     "btn-full-width",

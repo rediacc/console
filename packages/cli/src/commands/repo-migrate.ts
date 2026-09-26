@@ -53,10 +53,7 @@ export function registerRepoMigrateCommand(repoCommand: Command): void {
     )
     .option('--skip-dns', t('commands.repo.migrate.optionSkipDns'))
     .option('--keep-source', t('commands.repo.migrate.optionKeepSource'))
-    // --health-window / --health-timeout (spec §5.4) are intentionally NOT
-    // registered: the current migrate is a two-phase rsync with no post-cutover
-    // health-gate path, so advertising them would render dead console fields and
-    // promise behavior that does not run. They return with the gate (as-built §12).
+    // --health-window / --health-timeout (spec §5.4) are intentionally NOT registered: the current migrate is a two-phase rsync with no post-cutover health-gate path, so advertising them would render dead console fields and promise behavior that does not run. They return with the gate (as-built §12).
     .option('--debug', t('options.debug'))
     .action(async (ref: string, options: MigrateOptions) => {
       try {
@@ -86,7 +83,7 @@ interface MigrateOptions {
  * bag, so an execution that declares nothing is dispatched against the machine's
  * default docker datastore. Migrate declared nothing on any of its source-side
  * legs, so a repo living in a NAMED datastore failed at the first one with
- * `stat /mnt/rediacc/repositories/<guid>: no such file or directory` — renet
+ * `stat /mnt/rediacc/repositories/<guid>: no such file or directory`, renet
  * looking for the image where the repo has never been.
  *
  * It is captured ONCE, before finalizeCutover rewrites placement to `{machine: to}`,
@@ -160,8 +157,7 @@ async function assertNotMountedOnTarget(
   });
   if (!targetCheck.success || !targetCheck.stdout) return;
   try {
-    // renet's `list repositories --json` keys repos by GUID under `name` and has no `guid` field.
-    // parseRepositoryListOutput tolerates log-prefixed / non-array stdout.
+    // renet's `list repositories --json` keys repos by GUID under `name` and has no `guid` field. parseRepositoryListOutput tolerates log-prefixed / non-array stdout.
     const repos = parseRepositoryListOutput(targetCheck.stdout) as {
       name: string;
       mounted: boolean;
@@ -201,8 +197,7 @@ async function executePhase1(
   if (uniqueSeeds.length > 0) pushParams.params.seed = uniqueSeeds.join(',');
   if (bwlimit) pushParams.params.bwlimit = bwlimit;
   if (strategy) pushParams.params.strategy = strategy;
-  // Retain the hot pre-copy as an immutable base so the Phase-2 cutover ships
-  // only the bytes that changed during Phase 1 (FIEMAP delta, not a full scan).
+  // Retain the hot pre-copy as an immutable base so the Phase-2 cutover ships only the bytes that changed during Phase 1 (FIEMAP delta, not a full scan).
   pushParams.params.retainBase = retainBase;
 
   await deployRepoKeyIfNeeded(name, to);
@@ -240,9 +235,7 @@ async function executePhase2(
   outputService.info(`\n${t('commands.repo.migrate.phase2')}`);
   const cutoverStart = Date.now();
 
-  // Cutover ships only the changes since the delta base, then prunes the
-  // temporary Phase-1 base from both machines (migration is a move, not an
-  // ongoing link). An explicit --delta-base is never pruned.
+  // Cutover ships only the changes since the delta base, then prunes the temporary Phase-1 base from both machines (migration is a move, not an ongoing link). An explicit --delta-base is never pruned.
   const applyDelta = (params: Record<string, unknown>): void => {
     if (bwlimit) params.bwlimit = bwlimit;
     params.deltaBase = delta.base;
@@ -254,7 +247,7 @@ async function executePhase2(
   if (checkpoint) {
     cutoverStats = await withSpinner(
       t('commands.repo.migrate.checkpointing'),
-      async () => {
+      () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
           checkpoint: true,
@@ -273,7 +266,7 @@ async function executePhase2(
 
     cutoverStats = await withSpinner(
       t('commands.repo.migrate.deltaSync'),
-      async () => {
+      () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
         });
@@ -307,11 +300,9 @@ async function executePhase3(
     t('commands.repo.migrate.startingTarget'),
     async () => {
       await deployRepoKeyIfNeeded(name, to);
-      // Target side: the push landed the image in the TARGET's default datastore
-      // (buildExtraMachines gives a peer with no recorded datastore the default
+      // Target side: the push landed the image in the TARGET's default datastore (buildExtraMachines gives a peer with no recorded datastore the default
       // mount), and placement has already been rewritten to `{machine: to}` to
-      // match. So this leg declares no datastore ON PURPOSE — the source's named
-      // mount does not exist here.
+      // match. So this leg declares no datastore ON PURPOSE, the source's named mount does not exist here.
       await executeQuiet('repository_up', name, to, {}, undefined, debug);
     },
     t('commands.repo.migrate.targetStarted')
@@ -346,7 +337,7 @@ async function resolveMigrateEndpoint(name: string): Promise<string> {
 
 /**
  * R3 source disposition: delete the migrated image on the source machine after
- * a fully successful phase 3. Fails SAFE — the move already succeeded, so a
+ * a fully successful phase 3. Fails SAFE, the move already succeeded, so a
  * failed cleanup NEVER fails the migrate: it warns, leaves the image in place,
  * and names `machine prune` as the sweep. renet deletes an unmounted repo by
  * `name:tag` on the source (the `.interim` state mirror still resolves it after
@@ -388,12 +379,12 @@ async function deleteSourceImage(
 
 /**
  * R2 (fallback scope): migrate moves a whole FAMILY to one home (spec/04
- * §1.2.1 — placement is single-valued per family). Two refusals keep that
+ * §1.2.1, placement is single-valued per family). Two refusals keep that
  * invariant honest until the family-loop follow-up (grand-first + fork seeds,
  * gated on Open question #1: reflink preservation across backup_push with seeds,
  * a VM check the fleet cannot give this week):
- *   1. a ref naming a non-grand tag is a fork ref — exit 2, teaching push/promote;
- *   2. a family that has forks refuses wholesale — moving only the grand would
+ *   1. a ref naming a non-grand tag is a fork ref, exit 2, teaching push/promote;
+ *   2. a family that has forks refuses wholesale, moving only the grand would
  *      split the family across machines, the exact two-places bug being retired.
  * Exit 2 via ValidationError, the same precedent `repo promote` uses.
  */
@@ -422,7 +413,7 @@ function assertFamilyMigratable(name: string, tag: string, family: RepoFamily | 
  * must point there NOW, before phase 3. Rewriting here (not after phase 3) is
  * what makes a post-cutover failure safe: the data's home is the target, so the
  * operator's natural recovery (`rdc repo up <name>`) lands on the target, not on
- * the stale source copy — the exact wrong-host redeploy this closes. A
+ * the stale source copy, the exact wrong-host redeploy this closes. A
  * pre-cutover failure never reaches this function, so placement still names the
  * source (spec/03 §5.4 exit-14 row). placementUpdated is emitted before phase 3
  * so it stays on screen even if phase 3 then fails: both failure windows are
@@ -444,17 +435,12 @@ async function finalizeCutover(
   try {
     await executePhase3(repoKey, to, skipDns, debug);
   } catch (err) {
-    // Post-cutover failure: routing already points at the destination, so
-    // recovery lands there. State it, keep the source images as recovery
-    // material (R3 deletion below is skipped by the throw), and rethrow.
+    // Post-cutover failure: routing already points at the destination, so recovery lands there. State it, keep the source images as recovery material (R3 deletion below is skipped by the throw), and rethrow.
     outputService.warn(t('commands.repo.migrate.placementRetryHint', { name, machine: to }));
     throw err;
   }
 
-  // R3: migrate is a MOVE. Only after phase 3 fully succeeds is the source image
-  // a nameless orphan (the target is a superset — final delta synced at cutover,
-  // source down since), so delete it here, strictly LAST. --keep-source opts out
-  // and warns the leftover is a stray reconcile will flag.
+  // R3: migrate is a MOVE. Only after phase 3 fully succeeds is the source image a nameless orphan (the target is a superset, final delta synced at cutover, source down since), so delete it here, strictly LAST. --keep-source opts out and warns the leftover is a stray reconcile will flag.
   if (from === to) return;
   if (keepSource) {
     outputService.warn(t('commands.repo.migrate.sourceRetained', { name, machine: from }));
@@ -467,10 +453,7 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
   const { provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, keepSource, debug } =
     options;
 
-  // Source is DERIVED from the repo's config placement (spec/03 §2.3): `machineName`
-  // is the ref's home machine (a cluster repo's home is its control node). Migrate's
-  // data plane (CoW images + rsync/FIEMAP) is runtime-agnostic, so it operates
-  // machine<->machine and does not thread kubeCluster (see resolveMigrateEndpoint).
+  // Source is DERIVED from the repo's config placement (spec/03 §2.3): `machineName` is the ref's home machine (a cluster repo's home is its control node). Migrate's data plane (CoW images + rsync/FIEMAP) is runtime-agnostic, so it operates machine<->machine and does not thread kubeCluster (see resolveMigrateEndpoint).
   // `repoKey` (name or name:tag) drives config + renet; `name` is for messages.
   const { name, repoKey, machineName: from, tag } = await resolveRepoRef(ref);
 
@@ -489,8 +472,7 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
   const currentConfig = await configService.getCurrent();
   assertFamilyMigratable(name, tag, currentConfig?.resources?.repositories?.[name]);
 
-  // Same-home no-op: migrating to where the repo already lives is a 0-cost win,
-  // not a full self-transfer. --provision always targets a fresh, distinct host.
+  // Same-home no-op: migrating to where the repo already lives is a 0-cost win, not a full self-transfer. --provision always targets a fresh, distinct host.
   if (!provision && to === from) {
     outputService.info(t('commands.repo.migrate.noOpSameHome', { name, machine: from }));
     return;
@@ -517,8 +499,7 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
   }
 
   // Captured BEFORE finalizeCutover rewrites placement to `{machine: to}`: every
-  // source-side leg (both pushes, both downs, the source delete) must dispatch
-  // against the datastore the repo actually lives in. See SourceDatastore.
+  // source-side leg (both pushes, both downs, the source delete) must dispatch against the datastore the repo actually lives in. See SourceDatastore.
   const sourceDatastore = await recordedDatastoreMount(repoKey);
 
   // Phase 1 retains this base; Phase 2 deltas against it (or an explicit

@@ -85,9 +85,7 @@ function walkMarkdown(root: string): string[] {
   return out;
 }
 
-// Matches the same shape remark-tutorial-embed.ts:20 recognizes — markdown
-// image-syntax pointing at a .cast file. Keep this regex in sync if the
-// embed plugin ever broadens what it accepts.
+// Matches the same shape remark-tutorial-embed.ts:20 recognizes — markdown image-syntax pointing at a .cast file. Keep this regex in sync if the embed plugin ever broadens what it accepts.
 const CAST_REF_RE = /!\[[^\]]*\]\(([^)]+\.cast)\)/g;
 
 function extractCastKeys(mdContent: string): string[] {
@@ -174,11 +172,8 @@ function main(): number {
     }
     console.error('');
   }
-  // Deliberately no longer suggests tutorials:derive-fallback-timeline. Every one of the
-  // 13 locales is now natively narrated by VoxCPM2, so that command has nothing correct
-  // to do here: it derives a timeline from ENGLISH audio and strips word timings, and
-  // following this hint for ar/et/tr — which it used to name explicitly — would have
-  // replaced real native narration with English. TTS generation is the only right answer.
+  // Deliberately no longer suggests tutorials:derive-fallback-timeline. Every one of the 13 locales is now natively narrated by VoxCPM2, so that command has nothing correct to do here: it derives a timeline from ENGLISH audio and strips word timings, and following this hint for ar/et/tr — which it used to name explicitly — would have replaced real native narration with English.
+  // TTS generation is the only right answer.
   console.error(`Generate via:  npm run tutorials:tts:generate -- --lang <code>  (all 13 locales)`);
   console.error(
     `              npx tsx packages/www/scripts/generate-tutorial-video.ts --cast <slug> --lang <code>`

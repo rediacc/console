@@ -4,14 +4,8 @@ import { compareVersions } from '../update/updater.js';
 
 // Declared via vi.hoisted so they exist BEFORE the vi.mock factories below.
 //
-// vitest hoists every vi.mock call above the module body, so a factory that
-// closes over a plain `const` only works while nothing imports the mocked module
-// during the hoisted import phase. This file imports ../update/updater.js at the
-// top, and the moment updater's import graph reached node:fs/promises the
-// factory at line ~55 ran before these bindings initialised and the whole file
-// failed to load with "Cannot access 'readFileMock' before initialization" —
-// taking all of its tests with it while the suite still looked green.
-// vi.hoisted removes the ordering dependency entirely.
+// vitest hoists every vi.mock call above the module body, so a factory that closes over a plain `const` only works while nothing imports the mocked module during the hoisted import phase. This file imports ../update/updater.js at the top, and the moment updater's import graph reached node:fs/promises the factory at line ~55 ran before these bindings initialised and the whole file
+// failed to load with "Cannot access 'readFileMock' before initialization", taking all of its tests with it while the suite still looked green. vi.hoisted removes the ordering dependency entirely.
 const {
   readFileMock,
   writeFileMock,
@@ -42,9 +36,7 @@ const {
   removeTempSSHKeyFileMock: vi.fn(),
 }));
 
-// The persistent provision-state layer has its own suite (provision-state.
-// test.ts); here it must be inert — its real config reads would wedge inside
-// this file's blanket node:fs/promises mock.
+// The persistent provision-state layer has its own suite (provision-state. test.ts); here it must be inert, its real config reads would wedge inside this file's blanket node:fs/promises mock.
 vi.mock('../renet/provision-state.js', () => ({
   getFreshProvisionEntry: vi.fn(() => Promise.resolve(null)),
   recordProvisionVerified: vi.fn(() => Promise.resolve()),
@@ -58,8 +50,7 @@ class MockSFTPClient {
   connect = vi.fn(() => connectDelegate());
   // The mocked signature returns Promise<string> but these bodies are sync lookup tables.
   // `async` satisfies tsc and then trips @typescript-eslint/require-await, which is right:
-  // there is no await. So the body stays sync and is wrapped at the boundary, which is the
-  // pattern already used at remote/sync/__tests__/sftp-fallback.test.ts:31.
+  // there is no await. So the body stays sync and is wrapped at the boundary, which is the pattern already used at remote/sync/__tests__/sftp-fallback.test.ts:31.
   exec = vi.fn<(command: string) => Promise<string>>((command: string) =>
     Promise.resolve(
       ((): string => {
@@ -605,10 +596,7 @@ describe('RenetProvisionerService', () => {
   });
 
   it('gives a lock timeout its own exit status and marker', async () => {
-    // Without `-E`, flock's timeout exits 1, which the install body can also
-    // produce: a machine busy with someone else's provision was reported as
-    // "Unexpected provisioning result: (empty output)" and read as a broken
-    // install rather than as contention.
+    // Without `-E`, flock's timeout exits 1, which the install body can also produce: a machine busy with someone else's provision was reported as "Unexpected provisioning result: (empty output)" and read as a broken install rather than as contention.
     const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const command = (
       renetProvisioner as unknown as {
@@ -724,5 +712,209 @@ describe('RenetProvisionerService', () => {
     expect(
       getMockInstance(1).exec.mock.calls.some(([command]) => String(command) === 'uname -m')
     ).toBe(false);
+  });
+});
+
+/** A shared-SFTP stand-in whose exec answers from `answer`, recording every command. */
+function fakeSftp(answer: (command: string) => string) {
+  return {
+    exec: vi.fn<(command: string) => Promise<string>>((command: string) =>
+      Promise.resolve(answer(command))
+    ),
+    writeFile: vi.fn((_path: string, _data: Buffer) => Promise.resolve()),
+    exists: vi.fn((_path: string) => Promise.resolve(false)),
+  };
+}
+
+/** Anything that would change the machine: staging, activation, symlinks, restarts, locks. */
+const MUTATING_COMMAND = /mv -f|mv -Tf|ln -s|systemctl|flock|mkdir|chmod|rm -f/;
+
+function probeAnswer(slots: {
+  slot?: { hash: string; version: string };
+  current?: { hash: string; version: string };
+}): (command: string) => string {
+  return (command: string) => {
+    if (command === 'uname -m') return 'x86_64\n';
+    if (command.includes('SLOT_HASH')) {
+      const lines: string[] = [];
+      lines.push(
+        slots.slot
+          ? `SLOT_HASH ${slots.slot.hash}\nSLOT_VERSION renet version ${slots.slot.version}`
+          : 'SLOT_ABSENT'
+      );
+      lines.push(
+        slots.current
+          ? `CURRENT_HASH ${slots.current.hash}\nCURRENT_VERSION renet version ${slots.current.version}`
+          : 'CURRENT_ABSENT'
+      );
+      return `${lines.join('\n')}\n`;
+    }
+    throw new Error(`Unexpected command: ${command}`);
+  };
+}
+
+const TEST_HOST = { host: 'inspect-host', username: 'u', privateKey: 'key' };
+
+describe('inspect (read-only)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    mockInstances.length = 0;
+    readFileMock.mockResolvedValue(Buffer.from('renet-binary'));
+    statMock.mockResolvedValue({ mtimeMs: 1_000, size: 12 });
+    computeSha256Mock.mockReturnValue('local-hash');
+  });
+
+  it('reports hash drift without staging, activating, locking or restarting anything', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(
+      probeAnswer({
+        slot: { hash: 'remote-hash', version: VERSION },
+        current: { hash: 'remote-hash', version: VERSION },
+      })
+    );
+
+    const result = await renetProvisioner.inspect(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet' },
+      sftp as never
+    );
+
+    expect(result.drift).toBe('hash');
+    expect(result.remotePath).toBe(remoteInstallPath);
+    expect(result.remoteHash).toBe('remote-hash');
+    expect(result.localHash).toBe('local-hash');
+    const commands = sftp.exec.mock.calls.map(([command]) => command);
+    expect(commands.filter((command) => MUTATING_COMMAND.test(command))).toEqual([]);
+    expect(sftp.writeFile).not.toHaveBeenCalled();
+    expect(executeRsyncMock).not.toHaveBeenCalled();
+  });
+
+  it('reports version drift when the remote runs another release', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(
+      probeAnswer({
+        slot: { hash: 'remote-hash', version: '0.0.1' },
+        current: { hash: 'remote-hash', version: '0.0.1' },
+      })
+    );
+
+    const result = await renetProvisioner.inspect(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet' },
+      sftp as never
+    );
+
+    expect(result.drift).toBe('version');
+    expect(result.remoteVersion).toBe('0.0.1');
+  });
+
+  it('reports missing with no path when neither slot nor current holds a binary', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(probeAnswer({}));
+
+    const result = await renetProvisioner.inspect(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet' },
+      sftp as never
+    );
+
+    expect(result.drift).toBe('missing');
+    expect(result.remotePath).toBeNull();
+  });
+
+  it('falls back to current when this version has no slot on the machine', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(probeAnswer({ current: { hash: 'local-hash', version: VERSION } }));
+
+    const result = await renetProvisioner.inspect(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet' },
+      sftp as never
+    );
+
+    expect(result.drift).toBe('none');
+    expect(result.remotePath).toMatch(/\/current\/renet$/);
+  });
+});
+
+describe('provision uploadGuard', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    mockInstances.length = 0;
+    readFileMock.mockResolvedValue(Buffer.from('renet-binary'));
+    statMock.mockResolvedValue({ mtimeMs: 1_000, size: 12 });
+    computeSha256Mock.mockReturnValue('local-hash');
+    getRsyncCommandMock.mockResolvedValue('rsync');
+  });
+
+  function provisionAnswer(remoteHash: string): (command: string) => string {
+    return (command: string) => {
+      if (command === 'uname -m') return 'x86_64\n';
+      if (command.includes('flock -w 120')) {
+        return remoteHash === 'local-hash' ? 'VERIFIED\n' : 'UPDATED CURRENT_UPDATED\n';
+      }
+      if (command.includes(' version 2>/dev/null')) return `${remoteHash}\n`;
+      if (command.includes('command -v rsync')) return '';
+      if (command.startsWith('readlink ')) return '';
+      if (command.includes('find ')) return '';
+      if (command.includes('sha256sum')) return `${remoteHash}\n`;
+      if (command.startsWith('rm -f ')) return '';
+      throw new Error(`Unexpected command: ${command}`);
+    };
+  }
+
+  it('runs the guard when the remote hash differs, before staging', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(provisionAnswer('remote-hash'));
+    const uploadGuard = vi.fn(() => {
+      expect(sftp.writeFile).not.toHaveBeenCalled();
+    });
+
+    const result = await renetProvisioner.provision(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet', uploadGuard },
+      sftp as never
+    );
+
+    expect(result.success).toBe(true);
+    expect(uploadGuard).toHaveBeenCalledTimes(1);
+    expect(sftp.writeFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not run the guard when the remote already matches', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(provisionAnswer('local-hash'));
+    const uploadGuard = vi.fn();
+
+    const result = await renetProvisioner.provision(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet', uploadGuard },
+      sftp as never
+    );
+
+    expect(result.success).toBe(true);
+    expect(uploadGuard).not.toHaveBeenCalled();
+  });
+
+  it('a throwing guard stops the provision before anything is staged', async () => {
+    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const sftp = fakeSftp(provisionAnswer('remote-hash'));
+    const uploadGuard = vi.fn(() => {
+      throw new Error('dirty renet tree');
+    });
+
+    const result = await renetProvisioner.provision(
+      TEST_HOST,
+      { localBinaryPath: '/tmp/renet', uploadGuard },
+      sftp as never
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('dirty renet tree');
+    expect(sftp.writeFile).not.toHaveBeenCalled();
+    const commands = sftp.exec.mock.calls.map(([command]) => command);
+    expect(commands.some((command) => /flock|find |command -v rsync/.test(command))).toBe(false);
   });
 });

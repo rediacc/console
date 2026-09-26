@@ -2,9 +2,7 @@
 
 ## Overview
 
-All integration and acceptance tests for both the Ansible collection and the
-Terraform provider run against local VMs provisioned by `rdc ops`. This
-ensures reproducible, isolated test environments without cloud costs.
+All integration and acceptance tests for both the Ansible collection and the Terraform provider run against local VMs provisioned by `rdc ops`. This ensures reproducible, isolated test environments without cloud costs.
 
 ## Test Environment Tiers
 
@@ -13,8 +11,7 @@ ensures reproducible, isolated test environments without cloud costs.
 | **Basic** | `rdc ops up --basic --parallel` | Local datastores, rsync backup, all module tests | Default for CI, sufficient for most testing |
 | **Full (Ceph)** | `rdc ops up --parallel` | Basic + Ceph datastores, instant fork, fork tests | Required for datastore fork tests, preview environment patterns |
 
-The basic tier provisions 1 bridge + 2 workers (~6GB RAM, ~5 min).
-The full tier adds 3 Ceph nodes (~12GB RAM, ~15 min including Ceph bootstrap).
+The basic tier provisions 1 bridge + 2 workers (~6GB RAM, ~5 min). The full tier adds 3 Ceph nodes (~12GB RAM, ~15 min including Ceph bootstrap).
 
 ### Full tier: Additional setup after VM provisioning
 
@@ -178,8 +175,7 @@ echo "=== Teardown complete ==="
 
 ## Test Data: Minimal App for Testing
 
-A minimal application for integration tests. Contains a Rediaccfile and
-docker-compose.yaml that can be created, deployed, and verified.
+A minimal application for integration tests. Contains a Rediaccfile and docker-compose.yaml that can be created, deployed, and verified.
 
 ```bash
 # tests/fixtures/test-app/
@@ -278,8 +274,7 @@ For CI/CD (GitHub Actions, GitLab CI, etc.):
 
 ### Docker-Based CI (Alternative)
 
-If KVM is not available, tests can run against a Docker-in-Docker setup,
-but this is limited (no full VM isolation, no CRIU, no BTRFS snapshots).
+If KVM is not available, tests can run against a Docker-in-Docker setup, but this is limited (no full VM isolation, no CRIU, no BTRFS snapshots).
 
 ```yaml
 # .github/workflows/ci.yml (Docker-based fallback)
@@ -289,19 +284,15 @@ services:
     options: --privileged
 ```
 
-This is NOT recommended for full integration testing but can work
-for basic module validation.
+This is NOT recommended for full integration testing but can work for basic module validation.
 
 ## Smoke Tests (Cumulative)
 
-Smoke tests grow with each milestone. They exercise all implemented features
-together in a single run — a quick "is everything still working?" check.
-See `10-implementation-order.md` for when each section gets added.
+Smoke tests grow with each milestone. They exercise all implemented features together in a single run — a quick "is everything still working?" check. See `10-implementation-order.md` for when each section gets added.
 
 ### Ansible Smoke Playbook (`tests/smoke/ansible-smoke.yml`)
 
-Each milestone adds a tagged section. Run subsets with `--tags` or
-`--tags all` for the full smoke.
+Each milestone adds a tagged section. Run subsets with `--tags` or `--tags all` for the full smoke.
 
 ```yaml
 ---

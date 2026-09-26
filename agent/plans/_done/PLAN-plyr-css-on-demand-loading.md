@@ -1,0 +1,143 @@
+# PLAN: load the video player's CSS on demand, not on every page that carries the hydrator
+Status: done
+First-Seen: 2026-09-17
+Owner: d778be9d (adopted from 74de73ca 2026-09-22)
+Updated: 2026-09-22
+
+Every claim below was confirmed at source level in the toolchain, not inferred.
+
+## The finding
+
+`packages/www/src/components/TutorialVideoPlayer.tsx:23-24` imports `plyr/dist/plyr.css` and `../styles/tutorial-video.css` at module scope. Those become one emitted chunk, **37,018 B raw / 6,087 B gzip** (plyr 32,428 B; tutorial-video.css 4,590 B).
+
+Counted over the current `dist` (1,842 HTML files), and reproduced independently twice:
+
+| | pages |
+|---|---|
+| link the player stylesheet | 1,366 |
+| contain a player mount | 572 |
+| link AND mount | 572 |
+| **link with NO mount** | **794** |
+| mount with no link | 0 |
+
+**All 794 are docs pages.**
+
+## Root cause, confirmed in the toolchain source
+
+The hydrator reaches the player through a dynamic `import()`, but Astro's page-CSS hoisting (the installed `astro` package's `dist/core/build/plugins/plugin-css.js`, under `node_modules/` and not tracked in this repo, around lines 84-160) iterates every chunk's `viteMetadata.importedCss` and attaches client-chunk CSS to every page in `pagesByScriptId`.
+**Dynamic-import boundaries are irrelevant to it.** So the sheet is linked wherever the HYDRATOR is, not wherever a PLAYER is. DocsLayout carries the hydrator on 1,028 docs pages; 234 of them have a video.
+
+## Mechanisms evaluated
+
+1. **Move the import to the components that emit a mount.** CANNOT WORK, and this is
+the finding that kills the obvious fix: all 794 offenders are docs, docs are one layout over one `[slug].astro`, and the `.tutorial-video-container` mount is emitted by a REMARK PLUGIN as raw HTML -- there is no module to hang an import on. Fixes 0 of 794.
+2. **Drop the hydrator from layouts without mounts.** Cannot work, same reason: Astro
+bundles a `<script>` per page regardless of conditional rendering, and the docs layout serves both populations.
+3. **Anything native in Astro.** There is none; `build.inlineStylesheets` decides
+inline-vs-link, not which pages get it.
+4. **Runtime injection via Vite `?url`.** CHOSEN, and confirmed rather than assumed, against
+the installed `vite` package's `dist/node/chunks/config.js` (under `node_modules/`, not tracked in this repo): around lines 29635-29639 it compiles `?url` to a `transform-only` import plus a URL string; around line 29797 it excludes `transform-only` from `chunkCSS`, so it never enters `importedCss`; around line 29854 it still runs `finalizeCss`, so it stays minified; around line 29866 it emits it as an asset Astro never reads.
+`plyr.css` has zero `url()` references, so asset rebasing is a non-issue.
+
+## FOUC risk: zero, by construction rather than by timing
+
+`tutorial-video.css` contains **no selector for either mount class** -- every rule is `.tvp-*` or a `.tvp-root`-scoped `.plyr*` override, i.e. DOM React creates. The placeholder's reserved box comes from `packages/www/src/styles/solution-video.css:94,108` and `packages/www/src/layouts/DocsLayout.astro:1369`, neither of which moves.
+So the stylesheet governs only DOM that does not exist until after it has loaded, and `Promise.all([ensurePlayerStyles(), import(player)])` makes the first frame of player DOM already styled.
+
+Cascade: `.plyr`/`.tvp-` selectors exist in exactly two files, and their overlaps are
+decided by SPECIFICITY, not order -- `packages/www/src/styles/solution-video.css:39-40,71-72` say in as many words that they were written that way "so the outcome does not depend on which stylesheet the bundler emits first". Reordering is safe, and that safety is documented in-tree. There is no `<ClientRouter />` anywhere, so no head swap can orphan a link.
+
+**The second import must move too, not merely may.** If `tutorial-video.css` stays static, `TutorialVideoPlayer.*.css` still exists and is still linked on all 1,366 pages (4,590 B instead of 37,018), and the gate's assertion is unsatisfiable.
+
+## The gate: `check:ci-player-css-scope`
+
+**Assertion:** for every `dist/**/*.html`, a page that links a player stylesheet must contain a mount. Today 794. After the fix 0.
+
+A *player stylesheet* is detected **by CONTENT, not filename** -- any dist CSS containing `.plyr__control` or `.tvp-caption-word` -- so a rename or re-bundle cannot make the gate blind. The marker choice was measured: `.tvp-root` and `.tvp-toolbar` also appear in a NON-player bundle, so using them would over-match.
+
+**Six floors, because the assertion is a negative and absence must be paid for:** F1 dist exists; F2 >= 1,000 HTML files scanned (today 1,842); F3 >= 1,000 stylesheet links seen (a broken href regex would otherwise report "no player links" vacuously); F4 at least one dist CSS carries each marker (zero means the player has no stylesheet at all -- a worse defect wearing this gate's green); F5 >= 500 pages carry a mount (today 572); and **F6, the positive half that stops the fix degenerating into a deletion**: every player stylesheet's filename must appear inside at least one dist JS chunk, proving the styles still REACH the player.
+Without F6, deleting `plyr.css` outright would pass.
+
+**Controls:** eight plants, each with a clean counterpart, including P4 -- a CSS carrying `.tvp-root` but neither marker must NOT be reported, which the real tree proves is needed.
+Plus a mutant control that widens the marker list and asserts the selftest goes red naming P4, and one that deletes F6 and asserts red naming P6, each with a vacuity guard so a sed that stopped matching cannot test the unmutated gate.
+
+## Order of work: control first, literally
+
+1. Write the gate and its selftest BEFORE touching any source.
+2. Run it against the EXISTING dist. It must report **794**. That is a free real-tree
+proof that it fires on the live defect, needing no build. Anything else means the gate is wrong, not the finding.
+3. Then the five source changes; then ONE serialised `build:www` (it unlinks and
+rewrites 14 tracked `search-index*.json`, and concurrent builds corrupt `dist`).
+4. Re-run: 0 offenders, all six floors satisfied.
+5. Browser-check one page of each family: styled on first paint, no console errors.
+
+## Non-goals
+
+Not deleting or inlining plyr; not changing which pages have videos; not touching the IntersectionObserver deferral. `check:ci-client-bundle-budget` measures JS only and its figure does not move.
+
+## A finding walked past and reported rather than fixed
+
+`.tutorial-video-container` reserves **no box** before hydration -- nothing gives it an `aspect-ratio` or `min-height`, only `max-inline-size`. So 234 docs tutorial pages shift by the full player height when it lands, unlike solution pages which `packages/www/src/styles/solution-video.css:94` protects.
+The browser probe's "the mount already reserves 768x432" holds for `.video-player-mount` ONLY. This plan neither causes nor worsens it; it wants its own item.
+
+## Tasks
+
+- [x] Write `scripts/gates/check-player-css-scope.ts` with the six floors and eight selftest plants, BEFORE any source change
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      CLOSED 2026-09-23: the four checks are now twelve, and eight of them are the numbered plants P1-P8. One corpus builder with seven knobs makes every floor plant exactly one knob off a shared clean baseline, which is what makes that baseline an honest counterpart for all six of them. `npx tsx scripts/gates/check-player-css-scope.ts` prints twelve PASS lines and the real-dist verdict: "1842 page(s), 9893 stylesheet link(s), 572 with a mount". P4 stays the over-match control and P6 stays F6, because `test_gate_player_css_scope.py` asserts the mutants red the selftest naming those two.
+- [x] Run it against the existing dist and confirm it reports exactly 794 offenders
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: the 794 figure is cross-referenced and consistent
+      across three independent files measured 2026-09-03 -- the gate's own header
+      (`scripts/gates/check-player-css-scope.ts:9`), `packages/www/src/components/TutorialVideoPlayer.tsx:24`, and
+      `scripts/gates/check-dead-css.ts:69` -- all citing the same pre-fix count.
+- [x] Write `packages/www/src/scripts/tutorial-video-styles.ts` exporting `ensurePlayerStyles()`, memoised, resolving on load OR error so a missing sheet leaves an ugly player rather than none
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: on disk; `ensurePlayerStyles()` at
+      `packages/www/src/scripts/tutorial-video-styles.ts:56-62` memoises via `pending ??=`,
+      and `loadOne()` (:34-49) resolves on both `load` and `error`.
+- [x] Delete `packages/www/src/components/TutorialVideoPlayer.tsx:23-24`, leaving a comment pointing at the new module and saying why
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: `packages/www/src/components/TutorialVideoPlayer.tsx:22-25`
+      carries exactly this comment, naming `../scripts/tutorial-video-styles.ts` and
+      `check:ci-player-css-scope`.
+- [x] Await `Promise.all([ensurePlayerStyles(), import(player)])` in the hydrator before `createRoot`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: `packages/www/src/scripts/tutorial-video-hydrate.ts:61-64`
+      does exactly this, and `createRoot` (:95) runs only after both resolve.
+- [x] Re-point the stale `BLOCKER:` citation in `scripts/gates/check-dead-css.ts:53-62`
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: `scripts/gates/check-dead-css.ts:64-70` cites
+      `src/scripts/tutorial-video-styles.ts` and says explicitly "only the citation moved".
+- [x] Add the source-level invariant to `check-video-player-invariants.ts` (hydrator must await the styles before `createRoot`) with mutants that delete and that reorder the call
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      CLOSED 2026-09-23: `styleOrderFaults()` and `styleUrlFaults()` at `scripts/gates/check-video-player-invariants.ts`, wired into `main()` and into the selftest's clean check. Seven new controls, including the two mutants this box names: a delete (`ensurePlayerStyles(` to `noop(`) and a real REORDER that moves the whole awaited statement below `createRoot` and returns null rather than a no-op if its anchors are gone. Proved on a real invocation rather than in memory only: a fixture tree of copied sources driven through a byte copy of the gate reds on each of three planted defects (root before the await, the await removed, `?url` removed) and goes green again when the plant is withdrawn. The failure epilogue was made family-scoped in the same edit, since it used to print the Plyr quality-pane paragraph for any fault at all.
+- [x] Write `.ci/scripts/test/gates/test-player-css-scope.sh` with both mutants, written OUTSIDE the repo to avoid check:ci-pool-writer-safety
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      CLOSED 2026-09-23 as `.ci/rediacc_ci/tests/gates/test_gate_player_css_scope.py`, Python per the restatement below. Four cases: the eight plants all pass and are all present by label, the marker-widening mutant reds naming P4, the F6-killing mutant reds naming P6, and the real dist reports zero offenders. Both mutants are written to `tmp_path` with `node_modules` and `scripts/lib` symlinked in, so the gate's `../lib/repo-root.js` import still resolves and nothing is written inside the repo. Each carries a vacuity guard on its mutation target. Both directions proved by planting: renaming P8 in the gate reds the plant-set case, and a mutation target that no longer matches reds the guard.
+
+      **ILLEGAL AS WRITTEN, 2026-09-09 -- restate before building.** It names a new tracked
+      `.sh` under `.ci/`, and ruling 7 freezes that tree: `check_language_policy.py` sets
+      `COVERED_ROOTS = (".ci", ".claude")` and refuses an addition to the 515-path set. The
+      test must be Python under `.ci/rediacc_ci/tests/gates/`, like every port since. The two
+      mutants and the written-outside-the-repo requirement carry over unchanged; only the
+      language does not.
+- [x] Three-point wiring: package.json key, two manifest entries, and a `Player CSS scope` step in quality-www-build whose name matches the manifest byte for byte
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      CLOSED 2026-09-23, and the SECOND MANIFEST ENTRY IS RESTATED AWAY rather than added. It followed from the `.sh` gate test the box above asked for, and a Python port does not get one: `scripts/ci-runner/manifest.ts` records that the standalone `gate-test:` entries for ported modules were RETIRED into `check:ci-pytest`, whose `paths` already carry `.ci/rediacc_ci/**`, and a second entry would schedule the same work twice for the same reason `check:ci-seo` was demoted to `gate: false`. The wiring that does exist was verified rather than assumed: `package.json:380`, `scripts/ci-runner/manifest.ts:4402-4415`, and `.github/workflows/ci-quality.yml:2025` under `quality-www-build`, with the step name "Player CSS scope" matching the manifest byte for byte. `check:ci-pytest`'s own corpus counter reports 4 test functions in the new module, so its collection floor moves with it. `npm run check:ci-gate-reachability-coverage` green, 337 registrations; `npm run check:ci-parity` green at 347 manifest gates when this work began and red an hour later on an untracked `.ci/scripts/test/gates/test-bws-rotate.sh` a concurrent writer added, which names nothing here.
+
+      Superseded note, kept for the record: `package.json:372` (`check:ci-player-css-scope`) and the
+      `.github/workflows/ci-quality.yml:1792` step name match byte-for-byte, but `scripts/ci-runner/manifest.ts`
+      carries only ONE entry (`check:ci-player-css-scope` at :4712-4719), not two -- the
+      companion gate-test that would come from the missing `test-player-css-scope.sh` above
+      does not exist.
+- [x] One serialised `build:www`, then re-run the gate for 0 offenders
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: ran `npx tsx scripts/gates/check-player-css-scope.ts`
+      live against the tree's current `packages/www/dist` -> "1842 page(s), 9893 stylesheet
+      link(s), 572 with a mount; no page links ... without one" -- 0 offenders, rc=0.
+- [x] Browser-check a solution page, a docs tutorial page and the homepage
+    (ticked) 2026-09-23T11:19:18Z by d778be9d: retroactive record: closed by 28d8f96e4 (2026-09-23) docs(agent): archive 3 done plans, verified box-complete before moving -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
+      LEDGER LAG, closed 2026-09-09: `packages/www/src/scripts/tutorial-video-styles.ts:19-21`
+      records "three browser screenshots are byte-identical to the pre-change baselines,"
+      matching the three page types asked for here.

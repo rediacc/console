@@ -1,11 +1,11 @@
 /**
- * `rdc serve` — run this process as an executor.
+ * `rdc serve`, run this process as an executor.
  *
  * The same binary that operators run on a laptop becomes the thing that runs
  * commands on their behalf. Two placements, one artifact:
  *
- *   --mode daemon     on a customer's own host. It enrolled like any headless
- *                     CLI (`rdc config remote enable --headless`), so it can
+ *   --mode daemon     on a customer's own host. It enrolled like any other
+ *                     CLI (`rdc config remote enable`), so it can
  *                     derive the config key by itself and needs no per-session
  *                     grant. This is the strict tier: SSH never leaves the
  *                     customer's network.
@@ -57,8 +57,7 @@ export function registerServeCommand(program: Command): void {
     )
     .action((options: ServeOptions) => {
       try {
-        // --mode is constrained by Commander's .choices(), so an invalid value
-        // never reaches here.
+        // --mode is constrained by Commander's .choices(), so an invalid value never reaches here.
         const executorToken = process.env.REDIACC_TOKEN;
         if (!executorToken) {
           throw new ValidationError(
@@ -71,9 +70,7 @@ export function registerServeCommand(program: Command): void {
 
         const sessions = new SessionStore();
 
-        // The daemon reads its enrolled config off disk. The container has no
-        // disk and no enrollment: it pulls the config encrypted and opens it with
-        // the key the caller granted for the session.
+        // The daemon reads its enrolled config off disk. The container has no disk and no enrollment: it pulls the config encrypted and opens it with the key the caller granted for the session.
         const loadConfig =
           options.mode === 'container'
             ? createContainerConfigLoader({ accountUrl, executorToken, sessions })
@@ -90,8 +87,7 @@ export function registerServeCommand(program: Command): void {
           audit: createExecutorAudit({
             accountUrl,
             executorToken,
-            // A command that ran but could not be recorded is exactly the case an
-            // audit trail exists to catch, so it is never swallowed.
+            // A command that ran but could not be recorded is exactly the case an audit trail exists to catch, so it is never swallowed.
             onFailure: (error, event) => {
               outputService.warn(
                 `Ran "${event.commandPath}" for ${event.principal.userEmail} but could not record it: ` +
@@ -111,9 +107,7 @@ export function registerServeCommand(program: Command): void {
         );
         outputService.info(t('commands.serve.hint'));
 
-        // A container gets SIGTERM and then 15 minutes before SIGKILL. Stop
-        // accepting new work immediately, but let commands already in flight
-        // finish rather than orphaning an operation halfway through a machine.
+        // A container gets SIGTERM and then 15 minutes before SIGKILL. Stop accepting new work immediately, but let commands already in flight finish rather than orphaning an operation halfway through a machine.
         const shutdown = () => {
           outputService.info(t('commands.serve.draining'));
           server.close(() => process.exit(0));
@@ -131,9 +125,20 @@ export function registerServeCommand(program: Command): void {
  * disk, which headless enrollment already taught this host to decrypt. No
  * per-session grant is involved, and no config leaves the customer's network.
  *
+ * It is the whole decrypted RdcConfig, policy document included. It used to be
+ * getLocalConfig(), a machines-and-SSH projection with no `policy` field cast
+ * to RdcConfig, so authorize() always saw "no policy document" and a daemon
+ * never enforced one.
+ *
  * The container tier's loader lives in services/serve/container-config.ts, where
  * the config is pulled encrypted and opened with the key the caller granted.
  */
-function loadDaemonConfig(): Promise<RdcConfig> {
-  return configService.getLocalConfig() as unknown as Promise<RdcConfig>;
+export async function loadDaemonConfig(): Promise<RdcConfig> {
+  const config = await configService.getDecryptedConfig();
+  if (!config) {
+    throw new ValidationError(
+      `The executor has no config named "${configService.getEffectiveConfigName()}" to run commands against.`
+    );
+  }
+  return config;
 }

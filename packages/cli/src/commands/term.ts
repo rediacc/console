@@ -7,11 +7,12 @@ import { applyClusterConnectionContext } from '../services/cluster/cluster-targe
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr } from '../services/core/request-context.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import {
@@ -57,8 +58,7 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
     }
   }
 
-  // Pin the kubectl current-context to the repo's namespace for a cluster-placed
-  // repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
+  // Pin the kubectl current-context to the repo's namespace for a cluster-placed repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
   // exported by the loop, so this runs against the cluster's kubeconfig; the
   // `|| true` keeps a shell open even if kubectl is momentarily unavailable.
   if (connectionDetails?.kubeNamespace) {
@@ -73,9 +73,7 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   return parts.length > 0 ? `${parts.join('; ')}; ` : '';
 }
 
-// Sandbox is enforced server-side via ForceCommand in authorized_keys.
-// The CLI just sends the raw command — sandbox-gateway on the remote
-// reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
+// Sandbox is enforced server-side via ForceCommand in authorized_keys. The CLI just sends the raw command, sandbox-gateway on the remote reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
 
 function buildRemoteCommand(
   options: TermConnectOptions,
@@ -137,7 +135,7 @@ function enforceDirectRenetGuard(command: string): void {
       `Direct "${match.renetCommand}" is not allowed in agent mode.\n\nRun "${match.cliHelpCommand}" to see available CLI commands.`
     );
   }
-  process.stderr.write(
+  writeStderr(
     `\x1b[33mWarning:\x1b[0m Running "${match.renetCommand}" directly bypasses CLI orchestration.\nRun "${match.cliHelpCommand}" to see available CLI commands.\n`
   );
 }
@@ -148,7 +146,7 @@ function enforceFileWriteGuard(command: string): void {
   if (isAgentEnvironment()) {
     throw new ValidationError(t('errors.term.fileWriteDetected', { detected: match.label }));
   }
-  process.stderr.write(
+  writeStderr(
     `\x1b[33mHint:\x1b[0m Detected file write pattern (${match.label}). ` +
       `For file transfer, consider: rdc repo sync upload <ref> --local FILE --remote PATH\n`
   );
@@ -230,17 +228,11 @@ async function executeSSH(
   }
 }
 
-// Determines client-side output suppression and remote-TTY allocation for a
-// connectTerminal invocation.
+// Determines client-side output suppression and remote-TTY allocation for a connectTerminal invocation.
 //
-// - quietOutput: skip the spinners and the "Connecting to..." stderr line so
-//   `term connect <target> -c "..."` keeps stdout clean for the command's own
-//   output.
-// - noTTY: disable ssh -tt. The remote sandbox banner is gated by `[ -t 1 ]`,
-//   and ssh prints "Connection to HOST closed." only when -t allocated a PTY,
-//   so a one-shot command must not allocate one. The container side door was
+// - quietOutput: skip the spinners and the "Connecting to..." stderr line so `term connect <target> -c "..."` keeps stdout clean for the command's own output. - noTTY: disable ssh -tt. The remote sandbox banner is gated by `[ -t 1 ]`, and ssh prints "Connection to HOST closed." only when -t allocated a PTY, so a one-shot command must not allocate one. The container side door was
 //   the only case that needed a PTY for a `-c` invocation (docker exec -it);
-//   it is retired, so one-shot and no-TTY now coincide exactly.
+// it is retired, so one-shot and no-TTY now coincide exactly.
 export function resolveTermOutputMode(opts: TermConnectOptions): {
   quietOutput: boolean;
   noTTY: boolean;
@@ -295,7 +287,7 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
   }
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
+  await acquireRemoteRenet('read-only', localConfig, machine, sshPrivateKey, { machineName });
 
   if (dockerRepo) {
     const repoConfig = await configService.getRepository(dockerRepo);
@@ -420,10 +412,8 @@ async function runInlineSSH(
   quiet: boolean
 ): Promise<void> {
   if (!quiet) {
-    // Progress message on stderr — keeps stdout reserved for command output
-    // when -c piping is in play, matching the Unix convention used by ssh's
-    // own progress / banner messages.
-    process.stderr.write(`${t('commands.term.connectingTo', { title })}\n`);
+    // Progress message on stderr, keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
+    writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {

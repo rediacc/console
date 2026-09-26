@@ -1,0 +1,8 @@
+# twin .ci/scripts/release/resolve-backfill-commit.sh blob f1fc79f71e60257cba27298658ec34738b8474dc
+exit: 1
+--- stdout ---
+→ using operator-supplied commit_sha: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+::error::commit deadbeefdeadbeefdeadbeefdeadbeefdeadbeef does not name a commit in this repository -- either no such object exists here at all, or the object is not a commit
+::error::if you took this SHA from an old release note or an R2 sentinel, it no longer exists: the 2026-08-23 git history rewrite renamed every commit. Leave commit_sha/INPUT_SHA EMPTY and let v1.0.0 resolve through the tag instead -- the rewrite moved tags with the commits, so the tag path still works.
+--- stderr ---
+--- github-output ---

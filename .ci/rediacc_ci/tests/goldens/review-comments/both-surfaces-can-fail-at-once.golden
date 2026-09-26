@@ -1,0 +1,99 @@
+# twin .ci/scripts/quality/check-review-comments.sh blob 5266b55d1c74cf7509545c731781ba3ef5aac05d
+exit: 1
+--- stdout ---
+Checking review comments for PR #42...
+
+============================================================
+  Review Comments Require Attention
+============================================================
+
+UNREPLIED COMMENTS (1):
+
+  - src/a.ts:12 by @muhammed
+    "please rename this..."
+
+------------------------------------------------------------
+Please address all review comments with SUBSTANTIVE replies.
+
+Low-effort replies like 'Acknowledged', 'OK', 'Done', 'Fixed'
+etc. are NOT accepted. Explain what you did or why you
+disagree with the feedback.
+
+Examples of good replies:
+  - 'Fixed by adding null check in validateInput()'
+  - 'Refactored to use the existing helper as suggested'
+  - 'Keeping as-is because X needs to happen before Y due to...'
+
+To reply using gh CLI:
+
+  # List unreplied comments (find the COMMENT_ID you need to reply to)
+  gh api repos/rediacc/console/pulls/42/comments \
+    --jq '.[] | select(.in_reply_to_id == null) | {id, path, line, body}'
+
+  # Reply to a specific comment (NOTE: PR number is required in the path!)
+  gh api repos/rediacc/console/pulls/42/comments/{COMMENT_ID}/replies \
+    -X POST -f body="Your substantive reply here"
+
+  # IMPORTANT: The endpoint is /pulls/{PR_NUMBER}/comments/{COMMENT_ID}/replies
+  # NOT /pulls/comments/{COMMENT_ID}/replies (this will return 404)
+
+Or reply directly on GitHub:
+  https://github.com/rediacc/console/pull/42
+------------------------------------------------------------
+
+UNANSWERED REVIEW SUMMARY (1):
+
+  - comment 5189236393 by @github-actions[bot], posted 2026-08-05T10:00:00Z
+    https://github.com/rediacc/console/pull/42#issuecomment-5189236393
+    "x ```json:review-findings [] ..."
+
+------------------------------------------------------------
+WHY THIS BLOCKS. The automated review posts its verdict, its
+severity-ordered defects, its nits and its coverage map as ONE
+top-level comment. Only the top findings are mirrored inline
+(capped at 20, and any whose line is not in the diff is dropped),
+so resolving the inline threads does NOT address the summary.
+Top-level comments have no thread and nothing to resolve, so the
+only evidence anyone read it is a later comment answering it.
+There is none.
+
+WHAT A SUBSTANTIVE REPLY MUST CONTAIN. Go finding by finding, in
+the summary's own order, and for each one state exactly one of:
+  - fixed: what changed and in which commit
+  - deferred: where it is tracked (issue or worklist id) and why
+  - disagreed: the reason, concretely, not 'out of scope'
+Answer the nits and the coverage map too: if the summary says an
+area went unreviewed, say whether that is acceptable and why.
+It must be posted by someone other than @github-actions[bot] (a
+second comment from the reviewer is not an answer to the first),
+and it must either cite 5189236393 or run past 200 characters.
+
+To answer using gh CLI:
+
+  # 1. Read the full summary first - the excerpt above is 120 chars
+  gh api repos/rediacc/console/issues/comments/5189236393 --jq .body
+
+  # 2. Post the answer as a NEW top-level comment
+  gh api repos/rediacc/console/issues/42/comments -X POST \
+    -f body="Re: review summary 5189236393
+
+  - <finding 1 title>: fixed in <sha> - <what changed>
+  - <finding 2 title>: not changing - <why>
+  - <nit>: deferred to <issue/worklist id>
+
+  Coverage: <the areas the summary flagged as unreviewed, and your call on them>"
+
+  # IMPORTANT: a top-level comment has NO replies endpoint. All three
+  # of these are wrong, and the first two return 404 (verified):
+  #   repos/rediacc/console/issues/42/comments/5189236393/replies   -> 404
+  #   repos/rediacc/console/pulls/42/comments/5189236393/replies    -> 404
+  #     (that path is real, but only for INLINE comment ids;
+  #      5189236393 is an ISSUE comment id and is not found there)
+  #   repos/rediacc/console/issues/comments/5189236393  -> GET/PATCH only. That
+  #     is the EDIT endpoint for the summary itself; posting there would
+  #     overwrite the review, not answer it.
+
+Or comment directly on GitHub:
+  https://github.com/rediacc/console/pull/42#issuecomment-5189236393
+------------------------------------------------------------
+--- stderr ---

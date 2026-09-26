@@ -55,13 +55,13 @@ export function extractPushResult(stdout: string | undefined): PushResultStats |
         return stats;
       }
     } catch {
-      // Not valid JSON (log line, partial output) — keep scanning.
+      // Not valid JSON (log line, partial output), keep scanning.
     }
   }
   return undefined;
 }
 
-/** First GUID group ("3f2c1a9b") — enough to identify a base, short enough to read. */
+/** First GUID group ("3f2c1a9b"), enough to identify a base, short enough to read. */
 function shortBase(guid: string | undefined): string {
   if (!guid) return '';
   return guid.length > 8 ? `${guid.slice(0, 8)}…` : guid;
@@ -69,8 +69,8 @@ function shortBase(guid: string | undefined): string {
 
 /**
  * Print the push completion line with real transfer numbers, e.g.
- *   delta: Pushed "my-app" to machine-12 — 49.7 MB transferred in 6.2s (delta vs base 3f2c1a9b…, image 1.0 GB)
- *   full:  Pushed "my-app" to machine-12 — 1.0 GB transferred in 41s (full)
+ *   delta: Pushed "my-app" to machine-12, 49.7 MB transferred in 6.2s (delta vs base 3f2c1a9b…, image 1.0 GB)
+ *   full:  Pushed "my-app" to machine-12, 1.0 GB transferred in 41s (full)
  * Unknown byte counts (-1) omit the byte figure.
  */
 export function renderPushStats(repo: string, machine: string, stats: PushResultStats): void {

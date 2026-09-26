@@ -190,10 +190,7 @@ describe('getSSHConnectionDetails', () => {
   });
 
   it('file-mode secretFiles do NOT propagate into the SSH session env', async () => {
-    // secretFiles ride the vault stdin to renet (Step 6) so they reach a
-    // tmpfs file via Docker compose secrets — they must NEVER leak into the
-    // interactive shell, where they would be visible to docker exec, ps,
-    // and accidental shell logging.
+    // secretFiles ride the vault stdin to renet (Step 6) so they reach a tmpfs file via Docker compose secrets, they must NEVER leak into the interactive shell, where they would be visible to docker exec, ps, and accidental shell logging.
     mockGetConnectionVaults.mockResolvedValue({
       machineVault: baseMachineVault,
       teamVault: baseTeamVault,

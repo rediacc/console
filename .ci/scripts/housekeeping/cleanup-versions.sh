@@ -746,7 +746,7 @@ cleanup_cf_pages() {
 # OBJECT requires Administration:write (a repo-settings operation; see the
 # GitHub Apps permissions reference). This comment used to say the phase "only
 # succeeds if the App is ever granted admin", which reads as a pending upgrade.
-# It is not: `.ci/scripts/quality/check-no-app-admin-perm.sh` is a BLOCKING gate
+# It is not: `check:ci-app-admin-perm` is a BLOCKING gate
 # that forbids granting Administration:write to the rediacc-ci-cd App, precisely
 # so a leaked App token cannot delete the edge/stable environments. The gate and
 # this phase cannot both get what they want, and the gate is the one that is
@@ -820,7 +820,7 @@ cleanup_environments() {
                     # Same token for every environment, so one failure means
                     # they all fail -- warn once and stop.
                     # log_info, not log_warn: this 403 is the DESIGNED outcome, not a
-                    # fault. check-no-app-admin-perm.sh guarantees the token never
+                    # fault. check:ci-app-admin-perm guarantees the token never
                     # carries Administration:write, so warning on every run trains
                     # readers to ignore this script's warnings -- and the one that
                     # matters next will be ignored too.
@@ -1397,7 +1397,7 @@ cleanup_r2() {
         # Drift: exactly one of sentinel/tag is present. Do not auto-heal.
         if ((has_sentinel)); then
             log_error "drift: ${dir}/${ver}/.released exists but git tag ${ver} missing"
-            log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/dev/scrub-sentinel.sh ${ver} --execute"
+            log_error "  remediation: re-run CD to tag/release ${ver}, or scrub via scripts/ops/scrub-sentinel.sh ${ver} --execute"
         else
             log_error "drift: git tag ${ver} exists but ${dir}/${ver}/.released missing"
             log_error "  remediation: re-run CI for ${ver}, or delete tag ${ver}"

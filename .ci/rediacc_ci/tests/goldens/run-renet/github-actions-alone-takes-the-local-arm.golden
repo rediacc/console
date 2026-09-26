@@ -1,0 +1,7 @@
+# twin .ci/scripts/private/run-renet.sh blob fc9910e7aa1ac53dcc07ece0f26fa68ee7ee6179
+exit: 0
+--- stdout ---
+--- stderr ---
+⚠ Renet submodule not available, skipping (this is a hard failure in CI)
+--- calls ---
+[]

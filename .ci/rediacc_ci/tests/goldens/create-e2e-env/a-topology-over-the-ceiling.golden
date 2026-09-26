@@ -1,0 +1,9 @@
+# twin .ci/scripts/env/create-e2e-env.sh blob 0eec9b497b14624aa6cbdcd006042badbd2198a1
+exit: 1
+--- stdout ---
+--- stderr ---
+✓ VM RAM budget: bridge 1024 + 2x6000 (worker) + 3x6000 (ceph) = 31024 MB
+✗ Requested VM RAM 31024 MB exceeds the 14848 MB (14.5 GB) budget for a 16 GB runner.
+✗ Lower --vm-ram-worker/--vm-ram-ceph or reduce node counts.
+--- file ---
+null

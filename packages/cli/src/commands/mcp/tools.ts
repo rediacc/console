@@ -94,7 +94,7 @@ function checkOverrideLegitimacy(
   return guardError(t(errorKey, { ...templateVars, platform: process.platform }));
 }
 
-/** Guard a grand (non-fork) repo — block unless a legitimate override is present. */
+/** Guard a grand (non-fork) repo, block unless a legitimate override is present. */
 function guardGrandRepo(repoName: string): ToolResult | null {
   if (!isRepoAllowedByGrandEnv(repoName)) {
     return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
@@ -106,7 +106,7 @@ function guardGrandRepo(repoName: string): ToolResult | null {
   );
 }
 
-/** Guard a named repo — block grand repos or fork-blocked commands. */
+/** Guard a named repo, block grand repos or fork-blocked commands. */
 async function guardNamedRepo(
   tool: ToolDef,
   repoName: string,
@@ -124,17 +124,17 @@ async function guardNamedRepo(
  * Block destructive ops on non-fork repos unless --allow-grand or env override.
  * Also blocks fork-incompatible commands on fork repos.
  */
-async function applyGrandRepoGuard(
+function applyGrandRepoGuard(
   tool: ToolDef,
   args: Record<string, unknown>,
   options: McpServerOptions
 ): Promise<ToolResult | null> {
-  if (!tool.repoArgField) return null;
+  if (!tool.repoArgField) return Promise.resolve(null);
 
   const repoName = args[tool.repoArgField] as string | undefined;
   if (repoName) return guardNamedRepo(tool, repoName, options);
 
-  return null;
+  return Promise.resolve(null);
 }
 
 /** Execute a tool call via the rdc child process and format the MCP response. */

@@ -210,8 +210,7 @@ test.describe('Container Operations @bridge', () => {
     expect(runner.isSuccess(result)).toBe(true);
   });
 
-  // Runtime-generic repository verbs (repository_exec / repository_logs /
-  // repository_health) against the SAME running nginx repo. These had no live
+  // Runtime-generic repository verbs (repository_exec / repository_logs / repository_health) against the SAME running nginx repo. These had no live
   // dispatch site (allowlist-only on the coverage gate); each assert here checks
   // CONTENT, not exit code alone, so it can actually fail.
   test('repository_exec runs a command inside the deployed container', async () => {
@@ -233,8 +232,7 @@ test.describe('Container Operations @bridge', () => {
       datastorePath,
     });
     expect(runner.isSuccess(result)).toBe(true);
-    // nginx:alpine's entrypoint prints deterministic startup lines — assert one,
-    // not merely a zero exit.
+    // nginx:alpine's entrypoint prints deterministic startup lines — assert one, not merely a zero exit.
     expect(runner.getCombinedOutput(result).toLowerCase()).toMatch(
       /nginx|docker-entrypoint|worker process/
     );
@@ -242,9 +240,7 @@ test.describe('Container Operations @bridge', () => {
 
   test('repository_health reports a health-gate verdict for the running repo', async () => {
     const result = await runner.repositoryHealth(testRepo, datastorePath);
-    // repository_health emits a JSON HealthReport whose `state` is one of
-    // healthy|warming|unhealthy|unknown (renet cmd/renet/repository_health.go).
-    // Assert on that verdict content rather than the process exit code.
+    // repository_health emits a JSON HealthReport whose `state` is one of healthy|warming|unhealthy|unknown (renet cmd/renet/repository_health.go). Assert on that verdict content rather than the process exit code.
     expect(runner.getCombinedOutput(result).toLowerCase()).toMatch(
       /healthy|warming|unhealthy|unknown/
     );

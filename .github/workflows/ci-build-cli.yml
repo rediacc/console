@@ -7,8 +7,12 @@ on:
         type: string
         required: false
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 # Note: Renet binaries are built by ci-build-renet.yml and downloaded as artifact
 # This workflow depends on build-renet completing first (configured in ci.yml)
@@ -18,6 +22,9 @@ jobs:
     name: CLI (${{ matrix.platform }}-${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ matrix.timeout }}
+    # Checkout and artifacts only. No GitHub API, no registry, no git remote.
+    permissions:
+      contents: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,
@@ -99,12 +106,12 @@ jobs:
         shell: bash
         env:
           NEXT_VERSION: ${{ inputs.next_version }}
-        run: .ci/scripts/version/inject-env.sh --version "$NEXT_VERSION" --strict --print
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.version.inject_env --version "$NEXT_VERSION" --strict --print
 
       - name: Build CLI SEA executable
         if: matrix.platform != 'linux-musl'
         shell: bash
-        run: .ci/scripts/build/build-cli-executables.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_executables --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
           # Makes the build script re-check the version with --strict and refuse
@@ -115,7 +122,7 @@ jobs:
       - name: Build CLI SEA executable (musl)
         if: matrix.platform == 'linux-musl'
         shell: bash
-        run: .ci/scripts/build/build-cli-musl.sh --arch ${{ matrix.arch }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli_musl --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
           RELEASE_BUILD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

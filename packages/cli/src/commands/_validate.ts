@@ -24,8 +24,9 @@ export async function assertStorageExists(storageName: string): Promise<void> {
   } catch (storageErr) {
     const base = storageName.split(':')[0];
     const repos = await configService.listRepositories().catch(() => []);
-    const repoNames = new Set(repos.map((r) => r.name));
-    if (repoNames.has(storageName) || repoNames.has(base) || repoNames.has(`${base}:latest`)) {
+    // Any tag of the family counts: the grand is not necessarily stored as `:latest`.
+    const repoBases = new Set(repos.map((r) => r.name.split(':')[0]));
+    if (repoBases.has(base)) {
       throw new Error(
         `"${storageName}" is a repository, not a storage. To delete a repository image use: rdc repo delete ${base}`
       );

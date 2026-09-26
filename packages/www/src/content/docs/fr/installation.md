@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 1
 language: fr
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
@@ -215,7 +215,7 @@ Aucune configuration manuelle nécessaire. Le script d'installation détecte le 
 
 ## Mises à jour de binaires distants
 
-Lorsque vous exécutez des commandes sur une machine distante, la CLI provisionne automatiquement le binaire `renet` correspondant. Si le binaire est mis à jour, le serveur de routes (`rediacc-router`) est redémarré automatiquement pour prendre en charge la nouvelle version.
+Les commandes qui modifient une machine, comme les déploiements, les sauvegardes ou `rdc machine setup`, provisionnent automatiquement le binaire `renet` correspondant. Si le binaire est mis à jour, le serveur de routes (`rediacc-router`) redémarre automatiquement pour prendre en charge la nouvelle version. Les commandes en lecture seule, comme `rdc machine status` et `rdc repo list`, ne remplacent jamais le binaire : elles utilisent la version déjà présente sur la machine et affichent un avertissement si elle diffère de celle de la CLI.
 
 Le redémarrage est transparent et ne cause **aucune interruption** :
 
@@ -225,4 +225,4 @@ Le redémarrage est transparent et ne cause **aucune interruption** :
 - **Les connexions client existantes (HTTP, TCP, UDP) ne sont pas affectées.** Le serveur de routes est un fournisseur de configuration -- il n'est pas dans le chemin de données. Traefik gère tout le trafic directement.
 - Vos conteneurs d'application ne sont pas touchés -- seul le processus du serveur de routes au niveau système est redémarré.
 
-Pour ignorer le redémarrage automatique, passez `--skip-router-restart` à n'importe quelle commande, ou définissez la variable d'environnement `REDIACC_SKIP_ROUTER_RESTART=1`.
+Pour ignorer le redémarrage automatique, passez `--skip-router-restart` à une commande qui provisionne renet, ou définissez la variable d'environnement `REDIACC_SKIP_ROUTER_RESTART=1`.

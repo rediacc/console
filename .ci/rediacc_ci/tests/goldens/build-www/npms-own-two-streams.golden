@@ -1,0 +1,11 @@
+# twin .ci/scripts/build/build-www.sh blob 3382a9cc1ca7a01906efdb9b111e858f410a4958
+exit: 0
+--- stdout ---
+astro: building 42 pages
+--- stderr ---
+→ Building www (Astro)...
+astro: warning: unused import
+✓ www build completed
+✓ www build complete: packages/www/dist/
+--- calls ---
+CALL npm	run	build:www

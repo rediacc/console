@@ -2,15 +2,15 @@
  * Tests for the `renet job ...` remote command builders.
  *
  * The env prefix on `job start` is the part that actually matters. `job start`
- * snapshots its own environment into the job's spool so that `job run` — which
- * systemd spawns with a CLEAN environment — can re-inject it. renet captures
+ * snapshots its own environment into the job's spool so that `job run`, which
+ * systemd spawns with a CLEAN environment, can re-inject it. renet captures
  * exactly five things (REDIACC_SECRET_*, REDIACC_OTLP_*, REDIACC_ENVIRONMENT,
  * REDIACC_TELEMETRY_DISABLED, KUBECONFIG), so anything missing from the prefix
  * is silently absent from every detached deployment: a repo's secrets would just
  * vanish, and the failure would look like a broken app rather than a broken CLI.
  *
- * The prefix is composed by buildRenetEnvPrefix — the SAME function the
- * synchronous path uses — and these tests build it that way rather than hand-
+ * The prefix is composed by buildRenetEnvPrefix, the SAME function the
+ * synchronous path uses, and these tests build it that way rather than hand-
  * writing a string, so they exercise the real composition and inherit its
  * telemetry rules (renet#51): an opt-out must never ship OTLP credentials.
  */

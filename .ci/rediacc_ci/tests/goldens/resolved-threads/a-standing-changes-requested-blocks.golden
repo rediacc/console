@@ -1,0 +1,19 @@
+# twin .ci/scripts/quality/check-resolved-threads.sh blob 19a5839d4715dd5e8a8ac152d6c11d87ac09e868
+exit: 1
+--- stdout ---
+
+============================================================
+  Changes Requested by Reviewer
+============================================================
+
+One or more reviewers have requested changes.
+
+Reviewers who requested changes:
+  - @amy
+
+Please address the reviewer feedback and request a new review.
+------------------------------------------------------------
+--- stderr ---
+→ Checking review threads and review status...
+→ Fetching review threads via GraphQL...
+→ Checking review status...

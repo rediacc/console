@@ -62,11 +62,9 @@ describe('resolveKvmTopology', () => {
     expect(t.members.map((m) => m.vmId)).not.toContain(11);
   });
 
-  // ops down tears VMs down by id, so a pool that grows must keep the ids its
-  // running members already hold.
+  // ops down tears VMs down by id, so a pool that grows must keep the ids its running members already hold.
   it('reuses persisted ids and only allocates for the new members', () => {
-    // The ledger now comes from state.clusters[*].memberIds (Carry-in 5),
-    // threaded in as the third argument, not the spec kvm block.
+    // The ledger now comes from state.clusters[*].memberIds (Carry-in 5), threaded in as the third argument, not the spec kvm block.
     const existing = cluster({ pools: [{ name: 'agents', role: 'k8s-agent', count: 3 }] });
     const t = resolveKvmTopology('c', existing, { agents: [11, 12] });
     expect(t.memberIds.agents).toEqual([11, 12, 13]);

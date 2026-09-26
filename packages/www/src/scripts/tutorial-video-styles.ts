@@ -43,9 +43,7 @@ function loadOne(href: string): Promise<void> {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = href;
-    // Resolve on error too: a missing stylesheet must leave an UGLY player, never no
-    // player at all. Failing open here is the difference between a cosmetic regression
-    // and a blank box where the video was.
+    // Resolve on error too: a missing stylesheet must leave an UGLY player, never no player at all. Failing open here is the difference between a cosmetic regression and a blank box where the video was.
     link.addEventListener('load', () => resolve(), { once: true });
     link.addEventListener('error', () => resolve(), { once: true });
     document.head.appendChild(link);

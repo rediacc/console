@@ -59,8 +59,7 @@
 ### Phase 1: Ansible Collection (implement first)
 
 **Rationale**: Ansible wraps the existing `rdc` CLI. No changes to rdc needed.
-The CLI-wrapper pattern is proven (see `community.general.terraform` module).
-Immediate value: fleet-level parallelism and orchestration rdc currently lacks.
+The CLI-wrapper pattern is proven (see `community.general.terraform` module). Immediate value: fleet-level parallelism and orchestration rdc currently lacks.
 
 - Python modules (~100-200 lines each) wrapping `rdc` commands
 - `rdc --output json` already provides structured output for parsing
@@ -70,8 +69,7 @@ Immediate value: fleet-level parallelism and orchestration rdc currently lacks.
 ### Phase 2: Terraform Provider (implement second)
 
 **Rationale**: Requires Go, more complex, but adds declarative state management.
-Phase 1 experience informs which resources matter most. The provider calls
-`rdc` CLI via `exec.Command()` — same wrapper pattern as Phase 1, different language.
+Phase 1 experience informs which resources matter most. The provider calls `rdc` CLI via `exec.Command()` — same wrapper pattern as Phase 1, different language.
 
 - Go provider using `terraform-plugin-framework` (not legacy SDKv2)
 - CLI-wrapper pattern, same as the Dokku Terraform provider
@@ -117,8 +115,7 @@ These operations are rdc's domain. Ansible/Terraform should **call** rdc, not re
 
 ## Three Transfer Mechanisms
 
-Rdc provides three ways to move data between machines. Each serves a different
-purpose — they complement each other, not compete:
+Rdc provides three ways to move data between machines. Each serves a different purpose — they complement each other, not compete:
 
 | | Backup Push | CRIU Migration | Ceph Fork |
 |---|---|---|---|
@@ -133,22 +130,11 @@ purpose — they complement each other, not compete:
 | **Ansible module** | `rediacc_backup` | `rediacc_backup` | `rediacc_datastore_fork` |
 | **Terraform resource** | N/A (procedural) | N/A (procedural) | `rediacc_datastore_fork` |
 
-**Why Ceph fork is a differentiator:** PlanetScale branches databases. Neon
-branches Postgres. Vercel clones frontend builds. Rediacc forks **entire
-encrypted application stacks** — Docker services, data volumes, LUKS encryption,
-compose configs, all repos on a machine — in under 2 seconds regardless of size.
-No other self-hosted infrastructure tool offers this.
+**Why Ceph fork is a differentiator:** PlanetScale branches databases. Neon branches Postgres. Vercel clones frontend builds. Rediacc forks **entire encrypted application stacks** — Docker services, data volumes, LUKS encryption, compose configs, all repos on a machine — in under 2 seconds regardless of size. No other self-hosted infrastructure tool offers this.
 
-**How fork works:** RBD snapshot → COW clone → device-mapper overlay.
-Reads come from the shared Ceph clone (no transfer needed). Writes go to a
-local sparse file that starts at 0 bytes and grows only with actual changes.
-After unfork, the original datastore is restored automatically.
+**How fork works:** RBD snapshot → COW clone → device-mapper overlay. Reads come from the shared Ceph clone (no transfer needed). Writes go to a local sparse file that starts at 0 bytes and grows only with actual changes. After unfork, the original datastore is restored automatically.
 
-**Current limitation:** Fork mounts on the source machine, replacing its
-`/mnt/rediacc` with the COW overlay. For production → staging cloning,
-the staging machine needs Ceph client access to mount the clone independently.
-The ops provisioner (`rdc ops up`) configures Ceph client access on all workers
-automatically.
+**Current limitation:** Fork mounts on the source machine, replacing its `/mnt/rediacc` with the COW overlay. For production → staging cloning, the staging machine needs Ceph client access to mount the clone independently. The ops provisioner (`rdc ops up`) configures Ceph client access on all workers automatically.
 
 ## What Ansible/Terraform Add (The Gaps)
 
@@ -168,12 +154,8 @@ automatically.
 
 ### Architectural Rule: Always `rdc`, Never `renet`
 
-Renet is a low-level orchestrator managed by rdc. External tools MUST call
-`rdc` CLI only — never SSH into machines and run renet directly. Reasons:
-rdc manages renet's lifecycle (provisioning/upgrades), builds the RenetVault
-payload (SSH keys, credentials, storage configs), manages config (machines,
-repos, network IDs, SSH keys), and handles SSH transport. If rdc is missing
-a command or JSON output, fix rdc — don't bypass it.
+Renet is a low-level orchestrator managed by rdc. External tools MUST call `rdc` CLI only — never SSH into machines and run renet directly. Reasons: rdc manages renet's lifecycle (provisioning/upgrades), builds the RenetVault payload (SSH keys, credentials, storage configs), manages config (machines, repos, network IDs, SSH keys), and handles SSH transport. If rdc is missing a
+command or JSON output, fix rdc — don't bypass it.
 
 ### Complete JSON Output Audit
 
@@ -220,8 +202,7 @@ The CLI has two output methods:
    Fix: change to `outputService.print(config, getOutputFormat())`.
 
 2. **`repo list`** — pipes renet's raw stdout, no JSON formatting at all.
-   Workaround exists (`config repositories` gives repo config, `machine containers`
-   gives running state), but a direct `repo list` with JSON would simplify modules.
+   Workaround exists (`config repositories` gives repo config, `machine containers` gives running state), but a direct `repo list` with JSON would simplify modules.
 
 3. **`backup list`** — no JSON output. The disaster_recovery role and Terraform
    import both need to enumerate available backups programmatically.
@@ -239,12 +220,8 @@ The CLI has two output methods:
    Acceptable but adds latency (2 SSH calls per operation).
 
 7. **`datastore status`** — renet function outputs clean JSON to stdout, but the
-   CLI streams it via `outputService.info()` (stderr) + `executeFunction()` (stdout
-   pass-through) instead of routing through `outputService.print()`. Workaround:
-   runners parse stdout as plain JSON (no envelope). Fix: route through
-   `outputService.print()` for consistent envelope wrapping. This partially closes
-   the "volume size not queryable" drift detection gap — `datastore status` returns
-   `size`, `used`, `available`, `backend`, `mounted` at the datastore level.
+   CLI streams it via `outputService.info()` (stderr) + `executeFunction()` (stdout pass-through) instead of routing through `outputService.print()`. Workaround: runners parse stdout as plain JSON (no envelope). Fix: route through `outputService.print()` for consistent envelope wrapping. This partially closes the "volume size not queryable" drift detection gap — `datastore status`
+   returns `size`, `used`, `available`, `backend`, `mounted` at the datastore level.
 
 **NICE-TO-HAVE (workarounds are adequate):**
 
@@ -264,9 +241,7 @@ All JSON output uses this envelope structure:
 {success: bool, command: string, data: any, errors: null|[{code, message, details, retryable, guidance}], warnings: string[], metrics: {duration_ms: number}}
 ```
 
-Key detail: the **error envelope includes `retryable` and `guidance` fields**.
-This is valuable for Ansible/Terraform error handling — they can distinguish
-transient failures from permanent ones without pattern-matching error messages.
+Key detail: the **error envelope includes `retryable` and `guidance` fields**. This is valuable for Ansible/Terraform error handling — they can distinguish transient failures from permanent ones without pattern-matching error messages.
 
 ### Config File Structure (relevant fields)
 
@@ -282,29 +257,22 @@ The rdc config (`~/.config/rediacc/rediacc.json`) contains:
 - `s3` — optional S3 resource state backend (still local adapter, not a separate mode)
 - `id` / `version` — config identity and conflict detection
 
-**Important for Terraform:** The `version` field increments on every config write.
-If two Terraform operations modify config concurrently, the second will see a
-version conflict. This is part of why per-machine locking matters.
+**Important for Terraform:** The `version` field increments on every config write. If two Terraform operations modify config concurrently, the second will see a version conflict. This is part of why per-machine locking matters.
 
 ### stdout/stderr Behavior
 
 - **Query commands**: data → stdout (JSON envelope), status messages → stderr
 - **Lifecycle commands**: renet's raw output → stdout, rdc's status → stderr
 - **Auto-TTY detection**: when stdout is piped (non-TTY), CLI defaults to JSON
-  even without `--output json`. This means Ansible/Terraform will get JSON
-  from query commands automatically, but should still pass `--output json`
-  explicitly for clarity.
+  even without `--output json`. This means Ansible/Terraform will get JSON from query commands automatically, but should still pass `--output json` explicitly for clarity.
 
 ## Key Design Decisions
 
 ### 1. CLI Wrapper Architecture
 
-Modules call `rdc` via subprocess (`exec.Command` in Go, `run_command` in Python).
-rdc is the only public interface — renet is internal.
+Modules call `rdc` via subprocess (`exec.Command` in Go, `run_command` in Python). rdc is the only public interface — renet is internal.
 
-**Precedent:** The Dokku Terraform provider follows the same pattern (wraps CLI
-over SSH). The `community.general.terraform` Ansible module wraps the `terraform`
-binary. This is a battle-tested approach.
+**Precedent:** The Dokku Terraform provider follows the same pattern (wraps CLI over SSH). The `community.general.terraform` Ansible module wraps the `terraform` binary. This is a battle-tested approach.
 
 **Three-layer design** (learned from Dokku provider):
 1. **Transport layer** — executes rdc binary, captures output, handles timeouts
@@ -313,23 +281,15 @@ binary. This is a battle-tested approach.
 
 ### 2. Concurrency and Locking (Terraform-specific)
 
-**Problem:** Terraform runs resource operations in parallel (default parallelism=10).
-rdc cannot handle concurrent operations on the same machine — two simultaneous
-`repo up` commands on the same machine will conflict. Additionally, rdc's config
-file has a `version` field that increments on writes, causing conflicts.
+**Problem:** Terraform runs resource operations in parallel (default parallelism=10). rdc cannot handle concurrent operations on the same machine — two simultaneous `repo up` commands on the same machine will conflict. Additionally, rdc's config file has a `version` field that increments on writes, causing conflicts.
 
-**Solution:** Implement a `mutexKV` pattern (used by Google's Terraform provider).
-Serialize all operations per machine hostname. Operations on *different* machines
-can safely run in parallel.
+**Solution:** Implement a `mutexKV` pattern (used by Google's Terraform provider). Serialize all operations per machine hostname. Operations on *different* machines can safely run in parallel.
 
-Lock granularity: `rediacc/machine/<machine-name>`. Any resource operation that
-targets a specific machine acquires that machine's lock before executing.
+Lock granularity: `rediacc/machine/<machine-name>`. Any resource operation that targets a specific machine acquires that machine's lock before executing.
 
-Config-modifying operations (`machine add/delete`, `repo create/delete`) need
-a separate config-level lock: `rediacc/config`. This prevents version conflicts.
+Config-modifying operations (`machine add/delete`, `repo create/delete`) need a separate config-level lock: `rediacc/config`. This prevents version conflicts.
 
-**Ansible:** Not a problem — Ansible serializes tasks per host by default.
-`strategy: free` parallelizes across hosts, which is safe.
+**Ansible:** Not a problem — Ansible serializes tasks per host by default. `strategy: free` parallelizes across hosts, which is safe.
 
 ### 3. Timeout Handling
 
@@ -339,20 +299,17 @@ a separate config-level lock: `rediacc/config`. This prevents version conflicts.
 - `backup push`: minutes to hours (depends on data size and network)
 - `sync upload`: variable (depends on file count and size)
 
-**Terraform solution:** Use `terraform-plugin-framework-timeouts` to let users
-configure per-resource timeouts. Sensible defaults:
+**Terraform solution:** Use `terraform-plugin-framework-timeouts` to let users configure per-resource timeouts. Sensible defaults:
 - `rediacc_machine` create: 20 minutes
 - `rediacc_repository` create: 30 minutes
 - `rediacc_backup_schedule` create: 5 minutes
 - All deletes: 10 minutes
 
-**Ansible solution:** Ansible's `async` + `poll` pattern for long-running tasks.
-Modules should accept a `timeout` parameter with generous defaults.
+**Ansible solution:** Ansible's `async` + `poll` pattern for long-running tasks. Modules should accept a `timeout` parameter with generous defaults.
 
 ### 4. Error Classification
 
-The rdc error envelope includes `retryable` and `code` fields. Use these
-to distinguish error types:
+The rdc error envelope includes `retryable` and `code` fields. Use these to distinguish error types:
 
 **Retryable** (retry with backoff):
 - SSH connection refused / timeout (host briefly unreachable)
@@ -365,16 +322,13 @@ to distinguish error types:
 - Resource conflicts (repo already exists, port in use)
 - Permission denied
 
-**Terraform:** Use `tfresource.Retry()` with the `retryable` flag from the
-error envelope. Non-retryable errors propagate immediately.
+**Terraform:** Use `tfresource.Retry()` with the `retryable` flag from the error envelope. Non-retryable errors propagate immediately.
 
-**Ansible:** Report retry status in module return values. Let playbooks
-decide retry behavior via `retries` + `until`.
+**Ansible:** Report retry status in module return values. Let playbooks decide retry behavior via `retries` + `until`.
 
 ### 5. State Detection and Drift
 
-**The execute-then-query pattern**: Since 37 of 63 commands lack JSON output,
-modules must always:
+**The execute-then-query pattern**: Since 37 of 63 commands lack JSON output, modules must always:
 1. Query current state via JSON-capable commands
 2. Execute lifecycle command (exit code only)
 3. Query again to confirm the change
@@ -389,21 +343,13 @@ modules must always:
 | Machine system info | `machine info` | System, repos, containers, services |
 | What services run? | `machine services` | List of systemd services |
 
-**Drift detection (Terraform Read):** The Read function queries actual state
-and compares to stored state. If a repo was deleted outside Terraform,
-Read returns empty state (removes from Terraform state), and next `plan`
-shows it needs recreation. If a repo was stopped manually, Read detects
-the mismatch and `plan` shows it needs to be restarted.
+**Drift detection (Terraform Read):** The Read function queries actual state and compares to stored state. If a repo was deleted outside Terraform, Read returns empty state (removes from Terraform state), and next `plan` shows it needs recreation. If a repo was stopped manually, Read detects the mismatch and `plan` shows it needs to be restarted.
 
-**Key limitation:** Cannot detect all per-repo drift. If someone resizes a
-repo outside Terraform, there's no per-repo size query. Accept this as a
-known limitation. Note: `datastore status` returns datastore-level size/usage,
-which partially closes this gap for the `rediacc_machine` resource.
+**Key limitation:** Cannot detect all per-repo drift. If someone resizes a repo outside Terraform, there's no per-repo size query. Accept this as a known limitation. Note: `datastore status` returns datastore-level size/usage, which partially closes this gap for the `rediacc_machine` resource.
 
 ### 6. Data Safety
 
-Repositories contain user data (encrypted LUKS volumes). Destruction is
-irreversible and potentially catastrophic.
+Repositories contain user data (encrypted LUKS volumes). Destruction is irreversible and potentially catastrophic.
 
 - Terraform: all examples use `prevent_destroy = true`
 - Terraform: `backup_before_destroy` attribute triggers backup before delete
@@ -412,8 +358,7 @@ irreversible and potentially catastrophic.
 
 ### 7. Dry-Run Mode for Check/Plan
 
-A useful discovery: `repo up`, `repo down`, and `repo delete` support
-`--dry-run` which DOES return structured JSON. This enables:
+A useful discovery: `repo up`, `repo down`, and `repo delete` support `--dry-run` which DOES return structured JSON. This enables:
 - **Terraform plan**: can show what would change without executing
 - **Ansible check mode**: can report `changed: true/false` without acting
 
@@ -421,16 +366,13 @@ Modules should use `--dry-run` during check/plan phases where available.
 
 ### 8. Config System Integration
 
-Both tools reference rdc's existing config file rather than duplicating
-credentials. The config has everything needed: machine IPs, SSH keys,
-repo metadata, storage backends, backup schedules.
+Both tools reference rdc's existing config file rather than duplicating credentials. The config has everything needed: machine IPs, SSH keys, repo metadata, storage backends, backup schedules.
 
 - Terraform: `config_name` provider attribute (defaults to default config)
 - Ansible: `config_name` module parameter
 - Ansible inventory: reads config via `rdc config show --output json`
 
-**Encrypted configs:** When `encrypted: true`, rdc handles decryption
-transparently. Ansible/Terraform don't need to know about encryption.
+**Encrypted configs:** When `encrypted: true`, rdc handles decryption transparently. Ansible/Terraform don't need to know about encryption.
 
 **Environment variable fallback** (Terraform best practice):
 
@@ -440,18 +382,11 @@ transparently. Ansible/Terraform don't need to know about encryption.
 | `config_path` | `REDIACC_CONFIG_PATH` | Explicit config file path |
 | `rdc_path` | `REDIACC_RDC_PATH` | Path to rdc binary |
 
-Evaluation order: HCL attribute → environment variable → default.
-This follows the pattern used by AWS (`AWS_PROFILE`), Hetzner
-(`HCLOUD_TOKEN`), and Cloudflare (`CLOUDFLARE_API_TOKEN`) providers.
-Keeps `.tf` files credential-free and portable across environments.
+Evaluation order: HCL attribute → environment variable → default. This follows the pattern used by AWS (`AWS_PROFILE`), Hetzner (`HCLOUD_TOKEN`), and Cloudflare (`CLOUDFLARE_API_TOKEN`) providers. Keeps `.tf` files credential-free and portable across environments.
 
 ### 9. Ceph Fork as Core Differentiator
 
-The `datastore fork` command enables instant copy-on-write cloning of entire
-datastores (all repos, all data) in under 2 seconds via Ceph RBD snapshots.
-This is the infrastructure equivalent of what PlanetScale/Neon do for databases
-and what Vercel/Render do for preview deployments — but for entire encrypted
-application stacks.
+The `datastore fork` command enables instant copy-on-write cloning of entire datastores (all repos, all data) in under 2 seconds via Ceph RBD snapshots. This is the infrastructure equivalent of what PlanetScale/Neon do for databases and what Vercel/Render do for preview deployments — but for entire encrypted application stacks.
 
 **Patterns this enables:**
 
@@ -468,13 +403,11 @@ application stacks.
 - **Ansible** owns fork workflows — fork/unfork is procedural (do X, then Y, then cleanup).
   New module: `rediacc_datastore_fork`. New roles: `fork_environment`, preview/canary patterns.
 - **Terraform** manages fork *lifecycle* — `rediacc_datastore_fork` as a managed resource
-  where Create=fork, Read=`datastore status` (check `cow_mode`), Delete=unfork.
-  Fork metadata (snapshot name, clone name) stored as computed attributes in state.
+  where Create=fork, Read=`datastore status` (check `cow_mode`), Delete=unfork. Fork metadata (snapshot name, clone name) stored as computed attributes in state.
 - **Ceph is optional** — all existing functionality works with local backend.
   Ceph adds the instant fork capability for users who need it.
 - **Machine resource extended** — `rediacc_machine` gains an optional `ceph {}` block
-  for Ceph RBD configuration. When present, `config set-ceph` + `datastore init --backend ceph`
-  run during machine setup.
+  for Ceph RBD configuration. When present, `config set-ceph` + `datastore init --backend ceph` run during machine setup.
 
 **Two datastore backends:**
 
@@ -483,45 +416,32 @@ application stacks.
 | `local` (default) | Loop-backed file | Slow (rsync) | Single machines, no Ceph |
 | `ceph` | RBD image on Ceph cluster | Instant (< 2s) | Multi-machine, testing, staging |
 
-The `datastore status` command returns JSON (plain, no envelope) with: `type`,
-`size`, `used`, `available`, `path`, `mounted`, `initialized`, `backend`,
-`rbd_image`. During an active fork, `cow_mode: true` is added.
+The `datastore status` command returns JSON (plain, no envelope) with: `type`, `size`, `used`, `available`, `path`, `mounted`, `initialized`, `backend`, `rbd_image`. During an active fork, `cow_mode: true` is added.
 
 ## Progressive Adoption Strategy
 
 ### The Natural Path: Manual → CLI → Terraform/Ansible
 
-Most users already run `rdc` manually. The tools should meet them where
-they are, not require a greenfield setup. The adoption path:
+Most users already run `rdc` manually. The tools should meet them where they are, not require a greenfield setup. The adoption path:
 
 1. **Already using rdc manually** — import existing machines and repos
-   into Terraform state without recreating them. This is the #1 adoption
-   barrier for IaC tools (learned from Dokku/Coolify/Proxmox providers).
+   into Terraform state without recreating them. This is the #1 adoption barrier for IaC tools (learned from Dokku/Coolify/Proxmox providers).
 
 2. **Start with Terraform for new machines** — provision cloud VMs and
-   register them with `rediacc_machine`. Keep managing repos via `rdc`
-   directly. This is the "Kamal model" (TF for infrastructure, CLI for apps).
+   register them with `rediacc_machine`. Keep managing repos via `rdc` directly. This is the "Kamal model" (TF for infrastructure, CLI for apps).
 
 3. **Add repos to Terraform as needed** — import existing repos one at a
    time with `terraform import`. Don't require all-or-nothing migration.
 
 4. **Add Ansible for fleet operations** — when managing 5+ machines,
-   Ansible adds value for rolling deploys and health gates. Terraform
-   handles what exists; Ansible handles what happens.
+   Ansible adds value for rolling deploys and health gates. Terraform handles what exists; Ansible handles what happens.
 
 5. **Add Ceph for instant operations** — when fork speed matters
-   (staging environments, preview deployments, DR testing, canary releases),
-   provision a Ceph cluster and switch machines to Ceph-backed datastores.
-   Forks go from minutes (rsync) to seconds (Ceph COW). This unlocks the
-   preview environment and canary release patterns that no other self-hosted
-   tool can offer.
+   (staging environments, preview deployments, DR testing, canary releases), provision a Ceph cluster and switch machines to Ceph-backed datastores. Forks go from minutes (rsync) to seconds (Ceph COW). This unlocks the preview environment and canary release patterns that no other self-hosted tool can offer.
 
 ### Import as a Day-One Feature
 
-Import is NOT a nice-to-have — it's the #1 barrier to adoption. Every
-resource must support `terraform import` from v0.1.0. Without it, users
-with existing infrastructure can't adopt the provider without destroying
-and recreating everything (unacceptable for production repos with data).
+Import is NOT a nice-to-have — it's the #1 barrier to adoption. Every resource must support `terraform import` from v0.1.0. Without it, users with existing infrastructure can't adopt the provider without destroying and recreating everything (unacceptable for production repos with data).
 
 Import formats:
 - `terraform import rediacc_machine.web web-1`
@@ -555,16 +475,11 @@ resource "rediacc_machine" "web" {
 }
 ```
 
-No API keys, no endpoints, no complex setup. The provider reads the
-existing rdc config file that users already have.
+No API keys, no endpoints, no complex setup. The provider reads the existing rdc config file that users already have.
 
 ### Versioning: Start at 0.x
 
-Publish 0.1.0 early, iterate with user feedback. Semantic versioning
-below 1.0 allows breaking changes. The Dokku provider stayed at 0.x
-for months and iterated based on real user issues. Don't wait for
-perfection — ship a working provider with import + machine + repository
-and gather feedback.
+Publish 0.1.0 early, iterate with user feedback. Semantic versioning below 1.0 allows breaking changes. The Dokku provider stayed at 0.x for months and iterated based on real user issues. Don't wait for perfection — ship a working provider with import + machine + repository and gather feedback.
 
 ## Repository Structure (New Packages)
 

@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { generateTOCFromHtml } from '../sidebar-behavior';
 
-// The TOC must consume the id the page renders, never re-derive one. The site
-// shipped two slug algorithms over one heading for years: rendered ids came
+// The TOC must consume the id the page renders, never re-derive one. The site shipped two slug algorithms over one heading for years: rendered ids came
 // from github-slugger while the TOC re-slugged the text ASCII-only, which left
-// 8,013 in-page links dead across 963 pages. These tests pin the contract that
-// killed that class: the id attribute is the single source.
+// 8,013 in-page links dead across 963 pages. These tests pin the contract that killed that class: the id attribute is the single source.
 describe('generateTOCFromHtml', () => {
   it('reads the id attribute instead of re-deriving it from the text', () => {
     const toc = generateTOCFromHtml('<h2 id="members--roles">Members &amp; Roles</h2>');

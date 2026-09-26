@@ -1,0 +1,50 @@
+# .w7p5a-real-run-leg-blocklist -- W7P5-a's real-run-LEG BLOCKER register, distinct
+# from .w7p5a-real-run-blocklist.
+#
+# W7P5-a ("agent/plans/PLAN-tooling-transformation.md") sets the bar as "golden dry-run
+# parity plus one real run each". The 32 paths in .w7p5a-real-run-blocklist have
+# neither leg done directly (their dry-run parity is inherited from W7P6's port);
+# the paths here are different: EACH ALREADY CARRIES ITS OWN w7p5a K=5 shadow-gate
+# ledger (recorded in .ci/shadow/w7p5a-status.json as `status: "ledger"`), so their
+# dry-run-parity leg is genuinely done, under this box's own name. What remains
+# blocked is narrower: their real-run branch invokes a real external system
+# (a production CDN, a live Cloudflare Worker preview URL, or the real GitHub repo
+# via `gh`) that this session has no standing authorization to touch for a porting
+# exercise, even for a read-only GET.
+#
+# WHY THIS CANNOT SHARE A FILE WITH .w7p5a-real-run-blocklist.
+# check_w7p5a_real_run_blockers.py's existing STALE check treats ANY entry in that
+# file whose path has graduated to "ledger" status as a leftover to be deleted --
+# correct for THAT file, since it BLOCKs a whole path's port and a ledgered path's
+# port is no longer blocked. Putting a real-run-LEG block in the same file would
+# make every entry here look like exactly that leftover. This file's entries are
+# never stale merely for being "ledger" status; they are checked by the SEPARATE
+# fifth clause in w7p5a_real_run_blockers.py that cross-references this file
+# against each `ledger` row's `note` field instead.
+#
+# Liveness is enforced the same way as .w7p5a-real-run-blocklist: an entry is live
+# while (a) the path still exists, (b) .ci/shadow/w7p5a-status.json still records it
+# as "ledger" without the real-run confirmation phrase in its `note`, and (c) its
+# reason still validates through the canonical rediacc_ci.core.allowlist checker.
+# Format: name-per-line, each preceded by one or more BLOCKER-reason comment lines.
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare production credentials and is explicitly forbidden from performing a real deploy or a real infrastructure probe; the script's real-run path invokes curl against a live Cloudflare Worker preview URL's health and well-known endpoints, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger (.ci/shadow/w7p5a-wait-for-preview-worker.observations.jsonl), with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/deploy/wait-for-preview-worker.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no standing authorization to fetch from production release infrastructure for a porting exercise; the script's real-run path invokes curl against the real https://releases.rediacc.com/cli/edge/manifest.json CDN endpoint, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger, with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/release/check-edge-manifest.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no standing authorization to fetch from production release infrastructure for a porting exercise; the script's real-run path invokes curl against the real https://releases.rediacc.com/cli/stable/manifest.json CDN endpoint, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger, with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/release/check-stable-manifest.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no standing authorization to query the real GitHub repository's release state for a porting exercise; the script's real-run path invokes `gh release view` against the real rediacc/console repo, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger, with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/release/check-existing-release.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no standing authorization to query the real GitHub Actions API for a porting exercise; the script's real-run path invokes `gh api` against the real rediacc/console repo's workflow runs, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger, with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/release/resolve-ci-run.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no standing authorization to verify build provenance against the real GitHub attestation service for a porting exercise; the script's real-run path invokes `gh attestation verify` against the real rediacc/console repo, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger, with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/release/verify-artifact-attestation.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no standing authorization to query the real GitHub repository's release assets for a porting exercise; the script's real-run path invokes `gh release view` against the real rediacc/console repo, so the box's 'one real run each' clause cannot be satisfied here. This path's own dry-run parity IS done: it carries a w7p5a K=5 shadow-gate ledger, with a permanent side-by-side pytest differential -- this entry blocks only the real-run clause, not the ledgered dry-run parity.
+.ci/scripts/release/verify-release-assets.sh

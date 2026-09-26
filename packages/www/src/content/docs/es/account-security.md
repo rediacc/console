@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: es
-sourceHash: "c898204d1ff917f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Autenticación
@@ -36,7 +36,7 @@ Los tokens de API autentican operaciones de máquina a máquina (activación de 
 - `subscription:read` -- Leer detalles de la suscripción
 
 **Funciones de seguridad:**
-- Vinculación de IP: la primera solicitud bloquea el token a esa dirección IP
+- Vinculación de IP: un token solo vale para la dirección IP de su primera solicitud; una dirección nueva requiere una verificación TOTP o un nuevo inicio de sesión (ver más abajo)
 - Alcance por equipo: los tokens pueden restringirse a un equipo específico
 - Revocación automática: los tokens se revocan cuando el creador es eliminado de la organización
 
@@ -46,6 +46,18 @@ Crear un token:
 # El valor del token se muestra una vez -- guárdelo de forma segura
 ```
 
+#### Cuando cambia la dirección IP
+
+Un token vinculado a una dirección IP se rechaza desde cualquier otra, por ejemplo cuando el proveedor de Internet asigna una dirección nueva. La CLI se encarga del traslado:
+
+- **Terminal interactiva con 2FA activada**: la CLI pide el código de 6 dígitos de la app de autenticación, traslada el token a la nueva dirección y vuelve a ejecutar el comando. Los códigos de respaldo no sirven para un traslado.
+- **Scripts y CI (sin terminal)**: el comando falla e indica las dos soluciones: ejecutar una vez cualquier comando `rdc` en una terminal interactiva (por ejemplo `rdc subscription status`) e introducir el código, o ejecutar `rdc subscription login`.
+- **2FA desactivada**: el token no se puede trasladar. `rdc subscription login` emite uno nuevo y, con la 2FA activada, el próximo traslado solo necesita un código.
+- **Códigos incorrectos**: 5 códigos incorrectos en 15 minutos bloquean el traslado, primero durante 5 minutos y luego el doble cada vez, hasta 1 hora. Tras 4 bloqueos, el traslado queda desactivado para ese token hasta el siguiente `rdc subscription login`.
+- **Los tokens de executor** con vinculación de IP `unbound` o `cloudflare` no se ven afectados.
+
+Cada traslado aparece en el registro de actividad del portal, con la dirección anterior y la nueva.
+
 ### Flujo de código de dispositivo
 
 La CLI puede autenticarse en máquinas sin pantalla utilizando el flujo de código de dispositivo:
@@ -53,7 +65,7 @@ La CLI puede autenticarse en máquinas sin pantalla utilizando el flujo de códi
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Muestra: Ingrese el código XXXX-XXXX-XX en https://www.rediacc.com/account/authorize
 # Después de la aprobación, la CLI recibe credenciales automáticamente
 ```

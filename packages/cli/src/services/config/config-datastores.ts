@@ -14,14 +14,14 @@
  * `config reconcile` is what re-syncs the hint after the world moves underneath it.
  *
  * ★ AND HERE IS WHAT THE READS ACTUALLY DO, because this comment used to claim that
- * "every read here tolerates a stale hint instead of trusting it blindly" — and that is
+ * "every read here tolerates a stale hint instead of trusting it blindly", and that is
  * NOT TRUE. `resolve-machine.ts` throws `stateMismatch` when `attachedTo` is ABSENT; when
  * it is PRESENT it returns that machine with no check that the machine exists or that the
  * datastore is mounted there. A missing hint is caught. A LYING hint is trusted.
  *
  * `cluster destroy` no longer leaves one behind (#89 clears the observation for every
- * datastore the cluster owned), but any other source of staleness — a hand-deleted VM, a
- * crashed provision — still produces a hint the reads will follow. Hardening the read to
+ * datastore the cluster owned), but any other source of staleness, a hand-deleted VM, a
+ * crashed provision, still produces a hint the reads will follow. Hardening the read to
  * verify the machine/mount is P5. Until then: this comment describes the code, not the
  * intention. A comment that promises a mitigation the code does not implement is worse than
  * no comment, because it stops the next person from looking.
@@ -32,11 +32,11 @@
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { RefGrammarError, splitRef } from '@rediacc/shared/ref';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { notFound } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
 import { configService } from './config-resources.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 type DatastoreConfig = NonNullable<NonNullable<RdcConfig['resources']>['datastores']>[string];
 export type DatastoreState = NonNullable<NonNullable<RdcConfig['state']>['datastores']>[string];
@@ -90,7 +90,7 @@ export async function listDatastoreState(): Promise<Record<string, DatastoreStat
  * `map[key]` lies: the repo does not enable `noUncheckedIndexedAccess`, so a missing
  * key is typed as present while yielding undefined at runtime. Every absence check in
  * this file guards a real runtime case, and going through this helper is what keeps
- * them type-legal — annotating the variable is not enough, because TypeScript narrows
+ * them type-legal, annotating the variable is not enough, because TypeScript narrows
  * a const back to the initializer's (lying) type.
  */
 export function at<T>(map: Record<string, T>, key: string): T | undefined {
@@ -136,7 +136,7 @@ export async function requireDatastoreHost(ref: string): Promise<string> {
 }
 
 export async function recordDatastore(name: string, record: DatastoreConfig): Promise<void> {
-  await configFileStorage.update(configService.getEffectiveConfigName(), (cfg) => ({
+  await updateSyncedConfig(configService.getEffectiveConfigName(), (cfg) => ({
     ...cfg,
     resources: {
       ...(cfg.resources ?? {}),
@@ -146,14 +146,11 @@ export async function recordDatastore(name: string, record: DatastoreConfig): Pr
 }
 
 export async function forgetDatastore(name: string): Promise<void> {
-  await configFileStorage.update(configService.getEffectiveConfigName(), (cfg) => {
+  await updateSyncedConfig(configService.getEffectiveConfigName(), (cfg) => {
     const datastores = { ...(cfg.resources?.datastores ?? {}) };
     delete datastores[name];
-    // #89, swept: the observation goes with the declaration. The delete path happens to
-    // clear the hint first (via setDatastoreState) whenever the datastore is attached, so
-    // this was not reachable in practice — but that made it a trap, not a non-bug: it
-    // relied on every caller remembering, and `forget` means forget. Clearing both halves
-    // here is what makes the invariant hold no matter who calls it.
+    // #89, swept: the observation goes with the declaration. The delete path happens to clear the hint first (via setDatastoreState) whenever the datastore is attached, so this was not reachable in practice, but that made it a trap, not a non-bug: it relied on every caller remembering, and `forget` means forget. Clearing both halves here is what makes the invariant hold no matter
+    // who calls it.
     const stateDatastores = { ...(cfg.state?.datastores ?? {}) };
     delete stateDatastores[name];
     return {
@@ -184,9 +181,7 @@ export async function reposInDatastore(ref: string): Promise<string[]> {
   const families = cfg?.resources?.repositories ?? {};
   const found: string[] = [];
   for (const [name, family] of Object.entries(families)) {
-    // Placement is a property of the FAMILY (every tag of a repo lives in the same
-    // datastore; a fork that moved is a different family). Report each tag so the
-    // operator sees exactly what a --force delete would take with it.
+    // Placement is a property of the FAMILY (every tag of a repo lives in the same datastore; a fork that moved is a different family). Report each tag so the operator sees exactly what a --force delete would take with it.
     const placement = family.placement;
     if (!placement || !('datastore' in placement) || placement.datastore !== ref) continue;
     for (const tag of Object.keys(family.tags)) {

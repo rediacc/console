@@ -28,9 +28,7 @@ const computeIsActive = (
   if (!currentPath) return false;
   const normalizedHref = normalizePath(href);
   const normalizedPath = normalizePath(currentPath);
-  // A hash link is active only when the FRAGMENT matches too. Path alone was
-  // enough while every hash link pointed at a page of its own; once Solutions
-  // became `/<lang>#solutions` it shares a path with Home, and a path-only test
+  // A hash link is active only when the FRAGMENT matches too. Path alone was enough while every hash link pointed at a page of its own; once Solutions became `/<lang>#solutions` it shares a path with Home, and a path-only test
   // put aria-current="page" on two rows of the same drawer at once.
   if (href.includes('#')) {
     const hash = href.slice(href.indexOf('#'));
@@ -66,8 +64,7 @@ const useSidebarBodyLock = (isOpen: boolean, sidebarRef: React.RefObject<HTMLEle
       document.body.classList.add('sidebar-active');
       document.body.style.overflow = 'hidden';
       window.plausible?.('sidebar_toggle', { props: { action: 'open' } });
-      // Focus the first interactive element in the visual order — usually the
-      // Account CTA at the top of the sidebar, not the first .sidebar-link.
+      // Focus the first interactive element in the visual order, usually the Account CTA at the top of the sidebar, not the first .sidebar-link.
       const firstTabbable = sidebarRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
       firstTabbable?.focus();
     } else {
@@ -144,10 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ lang, isOpen, onClose, origin, onSear
   const [currentPath, setCurrentPath] = useState('');
   const [currentHash, setCurrentHash] = useState('');
 
-  // The solutions accordion (6 category groups x 21 titles) is gone: the
-  // constellation is the one browse surface, so the sidebar links to it like
-  // any other top-level destination. It moved onto the homepage under
-  // `#solutions` when the `/[lang]/solutions` index route was deleted.
+  // The solutions accordion (6 category groups x 21 titles) is gone: the constellation is the one browse surface, so the sidebar links to it like any other top-level destination. It moved onto the homepage under `#solutions` when the `/[lang]/solutions` index route was deleted.
   const topNavItems = [
     { href: `/${currentLang}`, label: t('navigation.home') },
     { href: `/${currentLang}#solutions`, label: t('navigation.solutions') },
@@ -186,11 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({ lang, isOpen, onClose, origin, onSear
     onClose();
   };
 
-  // Search lives in the header's split-button menu, and that whole control is
-  // `display: none` below 30rem (main.css, the .nav-cta-split block), so on the
-  // narrowest phones this drawer is the ONLY way to reach it. The label reuses
-  // navigation.search, already in the client catalog: a second key for the same
-  // word in thirteen locales would be the cost of not looking.
+  // Search lives in the header's split-button menu, and that whole control is `display: none` below 30rem (main.css, the .nav-cta-split block), so on the narrowest phones this drawer is the ONLY way to reach it. The label reuses navigation.search, already in the client catalog: a second key for the same word in thirteen locales would be the cost of not looking.
   const handleSearchClick = () => {
     onClose();
     onSearch();

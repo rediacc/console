@@ -3,50 +3,37 @@
 
 WHY THIS EXISTS
 ---------------
-Recording the 18-tutorial suite aborted at tutorial 9 with `container pgadmin is
-unhealthy` the moment the recording host was downclocked. Nothing was wrong with
-the tutorial: pgAdmin's healthcheck allowed `start_period: 120s` plus 10 retries
-at 3s, a total startup budget of 150 seconds, and on a slower CPU pgAdmin's first
-boot (Python imports plus schema migration) simply takes longer than that. The
-whole run died, non-resumably, on a number somebody picked while watching a fast
-machine.
+Recording the 18-tutorial suite aborted at tutorial 9 with `container pgadmin is unhealthy` the moment the recording host was downclocked. Nothing was wrong with the tutorial: pgAdmin's healthcheck allowed `start_period: 120s` plus 10 retries at 3s, a total startup budget of 150 seconds, and on a slower CPU pgAdmin's first boot (Python imports plus schema migration) simply takes
+longer than that. The whole run died, non-resumably, on a number somebody picked while watching a fast machine.
 
-That number is invisible to every other gate. The compose file is valid, the
-tutorial script is correct, the app works. Only a slow host disagrees, and no CI
-gate runs the suite on one.
+That number is invisible to every other gate. The compose file is valid, the tutorial script is correct, the app works. Only a slow host disagrees, and no CI gate runs the suite on one.
 
 WHAT THIS CHECKS
 ----------------
-The startup budget of every healthcheck under `.ci/tutorials/apps/`, plus
-`.ci/docker/ci/docker-compose.yml` (the account-server container
-ci-start-account.sh's own wait loop polls -- widened here rather than given a
-second gate, since it is the exact same "sized for a fast host only" property
-this gate already exists to catch). `private/elite/docker-compose.yml` is
-NOT included: it lives in a submodule this console-repo gate does not own the
-source of truth for.
+The startup budget of every healthcheck under `.ci/tutorials/apps/`, plus `.ci/docker/ci/docker-compose.yml` (the account-server container ci-start-account.sh's own wait loop polls -- widened here rather than given a second gate, since it is the exact same "sized for a fast host only" property this gate already exists to catch). `private/elite/docker-compose.yml` is NOT included:
+it lives in a submodule this console-repo gate does not own the source of truth for.
 
     budget = start_period + interval * retries
 
-must be at least MIN_BUDGET_SECONDS. That single number is what actually governs
-whether a container is allowed to be slow, and it is the one both knobs feed, so
-checking it catches a tightening of either.
+must be at least MIN_BUDGET_SECONDS. That single number is what actually governs whether a container is allowed to be slow, and it is the one both knobs feed, so checking it catches a tightening of either.
 
 WHY 180 SECONDS
 ---------------
-Evidence, not taste: the configuration observed to FAIL had a budget of exactly
-150s. A floor must exceed a value proven insufficient, so 180 leaves 20% headroom
-above the known-bad point. Raise it if a slower host is ever adopted; never lower
-it to make a red gate green.
+Evidence, not taste: the configuration observed to FAIL had a budget of exactly 150s. A floor must exceed a value proven insufficient, so 180 leaves 20% headroom above the known-bad point. Raise it if a slower host is ever adopted; never lower it to make a red gate green.
 
-Widening a window costs a fast machine NOTHING. Failures inside `start_period` do
-not count against `retries`, and a container is marked healthy the instant a check
-passes, so the extra budget is engaged only when the host is actually slow.
+Widening a window costs a fast machine NOTHING. Failures inside `start_period` do not count against `retries`, and a container is marked healthy the instant a check passes, so the extra budget is engaged only when the host is actually slow.
 
 CONTROL-FIRST
 -------------
-`--selftest` plants both a too-tight and a generous healthcheck and requires the
-detector to flag exactly the tight one. Finding no compose files at all is a hard
-FAILURE, not a pass: a headroom check with nothing to check asserts nothing.
+`--selftest` plants both a too-tight and a generous healthcheck and requires the detector to flag exactly the tight one. Finding no compose files at all is a hard FAILURE, not a pass: a headroom check with nothing to check asserts nothing.
+
+---- gate ----
+step: Tutorial healthcheck headroom
+run: .ci/scripts/quality/check_tutorial_healthcheck_headroom.py --selftest && .ci/scripts/quality/check_tutorial_healthcheck_headroom.py
+selftest: true
+needs: none
+lane: quality-packages
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -66,9 +53,7 @@ MIN_BUDGET_SECONDS = 180.0
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 APPS_GLOB = os.path.join(REPO, ".ci", "tutorials", "apps", "**", "docker-compose.y*ml")
-# Not a glob match: exactly one file, in-repo (not a submodule), with a
-# healthcheck a wait-loop script (ci-start-account.sh) depends on being
-# realistic about contention. See the module docstring's WHAT THIS CHECKS.
+# Not a glob match: exactly one file, in-repo (not a submodule), with a healthcheck a wait-loop script (ci-start-account.sh) depends on being realistic about contention. See the module docstring's WHAT THIS CHECKS.
 EXTRA_PATHS = [os.path.join(REPO, ".ci", "docker", "ci", "docker-compose.yml")]
 
 # Compose defaults, from the Compose spec. Used when a key is omitted.

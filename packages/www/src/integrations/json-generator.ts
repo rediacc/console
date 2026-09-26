@@ -19,8 +19,7 @@ export default function jsonGeneratorIntegration(): AstroIntegration {
     name: 'json-generator',
     hooks: {
       'astro:build:done': ({ dir }) => {
-        // dir.pathname gives us the output directory (e.g., /app/packages/www/dist/)
-        // We need the project root which is the parent of dist
+        // dir.pathname gives us the output directory (e.g., /app/packages/www/dist/) We need the project root which is the parent of dist
         const projectRoot = new URL('..', dir).pathname.replace(/^\/([A-Z]:)/, '$1');
 
         process.stdout.write('Generating JSON configuration files...\n');

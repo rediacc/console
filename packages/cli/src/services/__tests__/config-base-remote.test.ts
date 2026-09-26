@@ -32,6 +32,7 @@ const {
       save: vi.fn(),
       update: vi.fn(),
       updateCache: vi.fn(),
+      setRemoteStateWriter: vi.fn(),
       list: vi.fn(),
       delete: vi.fn(),
       clearCache: vi.fn(),
@@ -53,8 +54,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 }));
 
 vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
-  // Keep the real error classes (loadRemote branches on RemoteUnreachableError
-  // via instanceof) but stub the adapter itself.
+  // Keep the real error classes (loadRemote branches on RemoteUnreachableError via instanceof) but stub the adapter itself.
   const original = await importOriginal<typeof import('../../adapters/remote-config-adapter.js')>();
   return { ...original, RemoteConfigAdapter: MockRemoteConfigAdapter };
 });
@@ -128,12 +128,49 @@ describe('ConfigServiceBase remote integration', () => {
     const mod = await import('../config/config-base.js');
     ConfigServiceBase = mod.ConfigServiceBase;
     service = new ConfigServiceBase();
-    // The config-name override is a module-level singleton (config-name.ts), so
-    // reset it between tests — a prior test's setRuntimeConfig would otherwise leak.
+    // The config-name override is a module-level singleton (config-name.ts), so reset it between tests, a prior test's setRuntimeConfig would otherwise leak.
     service.setRuntimeConfig(null);
 
     // Ensure we don't pick up env vars
     delete process.env.REDIACC_CONFIG;
+
+    // The real updateCache runs its updater over the on-disk document and saves the result; loadRemote returns that
+    // result, so a stub that skips the updater would hand it nothing. The disk here is whatever the test loads.
+    mockConfigFileStorage.updateCache.mockImplementation(
+      async (_name: string, updater: (c: unknown) => unknown) =>
+        updater(await mockConfigFileStorage.getOrCreateDefault())
+    );
+  });
+
+  // ─── startup and login reads ──────────────────────────────────────
+
+  describe('account and preference reads', () => {
+    // The preAction hook, the telemetry context and `subscription login` read these before any command runs. A pull there made a remote config whose token could not be renewed fail every command, the login that renews it included (2026-09-26), so they read the local file and never reach the adapter.
+    it('serve the cached file and never pull, even when the pull would fail', async () => {
+      mockConfigFileStorage.load.mockResolvedValue({
+        ...localConfigWithRemote,
+        defaults: { language: 'de' },
+        account: { team: 'ops', userEmail: 'a@example.com', region: 'eu' },
+      });
+      mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(localConfigWithRemote);
+      mockAdapterInstance.pull.mockRejectedValue(new Error('cannot renew config tokens'));
+      delete process.env.REDIACC_LANG;
+
+      expect(await service.getTeam()).toBe('ops');
+      expect(await service.getUserEmail()).toBe('a@example.com');
+      expect(await service.getRegion()).toBe('eu');
+      expect(await service.getLanguage()).toBe('de');
+      expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
+    });
+
+    it('answer empty when the file is missing', async () => {
+      mockConfigFileStorage.load.mockRejectedValue(new Error('ENOENT'));
+
+      expect(await service.getTeam()).toBeUndefined();
+      expect(await service.getUserEmail()).toBeNull();
+      expect(await service.getRegion()).toBeUndefined();
+      expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
+    });
   });
 
   // ─── getCurrent() ─────────────────────────────────────────────────
@@ -159,9 +196,10 @@ describe('ConfigServiceBase remote integration', () => {
       const result = await service.getCurrent();
 
       expect(mockAdapterInstance.pull).toHaveBeenCalled();
-      // Pulled config should have remote pointer and language preserved from local
-      expect(result?.remote).toEqual(remotePointer);
-      expect(result?.defaults?.language).toBe('en');
+      // The remote pointer is host-local and cache-stamped, because the in-memory config is exactly what the cache
+      // now holds. `defaults` follows the store with no local override (operator ruling D3): the pulled copy has none.
+      expect(result?.remote).toMatchObject({ ...remotePointer, cachedVersion: 3 });
+      expect(result?.defaults).toBeUndefined();
       expect(result?.resources?.machines).toHaveProperty('prod');
     });
 
@@ -253,15 +291,15 @@ describe('ConfigServiceBase remote integration', () => {
         version: 4,
         sdkEpoch: 42,
       });
-      mockConfigFileStorage.updateCache.mockResolvedValue(cachedOnDisk);
-
-      await service.getCurrent();
+      const result = await service.getCurrent();
 
       expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(1);
       expect(mockConfigFileStorage.updateCache).toHaveBeenCalledWith(
         'rediacc',
         expect.any(Function)
       );
+      expect(result?.remote?.cachedVersion).toBe(4);
+      expect(result?.resources?.machines).toHaveProperty('prod');
     });
   });
 
@@ -300,8 +338,7 @@ describe('ConfigServiceBase remote integration', () => {
 
       const state = await service.getResourceState();
 
-      // v3: encryption is a storage-layer transform, so config-base feeds
-      // LocalResourceState a decrypted config (no master-password arg).
+      // v3: encryption is a storage-layer transform, so config-base feeds LocalResourceState a decrypted config (no master-password arg).
       expect(mockLocalResourceStateLoad).toHaveBeenCalledWith(localConfig, 'rediacc');
       expect(state).toBe(mockLocalState);
     });

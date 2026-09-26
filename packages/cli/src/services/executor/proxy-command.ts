@@ -18,7 +18,7 @@ import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
-import { ProxyClient } from './proxy-client.js';
+import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
 import type { RenetEvent } from './types.js';
 
 /**
@@ -116,8 +116,7 @@ export function paramsFromCommand(
   for (const option of entry.options) {
     const value = opts[optionKey(option.long)];
     if (value === undefined) continue;
-    // A switch the operator did not pass is absent, not false. Sending `false`
-    // would be harmless but noisy in the audit record of what was asked for.
+    // A switch the operator did not pass is absent, not false. Sending `false` would be harmless but noisy in the audit record of what was asked for.
     if (!option.valueTaking && value === false) continue;
     params[option.long] = value;
   }
@@ -204,6 +203,43 @@ export interface ProxyRunContext {
   getToken: () => Promise<string>;
   contractVersion: string;
   fetchImpl?: typeof fetch;
+  /** The config key to grant a container executor. Defaults to the enrolled one. */
+  getCek?: () => Promise<CryptoKey>;
+}
+
+/**
+ * This device's config key, unwrapped from its `config remote` enrollment.
+ *
+ * Only a container executor asks for it (ProxyClient.ensureSession), and it is
+ * sealed to that executor's session key before it leaves this process. Reads
+ * the local config POINTER only: the config itself is never pulled here.
+ */
+async function loadEnrolledCek(): Promise<CryptoKey> {
+  const { configFileStorage } = await import('../../adapters/config-file-storage.js');
+  const { configService } = await import('../config/config-resources.js');
+  const { hasRemoteConfig } = await import('../../types/index.js');
+  const name = configService.getEffectiveConfigName();
+  const config = await configFileStorage.load(name);
+  if (!hasRemoteConfig(config)) {
+    throw new Error(
+      `This executor runs in a container, and it can open your config only with the config key from config storage. ` +
+        `Config "${name}" is not in config storage yet: run "rdc config remote enable", then retry.`
+    );
+  }
+  const { RemoteConfigAdapter } = await import('../../adapters/remote-config-adapter.js');
+  const { remoteTokenStorage } = await import('../../adapters/remote-token-storage.js');
+  const { getSecureStorage } = await import('../../utils/secure-storage.js');
+  return new RemoteConfigAdapter(
+    config.remote,
+    name,
+    remoteTokenStorage,
+    getSecureStorage()
+  ).unwrapCek();
+}
+
+/** The CEK provider for a run: the injected one, else the enrolled key. */
+function cekProviderFor(context: ProxyRunContext): () => Promise<CryptoKey> {
+  return context.getCek ?? loadEnrolledCek;
 }
 
 /**
@@ -229,6 +265,7 @@ export async function runCommandThroughProxy(
     getToken: context.getToken,
     contractVersion: context.contractVersion,
     ...(context.fetchImpl ? { fetchImpl: context.fetchImpl } : {}),
+    getCek: cekProviderFor(context),
   });
 
   const params = paramsFromCommand(entry, actionCommand);
@@ -243,22 +280,25 @@ export async function runCommandThroughProxy(
     machine ? { machine } : undefined
   );
 
-  // Whatever the command printed at the executor is printed here, verbatim, so
-  // `rdc --proxy repo status` shows what `rdc repo status` shows.
-  if (outcome.stdout) writeStdout(`${outcome.stdout}\n`);
+  writeOutcome(outcome);
+  return exitProcess(outcome.exitCode);
+}
+
+/** Print what the command produced at the executor, the way it would have printed locally. */
+function writeOutcome(outcome: ProxyCommandOutcome): void {
+  // Whatever the command printed at the executor is printed here, verbatim, so `rdc --proxy repo status` shows what `rdc repo status` shows.
+  // Bytes are written exactly as the executor captured them: no newline, no re-encoding.
+  if (outcome.stdoutBytes) writeStdout(outcome.stdoutBytes);
+  else if (outcome.stdout) writeStdout(`${outcome.stdout}\n`);
   if (outcome.stderr) writeStderr(`${outcome.stderr}\n`);
 
-  // Renet's own output has normally been rendered live already, arriving as
-  // `output` events the same way it streams to a terminal locally. Print the
-  // capture only when none of it came through, so a run never ends silently and
-  // nothing is ever shown twice.
-  if (!outcome.renderedLiveOutput && outcome.renetStdout) {
+  // Renet's own output has normally been rendered live already, arriving as `output` events the same way it streams to a terminal locally. Print the capture only when none of it came through, so a run never ends silently and nothing is ever shown twice.
+  // Never after raw bytes: those ARE the answer (`repo cat`), and renet's capture is the base64 envelope they were decoded from, which appended would corrupt the file.
+  if (!outcome.stdoutBytes && !outcome.renderedLiveOutput && outcome.renetStdout) {
     writeStdout(
       outcome.renetStdout.endsWith('\n') ? outcome.renetStdout : `${outcome.renetStdout}\n`
     );
   }
 
   if (outcome.error) writeStderr(`${outcome.error}\n`);
-
-  return exitProcess(outcome.exitCode);
 }

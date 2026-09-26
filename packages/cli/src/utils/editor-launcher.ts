@@ -14,7 +14,7 @@
  * the user closes the editor rather than returning immediately (which is the
  * default for `code`, `cursor`, `subl`, etc.).
  *
- * Headless invocations (e.g., `nvim --headless`) refuse — they would block
+ * Headless invocations (e.g., `nvim --headless`) refuse, they would block
  * forever or return without the user editing anything.
  */
 
@@ -43,7 +43,7 @@ function platformDefaults(): string[] {
 
 /**
  * Read `core.editor` from git config. Returns `null` if git is missing, the
- * key is unset, or any error occurs — the caller falls through to $VISUAL /
+ * key is unset, or any error occurs, the caller falls through to $VISUAL /
  * $EDITOR. Runs with a short timeout so a misconfigured git (slow ssh signing
  * helper, etc.) can't hang the CLI.
  */
@@ -77,7 +77,7 @@ export interface ResolvedEditor {
 /**
  * Pick an editor from the caller's preference, git config, the environment,
  * and fall back to platform defaults. Returns the base command and any
- * auto-injected flags (not including the file path — that's appended at
+ * auto-injected flags (not including the file path, that's appended at
  * launch time).
  *
  * Rejects invocations that already specify `--headless` / similar blocking-
@@ -119,7 +119,7 @@ export function resolveEditor(explicit?: string): ResolvedEditor {
  * Spawn the editor on the given file path, inherit stdio, and resolve when
  * the user exits the editor. Rejects with EditorError on non-zero exit.
  */
-export async function openEditor(filePath: string, explicit?: string): Promise<void> {
+export function openEditor(filePath: string, explicit?: string): Promise<void> {
   const { command, args } = resolveEditor(explicit);
   return new Promise((resolve, reject) => {
     const child = spawn(command, [...args, filePath], {

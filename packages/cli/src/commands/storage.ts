@@ -47,7 +47,7 @@ async function fetchLiveGuids(options: StoragePruneOptions): Promise<Set<string>
     skipRouterRestart: options.skipRouterRestart,
   });
   if (!result.success) {
-    // Probe failure is non-fatal — surface it but don't block the operator;
+    // Probe failure is non-fatal, surface it but don't block the operator;
     // the delete loop still has the analyzePrune protections.
     outputService.warn(`Could not list machine repositories for safety check: ${result.error}`);
     return new Set();
@@ -83,7 +83,7 @@ function parseBackupGuids(stdout: string): string[] {
   return (parsed.entries ?? []).filter((e) => !e.isDirectory).map((e) => e.name);
 }
 
-/** Storage layout — scheduled backups split into these subpaths. */
+/** Storage layout, scheduled backups split into these subpaths. */
 const STORAGE_MODES = ['hot', 'cold'] as const;
 type StorageMode = (typeof STORAGE_MODES)[number];
 
@@ -108,8 +108,7 @@ async function listGuidsAtPath(
   });
   if (!result.success) {
     const stderr = (result.error ?? '').toString();
-    // rclone reports a missing remote subpath as "directory not found".
-    // Anything else is a real error — surface it.
+    // rclone reports a missing remote subpath as "directory not found". Anything else is a real error, surface it.
     if (/(directory not found|no such (file|directory))/i.test(stderr)) {
       return [];
     }
@@ -251,7 +250,7 @@ export function registerStorageCommands(program: Command): void {
     .summary(t('commands.storage.descriptionShort'))
     .description(t('commands.storage.description'));
 
-  // add/remove/list/import — the endpoint registry (absorbs config storage *).
+  // add/remove/list/import, the endpoint registry (absorbs config storage *).
   registerStorageEndpointCommands(storage, program);
 
   // Add browse subcommand for listing files in a storage system
@@ -291,7 +290,7 @@ export function registerStorageCommands(program: Command): void {
       }
     });
 
-  // storage prune <storageName> — remove orphaned backups from storage
+  // storage prune <storageName>, remove orphaned backups from storage
   storage
     .command('prune')
     .summary(t('commands.storage.prune.descriptionShort'))

@@ -1,34 +1,19 @@
 #!/usr/bin/env python3
 """trapguard: the PostToolUse surface for misread-outcome traps.
 
-Two modes. `--posttool` is the live one, running the misread-outcome rules below.
-`--probe-payload` is a retired diagnostic, kept because the next rule that wants
-a payload field should re-run it rather than trust this docstring.
+Two modes. `--posttool` is the live one, running the misread-outcome rules below. `--probe-payload` is a retired diagnostic, kept because the next rule that wants a payload field should re-run it rather than trust this docstring.
 
-THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever
-read `tool_response`; the only evidence it arrives was a docstring
-(`wl_wait.py:139-143`) recording a payload someone captured. That is a ruling
+THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever read `tool_response`; the only evidence it arrives was a docstring in the since-removed inbox waiter recording a payload someone captured, with the keys tool_name, tool_input, tool_response, tool_use_id, agent_id, agent_type, cwd, duration_ms, effort, permission_mode, prompt_id, session_id, transcript_path and hook_event_name. That is a ruling
 from an artifact, which is itself a trap in this corpus, so it was probed before
-anything depended on it (plan section 7.1). Writing the rules first would have
-been building a check on an unverified payload shape, which is how a check that
-cannot fire ships believing it works.
+anything depended on it (plan section 7.1). Writing the rules first would have been building a check on an unverified payload shape, which is how a check that cannot fire ships believing it works.
 
-WHAT THE PROBE ANSWERED, on real payloads, 2026-08-09: the field arrives as a
-dict; a planted nonce reached the hook, so it carries actual output rather than
-merely existing; and hooks fire for subagents. It also corrected that docstring
-twice -- `isImage` and `noOutputExpected` were undocumented, and `agent_id` and
-`agent_type` are ABSENT on main-loop calls, appearing only for subagents, so a
-rule keyed on them would have silently never matched in the main loop.
+WHAT THE PROBE ANSWERED, on real payloads, 2026-08-09: the field arrives as a dict; a planted nonce reached the hook, so it carries actual output rather than merely existing; and hooks fire for subagents. It also corrected that docstring twice -- `isImage` and `noOutputExpected` were undocumented, and `agent_id` and `agent_type` are ABSENT on main-loop calls, appearing only for
+subagents, so a rule keyed on them would have silently never matched in the main loop.
 
-WHAT THE PROBE RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans
-only. No tool output is ever written to disk: a hook that logged tool responses
-would be a durable copy of everything every session reads. The single exception
-is a nonce planted deliberately, matched by pattern rather than stored. It is
-unregistered in settings.json; a diagnostic on every tool call is a standing cost.
+WHAT THE PROBE RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans only. No tool output is ever written to disk: a hook that logged tool responses would be a durable copy of everything every session reads. The single exception is a nonce planted deliberately, matched by pattern rather than stored. It is unregistered in settings.json; a diagnostic on every tool call is
+a standing cost.
 
-NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed, so
-nothing here can deny anything, and a hook that broke a session's turn because a
-log directory was read-only would be a self-inflicted outage. Every path exits 0.
+NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed, so nothing here can deny anything, and a hook that broke a session's turn because a log directory was read-only would be a self-inflicted outage. Every path exits 0.
 """
 
 import datetime
@@ -39,10 +24,7 @@ import re
 import subprocess
 import sys
 
-# The only string this file ever matches. Planted by hand to prove that stdout
-# genuinely reaches the hook (assertion P2), not merely that a key named
-# tool_response exists (assertion P1). The two are different claims and the
-# whole tier depends on the second one.
+# The only string this file ever matches. Planted by hand to prove that stdout genuinely reaches the hook (assertion P2), not merely that a key named tool_response exists (assertion P1). The two are different claims and the whole tier depends on the second one.
 NONCE_RE = re.compile(r"trapguard-probe-[0-9a-zA-Z]+")
 
 PROBE_PATH = pathlib.Path(
@@ -54,9 +36,7 @@ PROBE_PATH = pathlib.Path(
 def _response_facts(resp):
     """(type-name, length, key-names) for whatever tool_response turned out to be.
 
-    Written to survive being wrong about the shape, because being wrong about the
-    shape is precisely what the probe exists to discover. A dict, a string, a
-    list and an absent field each answer differently rather than raising.
+    Written to survive being wrong about the shape, because being wrong about the shape is precisely what the probe exists to discover. A dict, a string, a list and an absent field each answer differently rather than raising.
     """
     if resp is None:
         return "absent", 0, []
@@ -75,15 +55,9 @@ def _response_facts(resp):
 
 # ---- the misread-outcome rules ----------------------------------------------
 #
-# These read `tool_response` and INJECT context; they cannot deny, because the
-# command already ran. That is the correct semantics: in both traps below the
-# command was fine and only the READING of its output was wrong, which is
-# exactly the failure no other surface can catch. A CI gate is far too late and
-# a PreToolUse hook is too early: at request time neither trap is visible.
+# These read `tool_response` and INJECT context; they cannot deny, because the command already ran. That is the correct semantics: in both traps below the command was fine and only the READING of its output was wrong, which is exactly the failure no other surface can catch. A CI gate is far too late and a PreToolUse hook is too early: at request time neither trap is visible.
 #
-# Each rule is (applies, verdict). `applies` narrows on the command so the
-# response is not scanned for every tool call; `verdict` keys on the RESPONSE,
-# never on the command alone, because a command is not wrong here, an inference
+# Each rule is (applies, verdict). `applies` narrows on the command so the response is not scanned for every tool call; `verdict` keys on the RESPONSE, never on the command alone, because a command is not wrong here, an inference
 # from its output is.
 
 STAT_DELETIONS = re.compile(r"(\d+) deletions?\(-\)")
@@ -96,10 +70,7 @@ DIFF_PATH = re.compile(r"^(?:---|\+\+\+) [ab]/(\S+)", re.MULTILINE)
 def _response_text(resp):
     """Whatever the tool printed, as one string, without caring about shape.
 
-    The probe established tool_response is a dict of stdout/stderr/interrupted/
-    isImage/noOutputExpected, but this stays shape-tolerant on purpose: the
-    payload gained two keys nobody had documented, so assuming today's exact
-    shape is how a rule silently stops matching after a harness update.
+    The probe established tool_response is a dict of stdout/stderr/interrupted/ isImage/noOutputExpected, but this stays shape-tolerant on purpose: the payload gained two keys nobody had documented, so assuming today's exact shape is how a rule silently stops matching after a harness update.
     """
     if isinstance(resp, str):
         return resp
@@ -111,36 +82,22 @@ def _response_text(resp):
 def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
     """A cancelled run is not a passed run.
 
-    Corpus entry: docs/agent-reference/TRAPS.md, "A cancelled run is not a
-    passed run, and it is not a failed one either". Cited by HEADING rather
-    than by line: the two trap corpora were merged into that one file, so every
-    line number in it moved, and a citation that silently drifts one entry over
-    is worse than none.
+    Corpus entry: docs/agent-reference/TRAPS.md, "A cancelled run is not a passed run, and it is not a failed one either". Cited by HEADING rather than by line: the two trap corpora were merged into that one file, so every line number in it moved, and a citation that silently drifts one entry over is worse than none.
 
-    Cost when missed: three consecutive CI rounds that measured nothing while
-    being counted as "did not recur". The watchdog cancels siblings on the first
-    real failure, so a job that never ran looks identical to a job that passed
-    in every run-level summary.
+    Cost when missed: three consecutive CI rounds that measured nothing while being counted as "did not recur". The watchdog cancels siblings on the first real failure, so a job that never ran looks identical to a job that passed in every run-level summary.
     """
     if not re.search(r"gh\s+run\b|actions/runs|actions/jobs", cmd):
         return None
 
-    # TWO SHAPES, and the second one was DEAD CODE until review caught it. The
-    # first version gated everything behind "the word cancelled appears in the
-    # output", then checked the empty-failure-filter case behind that gate. But
+    # TWO SHAPES, and the second one was DEAD CODE until review caught it. The first version gated everything behind "the word cancelled appears in the output", then checked the empty-failure-filter case behind that gate. But
     # a `--jq select(.conclusion=="failure")` query that comes back `[]`
-    # BECAUSE the job was cancelled rather than failed contains no such word by
-    # construction: the filter removed it. So the branch could never be reached
+    # BECAUSE the job was cancelled rather than failed contains no such word by construction: the filter removed it. So the branch could never be reached
     # for the case it existed to catch, and once the gate passed it could not
-    # change the verdict either. A documented detection shape that cannot fire,
-    # inside the change whose whole subject is checks that cannot fire.
+    # change the verdict either. A documented detection shape that cannot fire, inside the change whose whole subject is checks that cannot fire.
     #
-    # They are now independent alternatives, which is what they always were.
-    # A COUNT of zero cancelled jobs is the OPPOSITE of this trap: it is a session
-    # performing exactly the check this rule asks for and finding nothing. Observed
+    # They are now independent alternatives, which is what they always were. A COUNT of zero cancelled jobs is the OPPOSITE of this trap: it is a session performing exactly the check this rule asks for and finding nothing. Observed
     # live within the hour, warning about output that read `cancelled=0`. Strip the
-    # zero-count shapes before deciding, so the rule stays quiet on the good
-    # behaviour it exists to encourage. A real `"conclusion":"cancelled"` survives.
+    # zero-count shapes before deciding, so the rule stays quiet on the good behaviour it exists to encourage. A real `"conclusion":"cancelled"` survives.
     counted_zero = re.sub(r"cancelled\W{0,4}0\b", "", out, flags=re.IGNORECASE)
     saw_cancelled = bool(re.search(r"cancelled", counted_zero, re.IGNORECASE))
     empty_failure_filter = bool(
@@ -173,27 +130,14 @@ def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
 def rule_phantom_deletion_diff(cmd, out, root, _resp):
     """An all-deletions diff for a file that is still on disk.
 
-    Corpus entry: docs/agent-reference/TRAPS.md, "`git diff <branch>` reads as
-    DELETED for a file the worktree never tracked". By heading, not line, for
-    the reason given on rule_cancelled_run_not_passed above.
+    Corpus entry: docs/agent-reference/TRAPS.md, "`git diff <branch>` reads as DELETED for a file the worktree never tracked". By heading, not line, for the reason given on rule_cancelled_run_not_passed above.
 
-    Observed 2026-08-09: an intact 462-line wl_checklist.py printed
-    `1 file changed, 462 deletions(-)` because the branch was built with git
-    plumbing, so the file was untracked relative to HEAD and absent from the
-    index git compares against. The reflex read is that a sub-agent deleted it,
-    and the near-miss is a destructive repair of a file that was never damaged.
+    Observed 2026-08-09: an intact 462-line wl_checklist.py printed `1 file changed, 462 deletions(-)` because the branch was built with git plumbing, so the file was untracked relative to HEAD and absent from the index git compares against. The reflex read is that a sub-agent deleted it, and the near-miss is a destructive repair of a file that was never damaged.
 
-    TWO TESTS, AND THE FIRST ONE ALONE WAS WRONG. This rule briefly shipped
-    keyed on "the file still exists", which fires on ANY deletions-only change
-    to a tracked file. It false-positived within the hour on
-    `git diff --stat package-lock.json`, a peer's ordinary 27-line removal. A
-    rule that fires on common, correct shapes trains sessions to discount it,
-    which is worse than not having it.
+    TWO TESTS, AND THE FIRST ONE ALONE WAS WRONG. This rule briefly shipped keyed on "the file still exists", which fires on ANY deletions-only change to a tracked file. It false-positived within the hour on `git diff --stat package-lock.json`, a peer's ordinary 27-line removal. A rule that fires on common, correct shapes trains sessions to discount it, which is worse than not
+    having it.
 
-    Existence narrows; TRACKED-NESS decides. The phantom exists because the file
-    is untracked relative to HEAD, so git compares against an index with no
-    entry for it and calls the whole thing removed. A tracked file losing lines
-    is just a diff. Cost is one stat plus one `git ls-files` per named path, and
+    Existence narrows; TRACKED-NESS decides. The phantom exists because the file is untracked relative to HEAD, so git compares against an index with no entry for it and calls the whole thing removed. A tracked file losing lines is just a diff. Cost is one stat plus one `git ls-files` per named path, and
     if git cannot answer the rule stays silent rather than guessing.
     """
     if not re.search(r"\bgit\s+(-[A-Za-z-]+\s+\S+\s+)*diff\b", cmd):
@@ -206,17 +150,10 @@ def rule_phantom_deletion_diff(cmd, out, root, _resp):
     alive = [p for p in paths if p not in ("a", "b") and (pathlib.Path(root) / p).exists()]
     if not alive:
         return None
-    # EXISTS-ON-DISK IS NOT ENOUGH, and this rule shipped briefly believing it was.
-    # It fired on `git diff --stat package-lock.json` for a tracked file a peer had
-    # simply removed lines from: deletions, no insertions, file obviously present.
-    # Any deletions-only change to a tracked file looks like that, which is common,
-    # and a rule that fires on ordinary shapes teaches sessions to ignore it -- the
-    # precision decay the plan names as this tier's main risk.
+    # EXISTS-ON-DISK IS NOT ENOUGH, and this rule shipped briefly believing it was. It fired on `git diff --stat package-lock.json` for a tracked file a peer had simply removed lines from: deletions, no insertions, file obviously present. Any deletions-only change to a tracked file looks like that, which is common, and a rule that fires on ordinary shapes teaches sessions to ignore
+    # it -- the precision decay the plan names as this tier's main risk.
     #
-    # The real discriminator is TRACKED-NESS. The phantom happens because the file
-    # is untracked relative to HEAD, so git compares against an index that has no
-    # entry and reports the whole file as removed. A tracked file losing lines is
-    # just a diff. `git ls-files --error-unmatch` answers exactly that question.
+    # The real discriminator is TRACKED-NESS. The phantom happens because the file is untracked relative to HEAD, so git compares against an index that has no entry and reports the whole file as removed. A tracked file losing lines is just a diff. `git ls-files --error-unmatch` answers exactly that question.
     untracked = []
     for p in alive:
         try:
@@ -246,10 +183,7 @@ def rule_phantom_deletion_diff(cmd, out, root, _resp):
     )
 
 
-# The tail steps that exist to undo an earlier one. Deliberately a short, named
-# set rather than "anything destructive": the rule must stay quiet on ordinary
-# interrupted commands, and every entry here is a shape whose whole purpose is
-# putting something back.
+# The tail steps that exist to undo an earlier one. Deliberately a short, named set rather than "anything destructive": the rule must stay quiet on ordinary interrupted commands, and every entry here is a shape whose whole purpose is putting something back.
 RESTORE_TAIL = re.compile(
     r"\bcp\b[^\n;&|]*\.(?:orig|bak|prev|save)\b"
     r"|\bmv\b[^\n;&|]*\.(?:orig|bak|prev|save)\b"
@@ -263,32 +197,19 @@ RESTORE_TAIL = re.compile(
 def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
     """A killed command did not run its own cleanup (this session, 2026-08-09).
 
-    The output of an interrupted command is a truthful account of a partial run,
-    which is exactly what makes it dangerous: it ends mid-script, having printed
-    a restore step that may never have run.
+    The output of an interrupted command is a truthful account of a partial run, which is exactly what makes it dangerous: it ends mid-script, having printed a restore step that may never have run.
 
-    Paid for immediately, in the session that wrote the other two rules: a
-    mutation test neutered a guard in the live tree, ran the suite, and restored
-    it on the next line. The suite outlived the 2-minute tool timeout, the whole
-    command took SIGTERM, and the restore never happened. What came back was
-    `mutated: guard neutered` and a truncated log -- output that reads like a
-    completed step, because every line it printed was true. The tree sat with a
-    disabled guard in it.
+    Paid for immediately, in the session that wrote the other two rules: a mutation test neutered a guard in the live tree, ran the suite, and restored it on the next line. The suite outlived the 2-minute tool timeout, the whole command took SIGTERM, and the restore never happened. What came back was `mutated: guard neutered` and a truncated log -- output that reads like a
+    completed step, because every line it printed was true. The tree sat with a disabled guard in it.
 
-    Why this is a hook and not a note: the failure is invisible at exactly the
-    moment you are reading output, which is the faculty that already failed. The
-    two conditions are independent alternatives on purpose, since the harness
-    reports a kill through `interrupted` on some paths and through the timeout
-    text on others, and gating either behind the other is how the sibling rule
+    Why this is a hook and not a note: the failure is invisible at exactly the moment you are reading output, which is the faculty that already failed. The two conditions are independent alternatives on purpose, since the harness reports a kill through `interrupted` on some paths and through the timeout text on others, and gating either behind the other is how the sibling rule
     above ended up with a branch that could not fire.
     """
     killed = bool(resp.get("interrupted")) if isinstance(resp, dict) else False
     timed_out = bool(re.search(r"timed out after|Exit code 143|\bSIGTERM\b", out))
     if not (killed or timed_out):
         return None
-    # Only worth a word if a LATER step was supposed to undo an earlier one. The
-    # first statement cannot be a tail, so a bare `git restore ...` that was
-    # itself the interrupted command is not this shape.
+    # Only worth a word if a LATER step was supposed to undo an earlier one. The first statement cannot be a tail, so a bare `git restore ...` that was itself the interrupted command is not this shape.
     first_sep = re.search(r";|&&|\|\||\n", cmd)
     if not first_sep:
         return None
@@ -308,17 +229,10 @@ def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
     )
 
 
-# A heredoc BODY is data the command writes, not a command it runs. Documenting
-# a rewrite hazard (this repo's skills and agent notes do exactly that) fed the
-# words `filter-repo --message-callback` straight into the matcher below and
-# produced a confident warning about a rewrite that never happened. The rule's
-# own docstring is the argument for fixing it: a warning computed from the wrong
-# thing teaches sessions to discount the ones that are right.
+# A heredoc BODY is data the command writes, not a command it runs. Documenting a rewrite hazard (this repo's skills and agent notes do exactly that) fed the words `filter-repo --message-callback` straight into the matcher below and produced a confident warning about a rewrite that never happened. The rule's own docstring is the argument for fixing it: a warning computed from the
+# wrong thing teaches sessions to discount the ones that are right.
 #
-# SCOPE, stated rather than overclaimed: this strips heredoc BODIES only. An
-# interpreter payload (`python3 -c '...'`) naming the same words still fires,
-# and that is left alone on purpose, because such a payload CAN genuinely reach
-# a rewrite through os.system and a silent arm there would be the wrong error.
+# SCOPE, stated rather than overclaimed: this strips heredoc BODIES only. An interpreter payload (`python3 -c '...'`) naming the same words still fires, and that is left alone on purpose, because such a payload CAN genuinely reach a rewrite through os.system and a silent arm there would be the wrong error.
 HEREDOC = re.compile(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1")
 
 
@@ -343,9 +257,7 @@ def strip_heredocs(cmd):
 HISTORY_REWRITE = re.compile(
     r"\bgit\s+(?:-[A-Za-z-]+\s+\S+\s+)*filter-(?:repo|branch)\b|\bbfg(?:\.jar)?\b"
 )
-# Modes that read history without writing it. `--analyze` in particular is the
-# RIGHT first move before a rewrite, and warning about it would punish exactly
-# the caution this rule wants.
+# Modes that read history without writing it. `--analyze` in particular is the RIGHT first move before a rewrite, and warning about it would punish exactly the caution this rule wants.
 REWRITE_READONLY = re.compile(r"--help\b|--version\b|--analyze\b|--dry-run\b")
 # `--path X`, `--path=X`, and the glob forms. Quotes stripped because the value
 # arrives however the session happened to quote it.
@@ -357,44 +269,21 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
 
     Corpus entries, cited BY HEADING because line numbers in that file move
     with every append: docs/agent-reference/TRAPS.md, "Widening a deletion
-    prefix by one directory can delete a LIVE file while removing zero bytes"
-    and "A destructive transform needs a BASELINE run to diff against, not just
-    an invariant to assert".
+    prefix by one directory can delete a LIVE file while removing zero bytes" and "A destructive transform needs a BASELINE run to diff against, not just an invariant to assert".
 
-    TWO INDEPENDENT ARMS, not one nested in the other, because they catch
-    different classes and either can be the only one present. Nesting is the
-    defect review already found twice in the rules above this one.
+    TWO INDEPENDENT ARMS, not one nested in the other, because they catch different classes and either can be the only one present. Nesting is the defect review already found twice in the rules above this one.
 
-    ARM 1 -- the deletion list. Under `--invert-paths` a `--path` value is not a
-    filter, it is a DELETION LIST, so widening it by one directory is never
-    free. It cost `packages/www/public/assets/videos/user-guide/.gitkeep`, the
-    single tracked file under a parent that carried 0.00 MB of history: exit 0,
-    pack size right, nothing in the output different from the correct run. The
-    arm answers the one question that would have caught it before the fact --
-    `git ls-files -- <P>`, which names what is alive under each listed path.
+    ARM 1 -- the deletion list. Under `--invert-paths` a `--path` value is not a filter, it is a DELETION LIST, so widening it by one directory is never free. It cost `packages/www/public/assets/videos/user-guide/.gitkeep`, the single tracked file under a parent that carried 0.00 MB of history: exit 0, pack size right, nothing in the output different from the correct run. The arm
+    answers the one question that would have caught it before the fact -- `git ls-files -- <P>`, which names what is alive under each listed path.
 
-    KNOWN FALSE NEGATIVE, accepted deliberately: the console index is the
-    oracle, so a rewrite aimed at renet, account or elite is measured against
-    the wrong repository and the arm goes SILENT rather than wrong. That is the
-    right trade only because trapguard never blocks anything -- a missed warning
-    costs a warning, and a confident warning computed from the wrong index would
-    teach sessions to discount the ones that are right.
+    KNOWN FALSE NEGATIVE, accepted deliberately: the console index is the oracle, so a rewrite aimed at renet, account or elite is measured against the wrong repository and the arm goes SILENT rather than wrong. That is the right trade only because trapguard never blocks anything -- a missed warning costs a warning, and a confident warning computed from the wrong index would teach
+    sessions to discount the ones that are right.
 
-    ARM 2 -- the transform with no baseline. `--message-callback` /
-    `--commit-callback` rewrite commit messages, and git is content-addressed:
-    two commits whose messages become byte-identical COLLAPSE into one object.
-    An unconditional `return message.rstrip() + b'\\n'` did exactly that to 93
-    commits and took 96 legitimate co-author trailers with them. This arm
-    detects that the RISK WAS TAKEN, not that damage occurred -- it cannot know
-    the callback's contents, and it is firing on every callback run on purpose,
-    because the damage is invisible to `size-pack` AND invisible to the
+    ARM 2 -- the transform with no baseline. `--message-callback` / `--commit-callback` rewrite commit messages, and git is content-addressed: two commits whose messages become byte-identical COLLAPSE into one object. An unconditional `return message.rstrip() + b'\\n'` did exactly that to 93 commits and took 96 legitimate co-author trailers with them. This arm detects that the RISK
+    WAS TAKEN, not that damage occurred -- it cannot know the callback's contents, and it is firing on every callback run on purpose, because the damage is invisible to `size-pack` AND invisible to the
     `main^{tree}` identity control that catches arm 1's class.
 
-    CONSIDERED AND DECLINED, so it is not re-proposed: firing on `--path`
-    WITHOUT `--invert-paths`. That is keep-mode, where the paths named are the
-    survivors and everything else goes; it is a different (and much larger)
-    hazard whose warning would be about what is ABSENT from the list, which
-    `git ls-files` cannot enumerate usefully.
+    CONSIDERED AND DECLINED, so it is not re-proposed: firing on `--path` WITHOUT `--invert-paths`. That is keep-mode, where the paths named are the survivors and everything else goes; it is a different (and much larger) hazard whose warning would be about what is ABSENT from the list, which `git ls-files` cannot enumerate usefully.
     """
     cmd = strip_heredocs(cmd)
     if not HISTORY_REWRITE.search(cmd):
@@ -456,10 +345,7 @@ def rule_history_rewrite_controls(cmd, _out, root, _resp):
 REBASE_DONE = re.compile(
     r"Successfully rebased and updated|Applying:|^Rebasing \(\d+/\d+\)", re.MULTILINE
 )
-# Command position, like every other matcher in this family. The rule already
-# needs REAL rebase output to fire, so a mention alone cannot trigger it, but
-# anchoring costs nothing and this session fixed five mention-as-execution
-# false positives -- the cheapest time to be consistent is now.
+# Command position, like every other matcher in this family. The rule already needs REAL rebase output to fire, so a mention alone cannot trigger it, but anchoring costs nothing and this session fixed five mention-as-execution false positives -- the cheapest time to be consistent is now.
 REBASE_CMD = re.compile(
     r"(?:^|[;&|(]|\$\(|`)\s*git\b(?:\s+-[A-Za-z-]+\s+\S+)*\s+rebase\b", re.MULTILINE
 )
@@ -468,28 +354,14 @@ REBASE_CMD = re.compile(
 def rule_rebase_unverified(cmd, out, _root, _resp):
     """A rebase that SUCCEEDED can still be wrong, and nothing says so at the time.
 
-    THE OPERATOR'S OBSERVATION, 2026-08-26: "you had known how and when to use
-    verify-rebase because you built it -- is there any hint?" There was none.
-    `worklist.py --git` is referenced by ZERO commands, agents and docs
-    (measured), so the capability existed and the affordance did not. A tool
-    nobody can be pointed at is a tool nobody uses.
+    THE OPERATOR'S OBSERVATION, 2026-08-26: "you had known how and when to use verify-rebase because you built it -- is there any hint?" There was none. `worklist.py --git` is referenced by ZERO commands, agents and docs (measured), so the capability existed and the affordance did not. A tool nobody can be pointed at is a tool nobody uses.
 
-    A hint at the MOMENT OF NEED beats a line in a document a session may never
-    open, which is this repo's standing lesson about hooks versus prose. So this
-    fires once, right after a rebase reports success, and says the one thing that
-    is easy to get wrong afterwards.
+    A hint at the MOMENT OF NEED beats a line in a document a session may never open, which is this repo's standing lesson about hooks versus prose. So this fires once, right after a rebase reports success, and says the one thing that is easy to get wrong afterwards.
 
-    WHY A COUNT IS THE WRONG CHECK, and why the hint is worth printing: all five
-    repos are rebase-merge only, so merging a parent PR REWRITES its SHAs. When a
-    stacked branch then re-rebases, git correctly drops the commits whose patches
-    are already upstream and `rev-list --count` legitimately FALLS. Eyeballing
-    that against a `--skip` that ate a commit is exactly the judgement the check
-    should be making for you.
+    WHY A COUNT IS THE WRONG CHECK, and why the hint is worth printing: all five repos are rebase-merge only, so merging a parent PR REWRITES its SHAs. When a stacked branch then re-rebases, git correctly drops the commits whose patches are already upstream and `rev-list --count` legitimately FALLS. Eyeballing that against a `--skip` that ate a commit is exactly the judgement the
+    check should be making for you.
 
-    NOT A REFUSAL. trapguard never blocks; this is a note on a stop that already
-    happened. Silent when the command was not a rebase, or when the output shows
-    no rebase actually ran (a no-op `git rebase` on an up-to-date branch prints
-    nothing to match).
+    NOT A REFUSAL. trapguard never blocks; this is a note on a stop that already happened. Silent when the command was not a rebase, or when the output shows no rebase actually ran (a no-op `git rebase` on an up-to-date branch prints nothing to match).
     """
     if not REBASE_CMD.search(cmd):
         return None
@@ -510,12 +382,80 @@ def rule_rebase_unverified(cmd, out, _root, _resp):
     )
 
 
+# A `bws` IN COMMAND POSITION, and not the two scripts whose names begin with those three letters. `bws(?![\w.-])` is what stops `bws-map-refresh.py` and `bws-rotate.py` from matching: both already print the notice themselves, so firing on them would double every message they emit. The leading alternation is the same anchoring every other matcher in this file uses, so `echo "run
+# bws later"` is prose rather than a run.
+BWS_CMD = re.compile(r"(?:^|[;&|(]|\$\(|`)\s*(?:\S*/)?bws(?![\w.\-/])", re.MULTILINE)
+
+# THE MARKERS, AND WHY THEY ARE COPIED HERE RATHER THAN IMPORTED. The ONE classifier is `rediacc_ci.core.bws_env.classify_failure`, and a hook cannot reach it: `.claude/hooks/trapguard/` has no route onto `sys.path` for `.ci/`, and a hook that imported a CI package would break a turn the first time that package moved. So these two tuples are a COPY, and
+# `check:ci-bws-rotation-notice` asserts character-for-character that they still equal `bws_env.WIRING_MARKERS` and `bws_env.ROTATION_MARKERS`. A copy nobody compares is a second implementation; a copy a gate compares is a cache.
+BWS_WIRING_MARKERS = ("Missing access token",)
+BWS_ROTATION_MARKERS = (
+    '[400 Bad Request] {"error":"invalid_client"}',
+    "Doesn't contain a decryption key",
+)
+
+# A USAGE ERROR IS NOT AN AUTH FAILURE. clap rejects a malformed invocation before any request leaves the machine, and its message carries one of these shapes. Found 2026-09-24: `bws secret create FULL_CI "" <project>` printed `error: value must not be empty` and the generic `error:` arm below ordered a token rotation for a call that never reached Bitwarden.
+BWS_USAGE_MARKERS = (
+    "must not be empty",
+    "Usage: bws",
+    "unexpected argument",
+    "invalid value",
+    "the following required arguments were not provided",
+    "For more information, try '--help'",
+)
+
+# Quoted spans, removed before BWS_CMD looks for a command position. Found 2026-09-24: `grep -iE "error|bws|token"` matched, because the `|` INSIDE the quoted pattern reads as a pipe to the raw-text regex.
+_QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
+
+
+def rule_bws_auth_failure(cmd, out, _root, _resp):
+    """A `bws` that could not authenticate is a ROTATION, and only a person can do it.
+
+    Corpus entry: docs/agent-reference/TRAPS.md, "A dead machine-account token looks like four different faults and reads as none of them". By heading rather than by line, for the reason `rule_cancelled_run_not_passed` gives above.
+
+    THIS IS THE RING FOR A SESSION THAT TYPED `bws` DIRECTLY. `rediacc_ci.core.bws_env` and `scripts/ops/bws-map-refresh.py` both print the notice from their own failure paths, and `.github/actions/bws-secrets` prints it in CI. A session running the binary by hand bypasses all three and sees only Bitwarden's own message, which names no procedure and no file.
+
+    THE WIRING STRING IS SILENT, DELIBERATELY. `Missing access token` means the variable is not set; nothing has expired and a rotation would fix nothing. That is the one branch where this rule must say nothing at all, and it is the branch a rule written to "fire on any bws error" would get wrong.
+
+    THE DEFAULT IS ON, matching the classifier: any other non-empty error text from a `bws` invocation fires, because expired, revoked, deleted and network-fault are indistinguishable from here and the string a genuinely expired token prints has never been seen in this repository.
+    """
+    if not BWS_CMD.search(_QUOTED.sub("''", cmd or "")):
+        return None
+    text = out or ""
+    if any(marker in text for marker in BWS_WIRING_MARKERS):
+        return None
+    if any(marker in text for marker in BWS_USAGE_MARKERS) and not any(
+        marker in text for marker in BWS_ROTATION_MARKERS
+    ):
+        return None
+    # THE OUTPUT MUST LOOK LIKE A FAILURE. PostToolUse carries no exit code, so a successful `bws secret list` and a failed one are separated only by what they printed. An error shape is required rather than assumed, or every successful listing in a session would carry this warning.
+    failed = any(marker in text for marker in BWS_ROTATION_MARKERS) or re.search(
+        r"^\s*(?:Error|error):|\berror\b.*\b(?:token|client|decryption|auth)", text, re.MULTILINE
+    )
+    if not failed:
+        return None
+    return (
+        "trapguard[bws-auth-failure]: this `bws` call failed to authenticate. Expired, "
+        "revoked, deleted and a network fault all exit 1 here and none of them can be "
+        "told apart from this output, so the remedy is the same for all four: the "
+        "machine-account token is ROTATED, by a person, in the Bitwarden web vault. "
+        "bws 2.1.0 has no verb that mints or rotates one, so no session can do this.\n"
+        "    the procedure, in full:  .ci/config/bws-rotation-notice.txt\n"
+        "    the operator runs:       scripts/dev/bws-rotate.py\n"
+        "  A session's whole part is to report this and stop. DO NOT ask for the token in "
+        "the conversation, DO NOT put it in a tracked file, and DO NOT offer to run the "
+        "script: it reads the value from a TTY with echo off and refuses a non-TTY stdin "
+        "with exit 2, so a tool call physically cannot feed it."
+    )
+
+
 RULES = (
     rule_cancelled_run_not_passed,
     rule_phantom_deletion_diff,
     rule_interrupted_cleanup_skipped,
     rule_history_rewrite_controls,
     rule_rebase_unverified,
+    rule_bws_auth_failure,
 )
 
 
@@ -571,18 +511,13 @@ def main():
     try:
         event = json.loads(raw) if raw.strip() else {}
     except ValueError:
-        # An unparseable payload is itself a finding, so it is recorded rather
-        # than dropped: "the field never arrived" and "the whole event was
-        # malformed" are different answers to P1.
+        # An unparseable payload is itself a finding, so it is recorded rather than dropped: "the field never arrived" and "the whole event was malformed" are different answers to P1.
         event = {"__unparseable__": True}
 
     resp = event.get("tool_response")
     rtype, rlen, rkeys = _response_facts(resp)
 
-    # The nonce is matched against the RAW event text, so it is found wherever
-    # the harness happens to put stdout inside tool_response. Matching a parsed
-    # sub-field would make a negative result ambiguous between "no content" and
-    # "content lives somewhere I did not look".
+    # The nonce is matched against the RAW event text, so it is found wherever the harness happens to put stdout inside tool_response. Matching a parsed sub-field would make a negative result ambiguous between "no content" and "content lives somewhere I did not look".
     row = {
         "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tool_name": str(event.get("tool_name") or ""),

@@ -128,7 +128,7 @@ Install renet and prepare a registered machine for repositories.
 
 ### rdc machine status [name]
 
-Show a machine's system, repositories, containers, and services.
+Show a machine's system, repositories, containers, and services. Read-only: never updates renet on the machine; warns when its version differs.
 
 **Options:**
 
@@ -190,7 +190,7 @@ Destroy a cloud-provisioned machine and remove from config
 
 ### rdc machine prune <name>
 
-Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
+Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.
 
 **Options:**
 
@@ -1191,7 +1191,9 @@ List all embedded deployment templates shipped with the CLI
 
 ### rdc repo admin template apply <ref>
 
-Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose': 'docker compose' is rejected. ENV VARS: two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe: Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe: renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile: renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
+Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose': 'docker compose' is rejected. ENV VARS: two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP.
+Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe: Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe: renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile: renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}.
+Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53
 
 **Options:**
 
@@ -1662,7 +1664,6 @@ Link this config to remote encrypted storage
 
 **Options:**
 
-- `--headless`: Use device code flow (for headless servers)
 - `--password`: Enroll headlessly with a pre-provisioned password slot (no browser)
 - `--api-url <url>`: Account server URL
 - `--force`: Replace differing local content with the server copy without confirmation
@@ -1674,6 +1675,18 @@ Disconnect from remote storage and save config locally
 ### rdc config remote status
 
 Show remote connection status
+
+### rdc config remote versions
+
+List the earlier versions of this config kept on the server
+
+### rdc config remote restore <version>
+
+Publish an earlier version of this config as its newest version
+
+**Options:**
+
+- `-y, --yes`: Skip confirmation prompt
 
 ### rdc config remote refresh
 

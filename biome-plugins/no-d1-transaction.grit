@@ -1,0 +1,9 @@
+// Replaces the ESLint `no-restricted-syntax` entries at eslint.config/packages.js:81-83 and :101-104 (selector: `CallExpression[callee.property.name='transaction']`). `db.transaction()` is not supported on Cloudflare D1: use sequential awaited operations instead. Scoped to `private/account/**` by the `includes` on the plugin reference in biome.json, matching the ESLint file scope.
+language js
+
+`$obj.transaction($args)` where {
+    register_diagnostic(
+        span = $obj,
+        message = "db.transaction() is not supported on D1. Use sequential awaited operations instead."
+    )
+}

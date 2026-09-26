@@ -1,0 +1,17 @@
+# twin .ci/scripts/security/shfmt.sh blob 5a9fd57994b4a4b00e0b93dd17bf4b3cc83fbd94
+exit: 1
+--- stdout ---
+info: Checking shell script formatting
+v9.99.0
+info: Checking .ci/**/*.sh
+info: Checking .claude/**/*.sh
+diff .claude/two.sh.orig .claude/two.sh
+--- .claude/two.sh.orig
++++ .claude/two.sh
+@@ -1,2 +1,2 @@
+-  local x
++    local x
+--- stderr ---
+--- calls ---
+FAKECALL shfmt -i 4 -ci -d .ci/config/constants.sh .ci/scripts/lib/toolchain.sh .ci/scripts/security/shfmt.sh
+FAKECALL shfmt -i 4 -ci -d .claude/two.sh

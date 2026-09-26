@@ -199,15 +199,10 @@ const StorageConfigSchema = z.object({
 
 // Per-repo secrets. Two delivery modes:
 //   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
-//   file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the
-//          target machine, referenced by Docker compose `secrets:` block.
-// Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
+// file → tmpfs file at /var/run/rediacc/secrets/<networkId>/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
 const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
 
-// Size caps (gate C11, merged with spec 05). The config file is atomically
-// rewritten and remote-pushed WHOLE on every mutation, and each mode
-// materializes as one k8s Secret object per repo namespace (~1 MiB apiserver
-// cap), so anything larger is a file the data plane should carry.
+// Size caps (gate C11, merged with spec 05). The config file is atomically rewritten and remote-pushed WHOLE on every mutation, and each mode materializes as one k8s Secret object per repo namespace (~1 MiB apiserver cap), so anything larger is a file the data plane should carry.
 export const SECRET_ENV_VALUE_MAX_BYTES = 32 * 1024; // 32 KiB per env value
 export const SECRET_FILE_VALUE_MAX_BYTES = 256 * 1024; // 256 KiB per file value
 export const SECRET_AGGREGATE_MAX_BYTES = 512 * 1024; // 512 KiB per repo per mode
@@ -267,8 +262,7 @@ const RepoRecordSchema = z.object({
   credential: z.string().optional(),
   grandGuid: z.string().optional(),
   parentGuid: z.string().optional(),
-  // Marks a fork read-only (refuses to mount on the machine). Producer:
-  // `repo fork --immutable`. The machine-side mirror is authoritative.
+  // Marks a fork read-only (refuses to mount on the machine). Producer: `repo fork --immutable`. The machine-side mirror is authoritative.
   immutable: z.boolean().optional(),
   sshPrivateKey: z.string().optional(),
   sshPublicKey: z.string().optional(),
@@ -288,8 +282,7 @@ const RepoFamilySchema = z.object({
   tags: z.record(TagName, RepoRecordSchema),
 });
 
-// Archives OMIT secrets — archiveRepository scrubs them. `tag` splits out of
-// the v2 composite `name` string (migration transform 9).
+// Archives OMIT secrets — archiveRepository scrubs them. `tag` splits out of the v2 composite `name` string (migration transform 9).
 const ArchivedRepositorySchema = RepoRecordSchema.omit({ secrets: true }).extend({
   name: z.string(),
   tag: z.string(),
@@ -401,9 +394,7 @@ const ClusterCephRefSchema = z.object({
   pool: z.string().optional(),
 });
 
-// Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the
-// booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2)
-// so per-boot allocation churn no longer bumps the version counter.
+// Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2) so per-boot allocation churn no longer bumps the version counter.
 const ClusterKvmSchema = z.object({
   netName: z.string().min(1),
   netBase: z.string().min(1),
@@ -518,9 +509,7 @@ const AccountSchema = z.object({
   e2ePublicKey: z.string().optional(), // server X25519 SPKI, discovered or seeded
   updateChannel: z.string().optional(), // free-form R2 channel segment (edge, stable, pr-N)
   releasesUrl: z.string().optional(), // on-prem releases base URL override
-  // team/region are retired cloud-adapter residue (R2-F9). The v2→v3 migration
-  // strips them and nothing repopulates them; kept optional only so the dead
-  // `config set/clear team|region` command surface compiles until P4 removes it.
+  // team/region are retired cloud-adapter residue (R2-F9). The v2→v3 migration strips them and nothing repopulates them; kept optional only so the dead `config set/clear team|region` command surface compiles until P4 removes it.
   team: z.string().optional(),
   region: z.string().optional(),
 });
@@ -572,9 +561,7 @@ const RemoteConfigSchema = z.object({
   storeId: uuid,
   configId: uuid,
   teamId: uuid.optional(),
-  // Server-provided over the config-remote handoff, then fed to native secure
-  // storage (keyctl / macOS security / DPAPI). Constrain to a safe charset so a
-  // hostile account server cannot smuggle shell metacharacters this far.
+  // Server-provided over the config-remote handoff, then fed to native secure storage (keyctl / macOS security / DPAPI). Constrain to a safe charset so a hostile account server cannot smuggle shell metacharacters this far.
   storageKeyId: z.string().regex(/^[A-Za-z0-9:_-]{1,200}$/),
   dataRegion: z.string().optional(),
   /** Server envelope version of the last successful pull/push (offline read cache). */
@@ -623,26 +610,46 @@ export const RdcConfigSchema = z
 // Types
 // =============================================================================
 
-export type RdcConfig = z.infer<typeof RdcConfigSchema>;
-export type MachineConfig = z.infer<typeof MachineConfigSchema>;
-export type StorageConfig = z.infer<typeof StorageConfigSchema>;
-export type Placement = z.infer<typeof PlacementSchema>;
-export type RepoRecord = z.infer<typeof RepoRecordSchema>;
-export type RepoFamily = z.infer<typeof RepoFamilySchema>;
-export type SecretEntry = z.infer<typeof SecretEntrySchema>;
+type RdcConfig = z.infer<typeof RdcConfigSchema>;
+type MachineConfig = z.infer<typeof MachineConfigSchema>;
+type StorageConfig = z.infer<typeof StorageConfigSchema>;
+type Placement = z.infer<typeof PlacementSchema>;
+type RepoRecord = z.infer<typeof RepoRecordSchema>;
+type RepoFamily = z.infer<typeof RepoFamilySchema>;
+type SecretEntry = z.infer<typeof SecretEntrySchema>;
 export type SecretMode = SecretEntry['mode'];
-export type InfraConfig = z.infer<typeof InfraConfigSchema>;
-export type BackupDestination = z.infer<typeof BackupDestinationSchema>;
-export type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
-export type CloudProviderConfig = z.infer<typeof CloudProviderConfigSchema>;
-export type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
-export type ClusterPool = z.infer<typeof ClusterPoolSchema>;
-export type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
+type InfraConfig = z.infer<typeof InfraConfigSchema>;
+type BackupDestination = z.infer<typeof BackupDestinationSchema>;
+type BackupStrategyConfig = z.infer<typeof BackupStrategyConfigSchema>;
+type CloudProviderConfig = z.infer<typeof CloudProviderConfigSchema>;
+type ClusterConfig = z.infer<typeof ClusterConfigSchema>;
+type ClusterPool = z.infer<typeof ClusterPoolSchema>;
+type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
 export type ClusterPoolRole = ClusterPool['role'];
-export type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
-export type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
-export type EncryptionState = z.infer<typeof EncryptionSchema>;
-export type { AcmeCertCache, RdcState };
+type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
+type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
+type EncryptionState = z.infer<typeof EncryptionSchema>;
+export type {
+  RdcConfig,
+  MachineConfig,
+  StorageConfig,
+  Placement,
+  RepoRecord,
+  RepoFamily,
+  SecretEntry,
+  InfraConfig,
+  BackupDestination,
+  BackupStrategyConfig,
+  CloudProviderConfig,
+  ClusterConfig,
+  ClusterPool,
+  ClusterKvm,
+  RemoteConfig,
+  EncryptedBlob,
+  EncryptionState,
+  AcmeCertCache,
+  RdcState,
+};
 
 /**
  * Flattened in-memory repository view. `ResourceState` presents repositories to
@@ -666,7 +673,8 @@ export type RepositoryConfig = RepoRecord & {
   reflog?: ReflogEntry[];
 };
 
-export type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+type ArchivedRepository = z.infer<typeof ArchivedRepositorySchema>;
+export type { ArchivedRepository };
 
 // =============================================================================
 // Create an empty v3 config

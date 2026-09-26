@@ -86,11 +86,8 @@ function agentPool(clusterName: string, cluster: ClusterConfig): ClusterPool {
   return pool;
 }
 
-// Carry-in 1 seam note: the datastore node label (rediacc.io/ds-<name>) is
-// stamped/stripped through the renet `kube_node_label` bridge function (control
-// plane admin kubectl, node resolved by InternalIP). Because node labels persist
-// in kine across a same-node reboot, only RELOCATION/failover re-stamps them
-// (remove-before-add). The `datastore attach`/`detach` porcelain that wires this
+// Carry-in 1 seam note: the datastore node label (rediacc.io/ds-<name>) is stamped/stripped through the renet `kube_node_label` bridge function (control plane admin kubectl, node resolved by InternalIP). Because node labels persist in kine across a same-node reboot, only RELOCATION/failover re-stamps them (remove-before-add). The `datastore attach`/`detach` porcelain that wires
+// this
 // dispatch is P4; until then it is exercised via the renet primitive directly.
 
 export interface JoinClusterOptions {
@@ -210,7 +207,7 @@ export async function evictCluster(
   const held = await attachedDatastoresOn(machineName);
   if (held.length > 0) {
     // Single-mounter safety (spec 03 §5.5): refuse a node that still mounts a
-    // named datastore, unless --force — the honest path for a DEAD node whose
+    // named datastore, unless --force, the honest path for a DEAD node whose
     // datastore must be recovered/fenced separately (it will not detach cleanly).
     if (options.force) {
       outputService.warn(

@@ -127,9 +127,7 @@ export class SessionStore {
   ): Promise<void> {
     const session = this.require(sessionId);
     if (session.principal.userId !== grantingPrincipal.userId) {
-      // Deliberately the same message require() gives for an unknown session, so
-      // a caller cannot probe which session ids exist by whether the error
-      // changes from "unknown" to "not yours".
+      // Deliberately the same message require() gives for an unknown session, so a caller cannot probe which session ids exist by whether the error changes from "unknown" to "not yours".
       throw new SessionError('Unknown or expired session. Open a new one.');
     }
     if (!session.ephemeralPrivateKey) {
@@ -141,8 +139,7 @@ export class SessionStore {
     session.ephemeralPrivateKey = undefined;
     session.lastUsedAt = this.now();
 
-    // Index the grant so sessionFor() can find it. See that method for why this
-    // is keyed by user and never by org.
+    // Index the grant so sessionFor() can find it. See that method for why this is keyed by user and never by org.
     this.grantsByUser.set(session.principal.userId, sessionId);
   }
 
@@ -206,7 +203,7 @@ export class SessionStore {
    * The session a command should draw its config key from.
    *
    * When the request NAMES a session (the web console's X-Config-Session
-   * header), the named session must exist and belong to the request principal —
+   * header), the named session must exist and belong to the request principal ,
    * the same ownership rule grantCek enforces, refused with the same
    * deliberately indistinguishable message, so a caller cannot probe which
    * session ids exist. The named session wins over the grant index: a user with

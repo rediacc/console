@@ -147,11 +147,7 @@ const TAG_KEYS: Record<DocTag, { key: string; en: string }> = {
  */
 export function makeTagLabel(t: (key: string, fallback?: string) => string) {
   return (tag: string): string => {
-    // Typed as possibly-undefined on purpose. `tag` arrives as a plain string, so the
-    // cast is a claim rather than a guarantee and an unknown tag really does miss the
-    // table. Without the annotation TypeScript reads the lookup as total and calls the
-    // guard below "always truthy" -- deleting it to satisfy that would crash on exactly
-    // the input the guard exists for.
+    // Typed as possibly-undefined on purpose. `tag` arrives as a plain string, so the cast is a claim rather than a guarantee and an unknown tag really does miss the table. Without the annotation TypeScript reads the lookup as total and calls the guard below "always truthy" -- deleting it to satisfy that would crash on exactly the input the guard exists for.
     const entry = (TAG_KEYS as Partial<Record<string, (typeof TAG_KEYS)[DocTag]>>)[tag];
     return entry ? t(entry.key, entry.en) : tag;
   };
@@ -232,9 +228,7 @@ const DOC_SUBCATEGORIES: Record<DocCategory, readonly DocSubcategory[]> = {
 
 /** The ordered shelf list for a category; empty for anything unknown. */
 export function subcategoriesFor(category: string): readonly DocSubcategory[] {
-  // Typed as possibly-undefined on purpose, exactly as makeTagLabel below: `category`
-  // arrives as a plain string, so the cast is a claim rather than a guarantee and an
-  // unknown category really does miss the record.
+  // Typed as possibly-undefined on purpose, exactly as makeTagLabel below: `category` arrives as a plain string, so the cast is a claim rather than a guarantee and an unknown category really does miss the record.
   const shelves = (DOC_SUBCATEGORIES as Partial<Record<string, readonly DocSubcategory[]>>)[
     category
   ];

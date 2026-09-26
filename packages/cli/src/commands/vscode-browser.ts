@@ -19,7 +19,7 @@ import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import {
@@ -61,7 +61,7 @@ export async function verifySSHConnectivity(connectionDetails: ConnectionDetails
 
 /**
  * Resolve connection details and prepare the remote side: connectivity
- * check, mount check, per-repo key deployment, and renet provisioning.
+ * check, mount check, per-repo key deployment, and a read-only renet check.
  */
 async function prepareBrowserConnection(
   machineName: string,
@@ -83,7 +83,7 @@ async function prepareBrowserConnection(
   const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
   if (machine) {
     outputService.info(t('commands.vscode.connect.provisioningRenet'));
-    await provisionRenetToRemote(localConfig, machine, teamKey, {});
+    await acquireRemoteRenet('read-only', localConfig, machine, teamKey, { machineName });
   }
 
   return { connectionDetails, teamKey };
@@ -91,7 +91,7 @@ async function prepareBrowserConnection(
 
 /**
  * Report the ready tunnel. `--url-only` contract (consumed by the tutorial
- * video pipeline): exactly one line — the tokenized URL — is written to
+ * video pipeline): exactly one line, the tokenized URL, is written to
  * stdout; all progress goes to stderr.
  */
 function reportBrowserTunnel(

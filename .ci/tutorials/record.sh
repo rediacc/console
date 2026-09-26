@@ -35,10 +35,12 @@ if ! command -v asciinema &>/dev/null; then
     exit 1
 fi
 
-RAW_CAST="$(mktemp /tmp/tutorial-raw-XXXXXX.cast)"
-MARKED_CAST="$(mktemp /tmp/tutorial-marked-XXXXXX.cast)"
-EXIT_CODE_FILE="/tmp/tutorial-exit-code-$$"
-trap 'rm -f "$RAW_CAST" "$MARKED_CAST" "$EXIT_CODE_FILE"' EXIT
+# One pid-stamped directory for all three files (runtmp.SHELL_MKTEMP): the EXIT trap removes it, and a recording killed before the trap can run is swept by the next Python run_dir.
+RECORD_TMP="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-tutorial-record-XXXXXXXX")"
+RAW_CAST="$RECORD_TMP/raw.cast"
+MARKED_CAST="$RECORD_TMP/marked.cast"
+EXIT_CODE_FILE="$RECORD_TMP/exit-code"
+trap 'rm -rf "$RECORD_TMP"' EXIT
 
 echo "Recording: $(basename "$TUTORIAL_SCRIPT") → $(basename "$OUTPUT_CAST")"
 echo "Terminal: ${COLS}x${ROWS}"
@@ -64,7 +66,14 @@ asciinema rec \
 if [[ -f "$EXIT_CODE_FILE" ]]; then
     SCRIPT_EXIT=$(cat "$EXIT_CODE_FILE")
     if [[ "$SCRIPT_EXIT" != "0" ]]; then
-        echo "Error: tutorial script exited with code $SCRIPT_EXIT" >&2
+        # A SIGNAL IS NOT A VERDICT THE SCRIPT REACHED. Under a CI step timeout
+        # or an OOM kill this file holds 128+n, and reporting it as "exited with
+        # code 137" sends the reader hunting a failure branch that does not exist.
+        if [[ "$SCRIPT_EXIT" -gt 128 && "$SCRIPT_EXIT" -lt 160 ]]; then
+            echo "Error: tutorial script was KILLED by signal $((SCRIPT_EXIT - 128)) (raw $SCRIPT_EXIT) -- it did not choose this status" >&2
+        else
+            echo "Error: tutorial script exited with code $SCRIPT_EXIT" >&2
+        fi
         echo "Script: $TUTORIAL_SCRIPT" >&2
         # PRESERVE the recording. Deleting it here destroyed the only artifact that
         # explains the failure: the tutorial silences its own setup with

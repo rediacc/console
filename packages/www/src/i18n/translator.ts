@@ -18,7 +18,8 @@ import type { InterpolationParams, Language, PathValue, Translations } from './t
  */
 
 /** A parsed locale catalog. Deliberately loose: the client slices are a subset of the full ones. */
-export type TranslationCatalog = Record<string, unknown>;
+type TranslationCatalog = Record<string, unknown>;
+export type { TranslationCatalog };
 
 /**
  * Get a nested value from an object using a dot-notation path

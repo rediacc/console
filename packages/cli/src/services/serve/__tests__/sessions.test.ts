@@ -62,7 +62,7 @@ async function sealCekTo(publicKeyB64: string): Promise<{
   return { blob: await cekHandoffEncrypt(rawCek, publicKey), rawCek };
 }
 
-async function openFor(store: SessionStore, principal: SessionPrincipal) {
+function openFor(store: SessionStore, principal: SessionPrincipal) {
   return store.open(principal, serveCrypto.generateEphemeralKeyPair, serveCrypto.exportPublicKey);
 }
 
@@ -87,8 +87,7 @@ describe('SessionStore CEK grant ownership (SEC-3)', () => {
     // Bob, a real user in the same org, tries to complete Alice's grant.
     await expect(store.grantCek(sessionId, blob, BOB)).rejects.toBeInstanceOf(SessionError);
 
-    // Alice's session is left with no key: a rejected grant does not partially
-    // apply, and her later commands cannot run against a key Bob supplied.
+    // Alice's session is left with no key: a rejected grant does not partially apply, and her later commands cannot run against a key Bob supplied.
     expect(() => store.requireCek(sessionId)).toThrow(/no config key yet/i);
   });
 
@@ -97,8 +96,7 @@ describe('SessionStore CEK grant ownership (SEC-3)', () => {
     const { sessionId, publicKey } = await openFor(store, ALICE);
     const { blob } = await sealCekTo(publicKey);
 
-    // A wrong-owner grant and a grant to a made-up id must fail the SAME way, so
-    // an attacker cannot enumerate live session ids by the error text.
+    // A wrong-owner grant and a grant to a made-up id must fail the SAME way, so an attacker cannot enumerate live session ids by the error text.
     let ownerMismatch: unknown;
     let unknownId: unknown;
     await store.grantCek(sessionId, blob, BOB).catch((e: unknown) => {
@@ -142,9 +140,7 @@ describe('SessionStore.sessionForExec (the X-Config-Session selection rule)', ()
   });
 
   it('honours the NAMED session over the latest-grant index', async () => {
-    // Alice grants through two live sessions (say, a browser and a CLI). The
-    // index points at the newest, but a request that names the older one must
-    // get the older one — the client chose it.
+    // Alice grants through two live sessions (say, a browser and a CLI). The index points at the newest, but a request that names the older one must get the older one, the client chose it.
     const store = new SessionStore();
     const first = await openAndGrant(store, ALICE);
     const second = await openAndGrant(store, ALICE);
@@ -157,8 +153,7 @@ describe('SessionStore.sessionForExec (the X-Config-Session selection rule)', ()
     const store = new SessionStore();
     const alices = await openAndGrant(store, ALICE);
 
-    // Bob naming Alice's session and Bob naming a nonexistent one must fail the
-    // same way, so the header cannot be used to probe which ids are live.
+    // Bob naming Alice's session and Bob naming a nonexistent one must fail the same way, so the header cannot be used to probe which ids are live.
     let wrongOwner: unknown;
     let unknownId: unknown;
     try {

@@ -30,11 +30,12 @@ import {
 } from '../remote/vscode/index.js';
 import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
 } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
@@ -75,7 +76,7 @@ interface VSCodeCleanupOptions {
   connection?: string;
 }
 
-async function detectVSCode() {
+function detectVSCode() {
   return withSpinner(t('commands.vscode.connect.detecting'), async () => {
     const info = await findVSCode();
     if (!info) {
@@ -154,12 +155,8 @@ async function configureVSCodeAndSettings(
     }
 
     if (connectionDetails.datastore) {
-      // Per-repo server install path so VS Code runs separate server instances.
-      // VS Code shares servers by resolved hostname — without separate paths,
-      // the second repo would reuse the first repo's sandboxed server.
-      // Uses the GUID-based mount path (colon-free) because VS Code rejects
-      // serverInstallPath values containing ':' (parsed as PATH-style separator),
-      // which breaks fork aliases like "<parent>:<tag>".
+      // Per-repo server install path so VS Code runs separate server instances. VS Code shares servers by resolved hostname, without separate paths, the second repo would reuse the first repo's sandboxed server. Uses the GUID-based mount path (colon-free) because VS Code rejects serverInstallPath values containing ':' (parsed as PATH-style separator), which breaks fork aliases
+      // like "<parent>:<tag>".
       const serverPath =
         repositoryName && connectionDetails.repositoryGuid
           ? `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}`
@@ -172,7 +169,7 @@ async function configureVSCodeAndSettings(
   });
 }
 
-async function provisionAndPrepare(
+async function prepareRemote(
   machineName: string,
   repositoryName: string | undefined,
   connectionDetails: ConnectionDetails,
@@ -184,7 +181,7 @@ async function provisionAndPrepare(
 
   if (machine) {
     await withSpinner(t('commands.vscode.connect.provisioningRenet'), () =>
-      provisionRenetToRemote(localConfig, machine, teamKey, {})
+      acquireRemoteRenet('read-only', localConfig, machine, teamKey, { machineName })
     );
   }
 
@@ -192,9 +189,7 @@ async function provisionAndPrepare(
     await preparePerRepoVSCodeServer(connectionDetails, teamKey);
   }
 
-  // Pin the kubectl current-context to the repo's namespace on the control node
-  // so the integrated terminal lands in the right namespace (design D14, the
-  // k8s analog of the per-repo working directory for docker targets).
+  // Pin the kubectl current-context to the repo's namespace on the control node so the integrated terminal lands in the right namespace (design D14, the k8s analog of the per-repo working directory for docker targets).
   if (kubeNamespace) {
     await pinClusterNamespace(connectionDetails, kubeNamespace);
   }
@@ -397,9 +392,7 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
     getSSHConnectionDetails(NO_TEAM, machineName, repositoryName)
   );
 
-  // For a cluster target, layer KUBECONFIG onto the control-node connection so
-  // the integrated terminal has kubectl ready (design D14). The namespace is
-  // pinned on the control node in provisionAndPrepare below.
+  // For a cluster target, layer KUBECONFIG onto the control-node connection so the integrated terminal has kubectl ready (design D14). The namespace is pinned on the control node in prepareRemote below.
   if (kubeCluster) {
     applyClusterConnectionContext(connectionDetails, kubeCluster, kubeNamespace);
   }
@@ -415,9 +408,8 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
     await deployRepoKeyIfNeeded(repositoryName, machineName);
   }
 
-  // Provision renet, prepare the per-repo VS Code server, and (for a cluster
-  // target) pin the kubectl namespace on the control node.
-  await provisionAndPrepare(machineName, repositoryName, connectionDetails, kubeNamespace);
+  // Provision renet, prepare the per-repo VS Code server, and (for a cluster target) pin the kubectl namespace on the control node.
+  await prepareRemote(machineName, repositoryName, connectionDetails, kubeNamespace);
 
   const { connectionName, identityFile, knownHostsFile } = await setupSSHConfig(
     machineName,
@@ -445,20 +437,17 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
   const vscodeUri = generateRemoteUri(connectionName, remotePath);
 
   if (options.urlOnly) {
-    // eslint-disable-next-line no-console
-    console.log(vscodeUri);
+    outputService.print(vscodeUri);
     return;
   }
 
-  // eslint-disable-next-line no-console
-  console.log(
+  outputService.print(
     t('commands.vscode.connect.opening', { connection: connectionName, path: remotePath })
   );
 
   await launchVSCode(vscodeInfo, vscodeUri, { newWindow: options.newWindow });
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.connect.success'));
+  outputService.print(t('commands.vscode.connect.success'));
 }
 
 /**
@@ -469,28 +458,22 @@ function listVSCodeConnections(): void {
   const keys = listPersistedKeys();
 
   if (entries.length === 0) {
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.list.noConnections'));
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
+    outputService.print(t('commands.vscode.list.noConnections'));
+    outputService.print(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
     return;
   }
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.list.header'));
+  outputService.print(t('commands.vscode.list.header'));
 
   for (const entry of entries) {
     // Check if key exists for this entry
     const hasKey = keys.some((k: string) => entry.includes(k.replaceAll('_', '-')));
     const keyIndicator = hasKey ? t('commands.vscode.list.keyPersisted') : '';
-    // eslint-disable-next-line no-console
-    console.log(`  ${entry}${keyIndicator}`);
+    outputService.print(`  ${entry}${keyIndicator}`);
   }
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.list.total', { count: entries.length }));
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
+  outputService.print(t('commands.vscode.list.total', { count: entries.length }));
+  outputService.print(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
 }
 
 /**
@@ -506,18 +489,15 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
     }
     cleanupAllPersistedKeys();
 
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.cleanup.cleanedAll', { count }));
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.cleanup.removedKeys'));
+    outputService.print(t('commands.vscode.cleanup.cleanedAll', { count }));
+    outputService.print(t('commands.vscode.cleanup.removedKeys'));
   } else if (options.connection) {
     const connectionName = options.connection;
 
     // Remove SSH config entry
     removeSSHConfigEntry(connectionName);
 
-    // Parse connection name to extract team/machine/repository
-    // Format: rediacc-team-machine or rediacc-team-machine-repository
+    // Parse connection name to extract team/machine/repository Format: rediacc-team-machine or rediacc-team-machine-repository
     const parts = connectionName.replace(/^rediacc-/, '').split('-');
     if (parts.length >= 2) {
       const [team, machine, ...repositoryParts] = parts;
@@ -525,8 +505,7 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
       removePersistedKeys(team, machine, repository);
     }
 
-    // eslint-disable-next-line no-console
-    console.log(t('commands.vscode.cleanup.cleaned', { connection: connectionName }));
+    outputService.print(t('commands.vscode.cleanup.cleaned', { connection: connectionName }));
   } else {
     throw new Error(t('errors.vscode.cleanupRequired'));
   }
@@ -536,8 +515,7 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
  * Checks VS Code installation and configuration
  */
 async function checkVSCodeSetup(isInsiders = false): Promise<void> {
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.title'));
+  outputService.print(t('commands.vscode.check.title'));
 
   const vscode = await findVSCode();
   displayVSCodeInstallation(vscode);
@@ -546,17 +524,14 @@ async function checkVSCodeSetup(isInsiders = false): Promise<void> {
   const extensionStatus = hasExtension
     ? t('commands.vscode.check.installed')
     : t('commands.vscode.check.notDetected');
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.remoteSSH', { status: extensionStatus }));
+  outputService.print(t('commands.vscode.check.remoteSSH', { status: extensionStatus }));
 
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.configuration'));
+  outputService.print(t('commands.vscode.check.configuration'));
   const configCheck = checkVSCodeConfiguration(isInsiders);
   displayConfigurationStatus(configCheck);
 
   const configPath = getSSHConfigPath();
-  // eslint-disable-next-line no-console
-  console.log(t('commands.vscode.check.sshConfig', { path: configPath }));
+  outputService.print(t('commands.vscode.check.sshConfig', { path: configPath }));
 
   const connections = listSSHConfigEntries();
   displayActiveConnections(connections);

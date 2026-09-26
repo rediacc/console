@@ -10,15 +10,12 @@ import {
 import { handleError } from './utils/errors.js';
 import { runWarmup } from './warmup.js';
 
-// Warmup check: validate bundle coherence before full CLI initialization.
-// Static import required - dynamic import() segfaults in SEA binaries on macOS ARM64.
+// Warmup check: validate bundle coherence before full CLI initialization. Static import required - dynamic import() segfaults in SEA binaries on macOS ARM64.
 if (process.argv.includes('--warmup')) {
   process.exit(runWarmup());
 }
 
-// MCP server mode — must run before normal CLI to avoid stdout pollution.
-// The MCP protocol uses stdout for JSON-RPC, so no other CLI initialization
-// (telemetry, i18n, update checks) can write to stdout.
+// MCP server mode, must run before normal CLI to avoid stdout pollution. The MCP protocol uses stdout for JSON-RPC, so no other CLI initialization (telemetry, i18n, update checks) can write to stdout.
 if (process.argv.includes('mcp') && process.argv.includes('serve')) {
   const configIdx = process.argv.indexOf('--config');
   const configName = configIdx >= 0 ? process.argv[configIdx + 1] : undefined;
@@ -26,9 +23,7 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
   const defaultTimeoutMs =
     timeoutIdx >= 0 ? Number.parseInt(process.argv[timeoutIdx + 1], 10) : 120_000;
 
-  // MCP tools are derived from the generated CLI contract, not the live Commander
-  // tree, so this fast path no longer needs to import cli.js just to hand over the
-  // program instance.
+  // MCP tools are derived from the generated CLI contract, not the live Commander tree, so this fast path no longer needs to import cli.js just to hand over the program instance.
   import('./commands/mcp/server.js')
     .then(({ startMcpServer }) => startMcpServer({ configName, defaultTimeoutMs }))
     .catch((err: unknown) => {

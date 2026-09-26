@@ -66,9 +66,7 @@ describe('RetentionPolicySchema', () => {
     });
   });
 
-  // EVERY knob, not just one: they are declared independently, so a single
-  // knob losing its `.int()` would otherwise slip through. Mutating exactly
-  // that on `keepLast` is what proved a one-knob version of this test blind.
+  // EVERY knob, not just one: they are declared independently, so a single knob losing its `.int()` would otherwise slip through. Mutating exactly that on `keepLast` is what proved a one-knob version of this test blind.
   const KNOBS = [
     'keepLast',
     'keepHourly',

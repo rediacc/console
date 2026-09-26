@@ -149,8 +149,7 @@ describe('fetchServerInfo', () => {
 });
 
 describe('getServerKeyMaterial tiers', () => {
-  // A real, valid X25519 SPKI (the hardcoded production key), reused so
-  // importX25519PublicKey does not reject.
+  // A real, valid X25519 SPKI (the hardcoded production key), reused so importX25519PublicKey does not reject.
   const VALID_SPKI = 'MCowBQYDK2VuAyEALY64atDar/bIwKoYEJPoYphKKZ6KUIkPzIHdfH6nKg8=';
 
   afterEach(() => {

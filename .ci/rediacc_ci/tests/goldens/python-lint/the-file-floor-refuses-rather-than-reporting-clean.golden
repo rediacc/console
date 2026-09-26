@@ -1,0 +1,15 @@
+# twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗ VACUOUS INPUT[0m: only 8 Python file(s) found, expected at least 10.
+  ruff exits 0 on an empty list, so a shrinking input reads exactly like
+  a clean tree. Refusing to report a pass.
+    .ci/rediacc_ci/__init__.py
+    .ci/rediacc_ci/controls.py
+    .ci/rediacc_ci/gitx.py
+    .ci/rediacc_ci/log.py
+    .ci/rediacc_ci/paths.py
+    .ci/rediacc_ci/proc.py
+    .ci/rediacc_ci/quality/__init__.py
+    .ci/rediacc_ci/quality/python_lint.py

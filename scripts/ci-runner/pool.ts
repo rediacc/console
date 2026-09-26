@@ -3,16 +3,60 @@
  *
  * CI parallelises the same work at JOB level, ten lanes grouped by what each
  * needs on disk, and gets isolation for free because every lane is a separate
- * runner. One machine with one tree does not get that, so the two facts CI
- * never had to write down are declared per gate instead: `needs` for ordering
- * and `mutex` for shared mutable resources (the per-package dist trees,
- * private/renet/bin, the account vitest state, packages/www/dist).
+ * runner. One machine with one tree does not get that, so the facts CI never
+ * had to write down are declared per gate instead: `needs` for ordering, and
+ * `mutex` / `reads` for shared mutable resources (the per-package dist trees,
+ * private/renet/bin, the account vitest state, packages/www/dist, and the
+ * working tree itself).
  *
  * Longest-first dequeuing is what makes the flattened battery pay off: the
  * achievable floor is the longest single gate, not the sum, so the critical
  * path has to start in the first wave.
  *
- * See agent/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
+ * ---------------------------------------------------------------------------
+ * THE ISOLATION CONTRACT (W2.4b). Defined here ONCE and implemented identically
+ * by the other scheduler in this repo, `.ci/rediacc_ci/battery.py`.
+ *
+ *   A gate names the shared resources it touches. `mutex: [r]` is an EXCLUSIVE
+ *   claim on r; `reads: [r]` is a SHARED claim on the same r. Two gates may
+ *   overlap unless one of them holds r exclusively and the other holds r at
+ *   all. Shared never conflicts with shared. One namespace, two claim strengths:
+ *   a multiple-readers / single-writer lock, keyed on strings.
+ *
+ * WHY A SECOND CLAIM STRENGTH EXISTS AT ALL, since exclusive-only was enough
+ * for the five build resources this file was written for. The hazard the
+ * gate-test battery actually has is asymmetric: two of those tests WRITE into
+ * the real tree (they drive code that hardcodes the real tree and offers no
+ * fixture seam), while a dozen others RECURSIVELY ENUMERATE the same
+ * directories. A file appearing or vanishing mid-`cp -r` is a hard error under
+ * `set -euo pipefail`, so writer-versus-scanner must be excluded -- but
+ * scanner-versus-scanner must NOT be, or twenty-one read-only tests serialise
+ * for nothing. An exclusive-only mutex can express one of those or the other,
+ * never both, which is precisely why the battery keeps a three-set
+ * scheduler instead of declaring anything.
+ *
+ * WHAT THE TWO SCHEDULERS DID BEFORE THIS, and it is worth stating plainly
+ * because they disagreed for months without anything noticing. The battery
+ * carried the membership as two hand-maintained NAME LISTS inside the runner
+ * (WRITER_TESTS, SCANNER_TESTS) and honoured them. The manifest carried nothing:
+ * measured 2026-09-06 at commit ac817a647, all three real-tree writers --
+ * gate-test:gate-paths-exist, gate-test:gate-anti-vacuity,
+ * gate-test:generate-tag-inputs -- are registered with NO mutex, and zero of the
+ * 147 qualityGateTest entries carry one. So `npm run ci` schedules exactly the
+ * combination the battery's own header calls "a flake manufactured by the
+ * runner", while the CI step that runs the same 147 tests is protected. The
+ * isolation was real in one scheduler and absent in the other, and the only
+ * thing keeping the difference invisible is that the two are rarely both hot.
+ *
+ * The resource names are PATH-SCOPED (`tree:<dir>`), so the declaration says
+ * what a gate touches rather than which bucket someone put it in, and a new
+ * gate declares itself instead of being added to a list in a runner. Two gates
+ * hold the declarations to the code: check:ci-pool-writer-safety for gate
+ * tests, and check:ci-gate-tree-writes for gates, where an exclusive `tree:`
+ * claim must come with a `writesTree` reason (gate-spec.ts).
+ * ---------------------------------------------------------------------------
+ *
+ * See agent/plans/PLAN-npm-ci-parallel-parity.md sections 3 and 4.2.
  */
 
 import type { ExecOutcome } from './exec';
@@ -40,10 +84,7 @@ type GateStatus = 'ok' | 'fail' | 'blocked' | 'skipped';
  * with a real verdict: 1 is a finding, 2 is usage, 124 is a timeout, 127 is
  * not-found (which is a genuine breakage, not a considered "cannot run").
  */
-// NOT exported: nothing outside this module imports it, and knip's
-// --treat-config-hints-as-errors counts an unused export as a finding. The
-// shell gates that exit 77 (check-python-lint.sh, shfmt.sh) cannot import a
-// TypeScript constant anyway, so the value is duplicated there as a literal
+// NOT exported: nothing outside this module imports it, and knip's --treat-config-hints-as-errors counts an unused export as a finding. The shell gates that exit 77 (check-python-lint.sh, shfmt.sh) cannot import a TypeScript constant anyway, so the value is duplicated there as a literal
 // with this comment as its reference point.
 const CANNOT_RUN = 77;
 
@@ -153,6 +194,23 @@ export function buildGraph(all: readonly GateSpec[], selected: ReadonlySet<strin
   return all.filter((spec) => keep.has(spec.id));
 }
 
+/**
+ * Shared claims, read structurally rather than off the type.
+ *
+ * `mutex` has been a declared `GateSpec` field since the pool was written;
+ * `reads` is the other half of the isolation contract and its declaration lands
+ * with the registry change that populates it (see the W2.4b proposal). Reading
+ * it structurally means this scheduler already honours the field the day the
+ * data arrives, and behaves exactly as it does today until then -- an absent
+ * `reads` is an empty claim set, which is the same graph the pool has always
+ * built. It is NOT a compatibility shim to keep around: once gate-spec.ts
+ * declares `reads?: string[]`, this function collapses to `spec.reads ?? []`.
+ */
+function sharedClaims(spec: GateSpec): readonly string[] {
+  const declared = (spec as GateSpec & { reads?: unknown }).reads;
+  return Array.isArray(declared) ? declared.filter((r): r is string => typeof r === 'string') : [];
+}
+
 export async function runPool(
   specs: readonly GateSpec[],
   opts: PoolOptions
@@ -162,21 +220,27 @@ export async function runPool(
   const results = new Map<string, GateResult>();
   const unstarted = new Set(specs.map((spec) => spec.id));
   const running = new Map<string, Promise<{ id: string; outcome: ExecOutcome }>>();
-  const held = new Set<string>();
+  // The isolation contract's two claim strengths. Exclusive is a set because a resource has at most one writer at a time; shared is a COUNT because any number of readers may hold one and the last one out has to be the one that releases it. A plain Set here would have the first reader to finish unlock a resource three others were still reading, which is the shape of bug that only
+  // ever shows up as an unreproducible mid-enumeration error.
+  const heldExclusive = new Set<string>();
+  const heldShared = new Map<string, number>();
   let slots = 0;
   let heavyRunning = 0;
   let stopped = false;
 
-  // A missing or corrupt duration cache must never fail the run, so an
-  // unknown gate is simply assumed cheap-ish and sorts late.
+  // A missing or corrupt duration cache must never fail the run, so an unknown gate is simply assumed cheap-ish and sorts late.
   const expected = (spec: GateSpec): number =>
     opts.durations.get(spec.id) ?? (spec.weight ?? 1) * 5000;
-  // Clamped: a gate declaring more weight than the whole budget would never
-  // be admissible and would hang the pool at --jobs 1.
+  // Clamped: a gate declaring more weight than the whole budget would never be admissible and would hang the pool at --jobs 1.
   const effWeight = (spec: GateSpec): number =>
     Math.min(Math.max(1, spec.weight ?? 1), Math.max(1, opts.jobs));
   const rank = (a: GateSpec, b: GateSpec): number =>
     expected(b) - expected(a) || (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0);
+
+  // THE CONTRACT, and this is the whole of it. An exclusive claim conflicts with any claim on the same resource; a shared claim conflicts only with an exclusive one. Shared against shared is deliberately admissible, which is the asymmetry the header explains and the reason this is not one Set.
+  const blockedByClaim = (spec: GateSpec): boolean =>
+    (spec.mutex ?? []).some((r) => heldExclusive.has(r) || (heldShared.get(r) ?? 0) > 0) ||
+    sharedClaims(spec).some((r) => heldExclusive.has(r));
 
   const record = (result: GateResult): void => {
     results.set(result.id, result);
@@ -200,7 +264,8 @@ export async function runPool(
     unstarted.delete(spec.id);
     slots += effWeight(spec);
     if (spec.heavy === true) heavyRunning += 1;
-    for (const group of spec.mutex ?? []) held.add(group);
+    for (const r of spec.mutex ?? []) heldExclusive.add(r);
+    for (const r of sharedClaims(spec)) heldShared.set(r, (heldShared.get(r) ?? 0) + 1);
     opts.onStart?.(spec);
     running.set(
       spec.id,
@@ -209,9 +274,7 @@ export async function runPool(
   };
 
   while (unstarted.size > 0 || running.size > 0) {
-    // A dependency that failed poisons its dependents transitively, so run
-    // the propagation to a fixpoint. Reporting them as skipped rather than
-    // passed is what keeps a broken prerequisite from reading as green.
+    // A dependency that failed poisons its dependents transitively, so run the propagation to a fixpoint. Reporting them as skipped rather than passed is what keeps a broken prerequisite from reading as green.
     let changed = true;
     while (changed) {
       changed = false;
@@ -240,15 +303,14 @@ export async function runPool(
     for (const spec of ready) {
       if (slots + effWeight(spec) > opts.jobs) continue;
       if (spec.heavy === true && heavyRunning >= opts.heavyLimit) continue;
-      if ((spec.mutex ?? []).some((group) => held.has(group))) continue;
+      if (blockedByClaim(spec)) continue;
       launch(spec);
     }
 
     if (running.size === 0 && unstarted.size > 0) {
-      // Nothing is in flight and nothing was admissible: the budget is
-      // smaller than the head of the queue. Admit it anyway rather than
-      // spin. Mutex cannot be the blocker here, since nothing holds one.
-      const head = ready.find((spec) => !(spec.mutex ?? []).some((group) => held.has(group)));
+      // Nothing is in flight and nothing was admissible: the budget is smaller than the head of the queue. Admit it anyway rather than spin. No claim can be the blocker here, since nothing holds one -- but the predicate is still consulted rather than assumed, because "cannot happen" is how a stall turns into a silent over-admission that violates the very exclusion this branch is
+      // bypassing.
+      const head = ready.find((spec) => !blockedByClaim(spec));
       if (head === undefined) {
         throw new Error('ci-runner: internal error, pool stalled with work outstanding');
       }
@@ -262,11 +324,14 @@ export async function runPool(
     running.delete(id);
     slots -= effWeight(spec);
     if (spec.heavy === true) heavyRunning -= 1;
-    for (const group of spec.mutex ?? []) held.delete(group);
+    for (const r of spec.mutex ?? []) heldExclusive.delete(r);
+    for (const r of sharedClaims(spec)) {
+      const remaining = (heldShared.get(r) ?? 1) - 1;
+      if (remaining > 0) heldShared.set(r, remaining);
+      else heldShared.delete(r);
+    }
 
-    // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that
-    // claims it cannot run AND trips the anti-vacuity oracle is not a machine
-    // missing a tool, it is a gate lying about what it did.
+    // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that claims it cannot run AND trips the anti-vacuity oracle is not a machine missing a tool, it is a gate lying about what it did.
     const cannotRun = outcome.code === CANNOT_RUN && outcome.vacuity === undefined;
     const failed = !cannotRun && (outcome.code !== 0 || outcome.vacuity !== undefined);
     record({
@@ -283,8 +348,7 @@ export async function runPool(
     if (failed && opts.failFast) stopped = true;
   }
 
-  // Manifest order, not completion order: the exit code and the summary must
-  // be identical across runs even though the scheduling never is.
+  // Manifest order, not completion order: the exit code and the summary must be identical across runs even though the scheduling never is.
   return specs.map((spec) => {
     const result = results.get(spec.id);
     if (result === undefined)

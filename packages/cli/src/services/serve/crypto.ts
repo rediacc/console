@@ -14,8 +14,7 @@ import type { ServeCrypto } from './deps.js';
 
 export const serveCrypto: ServeCrypto = {
   async generateEphemeralKeyPair() {
-    // `false` for extractable: the private half cannot be exported, even by this
-    // process, so a bug here cannot leak it. Only the public half goes out.
+    // `false` for extractable: the private half cannot be exported, even by this process, so a bug here cannot leak it. Only the public half goes out.
     const keyPair = await crypto.subtle.generateKey({ name: 'X25519' }, false, ['deriveBits']);
 
     return { publicKey: keyPair.publicKey, privateKey: keyPair.privateKey };

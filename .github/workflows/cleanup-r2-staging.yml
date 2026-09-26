@@ -6,14 +6,20 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 jobs:
   cleanup:
     name: Delete PR Channel
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Checkout only. The delete is against R2 with Bitwarden credentials;
+    # no GitHub API call in this job.
+    permissions:
+      contents: read
     # Same fork guard as cleanup-preview.yml. This job holds R2 delete
     # credentials for the releases bucket; a fork PR has empty secrets, so the
     # step would fail into `|| true` and log a confusing no-op. Fork PRs are
@@ -27,10 +33,12 @@ jobs:
       # cone too, or the step fails with the action simply not there.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .ci/scripts
             .ci/config
             .github/actions
+            .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
@@ -43,7 +51,7 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
       - name: Delete channel artifacts
-        run: .ci/scripts/deploy/delete-r2-channel.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.delete_r2_channel
         env:
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}

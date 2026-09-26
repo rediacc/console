@@ -1,0 +1,13 @@
+# twin .ci/scripts/signal/create-complete.sh blob 6218aef1389e5fc463b126a27910b983342307ab
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ Created completion signal: <outdir>/complete-from-tmpdir.txt (status: success)
+--- files ---
+{
+  "decoy": {},
+  "out": {
+    "complete-from-tmpdir.txt": "success\n",
+    "complete.txt": "success\n"
+  }
+}

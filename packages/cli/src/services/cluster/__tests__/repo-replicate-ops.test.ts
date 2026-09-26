@@ -58,8 +58,7 @@ function mockExec() {
         ]),
       }) as never;
     }
-    // datastore_fork is captured (--json) so the record can be adopted onto an
-    // off-control replica node before attach (finding #36).
+    // datastore_fork is captured (--json) so the record can be adopted onto an off-control replica node before attach (finding #36).
     if (functionName === 'datastore_fork') {
       return Promise.resolve({
         success: true,
@@ -108,17 +107,10 @@ describe('replicateRepo (create orchestrator)', () => {
 
     const calls = exec.mock.calls.map((c) => c[0]);
     const names = calls.map((c) => c.functionName);
-    // The REF supplies the datastore (spec §2.3), so there is no datastore_list
-    // inference round-trip any more: ONE snapshot -> (fork, attach, OPEN, label) x2
-    // -> apply. Replicas land on off-control nodes (prod-w-1/2), so each fork's
-    // record is adopted onto the hosting node before the attach (finding #36).
+    // The REF supplies the datastore (spec §2.3), so there is no datastore_list inference round-trip any more: ONE snapshot -> (fork, attach, OPEN, label) x2 -> apply. Replicas land on off-control nodes (prod-w-1/2), so each fork's record is adopted onto the hosting node before the attach (finding #36).
     //
-    // datastore_volumes_open is bug #49's fix and its position is load-bearing: it
-    // must follow the attach (there is no mount to open the image on before that)
-    // and precede kube_node_label (the label is the PV's nodeAffinity key, i.e. the
-    // scheduling gate, so opening first means no pod can ever be scheduled onto a
-    // volume that is not yet mounted). Without it the replica bind-mounts the empty
-    // directory the block clone carried and comes up healthy, Ready, and EMPTY.
+    // datastore_volumes_open is bug #49's fix and its position is load-bearing: it must follow the attach (there is no mount to open the image on before that) and precede kube_node_label (the label is the PV's nodeAffinity key, i.e. the scheduling gate, so opening first means no pod can ever be scheduled onto a volume that is not yet mounted). Without it the replica bind-mounts
+    // the empty directory the block clone carried and comes up healthy, Ready, and EMPTY.
     expect(names).toEqual([
       'datastore_snapshot_create',
       'datastore_fork',
@@ -136,14 +128,13 @@ describe('replicateRepo (create orchestrator)', () => {
       'kube_apply',
     ]);
     // ★ #93 (storage speaks GUID): the orchestrator resolves the repo's GUID
-    // from config and every storage-facing step speaks it — a create that
+    // from config and every storage-facing step speaks it, a create that
     // passes the NAME through (skipping resolution) turns this red.
     const opens = calls.filter((c) => c.functionName === 'datastore_volumes_open');
     expect(opens.every((c) => c.params?.repo === 'guid-sqldb')).toBe(true);
     expect(opens.some((c) => c.params?.repo === 'sqldb')).toBe(false);
 
-    // The overlay goes through kube_apply on the control node, stdin-fed,
-    // persisted under a stable per-set basename.
+    // The overlay goes through kube_apply on the control node, stdin-fed, persisted under a stable per-set basename.
     const apply = calls.find((c) => c.functionName === 'kube_apply');
     expect(apply).toMatchObject({
       machineName: 'cp1',
@@ -215,12 +206,8 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
     await removeReplicaSet('sqldb');
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    // ORDER is the safety property (bug #95): delete the WHOLE overlay FIRST so the
-    // replica pods terminate and release their fork mounts, THEN per fork close its
-    // LUKS volumes (#49 mirror) and detach --discard, THEN strip the labels, drop
-    // the snapshot, and VERIFY each fork is gone (datastore_list per node) before
-    // forgetting state. The old order stripped labels first and detached with a
-    // warn-and-continue swallow — the false-success the fix kills.
+    // ORDER is the safety property (bug #95): delete the WHOLE overlay FIRST so the replica pods terminate and release their fork mounts, THEN per fork close its LUKS volumes (#49 mirror) and detach --discard, THEN strip the labels, drop the snapshot, and VERIFY each fork is gone (datastore_list per node) before forgetting state. The old order stripped labels first and detached
+    // with a warn-and-continue swallow, the false-success the fix kills.
     expect(calls.map((c) => c.functionName)).toEqual([
       'kube_delete',
       'datastore_volumes_close',
@@ -233,8 +220,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
       'datastore_list',
       'datastore_list',
     ]);
-    // The overlay delete is replica-set scoped (whole-overlay form, no ordinal) and
-    // CAPTURED — a failure surfaces what it actually deleted (bug #95 mechanism b).
+    // The overlay delete is replica-set scoped (whole-overlay form, no ordinal) and CAPTURED, a failure surfaces what it actually deleted (bug #95 mechanism b).
     expect(calls[0]).toMatchObject({
       machineName: 'cp1',
       captureOutput: true,
@@ -272,10 +258,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
 
   it('REJECTS and PRESERVES state when a fork detach stays busy (bug #95 — no false success)', async () => {
     mockState({ 'sqldb-replicas': seededSet });
-    // The replica pod outlived the detach, so datastore_detach never clears. The
-    // OLD teardown swallowed this (tryStep warn-and-continue) and forgot state
-    // anyway — the false success. Now the discard is HARD: it must propagate and
-    // NEVER reach the state-forget.
+    // The replica pod outlived the detach, so datastore_detach never clears. The OLD teardown swallowed this (tryStep warn-and-continue) and forgot state anyway, the false success. Now the discard is HARD: it must propagate and NEVER reach the state-forget.
     const forget = vi.spyOn(configService, 'setStateBucket');
     vi.spyOn(localExecutorService, 'execute').mockImplementation(({ functionName }) => {
       if (functionName === 'datastore_detach') {
@@ -289,8 +272,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
 
     await expect(removeReplicaSet('sqldb')).rejects.toThrow(/NOT removed.*could not be discarded/s);
 
-    // The state-forget (the only setStateBucket call remove makes) never fired —
-    // reverting the discard to a swallow makes this go red (state cleared).
+    // The state-forget (the only setStateBucket call remove makes) never fired, reverting the discard to a swallow makes this go red (state cleared).
     expect(forget).not.toHaveBeenCalled();
     expect(stored).toEqual({ 'sqldb-replicas': seededSet });
   });
@@ -298,9 +280,7 @@ describe('removeReplicaSet (teardown orchestrator)', () => {
   it('REJECTS naming the survivor when a fork is still attached after the discard', async () => {
     mockState({ 'sqldb-replicas': seededSet });
     const forget = vi.spyOn(configService, 'setStateBucket');
-    // Every teardown step SUCCEEDS, but datastore_list still enumerates r1's fork:
-    // the discard succeeded-but-did-nothing. Verify-before-forget catches it and
-    // fails loud naming the survivor, leaving state intact for the retry.
+    // Every teardown step SUCCEEDS, but datastore_list still enumerates r1's fork: the discard succeeded-but-did-nothing. Verify-before-forget catches it and fails loud naming the survivor, leaving state intact for the retry.
     vi.spyOn(localExecutorService, 'execute').mockImplementation(
       ({ functionName, machineName }) => {
         if (functionName === 'datastore_list') {
@@ -329,16 +309,10 @@ describe('refreshReplicaSet (rolling one-at-a-time)', () => {
     const calls = exec.mock.calls.map((c) => c[0]);
     expect(calls.map((c) => c.functionName)).toEqual([
       'datastore_snapshot_create',
-      // Replica 1 fully, then replica 2 (N-1 keep serving). ★ BUG #41: the node
-      // label is STRIPPED FIRST (kube_node_label remove) so the bounced pod is
-      // unschedulable and cannot re-mount the OLD fork before the discard-detach
+      // Replica 1 fully, then replica 2 (N-1 keep serving). ★ BUG #41: the node label is STRIPPED FIRST (kube_node_label remove) so the bounced pod is unschedulable and cannot re-mount the OLD fork before the discard-detach
       // wins; provisionOneReplica's trailing kube_node_label re-opens the gate.
-      // Each re-fork's record is re-adopted onto the off-control node (#36).
-      // ★ BUG #49: the OLD fork's volumes are closed before its discard-detach (a
-      // live LUKS mapping makes the fork BUSY, so the detach would burn its retries
-      // and throw), and the NEW fork's volumes are opened after its attach and
-      // before the label re-opens the scheduling gate. A refresh that re-forked
-      // without re-opening would roll the whole set to EMPTY replicas.
+      // Each re-fork's record is re-adopted onto the off-control node (#36). ★ BUG #49: the OLD fork's volumes are closed before its discard-detach (a live LUKS mapping makes the fork BUSY, so the detach would burn its retries and throw), and the NEW fork's volumes are opened after its attach and before the label re-opens the scheduling gate. A refresh that re-forked without
+      // re-opening would roll the whole set to EMPTY replicas.
       'kube_node_label',
       'kube_delete',
       'datastore_volumes_close',

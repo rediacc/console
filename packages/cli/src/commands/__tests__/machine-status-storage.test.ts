@@ -121,8 +121,7 @@ function makeStorageHealth(): StorageHealthResult {
         allocated_bytes: 128 * 1024 ** 3,
         // The sealed volume: NOT mounted, so status.ts's `!sh.mounted` branch prints '-'
         // for both mounted-only columns. The fixture used to express this by omitting the
-        // field, which `RepositoryStorageHealth` does not permit -- it declares
-        // `mounted: boolean`. Only the `as unknown as` cast let that stand.
+        // field, which `RepositoryStorageHealth` does not permit -- it declares `mounted: boolean`. Only the `as unknown as` cast let that stand.
         mounted: false,
         discards_enabled: false,
       },
@@ -202,17 +201,10 @@ describe('fragmentationPerGb', () => {
 });
 
 describe('table/JSON section parity guard', () => {
-  // Every data-bearing ListResult section must be classified: either rendered as
-  // a table section, or explicitly JSON-only (a conscious decision). This object
-  // is typed `Record<keyof ListResult, ...>` so that adding a section to
-  // ListResult forces a decision here.
+  // Every data-bearing ListResult section must be classified: either rendered as a table section, or explicitly JSON-only (a conscious decision). This object is typed `Record<keyof ListResult, ...>` so that adding a section to ListResult forces a decision here.
   //
-  // CAVEAT, verified 2026-07-18: that enforcement does NOT currently work.
-  // packages/cli/tsconfig.json excludes `**/*.test.ts`, and `npm run typecheck`
-  // is plain `tsc --noEmit` over that config, so this file is never typechecked
-  // and a missing key cannot fail a build. Adding `backup_coverage` produced no
-  // error until it was added by hand. Treat this list as a manual checklist
-  // until tests are typechecked (e.g. vitest --typecheck or a test tsconfig).
+  // CAVEAT, verified 2026-07-18: that enforcement does NOT currently work. packages/cli/tsconfig.json excludes `**/*.test.ts`, and `npm run typecheck` is plain `tsc --noEmit` over that config, so this file is never typechecked and a missing key cannot fail a build. Adding `backup_coverage` produced no error until it was added by hand. Treat this list as a manual checklist until
+  // tests are typechecked (e.g. vitest --typecheck or a test tsconfig).
   const SECTION_COVERAGE: Record<keyof ListResult, 'table' | 'json-only'> = {
     system: 'table',
     repositories: 'table',
@@ -231,8 +223,7 @@ describe('table/JSON section parity guard', () => {
     expect(SECTION_COVERAGE.storage_health).toBe('table');
   });
 
-  // health_drift used to be the one JSON-only section, visible only via
-  // `--strict`. The watchdog maintains it to catch containers failing their
+  // health_drift used to be the one JSON-only section, visible only via `--strict`. The watchdog maintains it to catch containers failing their
   // healthchecks for days; a signal you must already suspect to see is not a
   // signal. --strict still governs the exit code, but the data is now shown.
   it('leaves no section JSON-only', () => {

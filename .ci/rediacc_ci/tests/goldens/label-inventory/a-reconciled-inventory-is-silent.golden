@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ label inventory reconciled: 5 declared, 5 live (source: fx/live.txt (injected)); names, descriptions and colours all agree

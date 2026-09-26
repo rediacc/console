@@ -1,0 +1,11 @@
+# twin .ci/scripts/security/shellcheck.sh blob bd92dcbb76ec0045ffcf3b0c134ff17ff2294284
+exit: 1
+--- stdout ---
+info: Checking shell script compatibility
+ShellCheck - fake
+version: 9.99.0
+info: Checking every tracked and untracked *.sh file
+info: skipping 1 tracked file(s) deleted in the working tree: scripts/one.sh
+--- stderr ---
+--- calls ---
+

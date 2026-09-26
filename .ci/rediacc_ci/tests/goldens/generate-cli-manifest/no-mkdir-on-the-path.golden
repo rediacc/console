@@ -1,0 +1,23 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 127
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v1.2.3
+✓   Input: in
+✓   Output: out/manifest.json
+✓   Added linux-x64: aaaaaaaaaaaaaaaa...
+✓   Skipping linux-arm64 (no checksum file)
+✓   Skipping mac-x64 (no checksum file)
+✓   Skipping mac-arm64 (no checksum file)
+✓   Skipping win-x64 (no checksum file)
+✓   Skipping win-arm64 (no checksum file)
+<SELF>: line 136: mkdir: command not found
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+CALL jq	-n	--arg	version	1.2.3	--arg	releaseDate	2026-09-14T00:00:00Z	--arg	releaseNotesUrl	https://github.com/rediacc/console/releases/tag/v1.2.3	--arg	commit	unknown	{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}
+CALL awk	{print $1}	in/rdc-linux-x64.sha256
+CALL jq	--arg	key	linux-x64	--arg	url	https://releases.rediacc.com/cli/v1.2.3/rdc-linux-x64	--arg	sha256	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	.binaries[$key] = {url: $url, sha256: $sha256}
+--- files ---
+{
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

@@ -1,0 +1,17 @@
+# twin scripts/ops/build-server.sh blob 8869c152c26924da7feaa0f86a3ffdd9bd75abf4
+exit: 127
+--- stdout ---
+==> Staging build context...
+==> Packing CLI tarball...
+==> Building rediacc-server-onprem:dev (--target onprem)...
+--- stderr ---
+docker: command not found
+--- calls ---
+CALL npm	pack	--pack-destination	<root>/cli-npm
+--- staged ---
+binaries/renet-linux-amd64	renet-amd64
+binaries/renet-linux-arm64	renet-arm64
+www-assets/index.html	www-index
+account-web-assets/index.html	portal-index
+cli-npm/rediacc-cli-0.8.9.tgz	rediacc-cli-0.8.9.tgz
+cli-npm/rediacc-cli-latest.tgz	rediacc-cli-0.8.9.tgz

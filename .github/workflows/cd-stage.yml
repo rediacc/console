@@ -52,11 +52,12 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-permissions:
-  contents: read
-  packages: write   # GHCR pull + retag push when push-to-main
-  id-token: write   # OIDC token for Sigstore signing
-  attestations: write  # Store attestations on GitHub
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
 
 jobs:
   stage:
@@ -69,6 +70,15 @@ jobs:
     # durations are around 11 minutes; 45 is generous headroom that still fails
     # fast instead of burning six hours of runner time on a wedged sync.
     timeout-minutes: 45
+    # All four are load-bearing and none is obtainable from any default:
+    # packages: write for the ghcr retag (buildx imagetools create pushes),
+    # and id-token + attestations: write for the two attest-build-provenance
+    # steps that sign via Sigstore and store the attestation on GitHub.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:
@@ -102,6 +112,7 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - name: Download CLI executables
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
@@ -138,10 +149,10 @@ jobs:
           # carry its own copy and kept the old `| sudo tar` form after ci.yml
           # was fixed, so the pinned checksum was verified on one of the two
           # installs and not the other.
-          .ci/scripts/build/ensure-nfpm.sh >>"$GITHUB_PATH"
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
       - name: Build Linux packages
-        run: .ci/scripts/build/build-linux-packages.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_linux_packages
         env:
           NEXT_VERSION: ${{ inputs.next_version }}
           RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
@@ -157,7 +168,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Generate CLI manifest
         run: |
-          .ci/scripts/build/generate-cli-manifest.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.generate_cli_manifest \
             --version ${{ inputs.next_version }} \
             --channel "${{ inputs.channel }}" \
             --input dist/cli/ \
@@ -172,7 +183,7 @@ jobs:
           build-packages: 'true'
 
       - name: Assemble pages package
-        run: .ci/scripts/build/build-pages.sh --output dist/pages
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_pages --output dist/pages
 
       - name: Copy CLI manifest to pages
         run: |
@@ -190,7 +201,7 @@ jobs:
           VERSION="${{ inputs.next_version }}"
 
           # Build self-contained repos (packages alongside metadata)
-          .ci/scripts/build/build-pkg-repo.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.build_pkg_repo \
             --version "$VERSION" \
             --local-pkgs dist/packages \
             --output dist/repos \
@@ -216,7 +227,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Stage Docker images
-        # Skip on empty channel (schedule events). retag-image.sh
+        # Skip on empty channel (schedule events). retag_image.py
         # uses `set -euo pipefail` and would fail loudly on an empty target
         # tag; gating here is cheaper than erroring the job for validation-
         # only runs that deliberately don't publish.
@@ -229,12 +240,12 @@ jobs:
         run: |
           CHANNEL="${{ inputs.channel }}"
 
-          .ci/scripts/docker/retag-image.sh --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image rdc --from "${{ inputs.rdc_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag_image.py --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag_image.py --image rdc --from "${{ inputs.rdc_tag }}" --to "$CHANNEL"
           # On-prem server image lives outside the elite/ namespace; use --image-path
           # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the
           # build-server-docker-{amd64,arm64} jobs, sharing the web_tag.
-          .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------
       # Step 6: Validate all artifacts
@@ -246,7 +257,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           NEXT_VERSION: ${{ inputs.next_version }}
           CHANNEL: ${{ inputs.channel }}
-        run: .ci/scripts/release/validate-stage-artifacts.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.validate_stage_artifacts
 
       # Install validation handled by validate-install job in ci.yml (6 platforms).
 
@@ -306,11 +317,11 @@ jobs:
       # on a real bump-none merge, so nothing would ever exercise it and it
       # would rot into a vacuous branch. Letting the script decide keeps the
       # thing under test on the live path. See
-      # agent/PLAN-skip-release-gates-r2-manifest.md section 3.
+      # agent/plans/PLAN-skip-release-gates-r2-manifest.md section 3.
       - name: Upload artifacts to R2 channel
         if: inputs.channel != ''
         run: |
-          .ci/scripts/deploy/upload-to-r2.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.upload_to_r2 \
             --version "${{ inputs.next_version }}" \
             --channel "${{ inputs.channel }}"
         env:
@@ -327,9 +338,9 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
           CHANNEL: ${{ inputs.channel }}
-        run: .ci/scripts/deploy/upload-repos-to-r2.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.upload_repos_to_r2
 
       # -----------------------------------------------------------------------
       # Assert the versioned-path sentinel is actually sealed after upload.
@@ -347,7 +358,7 @@ jobs:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-        run: .ci/scripts/test/assert-r2-sentinel.sh "${{ inputs.channel }}" "${{ inputs.next_version }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_r2_sentinel "${{ inputs.channel }}" "${{ inputs.next_version }}"
 
       # -----------------------------------------------------------------------
       # Attest staging artifacts (Sigstore provenance for supply chain integrity)

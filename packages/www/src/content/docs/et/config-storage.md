@@ -1,6 +1,6 @@
 ---
 title: Konfiguratsioonisalv
-description: Null-teadmisega krüpteeritud konfiguratsioonisünkroonimine passkey, peaparooli ja taastekoodiga avamisega
+description: Kliendipoolselt krüpteeritud konfiguratsioonisünkroonimine passkey, peaparooli ja taastekoodiga avamisega
 category: Guides
 tags:
   - account
@@ -8,13 +8,13 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "e4b2eecb8bdf0015"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "ccced160d151eeeb"
+sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
 # Konfiguratsioonisalv
 
-Konfiguratsioonisalv pakub sinu CLI konfiguratsiooni null-teadmisega krüpteeritud sünkroonimist seadmete vahel. Sinu konfiguratsioonid krüpteeritakse kliendipoolselt sisukrüpteerimisvõtmega (CEK), server ei näe kunagi lihtteksti andmeid.
+Konfiguratsioonisalv sünkroonib CLI konfiguratsiooni seadmete vahel. Konfiguratsioonid krüpteeritakse seadmes sisukrüpteerimisvõtmega (CEK), mida server kunagi ei oma. Jaotis [Turvalisus](#security) kirjeldab täpselt, mille eest see kaitseb ja mille eest mitte.
 
 ## Avamismeetodid (võtmepesad)
 
@@ -26,7 +26,7 @@ Igal salvel on üks CEK, mis on iga avamismeetodi jaoks eraldi mähitud (sarnase
 | **Peaparool** | Sinu valitud parool, venitatud PBKDF2-SHA256-ga (600 000 iteratsiooni) | Toimib ka ilma PRF-toega riistvarata; võimaldab ka pealdiseta CLI registreerimist |
 | **Taastekood** | Genereeritud `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kood | Näidatakse täpselt üks kord loomisel; hoia see turvalises kohas |
 
-Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa, seega kehtib null-teadmise põhimõte kõigi kolme meetodi puhul, pesa saladus ei jõua kunagi serverisse.
+Iga meetod läbib sama protsessi: pesa annab saladuse, mis kombineeritakse serveripoolse saladusega CEK-i lahtimähkimiseks. Kummastki poolest üksi ei piisa ja pesa saladus ei jõua kunagi serverisse. Peaparooli pesa on kolmest kõige nõrgem: serveril on olemas kõik, mida on vaja parooli oletuste offline-testimiseks, seega peab parool olema tugev. Passkey ja taastekoodi pesadel sellist nõrkust ei ole.
 
 Pesasid hallatakse portaalis Konfiguratsioonisalve lehel. Organisatsioonid, kes soovivad ainult riistvarapõhist avamist, saavad lubada **nõua passkey** poliitika, mis keeldub mitte-passkey pesadest ja tühistab need kogu salve jaoks.
 
@@ -44,12 +44,13 @@ PRF-nõue kehtib ainult passkey-pesa kohta. Peaparooli ja taastekoodi meetodid t
 
 1. Naviseeri külgribal **Konfiguratsioonisalv** ja klõpsa **Seadista konfiguratsioonisalv**
 2. Nõuete kontrollnimekiri kontrollib brauserit, 2FA-d ja seansi olekut
-3. Klõpsa **Alusta seadistamist**. Passkey-pesa jaoks pead puudutama oma turvavõtit kaks korda:
-   - Esimene puudutus: registreerib passkey'i
-   - Teine puudutus: tuletab krüpteerimisvõtmed PRF kaudu
-4. Seadistamine lõpetatud, sinu passkey saladus salvestatakse sinu OS-i võtmehoidlasse
+3. Vali esimene lukust avamise viis ja klõpsa **Loo konfiguratsioonihoidla**:
+   - **Pääsuvõti**, kui su teenusepakkuja toetab PRF-i: puudutad turvavõtit kaks korda, üks kord registreerimiseks ja teist korda krüpteerimisvõtmete tuletamiseks.
+   - **Ülemparool**, mis töötab igas brauseris, ka PRF-i toeta pääsuvõtme pakkujatega nagu Bitwarden.
+   - Soovi korral **taastekood**, mida näidatakse ainult üks kord ja mis tuleb enne hoidla loomist salvestada.
+4. Seadistus on valmis. CLI hoiab lukust avamise saladust sinu operatsioonisüsteemi võtmehoidlas.
 
-Pärast seadistamist lisa Konfiguratsioonisalve lehelt peaparooli või taastekoodi pesa, et kadunud või PRF-i mittetoetav autentimisseade ei jätaks sind salvest välja.
+Pääsuvõtme saab hiljem lisada Config Storage lehelt. Hoia alles vähemalt kaks lukust avamise viisi, et kaotatud või toeta autentija sind välja ei lukustaks.
 
 ## PRF-pakkuja ühilduvus
 
@@ -60,7 +61,7 @@ Pärast seadistamist lisa Konfiguratsioonisalve lehelt peaparooli või taastekoo
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Platvormideülene |
-| Bitwarden laiendus | ❌ | Arenduses |
+| Bitwarden laiendus | ❌ | Kasuta selle asemel peaparooli |
 | Windows Hello | ❌ | Pole toetatud |
 
 ## Pealdiseta CLI registreerimine
@@ -86,7 +87,23 @@ Pärast lubamist hoiab konfiguratsioon täielikku **lugemise vahemälu**, mis on
 
 - **Lugemine toimib võrguühenduseta.** Vahemälus olev sisu edastatakse koos aegumishoiatusega stderr-is, märgistatuna vahemällu salvestatud versiooni ja ajatempliga (`cachedVersion` / `cachedAt`).
 - **Kirjutamine nõuab serverit ja ebaõnnestub turvaliselt.** Võrguühenduseta kirjutusjärjekorda ei ole: kirjutamine, mis ei jõua serverini, lõpeb veaga, mis nimetab serverit. Kui kirjutuskäsk õnnestus, on muudatus serveris.
-- **Samaaegsed muudatused kahest masinast** lahendatakse pull-replay-repush põhimõttel ressursipaketi tasemel, nii et samaaegne muudatus mujal ei kirjuta sinu oma üle.
+- **Samaaegsed muudatused kahest masinast** lahendatakse pull-replay-repush põhimõttel: server võtab vastu ainult pushi, mis on asendatava versiooni peal, ja kaotanud push mängitakse värske koopia peal uuesti läbi, nii et samaaegne muudatus mujal ei kirjuta sinu oma üle.
+- **Kohalikku konfiguratsiooni** (ilma `remote` plokita) see kõik ei mõjuta ja see töötab täielikult võrguühenduseta.
+
+## Mis sünkroonitakse
+
+Konfiguratsiooni kõik sisu sünkroonitakse, sealhulgas iga repositooriumi võrgu ID, välja arvatud järgmised seadmepõhised väljad: `schemaVersion`, `version`, `remote`, `encryption`, `renetPath`, `credentials.masterPasswordVerifier` ning sisselogimisväljad `account.accountServer` ja `account.e2ePublicKey`. Sisse- ja väljalogimine toimub seadmepõhiselt.
+
+## Versioonid ja taastamine
+
+Server hoiab iga konfiguratsiooni viimast 50 versiooni.
+
+```bash
+rdc config remote versions
+rdc config remote restore <version>
+```
+
+Taastamine avaldab vana sisu uue versioonina praeguse peal; versiooninumber ei liigu kunagi tagasi. Iga seade saab taastatud sisu järgmisel tõmbamisel (pull) ja taastamine registreeritakse auditilogisse.
 
 ## Võtme pööramine
 
@@ -95,6 +112,7 @@ Salve CEK-i pööramine mähib selle uude põlvkonda:
 - **Taastekoodid muutuvad pööramisel alati kehtetuks**, genereeri ja salvesta pärast seda uus
 - **Peaparooli pesa** säilib ainult siis, kui parool sisestatakse pööramisviisardis uuesti
 - Vana põlvkonda jäänud pesa märgitakse aegunuks, mitte ei ebaõnnestu arusaamatu dekrüpteerimisveaga
+- Teiste liikmete konfiguratsioonitokenid tühistatakse ning seadmele, mis hoiab veel vana võtit, kuvatakse juhis uuesti aktiveerida käsuga `rdc config remote enable`
 
 ## Liikmete haldamine
 
@@ -110,11 +128,23 @@ Salves olevad konfiguratsioonid on lisaks piiritletud meeskonna kaupa, kuid see 
 
 ## Turvalisus
 
-- **Null-teadmine**: Server salvestab kolmekordselt krüpteeritud andmeid, mida ta ei suuda dekrüpteerida
-- **Jagatud võti**: Dekrüpteerimiseks on vaja nii sinu pesa saladust (kliendi poolel) kui ka serveri saladust (serveri poolel)
-- **Pöörlevad tokenid**: Iga API-kutse kasutab värsket tokenit; vanad tokenid hävivad ise
-- **IP-sidumine**: Tokenid seotakse sinu IP-aadressiga esimesel kasutamisel
-- **Kohene tühistamine**: Eemaldatud liikmed kaotavad juurdepääsu 30 sekundi jooksul
+**Mis on kaitstud.** Salvestatud konfiguratsioonid on konfidentsiaalsed serveri salvestuse kompromiteerimise ja passiivse operaatori vastu. Iga blob on seotud oma salve, konfiguratsiooni, meeskonna ja versiooniga, seega ei saa server vahetada ühe konfiguratsiooni blobi teise vastu ega muuta seda avastamatult.
+
+**Mis ei ole kaitstud.** Operaator, kes serveerib pahatahtlikku portaalikoodi, saab lugeda võtit brauseris. Operaator võib ka jätta seadmele, mis pole kunagi uuemat versiooni näinud, selle uusima versiooni edastamata.
+
+| Server saab | Server ei saa |
+|---|---|
+| Näha konfiguratsioonide ID-sid, meeskondi, versiooninumbreid, ajatempleid, blobi suurusi, mitut välja konfiguratsioon kommiteerib ja iga välja tüüpi, ning kliendi IP-aadresse | Näha masina, repositooriumi ega salve nimesid (need on varjatud) ega ühtegi konfiguratsiooni väärtust |
+| Keelduda, viivitada või kustutada konfiguratsioone ja nende ajalugu | Serveerida ühe konfiguratsiooni sisu teise omana või seda muuta ilma, et seade seda tuvastaks |
+| Serveerida vana versiooni seadmele, mis pole kunagi uuemat näinud | Serveerida CLI-le versiooni, mis on vanem kui see, mida ta juba nägi: CLI keeldub sellest |
+| Testida peaparooli oletusi offline | Avada passkey või taastekoodi pesa |
+
+Muud kaitsemeetmed:
+
+- **Jagatud võti**: dekrüpteerimiseks on vaja nii pesa saladust (seadmes) kui ka serveri saladust
+- **Kustutamine nõuab teadmist**: kommiteeritud väärtuse eemaldamine konfiguratsioonist nõuab tõestust, et väärtus oli teada, nii et osalise juurdepääsuga agent ei saa vaikimisi välju kustutada
+- **Pöörlevad tokenid**: iga päring pöörab konfiguratsioonitokenit; token on seotud selle esimese kasutamise IP-aadressiga ja aegub 7 päeva pärast
+- **Tühistamine**: liikme eemaldamine kustutab korraga tema võtmepesad ja tokenid; see, mida ta juba oli tõmmanud, jääb tema seadmesse, ning CEK-i pööramine takistab tal säilinud võtmega hilisemaid versioone avamast
 
 ## Tõrkeotsing
 
@@ -124,7 +154,8 @@ Salves olevad konfiguratsioonid on lisaks piiritletud meeskonna kaupa, kuid see 
 | X25519 pole toetatud | Brauseri versioon on liiga vana | Uuenda Chrome 133+, Edge 133+, Firefox 130+ või Safari 17+ |
 | Juba konfigureeritud | Salv on sinu organisatsiooni jaoks olemas | Külasta /account/config-storage haldamiseks |
 | Konfiguratsioonisalv pole seadistatud | Serveril puudub blob-salvestus | Võta ühendust administraatoriga R2/RustFS seadistamiseks |
-| Token aegunud | Tegevust pole olnud 24 tundi | Käivita mis tahes konfiguratsioonisalve käsk värskendamiseks |
+| Token aegunud | Tegevust pole olnud 7 päeva või seade vahetas võrku | Uueneb automaatselt sisselogimise kaudu; kui sisselogimist pole salvestatud, käivita `rdc subscription login` või `rdc config remote enable` |
+| Konfiguratsioon tuli tagasi vanema versiooniga | Server tagastas vanema koopia kui see, mida seade juba nägi | Kohalikult ei muutunud midagi; proovi uuesti ja anna sellest teada, kui see kordub |
 | Viimast liiget ei saa eemaldada | Salv lukustaks end jäädavalt | Lisa esmalt teine liige |
 | Aegunud pesa | Pesa pärineb enne viimast võtme pööramist | Lisa pesa uuesti (taastekoodid tuleb pärast iga pööramist uuesti genereerida) |
 

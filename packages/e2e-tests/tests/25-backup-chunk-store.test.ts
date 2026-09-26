@@ -131,8 +131,7 @@ function parseVerifyRecords(stdout: string): VerifyRecord[] {
     try {
       records.push(JSON.parse(trimmed) as VerifyRecord);
     } catch {
-      // Not one of ours: the harness runs the verb with --debug, so the stream
-      // also carries the dispatcher's own JSON logging.
+      // Not one of ours: the harness runs the verb with --debug, so the stream also carries the dispatcher's own JSON logging.
     }
   }
   return records;
@@ -190,10 +189,7 @@ function parseBrowseListing(stream: string): BrowseListing | undefined {
     const trimmed = line.trim();
     if (!trimmed.startsWith('{') || !trimmed.includes('"entries"')) continue;
     try {
-      // Parsed as unknown, then narrowed. Casting to BrowseListing first made
-      // the guard below dead code in the type system's eyes -- it "knew" the
-      // value was a listing because I told it so, which is exactly the shape of
-      // assertion this suite exists to distrust.
+      // Parsed as unknown, then narrowed. Casting to BrowseListing first made the guard below dead code in the type system's eyes -- it "knew" the value was a listing because I told it so, which is exactly the shape of assertion this suite exists to distrust.
       const parsed: unknown = JSON.parse(trimmed);
       if (
         parsed !== null &&
@@ -213,8 +209,7 @@ function parseBrowseListing(stream: string): BrowseListing | undefined {
 test.describe
   .serial('Chunk-store backup: the machine surface @bridge @backup', () => {
     if (verdict.kind === 'undeclared') {
-      // A failing test, not a skip: the message names the unmet prerequisite
-      // and the exact command that satisfies it.
+      // A failing test, not a skip: the message names the unmet prerequisite and the exact command that satisfies it.
       test('suite 25 prerequisites are missing and undeclared', () => {
         expect(() => announcePrerequisites(verdict)).not.toThrow();
       });
@@ -312,8 +307,7 @@ test.describe
       });
 
       test('3. control: an invalid level is REFUSED, so test 2 read a real parameter', async () => {
-        // Without this, a verb that ignored `level` entirely and stamped the
-        // request back into its record would satisfy test 2.
+        // Without this, a verb that ignored `level` entirely and stamped the request back into its record would satisfy test 2.
         const result = await verifyViaFunction(REPO_GUID, 'thorough');
         expect(result.code, 'an invalid verify level was accepted').not.toBe(0);
         const text = runner.getCombinedOutput(result);
@@ -332,9 +326,7 @@ test.describe
         const guids = parseVerifyRecords(all.stdout).map((r) => r.guid);
         expect(guids, 'the enumeration missed the GUID-named repository').toContain(REPO_GUID);
 
-        // And the empty case is a loud refusal rather than a silent success:
-        // an empty datastore that exited 0 would look exactly like a healthy
-        // fleet-wide verify.
+        // And the empty case is a loud refusal rather than a silent success: an empty datastore that exited 0 would look exactly like a healthy fleet-wide verify.
         const empty = await runner.executeViaBridge(
           `sudo renet backup verify --datastore /var/tmp/chunk-empty-${stamp}`
         );
@@ -345,14 +337,8 @@ test.describe
       });
 
       test('5. verify is a read: it leaves no anchor and no journal behind', async () => {
-        // An anchor or journal conjured by a READ is the state a later
-        // incremental would trust — and it would describe a snapshot that was
-        // never uploaded.
-        // CASE MATTERS HERE. getCombinedOutput() LOWERCASES (TestHelpers.ts:15),
-        // so a literal carrying a capital can never match no matter what the
-        // machine did. `/No such file/` was exactly that: the anchor directory
-        // was correctly absent and the assertion still went red, because only
-        // the `total 0` arm was alive. Every matcher in this file is
+        // An anchor or journal conjured by a READ is the state a later incremental would trust — and it would describe a snapshot that was never uploaded. CASE MATTERS HERE. getCombinedOutput() LOWERCASES (TestHelpers.ts:15), so a literal carrying a capital can never match no matter what the machine did. `/No such file/` was exactly that: the anchor directory was correctly absent
+        // and the assertion still went red, because only the `total 0` arm was alive. Every matcher in this file is
         // case-insensitive for that reason -- do not "tidy" the flags away.
         const anchors = await runner.executeViaBridge(
           `sudo ls -la "${DS}/.chunk-anchors" 2>&1 || true`
@@ -364,11 +350,7 @@ test.describe
         );
         expect(runner.getCombinedOutput(journal).trim()).toMatch(/(^|\D)0(\D|$)/);
 
-        // The anchors directory is `.chunk-anchors` and NOT `.backup-anchors`
-        // on purpose: three live scanners match `.backup-*` at the datastore
-        // root and one of them DELETES what it finds (findStaleBackupSnapshots
-        // -> btrfs subvolume delete). A rename back would make every
-        // `machine prune` eat the anchors.
+        // The anchors directory is `.chunk-anchors` and NOT `.backup-anchors` on purpose: three live scanners match `.backup-*` at the datastore root and one of them DELETES what it finds (findStaleBackupSnapshots -> btrfs subvolume delete). A rename back would make every `machine prune` eat the anchors.
         const wrongName = await runner.executeViaBridge(
           `sudo test -e "${DS}/.backup-anchors" && echo PRESENT || echo ABSENT`
         );
@@ -379,19 +361,10 @@ test.describe
       });
 
       test('6. `backup snapshot --dry-run` plans without a session, and writes no state', async () => {
-        // The verb landed on 2026-08-14 (`renet backup snapshot`), and
-        // `--dry-run` is "plan only: no session, no grant, no upload"
-        // (backup_snapshot.go:128), which is what makes this leg runnable HERE:
-        // no account server, no credentials, no bytes.
+        // The verb landed on 2026-08-14 (`renet backup snapshot`), and `--dry-run` is "plan only: no session, no grant, no upload" (backup_snapshot.go:128), which is what makes this leg runnable HERE: no account server, no credentials, no bytes.
         //
-        // Two honest outcomes, because the plan needs an installed repository
-        // licence before it will look at the image (backup_snapshot.go:216):
-        //   failed  — this fleet's repos carry no licence (the ops fleet runs
-        //             --nolicense renet). The record must SAY so.
-        //   stored  — a licensed fleet: the plan really ran and reports what
-        //             WOULD move.
-        // Both are asserted specifically. What both must share is the part that
-        // matters: a dry run moves nothing and leaves nothing behind.
+        // Two honest outcomes, because the plan needs an installed repository licence before it will look at the image (backup_snapshot.go:216): failed — this fleet's repos carry no licence (the ops fleet runs --nolicense renet). The record must SAY so. stored — a licensed fleet: the plan really ran and reports what WOULD move. Both are asserted specifically. What both must share
+        // is the part that matters: a dry run moves nothing and leaves nothing behind.
         const result = await runner.executeViaBridge(
           `sudo renet ${chunkVerbs().run} --dry-run --repo "${REPO_GUID}" --datastore "${DS}"`
         );
@@ -410,8 +383,7 @@ test.describe
         ).toEqual([]);
 
         if (record.status === 'failed') {
-          // The reason has to name what is missing. "failed" with a shrug is
-          // the report that sends someone to read the source.
+          // The reason has to name what is missing. "failed" with a shrug is the report that sends someone to read the source.
           expect(record.reason ?? '').toMatch(/licen[cs]e/i);
           expect(result.code, 'a failed repository must carry a non-zero exit').toBe(1);
         } else {
@@ -421,10 +393,7 @@ test.describe
           expect(result.code).toBe(0);
         }
 
-        // The invariant both branches share, and the reason this test is worth
-        // running on a fleet at all: planning is not committing. An anchor or a
-        // journal written here would be state a later incremental TRUSTS,
-        // describing a snapshot that was never uploaded.
+        // The invariant both branches share, and the reason this test is worth running on a fleet at all: planning is not committing. An anchor or a journal written here would be state a later incremental TRUSTS, describing a snapshot that was never uploaded.
         const journals = await runner.executeViaBridge(
           `sudo ls /var/lib/rediacc/backup-journal/ 2>/dev/null | grep -c "${REPO_GUID}" || true`
         );
@@ -441,10 +410,7 @@ test.describe
       });
 
       test('7. quota is the only thing that exits 16; an ordinary failure exits 1', async () => {
-        // The verb reserves exit 16 for a quota refusal specifically, because
-        // the operator action is different (prune or upgrade, not debug). A
-        // blanket mapping would make that signal worthless, so the control is
-        // to drive a NON-quota failure and require a plain 1.
+        // The verb reserves exit 16 for a quota refusal specifically, because the operator action is different (prune or upgrade, not debug). A blanket mapping would make that signal worthless, so the control is to drive a NON-quota failure and require a plain 1.
         const unknown = 'deadbeef-0000-4000-8000-000000000000';
         const result = await runner.executeViaBridge(
           `sudo renet ${chunkVerbs().run} --dry-run --repo "${unknown}" --datastore "${DS}"`
@@ -464,11 +430,7 @@ test.describe
         const before = await imageSha(REPO_GUID);
         expect(before, 'could not hash the repository image').toMatch(/^[0-9a-f]{64}$/);
 
-        // RFC3339 carries a capital T and Z, and getCombinedOutput() lowercases
-        // (TestHelpers.ts:15), so the literal cannot be compared as written --
-        // the engine quotes the timestamp back correctly and the assertion
-        // still fails. Lowercase the EXPECTED value rather than the received
-        // one, so the command line and the assertion stay one constant.
+        // RFC3339 carries a capital T and Z, and getCombinedOutput() lowercases (TestHelpers.ts:15), so the literal cannot be compared as written -- the engine quotes the timestamp back correctly and the assertion still fails. Lowercase the EXPECTED value rather than the received one, so the command line and the assertion stay one constant.
         const at = '2026-01-01T00:00:00Z';
         const result = await runner.executeViaBridge(
           `sudo renet backup pull --name "${REPO_GUID}" --datastore "${DS}" --at ${at}`
@@ -478,18 +440,12 @@ test.describe
         expect(text).toContain('snapshot-addressed restore');
         expect(text, 'the refusal must quote what was asked for').toContain(at.toLowerCase());
 
-        // The half that matters: refusing is only safe if it refused BEFORE
-        // touching anything. A partial restore of the wrong point in time is
-        // the failure mode the loud refusal exists to prevent.
+        // The half that matters: refusing is only safe if it refused BEFORE touching anything. A partial restore of the wrong point in time is the failure mode the loud refusal exists to prevent.
         expect(await imageSha(REPO_GUID), 'the refused restore modified the image').toBe(before);
       });
 
       test('9. browse REFUSES a repository it cannot open, and names the remedy', async () => {
-        // This repo is created encrypted and left unmounted, which is the state
-        // most of this suite runs in. openRepoReadOnly needs the LUKS keyfile,
-        // so browse cannot read it -- and that is the CORRECT outcome. What
-        // matters is that it refuses loudly and says what to do, rather than
-        // printing an empty listing that reads as "this backup has no files".
+        // This repo is created encrypted and left unmounted, which is the state most of this suite runs in. openRepoReadOnly needs the LUKS keyfile, so browse cannot read it -- and that is the CORRECT outcome. What matters is that it refuses loudly and says what to do, rather than printing an empty listing that reads as "this backup has no files".
         const result = await browseViaFunction(REPO_GUID);
         expect(result.code, 'browse of an unopenable repo appeared to succeed').not.toBe(0);
         const output = runner.getCombinedOutput(result);
@@ -500,9 +456,7 @@ test.describe
       });
 
       test('10. browse lists a MOUNTED repository, with no server and no credentials', async () => {
-        // The real path, and the reason Stage 1 exists: a mounted repo is read
-        // in place, so this needs no account server, no credentials and no
-        // bytes leaving the machine.
+        // The real path, and the reason Stage 1 exists: a mounted repo is read in place, so this needs no account server, no credentials and no bytes leaving the machine.
         const mounted = await runner.repositoryMount(REPO_GUID, TEST_PASSWORD, DS);
         expect(
           runner.isSuccess(mounted),
@@ -522,17 +476,14 @@ test.describe
 
           const listing = parseBrowseListing(result.stdout + result.stderr);
           expect(listing, `no browse listing:\n${result.stdout.slice(-800)}`).toBeTruthy();
-          // A listing that does not say what it lists is how the wrong snapshot
-          // gets restored.
+          // A listing that does not say what it lists is how the wrong snapshot gets restored.
           expect(listing?.source ?? '').toContain(REPO_GUID);
-          // The file we just wrote must be IN it. Without this the test would
-          // pass on an empty listing, which is the failure mode it exists for.
+          // The file we just wrote must be IN it. Without this the test would pass on an empty listing, which is the failure mode it exists for.
           const paths = (listing?.entries ?? []).map((e) => e.path);
           expect(paths, `browse did not list ${marker}; got ${paths.join(', ')}`).toContain(
             `/${marker}`
           );
-          // Renet scaffolding must NOT appear: browse and diff have to agree
-          // about what a repository contains.
+          // Renet scaffolding must NOT appear: browse and diff have to agree about what a repository contains.
           for (const path of paths) {
             expect(path.startsWith('/.rediacc'), `scaffolding leaked: ${path}`).toBe(false);
             expect(path).not.toBe('/CLAUDE.md');

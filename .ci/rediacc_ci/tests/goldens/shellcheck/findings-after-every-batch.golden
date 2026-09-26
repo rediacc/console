@@ -1,0 +1,18 @@
+# twin .ci/scripts/security/shellcheck.sh blob bd92dcbb76ec0045ffcf3b0c134ff17ff2294284
+exit: 1
+--- stdout ---
+info: Checking shell script compatibility
+ShellCheck - fake
+version: 9.99.0
+info: Checking every tracked and untracked *.sh file
+info: 50 file(s)
+In scripts/gen00.sh line 2:
+echo $1
+     ^-- SC2086: Double quote.
+--- stderr ---
+[0;31merror: shellcheck reported findings[0m
+--- calls ---
+FAKECALL shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning .ci/config/constants.sh .ci/scripts/lib/toolchain.sh .ci/scripts/security/shellcheck.sh run.sh scripts/gen00.sh scripts/gen01.sh scripts/gen02.sh scripts/gen03.sh scripts/gen04.sh scripts/gen05.sh scripts/gen06.sh scripts/gen07.sh scripts/gen08.sh scripts/gen09.sh scripts/gen10.sh scripts/gen11.sh scripts/gen12.sh scripts/gen13.sh scripts/gen14.sh scripts/gen15.sh scripts/gen16.sh scripts/gen17.sh scripts/gen18.sh scripts/gen19.sh scripts/gen20.sh scripts/gen21.sh scripts/gen22.sh scripts/gen23.sh scripts/gen24.sh scripts/gen25.sh scripts/gen26.sh scripts/gen27.sh scripts/gen28.sh scripts/gen29.sh scripts/gen30.sh scripts/gen31.sh scripts/gen32.sh scripts/gen33.sh scripts/gen34.sh scripts/gen35.sh
+FAKEBATCH 40
+FAKECALL shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning scripts/gen36.sh scripts/gen37.sh scripts/gen38.sh scripts/gen39.sh scripts/gen40.sh scripts/gen41.sh scripts/gen42.sh scripts/gen43.sh scripts/gen44.sh scripts/one.sh
+FAKEBATCH 10

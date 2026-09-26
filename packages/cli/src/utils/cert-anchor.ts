@@ -1,5 +1,5 @@
 /**
- * Classify ACME certificate domain names by their *anchor* — the leftmost
+ * Classify ACME certificate domain names by their *anchor*, the leftmost
  * meaningful label that ties the cert back to a resource in the operator's
  * config (a repository GUID, a repo name, or a machine name).
  *
@@ -35,7 +35,7 @@ type CertAnchorKind =
 
 export interface CertAnchor {
   kind: CertAnchorKind;
-  /** The GUID, repo name, machine name, or service name — depending on `kind`. */
+  /** The GUID, repo name, machine name, or service name, depending on `kind`. */
   anchor?: string;
   /** Machine label, when relevant (for `guid`, `repo-name`, `service`, `machine`). */
   machine?: string;
@@ -47,7 +47,7 @@ export interface CertAnchor {
  * Parse a cert domain name relative to a known `baseDomain`. The base must
  * match the suffix or the result is `opaque`.
  *
- * Pure function — no I/O, no allocations beyond the return object.
+ * Pure function, no I/O, no allocations beyond the return object.
  */
 function classifyWildcard(labels: string[], raw: string): CertAnchor {
   if (labels.length === 1) {

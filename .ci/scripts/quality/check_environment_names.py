@@ -1,29 +1,15 @@
 #!/usr/bin/env python3
 """check:ci-environment-names -- no workflow may mint an environment CI cannot clean up.
 
-WHY THIS EXISTS. A job-level `environment:` block makes GitHub create the environment
-OBJECT, and deleting one needs `Administration:write` -- a permission
-check-no-app-admin-perm.sh forbids the CI App from holding, on purpose. So an
-environment whose NAME varies per pull request produces one permanent object per PR
-that housekeeping cannot remove: measured 2026-09-03, 25 `pr-*` environments with zero
-deployments between them, all cluttering /deployments long after their PRs merged.
+WHY THIS EXISTS. A job-level `environment:` block makes GitHub create the environment OBJECT, and deleting one needs `Administration:write` -- a permission check:ci-app-admin-perm forbids the CI App from holding, on purpose. So an environment whose NAME varies per pull request produces one permanent object per PR that housekeeping cannot remove: measured 2026-09-03, 25 `pr-*`
+environments with zero deployments between them, all cluttering /deployments long after their PRs merged.
 
-That was fixed by DELETING the `environment:` block from the preview job, by hand, and
-nothing stops it coming back. ci.yml:1247 carries a comment explaining its absence,
-which is a comment doing a gate's job -- and this repo has been here before: a comment
-that invites the deletion of the line it guards is a documented trap.
+That was fixed by DELETING the `environment:` block from the preview job, by hand, and nothing stops it coming back. ci.yml:1247 carries a comment explaining its absence, which is a comment doing a gate's job -- and this repo has been here before: a comment that invites the deletion of the line it guards is a documented trap.
 
-THE RULE. An environment name may be a literal, or interpolate from a BOUNDED source
-(a workflow input, a matrix value, a var). It may never interpolate from anything
-that varies per pull request or per branch -- `github.event.number`, `github.event.pull_request.*`,
-`github.ref`, `github.head_ref`, `github.sha`, or a `pr-` prefix -- because that is
-exactly what mints an object per PR.
+THE RULE. An environment name may be a literal, or interpolate from a BOUNDED source (a workflow input, a matrix value, a var). It may never interpolate from anything that varies per pull request or per branch -- `github.event.number`, `github.event.pull_request.*`, `github.ref`, `github.head_ref`, `github.sha`, or a `pr-` prefix -- because that is exactly what mints an object per
+PR.
 
-WHAT THIS DELIBERATELY DOES NOT DO. It says nothing about the /deployments RECORDS that
-already exist for retired environments (production, marketing-*, github-pages). Those
-are GitHub history, no commit can clear them, and deleting production deployment
-history is outward-facing and the operator's call -- a gate on them would be red
-forever on a condition this repo cannot satisfy.
+WHAT THIS DELIBERATELY DOES NOT DO. It says nothing about the /deployments RECORDS that already exist for retired environments (production, marketing-*, github-pages). Those are GitHub history, no commit can clear them, and deleting production deployment history is outward-facing and the operator's call -- a gate on them would be red forever on a condition this repo cannot satisfy.
 
 Exit 1 on an unbounded environment name, 2 on a failed control.
 
@@ -42,15 +28,15 @@ import re
 import sys
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = Path(os.environ.get("ENV_NAMES_ROOT") or Path(__file__).resolve().parents[3])
 WORKFLOWS = ROOT / ".github" / "workflows"
-# Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this
-# gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity.
+# Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity.
 MIN_WORKFLOWS = int(os.environ.get("ENV_NAMES_MIN", "20"))
 
-# The expressions that vary per PR or per branch. `inputs.*`, `matrix.*` and `vars.*`
-# are deliberately absent: those are bounded by a choice list, a matrix or repo config,
-# and the three live environment names in this repo are built from exactly those.
+# The expressions that vary per PR or per branch. `inputs.*`, `matrix.*` and `vars.*` are deliberately absent: those are bounded by a choice list, a matrix or repo config, and the three live environment names in this repo are built from exactly those.
 UNBOUNDED = re.compile(
     r"github\.event\.number"
     r"|github\.event\.pull_request"
@@ -72,12 +58,8 @@ ENV_NAME_RE = re.compile(r"^      name:\s*(\S.*?)\s*$")
 def declared_environments(text: str) -> list[tuple[str, str]]:
     """[(job, environment name)] for one workflow, by hand rather than by PyYAML.
 
-    A HAND PARSER ON PURPOSE, and a gate caught why: importing `yaml` here died on
-    check:ci-python-gate-deps, because quality-code installs no PyYAML and the gate
-    would have raised ModuleNotFoundError on a clean runner while passing locally.
-    The shape is fixed -- two indent levels, two spellings -- so hand-parsing removes
-    a dependency from a job rather than adding one, and leaves this runnable in the
-    slim lane if it is ever moved there.
+    A HAND PARSER ON PURPOSE, and a gate caught why: importing `yaml` here died on check:ci-python-gate-deps, because quality-code installs no PyYAML and the gate would have raised ModuleNotFoundError on a clean runner while passing locally. The shape is fixed -- two indent levels, two spellings -- so hand-parsing removes a dependency from a job rather than adding one, and leaves
+    this runnable in the slim lane if it is ever moved there.
     """
     out: list[tuple[str, str]] = []
     job = ""
@@ -155,8 +137,7 @@ def selftest() -> int:
     )
     check("env_name ignores a job with no environment", env_name(None) is None)
 
-    # THE HAND PARSER, both YAML forms and a negative. It replaced PyYAML, so
-    # nothing else proves it reads a workflow correctly.
+    # THE HAND PARSER, both YAML forms and a negative. It replaced PyYAML, so nothing else proves it reads a workflow correctly.
     block = "jobs:\n  a:\n    environment:\n      name: edge\n      url: https://x\n  b:\n    steps: []\n"
     check(
         "parser reads the mapping form",
@@ -179,12 +160,8 @@ def selftest() -> int:
 
 
 def main() -> int:
-    print("environment names: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("environment names", selftest):
+        return refusal
 
     files = sorted(WORKFLOWS.glob("*.yml"))
     if len(files) < MIN_WORKFLOWS:
@@ -212,7 +189,7 @@ def main() -> int:
         for line in [
             "",
             "  A job-level `environment:` makes GitHub create the environment OBJECT, and",
-            "  deleting one needs Administration:write -- which check-no-app-admin-perm.sh",
+            "  deleting one needs Administration:write -- which check:ci-app-admin-perm",
             "  forbids the CI App from holding. A name that varies per PR therefore mints a",
             "  permanent object per PR that housekeeping cannot remove: 25 of them had",
             "  accumulated by 2026-09-03, every one with zero deployments.",

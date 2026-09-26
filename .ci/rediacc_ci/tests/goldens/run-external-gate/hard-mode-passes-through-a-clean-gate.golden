@@ -1,0 +1,8 @@
+# twin .ci/scripts/quality/run-external-gate.sh blob 2fa64f11a3cedfd443307d5b179858bc970ab2e9
+exit: 0
+--- stdout ---
+gate-stdout
+--- stderr ---
+gate-stderr
+--- summary ---
+(absent)

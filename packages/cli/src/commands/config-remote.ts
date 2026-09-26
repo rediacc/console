@@ -1,8 +1,5 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import type { CekHandoffBlob } from '@rediacc/shared/config-crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { accountServerFetch } from '../services/account/account-client.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -11,218 +8,28 @@ import { hasRemoteConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { askConfirm } from '../utils/prompt.js';
 import { withSpinner } from '../utils/spinner.js';
-import { applyHandoff, storeHandoffCredentials } from './config-remote-enable.js';
 import {
-  decryptHandoff,
-  exportPublicKeyBase64,
-  generateX25519KeyPair,
-} from './config-remote-handoff.js';
+  applyHandoff,
+  checkEnablePrerequisites,
+  requireLoginToken,
+  storageKeyInUseElsewhere,
+  storeHandoffCredentials,
+} from './config-remote-enable.js';
+import { runRelayHandoff, tryOpenBrowser } from './config-remote-relay.js';
 
 /** Default output format when parent program is unavailable */
 const DEFAULT_OUTPUT_FORMAT: OutputFormat = 'table';
 
-// ─── Browser Open ────────────────────────────────────────────────────────
+// ─── Enable Flow ───────────────────────────────────────────────────────── (finalizeEnable / applyHandoff / storeHandoffCredentials live in config-remote-enable.ts; the relay transport lives in config-remote-relay.ts.)
 
-async function tryOpenBrowser(url: string): Promise<void> {
-  try {
-    const { execFile } = await import('node:child_process');
-    const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
-    execFile(cmd, [url]);
-  } catch {
-    // Browser open is best-effort
-  }
-}
-
-// ─── Localhost Callback Server ───────────────────────────────────────────
-
-function startCallbackServer(): Promise<{
-  port: number;
-  waitForPayload: () => Promise<CekHandoffBlob>;
-  close: () => void;
-}> {
-  return new Promise((resolve, reject) => {
-    let payloadResolve: (value: CekHandoffBlob) => void;
-    let payloadReject: (reason: Error) => void;
-    const payloadPromise = new Promise<CekHandoffBlob>((res, rej) => {
-      payloadResolve = res;
-      payloadReject = rej;
-    });
-
-    const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-      // CORS preflight
-      if (req.method === 'OPTIONS') {
-        res.writeHead(204, {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        });
-        res.end();
-        return;
-      }
-
-      if (req.method !== 'POST') {
-        res.writeHead(405);
-        res.end();
-        return;
-      }
-
-      const chunks: Buffer[] = [];
-      req.on('data', (chunk: Buffer) => chunks.push(chunk));
-      req.on('end', () => {
-        try {
-          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as CekHandoffBlob;
-          res.writeHead(200, {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json',
-          });
-          res.end(JSON.stringify({ ok: true }));
-          payloadResolve(body);
-        } catch (error) {
-          res.writeHead(400);
-          res.end();
-          payloadReject(error instanceof Error ? error : new Error('Invalid payload'));
-        }
-      });
-    });
-
-    server.listen(0, '127.0.0.1', () => {
-      const addr = server.address();
-      if (!addr || typeof addr === 'string') {
-        reject(new Error('Failed to bind callback server'));
-        return;
-      }
-      resolve({
-        port: addr.port,
-        waitForPayload: () => payloadPromise,
-        close: () => server.close(),
-      });
-    });
-
-    server.on('error', reject);
-  });
-}
-
-// ─── Enable Flow ─────────────────────────────────────────────────────────
-// (finalizeEnable / applyHandoff / storeHandoffCredentials live in
-// config-remote-enable.ts; this file keeps the transports.)
-
-async function enableBrowser(
+async function enableRelay(
   apiUrl: string,
   configName: string,
   opts: { force?: boolean } = {}
 ): Promise<void> {
-  const keyPair = await generateX25519KeyPair();
-  const pubBase64 = await exportPublicKeyBase64(keyPair.publicKey);
-
-  const { port, waitForPayload, close } = await startCallbackServer();
-
-  const callbackUrl = `http://localhost:${port}`;
-  // Portal route: private/account/web/src/pages/ConfigRemote.tsx, registered as
-  // /account/config-remote in web/src/router.tsx. Renaming that route strands
-  // this URL (and its two siblings below) — change them together.
-  const browserUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
-
-  outputService.info(t('commands.config.remote.enable.openBrowser'));
-  outputService.info(`  ${browserUrl}`);
-  outputService.info('');
-
-  await tryOpenBrowser(browserUrl);
-
-  try {
-    const encryptedBlob = await withSpinner(
-      t('commands.config.remote.enable.waiting'),
-      () => waitForPayload(),
-      t('commands.config.remote.enable.received')
-    );
-
-    const payload = await decryptHandoff(encryptedBlob, keyPair.privateKey);
-    await applyHandoff(payload, configName, opts);
-
-    outputService.success(
-      t('commands.config.remote.enable.success', { name: configName, apiUrl: payload.apiUrl })
-    );
-  } finally {
-    close();
-  }
-}
-
-async function pollOnce(deviceCode: string, apiUrl: string): Promise<CekHandoffBlob | null> {
-  try {
-    const result = await accountServerFetch<{
-      status: string;
-      configHandoff?: CekHandoffBlob;
-    }>(`/account/api/v1/device-codes/${deviceCode}`, {
-      noAuth: true,
-      serverUrl: apiUrl,
-    });
-
-    if (result.status === 'complete' && result.configHandoff) {
-      return result.configHandoff;
-    }
-    if (result.status === 'expired') {
-      throw new ValidationError(t('commands.config.remote.enable.expired'));
-    }
-  } catch (error) {
-    if (error instanceof ValidationError) throw error;
-    // Polling errors are expected while pending
-  }
-  return null;
-}
-
-async function pollForDeviceCode(
-  deviceCode: string,
-  apiUrl: string,
-  pollInterval: number,
-  maxAttempts: number
-): Promise<CekHandoffBlob> {
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    const blob = await pollOnce(deviceCode, apiUrl);
-    if (blob) return blob;
-  }
-
-  throw new ValidationError(t('commands.config.remote.enable.expired'));
-}
-
-async function enableHeadless(
-  apiUrl: string,
-  configName: string,
-  opts: { force?: boolean } = {}
-): Promise<void> {
-  const keyPair = await generateX25519KeyPair();
-  const pubBase64 = await exportPublicKeyBase64(keyPair.publicKey);
-
-  const initResult = await accountServerFetch<{
-    deviceCode: string;
-    userCode: string;
-    verificationUrl: string;
-    interval: number;
-    expiresIn: number;
-  }>('/account/api/v1/device-codes', {
-    method: 'POST',
-    noAuth: true,
-    serverUrl: apiUrl,
-  });
-
-  const { deviceCode, userCode, interval, expiresIn } = initResult;
-
-  // Portal route: /account/config-remote (ConfigRemote.tsx) — the device-code
-  // leg of the same page enableBrowser drives; see the comment there.
-  const remoteUrl = `${apiUrl}/account/config-remote?code=${encodeURIComponent(userCode)}&key=${encodeURIComponent(pubBase64)}`;
-
-  outputService.info(t('commands.config.remote.enable.openBrowser'));
-  outputService.info(`  ${remoteUrl}`);
-  outputService.info('');
-
-  await tryOpenBrowser(remoteUrl);
-  outputService.info(t('commands.config.remote.enable.polling'));
-
-  const pollInterval = interval * 1000;
-  const maxAttempts = Math.ceil(expiresIn / interval);
-
-  const encryptedBlob = await pollForDeviceCode(deviceCode, apiUrl, pollInterval, maxAttempts);
-
-  const payload = await decryptHandoff(encryptedBlob, keyPair.privateKey);
+  // Before any portal link: no login token, or a missing 2FA, refuses here instead of mid-flow in the browser.
+  const { token, email } = await checkEnablePrerequisites(apiUrl);
+  const payload = await runRelayHandoff(apiUrl, token, email);
   await applyHandoff(payload, configName, opts);
 
   outputService.success(
@@ -266,20 +73,22 @@ async function disableRemote(configName: string): Promise<void> {
     throw error;
   }
 
-  // Write full decrypted config to local file, removing remote pointer
-  const restored: RdcConfig = {
-    ...fullConfig,
-    defaults: {
-      ...(fullConfig.defaults ?? {}),
-      language: localConfig.defaults?.language ?? fullConfig.defaults?.language,
-    },
-  };
-  delete restored.remote;
-  await configFileStorage.save(restored, configName);
+  // Write the full config to the local file without the remote pointer. The pull carries no host-local sections, so they come from the decrypted local copy through the one overlay: saving the pull as is dropped state.repos networkIds, renetPath, the master-password verifier and unknown keys, and wrote a master-password config back in plaintext (F3/F4/F18 sibling, PLAN-config-sync-hardening T3).
+  // `defaults.language` comes from the store like the rest of `defaults` (operator ruling D3, all synced): a remote config
+  // holds no device-only language, so preferring the local copy here only brought back a stale cached value.
+  const { overlayDeviceLocal } = await import('../services/config/remote-cache.js');
+  await configFileStorage.update(configName, (local) => {
+    const restored: RdcConfig = overlayDeviceLocal(fullConfig, local);
+    delete restored.remote;
+    return restored;
+  });
 
-  // Clean up credentials
+  // Clean up credentials. The slot secret belongs to the (store, user) enrollment, which another local config may
+  // share: it goes only when no other config names it (F17 sibling).
   await remoteTokenStorage.delete(configName);
-  await secureStorage.delete(remote.storageKeyId);
+  if (!(await storageKeyInUseElsewhere(remote.storageKeyId, configName))) {
+    await secureStorage.delete(remote.storageKeyId);
+  }
 
   outputService.success(t('commands.config.remote.disable.success', { name: configName }));
 }
@@ -352,16 +161,70 @@ async function refreshRemote(configName: string): Promise<void> {
     getSecureStorage()
   );
 
+  const { pullOrPurge, writeRemoteCache } = await import('../services/config/remote-cache.js');
   const { config: pulledConfig, version } = await withSpinner(
     t('commands.config.remote.refresh.pulling'),
-    () => adapter.pull(),
+    () => pullOrPurge(adapter, configName),
     t('commands.config.remote.refresh.pulled')
   );
 
-  const { writeRemoteCache } = await import('../services/config/remote-cache.js');
   await writeRemoteCache(configName, pulledConfig, version);
 
   outputService.success(t('commands.config.remote.refresh.success', { version: String(version) }));
+}
+
+// ─── Versions and Restore (T16) ─────────────────────────────────────────
+
+/** The active config's remote adapter; refuses a config that is not remote. */
+async function activeRemoteAdapter() {
+  const adapter = await configService.getActiveRemoteAdapter();
+  if (!adapter) throw new ValidationError(t('commands.config.remote.refresh.notEnabled'));
+  return adapter;
+}
+
+async function showVersions(configName: string, format: OutputFormat): Promise<void> {
+  const adapter = await activeRemoteAdapter();
+  const { listRemoteVersions } = await import('../services/config/remote-restore.js');
+  const versions = await listRemoteVersions(adapter);
+  if (versions.length === 0 && format === DEFAULT_OUTPUT_FORMAT) {
+    outputService.info(t('commands.config.remote.versions.empty', { config: configName }));
+    return;
+  }
+  outputService.print(versions, format);
+}
+
+async function restoreVersion(
+  configName: string,
+  rawVersion: string,
+  opts: { yes?: boolean }
+): Promise<void> {
+  const { parseVersionArgument, restoreRemoteVersion } = await import(
+    '../services/config/remote-restore.js'
+  );
+  const version = parseVersionArgument(rawVersion);
+  const adapter = await activeRemoteAdapter();
+  const confirm = async (current: number) =>
+    opts.yes === true ||
+    askConfirm(
+      t('commands.config.remote.restore.confirm', {
+        version: String(version),
+        config: configName,
+        current: String(current),
+      }),
+      false
+    );
+  const result = await restoreRemoteVersion(adapter, configName, version, confirm);
+  if (!result) {
+    outputService.info(t('prompts.cancelled'));
+    return;
+  }
+  outputService.success(
+    t('commands.config.remote.restore.success', {
+      restored: String(result.restoredFrom),
+      config: configName,
+      version: String(result.version),
+    })
+  );
 }
 
 // ─── CEK Rotation ────────────────────────────────────────────────────────
@@ -371,16 +234,40 @@ async function refreshRemote(configName: string): Promise<void> {
  *
  * The rotation itself CANNOT run headlessly. It re-encrypts every config in the
  * organization, so the server gates it behind a 2FA-backed, freshly
- * re-authenticated (elevated) portal session — and the CLI holds config tokens,
+ * re-authenticated (elevated) portal session, and the CLI holds config tokens,
  * never a portal session. So this command drives the browser, exactly as
  * `config remote enable` already does for the other session-gated config steps.
  *
  * Two browser trips, and both are load-bearing:
  *   1. The wizard, which performs the rotation.
- *   2. The credential handoff, because the rotation deliberately revokes this
- *      device's wrapped CEK. Without step 2 the local config still holds the OLD
- *      key and every subsequent pull would fail to decrypt.
+ *   2. The credential handoff over the server relay (config-remote-relay.ts),
+ *      because the rotation deliberately revokes this device's wrapped CEK.
+ *      Without step 2 the local config still holds the OLD key and every
+ *      subsequent pull would fail to decrypt.
  */
+/** How long `rotate-cek` waits for the browser wizard, and how often it asks the server. */
+const ROTATION_WAIT_MS = 30 * 60 * 1000;
+const ROTATION_POLL_MS = 5000;
+
+/**
+ * Poll the store's CEK generation until it passes `before`: true once the rotation is done, false when the wait
+ * runs out with nothing rotated. Exported for its test.
+ */
+export async function waitForGeneration(
+  read: () => Promise<number | undefined>,
+  before: number,
+  options: { timeoutMs?: number; intervalMs?: number; sleep?: (ms: number) => Promise<void> } = {}
+): Promise<boolean> {
+  const timeoutMs = options.timeoutMs ?? ROTATION_WAIT_MS;
+  const intervalMs = options.intervalMs ?? ROTATION_POLL_MS;
+  const sleep = options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  for (let waited = 0; waited < timeoutMs; waited += intervalMs) {
+    await sleep(intervalMs);
+    if (((await read()) ?? 0) > before) return true;
+  }
+  return false;
+}
+
 export async function rotateCek(configName: string, apiUrl: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const config = await configFileStorage.load(configName);
@@ -388,6 +275,8 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
   if (!hasRemoteConfig(config)) {
     throw new ValidationError(t('commands.config.rotateCek.notEnabled', { name: configName }));
   }
+  // The re-link in step 2 needs the login token; refuse before the rotation, not after it revoked this device.
+  const loginToken = requireLoginToken(apiUrl);
 
   outputService.warn(t('commands.config.rotateCek.warning'));
   const confirmed = await askConfirm(t('commands.config.rotateCek.confirm'), false);
@@ -396,79 +285,63 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
     return;
   }
 
+  // THE SERVER SAYS WHEN THE ROTATION IS DONE, not the user. This used to ask "Did the browser report the rotation as complete?", and both wrong answers lied: a yes before the rotation re-linked the old key and printed "now encrypted under the new key"; a no after it printed "nothing changed" to a device whose key was already stale (operator, 2026-09-26).
+  const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
+  const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+  const { getSecureStorage } = await import('../utils/secure-storage.js');
+  const current = new RemoteConfigAdapter(
+    config.remote,
+    configName,
+    remoteTokenStorage,
+    getSecureStorage()
+  );
+  const before = (await current.storeGeneration()) ?? 0;
+
   const wizardUrl = `${apiUrl}/account/config-storage/rotate-key`;
   outputService.info(t('commands.config.rotateCek.openWizard'));
   outputService.info(`  ${wizardUrl}`);
   outputService.info('');
   await tryOpenBrowser(wizardUrl);
 
-  const proceed = await askConfirm(t('commands.config.rotateCek.confirmDone'), false);
-  if (!proceed) {
-    outputService.info(t('commands.config.rotateCek.cancelled'));
-    return;
+  const rotated = await withSpinner(
+    t('commands.config.rotateCek.waiting'),
+    () => waitForGeneration(() => current.storeGeneration(), before),
+    t('commands.config.rotateCek.detected')
+  );
+  if (!rotated) {
+    throw new ValidationError(t('commands.config.rotateCek.timedOut'));
   }
 
-  // The rotation revoked this device's key. Re-acquire it over the same X25519
-  // handoff `config remote enable` uses; the pointer file is already correct, so
-  // only the stored token + wrapped CEK are replaced.
-  const keyPair = await generateX25519KeyPair();
-  const pubBase64 = await exportPublicKeyBase64(keyPair.publicKey);
-  const { port, waitForPayload, close } = await startCallbackServer();
-
-  const callbackUrl = `http://localhost:${port}`;
-  // Portal route: /account/config-remote (ConfigRemote.tsx) — the existing-store
-  // re-handoff leg; see the comment in enableBrowser.
-  const handoffUrl = `${apiUrl}/account/config-remote?callback=${encodeURIComponent(callbackUrl)}&key=${encodeURIComponent(pubBase64)}`;
-
+  // The rotation revoked this device's key. Re-acquire it over the same relay `config remote enable` uses; the pointer file is already correct, so only the stored token + wrapped CEK are replaced.
   outputService.info(t('commands.config.rotateCek.resync'));
-  outputService.info(`  ${handoffUrl}`);
-  outputService.info('');
-  await tryOpenBrowser(handoffUrl);
+  const payload = await runRelayHandoff(apiUrl, loginToken, undefined);
+  const stored = await storeHandoffCredentials(payload, configName);
+  // The pointer file is already correct; a re-handoff may omit configId, so fall back to the enrolled pointer's.
+  const remote: RemoteConfig = {
+    ...stored,
+    configId: stored.configId ?? config.remote.configId,
+  };
 
-  try {
-    const encryptedBlob = await withSpinner(
-      t('commands.config.rotateCek.waiting'),
-      () => waitForPayload(),
-      t('commands.config.rotateCek.received')
-    );
+  // Prove the new key actually decrypts the freshly rotated blob before declaring success, a silent stale key is the whole failure mode here.
+  const adapter = new RemoteConfigAdapter(
+    remote,
+    configName,
+    remoteTokenStorage,
+    getSecureStorage()
+  );
+  const { config: verifiedConfig, version } = await withSpinner(
+    t('commands.config.rotateCek.verifying'),
+    () => adapter.pull(),
+    t('commands.config.rotateCek.verified')
+  );
 
-    const payload = await decryptHandoff(encryptedBlob, keyPair.privateKey);
-    const stored = await storeHandoffCredentials(payload, configName);
-    // The pointer file is already correct; a re-handoff may omit configId, so
-    // fall back to the enrolled pointer's.
-    const remote: RemoteConfig = {
-      ...stored,
-      configId: stored.configId ?? config.remote.configId,
-    };
+  // The rotation rewrote every blob server-side; the offline cache must follow, or a later offline read would serve pre-rotation content.
+  const { writeRemoteCache } = await import('../services/config/remote-cache.js');
+  await writeRemoteCache(configName, verifiedConfig, version);
 
-    // Prove the new key actually decrypts the freshly rotated blob before
-    // declaring success — a silent stale key is the whole failure mode here.
-    const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
-    const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-    const { getSecureStorage } = await import('../utils/secure-storage.js');
-    const adapter = new RemoteConfigAdapter(
-      remote,
-      configName,
-      remoteTokenStorage,
-      getSecureStorage()
-    );
-    const { config: verifiedConfig, version } = await withSpinner(
-      t('commands.config.rotateCek.verifying'),
-      () => adapter.pull(),
-      t('commands.config.rotateCek.verified')
-    );
-
-    // The rotation rewrote every blob server-side; the offline cache must
-    // follow, or a later offline read would serve pre-rotation content.
-    const { writeRemoteCache } = await import('../services/config/remote-cache.js');
-    await writeRemoteCache(configName, verifiedConfig, version);
-
-    outputService.success(
-      t('commands.config.rotateCek.success', { name: configName, version: String(version) })
-    );
-  } finally {
-    close();
-  }
+  outputService.success(
+    t('commands.config.rotateCek.success', { name: configName, version: String(version) })
+  );
 }
 
 // ─── Command Registration ────────────────────────────────────────────────
@@ -482,7 +355,6 @@ export function registerRemoteCommands(configCommand: Command): void {
   remote
     .command('enable')
     .description(t('commands.config.remote.enable.description'))
-    .option('--headless', t('commands.config.remote.enable.optionHeadless'))
     .option('--password', t('commands.config.remote.enable.optionPassword'))
     .option('--api-url <url>', t('commands.config.remote.enable.optionApiUrl'))
     .option('--force', t('commands.config.remote.enable.optionForce'))
@@ -504,10 +376,8 @@ export function registerRemoteCommands(configCommand: Command): void {
         if (options.password) {
           const { enablePassword } = await import('./config-remote-password.js');
           await enablePassword(apiUrl, configName, opts);
-        } else if (options.headless) {
-          await enableHeadless(apiUrl, configName, opts);
         } else {
-          await enableBrowser(apiUrl, configName, opts);
+          await enableRelay(apiUrl, configName, opts);
         }
       } catch (error) {
         handleError(error);
@@ -537,6 +407,36 @@ export function registerRemoteCommands(configCommand: Command): void {
         const program = configCommand.parent;
         const format = (program?.opts().output ?? DEFAULT_OUTPUT_FORMAT) as OutputFormat;
         await showStatus(configName, format);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // remote versions
+  remote
+    .command('versions')
+    .description(t('commands.config.remote.versions.description'))
+    .action(async () => {
+      try {
+        const configName = configService.getEffectiveConfigName();
+        const program = configCommand.parent;
+        const format = (program?.opts().output ?? DEFAULT_OUTPUT_FORMAT) as OutputFormat;
+        await showVersions(configName, format);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // remote restore
+  remote
+    .command('restore')
+    .description(t('commands.config.remote.restore.description'))
+    .argument('<version>', t('commands.config.remote.restore.argVersion'))
+    .option('-y, --yes', t('options.yes'))
+    .action(async (version: string, options: { yes?: boolean }) => {
+      try {
+        const configName = configService.getEffectiveConfigName();
+        await restoreVersion(configName, version, options);
       } catch (error) {
         handleError(error);
       }

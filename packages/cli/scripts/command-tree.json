@@ -4068,12 +4068,6 @@
               "descriptionKey": "commands.config.remote.enable.description",
               "options": [
                 {
-                  "flags": "--headless",
-                  "descriptionKey": "commands.config.remote.enable.optionHeadless",
-                  "mandatory": false,
-                  "defaultValue": null
-                },
-                {
                   "flags": "--password",
                   "descriptionKey": "commands.config.remote.enable.optionPassword",
                   "mandatory": false,
@@ -4107,6 +4101,34 @@
               "descriptionKey": "commands.config.remote.status.description",
               "options": [],
               "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "versions",
+              "descriptionKey": "commands.config.remote.versions.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "restore",
+              "descriptionKey": "commands.config.remote.restore.description",
+              "options": [
+                {
+                  "flags": "-y, --yes",
+                  "descriptionKey": "options.yes",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "version",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
               "subcommands": []
             },
             {

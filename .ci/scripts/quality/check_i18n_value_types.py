@@ -1,31 +1,27 @@
 #!/usr/bin/env python3
 """Every locale value must have the same TYPE as its English counterpart.
 
-WHY THIS EXISTS. On 2026-08-06 eight locales were found carrying
-`"ref": "[1]"` where en.json holds `"ref": 1` -- a citation INDEX that had been
-replaced by its own rendered marker, 18 keys per locale, 144 values. Where the
-index was 0 it had become `""`, because 0 is falsy and something in the pipeline
-did `value || ''`.
+WHY THIS EXISTS. On 2026-08-06 eight locales were found carrying `"ref": "[1]"` where en.json holds `"ref": 1` -- a citation INDEX that had been replaced by its own rendered marker, 18 keys per locale, 144 values. Where the index was 0 it had become `""`, because 0 is falsy and something in the pipeline did `value || ''`.
 
-It was live in production. packages/www/src/components/solution-pages/
-SPProblem.astro guards with `callout.ref && callout.ref > 0`; for a string
-`'[1]' > 0` is false, so the citation superscript and its source link rendered
+It was live in production. packages/www/src/components/solution-pages/ SPProblem.astro guards with `callout.ref && callout.ref > 0`; for a string `'[1]' > 0` is false, so the citation superscript and its source link rendered
 for NOBODY in those eight languages across six solution pages, while English
 rendered them normally.
 
-NOTHING CAUGHT IT, and that is the point of this file. The placeholder,
-cross-locale and locale-source gates all passed, because each compares TEXT.
-i18n/no-empty-translations would have caught exactly one of the 144 -- and it
-could not, because it was one of five rules reading `node.body?.members` on an
-AST that puts `members` on the Object node, so it iterated an empty list and
+NOTHING CAUGHT IT, and that is the point of this file. The placeholder, cross-locale and locale-source gates all passed, because each compares TEXT. i18n/no-empty-translations would have caught exactly one of the 144 -- and it could not, because it was one of five rules reading `node.body?.members` on an AST that puts `members` on the Object node, so it iterated an empty list and
 could never report at all.
 
-A type check is cheap, has no false-positive surface worth speaking of (a value
-is a string or it is not), and catches the whole class rather than the instance.
+A type check is cheap, has no false-positive surface worth speaking of (a value is a string or it is not), and catches the whole class rather than the instance.
 
 Run modes:
     check_i18n_value_types.py            the gate
     check_i18n_value_types.py --selftest controls only
+
+---- gate ----
+step: i18n value types match English
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import argparse
@@ -33,11 +29,7 @@ import json
 import pathlib
 import sys
 
-# (english file, [sibling locale files]) pairs are discovered, not listed, so a
-# new locale is covered the day it is added rather than the day someone
-# remembers this file. The locale SET is deliberately not hard-coded here --
-# @rediacc/locales is the single source for that, and a hand-rolled list in a
-# gate is how a 379-key blind spot happened once before.
+# (english file, [sibling locale files]) pairs are discovered, not listed, so a new locale is covered the day it is added rather than the day someone remembers this file. The locale SET is deliberately not hard-coded here -- @rediacc/locales is the single source for that, and a hand-rolled list in a gate is how a 379-key blind spot happened once before.
 WWW = "packages/www/src/i18n/translations"
 CLI = "packages/cli/src/i18n/locales"
 
@@ -57,9 +49,7 @@ def flatten(node, path, out):
 def compare(en_doc, loc_doc):
     """[(key, english value, locale value)] where the TYPES disagree.
 
-    Keys absent from the locale are NOT a finding here: missing translations are
-    a different defect with its own gate, and folding them in would make this
-    check fire on every partially-translated file and get switched off.
+    Keys absent from the locale are NOT a finding here: missing translations are a different defect with its own gate, and folding them in would make this check fire on every partially-translated file and get switched off.
     """
     en_flat, loc_flat = {}, {}
     flatten(en_doc, [], en_flat)
@@ -69,8 +59,7 @@ def compare(en_doc, loc_doc):
         if key not in loc_flat:
             continue
         loc_value = loc_flat[key]
-        # bool is a subclass of int in Python; treat them as distinct so a
-        # `true` swapped for `1` is still caught.
+        # bool is a subclass of int in Python; treat them as distinct so a `true` swapped for `1` is still caught.
         if type(en_value) is not type(loc_value):
             bad.append((key, en_value, loc_value))
     return bad
@@ -97,8 +86,7 @@ def locale_pairs(root):
     return pairs
 
 
-# ---- controls ----------------------------------------------------------------
-# A gate that cannot fire reports a clean tree forever, and this one would be
+# ---- controls ---------------------------------------------------------------- A gate that cannot fire reports a clean tree forever, and this one would be
 # especially easy to break silently: a flatten() that returns {} makes every
 # comparison vacuous while still exiting 0.
 _MUST_FLAG = [

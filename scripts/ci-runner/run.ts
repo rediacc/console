@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto';
  *     putting `!cancelled()` on every quality step; the runner defaults to
  *     keep-going for the same reason, and --fail-fast is the opt-in.
  *   - check:ci-quality-gates was 443 s of that total, 43%, as one opaque unit
- *     wrapping run-all.sh. Scheduling it whole caps the speedup at 2.4x no
+ *     wrapping the battery. Scheduling it whole caps the speedup at 2.4x no
  *     matter how many cores exist, which is why its 57 tests are individually
  *     scheduled manifest entries.
  *
@@ -23,7 +23,7 @@ import { createHash } from 'node:crypto';
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
  *
- * See agent/PLAN-npm-ci-parallel-parity.md section 4.
+ * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -33,21 +33,16 @@ import { execGate } from './exec';
 import { GATES, type GateSpec } from './manifest';
 import { buildGraph, type GateResult, runPool } from './pool';
 import { createReporter } from './report';
+import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-// Per-gate process-tree profiling (agent/PLAN-shell-resource-profiling.md). ON by
-// default: captures land in .ci/cache/profiles (untracked), and the previous run's set
-// is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
+// Per-gate process-tree profiling (agent/plans/PLAN-shell-resource-profiling.md). ON by default: captures land in .ci/cache/profiles (untracked), and the previous run's set is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
 // never the torn files of gates still running. CI_PROFILE=off disables it; CI_PROFILE_DIR
 // redirects it. One run id per process so the E4 cross-gate join can pair captures.
 const PROFILE_OPTS = ((): { profileDir?: string; profileRunId?: string } => {
   if (process.env.CI_PROFILE === 'off') return {};
   try {
-    // A NESTED RUNNER MUST NOT ROTATE. gate-test:ci-runner runs this very file as a
-    // gate, so without this the inner run rotated the pointer and aimed it at its own
-    // two selftest captures -- last writer wins, and a full 292-gate run left a
-    // profiles.current naming a directory with two files in it. The inner run inherits
-    // the outer run's directory and id and simply writes beside it.
+    // A NESTED RUNNER MUST NOT ROTATE. gate-test:ci-runner runs this very file as a gate, so without this the inner run rotated the pointer and aimed it at its own two selftest captures -- last writer wins, and a full 292-gate run left a profiles.current naming a directory with two files in it. The inner run inherits the outer run's directory and id and simply writes beside it.
     const inherited = process.env.CI_PROFILE_RUN;
     if (inherited !== undefined && inherited !== '') {
       const [id, ...rest] = inherited.split('\u0000');
@@ -91,6 +86,8 @@ interface Options {
   only?: string[];
   skip?: string[];
   manifest?: string;
+  /** `--receipt-out`: where to write the push receipt instead of this checkout's own `.ci/cache/`. */
+  receiptOut?: string;
 }
 
 /** Every flag off. Selftest-only, so a control states the flag it exercises
@@ -143,11 +140,14 @@ function parseArgs(argv: readonly string[]): Options {
         i += 1;
         break;
       case '--only':
-        opts.only = value(i, arg).split(',').filter(Boolean);
+        // APPENDS, and used to ASSIGN. A repeated flag silently discarded every earlier one, so `--only a --only b` ran ONLY b, printed `ci-runner: 1 gate` and exited green. The operator believes two gates passed; one did, and the other was never scheduled. That is a vacuous green produced by the selector rather than by a gate, which is the worse of the two because nothing in the
+        // output names a missing gate. The `1 gate` header line was the only tell and it reads as a count, not as a warning. Found 2026-09-06 by an agent that passed eleven separate --only flags and was told it had run one gate, ok. Comma-separated remains the documented spelling and still works.
+        opts.only = [...(opts.only ?? []), ...value(i, arg).split(',').filter(Boolean)];
         i += 1;
         break;
       case '--skip':
-        opts.skip = value(i, arg).split(',').filter(Boolean);
+        // Appends for the same reason as --only above: a dropped --skip is a gate that RUNS when the operator asked for it not to, which on a machine-mutex gate is worse than a dropped --only.
+        opts.skip = [...(opts.skip ?? []), ...value(i, arg).split(',').filter(Boolean)];
         i += 1;
         break;
       case '--manifest':
@@ -178,6 +178,16 @@ function parseArgs(argv: readonly string[]): Options {
       case '--verbose':
         opts.verbose = true;
         break;
+      case '--receipt-out': {
+        // A CLEAN-SNAPSHOT RECEIPT. The gates judge the worktree they run in, and the push carries HEAD^{tree}. In a tree shared with live writers, their uncommitted edits turn a receipt red for a tree that does not contain them (2026-09-24: 14 writers, python-lint red on two files in nobody's HEAD). Running ci:quick in a clean clone checked out at HEAD
+        // and writing the receipt into the pushing checkout's cache judges exactly the pushed tree. Nothing is trusted: the receipt still records the clone's own HEAD^{tree}, and block_unverified_push refuses unless that equals the pushing HEAD^{tree}. ABSOLUTE ONLY, because a relative path would resolve against whichever cwd npm happened to use.
+        const out = value(i, arg);
+        if (!path.isAbsolute(out))
+          throw new Error(`ci-runner: ${arg} needs an absolute path, got '${out}'`);
+        opts.receiptOut = out;
+        i += 1;
+        break;
+      }
       default:
         throw new Error(`ci-runner: unknown flag '${arg}'`);
     }
@@ -221,7 +231,7 @@ async function loadManifest(source: string | undefined): Promise<readonly GateSp
  * `**\/` -> `(?:.*\/)?` form is handled before the bare `**` so the optional
  * separator is part of the token rather than left behind.
  */
-function globToRegExp(glob: string): RegExp {
+export function globToRegExp(glob: string): RegExp {
   const body = glob.replace(/\*\*\/|\*\*|[*?.+^${}()|[\]\\]/g, (token) => {
     if (token === '**/') return '(?:.*/)?';
     if (token === '**') return '.*';
@@ -271,22 +281,35 @@ function firstGitlink(): string | undefined {
   return undefined;
 }
 
+/**
+ * Every gitlink (submodule) path in HEAD, from ONE `git ls-tree`. Asking per changed file spawned one git process per path: a
+ * 60-commit branch paid about 12 s in process start-up alone, and check:ci-changed-selection's all-files change set about 50 s
+ * (2026-09-26, profiled: 11.6 s of 12.6 s inside spawnSync). An unreadable tree answers "no gitlinks", the same answer the
+ * per-file probe gave on failure.
+ */
+function headGitlinks(): Set<string> {
+  try {
+    const out = execFileSync('git', ['ls-tree', '-r', '--format=%(objectmode) %(path)', 'HEAD'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    const links = new Set<string>();
+    for (const line of out.split('\n')) {
+      if (line.startsWith('160000 ')) links.add(line.slice('160000 '.length));
+    }
+    return links;
+  } catch {
+    return new Set();
+  }
+}
+
 function expandGitlinks(named: readonly string[], warn: (text: string) => void): string[] {
   const out = new Set<string>(named);
+  const gitlinks = headGitlinks();
   for (const entry of named) {
-    let isGitlink = false;
-    try {
-      isGitlink =
-        execFileSync('git', ['ls-tree', '--format=%(objectmode)', 'HEAD', '--', entry], {
-          cwd: REPO_ROOT,
-          encoding: 'utf-8',
-        }).trim() === '160000';
-    } catch {
-      isGitlink = false;
-    }
-    if (!isGitlink) continue;
-    // The wildcard goes in FIRST, so a submodule we cannot read still selects
-    // every gate scoped beneath it rather than none.
+    if (!gitlinks.has(entry)) continue;
+    // The wildcard goes in FIRST, so a submodule we cannot read still selects every gate scoped beneath it rather than none.
     out.add(`${entry}/**`);
     try {
       const inner = execFileSync('git', ['-C', entry, 'diff', '--name-only', 'HEAD'], {
@@ -303,25 +326,40 @@ function expandGitlinks(named: readonly string[], warn: (text: string) => void):
   return [...out];
 }
 
-function changedFiles(warn: (text: string) => void): string[] {
+/**
+ * The change set, WITH its provenance. It used to return a bare `string[]` and
+ * swallow a git failure into `[]` under a warning that said "selecting every gate"
+ * -- which was false, because `select()` then dropped every path-declaring gate for
+ * want of a match. See scripts/ci-runner/select.ts for the measurement.
+ */
+function changedFiles(): ChangeSet {
   const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
   try {
     const mergeBase = execFileSync('git', ['merge-base', 'HEAD', base], {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
     const named = execFileSync('git', ['diff', '--name-only', mergeBase], {
       cwd: REPO_ROOT,
       encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     })
       .split('\n')
       .filter(Boolean);
-    return expandGitlinks(named, warn);
-  } catch {
-    warn(
-      `ci-runner: --changed could not resolve a merge base against ${base}; selecting every gate\n`
-    );
-    return [];
+    // expandGitlinks warns through stderr directly; a submodule it cannot read widens to a wildcard rather than narrowing, so the set stays inclusive.
+    return {
+      files: expandGitlinks(named, (t) => process.stderr.write(t)),
+      origin: 'resolved',
+      base,
+    };
+  } catch (err) {
+    return {
+      files: [],
+      origin: 'unresolved',
+      base,
+      reason: err instanceof Error ? err.message.split('\n')[0] : String(err),
+    };
   }
 }
 
@@ -337,36 +375,23 @@ function select(
   warn: (text: string) => void
 ): Selection {
   const notes: string[] = [];
-  // gate:false nodes are prerequisites, never selected on their own. They
-  // enter the run only through the needs-closure in buildGraph.
+  // gate:false nodes are prerequisites, never selected on their own. They enter the run only through the needs-closure in buildGraph.
   let chosen = specs.filter((spec) => spec.gate);
 
   if (opts.changed) {
-    const files = changedFiles(warn);
-    // An entry with no declared `paths` is ALWAYS selected. A half-populated
-    // path table would make --changed drop gates silently, which is the
-    // vacuity failure this design exists to prevent.
-    chosen = chosen.filter(
-      (spec) => spec.paths === undefined || files.some((f) => matchesAny(f, spec.paths ?? []))
-    );
-    const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
-    // Say out loud when the flag scoped nothing. The selection above is
-    // deliberately safe, but the note used to read like a narrowed run, and
-    // a reader reasonably concluded --changed was scoping when it was not.
-    // An instrument that reports work it did not do is the same class of
-    // defect as a gate that cannot fail.
-    const scopable = specs.filter((spec) => spec.gate && spec.paths !== undefined).length;
-    notes.push(
-      scopable === 0
-        ? `--changed (${files.length} files vs ${base}) SCOPED NOTHING: no gate declares paths, so all ${chosen.length} gates are selected`
-        : `--changed (${files.length} files vs ${base}; ${scopable} gate(s) path-scoped)`
-    );
+    // BOTH HALVES LIVE IN select.ts. Fail OPEN on scope -- an entry with no declared `paths` is selected for every non-empty change set, because the overwhelming majority of gates declare none and a half-populated path table would drop them silently. REFUSE an unusable change set -- an empty file list is the one input
+    // for which fail-open inverts into fail-closed, and "nothing changed" and "the
+    // differ broke" arrive in exactly that shape.
+    //
+    // THE RATIO IS NOT WRITTEN DOWN HERE ON PURPOSE. It moved twice in one session (474/46 to 475/46) while this box was being written, and a number quoted in a comment is a number nobody recomputes. `check:ci-changed-selection` derives it
+    // from the lock and PRINTS it on every run, and asserts both halves against the
+    // real invocation.
+    const result = selectChanged(chosen, changedFiles(), matchesAny);
+    chosen = [...result.chosen];
+    notes.push(result.note);
   }
   if (opts.quick) {
-    // THE LANE IS A FIXPOINT, not a filter. A cheap gate whose `needs` closure
-    // reaches a slow prerequisite costs that prerequisite's time, so it is not
-    // cheap -- buildGraph pulls prereqs in transitively and would have made the
-    // "10 second" lane silently cost minutes. Demote until nothing moves.
+    // THE LANE IS A FIXPOINT, not a filter. A cheap gate whose `needs` closure reaches a slow prerequisite costs that prerequisite's time, so it is not cheap -- buildGraph pulls prereqs in transitively and would have made the "10 second" lane silently cost minutes. Demote until nothing moves.
     const byId = new Map(specs.map((spec) => [spec.id, spec]));
     const slow = new Set(specs.filter((spec) => spec.slow === true).map((spec) => spec.id));
     for (;;) {
@@ -377,8 +402,7 @@ function select(
       }
       if (slow.size === before) break;
     }
-    // NAME THE DEMOTIONS. A gate that silently left the lane is coverage lost
-    // without a record, which is the vacuity this whole design is against.
+    // NAME THE DEMOTIONS. A gate that silently left the lane is coverage lost without a record, which is the vacuity this whole design is against.
     const demoted = specs
       .filter((spec) => spec.gate && spec.slow !== true && slow.has(spec.id))
       .map((spec) => {
@@ -444,8 +468,7 @@ function loadDurationRecords(cachePath: string | undefined): Map<string, Duratio
       }
     }
   } catch {
-    // A missing or corrupt cache is a scheduling hint at worst. It must
-    // never fail the run.
+    // A missing or corrupt cache is a scheduling hint at worst. It must never fail the run.
   }
   return records;
 }
@@ -465,14 +488,8 @@ function saveDurations(
   try {
     const next: Record<string, DurationRecord> = Object.fromEntries(loadDurationRecords(cachePath));
     for (const r of results) {
-      // ONLY a passing run. A gate that fails fast is cheap in wall-clock and
-      // expensive in nothing -- but the tier oracle judges the FLOOR of
-      // `recent`, so one 1.1s failure of a 21s gate makes it look like a
-      // pre-push-lane candidate forever. That is how check:ci-shape-duplication
-      // (21.4s), check:ci-renet-types (10.7s) and gate-test:trap-registry
-      // (46.4s) were all demanded into the fast lane on 2026-09-02, during a
-      // session that had just triaged ten red gates. A failure's duration is
-      // not the gate's cost; it is the cost of the part that ran.
+      // ONLY a passing run. A gate that fails fast is cheap in wall-clock and expensive in nothing -- but the tier oracle judges the FLOOR of `recent`, so one 1.1s failure of a 21s gate makes it look like a pre-push-lane candidate forever. That is how check:ci-shape-duplication (21.4s), check:ci-renet-types (10.7s) and gate-test:trap-registry (46.4s) were all demanded into the
+      // fast lane on 2026-09-02, during a session that had just triaged ten red gates. A failure's duration is not the gate's cost; it is the cost of the part that ran.
       if (r.status !== 'ok' || r.ms <= 0) continue;
       const old = prior.get(r.id);
       const ewma =
@@ -562,11 +579,7 @@ async function selftest(): Promise<number> {
   );
   require_(!text.includes('selftest-pass'), "a passing gate's output must stay quiet");
 
-  // GLOB SEMANTICS, both directions. These three were all FALSE before the
-  // `**\/` fix, and the first one is a live defect: manifest.ts declares
-  // `paths: ['**\/*.sh']` for check:ci-shell-size under a comment saying
-  // "deliberately not path-narrowed", while the gate itself enumerates with
-  // the git pathspec `*.sh`, which DOES match at the root.
+  // GLOB SEMANTICS, both directions. These three were all FALSE before the `**\/` fix, and the first one is a live defect: manifest.ts declares `paths: ['**\/*.sh']` for check:ci-shell-size under a comment saying "deliberately not path-narrowed", while the gate itself enumerates with the git pathspec `*.sh`, which DOES match at the root.
   require_(globToRegExp('**/*.sh').test('run.sh'), '**/*.sh must match a root-level run.sh');
   require_(
     globToRegExp('**/*.sh').test('.ci/scripts/quality/check-npmrc.sh'),
@@ -576,10 +589,7 @@ async function selftest(): Promise<number> {
     !globToRegExp('**/*.sh').test('packages/cli/src/index.ts'),
     'CONTROL: **/*.sh must NOT match a .ts, or the pattern matches everything'
   );
-  // The two paths below are ASSEMBLED rather than written out. They name files
-  // that do not exist -- that is the point of a glob fixture -- and
-  // test-gate-paths-exist.sh scans this source for path literals and requires
-  // every one to exist. Writing them plainly made that gate red, correctly.
+  // The two paths below are ASSEMBLED rather than written out. They name files that do not exist -- that is the point of a glob fixture -- and test_gate_paths_exist.py scans this source for path literals and requires every one to exist. Writing them plainly made that gate red, correctly.
   const dirA = ['private', 'account'].join('/');
   const dirB = ['private', 'renet'].join('/');
   require_(
@@ -591,10 +601,7 @@ async function selftest(): Promise<number> {
     'CONTROL: a directory glob must not match a sibling directory'
   );
 
-  // A GITLINK MUST WIDEN, NOT PASS THROUGH. `git diff --name-only` names a
-  // changed submodule as ONE entry (mode 160000), so a `private/x/**` glob can
-  // never match it. Both directions against the real repo, with a precondition
-  // so the case cannot pass because the fixture stopped being a submodule.
+  // A GITLINK MUST WIDEN, NOT PASS THROUGH. `git diff --name-only` names a changed submodule as ONE entry (mode 160000), so a `private/x/**` glob can never match it. Both directions against the real repo, with a precondition so the case cannot pass because the fixture stopped being a submodule.
   const gitlink = firstGitlink();
   if (gitlink === undefined) {
     require_(false, 'CONTROL: no gitlink found in HEAD, so the expansion case proves nothing');
@@ -611,18 +618,10 @@ async function selftest(): Promise<number> {
     );
   }
 
-  // ORDERING, END TO END, THROUGH main() ITSELF. The two select() controls
-  // below exercise the FUNCTION; neither would notice `--list` moving back
-  // above the `select()` call, which is exactly the regression that shipped:
-  // `--list` returned before selection ran, so `--list --changed` printed all
-  // 314 specs whatever the scoping did, and a measurement taken from it was
-  // reported to the operator by an instrument that could not have shown
-  // otherwise.
+  // ORDERING, END TO END, THROUGH main() ITSELF. The two select() controls below exercise the FUNCTION; neither would notice `--list` moving back above the `select()` call, which is exactly the regression that shipped: `--list` returned before selection ran, so `--list --changed` printed all 314 specs whatever the scoping did, and a measurement taken from it was reported to the
+  // operator by an instrument that could not have shown otherwise.
   //
-  // A unit test on select() cannot see that; only the real argv path can. The
-  // first draft of this spawned `process.execPath run.ts`, which fails because
-  // node cannot execute TypeScript -- so it drives main() in-process with argv
-  // set and stdout captured. Same path, no interpreter, no subprocess.
+  // A unit test on select() cannot see that; only the real argv path can. The first draft of this spawned `process.execPath run.ts`, which fails because node cannot execute TypeScript -- so it drives main() in-process with argv set and stdout captured. Same path, no interpreter, no subprocess.
   const listGateLines = async (argv: string[]): Promise<number> => {
     const realArgv = process.argv;
     const realWrite = process.stdout.write.bind(process.stdout);
@@ -645,17 +644,14 @@ async function selftest(): Promise<number> {
     onlyOne === 1,
     `--list must print the SELECTION: --only one id printed ${onlyOne} gate lines`
   );
-  // CONTROL: a bare --list must print many. Without this the assertion above
-  // also passes on a --list that prints nothing at all.
+  // CONTROL: a bare --list must print many. Without this the assertion above also passes on a --list that prints nothing at all.
   const allGates = await listGateLines(['--list']);
   require_(
     allGates > 50,
     `CONTROL: a bare --list must print the whole set, got ${allGates} -- the --only case proves nothing without this`
   );
 
-  // `--list` MUST REFLECT THE SELECTION. Before this it returned before
-  // select() ran, so a scoped list was indistinguishable from a full one --
-  // and no oracle could assert on a selection it could not read.
+  // `--list` MUST REFLECT THE SELECTION. Before this it returned before select() ran, so a scoped list was indistinguishable from a full one -- and no oracle could assert on a selection it could not read.
   const listSpecs = [
     syntheticSpec('selftest:list-a', 'true'),
     syntheticSpec('selftest:list-b', 'true'),
@@ -670,11 +666,7 @@ async function selftest(): Promise<number> {
     'CONTROL: with no flags select() must keep every gate, or --only proves nothing'
   );
 
-  // THE DURATION CACHE MUST NOT LEARN FROM FAILURES. It feeds the tier oracle
-  // in check-gate-manifest, which judges the FLOOR of `recent` -- so a single
-  // fast failure of a slow gate is indistinguishable from the gate becoming
-  // cheap, and demands it be moved into the pre-push lane forever. Both
-  // directions, because "records nothing" would pass the first assertion alone.
+  // THE DURATION CACHE MUST NOT LEARN FROM FAILURES. It feeds the tier oracle in check-gate-manifest, which judges the FLOOR of `recent` -- so a single fast failure of a slow gate is indistinguishable from the gate becoming cheap, and demands it be moved into the pre-push lane forever. Both directions, because "records nothing" would pass the first assertion alone.
   const durDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-dur-'));
   const durCache = path.join(durDir, 'gate-durations.json');
   const durResult = (id: string, status: GateResult['status'], ms: number): GateResult => ({
@@ -707,6 +699,58 @@ async function selftest(): Promise<number> {
     'CONTROL: a PASSING run must still be recorded, or the two assertions above prove nothing'
   );
 
+  // THE RECEIPT MUST NOT CLAIM A WHOLE LANE IT DID NOT RUN. `--changed` was missing from this condition until 2026-09-06: `select()` drops every gate whose declared `paths` the diff does not touch, and the run still wrote `whole: true` -- the field the pre-push guard reads to authorise a push. Measured on this tree the same day: a `--changed` receipt claimed `whole`
+  // while its own selection prose said "30 gate(s) path-scoped".
+  require_(
+    narrowingFlags({ ...EMPTY_OPTS, changed: true }).includes('--changed'),
+    '--changed must narrow the receipt: it drops every path-declaring gate'
+  );
+  require_(
+    narrowingFlags({ ...EMPTY_OPTS, only: ['x'] }).includes('--only'),
+    '--only must narrow the receipt'
+  );
+  require_(
+    narrowingFlags({ ...EMPTY_OPTS, skip: ['x'] }).includes('--skip'),
+    '--skip must narrow the receipt'
+  );
+  require_(
+    narrowingFlags(EMPTY_OPTS).length === 0,
+    'CONTROL: an unnarrowed quick run must still report the whole lane, or the three above prove nothing'
+  );
+
+  // THE RECEIPT NAMES THE TREE JUDGED FROM THE START, OR NONE.
+  require_(receiptTree('aaa', 'aaa') === 'aaa', 'an unmoved HEAD must be vouched for');
+  require_(
+    receiptTree('aaa', 'bbb') === '',
+    'a HEAD that moved mid-run must vouch for NO tree -- the end tree was never judged'
+  );
+  require_(receiptTree('', '') === '', 'CONTROL: an unreadable HEAD vouches for nothing either');
+
+  // --receipt-out: a snapshot clone's run lands where the pushing checkout's guard reads, and nowhere else.
+  require_(
+    receiptPathFor(parseArgs(['--quick', '--receipt-out', '/snap/receipt.json'])) ===
+      '/snap/receipt.json',
+    '--receipt-out must redirect the receipt to the given path'
+  );
+  require_(
+    receiptPathFor(parseArgs(['--quick'])) === RECEIPT_PATH,
+    "CONTROL: without --receipt-out the receipt stays in this checkout's own cache"
+  );
+  let relRefused = false;
+  try {
+    parseArgs(['--receipt-out', 'relative/receipt.json']);
+  } catch {
+    relRefused = true;
+  }
+  require_(
+    relRefused,
+    '--receipt-out must refuse a relative path, which would resolve against an arbitrary cwd'
+  );
+  require_(
+    narrowingFlags(parseArgs(['--quick', '--receipt-out', '/snap/r.json'])).length === 0,
+    '--receipt-out must not narrow the lane: it changes where the verdict is written, not which gates run'
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -714,7 +758,7 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3} assertions)\n`);
+  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4} assertions)\n`);
   return 0;
 }
 
@@ -753,13 +797,31 @@ interface Receipt {
   stable: boolean;
   selection: string | null;
   /**
-   * The lane ran WHOLE. `--only`/`--skip` narrow it, and a receipt from a
-   * one-gate run would otherwise read exactly like a receipt from all 254 --
-   * the guard would then honour a push proven by nothing. Recorded as a flag
-   * rather than left for the guard to infer from the selection prose, because
-   * a guard parsing English is a guard that fails open on a rewording.
+   * The lane ran WHOLE. `--only`, `--skip` and `--changed` all narrow it, and a
+   * receipt from a one-gate run would otherwise read exactly like a receipt
+   * from all 254 -- the guard would then honour a push proven by nothing.
+   * Recorded as a flag rather than left for the guard to infer from the
+   * selection prose, because a guard parsing English is a guard that fails open
+   * on a rewording.
+   *
+   * `--changed` was MISSING from this condition until 2026-09-06. It is the
+   * narrowing that matters most, because `select()` drops every gate declaring
+   * `paths` that the diff does not touch -- so a `--changed` run can execute a
+   * small fraction of the lane and still write `whole: true`, and
+   * `.claude/hooks/pre-bash/block-unverified-push.sh` reads exactly this field
+   * to authorise the push. Unlike `--only`, which a human types deliberately
+   * about one gate, `--changed` is the flag a session reaches for BECAUSE it
+   * believes it is running the relevant lane, which is what made the hole quiet.
    */
   whole: boolean;
+  /**
+   * Which flags narrowed the lane; empty exactly when `whole` is true.
+   *
+   * Diagnostic, not load-bearing: the guard reads `whole`. It exists because
+   * that guard's refusal text names `--only/--skip` only, so a run refused for
+   * `--changed` would otherwise leave the reader nothing to go on.
+   */
+  narrowedBy: string[];
   /**
    * Gates that COULD NOT RUN here. Recorded separately from `failed` because
    * the guard treats them differently -- it warns, it does not refuse. A
@@ -771,6 +833,8 @@ interface Receipt {
   failed: string[];
   wallMs: number;
   finishedAt: string;
+  /** The checkout the gates actually ran in. Differs from the pushing checkout when `--receipt-out` wrote this from a snapshot clone. */
+  judgedRoot: string;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -792,14 +856,52 @@ function dirtyDigest(): string {
 
 const RECEIPT_PATH = path.join(REPO_ROOT, '.ci', 'cache', 'prepush-receipt.json');
 
-function writeReceipt(receipt: Receipt, warn: (text: string) => void): void {
+/**
+ * Every flag that makes this run LESS than the whole lane.
+ *
+ * `--quick` is deliberately not one of them: the receipt is only written for
+ * quick runs, the lane IS quick by definition, and the push guard's own message
+ * says so ("a PARTIAL run ... slower gates are deferred to CI").
+ *
+ * Extracted from the receipt literal so the selftest can assert it. The bug it
+ * exists to keep out was one missing term in an inline boolean, which nothing
+ * could reach.
+ */
+function narrowingFlags(opts: Options): string[] {
+  const flags: string[] = [];
+  if (opts.only !== undefined) flags.push('--only');
+  if (opts.skip !== undefined) flags.push('--skip');
+  if (opts.changed) flags.push('--changed');
+  return flags;
+}
+
+/**
+ * The tree a receipt may vouch for. A run judges the tree HEAD named when it STARTED; if HEAD moved before the receipt was written (a commit landed mid-run), no single tree was judged, so the receipt vouches for none and the push guard, which demands tree equality, refuses it. Found 2026-09-24: the tree used to be read at write time, so a mid-run commit bound a verdict to a tree nothing had judged.
+ */
+function receiptTree(atStart: string, atEnd: string): string {
+  return atStart !== '' && atStart === atEnd ? atStart : '';
+}
+
+/** `git rev-parse HEAD^{tree}`, or '' when git cannot answer. */
+function headTreeNow(): string {
   try {
-    fs.mkdirSync(path.dirname(RECEIPT_PATH), { recursive: true });
-    fs.writeFileSync(RECEIPT_PATH, `${JSON.stringify(receipt, null, 2)}\n`);
+    return gitOut(['rev-parse', 'HEAD^{tree}']);
+  } catch {
+    return '';
+  }
+}
+
+/** The receipt's destination: `--receipt-out` when given, else this checkout's own cache. */
+function receiptPathFor(opts: Options): string {
+  return opts.receiptOut ?? RECEIPT_PATH;
+}
+
+function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): void {
+  try {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, `${JSON.stringify(receipt, null, 2)}\n`);
   } catch (err) {
-    // LOUD, unlike the duration cache. That cache is an optimisation and is
-    // deliberately non-load-bearing; this authorises a push, so a silent
-    // failure to write it would present as "you never ran the gates".
+    // LOUD, unlike the duration cache. That cache is an optimisation and is deliberately non-load-bearing; this authorises a push, so a silent failure to write it would present as "you never ran the gates".
     warn(`ci-runner: could not write the push receipt: ${(err as Error).message}\n`);
   }
 }
@@ -818,13 +920,19 @@ async function main(): Promise<number> {
     ? (text: string) => process.stderr.write(text)
     : (text: string) => process.stdout.write(text);
 
-  // `--list` USED TO RETURN BEFORE `select()` RAN, so `--list --changed`
-  // printed all 314 specs whatever the scoping did. That is worse than
-  // unhelpful: it is an instrument that answers a question it never asked, and
-  // it is how --changed stayed inert without anyone noticing. Measured
-  // 2026-08-27 -- a reader (me) concluded from it that --changed scoped
-  // nothing, on evidence that could not have shown otherwise.
-  const selection = select(specs, opts, humanOut);
+  // `--list` USED TO RETURN BEFORE `select()` RAN, so `--list --changed` printed all 314 specs whatever the scoping did. That is worse than unhelpful: it is an instrument that answers a question it never asked, and it is how --changed stayed inert without anyone noticing. Measured 2026-08-27 -- a reader (me) concluded from it that --changed scoped nothing, on evidence that could
+  // not have shown otherwise.
+  let selection: Selection;
+  try {
+    selection = select(specs, opts, humanOut);
+  } catch (err) {
+    // A REFUSAL IS NOT A CRASH, and it must not read as one. `--changed` with a change set it cannot trust exits 1 with the reason and the fix on stderr, rather than selecting the 418 gates that happen to declare no `paths` and reporting a green over the 46 it dropped.
+    if (err instanceof ChangeSetRefusal) {
+      process.stderr.write(`ci-runner: ${err.message}\n`);
+      return 1;
+    }
+    throw err;
+  }
   if (opts.list) {
     for (const spec of specs) {
       if (spec.gate && !selection.ids.has(spec.id)) continue;
@@ -841,8 +949,7 @@ async function main(): Promise<number> {
 
   const jobs = opts.jobs ?? Math.max(1, os.availableParallelism() - 2);
   const heavyLimit = opts.heavyLimit ?? Math.max(2, Math.floor(jobs / 4));
-  // A synthetic manifest must not pollute (or be scheduled by) the real
-  // duration cache, so caching is off unless the caller names a path.
+  // A synthetic manifest must not pollute (or be scheduled by) the real duration cache, so caching is off unless the caller names a path.
   const cachePath =
     process.env.CI_RUNNER_CACHE ?? (opts.manifest === undefined ? DEFAULT_CACHE : undefined);
   const durations = loadDurations(cachePath);
@@ -853,11 +960,9 @@ async function main(): Promise<number> {
     jsonOut: opts.json ? (text: string) => process.stdout.write(text) : undefined,
   });
 
-  // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a
-  // temp .ts into packages/cli and breaks check:format, and check-python-lint
-  // plants an untracked probe. A digest taken afterwards would record the
-  // gates' own leavings and drift from the tree the session actually has.
+  // BEFORE runPool, not after: manifest.ts:2817 records a gate that writes a temp .ts into packages/cli and breaks check:format, and check-python-lint plants an untracked probe. A digest taken afterwards would record the gates' own leavings and drift from the tree the session actually has.
   const dirtyAtStart = dirtyDigest();
+  const headTreeAtStart = headTreeNow();
   const started = Date.now();
   const meta = { jobs, failFast: opts.failFast, selection: selection.description, wallMs: 0 };
   reporter.header(graph.length, meta);
@@ -884,23 +989,11 @@ async function main(): Promise<number> {
 
   // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
   //
-  // `--quick` runs selftest() first (see the npm key), and selftest() refuses
-  // to return 0 unless a planted failing gate produced exit 1, both captured
-  // streams, and a skipped dependent. A runner that cannot fail authorising a
-  // push would be strictly worse than no lane at all: it would replace "nobody
-  // checked" with "something green says it checked".
+  // `--quick` runs selftest() first (see the npm key), and selftest() refuses to return 0 unless a planted failing gate produced exit 1, both captured streams, and a skipped dependent. A runner that cannot fail authorising a push would be strictly worse than no lane at all: it would replace "nobody checked" with "something green says it checked".
   //
-  // Minted on RED as well as green, carrying the failing ids. The guard decides
-  // what a red receipt is worth; the runner's job is to record what happened,
-  // not to editorialise. A receipt that appeared only on success would make
-  // "gates failed" and "gates never ran" the same observation at the guard --
-  // the exact conflation this repo keeps paying for.
-  // SAMPLE THE TREE AGAIN, and compare. dirtyAtStart alone answers "was the tree
-  // dirty when we began"; it cannot answer "did it hold still", and those are
-  // different questions once anything else is running in this worktree. Two
-  // whole-lane runs were spent on 2026-08-27 discovering that four gates failed
-  // only in the lane and passed standalone every time, because a peer session
-  // was editing files mid-run. The lane read a moving tree and said nothing.
+  // Minted on RED as well as green, carrying the failing ids. The guard decides what a red receipt is worth; the runner's job is to record what happened, not to editorialise. A receipt that appeared only on success would make "gates failed" and "gates never ran" the same observation at the guard -- the exact conflation this repo keeps paying for. SAMPLE THE TREE AGAIN, and
+  // compare. dirtyAtStart alone answers "was the tree dirty when we began"; it cannot answer "did it hold still", and those are different questions once anything else is running in this worktree. Two whole-lane runs were spent on 2026-08-27 discovering that four gates failed only in the lane and passed standalone every time, because a peer session was editing files mid-run. The
+  // lane read a moving tree and said nothing.
   const dirtyAtEnd = dirtyDigest();
   if (dirtyAtEnd !== dirtyAtStart) {
     humanOut(
@@ -911,14 +1004,18 @@ async function main(): Promise<number> {
   }
 
   if (opts.quick && !opts.manifest) {
+    const narrowedBy = narrowingFlags(opts);
     writeReceipt(
       {
         headTree: (() => {
-          try {
-            return gitOut(['rev-parse', 'HEAD^{tree}']);
-          } catch {
-            return '';
+          const tree = receiptTree(headTreeAtStart, headTreeNow());
+          if (tree === '' && headTreeAtStart !== '') {
+            humanOut(
+              'WARNING: HEAD moved while these gates ran, so this receipt vouches for no tree and\n' +
+                '  cannot authorise a push. Re-run on a HEAD that stays put.'
+            );
           }
+          return tree;
         })(),
         head: (() => {
           try {
@@ -937,13 +1034,16 @@ async function main(): Promise<number> {
         dirtyDigest: dirtyAtStart,
         stable: dirtyAtEnd === dirtyAtStart,
         selection: selection.description ?? null,
-        whole: opts.only === undefined && opts.skip === undefined,
+        whole: narrowedBy.length === 0,
+        narrowedBy,
         exitCode,
         failed: results.filter((r) => r.status === 'fail').map((r) => r.id),
         blocked: results.filter((r) => r.status === 'blocked').map((r) => r.id),
         wallMs: meta.wallMs,
         finishedAt: new Date().toISOString(),
+        judgedRoot: REPO_ROOT,
       },
+      receiptPathFor(opts),
       humanOut
     );
   }

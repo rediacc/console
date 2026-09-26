@@ -1,0 +1,27 @@
+{
+  "$comment": [
+    "The commit policy's data: which paths a [no-review] commit may touch, the [hotfix] size limit, the CI skip tokens agents may not write, and the feature-branch shape.",
+    "Decided in the commit-policy plan under agent/plans (sections 4 and 5.2) and the operator rulings of 2026-09-25.",
+    "Read by .claude/rediacc_hooks/commit_policy.py (load_config), which the pre-bash guards and the git-level hooks under .claude/rediacc_hooks/git/ share. Each key's `value` falls back to commit_policy.DEFAULTS when missing, and test-block_commit_on_main.py asserts the two agree."
+  ],
+  "no_review_eligible": {
+    "$comment": "Writing only (decision 3): a [no-review] commit's every path must match one of these. `**/` spans any number of directories, `*` stays inside one.",
+    "value": ["agent/**", "docs/**", "**/*.md"]
+  },
+  "no_review_denied": {
+    "$comment": "Never [no-review], even when an eligible glob matches: .claude/** holds agent programs (commands, agents, output styles, skills) and CLAUDE.md is policy.",
+    "value": [".claude/**", "CLAUDE.md", "**/CLAUDE.md"]
+  },
+  "hotfix_max_files": {
+    "$comment": "Decision 4: a [hotfix] commit on main touches at most this many files. A larger fix belongs on a branch and a reviewed PR.",
+    "value": 5
+  },
+  "skip_tokens": {
+    "$comment": "Section 4.3: GitHub's five skip forms plus the rejected [no-ci]. A skipped workflow leaves the required CI Complete check at Expected forever. Matched case-insensitively; the `skip-checks: true` trailer is matched separately.",
+    "value": ["[skip ci]", "[ci skip]", "[no ci]", "[skip actions]", "[actions skip]", "[no-ci]"]
+  },
+  "branch_shape": {
+    "$comment": "Feature branches are MMDD-N, no suffix. /pr-merge matches a submodule's coordinated branch by this exact name.",
+    "value": "^[0-9]{4}-[0-9]+$"
+  }
+}

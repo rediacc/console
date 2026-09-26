@@ -29,11 +29,21 @@ on:
       # Worker whose backup endpoints answer 503 at runtime. That is the exact
       # shape of the OTLP bug above, and `required` is what turns it into a
       # loud workflow error instead of a silent production regression.
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
+
 jobs:
   # Read regions.json to build the deployment matrix
   read-regions:
     name: Read regions
     runs-on: ubuntu-latest
+    # Sparse checkout of regions.json. No GitHub API.
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.regions.outputs.matrix }}
     steps:
@@ -56,6 +66,11 @@ jobs:
   build:
     name: Build account portal
     runs-on: ubuntu-latest
+    # Checkout only against GITHUB_TOKEN; the private submodules come in on the
+    # cd-preset App token, and every deploy credential is Cloudflare/AWS/Stripe
+    # from Bitwarden. No GitHub API write anywhere in this file.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -70,11 +85,13 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+            TURNSTILE_SITE_KEY > BWS_TURNSTILE_SITE_KEY
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account
@@ -87,9 +104,7 @@ jobs:
       - name: Init account submodule
         run: git submodule update --init private/account
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
+      - uses: ./.github/actions/setup-node-npm
 
       - name: Install dependencies
         run: npm ci && npm run install:natives
@@ -105,8 +120,18 @@ jobs:
         run: npm install && npx vite build --outDir ../../../workers/account/dist/account
         working-directory: private/account/web
         env:
-          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
           VITE_CI_MODE: 'false'
+
+      # The account worker enforces Turnstile whenever its secret is set, so a
+      # portal built without the site key renders no widget and refuses every
+      # login ("Captcha verification required", production 2026-09-24).
+      - name: Portal carries the Turnstile site key
+        run: |
+          test -n "$VITE_TURNSTILE_SITE_KEY" || { echo "::error::TURNSTILE_SITE_KEY resolved empty; refusing to deploy a portal nobody can log in to"; exit 1; }
+          grep -rqF -- "$VITE_TURNSTILE_SITE_KEY" workers/account/dist/account/assets || { echo "::error::workers/account/dist/account does not contain the Turnstile site key"; exit 1; }
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
 
       - name: Install account worker dependencies
         run: npm install
@@ -122,6 +147,10 @@ jobs:
   # Deploy to each region in parallel
   deploy:
     name: Deploy ${{ inputs.target }} ${{ matrix.id }}
+    # As `build`. The environment: deployment record is created by the runner,
+    # not by the token, so deployments: write is not needed.
+    permissions:
+      contents: read
     needs: [read-regions, build]
     runs-on: ubuntu-latest
     strategy:
@@ -178,11 +207,26 @@ jobs:
             OBS_OTLP_CREDENTIALS_ASIA > BWS_OBS_OTLP_CREDENTIALS_ASIA
             OBS_OTLP_CREDENTIALS_EU > BWS_OBS_OTLP_CREDENTIALS_EU
             OBS_OTLP_CREDENTIALS_US > BWS_OBS_OTLP_CREDENTIALS_US
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
+            AWS_SES_FROM > BWS_AWS_SES_FROM
+            ROOT_EMAIL > BWS_ROOT_EMAIL
+            SELLER_ADDRESS_LINE1 > BWS_SELLER_ADDRESS_LINE1
+            SELLER_ADDRESS_LINE2 > BWS_SELLER_ADDRESS_LINE2
+            SELLER_CITY > BWS_SELLER_CITY
+            SELLER_COUNTRY > BWS_SELLER_COUNTRY
+            SELLER_EMAIL > BWS_SELLER_EMAIL
+            SELLER_NAME > BWS_SELLER_NAME
+            SELLER_POSTAL_CODE > BWS_SELLER_POSTAL_CODE
+            SELLER_REGISTRATION_NUMBER > BWS_SELLER_REGISTRATION_NUMBER
+            SELLER_VAT_NUMBER > BWS_SELLER_VAT_NUMBER
+            TURNSTILE_SITE_KEY > BWS_TURNSTILE_SITE_KEY
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,account
@@ -194,9 +238,7 @@ jobs:
       - name: Init account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
+      - uses: ./.github/actions/setup-node-npm
 
       - name: Install dependencies
         run: npm ci && npm run install:natives
@@ -229,7 +271,20 @@ jobs:
           MATRIX_DOMAIN: ${{ matrix.domain }}
           MATRIX_EDGE_WORKER_NAME: ${{ matrix.edgeWorkerName }}
           MATRIX_EDGE_DOMAIN: ${{ matrix.edgeDomain }}
-        run: .ci/scripts/deploy/resolve-account-deploy-config.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.resolve_account_deploy_config
+
+      # Preflight: the secret this job is about to push must be the one the live
+      # `rediacc-console` Turnstile widget holds. On 2026-09-24 Bitwarden's copy had
+      # silently drifted, a routine secret push deployed it to every account Worker,
+      # and every login failed with "Captcha verification failed". Exit 1 is drift,
+      # exit 2 is no verdict (API or credential failure); both block the deploy.
+      - name: Turnstile widget matches Bitwarden (${{ matrix.id }})
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
+          CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ env.BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.turnstile_drift
 
       # Preflight: the production price catalog is only updated by a manual
       # stripe-sync run per regional Stripe account. Fail the deploy if the
@@ -251,15 +306,15 @@ jobs:
         run: npx tsx scripts/check-live-prices.ts
 
       - name: Deploy account Worker (${{ matrix.id }})
-        run: .ci/scripts/deploy/deploy-account.sh --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region ${{ steps.config.outputs.region }} --target ${{ inputs.target }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Set Worker secrets (${{ matrix.id }})
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # Region-aware secrets: resolved via bash indirection from SUFFIX
           # No STRIPE_SANDBOX_*: set-account-worker-secrets.sh blanks Stripe on
           # edge (billing disabled) and uses the regional key on stable, so the
@@ -286,8 +341,8 @@ jobs:
           AWS_SES_ACCESS_KEY_ID_ASIA: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_ASIA }}
           AWS_SES_ACCESS_KEY_ID_EU: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
           AWS_SES_ACCESS_KEY_ID_US: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_US }}
-          AWS_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
-          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
+          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_REGION: ${{ matrix.sesRegion }}
           AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_ASIA }}
           AWS_SES_SECRET_ACCESS_KEY_EU: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
@@ -299,18 +354,18 @@ jobs:
           OBS_OTLP_CREDENTIALS_EU: ${{ env.BWS_OBS_OTLP_CREDENTIALS_EU }}
           OBS_OTLP_CREDENTIALS_US: ${{ env.BWS_OBS_OTLP_CREDENTIALS_US }}
           R2_JURISDICTION: ${{ matrix.r2Jurisdiction }}
-          ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
-          SELLER_ADDRESS_LINE1: ${{ vars.SELLER_ADDRESS_LINE1 }}
-          SELLER_ADDRESS_LINE2: ${{ vars.SELLER_ADDRESS_LINE2 }}
-          SELLER_CITY: ${{ vars.SELLER_CITY }}
-          SELLER_COUNTRY: ${{ vars.SELLER_COUNTRY }}
-          SELLER_EMAIL: ${{ vars.SELLER_EMAIL }}
-          SELLER_NAME: ${{ vars.SELLER_NAME }}
-          SELLER_POSTAL_CODE: ${{ vars.SELLER_POSTAL_CODE }}
-          SELLER_REGISTRATION_NUMBER: ${{ vars.SELLER_REGISTRATION_NUMBER }}
-          SELLER_VAT_NUMBER: ${{ vars.SELLER_VAT_NUMBER }}
+          ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
+          SELLER_ADDRESS_LINE1: ${{ env.BWS_SELLER_ADDRESS_LINE1 }}
+          SELLER_ADDRESS_LINE2: ${{ env.BWS_SELLER_ADDRESS_LINE2 }}
+          SELLER_CITY: ${{ env.BWS_SELLER_CITY }}
+          SELLER_COUNTRY: ${{ env.BWS_SELLER_COUNTRY }}
+          SELLER_EMAIL: ${{ env.BWS_SELLER_EMAIL }}
+          SELLER_NAME: ${{ env.BWS_SELLER_NAME }}
+          SELLER_POSTAL_CODE: ${{ env.BWS_SELLER_POSTAL_CODE }}
+          SELLER_REGISTRATION_NUMBER: ${{ env.BWS_SELLER_REGISTRATION_NUMBER }}
+          SELLER_VAT_NUMBER: ${{ env.BWS_SELLER_VAT_NUMBER }}
           STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET_ASIA: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_ASIA }}
           STRIPE_WEBHOOK_SECRET_EU: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
           STRIPE_WEBHOOK_SECRET_US: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_US }}
-        run: .ci/scripts/deploy/set-account-worker-secrets.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_account_worker_secrets

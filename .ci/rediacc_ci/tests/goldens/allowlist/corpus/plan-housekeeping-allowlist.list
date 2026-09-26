@@ -1,0 +1,17 @@
+# Plans that must outlive .ci/config/plan-lifecycle.json's delete_days ON PURPOSE.
+#
+# Format, one entry per plan, the BLOCKER line directly above its path:
+#     # BLOCKER: <why this plan must stay, and what makes that true>
+#     YYYY-MM-DD  agent/PLAN-example.md
+#
+# THREE LIVENESS RULES, all re-derived by check-plan-housekeeping.sh rather than
+# believed, and the third is what stops this becoming a dumping ground:
+#   1. the path must be a TRACKED plan file -- an entry for a deleted plan is red
+#   2. the plan must actually be over the threshold -- an entry that suppresses
+#      nothing is red, which is the converse direction most allowlists never check
+#   3. the date is a HARD UTC expiry: the entry goes red on it whether or not
+#      anyone looked, so an exemption cannot outlive the argument for it
+#
+# EMPTY IS THE CORRECT STATE and it is safe: the floor (30 tracked plans) and the
+# rules above mean an empty list cannot make the gate vacuous. Measured
+# 2026-09-03, nothing needs an entry -- no plan in this tree is over 33 days.

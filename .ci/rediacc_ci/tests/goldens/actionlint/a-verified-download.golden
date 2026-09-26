@@ -1,0 +1,10 @@
+# twin .ci/scripts/security/actionlint.sh blob e58816fbc1d7a74a6dedf647227c8f19b754be8d
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ fetching actionlint 0.0.0-fixture (<arch>)
+→ Running actionlint over 3 workflow file(s)
+✓ actionlint clean across 3 workflow file(s)
+--- calls ---
+FAKECALL curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o <cache>/actionlint-0.0.0-fixture/al.<tmp>/actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v0.0.0-fixture/actionlint_0.0.0-fixture_linux_<arch>.tar.gz
+FAKECALL actionlint -no-color <fx>/.github/workflows/alpha.yml <fx>/.github/workflows/beta.yml <fx>/.ci/breakpoint/workflow/breakpoint.yml

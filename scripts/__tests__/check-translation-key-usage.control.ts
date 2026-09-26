@@ -19,6 +19,7 @@
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
@@ -26,7 +27,7 @@ import { globSync } from 'glob';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '../..');
 const WWW_SRC = path.join(REPO, 'packages/www/src');
-const GATE = path.join(REPO, 'scripts/check-translation-key-usage.ts');
+const GATE = path.join(REPO, 'scripts/gates/check-translation-key-usage.ts');
 const EN = path.join(WWW_SRC, 'i18n/translations/en.json');
 
 interface Case {
@@ -124,9 +125,14 @@ function namespaceVarsInUse(): string[] {
   return [...names].sort();
 }
 
-function gateReports(bad: string): boolean {
+/** Run the gate against the MIRROR through its KEY_USAGE_WWW_SRC seam. */
+function gateReports(bad: string, mirror: string): boolean {
   try {
-    const out = execFileSync('npx', ['tsx', GATE], { cwd: REPO, encoding: 'utf8' });
+    const out = execFileSync('npx', ['tsx', GATE], {
+      cwd: REPO,
+      encoding: 'utf8',
+      env: { ...process.env, KEY_USAGE_WWW_SRC: mirror, REDIACC_KEY_USAGE_PROBE: '1' },
+    });
     return out.includes(bad);
   } catch (err) {
     const e = err as { stdout?: string; stderr?: string };
@@ -143,41 +149,34 @@ function main(): void {
     process.exit(1);
   }
 
-  // The probe MUST be written into the real www source tree, not a tmpdir: the gate under
-  // test scans WWW_SRC, so a probe anywhere else would be invisible to it and every case
-  // would report "ignored" -- a control that passes its negative cases while measuring
-  // nothing. There was an unused `mkdtempSync` scratch dir here whose only other mention was
-  // its own rmSync; it implied a sandbox that never existed and is gone.
-  //
-  // Residual risk, stated rather than papered over: each write is unlink'd in a `finally`,
-  // so ordinary failures clean up, but a SIGKILL mid-run can leave __control_probe__.tsx in
-  // real source. The name is deliberately unmistakable, and the guard below refuses to run
-  // against a leftover probe rather than folding it into the measurement.
-  const probeDir = path.join(WWW_SRC, 'components');
-  const stale = path.join(probeDir, '__control_probe__.tsx');
-  if (fs.existsSync(stale)) {
-    console.error(
-      `VACUOUS: a leftover ${stale} is already present.\n` +
-        '  A previous run was killed mid-probe. Remove it and re-run; leaving it would\n' +
-        "  fold one case's source into every later case."
-    );
-    process.exit(1);
+  // The probe goes into a MIRROR of the www source, never the real tree. It used to be
+  // written into packages/www/src/components and unlinked in a `finally`, because the gate
+  // scanned a hard-coded WWW_SRC and a probe anywhere else was invisible to it; a SIGKILL
+  // mid-run left __control_probe__.tsx in real source, and every concurrent reader of that
+  // tree saw it (check:ci-gate-tree-writes V4). The gate now takes KEY_USAGE_WWW_SRC, so
+  // the mirror holds exactly what it reads: the real en.json, copied, and the probe. The
+  // probe is the only .tsx in the mirror, so each case measures that source and nothing else.
+  const mirror = fs.mkdtempSync(path.join(os.tmpdir(), 'key-usage-mirror-'));
+  let failures = 0;
+  try {
+    failures = runCases(mirror);
+  } finally {
+    fs.rmSync(mirror, { recursive: true, force: true });
   }
+  report(failures);
+}
+
+function runCases(mirror: string): number {
+  fs.mkdirSync(path.join(mirror, 'i18n', 'translations'), { recursive: true });
+  fs.copyFileSync(EN, path.join(mirror, 'i18n', 'translations', 'en.json'));
+  const probeDir = path.join(mirror, 'components');
+  fs.mkdirSync(probeDir, { recursive: true });
+  const probe = path.join(probeDir, '__control_probe__.tsx');
   let failures = 0;
 
-  // Tell the gate this fixture is a LIVE probe, not the orphan a killed run leaves behind.
-  // The gate diagnoses an orphan by filename; without this it would refuse every case here.
-  process.env.REDIACC_KEY_USAGE_PROBE = '1';
-
   for (const c of CASES) {
-    const probe = path.join(probeDir, `__control_probe__.tsx`);
     fs.writeFileSync(probe, c.source, 'utf8');
-    let detected: boolean;
-    try {
-      detected = gateReports(BAD);
-    } finally {
-      fs.unlinkSync(probe);
-    }
+    const detected = gateReports(BAD, mirror);
     const ok = detected === c.shouldDetect;
     failures += ok ? 0 : 1;
     console.log(
@@ -199,17 +198,12 @@ function main(): void {
   }
   const unresolved: string[] = [];
   for (const name of inUse) {
-    const probe = path.join(probeDir, '__control_probe__.tsx');
     fs.writeFileSync(
       probe,
       `const ${name} = 'pages.partners.form';\nexport const C = () => <p>{t(\`\${${name}}.${BAD}\`)}</p>;\n`,
       'utf8'
     );
-    try {
-      if (!gateReports(BAD)) unresolved.push(name);
-    } finally {
-      fs.unlinkSync(probe);
-    }
+    if (!gateReports(BAD, mirror)) unresolved.push(name);
   }
   if (unresolved.length > 0) {
     failures += unresolved.length;
@@ -217,7 +211,10 @@ function main(): void {
   } else {
     console.log(`  ok   all ${inUse.length} in-use namespace names resolve: ${inUse.join(', ')}`);
   }
+  return failures;
+}
 
+function report(failures: number): void {
   if (failures > 0) {
     console.error(
       `\n✗ ${failures} control case(s) failed. Namespace discovery has regressed —\n` +

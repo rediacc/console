@@ -38,12 +38,13 @@ on:
         type: boolean
         default: false
 
-# Required for release publishing, Docker, and Cloudflare Pages deployment
-permissions:
-  actions: write
-  contents: write
-  packages: write       # For GHCR push
-  attestations: write   # Verify artifact provenance
+# Release publishing, Docker and Cloudflare Pages scopes are declared per job
+# below, not here: only tag-and-release needs contents: write, and only
+# publish needs packages: write.
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Queue new releases instead of cancelling in-progress ones
 concurrency:
@@ -58,6 +59,13 @@ jobs:
   init:
     name: Initialize
     runs-on: ubuntu-latest
+    # actions: read is for resolve-ci-run.sh, which reads
+    # repos/*/actions/runs with github.token. Everything else in this job
+    # (check-existing-release, assert-artifact-version, the submodule fetch)
+    # runs on the cd-preset App token. No write scope is needed here.
+    permissions:
+      contents: read
+      actions: read
     outputs:
       ci_run_id: ${{ steps.resolve.outputs.ci_run_id }}
       ci_sha: ${{ steps.resolve.outputs.ci_sha }}
@@ -81,11 +89,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
@@ -107,7 +116,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           INPUT_CI_RUN_ID: ${{ inputs.ci_run_id }}
           ALLOW_STALE: ${{ inputs.allow_stale_ci_run_id }}
-        run: .ci/scripts/release/resolve-ci-run.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.resolve_ci_run
 
       - name: Stale ref check (workers-only)
         if: inputs.deploy_workers_only == true
@@ -128,14 +137,14 @@ jobs:
         env:
           DEPLOY_WORKERS_ONLY: ${{ inputs.deploy_workers_only }}
           RELEASE_MODE: ${{ inputs.release_mode }}
-        run: .ci/scripts/release/decide-release-mode.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.decide_release_mode
 
       # Retry/workers-only mode: use current version from latest tag without bumping
       - name: Resolve version (retry/workers-only mode)
         if: steps.skip-check.outputs.retry_mode == 'true' || steps.skip-check.outputs.workers_only == 'true'
         id: version
         run: |
-          VERSION=$(.ci/scripts/version/resolve-version.sh --current)
+          VERSION=$(PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --current)
           echo "next_version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "bump_type=none" >> "$GITHUB_OUTPUT"
           echo "::notice::Using existing version $VERSION (from latest tag)"
@@ -153,7 +162,7 @@ jobs:
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.initialize --output "$GITHUB_OUTPUT"
 
       - name: Generate channel
         id: channel
@@ -168,7 +177,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ steps.init.outputs.next_version }}
-        run: .ci/scripts/release/check-existing-release.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_existing_release
 
       # Artifact-version assertion: catch the stale-ci_run_id foot-gun.
       # If someone dispatches with a ci_run_id whose artifacts were built
@@ -205,7 +214,7 @@ jobs:
           # workers-only step wins when it ran, otherwise initialize.sh's.
           VERSION: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
           CI_RUN_ID: ${{ steps.resolve.outputs.ci_run_id }}
-        run: .ci/scripts/release/assert-artifact-version.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_artifact_version
 
   # ============================================================================
   # PUBLISH
@@ -215,6 +224,18 @@ jobs:
   publish:
     name: Tag & Release
     runs-on: ubuntu-latest
+    # packages: write because retag_image.py does `buildx imagetools create`,
+    # which PUSHES to ghcr. actions: read for the cross-run
+    # download-artifact (run-id + github-token). attestations: read for
+    # `gh attestation verify`, which only READS the attestation - the signing
+    # and storing happens in cd-stage.yml, not here.
+    # The environment: edge deployment record is created by the runner, not the
+    # token, so deployments: write is not needed.
+    permissions:
+      contents: read
+      packages: write
+      actions: read
+      attestations: read
     needs: [init]
     if: >-
       success()
@@ -240,11 +261,13 @@ jobs:
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - uses: ./.github/actions/app-token
         if: needs.init.outputs.workers_only != 'true'
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
@@ -256,10 +279,8 @@ jobs:
           filter: blob:none   # see the divergence-check checkout above
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         if: needs.init.outputs.workers_only != 'true'
-        with:
-          node-version: '22'
 
       # -----------------------------------------------------------------------
       # Step 1: Promote Docker images (channel -> version + latest)
@@ -278,11 +299,11 @@ jobs:
           CHANNEL="${{ needs.init.outputs.channel }}"
           VERSION="${{ needs.init.outputs.next_version }}"
 
-          .ci/scripts/docker/retag-image.sh --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
-          .ci/scripts/docker/retag-image.sh --image rdc --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image renet --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image rdc --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
           # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-stage stages :CHANNEL.
-          .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
       # Step 1b: Install dependencies and build shared packages
@@ -336,7 +357,7 @@ jobs:
         if: needs.init.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/release/verify-artifact-attestation.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.verify_artifact_attestation
 
       # Tag creation + GitHub Release + Homebrew update moved to the
       # `tag-and-release` job below, which runs after edge deploys +
@@ -360,19 +381,19 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
-        run: .ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable_hotfix
 
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
-        run: .ci/scripts/deploy/promote-docker-to-stable-hotfix.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_docker_to_stable_hotfix
 
       # -----------------------------------------------------------------------
       # Step 5: Cleanup channel Docker tags
       # -----------------------------------------------------------------------
       - name: Cleanup channel Docker tags
         if: needs.init.outputs.workers_only != 'true'
-        run: .ci/scripts/release/cleanup-channel-docker-tags.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.cleanup_channel_docker_tags
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CHANNEL: ${{ needs.init.outputs.channel }}
@@ -389,7 +410,7 @@ jobs:
           VERSION: ${{ needs.init.outputs.next_version }}
           CI_RUN_ID: ${{ needs.init.outputs.ci_run_id }}
           CI_SHA: ${{ needs.init.outputs.ci_sha }}
-        run: .ci/scripts/release/deployment-summary.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.deployment_summary
 
   # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
   # BEFORE publish, so broken artifacts never reach the edge or stable channel.
@@ -399,6 +420,11 @@ jobs:
   # ============================================================================
   deploy-marketing-edge:
     name: Deploy edge Marketing
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish]
     # Cannot use bare success() here: in workers_only mode `publish` is
     # correctly skipped (its own `if:` gates on workers_only), and bare
@@ -420,6 +446,11 @@ jobs:
 
   deploy-account-edge:
     name: Deploy edge Account (all regions)
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish]
     # See deploy-marketing-edge above for why we don't use bare success().
     if: >-
@@ -438,6 +469,11 @@ jobs:
   # ============================================================================
   deploy-marketing-stable:
     name: Deploy stable Marketing (hotfix)
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish, smoke-test, tag-and-release]
     # tag-and-release is correctly skipped in retry/workers-only mode (the
     # tag already exists), so we cannot use bare success() here -- a skipped
@@ -461,6 +497,11 @@ jobs:
 
   deploy-account-stable:
     name: Deploy stable Account (hotfix, all regions)
+    # The callee needs only checkout. Without this block it inherited this
+    # workflow contents:write + packages:write + actions:write + attestations:write,
+    # which no step in the called workflow uses.
+    permissions:
+      contents: read
     needs: [init, publish, smoke-test, tag-and-release]
     # See deploy-marketing-stable above for why we don't use bare success().
     if: >-
@@ -483,6 +524,9 @@ jobs:
   smoke-test:
     name: Smoke Test
     runs-on: ubuntu-slim
+    # Checkout, then HTTP probes against the deployed endpoints. No GitHub API.
+    permissions:
+      contents: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge]
     # See deploy-marketing-edge above for why we don't use bare success().
     # smoke-test must still run when publish is skipped (workers_only),
@@ -498,16 +542,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # .ci/scripts is needed too: the smoke test itself now lives there.
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             regions.json
             .ci/scripts
+            .ci/rediacc_ci
           sparse-checkout-cone-mode: false
 
       - name: Verify edge endpoints
         env:
           VERSION: ${{ needs.init.outputs.next_version }}
           WORKERS_ONLY: ${{ needs.init.outputs.workers_only }}
-        run: .ci/scripts/deploy/verify-edge-endpoints.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.verify_edge_endpoints
 
   # ============================================================================
   # POST-PUBLISH INSTALL VALIDATION - Reuses ct-install-methods.yml against
@@ -520,6 +566,10 @@ jobs:
   # ============================================================================
   validate-install-published:
     name: Validate Install (post-publish)
+    # Matches what ct-install-methods.yml declares: checkout plus a ghcr PULL.
+    permissions:
+      contents: read
+      packages: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test]
     # See deploy-marketing-edge above for why we don't use bare success().
     # Workers-only already excluded by the workers_only check; we
@@ -547,6 +597,28 @@ jobs:
   tag-and-release:
     name: Tag & GitHub Release
     runs-on: ubuntu-latest
+    # NO `contents: write`, and that is the point. Every write in this job now
+    # rides the cd-preset App token: the tag push, the submodule tags, the
+    # homebrew-tap bump and the contract floor push go through the global
+    # insteadOf credential, and "Create GitHub Release" is now explicitly on
+    # `steps.app-token.outputs.token` too.
+    #
+    # It used to be the ONE step left on github.token, and it runs LAST, after
+    # the tag push. So the job held two credentials to do one job and the
+    # fragile half went last: lose contents:write and the tag lands while the
+    # Release does not. That is not hypothetical, it is the half-completed
+    # release this repo saw twice, on v1.3.11 and v1.3.8, recorded in
+    # .github/actions/app-token/action.yml.
+    #
+    # One credential for the whole job means the failure mode is now all-or-
+    # nothing rather than partial, which is the property that matters for a
+    # release: a run that cannot authenticate produces no tag AND no Release,
+    # and promote-stable's assert-edge-tag-exists.sh then refuses to promote.
+    #
+    # actions: read is for the cross-run download-artifact.
+    permissions:
+      contents: read
+      actions: read
     needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published]
     if: >-
       success() &&
@@ -568,10 +640,13 @@ jobs:
             CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+            GIT_BOT_NAME > BWS_GIT_BOT_NAME
+            GIT_BOT_EMAIL > BWS_GIT_BOT_EMAIL
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
@@ -594,28 +669,28 @@ jobs:
       - name: Create version tag
         run: |
           VERSION="${{ needs.init.outputs.next_version }}"
-          git config user.name "${{ vars.GIT_BOT_NAME }}"
-          git config user.email "${{ vars.GIT_BOT_EMAIL }}"
+          git config user.name "${BWS_GIT_BOT_NAME}"
+          git config user.email "${BWS_GIT_BOT_EMAIL}"
           git tag -a "v${VERSION}" -m "v${VERSION}"
           git push origin "v${VERSION}"
           echo "::notice::Created tag v${VERSION}"
 
       - name: Tag submodules
-        run: .ci/scripts/release/tag-submodules.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.tag_submodules
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
 
       - name: Update Homebrew formula
         run: |
-          .ci/scripts/release/update-homebrew-tap.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.update_homebrew_tap \
             --version ${{ needs.init.outputs.next_version }} \
             --local-checksums dist/cli \
             --push
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
-          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
+          GIT_BOT_NAME: ${{ env.BWS_GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
 
       # Auto-advance the release-contract-floor ratchet to track the oldest
       # cli sentinel currently on R2. The bijection check uses this as a
@@ -628,15 +703,19 @@ jobs:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-          GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
-          GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
-        run: .ci/scripts/release/advance-contract-floor.sh
+          GIT_BOT_NAME: ${{ env.BWS_GIT_BOT_NAME }}
+          GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.advance_contract_floor
 
       - name: Create GitHub Release
         env:
-          GH_TOKEN: ${{ github.token }}
+          # The App token, not github.token. See this job's `permissions:` block:
+          # every other write here already uses it, and this step running last on
+          # a different credential is what made a lost scope produce a tag with no
+          # Release rather than a clean failure.
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
-        run: .ci/scripts/release/create-github-release.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.create_github_release
 
   # No cleanup-on-failure job. Failure model:
   #   - R2 sentinel is the atomic commit point, written by ci.yml's

@@ -323,7 +323,7 @@ describe('postRepoUpTasks', () => {
       steps,
     });
 
-    // Caller fired DNS early — postRepoUpTasks must not re-run it
+    // Caller fired DNS early, postRepoUpTasks must not re-run it
     expect(mockEnsureRepoDnsRecords).not.toHaveBeenCalled();
     // cert sync ran in parallel; service URLs ran last
     expect(steps.map((s) => s.name)).toEqual(['cert_sync', 'service_urls']);

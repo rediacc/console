@@ -5,7 +5,7 @@
  *   - unset / empty: everything off.
  *   - `1` or `*`: every scope and general (unscoped) logging on.
  *   - comma list (e.g. `daemon,timing`): the listed scopes are on; general
- *     (unscoped) logging is also on when the var is non-empty — any debug
+ *     (unscoped) logging is also on when the var is non-empty, any debug
  *     intent enables baseline logging.
  *
  * Known scopes: `daemon`, `renet`, `timing`, `otel`.
@@ -28,7 +28,7 @@ export function debugEnabled(scope?: string): boolean {
 }
 
 /**
- * Debug logging helper — outputs when `REDIACC_DEBUG` enables the given scope
+ * Debug logging helper, outputs when `REDIACC_DEBUG` enables the given scope
  * (or general logging when no scope is passed).
  */
 export function debugLog(message: string, scope?: string): void {

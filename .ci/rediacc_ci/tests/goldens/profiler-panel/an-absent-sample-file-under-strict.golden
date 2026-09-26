@@ -1,0 +1,16 @@
+# twin .ci/scripts/ci/profiler/panel.sh blob 7c1e340f56711c529ad241bbe2345d12083c81e7
+exit: 1
+--- stdout ---
+::error::profiler: no sample file at <work>/nope.tsv (sampler produced nothing)
+--- stderr ---
+--- summary ---
+
+## Runner Profile
+
+**Samples:** none - no sample file was produced.
+**Reason:** the sampler did not start, or wrote nothing before the job ended
+
+> No profile was collected. Nothing about this job's CPU or memory
+> footprint can be concluded from this run.
+
+

@@ -40,7 +40,7 @@ type DestinationKind = 'storage' | 'hosted-service';
  * 2026-08-15 this command could only make `storage` (rclone) destinations: it
  * hard-required `--storage`. Then the rclone emission was deleted from the unit
  * generator, and the two facts together left NO supported route from
- * `backup strategy set` to a deployable schedule — every path either threw at
+ * `backup strategy set` to a deployable schedule, every path either threw at
  * set time for want of `--storage`, or threw at deploy time because a `storage`
  * destination can no longer be rendered. Only a hand-edited config JSON could
  * produce a working strategy.
@@ -69,10 +69,7 @@ function resolveDestinationKind(
   existing: { kind?: string } | undefined
 ): DestinationKind {
   if (storageFlag) return 'storage';
-  // `kind` is declared OPTIONAL on this parameter on purpose. A destination
-  // read through the config loader has been schema-parsed and always carries
-  // one, but a hand-edited entry (and the operator's live config) has none, and
-  // that case must still resolve to what the entry actually is.
+  // `kind` is declared OPTIONAL on this parameter on purpose. A destination read through the config loader has been schema-parsed and always carries one, but a hand-edited entry (and the operator's live config) has none, and that case must still resolve to what the entry actually is.
   if (existing) {
     return (existing.kind ?? BACKUP_DEFAULTS.DESTINATION_KIND) === 'storage'
       ? 'storage'
@@ -101,7 +98,7 @@ function definedOnly(o: Record<string, unknown>): Record<string, unknown> {
  * Build the destination record to store, from the flags plus whatever is
  * already there. Pure: no config reads, no writes, so a test can drive the
  * exact object the operator's flags produce and hand it straight to the unit
- * generator. That crossing is deliberate — the defects in this stack all came
+ * generator. That crossing is deliberate, the defects in this stack all came
  * from each side being tested against its own fake.
  */
 export function buildDestination(
@@ -110,11 +107,7 @@ export function buildDestination(
 ): BackupStrategyDestination {
   const kind = resolveDestinationKind(o.storage, existingDest);
   if (kind === 'hosted-service') {
-    // `--folder` is a subfolder inside an rclone bucket. The chunk store names
-    // its own keys server-side (the client never composes an object key), so
-    // there is nothing for a folder to mean here. Refused rather than dropped:
-    // dropping it would put backups somewhere other than where the operator
-    // said, which is the failure mode this whole surface keeps producing.
+    // `--folder` is a subfolder inside an rclone bucket. The chunk store names its own keys server-side (the client never composes an object key), so there is nothing for a folder to mean here. Refused rather than dropped: dropping it would put backups somewhere other than where the operator said, which is the failure mode this whole surface keeps producing.
     if (o.folder !== undefined) {
       throw new ValidationError(t('commands.backup.strategy.set.storageRequired'));
     }
@@ -159,29 +152,18 @@ async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
 
   if (dest.kind === 'storage') await assertStorageExists(dest.storage);
 
-  // A kind CHANGE cannot go through the merge in addBackupDestination: it
-  // spreads the new record over the old one, so flipping hosted-service ->
-  // storage would leave `endpoint`/`vaultContent` behind in the file (the
-  // schema strips them on the next read, so the junk would be invisible until
-  // someone diffed the config). Drop the old record first and write a clean one.
-  // Compared through resolveDestinationKind, not `existingDest.kind`, so a
-  // legacy entry with no `kind` at all is not treated as a flip and rewritten
+  // A kind CHANGE cannot go through the merge in addBackupDestination: it spreads the new record over the old one, so flipping hosted-service -> storage would leave `endpoint`/`vaultContent` behind in the file (the schema strips them on the next read, so the junk would be invisible until someone diffed the config). Drop the old record first and write a clean one. Compared through
+  // resolveDestinationKind, not `existingDest.kind`, so a legacy entry with no `kind` at all is not treated as a flip and rewritten
   // for nothing.
   if (existingDest && resolveDestinationKind(undefined, existingDest) !== dest.kind) {
     await configService.removeBackupDestination(o.strategyName, o.destinationName);
   }
   await configService.addBackupDestination(o.strategyName, dest);
 
-  // Saved, then flagged. A `storage` destination is still legal to hold on disk
-  // and still legal to create — but no unit can be generated for one, and an
-  // operator who learns that at deploy time has already bound the strategy and
-  // walked away. Say it here, where the decision is.
+  // Saved, then flagged. A `storage` destination is still legal to hold on disk and still legal to create, but no unit can be generated for one, and an operator who learns that at deploy time has already bound the strategy and walked away. Say it here, where the decision is.
   const unschedulable = unschedulableDestinationReason(dest);
   if (unschedulable) {
-    // Naming the two commands matters: omitting --storage PRESERVES an existing
-    // kind (see resolveDestinationKind), so there is no single flag that turns a
-    // storage destination into a chunk-store one. "Change it to a hosted-service
-    // destination" without the how is the same dead end in a friendlier voice.
+    // Naming the two commands matters: omitting --storage PRESERVES an existing kind (see resolveDestinationKind), so there is no single flag that turns a storage destination into a chunk-store one. "Change it to a hosted-service destination" without the how is the same dead end in a friendlier voice.
     outputService.warn(
       `${unschedulable} The destination was saved, but \`rdc backup schedule\` will refuse to deploy a unit for it. ` +
         `To convert it: rdc backup strategy remove ${o.strategyName} --destination ${o.destinationName} ` +
@@ -190,10 +172,7 @@ async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
   }
 }
 
-// parseRepoFilter turns a comma-separated --include/--exclude value into a repo
-// list, or returns undefined to CLEAR the filter. An empty string or the literal
-// "none" (and a value that is only separators/whitespace) clears it — that's how
-// you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
+// parseRepoFilter turns a comma-separated --include/--exclude value into a repo list, or returns undefined to CLEAR the filter. An empty string or the literal "none" (and a value that is only separators/whitespace) clears it, that's how you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
 // all repos again). setBackupStrategy merges with `{...existing, ...update}`, and
 // an undefined value is dropped on JSON write, so the key is removed.
 export function parseRepoFilter(raw: string): string[] | undefined {
@@ -213,10 +192,7 @@ export function buildStrategyUpdate(
   const u: Partial<BackupStrategyConfig> = {};
   if (opts.cron !== undefined) u.schedule = opts.cron;
   if (opts.mode !== undefined) {
-    // `--mode cold` used to be refused here, because the scheduled verb could
-    // only take a hot snapshot and accepting the flag would have promised a
-    // quiesce that never happened. `backup snapshot --cold` exists now, so
-    // both modes schedule and there is nothing left to refuse: the schema's
+    // `--mode cold` used to be refused here, because the scheduled verb could only take a hot snapshot and accepting the flag would have promised a quiesce that never happened. `backup snapshot --cold` exists now, so both modes schedule and there is nothing left to refuse: the schema's
     // enum is exactly hot|cold, so any other value fails at config load.
     u.mode = opts.mode as 'hot' | 'cold';
   }
@@ -253,22 +229,15 @@ async function applyBackupStrategyOptions(
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
 
-  // Strategy fields and destination fields are applied in the SAME call. This
-  // used to be an either/or, so creating a strategy with a destination took two
-  // invocations — and the first one, `set <new> --destination …`, silently
-  // produced a strategy with an empty schedule.
+  // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
   //
-  // `--bwlimit` and `--enable/--disable` stay scoped to the destination when one
-  // is named, which is what they have always meant there: `set s --destination d
-  // --disable` disables that destination, not the whole strategy.
+  // `--bwlimit` and `--enable/--disable` stay scoped to the destination when one is named, which is what they have always meant there: `set s --destination d --disable` disables that destination, not the whole strategy.
   const update = buildStrategyUpdate(
     { ...options, bwlimit: targetsDestination ? undefined : options.bwlimit },
     targetsDestination ? undefined : enabled
   );
 
-  // Order matters: upsertBackupDestination reads the stored strategy to merge
-  // destination defaults, so the strategy has to exist before the destination
-  // is attached. These cannot run in parallel.
+  // Order matters: upsertBackupDestination reads the stored strategy to merge destination defaults, so the strategy has to exist before the destination is attached. These cannot run in parallel.
   if (!targetsDestination || Object.keys(update).length > 0) {
     await configService.setBackupStrategy(name, update);
   }
@@ -336,9 +305,7 @@ function destinationLine(strategy: BackupStrategyConfig, dest: BackupStrategyDes
     dest.kind === 'storage'
       ? `storage=${dest.storage}${dest.folder ? `  folder=${dest.folder}` : ''}`
       : `hosted-service${dest.endpoint ? `  endpoint=${dest.endpoint}` : ''}`;
-  // Same reason the mode marker existed: the operator's live config still holds rclone
-  // destinations, and `show` is where they will look first when a backup stops
-  // happening. An unmarked line here reads as healthy.
+  // Same reason the mode marker existed: the operator's live config still holds rclone destinations, and `show` is where they will look first when a backup stops happening. An unmarked line here reads as healthy.
   const note = unschedulableDestinationReason(dest)
     ? '  (NOT SCHEDULABLE: rclone path removed)'
     : '';
@@ -454,8 +421,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
           outputService.info(t('commands.backup.strategy.show.notConfigured'));
           return;
         }
-        // A strategy is only ever deployed to machines that bind it, so a
-        // listing without bindings cannot answer "why did this not run?".
+        // A strategy is only ever deployed to machines that bind it, so a listing without bindings cannot answer "why did this not run?".
         const boundTo = await strategyBindings();
         for (const name of names) {
           const s = strategies[name];

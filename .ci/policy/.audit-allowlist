@@ -1,0 +1,49 @@
+# Security audit allowlist for dev-only dependencies.
+# Enforced by .ci/rediacc_ci/security/audit.py (two-pass strategy):
+#
+#   Pass 1 — production deps (--omit=dev): ZERO TOLERANCE, no allowlist.
+#            Any severity → hard fail.
+#   Pass 2 — dev deps: this allowlist applies.
+#
+# Rules:
+#   - NEVER add production dependency advisories here; they cannot be allowlisted.
+#   - Only add dev-dependency advisories after confirming no upgrade path exists.
+#   - Each group MUST have a "# BLOCKER: <reason>" line; the audit script
+#     enforces this strictly. Blank lines separate groups.
+#
+# Was EMPTY from 2026-07-31 to 2026-08-01 (see the brace-expansion entry
+# below for why it isn't now). Every entry before that emptying (tar,
+# minimatch, yauzl, brace-expansion, tmp, node-tar — 18 advisory IDs across
+# 6 groups) was justified by an electron / electron-builder chain.
+# Electron is gone from the tree: package-lock.json contains no electron,
+# electron-builder, electron-vite, electron-updater, electron-publish,
+# app-builder-lib or @electron/* entry, and none of those 18 advisories
+# appears in `npm audit` output any more. Do not re-add an entry without
+# confirming the advisory actually fires.
+#
+# 2026-07-31: the brace-expansion GHSA-mh99-v99m-4gvg entry (id 1124334,
+# covering the eslint-vendored 1.1.16 copies via a "<= 5.0.7" affected
+# range) was removed: the advisory's affected range narrowed to
+# ">= 4.0.0, < 5.0.8" under a new id (1130588), which does not reach 1.x.
+# The 1.1.16 copies (eslint, eslint-plugin-import/jsx-a11y/react,
+# @eslint/config-array, @eslint/eslintrc) are still in package-lock.json
+# unchanged; the advisory itself stopped applying to them, not the tree.
+#
+# 2026-08-01: id 1130588's own affected range moved AGAIN (npm's advisory
+# database re-widened it to "<1.1.17", verified live via `npm audit
+# --json`), so it now reaches the same 1.1.16 copies the entry above was
+# removed over. Re-added below. This is not a reversal of that removal's
+# reasoning -- the underlying fact (no upgrade path exists for these six
+# eslint/minimatch@3 edges without crashing eslint) never changed and is
+# independently documented in package.json's brace-expansion@^1.1.7
+# override BLOCKER comment; only the advisory database's own range
+# metadata has been unstable across two consecutive audit windows.
+#
+# 2026-08-04: 1130588 removed again, this time because the TREE moved, not
+# the advisory: GHSA-rgw5-rvv9-x895 (the incomplete-mitigation follow-up)
+# forced the brace-expansion@^1.1.7 override from 1.1.16 up to 1.1.18, so
+# the six eslint/minimatch@3 edges now resolve to a version outside every
+# published range and the advisory no longer fires. The v5 export-shape
+# constraint that justified pinning the 1.x LINE (not a specific patch
+# version) still holds and stays documented in the override's BLOCKER
+# comment in package.json.

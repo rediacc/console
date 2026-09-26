@@ -1,0 +1,25 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v1.2.3
+✓   Input: in
+✓   Output: out/manifest.json
+⚠   Invalid checksum for rdc-linux-x64, skipping
+✓   Skipping linux-arm64 (no checksum file)
+✓   Skipping mac-x64 (no checksum file)
+✓   Skipping mac-arm64 (no checksum file)
+✓   Skipping win-x64 (no checksum file)
+✓   Skipping win-arm64 (no checksum file)
+✓ Manifest generated: out/manifest.json
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+CALL jq	-n	--arg	version	1.2.3	--arg	releaseDate	2026-09-14T00:00:00Z	--arg	releaseNotesUrl	https://github.com/rediacc/console/releases/tag/v1.2.3	--arg	commit	unknown	{version: $version, releaseDate: $releaseDate, releaseNotesUrl: $releaseNotesUrl, commit: $commit, binaries: {}}
+CALL awk	{print $1}	in/rdc-linux-x64.sha256
+CALL mkdir	-p	out
+CALL jq	.
+--- files ---
+{
+  "in/rdc-linux-x64.sha256": "file:484bcbb7d16ffcba",
+  "out/manifest.json": "file:e434e44ac63e59f0"
+}

@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 1
 language: tr
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
@@ -215,7 +215,7 @@ Manuel yapılandırma gerekmez. Kurulum betiği, dağıtım bağlamını URL'den
 
 ## Uzak İkili Güncellemeler
 
-Uzak bir makineye karşı komut çalıştırdığınızda, CLI otomatik olarak eşleşen `renet` ikili dosyasını sağlar. İkili dosya güncellenirse, yeni sürümü alması için yol sunucusu (`rediacc-router`) otomatik olarak yeniden başlatılır.
+Makinede değişiklik yapan komutlar (dağıtımlar, yedeklemeler ve `rdc machine setup` gibi) eşleşen `renet` ikili dosyasını otomatik olarak sağlar. İkili dosya güncellenirse, yeni sürümü alması için yol sunucusu (`rediacc-router`) otomatik olarak yeniden başlatılır. `rdc machine status` ve `rdc repo list` gibi yalnızca okuma yapan komutlar ikili dosyayı hiçbir zaman değiştirmez: makinede zaten bulunan sürümü kullanır ve bu sürüm CLI'ın kendi sürümünden farklıysa bir uyarı gösterir.
 
 Yeniden başlatma şeffaftır ve **kesinti yaratmaz**:
 
@@ -225,4 +225,4 @@ Yeniden başlatma şeffaftır ve **kesinti yaratmaz**:
 - **Mevcut istemci bağlantıları (HTTP, TCP, UDP) etkilenmez.** Yol sunucusu bir yapılandırma sağlayıcısıdır -- veri yolunda değildir. Traefik tüm trafiği doğrudan yönetir.
 - Uygulama konteynerlerinize dokunulmaz -- yalnızca sistem düzeyindeki yol sunucusu süreci yeniden başlatılır.
 
-Otomatik yeniden başlatmayı atlamak için herhangi bir komuta `--skip-router-restart` parametresini ekleyin veya `REDIACC_SKIP_ROUTER_RESTART=1` ortam değişkenini ayarlayın.
+Otomatik yeniden başlatmayı atlamak için renet sağlayan bir komuta `--skip-router-restart` parametresini ekleyin veya `REDIACC_SKIP_ROUTER_RESTART=1` ortam değişkenini ayarlayın.

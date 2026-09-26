@@ -71,8 +71,7 @@ describe('usageViolations', () => {
   it('treats usage exactly AT the quota as not over it', () => {
     // The boundary the flag is defined on. Without this row, a check written
     // with >= instead of > passes every other case here: `usedBytes` only ever
-    // lands exactly on the quota when a subscription fills it precisely, which
-    // is also the moment a wrong comparison starts refusing legitimate writes.
+    // lands exactly on the quota when a subscription fills it precisely, which is also the moment a wrong comparison starts refusing legitimate writes.
     const atLimit = healthyUsage({ quotaBytes: 1000, storedBytes: 900, overLimit: false });
     expect(atLimit.usedBytes).toBe(atLimit.quotaBytes);
     expect(usageViolations(atLimit)).toEqual([]);
@@ -197,8 +196,7 @@ describe('incrementalViolations', () => {
   });
 
   it('catches a full re-upload dressed up as an incremental', () => {
-    // The failure this whole tier exists to catch: the run "succeeds", the
-    // manifest chain looks right, and every cell was sent again.
+    // The failure this whole tier exists to catch: the run "succeeds", the manifest chain looks right, and every cell was sent again.
     const wasteful = { ...incremental, addedBytes: 32 << 20, addedChunkCount: 32 };
     expect(incrementalViolations({ seed, incremental: wasteful, ...write }).join('\n')).toContain(
       'it is not sending only changed cells'
@@ -217,9 +215,7 @@ describe('incrementalViolations', () => {
   });
 
   it('widens the bound by the metadata cells a filesystem write dirties, and no further', () => {
-    // The live suite writes through ext4-inside-LUKS, so a 4 KiB file write
-    // also moves the journal and the group metadata: measured 5 cells for one
-    // `dd`. The allowance has to admit that WITHOUT admitting a re-upload.
+    // The live suite writes through ext4-inside-LUKS, so a 4 KiB file write also moves the journal and the group metadata: measured 5 cells for one `dd`. The allowance has to admit that WITHOUT admitting a re-upload.
     const fiveCells = { ...incremental, addedBytes: 5 << 20, addedChunkCount: 5 };
     expect(
       incrementalViolations({ seed, incremental: fiveCells, ...write }).join('\n'),
@@ -264,9 +260,7 @@ describe('incrementalViolations', () => {
 });
 
 describe('verbIsRegistered', () => {
-  // Shaped like the real `renet backup --help` (verified against the built
-  // binary): the parent's own name never appears, the children are indented one
-  // per line, and the prose above them mentions words that are NOT commands.
+  // Shaped like the real `renet backup --help` (verified against the built binary): the parent's own name never appears, the children are indented one per line, and the prose above them mentions words that are NOT commands.
   const help = [
     'Manage repository backups with support for local and remote storage.',
     '- BTRFS snapshots for consistent backups',
@@ -288,11 +282,7 @@ describe('verbIsRegistered', () => {
   });
 
   it('checks the token AFTER the parent, not the first token', () => {
-    // The regression that only a live run caught. `renet backup --help` lists
-    // the CHILDREN of `backup`, so there is no line reading "backup" in it.
-    // A probe that tested the first token answered "absent" for a verb sitting
-    // in the listing, and the tier that depended on it stayed dark after the
-    // verb had landed.
+    // The regression that only a live run caught. `renet backup --help` lists the CHILDREN of `backup`, so there is no line reading "backup" in it. A probe that tested the first token answered "absent" for a verb sitting in the listing, and the tier that depended on it stayed dark after the verb had landed.
     expect(help).not.toMatch(/^\s+backup(\s|$)/m);
     expect(verbIsRegistered(help, 'backup snapshot')).toBe(true);
     expect(verbIsRegistered(help, 'backup verify')).toBe(true);
@@ -304,9 +294,7 @@ describe('verbIsRegistered', () => {
   });
 
   it('does NOT count a verb that only appears inside prose', () => {
-    // The instrument check: `chunk` appears in the help text, in a sentence.
-    // A substring probe would report the engine as present and light a tier
-    // that then fails eight assertions deep for the wrong reason.
+    // The instrument check: `chunk` appears in the help text, in a sentence. A substring probe would report the engine as present and light a tier that then fails eight assertions deep for the wrong reason.
     expect(help).toContain('chunk');
     expect(verbIsRegistered(help, 'chunk push')).toBe(false);
   });
@@ -324,10 +312,7 @@ describe('chunkVerbs', () => {
   });
 
   it('defaults the restore verb to the one renet now registers', () => {
-    // This used to assert '' — correct while renet had no download path, and
-    // stale from the moment `renet backup restore` landed (2026-08-14) and the
-    // module started defaulting it. The empty default existed so a
-    // plausible-looking guess could not light the restore tier and then fail on
+    // This used to assert '' — correct while renet had no download path, and stale from the moment `renet backup restore` landed (2026-08-14) and the module started defaulting it. The empty default existed so a plausible-looking guess could not light the restore tier and then fail on
     // an unknown command; the tier's live `renet backup --help` probe is what
     // does that job now, so the default is argv, not a claim.
     expect(chunkVerbs({}).restore).toBe('backup restore');
@@ -419,8 +404,7 @@ describe('dryRunViolations', () => {
   });
 
   it('catches a dry run that uploaded, minted, or resolved a stream', () => {
-    // Each of these means "no session, no grant, no upload" was not true — on a
-    // run the operator was told would cost nothing.
+    // Each of these means "no session, no grant, no upload" was not true — on a run the operator was told would cost nothing.
     expect(
       dryRunViolations({ ...dry, chunksUploaded: 1, chunksMissing: 1, bytesUploaded: 4096 }).join(
         '\n'

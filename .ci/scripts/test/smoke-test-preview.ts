@@ -36,12 +36,8 @@ if (!PREVIEW_URL || !TOKEN || !ED25519_PUBLIC_KEY) {
   process.exit(1);
 }
 
-// This guard proves all three are strings from here on, but TypeScript does not
-// carry that narrowing across a closure boundary: every use below sits inside a
-// step function, and there the declared type is still `string | undefined`. The
-// three `!` assertions further down restate what this guard already enforced.
-// They are erased at runtime -- do not replace them with `?? ''` or a default,
-// which would let a missing variable reach the network instead of exiting here.
+// This guard proves all three are strings from here on, but TypeScript does not carry that narrowing across a closure boundary: every use below sits inside a step function, and there the declared type is still `string | undefined`. The three `!` assertions further down restate what this guard already enforced. They are erased at runtime -- do not replace them with `?? ''` or a
+// default, which would let a missing variable reach the network instead of exiting here.
 
 const TEST_MACHINE_ID = 'a'.repeat(64); // deterministic 64-char hex
 const TEST_CLIENT_MACHINE_ID = 'b'.repeat(64);
@@ -62,20 +58,13 @@ function fail(name: string, error: unknown): void {
 
 // ── Step 1: Health check ─────────────────────────────────────────────
 
-// Retried, because a single sample of a globally-propagated Worker is not a
-// measurement of whether it is healthy.
+// Retried, because a single sample of a globally-propagated Worker is not a measurement of whether it is healthy.
 //
-// Measured on run 31193040761: wait-for-preview-worker.sh had just declared
-// "health + server-info both serving, 3 consecutive probes", and this call --
-// the very next step, seconds later, to the SAME endpoint -- returned HTTP 400.
+// Measured on run 31193040761: wait-for-preview-worker.sh had just declared "health + server-info both serving, 3 consecutive probes", and this call -- the very next step, seconds later, to the SAME endpoint -- returned HTTP 400.
 // Probing it by hand afterwards returned 200 with {"status":"ok"}. Cloudflare
-// was mid-propagation, and one unlucky sample failed the whole job, since the
-// caller exits on a health failure.
+// was mid-propagation, and one unlucky sample failed the whole job, since the caller exits on a health failure.
 //
-// This does NOT weaken the check: the assertion is unchanged and a worker that
-// is genuinely unhealthy still fails, three times over, in ~6 seconds. It
-// removes a single-sample flake, which is the opposite of a suppression --
-// a one-shot probe of an eventually-consistent edge was the weak version.
+// This does NOT weaken the check: the assertion is unchanged and a worker that is genuinely unhealthy still fails, three times over, in ~6 seconds. It removes a single-sample flake, which is the opposite of a suppression -- a one-shot probe of an eventually-consistent edge was the weak version.
 const HEALTH_ATTEMPTS = 3;
 const HEALTH_RETRY_MS = 2000;
 
@@ -197,21 +186,14 @@ async function stepServerInfo(): Promise<E2eContext> {
 
 // Step 2b: the preview must not identify as production.
 //
-// ASSERTED, not printed, because printing is precisely how this stayed broken.
-// envSchema defaults ENVIRONMENT to 'production' and nothing set it for
-// preview deploys, so every PR preview reported environment 'production' and
-// updateChannel 'stable'. The line above printed that wrong value on every
-// single run and nobody read it. Meanwhile the same worker rewrites the
-// install.sh it serves to channel pr-N, so 'stable' here would send a CLI
-// installed from this hostname to a different channel on its first update.
+// ASSERTED, not printed, because printing is precisely how this stayed broken. envSchema defaults ENVIRONMENT to 'production' and nothing set it for preview deploys, so every PR preview reported environment 'production' and updateChannel 'stable'. The line above printed that wrong value on every single run and nobody read it. Meanwhile the same worker rewrites the install.sh it
+// serves to channel pr-N, so 'stable' here would send a CLI installed from this hostname to a different channel on its first update.
 function stepPreviewIdentity(serverInfo: ServerInfo): void {
   try {
     if (serverInfo.environment !== 'preview') {
       throw new Error(`environment is "${serverInfo.environment}", expected "preview"`);
     }
-    // A null channel is not this check's business: Step 7 below already reports
-    // an unparseable PREVIEW_URL once, and comparing against null here would
-    // report the same fault a second time in a much more confusing shape.
+    // A null channel is not this check's business: Step 7 below already reports an unparseable PREVIEW_URL once, and comparing against null here would report the same fault a second time in a much more confusing shape.
     const expected = extractChannel(PREVIEW_URL!);
     if (expected !== null && serverInfo.updateChannel !== expected) {
       throw new Error(`updateChannel is "${serverInfo.updateChannel}", expected "${expected}"`);
@@ -317,11 +299,7 @@ function stepValidatePayload(signedLicense: SignedSubscriptionBlob): void {
   }
 }
 
-// ── Step 7: Channel rewrite assertions ─────────────────────────────
-// The preview worker must rewrite install.sh/install.ps1 to bake the
-// PR-N channel into the CLI defaults it hands out. Without this, users
-// visiting a PR preview download the stable CLI instead of the preview
-// build — the exact regression this test exists to catch.
+// ── Step 7: Channel rewrite assertions ───────────────────────────── The preview worker must rewrite install.sh/install.ps1 to bake the PR-N channel into the CLI defaults it hands out. Without this, users visiting a PR preview download the stable CLI instead of the preview build — the exact regression this test exists to catch.
 async function stepChannelRewrite(): Promise<void> {
   const expectedChannel = extractChannel(PREVIEW_URL!);
   if (!expectedChannel) {
@@ -349,6 +327,30 @@ async function stepChannelRewrite(): Promise<void> {
  * that the SERVED BUNDLE still contains the route, because a page dropped from
  * the build takes its route string with it.
  */
+/**
+ * True when any of `srcs` is a served bundle whose text contains `needle`.
+ *
+ * Split out of stepQuotaPageShipped so that function stays under the cognitive
+ * complexity ceiling: the fetch-and-scan loop nests a continue and a break
+ * inside a loop inside a try, and that nesting was the whole of the overage
+ * (measured 11 against the 10 allowed when workers/, .ci/ and eslint-rules/
+ * entered the lint scope on 2026-09-06). Extracting it costs nothing at runtime
+ * and leaves each half describable in one sentence.
+ *
+ * A bundle that will not fetch is skipped rather than fatal: the shell routinely
+ * references cross-origin or already-evicted chunks, and one unreachable script
+ * is not evidence that the route is missing. Only an exhausted list is.
+ */
+async function anyBundleMentions(srcs: string[], needle: string): Promise<boolean> {
+  for (const src of srcs) {
+    const url = src.startsWith('http') ? src : `${PREVIEW_URL}${src}`;
+    const js = await fetch(url);
+    if (!js.ok) continue;
+    if ((await js.text()).includes(needle)) return true;
+  }
+  return false;
+}
+
 async function stepQuotaPageShipped(): Promise<void> {
   try {
     const shell = await fetch(`${PREVIEW_URL}/account/backup-storage`);
@@ -359,17 +361,7 @@ async function stepQuotaPageShipped(): Promise<void> {
     const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
     if (srcs.length === 0) throw new Error('the shell referenced no scripts at all');
 
-    let found = false;
-    for (const src of srcs) {
-      const url = src.startsWith('http') ? src : `${PREVIEW_URL}${src}`;
-      const js = await fetch(url);
-      if (!js.ok) continue;
-      if ((await js.text()).includes('backup-storage')) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
+    if (!(await anyBundleMentions(srcs, 'backup-storage'))) {
       throw new Error(
         'no served bundle mentions the backup-storage route: the quota page is not in this deployment'
       );

@@ -1,0 +1,882 @@
+{
+  "$why": [
+    "Every WORKLIST_* environment name this repository reads, in one place, so that a name nobody reads and a read nobody registered are both findings.",
+    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK, WORKLIST_CADENCE, WORKLIST_FOCUS -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
+    "Measured 2026-09-09 against the bash corpus that has since been ported to pytest: 133 live names across 60 tracked files at 183 read sites. The plan box said 134, which is the GREP answer; one of those, WORKLIST_EMAIL, appeared only in a comment describing a name that no longer existed, which is why this scanner counts READS rather than greps.",
+    "Enforced by check:ci-worklist-env-registry, both directions. Every field except `why` is DERIVED from the code by the gate and pinned here, so this file cannot drift into being a description of what somebody once intended."
+  ],
+  "$gate": ".ci/rediacc_ci/quality/worklist_env_registry.py",
+  "sealed_modules": {
+    ".claude/hooks/stop/wl_roster.py": {
+      "why": "the parallel-writer roster's limits are the operator's (4 writers, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
+      "literals": {
+        "WRITER_CAP": 4,
+        "STATUS_PING_MIN": 20
+      }
+    },
+    ".claude/rediacc_hooks/guards/block_agent_cap.py": {
+      "why": "the PreToolUse half of the same writer cap; it imports WRITER_CAP from wl_roster, and an environment read here would let a spawn bypass the cap the Stop hook enforces"
+    },
+    ".claude/hooks/stop/wl_standdown.py": {
+      "literals": {
+        "FOCUS_BATCH_MIN": 30,
+        "FOCUS_MAX_HOURS": 24
+      },
+      "why": "the stand-down keep-lists (the cap-saturated wait and focus mode) decide which checks still block while the session is told to wait; a variable that retuned a list or the focus batch and expiry limits would be exactly the escape hatch the roster rules out"
+    },
+    ".claude/rediacc_hooks/guards/block_focus_spawn.py": {
+      "why": "the PreToolUse half of focus mode: it refuses writer spawns while a PR wind-down is declared, and an environment read here would let a spawn bypass the focus the Stop hook enforces"
+    },
+    ".claude/hooks/stop/wl_planconc.py": {
+      "why": "plan priority order and the plan-concurrency rules (the mutex and the Owns overlap, operator 2026-09-25 section X); a variable that retuned what counts as an overlap, or which lease counts as live, would be an escape hatch around the pre-agent guard and the roster that read it"
+    },
+    ".claude/hooks/stop/wl_planorder.py": {
+      "why": "the one plan order and concurrency hold every next-item picker reads (queue-slot, the guide, the open list, the backlog nomination, the queue lease beside a free slot); a variable that decided which item is held or which plan ranks first would be an escape hatch around the pre-agent guard and the roster"
+    },
+    ".claude/rediacc_hooks/guards/block_plan_concurrency.py": {
+      "why": "the PreToolUse half of plan concurrency: it refuses a writer spawn that breaks a live exclusive plan or claims files a live plan owns, and an environment read here would let a spawn bypass it"
+    }
+  },
+  "exclusions": {
+    "agent/": "invariant 7: agent/ is live gated state (.claude/hooks/stop/wl_store.py:274), not source. It is full of plans and briefs that NAME these variables in prose, and admitting it would register every name any plan ever discussed. Declared here rather than hardcoded in the gate so the reason travels with the exclusion.",
+    "docs/": "prose about the program, not the program. Same argument as agent/: a documented name is not a read, and a gate that treats it as one can never report a name as dead."
+  },
+  "kinds": {
+    "flag": "a toggle. A typo reads as the default, which for a flag defaulting to `on` is FAIL-OPEN. `why` is REQUIRED, and every default must be one of on, off, 1, 0 or empty.",
+    "tuning": "a numeric threshold, limit, count or timeout. A typo yields the default, which is fail-safe, so no `why` is required. Every default must parse as a number.",
+    "path": "a directory or file location. Named `*_DIR`/`*_ROOT`, or a default containing a path separator.",
+    "handle": "an identity supplied by the harness or the environment: a session id, a pid, a branch, a ref. Unset is the normal state and means `work it out`, so a typo turns a capability off silently. `why` is REQUIRED.",
+    "corpus": "a pattern, list or model id that selects WHAT the program looks at or uses. Narrowing one does not make a check stricter, it makes it see less, which is the vacuity direction. `why` is REQUIRED, and this kind is deliberately the residual so that the residual cannot become a dumping ground."
+  },
+  "names": {
+    "WORKLIST_AGENTS_DIR": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_AGENT_ADOPT_MAX_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'60'"
+      ]
+    },
+    "WORKLIST_AGENT_BRANCH": {
+      "kind": "handle",
+      "defaults": [
+        "NONE"
+      ],
+      "why": "The branch the worklist attributes work to, overriding the `git symbolic-ref` read in wl_core.py:573. A handle rather than a flag: unset is the normal state and means `ask git`. It is also the most-assigned name in the test corpus, which is why a typo here surfaces as a test that quietly reads the real branch."
+    },
+    "WORKLIST_AGENT_HINT": {
+      "kind": "flag",
+      "defaults": [
+        "'on'"
+      ],
+      "why": "FAIL-OPEN ON A TYPO, and it is the reason this registry exists. Defaults to `on`; a misspelled name reads as unset, the default applies, and the agent-hint scorer keeps firing while the author believes they switched it off. wl_agents.py:45 reads it at import because every stop is a fresh process."
+    },
+    "WORKLIST_AGENT_HINT_MAX_PER_SESSION": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_AGENT_HINT_MIN_MARGIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'1'"
+      ]
+    },
+    "WORKLIST_AGENT_HINT_MIN_SCORE": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_AGENT_HINT_REFRESH_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'720'"
+      ]
+    },
+    "WORKLIST_AGENT_PUSHBACK": {
+      "kind": "flag",
+      "defaults": [
+        "'on'"
+      ],
+      "why": "The one-shot per-agent-per-session challenge in wl_agents.py:570. Defaults to `on`, so a typo leaves it on. It is deliberately not a nag, which means a session that meant to silence it and misspelled the name gets exactly one confusing challenge and no clue why."
+    },
+    "WORKLIST_AGENT_STATE_MAX_CHARS": {
+      "kind": "tuning",
+      "defaults": [
+        "'4000'"
+      ]
+    },
+    "WORKLIST_AGENT_STATE_STALE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_ALWAYS_FULL_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_ARCHIVE_HOURS": {
+      "kind": "tuning",
+      "defaults": [
+        "'168'"
+      ]
+    },
+    "WORKLIST_BACKLOG_MAX_PER_SESSION": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_BGSWEEP_AGE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'20'"
+      ]
+    },
+    "WORKLIST_BG_OUTPUT_DIR": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_BG_REPORT_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_BG_STALE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_BIG_OPEN_FLOOR": {
+      "kind": "tuning",
+      "defaults": [
+        "'10'"
+      ]
+    },
+    "WORKLIST_BIG_TOP_N": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
+    },
+    "WORKLIST_BRAVE_MAX_FIRES": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_BRAVE_TTL_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_BRIEF_STALE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'90'"
+      ]
+    },
+    "WORKLIST_BULK_FILE_THRESHOLD": {
+      "kind": "tuning",
+      "defaults": [
+        "'20'"
+      ]
+    },
+    "WORKLIST_CADENCE": {
+      "kind": "flag",
+      "defaults": [
+        "'on'"
+      ],
+      "why": "The cadence gate in wl_checks.py:5333, one report turn between hook demands. Defaults to `on`. Off is the LOUDER setting here, not the quieter one, so a typo silently keeps the pause in place and a session waiting to be asked again is not asked."
+    },
+    "WORKLIST_CADENCE_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_CI_CACHE_FINAL_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'900'"
+      ]
+    },
+    "WORKLIST_CI_CACHE_LIVE_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'180'"
+      ]
+    },
+    "WORKLIST_CI_FORCE_MIN_AGE": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_CI_FORCE_PER_STOP": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_CI_MAX_BLOCKS": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_CI_QUEUE_CACHE_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'180'"
+      ]
+    },
+    "WORKLIST_CI_QUEUE_DEPTH": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_CI_QUEUE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'10'"
+      ]
+    },
+    "WORKLIST_CI_RETRY_PATTERNS": {
+      "kind": "corpus",
+      "defaults": [
+        "'E2E,OPS,Fork Isolation,Migration Test'"
+      ],
+      "why": "The comma-separated job-name patterns wl_ci.py:176 will auto-retry. A corpus, not a knob: adding a pattern widens what the hook is willing to re-run on the operator's behalf, so the value is a policy decision and the default is four named job families."
+    },
+    "WORKLIST_DEAD_HOURS": {
+      "kind": "tuning",
+      "defaults": [
+        "'24'"
+      ]
+    },
+    "WORKLIST_DEFER_AUDIT_BATCH": {
+      "kind": "tuning",
+      "defaults": [
+        "'4'"
+      ]
+    },
+    "WORKLIST_DEFER_AUDIT_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'45'"
+      ]
+    },
+    "WORKLIST_DEFER_EXEC_PER_STOP": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_DEFER_SETTLE_BATCH": {
+      "kind": "tuning",
+      "defaults": [
+        "'4'"
+      ]
+    },
+    "WORKLIST_DEFER_SETTLE_CAP": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
+    },
+    "WORKLIST_DEFER_SETTLE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_DEFER_WINDOW_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_DESIGN_DOCS": {
+      "kind": "path",
+      "defaults": [
+        "'docs/ci-overhaul'"
+      ]
+    },
+    "WORKLIST_DOCS_DRIFT_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'10'"
+      ]
+    },
+    "WORKLIST_FOCUS": {
+      "kind": "flag",
+      "defaults": [
+        "'on'"
+      ],
+      "why": "FAIL-OPEN ON A TYPO: defaults to `on`, and the fail-open direction is OFF, not on. wl_checks.py:5484 checks it only on the path where every violation is about to be rendered (the fail-safe reggate emit); a misspelled name reads as unset, the default `on` applies, and the caller gets the full render it already asked for by default -- a typo here cannot silently suppress output, only fail to suppress it."
+    },
+    "WORKLIST_GUIDE_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'12'"
+      ]
+    },
+    "WORKLIST_HANDOFF_STALE_HOURS": {
+      "kind": "tuning",
+      "defaults": [
+        "'720'"
+      ]
+    },
+    "WORKLIST_HARNESS_PID": {
+      "kind": "handle",
+      "defaults": [
+        "''"
+      ],
+      "why": "The harness pid, overriding the ancestor walk in wl_liveness.py:172, for tests and for setups where the walk cannot see the harness. Read with `.isdigit()`, so a typo and a non-numeric value are indistinguishable from unset and both fall back to the walk."
+    },
+    "WORKLIST_HINTS_FILE": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_IDLE_EDGE_EPSILON_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_INTENT_DEFAULT_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'45'"
+      ]
+    },
+    "WORKLIST_INTENT_MAX_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_JUDGE": {
+      "kind": "handle",
+      "defaults": [
+        "NONE"
+      ],
+      "why": "`off` disables the judge entirely (wl_judge.py:55). Compared with `== \"off\"`, so anything else -- including a misspelled variable name -- leaves the judge ON and spending money. That is the fail-open direction for a paid call."
+    },
+    "WORKLIST_JUDGE_BUDGET_USD": {
+      "kind": "tuning",
+      "defaults": [
+        "'0.25'"
+      ]
+    },
+    "WORKLIST_JUDGE_CACHE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_JUDGE_MODEL": {
+      "kind": "corpus",
+      "defaults": [
+        "'claude-haiku-4-5-20251001'"
+      ],
+      "why": "The model id for the judge call, wl_judge.py:24. Pinned to a dated haiku build rather than an alias, because cost and latency were measured against that build ($0.011-$0.026 warm) and an alias would silently move both."
+    },
+    "WORKLIST_JUDGE_TIMEOUT_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'240'"
+      ]
+    },
+    "WORKLIST_JUSTIFY_AGE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_JUSTIFY_PER_STOP": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_LADDER_INVESTIGATE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'90'"
+      ]
+    },
+    "WORKLIST_LADDER_PING_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'45'"
+      ]
+    },
+    "WORKLIST_LADDER_RESOLVE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_LIVE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_LKG_CHILD": {
+      "kind": "handle",
+      "defaults": [
+        "NONE"
+      ],
+      "why": "The last-known-good recursion guard (wl_lkg.py, agent/plans/PLAN-stop-hook-continuity.md P2.5), set only by worklist.py on the snapshot child it spawns after a live-tree crash. Unset is the normal state. A misspelled read would read as unset inside the child, so a crashing snapshot would try to fall back again; the child's own crash then emits the ordinary crash block, which is the fail-closed direction."
+    },
+    "WORKLIST_MIGRATE_PLANS_SHOW": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_MIGRATE_PLAN_MIN_OPEN": {
+      "kind": "tuning",
+      "defaults": [
+        "'1'"
+      ]
+    },
+    "WORKLIST_OUTQ_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'40'"
+      ]
+    },
+    "WORKLIST_PHANTOM_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_PLANFID_MIN_TASKS": {
+      "kind": "tuning",
+      "defaults": [
+        "'6'"
+      ]
+    },
+    "WORKLIST_PLANFID_RATIO": {
+      "kind": "tuning",
+      "defaults": [
+        "'0.6'"
+      ]
+    },
+    "WORKLIST_PLANFID_RECALL_FLOOR": {
+      "kind": "tuning",
+      "defaults": [
+        "'0.6'"
+      ]
+    },
+    "WORKLIST_PLANFID_SCAN_CAP": {
+      "kind": "tuning",
+      "defaults": [
+        "str(256 * 1024 * 1024)"
+      ]
+    },
+    "WORKLIST_PLANFID_TASK_MATCH": {
+      "kind": "tuning",
+      "defaults": [
+        "'0.7'"
+      ]
+    },
+    "WORKLIST_PLANFID_UMBRELLA_WORDS": {
+      "kind": "tuning",
+      "defaults": [
+        "'8'"
+      ]
+    },
+    "WORKLIST_PLANFILE_MAX_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "str(1024 * 1024)"
+      ]
+    },
+    "WORKLIST_PLANFILE_MAX_READ": {
+      "kind": "tuning",
+      "defaults": [
+        "'40'"
+      ]
+    },
+    "WORKLIST_PLANFILE_PLANS_SHOW": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_PLANFILE_SHOW": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_PLANFILE_STALE_SHOW": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_PLAN_DRIFT_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
+    },
+    "WORKLIST_PLAN_DRIFT_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'4'"
+      ]
+    },
+    "WORKLIST_PLAN_ORIENT_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "'8192'"
+      ]
+    },
+    "WORKLIST_PLAN_ORIENT_FILES": {
+      "kind": "tuning",
+      "defaults": [
+        "'4'"
+      ]
+    },
+    "WORKLIST_POPUP_PROBABILITY": {
+      "kind": "tuning",
+      "defaults": [
+        "str(POP_PROBABILITY)"
+      ]
+    },
+    "WORKLIST_PROFILE": {
+      "kind": "corpus",
+      "defaults": [
+        "''",
+        "NONE"
+      ],
+      "why": "`off` disables the tier-0 resource profiler (wl_resprofile.py:197 and :369). Compared with `== \"off\"` in both places, so every other spelling leaves profiling on. Classed as a corpus rather than a flag because the bash side reads it with a different default spelling, which is itself worth seeing in this table."
+    },
+    "WORKLIST_PROGRAM_SURFACE": {
+      "kind": "corpus",
+      "defaults": [
+        "'.ci .github .claude'"
+      ],
+      "why": "The space-separated tree list wl_checks.py:70 treats as `the program`, split() into three roots. A corpus and not a path: it is one string holding several bare directory NAMES with no separator in any of them, and narrowing it does not make any check stricter, it makes the check see less of the program. The gate caught this entry classed as a path on its first run against the real tree, which is the shape rule doing its job."
+    },
+    "WORKLIST_PROJECTS_DIR": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_PROOFCHECK_MAX_FIRES": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_PROOFCHECK_TTL_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_PUBLISH_REF": {
+      "kind": "handle",
+      "defaults": [
+        "''"
+      ],
+      "why": "The ref a PR is published on, wl_ci.py:42 and :77. Empty means the session has not opted in and pays nothing; when it IS set and the lookup fails, that is reported as a hook-side inability rather than passing quietly. A typo therefore silently opts the session out."
+    },
+    "WORKLIST_PUBLISH_ROOT": {
+      "kind": "path",
+      "defaults": [
+        "'$(git rev-parse --show-toplevel 2>/dev/null || echo .)'",
+        "''",
+        "NONE"
+      ]
+    },
+    "WORKLIST_RECORD_BLOB_RATIO": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_RECORD_MAX_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "str(6 * 1024)"
+      ]
+    },
+    "WORKLIST_RECORD_PER_BOX_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "'160'"
+      ]
+    },
+    "WORKLIST_REGGATE_CAP": {
+      "kind": "tuning",
+      "defaults": [
+        "'7'"
+      ]
+    },
+    "WORKLIST_REGGATE_DEBT_GRACE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'720'"
+      ]
+    },
+    "WORKLIST_REGGATE_TICK_FLOOD": {
+      "kind": "tuning",
+      "defaults": [
+        "'20'"
+      ]
+    },
+    "WORKLIST_REGGATE_TIMEOUT_S": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_REGISTRY_OVERRIDE_FILE": {
+      "kind": "path",
+      "defaults": [
+        "''"
+      ],
+      "why": "GATE-SEAM, test-only: an absolute path, read by check:ci-worklist-env-registry's own run() in place of the real .ci/policy/worklist-env-registry.json, so a registry plant (test_dropping_a_registered_name_reds, test_a_registered_name_nobody_reads_reds) never writes the tracked file -- that write-mutate-restore shape corrupted it twice in one session when an unrelated kill landed in the write window. Unset means the real registry is read unchanged."
+    },
+    "WORKLIST_REPORTS_DIR": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_REPORT_INDEX_READ_MAX_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "str(4 * 1024 * 1024)"
+      ]
+    },
+    "WORKLIST_REPORT_REFRESH_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'360'"
+      ]
+    },
+    "WORKLIST_REPORT_RETENTION_DAYS": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_REPORT_SCAN_IDLE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
+    },
+    "WORKLIST_REPORT_SCAN_LIVE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'30'"
+      ]
+    },
+    "WORKLIST_REPORT_SCAN_LOOKBACK_DAYS": {
+      "kind": "tuning",
+      "defaults": [
+        "'7'"
+      ]
+    },
+    "WORKLIST_REPORT_SILENT_FLOOR": {
+      "kind": "tuning",
+      "defaults": [
+        "'200'"
+      ]
+    },
+    "WORKLIST_REPORT_SURFACE_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'25'"
+      ]
+    },
+    "WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "str(16 * 1024 * 1024)"
+      ]
+    },
+    "WORKLIST_REVIEW_MAX_BLOCKS": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_ROSTER_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'6'"
+      ]
+    },
+    "WORKLIST_SESSION_ID": {
+      "kind": "handle",
+      "defaults": [
+        "NONE"
+      ],
+      "why": "The session identity, tried before CLAUDE_CODE_SESSION_ID in wl_core.py:313. Returns \"\" for CANNOT VERIFY, and the honest response to that is to say nothing rather than accuse, so a typo turns identity checking off without a word."
+    },
+    "WORKLIST_SHAPEDUP_WIDE_CAP": {
+      "kind": "tuning",
+      "defaults": [
+        "'5'"
+      ]
+    },
+    "WORKLIST_SHAPE_MAX_FIRES": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_SHAPE_TTL_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_SOLO_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'12'"
+      ]
+    },
+    "WORKLIST_SOURCE_OVERRIDE_FILE": {
+      "kind": "path",
+      "defaults": [
+        "''"
+      ],
+      "why": "GATE-SEAM, test-only: `rel/path:override/file`, read by check:ci-worklist-env-registry's own scan_corpus() to substitute one tracked source file's CONTENT with a tmp copy during the plant tests, so test_a_typo_in_a_real_source_file_reds never writes the real tracked file it names. Unset means no substitution: the real corpus is scanned unchanged."
+    },
+    "WORKLIST_STORE_DIR": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_STUCK_ROUNDS": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    },
+    "WORKLIST_STUCK_SUPERVISED_MAX_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'70'"
+      ]
+    },
+    "WORKLIST_SUBMODULE_DECIDED_LATCH_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'1440'"
+      ]
+    },
+    "WORKLIST_SUBMODULE_LATCH_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_SWEEP_MAX_FIRES": {
+      "kind": "tuning",
+      "defaults": [
+        "'2'"
+      ]
+    },
+    "WORKLIST_SWEEP_TTL_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'120'"
+      ]
+    },
+    "WORKLIST_TAIL_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "'2000000'"
+      ]
+    },
+    "WORKLIST_TASKS_DIR": {
+      "kind": "path",
+      "defaults": [
+        "NONE"
+      ]
+    },
+    "WORKLIST_TEAMMATE_FRESH_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_TEAMMATE_TAIL_BYTES": {
+      "kind": "tuning",
+      "defaults": [
+        "'262144'"
+      ]
+    },
+    "WORKLIST_TICK_EVIDENCE_MAX": {
+      "kind": "tuning",
+      "defaults": [
+        "'300'"
+      ]
+    },
+    "WORKLIST_TICK_EVIDENCE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'12'"
+      ]
+    },
+    "WORKLIST_UNREAD_INVARIANT_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'45'"
+      ]
+    },
+    "WORKLIST_UNREAD_ROTATE_MIN": {
+      "kind": "tuning",
+      "defaults": [
+        "'15'"
+      ]
+    },
+    "WORKLIST_WHY_MAX_CHARS": {
+      "kind": "tuning",
+      "defaults": [
+        "'220'"
+      ]
+    },
+    "WORKLIST_WHY_MAX_RECORDS": {
+      "kind": "tuning",
+      "defaults": [
+        "'3'"
+      ]
+    }
+  }
+}

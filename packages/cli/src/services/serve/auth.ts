@@ -17,6 +17,12 @@ import type { SessionPrincipal } from './sessions.js';
 /** How long a resolved identity is trusted before re-asking the account server. */
 const CACHE_TTL_MS = 60_000;
 
+/** The scope the executor's OWN token needs to record what it ran. */
+const AUDIT_WRITE_SCOPE = 'audit:write';
+
+/** Whether the executor can record an audit event, and if not, why. */
+export type AuditCapability = { ok: true } | { ok: false; reason: string };
+
 export interface IntrospectionResponse {
   active: boolean;
   scopes?: string[];
@@ -57,6 +63,7 @@ export class AuthError extends Error {
 
 export class AuthVerifier {
   private readonly cache = new Map<string, CacheEntry>();
+  private auditCapability: { value: AuditCapability; expiresAt: number } | undefined;
   private readonly accountUrl: string;
   private readonly executorToken: string;
   private readonly requiredScope: string;
@@ -108,14 +115,64 @@ export class AuthVerifier {
     return principal;
   }
 
+  /**
+   * Whether the executor's own token may write audit events.
+   *
+   * Found by introspecting the executor's token itself, so a token minted
+   * without `audit:write` is caught BEFORE a command runs rather than by the
+   * account server rejecting the event after it ran (the Phase 1 trial ran
+   * `repo status` and could only log the 403 afterwards). Any failure to learn
+   * the scopes counts as "cannot audit": the caller fails closed on it.
+   * Cached like a principal, so a token fixed in the portal is picked up within
+   * a minute.
+   */
+  async canWriteAudit(): Promise<AuditCapability> {
+    const cached = this.auditCapability;
+    if (cached && cached.expiresAt > this.now()) return cached.value;
+
+    const value = await this.probeAuditCapability();
+    this.auditCapability = { value, expiresAt: this.now() + CACHE_TTL_MS };
+    return value;
+  }
+
+  private async probeAuditCapability(): Promise<AuditCapability> {
+    let body: IntrospectionResponse;
+    try {
+      const response = await this.fetchImpl(`${this.accountUrl}/account/api/v1/proxy/introspect`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${this.executorToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ token: this.executorToken }),
+      });
+      if (!response.ok) {
+        return {
+          ok: false,
+          reason: `the account server would not report the executor token's scopes (${response.status})`,
+        };
+      }
+      body = (await response.json()) as IntrospectionResponse;
+    } catch (error) {
+      return {
+        ok: false,
+        reason: `the account server could not be asked for the executor token's scopes (${error instanceof Error ? error.message : String(error)})`,
+      };
+    }
+    if (!body.active) return { ok: false, reason: 'the executor token is not active' };
+    if (!body.scopes?.includes(AUDIT_WRITE_SCOPE)) {
+      return { ok: false, reason: `the executor token lacks the "${AUDIT_WRITE_SCOPE}" scope` };
+    }
+    return { ok: true };
+  }
+
   /** Forget a token, e.g. after the account server rejects it downstream. */
   invalidate(bearerToken: string): void {
     this.cache.delete(bearerToken);
   }
 
   private toPrincipal(body: IntrospectionResponse): SessionPrincipal {
-    // A revoked, expired, unknown, or foreign-org token all look the same here,
-    // deliberately: the executor must not become an oracle for token discovery.
+    // A revoked, expired, unknown, or foreign-org token all look the same here, deliberately: the executor must not become an oracle for token discovery.
     if (!body.active) {
       throw new AuthError('This token is not valid for the executor.', 401);
     }
@@ -138,10 +195,7 @@ export class AuthVerifier {
       userId: body.createdByUserId,
       userEmail: body.userEmail,
       orgRole: normalizeRole(body.orgRole),
-      // Carried into the audit event as onBehalfOfTokenId, so the account server
-      // attributes the command to THIS token's user rather than to the
-      // executor's own audit credential. Without it every proxied command is
-      // logged against the executor fleet, not the person who ran it.
+      // Carried into the audit event as onBehalfOfTokenId, so the account server attributes the command to THIS token's user rather than to the executor's own audit credential. Without it every proxied command is logged against the executor fleet, not the person who ran it.
       tokenId: body.tokenId,
     };
   }

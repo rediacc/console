@@ -3,7 +3,7 @@
  *
  * ★ This is the gate whose absence let `term_exec` rot in place. That tool built
  * `term connect -m <machine> [-r <repo>] -c <cmd>`. P4 deleted `-m` and `-r`, so
- * from that moment the tool emitted an argv the CLI would REJECT — and the whole
+ * from that moment the tool emitted an argv the CLI would REJECT, and the whole
  * MCP suite stayed green, because every test asserted the argv a tool BUILDS and
  * not one asserted the CLI would take it. The tool was broken and the tests could
  * not see it, because they were checking the tool against itself.
@@ -14,7 +14,7 @@
  * name a flag that no longer exists.
  *
  * So: build each tool's argv with every field of its schema populated, then resolve
- * that argv against the REAL Commander tree — the command path must exist, every
+ * that argv against the REAL Commander tree, the command path must exist, every
  * flag must be registered on it (or be a global), and the positionals must fit.
  * Nothing here consults the tool's own metadata for the answer, which is the point.
  */
@@ -98,10 +98,7 @@ function rejections(argv: string[]): string[] {
         problems.push(`unknown flag "${flag}" on \`${cmd.name()}\``);
         continue;
       }
-      // Skip the flag's value when it was passed as a separate token. Commander
-      // consumes the next token for BOTH `--flag <v>` (Option.required) and
-      // `--flag [v]` (Option.optional) — `repo diff --content [path]` is the
-      // latter, and treating its value as a stray positional is a false alarm.
+      // Skip the flag's value when it was passed as a separate token. Commander consumes the next token for BOTH `--flag <v>` (Option.required) and `--flag [v]` (Option.optional), `repo diff --content [path]` is the latter, and treating its value as a stray positional is a false alarm.
       const opt = [...cmd.options, ...(cmd.parent?.options ?? [])].find(
         (o) => o.long === flag || o.short === flag
       );
@@ -128,8 +125,7 @@ function rejections(argv: string[]): string[] {
 
 describe('MCP tools emit argv the CLI accepts', () => {
   it('has tools to check (the gate must not pass by finding nothing)', () => {
-    // A suite that silently checks zero tools is the failure mode this whole file
-    // exists to prevent, so assert the population before asserting anything about it.
+    // A suite that silently checks zero tools is the failure mode this whole file exists to prevent, so assert the population before asserting anything about it.
     expect(TOOLS.length).toBeGreaterThan(50);
   });
 
@@ -146,11 +142,7 @@ describe('MCP tools emit argv the CLI accepts', () => {
   it.each(TOOLS.filter((t) => t.repoArgField).map((t) => [t.name, t] as const))(
     "%s's repoArg names a field that actually exists in its schema",
     (_name, tool) => {
-      // repoArgField drives the grand-repo guard: the guard reads args[repoArgField]
-      // to learn which repo is being touched. Name a field that does not exist and
-      // it reads `undefined` — the guard then scopes NOTHING, silently, on a tool
-      // whose whole reason for carrying the annotation is that it touches a repo.
-      // The web console reads the same annotation to pick its repo picker.
+      // repoArgField drives the grand-repo guard: the guard reads args[repoArgField] to learn which repo is being touched. Name a field that does not exist and it reads `undefined`, the guard then scopes NOTHING, silently, on a tool whose whole reason for carrying the annotation is that it touches a repo. The web console reads the same annotation to pick its repo picker.
       expect(Object.keys(tool.schema)).toContain(tool.repoArgField);
     }
   );

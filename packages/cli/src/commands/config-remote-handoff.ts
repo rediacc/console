@@ -1,11 +1,13 @@
 /**
- * Handoff payload contract + X25519 helpers for `config remote enable`.
+ * Handoff payload contract + X25519 helpers for `config remote enable` and
+ * `config rotate-cek`.
  *
  * Lives in its own module so the round-trip contract test can import the
  * payload shape and decrypt path without dragging in commander. The portal
  * side produces this payload (sealed with cekHandoffEncrypt to the X25519
- * public key the CLI puts in the URL); its mirror fixture lives at
- * `private/account/web/src/lib/__tests__/config-handoff.test.ts` — keep the
+ * public key the CLI puts in the link fragment, then posted to the server
+ * relay; see config-remote-relay.ts); its mirror fixture lives at
+ * `private/account/web/src/lib/__tests__/config-handoff.test.ts`, keep the
  * two textually identical.
  */
 
@@ -16,7 +18,7 @@ import { ValidationError } from '../utils/errors.js';
 
 /**
  * Decrypted handoff payload from the portal. `configId` is absent for a
- * fresh (zero-config) store — the CLI then mints one from the local config's
+ * fresh (zero-config) store, the CLI then mints one from the local config's
  * id and seeds the store on enable.
  */
 export interface HandoffPayload {
@@ -28,6 +30,8 @@ export interface HandoffPayload {
   apiUrl: string;
   configId?: string;
   teamId?: string;
+  /** The nonce from the link fragment, echoed inside the sealed plaintext; the relay refuses any other value. */
+  handoffNonce: string;
 }
 
 export function generateX25519KeyPair(): Promise<CryptoKeyPair> {
@@ -48,11 +52,7 @@ export async function decryptHandoff(
   try {
     plainBytes = await cekHandoffDecrypt(encryptedBlob, privateKey);
   } catch (error) {
-    // The blob was sealed against a public key this process did not generate,
-    // so the AES-GCM tag fails. In practice: a browser tab left open from an
-    // earlier `config remote enable` posting to the new run's callback. Raw,
-    // this surfaced as "OperationError: The operation failed for an
-    // operation-specific reason" at all three call sites in config-remote.ts.
+    // The blob was sealed against a public key this process did not generate, so the AES-GCM tag fails: a relay-side or link-tampering swap, since the server only accepts a blob for the key hash this run registered. Raw, this surfaced as "OperationError: The operation failed for an operation-specific reason".
     throw new ValidationError(
       t('commands.config.remote.handoffUndecryptable', {
         error: error instanceof Error ? error.message : String(error),

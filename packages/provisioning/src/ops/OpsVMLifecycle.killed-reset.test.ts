@@ -4,23 +4,12 @@ import { OpsCommandRunner } from './OpsCommandRunner';
 import { OpsVMLifecycle } from './OpsVMLifecycle';
 import type { OpsVMExecutor } from './OpsVMExecutor';
 
-// WHY THIS FILE EXISTS. Console CI run 33937342780: `renet ops up` blew its
-// budget, we SIGTERM'd it, and `resetVMs` reported SUCCESS at 1800.8s anyway.
-// `ops up` treats Ceph provisioning as non-fatal, so a kill mid-provision still
-// leaves SSH-reachable VMs and still prints "Cluster started successfully" --
-// the readiness probe passed on a half-built fleet. The suite then died a
-// second later on a Ceph error that named Ceph rather than the budget, which is
-// what made it expensive: every hypothesis pointed at storage, and the cause
-// was that the caller had been told a killed operation succeeded.
+// WHY THIS FILE EXISTS. Console CI run 33937342780: `renet ops up` blew its budget, we SIGTERM'd it, and `resetVMs` reported SUCCESS at 1800.8s anyway. `ops up` treats Ceph provisioning as non-fatal, so a kill mid-provision still leaves SSH-reachable VMs and still prints "Cluster started successfully" -- the readiness probe passed on a half-built fleet. The suite then died a
+// second later on a Ceph error that named Ceph rather than the budget, which is what made it expensive: every hypothesis pointed at storage, and the cause was that the caller had been told a killed operation succeeded.
 //
-// Neither OpsVMLifecycle.ts nor OpsCommandRunner.ts had any test file before
-// this one (only OpsManager.group-env.test.ts existed here), which is how the
-// fix landed uncovered. Raised as a medium finding by the automated review of
-// a032863c7 and tracked as worklist #a5d9f490.
+// Neither OpsVMLifecycle.ts nor OpsCommandRunner.ts had any test file before this one (only OpsManager.group-env.test.ts existed here), which is how the fix landed uncovered. Raised as a medium finding by the automated review of a032863c7 and tracked as worklist #a5d9f490.
 //
-// Each assertion is paired with a CONTROL that reproduces the ORIGINAL bug, so
-// a green run means the test can actually distinguish the two -- not that the
-// code path was never reached.
+// Each assertion is paired with a CONTROL that reproduces the ORIGINAL bug, so a green run means the test can actually distinguish the two -- not that the code path was never reached.
 
 const fakeChild = () => {
   const child = new EventEmitter() as EventEmitter & {
@@ -83,8 +72,7 @@ describe('OpsCommandRunner reports a kill distinctly from a non-zero exit', () =
     const result = await promise;
 
     // Both shapes carry a failing code; only the kill carries timedOut. If this
-    // control ever goes true, `timedOut` has stopped meaning "we killed it" and
-    // every assertion below is testing nothing.
+    // control ever goes true, `timedOut` has stopped meaning "we killed it" and every assertion below is testing nothing.
     expect(result.code).toBe(1);
     expect(result.timedOut).toBeUndefined();
   });
@@ -93,10 +81,7 @@ describe('OpsCommandRunner reports a kill distinctly from a non-zero exit', () =
 describe('resetVMs must FAIL when we killed the reset', () => {
   const build = (result: Awaited<ReturnType<OpsCommandRunner['runWithEnv']>>) => {
     const commandRunner = { runWithEnv: vi.fn().mockResolvedValue(result) };
-    // The readiness probe is what used to rescue a killed reset: it answers
-    // "reachable" for a half-built fleet. Stubbing it to SUCCEED is deliberate
-    // -- it recreates the exact conditions of run 33937342780, so the only
-    // thing that can fail the reset is the timedOut guard itself.
+    // The readiness probe is what used to rescue a killed reset: it answers "reachable" for a half-built fleet. Stubbing it to SUCCEED is deliberate -- it recreates the exact conditions of run 33937342780, so the only thing that can fail the reset is the timedOut guard itself.
     const vmExecutor = {
       waitForVM: vi.fn().mockResolvedValue(true),
       executeOnVM: vi.fn().mockResolvedValue({ code: 0, stdout: '', stderr: '' }),
@@ -121,8 +106,7 @@ describe('resetVMs must FAIL when we killed the reset', () => {
     const { success } = await lifecycle.resetVMs();
 
     // THE REGRESSION. Before the fix this returned true: code !== 0 fell
-    // through to the readiness probe, the probe passed on the half-built fleet,
-    // and the caller was told the reset succeeded.
+    // through to the readiness probe, the probe passed on the half-built fleet, and the caller was told the reset succeeded.
     expect(success).toBe(false);
   });
 
@@ -136,9 +120,7 @@ describe('resetVMs must FAIL when we killed the reset', () => {
 
     const { success } = await lifecycle.resetVMs();
 
-    // This is the pre-fix behaviour, and it must stay reachable: a clean `ops
-    // up` still succeeds. If this ever went false the guard would be failing
-    // every reset, and the assertion above would pass for the wrong reason.
+    // This is the pre-fix behaviour, and it must stay reachable: a clean `ops up` still succeeds. If this ever went false the guard would be failing every reset, and the assertion above would pass for the wrong reason.
     expect(success).toBe(true);
   });
 });

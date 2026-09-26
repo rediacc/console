@@ -4,14 +4,14 @@
  * Encryption is a STORAGE-LAYER transform, not a caller behavior: every writer
  * goes through ConfigFileStorage, which decrypts on read and re-encrypts on
  * write, so no caller ever produces or sees a blob. This is the single
- * chokepoint that makes the R2-F3 data-loss class impossible — there is no
+ * chokepoint that makes the R2-F3 data-loss class impossible, there is no
  * second "plaintext resources" path that a persist can clobber.
  *
  * Granularity is driven ENTIRELY by schema/sensitivity.ts: any leaf whose
  * registry meta has `encryptAtRest` (default true for secret/credential) is
  * moved out of the plaintext tree into `encryption.encryptedFields[pointer]`.
  * The one deliberate exception is `/credentials/masterPasswordVerifier`
- * (encryptAtRest:false) — encrypting it under the password it verifies would
+ * (encryptAtRest:false), encrypting it under the password it verifies would
  * be a bootstrapping deadlock.
  *
  * Because an encrypted leaf is ABSENT from the plaintext tree at rest, a strict
@@ -77,7 +77,7 @@ export function injectEncryptedStubs(config: RdcConfig): RdcConfig {
  * Move every encrypt-at-rest leaf into `encryption.encryptedFields` as a fresh
  * AES-GCM blob and remove it from the plaintext tree. A leaf that is still a
  * stub (never decrypted this cycle) preserves its existing blob rather than
- * encrypting the placeholder — so a save that never decrypted cannot corrupt or
+ * encrypting the placeholder, so a save that never decrypted cannot corrupt or
  * drop encrypted data. No-op when not in master-password mode.
  */
 type Blobs = Record<string, { data: string }>;
@@ -146,22 +146,4 @@ export async function decryptConfigFields(config: RdcConfig, password: string): 
   }
 
   return { ...result, encryption: { mode: 'master-password', encryptedFields: {} } };
-}
-
-/**
- * Serialize-for-push view: strip the entire `state` bucket and any encrypted
- * field whose pointer targets `/state/*`. The status half never enters the
- * remote config store (spec 04 §1.3 property 1).
- */
-export function stripStateForPush(config: RdcConfig): RdcConfig {
-  const { state: _state, ...rest } = config;
-  void _state;
-  if (rest.encryption?.encryptedFields) {
-    const kept: Record<string, { data: string }> = {};
-    for (const [pointer, blob] of Object.entries(rest.encryption.encryptedFields)) {
-      if (!pointer.startsWith('/state/')) kept[pointer] = blob;
-    }
-    rest.encryption = { ...rest.encryption, encryptedFields: kept };
-  }
-  return rest;
 }

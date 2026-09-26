@@ -28,6 +28,7 @@ import type {
   StorageConfig,
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
+import { currentRequestConfig } from '../core/request-context.js';
 import { ConfigServiceBase } from './config-base.js';
 import {
   assertClusterMembersUnique,
@@ -46,13 +47,48 @@ import {
   assertRestoredForkKeyIsExplicit,
   buildArchivedRecord,
   buildGuidMap,
+  grandTagsOf,
   resolveDestructiveTargetFromRepos,
-  resolveExactOrLatest,
+  resolveRepoKey,
 } from './config-resources-resolve.js';
+import type { ResourceState } from './resource-state.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
 class ConfigService extends ConfigServiceBase {
+  /**
+   * The current config. Inside a request-scoped dispatch (the container tier)
+   * it is the config decrypted for the session, never a file and never the
+   * process-wide remote snapshot.
+   */
+  override getCurrent(): Promise<RdcConfig | null> {
+    const scoped = currentRequestConfig();
+    if (scoped) return Promise.resolve(scoped.config);
+    return super.getCurrent();
+  }
+
+  override getDecryptedConfig(): Promise<RdcConfig | null> {
+    const scoped = currentRequestConfig();
+    if (scoped) return Promise.resolve(scoped.config);
+    return super.getDecryptedConfig();
+  }
+
+  /**
+   * The resource view, memoized on the REQUEST when a request-scoped config is
+   * in force. The process-wide memo on the base class would otherwise hand one
+   * tenant's machines to another tenant's concurrent command.
+   */
+  override async getResourceState(): Promise<ResourceState> {
+    const scoped = currentRequestConfig();
+    if (!scoped) return super.getResourceState();
+    if (!scoped.resourceState) {
+      const { LocalResourceState } = await import('./resource-state.js');
+      scoped.resourceState = LocalResourceState.load(scoped.config, this.getEffectiveConfigName());
+    }
+    return scoped.resourceState as ResourceState;
+  }
+
   /**
    * Load the current (or named) config, failing when none is active.
    */
@@ -91,9 +127,7 @@ class ConfigService extends ConfigServiceBase {
     const sshContent = state.getSSH();
     let sshPrivateKey = sshContent?.privateKey;
     let sshPublicKey = sshContent?.publicKey;
-    // Fall back to the standard local SSH key when none is configured (e.g. a
-    // config auto-created without `rdc config init --ssh-key`). Keeps the
-    // common case zero-config: if ~/.ssh/id_rsa (or id_ed25519) exists, use it.
+    // Fall back to the standard local SSH key when none is configured (e.g. a config auto-created without `rdc config init --ssh-key`). Keeps the common case zero-config: if ~/.ssh/id_rsa (or id_ed25519) exists, use it.
     if (!sshPrivateKey) {
       const sshDir = path.join(os.homedir(), '.ssh');
       for (const name of ['id_rsa', 'id_ed25519']) {
@@ -164,9 +198,7 @@ class ConfigService extends ConfigServiceBase {
     machines[name] = config;
     await state.setMachines(machines);
     try {
-      // Report the path actually written, never a hardcoded ~/.ssh/config_rediacc:
-      // under WSL getSSHHome() deliberately resolves to the WINDOWS home (see its
-      // doc comment), so the old message sent WSL users to the wrong file.
+      // Report the path actually written, never a hardcoded ~/.ssh/config_rediacc: under WSL getSSHHome() deliberately resolves to the WINDOWS home (see its doc comment), so the old message sent WSL users to the wrong file.
       const path = addMachineSSHConfigEntry({
         machineName: name,
         host: config.ip,
@@ -250,7 +282,7 @@ class ConfigService extends ConfigServiceBase {
   }): Promise<void> {
     const name = this.getEffectiveConfigName();
     await this.requireSelfHosted(name);
-    await configFileStorage.update(name, (cfg) => ({
+    await updateSyncedConfig(name, (cfg) => ({
       ...cfg,
       credentials:
         'cfDnsApiToken' in updates
@@ -344,14 +376,15 @@ class ConfigService extends ConfigServiceBase {
 
   /**
    * Resolve a repository reference to its config.
-   * Supports: direct key match, legacy names, and bare names (defaults to :latest).
+   * Supports: direct key match, and a bare (or `:base`) name, which resolves to
+   * the family's grand through its recorded grand pointer, whatever its tag.
    */
   async getRepository(repoRef: string): Promise<RepositoryConfig | undefined> {
     const config = await this.getCurrent();
     if (!config) return undefined;
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-    const key = resolveExactOrLatest(repos, repoRef, !repoRef.includes(':'));
+    const key = resolveRepoKey(repos, repoRef, grandTagsOf(config.resources?.repositories));
     return key ? repos[key] : undefined;
   }
 
@@ -363,7 +396,11 @@ class ConfigService extends ConfigServiceBase {
     const config = await this.getCurrent();
     if (!config) return undefined;
     const state = await this.getResourceState();
-    return resolveExactOrLatest(state.getRepositories(), repoRef, !repoRef.includes(':'));
+    return resolveRepoKey(
+      state.getRepositories(),
+      repoRef,
+      grandTagsOf(config.resources?.repositories)
+    );
   }
 
   /**
@@ -373,9 +410,9 @@ class ConfigService extends ConfigServiceBase {
    *
    * - Exact-key match wins (same as `getRepositoryKey`).
    * - For a bare ref, refuses when more than one config key shares the base
-   *   name, even if the `:latest` fallback would otherwise resolve.
+   *   name, even if the grand-pointer fallback would otherwise resolve.
    * - For a bare ref that resolves to a fork (grandGuid set and !== guid),
-   *   refuses — the operator must say `<name>:<tag>` explicitly so we do not
+   *   refuses, the operator must say `<name>:<tag>` explicitly so we do not
    *   destroy a fork registered in the grand slot by mistake.
    */
   async resolveDestructiveTarget(
@@ -385,7 +422,8 @@ class ConfigService extends ConfigServiceBase {
     if (!config) throw new Error(`Repository "${repoRef}" not found in context`);
     return resolveDestructiveTargetFromRepos(
       (await this.getResourceState()).getRepositories(),
-      repoRef
+      repoRef,
+      grandTagsOf(config.resources?.repositories)
     );
   }
 
@@ -426,8 +464,7 @@ class ConfigService extends ConfigServiceBase {
     const { name: originalName, deletedAt, ...repoConfig } = archived;
     void originalName;
     void deletedAt;
-    // This write bypasses addRepository, but the record it makes LIVE is subject
-    // to the same GUID-keyed credential map.
+    // This write bypasses addRepository, but the record it makes LIVE is subject to the same GUID-keyed credential map.
     assertNoCredentialCollision(repos, restoredName, repoConfig);
     repos[restoredName] = repoConfig;
     await state.setRepositories(repos);
@@ -480,72 +517,66 @@ class ConfigService extends ConfigServiceBase {
     strategyName: string,
     update: Partial<BackupStrategyConfig>
   ): Promise<void> {
-    const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
-    strategies[strategyName] = { ...existing, ...update };
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.editBackupStrategies((strategies) => {
+      const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
+      strategies[strategyName] = { ...existing, ...update };
+    });
   }
 
   async removeBackupStrategy(strategyName: string): Promise<void> {
-    const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    delete strategies[strategyName];
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.editBackupStrategies((strategies) => {
+      delete strategies[strategyName];
+    });
   }
 
   async addBackupDestination(strategyName: string, dest: BackupStrategyDestination): Promise<void> {
-    const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    if (!Object.hasOwn(strategies, strategyName)) {
+    const current = await this.requireSelfHosted();
+    // Checked up front for the teaching error; the edit below re-checks against the document it is given.
+    if (!Object.hasOwn(current.resources?.backupStrategies ?? {}, strategyName)) {
       throw new Error(
         `Backup strategy "${strategyName}" not found. Create it first with: rdc backup strategy set ${strategyName} --cron "..."`
       );
     }
-    const strategy = strategies[strategyName];
-    const destinations = [...strategy.destinations];
-    const idx = destinations.findIndex((d) => d.name === dest.name);
-    if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
-    else destinations.push(dest);
-    destinations.sort((a, b) => a.name.localeCompare(b.name));
-    strategies[strategyName] = { ...strategy, destinations };
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.editBackupStrategies((strategies) => {
+      const strategy = strategies[strategyName] as BackupStrategyConfig | undefined;
+      if (!strategy) throw new Error(`Backup strategy "${strategyName}" not found`);
+      const destinations = [...strategy.destinations];
+      const idx = destinations.findIndex((d) => d.name === dest.name);
+      if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
+      else destinations.push(dest);
+      destinations.sort((a, b) => a.name.localeCompare(b.name));
+      strategies[strategyName] = { ...strategy, destinations };
+    });
   }
 
   async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
+    await this.editBackupStrategies((strategies) => {
+      if (!Object.hasOwn(strategies, strategyName)) return;
+      const strategy = strategies[strategyName];
+      strategies[strategyName] = {
+        ...strategy,
+        destinations: strategy.destinations.filter((d) => d.name !== destName),
+      };
+    });
+  }
+
+  /**
+   * Edit `resources.backupStrategies` of the active config through the synced write path. `edit`
+   * mutates a copy taken from the document being written, so a push that replays after a version
+   * conflict applies it to the fresh server copy.
+   */
+  private async editBackupStrategies(
+    edit: (strategies: Record<string, BackupStrategyConfig>) => void
+  ): Promise<void> {
     const configName = this.getEffectiveConfigName();
-    const current = await this.requireSelfHosted(configName);
-    const strategies: Record<string, BackupStrategyConfig> = {
-      ...(current.resources?.backupStrategies ?? {}),
-    };
-    if (!Object.hasOwn(strategies, strategyName)) return;
-    const strategy = strategies[strategyName];
-    strategies[strategyName] = {
-      ...strategy,
-      destinations: strategy.destinations.filter((d) => d.name !== destName),
-    };
-    await configFileStorage.update(configName, (cfg) => ({
-      ...cfg,
-      resources: { ...(cfg.resources ?? {}), backupStrategies: strategies },
-    }));
+    await this.requireSelfHosted(configName);
+    await updateSyncedConfig(configName, (cfg) => {
+      const strategies: Record<string, BackupStrategyConfig> = {
+        ...(cfg.resources?.backupStrategies ?? {}),
+      };
+      edit(strategies);
+      return { ...cfg, resources: { ...(cfg.resources ?? {}), backupStrategies: strategies } };
+    });
   }
 
   // ============================================================================
@@ -574,8 +605,7 @@ class ConfigService extends ConfigServiceBase {
 
   // ============================================================================
   // Cluster CRUD (non-secret SSH-reachable inventory; members materialize into
-  // resources.machines). Cluster records are non-secret so they live in the
-  // plain config like cloudProviders, not the encrypted resource state.
+  // resources.machines). Cluster records are non-secret so they live in the plain config like cloudProviders, not the encrypted resource state.
   // ============================================================================
 
   async addCluster(name: string, config: ClusterConfig): Promise<void> {
@@ -607,7 +637,7 @@ class ConfigService extends ConfigServiceBase {
   // Network ID Allocation (per config file)
   // ============================================================================
 
-  async allocateNetworkId(): Promise<number> {
+  allocateNetworkId(): Promise<number> {
     return allocateNetworkIdInStore(this.getEffectiveConfigName());
   }
 

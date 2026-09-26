@@ -46,8 +46,7 @@ export function mountLanguagePane(opts: {
   const row = homeRows[(hasCaptions ? 1 : 0) + 1] as HTMLElement | undefined;
   if (row) {
     row.removeAttribute('hidden');
-    // Plyr writes `data[type]` into this span and has no entry for ours, so without this
-    // the row reads "Select language undefined".
+    // Plyr writes `data[type]` into this span and has no entry for ours, so without this the row reads "Select language undefined".
     const valueSpan = row.querySelector('.plyr__menu__value');
     if (valueSpan) valueSpan.textContent = getLanguageName(active);
   }

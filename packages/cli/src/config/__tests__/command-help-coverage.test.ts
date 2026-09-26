@@ -26,7 +26,7 @@ const I18N_KEY_OVERRIDES: Record<string, string> = {
 /**
  * Hidden internal commands whose help text is deliberately hardcoded English
  * (see the header of commands/executor-daemon.ts: a debug/ops surface with no
- * place in the translated help tree). They carry NO i18n key on purpose — the
+ * place in the translated help tree). They carry NO i18n key on purpose, the
  * orphan-key gate (check-cli-i18n-key-usage) enforces the absence, so listing
  * one here AND adding a catalog key is a contradiction the gates will catch.
  */

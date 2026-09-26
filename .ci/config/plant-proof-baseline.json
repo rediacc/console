@@ -1,0 +1,35 @@
+{
+  "note": "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a single row. Every entry is a control that PLANTS a defect by in-place mutation (bash) or by `.replace()` (TypeScript) and does NOT prove the plant landed. A plant whose needle has gone mutates nothing, so the control asserts the opposite verdict about identical input and passes for free. This list may only lose members: a NEW id is refused by .ci/scripts/quality/check_plant_proofs.py even when the total shrinks, because composition is the claim and a total is not. Drain it by ADDING THE PROOF and then running `--write-baseline`, never to make a red go away.",
+  "plants": [
+    {
+      "id": "c327db0b2868151d",
+      "lang": "bash",
+      "file": ".ci/docker/web/entrypoint.sh",
+      "text": "sed -i \"s|set \\$account_backend \\\"127.0.0.1:3000\\\"|set \\$account_backend \\\"${ACCOUNT_BACKEND}\\\"|\" /etc/nginx/http.d/default.conf"
+    },
+    {
+      "id": "8218bb8936f383ab",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i \"s/__RUNNER__/$runner/\" \"$dir/fixture.yml\""
+    },
+    {
+      "id": "fc6229ec5f080cc3",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i 's/\"format\": 1,/\"format\": 2,/' \"$d/base.json\""
+    },
+    {
+      "id": "cce1b37d16b2346c",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i '/\"format\": 1,/d' \"$d/base.json\""
+    },
+    {
+      "id": "b86b963ed52febe3",
+      "lang": "bash",
+      "file": ".ci/scripts/test/gates/test-runner-advice.sh",
+      "text": "sed -i 's/\"format\": 1,/\"format\": 2,/' \"$d/base.json\""
+    }
+  ]
+}

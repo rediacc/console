@@ -1,5 +1,4 @@
-// BridgeTestRunner contains extensive delegation methods for backward compatibility.
-// The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
+// BridgeTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B } from '../../constants';
@@ -154,8 +153,7 @@ export class BridgeTestRunner {
     this.bridgeVM = this.opsManager.getBridgeVMIp();
     this.targetVM = this.resolveTargetVM(config.targetVM);
 
-    // Use SSHExecutor for all SSH operations - computes options fresh each time
-    // to ensure SSH keys created by `ops up` are always detected
+    // Use SSHExecutor for all SSH operations - computes options fresh each time to ensure SSH keys created by `ops up` are always detected
     this.sshExecutor = getSSHExecutor();
 
     const timeoutStr = process.env.BRIDGE_TIMEOUT;
@@ -358,8 +356,7 @@ export class BridgeTestRunner {
 
     // Two-hop SSH command: Host → Bridge → Target
     // Outer hop uses host identity file ({RENET_DATA_DIR}/staging/.ssh/id_rsa).
-    // Inner hop runs on the bridge where that host path is invalid, so drop
-    // `-i` and let ssh fall back to ~/.ssh/id_rsa (set up by renet mesh).
+    // Inner hop runs on the bridge where that host path is invalid, so drop `-i` and let ssh fall back to ~/.ssh/id_rsa (set up by renet mesh).
     const sshCmd = `ssh ${outerOpts} ${user}@${this.bridgeVM} "ssh ${innerOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
 
     // Log the command being executed
@@ -383,8 +380,7 @@ export class BridgeTestRunner {
       const err = error as Error & {
         stdout?: string;
         stderr?: string;
-        // Node reports some failures with a STRING code, e.g.
-        // ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
+        // Node reports some failures with a STRING code, e.g. ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
         code?: number | string;
         killed?: boolean;
       };
@@ -435,8 +431,7 @@ export class BridgeTestRunner {
       const err = error as Error & {
         stdout?: string;
         stderr?: string;
-        // Node reports some failures with a STRING code, e.g.
-        // ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
+        // Node reports some failures with a STRING code, e.g. ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
         code?: number | string;
         killed?: boolean;
       };
@@ -757,8 +752,7 @@ export class BridgeTestRunner {
    * Executes: Host → Bridge → Target VM
    */
   async testFunction(opts: TestFunctionOptions): Promise<ExecResult> {
-    // Use renet from PATH on the VM (deployed by InfrastructureManager)
-    // Always use --debug in e2e tests for full logging visibility
+    // Use renet from PATH on the VM (deployed by InfrastructureManager) Always use --debug in e2e tests for full logging visibility
     let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
 
     cmd += this.buildCommonFlags(opts);
@@ -984,6 +978,7 @@ export class BridgeTestRunner {
   ping = () => this.systemCheckMethods.ping();
   nop = () => this.systemCheckMethods.nop();
   hello = () => this.systemCheckMethods.hello();
+  networkUsed = () => this.systemCheckMethods.networkUsed();
   sshTest = () => this.systemCheckMethods.sshTest();
   checkKernelCompatibility = () => this.systemCheckMethods.checkKernelCompatibility();
   checkSetup = () => this.systemCheckMethods.checkSetup();
@@ -1020,10 +1015,7 @@ export class BridgeTestRunner {
     this.executeViaBridge(
       `sudo renet datastore init --path ${datastorePath} --size ${size}${force ? ' --force' : ''}`
     );
-  // `datastorePath` is NOT a function param — the harness turns it into
-  // `renet functions once --datastore-path <p>`, which sets the DATASTORE CONTEXT the
-  // command's RequireDatastore(vault) reads. Dropping it strips the context and
-  // datastore_expand fails outright. It was never "passed into the void".
+  // `datastorePath` is NOT a function param — the harness turns it into `renet functions once --datastore-path <p>`, which sets the DATASTORE CONTEXT the command's RequireDatastore(vault) reads. Dropping it strips the context and datastore_expand fails outright. It was never "passed into the void".
   /**
    * Mount / unmount the machine's BASE pool.
    *
@@ -1073,10 +1065,7 @@ export class BridgeTestRunner {
   kubeKubeconfig = (opts: KubeTargetOptions) => this.kubeMethods.kubeKubeconfig(opts);
   kubeHealth = (opts: KubeTargetOptions) => this.kubeMethods.kubeHealth(opts);
 
-  // Whole-cluster fork/migrate primitives (kube_prep_fork / kube_identity_rewrite)
-  // + local-PV topology label (kube_node_label). The per-namespace kube verbs
-  // (kube_namespace_*/kube_pv_*/kube_deploy) are DELETED — kube repo lifecycle
-  // now rides the runtime-generic repository_* verbs via the datastore dispatch.
+  // Whole-cluster fork/migrate primitives (kube_prep_fork / kube_identity_rewrite) + local-PV topology label (kube_node_label). The per-namespace kube verbs (kube_namespace_*/kube_pv_*/kube_deploy) are DELETED — kube repo lifecycle now rides the runtime-generic repository_* verbs via the datastore dispatch.
   kubePrepFork = (opts: KubePrepForkOptions) => this.kubeMethods.kubePrepFork(opts);
   kubeIdentityRewrite = (opts: KubeIdentityRewriteOptions) =>
     this.kubeMethods.kubeIdentityRewrite(opts);

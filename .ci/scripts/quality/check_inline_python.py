@@ -1,37 +1,28 @@
 #!/usr/bin/env python3
 """Refuse Python source embedded inside JavaScript/TypeScript.
 
-WHY THIS EXISTS. A ruff gate landed on 2026-08-06 that lints every TRACKED .py
-file. Python living inside a JS/TS string literal is invisible to it: never
-linted, never formatted, never type-checked by anything at all. That blind spot
-was not hypothetical -- packages/cli/src/remote/vscode/bootstrap.ts held a
-130-line, 4871-character Python program in a template literal, and four of the
-six values interpolated into it went in unescaped. Python's own parser confirms
+WHY THIS EXISTS. A ruff gate landed on 2026-08-06 that lints every TRACKED .py file. Python living inside a JS/TS string literal is invisible to it: never linted, never formatted, never type-checked by anything at all. That blind spot was not hypothetical -- packages/cli/src/remote/vscode/bootstrap.ts held a 130-line, 4871-character Python program in a template literal, and four of
+the six values interpolated into it went in unescaped. Python's own parser confirms
 the consequence: a universalUser of `'; import os; os.system('id'); x='` parses
-cleanly and turns the middle into executable Python, which then runs on a remote
-host under `sudo -u`. Nothing in the repo could have seen it, because no tool
-looks inside a template literal.
+cleanly and turns the middle into executable Python, which then runs on a remote host under `sudo -u`. Nothing in the repo could have seen it, because no tool looks inside a template literal.
 
-THE RULE, and why it is drawn this way. "Mentions Python" is far too wide: of
-999 tracked JS/TS files, four match /python3?/ and THREE of those are innocent
-(an interpreter binary name in a config default, the word "python" inside a word
-list, and the string "check:ci-python-lint"). A rule that flagged those would be
-turned off within a week. So a file is flagged only when a string in it looks
-like Python SOURCE -- two or more distinct statement-shaped signals, each at the
-start of a line, inside one quoted region. Naming the interpreter is not a
-finding; shipping a program is.
+THE RULE, and why it is drawn this way. "Mentions Python" is far too wide: of 999 tracked JS/TS files, four match /python3?/ and THREE of those are innocent (an interpreter binary name in a config default, the word "python" inside a word list, and the string "check:ci-python-lint"). A rule that flagged those would be turned off within a week. So a file is flagged only when a string
+in it looks like Python SOURCE -- two or more distinct statement-shaped signals, each at the start of a line, inside one quoted region. Naming the interpreter is not a finding; shipping a program is.
 
-THIS IS A DETECTOR, NOT A PARSER, and the difference is stated rather than
-hidden: it reads quoted regions with a small scanner instead of a JS grammar. It
-can therefore be fooled by source that assembles Python from fragments, and it
-is not asked to catch that. What it does catch is the shape the incident
-actually took -- a readable program pasted into a template literal -- and it
+THIS IS A DETECTOR, NOT A PARSER, and the difference is stated rather than hidden: it reads quoted regions with a small scanner instead of a JS grammar. It can therefore be fooled by source that assembles Python from fragments, and it is not asked to catch that. What it does catch is the shape the incident actually took -- a readable program pasted into a template literal -- and it
 catches it before review rather than after.
 
 Run modes:
     check_inline_python.py            scan every tracked JS/TS file (the gate)
     check_inline_python.py --file P   judge ONE file, for the pre-edit hook
     check_inline_python.py --selftest controls only, no repo scan
+
+---- gate ----
+step: No inline Python in JS/TS
+needs: none
+id: check:ci-no-inline-python
+selftest: true
+---- end gate ----
 """
 
 import argparse
@@ -40,8 +31,7 @@ import re
 import subprocess
 import sys
 
-# Statement shapes that only appear in real Python. Each must match at the START
-# of a line inside a quoted region, which is what keeps prose and identifiers
+# Statement shapes that only appear in real Python. Each must match at the START of a line inside a quoted region, which is what keeps prose and identifiers
 # from scoring: a JS file may well contain the word "import", but not at the
 # head of a line inside a string, followed by a stdlib module name.
 _SIGNALS = (
@@ -57,13 +47,10 @@ _SIGNALS = (
     re.compile(r"^\s*print\s*\(", re.MULTILINE),
 )
 
-# `python -c` / `python3 -c` given anything other than a trivial literal. The
-# interpreter NAME on its own is deliberately not a signal (that is the
-# generate-tutorial-audio.ts false positive), so this needs the -c flag.
+# `python -c` / `python3 -c` given anything other than a trivial literal. The interpreter NAME on its own is deliberately not a signal (that is the generate-tutorial-audio.ts false positive), so this needs the -c flag.
 _DASH_C = re.compile(r"python3?\s+-c\b")
 
-# Quoted regions: template literals, single and double quotes. Backslash escapes
-# are honoured so an escaped quote does not end a region early.
+# Quoted regions: template literals, single and double quotes. Backslash escapes are honoured so an escaped quote does not end a region early.
 _REGION = re.compile(
     r"`(?:[^`\\]|\\.)*`" r"|'(?:[^'\\\n]|\\.)*'" r'|"(?:[^"\\\n]|\\.)*"',
     re.DOTALL,
@@ -91,18 +78,11 @@ def findings(text):
     if not out:
         # `python -c` is a CORROBORATING signal, never an independent one.
         #
-        # It was independent for exactly one revision, and it immediately
-        # produced a false positive on the very code that FIXED the original
-        # defect: once the program moved to setup-script.py, bootstrap.ts still
+        # It was independent for exactly one revision, and it immediately produced a false positive on the very code that FIXED the original defect: once the program moved to setup-script.py, bootstrap.ts still
         # reads `python3 -c ${script} ${config}` -- and ${script} is now a
-        # shell-quoted embedded CONSTANT, which is precisely what was wanted.
-        # Flagging that would punish the fix and teach the next reader that this
-        # gate is noise, which is how a gate gets deleted.
+        # shell-quoted embedded CONSTANT, which is precisely what was wanted. Flagging that would punish the fix and teach the next reader that this gate is noise, which is how a gate gets deleted.
         #
-        # If no quoted region in this file looks like Python, there is no
-        # program here for an interpolation to be part of. Whatever reaches -c
-        # came from somewhere else: from a literal, which this same rule catches
-        # in the file that holds it, or from a real .py file, which is the goal.
+        # If no quoted region in this file looks like Python, there is no program here for an interpolation to be part of. Whatever reaches -c came from somewhere else: from a literal, which this same rule catches in the file that holds it, or from a real .py file, which is the goal.
         return out
     out.extend(
         (text.count("\n", 0, m.start()) + 1, "python -c executes the embedded source flagged above")
@@ -111,10 +91,7 @@ def findings(text):
     return out
 
 
-# ---- controls ---------------------------------------------------------------
-# A detector that cannot fire would report a clean tree forever. Both directions
-# are proven before any real file is read: it must FLAG a planted program, and
-# it must CLEAR the three real, benign shapes that exist in this repo today.
+# ---- controls --------------------------------------------------------------- A detector that cannot fire would report a clean tree forever. Both directions are proven before any real file is read: it must FLAG a planted program, and it must CLEAR the three real, benign shapes that exist in this repo today.
 _MUST_FLAG = [
     (
         "a program in a template literal",

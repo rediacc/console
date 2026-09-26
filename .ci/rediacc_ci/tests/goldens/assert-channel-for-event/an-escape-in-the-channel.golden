@@ -1,0 +1,6 @@
+# twin .ci/scripts/ci/assert-channel-for-event.sh blob 831b2f7740d4f1c066ec1a5fbd1168b8f5fcd330
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Channel must be empty for schedule events (got: dryrun-a	b).
+✗   schedule must not produce R2 uploads.

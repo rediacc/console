@@ -34,7 +34,7 @@ export function sdkGetEpoch(
  * @param epoch - The epoch number (from sdkGetEpoch)
  * @returns Derived AES-256-GCM key for this epoch
  */
-export async function sdkDerive(sdkMaster: Uint8Array, epoch: number): Promise<CryptoKey> {
+export function sdkDerive(sdkMaster: Uint8Array, epoch: number): Promise<CryptoKey> {
   // Use the epoch as salt (converted to bytes)
   const epochBytes = new TextEncoder().encode(String(epoch));
   return hkdfDeriveKey(sdkMaster, epochBytes, HKDF_INFO.SDK_DERIVE);

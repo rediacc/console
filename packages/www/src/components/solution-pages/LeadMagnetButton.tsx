@@ -20,11 +20,8 @@ interface Props {
 
 const DISMISS_KEY_PREFIX = 'leadMagnetButtonDismissed:';
 
-// Dismissal lives in sessionStorage, which the server does not have. Reading it during
-// render made the server and the browser disagree, and React discards a subtree it
-// cannot reconcile. useSyncExternalStore keeps both renders on the server snapshot and
-// applies the stored value after hydration. One listener set covers every key: a
-// dismissal notifies all mounted buttons and each one re-reads its own key.
+// Dismissal lives in sessionStorage, which the server does not have. Reading it during render made the server and the browser disagree, and React discards a subtree it cannot reconcile. useSyncExternalStore keeps both renders on the server snapshot and applies the stored value after hydration. One listener set covers every key: a dismissal notifies all mounted buttons and each one
+// re-reads its own key.
 const dismissListeners = new Set<() => void>();
 
 function subscribeDismissed(onStoreChange: () => void): () => void {

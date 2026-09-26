@@ -3,6 +3,7 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -54,13 +55,13 @@ function reachableCommits(repos: RepoEntry[]): Set<string> {
 /**
  * Every datastore these repos are recorded on, plus the machine's default (#74).
  *
- * `repository_list` enumerates ONE datastore — there is no `--all-datastores` on
- * it the way there is on the licence verbs — so a single call sees only the
+ * `repository_list` enumerates ONE datastore, there is no `--all-datastores` on
+ * it the way there is on the licence verbs, so a single call sees only the
  * machine's default. gc and fsck compare that listing against the WHOLE config,
  * so a repo family living on a named datastore read as "not present on the
  * machine": fsck reported its refs as dangling, and gc could never collect its
  * unreachable commits. Asking each recorded mount in turn needs no new renet
- * surface. `undefined` is in the set on purpose — it is the default datastore.
+ * surface. `undefined` is in the set on purpose, it is the default datastore.
  */
 async function recordedMounts(repos: RepoEntry[]): Promise<(string | undefined)[]> {
   const mounts = new Set<string | undefined>([undefined]);
@@ -76,7 +77,7 @@ async function recordedMounts(repos: RepoEntry[]): Promise<(string | undefined)[
  *
  * A mount that is not attached here simply contributes nothing: the dispatch
  * fails or returns an empty listing, and both are already tolerated. That
- * matters for gc, which only ever deletes objects it found PRESENT — a datastore
+ * matters for gc, which only ever deletes objects it found PRESENT, a datastore
  * it could not read yields no candidates rather than a wrong deletion.
  */
 async function machineObjects(
@@ -108,7 +109,7 @@ async function machineObjects(
   return objects;
 }
 
-/** repo gc -m <machine> [--apply] — delete unreachable immutable commits. */
+/** repo gc -m <machine> [--apply], delete unreachable immutable commits. */
 async function handleGc(options: {
   machine: string;
   apply?: boolean;
@@ -119,9 +120,7 @@ async function handleGc(options: {
     const reachable = reachableCommits(repos);
     const present = await machineObjects(options.machine, repos);
 
-    // Candidates: immutable commits, present on the machine, unreachable from any
-    // ref, and not currently mounted (a mounted object is in use). Working forks
-    // are never immutable, so they are excluded by construction.
+    // Candidates: immutable commits, present on the machine, unreachable from any ref, and not currently mounted (a mounted object is in use). Working forks are never immutable, so they are excluded by construction.
     const candidates = repos.filter((r) => {
       const guid = r.config.repositoryGuid;
       const obj = present.get(guid);
@@ -146,8 +145,7 @@ async function handleGc(options: {
       const result = await getExecutor().execute({
         functionName: 'repository_delete',
         machineName: options.machine,
-        // #74: the candidate's OWN recorded datastore, not the machine default —
-        // gc deletes objects it found by enumerating those same mounts above.
+        // #74: the candidate's OWN recorded datastore, not the machine default, gc deletes objects it found by enumerating those same mounts above.
         datastore: await recordedDatastoreMount(c.name),
         params: { repository: guid },
         debug: options.debug,
@@ -182,7 +180,7 @@ function findDanglingRefs(
   return dangling;
 }
 
-/** repo fsck -m <machine> — report config-ref vs machine-object drift. */
+/** repo fsck -m <machine>, report config-ref vs machine-object drift. */
 async function handleFsck(options: { machine: string }): Promise<void> {
   try {
     const repos = await configService.listRepositories();
@@ -210,7 +208,7 @@ async function handleFsck(options: { machine: string }): Promise<void> {
       for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
       outputService.info(t('commands.repo.admin.fsck.orphanHint'));
     }
-    process.exitCode = 1;
+    setExitCode(1);
   } catch (error) {
     handleError(error);
   }
@@ -230,8 +228,7 @@ export function registerRepoMaintenanceCommands(repo: Command, admin: Command): 
       return handleGc(options);
     });
 
-  // repo admin fsck --machine <m>: a machine-scoped scan of config refs against the
-  // commits actually present. No repo to derive from, so -m stays (§5.4).
+  // repo admin fsck --machine <m>: a machine-scoped scan of config refs against the commits actually present. No repo to derive from, so -m stays (§5.4).
   admin
     .command('fsck')
     .summary(t('commands.repo.admin.fsck.descriptionShort'))

@@ -28,9 +28,7 @@ export interface PatternRule {
   rationale: string;
 }
 
-// Not exported: the only consumer is the `redirectsJson as RedirectsFile` cast six lines
-// below. An exported shape nothing outside this file names is a public surface nobody
-// asked for.
+// Not exported: the only consumer is the `redirectsJson as RedirectsFile` cast six lines below. An exported shape nothing outside this file names is a public surface nobody asked for.
 interface RedirectsFile {
   exact: Record<string, RedirectTarget>;
   patterns: PatternRuleRaw[];
@@ -45,9 +43,7 @@ interface RedirectsFile {
 
 const typed = redirectsJson as RedirectsFile;
 
-// `| undefined` is load-bearing: a lookup for a path that is not in the table
-// returns undefined at runtime, and applyRedirect() branches on exactly that.
-// Without it the guard below reads as dead code to type-aware lint.
+// `| undefined` is load-bearing: a lookup for a path that is not in the table returns undefined at runtime, and applyRedirect() branches on exactly that. Without it the guard below reads as dead code to type-aware lint.
 export const EXACT: Record<string, RedirectTarget | undefined> = typed.exact;
 
 export const PATTERNS: PatternRule[] = typed.patterns.map((p) => ({

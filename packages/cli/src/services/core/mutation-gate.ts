@@ -1,5 +1,5 @@
 /**
- * MutationGate — the single chokepoint every config mutation flows through.
+ * MutationGate, the single chokepoint every config mutation flows through.
  *
  * Responsibilities:
  *   1. Detect which sensitive paths are being mutated (by diffing previous vs new).
@@ -11,7 +11,7 @@
  *   4. Fail fast (before any network or disk write) with PreconditionMismatchError.
  *
  * Symmetric-by-design: humans don't get a TTY bypass. The "I'm at the
- * keyboard" claim was theatre — the gate prevents typos and accidents
+ * keyboard" claim was theatre, the gate prevents typos and accidents
  * regardless of who's driving, and removes a divergent code path that
  * had no integration coverage.
  *
@@ -94,7 +94,7 @@ interface SingleMutationResult {
  * Evaluate a single sensitive-path mutation. Applied symmetrically to
  * humans and agents. The four allow paths in order of precedence:
  *
- *   1. Override scope match (REDIACC_ALLOW_CONFIG_EDIT) — agent-only;
+ *   1. Override scope match (REDIACC_ALLOW_CONFIG_EDIT), agent-only;
  *      humans get null overrideScope so this branch is skipped naturally.
  *   2. Explicit rotation acknowledgement (rotateAcknowledged Set
  *      populated by `--rotate-secret` / `--rotate`).
@@ -127,10 +127,7 @@ function evaluateSensitiveMutation(
 
   const stored = digestForPointer(context.previousConfig, entry.pointer);
   if (stored === undefined && !agent) {
-    // New field added by a HUMAN — there is no previous value to verify, so
-    // the passwd-style ceremony does not apply (--current is documented as
-    // required for overwrite/unset). Agents keep the explicit ceremony even
-    // on first write (existing precedent). Permit, but audit.
+    // New field added by a HUMAN, there is no previous value to verify, so the passwd-style ceremony does not apply (--current is documented as required for overwrite/unset). Agents keep the explicit ceremony even on first write (existing precedent). Permit, but audit.
     return {
       decision: {
         pointer: entry.pointer,
@@ -153,8 +150,7 @@ function evaluateSensitiveMutation(
   }
 
   if (stored === undefined) {
-    // Agent first-write with a knowledge claim — nothing to verify against.
-    // Treat as rotation: permit, but audit.
+    // Agent first-write with a knowledge claim, nothing to verify against. Treat as rotation: permit, but audit.
     return {
       decision: {
         pointer: entry.pointer,
@@ -208,9 +204,7 @@ export function evaluateMutations(
       continue;
     }
 
-    // Symmetric path: humans and agents both go through the same evaluator.
-    // Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes
-    // effect under agent context), so they cannot bypass via that branch.
+    // Symmetric path: humans and agents both go through the same evaluator. Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes effect under agent context), so they cannot bypass via that branch.
     const { decision, failure } = evaluateSensitiveMutation(
       entry,
       meta,

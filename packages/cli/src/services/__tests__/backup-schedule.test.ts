@@ -1,10 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// First-time module evaluation in CI runners can exceed the 5s default test
-// timeout (this file mocks 30+ deps before importing backup-schedule). Pull
+// First-time module evaluation in CI runners can exceed the 5s default test timeout (this file mocks 30+ deps before importing backup-schedule). Pull
 // the import into a single beforeAll with a generous timeout; the per-test
-// `await import` calls that follow then hit vitest's module cache and return
-// instantly. Cheaper than bumping every individual test's timeout.
+// `await import` calls that follow then hit vitest's module cache and return instantly. Cheaper than bumping every individual test's timeout.
 beforeAll(async () => {
   await import('../backup/backup-schedule.js');
 }, 30000);
@@ -12,22 +10,19 @@ beforeAll(async () => {
 const mockExecStreaming = vi.fn();
 const mockConnect = vi.fn().mockResolvedValue(undefined);
 const mockClose = vi.fn();
-// A tripwire, not a stub. The rclone/OneDrive emission was removed on
-// 2026-08-15, so any call to buildRcloneArgs from the scheduling path means
-// dead credential plumbing came back to life.
+// A tripwire, not a stub. The rclone/OneDrive emission was removed on 2026-08-15, so any call to buildRcloneArgs from the scheduling path means dead credential plumbing came back to life.
 const mockBuildRcloneArgs = vi.fn(() => {
   throw new Error('buildRcloneArgs must not be reachable from the backup scheduling path');
 });
 
-const mockProvisionRenetToRemote = vi
+const mockAcquireRemoteRenet = vi
   .fn()
   .mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
 const mockReadSSHKey = vi.fn().mockResolvedValue('PRIVATE_KEY');
 const mockRefreshRepoLicensesBatch = vi.fn();
 
 const mockGetBackupStrategy = vi.fn();
-// Defaults to "no strategies beyond those under test" so the unbound-strategy
-// warning has something well-formed to read. Tests that care override it.
+// Defaults to "no strategies beyond those under test" so the unbound-strategy warning has something well-formed to read. Tests that care override it.
 const mockListBackupStrategies = vi.fn(() => Promise.resolve({}));
 const mockGetLocalConfig = vi.fn();
 const mockGetStorage = vi.fn();
@@ -50,7 +45,7 @@ vi.mock('@rediacc/shared/storage-browser', () => ({
 }));
 
 vi.mock('../renet/renet-execution.js', () => ({
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: mockReadSSHKey,
 }));
 
@@ -74,9 +69,7 @@ vi.mock('../core/output.js', () => ({
   },
 }));
 
-// ---------------------------------------------------------------------------
-// Test helpers
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Test helpers ---------------------------------------------------------------------------
 
 interface ExecScript {
   match: string | RegExp;
@@ -218,9 +211,7 @@ const DEFAULT_STRATEGY = {
   destinations: [HOSTED_DEST],
 };
 
-// ---------------------------------------------------------------------------
-// Pure-function unit tests
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Pure-function unit tests ---------------------------------------------------------------------------
 
 describe('generateServiceUnit', () => {
   it('keeps bwlimit on argv and needs no EnvironmentFile= at all', async () => {
@@ -233,9 +224,7 @@ describe('generateServiceUnit', () => {
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain('ExecStart=/usr/bin/renet backup snapshot');
-    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and
-    // the rclone-style '6M' the schema declares would die at cobra's flag parse
-    // inside the timer, at run time, on a machine nobody is watching.
+    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and the rclone-style '6M' the schema declares would die at cobra's flag parse inside the timer, at run time, on a machine nobody is watching.
     expect(serviceContent).toContain('--bwlimit 6291456');
     expect(serviceContent).not.toContain('--bwlimit 6M');
     // The chunk store carries no credentials by construction, so the
@@ -247,8 +236,7 @@ describe('generateServiceUnit', () => {
   it('never writes credentials into the unit or a sidecar for a chunk-store destination', async () => {
     // Successor to the rclone test that pinned credentials OUT of ExecStart and
     // INTO a 0600 EnvironmentFile=. There is no credential to place any more:
-    // the machine authenticates with its signed licence blob, so the correct
-    // assertion is that nothing credential-shaped appears anywhere.
+    // the machine authenticates with its signed licence blob, so the correct assertion is that nothing credential-shaped appears anywhere.
     const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'nightly-snapshot',
@@ -263,9 +251,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('emits no --mode flag, which `backup snapshot` does not have', async () => {
-    // private/renet/cmd/renet/backup_snapshot.go declares no --mode. Pinned so
-    // nothing starts emitting one that cobra would reject at flag-parse time,
-    // inside the timer, on a machine nobody is watching.
+    // private/renet/cmd/renet/backup_snapshot.go declares no --mode. Pinned so nothing starts emitting one that cobra would reject at flag-parse time, inside the timer, on a machine nobody is watching.
     const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent } = _testing.generateServiceUnit(
       'hourly-hot',
@@ -278,16 +264,9 @@ describe('generateServiceUnit', () => {
   });
 
   it('emits --cold for a cold strategy, and nothing for a hot one', async () => {
-    // This assertion used to say the opposite: cold was REFUSED, because the
-    // scheduled verb could only take a hot snapshot and deploying one would
-    // have handed back unquiesced snapshots of a database the operator asked to
-    // be stopped first. `backup snapshot --cold` closed that gap, so the flag
-    // is emitted rather than the strategy rejected.
+    // This assertion used to say the opposite: cold was REFUSED, because the scheduled verb could only take a hot snapshot and deploying one would have handed back unquiesced snapshots of a database the operator asked to be stopped first. `backup snapshot --cold` closed that gap, so the flag is emitted rather than the strategy rejected.
     //
-    // Both directions are asserted deliberately. Checking only the cold case
-    // would pass just as happily against a generator that appended --cold to
-    // EVERY unit, which would impose a nightly outage on every hot strategy on
-    // the machine — the mirror image of the bug this replaced.
+    // Both directions are asserted deliberately. Checking only the cold case would pass just as happily against a generator that appended --cold to EVERY unit, which would impose a nightly outage on every hot strategy on the machine, the mirror image of the bug this replaced.
     const { _testing } = await import('../backup/backup-schedule.js');
     const gen = (mode: 'hot' | 'cold') =>
       _testing.generateServiceUnit(
@@ -300,18 +279,12 @@ describe('generateServiceUnit', () => {
 
     expect(gen('cold')).toContain('--cold');
     expect(gen('hot')).not.toContain('--cold');
-    // The retired spelling must not come back: renet takes --cold, not --mode.
-    // `--mode cold` parses as an unknown flag and the unit dies inside a timer
-    // at 03:00, where nobody is watching.
+    // The retired spelling must not come back: renet takes --cold, not --mode. `--mode cold` parses as an unknown flag and the unit dies inside a timer at 03:00, where nobody is watching.
     expect(gen('cold')).not.toContain('--mode');
   });
 
   it('gives a cold unit a stop window longer than renet needs to restart', async () => {
-    // A SIGTERM inside the cold window leaves containers STOPPED, and renet's
-    // handler has to bring them all back before it exits — bounded at 15 min
-    // renet-side. The hot budget of 90s would SIGKILL mid-restart and leave the
-    // repositories down, turning a clean `systemctl stop` into the outage cold
-    // mode exists to keep brief.
+    // A SIGTERM inside the cold window leaves containers STOPPED, and renet's handler has to bring them all back before it exits, bounded at 15 min renet-side. The hot budget of 90s would SIGKILL mid-restart and leave the repositories down, turning a clean `systemctl stop` into the outage cold mode exists to keep brief.
     const { _testing } = await import('../backup/backup-schedule.js');
     const stopSec = (mode: 'hot' | 'cold') => {
       const { serviceContent } = _testing.generateServiceUnit(
@@ -329,15 +302,12 @@ describe('generateServiceUnit', () => {
     // 15 min is renet's coldRestartTimeout; anything at or under it can SIGKILL
     // a restart that is still working.
     expect(stopSec('cold')).toBeGreaterThan(15 * 60);
-    // And the hot unit must NOT inherit it: a 16-minute shutdown wait on every
-    // reboot, for a path whose cleanup is bounded at 60s, is its own defect.
+    // And the hot unit must NOT inherit it: a 16-minute shutdown wait on every reboot, for a path whose cleanup is bounded at 60s, is its own defect.
     expect(stopSec('hot')).toBe(90);
   });
 
   it('defaults an unset mode to hot rather than to an outage', async () => {
-    // A strategy with no `mode` is the common case. Reading undefined as cold
-    // would stop every container on the machine nightly, so the default is
-    // pinned here rather than left to whichever branch happens to run.
+    // A strategy with no `mode` is the common case. Reading undefined as cold would stop every container on the machine nightly, so the default is pinned here rather than left to whichever branch happens to run.
     const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent } = _testing.generateServiceUnit(
       'nightly',
@@ -376,9 +346,7 @@ describe('generateServiceUnit', () => {
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    // The '-' prefix is the whole point: a refused renewal (one lapsed repo, a
-    // network blip) and an older renet that does not know the `license` verb
-    // must both leave the backup running.
+    // The '-' prefix is the whole point: a refused renewal (one lapsed repo, a network blip) and an older renet that does not know the `license` verb must both leave the backup running.
     expect(serviceContent).toContain('ExecStartPre=-/usr/bin/renet license renew --jitter 45s');
     const preIdx = serviceContent.indexOf('ExecStartPre=');
     const execIdx = serviceContent.indexOf('ExecStart=/usr/bin/renet backup');
@@ -402,10 +370,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('validates every destination, not just the first, before emitting a unit', async () => {
-    // Successor to the conflicting-env-var test: destinations no longer
-    // contribute env vars that could collide, but the multi-destination
-    // validation it protected still matters — a strategy must be rejected
-    // whole rather than half-rendered.
+    // Successor to the conflicting-env-var test: destinations no longer contribute env vars that could collide, but the multi-destination validation it protected still matters, a strategy must be rejected whole rather than half-rendered.
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(
@@ -420,9 +385,7 @@ describe('generateServiceUnit', () => {
   });
 
   it('REFUSES an rclone `storage` destination instead of emitting a unit with no ExecStart', async () => {
-    // The exact defect the hosted-service branch was added to fix, reachable
-    // again from the other side now that rclone is gone: a config still naming
-    // a storage destination must not deploy a timer that backs up nothing.
+    // The exact defect the hosted-service branch was added to fix, reachable again from the other side now that rclone is gone: a config still naming a storage destination must not deploy a timer that backs up nothing.
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(
@@ -491,9 +454,7 @@ describe('generateEnvFile', () => {
 });
 
 describe('cronToOnCalendar', () => {
-  // Regression: cron ranges like "0-2,4-23" must become systemd "0..2,4..23"
-  // (double-dot, not hyphen). Single-dash output trips systemd's parser and
-  // renders the timer unit "bad-setting", silently disabling the schedule.
+  // Regression: cron ranges like "0-2,4-23" must become systemd "0..2,4..23" (double-dot, not hyphen). Single-dash output trips systemd's parser and renders the timer unit "bad-setting", silently disabling the schedule.
   it('converts hyphen ranges and comma-lists to systemd ..-ranges', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.cronToOnCalendar('0 0-2,4-23 * * *')).toBe('*-*-* 00..02,04..23:00:00');
@@ -507,9 +468,7 @@ describe('sha256Hex', () => {
   it('is deterministic for the same UTF-8 input', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     expect(_testing.sha256Hex('hello')).toBe(_testing.sha256Hex('hello'));
-    // Pinned against a known expected value — guards against an accidental
-    // encoding flip (bytes vs hex) that would silently turn every reconcile
-    // into "everything updated."
+    // Pinned against a known expected value, guards against an accidental encoding flip (bytes vs hex) that would silently turn every reconcile into "everything updated."
     expect(_testing.sha256Hex('hello')).toBe(
       '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
     );
@@ -544,9 +503,7 @@ describe('parseStrategyFromPath', () => {
   });
 
   it('excludes -adhoc service files', async () => {
-    // `-adhoc` units belong to the on-demand backup path (`machine backup now`)
-    // and must not be reconciled as scheduled strategies — otherwise the
-    // reconciler would try to remove them as orphans on every run.
+    // `-adhoc` units belong to the on-demand backup path (`machine backup now`) and must not be reconciled as scheduled strategies, otherwise the reconciler would try to remove them as orphans on every run.
     const { _testing } = await import('../backup/backup-schedule.js');
     expect(
       _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-foo-adhoc.service')
@@ -749,9 +706,7 @@ describe('applyInFlightGate', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Integration tests — pushBackupSchedule (full flow with scripted SSH)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Integration tests, pushBackupSchedule (full flow with scripted SSH) ---------------------------------------------------------------------------
 
 describe('pushBackupSchedule (reconcile)', () => {
   beforeEach(() => {
@@ -807,16 +762,13 @@ describe('pushBackupSchedule (reconcile)', () => {
     const reloads = cmds.filter((c) => c === 'sudo systemctl daemon-reload');
     expect(reloads).toHaveLength(1);
     expect(cmds).toContain('sudo systemctl enable --now rediacc-backup-hourly-hot.timer');
-    // No legacy glob-remove — only orphan cleanup of *.new files.
+    // No legacy glob-remove, only orphan cleanup of *.new files.
     expect(cmds.some((c) => c.includes('rm -f') && c.includes('rediacc-backup-*.service'))).toBe(
       false
     );
   });
 
-  // The failure this covers is PARTIAL binding, which was completely silent:
-  // one strategy bound and deployed ("unchanged"), another enabled but bound to
-  // no machine, exit 0, no mention of the second. The operator's only signal was
-  // a backup that never ran.
+  // The failure this covers is PARTIAL binding, which was completely silent: one strategy bound and deployed ("unchanged"), another enabled but bound to no machine, exit 0, no mention of the second. The operator's only signal was a backup that never ran.
   it('warns about an enabled strategy that no machine binds', async () => {
     mockListBackupStrategies.mockResolvedValueOnce({
       'hourly-hot': DEFAULT_STRATEGY,
@@ -845,8 +797,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('"hourly-hot" is'));
   });
 
-  // Other direction: without this the assertion above would pass on a function
-  // that warns unconditionally.
+  // Other direction: without this the assertion above would pass on a function that warns unconditionally.
   it('stays silent when every enabled strategy is bound somewhere', async () => {
     mockListBackupStrategies.mockResolvedValueOnce({ 'hourly-hot': DEFAULT_STRATEGY });
     scriptedExec([
@@ -1155,7 +1106,7 @@ describe('pushBackupSchedule (reconcile)', () => {
     expect(cmds.some((c) => c.startsWith('sudo mv '))).toBe(false);
     expect(cmds.some((c) => c === 'sudo systemctl daemon-reload')).toBe(false);
     expect(cmds.some((c) => c.includes('enable --now'))).toBe(false);
-    expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
+    expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 

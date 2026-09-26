@@ -1,0 +1,11 @@
+# twin .ci/scripts/housekeeping/retry-failed-runs.sh blob e59a3222b8f31364af2de2bff17b416e12e72a94
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Nightly retry: failed runs in other/repo (last 48h)
+✓ reran 1 (Cleanup PR Preview, was attempt 1)
+✓ considered=1 excluded=0 too-old=0 attempt-capped=0 dead-head=0 retried=1
+--- calls ---
+api	repos/other/repo/branches?per_page=100	--paginate	--jq	.[].commit.sha
+api	repos/other/repo/actions/runs?status=failure&per_page=100	--jq	[.workflow_runs[] | {id, name, path, head_sha, run_attempt, created_at}]
+api	-X	POST	repos/other/repo/actions/runs/1/rerun-failed-jobs

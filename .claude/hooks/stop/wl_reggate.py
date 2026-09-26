@@ -1,24 +1,11 @@
 """wl_reggate: the v7 regression-gate machinery and its v8 bookkeeping.
 
-WHY (v7, operator request): "you fixed but we didn't have a mechanism for
-future regressions." A fix without a gate is a defect scheduled to return,
-and the i18n cross-locale bug proved it: fixed by hand, then invisible to
-every existing check by construction. On every stop where a fix landed, the
-judge is asked whether a gate protects it, and every model claim is VERIFIED
-against artifacts: a named existing gate must be a real check:* key; a new
-gate counts only when WIRED (reachable from `npm run ci` TRANSITIVELY) and
-its bounded run is green (cached by content hash).
+WHY (v7, operator request): "you fixed but we didn't have a mechanism for future regressions." A fix without a gate is a defect scheduled to return, and the i18n cross-locale bug proved it: fixed by hand, then invisible to every existing check by construction. On every stop where a fix landed, the judge is asked whether a gate protects it, and every model claim is VERIFIED against
+artifacts: a named existing gate must be a real check:* key; a new gate counts only when WIRED (reachable from `npm run ci` TRANSITIVELY) and its bounded run is green (cached by content hash).
 
-Detection is from ARTIFACTS, never prose: commit subjects matching
-^(fix|revert)[(!:] between the marker's last-seen HEAD and current HEAD,
-plus newly ticked `- [x]` items owned by this session. A fix-set touching
-only docs/** and **/*.md never asks. A settled fix-set is NEVER re-asked.
+Detection is from ARTIFACTS, never prose: commit subjects matching ^(fix|revert)[(!:] between the marker's last-seen HEAD and current HEAD, plus newly ticked `- [x]` items owned by this session. A fix-set touching only docs/** and **/*.md never asks. A settled fix-set is NEVER re-asked.
 
-FAIL SAFE: a missing marker initialises to current HEAD and asks nothing
-that stop; a corrupt one does the same plus ONE systemMessage line. Never a
-block, never silent. No field-wise salvage: any invalid shape discards the
-file, because half-parsed fixsets silently resurrect a blocked question as
-settled.
+FAIL SAFE: a missing marker initialises to current HEAD and asks nothing that stop; a corrupt one does the same plus ONE systemMessage line. Never a block, never silent. No field-wise salvage: any invalid shape discards the file, because half-parsed fixsets silently resurrect a blocked question as settled.
 """
 
 import contextlib
@@ -31,7 +18,9 @@ import pathlib
 import re
 import subprocess
 
+import wl_common
 import wl_core as C
+import wl_proc
 import wl_store as S
 import worklist_messages as M
 
@@ -43,38 +32,24 @@ REGGATE_VERDICTS = (
     "one-off",
     "proven",
     "deferred",
-    # Written ONLY by the cap, never by the judge. It says "the finding was
-    # computed and verified, then deferred as debt" -- which is a different fact
+    # Written ONLY by the cap, never by the judge. It says "the finding was computed and verified, then deferred as debt" -- which is a different fact
     # from every verdict above, all of which mean the question was answered.
     # Collapsing it into "deferred" would make a capped demand indistinguishable
     # from one the session argued its way out of.
     "capped",
 )
 
-# ---------------------------------------------------------------------------
-# THE EFFORT CAP (operator ruling 2026-09-05T01:55Z).
+# --------------------------------------------------------------------------- THE EFFORT CAP (operator ruling 2026-09-05T01:55Z).
 #
-# "This is a general problem. Lets employ a planning agent to have a limit for
-# that. Maybe we can limit new gate work after some point to 7 times? But that
-# check should be done on stop hook side instead of ignoring."
+# "This is a general problem. Lets employ a planning agent to have a limit for that. Maybe we can limit new gate work after some point to 7 times? But that check should be done on stop hook side instead of ignoring."
 #
-# The ruling's second sentence is the load-bearing one: the cap belongs HERE, in
-# the machinery, not in a session deciding it has complied enough. A session that
-# stops complying is indistinguishable from a session that is wrong.
+# The ruling's second sentence is the load-bearing one: the cap belongs HERE, in the machinery, not in a session deciding it has complied enough. A session that stops complying is indistinguishable from a session that is wrong.
 #
-# WHAT IS COUNTED (plan Q1): a fix-set this BRANCH settled by writing a new gate
-# (`proven`), plus one for each fix-set the cap itself deferred. NOT demands,
-# blocks or stops -- counting those lets a session outwait a legitimate demand by
-# stopping N times, which is the ignoring the ruling forbids. NOT the cheap
-# settles (`covered`/`one-off`/`not-applicable`/`deferred`) -- those cost no
-# artifact and no CI round, and counting them would let a session farm the budget
+# WHAT IS COUNTED (plan Q1): a fix-set this BRANCH settled by writing a new gate (`proven`), plus one for each fix-set the cap itself deferred. NOT demands, blocks or stops -- counting those lets a session outwait a legitimate demand by stopping N times, which is the ignoring the ruling forbids. NOT the cheap settles (`covered`/`one-off`/`not-applicable`/`deferred`) -- those cost
+# no artifact and no CI round, and counting them would let a session farm the budget
 # with five honest one-offs to buy a pass on the sixth, real gate.
 #
-# SCOPE IS THE BRANCH, not the session. `reggate_path` is keyed on session id, so
-# a per-session budget would evaporate at exactly the moment a long night makes
-# compaction likely. A branch maps one-to-one onto one PR and one CI queue, which
-# is where the cost actually lands; two sessions sharing a branch share the
-# budget, correctly, because they share the queue.
+# SCOPE IS THE BRANCH, not the session. `reggate_path` is keyed on session id, so a per-session budget would evaporate at exactly the moment a long night makes compaction likely. A branch maps one-to-one onto one PR and one CI queue, which is where the cost actually lands; two sessions sharing a branch share the budget, correctly, because they share the queue.
 # ---------------------------------------------------------------------------
 REGGATE_CAP = max(1, int(os.environ.get("WORKLIST_REGGATE_CAP", "7")))
 # A branch may never merge, so the merge probe alone could hold a debt open
@@ -86,25 +61,21 @@ REGGATE_DEBT_GRACE_MIN = max(1, int(os.environ.get("WORKLIST_REGGATE_DEBT_GRACE_
 def debt_dir(root=None):
     """Directory holding the per-branch ledgers. See wl_store.AGENT_RESERVED_DIRS.
 
-    HONOURS $WORKLIST_STORE_DIR, exactly as wl_store.store_dir does, and for the
-    same reason it had to learn it: without the override the test harness runs
-    the hook against the REAL repo root, so every suite run appended a ledger to
-    the operator's own tree. Caught the first time this shipped -- an untracked
-    agent/reggate/agenttest.jsonl appeared in `git status` from a suite run,
-    which is the same footgun as the harness once writing the operator's real
-    worklist. A sibling of the store, so one export redirects both.
+    HONOURS $WORKLIST_STORE_DIR, exactly as wl_store.store_dir does, and for the same reason it had to learn it: without the override the test harness runs the hook against the REAL repo root, so every suite run appended a ledger to the operator's own tree. Caught the first time this shipped -- an untracked agent/reggate/agenttest.jsonl appeared in `git status` from a suite run,
+    which is the same footgun as the harness once writing the operator's real worklist. A sibling of the store, so one export redirects both.
     """
     override = os.environ.get("WORKLIST_STORE_DIR")
     if override:
         return pathlib.Path(override).parent / "reggate"
-    return pathlib.Path(root or ".") / "agent" / "reggate"
+    if root is None:
+        root = C.project_root(C.project_start())
+    return pathlib.Path(root) / "agent" / "reggate"
 
 
 def _branch_slug(branch):
     """A branch name flattened to one safe filename component.
 
-    Branch names carry '/' and worse; one file per branch means the name IS the
-    filename, so it is sanitised rather than trusted.
+    Branch names carry '/' and worse; one file per branch means the name IS the filename, so it is sanitised rather than trusted.
     """
     slug = re.sub(r"[^A-Za-z0-9._-]+", "-", (branch or "detached").strip()) or "detached"
     return slug[:100]
@@ -113,42 +84,28 @@ def _branch_slug(branch):
 def debt_path(branch, root=None):
     """ONE FILE PER BRANCH, following wl_store's per-writer rule verbatim.
 
-    Both sides of a merge append at EOF, so a single shared ledger conflicts on
-    every concurrent append. Per-branch files never do.
+    Both sides of a merge append at EOF, so a single shared ledger conflicts on every concurrent append. Per-branch files never do.
     """
     return debt_dir(root) / (_branch_slug(branch) + ".jsonl")
 
 
-# Where a freshly written gate leaves its artifact. Both shapes exist in this
-# repo; anything else is not a gate the ci chain can run.
-# The hook and gate test suites count as gate artifacts too: a fix inside
-# .claude/hooks/** or a CI script has its canonical regression home in the
-# corresponding SUITE, and the old two-glob probe kept printing "no new or
-# changed check script found" across three consecutive stops while the
-# judge itself had already accepted a suite case (163e) as the gate. A
-# probe narrower than the judge's own ruling is a false-fire generator.
+# Where a freshly written gate leaves its artifact. Both shapes exist in this repo; anything else is not a gate the ci chain can run. The hook and gate test suites count as gate artifacts too: a fix inside .claude/hooks/** or a CI script has its canonical regression home in the corresponding SUITE, and the old two-glob probe kept printing "no new or changed check script found"
+# across three consecutive stops while the judge itself had already accepted a suite case (163e) as the gate. A probe narrower than the judge's own ruling is a false-fire generator.
 CHECK_SCRIPT_GLOBS = (
-    "scripts/check-*.ts",
-    # Package-local gates. Omitting these made the probe structurally blind to
-    # NINE real gates -- check:ci-tutorial-parity, check:ci-locale-tutorial-assets,
-    # check:ci-solution-videos, check:ci-command-planes and friends all live here,
-    # because a gate about www content belongs beside www. Measured 2026-08-18: a
-    # session wrote packages/www/scripts/check-tutorial-card-fonts.ts, wired its
-    # check:ci-* key and its ci-quality.yml step, ran its planted-defect proof, and
-    # the probe still answered "no new or changed check script found; a claimed
-    # gate must leave one". The only way to satisfy the old globs was to move a
-    # www gate to the repo root, i.e. to let the probe dictate layout.
+    "scripts/gates/check-*.ts",
+    # Package-local gates. Omitting these made the probe structurally blind to NINE real gates -- check:ci-tutorial-parity, check:ci-locale-tutorial-assets, check:ci-solution-videos, check:ci-command-planes and friends all live here, because a gate about www content belongs beside www. Measured 2026-08-18: a session wrote packages/www/scripts/check-tutorial-card-fonts.ts, wired its
+    # check:ci-* key and its ci-quality.yml step, ran its planted-defect proof, and the probe still answered "no new or changed check script found; a claimed gate must leave one". The only way to satisfy the old globs was to move a www gate to the repo root, i.e. to let the probe dictate layout.
     "packages/*/scripts/check-*.ts",
     ".ci/scripts/quality/check-*.sh",
+    ".ci/scripts/quality/check_*.py",
     ".ci/scripts/test/gates/test-*.sh",
+    # THE PYTHON GATE-TEST SURFACE, and its omission was the THIRD instance of the exact class this header already records twice. Measured 2026-09-07: 149 bash gate tests here were visible to the probe and 99 Python ones were not, on the surface W7 is actively migrating all 149 onto -- so the blind half is the growing half. A session wrote test_gate_fanout_timeout_declarable.py,
+    # proved it against a re-planted defect, confirmed `check:ci-pytest` collects it and that the full gate went 9602 -> 9604 passed, and the probe still answered "no NEW or CHANGED check script this stop". Same shape as the nine www gates above: the only way to satisfy the old globs was to write the gate somewhere it does not belong, i.e. to let the probe dictate layout.
+    ".ci/rediacc_ci/tests/gates/test_gate_*.py",
     ".claude/hooks/stop/test-*.sh",
     ".claude/hooks/test-*.sh",
 )
-# UPGRADE GUARD (v10). Tick identity is the hash of the RENDERED line, and the
-# v10 store rewrite changed rendering, so the first stop after an upgrade can
-# see every historical [x] as "new" (791 in the live store). A flood of ticks
-# is bookkeeping drift, not 791 simultaneous fixes: absorb silently with one
-# systemMessage line instead of asking the judge about ancient history.
+# UPGRADE GUARD (v10). Tick identity is the hash of the RENDERED line, and the v10 store rewrite changed rendering, so the first stop after an upgrade can see every historical [x] as "new" (791 in the live store). A flood of ticks is bookkeeping drift, not 791 simultaneous fixes: absorb silently with one systemMessage line instead of asking the judge about ancient history.
 TICK_FLOOD = int(os.environ.get("WORKLIST_REGGATE_TICK_FLOOD", "20"))
 
 
@@ -185,21 +142,14 @@ def load_reggate(path):
 def append_ledger(branch, record, root=None):
     """Append ONE ledger record under a blocking flock, via the store's own primitive.
 
-    Append-only JSONL, folded on read, NEVER edited. It is deliberately not an
-    `ev:` kind in the item store: wl_epic.py's header records why, and it learned
-    it the hard way -- `compact()` rewrites that log down to the minimal
-    item-reproducing set, so a novel event kind there is SILENTLY DESTROYED.
-    `.requests`, `.intents` and `.epics` are the precedents this follows.
+    Append-only JSONL, folded on read, NEVER edited. It is deliberately not an `ev:` kind in the item store: wl_epic.py's header records why, and it learned it the hard way -- `compact()` rewrites that log down to the minimal item-reproducing set, so a novel event kind there is SILENTLY DESTROYED. `.requests`, `.intents` and `.epics` are the precedents this follows.
     """
     path = debt_path(branch, root)
     path.parent.mkdir(parents=True, exist_ok=True)
     rec = dict(record)
     rec.setdefault("at", C.stamp_now())
     rec.setdefault("br", branch or "")
-    # Pass the DICT: _append_lines serialises each payload itself. Handing it a
-    # pre-encoded string double-encodes it into a JSON string containing JSON,
-    # which read_ledger then rejects as malformed -- silently emptying the
-    # ledger and, with it, the budget.
+    # Pass the DICT: _append_lines serialises each payload itself. Handing it a pre-encoded string double-encodes it into a JSON string containing JSON, which read_ledger then rejects as malformed -- silently emptying the ledger and, with it, the budget.
     S._append_lines(path, path.with_suffix(".lock"), [rec])
     return rec
 
@@ -207,10 +157,7 @@ def append_ledger(branch, record, root=None):
 def read_ledger(branch, root=None):
     """(records, forgot), same FAIL SAFE contract as load_reggate.
 
-    `forgot` means the ledger could not be read as written. It is reported rather
-    than swallowed, because a budget computed from an unreadable ledger reads as
-    a FRESH budget -- the most permissive answer possible, and exactly the shape
-    that would let the cap silently stop capping.
+    `forgot` means the ledger could not be read as written. It is reported rather than swallowed, because a budget computed from an unreadable ledger reads as a FRESH budget -- the most permissive answer possible, and exactly the shape that would let the cap silently stop capping.
     """
     path = debt_path(branch, root)
     if not path.exists():
@@ -238,27 +185,18 @@ def read_ledger(branch, root=None):
 def branch_merged(branch, root=None):
     """Has this branch landed on origin/main?
 
-    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone
-    governs the debt -- making it due sooner, never never. A probe that answered
-    True on failure would discharge every debt on any git hiccup.
+    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone governs the debt -- making it due sooner, never never. A probe that answered True on failure would discharge every debt on any git hiccup.
     """
     if not branch:
         return False
-    # NOT `merge-base --is-ancestor`: it answers through its EXIT CODE and prints
-    # nothing, while C._git returns stdout and collapses every failure to "".
-    # Through that helper a merged branch and a broken git are the same empty
-    # string. `rev-list --count origin/main..HEAD` puts the answer on stdout:
-    # "0" means HEAD carries nothing origin/main lacks, i.e. it landed.
+    # NOT `merge-base --is-ancestor`: it answers through its EXIT CODE and prints nothing, while C._git returns stdout and collapses every failure to "". Through that helper a merged branch and a broken git are the same empty string. `rev-list --count origin/main..HEAD` puts the answer on stdout: "0" means HEAD carries nothing origin/main lacks, i.e. it landed.
     return C._git(root or ".", "rev-list", "--count", "origin/main..HEAD") == "0"
 
 
 def budget_state(branch, root=None):
     """(charged, remaining, debts, forgot) folded from the ledger.
 
-    THE COUNTER RESETS WHEN THE BRANCH LANDS; DEBTS DO NOT. A merge resets the
-    counter and simultaneously makes every outstanding debt DUE. That inversion
-    is the point: merging is what makes you pay, and there is no ordering in
-    which a merge discharges a debt.
+    THE COUNTER RESETS WHEN THE BRANCH LANDS; DEBTS DO NOT. A merge resets the counter and simultaneously makes every outstanding debt DUE. That inversion is the point: merging is what makes you pay, and there is no ordering in which a merge discharges a debt.
     """
     records, forgot = read_ledger(branch, root)
     discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
@@ -275,8 +213,7 @@ def charge(branch, sig, reason, root=None):
 
 
 def save_reggate(path, state):
-    # Whole-file rewrite is correct here for the same reason as the handover:
-    # the marker is per-session, so there is no second writer to race.
+    # Whole-file rewrite is correct here for the same reason as the handover: the marker is per-session, so there is no second writer to race.
     with contextlib.suppress(OSError):
         path.write_text(json.dumps(state, indent=1), encoding="utf-8")
 
@@ -285,13 +222,12 @@ def _tick_id(line):
     return hashlib.sha1(line.strip().encode("utf-8", "replace")).hexdigest()[:12]
 
 
-def mine_tick_ids(lines, session_id):
-    out = []
-    for line in lines:
-        m = C.ITEM.match(line)
-        if m and m.group("state") == "x" and C.owned_by_me(m.group("owner"), session_id):
-            out.append(_tick_id(line))
-    return out
+def mine_tick_ids(items, session_id):
+    return [
+        _tick_id(rec["line"])
+        for rec in items
+        if rec["state"] == "x" and C.owned_by_me(rec.get("owner"), session_id)
+    ]
 
 
 def _hash_file(path):
@@ -302,10 +238,7 @@ def _hash_file(path):
 
 
 def seed_gate_hashes(root):
-    """Hashes of every existing check script, recorded at marker init so only
-    scripts that are NEW or CHANGED after that point ever count as candidate
-    proof (or get run). Without this seed, the first fix-signal stop in a real
-    repo would treat ~all 90 existing gates as candidates and try to run them."""
+    """Hashes of every existing check script, recorded at marker init so only scripts that are NEW or CHANGED after that point ever count as candidate proof (or get run). Without this seed, the first fix-signal stop in a real repo would treat ~all 90 existing gates as candidates and try to run them."""
     stamp = C.stamp_now()
     out = {}
     for pat in CHECK_SCRIPT_GLOBS:
@@ -317,19 +250,14 @@ def seed_gate_hashes(root):
     return out
 
 
-# A path-shaped token with an extension. Used only to decide whether a tick's
-# EVIDENCE names code; the tick text itself is prose and is never parsed further.
+# A path-shaped token with an extension. Used only to decide whether a tick's EVIDENCE names code; the tick text itself is prose and is never parsed further.
 _EVIDENCE_PATH = re.compile(r"(?<![\w/])((?:[\w.@-]+/)+[\w.@-]+\.[A-Za-z0-9]+)")
 
 
 def tick_touches_code(line):
     """Does this tick's evidence name a file that is not documentation?
 
-    The operator's rule: only code-touching ticks are asked. This mirrors the
-    docs-only filter already applied to commits, and it FAILS TOWARD ASKING --
-    a tick whose evidence names no path at all is asked, because "no path" is
-    not evidence that nothing shipped, and silently dropping a fix is the
-    failure this whole mechanism exists to prevent.
+    The operator's rule: only code-touching ticks are asked. This mirrors the docs-only filter already applied to commits, and it FAILS TOWARD ASKING -- a tick whose evidence names no path at all is asked, because "no path" is not evidence that nothing shipped, and silently dropping a fix is the failure this whole mechanism exists to prevent.
     """
     paths = _EVIDENCE_PATH.findall(line or "")
     if not paths:
@@ -337,90 +265,175 @@ def tick_touches_code(line):
     return not all(p.startswith("docs/") or p.endswith(".md") for p in paths)
 
 
-# Paths that are CI-gate MAINTENANCE rather than product code. Derived by
-# checking real commits, not guessed: the first version of this list omitted
-# .github/workflows and scripts/data and therefore answered False for
-# 3148399c9, a commit that is nothing BUT gate maintenance.
+# Paths that are CI-gate MAINTENANCE rather than product code. Derived by checking real commits, not guessed: the first version of this list omitted .github/workflows and scripts/data and therefore answered False for 3148399c9, a commit that is nothing BUT gate maintenance.
 GATE_ARTIFACT_PREFIXES = (
-    "scripts/check-",
+    "scripts/gates/check-",
     "scripts/data/",  # gate seeds and baselines
     "scripts/lib/",  # gate-support libraries: verified 2026-09-05 that
-    # every consumer is a check script or a test, never
-    # product runtime (action-refs, blocker-validator,
-    # gate-header, shrink-only-baseline, controls...)
-    # NOT "packages/" -- that was the first version and it is WRONG in the most
-    # expensive direction: it marks EVERY file under packages/ as gate
-    # maintenance, so all product code would earn the hint. Caught by case 96 in
-    # a fixture repo, where packages/cli/src/real.ts came back True. Sampling 7
-    # real commits had missed it because none touched product code under
-    # packages/ -- testing against the data you happen to have is how a rule
-    # ships inverted. Package-local gates are matched by GLOB below instead.
+    # every consumer is a check script or a test, never product runtime (action-refs, blocker-validator, gate-header, shrink-only-baseline, controls...) NOT "packages/" -- that was the first version and it is WRONG in the most expensive direction: it marks EVERY file under packages/ as gate maintenance, so all product code would earn the hint. Caught by case 96 in a fixture repo,
+    # where packages/cli/src/real.ts came back True. Sampling 7 real commits had missed it because none touched product code under packages/ -- testing against the data you happen to have is how a rule ships inverted. Package-local gates are matched by GLOB below instead.
     ".ci/scripts/quality/",
     ".ci/scripts/security/",
     ".ci/scripts/test/",
+    # The ported half of the same estate. Without it a fix whose regression home is a Python gate test counts as touching no gate artifact at all, which is the same blindness CHECK_SCRIPT_GLOBS carried, one list further down.
+    ".ci/rediacc_ci/tests/",
     ".claude/hooks/",
     ".github/workflows/ci-",  # the quality workflows a gate is wired into
 )
 GATE_ARTIFACT_EXACT = ("scripts/ci-runner/manifest.ts", "package.json")
-# Package-local gates live beside their package, so they need a GLOB, not a
-# prefix. CHECK_SCRIPT_GLOBS' own header records why they must be reachable at
-# all: omitting them made the gate probe structurally blind to nine real gates.
+# Package-local gates live beside their package, so they need a GLOB, not a prefix. CHECK_SCRIPT_GLOBS' own header records why they must be reachable at all: omitting them made the gate probe structurally blind to nine real gates.
 GATE_ARTIFACT_GLOBS = (
     "packages/*/scripts/check-*.ts",
     "packages/*/scripts/check-*.sh",
 )
 
-# BOOKKEEPING, ignored rather than counted. Every commit in this repo carries
-# agent/ session state and often docs; requiring them to be gate artifacts made
-# the probe answer False for 89189c0b5, which touches one hook file and two
-# agent files. This mirrors the docs-only skip below: prose is not the subject.
+# BOOKKEEPING, ignored rather than counted. Every commit in this repo carries agent/ session state and often docs; requiring them to be gate artifacts made the probe answer False for 89189c0b5, which touches one hook file and two agent files. This mirrors the docs-only skip below: prose is not the subject.
 GATE_NEUTRAL_PREFIXES = ("agent/", "docs/")
+
+
+def _diff_tree_files(root, sha):
+    """The real files one commit touched, root-commit safe. `[]` on any git failure or an unresolvable ref.
+
+    FACTORED OUT of `gate_only_fixset` and `fix_signals`, which each carried this exact root-commit-retry shape independently -- the third copy of one pattern, found while grounding the judge's prompt in real data rather than narrated claims (agent/plans/PLAN-judge-prompt-trap-conflation.md). `C._git` itself never raises (it returns `""` on any failure), so the `try/except` here is
+    belt-and-suspenders against a future change to that contract, matching the caller this replaces.
+    """
+    try:
+        files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
+    except Exception:  # noqa: BLE001 -- a hint must never raise into the stop path
+        return []
+    if files:
+        return [f.strip() for f in files if f.strip()]
+    # A ROOT commit has no parent, so `diff-tree` prints nothing. Retry with `--root`, which does list a root commit's files. Caught by case 96, whose fixture repo's first commit IS the root.
+    try:
+        files = C._git(
+            root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
+        ).splitlines()
+    except Exception:  # noqa: BLE001
+        return []
+    return [f.strip() for f in files if f.strip()]
+
+
+def _porcelain_path(line):
+    """The path one `git status --porcelain` line names (the NEW path of a rename).
+
+    `C._git` strips the WHOLE output, so the first line's leading space is gone: ` M a.ts` arrives as `M a.ts`, and the old `ln[3:]` answered `ackages/x/a.ts` for `packages/x/a.ts` (found 2026-09-24 by the R.1 fixture of agent/plans/PLAN-stop-hook-retro-20260924.md). A two-character status is followed by one space; a stripped one-character status is not.
+    """
+    path = line[2:] if line[1:2] == " " and line[2:3] != " " else line[3:]
+    return path.split(" -> ", 1)[-1].strip().strip('"')
+
+
+_SUBPROJECT_RE = re.compile(r"^([-+])Subproject commit ([0-9a-f]{7,40})", re.MULTILINE)
+_NULL_SHA = re.compile(r"^0+$")
+
+
+def _submodule_files(root, path, old, new):
+    """`<path>/<file>` for every file the submodule at `path` changed between `old` and `new`, or [] when either is missing or the range does not resolve there."""
+    if not old or not new or _NULL_SHA.match(old) or _NULL_SHA.match(new) or old == new:
+        return []
+    sub = os.path.join(str(root), path)
+    listed = C._git(sub, "diff", "--name-only", old, new) or ""
+    return ["%s/%s" % (path, f.strip()) for f in listed.splitlines() if f.strip()]
+
+
+def _gitlink_moves_status(root, paths):
+    """{path: (old, new)} for each of `paths` that is a gitlink whose working-tree commit differs from HEAD's, read from `git diff HEAD -- <path>`."""
+    out = {}
+    for path in paths:
+        # A gitlink is a checked-out repository; a plain dirty file never costs a git call here.
+        if not os.path.exists(os.path.join(str(root), path, ".git")):
+            continue
+        diff = C._git(root, "diff", "--no-color", "--no-ext-diff", "HEAD", "--", path) or ""
+        if "Subproject commit" not in diff:
+            continue
+        sides = dict(_SUBPROJECT_RE.findall(diff))
+        if "-" in sides and "+" in sides:
+            out[path] = (sides["-"], sides["+"])
+    return out
+
+
+def _gitlink_moves_commit(root, sha):
+    """{path: (old, new)} for each gitlink one commit moved, read from `git diff-tree --raw` (mode 160000)."""
+    out = {}
+    raw = C._git(root, "diff-tree", "--no-commit-id", "-r", "--raw", "--abbrev=40", sha) or ""
+    for line in raw.splitlines():
+        meta, _, path = line.partition("\t")
+        parts = meta.lstrip(":").split()
+        if len(parts) >= 4 and "160000" in (parts[0], parts[1]) and path:
+            out[path.strip()] = (parts[2], parts[3])
+    return out
+
+
+def _expand_gitlinks(root, moves):
+    files = []
+    for path, (old, new) in moves.items():
+        files.extend(_submodule_files(root, path, old, new))
+    return files
+
+
+def fixset_files(root, ids, live_paths=None):
+    """(files, provenance). The real files THIS fix-set touched, computed by git, never narrated. `provenance` is `"diff-tree"` when every id resolved to a real commit, or `"status-fallback"` when nothing did and the answer is the whole working tree's `git status --porcelain` instead -- named so a caller can tell the judge WHICH ground truth it is being shown, since the two answer
+    different questions (agent/plans/PLAN-sweep-obligation-carry-forward.md task "Label the injected file list with its provenance").
+
+    `ids` are fix_signals' own ids: commit shas for a commit-based fix-set, a single tick id for a tick-based one. A tick id is not a tree-ish, so `_diff_tree_files` answers `[]` for it -- correct, because a tick-based fix-set's evidence is necessarily still UNCOMMITTED. Falls back to `git status --porcelain`, the same ground truth `gate_only_fixset`'s own docstring already calls
+    out as the honest answer for that shape, so a hallucinated bulk transform can be checked against what git ACTUALLY shows changed rather than trusted from the judge's own prose (agent/plans/PLAN-judge-prompt-trap-conflation.md).
+
+    `live_paths` (wl_roster.live_writer_paths) is subtracted on the status arm ONLY, under provenance `"status-minus-live-writers"` (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): the dirty tree is shared, and a writer's uncommitted edits are not the lead's fix-set while the writer is live or an item leased to it is un-ticked (R20260925.2). The obligation for them belongs in that writer's own tick: when `ids` is a tick whose item had agent lease workers (`live_paths.by_tick`), the answer is those workers' paths intersected with the dirty tree, under provenance `"item-writers"`. A path covers every file below it. A commit-based fix-set is never trimmed.
+
+    A MOVED GITLINK IS EXPANDED into `<sub>/<file>` for every file the submodule's own range changed, on both arms (R20260924.19). The gitlink path alone stays listed. At 16:23:57Z on 2026-09-24 the judge said "no test files appear in this fix-set" while the tests sat in private/account commit aea435154, because the list carried `private/account` and nothing under it.
+    """
+    files = set()
+    for i in ids or []:
+        found = _diff_tree_files(root, i)
+        files.update(found)
+        if found:
+            files.update(_expand_gitlinks(root, _gitlink_moves_commit(root, i)))
+    if files:
+        return sorted(files), "diff-tree"
+    status = C._git(root, "status", "--porcelain") or ""
+    dirty = {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
+    files.update(dirty)
+    files.update(_expand_gitlinks(root, _gitlink_moves_status(root, sorted(dirty))))
+    # A TICK ANSWERS FOR ITS OWN WRITERS (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.2). An item that had agent lease workers is asked about exactly the dirty files those workers changed, not the whole tree: at 19:47:31 on 2026-09-24 the judge picked a "class" out of another writer's uncommitted rewrites. An item that never had a worker lease keeps the status arm below.
+    by_tick = getattr(live_paths, "by_tick", None) or {}
+    own = [by_tick[i] for i in ids or [] if i in by_tick]
+    if own:
+        mine = set().union(*own)
+        return sorted(f for f in files if _covers(mine, f)), "item-writers"
+    if live_paths:
+        kept = {f for f in files if not _covers(live_paths, f)}
+        if kept != files:
+            return sorted(kept), "status-minus-live-writers"
+    return sorted(files), "status-fallback"
+
+
+def _covers(paths, rel):
+    """True when the `git status` path `rel` is one of `paths` or lies under one: a writer's Bash-made directory removal (`rm -rf .claude/oracles`) covers every file below it (R20260925.1)."""
+    rel = str(rel).rstrip("/")
+    for raw in paths or ():
+        p = str(raw).rstrip("/")
+        if p and (rel == p or rel.startswith(p + "/")):
+            return True
+    return False
 
 
 def gate_only_fixset(root, shas):
     """True when every NON-BOOKKEEPING file in the fix-set is a CI-gate artifact.
 
-    ARTIFACTS, NEVER PROSE -- this reads `git diff-tree`, not a commit subject,
-    the same rule fix_signals states for its docs-only skip below.
+    ARTIFACTS, NEVER PROSE -- this reads `git diff-tree`, not a commit subject, the same rule fix_signals states for its docs-only skip below.
 
-    WHY IT IS A HINT AND NOT A SKIP. A gate-maintenance fix can still deserve a
-    gate of its own, so this never suppresses a fix-set; it tells the judge what
-    it is looking at, so question (0) has something to bite on. Measured
-    2026-09-04/05: two sessions ran a self-generating loop where writing gate A
-    produced the finding that gate B was needed, and every one of those findings
-    had ALREADY been caught by an existing gate. Nothing told the judge the
-    fix-set was gate machinery.
+    WHY IT IS A HINT AND NOT A SKIP. A gate-maintenance fix can still deserve a gate of its own, so this never suppresses a fix-set; it tells the judge what it is looking at, so question (0) has something to bite on. Measured 2026-09-04/05: two sessions ran a self-generating loop where writing gate A produced the finding that gate B was needed, and every one of those findings had
+    ALREADY been caught by an existing gate. Nothing told the judge the fix-set was gate machinery.
 
-    Fails toward saying nothing extra: any git error, an empty fix-set, or a
-    fix-set that is ONLY bookkeeping returns False rather than skipping the
-    question. That includes a TICK-BASED fix-set: fix_signals' ids are commit
-    shas OR tick ids, and a tick id is not a tree-ish, so `git diff-tree` fails
-    and this answers False. Correct by construction -- an uncommitted fix has no
-    file list to classify -- and it means the hint is a commit-fix-set feature.
+    Fails toward saying nothing extra: any git error, an empty fix-set, or a fix-set that is ONLY bookkeeping returns False rather than skipping the question. That includes a TICK-BASED fix-set: fix_signals' ids are commit shas OR tick ids, and a tick id is not a tree-ish, so `git diff-tree` fails and this answers False. Correct by construction -- an uncommitted fix has no file
+    list to classify -- and it means the hint is a commit-fix-set feature.
     """
     if not shas:
         return False
     seen = False
     for sha in shas:
-        try:
-            files = C._git(
-                root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha
-            ).splitlines()
-        except Exception:  # noqa: BLE001 -- a hint must never raise into the stop path
-            return False
+        files = _diff_tree_files(root, sha)
         if not files:
-            # A ROOT commit has no parent, so `diff-tree` prints nothing. Retry
-            # with --root, which does list a root commit's files. Caught by case
-            # 96, whose fixture repo's first commit IS the root. Still False if
-            # that yields nothing: an unreadable ref says nothing extra.
-            try:
-                files = C._git(
-                    root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
-                ).splitlines()
-            except Exception:  # noqa: BLE001
-                return False
-            if not files:
-                return False
+            return False
         for raw in files:
             path = raw.strip()
             if not path or any(path.startswith(pre) for pre in GATE_NEUTRAL_PREFIXES):
@@ -436,26 +449,18 @@ def gate_only_fixset(root, shas):
     return seen
 
 
-def fix_signals(root, lines, session_id, state):
-    """(descriptions, ids, new_tick_pairs, current_head, banked_only_ids).
+def fix_signals(root, items, session_id, state):
+    """(descriptions, ids, new_tick_triples, current_head, banked_only_ids).
 
-    ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in
-    marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this
-    session, covering the uncommitted-tree default. The skip filter is
-    deliberately narrow: a fix commit touching only docs/** and **/*.md never
-    asks; everything else does, and the judge's four questions sort the
-    one-offs out. A rewound or unreachable old head yields an empty log,
-    which reads as no signals and lets head self-heal by advancing.
+    ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this session, covering the uncommitted-tree default. The skip filter is deliberately narrow: a fix commit touching only docs/** and **/*.md never asks; everything else does, and the judge's four questions sort the one-offs out. A rewound or
+    unreachable old head yields an empty log, which reads as no signals and lets head self-heal by advancing.
 
-    `banked_only_ids` is a SEPARATE list from `new_tick_pairs`, deliberately: a
-    docs-only tick must be marked seen so it stops being rediscovered every
-    stop, but it must NOT be asked about and must NOT be subjected to the I7
-    completion-evidence check that `new_tick_pairs` feeds elsewhere. Folding it
-    into `new_tick_pairs` instead (the first version of this fix) would have
-    made that evidence check run over ticks nobody is asking about -- a
-    docs-only tick with a bare `- [x]` line and no evidence would then fail I7
-    for a reason unrelated to what it actually is. Found in review, not by a
-    control: no `- [x]` docs-only fixture exercised that path."""
+    `banked_only_ids` is a SEPARATE list from `new_tick_triples`, deliberately: a docs-only tick must be marked seen so it stops being rediscovered every stop, but it must NOT be asked about and must NOT be subjected to the I7 completion-evidence check that `new_tick_triples` feeds elsewhere. Folding it into `new_tick_triples` instead (the first version of this fix) would have made
+    that evidence check run over ticks nobody is asking about -- a docs-only tick with a bare `- [x]` line and no evidence would then fail I7 for a reason unrelated to what it actually is. Found in review, not by a control: no `- [x]` docs-only fixture exercised that path.
+
+    `new_tick_triples` is `(tid, line, evidence_text)`, not `(tid, line)`: `evidence_text` is `rec["lastnote"]` when present, the closing note that actually carries the fix's proof, falling back to the full `line` only for markdown-origin items with no structured note. `line` stays the FULL rendered text (accumulated history included) because `tick_touches_code` genuinely needs
+    to scan it all for a path; only the I7 evidence check needs the narrower, unpolluted slice. Before this, both consumers shared one accumulated blob, and a tick whose history grew past a few dozen lease/update notes buried its own closing sha under longer worker-id-shaped tokens that a "5 longest hex candidates" heuristic picked first -- the real evidence sat there,
+    unchecked."""
     head = C._git(root, "rev-parse", "HEAD")
     commits, new_ticks = [], []
     if state["head"] and head and state["head"] != head:
@@ -471,31 +476,22 @@ def fix_signals(root, lines, session_id, state):
             if files and all(f.startswith("docs/") or f.endswith(".md") for f in files):
                 continue
             commits.append((sha, "%s %s" % (sha[:7], subj)))
-    for line in lines:
-        m = C.ITEM.match(line)
-        if m and m.group("state") == "x" and C.owned_by_me(m.group("owner"), session_id):
+    for rec in items:
+        if rec["state"] == "x" and C.owned_by_me(rec.get("owner"), session_id):
+            line = rec["line"]
             tid = _tick_id(line)
             if tid not in state["seen_ticks"]:
-                new_ticks.append((tid, line.strip()))
-    # ONE UNIT PER STOP, oldest first. Until now every commit and every new tick
-    # of a stop were hashed into a SINGLE fix-set, so one verdict had to cover
-    # unrelated fixes and the judge's answers wandered across the bundle. Asking
-    # per item is what the operator asked for; asking about ALL of them at once
-    # would wall a busy stop in behind eight simultaneous demands, so the rest
-    # stay unbanked and the next stop picks up the next one.
+                evidence_text = rec.get("lastnote") or line
+                new_ticks.append((tid, line.strip(), evidence_text))
+    # ONE UNIT PER STOP, oldest first. Until now every commit and every new tick of a stop were hashed into a SINGLE fix-set, so one verdict had to cover unrelated fixes and the judge's answers wandered across the bundle. Asking per item is what the operator asked for; asking about ALL of them at once would wall a busy stop in behind eight simultaneous demands, so the rest stay
+    # unbanked and the next stop picks up the next one.
     #
-    # Commits are ONE unit, not one each: they already passed the docs-only
-    # filter above and they landed together.
-    # THE FLOOD GUARD RUNS BEFORE UNIT SELECTION, and it has to. The caller
-    # absorbs a burst of "new" ticks as store-format drift rather than as
-    # fixes, and it decides that from `len(new_ticks)`. Handing it one unit
-    # first hid the burst from it, so the flood was never absorbed and the very
-    # first historical tick blocked instead. Caught by the suite's own
-    # tick-flood case, not by review.
+    # Commits are ONE unit, not one each: they already passed the docs-only filter above and they landed together. THE FLOOD GUARD RUNS BEFORE UNIT SELECTION, and it has to. The caller absorbs a burst of "new" ticks as store-format drift rather than as fixes, and it decides that from `len(new_ticks)`. Handing it one unit first hid the burst from it, so the flood was never absorbed
+    # and the very first historical tick blocked instead. Caught by the suite's own tick-flood case, not by review.
     if len(new_ticks) > TICK_FLOOD:
         return (
-            ["tick: " + t[:120] for _, t in new_ticks],
-            sorted([t for t, _ in new_ticks]),
+            ["tick: " + t[:120] for _, t, _ev in new_ticks],
+            sorted([t for t, _, _ev in new_ticks]),
             new_ticks,
             head,
             [],
@@ -504,17 +500,12 @@ def fix_signals(root, lines, session_id, state):
     banked_only = []
     if commits:
         units.append(([s for s, _ in commits], [d for _, d in commits], []))
-    for tid, line in new_ticks:
+    for tid, line, evidence_text in new_ticks:
         if not tick_touches_code(line):
-            # SEEN, NOT ASKED. Without this the id is never added to seen_ticks
-            # (the caller only banks what THIS function returns), so it is
-            # rediscovered as "new" and re-filtered on every future stop,
-            # forever. It still must not enter `ticks`/`ids`: those feed both
-            # the ask and the I7 evidence check, and a docs-only tick is
-            # neither being asked about nor required to carry evidence.
+            # SEEN, NOT ASKED. Without this the id is never added to seen_ticks (the caller only banks what THIS function returns), so it is rediscovered as "new" and re-filtered on every future stop, forever. It still must not enter `ticks`/`ids`: those feed both the ask and the I7 evidence check, and a docs-only tick is neither being asked about nor required to carry evidence.
             banked_only.append(tid)
             continue
-        units.append(([tid], ["tick: " + line[:120]], [(tid, line)]))
+        units.append(([tid], ["tick: " + line[:120]], [(tid, line, evidence_text)]))
     if not units:
         return [], [], [], head, banked_only
     ids, descriptions, ticks = units[0]
@@ -523,9 +514,7 @@ def fix_signals(root, lines, session_id, state):
             *descriptions,
             "(%d more fix(es) queued for later stops; this one is asked alone)" % (len(units) - 1),
         ]
-    # ticks stays (id, line) pairs: I7 needs the LINE to check evidence, the
-    # absorb/settle sites need the id. Returning ids only here once made the I7
-    # unpack crash, and a crashed hook reads as ALLOW -- fail-open.
+    # ticks stays (id, line, evidence_text) triples: tick_touches_code needs the FULL line, I7 needs the narrower evidence_text, the absorb/settle sites need the id. Returning ids only here once made the I7 unpack crash, and a crashed hook reads as ALLOW -- fail-open.
     return descriptions, sorted(ids), ticks, head, banked_only
 
 
@@ -538,68 +527,56 @@ def package_scripts(root):
         return {}
 
 
+LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
+
+
+def _manifest_entries(root):
+    """Every manifest entry, read from `scripts/ci-runner/gates.lock.json`.
+
+    THIS USED TO BE A TYPESCRIPT PARSER WRITTEN IN REGEX, and it shipped wrong. Two functions each ran a finditer over a brace-delimited pattern matching an optional run of whitespace-or-line-comment, then an `id:` string, applied to a 5,700-line TS literal. The whitespace-or-comment alternation in that pattern is a scar: the first version allowed whitespace only, so any entry
+    whose leading comment sat INSIDE the brace was invisible, and the reachability gate checked a smaller set while printing a healthy "agrees with all N registrations". Found 2026-08-20 with a planted entry it went green over; it was already hiding check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at 259 of 261 seen. The next TS shape nobody anticipated would
+    have done it again, silently and in the same direction.
+
+    The lock is that literal, projected to JSON by `scripts/gen/gen-gates-lock.ts` and kept faithful by `check:ci-gates-lock`, which fails when the two disagree. One parse, no regex archaeology, and a shape error is a JSON error rather than a quietly shorter list.
+
+    RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by oversight. That matches what the regex version did on an unreadable file, and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs this lookup to empty and requires the probe's verdict to change, which is how that gate proves it can still detect manifest-blindness. Absence is a broken
+    checkout rather than a state to tolerate, and the gate that refuses it is check:ci-gates-lock, not this reader.
+    """
+    if root is None:
+        return []
+    try:
+        with open(os.path.join(str(root), *LOCK_REL), encoding="utf-8") as fh:
+            parsed = json.load(fh)
+    except (OSError, ValueError):
+        return []
+    return [g for g in parsed if isinstance(g, dict) and isinstance(g.get("id"), str)]
+
+
 def _manifest_gate_ids(root):
     """Gate ids registered in the ci-runner manifest, as a set.
 
-    The runner is the dispatcher for every `check:ci-*` in this repo, so a gate
-    listed there with `gate: true` IS run by `npm run ci` even though nothing in
+    The runner is the dispatcher for every `check:ci-*` in this repo, so a gate listed there with `gate: true` IS run by `npm run ci` even though nothing in
     package.json ever says `npm run <that key>`.
     """
-    ids = set()
-    if root is None:
-        return ids
-    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
-    try:
-        with open(mf, encoding="utf-8") as fh:
-            src = fh.read()
-    except OSError:
-        return ids
-    # `(?:\s|//[^\n]*\n)*`, not `\s*`: a manifest entry whose leading comment sits
-    # INSIDE the brace was invisible to this scan, so the reachability gate silently
-    # checked a smaller set and still printed a healthy "agrees with all N
-    # registrations". Found 2026-08-20 with a planted entry that the gate went green
-    # over; it was already hiding check:ci-dockerfile-mirror-resilience and
-    # check:ci-tutorial-card-fonts (259 of 261 seen).
-    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
-        if "gate: true" in m.group(2):
-            ids.add(m.group(1))
-    return ids
+    return {g["id"] for g in _manifest_entries(root) if g.get("gate") is True}
 
 
 def _manifest_gate_run_paths(root):
     """`run:` script paths for every `gate: true` manifest entry, as a set.
 
-    A citation of real, ci-runner-scheduled coverage is far more often a FILE
-    PATH ("test-ci-trace-branch.sh" or its full repo-relative path, optionally
+    A citation of real, ci-runner-scheduled coverage is far more often a FILE PATH ("test_gate_ci_trace_branch.py" or its full repo-relative path, optionally
     with "::test_name" naming the specific case inside it) than the manifest's
-    own `id:` string -- both a human and a judge model reach for the path they
-    can see in the tree, not an id that exists only in manifest.ts. Checking
-    ids alone (the first fix here) left that whole citation shape unrecognized
-    and still reporting real coverage as hallucinated. Same regex/parsing
-    approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
+    own `id:` string -- both a human and a judge model reach for the path they can see in the tree, not an id that exists only in manifest.ts. Checking ids alone (the first fix here) left that whole citation shape unrecognized and still reporting real coverage as hallucinated. Same regex/parsing approach as _manifest_gate_ids, deliberately: one manifest scan, two views.
     """
-    paths = set()
-    if root is None:
-        return paths
-    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
-    try:
-        with open(mf, encoding="utf-8") as fh:
-            src = fh.read()
-    except OSError:
-        return paths
-    for m in re.finditer(r"\{(?:\s|//[^\n]*\n)*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
-        if "gate: true" not in m.group(2):
-            continue
-        rm = re.search(r"run:\s*'([^']+)'", m.group(2))
-        if rm:
-            paths.add(rm.group(1))
-    return paths
+    return {
+        g["run"]
+        for g in _manifest_entries(root)
+        if g.get("gate") is True and isinstance(g.get("run"), str)
+    }
 
 
 def _citation_matches_gate(eg, root):
-    """True when `eg` names real, `npm run ci`-scheduled coverage: either a
-    manifest `id:` (checked by the caller against `_manifest_gate_ids`
-    directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
+    """True when `eg` names real, `npm run ci`-scheduled coverage: either a manifest `id:` (checked by the caller against `_manifest_gate_ids` directly) or a `run:` file path, exact or with a trailing "::name"/"#name"
     case qualifier and/or a leading "./" stripped."""
     base = re.split(r"::|#", eg, maxsplit=1)[0].strip()
     while base.startswith("./"):
@@ -609,10 +586,7 @@ def _citation_matches_gate(eg, root):
 
 
 def gate_reachable(scripts, target, root=None):
-    """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
-    references? Transitive, because ci reaches most gates through batch keys.
-    NOT a substring test: a gate's name inside an `echo` is not reachability,
-    and the substring version produced real false positives on this repo."""
+    """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run` references? Transitive, because ci reaches most gates through batch keys. NOT a substring test: a gate's name inside an `echo` is not reachability, and the substring version produced real false positives on this repo."""
     seen, todo = set(), ["ci"]
     runner = False
     while todo:
@@ -621,13 +595,9 @@ def gate_reachable(scripts, target, root=None):
             continue
         seen.add(k)
         body = scripts[k]
-        # A DISPATCHER, not an npm-run chain. `ci` is `tsx scripts/ci-runner/run.ts`,
-        # whose body contains ZERO `npm run` references -- it schedules from
-        # manifest.ts instead. Walking npm-run edges alone therefore returned False
+        # A DISPATCHER, not an npm-run chain. `ci` is `tsx scripts/ci-runner/run.ts`, whose body contains ZERO `npm run` references -- it schedules from manifest.ts instead. Walking npm-run edges alone therefore returned False
         # for EVERY gate in this repo, check:ci-shell-commands and check:ci-dead-bash
-        # included, and reported each new gate as "defined but never run". A probe
-        # that cannot pass is the same defect as a check that cannot fail: it was
-        # rejecting correctly-wired gates and demanding they be re-wired.
+        # included, and reported each new gate as "defined but never run". A probe that cannot pass is the same defect as a check that cannot fail: it was rejecting correctly-wired gates and demanding they be re-wired.
         if "ci-runner/run.ts" in body:
             runner = True
         todo.extend(re.findall(r"npm run\s+(?:--silent\s+)?([A-Za-z0-9:._-]+)", body))
@@ -639,23 +609,14 @@ def gate_reachable(scripts, target, root=None):
 def prove_named_artifact(root, artifact):
     """(proven, note) for a case on ANY surface, by the path the judge named.
 
-    THE GLOB PROBE BELOW CAN ONLY SEE ONE SURFACE. It matches check-*.ts,
-    check-*.sh and the two test suites, so a fix whose regression home is an
-    E2E case, an ops step, an install script or a unit test had no acceptable
-    answer at all: the only thing it could prove was a static gate, which for a
-    behavioural defect asserts that the source still looks right. Enumerating
-    the other five here would rot the moment a sixth appears, so this asks a
-    different question -- the judge names the path, and this checks whether that
-    path CHANGED in this session's tree.
+    THE GLOB PROBE BELOW CAN ONLY SEE ONE SURFACE. It matches check-*.ts, check-*.sh and the two test suites, so a fix whose regression home is an E2E case, an ops step, an install script or a unit test had no acceptable answer at all: the only thing it could prove was a static gate, which for a behavioural defect asserts that the source still looks right. Enumerating the other
+    five here would rot the moment a sixth appears, so this asks a different question -- the judge names the path, and this checks whether that path CHANGED in this session's tree.
 
     Deliberately weaker than the glob probe, and it says so: this proves the
     case was written, not that it runs or that it fails on the defect. The
-    surface's own file in `.claude/skills/testing/` names the run that would.
-    A path that does not exist, or exists unchanged, proves nothing.
+    surface's own file in `.claude/skills/testing/` names the run that would. A path that does not exist, or exists unchanged, proves nothing.
     """
-    # `.lstrip("./")` was the first spelling and it is wrong: lstrip takes a
-    # CHARACTER SET, so `.claude/hooks/...` came back as `claude/hooks/...` and
-    # every hook-surface artifact was reported as nonexistent. Strip the prefix.
+    # `.lstrip("./")` was the first spelling and it is wrong: lstrip takes a CHARACTER SET, so `.claude/hooks/...` came back as `claude/hooks/...` and every hook-surface artifact was reported as nonexistent. Strip the prefix.
     rel = str(artifact or "").strip()
     while rel.startswith("./"):
         rel = rel[2:]
@@ -670,16 +631,8 @@ def prove_named_artifact(root, artifact):
 
 
 def prove_new_gate(root, scripts, state):
-    """(proven, notes). A claimed gate must leave ARTIFACTS, each verified:
-    a NEW or CHANGED check script (content hash vs the marker), a check:* key
-    whose command runs it, reachability from `npm run ci` (transitive, see
-    gate_reachable), and a bounded green run. Runs are cached by content hash
-    so a red gate is not re-run every stop and a green one is not re-paid.
-    A green run of a control-first gate IS the planted-defect proof, because
-    such a gate self-fails when its own control cannot fire -- the
-    check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact
-    failure this rule exists for, and check-gate-reachability.ts exists
-    because a gate can be defined yet never run."""
+    """(proven, notes). A claimed gate must leave ARTIFACTS, each verified: a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of
+    a control-first gate IS the planted-defect proof, because such a gate self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists because a gate can be defined yet never run."""
     stamp = C.stamp_now()
     notes, proven = [], False
     already_green = []
@@ -695,35 +648,17 @@ def prove_new_gate(root, scripts, state):
                 and not _is_dirty(rel, root)
                 and not _new_since_head(rel, root, state.get("head", ""))
             ):
-                # First sight of a gate the working tree has NOT touched. That is
-                # a glob widening or a fresh marker, not evidence about this fix,
-                # so record it and move on. Without this, widening the globs to
-                # packages/*/scripts turned one stop into eight `npm run` gates at
-                # up to REGGATE_TIMEOUT_S each -- a sixteen-minute stop hook that
-                # proves nothing, because none of those gates was written here.
+                # First sight of a gate the working tree has NOT touched. That is a glob widening or a fresh marker, not evidence about this fix, so record it and move on. Without this, widening the globs to packages/*/scripts turned one stop into eight `npm run` gates at up to REGGATE_TIMEOUT_S each -- a sixteen-minute stop hook that proves nothing, because none of those gates was
+                # written here.
                 state["gate_runs"][rel] = {"hash": digest, "exit": -3, "at": stamp}
                 continue
             if prev and prev.get("hash") == digest:
-                # Neither new nor changed, so it proves nothing for THIS fix and
-                # `proven` stays False. But a gate this marker already RAN GREEN
-                # must still be NAMED, because the alternative message is false.
-                # Measured 2026-08-10: a session wrote check:ci-mutate-check,
-                # the probe ran it and recorded exit 0, and on the very next
-                # finding the probe reported "no new or changed check script
-                # found; a claimed gate must leave one" -- while that gate sat
-                # in this same marker at exit 0 with a matching hash. The
-                # session cannot tell "your gate is missing" from "your gate is
-                # old news", so it either writes a duplicate gate or argues with
-                # a message that is simply wrong. Naming it makes the REBUT exit
-                # usable, which is the exit the judge itself asked for here.
+                # Neither new nor changed, so it proves nothing for THIS fix and `proven` stays False. But a gate this marker already RAN GREEN must still be NAMED, because the alternative message is false. Measured 2026-08-10: a session wrote check:ci-mutate-check, the probe ran it and recorded exit 0, and on the very next finding the probe reported "no new or changed check script
+                # found; a claimed gate must leave one" -- while that gate sat in this same marker at exit 0 with a matching hash. The session cannot tell "your gate is missing" from "your gate is old news", so it either writes a duplicate gate or argues with a message that is simply wrong. Naming it makes the REBUT exit usable, which is the exit the judge itself asked for here.
                 if prev.get("exit") == 0:
                     already_green.append(rel)
                 continue
-            # SUITE gates (hook and gate test suites) have no check:* key and
-            # take minutes to run, so they are accepted ON CHANGE: they run in
-            # CI regardless (Quality/Static executes the hook suite; the gates
-            # suites ride check:ci-quality-gates), and the session that added
-            # the case has just run it. The note says which run to trust.
+            # SUITE gates (hook and gate test suites) have no check:* key and take minutes to run, so they are accepted ON CHANGE: they run in CI regardless (Quality/Static executes the hook suite; the gates suites ride check:ci-quality-gates), and the session that added the case has just run it. The note says which run to trust.
             if rel.startswith((".claude/hooks/", ".ci/scripts/test/gates/")):
                 state["gate_runs"][rel] = {"hash": digest, "exit": 0, "at": stamp}
                 notes.append(
@@ -747,20 +682,12 @@ def prove_new_gate(root, scripts, state):
                     "(defined-but-never-run is the check-gate-reachability failure)" % (rel, key)
                 )
                 continue
-            try:
-                pr = subprocess.run(
-                    ["npm", "run", "--silent", key],
-                    cwd=str(root),
-                    capture_output=True,
-                    text=True,
-                    timeout=REGGATE_TIMEOUT_S,
-                    check=False,
-                )
-                code = pr.returncode
-            except subprocess.TimeoutExpired:
-                code = 124
-            except (OSError, subprocess.SubprocessError):
-                code = 127
+            # NO try/except: `wl_proc.run` never raises for a timeout or a failed spawn, and the codes it returns are the two this site was already synthesising by hand -- TIMEOUT_RC is 124 and SPAWN_FAILED_RC is 127.
+            code = wl_proc.run(
+                ["npm", "run", "--silent", key],
+                cwd=str(root),
+                timeout=REGGATE_TIMEOUT_S,
+            ).returncode
             state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
             notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
             if code == 0:
@@ -780,44 +707,23 @@ def prove_new_gate(root, scripts, state):
 def _new_since_head(rel, root, head):
     """True when `rel` did not exist at the marker's last-seen head.
 
-    _is_dirty used to be the ENTIRE freshness test, which silently assumed a
-    session leaves its work UNCOMMITTED. That holds under this repo's default,
-    but the moment a session COMMITS its gate -- which the findings rule pushes
-    toward as soon as the fix is headed for a PR -- the path is clean, `prev is
-    None`, and prove_new_gate files it at exit -3 as a glob widening.
+    _is_dirty used to be the ENTIRE freshness test, which silently assumed a session leaves its work UNCOMMITTED. That holds under this repo's default, but the moment a session COMMITS its gate -- which the findings rule pushes toward as soon as the fix is headed for a PR -- the path is clean, `prev is None`, and prove_new_gate files it at exit -3 as a glob widening.
 
-    Measured 2026-08-26: check-devbox-exec.sh was written, wired three-point,
-    proven against pre-fix source AND committed inside one stop. The very next
-    stop reported "no NEW or CHANGED check script this stop" while the marker
-    held that exact gate at exit -3, never run. The finding then re-fired every
-    stop with NO REACHABLE EXIT: writing the gate again could not change the
-    outcome, and the judge itself was answering "no further work needed".
+    Measured 2026-08-26: check-devbox-exec.sh was written, wired three-point, proven against pre-fix source AND committed inside one stop. The very next stop reported "no NEW or CHANGED check script this stop" while the marker held that exact gate at exit -3, never run. The finding then re-fired every stop with NO REACHABLE EXIT: writing the gate again could not change the outcome,
+    and the judge itself was answering "no further work needed".
 
-    Errs toward True on any git failure, matching _is_dirty: run the gate
-    rather than silently skip it.
+    Errs toward True on any git failure, matching _is_dirty: run the gate rather than silently skip it.
     """
     if not head:
         return False
-    try:
-        pr = subprocess.run(
-            ["git", "cat-file", "-e", "%s:%s" % (head, rel)],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return True
-    return pr.returncode != 0
+    pr = wl_common.run_quiet(["git", "cat-file", "-e", "%s:%s" % (head, rel)], cwd=str(root))
+    return pr is None or pr.returncode != 0
 
 
 def _is_dirty(rel, root):
     """True when the working tree has touched this path (modified or untracked).
 
-    The probe's question is "did the session that just claimed a fix leave a
-    gate", so a gate it did not touch is not evidence either way. Errs toward
-    True: if git cannot answer, run the gate rather than silently skip it.
+    The probe's question is "did the session that just claimed a fix leave a gate", so a gate it did not touch is not evidence either way. Errs toward True: if git cannot answer, run the gate rather than silently skip it.
     """
     try:
         pr = subprocess.run(
@@ -838,8 +744,7 @@ def _is_dirty(rel, root):
 def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     """('malformed'|'settle'|'block', payload, detail).
 
-    Deterministic mapping from the judge's regression_gate object to an
-    action, with every model claim VERIFIED against artifacts:
+    Deterministic mapping from the judge's regression_gate object to an action, with every model claim VERIFIED against artifacts:
       applicable false                      -> settle 'not-applicable'
       existing_gate is a REAL check:* key   -> settle 'covered'
       existing_gate names a key that is not -> hallucinated coverage, counts
@@ -870,23 +775,12 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     if eg:
         if eg in keys:
             return "settle", "covered", eg
-        # A `gate-test:*` (or any other) manifest id with `gate: true` is run
-        # DIRECTLY by `npm run ci` -- scripts/ci-runner/run.ts schedules from
-        # manifest.ts, not from package.json `check:*` keys. gate_reachable()
-        # already trusts this same set for the WRITE path; the REBUT path was
-        # checking package.json only, so a correct citation of a real,
-        # ci-runner-scheduled suite gate (e.g. gate-test:ci-trace-branch) was
-        # unconditionally reported as hallucinated. Verified live 2026-08-27:
-        # `npx tsx scripts/ci-runner/run.ts --only gate-test:ci-trace-branch`
-        # actually executes and passes it.
+        # A `gate-test:*` (or any other) manifest id with `gate: true` is run DIRECTLY by `npm run ci` -- scripts/ci-runner/run.ts schedules from manifest.ts, not from package.json `check:*` keys. gate_reachable() already trusts this same set for the WRITE path; the REBUT path was checking package.json only, so a correct citation of a real, ci-runner-scheduled suite gate (e.g.
+        # gate-test:ci-trace-branch) was unconditionally reported as hallucinated. Verified live 2026-08-27: `npx tsx scripts/ci-runner/run.ts --only gate-test:ci-trace-branch` actually executes and passes it.
         if eg in _manifest_gate_ids(root):
             return "settle", "covered", eg
-        # A citation is at least as often a FILE PATH (optionally with
-        # "::test_name") as it is a manifest id -- both a human rebuttal and
-        # the judge itself reach for the path visible in the tree. Observed
-        # live 2026-08-27: three consecutive REBUTs, each naming a real,
-        # already-passing case in test-ci-trace-branch.sh by path/function,
-        # kept reporting hallucinated because only the bare id was checked.
+        # A citation is at least as often a FILE PATH (optionally with "::test_name") as it is a manifest id -- both a human rebuttal and the judge itself reach for the path visible in the tree. Observed live 2026-08-27: three consecutive REBUTs, each naming a real, already-passing case in test_gate_ci_trace_branch.py by path/function, kept reporting hallucinated because only the
+        # bare id was checked.
         if _citation_matches_gate(eg, root):
             return "settle", "covered", eg
         hall = eg
@@ -900,10 +794,7 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     proven, notes = prove_new_gate(root, scripts, state)
     if proven:
         return "settle", "proven", notes[:300]
-    # The other five surfaces. Only consulted when the judge routed AWAY from
-    # `gates`, so a static gate still has to clear the stricter probe above --
-    # wired, reachable and green -- rather than being waved through by touching
-    # a file.
+    # The other five surfaces. Only consulted when the judge routed AWAY from `gates`, so a static gate still has to clear the stricter probe above -- wired, reachable and green -- rather than being waved through by touching a file.
     surface = str(rg.get("surface") or "").strip()
     if surface and surface not in ("gates", "none"):
         ok, note = prove_named_artifact(root, rg.get("artifact"))

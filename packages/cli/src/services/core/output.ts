@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { DEFAULTS } from '@rediacc/shared/config';
 import { formatPropertyName, formatTimestampAsIs, formatValue } from '@rediacc/shared/formatters';
 import { escapeCSVValue } from '@rediacc/shared/utils';
@@ -9,11 +7,7 @@ import { stringify as yamlStringify } from 'yaml';
 import type { OutputFormat } from '../../types/index.js';
 import { createOutputState, currentRequestContext, type OutputState } from './request-context.js';
 
-// esbuild statically bundles this literal `require` and wraps cli-table3
-// (→ string-width → chardet, ~16 ms of module init) in a lazy CJS
-// initializer that only runs the first time a table is actually rendered.
-// A top-level `import` would run it eagerly on every startup, including
-// --version/--help/JSON-output runs that never draw a table.
+// esbuild statically bundles this literal `require` and wraps cli-table3 (→ string-width → chardet, ~16 ms of module init) in a lazy CJS initializer that only runs the first time a table is actually rendered. A top-level `import` would run it eagerly on every startup, including --version/--help/JSON-output runs that never draw a table.
 declare const require: NodeJS.Require;
 let TableCtor: typeof CliTable3 | undefined;
 function loadTable(): typeof CliTable3 {
@@ -158,7 +152,7 @@ class OutputService {
   private writeOut(text: string): void {
     const context = currentRequestContext();
     if (context) context.stdout.push(text);
-    else console.log(text);
+    else process.stdout.write(`${text}\n`);
   }
 
   /** Human output: the terminal's stderr, or this request's stderr buffer. */
@@ -216,7 +210,7 @@ class OutputService {
     this.state.operationDurationMs = ms;
   }
 
-  /** Mark that a timeline was rendered — suppresses the postAction "Completed" line */
+  /** Mark that a timeline was rendered, suppresses the postAction "Completed" line */
   setTimelineRendered(): void {
     this.state.timelineRendered = true;
   }
@@ -288,19 +282,10 @@ class OutputService {
     }
 
     const Table = loadTable();
-    // Without these two, a table wider than the terminal is emitted at its
-    // natural width and the TERMINAL wraps it: the overflowing columns land
-    // on the next physical line and interleave with the row below, which
-    // shreds the box-drawing borders into unreadable noise. `rdc config show`
-    // is 147 columns and did exactly that on any terminal narrower than that,
-    // including every recorded tutorial (107 cols) and any 80-column SSH
-    // session. wordWrap makes cli-table3 wrap INSIDE each cell instead.
+    // Without these two, a table wider than the terminal is emitted at its natural width and the TERMINAL wraps it: the overflowing columns land on the next physical line and interleave with the row below, which shreds the box-drawing borders into unreadable noise. `rdc config show` is 147 columns and did exactly that on any terminal narrower than that, including every recorded
+    // tutorial (107 cols) and any 80-column SSH session. wordWrap makes cli-table3 wrap INSIDE each cell instead.
     //
-    // colWidths must be OMITTED, not passed as undefined, when the table already
-    // fits. cli-table3 reads options.colWidths[0] unconditionally, so an explicit
-    // undefined throws "Cannot read properties of undefined (reading '0')" and
-    // takes down every table narrow enough to need no shrinking - which is most
-    // of them.
+    // colWidths must be OMITTED, not passed as undefined, when the table already fits. cli-table3 reads options.colWidths[0] unconditionally, so an explicit undefined throws "Cannot read properties of undefined (reading '0')" and takes down every table narrow enough to need no shrinking - which is most of them.
     const widths = fitColumnWidths(cols, items, terminalWidth());
     const table = new Table({
       head: cols.map((c) => this.bold(c.header)),
@@ -367,10 +352,7 @@ class OutputService {
 
   info(message: string): void {
     if (this.state.quiet) return;
-    // chalk.blueBright (ANSI 12) reads cleanly on both light and dark
-    // terminal backgrounds. The default chalk.blue (ANSI 4) renders as a
-    // dark navy on standard 16-color palettes and was reported unreadable
-    // against black backgrounds (see `rdc repo template list` output).
+    // chalk.blueBright (ANSI 12) reads cleanly on both light and dark terminal backgrounds. The default chalk.blue (ANSI 4) renders as a dark navy on standard 16-color palettes and was reported unreadable against black backgrounds (see `rdc repo template list` output).
     this.writeProse(message, (line) => (this.colorEnabled ? chalk.blueBright(line) : line));
   }
 

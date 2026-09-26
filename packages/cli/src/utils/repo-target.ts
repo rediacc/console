@@ -37,17 +37,8 @@ function withDefaultVerifier(options: ResolveMachineOptions): ResolveMachineOpti
   return {
     ...options,
     verifyMount: async ({ machine, datastore, repoGuid }) => {
-      // #92: the presence probe serves the MACHINE arm only. probeRepoPresent
-      // rides repository_list, which enumerates DOCKER repos under
-      // <datastore>/repositories — a kube repo lives at <ds>/repos/<guid> on a
-      // NAMED datastore and is structurally invisible to it, so probing the
-      // datastore arm false-refused every mutating verb on a cluster repo with
-      // exit 12 (found live by the B1 window, the arm's first-ever execution).
-      // The datastore arm's routing is verified at dispatch instead: derivation
-      // rides the attach hint, and renet errors loudly on an unmounted
-      // datastore — a wrong host cannot silently succeed there. A datastore-
-      // aware presence probe (a renet verb that can see <ds>/repos/) is the
-      // recorded follow-up, spec/13.
+      // #92: the presence probe serves the MACHINE arm only. probeRepoPresent rides repository_list, which enumerates DOCKER repos under <datastore>/repositories, a kube repo lives at <ds>/repos/<guid> on a NAMED datastore and is structurally invisible to it, so probing the datastore arm false-refused every mutating verb on a cluster repo with exit 12 (found live by the B1
+      // window, the arm's first-ever execution). The datastore arm's routing is verified at dispatch instead: derivation rides the attach hint, and renet errors loudly on an unmounted datastore, a wrong host cannot silently succeed there. A datastore- aware presence probe (a renet verb that can see <ds>/repos/) is the recorded follow-up, spec/13.
       if (datastore !== undefined) return true;
       const present = await probeRepoPresent(repoGuid, machine);
       return present !== false;
@@ -56,7 +47,7 @@ function withDefaultVerifier(options: ResolveMachineOptions): ResolveMachineOpti
 }
 
 export interface RepoTarget {
-  /** Effective machine to SSH to — the cluster's control node for a cluster target. */
+  /** Effective machine to SSH to, the cluster's control node for a cluster target. */
   machineName: string;
   /** Set when the target is a cluster; threaded into execute() to inject KUBECONFIG. */
   kubeCluster?: string;
@@ -132,7 +123,7 @@ export async function resolveRepoRef(
  * The config-local resolution of a positional repo `<ref>`: the family/tag and
  * the derived identifiers, WITHOUT resolving (or requiring) a placement machine.
  * For verbs whose whole effect lands in the local config and that never dispatch
- * to a machine (`repo secret get|list|set|unset`, `repo branch`) — resolving a
+ * to a machine (`repo secret get|list|set|unset`, `repo branch`), resolving a
  * machine there is both unnecessary and harmful, because it would refuse the verb
  * on a repo whose datastore is currently detached or whose placement has not been
  * reconciled yet.
@@ -199,7 +190,7 @@ export async function resolveRepoTarget(options: {
 export type ConnectTarget =
   | {
       kind: 'place';
-      /** The machine to SSH to — a cluster's control node for a cluster place. */
+      /** The machine to SSH to, a cluster's control node for a cluster place. */
       machineName: string;
       /** Set when the place named a cluster; threaded into KUBECONFIG injection. */
       kubeCluster?: string;
@@ -236,7 +227,7 @@ export type ConnectTarget =
  * refuses a cluster whose name collides with a machine (§2.4), so a name is at
  * most one of the two. Repo refs resolve through `resolveRepoRef`, so the repo
  * arm inherits the whole §2.3 derivation (placement, `@place` verification, and
- * — for a mutating caller that injects one — the step-5 mount check).
+ * for a mutating caller that injects one, the step-5 mount check).
  */
 export async function resolveConnectTarget(
   target: string,
@@ -244,9 +235,7 @@ export async function resolveConnectTarget(
 ): Promise<ConnectTarget> {
   const parsed = parseRef(target);
 
-  // Step 1: `:tag` or `@place` makes the intent unambiguous — it is a repo ref,
-  // even when the name also happens to be a place. `resolveRepoRef` raises the
-  // exit-5 "no such repository" (or the exit-12 @place conflict) if it is not one.
+  // Step 1: `:tag` or `@place` makes the intent unambiguous, it is a repo ref, even when the name also happens to be a place. `resolveRepoRef` raises the exit-5 "no such repository" (or the exit-12 @place conflict) if it is not one.
   const isExplicitRepoRef = parsed.tag !== undefined || parsed.place !== undefined;
   if (!isExplicitRepoRef) {
     const config = await configService.getCurrent();
@@ -301,7 +290,7 @@ async function resolveBarePlace(
     });
   }
 
-  // Step 3: both namespaces claim the bare name — refuse, never guess.
+  // Step 3: both namespaces claim the bare name, refuse, never guess.
   if (isRepo) {
     throw isMachine ? termConnectCollisionError(name) : clusterCollisionError(name);
   }

@@ -1,0 +1,13 @@
+# twin .ci/scripts/infra/verify-ssh.sh blob 03a853b7a3ab7d8da3ff395bfc38cfc95e420151
+exit: 1
+--- stdout ---
+partial output
+--- stderr ---
+ssh: connect to host h port 22: Connection refused
+✓ Attempt 1 on h failed
+✓ Attempt 1 failed for all targets, retrying in 5s...
+✗ SSH connection failed for all targets after 1 attempts
+--- calls ---
+whoami	
+ssh	-i	/fixture/id_rsa	-p	22	-o	StrictHostKeyChecking=no	-o	UserKnownHostsFile=/dev/null	-o	ConnectTimeout=5	fixtureuser@h	echo 'SSH OK'
+sleep	5

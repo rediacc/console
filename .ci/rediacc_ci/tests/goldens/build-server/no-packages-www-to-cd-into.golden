@@ -1,0 +1,11 @@
+# twin scripts/ops/build-server.sh blob 8869c152c26924da7feaa0f86a3ffdd9bd75abf4
+exit: 1
+--- stdout ---
+==> Staging build context...
+==> Building packages/www...
+--- stderr ---
+cd: packages/www: No such file or directory
+--- calls ---
+--- staged ---
+binaries/renet-linux-amd64	renet-amd64
+binaries/renet-linux-arm64	renet-arm64

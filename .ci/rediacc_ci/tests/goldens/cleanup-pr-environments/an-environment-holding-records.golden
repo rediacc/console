@@ -1,0 +1,11 @@
+# twin .ci/scripts/housekeeping/cleanup-pr-environments.sh blob 4d8000b5648f45a1ac73e0f20a4eb47002026c7e
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Cleaning up empty pr-N environments in acme/widget
+⚠ SKIP pr-5: still holds 3 deployment record(s) -- run cleanup-github-deployments.sh first
+✓ Deleted 0 of 1 pr-N environment(s); 1 skipped
+--- calls ---
+api	repos/acme/widget/environments	--paginate	--jq	.environments[]?.name
+pr	view	5	--repo	acme/widget	--json	state	--jq	.state
+api	repos/acme/widget/deployments?environment=pr-5&per_page=100	--jq	length

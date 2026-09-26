@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 """The sanctioned-command registry: ad-hoc shape -> the tool that replaces it.
 
-WHY A TABLE AND NOT ANOTHER GUARD. This repo already carries 21 separate
-pre-bash `block-*.sh` scripts, each with its own regex and its own hand-written
-message. That is the same many-copies shape that caused the bug this registry
-exists to end: on 2026-08-25 the CI-watch recipe was found in NINE places, two
-of them printing advice their own neighbouring prose contradicted. Adding a
+WHY A TABLE AND NOT ANOTHER GUARD. This repo already carries 21 separate pre-bash `block-*.sh` scripts, each with its own regex and its own hand-written message. That is the same many-copies shape that caused the bug this registry exists to end: on 2026-08-25 the CI-watch recipe was found in NINE places, two of them printing advice their own neighbouring prose contradicted. Adding
+a
 class here is a ROW, not a new script, so there is one place to be right.
 
 Each row is a work order, not a ban:
@@ -22,12 +19,8 @@ Each row is a work order, not a ban:
     use       the exact replacement to print
     why       the evidence, in one line, so the message argues rather than asserts
 
-READS COMMAND TEXT, DELIBERATELY. Prose that merely DESCRIBES a banned shape is
-matched too. That false positive was put to the operator on 2026-08-25 with four
-scored options and the ruling was to keep it: this failure is loud (a blocked
-command naming its replacement) while every narrowing that would admit the doc
-edit fails silently. Worklist #6a2c9652. The workaround is to write the file with
-the Write tool and pass it by path.
+READS COMMAND TEXT, DELIBERATELY. Prose that merely DESCRIBES a banned shape is matched too. That false positive was put to the operator on 2026-08-25 with four scored options and the ruling was to keep it: this failure is loud (a blocked command naming its replacement) while every narrowing that would admit the doc edit fails silently. Worklist #6a2c9652. The workaround is to
+write the file with the Write tool and pass it by path.
 """
 
 import re

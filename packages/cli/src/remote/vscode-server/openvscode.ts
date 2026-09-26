@@ -10,8 +10,7 @@ import {
 const VERSION = '1.109.5';
 
 // Pinned release assets. sha256 values come from the GitHub release digests;
-// verify with `sha256sum` when bumping. Mirroring to R2 later only changes
-// the URLs.
+// verify with `sha256sum` when bumping. Mirroring to R2 later only changes the URLs.
 const ARTIFACTS: Record<ServerPlatform, ServerArtifact> = {
   'linux-x64': {
     url: `https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${VERSION}/openvscode-server-v${VERSION}-linux-x64.tar.gz`,
@@ -26,7 +25,7 @@ const ARTIFACTS: Record<ServerPlatform, ServerArtifact> = {
 };
 
 /**
- * openvscode-server (Gitpod, MIT) — the default browser VS Code provider.
+ * openvscode-server (Gitpod, MIT), the default browser VS Code provider.
  * Token-in-URL auth makes it the best fit for `--url-only` automation: the
  * printed URL is self-contained and the loopback port rejects strangers.
  */

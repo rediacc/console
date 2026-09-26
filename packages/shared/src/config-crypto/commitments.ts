@@ -14,8 +14,24 @@
  *   commitments: {
  *     alg: 'HMAC-SHA256',
  *     fckSalt: base64(16 random bytes),
- *     fields: Record<JsonPointer, { hmac: base64, kind: CommitmentValueKind }>
+ *     fields: Record<Key, { hmac: base64, kind: CommitmentValueKind }>,
+ *     removed?: Record<Key, { hmac, kind }>,   // push only: tombstones
+ *     migrated?: Record<JsonPointer, Key>,     // push only: the v2 -> v3 upgrade
  *   }
+ *
+ * `Key` is the JSON pointer itself in envelope v2, and the BLINDED pointer in v3:
+ * base64(HMAC-SHA256(PBK, pointer)), where PBK = HKDF(CEK, salt = configId, info
+ * 'rediacc-config-ptr-v1'). The blinding key is per config and does not depend on
+ * `fckSalt`, so one pointer keeps one key across every push of a config (the
+ * server's anti-downgrade rule compares keys), while the server no longer reads
+ * machine, repo or storage names out of the envelope (F14, ruling D6).
+ *
+ * A tombstone (`removed[key]`) is the commitment the STORED envelope holds for a
+ * path the push drops, recomputed by the client from the value it saw, under the
+ * stored `fckSalt`. The server lets a stored key vanish only against a tombstone
+ * equal to what it stored: to delete a value, the writer must know it (F2, ruling
+ * D1). `migrated` maps each v2 pointer to its v3 key on the one push that upgrades
+ * a store; the server checks continuity through it and stores neither block.
  *
  * `fckSalt` rotates whenever the CEK rotates (or arbitrarily — the client owns
  * the rotation cadence). A fresh salt invalidates all prior commitments, so the
@@ -59,6 +75,46 @@ export interface FieldCommitments {
   alg: 'HMAC-SHA256';
   fckSalt: string; // base64-encoded salt for HKDF(CEK → FCK)
   fields: Record<string, FieldCommitment>;
+  /** Push only: the stored commitment of each path this push deletes (see the header). */
+  removed?: Record<string, FieldCommitment>;
+  /** Push only, on the v2 -> v3 upgrade: each committed v2 pointer and the v3 key it now has. */
+  migrated?: Record<string, string>;
+}
+
+/**
+ * Derive the per-config key that blinds commitment pointers (envelope v3). Deterministic in (CEK,
+ * configId): every device of a config computes the same key for the same pointer, and a pointer of
+ * another config under the same CEK gets an unrelated one, so the server cannot link names across
+ * configs of a store.
+ */
+export async function derivePointerBlindingKey(
+  cek: CryptoKey,
+  configId: string
+): Promise<CryptoKey> {
+  const cekRaw = new Uint8Array(await crypto.subtle.exportKey('raw', cek));
+  const salt = new TextEncoder().encode(configId);
+  const raw = await hkdfDeriveRaw(cekRaw, salt, HKDF_INFO.POINTER_BLIND);
+  return crypto.subtle.importKey('raw', buf(raw), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+  ]);
+}
+
+/** The v3 envelope key of one JSON pointer: base64(HMAC-SHA256(blinding key, pointer)). */
+export async function blindPointer(blindingKey: CryptoKey, pointer: string): Promise<string> {
+  const sig = await crypto.subtle.sign('HMAC', blindingKey, buf(new TextEncoder().encode(pointer)));
+  return toBase64(new Uint8Array(sig));
+}
+
+/**
+ * SHA-256 over the canonical form of the commitment STATE (`alg`, `fckSalt`, `fields`), base64.
+ * Envelope v3 authenticates it in the AAD, so a server that edits the stored commitments makes the
+ * blob refuse to open. The push-only blocks (`removed`, `migrated`) are not state and are excluded:
+ * the server drops them before storing.
+ */
+export async function commitmentsDigest(commitments: FieldCommitments): Promise<string> {
+  const state = { alg: commitments.alg, fckSalt: commitments.fckSalt, fields: commitments.fields };
+  const digest = await crypto.subtle.digest('SHA-256', buf(canonicalize(state)));
+  return toBase64(new Uint8Array(digest));
 }
 
 /** Generate a fresh random salt for FCK derivation. */
@@ -97,8 +153,7 @@ export async function commitField(
   value: unknown
 ): Promise<FieldCommitment> {
   const canon = canonicalize(value);
-  // Include the pointer in the signed bytes so two different paths holding the
-  // same value produce distinct HMACs (prevents path-swap attacks).
+  // Include the pointer in the signed bytes so two different paths holding the same value produce distinct HMACs (prevents path-swap attacks).
   const payload = concat([new TextEncoder().encode(`${pointer}\0`), canon]);
   const sig = await crypto.subtle.sign('HMAC', fck, buf(payload));
   return {
@@ -110,15 +165,19 @@ export async function commitField(
 /**
  * Compute commitments for a list of pointer/value pairs. Caller is responsible
  * for selecting which pointers to commit (see packages/shared/src/config-schema/walker.ts).
+ * With `blindingKey` (envelope v3) each entry is keyed by its blinded pointer; without it, by the
+ * pointer itself (the v2 form, which only a store still on v2 holds).
  */
 export async function computeCommitments(
   fck: CryptoKey,
   fckSaltB64: string,
-  entries: { pointer: string; value: unknown }[]
+  entries: { pointer: string; value: unknown }[],
+  blindingKey?: CryptoKey
 ): Promise<FieldCommitments> {
   const fields: Record<string, FieldCommitment> = {};
   for (const { pointer, value } of entries) {
-    fields[pointer] = await commitField(fck, pointer, value);
+    const key = blindingKey ? await blindPointer(blindingKey, pointer) : pointer;
+    fields[key] = await commitField(fck, pointer, value);
   }
   return { alg: 'HMAC-SHA256', fckSalt: fckSaltB64, fields };
 }
@@ -130,13 +189,13 @@ export async function computeCommitments(
  * Server-side verification is a hex-string comparison, not an HMAC recompute,
  * because the server does not hold FCK.
  */
-export async function verifyCommitment(
+export function verifyCommitment(
   fck: CryptoKey,
   pointer: string,
   value: unknown,
   expected: FieldCommitment
 ): Promise<boolean> {
-  if (valueKind(value) !== expected.kind) return false;
+  if (valueKind(value) !== expected.kind) return Promise.resolve(false);
   const canon = canonicalize(value);
   const payload = concat([new TextEncoder().encode(`${pointer}\0`), canon]);
   const expectedBytes = fromBase64(expected.hmac);

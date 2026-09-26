@@ -3339,17 +3339,6 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Link this config to remote encrypted storage",
       "options": [
         {
-          "flags": "--headless",
-          "long": "headless",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionHeadless",
-          "label": "Use device code flow (for headless servers)"
-        },
-        {
           "flags": "--password",
           "long": "password",
           "valueTaking": false,
@@ -3423,6 +3412,52 @@ export const CLI_CONTRACT: CliContract = {
       "path": [
         "config",
         "remote",
+        "restore"
+      ],
+      "pathKey": "config remote restore",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.config.remote.restore.description",
+      "label": "Publish an earlier version of this config as its newest version",
+      "options": [
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "version",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.remote.restore.argVersion",
+          "label": "Version to restore (see rdc config remote versions)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "remote",
         "status"
       ],
       "pathKey": "config remote status",
@@ -3431,6 +3466,30 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.config.remote.status.description",
       "label": "Show remote connection status",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "remote",
+        "versions"
+      ],
+      "pathKey": "config remote versions",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.config.remote.versions.description",
+      "label": "List the earlier versions of this config kept on the server",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -6078,7 +6137,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.machine.prune.description",
-      "label": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from your local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
+      "label": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
       "options": [
         {
           "flags": "--dry-run",
@@ -6364,7 +6423,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.machine.status.description",
-      "label": "Show a machine's system, repositories, containers, and services.",
+      "label": "Show a machine's system, repositories, containers, and services. Read-only: never updates renet on the machine; warns when its version differs.",
       "options": [
         {
           "flags": "--debug",

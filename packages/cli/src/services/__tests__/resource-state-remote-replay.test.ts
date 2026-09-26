@@ -1,6 +1,7 @@
 /**
  * RemoteResourceState write policy (D3/D4): push-on-mutate with fail-closed
- * unreachable handling and bucket-scoped 409 replay.
+ * unreachable handling and a 409 replay that re-applies this process's edit
+ * to the fresh copy, key by key within the mutated bucket (T17).
  *
  * The adapter is a plain mock injected through `RemoteResourceState.load`;
  * the error classes are the REAL ones from remote-config-adapter (persist
@@ -73,8 +74,17 @@ function loadState(adapter: ReturnType<typeof createAdapter>, version = 4) {
 describe('RemoteResourceState persist', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockConfigFileStorage.loadDecrypted.mockResolvedValue(structuredClone(baseConfig));
-    mockConfigFileStorage.updateCache.mockResolvedValue(undefined);
+    // The on-disk cache: loadDecrypted reads it, updateCache rewrites it (the rebase writes the fresh pull here).
+    let disk = structuredClone(baseConfig);
+    mockConfigFileStorage.loadDecrypted.mockImplementation(() =>
+      Promise.resolve(structuredClone(disk))
+    );
+    mockConfigFileStorage.updateCache.mockImplementation(
+      (_name: string, updater: (c: RdcConfig) => RdcConfig) => {
+        disk = updater(structuredClone(disk));
+        return Promise.resolve(disk);
+      }
+    );
   });
 
   it('pushes, tracks the new version, and refreshes the cache on success', async () => {
@@ -90,7 +100,6 @@ describe('RemoteResourceState persist', () => {
     expect(adapter.push).toHaveBeenCalledTimes(1);
     const [pushDoc, currentVersion] = adapter.push.mock.calls[0] as [RdcConfig, number];
     expect(currentVersion).toBe(4);
-    expect(pushDoc.state).toBeUndefined();
     expect(pushDoc.resources?.machines).toHaveProperty('m2');
 
     // Cache follows the push, stamped with the server's new version.
@@ -113,6 +122,8 @@ describe('RemoteResourceState persist', () => {
     adapter.pull.mockResolvedValue({
       config: {
         ...structuredClone(baseConfig),
+        policy: { version: 1, defaults: { allowGrandRepos: true } },
+        defaults: { universalUser: 'from-b' },
         resources: {
           machines: { m1: { ip: '10.0.0.1', user: 'root' } },
           storages: { sNew: { provider: 'sftp' } },
@@ -137,8 +148,72 @@ describe('RemoteResourceState persist', () => {
     expect(replayDoc.resources?.storages).not.toHaveProperty('sOld');
     // ...and re-applies our machines mutation.
     expect(replayDoc.resources?.machines).toHaveProperty('m2');
+    // Families outside the resource buckets go back as the other device left them, not from the
+    // stale cache (F6): the rebase wrote the fresh pull into the cache the replay builds from.
+    expect(replayDoc.policy).toEqual({ version: 1, defaults: { allowGrandRepos: true } });
+    expect(replayDoc.defaults).toEqual({ universalUser: 'from-b' });
 
-    expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(1);
+    // Two cache writes: the rebase's fresh pull, then the successful push.
+    expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(2);
+  });
+
+  it('replays a same-bucket edit key by key: the other device record survives, ours lands', async () => {
+    const adapter = createAdapter();
+    adapter.push
+      .mockRejectedValueOnce(new RemoteVersionConflictError('Version conflict: current is 5'))
+      .mockResolvedValueOnce({ version: 6 });
+    // The other device added m-b and changed m1 while this process added m2 and removed nothing.
+    adapter.pull.mockResolvedValue({
+      config: {
+        ...structuredClone(baseConfig),
+        resources: {
+          ...structuredClone(baseConfig).resources,
+          machines: {
+            m1: { ip: '10.0.0.100', user: 'root' },
+            'm-b': { ip: '10.0.0.200', user: 'root' },
+          },
+        },
+      },
+      version: 5,
+      sdkEpoch: 1,
+    });
+    const state = loadState(adapter);
+
+    await state.setMachines({ ...state.getMachines(), m2: { ip: '10.0.0.2', user: 'root' } });
+
+    const [replayDoc] = adapter.push.mock.calls[1] as [RdcConfig, number];
+    expect(replayDoc.resources?.machines).toEqual({
+      m1: { ip: '10.0.0.100', user: 'root' },
+      'm-b': { ip: '10.0.0.200', user: 'root' },
+      m2: { ip: '10.0.0.2', user: 'root' },
+    });
+  });
+
+  it('replays a same-bucket removal: the key this process deleted stays deleted', async () => {
+    const adapter = createAdapter();
+    adapter.push
+      .mockRejectedValueOnce(new RemoteVersionConflictError('Version conflict: current is 5'))
+      .mockResolvedValueOnce({ version: 6 });
+    adapter.pull.mockResolvedValue({
+      config: {
+        ...structuredClone(baseConfig),
+        resources: {
+          ...structuredClone(baseConfig).resources,
+          machines: {
+            m1: { ip: '10.0.0.1', user: 'root' },
+            'm-b': { ip: '10.0.0.200', user: 'root' },
+          },
+        },
+      },
+      version: 5,
+      sdkEpoch: 1,
+    });
+    const state = loadState(adapter);
+
+    await state.setMachines({});
+
+    const [replayDoc] = adapter.push.mock.calls[1] as [RdcConfig, number];
+    expect(replayDoc.resources?.machines).toEqual({ 'm-b': { ip: '10.0.0.200', user: 'root' } });
   });
 
   it('gives up after 3 conflicting attempts with the retry-exhausted error', async () => {
@@ -155,10 +230,11 @@ describe('RemoteResourceState persist', () => {
       /still conflicting/
     );
 
-    // Loop shape: 3 pushes, 2 re-pulls (no pull after the final attempt).
+    // Loop shape: 3 pushes, 2 re-pulls (no pull after the final attempt), each re-pull written to
+    // the cache as an observation of the server copy; no push result is.
     expect(adapter.push).toHaveBeenCalledTimes(3);
     expect(adapter.pull).toHaveBeenCalledTimes(2);
-    expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
+    expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(2);
   });
 
   it('fails closed when the server is unreachable: no cache write, no local write', async () => {

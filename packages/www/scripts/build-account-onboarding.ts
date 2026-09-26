@@ -115,8 +115,7 @@ function resolveProse(
 ): string {
   if (isEnglish) {
     // English is the source. `step.shortProse` is an authored override; the
-    // transcript is the fallback WITHIN English, which is not a cross-language
-    // substitution and is therefore still legitimate.
+    // transcript is the fallback WITHIN English, which is not a cross-language substitution and is therefore still legitimate.
     if (authored(step.shortProse)) return step.shortProse;
     if (authored(enEvent.prose)) return enEvent.prose;
     if (authored(enEvent.text)) return enEvent.text;

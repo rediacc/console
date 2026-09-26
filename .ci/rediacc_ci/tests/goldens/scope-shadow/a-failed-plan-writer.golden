@@ -1,0 +1,114 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    }
+  }
+}
+```
+_**the plan writer FAILED**: no attested plan will be uploaded for this
+run and NO run_* output was written, so every job runs and the reconcile
+step will report 'no attested plan'. That is a GAP IN THE EVIDENCE, not a
+clean result._
+```
+<root>/.ci/scripts/ci/skip-plan-reconcile.cjs:5
+  if (CONF.annotate_throws) throw new Error("annotatePlan: fixture refusal");
+                            ^
+
+Error: annotatePlan: fixture refusal
+    at annotatePlan (<root>/.ci/scripts/ci/skip-plan-reconcile.cjs:5:35)
+    at [eval]:13:1
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_string:74:3
+
+Node.js v22.23.2
+```
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    }
+  }
+}
+```
+_**the plan writer FAILED**: no attested plan will be uploaded for this
+run and NO run_* output was written, so every job runs and the reconcile
+step will report 'no attested plan'. That is a GAP IN THE EVIDENCE, not a
+clean result._
+```
+<root>/.ci/scripts/ci/skip-plan-reconcile.cjs:5
+  if (CONF.annotate_throws) throw new Error("annotatePlan: fixture refusal");
+                            ^
+
+Error: annotatePlan: fixture refusal
+    at annotatePlan (<root>/.ci/scripts/ci/skip-plan-reconcile.cjs:5:35)
+    at [eval]:13:1
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_string:74:3
+
+Node.js v22.23.2
+```
+
+=== gh-output
+(absent)
+=== plan.json
+(absent)
+=== greenlight.err
+(absent)

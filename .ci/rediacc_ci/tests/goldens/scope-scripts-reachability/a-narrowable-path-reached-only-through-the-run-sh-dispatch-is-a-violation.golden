@@ -1,0 +1,11 @@
+# twin .ci/scripts/quality/check-scope-scripts-reachability.sh blob 3ccfb3f3173ed0300fddef4ba081054d78383eca
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗ 1 path(s) reachable from a gated job do not force full CI:[0m
+  scripts/gates/check-embed-credits.ts (referenced from run.sh (drill)) classifies 'reduced', expected 'full'
+
+Each of these is executed by (or dispatched from) code that runs in a gated
+job, so a delta touching only that file would skip the job that depends on
+it. Add a carve-out rule in .ci/scripts/ci/scope-map.cjs ABOVE the
+'scripts-gates' rule (first match wins), mirroring 'scripts-drills'.

@@ -14,8 +14,7 @@ import {
   QUICK_INSTALL_UNIX,
   QUICK_INSTALL_WIN,
 } from '../config/install';
-// Route-scoped translations: this island hydrates on ONE page, so its strings ride
-// this component's chunk instead of the catalog every route downloads.
+// Route-scoped translations: this island hydrates on ONE page, so its strings ride this component's chunk instead of the catalog every route downloads.
 import { useRouteTranslation } from '../i18n/react-route';
 import type { Language } from '../i18n/types';
 import { copyToClipboard } from '../utils/clipboard';
@@ -153,15 +152,8 @@ function getMethodBlocks(
 const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {
   const { t } = useRouteTranslation(lang);
 
-  // A useState initializer must be PURE. An earlier version read window.location.hash
-  // and called detectPlatform() from the initializer, so the server's first render
-  // ('all') and the client's first render could disagree, and it also called
-  // requestAnimationFrame there, which StrictMode runs twice. Honest note on the
-  // evidence: the symptom that sent someone here, /en/install#homebrew rendering zero
-  // platform tabs, turned out to be a two-day-old dev server whose module graph had
-  // gone stale, NOT this code, and on a clean server that version logged no hydration
-  // warning either. Both this shape and the effect it replaced are correctness by the
-  // rules of the hook, not a repair of a reproduced failure.
+  // A useState initializer must be PURE. An earlier version read window.location.hash and called detectPlatform() from the initializer, so the server's first render ('all') and the client's first render could disagree, and it also called requestAnimationFrame there, which StrictMode runs twice. Honest note on the evidence: the symptom that sent someone here, /en/install#homebrew
+  // rendering zero platform tabs, turned out to be a two-day-old dev server whose module graph had gone stale, NOT this code, and on a clean server that version logged no hydration warning either. Both this shape and the effect it replaced are correctness by the rules of the hook, not a repair of a reproduced failure.
   const detectedFilter = useSyncExternalStore(
     subscribeDetectedFilter,
     getDetectedFilter,

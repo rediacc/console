@@ -1,38 +1,22 @@
 # RESEARCH — metrics (the quantitative baseline)
 
-**Author:** `sx-metrics` · **Measured:** 2026-08-17 · **Tool:** agent-browser 0.34.0
-(Chrome 145 headless) + CDP `CSS.startRuleUsageTracking`.
+**Author:** `sx-metrics` · **Measured:** 2026-08-17 · **Tool:** agent-browser 0.34.0 (Chrome 145 headless) + CDP `CSS.startRuleUsageTracking`.
 
-Everything below is a number I read out of a live page. Where I inferred rather
-than measured, it says so. Section 9 holds every snippet verbatim so a future
-session re-runs *this* methodology instead of inventing a new one.
+Everything below is a number I read out of a live page. Where I inferred rather than measured, it says so. Section 9 holds every snippet verbatim so a future session re-runs *this* methodology instead of inventing a new one.
 
 ---
 
 ## 0. Verdict
 
-The site is not complex in the ways people usually mean: our DOM is **smaller**
-(762 nodes vs claude.com's 1,149 and anthropic.com's 1,263), **shallower** (max
-depth 11 vs 16 and 23), our CSS is **fewer bytes parsed** (226 KB vs 342 KB and
-315 KB), and our accessibility score is **as good or better**. Chasing those is
-theatre. Three things are genuinely, measurably out of line: we ship **6.99 MB of
-decoded JavaScript** where anthropic.com ships 0.31 MB — and **6.67 MB of it is a
-single chunk containing all thirteen locale bundles**, served to every visitor on
-every page; our **visual entropy** is 2–3× theirs on every axis that matters
-(23 distinct painted font-sizes vs anthropic's 8; 43 distinct painted colors vs
-18; 11 border-radii vs 7; 32 line-heights vs 13); and our homepage is **twice as
-long** (7.55 screens desktop / 13.98 mobile vs anthropic's 3.57 / 7.59) built
-from **60 boxed surfaces vs their 26**. The single highest-leverage change is
-`src/i18n/utils.ts:1-13` — thirteen static JSON imports that Rollup hoists into
-the shared React vendor chunk — which is 91% of the homepage's shipped bytes and
-costs one afternoon.
+The site is not complex in the ways people usually mean: our DOM is **smaller** (762 nodes vs claude.com's 1,149 and anthropic.com's 1,263), **shallower** (max depth 11 vs 16 and 23), our CSS is **fewer bytes parsed** (226 KB vs 342 KB and 315 KB), and our accessibility score is **as good or better**. Chasing those is theatre. Three things are genuinely, measurably out of line: we
+ship **6.99 MB of decoded JavaScript** where anthropic.com ships 0.31 MB — and **6.67 MB of it is a single chunk containing all thirteen locale bundles**, served to every visitor on every page; our **visual entropy** is 2–3× theirs on every axis that matters (23 distinct painted font-sizes vs anthropic's 8; 43 distinct painted colors vs 18; 11 border-radii vs 7; 32 line-heights vs
+13); and our homepage is **twice as long** (7.55 screens desktop / 13.98 mobile vs anthropic's 3.57 / 7.59) built from **60 boxed surfaces vs their 26**. The single highest-leverage change is `src/i18n/utils.ts:1-13` — thirteen static JSON imports that Rollup hoists into the shared React vendor chunk — which is 91% of the homepage's shipped bytes and costs one afternoon.
 
 ---
 
 ## 1. SCORECARD — homepage, 1440×900, cold cache
 
-Ours = `https://www.rediacc.com/en` (production build). Ratio = ours ÷ best of
-the two references. **Bold** = we are worse.
+Ours = `https://www.rediacc.com/en` (production build). Ratio = ours ÷ best of the two references. **Bold** = we are worse.
 
 | # | Metric | Ours | claude.com | anthropic.com | Ratio |
 |---|---|---:|---:|---:|---:|
@@ -104,20 +88,14 @@ the two references. **Bold** = we are worse.
 | 58 | Critical / serious | 0 / 2 | 1 / 0 | 0 / 2 | — |
 | 59 | Rules passed | 44 | 44 | 39 | 1.0× |
 
-† anthropic.com's assets are cross-origin (`cdn.prod.website-files.com`) with no
-`Timing-Allow-Origin`, so Resource Timing reports `0` for every byte. I refetched
-all 50 URLs with `curl` (§9.6); the CDN answered without applying compression to
-that request, so the anthropic wire figure is effectively its *decoded* figure and
-is an **upper bound** on real wire bytes. Its decoded numbers are exact.
+† anthropic.com's assets are cross-origin (`cdn.prod.website-files.com`) with no `Timing-Allow-Origin`, so Resource Timing reports `0` for every byte. I refetched all 50 URLs with `curl` (§9.6); the CDN answered without applying compression to that request, so the anthropic wire figure is effectively its *decoded* figure and is an **upper bound** on real wire bytes. Its decoded
+numbers are exact.
 
-‡ claude.com and anthropic.com both had a cookie consent banner open, contributing
-3 buttons each. Excluding those: 15 / 14 / 14 — a dead heat. See §4.2.
+‡ claude.com and anthropic.com both had a cookie consent banner open, contributing 3 buttons each. Excluding those: 15 / 14 / 14 — a dead heat. See §4.2.
 
 ### The pricing pages
 
-`https://www.anthropic.com/pricing` **301s to `https://claude.com/pricing`** —
-verified, `location.href` after navigation reads `https://claude.com/pricing`
-(`cold-anthropicpricing-1440x900.json`). There is no third pricing page.
+`https://www.anthropic.com/pricing` **301s to `https://claude.com/pricing`** — verified, `location.href` after navigation reads `https://claude.com/pricing` (`cold-anthropicpricing-1440x900.json`). There is no third pricing page.
 
 | Metric | Ours `/en/pricing` | claude.com/pricing |
 |---|---:|---:|
@@ -136,20 +114,13 @@ verified, `location.href` after navigation reads `https://claude.com/pricing`
 | LCP | **1,808 ms** | 432 ms |
 | axe rules / nodes | 4 / 6 | 5 / 16 |
 
-**claude.com/pricing is not the exemplar the homepage is.** It parses 2.75 MB of
-CSS (a 2.66 MB Webflow `claude-brand.shared.*.min.css`, 94.9% unused) into 6,942
-DOM nodes. Our pricing page beats it on almost every structural axis except
-**box density** (18.0 surfaces per screen vs 10.4) and **LCP**. Anyone arguing
-"be like claude.com/pricing" should be shown this table first.
+**claude.com/pricing is not the exemplar the homepage is.** It parses 2.75 MB of CSS (a 2.66 MB Webflow `claude-brand.shared.*.min.css`, 94.9% unused) into 6,942 DOM nodes. Our pricing page beats it on almost every structural axis except **box density** (18.0 surfaces per screen vs 10.4) and **LCP**. Anyone arguing "be like claude.com/pricing" should be shown this table first.
 
 ---
 
 ## 2. The single damning finding: `assets/react.*.js` is 13 locales
 
-`https://www.rediacc.com/assets/react.DrK1BhOX.js` — **6,673,504 bytes decoded /
-1,457,105 bytes over the wire**, `initiatorType: "script"` (it is executed, not
-merely preloaded). That is **89.5% of the page's decoded bytes** and **81.5% of
-its wire bytes**.
+`https://www.rediacc.com/assets/react.DrK1BhOX.js` — **6,673,504 bytes decoded / 1,457,105 bytes over the wire**, `initiatorType: "script"` (it is executed, not merely preloaded). That is **89.5% of the page's decoded bytes** and **81.5% of its wire bytes**.
 
 What is in it, measured by character-script census over the downloaded file:
 
@@ -161,40 +132,28 @@ What is in it, measured by character-script census over the downloaded file:
 | CJK (zh) | 93,449 |
 | Kana (ja) | 67,999 |
 
-plus Latin-script locale markers: `Wiederherstellung` ×162, `herstel` ×220,
-`ripristino` ×152, `recuperação` ×141, `recuperación` ×127, `récupération` ×90,
-`Kurtarma` ×65. The first 400 characters of the file are Arabic marketing copy.
+plus Latin-script locale markers: `Wiederherstellung` ×162, `herstel` ×220, `ripristino` ×152, `recuperação` ×141, `recuperación` ×127, `récupération` ×90, `Kurtarma` ×65. The first 400 characters of the file are Arabic marketing copy.
 
 **Root cause, with file:line:**
 
 - `packages/www/src/i18n/utils.ts:1-13` statically imports all thirteen locale
-  JSONs. On disk they total **9,284,710 bytes**
-  (`ls -l src/i18n/translations/*.json`).
+JSONs. On disk they total **9,284,710 bytes** (`ls -l src/i18n/translations/*.json`).
 - `packages/www/src/i18n/react.ts:3` — `useTranslation()` calls
-  `createTranslator` from that module.
+`createTranslator` from that module.
 - Every hydrated React island imports `useTranslation`:
-  `Navigation.tsx:4`, `Footer.tsx:7`, `SearchModal.tsx:4`, `MegaMenu.tsx:4`,
-  `ContactModal.tsx:4`, `ContactForm.tsx:4`, `LeadMagnetModal.tsx:4`,
-  `NewsletterSignup.tsx:4`, `NewsletterReturnPopup.tsx:4`, `LogoWall.tsx:2`,
-  `DownloadsList.tsx:4`, `InstallMethods.tsx:17`.
+`Navigation.tsx:4`, `Footer.tsx:7`, `SearchModal.tsx:4`, `MegaMenu.tsx:4`, `ContactModal.tsx:4`, `ContactForm.tsx:4`, `LeadMagnetModal.tsx:4`, `NewsletterSignup.tsx:4`, `NewsletterReturnPopup.tsx:4`, `LogoWall.tsx:2`, `DownloadsList.tsx:4`, `InstallMethods.tsx:17`.
 - Rollup therefore hoists all thirteen JSONs into the shared vendor chunk
-  `assets/react.*.js`, which **every page** loads. Confirmed on `/en/pricing`
-  too: identical `6,998,912` decoded JS bytes.
+`assets/react.*.js`, which **every page** loads. Confirmed on `/en/pricing` too: identical `6,998,912` decoded JS bytes.
 
-`grep -l "react.zEl4485N.js" dist/assets/*.js` lists 10+ island chunks importing
-it. The local `dist/assets/react.zEl4485N.js` is 6,708,716 bytes.
+`grep -l "react.zEl4485N.js" dist/assets/*.js` lists 10+ island chunks importing it. The local `dist/assets/react.zEl4485N.js` is 6,708,716 bytes.
 
-**Inference (not measured):** splitting so an island receives only its own
-locale should take homepage decoded JS from 6,998,912 to roughly
-`6,998,912 − 6,673,504 + (6,673,504 ÷ 13) ≈ 838,000` bytes, and wire bytes from
-1,571,347 to ~226,000. That is a 8.3× decoded reduction from one module.
+**Inference (not measured):** splitting so an island receives only its own locale should take homepage decoded JS from 6,998,912 to roughly `6,998,912 − 6,673,504 + (6,673,504 ÷ 13) ≈ 838,000` bytes, and wire bytes from 1,571,347 to ~226,000. That is a 8.3× decoded reduction from one module.
 
 ---
 
 ## 3. The second finding: solution-page CSS on the homepage
 
-CDP rule-usage coverage of `https://www.rediacc.com/en` (§9.3), byte-accurate,
-the same engine as the DevTools Coverage panel:
+CDP rule-usage coverage of `https://www.rediacc.com/en` (§9.3), byte-accurate, the same engine as the DevTools Coverage panel:
 
 | Stylesheet | Bytes | Unused |
 |---|---:|---:|
@@ -210,10 +169,7 @@ the same engine as the DevTools Coverage panel:
 | inline `<style>` in `/en` | 1,217 + 59 | 100% / 0% |
 | **Total** | **226,347** | **77.1%** |
 
-The homepage `<link>`s **three solution-page stylesheets** —
-`dev-environments-brief` (twice, two different hashes) and `disaster-recovery` —
-together **113,970 bytes, i.e. 50.4% of all CSS parsed on the homepage**, at
-77–90% unused. Verified straight from the HTML:
+The homepage `<link>`s **three solution-page stylesheets** — `dev-environments-brief` (twice, two different hashes) and `disaster-recovery` — together **113,970 bytes, i.e. 50.4% of all CSS parsed on the homepage**, at 77–90% unused. Verified straight from the HTML:
 
 ```
 $ curl -sSL --compressed https://www.rediacc.com/en \
@@ -231,9 +187,7 @@ $ curl -sSL --compressed https://www.rediacc.com/en \
 
 anthropic.com ships **one** stylesheet. claude.com ships five.
 
-**Caveat I want on the record:** unused-CSS *percentage* is a bad target — see
-§5.2. What matters here is that 114 KB of the 226 KB has nothing to do with this
-page.
+**Caveat I want on the record:** unused-CSS *percentage* is a bad target — see §5.2. What matters here is that 114 KB of the 226 KB has nothing to do with this page.
 
 ---
 
@@ -241,24 +195,16 @@ page.
 
 ### 4.1 Entropy, controlled for element count
 
-The obvious objection to "23 font-sizes vs 8" is *we just have more elements*.
-The data kills it: anthropic.com paints **653** non-zero-box elements to our
-**591**, and does it with **8** distinct font-sizes, **5** background colors,
-**2** border-radii and **0** box-shadows. More painted elements, one third the
-vocabulary.
+The obvious objection to "23 font-sizes vs 8" is *we just have more elements*. The data kills it: anthropic.com paints **653** non-zero-box elements to our **591**, and does it with **8** distinct font-sizes, **5** background colors, **2** border-radii and **0** box-shadows. More painted elements, one third the vocabulary.
 
-Our homepage font-size ladder, with the count of elements at each size
-(`detail.js`, §9.4) — 23 values:
+Our homepage font-size ladder, with the count of elements at each size (`detail.js`, §9.4) — 23 values:
 
 ```
 16px×176  14px×158  18px×157  12.8px×42  11px×15  12px×6  20px×5  10px×5
 32px×5  40px×5  9px×4  17px×3  48px×3  20.8px×3  …  (9 more, ≤3 elements each)
 ```
 
-`12.8px`, `20.8px`, `17px`, `9px`, `10px`, `11px` are em-cascade accidents, not
-design decisions. anthropic.com's whole ladder is
-`12 / 14 / 15 / 16 / 18 / 20 / 24 / 60.87px` — eight values, and the top three
-(`12px×321`, `20px×251`, `16px×199`) carry 771 of its elements.
+`12.8px`, `20.8px`, `17px`, `9px`, `10px`, `11px` are em-cascade accidents, not design decisions. anthropic.com's whole ladder is `12 / 14 / 15 / 16 / 18 / 20 / 24 / 60.87px` — eight values, and the top three (`12px×321`, `20px×251`, `16px×199`) carry 771 of its elements.
 
 Colors, ours vs anthropic.com (top of each list):
 
@@ -271,21 +217,14 @@ anthropic  rgb(20,20,19)×335  rgb(250,249,245)×273  rgb(176,174,165)×183
            = 18 distinct colors painted
 ```
 
-Three near-identical greys (`#5e5e63`, `#4a4a4f`, `#6b6b70`) doing the same job
-is the shape of the problem: nobody chose them together.
+Three near-identical greys (`#5e5e63`, `#4a4a4f`, `#6b6b70`) doing the same job is the shape of the problem: nobody chose them together.
 
-Surface decoration on the homepage: **7 border-radii, 5 shadow styles, 11 border
-styles** (`boxes.js`, §9.5). anthropic.com: **2 radii, 0 shadows, 1 border
-style**. That is the number I would put on a wall.
+Surface decoration on the homepage: **7 border-radii, 5 shadow styles, 11 border styles** (`boxes.js`, §9.5). anthropic.com: **2 radii, 0 shadows, 1 border style**. That is the number I would put on a wall.
 
 ### 4.2 Above-fold density: the naive metric lies, and I checked
 
-`document.querySelectorAll(<interactive selector>)` filtered by visibility
-counts **51** above-fold targets for us vs 18 / 17. That number is wrong for our
-purposes: 42 of ours sit inside the nav's pre-rendered mega-menu panels, which
-have real boxes but are not hit-testable. Re-measuring with
-`document.elementFromPoint()` at each element's own centre plus an effective-opacity
-walk (`hittest.js`, §9.5) gives:
+`document.querySelectorAll(<interactive selector>)` filtered by visibility counts **51** above-fold targets for us vs 18 / 17. That number is wrong for our purposes: 42 of ours sit inside the nav's pre-rendered mega-menu panels, which have real boxes but are not hit-testable. Re-measuring with `document.elementFromPoint()` at each element's own centre plus an effective-opacity walk
+(`hittest.js`, §9.5) gives:
 
 | | clickable above fold | in header/nav | in body |
 |---|---:|---:|---:|
@@ -293,36 +232,26 @@ walk (`hittest.js`, §9.5) gives:
 | claude.com | 17 (14 + 3 cookie) | 9 | 8 |
 | anthropic.com | 17 (14 + 3 cookie) | 15 | 2 |
 
-**We are not denser above the fold.** I am reporting this because the naive
-number is the one a careless re-measurement will produce, and it would let a
-future session claim a 3× win it did not earn. Use `hittest.js`, not the naive
-count. (The 51-vs-18 gap is still a real fact about *DOM* weight in the header —
-`sx-chrome`'s territory — just not about visual density.)
+**We are not denser above the fold.** I am reporting this because the naive number is the one a careless re-measurement will produce, and it would let a future session claim a 3× win it did not earn. Use `hittest.js`, not the naive count. (The 51-vs-18 gap is still a real fact about *DOM* weight in the header — `sx-chrome`'s territory — just not about visual density.)
 
-The fold itself is clean: see
-`scratchpad/shots/sx-metrics/hprod-fold-1440x900.png`.
+The fold itself is clean: see `scratchpad/shots/sx-metrics/hprod-fold-1440x900.png`.
 
 ### 4.3 Length
 
 Full-page captures, all at 1440 wide:
 
 - ours — `scratchpad/shots/sx-metrics/fprod-full-1440.png` (6,794 px):
-  hero, "Your world moves fast" 3-card grid, an infra logo strip, a 4-card
-  "Most tools copy one piece" grid, a **five-block** "The Difference"
-  before/after sequence, a 4-number metrics strip, a second logo strip, the full
-  three-tier pricing table, footer. **14 top-level sections, 60 boxed surfaces.**
+hero, "Your world moves fast" 3-card grid, an infra logo strip, a 4-card "Most tools copy one piece" grid, a **five-block** "The Difference" before/after sequence, a 4-number metrics strip, a second logo strip, the full three-tier pricing table, footer. **14 top-level sections, 60 boxed surfaces.**
 - claude.com — `fclaude-full-1440.png` (4,104 px): hero + signup card,
-  "Explore plans" (3 cards), FAQ (3 rows), footer. **6 sections, 25 boxes.**
+"Explore plans" (3 cards), FAQ (3 rows), footer. **6 sections, 25 boxes.**
 - anthropic.com — `fanth-full-1440.png` (3,211 px): headline, one large black
-  rounded panel (this is the "special component" the operator likes), 3 release
-  cards, a 5-row link list, footer. **11 sections, 26 boxes, 0 shadows.**
+rounded panel (this is the "special component" the operator likes), 3 release cards, a 5-row link list, footer. **11 sections, 26 boxes, 0 shadows.**
 
 At 390×844 ours is **13.98 screens** of scrolling. Both references are ~7.6.
 
 ### 4.4 Eleven text runs render in a fallback font
 
-`detail.js` finds 11 painted text nodes on our homepage whose computed
-first-choice family is a bare generic:
+`detail.js` finds 11 painted text nodes on our homepage whose computed first-choice family is a bare generic:
 
 ```
 {tag:"text", fam:"sans-serif", txt:"10× faster"}
@@ -331,52 +260,35 @@ first-choice family is a bare generic:
 {tag:"text", fam:"monospace",  txt:"DB"}   … 7 more
 ```
 
-They are `<text>` elements inside inline SVG illustrations, which never inherit
-the page's `--font-family`. claude.com and anthropic.com: **0**. This is why our
-"family+weight combos painted" is 9 against their 7 — two of ours are accidents.
-Cheap, visible fix; belongs to whoever owns the illustrations (`sx-tokens` /
-`sx-homepage`).
+They are `<text>` elements inside inline SVG illustrations, which never inherit the page's `--font-family`. claude.com and anthropic.com: **0**. This is why our "family+weight combos painted" is 9 against their 7 — two of ours are accidents. Cheap, visible fix; belongs to whoever owns the illustrations (`sx-tokens` / `sx-homepage`).
 
 ### 4.5 Load
 
-LCP 1,768 ms against anthropic's 580 ms, and TTFB 686 ms against their 107 ms.
-The TTFB gap is Cloudflare edge-cache behaviour on a cold path, not markup; I did
-not isolate it. FCP == LCP for us on both pages, meaning the `h1` is the largest
-paint and nothing blocks it — so the LCP number will move mainly with TTFB and
-with the render-blocking CSS in §3, not with the JS in §2 (that chunk is
-`type=module`, deferred). **Do not promise an LCP win from the i18n split.**
+LCP 1,768 ms against anthropic's 580 ms, and TTFB 686 ms against their 107 ms. The TTFB gap is Cloudflare edge-cache behaviour on a cold path, not markup; I did not isolate it. FCP == LCP for us on both pages, meaning the `h1` is the largest paint and nothing blocks it — so the LCP number will move mainly with TTFB and with the render-blocking CSS in §3, not with the JS in §2 (that
+chunk is `type=module`, deferred). **Do not promise an LCP win from the i18n split.**
 
 ---
 
 ## 5. What is NOT wrong — do not "fix" these
 
-This is the most useful thing in this document. Four plausible-sounding targets
-would be pure theatre, because we already match or beat both references:
+This is the most useful thing in this document. Four plausible-sounding targets would be pure theatre, because we already match or beat both references:
 
 1. **Unused-CSS percentage.** Ours 77.1%. claude.com 87.9%. anthropic.com 79.4%.
-   claude.com/pricing is **94.7%** unused on a 2.66 MB sheet. Every site with a
-   global stylesheet looks like this. Target *bytes parsed*, never the ratio.
+claude.com/pricing is **94.7%** unused on a 2.66 MB sheet. Every site with a global stylesheet looks like this. Target *bytes parsed*, never the ratio.
 2. **DOM node count and depth.** 762 nodes / depth 11 vs 1,149 / 16 and
-   1,263 / 23. We are the leanest of the three. Node-count reduction buys nothing.
+1,263 / 23. We are the leanest of the three. Node-count reduction buys nothing.
 3. **Above-fold interactive density** — see §4.2, we are at parity once
-   hit-tested.
+hit-tested.
 4. **Accessibility.** 3 violated rules / 4 nodes, 44 rules passed. claude.com has
-   1 critical; anthropic.com has 10 violating nodes. Ours are `aria-hidden-focus`
-   (1), `color-contrast` (2), `heading-order` (1) — worth fixing on principle,
-   worthless as a simplification KPI. **They are a guardrail, not a target: they
-   must not get worse.**
+1 critical; anthropic.com has 10 violating nodes. Ours are `aria-hidden-focus` (1), `color-contrast` (2), `heading-order` (1) — worth fixing on principle, worthless as a simplification KPI. **They are a guardrail, not a target: they must not get worse.**
 
-Also not a problem: **font bytes** (141 KB, the leanest of the three — claude.com
-ships 728 KB of fonts), **image bytes** (1.9 KB vs anthropic's 807 KB — though
-that is arguably a *content* deficiency, not a win), **request count** (44 vs 42
-and 50), and **inline `style=""` attributes** (6 vs 65 and 111).
+Also not a problem: **font bytes** (141 KB, the leanest of the three — claude.com ships 728 KB of fonts), **image bytes** (1.9 KB vs anthropic's 807 KB — though that is arguably a *content* deficiency, not a win), **request count** (44 vs 42 and 50), and **inline `style=""` attributes** (6 vs 65 and 111).
 
 ---
 
 ## 6. Proposed OFFICIAL before/after targets
 
-Measured on the **production build** of `/en` at **1440×900**, cold cache, unless
-noted. Re-run §9 verbatim.
+Measured on the **production build** of `/en` at **1440×900**, cold cache, unless noted. Re-run §9 verbatim.
 
 | # | Metric | Before | Target | Why this one |
 |---|---|---:|---:|---|
@@ -405,88 +317,49 @@ noted. Re-run §9 verbatim.
 | G4 | `h1` count | 1 | exactly 1 |
 | G5 | Interactive elements, whole page | 110 | ≥ 60 (deleting nav links is fine; deleting the funnel is not) |
 
-If you want **one** number for the operator: *decoded bytes the homepage ships*,
-**7.46 MB → under 1 MB**, alongside *distinct painted colors*, **43 → 16**.
+If you want **one** number for the operator: *decoded bytes the homepage ships*, **7.46 MB → under 1 MB**, alongside *distinct painted colors*, **43 → 16**.
 
 ---
 
 ## 7. Methodology notes and honest limits
 
 - **The dev server is a valid instrument for structure, not for weight.** I
-  measured both. `localhost:4321/en` and `www.rediacc.com/en` agree exactly on
-  page height (6,794 px), on every entropy figure (23 font-sizes, 43 colors, 11
-  radii, 6 shadows), on painted elements (591), and within 0.2% on style rules
-  (1,628 vs 1,625) and selectors (1,822 vs 1,822). They diverge only where Astro's
-  dev pipeline differs: **157 requests vs 44**, **10.8 MB of unbundled JS modules
-  vs 23 bundled files**, and **150,334 bytes of injected inline `<style>` vs
-  1,276**. So: **T3–T16 may be re-measured on the dev server; T1, T2 and the
-  vitals must be measured against a production build.**
+measured both. `localhost:4321/en` and `www.rediacc.com/en` agree exactly on page height (6,794 px), on every entropy figure (23 font-sizes, 43 colors, 11 radii, 6 shadows), on painted elements (591), and within 0.2% on style rules (1,628 vs 1,625) and selectors (1,822 vs 1,822). They diverge only where Astro's dev pipeline differs: **157 requests vs 44**, **10.8 MB of unbundled JS
+modules vs 23 bundled files**, and **150,334 bytes of injected inline `<style>` vs 1,276**. So: **T3–T16 may be re-measured on the dev server; T1, T2 and the vitals must be measured against a production build.**
 - **Cold cache matters and warm runs silently lie.** My first pass reused one
-  browser and reported `transferSize: 0` for cached pricing-page assets (33 KB
-  "total"). Every number above comes from a **fresh named session per URL** so
-  the HTTP cache is empty. `cold.sh` (§9.2) enforces this.
+browser and reported `transferSize: 0` for cached pricing-page assets (33 KB "total"). Every number above comes from a **fresh named session per URL** so the HTTP cache is empty. `cold.sh` (§9.2) enforces this.
 - **CSS coverage is real, not approximated.** `coverage.mjs` (§9.3) drives
-  `CSS.startRuleUsageTracking` over CDP. Chrome reports only the *used* ranges, so
-  unused bytes are derived by subtracting merged used ranges from
-  `CSS.getStyleSheetText` length — exactly what the DevTools Coverage panel does.
-  As a control I also kept the naive static approximation inside `probe.js`
-  ("does any element match this selector"): it says 72.5% unused where CDP says
-  77.1%. Close enough to trust the approximation if CDP is ever unavailable, and
-  the 4.6-point gap is the honest error bar.
+`CSS.startRuleUsageTracking` over CDP. Chrome reports only the *used* ranges, so unused bytes are derived by subtracting merged used ranges from `CSS.getStyleSheetText` length — exactly what the DevTools Coverage panel does. As a control I also kept the naive static approximation inside `probe.js` ("does any element match this selector"): it says 72.5% unused where CDP says 77.1%.
+Close enough to trust the approximation if CDP is ever unavailable, and the 4.6-point gap is the honest error bar.
 - **Instrument control.** The entropy probe discriminates strongly across the
-  three sites on the same page type (8 / 13 / 23 font-sizes) while element counts
-  stay within 20% of each other — it is measuring vocabulary, not volume. The
-  above-fold probe **failed** its control (§4.2) and I replaced it rather than
-  report the flattering number.
+three sites on the same page type (8 / 13 / 23 font-sizes) while element counts stay within 20% of each other — it is measuring vocabulary, not volume. The above-fold probe **failed** its control (§4.2) and I replaced it rather than report the flattering number.
 - **Could not obtain:** (a) real *wire* bytes for anthropic.com — cross-origin
-  Webflow CDN with no `Timing-Allow-Origin`, and my `curl` refetch came back
-  effectively uncompressed, so its wire figure is an upper bound only; decoded
-  bytes are exact. (b) **INP** — requires real interaction; `vitals` returned
-  `null` on all six pages. (c) A separate anthropic.com pricing page — it 301s to
-  claude.com/pricing. (d) JS *execution* coverage (`Profiler.startPreciseCoverage`)
-  — I stopped at CSS; the 6.67 MB chunk is damning enough without it, and a future
-  session can add it with the same CDP harness.
+Webflow CDN with no `Timing-Allow-Origin`, and my `curl` refetch came back effectively uncompressed, so its wire figure is an upper bound only; decoded bytes are exact. (b) **INP** — requires real interaction; `vitals` returned `null` on all six pages. (c) A separate anthropic.com pricing page — it 301s to claude.com/pricing. (d) JS *execution* coverage
+(`Profiler.startPreciseCoverage`) — I stopped at CSS; the 6.67 MB chunk is damning enough without it, and a future session can add it with the same CDP harness.
 - **claude.com redirects on a second navigation.** Re-opening `https://claude.com/`
-  inside a session that already loaded it lands on
-  `https://claude.ai/?redirect=claude.com&via=cookie` (46 DOM nodes). My mobile
-  pass hit this; I re-measured in a clean session. Check `result.url` in every
-  output before trusting a row.
+inside a session that already loaded it lands on `https://claude.ai/?redirect=claude.com&via=cookie` (46 DOM nodes). My mobile pass hit this; I re-measured in a clean session. Check `result.url` in every output before trusting a row.
 
 ---
 
 ## 8. Cross-domain consequences (naming, not fixing)
 
 - **`sx-tokens`** — T3–T8 land in your files. 229 distinct `--custom-property`
-  names are defined across 348 declarations in **six** `:root`-ish origins:
-  `src/layouts/BaseLayout.astro:281` and `:302`, `public/styles/main.css:61`,
-  `public/styles/responsive.css:73`, `src/styles/sidebar-shared.css:6`,
-  `src/components/AnnouncementBar.astro:32`. Only 324 custom-property
-  *declarations* survive into the runtime cascade on the homepage — against
-  claude.com's 1,029 and anthropic.com's 1,588. **Their token systems are far
-  larger than ours and their painted output is far smaller.** Fewer tokens is not
-  the goal; fewer *painted values* is. Also §4.4: inline SVG `<text>` needs
-  `font-family` set.
+names are defined across 348 declarations in **six** `:root`-ish origins: `src/layouts/BaseLayout.astro:281` and `:302`, `public/styles/main.css:61`, `public/styles/responsive.css:73`, `src/styles/sidebar-shared.css:6`, `src/components/AnnouncementBar.astro:32`. Only 324 custom-property *declarations* survive into the runtime cascade on the homepage — against claude.com's 1,029 and
+anthropic.com's 1,588. **Their token systems are far larger than ours and their painted output is far smaller.** Fewer tokens is not the goal; fewer *painted values* is. Also §4.4: inline SVG `<text>` needs `font-family` set.
 - **`sx-chrome`** — the header renders 42 boxed interactive elements inside the
-  fold that are not hit-testable (mega-menu panels). Not a visual-density problem
-  (§4.2) but it is DOM and hydration weight, and it is why `Navigation.6ZJran_r.js`
-  is 68,135 bytes decoded.
+fold that are not hit-testable (mega-menu panels). Not a visual-density problem (§4.2) but it is DOM and hydration weight, and it is why `Navigation.6ZJran_r.js` is 68,135 bytes decoded.
 - **`sx-homepage`** — T9, T11, T16. 14 sections, 60 boxed surfaces, five
-  near-identical before/after blocks in "The Difference".
+near-identical before/after blocks in "The Difference".
 - **`sx-pricing`** — T10. 166 boxed surfaces, 18.0 per screen, the worst density
-  figure anywhere in this study including claude.com/pricing.
+figure anywhere in this study including claude.com/pricing.
 - **Whoever owns build config** — §2 and §3 are both bundler-shaped:
-  `src/i18n/utils.ts:1-13` and the three solution-page stylesheets `<link>`ed on
-  `/en`. Neither is anyone's *design* domain and both are bigger wins than any
-  design change. **Do not let them fall between chairs.**
+`src/i18n/utils.ts:1-13` and the three solution-page stylesheets `<link>`ed on `/en`. Neither is anyone's *design* domain and both are bigger wins than any design change. **Do not let them fall between chairs.**
 
 ---
 
 ## 9. The instruments — re-run these verbatim
 
-Working copies live in
-`/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/metrics/`.
-That directory is session-scoped and will be gone; the source below is canonical.
-Nothing here is added to the repo.
+Working copies live in `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/metrics/`. That directory is session-scoped and will be gone; the source below is canonical. Nothing here is added to the repo.
 
 ### 9.0 Session setup
 
@@ -858,8 +731,7 @@ ws.close();
 
 ### 9.5 `hittest.js` and `boxes.js`
 
-`hittest.js` — the **honest** above-fold count (use this, not `probe.js`'s
-`targets.aboveFold`):
+`hittest.js` — the **honest** above-fold count (use this, not `probe.js`'s `targets.aboveFold`):
 
 ```js
 (() => {
@@ -929,8 +801,7 @@ ws.close();
 
 ### 9.6 Cross-origin byte fallback (anthropic.com)
 
-When Resource Timing reports `transferSize: 0` (no `Timing-Allow-Origin`), pull
-the URL list from CDP and refetch:
+When Resource Timing reports `transferSize: 0` (no `Timing-Allow-Origin`), pull the URL list from CDP and refetch:
 
 ```bash
 agent-browser network requests --json > net.json
@@ -944,9 +815,7 @@ while read -r t u; do
 done < urls.txt
 ```
 
-`--compressed` yields **decoded** bytes. The Webflow CDN did not honour a
-hand-set `Accept-Encoding` in this environment, so a wire-byte figure obtained
-this way must be labelled an upper bound.
+`--compressed` yields **decoded** bytes. The Webflow CDN did not honour a hand-set `Accept-Encoding` in this environment, so a wire-byte figure obtained this way must be labelled an upper bound.
 
 ### 9.7 Source-side counts used above
 
@@ -962,8 +831,7 @@ curl -sSL --compressed https://www.rediacc.com/en \
 
 ### 9.8 Screenshot inventory (evidence)
 
-All under
-`/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-metrics/`:
+All under `/tmp/claude-1000/-home-muhammed-monorepo-console/e6500e92-55b2-4f40-b8f2-149511f68334/scratchpad/shots/sx-metrics/`:
 
 | File | What it shows |
 |---|---|
@@ -980,17 +848,9 @@ All under
 ## 10. Open questions for the operator
 
 1. **Do you want the 6.67 MB locale chunk fixed inside this simplification
-   program, or as a separate build-side change?** It is by far the largest single
-   number in this study, it is not a design decision, and nobody on this fleet
-   owns `src/i18n/`. My recommendation: it rides this program, because "the site
-   feels heavy" and "we ship 13 languages to every visitor" are the same
-   complaint. *(Default if unanswered: include it, and assign it to whoever takes
-   `sx-chrome`, since the islands that pull it are the nav and footer.)*
+program, or as a separate build-side change?** It is by far the largest single number in this study, it is not a design decision, and nobody on this fleet owns `src/i18n/`. My recommendation: it rides this program, because "the site feels heavy" and "we ship 13 languages to every visitor" are the same complaint. *(Default if unanswered: include it, and assign it to whoever takes
+`sx-chrome`, since the islands that pull it are the nav and footer.)*
 2. **Is a 2× shorter homepage acceptable content-wise?** T11/T16 mean deleting
-   roughly half the page — most obviously the five near-identical before/after
-   blocks in "The Difference". That is a marketing call, not a CSS one.
+roughly half the page — most obviously the five near-identical before/after blocks in "The Difference". That is a marketing call, not a CSS one.
 3. **Are 43 painted colors the result of a light/dark dual palette?** Our
-   homepage renders a dark hero band inside a light page. If T4 (≤16 colors) is
-   to be measured fairly it may need to be measured per theme
-   (`agent-browser set media dark|light`). I did not split it; say the word and
-   I will re-baseline both themes before implementation starts.
+homepage renders a dark hero band inside a light page. If T4 (≤16 colors) is to be measured fairly it may need to be measured per theme (`agent-browser set media dark|light`). I did not split it; say the word and I will re-baseline both themes before implementation starts.

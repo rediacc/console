@@ -11,10 +11,7 @@ type ManifestEntry = {
   keywords: string[];
 };
 
-// READ, not imported. `packages/www/dist/route-manifest.json` is a BUILD ARTIFACT: it
-// exists only after `npm run build:www`, which the job that typechecks this worker does
-// not run. A static import puts it in the TYPE graph, so `tsc` failed with TS2307 on a
-// clean checkout while passing on any machine that had once built the site -- and the
+// READ, not imported. `packages/www/dist/route-manifest.json` is a BUILD ARTIFACT: it exists only after `npm run build:www`, which the job that typechecks this worker does not run. A static import puts it in the TYPE graph, so `tsc` failed with TS2307 on a clean checkout while passing on any machine that had once built the site -- and the
 // import bought nothing, because the value was cast to ManifestEntry[] on the very next
 // line. Resolved from import.meta.url rather than cwd so the vitest run is unaffected.
 const MANIFEST_PATH = fileURLToPath(
@@ -24,11 +21,7 @@ const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as ManifestEntr
 const manifestPaths = new Set(manifest.map((e) => e.path));
 const allLiveTargets = new Set<string>([...manifestPaths, ...ALLOWED_NON_MANIFEST_TARGETS]);
 
-// redirect-aliases.ts casts redirects.json to a discriminated union where
-// status 301 implies `to: string` and status 410 implies `to: null`. That cast
-// is an assertion about the JSON, not a proof of it — and this file is where
-// the assertion gets proved. Read through the union type instead and TS
-// narrows every check below into dead code (which is exactly what
+// redirect-aliases.ts casts redirects.json to a discriminated union where status 301 implies `to: string` and status 410 implies `to: null`. That cast is an assertion about the JSON, not a proof of it — and this file is where the assertion gets proved. Read through the union type instead and TS narrows every check below into dead code (which is exactly what
 // @typescript-eslint/no-unnecessary-condition reported), so the tests would
 // pass on data that violates the invariant they exist to enforce.
 interface RawRule {
@@ -37,8 +30,7 @@ interface RawRule {
   rationale: string;
 }
 const RULES: Record<string, RawRule | undefined> = EXACT;
-// `| undefined` above models a lookup MISS (used by the chain test). Iteration
-// only ever yields values that are present.
+// `| undefined` above models a lookup MISS (used by the chain test). Iteration only ever yields values that are present.
 const RULE_ENTRIES = Object.entries(RULES) as [string, RawRule][];
 
 describe('EXACT redirect rules', () => {
@@ -55,15 +47,9 @@ describe('EXACT redirect rules', () => {
   });
 
   test('no redirect chains (target must not itself redirect elsewhere)', () => {
-    // Self-maps like /checkout/success -> /checkout/success are legal —
-    // they trigger the lang-prefix addition when the request has no lang,
-    // and the Worker's self-redirect guard prevents actual loops when
-    // lang is already present.
+    // Self-maps like /checkout/success -> /checkout/success are legal — they trigger the lang-prefix addition when the request has no lang, and the Worker's self-redirect guard prevents actual loops when lang is already present.
     //
-    // A rule like /apk/x86_64 -> /downloads pointing to a self-map
-    // target /downloads -> /downloads is ALSO legal: the Worker resolves
-    // the first redirect to /en/downloads in one hop (the lang-prefix
-    // is added in the same step), no chain is actually traversed.
+    // A rule like /apk/x86_64 -> /downloads pointing to a self-map target /downloads -> /downloads is ALSO legal: the Worker resolves the first redirect to /en/downloads in one hop (the lang-prefix is added in the same step), no chain is actually traversed.
     //
     // We only flag genuine chains: A -> B where B -> C with C !== B.
     const chains: { from: string; to: string; via: string }[] = [];

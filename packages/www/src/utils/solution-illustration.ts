@@ -11,8 +11,7 @@ const illustrationModules = import.meta.glob<string>('../assets/images/illustrat
   eager: true,
   query: '?raw',
   import: 'default',
-  // Index access on a glob record is `string` per TS, but a missing key is
-  // `undefined` at runtime, so widen and let the null fallback stay sound.
+  // Index access on a glob record is `string` per TS, but a missing key is `undefined` at runtime, so widen and let the null fallback stay sound.
 }) as Record<string, string | undefined>;
 
 export function resolveSolutionIllustration(slug: string): string | null {

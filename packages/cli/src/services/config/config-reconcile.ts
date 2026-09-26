@@ -2,7 +2,7 @@
  * `config reconcile` service layer (spec 04 §4).
  *
  * Rebuilds the STATE half of the config from what the fleet actually reports
- * (`renet list all --json` per machine), and — for configs migrated from v2 —
+ * (`renet list all --json` per machine), and, for configs migrated from v2 ,
  * fills MISSING repository placement by matching each repository GUID against
  * the machines' inventories. It NEVER overwrites a declared placement: spec is
  * declaration, state is observation. A GUID seen on a machine that conflicts
@@ -22,6 +22,7 @@ import type { Placement, RdcConfig, RdcState, RepoFamily } from '@rediacc/shared
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from './config-resources.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 /** One repository as observed on a machine, keyed by its on-disk GUID. */
 interface ObservedRepo {
@@ -33,7 +34,7 @@ interface ObservedRepo {
 }
 
 /**
- * @public BLOCKER: element type of ReconcileReport.conflicts — the P4 `config
+ * @public BLOCKER: element type of ReconcileReport.conflicts, the P4 `config
  * reconcile` command renders these per-repo conflicts; exported so that command
  * can type its conflict formatter without indexing ReconcileReport internals.
  */
@@ -66,7 +67,7 @@ export interface ReconcileReport {
 
 export interface ReconcileOptions {
   /**
-   * Overwrite a declared placement with the observed one — but ONLY for the
+   * Overwrite a declared placement with the observed one, but ONLY for the
    * unambiguous machine-arm drift class (grand GUID on exactly one machine that
    * differs from the declaration). Duplicates stay conflicts even with the flag
    * (spec/04 §4.3: ambiguity errors, never guesses).
@@ -111,17 +112,13 @@ function classifyDeclaredMachine(
       repository: name,
       message: `repository "${name}" is placed on "${declared}" but its image was observed on ${machines.join(', ')}. Use 'rdc repo migrate' to move it, or accept the observed placement: 'rdc config reconcile --accept-observed'.`,
     };
-    // Unambiguous drift: exactly one observed machine, different from the
-    // declaration. This is the only class --accept-observed rewrites.
+    // Unambiguous drift: exactly one observed machine, different from the declaration. This is the only class --accept-observed rewrites.
     if (machines.length === 1) {
       return { conflict, accept: { repository: name, from: declared, to: machines[0] } };
     }
     return { conflict };
   }
-  // R4: the declared machine holds a copy, but the grand GUID also lives on
-  // OTHER machines — stray copies (interrupted migrate, `--keep-source`, or a
-  // pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines"
-  // as a conflict class; this is its declared-plus-strays case.
+  // R4: the declared machine holds a copy, but the grand GUID also lives on OTHER machines, stray copies (interrupted migrate, `--keep-source`, or a pushed backup left mounted). spec/04 §4.3 lists "same GUID on two machines" as a conflict class; this is its declared-plus-strays case.
   if (machines.length > 1) {
     const strays = machines.filter((m) => m !== declared);
     return {
@@ -233,10 +230,7 @@ export async function reconcileState(
       pendingPlacement.set(fill.repository, fill.placement);
       placementsFilled.push(fill);
     }
-    // The unambiguous drift carries both `accept` and `conflict`. With the flag,
-    // resolve it (record the acceptance, suppress the conflict); without, report
-    // the conflict as usual. Duplicates have no `accept`, so they stay conflicts
-    // even under the flag.
+    // The unambiguous drift carries both `accept` and `conflict`. With the flag, resolve it (record the acceptance, suppress the conflict); without, report the conflict as usual. Duplicates have no `accept`, so they stay conflicts even under the flag.
     if (accept && options.acceptObserved) {
       pendingAccept.set(accept.repository, { machine: accept.to });
       placementsAccepted.push(accept);
@@ -245,9 +239,7 @@ export async function reconcileState(
     }
   }
 
-  // Rebuild state.machines observations. state.repos.networkId reconciliation
-  // requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7,
-  // a P1 renet addition); until it lands, networkId is left as-is.
+  // Rebuild state.machines observations. state.repos.networkId reconciliation requires the renet `network_id` field on RepositoryInfo (spec §1.3, §6.7, a P1 renet addition); until it lands, networkId is left as-is.
   await deps.writeState((cfg) => {
     const state: RdcState = { ...(cfg.state ?? {}) };
     const machines: NonNullable<RdcState['machines']> = { ...(state.machines ?? {}) };
@@ -259,8 +251,7 @@ export async function reconcileState(
 
     const repositories = { ...(cfg.resources?.repositories ?? {}) };
     for (const [name, placement] of pendingPlacement) {
-      // pendingPlacement keys are family names observed this run, so the family
-      // is present; only fill when it still declares no placement.
+      // pendingPlacement keys are family names observed this run, so the family is present; only fill when it still declares no placement.
       const family = repositories[name];
       if (!family.placement) repositories[name] = { ...family, placement };
     }
@@ -272,10 +263,7 @@ export async function reconcileState(
     };
   });
 
-  // Spec-half rewrite (--accept-observed) — a SEPARATE, version-bumping write,
-  // kept visibly distinct from the state write above (spec/04 §4.3). Under
-  // --dry-run the command wires this to a no-op, so placementsAccepted still
-  // reports what WOULD change while nothing is written.
+  // Spec-half rewrite (--accept-observed), a SEPARATE, version-bumping write, kept visibly distinct from the state write above (spec/04 §4.3). Under --dry-run the command wires this to a no-op, so placementsAccepted still reports what WOULD change while nothing is written.
   if (pendingAccept.size > 0) {
     await deps.writeResources((cfg) => {
       const repositories = { ...(cfg.resources?.repositories ?? {}) };
@@ -317,9 +305,9 @@ export async function reconcile(configName?: string): Promise<ReconcileReport> {
     writeState: async (updater) => {
       await configFileStorage.updateState(name, updater);
     },
-    // Version-bumping write for the --accept-observed declaration rewrite.
+    // Version-bumping write for the --accept-observed declaration rewrite, pushed for a remote config.
     writeResources: async (updater) => {
-      await configFileStorage.update(name, updater);
+      await updateSyncedConfig(name, updater);
     },
   });
 }
@@ -333,7 +321,7 @@ export interface RoutingVerification {
  * Runtime twin of reconcile (spec §1.3 property 3). A derived-machine op that
  * resolved a datastore through `state.datastores[*].attachedTo` must call this
  * with the machine renet actually reports the datastore mounted on. A mismatch
- * is a hard error naming both sides plus the fix — never a retry elsewhere.
+ * is a hard error naming both sides plus the fix, never a retry elsewhere.
  */
 export function verifyRoutingHint(params: {
   datastore: string;

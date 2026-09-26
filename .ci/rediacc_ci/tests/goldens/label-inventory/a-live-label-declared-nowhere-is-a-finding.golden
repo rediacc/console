@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ label 'zulu' exists on the repo but is declared nowhere in fx/labels.yml. Nothing in the tree records that it exists, and it cannot reach the PR label guide, so it is a label people can apply and nobody can look up. Declare it (name/color/description, plus 'guide: false' if it should stay off the PR guide) or delete it: gh label delete 'zulu'
+✗ 1 label inventory mismatch(es) between fx/labels.yml and the live repo.

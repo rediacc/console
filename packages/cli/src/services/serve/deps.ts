@@ -63,7 +63,7 @@ export interface ServeDeps {
   /**
    * Whether a command's machine work runs detached. Defaults to the contract's
    * `detachable` when absent. Injectable so a deployment (or a test) can force
-   * synchronous execution — a daemon that never wants detach, or a loopback
+   * synchronous execution, a daemon that never wants detach, or a loopback
    * harness whose fake executor does not implement the job spool.
    */
   detach?: (entry: ContractCommand) => boolean;

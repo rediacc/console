@@ -1,8 +1,8 @@
 # bench.rediacc.com — internal-only "real Cloudflare D1" environment for the
 # dev team to validate changes against actual D1/R2 before promoting to edge or
 # production. This environment is intentionally NOT wired into ci.yml or
-# cd-v2.yml — deploys are local-only via scripts/dev/deploy-bench.sh and
-# resets via scripts/dev/reset-bench.sh.
+# cd-v2.yml — deploys are local-only via scripts/ops/deploy-bench.sh and
+# resets via scripts/ops/reset-bench.sh.
 #
 # Differences from edge-eu:
 #   - Single non-regional environment (no us / asia siblings)

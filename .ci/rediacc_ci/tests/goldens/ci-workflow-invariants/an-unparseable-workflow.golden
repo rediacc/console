@@ -1,0 +1,9 @@
+# twin .ci/scripts/security/check-ci-workflow-invariants.sh blob 23c86d2113491f7e0d9ac4adaada5b9d885f21d8
+exit: 1
+--- stdout ---
+--- stderr ---
+SETUP: <work>/wf.yml does not parse as YAML: while parsing a flow sequence
+  in "<work>/wf.yml", line 2, column 6
+expected ',' or ']', but got '<stream end>'
+  in "<work>/wf.yml", line 3, column 1
+✗ INVARIANT-FAIL: analysis of <work>/wf.yml failed (exit 2); an unparsed workflow cannot pass

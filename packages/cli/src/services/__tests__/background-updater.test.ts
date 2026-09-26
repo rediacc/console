@@ -525,8 +525,7 @@ describe('services/background-updater', () => {
       const result = await applyPendingUpdate();
 
       expect(result).toBeNull();
-      // EBUSY path returns false without clearing pendingUpdate
-      // writeUpdateState should NOT have been called with pendingUpdate: null and lastError
+      // EBUSY path returns false without clearing pendingUpdate writeUpdateState should NOT have been called with pendingUpdate: null and lastError
       const writeCalls = mockUpdateState.writeUpdateState.mock.calls;
       for (const call of writeCalls) {
         const state = call[0];
@@ -622,8 +621,7 @@ describe('services/background-updater', () => {
       ebusyError.code = 'EBUSY';
       mockFs.rename.mockImplementation(() => {
         renameCallCount++;
-        // Calls 1-2 are EBUSY retries for the first rename, call 3 succeeds
-        // Calls 4-5 would be the second rename
+        // Calls 1-2 are EBUSY retries for the first rename, call 3 succeeds Calls 4-5 would be the second rename
         if (renameCallCount <= 2) {
           return Promise.reject(ebusyError);
         }
@@ -643,11 +641,7 @@ describe('services/background-updater', () => {
   // ==========================================================================
   // Lock contention during background staging (finding D + hardening)
   //
-  // runBackgroundUpdateWorker acquires the update lock BEFORE touching state
-  // or downloading. If another process already holds the lock, the worker
-  // must exit silently without mutating state. This test guards the
-  // invariant so a regression (e.g. moving lock acquisition inside
-  // downloadAndStage so it happens after state read) would be caught.
+  // runBackgroundUpdateWorker acquires the update lock BEFORE touching state or downloading. If another process already holds the lock, the worker must exit silently without mutating state. This test guards the invariant so a regression (e.g. moving lock acquisition inside downloadAndStage so it happens after state read) would be caught.
   // ==========================================================================
   describe('runBackgroundUpdateWorker — lock contention', () => {
     beforeEach(() => {
@@ -677,11 +671,9 @@ describe('services/background-updater', () => {
   });
 
   // ==========================================================================
-  // applyPendingUpdate — staged binary missing
+  // applyPendingUpdate, staged binary missing
   //
-  // When the staged file is missing at apply time, the updater must clear
-  // pendingUpdate and return false. Without this, a stale staged-update
-  // pointer could loop the apply path indefinitely on next startups.
+  // When the staged file is missing at apply time, the updater must clear pendingUpdate and return false. Without this, a stale staged-update pointer could loop the apply path indefinitely on next startups.
   // ==========================================================================
   describe('applyPendingUpdate — staged binary missing', () => {
     beforeEach(() => {

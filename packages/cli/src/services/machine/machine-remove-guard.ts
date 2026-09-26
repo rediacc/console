@@ -5,7 +5,7 @@
  * deregistered: the repos would be left pointing at a machine the config no
  * longer knows, and every derived-machine verb on them would then fail deep
  * (exit 12) with no hint of the cause. So `machine remove` refuses up front
- * (exit 12) and TEACHES the three legitimate ways forward — move the repos
+ * (exit 12) and TEACHES the three legitimate ways forward, move the repos
  * (`repo migrate`), delete them (`repo delete`), or knowingly accept the
  * damage class with `--force` (R2-F18: `--force` = "leave the placements
  * dangling on purpose").
@@ -13,7 +13,7 @@
  * "Placement references that machine" here means a DIRECT `{machine}` placement
  * (`repo create --machine <name>`). The indirect `{datastore}` arm is a runtime
  * attach observation, not a placement, and is already scrubbed on removal by
- * `dropMachineObservations` — blocking on it would fight that design.
+ * `dropMachineObservations`, blocking on it would fight that design.
  */
 
 import { t } from '../../i18n/index.js';
@@ -76,7 +76,7 @@ export function machineRemovePlacementError(
 /**
  * Refuse `machine remove` (exit 12) when repos are still placed on the machine,
  * unless `--force`. With `--force`, proceed but WARN that the surviving
- * placements are now dangling (they are left untouched by the removal — that is
+ * placements are now dangling (they are left untouched by the removal, that is
  * the accepted damage class).
  */
 export async function guardMachineRemoval(machineName: string, force?: boolean): Promise<void> {

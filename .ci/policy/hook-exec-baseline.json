@@ -1,0 +1,184 @@
+{
+  "$why": [
+    "The exec baseline W5's '2 processes per Bash tool call' target is defined against.",
+    "It did not exist until 2026-09-09: W5 P0 lists a fork counter as a deliverable and W5 P6 records '456 execs per Bash call to 35', and on 2026-09-09 `grep -rlnP 'strace|GUARD_PASS|HOOKS_ONLY|FORK_COUNT' .ci .claude scripts` returned ZERO files while `git ls-files | grep -iE 'strace|exec-baseline'` returned zero as well. Both numbers were unreproducible.",
+    "Every number below is DERIVED from .claude/settings.json by .claude/rediacc_hooks/execcount.py and pinned here. It counts the processes the HARNESS starts (one per hooks[].command), which is a floor on the true exec count and never the whole of it: in-guard forks are a separate measurement this file does not make.",
+    "Enforced by check:ci-hook-exec-baseline, which fails in BOTH directions. A count that GREW is a refusal. A count that SHRANK is also a refusal, saying so and printing the new value to paste, because a baseline that silently absorbs an improvement stops being able to prove the next one."
+  ],
+  "$counter": ".claude/rediacc_hooks/execcount.py",
+  "$gate": ".ci/scripts/quality/check_hook_exec_baseline.py",
+  "target": {
+    "tool": "Bash",
+    "reading": "fullmatch",
+    "processes": 2,
+    "why": "W5's stated target, recorded so the gap is a number. Today's value is in measured.tools.Bash; the gate enforces that it cannot drift without an edit here, not the target. D4 moved it from 12 to 3 on 2026-09-21: one harness command per (event, matcher) pattern, members listed in .claude/rediacc_hooks/lifecycle.py."
+  },
+  "probeTools": {
+    "AskUserQuestion": "the third PreToolUse matcher. Its chain is the shortest, which makes it the row that notices a guard being added to every chain by habit.",
+    "Bash": "the tool W5's '2 processes per Bash tool call' target is stated about. This row IS the target, and it is 3 today, down from 12 at the D4 collapse.",
+    "BashOutput": "not a matcher, a PROBE for the unanchored `Bash` matcher. It is the one tool in this table whose two readings disagree; see ambiguousMatchers.",
+    "Edit": "inside the anchored Edit-family alternation.",
+    "Glob": "a read-only tool no PreToolUse matcher names. Its row is the cost of the three wildcard PostToolUse entries and nothing else, so it is the floor every tool pays.",
+    "MultiEdit": "inside the anchored Edit-family alternation.",
+    "NotebookEdit": "inside the anchored Edit-family alternation. The rarest of the four, which is why it is listed rather than assumed to track Edit.",
+    "Read": "the highest-frequency tool in a session, and the floor row that a new wildcard PostToolUse entry would move first.",
+    "Task": "a subagent launch. Listed because a hook added here multiplies by the number of subagents, not by the number of turns. It grew from 1 to 2 on 2026-09-24, deliberately: the `pre-agent` pattern (matcher `^(Agent|Task)$`) runs guards/block_agent_cap.py, the spawn-time half of the operator's 4-writer cap (agent/plans/PLAN-parallel-writer-roster.md).",
+    "TodoWrite": "a wildcard-only tool whose name contains `Write`; it is the anchored-alternation counterpart of BashOutput and it is NOT ambiguous, which is the evidence that anchoring is what removes the ambiguity.",
+    "Write": "inside the anchored Edit-family alternation."
+  },
+  "ambiguousMatchers": {
+    "BashOutput": {
+      "counts": {
+        "search": 3,
+        "fullmatch": 1
+      },
+      "why": "BLOCKER: the `Bash` matcher in .claude/settings.json is bare, and nothing here documents whether the harness matches with search or fullmatch. Under search, `Bash` also selects `BashOutput`; under fullmatch it does not. The two readings differ by 2 processes, down from 9 before the D4 collapse. Anchoring the matcher to `^Bash$` would resolve it, as its own box."
+    }
+  },
+  "measured": {
+    "entryCount": 12,
+    "patternCount": 12,
+    "tools": {
+      "AskUserQuestion": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        }
+      },
+      "Bash": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 2,
+          "total": 3
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 2,
+          "total": 3
+        }
+      },
+      "BashOutput": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 2,
+          "total": 3
+        },
+        "fullmatch": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        }
+      },
+      "Edit": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        }
+      },
+      "Glob": {
+        "search": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        },
+        "fullmatch": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        }
+      },
+      "MultiEdit": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        }
+      },
+      "NotebookEdit": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        }
+      },
+      "Read": {
+        "search": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        },
+        "fullmatch": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        }
+      },
+      "Task": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        }
+      },
+      "TodoWrite": {
+        "search": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        },
+        "fullmatch": {
+          "PreToolUse": 0,
+          "PostToolUse": 1,
+          "total": 1
+        }
+      },
+      "Write": {
+        "search": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        },
+        "fullmatch": {
+          "PreToolUse": 1,
+          "PostToolUse": 1,
+          "total": 2
+        }
+      }
+    },
+    "events": {
+      "PostCompact": 1,
+      "PreCompact": 1,
+      "SessionStart": 1,
+      "Stop": 1,
+      "SubagentStop": 1,
+      "TeammateIdle": 1
+    }
+  }
+}

@@ -1,0 +1,23 @@
+# twin .ci/scripts/test/proxies/proxy-cli-manifest.sh blob 4a03d40be72f316608d1e2ade91cbb91bf1d7a6e
+exit: 0
+--- stdout ---
+proxy cli-manifest: local stand-in for .ci/rediacc_ci/build/generate_cli_manifest.py
+proxy cli-manifest: toolchain complete, 3 requirement(s) satisfied
+PASS: generate_cli_manifest.py exited 0 over the fixture dist dir
+PASS: the manifest exists and parses as JSON
+PASS: binaries has exactly the 5 well-formed keys: linux-arm64 linux-x64 mac-arm64 mac-x64 win-x64
+PASS: the malformed sidecar was skipped, not emitted
+PASS: every emitted sha256 equals the fixture's own sha256sum output
+PASS: a release channel (edge) bakes the immutable v-version path
+PASS: the URL names the binary it describes
+PASS: a non-release channel points at its own channel path instead
+PASS: version is carried through verbatim
+PASS: a missing --version is refused (exit 1)
+PASS: an unknown flag is refused (exit 1)
+proxy cli-manifest: KNOWN HAZARD in the subject, reported not enforced.
+  With an input dir holding no .sha256 files the subject exits 0 and writes
+  a manifest with 0 binaries. A release published from that manifest offers
+  no downloads at all, and nothing on the release path notices. Reproduce with:
+    python3 .ci/rediacc_ci/build/generate_cli_manifest.py --version 9.9.9 --input $(mktemp -d) --output /tmp/m.json
+proxy cli-manifest: 11 check(s) passed, 3 requirement(s) present
+--- stderr ---

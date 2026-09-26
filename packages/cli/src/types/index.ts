@@ -1,10 +1,9 @@
-// CLI-specific types — re-exports from the v2 Zod schema plus
-// non-config-shape enums/interfaces that remain hand-written.
+// CLI-specific types, re-exports from the v2 Zod schema plus non-config-shape enums/interfaces that remain hand-written.
 
 import type { PlatformKey } from '../utils/platform.js';
 
 // ============================================================================
-// Config types (derived from Zod v2 schema — single source of truth)
+// Config types (derived from Zod v2 schema, single source of truth)
 // ============================================================================
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
@@ -35,11 +34,12 @@ export type {
 export { createEmptyRdcConfig, hasRemoteConfig } from '@rediacc/shared/config-schema';
 
 /**
- * SSH credentials — derived from the Zod schema's `credentials.ssh` so that
+ * SSH credentials, derived from the Zod schema's `credentials.ssh` so that
  * schema changes propagate automatically. The name `SSHContent` is retained
  * for grep-continuity with existing call sites.
  */
-export type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
+type SSHContent = NonNullable<NonNullable<RdcConfig['credentials']>['ssh']>;
+export type { SSHContent };
 
 // ============================================================================
 // Output / UI types
@@ -84,10 +84,7 @@ export const EXIT_CODES = {
   PAYMENT_REQUIRED: 8,
   RATE_LIMITED: 9,
   // 10 (LICENSE_REQUIRED) is the renet precedent; it lives with the recovery
-  // framework (services/renet/renet-license-contract.ts) and is propagated
-  // verbatim, never remapped, so it is intentionally not duplicated here.
-  // 11-15 are the P4 refusal classes (spec/03 §1), one per class the redesign
-  // introduces. 130 is the SIGINT convention (128+2) for a detached follow.
+  // framework (services/renet/renet-license-contract.ts) and is propagated verbatim, never remapped, so it is intentionally not duplicated here. 11-15 are the P4 refusal classes (spec/03 §1), one per class the redesign introduces. 130 is the SIGINT convention (128+2) for a detached follow.
   AMBIGUOUS: 11,
   STATE_MISMATCH: 12,
   HEALTH_GATE_FAILED: 13,
@@ -141,7 +138,7 @@ export interface UpdateManifest {
 }
 
 // ============================================================================
-// Provider sub-types (still hand-written — not part of the top-level shape)
+// Provider sub-types (still hand-written, not part of the top-level shape)
 // ============================================================================
 
 export interface ProviderSSHKeyConfig {

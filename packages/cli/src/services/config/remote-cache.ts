@@ -2,46 +2,140 @@
  * Offline read-cache for remote-enabled configs.
  *
  * The local config file of a remote-enabled config is a full-content,
- * read-only CACHE of the last successful pull/push — not a bare pointer.
- * Content sections mirror the server copy; host-local sections (`remote`,
- * `state`, `encryption`, plus local `account`/`defaults` overrides) stay
- * host-local. One helper owns that merge so enable, read-refresh,
+ * read-only CACHE of the last successful pull/push, not a bare pointer.
+ * Everything mirrors the server copy except the device-local pointers named by
+ * DEVICE_LOCAL_POINTERS (packages/shared config-schema/sensitivity.ts), the one exclusion list of
+ * config sync (T17). `state` syncs too, merged per repo (see `mergeState`). One helper owns that
+ * merge so enable, read-refresh,
  * mutation-push, `remote refresh`, and the CEK-rotation verify all write the
  * same shape.
  *
  * Cache writes never bump the local `version` counter (they are observations,
- * not declared intent — same rationale as `updateState`). The server's
+ * not declared intent, same rationale as `updateState`). The server's
  * envelope version is authoritative and tracked in `remote.cachedVersion`.
  */
 
+import { DEVICE_LOCAL_POINTERS, RdcConfigSchema } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
+import {
+  type RemoteConfigAdapter,
+  RemoteTeamForbiddenError,
+} from '../../adapters/remote-config-adapter.js';
 import { t } from '../../i18n/index.js';
 import type { RdcConfig, RemoteConfig } from '../../types/index.js';
+import { outputService } from '../core/output.js';
+
+/** Top-level keys the schema declares; anything else in a document is an unknown (newer-CLI) key. */
+const KNOWN_TOP_LEVEL_KEYS: ReadonlySet<string> = new Set(Object.keys(RdcConfigSchema.shape));
+
+function pointerSegments(pointer: string): string[] {
+  return pointer.split('/').slice(1);
+}
+
+/** Set `doc[key]` to `value`, or remove the key when `value` is undefined. */
+function setOrDelete(doc: Record<string, unknown>, key: string, value: unknown): void {
+  if (value === undefined) delete doc[key];
+  else doc[key] = value;
+}
+
+/** Overlay one device-local pointer (one or two segments) from `local` onto `out`, cloning any parent it edits. */
+function overlayPointer(
+  out: Record<string, unknown>,
+  local: Record<string, unknown>,
+  pointer: string
+): void {
+  const [root, ...rest] = pointerSegments(pointer);
+  if (rest.length === 0) {
+    setOrDelete(out, root, local[root]);
+    return;
+  }
+  const child = rest[0];
+  const localValue = (local[root] as Record<string, unknown> | undefined)?.[child];
+  const parent = out[root] as Record<string, unknown> | undefined;
+  if (localValue === undefined && !(parent && child in parent)) return;
+  const edited = { ...(parent ?? {}) };
+  setOrDelete(edited, child, localValue);
+  out[root] = edited;
+}
+
+type RepoStates = NonNullable<NonNullable<RdcConfig['state']>['repos']>;
+
+/** Per repo and tag: the pulled runtime wins where both copies have it, each side's own survives. */
+function mergeRepoStates(
+  pulled: RepoStates | undefined,
+  local: RepoStates | undefined
+): RepoStates {
+  const merged: RepoStates = { ...(local ?? {}) };
+  for (const [repo, tags] of Object.entries(pulled ?? {})) {
+    merged[repo] = { ...(merged[repo] ?? {}), ...tags };
+  }
+  return merged;
+}
 
 /**
- * Merge a pulled (or just-pushed) server copy into the local cache file shape.
- * Pulled content sections win; `remote` (stamped with fresh cache metadata),
- * `state`, `encryption`, and the local `account`/`defaults` overrides are
- * re-applied from `local` — the same precedence `loadRemote` uses in memory.
+ * The `state` a pulled copy leaves in the cache.
+ *
+ * - The pulled copy carries no `state` at all: it was pushed before state synced (T17), so the local
+ *   state is kept whole, and the next push publishes it. This one-time migration is what keeps an
+ *   upgrade from erasing every repo's networkId.
+ * - Otherwise the pulled state wins, except `repos`, merged per repo and tag: a repo only this device
+ *   has runtime for keeps it, and the pulled runtime wins for a repo both have.
+ */
+function mergeState(
+  pulled: RdcConfig['state'],
+  local: RdcConfig['state']
+): RdcConfig['state'] | undefined {
+  if (pulled === undefined) return local;
+  if (local?.repos === undefined) return pulled;
+  return { ...pulled, repos: mergeRepoStates(pulled.repos, local.repos) };
+}
+
+/**
+ * Overlay THIS device's pointers onto a pulled (or just-pushed) server copy. The one
+ * implementation, driven by DEVICE_LOCAL_POINTERS: every writer of a pulled document (the cache
+ * merge, the in-memory load, the push's cache write, the conflict rebase) goes through here.
+ *
+ * - Each device-local pointer takes the LOCAL value, absence included: the pulled value is never
+ *   trusted there (a pull rebuilds `encryption` as plaintext and carries no `remote`).
+ * - `state` syncs, merged by `mergeState` (a pulled copy without state never erases local state).
+ * - Unknown top-level keys from `local` survive unless `pulled` carries the same key (F18, the
+ *   `.loose()` contract in schemas.ts).
+ * - Everything else, `account` and `defaults` included, follows the server with no local override
+ *   (operator ruling D3, PLAN-config-sync-hardening F5).
+ *
+ * Pure: neither input is mutated.
+ */
+export function overlayDeviceLocal(pulled: RdcConfig, local: RdcConfig): RdcConfig {
+  const out: Record<string, unknown> = { ...pulled };
+  const localDoc = local as Record<string, unknown>;
+
+  for (const [key, value] of Object.entries(localDoc)) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key) && !(key in out)) out[key] = value;
+  }
+
+  for (const pointer of DEVICE_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
+  setOrDelete(out, 'state', mergeState(pulled.state, local.state));
+  return out as RdcConfig;
+}
+
+/**
+ * Merge a pulled (or just-pushed) server copy into the local cache file shape: `overlayDeviceLocal`,
+ * plus fresh cache metadata on the `remote` pointer. The local `version` counter is device-local; the
+ * server's envelope version lives in `remote.cachedVersion`.
  */
 export function mergeRemoteIntoCache(
   local: RdcConfig,
   pulled: RdcConfig,
   version: number
 ): RdcConfig {
-  const merged: RdcConfig = {
-    ...pulled,
-    // The local file keeps its own optimistic counter; the server's envelope
-    // version lives in remote.cachedVersion, not here.
-    version: local.version,
-    remote: local.remote
-      ? { ...local.remote, cachedVersion: version, cachedAt: new Date().toISOString() }
-      : undefined,
-    state: local.state,
-    encryption: local.encryption,
-  };
-  if (local.account) merged.account = { ...(pulled.account ?? {}), ...local.account };
-  if (local.defaults) merged.defaults = { ...(pulled.defaults ?? {}), ...local.defaults };
+  const merged = overlayDeviceLocal(pulled, local);
+  if (merged.remote) {
+    merged.remote = {
+      ...merged.remote,
+      cachedVersion: version,
+      cachedAt: new Date().toISOString(),
+    };
+  }
   return merged;
 }
 
@@ -49,15 +143,78 @@ export function mergeRemoteIntoCache(
  * Refresh the on-disk cache of `configName` from a pulled server copy.
  * Loads the current file under lock (decrypted), merges, and saves through
  * the no-bump `updateCache` path (the storage layer re-encrypts per field).
+ *
+ * Returns the merged PLAINTEXT document, exactly what the cache now holds, so an in-memory
+ * reader sees the same device-local pointers and merged `state` the file does.
  */
 export async function writeRemoteCache(
   configName: string,
   pulled: RdcConfig,
   version: number
-): Promise<void> {
-  await configFileStorage.updateCache(configName, (local) =>
-    mergeRemoteIntoCache(local, pulled, version)
-  );
+): Promise<RdcConfig> {
+  let merged: RdcConfig | undefined;
+  await configFileStorage.updateCache(configName, (local) => {
+    merged = mergeRemoteIntoCache(local, pulled, version);
+    return merged;
+  });
+  if (!merged) throw new Error(`Config "${configName}" cache write did not run its merge`);
+  return merged;
+}
+
+/**
+ * What a purged cache keeps: this device's own pointers (DEVICE_LOCAL_POINTERS) and the config id,
+ * with the `remote` pointer's cache stamp removed. Nothing of the store's copy survives, `state` and
+ * unknown keys included, so no read can serve it and the next pull starts from the bare pointer.
+ */
+function deviceLocalOnly(local: RdcConfig): RdcConfig {
+  const out: Record<string, unknown> = { id: local.id };
+  const localDoc = local as Record<string, unknown>;
+  for (const pointer of DEVICE_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
+  if (local.remote) {
+    const pointer = { ...local.remote };
+    delete pointer.cachedVersion;
+    delete pointer.cachedAt;
+    out.remote = pointer;
+  }
+  return out as RdcConfig;
+}
+
+/**
+ * Remove the offline copy of `configName` from this device: the file keeps only its device-local
+ * pointers, and the `.bak` of the previous content goes too. Used when the server says this
+ * account may no longer read the config (team_forbidden, PLAN-config-team-scoping E4). Hygiene
+ * only: plaintext copied out earlier is not recalled, and the warning says so.
+ */
+async function purgeRemoteCache(configName: string): Promise<void> {
+  await configFileStorage.updateCache(configName, deviceLocalOnly);
+  await configFileStorage.removeBackup(configName);
+}
+
+/**
+ * `adapter.pull()` for a read path: when the server refuses the config because this account is no
+ * longer in its team, the offline cache is purged before the refusal propagates, so no later
+ * offline read can serve content the account lost access to.
+ */
+export async function pullOrPurge(
+  adapter: RemoteConfigAdapter,
+  configName: string
+): ReturnType<RemoteConfigAdapter['pull']> {
+  try {
+    return await adapter.pull();
+  } catch (error) {
+    if (error instanceof RemoteTeamForbiddenError) {
+      try {
+        await purgeRemoteCache(configName);
+        outputService.warn(
+          t('commands.config.remote.teamForbiddenCachePurged', { config: configName })
+        );
+      } catch {
+        // The refusal below is what the caller must see; a purge that could not run leaves the
+        // cache stamped, and the next read tries again.
+      }
+    }
+    throw error;
+  }
 }
 
 /** A remote pointer that has been cache-stamped by a successful pull/push. */

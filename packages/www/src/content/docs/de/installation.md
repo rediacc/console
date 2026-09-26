@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 1
 language: de
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
@@ -215,7 +215,7 @@ Keine manuelle Konfiguration erforderlich. Das Installationsskript erkennt den B
 
 ## Remote-Binär-Updates
 
-Wenn Sie Befehle gegen eine Remote-Maschine ausführen, stellt die CLI automatisch die passende `renet`-Binärdatei bereit. Wenn die Binärdatei aktualisiert wird, wird der Route-Server (`rediacc-router`) automatisch neu gestartet, damit er die neue Version übernimmt.
+Befehle, die eine Maschine verändern, etwa Deployments, Backups oder `rdc machine setup`, stellen automatisch die passende `renet`-Binärdatei bereit. Wird die Binärdatei aktualisiert, startet der Route-Server (`rediacc-router`) automatisch neu, damit er die neue Version übernimmt. Rein lesende Befehle wie `rdc machine status` und `rdc repo list` ersetzen die Binärdatei nie: Sie verwenden die bereits auf der Maschine vorhandene Version und geben eine Warnung aus, wenn diese von der Version der CLI abweicht.
 
 Der Neustart ist transparent und verursacht **keine Ausfallzeit**:
 
@@ -225,4 +225,4 @@ Der Neustart ist transparent und verursacht **keine Ausfallzeit**:
 - **Bestehende Client-Verbindungen (HTTP, TCP, UDP) sind nicht betroffen.** Der Route-Server ist ein Konfigurationsanbieter -- er befindet sich nicht im Datenpfad. Traefik verarbeitet den gesamten Datenverkehr direkt.
 - Ihre Anwendungscontainer werden nicht berührt -- nur der Route-Server-Prozess auf Systemebene wird neu gestartet.
 
-Um den automatischen Neustart zu überspringen, übergeben Sie `--skip-router-restart` an einen beliebigen Befehl oder setzen Sie die Umgebungsvariable `REDIACC_SKIP_ROUTER_RESTART=1`.
+Um den automatischen Neustart zu überspringen, übergeben Sie `--skip-router-restart` an einen Befehl, der renet bereitstellt, oder setzen Sie die Umgebungsvariable `REDIACC_SKIP_ROUTER_RESTART=1`.

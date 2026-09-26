@@ -23,7 +23,7 @@ import { hkdfDeriveKey } from './hkdf.js';
  *
  * @returns CryptoKey for AES-256-GCM
  */
-export async function generateCek(): Promise<CryptoKey> {
+export function generateCek(): Promise<CryptoKey> {
   return generateAesKey();
 }
 
@@ -36,7 +36,7 @@ export async function generateCek(): Promise<CryptoKey> {
  * @param serverSecret - Server-side secret (raw bytes)
  * @returns Wrapping key for CEK wrap/unwrap
  */
-export async function deriveWrappingKey(
+export function deriveWrappingKey(
   passkeySecret: Uint8Array,
   serverSecret: Uint8Array
 ): Promise<CryptoKey> {

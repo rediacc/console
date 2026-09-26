@@ -80,8 +80,7 @@ export async function verifyManifestSignature(
   delegatedPublicKeySpki: string
 ): Promise<boolean> {
   try {
-    // Wrap in a fresh ArrayBuffer to satisfy strict TS BufferSource typing
-    // (Uint8Array<ArrayBufferLike> isn't assignable to BufferSource in newer TS).
+    // Wrap in a fresh ArrayBuffer to satisfy strict TS BufferSource typing (Uint8Array<ArrayBufferLike> isn't assignable to BufferSource in newer TS).
     const keyBytes = base64ToBytes(delegatedPublicKeySpki);
     const publicKey = await crypto.subtle.importKey(
       'spki',

@@ -78,13 +78,13 @@ MANAGED_LABELS=(bug enhancement documentation ci bump-minor bump-none)
 # Created on demand immediately before its first use, the nightly-red pattern
 # (see the CREATE_ON_DEMAND allowlist in ../quality/check-label-inventory.sh).
 # The colour and description are asserted equal to .github/labels.yml by
-# test-review-labels.sh, since this file cannot read labels.yml: the post-review
+# test_gate_review_labels.py, since this file cannot read labels.yml: the post-review
 # steps run from a staged copy of .ci alone.
 # "<name>|<color>|<description>", one row per label. A TABLE rather than the
 # three scalars this used to be: bump-none arrived needing exactly the same
 # treatment as `ci`, and a second set of scalars would have been the copy that
 # drifts. Each row is asserted equal to .github/labels.yml by
-# test-review-labels.sh, since this file cannot read labels.yml itself: the
+# test_gate_review_labels.py, since this file cannot read labels.yml itself: the
 # post-review steps run from a staged copy of .ci alone.
 CREATE_ON_DEMAND_LABELS=(
     "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)"
@@ -167,7 +167,7 @@ emit_review_turns() {
     # one survival is not a floor. MAX_TURNS is a real cost ceiling, so above
     # MAX_TURNS/TURNS_PER_KLOC*1000 lines (~5600) density necessarily decays -- there the
     # budget is simply the maximum, and breadth-first reading in the prompt is what carries
-    # it. check-review-turn-capacity.sh enforces exactly that split.
+    # it. check:ci-review-turn-capacity enforces exactly that split.
     local per_kloc=25 max_turns=140 min_turns=50
     local kloc=$(((${changed:-0} + 999) / 1000))
     local turns=$((kloc * per_kloc))

@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-staging-tag-guard.sh blob 669c6953216a759054ab3d380c616444b2b45989
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ <root>/.ci/scripts/docker/cleanup-staging.sh not found -- nothing was verified

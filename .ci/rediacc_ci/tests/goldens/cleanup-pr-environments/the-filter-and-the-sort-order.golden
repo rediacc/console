@@ -1,0 +1,20 @@
+# twin .ci/scripts/housekeeping/cleanup-pr-environments.sh blob 4d8000b5648f45a1ac73e0f20a4eb47002026c7e
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Cleaning up empty pr-N environments in acme/widget
+✓ Deleted pr-2 (PR #2 CLOSED)
+✓ Deleted pr-010 (PR #010 CLOSED)
+✓ Deleted pr-10 (PR #10 CLOSED)
+✓ Deleted 3 of 3 pr-N environment(s); 0 skipped
+--- calls ---
+api	repos/acme/widget/environments	--paginate	--jq	.environments[]?.name
+pr	view	2	--repo	acme/widget	--json	state	--jq	.state
+api	repos/acme/widget/deployments?environment=pr-2&per_page=100	--jq	length
+api	-X	DELETE	repos/acme/widget/environments/pr-2
+pr	view	010	--repo	acme/widget	--json	state	--jq	.state
+api	repos/acme/widget/deployments?environment=pr-010&per_page=100	--jq	length
+api	-X	DELETE	repos/acme/widget/environments/pr-010
+pr	view	10	--repo	acme/widget	--json	state	--jq	.state
+api	repos/acme/widget/deployments?environment=pr-10&per_page=100	--jq	length
+api	-X	DELETE	repos/acme/widget/environments/pr-10

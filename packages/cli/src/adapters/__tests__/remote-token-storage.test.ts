@@ -75,6 +75,76 @@ describe('RemoteTokenStorage', () => {
     });
   });
 
+  describe('withLease', () => {
+    it('runs one operation at a time per config, each starting from the token the previous one persisted', async () => {
+      await storage.set('shared', { token: 'tok_0', wrappedCek: 'cek' });
+      // A second process: its own instance on the same directory, so the lock is the only coordination.
+      const other = new RemoteTokenStorage(testDir);
+      const seen: string[] = [];
+      let inside = 0;
+      let overlapped = false;
+      const op = (s: RemoteTokenStorage) =>
+        s.withLease('shared', async (lease) => {
+          inside++;
+          if (inside > 1) overlapped = true;
+          const sent = lease.token ?? '';
+          seen.push(sent);
+          await new Promise((r) => setTimeout(r, 5));
+          const next = `tok_${Number(sent.slice(4)) + 1}`;
+          await lease.update(next);
+          // A second request of the same operation sends the rotated token.
+          expect(lease.token).toBe(next);
+          await lease.update(`tok_${Number(next.slice(4)) + 1}`);
+          inside--;
+        });
+
+      await Promise.all(Array.from({ length: 6 }, (_, i) => op(i % 2 === 0 ? storage : other)));
+
+      expect(overlapped).toBe(false);
+      // Every operation started from a token nobody had sent before.
+      expect(new Set(seen).size).toBe(6);
+      expect(await storage.get('shared')).toEqual({ token: 'tok_12', wrappedCek: 'cek' });
+    });
+
+    it('hands a config without a token file a null lease whose update throws', async () => {
+      await storage.withLease('missing', async (lease) => {
+        expect(lease.data).toBeNull();
+        expect(lease.token).toBeUndefined();
+        await expect(lease.update('tok')).rejects.toThrow('No token file for config "missing"');
+      });
+      expect(await storage.get('missing')).toBeNull();
+    });
+  });
+
+  describe('sync record (T8 high-water mark)', () => {
+    const record = {
+      binding: 'store/config/',
+      highWater: 7,
+      envelopeVersion: 3 as const,
+      fckSalt: 'salt',
+    };
+
+    it('a lease persists the record and sees it back', async () => {
+      await storage.set('myconfig', { token: 'tok', wrappedCek: 'cek' });
+      await storage.withLease('myconfig', async (lease) => {
+        expect(lease.sync).toBeUndefined();
+        await lease.recordSync(record);
+        expect(lease.sync).toEqual(record);
+      });
+      expect((await storage.get('myconfig'))?.sync).toEqual(record);
+    });
+
+    it('re-enrolling (set without a record) keeps the versions the device saw', async () => {
+      await storage.set('myconfig', { token: 'tok', wrappedCek: 'cek', sync: record });
+      await storage.set('myconfig', { token: 'tok_new', wrappedCek: 'cek_new' });
+      expect(await storage.get('myconfig')).toEqual({
+        token: 'tok_new',
+        wrappedCek: 'cek_new',
+        sync: record,
+      });
+    });
+  });
+
   describe('delete', () => {
     it('should remove the file', async () => {
       await storage.set('myconfig', { token: 'tok_1', wrappedCek: 'cek_1' });

@@ -128,26 +128,14 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
 
     const output = await pushOutput(runner, vault);
 
-    // ASSERTED ON WHAT BOTH REFUSALS SHARE. There are two retirement messages,
-    // not one: cmd/renet's errStorageRetired says "backup push --to storage is
-    // retired", while the bridge functions layer this test drives says
-    // "backup_push with a 'storage' destination is retired". The first version
-    // of this test pinned `storage is retired`, which only the CLI wording
-    // contains, so it failed against the layer it actually exercises.
+    // ASSERTED ON WHAT BOTH REFUSALS SHARE. There are two retirement messages, not one: cmd/renet's errStorageRetired says "backup push --to storage is retired", while the bridge functions layer this test drives says "backup_push with a 'storage' destination is retired". The first version of this test pinned `storage is retired`, which only the CLI wording contains, so it failed
+    // against the layer it actually exercises.
     expect(output).toContain('is retired');
     expect(output).toContain('rclone cloud arm');
-    // The sentence must carry the operator somewhere, or a refusal is just a
-    // dead end with better grammar.
+    // The sentence must carry the operator somewhere, or a refusal is just a dead end with better grammar.
     //
-    // ASSERTED BY THE DISTINCTIVE FRAGMENTS, not the bare verb names, and this
-    // comment avoids spelling them for the same reason. check-e2e-coverage
-    // counts a verb literal appearing ANYWHERE in a live suite -- assertions and
-    // comments alike -- as that verb being exercised. Naming the restore verb
-    // here made it look covered by a suite that only ever reads it inside an
-    // error string, and the gate then demanded its allowlist entry be deleted
-    // as a debt paid. That would have recorded coverage which does not exist.
-    // `--at <snapshot>` and `chunk store` pin the same guidance without
-    // pretending anything ran.
+    // ASSERTED BY THE DISTINCTIVE FRAGMENTS, not the bare verb names, and this comment avoids spelling them for the same reason. check-e2e-coverage counts a verb literal appearing ANYWHERE in a live suite -- assertions and comments alike -- as that verb being exercised. Naming the restore verb here made it look covered by a suite that only ever reads it inside an error string, and
+    // the gate then demanded its allowlist entry be deleted as a debt paid. That would have recorded coverage which does not exist. `--at <snapshot>` and `chunk store` pin the same guidance without pretending anything ran.
     expect(output).toContain('chunk store');
     expect(output).toContain('--at <snapshot>');
     // And the retired flags must not reappear in the emitted command.
@@ -176,8 +164,7 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
   });
 
   test('CONTROL: machine transfer is untouched by the retirement', async () => {
-    // Without this, a renet that refused EVERY destination would satisfy both
-    // assertions above while having broken the half that still ships.
+    // Without this, a renet that refused EVERY destination would satisfy both assertions above while having broken the half that still ships.
     const vault = VaultBuilder.forPush()
       .withTeam(TEST_TEAM)
       .withRepository('test-repo-guid', 'machine-still-works-repo')

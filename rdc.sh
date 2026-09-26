@@ -2,58 +2,11 @@
 # Standalone CLI runner for rdc (development mode)
 # Auto-builds renet from Go source and makes it available to the CLI.
 #
-# ============================================================================
-# DEMO PREP CHEAT-SHEET  (read this before a live demo)
-# ============================================================================
-# Install a clean, license-free binary as the system `rdc` (renet built with
-# -tags nolicense, no account-server calls), then repoint the PATH symlink once:
-#
-#     ./rdc.sh --native
-#     ln -sf ../share/rediacc/bin/rdc ~/.local/bin/rdc
-#
-# After that, `rdc` from any terminal is the binary (no dev-wrapper output).
-#
-# ----------------------------------------------------------------------------
-# URL anatomy (demo-stackoverflow); forks add the -fork-<TAG> infix:
-#
-#            SERVICE NAME        PROJECT/WORKLOAD    SERVER      TOP.TLD
-#
-# https://pgadmin              .demo-stackoverflow .hostinger  .rediacc.io
-# https://pgadmin-fork-joseph  .demo-stackoverflow .hostinger  .rediacc.io
-# https://pgadmin-fork-abraham .demo-stackoverflow .hostinger  .rediacc.io
-#
-# ----------------------------------------------------------------------------
-# Repos on `hostinger` (forks are O(1) regardless of size). NOTE: gitlab uses
-# its OWN domain, not the .<repo>.<machine> shape above:
-#
-# demo-stackoverflow  128 GB  fork+up ~90s
-#   https://pgadmin.demo-stackoverflow.hostinger.rediacc.io
-#   https://pgadmin-fork-fabrikam.demo-stackoverflow.hostinger.rediacc.io
-#
-# gitlab               14 GB  fork+up ~5min (heavy)
-#   https://gitlab.rediacc.io/
-#   https://gitlab-fork-fabrikam.hostinger.rediacc.io/
-#
-# ----------------------------------------------------------------------------
-# Fork / connect / delete loop:
-#
-# rdc repo fork --parent demo-stackoverflow --machine hostinger --tag joseph  --up
-# rdc repo fork --parent demo-stackoverflow --machine hostinger --tag abraham --up
-#
-# rdc vscode connect --machine hostinger -r demo-stackoverflow
-#
-# rdc repo delete --name demo-stackoverflow:abc --machine hostinger   # destroys containers/volumes/image
-# rdc config repository remove --name demo-stackoverflow:abc          # delete keeps the config entry; this drops it
-#
-# ----------------------------------------------------------------------------
-# Agent-style demo prompts (paste to an assistant):
-#
-# "Use rdc (a locally installed CLI). On the hostinger machine, query the
-#  production demo-stackoverflow Postgres DB: top 10 tags by count."
-# "...how many rows are in the posts table of demo-stackoverflow on hostinger?"
-# "...connect to demo-stackoverflow on hostinger and drop the votes table
-#  (testing failure recovery)."
-# ============================================================================
+# The demo-prep cheat sheet that stood here (URL anatomy, the fork/connect/delete
+# loop, the repos on `hostinger`, the agent-style prompts) moved to
+# docs/agent-reference/local-env.md on 2026-09-09, beside the `--native` section that
+# already documented half of it. 53 lines of demo runbook in the wrapper a developer
+# types to run an ordinary CLI command is not where a runbook belongs.
 
 set -euo pipefail
 
@@ -64,98 +17,32 @@ ROOT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/lib/local-common.sh"
 
-# --native: build the real single-executable binary (Node SEA) from local source
-# and install it over the user's rdc at ~/.local/share/rediacc/bin/rdc, instead of
-# running via the dev bundle. Use it to exercise SEA-only behaviors the bundle
-# cannot reach (embedded-renet extraction, auto-update gating). The dev SEA
-# self-disables auto-update via the VERSION === "0.0.0-dev" gate in
-# packages/cli/src/utils/platform.ts::isUpdateDisabled, so it won't be clobbered
-# on the next invocation.
+# --native: build the real single-executable binary (Node SEA) from local source and
+# install it over the user's rdc, instead of running via the dev bundle. Use it to
+# exercise SEA-only behaviours the bundle cannot reach (embedded-renet extraction,
+# auto-update gating). docs/agent-reference/local-env.md carries the loop.
 #
-# Steps performed (must match the manual sequence documented in CLAUDE.md):
-#   1. Cross-build renet for BOTH linux arches into private/bin/renet-linux-<arch>
-#      with -tags nolicense, so the SEA can provision an amd64 OR arm64 remote
-#      (the embedded provisioner picks the arch matching each machine's uname -m).
-#   2. Run .ci/scripts/build/build-cli-executables.sh --platform $P --arch $A
-#      to assemble the SEA at dist/cli/rdc-$P-$A (injected by sea-inject/, which
-#      streams the blob and has no size ceiling — full k8s assets embed fine).
-#   3. Back up the existing user binary to *.old and replace it.
+# THE BUILD ITSELF IS NOT HERE ANY MORE. It was 93 lines of this file, 60 of them code,
+# including two `case "$(uname ...)"` blocks that were copies four and five of a mapping
+# .ci/rediacc_ci/core/platform.py already owned and names by line. .ci/rediacc_ci/native.py
+# holds it now, with `system` and `machine` as ARGUMENTS rather than uname calls, so
+# check:ci-rdc-native drives the linux, mac and win arms from one Linux box -- in bash the
+# mac and win arms were never once executed by anything in this repository.
+#
+# Do not re-inline it. check:ci-rdc-native holds this file to a line ceiling for the same
+# reason .ci/scripts/test/gates/test-run-sh.sh holds run.sh to one.
 if [[ "${1:-}" == "--native" ]]; then
     shift
-    # Detect platform + arch + executable suffix from uname. The .exe suffix
-    # matters because build-cli-executables.sh emits rdc-win-<arch>.exe and
-    # the auto-update housekeeping in packages/cli/src/utils/platform.ts
-    # expects the backup at <base>.old<ext> (rdc.old / rdc.old.exe).
-    case "$(uname -s)" in
-        Linux)
-            _ovr_platform="linux"
-            _ovr_exe=""
-            ;;
-        Darwin)
-            _ovr_platform="mac"
-            _ovr_exe=""
-            ;;
-        MINGW* | MSYS* | CYGWIN*)
-            _ovr_platform="win"
-            _ovr_exe=".exe"
-            ;;
-        *)
-            log_error "Unsupported platform $(uname -s) for --native"
-            exit 1
-            ;;
-    esac
-    case "$(uname -m)" in
-        x86_64 | amd64)
-            _ovr_arch="x64"
-            ;;
-        aarch64 | arm64)
-            _ovr_arch="arm64"
-            ;;
-        *)
-            log_error "Unsupported arch $(uname -m) for --native"
-            exit 1
-            ;;
-    esac
-    # The SEA bundler resolves shared / provisioning through their published
-    # dist/ outputs (the SSH/SFTP/sync code now lives inside packages/cli
-    # under src/remote). Without rebuilding them first, edits to those packages
-    # get silently dropped from the bundle.
-    check_node_version "$NODE_VERSION_MIN"
-    ensure_deps
-    ensure_packages_built
-    # Build renet for BOTH linux arches into the slots build-cli-executables.sh
-    # embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries
-    # for remote provisioning, and a remote machine may be amd64 or arm64 — the
-    # embedded provisioner sends the one matching each machine's `uname -m`, so
-    # both must be present. Delegated to build.sh's stage_linux so the per-arch
-    # cross-compile lives in exactly one place (shared with dev/build).
-    log_step "Cross-building renet (both linux arches) → private/bin"
-    (cd "$ROOT_DIR/private/renet" && ./build.sh stage_linux "$ROOT_DIR/private/bin")
-    log_step "Building SEA for $_ovr_platform/$_ovr_arch"
-    bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" \
-        --platform "$_ovr_platform" --arch "$_ovr_arch"
-    _ovr_built="$ROOT_DIR/dist/cli/rdc-${_ovr_platform}-${_ovr_arch}${_ovr_exe}"
-    if [[ ! -f "$_ovr_built" ]]; then
-        log_error "Built SEA not found at $_ovr_built"
+    # NAME THE MISSING INTERPRETER, the way run.sh:44-50 does. Without this the
+    # failure is a bare exit 127 and the word `python3`, on a flag nobody has any
+    # reason to know is Python.
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_error "--native is served by the Python CI package, and python3 is not on PATH."
+        log_error "Install it, or run .ci/bootstrap.sh which provisions this toolchain."
         exit 1
     fi
-    _ovr_dest="$HOME/.local/share/rediacc/bin/rdc${_ovr_exe}"
-    if [[ ! -d "$(dirname "$_ovr_dest")" ]]; then
-        log_error "Install dir $(dirname "$_ovr_dest") does not exist — is rdc installed?"
-        exit 1
-    fi
-    # Backup naming matches getOldBinaryPath() in
-    # packages/cli/src/utils/platform.ts so cleanupOldBinary() finds it:
-    # rdc.old on Linux/macOS, rdc.old.exe on Windows.
-    _ovr_backup="${_ovr_dest%${_ovr_exe}}.old${_ovr_exe}"
-    if [[ -f "$_ovr_dest" ]]; then
-        cp -f "$_ovr_dest" "$_ovr_backup"
-    fi
-    cp -f "$_ovr_built" "$_ovr_dest"
-    chmod +x "$_ovr_dest"
-    log_step "Installed dev SEA → $_ovr_dest (backup at $_ovr_backup)"
-    "$_ovr_dest" --version
-    exit 0
+    # exec, not a call: a multi-hour build's exit code and signals are its own.
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.native "$@"
 fi
 
 check_node_version "$NODE_VERSION_MIN"
@@ -205,63 +92,35 @@ fi
 renet_bin_dir="$ROOT_DIR/private/renet/bin"
 export PATH="$renet_bin_dir:$PATH"
 
-# Production is the default; dev is the one explicit opt-in mode on top. Every
-# universe is now a named CLI config (one config = server URL + E2E key + update
-# channel + token), so there are no per-mode token-file or env exports here —
-# selecting a config is all that changes:
-#   default       → user's real config "rediacc" in ~/.config/rediacc. The CLI's
-#                   own resolution applies: account server + update channel come
-#                   from that config's account section, falling back to the
-#                   built-in production defaults, same as an installed rdc.
-#   RDC_DEV=1     → the named config "dev" (REDIACC_CONFIG=dev). We auto-seed
-#     (or --dev)    ~/.config/rediacc/dev.json with the gateway URL and E2E
-#                   public key READ (never sourced) from private/account/.env.
-#                   Requires a running dev gateway: ./run.sh account dev
-#                   (default port 4800); we probe its /server-info first.
-#   bench         → no dedicated flag. Use the named config "bench":
-#                     ./rdc.sh --config bench <cmd>
-#                   Seed it once (token lands in api-token-bench.json, isolated
-#                   from dev and production by config name):
-#                     ./rdc.sh --config bench subscription login \
-#                         --server https://bench.rediacc.com
-#
-# Independent renet build modifier:
-#   RDC_RENET_LICENSE=1 → Build dev renet WITHOUT the --nolicense build tag, so
-#                         the local binary enforces repo licenses like a prod
-#                         release. Used to reproduce license-flow bugs locally
-#                         (e.g. rediacc/console#482) without a release cycle.
-#                         When set, also export ACCOUNT_ED25519_PUBLIC_KEY to
-#                         the production key to validate prod-issued licenses.
+# WHICH UNIVERSE THIS RUNS AGAINST. Production is the default and `--dev` (or
+# RDC_DEV=1) is the one opt-in on top; bench is not a flag, it is the named config
+# `./rdc.sh --config bench <cmd>`. Every universe is a named CLI config carrying its
+# own server, keys and token, so selecting one is the ONLY thing that changes here.
+# The 27 lines of prose that stood here said what docs/agent-reference/local-env.md
+# already says under 'The ./rdc.sh wrappers', including RDC_RENET_LICENSE=1, which is
+# an independent renet build modifier this file does not read at all.
 if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift
 fi
 if [[ "${RDC_DEV:-0}" == "1" ]]; then
-    # Read EXACTLY two values from the dev gateway's env file, by grep. NEVER
-    # `source` it (not even with `set -a`): private/account/.env also holds
-    # ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, ACCOUNT_JWT_SECRET and ACCOUNT_SERVER_API_KEY, and
-    # sourcing would leak every one of those secrets into the CLI process
-    # environment. grep + cut extracts only the two public values the dev
-    # config needs — the gateway URL and the server's X25519 public key.
-    account_env="$ROOT_DIR/private/account/.env"
-    dev_server=$(grep -E '^REDIACC_ACCOUNT_SERVER=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
-    dev_e2e_key=$(grep -E '^ACCOUNT_X25519_PUBLIC_KEY=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
-
-    # Fail fast when the gateway is not configured — a half-configured dev mode
-    # would otherwise surface as a confusing CLI error later.
-    if [[ -z "$dev_server" ]]; then
-        log_error "RDC_DEV=1 but no dev gateway configured (private/account/.env missing REDIACC_ACCOUNT_SERVER)."
+    # Two PUBLIC values only, both from the RUNNING gateway: its port from this
+    # worktree's .account-state and its X25519 key from /.well-known/server-info.
+    # Nothing under private/account is read or sourced, so no secret reaches the CLI.
+    dev_port=$(grep -E '^gateway_port=' "$ROOT_DIR/.account-state" 2>/dev/null | tail -1 | cut -d= -f2- || true)
+    if [[ -z "$dev_port" ]]; then
+        log_error "RDC_DEV=1 but no running dev gateway recorded in .account-state."
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
-
-    # Probe liveness so a stale/unstarted gateway fails here with a clear
-    # message instead of a confusing CLI error deep in a later request.
-    if ! curl -fsS --max-time 2 "$dev_server/account/api/v1/.well-known/server-info" >/dev/null 2>&1; then
+    dev_server="http://localhost:$dev_port"
+    if ! server_info=$(curl -fsS --max-time 2 "$dev_server/account/api/v1/.well-known/server-info" 2>/dev/null); then
         log_error "Dev gateway not responding at $dev_server"
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
+    # An empty key list yields "", and the seeder below then leaves e2ePublicKey alone.
+    dev_e2e_key=$(node -e 'let k="";try{k=JSON.parse(process.argv[1])?.e2e?.keys?.[0]?.publicKeySpki??""}catch{}process.stdout.write(String(k))' "$server_info")
 
     # Seed/patch the "dev" named config. node is guaranteed present (we exec it
     # below); jq is not. The seeder writes a minimal v3 config when the file is

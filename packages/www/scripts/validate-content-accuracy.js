@@ -117,8 +117,7 @@ function extractJsonRdcCommands(jsonContent, file) {
 // Shared CLI command validation
 // ---------------------------------------------------------------------------
 
-// Inline docs legitimately mention commands without full arguments.
-// Only report errors that indicate a genuinely wrong command or flag.
+// Inline docs legitimately mention commands without full arguments. Only report errors that indicate a genuinely wrong command or flag.
 const INLINE_REPORTABLE_REASONS = new Set([
   'unknown-command',
   'unknown-option',
@@ -248,9 +247,7 @@ function printSummary(errors, warnings) {
   console.log(colors.bold('Content Accuracy Validation'));
   console.log('='.repeat(60));
 
-  // NOTE: a clean run must still reach the backlog check below. Zero errors against a non-empty
-  // baseline is the stale-entry case — short-circuiting here is what let 13 already-fixed
-  // entries sit in the baseline unnoticed, each one pre-authorising 16 future violations.
+  // NOTE: a clean run must still reach the backlog check below. Zero errors against a non-empty baseline is the stale-entry case — short-circuiting here is what let 13 already-fixed entries sit in the baseline unnoticed, each one pre-authorising 16 future violations.
   if (errors.length === 0 && warnings.length === 0) {
     const stale = findRegressions(errors, loadBacklog(BASELINE_PATH));
     if (stale.length === 0) {
@@ -300,10 +297,7 @@ function printSummary(errors, warnings) {
     }
   }
 
-  // The frozen P7 backlog: see scripts/lib/p7-backlog.js for the BLOCKER and the
-  // self-destruct condition. The backlog is a RATCHET: a NEW doc or a GROWING count fails, and
-  // so does a count that FELL or an entry whose violations are all gone. (BASELINE_PATH is
-  // declared at the top of this function — the clean-run path above needs it as well.)
+  // The frozen P7 backlog: see scripts/lib/p7-backlog.js for the BLOCKER and the self-destruct condition. The backlog is a RATCHET: a NEW doc or a GROWING count fails, and so does a count that FELL or an entry whose violations are all gone. (BASELINE_PATH is declared at the top of this function — the clean-run path above needs it as well.)
   if (process.argv.includes('--write-baseline')) {
     const { files, violations } = writeBacklog(BASELINE_PATH, errors);
     console.log(colors.yellow(`Wrote P7 backlog: ${files} files, ${violations} violations.`));

@@ -2,15 +2,11 @@
 
 ## The Full Stack
 
-Phase 3 connects Terraform (infra) → Ansible (orchestration) → rdc (app deployment)
-into cohesive, reusable workflows.
+Phase 3 connects Terraform (infra) → Ansible (orchestration) → rdc (app deployment) into cohesive, reusable workflows.
 
 ### Architectural Rule: Always Use `rdc`, Never `renet`
 
-All integration patterns call the `rdc` CLI only. Renet is a low-level internal
-component managed by rdc. The Terraform provider and Ansible modules MUST never
-call renet directly (no `ssh user@machine sudo renet ...` patterns). If rdc is
-missing a command or JSON output, the fix goes into rdc — not a renet bypass.
+All integration patterns call the `rdc` CLI only. Renet is a low-level internal component managed by rdc. The Terraform provider and Ansible modules MUST never call renet directly (no `ssh user@machine sudo renet ...` patterns). If rdc is missing a command or JSON output, the fix goes into rdc — not a renet bypass.
 
 ### JSON Output Behavior
 
@@ -19,8 +15,7 @@ missing a command or JSON output, the fix goes into rdc — not a renet bypass.
 - **Lifecycle commands** (`repo create`, `repo up`, etc.) stream renet's output
   directly — only the exit code matters (0 = success)
 - Both Ansible modules and the Terraform provider handle this via separate
-  methods: `run()`/`RunQuery()` for queries, `run_lifecycle()`/`RunLifecycle()`
-  for mutations
+  methods: `run()`/`RunQuery()` for queries, `run_lifecycle()`/`RunLifecycle()` for mutations
 
 ## When to Use Which Tool
 
@@ -37,14 +32,11 @@ missing a command or JSON output, the fix goes into rdc — not a renet bypass.
 | Canary release with real data | Ansible only | Fork → deploy new version → validate → promote or discard |
 | Nightly DR validation | Ansible only | Fork production → run DR playbook → verify → unfork |
 
-**Rule of thumb:** Terraform for "what should exist", Ansible for "what should happen".
-Terraform is poor at procedural workflows (backup → migrate → verify → cleanup).
-Ansible is poor at declarative state management (drift detection, dependency graph).
+**Rule of thumb:** Terraform for "what should exist", Ansible for "what should happen". Terraform is poor at procedural workflows (backup → migrate → verify → cleanup). Ansible is poor at declarative state management (drift detection, dependency graph).
 
 ## Pattern 1: Terraform Provisions, Ansible Deploys
 
-The most common pattern. Terraform creates infrastructure, outputs feed
-Ansible's dynamic inventory, Ansible orchestrates rdc across the fleet.
+The most common pattern. Terraform creates infrastructure, outputs feed Ansible's dynamic inventory, Ansible orchestrates rdc across the fleet.
 
 ### Flow
 
@@ -207,8 +199,7 @@ plugin: rediacc.console.rediacc
 
 ## Pattern 2: Terraform-Only (Simple Deployments)
 
-For simpler setups where fleet orchestration isn't needed, Terraform
-manages everything declaratively:
+For simpler setups where fleet orchestration isn't needed, Terraform manages everything declaratively:
 
 ```hcl
 # Everything in one terraform apply
@@ -529,9 +520,7 @@ output "health" {
 
 ### Pattern 6: "I Already Have Stuff Running" (Import Workflow)
 
-The most common real-world scenario. Users have existing rdc machines and
-repos running in production. They want to adopt Terraform/Ansible without
-downtime or recreation.
+The most common real-world scenario. Users have existing rdc machines and repos running in production. They want to adopt Terraform/Ansible without downtime or recreation.
 
 **Step 1: Import machines into Terraform**
 ```hcl
@@ -573,14 +562,11 @@ resource "rediacc_repository" "app" {
 
 **Step 4: New resources via Terraform, existing via rdc**
 
-Keep managing existing repos with `rdc` directly. Only add new repos to
-Terraform as needed. No all-or-nothing migration required.
+Keep managing existing repos with `rdc` directly. Only add new repos to Terraform as needed. No all-or-nothing migration required.
 
 ### The Kamal Model: TF for Machines, CLI for Apps
 
-Inspired by 37signals' Kamal: use Terraform for infrastructure provisioning
-(VMs, DNS, firewalls, machine registration) and `rdc` CLI directly for
-application management. This is the natural starting point for most users:
+Inspired by 37signals' Kamal: use Terraform for infrastructure provisioning (VMs, DNS, firewalls, machine registration) and `rdc` CLI directly for application management. This is the natural starting point for most users:
 
 ```
 Terraform manages:          rdc manages (directly):
@@ -596,15 +582,11 @@ Ansible adds value at:
 └── DR runbooks
 ```
 
-This works because Terraform's value is declarative infrastructure management
-(what should exist), while `rdc`'s value is the actual deployment workflow
-(encrypted repos, Docker isolation, backup). They complement without overlapping.
+This works because Terraform's value is declarative infrastructure management (what should exist), while `rdc`'s value is the actual deployment workflow (encrypted repos, Docker isolation, backup). They complement without overlapping.
 
 ### Coexistence with Manual Operations
 
-The tools must coexist with manual `rdc` usage. Users will always run
-`rdc machine info`, `rdc repo up`, `rdc term` directly. The IaC tools
-should not break when out-of-band changes happen:
+The tools must coexist with manual `rdc` usage. Users will always run `rdc machine info`, `rdc repo up`, `rdc term` directly. The IaC tools should not break when out-of-band changes happen:
 
 - **Terraform Read()** detects drift and shows it in `plan` output
 - **Ansible check mode** queries current state before acting
@@ -613,8 +595,7 @@ should not break when out-of-band changes happen:
 
 ## Pattern 6: Preview Environments via Ceph Fork
 
-The infrastructure equivalent of Vercel preview deployments — every PR gets a
-complete copy of the production stack with real data, created in < 2 seconds.
+The infrastructure equivalent of Vercel preview deployments — every PR gets a complete copy of the production stack with real data, created in < 2 seconds.
 
 ### Ansible Playbook (preview.yml)
 
@@ -689,9 +670,7 @@ resource "null_resource" "deploy_pr" {
 
 ## Pattern 7: Canary Release with Real Data
 
-Fork production data → deploy new version → validate → promote or discard.
-Unlike traditional canary deploys that use empty environments, this tests
-against an exact copy of production data.
+Fork production data → deploy new version → validate → promote or discard. Unlike traditional canary deploys that use empty environments, this tests against an exact copy of production data.
 
 ### Ansible Playbook (canary.yml)
 
@@ -751,10 +730,7 @@ against an exact copy of production data.
 
 ## Pattern 8: Nightly DR Validation
 
-Fork production every night → run full DR playbook against the fork →
-verify all services recover → unfork. Actual disaster recovery testing
-with real data, automated. This is what Netflix's Chaos Engineering aims
-for but is typically too expensive to do with full data copies.
+Fork production every night → run full DR playbook against the fork → verify all services recover → unfork. Actual disaster recovery testing with real data, automated. This is what Netflix's Chaos Engineering aims for but is typically too expensive to do with full data copies.
 
 ### Ansible Playbook (dr-validate.yml)
 
@@ -838,37 +814,24 @@ Ansible/Terraform should NEVER:
 
 ### Don't manage the same resource in both tools
 
-If Terraform manages `rediacc_repository.app`, Ansible should NOT also create
-or delete that repo. Use one tool for lifecycle, the other for orchestration.
+If Terraform manages `rediacc_repository.app`, Ansible should NOT also create or delete that repo. Use one tool for lifecycle, the other for orchestration.
 Good: TF creates repos, Ansible does rolling redeploys.
 Bad: TF creates repos, Ansible also creates repos on different machines.
 
 ### Don't run Terraform and Ansible concurrently against the same config
 
-rdc's config file has a `version` field for conflict detection. Running
-`terraform apply` and `ansible-playbook` simultaneously against the same
-config will cause version conflicts. Sequence them: TF first, then Ansible.
+rdc's config file has a `version` field for conflict detection. Running `terraform apply` and `ansible-playbook` simultaneously against the same config will cause version conflicts. Sequence them: TF first, then Ansible.
 
 ### Don't bypass data safety guardrails
 
-Never use `terraform destroy -auto-approve` in production without
-`backup_before_destroy = true` on all repository resources. Never use
-Ansible `state: absent` without `force: true` and a preceding backup task.
+Never use `terraform destroy -auto-approve` in production without `backup_before_destroy = true` on all repository resources. Never use Ansible `state: absent` without `force: true` and a preceding backup task.
 
 ## Lessons from Similar Projects
 
-**From the Dokku Terraform provider:** Keep the transport layer (SSH/exec)
-separate from domain logic. The Dokku provider has `ssh.go` → `dokku.go` →
-`resource_*.go`, which makes it easy to test each layer independently.
+**From the Dokku Terraform provider:** Keep the transport layer (SSH/exec) separate from domain logic. The Dokku provider has `ssh.go` → `dokku.go` → `resource_*.go`, which makes it easy to test each layer independently.
 
-**From community.docker Ansible collection:** Idempotency detection by comparing
-desired vs actual state is fragile when the underlying tool changes output format.
-Pin to structured JSON output and version-gate parsing logic.
+**From community.docker Ansible collection:** Idempotency detection by comparing desired vs actual state is fragile when the underlying tool changes output format. Pin to structured JSON output and version-gate parsing logic.
 
-**From Google's Terraform provider:** Per-resource mutex locking prevents
-concurrent modification of the same cloud resource. Essential for CLI-wrapper
-providers where the underlying tool doesn't handle concurrency.
+**From Google's Terraform provider:** Per-resource mutex locking prevents concurrent modification of the same cloud resource. Essential for CLI-wrapper providers where the underlying tool doesn't handle concurrency.
 
-**From the Shell Terraform provider:** A `read` script that re-queries actual
-state is the key to drift detection. Compare output to previously stored state
-to detect out-of-band changes.
+**From the Shell Terraform provider:** A `read` script that re-queries actual state is the key to drift detection. Compare output to previously stored state to detect out-of-band changes.

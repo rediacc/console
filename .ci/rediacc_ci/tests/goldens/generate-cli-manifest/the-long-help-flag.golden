@@ -1,0 +1,10 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 0
+--- stdout ---
+Usage: <SELF> --version VERSION [--input DIR] [--output PATH] [--repo REPO] [--channel CHANNEL]
+--- stderr ---
+--- calls ---
+--- files ---
+{
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

@@ -18,8 +18,7 @@ const machineEventTypes = [
   'cli.machine.health',
   'cli.machine.id',
   'cli.machine.list',
-  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts),
-  // which prunes orphaned network units on the machine.
+  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts), which prunes orphaned network units on the machine.
   'cli.network_prune',
   'cli.machine.match',
   'cli.machine.mismatch',
@@ -73,20 +72,12 @@ const backupEventTypes = [
   'cli.backup.list',
   'cli.backup.pull',
   'cli.backup.push',
-  // `backup_restore` is the chunk-store restore verb. It is deliberately
-  // TierNone while `backup_pull` is TierRepoLicenseFull, but the tier says
-  // nothing about auditability: it mutates a repo, so it records like the rest.
+  // `backup_restore` is the chunk-store restore verb. It is deliberately TierNone while `backup_pull` is TierRepoLicenseFull, but the tier says nothing about auditability: it mutates a repo, so it records like the rest.
   'cli.backup.restore',
 ] as const;
 
-// Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes
-// through a `dispatch(functionName, …)` helper rather than a `functionName: '…'`
-// literal, so check-audit-coverage.sh — which greps for the literal — cannot see most
-// of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting
-// event types absent from this union, which makes functionNameToEventType return null
-// and the audit record vanish, on exactly the class-D ops (attach, delete, resize)
-// that most need an audit trail. `init`, `ceph_init` and `ceph_unfork` are the mirror
-// image: literals for functions that no longer exist (#34 / the P4 rename).
+// Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes through a `dispatch(functionName, …)` helper rather than a `functionName: '…'` literal, so check_audit_coverage.py — which greps for the literal — cannot see most of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting event types absent from this union, which makes
+// functionNameToEventType return null and the audit record vanish, on exactly the class-D ops (attach, delete, resize) that most need an audit trail. `init`, `ceph_init` and `ceph_unfork` are the mirror image: literals for functions that no longer exist (#34 / the P4 rename).
 const datastoreEventTypes = [
   'cli.datastore.adopt',
   'cli.datastore.attach',
@@ -106,8 +97,7 @@ const datastoreEventTypes = [
   'cli.datastore.volumes_open',
 ] as const;
 
-// `repo logs` / `repo exec` (repo-container.ts, new in P4). Dotted, like every other
-// group — the fall-through would have produced `cli.container_exec`.
+// `repo logs` / `repo exec` (repo-container.ts, new in P4). Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
 const containerEventTypes = ['cli.container.exec', 'cli.container.logs'] as const;
 
 const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.session'] as const;
@@ -146,7 +136,8 @@ export const ALL_EVENT_TYPES = [
 ] as const;
 
 export const auditEventTypeEnum = z.enum(ALL_EVENT_TYPES);
-export type AuditEventType = z.infer<typeof auditEventTypeEnum>;
+type AuditEventType = z.infer<typeof auditEventTypeEnum>;
+export type { AuditEventType };
 
 const baseData = z.object({
   functionName: z.string().min(1).max(100),
@@ -178,10 +169,7 @@ const eventEnvelope = {
   onBehalfOfTokenId: z.uuid().optional(),
 };
 
-// Machine/repo/backup/datastore ops AND cluster/k8s-namespace ops all carry the
-// same plain baseData, so they share one discriminated-union branch. Kept as one
-// branch (not two) because the audit.ts fall-through assigns a union-typed `type`
-// that TypeScript can only resolve against a single branch.
+// Machine/repo/backup/datastore ops AND cluster/k8s-namespace ops all carry the same plain baseData, so they share one discriminated-union branch. Kept as one branch (not two) because the audit.ts fall-through assigns a union-typed `type` that TypeScript can only resolve against a single branch.
 const baseOpEventTypes = [...MACHINE_OP_EVENT_TYPES, ...clusterEventTypes] as const;
 const machineOpEvent = z.object({
   type: z.enum(baseOpEventTypes),
@@ -211,17 +199,20 @@ export const AuditEventSchema = z.discriminatedUnion('type', [
   syncEvent,
   termEvent,
 ]);
-export type AuditEvent = z.infer<typeof AuditEventSchema>;
+type AuditEvent = z.infer<typeof AuditEventSchema>;
+export type { AuditEvent };
 
 export const AuditEventsRequestSchema = z.object({
   events: z.array(AuditEventSchema).min(1).max(50),
 });
-export type AuditEventsRequest = z.infer<typeof AuditEventsRequestSchema>;
+type AuditEventsRequest = z.infer<typeof AuditEventsRequestSchema>;
+export type { AuditEventsRequest };
 
 export const AuditEventsResponseSchema = z.object({
   accepted: z.number().int().min(0),
 });
-export type AuditEventsResponse = z.infer<typeof AuditEventsResponseSchema>;
+type AuditEventsResponse = z.infer<typeof AuditEventsResponseSchema>;
+export type { AuditEventsResponse };
 
 /**
  * Map a renet function name to its canonical event type.

@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-review-report-replies.sh blob df873d4858c21e391c81281dbcb80ef4b9cebf47
+exit: 0
+--- stdout ---
+Checking review report replies for PR #42...
+Newest review report (comment 100) answered by comment 101 - OK
+--- stderr ---

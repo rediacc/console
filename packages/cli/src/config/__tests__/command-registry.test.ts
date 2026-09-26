@@ -38,7 +38,7 @@ describe('config/command-registry', () => {
     /**
      * The registry must name EVERY top-level command, and only real ones.
      *
-     * It had drifted to 14 entries against 18 live domains — `cluster`, `credits`,
+     * It had drifted to 14 entries against 18 live domains, `cluster`, `credits`,
      * `job` and `serve` were in no entry at all. That is not cosmetic: the MCP
      * coverage check used to iterate the REGISTRY, so a domain missing from it was
      * not merely ungrouped, it was UNCHECKED. Every leaf beneath it could drift out
@@ -71,14 +71,9 @@ describe('config/command-registry', () => {
 
     it('machine experimental subcommands are declared', () => {
       const def = getCommandDef('machine');
-      // `health` is a registry entry but carries no gating any more — it used to
-      // be experimental, which made `rdc machine health` answer "unknown
-      // command" unless an env var was set, so the one command that aggregates
-      // machine issues was the one nobody could run.
+      // `health` is a registry entry but carries no gating any more, it used to be experimental, which made `rdc machine health` answer "unknown command" unless an env var was set, so the one command that aggregates machine issues was the one nobody could run.
       expect(def?.subcommands?.health).toBeDefined();
-      // containers/services/repos were folded into `machine status --containers` etc.
-      // by the P4 reshape. A registry entry for a command that no longer exists is a
-      // name waiting to be silently re-bound, so it must stay gone.
+      // containers/services/repos were folded into `machine status --containers` etc. by the P4 reshape. A registry entry for a command that no longer exists is a name waiting to be silently re-bound, so it must stay gone.
       expect(def?.subcommands?.containers).toBeUndefined();
       expect(def?.subcommands?.services).toBeUndefined();
       expect(def?.subcommands?.repos).toBeUndefined();

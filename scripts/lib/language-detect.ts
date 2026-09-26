@@ -2,10 +2,10 @@
  * Language identification for locale and documentation gates.
  *
  * WHY IT IS A LIBRARY AND NOT A COPY. This detector was built inside
- * scripts/check-i18n-cross-locale.ts and fought a long false-positive battle to get here:
+ * scripts/gates/check-i18n-cross-locale.ts and fought a long false-positive battle to get here:
  * a first version that compared values across locales reported 136 false positives on the
  * es/pt pair alone, and the two-independent-signals design below is what survived. When
- * scripts/check-docs-untranslated-text.ts was found to be PROVEN DEAD -- a wholly English
+ * scripts/gates/check-docs-untranslated-text.ts was found to be PROVEN DEAD -- a wholly English
  * paragraph appended to packages/www/src/content/docs/de/quick-start.md exited 0 -- the
  * fix needed exactly this detector at paragraph granularity. Copying it would have given
  * the repo two stopword tables to drift apart, which is the shape that produced the
@@ -56,10 +56,7 @@ export class UnmodelledLocaleError extends Error {
  * values produced 136 false positives on the es/pt pair alone.
  */
 export const STOPWORDS: Record<string, string[]> = {
-  // `en` is never scanned as a TARGET (it is SOURCE_LOCALE), only ever as a DETECTED
-  // language. Without it, English left sitting in a translated locale — the single most
-  // common failure of a half-finished translation pass — was undetectable by
-  // construction, exactly like German was before the de/fr/es/it/pt/tr lists existed.
+  // `en` is never scanned as a TARGET (it is SOURCE_LOCALE), only ever as a DETECTED language. Without it, English left sitting in a translated locale — the single most common failure of a half-finished translation pass — was undetectable by construction, exactly like German was before the de/fr/es/it/pt/tr lists existed.
   en: [
     'the',
     'and',
@@ -150,10 +147,7 @@ export const STOPWORDS: Record<string, string[]> = {
     'cette',
     'plus',
   ],
-  // 'more' used to sit here. It is an ENGLISH word, and it was the Spanish list's only
-  // non-Spanish entry, so an English string anywhere scored one point towards "this is
-  // Spanish". With an `en` list now present it would also have been pruned as
-  // non-discriminative, silently weakening both lists. Removed rather than deduplicated.
+  // 'more' used to sit here. It is an ENGLISH word, and it was the Spanish list's only non-Spanish entry, so an English string anywhere scored one point towards "this is Spanish". With an `en` list now present it would also have been pruned as non-discriminative, silently weakening both lists. Removed rather than deduplicated.
   es: [
     'los',
     'las',
@@ -205,9 +199,7 @@ export const STOPWORDS: Record<string, string[]> = {
     'onde',
   ],
   tr: ['ve', 'bir', 'icin', 'ile', 'bu', 'olarak', 'veya', 'daha', 'gerekli'],
-  // Estonian. Deliberately excludes 'on' and 'see', which are ordinary English words:
-  // an English string carrying them would have scored towards Estonian and been reported
-  // under the wrong source language, blunting the diagnostic the operator acts on.
+  // Estonian. Deliberately excludes 'on' and 'see', which are ordinary English words: an English string carrying them would have scored towards Estonian and been reported under the wrong source language, blunting the diagnostic the operator acts on.
   et: [
     'ja',
     'ei',
@@ -356,8 +348,7 @@ export function assertDetectionCoverage(
   stopwords: Record<string, string[]>,
   nativeScript: Record<string, RegExp>
 ): void {
-  // A typo in a detection key is silent otherwise: `NATIVE_SCRIPT.jp` would simply never
-  // match the `ja` directory, and the locale would read as covered while being skipped.
+  // A typo in a detection key is silent otherwise: `NATIVE_SCRIPT.jp` would simply never match the `ja` directory, and the locale would read as covered while being skipped.
   for (const key of [...Object.keys(stopwords), ...Object.keys(nativeScript)]) {
     if (!isSiteLocale(key)) {
       throw new Error(

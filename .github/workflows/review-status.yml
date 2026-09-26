@@ -47,16 +47,10 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-  checks: write
-  pull-requests: read
-  issues: read
-  # READ-ONLY, and only to fetch the `review-target` artifact from the Claude
-  # Review run that triggered this one. Deliberately NOT actions:write -- the
-  # deleted nudge step wanted that in order to dispatch a workflow, which is a
-  # far larger grant for a job that handles model output.
-  actions: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Latest event wins: every run recomputes the verdict from live API state, so
 # superseding an in-flight run loses nothing.
@@ -76,6 +70,19 @@ jobs:
     name: Review Status
     runs-on: ubuntu-slim
     timeout-minutes: 10 # CHECK 3: slim jobs must declare <= 14
+    # This job creates the "Review Complete" check run: review-status.sh does
+    # POST/PATCH on repos/*/check-runs with github.token, hence checks: write.
+    # No commit status is ever written, so statuses: write is deliberately absent.
+    # actions is READ-ONLY, and only to fetch the `review-target` artifact from
+    # the Claude Review run that triggered this one. Deliberately NOT
+    # actions:write -- the deleted nudge step wanted that in order to dispatch a
+    # workflow, which is a far larger grant for a job that handles model output.
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: read
+      issues: read
+      actions: read
     # issue_comment fires for plain issues too; those have no head SHA to
     # anchor a check-run to.
     if: >-
@@ -90,7 +97,10 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch || 'main' }}
           persist-credentials: false
-          sparse-checkout: .ci/scripts
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
+          sparse-checkout: |
+            .ci/scripts
+            .ci/rediacc_ci
 
       - name: Post Review Complete check-run
         env:
@@ -105,4 +115,4 @@ jobs:
           WR_RUN_ID: ${{ github.event.workflow_run.id }}
           WR_HTML_URL: ${{ github.event.workflow_run.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
-        run: .ci/scripts/review/review-status.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.review.review_status

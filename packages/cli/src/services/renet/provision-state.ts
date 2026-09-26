@@ -8,17 +8,17 @@
  * remembers a successful provision across processes so consecutive commands
  * skip all of it.
  *
- * Trust envelope — a persisted entry is honored only when ALL hold:
+ * Trust envelope, a persisted entry is honored only when ALL hold:
  *  - recorded CLI version equals the running VERSION,
  *  - the entry is younger than the TTL (same 1h as the in-memory cache),
  *  - dev mode only: the source binary's (mtimeMs, size) still match. Dev
  *    VERSION is a constant (`0.0.0-dev`), so a rebuilt `bin/renet` is only
- *    detectable by its stat fingerprint — this preserves the "next rdc.sh run
+ *    detectable by its stat fingerprint, this preserves the "next rdc.sh run
  *    deploys your renet change" promise at the cost of one ~1ms stat.
  *
  * Any provision failure drops the entry (fail open into the full path).
  *
- * State lives in the CONFIG (`state.renetProvision`), not a sidecar file —
+ * State lives in the CONFIG (`state.renetProvision`), not a sidecar file ,
  * same reasoning as `license-refresh-state.ts`: sidecars are machine-local
  * litter that leaks into tests; config state is mocked, versioned, and
  * inspectable. Written through `updateState`, so churn never bumps the
@@ -134,7 +134,7 @@ export async function recordProvisionVerified(
 
 /**
  * Record a successful machine-setup verification. Only annotates an existing
- * provision entry — setup verification always runs after provisioning, and a
+ * provision entry, setup verification always runs after provisioning, and a
  * bare setup timestamp without its provision context is not independently
  * trustworthy.
  */
@@ -144,7 +144,7 @@ export async function recordSetupVerified(hostPort: string, now = Date.now()): P
   );
 }
 
-/** Drop one machine's entry — called on provision failure (fail open). */
+/** Drop one machine's entry, called on provision failure (fail open). */
 export async function dropProvisionEntry(hostPort: string): Promise<void> {
   await writeEntry(hostPort, () => undefined);
 }

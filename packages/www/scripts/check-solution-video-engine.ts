@@ -66,8 +66,7 @@ export function findStaleNarrations(
   const out: EngineFinding[] = [];
   for (const slug of slugs) {
     const byLang = manifest.solutions?.[slug];
-    // A slug absent from the manifest is check-solution-videos' finding, not ours. Reporting
-    // it here too would double-count one defect and bury this gate's actual signal.
+    // A slug absent from the manifest is check-solution-videos' finding, not ours. Reporting it here too would double-count one defect and bury this gate's actual signal.
     if (!byLang) continue;
     for (const lang of langs) {
       const mp4 = byLang[lang]?.mp4;
@@ -89,8 +88,7 @@ function loadManifest(): SparseVideoManifest {
 
 function main(): number {
   const slugs = listSlugs().filter(slugRendersVideo);
-  // Anti-vacuity: a gate that checks nothing must not report success. Without this, a broken
-  // checkout or a rename of the solutions page directory reads as "all narrations current".
+  // Anti-vacuity: a gate that checks nothing must not report success. Without this, a broken checkout or a rename of the solutions page directory reads as "all narrations current".
   if (slugs.length === 0) {
     console.error(
       '✗ Refusing to run: no solution pages require video, so this check would assert nothing.'

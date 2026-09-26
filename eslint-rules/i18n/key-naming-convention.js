@@ -13,8 +13,7 @@ const PATTERNS = {
   PascalCase: /^[A-Z][a-zA-Z0-9]*$/,
 };
 
-// Rule-option default, not a product constant: how many dot-separated segments
-// a translation key may carry before it counts as over-nested.
+// Rule-option default, not a product constant: how many dot-separated segments a translation key may carry before it counts as over-nested.
 const DEFAULT_MAX_NESTING_DEPTH = 6;
 
 /** @type {import('eslint').Rule.RuleModule} */

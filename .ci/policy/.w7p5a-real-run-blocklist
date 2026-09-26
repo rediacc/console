@@ -1,0 +1,70 @@
+# .w7p5a-real-run-blocklist -- W7P5-a's real-run BLOCKER register.
+#
+# W7P5-a ("agent/plans/PLAN-tooling-transformation.md") requires, for each of the 48
+# deploy/release bash scripts under port: either a K=5 shadow-gate ledger
+# asserting `equivalence holds`, or an allowlist entry with a BLOCKER. No
+# third state.
+#
+# Every path below has its DRY-RUN-parity port as separate, reachable work --
+# stubbed tool binaries make that achievable without touching production, and
+# this file does not claim otherwise. Where it is done the evidence is named
+# on the entry's own BLOCKER line, and for every path re-driven under the
+# `w7p5a-` pair namespace on 2026-09-20 -- the Cloudflare/R2 family first, then
+# the gh / docker buildx / curl release and verification family -- it is also a
+# `dry_run_ledger` field on that path's `.ci/shadow/w7p5a-status.json` row,
+# which `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` enforces. What each entry
+# blocks is narrower: the box's "one real run each" clause, which for these
+# paths means invoking a real external system (Cloudflare, R2/AWS, GitHub,
+# ghcr.io, or a real `git push`) that this session has no credentials for and
+# is forbidden from touching. `.ci/shadow/w7p5a-status.json` tracks the box's
+# overall progress; this file is the checked, BLOCKER-gated record of why the
+# paths listed below cannot get a real-run leg here. How many there are is the
+# gate's line to print, not this header's to hard-code: it cross-checks this
+# file against the status file's "blocked" set in both directions and reports
+# the count it found. The figure stood at 39 here while the real set was 32.
+#
+# Liveness is enforced IN-GATE (the `.runner-advice-allowlist` /
+# `.profiler-coverage-allowlist` precedent, `docs/agent-reference/suppressions.md`):
+# the reader treats an entry as live while (a) the path still exists in the
+# tree and (b) `.ci/shadow/w7p5a-status.json` still records that path as
+# "blocked" rather than "ledger". A path that graduates to a K=5 ledger is
+# stale here and must be removed by the person who did the work -- do not add
+# it to the baseline by leaving it in place unfixed.
+#
+# A THIRD CLAUSE IS WRITTEN ON EVERY ENTRY AND CHECKED BY NOBODY, and saying so
+# is the point of this paragraph. Each BLOCKER below names the external tool
+# its real-run branch reaches for (wrangler / aws / gh / curl / docker buildx /
+# git push); a branch that drops that tool makes the entry stale just as surely
+# as a ledger does, but `rediacc_ci.quality.w7p5a_real_run_blockers` reads only
+# the two clauses above, so nothing reds when the sentence stops being true.
+# This header claimed the clause was enforced in-gate until 2026-09-20, and one
+# entry had already drifted under cover of that claim: the
+# cleanup-channel-docker-tags line named `cleanup-staging.sh` long after its
+# twin was cut over to `cleanup_staging.py`. Re-read the named branch by hand
+# before trusting an entry, and correct the wording when it has moved.
+#
+# A `dry_run_ledger` on a status row is NOT that graduation and does not make
+# an entry stale. It records a comparison in which every external tool was a
+# recording stub, so it is evidence about the port and none at all about the
+# real run this file blocks. Clause (b) above reads `status`, which stays
+# "blocked" for exactly that reason, and
+# `.ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py` fails if the two are
+# ever allowed to drift apart.
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/delete-r2-channel.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 against the real R2 bucket, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes aws s3 and curl against real R2/Cloudflare, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/deploy/sync-media-to-r2.sh
+
+# BLOCKER: operator-authorized real-run credentials are now available (private/account/.env, run inside the devbox), so the credentials reason below is STALE; the actual blocker (found 2026-09-23 by attempting the real run) is that the script's real-run path needs a push-triggered CI run on main with an un-expired cli-manifest artifact (1-day retention), and the last push-triggered green run on main was 2026-09-07 -- over two weeks stale. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/assert-artifact-version.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes a real git push of a version tag to origin, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/tag-submodules.sh
+
+# BLOCKER: this session is a sandboxed coding agent with no Cloudflare/AWS/GitHub production credentials and is explicitly forbidden from performing a real deploy or a real release action; the script's real-run path invokes curl plus a real git push to the homebrew tap repo, so the box's 'one real run each' clause cannot be satisfied here. The bash-vs-python golden dry-run parity ledger for this path is DONE (verified 2026-09-14): W7P6 independently ported it to .ci/rediacc_ci/, with a permanent side-by-side pytest differential and a K=5 shadow-gate ledger (w7p6-<slug>), external tools stubbed throughout so nothing touches production -- this entry blocks only the real-run clause, not the whole path.
+.ci/scripts/release/update-homebrew-tap.sh

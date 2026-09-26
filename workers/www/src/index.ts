@@ -8,29 +8,15 @@ import { findSmartRedirect } from './smart-redirect';
 
 interface Env {
   ASSETS: Fetcher;
-  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and
-  // injects the binding via wrangler.preview.toml). On stable / edge,
-  // /account/api/* is served by the regional workers, so DB is absent
-  // here and the branch below 410s.
+  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On stable / edge, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
-  // Service binding to the EU regional account worker. Used to forward the
-  // public marketing endpoints (contact submit, newsletter subscribe) so
-  // the forms on www.rediacc.com / edge.rediacc.com can reach a DB-bound
-  // backend without cross-origin CORS. Bound on stable + edge wrangler
-  // configs, absent on PR previews (which serve via env.DB instead).
+  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com / edge.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound on stable + edge wrangler configs, absent on PR previews (which serve via env.DB instead).
   ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }
 
-// ---------------------------------------------------------------------------
-// Preview origin rewriting
-// ---------------------------------------------------------------------------
-// On non-stable hostnames (edge.rediacc.com, pr-397.rediacc.workers.dev), rewrite
-// https://www.rediacc.com → the current origin in all text responses so that
-// install commands, canonical URLs, sitemaps, etc. reflect the preview domain.
-// Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview
-// is false and rewriteOrigin() is skipped.
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (edge.rediacc.com, pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
+// reflect the preview domain. Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview is false and rewriteOrigin() is skipped. ---------------------------------------------------------------------------
 
 const WWW_ORIGIN = 'https://www.rediacc.com';
 
@@ -46,9 +32,7 @@ export const REWRITABLE_TYPES = [
   'text/css',
 ] as const;
 
-// Install scripts are served with content-types outside REWRITABLE_TYPES
-// (application/x-sh, or no content-type for .ps1). Bypass the MIME check
-// so the channel default is still rewritten on preview hosts.
+// Install scripts are served with content-types outside REWRITABLE_TYPES (application/x-sh, or no content-type for .ps1). Bypass the MIME check so the channel default is still rewritten on preview hosts.
 export const REWRITABLE_PATHS = ['/install.sh', '/install.ps1'] as const;
 
 export function shouldRewrite(contentType: string | null, pathname: string): boolean {
@@ -80,8 +64,7 @@ export async function rewriteOrigin(
     body = body.replaceAll(WWW_ORIGIN, origin);
   }
 
-  // Rewrite install script defaults so CLI uses the preview channel
-  // and auto-connects to the preview account server.
+  // Rewrite install script defaults so CLI uses the preview channel and auto-connects to the preview account server.
   // Bash: ${REDIACC_CHANNEL:-stable}  PowerShell: } else { "stable" }
   body = body.replaceAll('REDIACC_CHANNEL:-stable', `REDIACC_CHANNEL:-${channel}`);
   body = body.replaceAll('REDIACC_SERVER_URL:-}', `REDIACC_SERVER_URL:-${origin}}`);
@@ -105,9 +88,7 @@ export async function rewriteOrigin(
 
 // ---------------------------------------------------------------------------
 
-// Non-prod hostnames (edge, PR previews) should not be indexed — sitemaps and
-// canonical links still point at www.rediacc.com after rewriteOrigin(), so
-// letting crawlers in would create duplicate-content noise.
+// Non-prod hostnames (edge, PR previews) should not be indexed — sitemaps and canonical links still point at www.rediacc.com after rewriteOrigin(), so letting crawlers in would create duplicate-content noise.
 export function buildDisallowRobots(): Response {
   return new Response('User-agent: *\nDisallow: /\n', {
     headers: {
@@ -131,16 +112,10 @@ const accountApp = createApp(
   }
 );
 
-// ---------------------------------------------------------------------------
-// 404 recovery — normalization + curated redirect table
-// ---------------------------------------------------------------------------
-// Google indexed historical URLs with trailing slashes, .html/.md suffixes,
-// and lang-prefixed paths. Normalize first, then look up in the curated
-// ./redirects.json table. See redirect-aliases.ts.
+// --------------------------------------------------------------------------- 404 recovery — normalization + curated redirect table --------------------------------------------------------------------------- Google indexed historical URLs with trailing slashes, .html/.md suffixes, and lang-prefixed paths. Normalize first, then look up in the curated ./redirects.json table. See
+// redirect-aliases.ts.
 
-// Relative, not a bare specifier: workers/www has its own package.json and is not a
-// root workspace, so `@rediacc/locales` would not resolve. wrangler/esbuild inlines
-// this the same way it already inlines ../../../private/account/src/app.js.
+// Relative, not a bare specifier: workers/www has its own package.json and is not a root workspace, so `@rediacc/locales` would not resolve. wrangler/esbuild inlines this the same way it already inlines ../../../private/account/src/app.js.
 import { SITE_LOCALES } from '../../../packages/locales/index.js';
 
 const SUPPORTED_LANGUAGES = SITE_LOCALES;
@@ -174,9 +149,7 @@ export function normalizePath(pathname: string): { path: string; changed: boolea
 
   // Lowercase outside percent-encoded sequences only. A %XX triple is
   // case-insensitive per RFC 3986 but ASSETS normalizes to uppercase;
-  // lowercasing the whole string would loop.
-  // `enc` is either a full 3-char %XX triple or undefined when that alternative
-  // did not participate — never the empty string, so ?? and ?: agree here.
+  // lowercasing the whole string would loop. `enc` is either a full 3-char %XX triple or undefined when that alternative did not participate — never the empty string, so ?? and ?: agree here.
   p = p.replaceAll(
     /(%[0-9a-fA-F]{2})|([^%]+)/g,
     (_, enc, plain) => (enc as string | undefined) ?? (plain as string).toLowerCase()
@@ -219,10 +192,7 @@ function buildGoneResponse(rationale: string): Response {
   });
 }
 
-// Static-asset paths are case-sensitive (Vite hashes like client.BzZdRM54.js,
-// fonts like Inter-Regular.woff2). normalizePath() would lowercase them and
-// 301 to a filename that doesn't exist on disk — breaking CSS, fonts, and
-// dynamic imports. These are served directly from ASSETS before normalizing.
+// Static-asset paths are case-sensitive (Vite hashes like client.BzZdRM54.js, fonts like Inter-Regular.woff2). normalizePath() would lowercase them and 301 to a filename that doesn't exist on disk — breaking CSS, fonts, and dynamic imports. These are served directly from ASSETS before normalizing.
 const STATIC_ASSET_PREFIX_RE = /^\/(assets|fonts|images|videos|scripts|styles|_astro)\//;
 
 /** ASSETS passthrough, with the preview-origin rewrite the whole worker shares. */
@@ -241,10 +211,7 @@ function isAccountApiPath(pathname: string): boolean {
   return pathname.startsWith('/account/api/') || pathname === '/account/api';
 }
 
-// Account API: served here only on PR previews (env.DB bound by
-// deploy-www.sh). On stable / edge the regional workers serve it.
-// Public marketing endpoints (contact submit, newsletter subscribe)
-// are forwarded via the ACCOUNT service binding so the forms on
+// Account API: served here only on PR previews (env.DB bound by deploy-www.sh). On stable / edge the regional workers serve it. Public marketing endpoints (contact submit, newsletter subscribe) are forwarded via the ACCOUNT service binding so the forms on
 // www.rediacc.com keep working; everything else 410s so the SPA
 // region picker routes authenticated traffic to the right region.
 function handleAccountApi(request: Request, env: Env, url: URL): Response | Promise<Response> {
@@ -278,8 +245,7 @@ function handleAccountSpa(
   if (/\.\w+$/.test(url.pathname)) {
     return env.ASSETS.fetch(request);
   }
-  // SPA routes: rewrite to /account/ so assets serves index.html.
-  // Don't use /account/index.html — Cloudflare pretty URLs 307-redirects it.
+  // SPA routes: rewrite to /account/ so assets serves index.html. Don't use /account/index.html — Cloudflare pretty URLs 307-redirects it.
   if (url.pathname !== '/account' && url.pathname !== '/account/') {
     const spaRequest = new Request(new URL('/account/', url.origin), request);
     return serveAsset(spaRequest, env, url, isPreview, channel);
@@ -293,15 +259,13 @@ function handleAccountSpa(
  * self-redirect case, where a matched alias resolves back to the same URL.
  */
 function resolveCuratedRedirect(url: URL): Response | null {
-  // Root -> default language. Replaces the old public/_redirects rule which
-  // Workers don't process (that was a Cloudflare Pages feature).
+  // Root -> default language. Replaces the old public/_redirects rule which Workers don't process (that was a Cloudflare Pages feature).
   if (url.pathname === '/') {
     const target = new URL(`/${DEFAULT_LANG}${url.search}`, url.origin);
     return buildRedirectResponse(target.toString(), 301, 'root-to-default-lang');
   }
 
-  // Step 1: normalize (strip trailing slash, .html/.md, lowercase).
-  // If the canonical form differs, 301 to it immediately.
+  // Step 1: normalize (strip trailing slash, .html/.md, lowercase). If the canonical form differs, 301 to it immediately.
   const normalized = normalizePath(url.pathname);
   if (normalized.changed) {
     const canonical = new URL(normalized.path + url.search, url.origin);
@@ -311,9 +275,7 @@ function resolveCuratedRedirect(url: URL): Response | null {
   // Step 2: detect language prefix, strip for lookup.
   const { lang, pathWithoutLang } = detectLanguage(url.pathname);
 
-  // Step 3: curated table lookup (exact, then pattern).
-  // Decode percent-encoded chars so UTF-8 keys (e.g. /blog/tags/configuración)
-  // match regardless of whether the request came in encoded form.
+  // Step 3: curated table lookup (exact, then pattern). Decode percent-encoded chars so UTF-8 keys (e.g. /blog/tags/configuración) match regardless of whether the request came in encoded form.
   let lookupPath = pathWithoutLang;
   try {
     lookupPath = decodeURIComponent(pathWithoutLang);
@@ -330,9 +292,7 @@ function resolveCuratedRedirect(url: URL): Response | null {
   const targetLang = lang ?? DEFAULT_LANG;
   // If the target starts with /account, don't add lang (Worker-served SPA)
   const targetPath = alias.to.startsWith('/account') ? alias.to : `/${targetLang}${alias.to}`;
-  // Self-redirect guard: if the redirect would land on the same URL (e.g.,
-  // /en/checkout/success → /en/checkout/success), fall through to ASSETS
-  // so the user lands on the actual page instead of looping.
+  // Self-redirect guard: if the redirect would land on the same URL (e.g., /en/checkout/success → /en/checkout/success), fall through to ASSETS so the user lands on the actual page instead of looping.
   if (targetPath === url.pathname) return null;
 
   const target = new URL(targetPath + url.search, url.origin);
@@ -383,17 +343,17 @@ async function serveWithSmartRedirect(
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const isPreview = url.hostname !== 'www.rediacc.com';
     const channel = getChannel(url.hostname);
 
     if (url.pathname === '/robots.txt' && isPreview) {
-      return buildDisallowRobots();
+      return Promise.resolve(buildDisallowRobots());
     }
 
     if (isAccountApiPath(url.pathname)) {
-      return handleAccountApi(request, env, url);
+      return Promise.resolve(handleAccountApi(request, env, url));
     }
 
     if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
@@ -404,11 +364,9 @@ export default {
       return serveAsset(request, env, url, isPreview, channel);
     }
 
-    // -----------------------------------------------------------------------
-    // 404 recovery: normalize path, then consult the curated redirect table.
-    // -----------------------------------------------------------------------
+    // ----------------------------------------------------------------------- 404 recovery: normalize path, then consult the curated redirect table. -----------------------------------------------------------------------
     const curated = resolveCuratedRedirect(url);
-    if (curated) return curated;
+    if (curated) return Promise.resolve(curated);
 
     return serveWithSmartRedirect(request, env, url, isPreview, channel);
   },

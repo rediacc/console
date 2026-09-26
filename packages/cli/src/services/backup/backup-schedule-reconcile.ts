@@ -1,7 +1,7 @@
 /**
  * Reconciliation core: read remote state + compute desired + diff + in-flight gate.
  *
- * This module is stateless w.r.t. the target machine — it issues read-only
+ * This module is stateless w.r.t. the target machine, it issues read-only
  * `find`/`sha256sum`/`systemctl show` commands and produces a typed diff
  * that the executor module consumes.
  */
@@ -17,9 +17,7 @@ import {
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
 export interface DesiredUnit {
   strategyName: string;
@@ -75,9 +73,7 @@ export interface ReconcileOptions {
   resetFailed?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Parsing helpers
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Parsing helpers ---------------------------------------------------------------------------
 
 const ACTIVE_STATES = new Set(['active', 'activating']);
 const ENABLED_STATES = new Set(['enabled', 'enabled-runtime', 'static']);
@@ -140,9 +136,7 @@ async function captureStdout(
   return { exitCode, stdout };
 }
 
-// ---------------------------------------------------------------------------
-// Phase A — Read remote state
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase A, Read remote state ---------------------------------------------------------------------------
 
 async function listRemoteUnitPaths(sftp: SFTPClient): Promise<string[]> {
   const cmd =
@@ -238,14 +232,9 @@ export async function readRemoteState(
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// Phase B — Compute desired units
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase B, Compute desired units ---------------------------------------------------------------------------
 
-// SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage,
-// which existed to build rclone args; with the rclone path removed there is
-// nothing async left. The single caller (backup-schedule.ts:204) still awaits
-// it, which is harmless, so the signature change needs no caller edit.
+// SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage, which existed to build rclone args; with the rclone path removed there is nothing async left. The single caller (backup-schedule.ts:204) still awaits it, which is harmless, so the signature change needs no caller edit.
 export function computeDesiredUnits(
   strategies: { name: string; config: BackupStrategyConfig }[],
   datastore: string,
@@ -259,12 +248,8 @@ export function computeDesiredUnits(
       continue;
     }
 
-    // NOTE 2026-08-15: this used to build an rclone args Map here and REFUSE any
-    // hosted-service destination as "not available in this build yet". Both are
-    // gone. Keeping the refusal after the rclone emission was deleted made
-    // `backup schedule push` impossible for EVERY config: hosted-service threw
-    // here, and storage threw in the unit generator. The generator is now the
-    // single place that validates destination kind.
+    // NOTE 2026-08-15: this used to build an rclone args Map here and REFUSE any hosted-service destination as "not available in this build yet". Both are gone. Keeping the refusal after the rclone emission was deleted made `backup schedule push` impossible for EVERY config: hosted-service threw here, and storage threw in the unit generator. The generator is now the single place
+    // that validates destination kind.
 
     const { serviceContent, envVars } = generateServiceUnit(
       name,
@@ -284,9 +269,7 @@ export function computeDesiredUnits(
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// Phase C — Compute reconcile plan (pure)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase C, Compute reconcile plan (pure) ---------------------------------------------------------------------------
 
 function envDrifted(
   desiredEnvHash: string | null,
@@ -304,8 +287,7 @@ function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined)
   const desiredTimerHash = sha256Hex(unit.timerContent);
   const desiredEnvHash = unit.envFileContent ? sha256Hex(unit.envFileContent) : null;
 
-  // Treat "no service or timer on remote" as fresh, even if a stale env
-  // file happens to exist (reconciler will overwrite it).
+  // Treat "no service or timer on remote" as fresh, even if a stale env file happens to exist (reconciler will overwrite it).
   const isFresh = !remote || (!remote.serviceFile.exists && !remote.timerFile.exists);
   if (isFresh) {
     const changedFiles: ChangedFile[] = ['service', 'timer'];
@@ -380,9 +362,7 @@ export function computeReconcilePlan(
   return plan;
 }
 
-// ---------------------------------------------------------------------------
-// Phase D — In-flight safety gate
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase D, In-flight safety gate ---------------------------------------------------------------------------
 
 function activeUnitName(diff: StrategyDiff): string | null {
   const state = diff.remote;

@@ -2,10 +2,10 @@
  * Placement union for `repo create` (spec/03 §5.4, the #38 fix).
  *
  * `repo create <name>` takes EXACTLY ONE of `--machine` (docker, implicit default
- * datastore) or `--datastore` (a named datastore — docker tiering, or the only
+ * datastore) or `--datastore` (a named datastore, docker tiering, or the only
  * kubernetes form). The #38 fix is that a cluster repo lands on its DATA datastore
  * (the one `repo replicate` forks), not the control datastore. These tests assert
- * the flag arithmetic, the teaching errors, and — critically — that the birth
+ * the flag arithmetic, the teaching errors, and, critically, that the birth
  * record carries the declared placement every derived-machine op resolves through.
  */
 
@@ -62,8 +62,7 @@ vi.mock('../../utils/errors.js', async (orig) => ({
 import { handleRepoCreate } from '../repo-create-delete.js';
 
 /** A config with the given datastores + machines, enough for placement resolution. */
-// Fixtures are deliberately partial. Taking a loose record here is what lets the call
-// sites pass a plain literal instead of casting each one through `as never`.
+// Fixtures are deliberately partial. Taking a loose record here is what lets the call sites pass a plain literal instead of casting each one through `as never`.
 function config(
   over: Record<string, unknown> = {},
   state: Record<string, unknown> = {}
@@ -197,11 +196,11 @@ describe('repo create placement union (#38)', () => {
   });
 
   /**
-   * ★ #67 — the dispatch must be ACCEPTABLE TO RENET, not merely well-formed.
+   * ★ #67, the dispatch must be ACCEPTABLE TO RENET, not merely well-formed.
    *
    * renet's `repository_create` reads the size with `GetSize(required=true)`
    * (pkg/datastore/registry.go), so a dispatch carrying no size is REFUSED with
-   * "size required" — UNLESS the caller declares `runtime: kube`, which is how renet
+   * "size required", UNLESS the caller declares `runtime: kube`, which is how renet
    * knows it is in the kubernetes world and must size volumes from the PVC
    * declarations instead (the #39 assertion channel).
    *
@@ -212,7 +211,7 @@ describe('repo create placement union (#38)', () => {
    *
    * This asserts renet's ACCEPTANCE RULE rather than the argv the CLI happens to
    * build. A test that only pinned the dispatch string would have passed while the
-   * command was completely unusable — which is exactly how this shipped, and why the
+   * command was completely unusable, which is exactly how this shipped, and why the
    * kube case above (which asserts `size` is undefined) was green on a broken CLI.
    */
   function assertRenetWouldAccept(params: Record<string, unknown>): void {
@@ -249,8 +248,7 @@ describe('repo create placement union (#38)', () => {
       params: Record<string, unknown>;
     };
     expect(call.functionName).toBe('repository_create');
-    // A kube repo still carries NO size (its volumes come from the PVCs) — so the
-    // ONLY thing that can make this dispatch acceptable is the runtime declaration.
+    // A kube repo still carries NO size (its volumes come from the PVCs), so the ONLY thing that can make this dispatch acceptable is the runtime declaration.
     expect(call.params.size).toBeUndefined();
     assertRenetWouldAccept(call.params);
   });
@@ -260,20 +258,18 @@ describe('repo create placement union (#38)', () => {
 
     expect(handleError).not.toHaveBeenCalled();
     const call = execute.mock.calls[0][0] as { params: Record<string, unknown> };
-    // The docker arm is acceptable the other way round: it carries a size, and it must
-    // NOT claim the kube runtime (renet asserts the declaration against the datastore
-    // descriptor and errors on a disagreement rather than silently picking an arm).
+    // The docker arm is acceptable the other way round: it carries a size, and it must NOT claim the kube runtime (renet asserts the declaration against the datastore descriptor and errors on a disagreement rather than silently picking an arm).
     expect(call.params.runtime).toBeUndefined();
     assertRenetWouldAccept(call.params);
   });
 
   /**
-   * ★ #74 — THE INVARIANT: the datastore DISPATCHED must be the datastore RECORDED.
+   * ★ #74, THE INVARIANT: the datastore DISPATCHED must be the datastore RECORDED.
    *
    * `repo create` resolved the placement (machine, cluster backref, mount path) and
    * then never told the executor about it. renet reads the datastore from the MACHINE
    * VAULT, so every create on a named datastore silently dispatched against the
-   * machine's DEFAULT docker datastore — while the config recorded the named one. The
+   * machine's DEFAULT docker datastore, while the config recorded the named one. The
    * placement written to disk and the placement sent to the machine were two different
    * things, and nothing said so.
    *

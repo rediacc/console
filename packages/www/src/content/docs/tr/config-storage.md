@@ -1,6 +1,6 @@
 ---
 title: Yapılandırma Depolama
-description: Passkey, ana parola ve kurtarma koduyla açılabilen sıfır bilgi şifreli yapılandırma senkronizasyonu
+description: Cihaz tarafında şifrelenen, passkey, ana parola veya kurtarma koduyla açılabilen yapılandırma senkronizasyonu
 category: Guides
 tags:
   - account
@@ -8,13 +8,13 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "e4b2eecb8bdf0015"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "ccced160d151eeeb"
+sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
 # Yapılandırma Depolama
 
-Yapılandırma depolama, CLI yapılandırmanızın cihazlar arasında sıfır bilgi şifreli senkronizasyonunu sağlar. Yapılandırmalarınız istemci tarafında bir içerik şifreleme anahtarıyla (CEK) şifrelenir, sunucu düz metin verileri asla görmez.
+Yapılandırma depolama, bir CLI yapılandırmasını cihazlar arasında senkronize eder. Yapılandırmalar, sunucunun asla elinde tutmadığı bir içerik şifreleme anahtarıyla (CEK) cihazda şifrelenir. [Güvenlik](#security) bölümü bunun tam olarak neye karşı koruma sağladığını ve neye karşı sağlamadığını belirtir.
 
 ## Kilit açma yöntemleri (anahtar yuvaları)
 
@@ -26,7 +26,7 @@ Her depo için tek bir CEK vardır ve bu anahtar, LUKS'un anahtar yuvalarına be
 | **Ana parola** | Seçtiğiniz, PBKDF2-SHA256 ile (600.000 yineleme) güçlendirilmiş bir parola | PRF destekli donanım gerektirmez; CLI'ı başsız (headless) olarak kaydetmeyi de mümkün kılar |
 | **Kurtarma kodu** | Oluşturulan bir `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` kodu | Oluşturulduğunda yalnızca bir kez gösterilir; güvenli bir yerde saklayın |
 
-Her yöntem aynı süreçten geçer: yuva, CEK'in kilidini açmak için sunucudaki bir sırla birleşen bir sır üretir. Bu yarımlardan hiçbiri tek başına yeterli değildir, dolayısıyla sıfır bilgi özelliği her üç yöntemde de korunur; yuva sırrı sunucuya asla ulaşmaz.
+Her yöntem aynı süreçten geçer: yuva, CEK'in kilidini açmak için sunucudaki bir sırla birleşen bir sır üretir. Bu yarımlardan hiçbiri tek başına yeterli değildir, ve yuva sırrı sunucuya asla ulaşmaz. Ana parola yuvası üçü arasında en zayıf olanıdır: sunucu, parola tahminlerini çevrimdışı denemek için gereken her şeye sahiptir, bu yüzden parolanın güçlü olması gerekir. Passkey ve kurtarma kodu yuvalarında böyle bir zayıflık yoktur.
 
 Yuvalar, portaldaki Yapılandırma Depolama sayfasından yönetilir. Yalnızca donanımla kilit açılmasını isteyen organizasyonlar, tüm depo için passkey dışındaki yuvaları reddeden ve iptal eden **passkey zorunlu kıl** politikasını etkinleştirebilir.
 
@@ -44,12 +44,13 @@ PRF gereksinimi yalnızca passkey yuvası için geçerlidir. Ana parola ve kurta
 
 1. Kenar çubuğunda **Yapılandırma Depolama**'ya gidin, ardından **Yapılandırma Depolamayı Kur**'a tıklayın
 2. Gereksinimler kontrol listesi tarayıcınızı, 2FA'yı ve oturum durumunu doğrular
-3. **Kurulumu Başlat**'a tıklayın. Passkey yuvası için güvenlik anahtarınıza iki kez dokunmanız gerekecek:
-   - İlk dokunuş: passkey'i kaydeder
-   - İkinci dokunuş: PRF aracılığıyla şifreleme anahtarlarını türetir
-4. Kurulum tamamlandı, passkey sırrınız işletim sisteminizin anahtar zincirinde saklanır
+3. İlk kilit açma yöntemini seçin ve **Yapılandırma deposu oluştur**'a tıklayın:
+   - **Passkey**, sağlayıcınız PRF destekliyorsa: güvenlik anahtarınıza iki kez dokunursunuz; biri kaydetmek, diğeri şifreleme anahtarlarını türetmek için.
+   - **Ana parola**, her tarayıcıyla çalışır; Bitwarden gibi PRF desteklemeyen passkey sağlayıcılarıyla da.
+   - İsteğe bağlı olarak bir **kurtarma kodu**: yalnızca bir kez gösterilir ve depo oluşturulmadan önce saklanmalıdır.
+4. Kurulum tamamlandı. CLI kilit açma sırrını işletim sisteminizin anahtar zincirinde tutar.
 
-Kurulumdan sonra, kayıp veya desteklenmeyen bir kimlik doğrulayıcının sizi dışarıda bırakmaması için Yapılandırma Depolama sayfasından bir ana parola veya kurtarma kodu yuvası ekleyin.
+Passkey daha sonra Config Storage sayfasından eklenebilir. Kaybolan ya da desteklenmeyen bir doğrulayıcı sizi dışarıda bırakmasın diye en az iki kilit açma yöntemi tutun.
 
 ## PRF Sağlayıcı Uyumluluğu
 
@@ -60,7 +61,7 @@ Kurulumdan sonra, kayıp veya desteklenmeyen bir kimlik doğrulayıcının sizi 
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Çapraz platform |
-| Bitwarden eklentisi | ❌ | Geliştirme aşamasında |
+| Bitwarden eklentisi | ❌ | Bunun yerine ana parola kullanın |
 | Windows Hello | ❌ | Desteklenmiyor |
 
 ## Başsız (Headless) CLI Kaydı
@@ -86,7 +87,23 @@ Etkinleştirildikten sonra yapılandırma, herhangi bir yerel yapılandırmayla 
 
 - **Okumalar çevrimdışı çalışır.** Önbelleğe alınmış içerik, önbellek sürümü ve zaman damgasıyla (`cachedVersion` / `cachedAt`) etiketlenmiş bir bayatlık uyarısıyla birlikte stderr'e yazdırılır.
 - **Yazmalar sunucu gerektirir ve kapalı biçimde başarısız olur.** Çevrimdışı bir yazma kuyruğu yoktur: sunucuya ulaşamayan bir yazma işlemi, sunucunun adını belirterek hata verir. Bir yazma komutu başarılı olduysa, değişiklik sunucudadır.
-- **İki makineden gelen eşzamanlı düzenlemeler**, kaynak-bucket düzeyinde çek-yeniden oynat-yeniden gönder (pull-replay-repush) ile çözülür; böylece başka bir yerdeki eşzamanlı bir düzenleme sizinkini geçersiz kılmaz.
+- **İki makineden gelen eşzamanlı düzenlemeler**, çek-yeniden oynat-yeniden gönder (pull-replay-repush) ile çözülür: sunucu bir gönderimi yalnızca değiştirdiği sürümün üzerine kabul eder ve kaybeden gönderim güncel kopya üzerinde yeniden oynatılır; böylece başka bir yerdeki eşzamanlı bir düzenleme geçersiz kılınmaz.
+- **Yerel bir yapılandırma** (bir `remote` bloğu olmayan) bundan hiç etkilenmez ve tamamen çevrimdışı çalışır.
+
+## Neler senkronize edilir
+
+`schemaVersion`, `version`, `remote`, `encryption`, `renetPath`, `credentials.masterPasswordVerifier` ile oturum açma alanları `account.accountServer` ve `account.e2ePublicKey` dışında, her deponun ağ kimliği dahil olmak üzere bir yapılandırmadaki her şey senkronize edilir. Oturum açma ve kapatma cihaz bazlıdır.
+
+## Sürümler ve geri yükleme
+
+Sunucu her yapılandırmanın son 50 sürümünü tutar.
+
+```bash
+rdc config remote versions
+rdc config remote restore <version>
+```
+
+Bir geri yükleme, eski içeriği mevcut sürümün üzerine yeni bir sürüm olarak yayımlar; sürüm numarasını asla geriye almaz. Her cihaz, bir sonraki pull işleminde geri yüklenen içeriği alır ve geri yükleme denetim günlüğüne kaydedilir.
 
 ## Anahtar Rotasyonu
 
@@ -95,6 +112,7 @@ Deponun CEK'ini rotasyona sokmak, anahtarı yeni bir nesil altında yeniden sarm
 - **Kurtarma kodları rotasyonla her zaman geçersiz kılınır**, ardından yeni bir kod oluşturup saklayın
 - Bir **ana parola yuvası** yalnızca rotasyon sihirbazı sırasında parola yeniden girilirse hayatta kalır
 - Eski bir nesilde kalan bir yuva, anlaşılmaz bir şifre çözme hatası vermek yerine bayat (stale) olarak raporlanır
+- Diğer üyelerin yapılandırma token'ları iptal edilir ve eski anahtarı hâlâ tutan bir cihaza `rdc config remote enable` ile yeniden etkinleştirmesi söylenir
 
 ## Üye Yönetimi
 
@@ -110,11 +128,23 @@ Depodaki yapılandırmalar ayrıca ekip bazında da kapsamlıdır, ancak bu kaps
 
 ## Güvenlik
 
-- **Sıfır bilgi**: Sunucu, çözemeyeceği üçlü şifreli verileri depolar
-- **Bölünmüş anahtar**: Şifre çözme, hem yuva sırrınızı (istemci) hem de sunucu sırrını (sunucu) gerektirir
-- **Dönen tokenlar**: Her API çağrısı yeni bir token kullanır; eski tokenlar kendini yok eder
-- **IP bağlama**: Tokenlar ilk kullanımda IP'nize bağlanır
-- **Anında iptal**: Kaldırılan üyeler 30 saniye içinde erişimi kaybeder
+**Neyin korunduğu.** Depolanan yapılandırmalar, sunucunun depolamasının ele geçirilmesine ve pasif bir operatöre karşı gizlidir. Her blob kendi deposuna, yapılandırmasına, ekibine ve sürümüne bağlıdır; bu yüzden sunucu bir yapılandırmanın blob'unu başka birininkiyle değiştiremez veya fark edilmeden değiştiremez.
+
+**Neyin korunmadığı.** Kötü amaçlı portal kodu sunan bir operatör, anahtarı tarayıcıda okuyabilir. Bir operatör, en yeni sürümü onu hiç görmemiş bir cihazdan da alıkoyabilir.
+
+| Sunucunun yapabildiği | Sunucunun yapamadığı |
+|---|---|
+| Yapılandırma kimliklerini, ekipleri, sürüm numaralarını, zaman damgalarını, blob boyutlarını, bir yapılandırmanın kaç alan içerdiğini ve her alanın türünü, ve istemci IP adreslerini görmek | Makine, depo veya depolama adlarını (körleştirilmiştir) ya da herhangi bir yapılandırma değerini görmek |
+| Yapılandırmaları ve geçmişlerini reddetmek, geciktirmek veya silmek | Bir yapılandırmanın içeriğini başka birininki gibi sunmak veya cihaz fark etmeden düzenlemek |
+| Daha yeni bir sürüm hiç görmemiş bir cihaza eski bir sürüm sunmak | CLI'a zaten gördüğü bir sürümden daha eskisini sunmak: CLI bunu reddeder |
+| Ana parolayı çevrimdışı tahmin etmeye çalışmak | Bir passkey ya da kurtarma kodu yuvasını açmak |
+
+Diğer korumalar:
+
+- **Bölünmüş anahtar**: şifre çözme hem yuva sırrını (cihazda) hem de sunucu sırrını gerektirir
+- **Silme bilgi gerektirir**: bir yapılandırmadan onaylanmış bir değeri kaldırmak, değerin bilindiğinin kanıtlanmasını gerektirir; böylece kısmi erişimi olan bir aracı alanları sessizce silemez
+- **Dönen token'lar**: her istek yapılandırma token'ını döndürür; bir token ilk kullanıldığı IP adresine bağlıdır ve 7 gün sonra sona erer
+- **İptal**: bir üyeyi kaldırmak, o üyenin anahtar yuvalarını ve token'larını aynı anda siler; üyenin daha önce çektiği içerik kendi cihazında kalır, ve bir CEK rotasyonu üyenin sakladığı bir anahtarın sonraki sürümleri açmasını engeller
 
 ## Sorun Giderme
 
@@ -124,7 +154,8 @@ Depodaki yapılandırmalar ayrıca ekip bazında da kapsamlıdır, ancak bu kaps
 | X25519 not supported | Tarayıcı sürümü çok eski | Chrome 133+, Edge 133+, Firefox 130+ veya Safari 17+'ye güncelleyin |
 | Already configured | Organizasyonunuz için depo zaten mevcut | Yönetmek için /account/config-storage adresini ziyaret edin |
 | Config storage not configured | Sunucuda blob depolama eksik | R2/RustFS yapılandırması için yöneticinize başvurun |
-| Token expired | 24 saattir etkinlik yok | Yenilemek için herhangi bir yapılandırma depolama komutu çalıştırın |
+| Token expired | 7 gündür etkinlik yok, ya da makine ağ değiştirdi | Girişten (login) otomatik olarak yenilenir; kayıtlı bir giriş yoksa `rdc subscription login` veya `rdc config remote enable` çalıştırın |
+| Yapılandırma daha eski bir sürümle döndü | Sunucu, bu cihazın zaten gördüğünden daha eski bir kopya döndürdü | Yerelde bir şey değişmedi; tekrar deneyin, sürerse bildirin |
 | Cannot remove last member | Depoyu kalıcı olarak kilitler | Önce başka bir üye ekleyin |
 | Stale slot | Yuva, son anahtar rotasyonundan öncesine ait | Yuvayı yeniden ekleyin (kurtarma kodları her rotasyondan sonra yeniden oluşturulmalıdır) |
 

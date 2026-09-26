@@ -1,0 +1,7 @@
+# twin .ci/scripts/housekeeping/cleanup-pr-environments.sh blob 4d8000b5648f45a1ac73e0f20a4eb47002026c7e
+exit: 7
+--- stdout ---
+--- stderr ---
+→ Cleaning up empty pr-N environments in acme/widget
+--- calls ---
+api	repos/acme/widget/environments	--paginate	--jq	.environments[]?.name

@@ -216,18 +216,12 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     result.manifest = manifest;
     result.updateAvailable = compareVersions(VERSION, manifest.version) < 0;
   } catch (err) {
-    // Still silent to the USER — a background update check must never
-    // interfere with CLI operation, and that part was always right.
+    // Still silent to the USER, a background update check must never interfere with CLI operation, and that part was always right.
     //
-    // But it was silent to US as well, and that is new harm. compareVersions
-    // now throws on a malformed version instead of quietly returning 0
-    // ("equal"), so a manifest advertising a broken version used to leave
-    // every client reporting "up to date" forever, and now throws into a bare
-    // catch and leaves them reporting exactly the same thing. Same outcome,
-    // still invisible from both directions.
+    // But it was silent to US as well, and that is new harm. compareVersions now throws on a malformed version instead of quietly returning 0 ("equal"), so a manifest advertising a broken version used to leave every client reporting "up to date" forever, and now throws into a bare catch and leaves them reporting exactly the same thing. Same outcome, still invisible from both
+    // directions.
     //
-    // Debug-only, so the user's experience is unchanged, but a broken manifest
-    // stops being undiagnosable.
+    // Debug-only, so the user's experience is unchanged, but a broken manifest stops being undiagnosable.
     debugLog(`update check failed: ${err instanceof Error ? err.message : String(err)}`, 'update');
   }
 
@@ -370,12 +364,8 @@ async function downloadVerifyAndReplace(
   const tempPath = join(execDir, `.rdc-update-${Date.now()}.tmp`);
 
   try {
-    // Try a delta update first: most of a release is embedded third-party
-    // payload that did not change since the running binary was built, so the
-    // blocks holding it can be reused from disk instead of re-downloaded. Any
-    // problem at all — no index published, no range support, a short read —
-    // falls through to the full download, and either way the checksum below is
-    // what actually decides whether the result is acceptable.
+    // Try a delta update first: most of a release is embedded third-party payload that did not change since the running binary was built, so the blocks holding it can be reused from disk instead of re-downloaded. Any problem at all, no index published, no range support, a short read, falls through to the full download, and either way the checksum below is what actually decides
+    // whether the result is acceptable.
     const viaDelta = await tryDeltaDownload(binaryUrl, tempPath, onProgress);
     if (!viaDelta) {
       await downloadFile(binaryUrl, tempPath, onProgress);
@@ -406,7 +396,7 @@ async function downloadVerifyAndReplace(
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === 'EBUSY' || code === 'EPERM' || code === 'ETXTBSY') {
-      // Binary is locked — stage for next launch instead
+      // Binary is locked, stage for next launch instead
       await stageDownloadedBinary(
         tempPath,
         expectedSha256,
@@ -429,7 +419,7 @@ function errorResult(error: string, toVersion: string = VERSION): UpdateResult {
 }
 
 /**
- * Handle caught errors during update — return appropriate UpdateResult.
+ * Handle caught errors during update, return appropriate UpdateResult.
  */
 function handleUpdateError(err: unknown): UpdateResult {
   if (err instanceof BinaryBusyError) {

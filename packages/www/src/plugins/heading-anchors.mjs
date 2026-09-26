@@ -22,8 +22,7 @@ import Slugger from 'github-slugger';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_ROOT = path.resolve(__dirname, '../content');
 // {{t:namespace.key}} placeholders in headings resolve against the CLI locale
-// catalogs, mirroring remark-resolve-translations. Only English is needed here,
-// because only English text is ever slugged.
+// catalogs, mirroring remark-resolve-translations. Only English is needed here, because only English text is ever slugged.
 const CLI_EN_LOCALES = path.resolve(__dirname, '../../../cli/src/i18n/locales/en');
 
 const TRANSLATION_KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
@@ -48,8 +47,7 @@ function resolveEnglishPlaceholders(text) {
       if (current === null || typeof current !== 'object') return match;
       current = current[key];
     }
-    // An unresolved key stays visible, the same behaviour as
-    // remark-resolve-translations, which already warns about it at build time.
+    // An unresolved key stays visible, the same behaviour as remark-resolve-translations, which already warns about it at build time.
     return typeof current === 'string' ? current : match;
   });
 }

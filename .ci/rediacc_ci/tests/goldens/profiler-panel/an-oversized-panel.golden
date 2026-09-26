@@ -1,0 +1,14 @@
+# twin .ci/scripts/ci/profiler/panel.sh blob 7c1e340f56711c529ad241bbe2345d12083c81e7
+exit: 0
+--- stdout ---
+::notice title=Runner sizing (profiler)::(advisory text unavailable: the panel was trimmed) | PROFILER_BASELINE_V1 job=unknown runner_label=ubuntu-slim tier=CGROUP_V2 env=unknown cpu_peak_milli=460 mem_peak_bytes=1297088512 wall_s=370 cpu_ceil_milli=1000 mem_ceil_bytes=5368709120 samples=37 findings=0 verdict=SLIM_FIT
+--- stderr ---
+--- summary ---
+
+## Runner Profile
+
+**Runner:** ubuntu-slim (tier CGROUP_V2; cpu via CGROUP_V2, memory via CGROUP_V2)
+**Detected ceilings:** 1.00 cores / 5.00 GiB
+**Wall clock:** 6m 10s (44% of the 14m 0s declared ti
+**Panel trimmed:** 1326 bytes exceeded the 200-byte budget (platform limit is 1 MiB per step summary).
+

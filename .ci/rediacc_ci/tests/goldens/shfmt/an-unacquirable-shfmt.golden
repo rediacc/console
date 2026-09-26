@@ -1,0 +1,11 @@
+# twin .ci/scripts/security/shfmt.sh blob 5a9fd57994b4a4b00e0b93dd17bf4b3cc83fbd94
+exit: 77
+--- stdout ---
+info: Checking shell script formatting
+info: Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report
+info: Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shfmt.sh
+--- stderr ---
+toolchain: could not download shfmt from https://github.com/mvdan/sh/releases/download/v9.99.0/shfmt_v9.99.0_linux_amd64
+[0;31merror: shfmt is unusable for this gate -- CANNOT RUN, not a verdict[0m
+--- calls ---
+FAKECALL curl -fsSL --max-time 180 --retry 3 --retry-delay 5 -o cache/rediacc-toolchain/shfmt-9.99.0/shfmt.<tmp> https://github.com/mvdan/sh/releases/download/v9.99.0/shfmt_v9.99.0_linux_amd64

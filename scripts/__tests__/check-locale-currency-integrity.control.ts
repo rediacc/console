@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { findCorruptions } from '../check-locale-currency-integrity.ts';
+import { findCorruptions } from '../gates/check-locale-currency-integrity.ts';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'currency-control-'));
 const write = (n: string, o: unknown) =>

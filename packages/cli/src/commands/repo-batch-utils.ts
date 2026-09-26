@@ -17,7 +17,7 @@ import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
-async function confirmBatch(action: string, count: number, machine: string): Promise<boolean> {
+function confirmBatch(action: string, count: number, machine: string): Promise<boolean> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question(`${t('commands.repo.batchConfirm', { action, count, machine })} `, (answer) => {
@@ -28,7 +28,7 @@ async function confirmBatch(action: string, count: number, machine: string): Pro
 }
 
 /**
- * Ensure DNS records exist for a repo's auto-route domain. Pure HTTP — needs
+ * Ensure DNS records exist for a repo's auto-route domain. Pure HTTP, needs
  * only names, so callers may fire it before (or concurrent with) SSH work.
  * Resolves to the machine's baseDomain (undefined when not configured or on
  * failure; DNS issues never block repo up).
@@ -54,10 +54,7 @@ export async function ensureDns(
 
 // Auto-sync the acme cert cache from the machine.
 //
-// Skipped if the cached entry for this baseDomain was updated within the last
-// AUTO_SYNC_MIN_INTERVAL_HOURS window — this prevents a series of back-to-back
-// `repo up` calls from SSH-thrashing the host for a file that Traefik refreshes
-// only on renewal. When sync runs and actually changes something, we emit an
+// Skipped if the cached entry for this baseDomain was updated within the last AUTO_SYNC_MIN_INTERVAL_HOURS window, this prevents a series of back-to-back `repo up` calls from SSH-thrashing the host for a file that Traefik refreshes only on renewal. When sync runs and actually changes something, we emit an
 // info-level log so the behavior is visible; silent failures are swallowed as
 // before because cert cache is advisory.
 async function maybeSyncCertCache(
@@ -120,8 +117,7 @@ export async function postRepoUpTasks(
 ): Promise<void> {
   const { steps } = options;
 
-  // DNS-await ∥ cert sync: cert sync only needs the baseDomain from local
-  // config, so it does not wait for DNS record creation to settle.
+  // DNS-await ∥ cert sync: cert sync only needs the baseDomain from local config, so it does not wait for DNS record creation to settle.
   const dnsPromise =
     options.dnsPromise ??
     recordTimelineStep(steps, 'dns', () => ensureDns(repoName, machineName), { parallel: true });
@@ -148,8 +144,7 @@ export async function postRepoUpTasks(
 }
 
 // Containers carry a partial-rediacc-label shape on the JSON wire; this local
-// alias avoids leaking through @rediacc/shared types we don't need to depend
-// on here.
+// alias avoids leaking through @rediacc/shared types we don't need to depend on here.
 type LabeledContainer = { name: string; labels?: Record<string, string> };
 
 function autoRouteHost(
@@ -227,18 +222,12 @@ export async function printResolvedServiceUrls(
   try {
     const [parentName, tag] = repoName.includes(':') ? repoName.split(':') : [repoName, undefined];
 
-    // Lease-aware status fetch: machineConnections pools by host, so when the
-    // caller holds a lease on this machine the SSH session is reused. Only
-    // the containers section is needed to resolve service URLs.
+    // Lease-aware status fetch: machineConnections pools by host, so when the caller holds a lease on this machine the SSH session is reused. Only the containers section is needed to resolve service URLs.
     const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
     const listResult = await fetchMachineStatus(machineName, { sections: ['containers'] });
     const machine = { machineName, vaultStatus: JSON.stringify(listResult) };
 
-    // The rediacc.repo_name label holds the FULL repo name including any
-    // :tag suffix for forks (e.g. "mautic:bugfix"), so a direct equality
-    // check covers both grands and forks. Traefik Host rules and the
-    // rediacc.domain label are already runtime-interpolated on running
-    // containers, so we read literal hostnames.
+    // The rediacc.repo_name label holds the FULL repo name including any :tag suffix for forks (e.g. "mautic:bugfix"), so a direct equality check covers both grands and forks. Traefik Host rules and the rediacc.domain label are already runtime-interpolated on running containers, so we read literal hostnames.
     const matched = getMachineContainers(machine).filter(
       (c) => c.labels?.['rediacc.repo_name'] === repoName
     );
@@ -351,9 +340,7 @@ export async function handleDownAll(options: {
   }
 }
 
-// Renders the `repo list` table: resolves tag/type from local config, marks
-// server-sourced names (not in local config) with ' *', and prints a legend
-// when any such name is shown.
+// Renders the `repo list` table: resolves tag/type from local config, marks server-sourced names (not in local config) with ' *', and prints a legend when any such name is shown.
 async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<void> {
   const { parseRepoRef } = await import('../utils/config-schema.js');
   const { classifyRepoType } = await import('../utils/repo-classify.js');
@@ -401,19 +388,14 @@ export async function handleRepoList(options: {
       throw new ValidationError(t('errors.repo.listTargetExclusive'));
     }
     // A datastore names WHERE the repos live; the machine holding it right now is a
-    // fact about the datastore, not something the operator should have to know. So
-    // --datastore resolves to its holder, and a detached datastore says so rather
-    // than dispatching at nothing.
+    // fact about the datastore, not something the operator should have to know. So --datastore resolves to its holder, and a detached datastore says so rather than dispatching at nothing.
     const { machineName, kubeCluster } = options.datastore
       ? {
           machineName: await requireDatastoreHost(options.datastore),
           kubeCluster: (await getDatastore(options.datastore)).cluster,
         }
       : await resolveRepoTarget(options);
-    // #74: `--datastore` resolved the HOLDER and then said nothing about the
-    // datastore itself, so `repo list --datastore tier1` dispatched at the right
-    // machine and listed its DEFAULT pool — the one place the operator did not
-    // ask about. `repository_list` enumerates exactly one datastore, so naming it
+    // #74: `--datastore` resolved the HOLDER and then said nothing about the datastore itself, so `repo list --datastore tier1` dispatched at the right machine and listed its DEFAULT pool, the one place the operator did not ask about. `repository_list` enumerates exactly one datastore, so naming it
     // is the whole fix; without --datastore the machine's default stays correct.
     const datastore = options.datastore ? namedDatastoreMount(options.datastore) : undefined;
     outputService.info(t('commands.repo.list.starting', { machine: machineName }));
@@ -432,8 +414,7 @@ export async function handleRepoList(options: {
     if (result.success) {
       const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
       const nameResolver = createRepoNameResolver(await loadGuidMap());
-      // Resolve each repo's display name: local config > server repo_name > GUID.
-      // Keep the GUID under `guid` and record where the name came from in `name_source`.
+      // Resolve each repo's display name: local config > server repo_name > GUID. Keep the GUID under `guid` and record where the name came from in `name_source`.
       const resolved: Record<string, unknown>[] = repositories.map((r) => {
         const guid = String(r.name);
         const { name, source } = nameResolver(guid, r.repo_name as string | undefined);

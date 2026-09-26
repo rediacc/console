@@ -107,7 +107,7 @@ function shellSingleQuote(s: string): string {
  * @param options - Additional options
  * @returns Promise resolving to success status and output
  */
-async function executeRemoteCommand(
+function executeRemoteCommand(
   destination: string,
   sshOptions: string[],
   command: string,
@@ -205,8 +205,7 @@ export async function ensureVSCodeEnvSetup(
     const script = shellSingleQuote(await loadSetupScript());
     const config = shellSingleQuote(buildSetupConfig(envBlock, universalUser, serverInstallPath));
 
-    // Build command to execute
-    // If we need user switching, wrap in sudo
+    // Build command to execute If we need user switching, wrap in sudo
     const command = needsUserSwitch(sshUser, universalUser)
       ? `sudo -u ${shellSingleQuote(universalUser)} python3 -c ${script} ${config}`
       : `python3 -c ${script} ${config}`;

@@ -47,16 +47,12 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
     return;
   }
 
-  // renet emits the prunable-resources / result struct as JSON. Parse and render
-  // it so the operator can see what a real prune would remove (dry-run) or what
-  // was removed. Fall back gracefully if the output isn't the expected JSON
-  // (e.g. an older renet that ignores --output json).
+  // renet emits the prunable-resources / result struct as JSON. Parse and render it so the operator can see what a real prune would remove (dry-run) or what was removed. Fall back gracefully if the output isn't the expected JSON (e.g. an older renet that ignores --output json).
   let parsed: Record<string, unknown>;
   try {
     parsed = parseDatastorePruneOutput(result.stdout ?? '');
   } catch {
-    // Report passthrough, not a parse: renet's diagnostics now arrive on
-    // stderr (data/diag channel split), so include both streams.
+    // Report passthrough, not a parse: renet's diagnostics now arrive on stderr (data/diag channel split), so include both streams.
     const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
     if (raw) outputService.print(raw);
     outputService.success(t('commands.machine.prune.datastoreCompleted'));
@@ -98,9 +94,7 @@ async function pruneUnits(machineName: string, options: PruneOptions): Promise<v
     return;
   }
 
-  // `renet prune` emits a human-readable report, not JSON, so pass it through
-  // rather than inventing a parse for a format that has no schema. Diagnostics
-  // arrive on stderr since the data/diag channel split — include both streams.
+  // `renet prune` emits a human-readable report, not JSON, so pass it through rather than inventing a parse for a format that has no schema. Diagnostics arrive on stderr since the data/diag channel split, include both streams.
   const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
   if (raw) outputService.print(raw);
   outputService.success(t('commands.machine.prune.unitsCompleted'));
@@ -135,13 +129,13 @@ function renderPruneOutcome(parsed: Record<string, unknown>, dryRun: boolean): v
 /**
  * Delete a list of orphaned repo GUIDs from a machine.
  *
- * Each `repository_delete` is its own SSH session today — `localExecutorService`
- * has no sticky connection — but `quietSpinners: true` on calls 2..N hides
+ * Each `repository_delete` is its own SSH session today, `localExecutorService`
+ * has no sticky connection, but `quietSpinners: true` on calls 2..N hides
  * the visible "Config loaded / Connected / Renet provisioned / Machine
  * verified" ladder so the output is one summary line per GUID instead of
  * five. The actual work is unchanged; only the user-facing repetition goes
  * away. (Real per-call wins would require batching `repository_delete` like
- * we did `backup_delete` — see TODO.)
+ * we did `backup_delete`, see TODO.)
  */
 async function deleteOrphanedItems(
   orphaned: { guid: string }[],
@@ -216,7 +210,7 @@ function filterMountedReposForDeletion<T extends MountableRepo>(
 
 /**
  * Phase 3 (opt-in): Delete repositories the renet `.interim/state` mirror
- * cannot classify — i.e. those that are NOT in the operator's local CLI
+ * cannot classify, i.e. those that are NOT in the operator's local CLI
  * config AND have no fork-marked mirror. This is a strictly narrower set
  * than `--orphaned-repos`:
  *

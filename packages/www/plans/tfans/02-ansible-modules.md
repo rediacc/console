@@ -1,24 +1,18 @@
 # Phase 1b: Ansible Module Specifications
 
-Each module follows the CLI-wrapper pattern: build args → call `rdc` → parse
-JSON output → report changed state. All modules use the shared `rdc_runner.py`
-utility (see `01-ansible-collection.md`).
+Each module follows the CLI-wrapper pattern: build args → call `rdc` → parse JSON output → report changed state. All modules use the shared `rdc_runner.py` utility (see `01-ansible-collection.md`).
 
 ## Design Conventions (Ansible Best Practices)
 
 ### 1. Use `state` for Desired State, Not `action`
 
-All modules that manage resource state use a `state` parameter with standard
-values: `present`, `absent`, `started`, `stopped`. This is the universal
-Ansible convention (see `community.docker.docker_container`, `ansible.builtin.service`).
+All modules that manage resource state use a `state` parameter with standard values: `present`, `absent`, `started`, `stopped`. This is the universal Ansible convention (see `community.docker.docker_container`, `ansible.builtin.service`).
 
-**Exception:** Pure action modules (sync, backup push/pull) where there is no
-idempotent target state. These use `direction` (upload/download, push/pull).
+**Exception:** Pure action modules (sync, backup push/pull) where there is no idempotent target state. These use `direction` (upload/download, push/pull).
 
 ### 2. Separate `_info` Modules for Read-Only Operations
 
-Read-only queries belong in dedicated `_info` modules, not mixed into
-mutation modules. This follows the `community.docker` pattern:
+Read-only queries belong in dedicated `_info` modules, not mixed into mutation modules. This follows the `community.docker` pattern:
 - `docker_container` → manages state
 - `docker_container_info` → reads state
 
@@ -29,9 +23,7 @@ Our split:
 
 ### 3. Argument Validation via `argument_spec`
 
-Use `mutually_exclusive`, `required_if`, and `required_together` in
-`argument_spec` — don't validate in module code. Ansible validates
-before the module runs and produces standard error messages.
+Use `mutually_exclusive`, `required_if`, and `required_together` in `argument_spec` — don't validate in module code. Ansible validates before the module runs and produces standard error messages.
 
 ```python
 module = AnsibleModule(
@@ -57,18 +49,15 @@ module = AnsibleModule(
 
 ### 4. Check Mode Mapped to `--dry-run`
 
-`repo up`, `repo down`, and `repo delete` support `--dry-run` which returns
-structured JSON. Modules map Ansible check mode to this:
+`repo up`, `repo down`, and `repo delete` support `--dry-run` which returns structured JSON. Modules map Ansible check mode to this:
 - **Check mode:** run with `--dry-run`, parse response, report `changed: true/false`
 - **Normal mode:** run without `--dry-run`, verify via post-query
 
-Modules that lack dry-run support simulate check mode by querying current
-state and comparing to desired state without executing.
+Modules that lack dry-run support simulate check mode by querying current state and comparing to desired state without executing.
 
 ### 5. Diff Mode Support
 
-When `_diff=True`, modules return `before` and `after` dicts showing what
-changed. This makes `ansible-playbook --diff` useful:
+When `_diff=True`, modules return `before` and `after` dicts showing what changed. This makes `ansible-playbook --diff` useful:
 
 ```python
 if module._diff:
@@ -80,15 +69,11 @@ if module._diff:
 
 ### 6. DOCUMENTATION/EXAMPLES/RETURN Strings
 
-Every module MUST include `DOCUMENTATION`, `EXAMPLES`, and `RETURN` module-level
-docstrings. These are required by `ansible-doc`, Ansible Galaxy, and `ansible-lint`.
-They are the module's public API documentation.
+Every module MUST include `DOCUMENTATION`, `EXAMPLES`, and `RETURN` module-level docstrings. These are required by `ansible-doc`, Ansible Galaxy, and `ansible-lint`. They are the module's public API documentation.
 
 ### 7. Execute-Then-Query Pattern
 
-Of 63 rdc commands, only 26 return structured JSON. All repo lifecycle commands
-(`create`, `up`, `down`, `delete`, `fork`, `resize`, `expand`) return human-only
-messages. Modules must:
+Of 63 rdc commands, only 26 return structured JSON. All repo lifecycle commands (`create`, `up`, `down`, `delete`, `fork`, `resize`, `expand`) return human-only messages. Modules must:
 
 1. **Query** current state via JSON-capable command (`config repositories`, `machine containers`)
 2. **Execute** lifecycle command — only check exit code (0=success)
@@ -98,9 +83,7 @@ The runner provides `run()` for queries and `run_lifecycle()` for mutations.
 
 ### 8. Error Handling
 
-The rdc error envelope includes `retryable`, `code`, and `guidance` fields.
-Modules should surface `guidance` in failure messages. For retryable errors,
-modules set `result['retryable'] = True` so playbooks can use `retries` + `until`.
+The rdc error envelope includes `retryable`, `code`, and `guidance` fields. Modules should surface `guidance` in failure messages. For retryable errors, modules set `result['retryable'] = True` so playbooks can use `retries` + `until`.
 
 ### 9. Return Values
 
@@ -224,9 +207,7 @@ state: absent
   → If yes: `rdc repo delete` → changed=true
 ```
 
-**Check Mode**: For `started`/`stopped`/`absent`, uses `--dry-run` which returns
-structured JSON showing what would change. For `present`, queries state only.
-Reports `changed: true/false` without executing.
+**Check Mode**: For `started`/`stopped`/`absent`, uses `--dry-run` which returns structured JSON showing what would change. For `present`, queries state only. Reports `changed: true/false` without executing.
 
 **Diff Mode**: When `_diff=True`, returns `before` and `after` state dicts.
 
@@ -292,8 +273,7 @@ Reports `changed: true/false` without executing.
 
 **Wraps**: `rdc repo backup push|pull`
 
-**Design note:** The `list` functionality is in `rediacc_backup_info` (separate
-read-only module, following Ansible `_info` convention).
+**Design note:** The `list` functionality is in `rediacc_backup_info` (separate read-only module, following Ansible `_info` convention).
 
 ```yaml
 # Push to another machine
@@ -425,8 +405,7 @@ mutually_exclusive=[
 | `repos` | list | no | all | Filter to specific repos |
 | `override` | bool | no | false | Overwrite on pull |
 
-**Design note:** Uses `direction` (not `state`) because this is a one-shot
-sync action with no idempotent target state.
+**Design note:** Uses `direction` (not `state`) because this is a one-shot sync action with no idempotent target state.
 
 ---
 

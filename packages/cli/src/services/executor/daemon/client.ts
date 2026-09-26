@@ -16,7 +16,7 @@
 import { randomUUID } from 'node:crypto';
 import * as net from 'node:net';
 import { debugEnabled } from '../../../utils/debug.js';
-import { currentRequestContext } from '../../core/request-context.js';
+import { currentRequestContext, writeStderr } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
 import { shouldEchoRelayLive, writeWrappedToStderr } from '../output-lines.js';
 import type { ExecuteOptions, ExecuteResult, Executor, RenetEvent } from '../types.js';
@@ -83,16 +83,10 @@ export function routeLogEvent(
     renderJobEvent(event);
     return;
   }
-  // `echoAll`, not `debugEnabled()` alone. THE SECOND HALF OF THE SAME BUG: the
-  // direct path was fixed to honour `--debug` and this one was not, and `repo up`
-  // routes HERE, through the daemon. So `rdc repo up --debug` still withheld
-  // renet's info-level lines and the concurrent-fork-isolation suite still could
-  // not find "restored from checkpoint" in its own --debug log. Fixing the
-  // instance in front of us instead of sweeping the class cost a second CI run.
-  // `shouldEchoRelayLive` is shared with the direct path deliberately: a third
-  // copy of this decision is what the extraction existed to prevent.
+  // `echoAll`, not `debugEnabled()` alone. THE SECOND HALF OF THE SAME BUG: the direct path was fixed to honour `--debug` and this one was not, and `repo up` routes HERE, through the daemon. So `rdc repo up --debug` still withheld renet's info-level lines and the concurrent-fork-isolation suite still could not find "restored from checkpoint" in its own --debug log. Fixing the
+  // instance in front of us instead of sweeping the class cost a second CI run. `shouldEchoRelayLive` is shared with the direct path deliberately: a third copy of this decision is what the extraction existed to prevent.
   if (event.level === 'error' || event.level === 'warning' || echoAll) {
-    process.stderr.write(`${event.msg}\n`);
+    writeStderr(`${event.msg}\n`);
     return;
   }
   remember(event.msg);
@@ -102,7 +96,7 @@ const DEFERRED_LOG_LIMIT = 200;
 
 function debug(message: string): void {
   if (debugEnabled('daemon')) {
-    process.stderr.write(`[executor-daemon] ${message}\n`);
+    writeStderr(`[executor-daemon] ${message}\n`);
   }
 }
 
@@ -143,7 +137,7 @@ interface ResolvedDeps {
  * Redraw the CLI-side provision timeline the daemon could not show.
  *
  * "Config loaded / Connected / Renet provisioned / Machine verified" are NOT
- * renet events — the direct path draws them from its own spinners (timedStep),
+ * renet events, the direct path draws them from its own spinners (timedStep),
  * which in the daemon write to a /dev/null stdout. They survive in
  * result.cliSteps, so we synthesize a step_done event per entry and route it
  * through the SAME renderer the detached-job and serve paths use (renderJobEvent
@@ -182,8 +176,7 @@ export function createDaemonExecutor(fallback: Executor, deps: DaemonClientDeps 
           debug(`falling back to direct: ${error.message}`);
           return fallback.execute(options);
         }
-        // Post-`accepted` failure: the work may already have started, so surface
-        // it rather than re-running it directly.
+        // Post-`accepted` failure: the work may already have started, so surface it rather than re-running it directly.
         throw error;
       }
     },
@@ -231,19 +224,14 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
     let accepted = false;
     // Info-level relay lines are DEFERRED, not dropped. Printing them live put
     // 358-column logrus strings on screen (and into every tutorial recording);
-    // dropping them outright is worse, and was tried: a renet child exited 1 and
-    // every explanatory line was an info-level log event, so the failure became
-    // unreadable. Buffering keeps both properties -- silent on success, complete
-    // on failure. Bounded so a chatty job cannot grow it without limit.
+    // dropping them outright is worse, and was tried: a renet child exited 1 and every explanatory line was an info-level log event, so the failure became unreadable. Buffering keeps both properties -- silent on success, complete on failure. Bounded so a chatty job cannot grow it without limit.
     const deferredLogs: string[] = [];
     const rememberLog = (line: string): void => {
       deferredLogs.push(line);
       if (deferredLogs.length > DEFERRED_LOG_LIMIT) deferredLogs.shift();
     };
     const flushDeferredLogs = (): void => {
-      // WRAPPED, via the same helper the direct path uses. These were dumped raw
-      // and a 115-column logrus line reached a recorded tutorial through this
-      // branch while the other buffer was already fixed.
+      // WRAPPED, via the same helper the direct path uses. These were dumped raw and a 115-column logrus line reached a recorded tutorial through this branch while the other buffer was already fixed.
       for (const line of deferredLogs) writeWrappedToStderr(line);
       deferredLogs.length = 0;
     };
@@ -260,8 +248,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
         case 'helloOk':
           return;
         case 'stale':
-          // The daemon runs a different build. Bring up a fresh one for the next
-          // invocation, and fall back to direct for this one.
+          // The daemon runs a different build. Bring up a fresh one for the next invocation, and fall back to direct for this one.
           deps.spawn();
           finish(() => reject(new DaemonUnavailable('stale daemon')));
           return;
@@ -271,12 +258,9 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
         case 'event':
           if (options.onEvent) options.onEvent(frame.event, frame.line);
           else if (!options.captureOutput) {
-            // Parity with the direct path, which echoes renet's stderr live
-            // (local-executor echoStderrLive): render EVERY log event to our
-            // stderr. renderJobEvent's replay filter (error/warning only)
+            // Parity with the direct path, which echoes renet's stderr live (local-executor echoStderrLive): render EVERY log event to our stderr. renderJobEvent's replay filter (error/warning only)
             // exists for detached-job replays; hiding info-level diagnostics
-            // here made real failures unreadable — a renet child exited 1 and
-            // every explanatory line was an info-level log event.
+            // here made real failures unreadable, a renet child exited 1 and every explanatory line was an info-level log event.
             routeLogEvent(frame.event, rememberLog, shouldEchoRelayLive(options));
           }
           return;
@@ -285,8 +269,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
           return;
         case 'result':
           finish(() => {
-            // The job failed, so the diagnostics we withheld are exactly what the
-            // reader needs. Flush BEFORE the step summary so cause precedes effect.
+            // The job failed, so the diagnostics we withheld are exactly what the reader needs. Flush BEFORE the step summary so cause precedes effect.
             if (frame.result.exitCode !== 0) flushDeferredLogs();
             renderCliSteps(options, frame.result);
             resolve(frame.result);
@@ -330,7 +313,7 @@ async function runViaDaemon(options: ExecuteOptions, deps: ResolvedDeps): Promis
 
 /**
  * Send a control frame (`stop`/`status`) to a running daemon and return its first
- * substantive reply, or null when no daemon is listening. Never spawns one — a
+ * substantive reply, or null when no daemon is listening. Never spawns one, a
  * control command has nothing to warm.
  */
 export async function sendDaemonControl(

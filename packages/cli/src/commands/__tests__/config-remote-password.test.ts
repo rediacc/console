@@ -9,6 +9,8 @@
  * mocked; every AES/HKDF/PBKDF2 operation runs for real.
  */
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ─── Hoisted I/O mocks (crypto stays real) ───────────────────────────────
@@ -75,6 +77,28 @@ vi.mock('../../adapters/remote-token-storage.js', () => ({
       if (cur) tokenMem.set(name, { ...cur, token });
       return Promise.resolve();
     },
+    withLease: <T>(name: string, fn: (lease: unknown) => Promise<T>) => {
+      const data = tokenMem.get(name) ?? null;
+      return fn({
+        data,
+        get token() {
+          return tokenMem.get(name)?.token;
+        },
+        get sync() {
+          return (tokenMem.get(name) as { sync?: unknown } | undefined)?.sync;
+        },
+        update: (token: string) => {
+          const cur = tokenMem.get(name);
+          if (cur) tokenMem.set(name, { ...cur, token });
+          return Promise.resolve();
+        },
+        recordSync: (sync: unknown) => {
+          const cur = tokenMem.get(name);
+          if (cur) tokenMem.set(name, { ...cur, sync } as typeof cur);
+          return Promise.resolve();
+        },
+      });
+    },
     delete: (name: string) => {
       tokenMem.delete(name);
       return Promise.resolve();
@@ -86,7 +110,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: mockConfigFileStorage,
 }));
 
-// Real crypto — do NOT mock @rediacc/shared/*.
+// Real crypto, do NOT mock @rediacc/shared/*.
 import {
   derivePasswordSlotSecret,
   generateCek,
@@ -133,6 +157,7 @@ async function provision(password: string, teamId: string | null = TEAM_ID) {
   } as unknown as RdcConfig;
 
   const payload = await buildConfigPushPayload(configInput, {
+    storeId: STORE_ID,
     version: 1,
     sdkEpoch: SDK_EPOCH,
     sdkDerived,
@@ -156,15 +181,20 @@ async function provision(password: string, teamId: string | null = TEAM_ID) {
       sdkEpoch: SDK_EPOCH,
     },
     config: {
+      server_secret: toBase64(serverSecret),
       configData: payload.encryptedBlob,
       envelope: {
+        envelopeVersion: payload.envelope.envelopeVersion,
         configId: CONFIG_ID,
         version: 1,
         teamId,
         lastModified: '2026-01-01T00:00:00Z',
+        sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
       },
       hmac: payload.hmac,
+      // The server's pull always returns the key of the epoch the blob was pushed in (configs.ts pull route).
+      sdk_derived: toBase64(rawSdk),
     },
   };
 }
@@ -277,21 +307,13 @@ describe('config remote enable --password', () => {
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
   });
 
-  // Six unrelated server conditions share HTTP 403 on password-enroll and the
-  // CLI used to render all of them as "requires a passkey". The server sends
-  // them as bare HTTPExceptions with no error code (see
-  // private/account/src/middleware/api-token.ts and routes/configs.ts), so the
-  // message text is the only discriminator; these cases quote it verbatim.
+  // Several unrelated server conditions share HTTP 403 on password-enroll and the CLI used to render all of them as "requires a passkey". Apart from the IP binding (TOKEN_IP_MISMATCH, handled centrally in accountServerFetch), the server sends them as bare HTTPExceptions with no
+  // error code (see routes/configs.ts), so the message text is the only discriminator; these cases quote it verbatim.
   const forbiddenCases: { name: string; serverMessage: string; expected: RegExp }[] = [
     {
       name: 'the passkey-only store policy',
       serverMessage: 'This config store requires a passkey; other unlock methods are disabled.',
       expected: /requires a passkey to unlock config storage/,
-    },
-    {
-      name: 'an api token bound to a different client IP',
-      serverMessage: 'Token is bound to a different IP address',
-      expected: /bound to a different client IP address/,
     },
     {
       name: 'a token missing the config:enroll scope',
@@ -327,6 +349,29 @@ describe('config remote enable --password', () => {
       expect(tokenMem.size).toBe(0);
     });
   }
+
+  it('surfaces the central TOKEN_IP_MISMATCH message unchanged', async () => {
+    // accountServerFetch has already localized the IP refusal (prompted, or explained both remedies) by the time it reaches the enroll handler.
+    const central =
+      'Your IP address changed, and this login only works from the old one. (central text)';
+    mockAccountServerFetch.mockRejectedValue(
+      Object.assign(new Error(central), { status: 403, code: 'TOKEN_IP_MISMATCH' })
+    );
+    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+
+    const failure = await enablePassword(API_URL, CONFIG_NAME).catch((e: unknown) => e);
+    expect((failure as Error).message).toBe(central);
+    expect(secureMem.size).toBe(0);
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('no longer matches the IP refusal by its text', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../config-remote-password.ts', import.meta.url)),
+      'utf8'
+    );
+    expect(source).not.toContain('bound to a different IP');
+  });
 
   it('quotes an unrecognised 403 verbatim rather than guessing', async () => {
     mockAccountServerFetch.mockRejectedValue(

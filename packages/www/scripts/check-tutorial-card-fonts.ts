@@ -72,8 +72,7 @@ function scan(): Offence[] {
   const langs = readdirSync(TRANSCRIPTS).filter((d) => existsSync(path.join(TRANSCRIPTS, d, '.')));
   for (const lang of langs.sort()) {
     const dir = path.join(TRANSCRIPTS, lang);
-    // Same helper the render-time assert uses, so the gate and the renderer
-    // cannot disagree about which families this locale actually resolves to.
+    // Same helper the render-time assert uses, so the gate and the renderer cannot disagree about which families this locale actually resolves to.
     const families = cardFontFamilies(lang);
     for (const family of families) {
       const file = resolveCardFontFile(family);

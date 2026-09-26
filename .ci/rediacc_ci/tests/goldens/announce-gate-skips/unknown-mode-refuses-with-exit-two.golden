@@ -1,0 +1,7 @@
+# twin .ci/scripts/quality/announce-gate-skips.sh blob ce63a3e3be32ed0e25ed71a569e9e4fcbac9ceab
+exit: 2
+--- stdout ---
+--- stderr ---
+announce-gate-skips: unknown GATE_SKIP_MODE 'Hard' (expected hard|skip)
+--- summary ---
+(absent)

@@ -12,12 +12,9 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 - Today (branch base): !`date +%m%d`  (feature branches are `MMDD-N`, NO suffix)
 
-**Take MAX+1 over the CONSUMED list, not over the remote branch list.** A merged
-PR's branch is DELETED, so `git branch -r` cannot see the name it used. That is
-how `0826-1` was picked twice on 2026-08-26: the remote showed only `0826-2`,
-while PR #576 had merged `0826-1` at 11:01 that morning. Both lines are printed
-below so the difference is visible rather than assumed.
+**Take MAX+1 over the CONSUMED list, not over the remote branch list.** A merged PR's branch is DELETED, so `git branch -r` cannot see the name it used. That is how `0826-1` was picked twice on 2026-08-26: the remote showed only `0826-2`, while PR #576 had merged `0826-1` at 11:01 that morning. Both lines are printed below so the difference is visible rather than assumed.
 - Current branch: !`git branch --show-current`
+- Live local branches besides `main` (at most ONE is allowed, `block_second_branch`): !`git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' '; echo`
 - Console tree (excl. settings.local.json): !`git status --short | grep -v '.claude/settings.local.json' | wc -l | tr -d ' '` changed path(s)
 - Submodules with changes: !`git status --short private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(none)'`
 - Existing date branches (console remote): !`git branch -r | grep "$(date +%m%d)-" || echo '(none yet)'`
@@ -29,15 +26,8 @@ below so the difference is visible rather than assumed.
 - **Default, including no arguments, is Inline mode** (below): you run the loop in THIS session per the agent file; `$ARGUMENTS` seeds the intent summary.
 - If the **first whitespace-delimited token of `$ARGUMENTS` is exactly `bg`** → **Delegate mode**: spawn a background pr-babysitter teammate and supervise it as team lead; the remainder of `$ARGUMENTS` seeds the intent summary.
 
-**WHY THE DEFAULT WENT BACK TO INLINE (operator directive, 2026-08-05.)** Delegation was
-tried as the default on the 0804-1 wave and the wave did not finish: CI reached green at
-05:35Z and the babysitter never saw it, because its wake-up watches died repeatedly
-(four separate deaths across the night, each needing a lead ping to recover) and the
-last one took the terminal verdict with it. The PR was still sitting in DRAFT hours
-later with every check green. The delegated loop's failure mode is that NOBODY is
-watching the watcher: a dropped watch is invisible to the babysitter by construction,
-and the lead can only detect it by polling a round log. Running in-session puts the
-loop on the same wake-ups as the rest of the session, where a stall is visible
+**WHY THE DEFAULT WENT BACK TO INLINE (operator directive, 2026-08-05.)** Delegation was tried as the default on the 0804-1 wave and the wave did not finish: CI reached green at 05:35Z and the babysitter never saw it, because its wake-up watches died repeatedly (four separate deaths across the night, each needing a lead ping to recover) and the last one took the terminal verdict
+with it. The PR was still sitting in DRAFT hours later with every check green. The delegated loop's failure mode is that NOBODY is watching the watcher: a dropped watch is invisible to the babysitter by construction, and the lead can only detect it by polling a round log. Running in-session puts the loop on the same wake-ups as the rest of the session, where a stall is visible
 immediately. `bg` remains available for genuinely multi-day waves.
 
 ## Preflight (both modes)
@@ -66,20 +56,24 @@ For each one found:
 - **One babysit at a time.** Check the task board for a live babysit task and, in inline mode, that you are not about to push alongside an existing background babysitter, because a second pusher triggers the cancel-old-ci race and the shared-tree hazard. If one is live, stop and say so.
 - **Resume detection**: if PRs already exist for this branch (state block above), the loop resumes at CI/reviews. Record that in the wave header/briefing; nothing is re-created.
 - **On resume, read the console PR's review state too**: note whether it is still a draft or already flipped ready, and whether a `<!-- claude-reviewed: <sha> -->` marker comment matches the current head. That determines whether the loop resumes pre-review (still driving CI green under a draft) or post-review (ready, addressing Claude's threads).
-- **ONE OPEN PR. This is the default and it is enforced**, by `.claude/hooks/pre-bash/block-second-open-pr.sh`, which denies `gh pr create` while you already have an open PR in that repo. New work goes onto the OPEN PR's branch: push, refresh the body, keep it reviewable as one thing. The rule exists because a single night produced FOUR stacked PRs, each individually reasonable, and the pile landed on one person who had to review and merge them in order. A second PR does not finish work sooner; it splits one decision into several.
-- **Stacking decision, made here and not mid-loop**: a stack is the EXCEPTION now, not a free choice. Stack only when the work genuinely cannot ride the open PR (it depends on unmerged prerequisites and main lacks the base) AND the operator has said so. The guard will refuse otherwise, and routing around it is not the answer: ask. Record the decision and rationale in the wave header/briefing.
-- **Cold-start rule**: if you lack session context to fill the wave header's first four slots (intent, deliberate renames, sanctioned reds, frozen surfaces; spec in the agent file's round-log section), survey the diff, fill what you can, and **ask the user the unfillable questions before starting**: sanctioned reds? deliberate renames? stack or new branch? Three questions up front beat a wrong round 1.
+- **Switch focus mode on** before the loop starts: `.claude/hooks/stop/worklist.py --focus <me> babysit [--pr <n>]`. Without `--pr` it resolves the open PR for the current branch; before the PR exists it records none, and the Stop hook fills the number in from the CI read once the PR is open. Focus stands the Stop hook down to what protects the PR (CI red, dead watches, unread reports, STATE.md near compaction, hook integrity), parks plan, queue and hygiene pushes, skips the judge and batches advisories. It refuses new writer spawns except declared fix work (see the Inline section). The branch may not be `main`.
+- **ONE BRANCH AND ONE OPEN PR, and no agent path to a second.** `block_second_branch` refuses every spelling of a second live branch (`checkout -b`, `switch -c`, `branch <new>`, a push to a new remote name, `gh pr create --head <other>`), and `.claude/rediacc_hooks/guards/block_second_open_pr.py` denies `gh pr create` while this account already has an open PR in that repo. A new branch is cut only from `main` with no live branch left, under today's next `MMDD-N`. New work goes onto the OPEN PR's branch: push, refresh the body, keep it reviewable as one thing. The rule exists because a single night produced FOUR stacked PRs, each individually reasonable, and the pile landed on one person who had to review and merge them in order. A second PR does not finish work sooner; it splits one decision into several.
+- **A submodule PR's branch is named EXACTLY like the console branch.** The `Submodule Branches` gate and `/pr-merge` both match submodule PRs by that name, so a submodule change riding an older branch (a `0914-1` PR under a `0923-1` console branch) can never pass either. Open each submodule PR on the console branch name FROM THE START. If one already exists on a differently named branch, push the same head to a branch named like the console branch, open a NEW PR from it (linking the old one), and close the old PR with a pointer to the new one. Do NOT use GitHub's branch-rename API for this: it retargets PRs that use the branch as their BASE, and CLOSES the PR whose HEAD it is (measured 2026-09-24: renaming account and renet `0914-1` to `0923-1` closed #87 and #111, `head_ref_deleted`). Operator ruling 2026-09-24, after PR #590's gate refused account#87 and renet#111 on `0914-1`.
+- **No stacking.** Every change rides the one open PR. A stacked second PR is the operator's own `!` command, never an agent's, so there is nothing to ask for and nothing to route around.
+- **Cold-start rule**: when the session lacks the context to fill the wave header's first four slots (intent, deliberate renames, sanctioned reds, frozen surfaces; spec in the agent file's round-log section), survey the diff, fill what it can, and **ask the user the unfillable questions before starting**: sanctioned reds? deliberate renames? Two questions up front beat a wrong round 1.
 
 ## Delegate mode (`bg` only): spawn and supervise
 
 You are the **team lead**. Your job is the four things only you can do: compose the briefing, hand over the tree, rule on escalations, verify the end. Your real work while it runs is *the remaining task list*. If you have nothing to do but watch CI, the wave was mis-scoped.
 
 ### 1. Compose the briefing
-Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-<branch>-briefing.md`. Contents: the **wave-header slots as specced in the agent file's round-log section** (intent, renames/removals, sanctioned reds, frozen surfaces, baselines + their measurement commands, decision-boundary additions, memory pointers) plus two delegate-only slots: **escalation routing** (domain → who answers; default: you) and **anything time-critical**. **Immutable once the babysitter is running**: supersede with a new file, never rewrite in place. (Briefing and round log stay two artifacts on purpose: the briefing is your immutable handoff; the round log is the babysitter's mutable state. Do not "simplify" them into one.)
+Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babysit-<branch>-briefing.md`. Contents: the **wave-header slots as specced in the agent file's round-log section** (intent, renames/removals, sanctioned reds, frozen surfaces, baselines + their measurement commands, decision-boundary additions, memory pointers) plus two delegate-only slots: **escalation
+routing** (domain → who answers; default: you) and **anything time-critical**. **Immutable once the babysitter is running**: supersede with a new file, never rewrite in place. (Briefing and round log stay two artifacts on purpose: the briefing is your immutable handoff; the round log is the babysitter's mutable state. Do not "simplify" them into one.)
 
 ### 2. Hand over the tree, register, spawn
 - **The primary working tree belongs to the babysitter** until green (it needs node_modules, builds, `rdc.sh`). Other implementation teammates you spawn use `isolation: "worktree"`. Do not edit tracked files in the primary tree; if you must (a fix only you can make), tell the babysitter the exact paths and that they are yours, so it stages surgically and will otherwise treat them as a leak.
 - `TaskCreate` a babysit task so the board and your watchdog cover it.
+- **Turn focus on before spawning** (`--focus <me> babysit`, Preflight). Under `babysit` focus the `pr-babysitter` type is the one spawn `block_focus_spawn` allows without a fix declaration; any other writer needs `focus-fix:#<id>`.
 - Spawn in the background with a **name** (e.g. `babysit-<branch>`) so SendMessage routing works both ways: `subagent_type: pr-babysitter` if registered, else general-purpose with an instruction to read `.claude/agents/pr-babysitter.md` as its role definition. Initial prompt = briefing path + branch + PR links + anything time-critical + the instruction that **you, the lead, are its principal and its SendMessage target for every tier-3 question and every report**.
 
 ### Messaging protocol (the operator-directed channel)
@@ -87,7 +81,9 @@ Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babys
 - An idle notification without a report is NOT a report: if the babysitter goes idle silently mid-wave, that is either the armed-watch design (STATUS fresh, leave it alone) or a dead driver (STATUS stale across observed state change, so ping once, then replace).
 
 ### 3. ⛔ You do not read CI
-From spawn until it reports green, you do not run `gh run watch/view/list` or fetch a job log, not once and not "just to check", and you do not diagnose a red. The failure mode is not the lead ignoring CI; it is the lead **shadowing** it: two agents burning full context to produce one answer. (Real case: lead and babysitter independently root-caused the same compile break, the same crashing gate, and fell into the same stale-`tsbuildinfo` trap. Everything correct, everything doubled.) **Two agents agreeing is not verification, it is the same answer, paid for twice.** Verification is the babysitter testing a claim against the live system. Your status channel is the babysitter's messages plus the round log's **STATUS block**; if neither says what you need, ask the babysitter, and do not go look.
+From spawn until it reports green, you do not run `gh run watch/view/list` or fetch a job log, not once and not "just to check", and you do not diagnose a red. The failure mode is not the lead ignoring CI; it is the lead **shadowing** it: two agents burning full context to produce one answer. (Real case: lead and babysitter independently root-caused the same compile break, the same
+crashing gate, and fell into the same stale-`tsbuildinfo` trap. Everything correct, everything doubled.) **Two agents agreeing is not verification, it is the same answer, paid for twice.** Verification is the babysitter testing a claim against the live system. Your status channel is the babysitter's messages plus the round log's **STATUS block**; if neither says what you need, ask
+the babysitter, and do not go look.
 
 ### 4. Rule on escalations (the interrupt handler)
 - Each arrives structured: gate, log, candidate fixes, recommendation. Verify a load-bearing claim **in the code**, not by re-running CI. **Rule on the question asked; do not adopt the red**: "helping" by diagnosing it yourself is the shadowing failure wearing a helpful face.
@@ -102,16 +98,20 @@ From spawn until it reports green, you do not run `gh run watch/view/list` or fe
 
 ### 6. Verify once, then close
 - On the green report: **verify independently, ONCE**: check every PR's checks via `gh`, spot-run the local battery. Never accept "all green" on report; require run URLs. **This is the only time you touch the GitHub API during a babysit**, because a per-round habit is exactly how the lead drifts back into shadowing.
-- Confirm debugging aids are off (e.g. a `no-auto-retry` label, a temporarily loosened gate) and files you told it to leave alone are still uncommitted.
+- Confirm debugging aids are off (e.g. a `no-auto-retry` label, a temporarily loosened gate) and files it was told to leave alone are still outside its commits.
+- End focus: `.claude/hooks/stop/worklist.py --focus <me> off`, at the finish line or on abandoning the wave. The Stop hook then prints one `FOCUS ENDED` line naming what it parked, and the full battery applies again. A merge or close of the PR ends focus by itself.
 - Distill the round log into a `pr-babysit-<branch>` memory file (the previous one demonstrably saved rounds on the next wave).
 - Report PR links + headline results. **Do NOT merge, do NOT push `main`**. `/pr-merge` is the user's call.
 
 ## Inline mode (default): run the loop here
 
-**Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here, because that file is the single source of truth for the loop, the tier system, the wake-up/heartbeat rules, Rule 2 (fix it, don't file it; "not my change" is not an exit), the workers contract, and the round-log format. Only the deltas that exist because the loop runs in THIS session are listed below.
+**Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here, because that file is the single source of truth for the loop, the tier system, the wake-up/heartbeat rules, Rule 2 (fix it, don't file it; "not my change" is not an exit), the workers
+contract, and the round-log format. Only the deltas that exist because the loop runs in THIS session are listed below.
 
 - Compose the **wave header** at the top of the round log (`reports/pr-babysit-<branch>.md`) per the agent file's slot spec. There is no separate briefing file in this mode.
 - **The round log is your compaction insurance.** After any context compaction or session restart, re-read the agent file + wave header + STATUS block before touching anything.
 - **AUTONOMOUS, never ask the user.** The agent file's in-context tier-3 rule applies as written: decide, log under DECISIONS (post-hoc review), keep the loop moving; irreversible-outside-the-PR actions stay forbidden outright.
-- **Absorb the operator's uncommitted work too.** The snapshot takes the whole tree, and the operator may keep adding to it while you run. Re-check `git status` each round; when new uncommitted paths appear that are plainly part of the same wave, commit them rather than stepping around them. (This is the OPPOSITE of delegated mode's never-absorb-by-inference rule, on purpose: here the principal IS the person editing the tree.) Guard unchanged: never `git add` a non-submodule repo under `private/`, and leave `.claude/settings.local.json` alone.
+- **Drain residue: commit by path, by epic.** Under CLAUDE.md rule 1 verified work is already committed as it lands, so the tree should hold little. What remains when the loop starts, or appears while it runs, is committed in small batches, each one epic with its own `PR-TASK:` trailer, `git commit -F <msg> -- <paths>`, never one whole-tree commit. Re-check `git status` each round; when new uncommitted paths appear that are plainly part of the same wave, commit them rather than stepping around them. (This is the OPPOSITE of delegated mode's never-absorb-by-inference rule, on purpose: here the principal IS the person editing the tree.) Guard unchanged: never `git add` a non-submodule repo under `private/`, and leave `.claude/settings.local.json` alone.
+- **Fix work under focus.** A fix is tracked as a worklist item carrying the PR token, `worklist.py --add <me> "<what> pr:<n>/fix"`, and a worker spawned for it names the item with `focus-fix:#<id>` in its description or prompt; `block_focus_spawn` admits a writer only when that item is this session's, open or leased, and carries `pr:<n>`. Work that is not the PR's fix is parked for after the PR (`--lease <me> <id> +120 worker:queue`), not spawned.
+- **End focus at the finish line**, or on abandoning the wave: `.claude/hooks/stop/worklist.py --focus <me> off`.
 - Scoping honesty: inline is the default because a delegated loop can die silently (see the Mode note above). The counter-risk is real too: the 0707 in-session babysitter died of context exhaustion mid-campaign. For a genuinely multi-day wave, `bg` is still the right call, but watch the round log yourself, because nothing else will.

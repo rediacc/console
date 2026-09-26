@@ -1,5 +1,5 @@
 /**
- * Audit log tests — append, chain verification, tamper detection.
+ * Audit log tests, append, chain verification, tamper detection.
  */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -68,8 +68,7 @@ describe('auditLog', () => {
   it('preserves actor kind + agent signals', () => {
     const prev = process.env.CLAUDECODE;
     process.env.CLAUDECODE = '1';
-    // Reset the module-level cache in agent-guard so the env change takes
-    // effect. Without this, a previous test that triggered isAgentEnvironment()
+    // Reset the module-level cache in agent-guard so the env change takes effect. Without this, a previous test that triggered isAgentEnvironment()
     // with CLAUDECODE unset poisons the cache for the remainder of the suite.
     resetAgentCache();
     try {
@@ -90,12 +89,10 @@ describe('auditLog', () => {
 
   it('chains correctly across a log larger than the readLastHash chunk window', () => {
     // readLastHash seeks from EOF in 64KB windows; exercise the multi-chunk
-    // path by appending enough padding that the last line sits beyond the
-    // first read. A real entry at the tail must still chain cleanly.
+    // path by appending enough padding that the last line sits beyond the first read. A real entry at the tail must still chain cleanly.
     const padding = 'x'.repeat(80_000);
     auditLog(dir, { command: 'preamble', paths: [], outcome: 'ok' });
-    // Inflate the log with a long `reason` field so the next prevHash lookup
-    // has to walk back more than 64KB.
+    // Inflate the log with a long `reason` field so the next prevHash lookup has to walk back more than 64KB.
     auditLog(dir, { command: 'bloat', paths: [], outcome: 'ok', reason: padding });
     auditLog(dir, { command: 'tail', paths: [], outcome: 'ok' });
     const entries = readAuditLog(logPath);

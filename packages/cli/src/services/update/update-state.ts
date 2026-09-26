@@ -19,14 +19,14 @@ const DEFAULT_STATE: CliUpdateState = {
 /**
  * Read update state from disk. Returns default state on missing/corrupt file.
  */
-export async function readUpdateState(): Promise<CliUpdateState> {
+export function readUpdateState(): Promise<CliUpdateState> {
   return readState(UPDATE_STATE_FILE, DEFAULT_STATE);
 }
 
 /**
  * Write update state atomically (temp + rename). Permissions 0o600.
  */
-export async function writeUpdateState(state: CliUpdateState): Promise<void> {
+export function writeUpdateState(state: CliUpdateState): Promise<void> {
   return writeState(UPDATE_STATE_FILE, state);
 }
 

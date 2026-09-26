@@ -63,8 +63,7 @@ describe('computeSchemaCoverage — coverage semantics', () => {
     const report = computeSchemaCoverage(schema, ['/policy'], []);
     expect(report.uncovered).toEqual([]);
     expect(report.covered).toEqual(['/policy']);
-    // Deeper registry templates under a pruned container are not stale: the
-    // walk never enumerated them, so their absence proves nothing.
+    // Deeper registry templates under a pruned container are not stale: the walk never enumerated them, so their absence proves nothing.
     const withDeeper = computeSchemaCoverage(schema, ['/policy', '/policy/version'], []);
     expect(withDeeper.stale).toEqual([]);
   });

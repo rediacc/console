@@ -145,6 +145,14 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 llvm \
                 libbpf-dev \
                 linux-headers-generic \
+                # zstd: renet's build STAGES EMBEDDED ASSETS through it and refuses to
+                # produce a binary without it -- "zstd is required to stage embedded
+                # assets". It is declared in .ci/rediacc_ci/setup/tools.py (the one
+                # install table) and was present on the host, so `./rdc.sh ops up`
+                # worked there and failed INSIDE the devbox with a build error that
+                # named zstd but not the fact that the image had never installed it.
+                # Found 2026-09-07 testing ops in the container.
+                zstd \
                 qemu-kvm \
                 libvirt-daemon-system \
                 libvirt-clients \
@@ -199,6 +207,9 @@ RUN install -m 0755 -d /etc/apt/keyrings \
 ENV NVM_DIR=/usr/local/share/nvm
 ENV NVM_SYMLINK_CURRENT=true
 
+# npm is replaced further down, after `COPY toolchain.env`, with the exact
+# NPM_VERSION pin: this image is where lockfiles get written, and npm 11 at that pin
+# is the only npm the repo supports (check:ci-lockfile refuses any other writer's form).
 RUN mkdir -p "$NVM_DIR" \
     && curl -fsSL $CURL_RETRY https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
     && . "$NVM_DIR/nvm.sh" \
@@ -206,7 +217,6 @@ RUN mkdir -p "$NVM_DIR" \
     && nvm alias default ${NODE_VERSION} \
     && nvm use default \
     && ln -sf "$(nvm which default | xargs dirname | xargs dirname)" "$NVM_DIR/current" \
-    && npm install -g npm@10 \
     && npm cache clean --force
 
 # Make node/npm available for subsequent RUN commands
@@ -264,29 +274,106 @@ ENV PATH="$GOROOT/bin:$GOPATH/bin:$PATH"
 # Actions are the other two), and the reason that file lives in this directory:
 # the build context IS .devcontainer/ (.github/workflows/ci-build-docker.yml:558),
 # so COPY cannot reach outside it.
+# =============================================================================
+# HEAVY, RARELY-CHANGING APT LAYERS -- DELIBERATELY ABOVE `COPY toolchain.env`.
+#
+# These two used to sit BELOW that COPY, which meant every pin bump in
+# toolchain.env invalidated them: `npx playwright install-deps chromium` pulls a
+# large dependency closure and is one of the most expensive layers in this image,
+# and neither block reads toolchain.env at all. Moving them above the COPY costs
+# nothing and stops a one-line version bump rebuilding them.
+#
+# The ordering rule this follows, and the reason the script COPYs live at the very
+# bottom: heavy and rare first, cheap and frequently-edited last. A layer only
+# rebuilds when it or something above it changes.
+# =============================================================================
+RUN apt-get update && \
+    npx playwright install-deps chromium && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends rpm createrepo-c && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY toolchain.env /etc/rediacc/toolchain.env
 
+# THE ONE npm, at the exact pin. Node 22 bundles npm 10, whose lockfile form
+# check:ci-lockfile refuses; installing the pin here keeps every lockfile written in
+# the devbox byte-identical to what CI's npm would write. Still root, so the nvm
+# prefix is writable.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${NPM_VERSION:?toolchain.env did not define NPM_VERSION}" \
+    && npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund \
+    && [ "$(npm --version)" = "${NPM_VERSION}" ] \
+    && npm cache clean --force
+
 USER vscode
-# shfmt is PINNED, the rest stay @latest deliberately.
+# EVERY Go tool in this image is PINNED. That is a change of position, and the
+# original reasoning is kept below because it is still half right.
 #
-# shfmt decides a CI verdict, so an image that ships a different one than the
-# host or the runner makes the same gate disagree with itself -- which is what
-# `go install ...@latest` here plus an unpinned `curl webi.sh/shfmt | sh` in the
-# workflow actually produced. The others (gopls, dlv, staticcheck,
-# golangci-lint, goimports) are EDITOR tooling: nothing gates on their output,
-# so pinning them would buy churn rather than consistency.
+# WHAT WAS TRUE, AND STILL IS. shfmt decides a CI verdict, so an image that
+# ships a different one than the host or the runner makes the same gate
+# disagree with itself -- which is what a version-less `go install` here plus an
+# unpinned `curl webi.sh/shfmt | sh` in the workflow actually produced. shfmt's
+# pin therefore lives in toolchain.env with the other GATE pins, sourced below.
 #
-# The `: "${SHFMT_VERSION:?...}"` guard is not decoration: without it an empty
+# WHAT WAS WRONG. The previous line here read "the rest stay @latest
+# deliberately", on the grounds that gopls, dlv, staticcheck, golangci-lint and
+# goimports are EDITOR tooling that nothing gates on, so pinning them would buy
+# churn rather than consistency. The consistency argument was aimed only at
+# gate VERDICTS; it missed that `@latest` also means the image is not
+# REPRODUCIBLE. Two builds of the identical Dockerfile a week apart shipped
+# different tools, so "rebuild the image" was never a repeatable instruction,
+# and a golangci-lint that changed its default linter set between two builds
+# changed what a developer sees in their editor with nothing in the diff to
+# explain it. `@latest` at build time is also the one input a supply-chain
+# review cannot audit after the fact.
+#
+# WHY THESE PINS ARE ARGs AND NOT toolchain.env KEYS. toolchain.env's own header
+# states its rule: "a version a GATE depends on, that more than one lane
+# installs". Only ONE lane installs these -- this image -- and no gate reads
+# them, so they do not meet it. `ARG <NAME>_VERSION=` is also the only shape
+# scripts/lib/dockerfile-versions.ts parses, which is what lets
+# scripts/gates/check-devcontainer-pin-freshness.ts tell us when one goes stale;
+# see scripts/lib/devcontainer-pin-sources.ts for which of the five it watches
+# and, for the two it cannot, why.
+#
+# NOTE THE MISSING UNDERSCORE in GOLANGCILINT_VERSION. That parser's regex is
+# /^ARG\s+([A-Z0-9]+)_VERSION=/ -- the base carries no underscore, so a
+# GOLANGCI_LINT_VERSION would not match at all and the freshness gate would
+# silently watch nothing. Renaming it means widening the shared parser first.
+ARG GOPLS_VERSION=0.23.0
+ARG DLV_VERSION=1.27.2
+# staticcheck ships TWO names for one build: the GitHub release is tagged
+# 2026.2.1 while the Go module version is v0.8.1. `go install` speaks module
+# versions, so that is what is pinned here; the freshness gate cannot compare
+# the two numbering schemes, which is why staticcheck is absent from
+# devcontainer-pin-sources.ts.
+ARG STATICCHECK_VERSION=0.8.1
+# golangci-lint v2 moved to the /v2 module path. Installing the old
+# `github.com/golangci/golangci-lint/cmd/golangci-lint` at a v2 version fails
+# outright, so the path below is not interchangeable with the pre-v2 one.
+ARG GOLANGCILINT_VERSION=2.14.0
+ARG GOIMPORTS_VERSION=0.49.0
+# The `: "${X_VERSION:?...}"` guards are not decoration: without them an empty
 # build arg silently resolves to `@v`, which Go treats as a floating reference,
-# and the image would quietly ship an unpinned shfmt again while looking pinned.
+# and the image would quietly ship an unpinned tool again while LOOKING pinned.
+# SHFMT_VERSION is guarded against toolchain.env (it is sourced); the other five
+# are guarded against their ARG defaults, which `docker build --build-arg
+# GOPLS_VERSION=` can blank out just as easily.
 RUN . /etc/rediacc/toolchain.env \
     && : "${SHFMT_VERSION:?toolchain.env did not define SHFMT_VERSION}" \
+    && : "${GOPLS_VERSION:?ARG GOPLS_VERSION resolved empty}" \
+    && : "${DLV_VERSION:?ARG DLV_VERSION resolved empty}" \
+    && : "${STATICCHECK_VERSION:?ARG STATICCHECK_VERSION resolved empty}" \
+    && : "${GOLANGCILINT_VERSION:?ARG GOLANGCILINT_VERSION resolved empty}" \
+    && : "${GOIMPORTS_VERSION:?ARG GOIMPORTS_VERSION resolved empty}" \
     && go telemetry off \
-    && go install golang.org/x/tools/gopls@latest \
-    && go install github.com/go-delve/delve/cmd/dlv@latest \
-    && go install honnef.co/go/tools/cmd/staticcheck@latest \
-    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
-    && go install golang.org/x/tools/cmd/goimports@latest \
+    && go install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
+    && go install "github.com/go-delve/delve/cmd/dlv@v${DLV_VERSION}" \
+    && go install "honnef.co/go/tools/cmd/staticcheck@v${STATICCHECK_VERSION}" \
+    && go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GOLANGCILINT_VERSION}" \
+    && go install "golang.org/x/tools/cmd/goimports@v${GOIMPORTS_VERSION}" \
     && go install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}" \
     && rm -rf /home/vscode/.cache/go-build \
     && rm -rf "$GOPATH/pkg/mod/cache"
@@ -340,9 +427,6 @@ USER root
 #
 # Refreshing the index in the same RUN keeps the two in step, and the list is cleaned up
 # so this does not bloat the image.
-RUN apt-get update && \
-    npx playwright install-deps chromium && \
-    rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # Linux packaging toolchain
@@ -361,9 +445,6 @@ RUN apt-get update && \
 # a version of them. nfpm is the opposite case and is NOT here -- it is pinned
 # with a checksum in .ci/config/constants.sh and installed by
 # .ci/scripts/build/ensure-nfpm.sh, which keeps that pin a single site.
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends rpm createrepo-c && \
-    rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # Global npm tools
@@ -447,12 +528,12 @@ RUN ARCH=$(dpkg --print-architecture) \
 # with, for version V:
 #   curl -s https://api.github.com/repos/bitwarden/clients/releases/tags/cli-v$V \
 #     | jq -r '.assets[]|select(.name|test("bw-linux(-arm64)?-"))|"\(.name) \(.digest)"'
-# scripts/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
+# scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
-ARG BW_VERSION=2026.8.0
-ARG BW_SHA256_AMD64=367f618e9fcccaac4980ec12c7bafd01df739b5f3cb1af31bc9045cf75eea1d6
-ARG BW_SHA256_ARM64=74d822a5dceda5896ed8fc07bc61925b29afd98d96a6a3e9e525ae556c3083a8
+ARG BW_VERSION=2026.9.0
+ARG BW_SHA256_AMD64=580c1deec8345b19dbac7f8b02babb6cc4fe250c69c567e29061f727f1e40768
+ARG BW_SHA256_ARM64=3f474cc34b701a1cebdd486009870038b034343afb83095607422cdad4c3653a
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
@@ -508,7 +589,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 
 # bashcov-sup — the resource profiler's wait4 supervisor (source in this directory,
 # so git is the pin). Built here so the devbox has it on PATH; run.sh setup builds
-# the same source onto the host. See agent/PLAN-shell-resource-profiling.md §1c.
+# the same source onto the host. See agent/plans/PLAN-shell-resource-profiling.md §1c.
 COPY bashcov-sup.c /tmp/bashcov-sup.c
 RUN gcc -O2 -Wall -o /usr/local/bin/bashcov-sup /tmp/bashcov-sup.c \
     && rm /tmp/bashcov-sup.c \

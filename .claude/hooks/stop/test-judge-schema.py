@@ -1,30 +1,21 @@
 #!/usr/bin/env python3
 """Controls for wl_judge: which objects the judge MUST return, and the class-sweep rule.
 
-Two rules live here. The first is judge_schema_for's marker contract; the second is
-wl_classsweep, the "sweep the class, not the instance" rule, whose controls start at
-PART 2 and carry their own argument.
+Two rules live here. The first is judge_schema_for's marker contract; the second is wl_classsweep, the "sweep the class, not the instance" rule, whose controls start at PART 2 and carry their own argument.
 
-Why this exists. The fix-signal is a separate prompt section (M.REGGATE_PROMPT, appended
-as `extra`), while v7 deliberately shipped ONE schema in which `regression_gate` is
-optional at the top level. Those two facts together let the model satisfy the schema while
-omitting the object, after which wl_reggate reports
+Why this exists. The fix-signal is a separate prompt section (M.REGGATE_PROMPT, appended as `extra`), while v7 deliberately shipped ONE schema in which `regression_gate` is optional at the top level. Those two facts together let the model satisfy the schema while omitting the object, after which wl_reggate reports
 
     regression_gate missing or incomplete: None
 
-and the stop hook blocks by the no-escape-hatch rule. The block is correct; what is wrong
-is that the session is blocked by a JUDGE error rather than by anything it did. Observed
-live on 2026-08-28, on a turn whose fix was already gated.
+and the stop hook blocks by the no-escape-hatch rule. The block is correct; what is wrong is that the session is blocked by a JUDGE error rather than by anything it did. Observed live on 2026-08-28, on a turn whose fix was already gated.
 
-Every control is a PAIR, because asserting that the signal makes the field required proves
-nothing on its own: a builder that always required it would pass that half and would break
-every ordinary stop. The paired assertion is that WITHOUT the signal it stays optional.
+Every control is a PAIR, because asserting that the signal makes the field required proves nothing on its own: a builder that always required it would pass that half and would break every ordinary stop. The paired assertion is that WITHOUT the signal it stays optional.
 
-The third pair is the one that matters most and is easiest to get wrong: the builder must
-not mutate the module-level JUDGE_SCHEMA. A dict returned by reference would make the
-first fix-signal stop poison every later call in the same process.
+The third pair is the one that matters most and is easiest to get wrong: the builder must not mutate the module-level JUDGE_SCHEMA. A dict returned by reference would make the first fix-signal stop poison every later call in the same process.
 """
 
+import hashlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -35,17 +26,20 @@ import tempfile
 import types
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from typing import Any
+
 import wl_bravedefault
 import wl_classsweep
 import wl_core
 import wl_judge
+import wl_proc
+import wl_proofcheck
+import wl_reggate
 import wl_rules
 
 
 class Tally:
-    """A counter object rather than module globals: ruff's PLW0603 is right that a
-    `global` statement here buys nothing, and the sibling test files already use this
-    shape."""
+    """A counter object rather than module globals: ruff's PLW0603 is right that a `global` statement here buys nothing, and the sibling test files already use this shape."""
 
     fails = 0
     count = 0
@@ -83,9 +77,7 @@ control(
     ["verdict", "reason", "next_action"],
 )
 
-# 3. THE MUTATION PAIR. Ask for the signalled schema first, then the plain one: if the
-#    builder handed back the module constant and appended to it, the plain schema would
-#    now carry regression_gate and every ordinary stop would fail closed.
+# 3. THE MUTATION PAIR. Ask for the signalled schema first, then the plain one: if the builder handed back the module constant and appended to it, the plain schema would now carry regression_gate and every ordinary stop would fail closed.
 wl_judge.judge_schema_for(SIGNAL)
 control(
     "the module constant is not mutated",
@@ -115,33 +107,34 @@ control(
 # ===========================================================================
 # PART 2 -- wl_classsweep: "sweep the class, not the instance".
 #
-# WHY THESE CONTROLS. The rule's whole job is to fire on a message that claims
-# ONE site fixed and offers no evidence anyone looked for the others. A rule
-# that cannot fire is worse than no rule, so every case below is a PAIR: the
-# planted defect that must fire, and the honest message that must stay silent.
+# WHY THESE CONTROLS. The rule's whole job is to fire on a message that claims ONE site fixed and offers no evidence anyone looked for the others. A rule that cannot fire is worse than no rule, so every case below is a PAIR: the planted defect that must fire, and the honest message that must stay silent.
 #
-# WHAT CANNOT BE CONTROLLED HERE, said plainly. The judgement itself is made by
-# haiku, and this suite runs offline with no model call. So these controls pin
-# the SEAM, not the model's taste: given a judge answer, does the machinery
-# fire, stay silent, and produce an actionable order? Whether haiku returns
-# `applicable: true` for a genuine class is calibrated by the opt-in live
-# harness `calibrate-class-sweep.py`, which costs money and needs a network,
-# and is therefore not wired into `npm run ci`.
+# WHAT CANNOT BE CONTROLLED HERE, said plainly. The judgement itself is made by haiku, and this suite runs offline with no model call. So these controls pin the SEAM, not the model's taste: given a judge answer, does the machinery fire, stay silent, and produce an actionable order? Whether haiku returns `applicable: true` for a genuine class is calibrated by the opt-in live harness
+# `calibrate-class-sweep.py`, which costs money and needs a network, and is therefore not wired into `npm run ci`.
 # ===========================================================================
 
 FIXSIG = "\n\n%s, so ALSO fill the `regression_gate` object.\n" % wl_judge._REGGATE_MARKER
 
-# The marker is a real file; keep every control out of the developer's own
-# outstanding-demand state, which is keyed by TMPDIR and cwd.
+# The marker is a real file; keep every control out of the developer's own outstanding-demand state, which is keyed by TMPDIR and cwd.
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+# Set BEFORE the first temp directory, because tempfile caches its answer: `wide-tier-`, `wide-settle-` and `schemalit-` further down used to land in /tmp itself, where only an explicit rmtree at the end removed them.
+tempfile.tempdir = runtmp.run_dir("judge-schema-suite-")
 _TMP = tempfile.TemporaryDirectory()
 os.environ["TMPDIR"] = _TMP.name
 MARKER = pathlib.Path(_TMP.name) / "sweep-marker.json"
 
 
 def fires(path):
-    """The banked fire count, or None. Read defensively so a rule that stopped
-    firing altogether reports a clean FAIL instead of a traceback -- the first
-    mutation run against these controls crashed here rather than failing."""
+    """The banked fire count, or None. Read defensively so a rule that stopped firing altogether reports a clean FAIL instead of a traceback -- the first mutation run against these controls crashed here rather than failing."""
     try:
         return json.loads(path.read_text())["fires"]
     except (OSError, ValueError, KeyError):
@@ -153,8 +146,8 @@ def answer(**kw):
     cs = {
         "applicable": True,
         "defect_class": "a guard that greps a script name without anchoring it to argv[0]",
-        "locus": ".claude/hooks/pre-bash/",
-        "search": "grep -rln 'block-' .claude/hooks/pre-bash/",
+        "locus": ".claude/rediacc_hooks/guards/",
+        "search": "grep -rln 'block_' .claude/rediacc_hooks/guards/",
         "evidence": "",
         "evidence_kind": "none",
         "swept": False,
@@ -176,10 +169,7 @@ control(
     "class_sweep" in wl_judge.judge_schema_for(sweep_sig)["required"],
     True,
 )
-# The two markers are INDEPENDENT: the sweep section is also appended on a
-# carried-forward demand, on a stop with no fix signal at all. A builder that
-# collapsed them into one boolean would require regression_gate on that stop
-# and fail the judge closed for a question nobody asked.
+# The two markers are INDEPENDENT: the sweep section is also appended on a carried-forward demand, on a stop with no fix signal at all. A builder that collapsed them into one boolean would require regression_gate on that stop and fail the judge closed for a question nobody asked.
 both = wl_judge.judge_schema_for(FIXSIG + sweep_sig)
 control(
     "both markers require both objects",
@@ -214,7 +204,7 @@ control(
 )
 control(
     "PLANTED: the order carries the actual search command",
-    out["next_action"].startswith("Run: grep -rln 'block-'"),
+    out["next_action"].startswith("Run: grep -rln 'block_'"),
     True,
 )
 control("PLANTED: the demand is banked for the next stop", MARKER.exists(), True)
@@ -245,9 +235,7 @@ kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
 control("CONTROL: a genuine one-off never fires", kind, "silent")
 control("CONTROL: the one-off keeps its stop", out["verdict"], "stop")
 
-# -- 2d. THE ASSERTION CASE, which is the point of the whole rule. ----------
-# "I swept the class" with nothing quotable behind it is exactly the failure
-# the operator described. The code overrides the model's own summary here.
+# -- 2d. THE ASSERTION CASE, which is the point of the whole rule. ---------- "I swept the class" with nothing quotable behind it is exactly the failure the operator described. The code overrides the model's own summary here.
 out = answer(swept=True, evidence_kind="none")
 kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
 control("a bare `swept` assertion with no evidence still fires", kind, "fire")
@@ -273,9 +261,7 @@ control(
     "degraded",
 )
 
-# A fire with no search still fires -- the class is named, so the order is
-# actionable even without the command. This is the boundary between 'degraded'
-# and 'fire' and it is easy to get backwards.
+# A fire with no search still fires -- the class is named, so the order is actionable even without the command. This is the boundary between 'degraded' and 'fire' and it is easy to get backwards.
 out = answer(search="")
 kind, _note = wl_classsweep.apply_verdict(out, path=MARKER)
 control("a fire with no search command still fires", kind, "fire")
@@ -286,11 +272,7 @@ control(
 )
 wl_classsweep.clear_outstanding(MARKER)
 
-# -- 2e2. THE JUDGE'S OWN COMMAND IS VALIDATED, and both real misfires. -----
-# Both strings below were handed to a live session on consecutive stops and
-# both were unrunnable; the first printed grep's error line, which the session
-# read as a finding. The demand must survive validation failing -- dropping the
-# block would turn a bad command into an escape hatch.
+# -- 2e2. THE JUDGE'S OWN COMMAND IS VALIDATED, and both real misfires. ----- Both strings below were handed to a live session on consecutive stops and both were unrunnable; the first printed grep's error line, which the session read as a finding. The demand must survive validation failing -- dropping the block would turn a bad command into an escape hatch.
 BAD_PATH = "grep -rn 'export.*worker' packages/workers/ --include='*.ts' | wc -l"
 TRUNCATED = (
     "find workers -type f \\( -name '*.ts' -o -name '*.tsx' \\) | xargs -I {} sh -c 'grep -q {"
@@ -311,7 +293,7 @@ control(
 )
 control(
     "CONTROL: a command over a directory that DOES exist passes",
-    wl_classsweep.validate_search("grep -rln 'block-' .claude/hooks/pre-bash/"),
+    wl_classsweep.validate_search("grep -rln 'block_' .claude/rediacc_hooks/guards/"),
     (True, ""),
 )
 control(
@@ -325,11 +307,7 @@ control(
     True,
 )
 
-# A SWEEP ONLY READS. A model-authored command reaches the session under the word
-# "Run:", so one that writes is not a bad search -- it is an order to damage the
-# tree. Both halves are controlled: destructive verbs reject, and the two shapes
-# that LOOK destructive but are not must still pass, or the rule loses the
-# actionability it depends on.
+# A SWEEP ONLY READS. A model-authored command reaches the session under the word "Run:", so one that writes is not a bad search -- it is an order to damage the tree. Both halves are controlled: destructive verbs reject, and the two shapes that LOOK destructive but are not must still pass, or the rule loses the actionability it depends on.
 for bad, want in [
     ("git clean -xdf packages", "git clean"),
     ("git checkout -- .claude/hooks", "git checkout"),
@@ -365,11 +343,7 @@ control(
 )
 wl_classsweep.clear_outstanding(MARKER)
 
-# THE SECOND DOOR. `instruction` is model-authored PROSE and reaches the session
-# verbatim through V_ACTION_NOSEARCH whenever `search` is empty, so the read-only
-# guarantee has to hold there too -- a session told "next step: git clean -xdf" may
-# run it even without the word "Run:". Word boundaries are load-bearing in both
-# directions and both directions are controlled.
+# THE SECOND DOOR. `instruction` is model-authored PROSE and reaches the session verbatim through V_ACTION_NOSEARCH whenever `search` is empty, so the read-only guarantee has to hold there too -- a session told "next step: git clean -xdf" may run it even without the word "Run:". Word boundaries are load-bearing in both directions and both directions are controlled.
 for prose, want in [
     ("run git clean -xdf then re-check", "git clean"),
     ("rm the stale baseline entries", "rm"),
@@ -431,19 +405,15 @@ control(
     "argv[0]" in out["reason"],
     True,
 )
-# wl_rules.apply_order caps next_action at 200 characters. The first draft of the
-# dropped-command order ran to exactly 200 and was cut mid-word, so the session
-# was handed a sentence that stopped at "or say plainly it is t". Pin the fit.
+# wl_rules.apply_order caps next_action at 200 characters. The first draft of the dropped-command order ran to exactly 200 and was cut mid-word, so the session was handed a sentence that stopped at "or say plainly it is t". Pin the fit.
 control(
     "the dropped-command order fits inside the 200-char next_action cap",
-    len(out["next_action"]) < 200 and out["next_action"].endswith("instance."),
+    len(out["next_action"]) < 200 and out["next_action"].endswith("none."),
     True,
 )
 wl_classsweep.clear_outstanding(MARKER)
 
-# -- 2f. The carried-forward demand, and its hard cap. ---------------------
-# Without this the demand is one-shot: wl_reggate settles the fix-set on the
-# same stop, so the next stop carries no fix signal and would never ask again.
+# -- 2f. The carried-forward demand, and its hard cap. --------------------- Without this the demand is one-shot: wl_reggate settles the fix-set on the same stop, so the next stop carries no fix signal and would never ask again.
 first = answer()
 wl_classsweep.apply_verdict(first, path=MARKER)
 carried = wl_classsweep.load_outstanding(MARKER)
@@ -457,6 +427,12 @@ control(
     "a NEW fix signal outranks the carried demand",
     wl_classsweep.prompt_section(True, carried) == wl_classsweep.SWEEP_PROMPT,
     True,
+)
+# THE TRAP-CONFLATION GUARD (agent/plans/PLAN-sweep-obligation-carry-forward.md): a carried class must never leak into the FRESH prompt, only ever into the follow-up one -- putting a PAST finding's text into a FRESH ask is the exact input shape that produced fabricated bulk-transform findings elsewhere in this hook.
+control(
+    "the carried class never appears in the fresh SWEEP_PROMPT text",
+    carried["defect_class"] in wl_classsweep.prompt_section(True, carried),
+    False,
 )
 control(
     "nothing to ask means no prompt section at all", wl_classsweep.prompt_section(False, None), ""
@@ -476,14 +452,199 @@ MARKER.write_text("{not json")
 control("a corrupt marker is not carried", wl_classsweep.load_outstanding(MARKER), None)
 wl_classsweep.clear_outstanding(MARKER)
 
-# ---------------------------------------------------------------------------
-# PART 3 -- end to end through run_judge, with the model call stubbed.
+# -- 2g. THE CARRY-FORWARD FIX (agent/plans/PLAN-sweep-obligation-carry-forward.md). A fresh fire (asked="fresh") no longer overwrites or clears a live demand naming a DIFFERENT class outright; it displaces it into the marker's one `owed` slot instead, states the debt in `reason`, and asks it in full on a later stop that is not a fix stop. `asked=None` (untested here, already pinned above) keeps the pre-existing legacy behaviour byte-identical.
+
+SILENT_SWEEP = {
+    "verdict": "stop",
+    "reason": "clean",
+    "next_action": "",
+    "class_sweep": {
+        "applicable": False,
+        "defect_class": "",
+        "locus": "",
+        "search": "",
+        "evidence": "",
+        "evidence_kind": "none",
+        "swept": False,
+        "instruction": "",
+    },
+}
+
+# The falsifying control: plant fix-signal 1, fire class A, then plant fix-signal 2 and fire a DIFFERENT class B with asked="fresh". On the code this plan replaces there is no `owed` field at all, so this control is red until the fix lands.
+out_a = answer(defect_class="class A: a guard matching a mention instead of a target")
+kind, _ = wl_classsweep.apply_verdict(out_a, None, path=MARKER, asked="fresh")
+control("2g: first fresh fire fires", kind, "fire")
+out_b = answer(defect_class="class B: a directory written from one template")
+kind, _ = wl_classsweep.apply_verdict(
+    out_b, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+control("2g: a second fresh fire naming a different class also fires", kind, "fire")
+owed = wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"]
+control(
+    "2g: class A is preserved in the owed slot", owed["defect_class"].startswith("class A"), True
+)
+control(
+    "2g: load_outstanding now answers class B, the new head",
+    wl_classsweep.load_outstanding(MARKER)["defect_class"].startswith("class B"),
+    True,
+)
+
+# The displacement is stated in the reason, and the whole reason still fits the 400-char cap wl_rules.apply_order enforces.
+control("2g: the reason names the displaced class A", "class A" in out_b["reason"], True)
+control("2g: the STILL OWED sentence is present", "STILL OWED" in out_b["reason"], True)
+control("2g: the reason still fits the 400-char cap", len(out_b["reason"]) <= 400, True)
+
+# THE 14:22:41Z CASE. A silent answer about a fresh (different) fix-set must not discharge the demand it displaced -- the live incident this plan fixes.
+kind, _ = wl_classsweep.apply_verdict(
+    SILENT_SWEEP, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="fresh"
+)
+control("2g: a fresh silent answer is read as silent", kind, "silent")
+control(
+    "2g: THE FIX -- a fresh silent answer leaves the outstanding head (class B) untouched",
+    wl_classsweep.load_outstanding(MARKER)["defect_class"].startswith("class B"),
+    True,
+)
+control(
+    "2g: ...and leaves the owed class A untouched too",
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"]["defect_class"].startswith("class A"),
+    True,
+)
+
+# PROMOTION. A follow-up that discharges the head promotes the owed class to head, and the promoted class then appears in the follow-up prompt.
+kind, _ = wl_classsweep.apply_verdict(
+    SILENT_SWEEP, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="followup"
+)
+control("2g: a follow-up silent answer discharges the head", kind, "silent")
+promoted = wl_classsweep.load_outstanding(MARKER)
+control("2g: class A is promoted to head", promoted["defect_class"].startswith("class A"), True)
+control(
+    "2g: the promoted class now appears in the follow-up prompt",
+    "class A" in wl_classsweep.prompt_section(False, promoted),
+    True,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# THE BOUND: three consecutive fresh fires leave exactly one record in owed, dropping the oldest.
+wl_classsweep.apply_verdict(answer(defect_class="class P"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class Q"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
+)
+wl_classsweep.apply_verdict(
+    answer(defect_class="class R"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
+)
+rec = wl_classsweep.SWEEP_DEMAND.peek(MARKER)
+control(
+    "2g: three consecutive fresh fires leave exactly one owed record",
+    rec["owed"]["defect_class"].startswith("class Q"),
+    True,
+)
+control("2g: the head is the third class", rec["defect_class"].startswith("class R"), True)
+control(
+    "2g: the oldest (class P) was dropped, not carried a second time",
+    "class P" not in json.dumps(rec),
+    True,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# CARRY_MAX: a demand displaced CARRY_MAX (2) times is dropped rather than carried a third time.
+wl_classsweep.apply_verdict(answer(defect_class="class M"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class N1"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
+)  # M carried into owed once (carried=1)
+wl_classsweep.SWEEP_DEMAND.promote(MARKER)  # M promoted back to head
+wl_classsweep.apply_verdict(
+    answer(defect_class="class N2"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
+)  # M carried a second time (carried=2, at CARRY_MAX)
+wl_classsweep.SWEEP_DEMAND.promote(MARKER)  # M promoted back to head again
+wl_classsweep.apply_verdict(
+    answer(defect_class="class N3"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
+)  # M's third displacement would exceed CARRY_MAX -> dropped
+control(
+    "2g: CARRY_MAX -- a demand displaced a third time is dropped, not carried again",
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER)["owed"],
+    None,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# An owed record past its own TTL is never promoted.
+wl_classsweep.apply_verdict(answer(defect_class="class S"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class T"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="fresh",
+)
+raw = wl_classsweep.SWEEP_DEMAND._raw(MARKER)
+raw["owed"]["at"] = 0.0  # force TTL expiry on the owed slot only, without touching the head
+MARKER.write_text(json.dumps(raw))
+wl_classsweep.apply_verdict(
+    SILENT_SWEEP, wl_classsweep.SWEEP_DEMAND.peek(MARKER), path=MARKER, asked="followup"
+)
+control(
+    "2g: a TTL-expired owed record is never promoted",
+    wl_classsweep.load_outstanding(MARKER),
+    None,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# THE FIRE COUNTER: a fresh fire followed by a follow-up fire on the SAME class reaches the cap rather than resetting to 1 -- the unbounded-re-fire guard this plan closes, since a bug that resets `fires` to 1 on every fix stop never reaches SWEEP_MAX_FIRES and the demand is never dropped as answered.
+wl_classsweep.apply_verdict(answer(defect_class="class U"), None, path=MARKER, asked="fresh")
+wl_classsweep.apply_verdict(
+    answer(defect_class="class U"),
+    wl_classsweep.SWEEP_DEMAND.peek(MARKER),
+    path=MARKER,
+    asked="followup",
+)
+control("2g: fresh-then-followup on the SAME class reaches the fire cap", fires(MARKER), 2)
+control(
+    "2g: a demand at the cap is never carried further",
+    wl_classsweep.load_outstanding(MARKER),
+    None,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# FAIL-OPEN, at the wl_classsweep seam: a missing marker, a corrupt one, and an unwritable directory each yield no debt and no exception on the new verbs too, not only on the pre-existing `load_outstanding`/`clear_outstanding` pair.
+_missing = pathlib.Path(_TMP.name) / "does-not-exist-2g.json"
+control(
+    "2g fail-open: promote() on a missing marker never raises",
+    wl_classsweep.SWEEP_DEMAND.promote(_missing),
+    None,
+)
+_corrupt = pathlib.Path(_TMP.name) / "corrupt-2g.json"
+_corrupt.write_text("{not json")
+control(
+    "2g fail-open: displace() over a corrupt marker never raises and still writes a fresh head",
+    wl_classsweep.SWEEP_DEMAND.displace(
+        {"defect_class": "z", "search": "y"}, head=None, path=_corrupt
+    )
+    or True,
+    True,
+)
+control(
+    "2g fail-open: the fresh head is readable after recovering from the corrupt marker",
+    wl_classsweep.SWEEP_DEMAND.load(_corrupt)["defect_class"],
+    "z",
+)
+_corrupt.unlink()
+
+# --------------------------------------------------------------------------- PART 3 -- end to end through run_judge, with the model call stubbed.
 #
-# The seam is subprocess: wl_judge shells out to `claude -p`. Replacing that ONE
-# attribute exercises everything else for real -- prompt assembly, the schema
-# built from the assembled prompt, the verdict flip, and the operator-only
-# sanitiser that runs after it.
-# ---------------------------------------------------------------------------
+# The seam is subprocess: wl_judge shells out to `claude -p`. Replacing that ONE attribute exercises everything else for real -- prompt assembly, the schema built from the assembled prompt, the verdict flip, and the operator-only sanitiser that runs after it. ---------------------------------------------------------------------------
 
 CAPTURED = {}
 
@@ -491,6 +652,8 @@ CAPTURED = {}
 class FakeProc:
     returncode = 0
     stderr = ""
+    # `timed_out` is what `wl_proc.Result` carries and what the routed call sites branch on before anything else. A fake without it raises AttributeError from inside the code under test, which reads as a defect in the subject.
+    timed_out = False
 
     def __init__(self, stdout):
         self.stdout = stdout
@@ -503,10 +666,14 @@ def fake_run(cmd, **_kw):
     return FakeProc(json.dumps({"is_error": False, "structured_output": CAPTURED["answer"]}))
 
 
-wl_judge.subprocess = types.SimpleNamespace(
+# THE SEAM MOVED FROM `subprocess` TO `wl_proc`. `wl_judge` was routed onto the shared bounded runner on 2026-09-08, because `claude -p` forks and a plain `subprocess.run` timeout kills only the direct child and then blocks in communicate() on pipes a grandchild holds -- inside the Stop hook, which means no session in the worktree can stop. A stub left on the old name would
+# intercept nothing and let every control below drive the REAL CLI.
+#
+# `TIMEOUT_RC`/`SPAWN_FAILED_RC` are carried over verbatim rather than invented, because the routed call sites branch on them by name.
+wl_judge.wl_proc = types.SimpleNamespace(
     run=fake_run,
-    TimeoutExpired=subprocess.TimeoutExpired,
-    DEVNULL=subprocess.DEVNULL,
+    TIMEOUT_RC=wl_proc.TIMEOUT_RC,
+    SPAWN_FAILED_RC=wl_proc.SPAWN_FAILED_RC,
 )
 wl_judge.resolve_claude = lambda: "/bin/sh"
 
@@ -520,11 +687,7 @@ def judged(extra, ans, remaining=None):
     return verdict
 
 
-# 2z. THE RETRY, all three directions. cef71b636 added it and shipped WITHOUT these,
-#     which a plan review caught: the commit message described three behaviours and
-#     nothing asserted any of them. The envelope shape below is the real one recorded
-#     on 2026-09-04 -- exit 0, is_error false, subtype success, well inside budget, and
-#     no schema.
+# 2z. THE RETRY, all three directions. cef71b636 added it and shipped WITHOUT these, which a plan review caught: the commit message described three behaviours and nothing asserted any of them. The envelope shape below is the real one recorded on 2026-09-04 -- exit 0, is_error false, subtype success, well inside budget, and no schema.
 def _envelope(cost, out):
     return json.dumps(
         {
@@ -546,11 +709,12 @@ def _retry_probe(payloads):
         calls["n"] += 1
         return FakeProc(payloads[min(calls["n"] - 1, len(payloads) - 1)])
 
-    real, wl_judge.subprocess.run = wl_judge.subprocess.run, scripted
+    # STUBBING `wl_proc.run`, NOT `subprocess.run`. The judge was routed onto the shared bounded runner on 2026-09-08 because `claude -p` forks and a plain `subprocess.run` timeout cannot bound it inside the Stop hook. A stub left on the old name intercepts NOTHING: the real CLI is invoked, the verdict comes back None, and this file dies on `v["verdict"]` rather than reporting.
+    real, wl_judge.wl_proc.run = wl_judge.wl_proc.run, scripted
     try:
         verdict, err = wl_judge.run_judge(["- [ ] x"], 0, "msg", 0, "(none)")
     finally:
-        wl_judge.subprocess.run = real
+        wl_judge.wl_proc.run = real
     return calls["n"], verdict, err
 
 
@@ -570,8 +734,7 @@ control("a budget-exhausted call is NOT retried", n, 1)
 control("and it still names the cause", "BUDGET EXHAUSTED" in (err or ""), True)
 
 
-# 3a. A fix stop: the section is in the prompt, the field is in the schema, and
-#     the planted answer turns the stop into a block.
+# 3a. A fix stop: the section is in the prompt, the field is in the schema, and the planted answer turns the stop into a block.
 v = judged(FIXSIG, answer())
 control(
     "the judge child is given NO TOOLS",
@@ -593,8 +756,7 @@ control(
 control("END TO END: the planted defect blocks the stop", v["verdict"], "continue")
 control("END TO END: with the search in the order", "grep -rln" in v["next_action"], True)
 
-# 3b. THE PAIR. An ordinary stop must be byte-identical to what it was before
-#     this rule existed -- no section, no field, no interference.
+# 3b. THE PAIR. An ordinary stop must be byte-identical to what it was before this rule existed -- no section, no field, no interference.
 wl_classsweep.clear_outstanding()
 v = judged("", {"verdict": "stop", "reason": "clean board", "next_action": ""})
 control(
@@ -619,10 +781,7 @@ v = judged(FIXSIG, {"verdict": "stop", "reason": "clean", "next_action": ""})
 control("a missing object does not block the stop", v["verdict"], "stop")
 control("but it is visible in the reason", "class-sweep not judged" in v["reason"], True)
 
-# 3e. ORDERING. The search command is the MODEL's text, so it must pass through
-#     the operator-only sanitiser like any other next_action. A rule that wrote
-#     next_action after sanitize_next_action would hand the session an order
-#     this judge is forbidden to give.
+# 3e. ORDERING. The search command is the MODEL's text, so it must pass through the operator-only sanitiser like any other next_action. A rule that wrote next_action after sanitize_next_action would hand the session an order this judge is forbidden to give.
 wl_classsweep.clear_outstanding()
 v = judged(FIXSIG, answer(search="gh pr merge 563 && grep -rn foo ."))
 control(
@@ -634,14 +793,76 @@ control("and the class survives in the reason", "argv[0]" in v["reason"], True)
 wl_classsweep.clear_outstanding()
 
 
+# 3k. END TO END through the stubbed run_judge (agent/plans/PLAN-sweep-obligation-carry-forward.md), replaying the live 14:22:41Z regression this plan fixes: a fix stop's fresh fire on a NEW class must not destroy a demand already outstanding for an OLD one, and the old one must eventually be asked in full.
+wl_classsweep.clear_outstanding()
+
+v1 = judged(FIXSIG, answer(defect_class="planted class: two semantically linked fields"))
+control("3k: the planting fix stop blocks", v1["verdict"], "continue")
+control(
+    "3k: the demand is live at the default marker path afterward",
+    bool(wl_classsweep.load_outstanding()),
+    True,
+)
+
+# A SECOND fix stop fires a genuinely different class -- the live shape: a fresh ask about a NEW fix-set while the first is still outstanding.
+v2 = judged(FIXSIG, answer(defect_class="new class: a table with more rows"))
+control(
+    "3k: the fix section is in the prompt", wl_classsweep.SWEEP_MARKER in CAPTURED["prompt"], True
+)
+control(
+    "3k: the planted class never leaks into the fresh SWEEP_PROMPT (it carries no interpolation)",
+    "two semantically linked fields" in CAPTURED["prompt"],
+    False,
+)
+control("3k: the second fix stop still blocks", v2["verdict"], "continue")
+control(
+    "3k: THE FIX -- the reason carries the STILL OWED sentence for the displaced class",
+    "STILL OWED" in v2["reason"],
+    True,
+)
+control(
+    "3k: ...naming the displaced class by its own already-validated text",
+    "two semantically linked fields" in v2["reason"],
+    True,
+)
+control(
+    "3k: the new head is now the second class",
+    wl_classsweep.load_outstanding()["defect_class"].startswith("new class"),
+    True,
+)
+control(
+    "3k: THE FIX -- the planted class survives, carried in the owed slot rather than destroyed",
+    wl_classsweep.SWEEP_DEMAND.peek()["owed"]["defect_class"].startswith("planted class"),
+    True,
+)
+
+# A NON-FIX stop that does not judge the class_sweep object at all (degraded) discharges the current head and promotes the first class back to it -- silent/degraded discharges only the question actually asked.
+v3 = judged("", {"verdict": "stop", "reason": "clean", "next_action": ""})
+control(
+    "3k: a follow-up stop asks about the CURRENT head (the second class)",
+    "a table with more rows" in CAPTURED["prompt"],
+    True,
+)
+control(
+    "3k: discharging it promotes the planted class back to head",
+    wl_classsweep.load_outstanding()["defect_class"].startswith("planted class"),
+    True,
+)
+
+# The NEXT non-fix stop now asks in full about the promoted (originally planted) class.
+v4 = judged("", {"verdict": "stop", "reason": "clean", "next_action": ""})
+control(
+    "3k: THE FIX -- the follow-up prompt now names the promoted class that a fix stop once displaced",
+    "two semantically linked fields" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
+
 # ===========================================================================
 # PART 4 -- wl_bravedefault: "a DEFAULT that does nothing is not a DEFAULT".
 #
-# Same discipline as PART 2: every case is a pair. The planted defect is a
-# deferral that defaults to the status quo; the controls beside it are a
-# default that commits to an action, and a hold that is genuinely justified by
-# irreversibility. Holding is sometimes right, so a rule that rejected every
-# hold would be wrong, not strict.
+# Same discipline as PART 2: every case is a pair. The planted defect is a deferral that defaults to the status quo; the controls beside it are a default that commits to an action, and a hold that is genuinely justified by irreversibility. Holding is sometimes right, so a rule that rejected every hold would be wrong, not strict.
 #
 # The judgement is still haiku's; these controls pin the seam.
 # ===========================================================================
@@ -693,9 +914,7 @@ control(
     "CONTROL: nothing remaining asks nothing", wl_bravedefault.has_deferral_with_default([]), False
 )
 control("no trigger means no prompt section", wl_bravedefault.prompt_section([OPEN_LINE]), "")
-# The trigger token is the program's ONE copy, not a second spelling of it. A
-# re-typed regex would drift from wl_core's the day either changes -- the exact
-# defect the sibling rule in this same file exists to catch.
+# The trigger token is the program's ONE copy, not a second spelling of it. A re-typed regex would drift from wl_core's the day either changes -- the exact defect the sibling rule in this same file exists to catch.
 control(
     "the DEFAULT token is the shared one, not a copy",
     wl_bravedefault.DEFAULT_TOKEN is wl_core.DEFAULT_TOKEN,
@@ -760,8 +979,7 @@ control(
 )
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# "no reason at all" is the other rejected reason, and it must not be silently
-# treated as a justification just because the model left the field bland.
+# "no reason at all" is the other rejected reason, and it must not be silently treated as a justification just because the model left the field bland.
 out = bd_answer(hold_reason="none")
 control(
     "PLANTED: an unexplained hold fires too",
@@ -771,13 +989,8 @@ control(
 control("and says the hold had no stated reason", "no stated reason" in out["reason"], True)
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# -- 4c2. A DEFAULT EXECUTES, so the order it proposes may not destroy work. --
-# `braver` becomes the deferral's DEFAULT and that runs on a timer with nobody
-# reading it first, which makes a destructive string here worse than the same
-# string in a sweep order. The threshold is NARROWER than wl_classsweep's on
-# purpose: a braver default may legitimately write, so only the git verbs that
-# discard uncommitted work are refused. Both halves are controlled, because a
-# guard that over-fires would gut the rule.
+# -- 4c2. A DEFAULT EXECUTES, so the order it proposes may not destroy work. -- `braver` becomes the deferral's DEFAULT and that runs on a timer with nobody reading it first, which makes a destructive string here worse than the same string in a sweep order. The threshold is NARROWER than wl_classsweep's on purpose: a braver default may legitimately write, so only the git verbs that
+# discard uncommitted work are refused. Both halves are controlled, because a guard that over-fires would gut the rule.
 for braver, want in [
     ("git stash the peer work then rebuild", "git stash"),
     ("git checkout the previous config and retry", "git checkout"),
@@ -798,10 +1011,7 @@ for braver, want in [
     control("  and the order still fits the 200-char cap", len(out["next_action"]) < 200, True)
     wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# -- 4c3. A DEFAULT MAY NOT ORDER AN ACT RESERVED TO THE OPERATOR. ---------
-# Same shape as 4c2, different reason: nothing here destroys anything, but
-# committing needs an ask, so an order carrying one tells the session to break a
-# standing order. This is the exact string this rule emitted on 2026-09-02.
+# -- 4c3. A DEFAULT MAY NOT ORDER AN ACT RESERVED TO THE OPERATOR. --------- Same shape as 4c2, different reason: nothing here destroys anything, but committing needs an ask, so an order carrying one tells the session to break a standing order. This is the exact string this rule emitted on 2026-09-02.
 for braver, want in [
     (
         "Rename BACKUP_R2_* across env.ts and the builders, then commit to the open branch",
@@ -821,9 +1031,7 @@ for braver, want in [
     )
     control("  and the order still fits the 200-char cap", len(out["next_action"]) < 200, True)
     wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
-# The prompt must not TEACH the thing the filter then drops: the rubric used to
-# offer "commit it onto the open PR's branch" as the model braver form, which is
-# where the 2026-09-02 order came from.
+# The prompt must not TEACH the thing the filter then drops: the rubric used to offer "commit it onto the open PR's branch" as the model braver form, which is where the 2026-09-02 order came from.
 control(
     "the rubric no longer offers committing as the braver form",
     [
@@ -839,11 +1047,9 @@ control(
     True,
 )
 
-# THE GENERIC BRANCH, which had no control at all until an audit of every V_ACTION
-# interpolation found it: with `braver` empty the order is built from `instruction`
+# THE GENERIC BRANCH, which had no control at all until an audit of every V_ACTION interpolation found it: with `braver` empty the order is built from `instruction`
 # instead, and it is guarded only because `proposed = braver or instruction` makes
-# instruction the validated value. Nothing pinned that, so a refactor of one line
-# could have reopened the path silently. Both directions, as above.
+# instruction the validated value. Nothing pinned that, so a refactor of one line could have reopened the path silently. Both directions, as above.
 out = bd_answer(braver="", instruction="git stash the peer work first")
 kind, _note = wl_bravedefault.apply_verdict(out, path=BMARKER)
 control("the generic branch refuses a destructive instruction too", kind, "fire")
@@ -864,8 +1070,7 @@ control(
 )
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# The narrow threshold, from the other side: these MUST pass through, or the rule
-# stops being able to ask for the actions it exists to ask for.
+# The narrow threshold, from the other side: these MUST pass through, or the rule stops being able to ask for the actions it exists to ask for.
 for braver in [
     "delete the stale baseline entries",
     "remove the suppression and re-run",
@@ -898,15 +1103,8 @@ control(
     ("git clean", "git clean"),
 )
 
-# -- The STANDING-ORDER threshold, which is not the safety one. -------------
-# CLAUDE.md's first standing order: the deliverable is an uncommitted working
-# tree; committing, branching, pushing and opening a PR need the operator's ask.
-# On 2026-09-02 wl_bravedefault's own next_action read "Rename ... then commit to
-# the open branch", the session did the rename and silently dropped the commit,
-# and a rule that must be quietly disobeyed is a broken rule. Both directions are
-# controlled: the version-control sense must fire and the ORDINARY ENGLISH sense
-# must not, because "commit to option A" means DECIDE and is the exact bravery
-# the rule it guards exists to encourage.
+# -- The STANDING-ORDER threshold, which is not the safety one. ------------- CLAUDE.md's first standing order: the deliverable is an uncommitted working tree; committing, branching, pushing and opening a PR need the operator's ask. On 2026-09-02 wl_bravedefault's own next_action read "Rename ... then commit to the open branch", the session did the rename and silently dropped the
+# commit, and a rule that must be quietly disobeyed is a broken rule. Both directions are controlled: the version-control sense must fire and the ORDINARY ENGLISH sense must not, because "commit to option A" means DECIDE and is the exact bravery the rule it guards exists to encourage.
 for text, want in [
     ("Rename it across every reader, then commit to the open branch", "commit to the open branch"),
     ("finish it and leave it committed on the branch", "leave it committed"),
@@ -932,10 +1130,7 @@ for text in [
     )
 
 
-# -- The CLASS-SWEEP reserved path, the sibling of 4c3. `instruction` is model
-# prose that reaches the session verbatim whenever `search` is empty, so it can
-# carry "commit them" as easily as "git clean". Both were verified by hand when
-# the branch landed; only the destructive half had a test.
+# -- The CLASS-SWEEP reserved path, the sibling of 4c3. `instruction` is model prose that reaches the session verbatim whenever `search` is empty, so it can carry "commit them" as easily as "git clean". Both were verified by hand when the branch landed; only the destructive half had a test.
 _CS_BASE = {
     "applicable": True,
     "swept": False,
@@ -1043,17 +1238,14 @@ control("THE CAP: the fourth block on the same deferral is suppressed", kind, "c
 control("THE CAP: and the session is let past", out["verdict"], "stop")
 control("THE CAP: which is said out loud, not silently", "capped after 3" in note, True)
 
-# A DIFFERENT deferral is a different demand: the cap must not carry over, or
-# one exhausted item would buy silence for every later one.
+# A DIFFERENT deferral is a different demand: the cap must not carry over, or one exhausted item would buy silence for every later one.
 out = bd_answer(quote="delete the dead branch?")
 kind, _note = wl_bravedefault.apply_verdict(out, path=BMARKER)
 control("CONTROL: a different deferral is not capped", kind, "fire")
 control("CONTROL: and its count starts again", fires(BMARKER), 1)
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# -- 4g. apply_order: a judge that already said continue is not overwritten.
-# Its own order is not less important than a rule's; clobbering it would trade
-# one true instruction for another and hide the trade.
+# -- 4g. apply_order: a judge that already said continue is not overwritten. Its own order is not less important than a rule's; clobbering it would trade one true instruction for another and hide the trade.
 out = bd_answer()
 out["verdict"] = "continue"
 out["reason"] = "three items are open"
@@ -1064,10 +1256,7 @@ control("and its own reason", out["reason"].startswith("three items are open"), 
 control("with the finding appended", "ALSO:" in out["reason"], True)
 wl_bravedefault.BRAVE_DEMAND.clear(BMARKER)
 
-# The braver form is the MODEL's text, so it passes through the operator-only
-# sanitiser like any other order. The rubric now tells the model that merging,
-# pushing main and releasing are never a brave default -- this is the belt for
-# that brace, and it is why the rubric's own examples were rewritten.
+# The braver form is the MODEL's text, so it passes through the operator-only sanitiser like any other order. The rubric now tells the model that merging, pushing main and releasing are never a brave default -- this is the belt for that brace, and it is why the rubric's own examples were rewritten.
 out = bd_answer(braver="merge it into the open PR")
 wl_bravedefault.apply_verdict(out, path=BMARKER)
 wl_judge.sanitize_next_action(out)
@@ -1110,9 +1299,7 @@ control(
 control("CONTROL: and its verdict passes through", v["verdict"], "stop")
 control("CONTROL: and its reason is not annotated", v["reason"], "clean board")
 
-# ONE ORDER PER STOP: when both rules fire, the live defect in the tree wins
-# and the parked decision waits for the next stop -- where its own trigger,
-# the `[?]` itself, is still sitting in the list.
+# ONE ORDER PER STOP: when both rules fire, the live defect in the tree wins and the parked decision waits for the next stop -- where its own trigger, the `[?]` itself, is still sitting in the list.
 both_ans = answer()
 both_ans["brave_default"] = bd_answer()["brave_default"]
 v = judged(FIXSIG, both_ans, remaining=[TIMID_LINE])
@@ -1133,30 +1320,18 @@ wl_classsweep.clear_outstanding()
 # ===========================================================================
 # PART 5 -- the judge_schema_for CONTRACT, after three markers instead of one.
 #
-# Session e580532b built this builder to fix a real fail-closed bug: the prompt
-# asked for regression_gate while JUDGE_SCHEMA left it optional, so a stop could
-# be blocked by a JUDGE error rather than by anything the session did. The fix
-# is the deepcopy -- the module constant is never mutated, so one fix-signal
-# stop cannot poison every later call in the same process.
+# Session e580532b built this builder to fix a real fail-closed bug: the prompt asked for regression_gate while JUDGE_SCHEMA left it optional, so a stop could be blocked by a JUDGE error rather than by anything the session did. The fix is the deepcopy -- the module constant is never mutated, so one fix-signal stop cannot poison every later call in the same process.
 #
-# Adding two more markers is exactly the change that could break it quietly, so
-# the contract is pinned here rather than trusted. THE GAP THIS CLOSES: every
-# existing non-mutation control asserts membership of ONE key, and all of them
-# would pass under a SHALLOW copy, because the builder only ever reassigns
-# `required` to a fresh list. Nothing proved the deepcopy was load-bearing.
+# Adding two more markers is exactly the change that could break it quietly, so the contract is pinned here rather than trusted. THE GAP THIS CLOSES: every existing non-mutation control asserts membership of ONE key, and all of them would pass under a SHALLOW copy, because the builder only ever reassigns `required` to a fresh list. Nothing proved the deepcopy was load-bearing.
 # ===========================================================================
 
-# Captured from the constant itself, not written out by hand: a literal would
-# have to be edited every time a base field is added, and an out-of-date
-# literal fails for the wrong reason.
+# Captured from the constant itself, not written out by hand: a literal would have to be edited every time a base field is added, and an out-of-date literal fails for the wrong reason.
 BASE_REQUIRED = list(wl_judge.JUDGE_SCHEMA["required"])
 ALL_MARKERS = FIXSIG + sweep_sig + brave_sig
 
 control("the base schema requires exactly three fields", len(BASE_REQUIRED), 3)
 
-# 5a. THE IDENTITY PAIR. The plain path must hand back the constant itself --
-#     that early return is what stops every ordinary stop paying for a deepcopy
-#     -- while any marker path must hand back a different object.
+# 5a. THE IDENTITY PAIR. The plain path must hand back the constant itself -- that early return is what stops every ordinary stop paying for a deepcopy -- while any marker path must hand back a different object.
 control(
     "a plain call returns the module constant itself",
     wl_judge.judge_schema_for("") is wl_judge.JUDGE_SCHEMA,
@@ -1170,7 +1345,7 @@ control(
 
 # 5b. ALL THREE MARKERS AT ONCE, then EXACT equality of the constant. The
 #     per-key membership checks above can each pass while a different key leaks;
-#     this cannot.
+# this cannot.
 _all = wl_judge.judge_schema_for(ALL_MARKERS)
 control(
     "all three objects are required together",
@@ -1188,10 +1363,7 @@ control(
     BASE_REQUIRED,
 )
 
-# 5c. THE DEEPCOPY ITSELF. A shallow copy would share every nested dict with the
-#     constant, so writing into the returned schema's properties would edit
-#     JUDGE_SCHEMA in place -- invisible to every control above. Mutate the copy
-#     and prove the constant did not move.
+# 5c. THE DEEPCOPY ITSELF. A shallow copy would share every nested dict with the constant, so writing into the returned schema's properties would edit JUDGE_SCHEMA in place -- invisible to every control above. Mutate the copy and prove the constant did not move.
 _all["properties"]["class_sweep"]["required"].append("planted_by_a_control")
 control(
     "the returned schema's nested objects are NOT shared with the constant",
@@ -1205,37 +1377,29 @@ control(
     False,
 )
 
-# 5d. CONTROL: the planting above must actually reach the copy, or 5c proves
-#     nothing -- an assertion that a write did not propagate is vacuous if the
-#     write never happened.
+# 5d. CONTROL: the planting above must actually reach the copy, or 5c proves nothing -- an assertion that a write did not propagate is vacuous if the write never happened.
 control(
     "CONTROL: the planted field really is in the copy",
     "planted_by_a_control" in _all["properties"]["class_sweep"]["required"],
     True,
 )
 
-# 5e. Order independence. `wanted` is built marker by marker; a builder that
-#     appended to a list it also read from could produce a different schema
-#     depending on which marker came first in the prompt.
+# 5e. Order independence. `wanted` is built marker by marker; a builder that appended to a list it also read from could produce a different schema depending on which marker came first in the prompt.
 control(
     "marker order does not change the result",
     sorted(wl_judge.judge_schema_for(brave_sig + sweep_sig + FIXSIG)["required"]),
     sorted(_all["required"]),
 )
 
-# ---------------------------------------------------------------------------
-# PART 6 -- wl_shapedup: "is this the Nth copy of a shape you already have?"
+# --------------------------------------------------------------------------- PART 6 -- wl_shapedup: "is this the Nth copy of a shape you already have?"
 #
-# The third judged rule, and the only one on its OWN model call. Its verdict half is pure
-# and its trigger half is a subprocess, so the controls below drive the pure half directly
-# and stub the subprocess for the driver.
+# The third judged rule, and the only one on its OWN model call. Its verdict half is pure and its trigger half is a subprocess, so the controls below drive the pure half directly and stub the subprocess for the driver.
 
 import wl_shapedup  # noqa: E402 -- the module under test, imported where its section starts
 
 SHAPE_MARKER_TEXT = wl_shapedup.SHAPE_MARKER
 SMARK = MARKER.with_suffix(".shape")
-# The repo root: wl_shapedup checks a named harness against the DISK, so the controls need
-# a real tree to check against.
+# The repo root: wl_shapedup checks a named harness against the DISK, so the controls need a real tree to check against.
 REPO = str(pathlib.Path(__file__).resolve().parents[3])
 
 
@@ -1288,7 +1452,7 @@ control(
 
 # 6b. THE EVIDENCE IS CHECKED AGAINST ITSELF. A refusal that names no divergence is not a
 #     refusal; it degrades rather than blocking, because an unactionable block is the one
-#     thing these rules cannot afford.
+# thing these rules cannot afford.
 control(
     "consolidatable=no with no divergence degrades, it does not buy silence",
     wl_shapedup.read_verdict(_sd(consolidatable="no", divergence="short"))[0],
@@ -1310,10 +1474,7 @@ control(
     "degraded",
 )
 
-# 6c. `already` FIRES both ways since the operator ruling of 2026-09-02, and the
-#     two ways differ only in `harness_real`, which picks the order. Kept as four
-#     controls rather than one, because "it fires" alone would pass on a rule that
-#     had stopped looking at the disk at all.
+# 6c. `already` FIRES both ways since the operator ruling of 2026-09-02, and the two ways differ only in `harness_real`, which picks the order. Kept as four controls rather than one, because "it fires" alone would pass on a rule that had stopped looking at the disk at all.
 _real = wl_shapedup.read_verdict(
     _sd(consolidatable="already", harness=".claude/hooks/stop/wl_rules.py"), root=REPO
 )
@@ -1333,10 +1494,7 @@ control(
     _claimed[1]["harness_real"],
     False,
 )
-# The order depends on the VERDICT, not merely on whether the named file exists.
-# `yes` pointing at a real library file is the common case, and it must still say
-# EXTRACT: the shared piece has to be written into that file. harness_real alone
-# gave it the adopt order.
+# The order depends on the VERDICT, not merely on whether the named file exists. `yes` pointing at a real library file is the common case, and it must still say EXTRACT: the shared piece has to be written into that file. harness_real alone gave it the adopt order.
 _yes_real = wl_shapedup.read_verdict(
     _sd(consolidatable="yes", harness=".claude/hooks/stop/wl_rules.py"), root=REPO
 )
@@ -1361,8 +1519,7 @@ control(
     "fire",
 )
 
-# 6d. The order it places, and the count it places it with. `instances` comes from the
-#     counter and is never read off the model, so it cannot be fabricated.
+# 6d. The order it places, and the count it places it with. `instances` comes from the counter and is never read off the model, so it cannot be fabricated.
 _out = _sd(harness="scripts/lib/controls.ts")
 _kind, _note = wl_shapedup.apply_verdict(_out, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
 control("firing flips the verdict to continue", _out.get("verdict"), "continue")
@@ -1378,8 +1535,7 @@ control(
     "the order routes through the existing triage", "--triage" in _out.get("next_action", ""), True
 )
 
-# 6e. The latch: once per SHAPE. A session authoring three gates in one family gets ONE
-#     consolidation question, not three.
+# 6e. The latch: once per SHAPE. A session authoring three gates in one family gets ONE consolidation question, not three.
 _again = _sd(harness="scripts/lib/controls.ts")
 for _ in range(wl_shapedup.SHAPE_MAX_FIRES + 2):
     wl_shapedup.apply_verdict(_again, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
@@ -1392,10 +1548,7 @@ control(
 _capped = _sd()
 wl_shapedup.apply_verdict(_capped, ["a.ts:1", "b.ts:1", "c.ts:1"], "sh1", path=SMARK)
 control("CONTROL: a capped shape places no order", _capped.get("verdict"), None)
-# THE KEYING IS IN THE PATH, so a control that passes one explicit `path` for two shapes
-# overrides the very thing it claims to test -- and did, reporting the second shape as
-# capped. In production `path` is None and `demand_for(hash).path()` derives one file per
-# shape; these two controls test that derivation directly and then use per-shape markers.
+# THE KEYING IS IN THE PATH, so a control that passes one explicit `path` for two shapes overrides the very thing it claims to test -- and did, reporting the second shape as capped. In production `path` is None and `demand_for(hash).path()` derives one file per shape; these two controls test that derivation directly and then use per-shape markers.
 control(
     "each shape gets its own marker file",
     wl_shapedup.demand_for("sh1").path() != wl_shapedup.demand_for("sh2").path(),
@@ -1410,33 +1563,38 @@ control(
 wl_shapedup.demand_for("sh1").clear(SMARK)
 wl_shapedup.demand_for("sh2").clear(SMARK2)
 
-# 6f. The driver never fails closed. A counter that cannot answer loses a demand; it can
-#     never grant an exit that was otherwise refused, and it can never wedge a stop.
+# 6f. The driver never fails closed. A counter that cannot answer loses a demand; it can never grant an exit that was otherwise refused, and it can never wedge a stop.
 _orig_counter = wl_shapedup.counter_findings
 try:
-    wl_shapedup.counter_findings = lambda _root: ([], "counter exploded")
+    wl_shapedup.counter_findings = lambda _root, _profile=None: ([], "counter exploded")
     _st = {}
     _fired, _r, _a, _n = wl_shapedup.run(REPO, _st)
     control("a broken counter does not fire", _fired, False)
     control("...but it is not silent about it", "counter exploded" in _n, True)
 
-    wl_shapedup.counter_findings = lambda _root: ([], "")
+    wl_shapedup.counter_findings = lambda _root, _profile=None: ([], "")
     _st2 = {}
     control("CONTROL: no findings, no model call, no fire", wl_shapedup.run(REPO, _st2)[0], False)
 
-    # THE SKIP IS A CACHE, NOT A SWITCH: an unchanged corpus costs a stat sweep, and any
-    # edit moves an mtime. Proven by running twice against a counter that would fire.
+    # THE SKIP IS A CACHE, NOT A SWITCH: an unchanged corpus costs a stat sweep, and any edit moves an mtime. Proven by running twice against a counter that would fire.
     _calls = []
 
-    def _boom(_root):
+    def _boom(_root, _profile=None):
         _calls.append(1)
         return [{"shape": "h", "files": ["a.ts:1", "b.ts:1", "c.ts:1"], "span": 5}], ""
 
     wl_shapedup.counter_findings = _boom
     _st3 = {}
     wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
+    # The skip also needs a shape index on disk, which a fresh checkout does not have until the first scan writes one; pinning it, and the inputs-moved check beside it, makes this control about the signature and not about the checkout it runs in or the real cache's own contents.
+    _index_present = wl_shapedup.index_present
+    _index_inputs_moved = wl_shapedup.index_inputs_moved
+    wl_shapedup.index_present = lambda _root: True
+    wl_shapedup.index_inputs_moved = lambda _root: False
     wl_shapedup.run(REPO, _st3)
     wl_shapedup.run(REPO, _st3)
+    wl_shapedup.index_present = _index_present
+    wl_shapedup.index_inputs_moved = _index_inputs_moved
     control("an unchanged corpus is scanned once, not twice", len(_calls), 1)
     control(
         "the signature is recorded so the skip can happen", bool(_st3.get("shapedup_sig")), True
@@ -1444,55 +1602,560 @@ try:
 finally:
     wl_shapedup.counter_findings = _orig_counter
 
-# ---------------------------------------------------------------------------
-# PART 4: a schema-exhausted sample is a FLAKE, not a broken gate.
+# 6g. THE REFRESH/JUDGE SPLIT (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): refresh_index runs the counter and rearms the commit-path index on its own, with NO model call and independent of whatever a judge later decides -- the fix for the live incident where a session the judge kept telling to `continue` never rearmed the disarmed commit-path guard.
+_orig_counter2 = wl_shapedup.counter_findings
+try:
+    _refresh_calls: list[Any] = []
+
+    def _boom2(_root, _profile=None):
+        _refresh_calls.append(1)
+        return [{"shape": "hh", "files": ["p.ts:1", "q.ts:1", "r.ts:1"], "span": 5}], ""
+
+    wl_shapedup.counter_findings = _boom2
+    _index_present2 = wl_shapedup.index_present
+    _index_inputs_moved2 = wl_shapedup.index_inputs_moved
+    wl_shapedup.index_present = lambda _root: False
+    wl_shapedup.index_inputs_moved = lambda _root: False
+    _st4: dict[Any, Any] = {}
+    _findings, _err = wl_shapedup.refresh_index(REPO, _st4)
+    control("refresh_index runs the counter with NO model call involved", len(_refresh_calls), 1)
+    control("refresh_index returns the counter's real findings", bool(_findings), True)
+    control(
+        "refresh_index records the signature so a later skip can happen",
+        bool(_st4.get("shapedup_sig")),
+        True,
+    )
+
+    # A SECOND call with an unchanged corpus and a now-present index is the skip path: no counter call, findings=None so `judge` can tell "did not run" from "ran and found nothing".
+    wl_shapedup.index_present = lambda _root: True
+    _findings2, _err2 = wl_shapedup.refresh_index(REPO, _st4)
+    control(
+        "refresh_index skips a second call on an unchanged, indexed corpus", len(_refresh_calls), 1
+    )
+    control("...and signals the skip with findings=None, not an empty list", _findings2, None)
+
+    # judge() NEVER TOUCHES THE COUNTER, only the findings it is handed -- the whole point of the split.
+    wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
+    _fired3, _r3, _a3, _n3 = wl_shapedup.judge(REPO, None, "")
+    control("judge(findings=None) fires nothing and stays silent", (_fired3, _n3), (False, ""))
+    _fired4, _r4, _a4, _n4 = wl_shapedup.judge(REPO, [], "counter exploded")
+    control(
+        "judge still surfaces a counter error it was handed, without re-running the counter",
+        "counter exploded" in _n4,
+        True,
+    )
+    control("judge never called the counter itself for either case", len(_refresh_calls), 1)
+
+    # THE REGRESSION THIS SPLIT FIXES, replayed directly: refresh_index alone -- exactly what a stop with judged_ok=False now calls -- still rearms the index, with no `ask`/judge call anywhere in the path.
+    wl_shapedup.index_present = lambda _root: False
+    _st5: dict[Any, Any] = {}
+    wl_shapedup.refresh_index(REPO, _st5)
+    control(
+        "THE FIX: refresh_index alone (judged_ok=False's whole call) still reaches the counter and rearms the index",
+        len(_refresh_calls),
+        2,
+    )
+    wl_shapedup.index_present = _index_present2
+    wl_shapedup.index_inputs_moved = _index_inputs_moved2
+finally:
+    wl_shapedup.counter_findings = _orig_counter2
+
+# 6h. index_inputs_moved (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): the fallback staleness check that catches a moved DEPENDENCY the corpus glob-sweep is blind to.
+with tempfile.TemporaryDirectory() as _im_root:
+    _im_cache = pathlib.Path(_im_root) / ".ci" / "cache" / "shape-index"
+    _im_cache.mkdir(parents=True)
+    _im_dep = pathlib.Path(_im_root) / "scripts" / "lib"
+    _im_dep.mkdir(parents=True)
+    (_im_dep / "console.ts").write_text("export const x = 1;\n")
+    _im_sha = hashlib.sha256((_im_dep / "console.ts").read_bytes()).hexdigest()
+    (_im_cache / "index.json").write_text(
+        json.dumps({"inputs": {"scripts/lib/console.ts": _im_sha}})
+    )
+    control(
+        "index_inputs_moved: an index whose inputs still hash to what it recorded is trusted",
+        wl_shapedup.index_inputs_moved(_im_root),
+        False,
+    )
+    (_im_dep / "console.ts").write_text("export const x = 2;  // edited\n")
+    control(
+        "THE GAP THIS CLOSES: a dependency OUTSIDE the corpus globs that moved is caught",
+        wl_shapedup.index_inputs_moved(_im_root),
+        True,
+    )
+    (_im_cache / "index.json").unlink()
+    control(
+        "index_inputs_moved: a missing index is never trusted",
+        wl_shapedup.index_inputs_moved(_im_root),
+        True,
+    )
+    (_im_cache / "index.json").write_text("{not json")
+    control(
+        "index_inputs_moved: a corrupt index is never trusted",
+        wl_shapedup.index_inputs_moved(_im_root),
+        True,
+    )
+
+# 6i-6p. THE WIDE TIER (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 3): the same question over the counter's `advisory` profile, ADVISORY ONLY. Every control below is a pair, the planted-defect half proving the assertion beside it can go red. The model call is stubbed throughout; `wl_shapedup.ask` is already a permanent stub from 6f, and it is put back to exactly that stub after each block.
+_WIDE_TMP = pathlib.Path(tempfile.mkdtemp(prefix="wide-tier-"))
+_wide_env_saved = os.environ.get("WORKLIST_STORE_DIR")
+# The spend ledger honours WORKLIST_STORE_DIR exactly as wl_reggate.debt_dir does, which is what keeps these controls from appending to the operator's own agent/reggate/.
+os.environ["WORKLIST_STORE_DIR"] = str(_WIDE_TMP / "store" / "worklist")
+_wide_ask_saved = wl_shapedup.ask
+_wide_cap_saved = wl_shapedup.WIDE_CAP
+_wide_counter_saved = wl_shapedup.counter_findings
+_wide_apply_saved = wl_rules.apply_order
+
+
+def _wide_f(h, n, span=5, stem="w"):
+    return {
+        "shape": h,
+        "files": [".claude/hooks/stop/wl_%s%d.py:%d" % (stem, i, i + 1) for i in range(n)],
+        "span": span,
+    }
+
+
+def _wide_clear(*hashes):
+    for h in hashes:
+        wl_shapedup.demand_for("wide-" + h).clear()
+
+
+_wide_asks: list[Any] = []
+
+
+class _FakeRunProc:
+    """What `counter_findings` reads off a finished run, with an empty verdict."""
+
+    timed_out = False
+    returncode = 0
+    stdout = '{"findings": []}\n'
+    stderr = ""
+
+
+def _wide_ask_fires(instances):
+    _wide_asks.append(list(instances))
+    return {
+        "shape_dup": {
+            "applicable": True,
+            "shape": "argv loop + exit 2",
+            "harness": "",
+            "consolidatable": "yes",
+            "divergence": "",
+            "instruction": "extract it",
+        }
+    }, ""
+
+
+try:
+    control(
+        "wide ledger lives under the redirected store, never the real agent/reggate",
+        str(wl_shapedup.wide_ledger_path("br-6i")).startswith(str(_WIDE_TMP)),
+        True,
+    )
+    control(
+        "wide ledger is a flat file in the reserved agent/reggate class, lock beside it",
+        (
+            wl_shapedup.wide_ledger_path("br-6i").parent.name,
+            wl_shapedup.wide_ledger_path("br-6i").with_suffix(".lock").name,
+        ),
+        ("reggate", "br-6i.shapedup-wide.lock"),
+    )
+
+    # 6i. THE CAP SUPPRESSES THE MODEL CALL, NOT THE FINDING. Under the cap one ask is made and charged; at the cap the same finding still lands, mechanically, with no ask.
+    wl_shapedup.ask = _wide_ask_fires
+    wl_shapedup.WIDE_CAP = 1
+    _wide_clear("cap6i")
+    _t1, _n1 = wl_shapedup.wide_report(REPO, [_wide_f("cap6i", 3)], "", "br-6i")
+    control("CONTROL: under the cap the model IS asked (the stub can count)", len(_wide_asks), 1)
+    control(
+        "under the cap the ask is charged to the branch ledger", wl_shapedup.wide_spent("br-6i"), 1
+    )
+    control("a judged wide finding carries the model's shape", "argv loop + exit 2" in _t1, True)
+    _wide_clear("cap6i")
+    _t2, _n2 = wl_shapedup.wide_report(REPO, [_wide_f("cap6i", 3)], "", "br-6i")
+    control("THE CAP: at the cap no model call is made", len(_wide_asks), 1)
+    control(
+        "THE CAP: ...but the finding still lands, with the counter's own file:line list",
+        ".claude/hooks/stop/wl_w0.py:1" in _t2 and "not judged" in _t2,
+        True,
+    )
+    control(
+        "THE CAP: ...and names itself advisory",
+        "ADVISORY: nothing is blocked on this." in _t2,
+        True,
+    )
+    control(
+        "the ledger is branch-scoped: another branch has its own budget",
+        wl_shapedup.wide_spent("br-other"),
+        0,
+    )
+    # Planted defect: a ledger line that is not a well-formed `ask` record must not count as a spend, and an unreadable ledger must not read as a fresh budget.
+    _led = wl_shapedup.wide_ledger_path("br-6i-junk")
+    _led.parent.mkdir(parents=True, exist_ok=True)
+    _led.write_text('not json\n{"kind": "other"}\n', encoding="utf-8")
+    control(
+        "PLANTED: junk ledger lines are not counted as spends",
+        wl_shapedup.wide_spent("br-6i-junk"),
+        0,
+    )
+    _led.unlink()
+    _led.mkdir()
+    control(
+        "PLANTED: an unreadable ledger counts as spent in full, never as a fresh budget",
+        wl_shapedup.wide_spent("br-6i-junk"),
+        wl_shapedup.WIDE_CAP,
+    )
+    _led.rmdir()
+    _wide_clear("cap6i")
+
+    # 6j. THE DEMAND IS KEYED PER SHAPE. Capping shape A's latch moves the report to shape B; an uncapped A is still the one reported (the planted half: a shared latch would make both answers the same).
+    wl_shapedup.WIDE_CAP = 0
+    control(
+        "each wide shape gets its own latch file, apart from the narrow tier's",
+        len(
+            {
+                wl_shapedup.demand_for("wide-aaaa6j").path(),
+                wl_shapedup.demand_for("wide-bbbb6j").path(),
+                wl_shapedup.demand_for("aaaa6j").path(),
+            }
+        ),
+        3,
+    )
+    _two = [_wide_f("aaaa6j", 4, stem="a"), _wide_f("bbbb6j", 3, stem="b")]
+    _ta, _ = wl_shapedup.wide_report(REPO, _two, "", "br-6j")
+    control(
+        "CONTROL: with no latch the LARGEST shape is reported",
+        "aaaa6j" in _ta and "bbbb6j" not in _ta,
+        True,
+    )
+    for _ in range(wl_shapedup.SHAPE_MAX_FIRES):
+        wl_shapedup.wide_report(REPO, [_wide_f("aaaa6j", 4, stem="a")], "", "br-6j")
+    _tb, _ = wl_shapedup.wide_report(REPO, _two, "", "br-6j")
+    control(
+        "a capped shape A does not cap shape B: B is reported next",
+        "bbbb6j" in _tb and "aaaa6j" not in _tb,
+        True,
+    )
+    for _ in range(wl_shapedup.SHAPE_MAX_FIRES):
+        wl_shapedup.wide_report(REPO, _two, "", "br-6j")
+    control(
+        "once every shape is capped the tier is silent rather than repeating",
+        wl_shapedup.wide_report(REPO, _two, "", "br-6j"),
+        ("", ""),
+    )
+    _wide_clear("aaaa6j", "bbbb6j")
+
+    # 6k. A COUNTER ERROR NEVER FIRES. The planted half is the same call with findings and no error, which must report.
+    _wide_calls: list[Any] = []
+
+    def _wide_counter_err(_root, profile=None):
+        _wide_calls.append(profile)
+        return [], "counter exploded"
+
+    wl_shapedup.counter_findings = _wide_counter_err
+    _st6k: dict[Any, Any] = {}
+    _tk, _nk = wl_shapedup.wide_run(REPO, _st6k, "br-6k")
+    control("a broken wide counter queues no section", _tk, "")
+    control("...but it is not silent about it", "counter exploded" in _nk, True)
+    control(
+        "the wide run asks the counter for the ADVISORY profile, not the gate's",
+        _wide_calls,
+        ["advisory"],
+    )
+    control(
+        "the wide run records its own signature key, not the narrow tier's",
+        ("shapedup_wide_sig" in _st6k, "shapedup_sig" in _st6k),
+        (True, False),
+    )
+
+    def _wide_counter_ok(_root, profile=None):
+        del (
+            profile
+        )  # the wide tier passes profile= by keyword; this stub answers the same either way
+        return [_wide_f("okay6k", 3)], ""
+
+    wl_shapedup.counter_findings = _wide_counter_ok
+    control(
+        "CONTROL: the same run with findings and no error DOES report",
+        "okay6k" in wl_shapedup.wide_run(REPO, {}, "br-6k")[0],
+        True,
+    )
+    wl_shapedup.counter_findings = _wide_counter_saved
+    _wide_clear("okay6k")
+
+    # 6l. A FIRE NEVER CALLS apply_order. The planted half runs the NARROW tier's apply_verdict under the same interceptor, which must be seen, or the interceptor proves nothing.
+    _orders: list[Any] = []
+    wl_rules.apply_order = lambda *a: _orders.append(a)
+    wl_shapedup.WIDE_CAP = 5
+    _tl, _ = wl_shapedup.wide_report(REPO, [_wide_f("fire6l", 3)], "", "br-6l")
+    control("a judged-yes wide finding places no order", (_orders, bool(_tl)), ([], True))
+    wl_shapedup.apply_verdict(
+        _sd(), ["a.ts:1", "b.ts:1", "c.ts:1"], "sh6l", path=_WIDE_TMP / "narrow-6l.json"
+    )
+    control("CONTROL: the interceptor DOES see the narrow tier's order", len(_orders), 1)
+    wl_rules.apply_order = _wide_apply_saved
+    _wide_clear("fire6l")
+
+    # 6m. outq_add ABSORBS AN IDENTICAL SECOND CALL inside REPORT_REFRESH_MIN, which is what makes an unchanged at-cap finding cost nothing on the next stop. The tier's mechanical text must therefore be stable across stops; a changed body is the planted half and must re-enqueue.
+    import wl_checks
+
+    wl_shapedup.WIDE_CAP = 0
+    _wl = _WIDE_TMP / "wl.md"
+    _qdoc = {"outq": {"items": [], "shown": {}, "seq": 0}}
+    _m1, _ = wl_shapedup.wide_report(REPO, [_wide_f("same6m", 3)], "", "br-6m")
+    _m2, _ = wl_shapedup.wide_report(REPO, [_wide_f("same6m", 3)], "", "br-6m")
+    control("the at-cap wide text is stable across two stops", _m1 == _m2 and bool(_m1), True)
+    control(
+        "first shapedup-wide section is queued",
+        wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m1, 2),
+        True,
+    )
+    control(
+        "an identical second call inside REPORT_REFRESH_MIN is absorbed",
+        wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m2, 2),
+        False,
+    )
+    control(
+        "CONTROL: a changed body is NOT absorbed",
+        wl_checks.outq_add(_wl, "sess6m", _qdoc, "shapedup-wide", _m2 + " (changed)", 2),
+        True,
+    )
+    _wide_clear("same6m")
+
+    # 6n. THE MOMENT. A fix landing in a wide family is the trigger (`touches_wide`), and `wide_sig_moved` filters it: an unchanged, indexed wide corpus is a stat sweep and no counter run.
+    control(
+        "touches_wide: a stop-hook file is in the wide corpus",
+        wl_shapedup.touches_wide(["x.md", ".claude/hooks/stop/wl_rules.py"]),
+        True,
+    )
+    control(
+        "CONTROL: touches_wide: a narrow-corpus gate is not",
+        wl_shapedup.touches_wide(["scripts/gates/check-x.ts", "docs/a.md"]),
+        False,
+    )
+    _mroot = _WIDE_TMP / "moment"
+    (_mroot / ".claude" / "hooks" / "stop").mkdir(parents=True)
+    (_mroot / ".claude" / "hooks" / "stop" / "wl_a.py").write_text("a = 1\n")
+    _mcache = _mroot / wl_shapedup.SHAPE_INDEX_WIDE_REL
+    _mcache.mkdir(parents=True)
+    (_mcache / "index.json").write_text(json.dumps({"inputs": {}}))
+    (_mcache / "probe.mjs").write_text("")
+    _mst = {"shapedup_wide_sig": wl_shapedup.corpus_sig(str(_mroot), wl_shapedup.CORPUS_GLOBS_WIDE)}
+    control(
+        "an unchanged, indexed wide corpus is not a moment",
+        wl_shapedup.wide_sig_moved(str(_mroot), _mst),
+        False,
+    )
+    (_mroot / ".claude" / "hooks" / "stop" / "wl_b.py").write_text("b = 2\n")
+    control(
+        "CONTROL: a new file in a wide family IS a moment",
+        wl_shapedup.wide_sig_moved(str(_mroot), _mst),
+        True,
+    )
+    _mst["shapedup_wide_sig"] = wl_shapedup.corpus_sig(str(_mroot), wl_shapedup.CORPUS_GLOBS_WIDE)
+    (_mcache / "probe.mjs").unlink()
+    control(
+        "CONTROL: a missing wide probe bundle IS a moment",
+        wl_shapedup.wide_sig_moved(str(_mroot), _mst),
+        True,
+    )
+    control(
+        "the narrow signature is untouched by a wide-family edit",
+        wl_shapedup.corpus_sig(str(_mroot)) == wl_shapedup.corpus_sig(str(_WIDE_TMP / "nowhere")),
+        True,
+    )
+
+    # 6p. THE ARGV. The default call is byte-identical to the pre-profile one, and a profiled call drops SHAPE_PROBE_CACHE so the wide scan never overwrites the commit-path guard's index (risk 6). The planted half is the inherited variable itself, which must be present for the drop to mean anything.
+    _argv_seen: list[Any] = []
+    _run_saved = wl_shapedup.wl_proc.run
+    _spc_saved = os.environ.get("SHAPE_PROBE_CACHE")
+    os.environ["SHAPE_PROBE_CACHE"] = str(_WIDE_TMP / "gate-cache")
+
+    def _capture_run(argv, **kw):
+        _argv_seen.append((argv, kw, (kw.get("env") or os.environ).get("SHAPE_PROBE_CACHE")))
+        return _FakeRunProc()
+
+    wl_shapedup.wl_proc.run = _capture_run
+    try:
+        wl_shapedup.counter_findings(REPO)
+        wl_shapedup.counter_findings(REPO, profile="advisory")
+    finally:
+        wl_shapedup.wl_proc.run = _run_saved
+        if _spc_saved is None:
+            os.environ.pop("SHAPE_PROBE_CACHE", None)
+        else:
+            os.environ["SHAPE_PROBE_CACHE"] = _spc_saved
+    control(
+        "the default counter argv is unchanged by the profile parameter",
+        (_argv_seen[0][0], "env" in _argv_seen[0][1]),
+        (["npx", "tsx", wl_shapedup.COUNTER, "--json", "--emit-index"], False),
+    )
+    control(
+        "a profiled call appends --profile and nothing else",
+        _argv_seen[1][0][5:],
+        ["--profile", "advisory"],
+    )
+    control(
+        "CONTROL: the default run DOES see an inherited SHAPE_PROBE_CACHE, so the drop below is observable",
+        _argv_seen[0][2],
+        str(_WIDE_TMP / "gate-cache"),
+    )
+    control("RISK 6: a profiled run never inherits SHAPE_PROBE_CACHE", _argv_seen[1][2], None)
+finally:
+    wl_shapedup.ask = _wide_ask_saved
+    wl_shapedup.WIDE_CAP = _wide_cap_saved
+    wl_shapedup.counter_findings = _wide_counter_saved
+    wl_rules.apply_order = _wide_apply_saved
+
+# 6o. RISK 1, THE SETTLE PATH, against the REAL counter. The completion-evidence bug re-fired forever because nothing the session did could discharge it; a duplication advisory needs a settle path or it does the same. So: a hermetic copy of the wide corpus plus three planted copies of one 5-line shape, the real counter run through `counter_findings` itself, then an `accepted` entry with a BLOCKER reason written into that tree's advisory seed -- and the same shape must be silent on the next stop. The planted-defect partner accepts a DIFFERENT live shape first, and the planted shape must still be reported.
+_PLANT_BODY = (
+    "    zz_acc = []\n"
+    "    for zz_row in zz_rows:\n"
+    "        if zz_row.get('zz_kind') == 'zz_plant':\n"
+    "            zz_acc.append(zz_row['zz_value'] * 7)\n"
+    "    return sorted(zz_acc, reverse=True)\n"
+)
+_PLANT_PRE = (
+    "import os\n\n\ndef plant_a(zz_rows):\n",
+    "import sys\nX = 3\n\n\ndef plant_b(zz_rows, extra=None):\n    del extra\n",
+    "\n\nclass Holder:\n    pass\n\n\ndef plant_c(zz_rows):\n    assert zz_rows is not None\n",
+)
+_PLANT_POST = ("\n\nprint(os.sep)\n", "\n\nY = sys.argv\n", "\n\nH = Holder()\n")
+_hx = pathlib.Path(tempfile.mkdtemp(prefix="wide-settle-"))
+_hx_env = os.environ.get("REDIACC_CI_ROOT")
+try:
+    for _rel in ["package.json", "tsconfig.json", wl_shapedup.COUNTER] + [
+        str(p.relative_to(REPO)) for p in (pathlib.Path(REPO) / "scripts" / "lib").glob("*.ts")
+    ]:
+        (_hx / _rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(pathlib.Path(REPO) / _rel, _hx / _rel)
+    os.symlink(pathlib.Path(REPO) / "node_modules", _hx / "node_modules")
+    _corpus = subprocess.run(
+        ["git", "-C", REPO, "ls-files", "--", *wl_shapedup.CORPUS_GLOBS_WIDE],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    for _rel in _corpus:
+        (_hx / _rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(pathlib.Path(REPO) / _rel, _hx / _rel)
+    for _i, _tag in enumerate("abc"):
+        (_hx / ".claude" / "hooks" / "stop" / ("wl_zzplant_%s.py" % _tag)).write_text(
+            _PLANT_PRE[_i] + _PLANT_BODY + _PLANT_POST[_i]
+        )
+    subprocess.run(["git", "init", "-q", str(_hx)], check=True)
+    subprocess.run(["git", "-C", str(_hx), "add", "--", ".ci", ".claude"], check=True)
+    # The BLOCKER validator resolves the canonical rules from its own file's checkout; the copy has no .ci/rediacc_ci/core, so point it at the real one.
+    os.environ["REDIACC_CI_ROOT"] = REPO
+    wl_shapedup.ask = lambda _inst: (None, "stubbed: no model call in a control")
+
+    def _planted(findings):
+        return [f for f in findings if any("wl_zzplant_" in loc for loc in f.get("files", []))]
+
+    _f0, _e0 = wl_shapedup.counter_findings(str(_hx), profile="advisory")
+    _p0 = _planted(_f0)
+    control("6o precondition: the real counter ran on the hermetic tree", _e0, "")
+    control(
+        "6o precondition: the planted shape is ONE single-window finding",
+        [(len(f["files"]), f["span"]) for f in _p0],
+        [(3, 5)],
+    )
+    control(
+        "6o precondition: the wide index went to the copy's own advisory cache",
+        (_hx / wl_shapedup.SHAPE_INDEX_WIDE_REL / "index.json").is_file(),
+        True,
+    )
+    if _p0:
+        _ph = _p0[0]["shape"]
+        _other = next(f["shape"] for f in _f0 if f not in _p0)
+        _wide_clear(_ph)
+        _t0, _ = wl_shapedup.wide_report(str(_hx), _p0, "", "br-6o")
+        control(
+            "before settling, the tier reports the planted shape by its accepted key",
+            ("accepted key: %s" % _ph) in _t0,
+            True,
+        )
+        _wide_clear(_ph)
+        _seed = _hx / "scripts" / "data" / "shape-duplication-seed-advisory.json"
+        _seed.parent.mkdir(parents=True, exist_ok=True)
+        _why = (
+            "BLOCKER: planted by the wide-tier settle-path control in test-judge-schema.py; the three "
+            "wl_zzplant files are fixtures whose whole point is to be copies of one another, so the "
+            "shape is deliberate and extracting it would delete the thing under test."
+        )
+        _seed.write_text(json.dumps({"accepted": {_other: _why}}))
+        _f1, _e1 = wl_shapedup.counter_findings(str(_hx), profile="advisory")
+        control(
+            "PLANTED: accepting a DIFFERENT shape leaves the planted one reported",
+            (_e1, [f["shape"] for f in _planted(_f1)]),
+            ("", [_ph]),
+        )
+        _t1b, _ = wl_shapedup.wide_report(str(_hx), _planted(_f1), "", "br-6o")
+        control("PLANTED: ...and the tier still queues it", _ph in _t1b, True)
+        _wide_clear(_ph)
+        _seed.write_text(json.dumps({"accepted": {_ph: _why}}))
+        _f2, _e2 = wl_shapedup.counter_findings(str(_hx), profile="advisory")
+        control(
+            "RISK 1: an accepted entry with a BLOCKER reason removes the shape from the next counter run",
+            (_e2, _planted(_f2)),
+            ("", []),
+        )
+        control(
+            "RISK 1: ...so the same shape is silent on the next stop",
+            wl_shapedup.wide_report(str(_hx), _planted(_f2), "", "br-6o"),
+            ("", ""),
+        )
+        control("RISK 1: ...and nothing else was silenced with it", len(_f2), len(_f0) - 1)
+        _wide_clear(_ph)
+finally:
+    wl_shapedup.ask = _wide_ask_saved
+    if _hx_env is None:
+        os.environ.pop("REDIACC_CI_ROOT", None)
+    else:
+        os.environ["REDIACC_CI_ROOT"] = _hx_env
+    if _wide_env_saved is None:
+        os.environ.pop("WORKLIST_STORE_DIR", None)
+    else:
+        os.environ["WORKLIST_STORE_DIR"] = _wide_env_saved
+    shutil.rmtree(_hx, ignore_errors=True)
+    shutil.rmtree(_WIDE_TMP, ignore_errors=True)
+
+# --------------------------------------------------------------------------- PART 4: a schema-exhausted sample is a FLAKE, not a broken gate.
 #
 # THE INCIDENT, 2026-09-04. A stop was blocked with "judge exited 1;
 # subtype=error_max_structured_output_retries; turns=6; cost=$0.0112 of budget
 # $0.25", and that message ends by telling the session the gate is broken and
 # offering WORKLIST_JUDGE=off. Neither half was true: the model was reachable,
-# and the real call with the same schema, model and budget returned a valid
-# verdict 3/3 at $0.05-0.06 each -- five times what the failing run spent, so
-# it did not hit its cap either.
+# and the real call with the same schema, model and budget returned a valid verdict 3/3 at $0.05-0.06 each -- five times what the failing run spent, so it did not hit its cap either.
 #
-# The exit-0 path already retries exactly this condition and calls it "a sample,
-# not a broken gate". The two spellings differ only in how the CLI reports them:
-# wandering to the end of the turn exits 0 with structured_output null, while
-# exhausting the CLI's own schema retries exits 1 with this subtype. Keying the
-# retry on the exit code made one failure a flake and the other an accusation.
+# The exit-0 path already retries exactly this condition and calls it "a sample, not a broken gate". The two spellings differ only in how the CLI reports them: wandering to the end of the turn exits 0 with structured_output null, while exhausting the CLI's own schema retries exits 1 with this subtype. Keying the retry on the exit code made one failure a flake and the other an
+# accusation.
 #
-# Each control below is a PAIR for the reason PART 1 gives: asserting that the
-# retry fires proves nothing unless something also proves it does NOT fire where
-# it should not, or a helper that retried everything would pass half of this.
-# ---------------------------------------------------------------------------
+# Each control below is a PAIR for the reason PART 1 gives: asserting that the retry fires proves nothing unless something also proves it does NOT fire where it should not, or a helper that retried everything would pass half of this. ---------------------------------------------------------------------------
 
 
 class _FakeProc:
-    """Just the two attributes the helper reads. A real subprocess here would
-    make these controls depend on the network, which is the thing they exist to
-    stop mattering."""
+    """Just the two attributes the helper reads. A real subprocess here would make these controls depend on the network, which is the thing they exist to stop mattering."""
 
     def __init__(self, returncode, stdout):
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = ""
+        self.timed_out = False
 
 
-def _envelope(subtype, cost, **extra):
+def _exhaustion_envelope(subtype, cost, **extra):
     return json.dumps({"subtype": subtype, "total_cost_usd": cost, **extra})
 
 
-_EXHAUSTED = _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
-_GOOD = _FakeProc(0, _envelope("success", 0.05))
+_EXHAUSTED = _FakeProc(1, _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
+_GOOD = _FakeProc(0, _exhaustion_envelope("success", 0.05))
 
 # 1. The incident's exact envelope: retried, and the retry's result is carried on.
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _EXHAUSTED, lambda: _GOOD)
 control("a schema-exhausted sample is retried, not reported", _proc is _GOOD, True)
 control("and a successful retry reports no error", _why, None)
 
-# 2. CONTROL: a DIFFERENT non-zero exit must still be reported, never retried.
-#    Without this the helper could retry everything -- including a real
-#    misconfiguration -- and control 1 would not notice.
+# 2. CONTROL: a DIFFERENT non-zero exit must still be reported, never retried. Without this the helper could retry everything -- including a real misconfiguration -- and control 1 would not notice.
 _calls = []
 
 
@@ -1501,15 +2164,14 @@ def _counting():
     return _GOOD
 
 
-_other = _FakeProc(1, _envelope("error_during_execution", 0.01))
+_other = _FakeProc(1, _exhaustion_envelope("error_during_execution", 0.01))
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _other, _counting)
 control("CONTROL: another failure subtype is not retried", (_proc, len(_calls)), (None, 0))
 control("CONTROL: and it is reported with its subtype", "error_during_execution" in _why, True)
 
-# 3. CONTROL: the same subtype, but the budget was spent. A call that hit its cap
-#    hits it again, so retrying doubles the bill for the same silence.
+# 3. CONTROL: the same subtype, but the budget was spent. A call that hit its cap hits it again, so retrying doubles the bill for the same silence.
 _calls.clear()
-_broke = _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.24))
+_broke = _FakeProc(1, _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.24))
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _broke, _counting)
 control("CONTROL: a budget-exhausted call is not retried", (_proc, len(_calls)), (None, 0))
 control("CONTROL: and the refusal says the budget was why", "budget" in _why, True)
@@ -1520,40 +2182,29 @@ _calls.clear()
 
 def _always_exhausted():
     _calls.append(1)
-    return _FakeProc(1, _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
+    return _FakeProc(1, _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112))
 
 
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _EXHAUSTED, _always_exhausted)
 control("a failing retry gives up rather than looping", (_proc, len(_calls)), (None, 1))
 control("and the message names both attempts", "the single retry also failed" in _why, True)
 
-# 5. CONTROL: stdout that is not an envelope at all (a crash before any JSON) is
-#    reported, not retried -- there is nothing to read a subtype from.
+# 5. CONTROL: stdout that is not an envelope at all (a crash before any JSON) is reported, not retried -- there is nothing to read a subtype from.
 _calls.clear()
 _garbage = _FakeProc(1, "Killed")
 _proc, _why = wl_judge.retry_schema_exhaustion("judge", _garbage, _counting)
 control("CONTROL: unparseable stdout is reported, not retried", (_proc, len(_calls)), (None, 0))
 
 
-# ---------------------------------------------------------------------------
-# PART 5: the FIFTH schema-constrained call site, which the first sweep missed.
+# --------------------------------------------------------------------------- PART 5: the FIFTH schema-constrained call site, which the first sweep missed.
 #
-# wl_judge holds four `claude -p --json-schema` calls and all four were wired to
-# the shared retry. wl_shapedup.ask() is a fifth, in a different module, and it
-# was left treating every non-zero exit as final. Its own comment says why that
-# is expensive there in particular: "one erroring case blanks the whole rubric",
-# so a single bad sample silently degrades a gate rather than failing loudly.
+# wl_judge holds four `claude -p --json-schema` calls and all four were wired to the shared retry. wl_shapedup.ask() is a fifth, in a different module, and it was left treating every non-zero exit as final. Its own comment says why that is expensive there in particular: "one erroring case blanks the whole rubric", so a single bad sample silently degrades a gate rather than failing
+# loudly.
 #
-# BEHAVIOURAL, not a grep for the helper's name: a structural assertion would
-# pass on a call site that imported the helper and never reached it.
+# BEHAVIOURAL, not a grep for the helper's name: a structural assertion would pass on a call site that imported the helper and never reached it.
 #
-# A FRESH MODULE INSTANCE, deliberately. A control far above this one replaces
-# `wl_shapedup.ask` with a permanent stub ("stubbed: no model call in a
-# control"), and the first version of these four controls called that stub and
-# failed with it -- which is the good outcome: a test that cannot reach the code
-# it names must say so rather than pass. Loading an isolated copy leaves the
-# stub in place for everything that depends on it.
-# ---------------------------------------------------------------------------
+# A FRESH MODULE INSTANCE, deliberately. A control far above this one replaces `wl_shapedup.ask` with a permanent stub ("stubbed: no model call in a control"), and the first version of these four controls called that stub and failed with it -- which is the good outcome: a test that cannot reach the code it names must say so rather than pass. Loading an isolated copy leaves the stub
+# in place for everything that depends on it. ---------------------------------------------------------------------------
 
 import importlib.util as _ilu  # noqa: E402
 
@@ -1580,17 +2231,17 @@ def _script(*procs):
     return run, calls
 
 
-_EXHAUST_ENV = _envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112)
+_EXHAUST_ENV = _exhaustion_envelope(wl_judge.SCHEMA_EXHAUSTION, 0.0112)
 _GOOD_ENV = json.dumps(
     {"subtype": "success", "total_cost_usd": 0.05, "structured_output": {"shape_dup": {}}}
 )
 _INST = [{"file": "a.py", "line": 1}]
 
-_real_run = _shapedup.subprocess.run
+_real_run = _shapedup.wl_proc.run
 try:
     # 1. An exhausted first sample is retried, and the good second one is used.
     _run, _calls = _script(_FakeProc(1, _EXHAUST_ENV), _FakeProc(0, _GOOD_ENV))
-    _shapedup.subprocess.run = _run
+    _shapedup.wl_proc.run = _run
     _out, _why = _shapedup.ask(_INST)
     # ask() returns the whole structured_output, not the inner shape_dup value.
     control(
@@ -1600,40 +2251,26 @@ try:
     )
     control("and it called the model exactly twice", len(_calls), 2)
 
-    # 2. CONTROL: a different non-zero exit stays final and is NOT retried. Without
-    #    this, a helper that retried everything would pass control 1.
-    _run, _calls = _script(_FakeProc(1, _envelope("error_during_execution", 0.01)))
-    _shapedup.subprocess.run = _run
+    # 2. CONTROL: a different non-zero exit stays final and is NOT retried. Without this, a helper that retried everything would pass control 1.
+    _run, _calls = _script(_FakeProc(1, _exhaustion_envelope("error_during_execution", 0.01)))
+    _shapedup.wl_proc.run = _run
     _out, _why = _shapedup.ask(_INST)
     control("CONTROL: another failure subtype is not retried", (_out, len(_calls)), (None, 1))
     control("CONTROL: and it is still reported", "shape_dup model call" in _why, True)
 finally:
-    _shapedup.subprocess.run = _real_run
+    _shapedup.wl_proc.run = _real_run
 
 
-# ---------------------------------------------------------------------------
-# PART 6: EVERY schema handed to `--json-schema`, checked TOGETHER.
+# --------------------------------------------------------------------------- PART 6: EVERY schema handed to `--json-schema`, checked TOGETHER.
 #
-# Five call sites reach the CLI with a schema -- TRIAGE_SCHEMA, PLANFID_SCHEMA
-# (through _run_structured), ADMISSION_SCHEMA, judge_schema_for(), and
-# wl_shapedup's wrapper. Four were module constants and one was a dict literal
-# written inline in the argv, and that fifth was the one that drifted: it alone
-# omitted `additionalProperties: False`, so it accepted top-level keys the other
+# Five call sites reach the CLI with a schema -- TRIAGE_SCHEMA, PLANFID_SCHEMA (through _run_structured), ADMISSION_SCHEMA, judge_schema_for(), and wl_shapedup's wrapper. Four were module constants and one was a dict literal written inline in the argv, and that fifth was the one that drifted: it alone omitted `additionalProperties: False`, so it accepted top-level keys the other
 # four refuse. SHAPE_SCHEMA inside it was correctly constrained the whole time.
 #
-# NO PER-SITE TEST CAN CATCH THAT. Each schema is individually plausible; the
-# defect only exists in the COMPARISON. So this iterates the set, and the set is
-# built from the modules rather than retyped here -- a sixth site added to
-# SCHEMA_SITES gets the same assertions with no new control to write, and one
-# added to the code and NOT to this list is what the corpus floor below catches.
+# NO PER-SITE TEST CAN CATCH THAT. Each schema is individually plausible; the defect only exists in the COMPARISON. So this iterates the set, and the set is built from the modules rather than retyped here -- a sixth site added to SCHEMA_SITES gets the same assertions with no new control to write, and one added to the code and NOT to this list is what the corpus floor below catches.
 # ---------------------------------------------------------------------------
 
-# EVERY SCHEMA DEFINITION IN THE HOOK TREE, not just the five that reach the CLI
-# as a payload. The first version of this listed the five call sites, and that was
-# too narrow twice over: CLASS_SWEEP_SCHEMA and BRAVE_DEFAULT_SCHEMA are composed
-# INTO judge_schema_for's output rather than passed directly, and JUDGE_SCHEMA is
-# the reference that judge_schema_for deep-copies. A drift in any of those is a
-# drift in what the model is actually held to, and none of them was covered.
+# EVERY SCHEMA DEFINITION IN THE HOOK TREE, not just the five that reach the CLI as a payload. The first version of this listed the five call sites, and that was too narrow twice over: CLASS_SWEEP_SCHEMA and BRAVE_DEFAULT_SCHEMA are composed INTO judge_schema_for's output rather than passed directly, and JUDGE_SCHEMA is the reference that judge_schema_for deep-copies. A drift in
+# any of those is a drift in what the model is actually held to, and none of them was covered.
 SCHEMA_SITES = {
     "JUDGE_SCHEMA": wl_judge.JUDGE_SCHEMA,
     "TRIAGE_SCHEMA": wl_judge.TRIAGE_SCHEMA,
@@ -1646,18 +2283,14 @@ SCHEMA_SITES = {
     "wl_bravedefault.BRAVE_DEFAULT_SCHEMA": wl_bravedefault.BRAVE_DEFAULT_SCHEMA,
 }
 
-# ANTI-VACUITY: an empty or shrunken set would pass every assertion below while
-# checking nothing, which is the failure this whole file exists to distrust.
+# ANTI-VACUITY: an empty or shrunken set would pass every assertion below while checking nothing, which is the failure this whole file exists to distrust.
 control("PART 6: the schema corpus is all nine definitions", len(SCHEMA_SITES), 9)
 
 
 def _object_subschemas(node, path=""):
     """[(path, node)] for every nested object schema, root included.
 
-    THE TOP LEVEL IS NOT THE WHOLE SCHEMA. Checking only the root would have
-    passed a JUDGE_SCHEMA whose `admission` object had lost its constraint while
-    the root kept one -- and the nested objects are where the model's actual
-    answer shape is pinned down. 22 of them across this corpus, against 9 roots.
+    THE TOP LEVEL IS NOT THE WHOLE SCHEMA. Checking only the root would have passed a JUDGE_SCHEMA whose `admission` object had lost its constraint while the root kept one -- and the nested objects are where the model's actual answer shape is pinned down. 22 of them across this corpus, against 9 roots.
     """
     out = []
     if isinstance(node, dict):
@@ -1672,8 +2305,7 @@ def _object_subschemas(node, path=""):
 
 
 _ALL_SUBS = [(n, p, sub) for n, sch in SCHEMA_SITES.items() for p, sub in _object_subschemas(sch)]
-# A NAMED FLOOR, not "> 0": the quiet collapse is a walker that still finds a
-# handful after a rename hides the rest. 22 at the time of writing.
+# A NAMED FLOOR, not "> 0": the quiet collapse is a walker that still finds a handful after a rename hides the rest. 22 at the time of writing.
 control("PART 6: the walk reaches every nested object schema", len(_ALL_SUBS) >= 20, True)
 for _n, _p, _sub in _ALL_SUBS:
     control(f"{_n} at {_p} refuses unknown keys", _sub.get("additionalProperties"), False)
@@ -1681,11 +2313,7 @@ for _n, _p, _sub in _ALL_SUBS:
 for _name, _sch in SCHEMA_SITES.items():
     control(f"{_name} is an object schema", _sch.get("type"), "object")
     control(f"{_name} declares properties", bool(_sch.get("properties")), True)
-    # The additionalProperties clause lives in the RECURSIVE walk above, which
-    # covers each root as well as its nested objects; asserting it twice here
-    # would just inflate the count.
-    # It has to survive json.dumps, because that is literally the next thing the
-    # call site does with it, and a TypeError there raises inside a Stop hook.
+    # The additionalProperties clause lives in the RECURSIVE walk above, which covers each root as well as its nested objects; asserting it twice here would just inflate the count. It has to survive json.dumps, because that is literally the next thing the call site does with it, and a TypeError there raises inside a Stop hook.
     try:
         json.dumps(_sch)
         _ser = True
@@ -1693,8 +2321,7 @@ for _name, _sch in SCHEMA_SITES.items():
         _ser = False
     control(f"{_name} is JSON-serialisable", _ser, True)
 
-# CONTROL: the additionalProperties assertion must be able to fail, or the four
-# above are decoration. This is the exact shape the wrapper had before the fix.
+# CONTROL: the additionalProperties assertion must be able to fail, or the four above are decoration. This is the exact shape the wrapper had before the fix.
 _drifted = {"type": "object", "properties": {"x": {"type": "string"}}, "required": ["x"]}
 control(
     "CONTROL: a schema missing additionalProperties is caught",
@@ -1702,26 +2329,14 @@ control(
     False,
 )
 
-# ---------------------------------------------------------------------------
-# PART 7: no `--json-schema` payload may be an INLINE OBJECT LITERAL.
+# --------------------------------------------------------------------------- PART 7: no `--json-schema` payload may be an INLINE OBJECT LITERAL.
 #
-# THE HOLE PART 6 LEAVES, and it is real. SCHEMA_SITES enumerates schemas by
-# NAME, so it can only check schemas that are reachable as module attributes. A
-# SIXTH site added as a dict literal inside an argv would not appear in that dict
-# at all, and every assertion above would pass while the new literal drifted --
-# which is exactly how the wl_shapedup wrapper stayed the odd one out: it was
-# invisible to anything but a reader of that call.
+# THE HOLE PART 6 LEAVES, and it is real. SCHEMA_SITES enumerates schemas by NAME, so it can only check schemas that are reachable as module attributes. A SIXTH site added as a dict literal inside an argv would not appear in that dict at all, and every assertion above would pass while the new literal drifted -- which is exactly how the wl_shapedup wrapper stayed the odd one out: it
+# was invisible to anything but a reader of that call.
 #
-# So this clause is SOURCE-LEVEL, not value-level. It reads the hook sources and
-# requires the payload handed to `--json-schema` to be a NAMED reference. A name
-# is something a test can enumerate and a reader can find; a literal is visible
-# only to whoever is already reading that call.
+# So this clause is SOURCE-LEVEL, not value-level. It reads the hook sources and requires the payload handed to `--json-schema` to be a NAMED reference. A name is something a test can enumerate and a reader can find; a literal is visible only to whoever is already reading that call.
 #
-# It is deliberately NOT a second copy of 74de73ca's check_schema_call_sites.py,
-# which enforces the neighbouring invariant over the same corpus (that each site
-# ROUTES THROUGH retry_schema_exhaustion). Theirs is about behaviour, this is
-# about definition shape. If the two are merged later this clause should move
-# there rather than be duplicated.
+# It is deliberately NOT a second copy of 74de73ca's check_schema_call_sites.py, which enforces the neighbouring invariant over the same corpus (that each site ROUTES THROUGH retry_schema_exhaustion). Theirs is about behaviour, this is about definition shape. If the two are merged later this clause should move there rather than be duplicated.
 # ---------------------------------------------------------------------------
 
 _HOOKS_ROOT = pathlib.Path(wl_judge.__file__).resolve().parent.parent
@@ -1753,9 +2368,7 @@ control(
     [],
 )
 
-# CONTROL: the scanner must FIRE on the exact shape wl_shapedup had before the
-# fix, or the assertion above is a tick over nothing. Planted in a temp tree so
-# the control tests the scanner, not today's source.
+# CONTROL: the scanner must FIRE on the exact shape wl_shapedup had before the fix, or the assertion above is a tick over nothing. Planted in a temp tree so the control tests the scanner, not today's source.
 _tmp = pathlib.Path(tempfile.mkdtemp(prefix="schemalit-"))
 (_tmp / "planted.py").write_text(
     'argv = [\n    "--json-schema",\n    json.dumps(\n        {"type": "object"}\n    ),\n]\n'
@@ -1765,19 +2378,47 @@ control("CONTROL: a planted inline literal IS caught", len(_literal_schema_paylo
 control("CONTROL: a named payload is accepted", _literal_schema_payloads(_tmp), [])
 shutil.rmtree(_tmp, ignore_errors=True)
 
-# EVERYTHING ABOVE THIS LINE IS COUNTED AND CAN FAIL THE SCRIPT. Blocks appended
-# BELOW the verdict at `if Tally.fails:` and the summary print are decorative: they
-# still run and still print "  FAIL", but nothing reads Tally.fails again, so the
-# script exits 0 and the harness reports "ok ... control(s) passed". Two blocks were
-# appended there on 2026-09-04 and were silently unfalsifiable until the control
-# COUNT failed to move. Add new parts ABOVE the verdict.
+# ---- a KILLED child is not an unreachable model -------------------------------
+#
+# THE FAILURE THIS PINS, paid for on 2026-09-08. `_explain_failed_exit` opened
+# with "judge exited 143" and the surrounding narrative read as an unreachable
+# model, whose offered remedy is `WORKLIST_JUDGE=off` -- disabling a HEALTHY gate.
+# The child had been SIGTERMed because the outer Stop-hook deadline was shorter than JUDGE_TIMEOUT_S; the model answered fine minutes later for $0.0165. A monitor that infers CAUSE from a non-zero exit without asking whether a signal killed the process will misdirect every reader who trusts it, and this one misdirects them toward switching the gate off.
 
-if Tally.fails:
-    print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
-    sys.exit(1)
-# --------------------------------------------------------------------------
-# THE JUDGE LOG and the streak it exists to make honest.
-# --------------------------------------------------------------------------
+
+class _Killed:
+    """A finished child, as `_explain_failed_exit` sees one."""
+
+    def __init__(self, rc):
+        self.returncode = rc
+        self.stdout = ""
+        self.stderr = ""
+
+
+def _says_killed(rc):
+    return "KILLED by signal" in " ".join(wl_judge._explain_failed_exit("judge", _Killed(rc)))
+
+
+# BOTH SPELLINGS OF A SIGNAL. `subprocess` reports a signalled child as a NEGATIVE returncode, while a shell between us and it reports 128+N -- and the live failure arrived as 143, the shell form, so testing only the negative form would have missed the case that actually happened.
+control("a negative returncode is reported as KILLED", _says_killed(-15), True)
+control("128+15 (SIGTERM through a shell) is reported as KILLED", _says_killed(143), True)
+control("128+9 (SIGKILL through a shell) is reported as KILLED", _says_killed(137), True)
+# THE MIRROR, and without it the three above are satisfied by a function that says KILLED unconditionally.
+control("CONTROL: an ordinary failure is NOT reported as killed", _says_killed(1), False)
+control("CONTROL: a usage error is NOT reported as killed", _says_killed(2), False)
+# 160 is outside the signal band: 128+32 is not a signal any child sends here, and treating the whole 128+ range as signals would swallow real exit codes.
+control("CONTROL: 160 is outside the signal band", _says_killed(160), False)
+# The message must point at the DEADLINE, not the model -- that is the whole reason the previous wording cost a turn.
+control(
+    "the killed message names the outer deadline rather than the model",
+    "deadline" in " ".join(wl_judge._explain_failed_exit("judge", _Killed(143))),
+    True,
+)
+
+# EVERYTHING ABOVE THIS LINE IS COUNTED AND CAN FAIL THE SCRIPT. Blocks appended BELOW the verdict at `if Tally.fails:` and the summary print are decorative: they still run and still print " FAIL", but nothing reads Tally.fails again, so the script exits 0 and the harness reports "ok ... control(s) passed". Two blocks were appended there on 2026-09-04 and were silently
+# unfalsifiable until the control COUNT failed to move. Add new parts ABOVE the verdict.
+
+# -------------------------------------------------------------------------- THE JUDGE LOG and the streak it exists to make honest. --------------------------------------------------------------------------
 with tempfile.TemporaryDirectory() as _jd:
     _jl = pathlib.Path(_jd) / "wl.judge-abc.jsonl"
     control("a log that does not exist yet is a streak of zero", wl_judge.continue_streak(_jl), 0)
@@ -1816,4 +2457,586 @@ control(
 )
 control("CONTROL: an empty extra is not a fix stop", wl_judge.is_fix_stop(""), False)
 
+# ===========================================================================
+# PART 3 -- wl_proofcheck: did the bulk transform prove itself?
+#
+# THE SAME SEAM AS PART 2, on the same reasoning: given a judge answer, does the machinery fire, stay silent, and produce an actionable order. Whether haiku correctly tells a bulk transform from a hand-written fix is calibrated live, not here; these controls pin the code around that judgement.
+# ===========================================================================
+
+PROOFSIG = "\n\n%s. ALSO fill the `proof_obligation` object, about the same fix-set.\n" % (
+    wl_proofcheck.PROOF_MARKER
+)
+
+PROOF_MARKER_PATH = pathlib.Path(_TMP.name) / "proofcheck-marker.json"
+
+
+def proof_fires(path):
+    try:
+        return json.loads(path.read_text())["fires"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def proof_answer(**kw):
+    """A judge verdict carrying a proof_obligation object, defaults to the fired shape."""
+    po = {
+        "applicable": True,
+        "transform_kind": "reflow --write across the .ci comment scope",
+        "scope": ".ci/rediacc_ci",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "run .ci/scripts/quality/shape_cluster_diff.py --rev HEAD .ci",
+    }
+    po.update(kw)
+    return {
+        "verdict": "stop",
+        "reason": "the board is clean",
+        "next_action": "",
+        "proof_obligation": po,
+    }
+
+
+# -- 3a. The schema pair, exactly as for class_sweep. ------------------------
+control(
+    "no proof section leaves proof_obligation optional",
+    "proof_obligation" in wl_judge.judge_schema_for("")["required"],
+    False,
+)
+control(
+    "the proof section makes proof_obligation required",
+    "proof_obligation" in wl_judge.judge_schema_for(PROOFSIG)["required"],
+    True,
+)
+proofboth = wl_judge.judge_schema_for(FIXSIG + PROOFSIG)
+control(
+    "both markers require both objects",
+    sorted(proofboth["required"][3:]),
+    ["proof_obligation", "regression_gate"],
+)
+control(
+    "the proof section alone does NOT require regression_gate",
+    "regression_gate" in wl_judge.judge_schema_for(PROOFSIG)["required"],
+    False,
+)
+control(
+    "the module constant survives the proof marker too",
+    "proof_obligation" in wl_judge.JUDGE_SCHEMA["required"],
+    False,
+)
+control(
+    "proof_obligation is still declared as a property",
+    wl_judge.JUDGE_SCHEMA["properties"]["proof_obligation"]["required"][0],
+    "applicable",
+)
+
+# -- 3b. THE PLANTED DEFECT. A bulk transform, no proof attached. -----------
+out = proof_answer()
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("PLANTED: a bulk transform with no proof fires", kind, "fire")
+control("PLANTED: the stop is flipped to continue", out["verdict"], "continue")
+control(
+    "PLANTED: the reason names the transform",
+    "reflow --write across the .ci comment scope" in out["reason"],
+    True,
+)
+control(
+    "PLANTED: the order runs the named tool",
+    out["next_action"].startswith("Run: run .ci/scripts/quality/shape_cluster_diff.py"),
+    True,
+)
+control("PLANTED: the demand is banked for the next stop", PROOF_MARKER_PATH.exists(), True)
+control("PLANTED: banked at one fire", proof_fires(PROOF_MARKER_PATH), 1)
+
+# -- 3c. THE SILENT PAIR. Real proof, and a genuine hand-written fix. -------
+out = proof_answer(
+    proof_kind="tool", proof_attached=True, evidence="shape-cluster diff: 0 files lost a shape"
+)
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("CONTROL: a tool run with real output is silent", kind, "silent")
+control("CONTROL: the verdict is left alone", out["verdict"], "stop")
+control("CONTROL: a silent answer discharges the banked demand", PROOF_MARKER_PATH.exists(), False)
+
+out = proof_answer(
+    proof_kind="manual", proof_attached=True, evidence="sampled 5 files, diffed by hand"
+)
+control(
+    "CONTROL: an explicit sampled-read statement is silent",
+    wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)[0],
+    "silent",
+)
+
+out = proof_answer(applicable=False, transform_kind="", instruction="")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("CONTROL: a genuine hand-written fix never fires", kind, "silent")
+control("CONTROL: it keeps its stop", out["verdict"], "stop")
+
+# -- 3d. THE ASSERTION CASE, the point of the whole rule. ------------------- "884 files changed" or "ran the formatter" with proof_kind still `none` must
+# fire even when the model marks proof_attached=true, because the override in
+# read_verdict is what stops a bare assertion from counting as proof.
+out = proof_answer(proof_attached=True, proof_kind="none", evidence="884 files changed")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("a bare file-count assertion still fires", kind, "fire")
+control("and the reason says proof was only asserted", "asserted" in out["reason"], True)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3e. DEGRADED, never blocked. -------------------------------------------
+out = {"verdict": "stop", "reason": "clean", "next_action": ""}
+kind, note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("a missing proof_obligation degrades", kind, "degraded")
+control("a degraded answer never flips the verdict", out["verdict"], "stop")
+control("and it says what was missing", "no proof_obligation object" in note, True)
+
+out = proof_answer(transform_kind="")
+kind, note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("firing with no transform named is unactionable, so it degrades", kind, "degraded")
+control("an unactionable answer never blocks", out["verdict"], "stop")
+
+out = proof_answer(proof_kind="whatever")
+control(
+    "an invalid proof_kind degrades",
+    wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)[0],
+    "degraded",
+)
+
+# -- 3f. THE SAFETY DOOR: a destructive or operator-reserved instruction is dropped, never handed to the session as a runnable command. -------------
+out = proof_answer(instruction="git clean -xdf")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("a destructive instruction still fires the rule", kind, "fire")
+control(
+    "but the destructive command is never handed over verbatim",
+    out["next_action"].startswith("Run: git clean"),
+    False,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+out = proof_answer(instruction="commit the reflow now")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control(
+    "an operator-reserved instruction is dropped too",
+    out["next_action"].startswith("Run: commit"),
+    False,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3g. BOTH RULES CAN FIRE ON ONE STOP, and neither clobbers the other. ---
+out = wl_classsweep_answer = {
+    "verdict": "stop",
+    "reason": "clean",
+    "next_action": "",
+    "class_sweep": {
+        "applicable": True,
+        "defect_class": "a guard matching a mention instead of a target",
+        "locus": ".claude/rediacc_hooks/guards/",
+        "search": "grep -rln 'block_' .claude/rediacc_hooks/guards/",
+        "evidence": "",
+        "evidence_kind": "none",
+        "swept": False,
+        "instruction": "grep the sibling guards",
+    },
+    "proof_obligation": {
+        "applicable": True,
+        "transform_kind": "a tree-wide rename",
+        "scope": "packages/cli",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "run the shape-cluster diff",
+    },
+}
+wl_classsweep.apply_verdict(out, path=MARKER)
+wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH)
+control("both rules fire on one stop: verdict is continue", out["verdict"], "continue")
+control(
+    "the class-sweep reason survives the second rule",
+    "mention instead of a target" in out["reason"],
+    True,
+)
+control(
+    "the proof-obligation reason is appended, not lost", "a tree-wide rename" in out["reason"], True
+)
+wl_classsweep.clear_outstanding(MARKER)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3g. THE SAME CARRY-FORWARD FIX, mirrored for wl_proofcheck (agent/plans/PLAN-sweep-obligation-carry-forward.md task "The same survival and bound controls for wl_proofcheck"). Storage is shared (wl_rules.Demand), so this exercises the SAME machinery through PF's own field names (transform_kind/scope) rather than re-deriving it.
+
+SILENT_PROOF = {
+    "verdict": "stop",
+    "reason": "clean",
+    "next_action": "",
+    "proof_obligation": {
+        "applicable": False,
+        "transform_kind": "",
+        "scope": "",
+        "proof_kind": "none",
+        "evidence": "",
+        "proof_attached": False,
+        "instruction": "",
+    },
+}
+
+out_a = proof_answer(transform_kind="transform A: a tree-wide rename")
+kind, _ = wl_proofcheck.apply_verdict(out_a, None, path=PROOF_MARKER_PATH, asked="fresh")
+control("3g: first fresh fire fires", kind, "fire")
+out_b = proof_answer(transform_kind="transform B: a reflow pass")
+kind, _ = wl_proofcheck.apply_verdict(
+    out_b, wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH), path=PROOF_MARKER_PATH, asked="fresh"
+)
+control("3g: a second fresh fire naming a different transform also fires", kind, "fire")
+owed = wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)["owed"]
+control(
+    "3g: transform A is preserved in the owed slot",
+    owed["transform_kind"].startswith("transform A"),
+    True,
+)
+control(
+    "3g: load_outstanding now answers transform B, the new head",
+    wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)["transform_kind"].startswith("transform B"),
+    True,
+)
+control("3g: the reason names the displaced transform A", "transform A" in out_b["reason"], True)
+control("3g: the STILL OWED sentence is present", "STILL OWED" in out_b["reason"], True)
+control("3g: the reason still fits the 400-char cap", len(out_b["reason"]) <= 400, True)
+
+# A fresh silent answer must not discharge the demand it displaced.
+kind, _ = wl_proofcheck.apply_verdict(
+    SILENT_PROOF,
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="fresh",
+)
+control("3g: a fresh silent answer is read as silent", kind, "silent")
+control(
+    "3g: a fresh silent answer leaves the outstanding head (transform B) untouched",
+    wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)["transform_kind"].startswith("transform B"),
+    True,
+)
+control(
+    "3g: ...and leaves the owed transform A untouched too",
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)["owed"]["transform_kind"].startswith(
+        "transform A"
+    ),
+    True,
+)
+
+# A follow-up that discharges the head promotes the owed transform to head.
+kind, _ = wl_proofcheck.apply_verdict(
+    SILENT_PROOF,
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="followup",
+)
+control("3g: a follow-up silent answer discharges the head", kind, "silent")
+promoted = wl_proofcheck.load_outstanding(PROOF_MARKER_PATH)
+control(
+    "3g: transform A is promoted to head",
+    promoted["transform_kind"].startswith("transform A"),
+    True,
+)
+control(
+    "3g: the promoted transform now appears in the follow-up prompt",
+    "transform A" in wl_proofcheck.prompt_section(False, promoted),
+    True,
+)
+control(
+    "3g: the carried transform never appears in the fresh PROOF_PROMPT text",
+    promoted["transform_kind"] in wl_proofcheck.prompt_section(True, promoted),
+    False,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# THE BOUND: three consecutive fresh fires leave exactly one record in owed, dropping the oldest; CARRY_MAX is enforced the same way it is for wl_classsweep, since both ride wl_rules.Demand.
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform P"), None, path=PROOF_MARKER_PATH, asked="fresh"
+)
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform Q"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="fresh",
+)
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform R"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="fresh",
+)
+rec = wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH)
+control(
+    "3g: three consecutive fresh fires leave exactly one owed record",
+    rec["owed"]["transform_kind"].startswith("transform Q"),
+    True,
+)
+control(
+    "3g: the head is the third transform", rec["transform_kind"].startswith("transform R"), True
+)
+control(
+    "3g: the oldest (transform P) was dropped, not carried a second time",
+    "transform P" not in json.dumps(rec),
+    True,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# The fire counter: fresh-then-followup on the SAME transform reaches the cap rather than resetting to 1.
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform U"), None, path=PROOF_MARKER_PATH, asked="fresh"
+)
+wl_proofcheck.apply_verdict(
+    proof_answer(transform_kind="transform U"),
+    wl_proofcheck.PROOF_DEMAND.peek(PROOF_MARKER_PATH),
+    path=PROOF_MARKER_PATH,
+    asked="followup",
+)
+control(
+    "3g: fresh-then-followup on the SAME transform reaches the fire cap",
+    proof_fires(PROOF_MARKER_PATH),
+    2,
+)
+control(
+    "3g: a demand at the cap is never carried further",
+    wl_proofcheck.load_outstanding(PROOF_MARKER_PATH),
+    None,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+
+# --------------------------------------------------------------------------- PART 3h -- grounding a fired finding in the real fix-set (agent/plans/PLAN-judge-prompt-trap-conflation.md).
+
+
+# -- 3h-bis. THE PROVENANCE LABEL (agent/plans/PLAN-sweep-obligation-carry-forward.md task "Label the injected file list with its provenance"): the FIXSET_GROUND_TRUTH block must say WHERE the file list came from, since a diff-tree list and a git-status fallback answer different questions.
+
+CAPTURED["answer"] = answer(defect_class="provenance test class")
+wl_classsweep.clear_outstanding()
+wl_judge.run_judge(
+    [],
+    0,
+    "a message",
+    0,
+    "none declared",
+    extra=FIXSIG,
+    fixset_files=["a.py"],
+    fixset_provenance="diff-tree",
+)
+control(
+    "provenance: a resolved commit says so in the prompt",
+    "resolved from the fix-set's own commit(s)" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
+wl_judge.run_judge(
+    [],
+    0,
+    "a message",
+    0,
+    "none declared",
+    extra=FIXSIG,
+    fixset_files=["a.py"],
+    fixset_provenance="status-fallback",
+)
+control(
+    "provenance: the status fallback names itself, not a diff",
+    "git status --porcelain" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
+wl_judge.run_judge(
+    [],
+    0,
+    "a message",
+    0,
+    "none declared",
+    extra=FIXSIG,
+    fixset_files=["a.py"],
+    fixset_provenance=None,
+)
+control(
+    "provenance: an unrecognised/missing provenance never asserts the stronger diff-tree claim",
+    "resolved from the fix-set's own commit(s)" in CAPTURED["prompt"],
+    False,
+)
+control(
+    "provenance: ...and still renders something, never a raw KeyError",
+    "provenance unknown" in CAPTURED["prompt"],
+    True,
+)
+wl_classsweep.clear_outstanding()
+
+
+control(
+    "scope_grounded: fixset_files=None never accuses (computation unavailable)",
+    wl_rules.scope_grounded("anything at all", None),
+    True,
+)
+control(
+    "scope_grounded: an empty, successfully-computed list is ungrounded for any real claim",
+    wl_rules.scope_grounded("some scope", []),
+    False,
+)
+control(
+    "scope_grounded: a scope naming a real path in the fix-set is grounded",
+    wl_rules.scope_grounded(
+        ".ci/scripts/quality/reflow.py touched", [".ci/scripts/quality/reflow.py"]
+    ),
+    True,
+)
+control(
+    "scope_grounded: a scope naming a real path SEGMENT is grounded",
+    wl_rules.scope_grounded("the plans directory", ["plans/reflow.md"]),
+    True,
+)
+control(
+    "scope_grounded: HALLUCINATION #2's exact shape -- a fictional plans/ scope against an unrelated real fix-set",
+    wl_rules.scope_grounded(
+        "Bulk prose-style reflow applied uniformly to markdown files in plans/ directory",
+        ["docs/agent-reference/TRAPS.md"],
+    ),
+    False,
+)
+
+# -- 3i. HALLUCINATION #1's exact shape replayed through PF.enforce: a fired proof_obligation naming a scope with NOTHING in the actual (clean) fix-set. -----
+out = proof_answer(scope="CI scripts", transform_kind="Bulk reflow of 84 CI script files")
+kind, _note = wl_proofcheck.apply_verdict(out, path=PROOF_MARKER_PATH, fixset_files=[])
+control("HALLUCINATION #1 replay: still fires (never suppressed)", kind, "fire")
+control(
+    "HALLUCINATION #1 replay: the reason is annotated UNVERIFIED",
+    "UNVERIFIED" in out["reason"],
+    True,
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# CONTROL: the identical fixture, but the scope genuinely matches the fix-set -- no caveat.
+out = proof_answer(scope=".ci/rediacc_ci/quality/prose_style.py")
+kind, _note = wl_proofcheck.apply_verdict(
+    out, path=PROOF_MARKER_PATH, fixset_files=[".ci/rediacc_ci/quality/prose_style.py"]
+)
+control("CONTROL: a grounded scope still fires (the rule itself is unrelated)", kind, "fire")
+control(
+    "CONTROL: no UNVERIFIED caveat when the scope is real", "UNVERIFIED" in out["reason"], False
+)
+wl_proofcheck.clear_outstanding(PROOF_MARKER_PATH)
+
+# -- 3j. HALLUCINATION #2's exact shape replayed through CS.enforce. --------
+out = answer(defect_class="prose reflow in plans/ directory")
+kind, _note = wl_classsweep.apply_verdict(
+    out, path=MARKER, fixset_files=["docs/agent-reference/TRAPS.md"]
+)
+control("HALLUCINATION #2 replay: still fires (never suppressed)", kind, "fire")
+control(
+    "HALLUCINATION #2 replay: the reason is annotated UNVERIFIED",
+    "UNVERIFIED" in out["reason"],
+    True,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+# CONTROL: defect_class matches the fix-set, but locus/search legitimately point OUTSIDE it (the entire point of a sweep) -- grounding checks defect_class alone, never locus/search, so an unrelated locus/search must NOT trigger the caveat.
+out = answer(
+    defect_class="a guard in block-example.sh missing anchoring",
+    locus=".claude/rediacc_hooks/guards/",
+    search="grep -rln 'block_' .claude/rediacc_hooks/guards/",
+)
+kind, _note = wl_classsweep.apply_verdict(
+    out, path=MARKER, fixset_files=[".claude/oracles/pre-bash/block-example.sh"]
+)
+control(
+    "CONTROL: defect_class grounded, locus outside the fix-set is normal for a sweep, no caveat",
+    "UNVERIFIED" in out["reason"],
+    False,
+)
+wl_classsweep.clear_outstanding(MARKER)
+
+
+def _git(cwd, *args):
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args], capture_output=True, text=True, check=False
+    ).stdout
+
+
+with tempfile.TemporaryDirectory() as _fxroot:
+    _fxroot = pathlib.Path(_fxroot)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(_fxroot)], check=True)
+    subprocess.run(
+        ["git", "-C", str(_fxroot), "config", "user.email", "p@example.invalid"], check=True
+    )
+    subprocess.run(["git", "-C", str(_fxroot), "config", "user.name", "p"], check=True)
+    (_fxroot / "a.py").write_text("x = 1\n")
+    subprocess.run(["git", "-C", str(_fxroot), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "commit", "-qm", "root commit"], check=True)
+    _root_sha = _git(_fxroot, "rev-parse", "HEAD").strip()
+
+    (_fxroot / "b.py").write_text("y = 2\n")
+    (_fxroot / "c.py").write_text("z = 3\n")
+    subprocess.run(["git", "-C", str(_fxroot), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "commit", "-qm", "add two files"], check=True)
+    _second_sha = _git(_fxroot, "rev-parse", "HEAD").strip()
+
+    _fxfiles, _fxprov = wl_reggate.fixset_files(_fxroot, [_second_sha])
+    control(
+        "fixset_files: a commit sha resolves to its real diff-tree file list",
+        sorted(_fxfiles),
+        ["b.py", "c.py"],
+    )
+    control("fixset_files: a resolved commit reports provenance diff-tree", _fxprov, "diff-tree")
+    control(
+        "fixset_files: a ROOT commit (no parent) still resolves via the --root retry",
+        wl_reggate.fixset_files(_fxroot, [_root_sha])[0],
+        ["a.py"],
+    )
+    control(
+        "fixset_files: a non-existent id (tick-shaped) falls back to `git status --porcelain`",
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"])[0],
+        [],
+    )
+    control(
+        "fixset_files: the status fallback reports provenance status-fallback",
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"])[1],
+        "status-fallback",
+    )
+    (_fxroot / "d.py").write_text("w = 4\n")
+    control(
+        "fixset_files: the git-status fallback sees a real untracked file",
+        wl_reggate.fixset_files(_fxroot, ["deadbeef00"])[0],
+        ["d.py"],
+    )
+    control(
+        "fixset_files: an empty ids list on an otherwise-dirty tree still uses the status fallback",
+        wl_reggate.fixset_files(_fxroot, [])[0],
+        ["d.py"],
+    )
+
+
+# ---- THE INDEX REFRESH PRECEDES EVERY JUDGE EXIT (found 2026-09-24). `C.emit` calls `sys.exit`, so a refresh placed after the judge's `continue` emit, or inside the judge section that only runs when work remains, never runs on exactly the stops Commit 1 was written for. Pinned on the wiring itself: the call must sit at function level (one `try:` deep) and BEFORE the judge section's opening `if`.
+_wc_lines = (
+    (pathlib.Path(__file__).resolve().parent / "wl_checks.py")
+    .read_text(encoding="utf-8")
+    .splitlines()
+)
+_refresh_at = [
+    i for i, ln in enumerate(_wc_lines) if "wl_shapedup.refresh_index(str(root), state_doc)" in ln
+]
+_judge_if_at = [
+    i
+    for i, ln in enumerate(_wc_lines)
+    # A prefix, not the whole line: d393a4e8c appended `and not _in_cap_wait` and this exact-line pin went red with it.
+    if ln.startswith("    if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED")
+]
+control("exactly one refresh_index call site in wl_checks.py", len(_refresh_at), 1)
+control("the judge section's opening `if` is found", len(_judge_if_at), 1)
+control(
+    "the refresh runs BEFORE the judge section, so no judge emit can exit past it",
+    bool(_refresh_at and _judge_if_at and _refresh_at[0] < _judge_if_at[0]),
+    True,
+)
+control(
+    "and at function level (inside one try:), not nested in any branch",
+    (len(_wc_lines[_refresh_at[0]]) - len(_wc_lines[_refresh_at[0]].lstrip()))
+    if _refresh_at
+    else -1,
+    8,
+)
+
+if Tally.fails:
+    print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)
+    sys.exit(1)
 print(f"{Tally.count} control(s) passed")

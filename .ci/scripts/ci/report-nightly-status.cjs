@@ -2,35 +2,22 @@
 //
 // WHY THIS EXISTS. The nightly is the ONLY thing that validates main: `ci.yml`
 // sets `full_suite: github.event_name != 'push'`, so push-to-main deliberately
-// skips the expensive suites on the grounds that the PR already validated them.
-// That is defensible only while the nightly is genuinely watched. It was not.
+// skips the expensive suites on the grounds that the PR already validated them. That is defensible only while the nightly is genuinely watched. It was not.
 //
-// Measured 2026-07-27:
-//   gh run list --workflow ci.yml --event schedule -L 12
-//     -> TWELVE cancelled, ZERO success, unbroken back to 2026-07-16
+// Measured 2026-07-27: gh run list --workflow ci.yml --event schedule -L 12 -> TWELVE cancelled, ZERO success, unbroken back to 2026-07-16
 //
-// Nobody noticed for twelve days, for two compounding reasons. First, the
-// watchdog force-cancelled each red run, so the conclusion read `cancelled`
+// Nobody noticed for twelve days, for two compounding reasons. First, the watchdog force-cancelled each red run, so the conclusion read `cancelled`
 // (= "superseded, ignore") rather than `failure` -- fixed separately by
-// evaluateCancelExemption in watchdog-monitor.cjs. Second, and the reason this
-// file exists: NOTHING EVER REPORTED IT ANYWHERE. A scheduled run that fails at
-// 04:00 UTC notifies no one, appears in no PR, and blocks nothing.
+// evaluateCancelExemption in watchdog-monitor.cjs. Second, and the reason this file exists: NOTHING EVER REPORTED IT ANYWHERE. A scheduled run that fails at 04:00 UTC notifies no one, appears in no PR, and blocks nothing.
 //
-// So: one rolling GitHub issue, commented on each red night, closed
-// automatically on the next green.
+// So: one rolling GitHub issue, commented on each red night, closed automatically on the next green.
 //
-// WHY ONE ROLLING ISSUE AND NOT ONE PER NIGHT. The observed failure mode is a
-// LONG UNBROKEN RUN of red nights, not isolated ones. One issue per night would
-// have produced twelve issues for what is really one unattended-CI problem, and
-// a wall of twelve identical issues is its own kind of invisible. A single issue
-// that keeps growing a comment per night states the duration of the outage
-// directly, which is the fact that actually matters.
+// WHY ONE ROLLING ISSUE AND NOT ONE PER NIGHT. The observed failure mode is a LONG UNBROKEN RUN of red nights, not isolated ones. One issue per night would have produced twelve issues for what is really one unattended-CI problem, and a wall of twelve identical issues is its own kind of invisible. A single issue that keeps growing a comment per night states the duration of the
+// outage directly, which is the fact that actually matters.
 //
-// Env:
-//   NIGHTLY_RUN_ID     - the Console CI run being reported on
-//   NIGHTLY_CONCLUSION - its conclusion (success / failure / cancelled / ...)
+// Env: NIGHTLY_RUN_ID - the Console CI run being reported on NIGHTLY_CONCLUSION - its conclusion (success / failure / cancelled / ...)
 //   NIGHTLY_EVENT      - its triggering event; anything but `schedule` is a no-op
-//   NIGHTLY_URL        - html_url of the run
+// NIGHTLY_URL - html_url of the run
 //
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/report-nightly-status.cjs')({github, context, core})
@@ -41,8 +28,7 @@ const ISSUE_TITLE = 'Nightly CI is red';
 // ISSUE_LABEL is created on demand the first time this fires.
 const ISSUE_LABELS = ['bug', 'automated', ISSUE_LABEL];
 
-// A run is green ONLY when it says `success`. `cancelled` is NOT green -- that
-// conflation is the exact bug this whole file is a response to, so it is
+// A run is green ONLY when it says `success`. `cancelled` is NOT green -- that conflation is the exact bug this whole file is a response to, so it is
 // spelled out as a named predicate rather than left as an inline `!==`.
 const isGreen = (conclusion) => conclusion === 'success';
 
@@ -53,20 +39,15 @@ const report = async ({ github, context, core }) => {
   const url = process.env.NIGHTLY_URL || '';
   const { owner, repo } = context.repo;
 
-  // Defensive: the workflow `if:` already filters to schedule runs. This is the
-  // second lock, because a future trigger change must not silently start
-  // opening issues for every PR run.
+  // Defensive: the workflow `if:` already filters to schedule runs. This is the second lock, because a future trigger change must not silently start opening issues for every PR run.
   if (event !== 'schedule') {
     console.log(`Run ${runId} was triggered by "${event}", not "schedule" -- nothing to report.`);
     return;
   }
 
-  // The rolling issue is identified by LABEL, not by title: a human may retitle
-  // it while investigating, and that must not orphan the tracking.
+  // The rolling issue is identified by LABEL, not by title: a human may retitle it while investigating, and that must not orphan the tracking.
   //
-  // `.pull_request` filter: GitHub's issues API returns PULL REQUESTS as issues.
-  // A PR that happened to carry this label would otherwise be treated as the
-  // tracking issue and get commented on, or closed on the next green nightly.
+  // `.pull_request` filter: GitHub's issues API returns PULL REQUESTS as issues. A PR that happened to carry this label would otherwise be treated as the tracking issue and get commented on, or closed on the next green nightly.
   const open = (
     await github.paginate(github.rest.issues.listForRepo, {
       owner,
@@ -97,8 +78,7 @@ const report = async ({ github, context, core }) => {
     return;
   }
 
-  // Red. Name the jobs, because "the nightly failed" is not actionable and the
-  // run link alone means opening a 90-job run to find the two that matter.
+  // Red. Name the jobs, because "the nightly failed" is not actionable and the run link alone means opening a 90-job run to find the two that matter.
   let failedList = '_(could not read the job list)_';
   try {
     const page = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
@@ -111,9 +91,7 @@ const report = async ({ github, context, core }) => {
     // SHAPE-AGNOSTIC on purpose. `github.paginate` sometimes yields the flattened
     // job objects and sometimes an array of RESPONSE objects (`{total_count,
     // jobs}`), depending on whether it recognises the endpoint's collection key.
-    // Observed live on nightly 30327872124: the call threw nothing, but every
-    // element lacked `.conclusion`, so the filter matched zero of NINE failed
-    // jobs and the issue said no job had failed. Normalise instead of assuming.
+    // Observed live on nightly 30327872124: the call threw nothing, but every element lacked `.conclusion`, so the filter matched zero of NINE failed jobs and the issue said no job had failed. Normalise instead of assuming.
     const jobs = Array.isArray(page)
       ? page.flatMap((entry) => (entry && Array.isArray(entry.jobs) ? entry.jobs : [entry]))
       : Array.isArray(page?.jobs)
@@ -133,18 +111,13 @@ const report = async ({ github, context, core }) => {
         )
         .join('\n');
     } else if (usable.length === 0) {
-      // ANTI-VACUITY. Zero readable jobs is not evidence that nothing failed, it
-      // is evidence that the read failed. Saying "no job reported a non-success
-      // conclusion" there is the same defect this whole programme is about:
-      // reporting empty data as clean data. Fail toward "I could not tell".
+      // ANTI-VACUITY. Zero readable jobs is not evidence that nothing failed, it is evidence that the read failed. Saying "no job reported a non-success conclusion" there is the same defect this whole programme is about: reporting empty data as clean data. Fail toward "I could not tell".
       failedList = `_(could not read the job list: the API returned ${jobs.length} entr${jobs.length === 1 ? 'y' : 'ies'}, none carrying a conclusion. The run itself concluded \`${conclusion}\`.)_`;
       console.log(
         `Job list for run ${runId} was unreadable (${jobs.length} entries, none with a conclusion).`
       );
     } else {
-      // Genuinely readable and genuinely all-green at job level. This does
-      // happen: a run can conclude `failure` because a job was cancelled by the
-      // 6h limit or a required check failed outside the job list.
+      // Genuinely readable and genuinely all-green at job level. This does happen: a run can conclude `failure` because a job was cancelled by the 6h limit or a required check failed outside the job list.
       failedList = `_(read ${usable.length} job(s); none reported a non-success conclusion, yet the run concluded \`${conclusion}\`.)_`;
     }
   } catch (e) {
@@ -165,19 +138,9 @@ const report = async ({ github, context, core }) => {
   if (open.length > 0) {
     const issue = open[0];
 
-    // Dedupe by run id. `workflow_run: completed` fires once per ATTEMPT, and a
-    // run keeps its id across attempts, so a nightly whose failed jobs are
-    // re-run reaches this code twice for the same night. Without this check the
-    // issue collects a duplicate comment per attempt, which makes a streak look
-    // longer than it is -- and the streak length is the one number this issue
-    // exists to communicate.
-    // Anchored on the markdown link's closing bracket, not a bare substring.
-    // Every posted body writes the run as `[run <id>](<url>)`, so matching
-    // `run <id>]` pins both ends. A bare `includes('run ' + runId)` would also
-    // match a LONGER id that happens to start with these digits, which run ids
-    // eventually will as they gain a digit -- and a false dedupe is silent, so
-    // it would drop a night from the streak with nothing to show for it.
-    // Flagged as a non-blocking nit in review of PR #541.
+    // Dedupe by run id. `workflow_run: completed` fires once per ATTEMPT, and a run keeps its id across attempts, so a nightly whose failed jobs are re-run reaches this code twice for the same night. Without this check the issue collects a duplicate comment per attempt, which makes a streak look longer than it is -- and the streak length is the one number this issue exists to
+    // communicate. Anchored on the markdown link's closing bracket, not a bare substring. Every posted body writes the run as `[run <id>](<url>)`, so matching `run <id>]` pins both ends. A bare `includes('run ' + runId)` would also match a LONGER id that happens to start with these digits, which run ids eventually will as they gain a digit -- and a false dedupe is silent, so it
+    // would drop a night from the streak with nothing to show for it. Flagged as a non-blocking nit in review of PR #541.
     const runMarker = `run ${runId}]`;
     let alreadyReported = String(issue.body || '').includes(runMarker);
     if (!alreadyReported) {
@@ -190,8 +153,7 @@ const report = async ({ github, context, core }) => {
         });
         alreadyReported = comments.some((c) => String(c.body || '').includes(runMarker));
       } catch (e) {
-        // Fail toward reporting: a duplicate comment is noise, a missing one is
-        // the silence this whole workflow exists to break.
+        // Fail toward reporting: a duplicate comment is noise, a missing one is the silence this whole workflow exists to break.
         console.log(`Could not read existing comments (${e.message}); reporting anyway.`);
       }
     }
@@ -207,8 +169,7 @@ const report = async ({ github, context, core }) => {
     return;
   }
 
-  // First red night in this streak. Ensure the label exists before using it:
-  // createIssue with an unknown label fails the whole call.
+  // First red night in this streak. Ensure the label exists before using it: createIssue with an unknown label fails the whole call.
   try {
     await github.rest.issues.getLabel({ owner, repo, name: ISSUE_LABEL });
   } catch {

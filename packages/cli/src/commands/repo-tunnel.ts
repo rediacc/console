@@ -10,7 +10,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { fetchMachineStatus } from '../services/machine/machine-status.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { openRepoTunnel } from '../services/repo/repo-ssh-tunnel.js';
@@ -55,8 +55,7 @@ function filterRepoContainers(
   }
   const repoGuid = repoGuidOverride ?? nameToGuid.get(repoName);
 
-  // The container's "repository" field may be a GUID, a resolved name, or
-  // a name with duplicated tag (e.g. "repo:tag:tag" from renet fork labeling).
+  // The container's "repository" field may be a GUID, a resolved name, or a name with duplicated tag (e.g. "repo:tag:tag" from renet fork labeling).
   return allContainers.filter((c) => {
     const repo = c.repository;
     const resolvedName = resolve(repo);
@@ -207,7 +206,7 @@ async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void>
     );
   }
 
-  // Provision renet and deploy repo key
+  // Check renet (read-only: a tunnel never replaces the machine's binary) and deploy repo key
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -215,11 +214,10 @@ async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void>
   }
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
+  await acquireRemoteRenet('read-only', localConfig, machine, sshPrivateKey, { machineName });
   await deployRepoKeyIfNeeded(repoName, machineName);
 
-  // Open the forward over the shared repo-tunnel primitive (port pre-check,
-  // ssh -N -L, readiness poll) and hold it until Ctrl+C.
+  // Open the forward over the shared repo-tunnel primitive (port pre-check, ssh -N -L, readiness poll) and hold it until Ctrl+C.
   const tunnel = await openRepoTunnel({
     connectionDetails,
     localPort: target.localPort,
@@ -229,8 +227,7 @@ async function tunnelConnect(ref: string, options: TunnelOptions): Promise<void>
 
   try {
     if (options.urlOnly) {
-      // Machine-readable contract (e.g. browser-scene urlFromCommand):
-      // exactly one URL line on stdout, then hold the tunnel.
+      // Machine-readable contract (e.g. browser-scene urlFromCommand): exactly one URL line on stdout, then hold the tunnel.
       outputService.print(`http://localhost:${target.localPort}`);
     } else {
       outputService.print(

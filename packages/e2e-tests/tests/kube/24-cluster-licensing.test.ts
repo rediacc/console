@@ -66,9 +66,7 @@ import {
  * and is to be confirmed on the first live run; the assertion SHAPE is final.
  */
 
-// ---------------------------------------------------------------------------
-// Prerequisite tiers
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Prerequisite tiers ---------------------------------------------------------------------------
 
 const ACCOUNT_SERVER = (process.env.REDIACC_ACCOUNT_SERVER ?? '').trim();
 const ACCOUNT_TOKEN = (process.env.E2E_ACCOUNT_API_TOKEN ?? '').trim();
@@ -129,9 +127,7 @@ const vmVerdict: PrerequisiteVerdict = resolvePrerequisites({
   ],
 });
 
-// ---------------------------------------------------------------------------
-// Shared harness
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Shared harness ---------------------------------------------------------------------------
 
 /** Own config namespace: suite 23's `e2e-cli` must not see these mutations. */
 const CFG = 'e2e-cluster';
@@ -218,15 +214,12 @@ interface LicenseStatus {
   lastRenewal?: { outcome: string; code?: string };
 }
 
-// ---------------------------------------------------------------------------
-// ACCOUNT tier — the slot pre-flight refuses before spending anything
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- ACCOUNT tier — the slot pre-flight refuses before spending anything ---------------------------------------------------------------------------
 
 test.describe
   .serial('rdc cluster slot pre-flight @cli @cluster @licensing', () => {
     if (accountVerdict.kind === 'undeclared') {
-      // A red, not a skip: the failure text names every unmet prerequisite and
-      // the var that would declare the omission.
+      // A red, not a skip: the failure text names every unmet prerequisite and the var that would declare the omission.
       test('ACCOUNT tier prerequisites are missing and undeclared', () => {
         expect(() => announcePrerequisites(accountVerdict)).not.toThrow();
       });
@@ -236,8 +229,7 @@ test.describe
       test.setTimeout(300_000);
 
       let cli: CliRunner;
-      // Two differently-sized asks, so the message can be shown to track the
-      // request rather than being a fixed string.
+      // Two differently-sized asks, so the message can be shown to track the request rather than being a fixed string.
       const BIG = 500;
       const OTHER = 321;
       const CL_BIG = 'e2e-lic-wall';
@@ -249,14 +241,8 @@ test.describe
         return Object.keys(cfg.resources?.machines ?? {}).sort();
       };
 
-      // A kvm declaration needs a network, and it must not be one the ops fleet
-      // or any other cluster uses (192.168.111 is the harness's own).
-      // The pool is k8s-agent, not k8s-server, because test 4 scales it: only
-      // k8s-agent pools scale in place (cluster-provision.ts), so a server pool
-      // is refused for its ROLE before the slot pre-flight is ever consulted,
-      // and test 4 would be measuring the wrong refusal. Declaration-time is
-      // unaffected either way -- createCluster pre-flights the SUM of every
-      // pool's count before it looks at any role.
+      // A kvm declaration needs a network, and it must not be one the ops fleet or any other cluster uses (192.168.111 is the harness's own). The pool is k8s-agent, not k8s-server, because test 4 scales it: only k8s-agent pools scale in place (cluster-provision.ts), so a server pool is refused for its ROLE before the slot pre-flight is ever consulted, and test 4 would be measuring
+      // the wrong refusal. Declaration-time is unaffected either way -- createCluster pre-flights the SUM of every pool's count before it looks at any role.
       const declareArgs = (name: string, count: number): string[] => [
         'cluster',
         'create',
@@ -328,27 +314,21 @@ test.describe
         const parsed = parseSlotLimit(text);
         expect(parsed.needed, 'the refusal must name the number of nodes asked for').toBe(BIG);
 
-        // "Before anything is provisioned" is the whole product claim: the
-        // cluster is declared in the config, and NOT ONE machine was created.
+        // "Before anything is provisioned" is the whole product claim: the cluster is declared in the config, and NOT ONE machine was created.
         expect(await machineNames(), 'the refused placement still created machines').toEqual(
           before
         );
       });
 
       test(`3. control: the same refusal for ${OTHER} nodes names ${OTHER}, so the message tracks the request`, async () => {
-        // A fixed error string would pass test 2 and fail here. This is the
-        // instrument check: the number is computed from the placement, which
-        // means test 2 read the real cap and not a canned failure.
+        // A fixed error string would pass test 2 and fail here. This is the instrument check: the number is computed from the placement, which means test 2 read the real cap and not a canned failure.
         const res = await cli.run(declareArgs(CL_OTHER, OTHER));
         expect(res.code).toBe(2);
         expect(parseSlotLimit(bothChannels(res)).needed).toBe(OTHER);
       });
 
       test('4. `cluster scale` past the ceiling is refused with the same message', async () => {
-        // TRANSCRIPT-CONFIRM: `--pool` names the pool declared in test 2, which
-        // is k8s-agent so that this reaches the slot pre-flight rather than the
-        // "only k8s-agent pools scale in place" role refusal. The ask is the
-        // DELTA (900 - the declared count), which is what the message must name.
+        // TRANSCRIPT-CONFIRM: `--pool` names the pool declared in test 2, which is k8s-agent so that this reaches the slot pre-flight rather than the "only k8s-agent pools scale in place" role refusal. The ask is the DELTA (900 - the declared count), which is what the message must name.
         const res = await cli.run([
           'cluster',
           'scale',
@@ -370,16 +350,12 @@ test.describe
       });
 
       test('5. control: `cluster join` needs ONE slot and is silent below the wall', async () => {
-        // The counterpart to tests 2-4. join pre-flights with machineCount: 1
-        // before it reads the cluster or dispatches anything, so under a cap with
-        // room it must pass through in silence. Without this, a pre-flight that
-        // refused everything would satisfy the tests above.
+        // The counterpart to tests 2-4. join pre-flights with machineCount: 1 before it reads the cluster or dispatches anything, so under a cap with room it must pass through in silence. Without this, a pre-flight that refused everything would satisfy the tests above.
         const add = await cli.addMachine(FAKE_NODE, '192.168.244.9', process.env.USER ?? 'root');
         expect(add.code, `machine add: ${add.stderr.slice(-400)}`).toBe(0);
 
         const res = await cli.run(['cluster', 'join', FAKE_NODE, '--cluster', CL_BIG]);
-        // It still fails — the cluster was never provisioned, so there is no
-        // control plane to join — but NOT for a licensing reason.
+        // It still fails — the cluster was never provisioned, so there is no control plane to join — but NOT for a licensing reason.
         expect(res.code, 'join a non-existent control plane should not succeed').not.toBe(0);
         expect(
           bothChannels(res),
@@ -388,11 +364,7 @@ test.describe
       });
 
       test.afterAll(async () => {
-        // Config-only residue (nothing was provisioned), removed so a re-run
-        // starts from the same state. TRANSCRIPT-CONFIRM: `cluster destroy` on a
-        // never-provisioned declaration.
-        // Guarded: a beforeAll that threw leaves `cli` unassigned, and teardown
-        // must not turn that into a second, less informative failure.
+        // Config-only residue (nothing was provisioned), removed so a re-run starts from the same state. TRANSCRIPT-CONFIRM: `cluster destroy` on a never-provisioned declaration. Guarded: a beforeAll that threw leaves `cli` unassigned, and teardown must not turn that into a second, less informative failure.
         try {
           for (const name of [CL_BIG, CL_OTHER]) {
             await cli.run(['cluster', 'destroy', name, '--force']);
@@ -405,9 +377,7 @@ test.describe
     }
   });
 
-// ---------------------------------------------------------------------------
-// VM tier — fork re-meters per repo, migrate does not, slots land per node
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- VM tier — fork re-meters per repo, migrate does not, slots land per node ---------------------------------------------------------------------------
 
 test.describe
   .serial('rdc cluster licensing on the fleet @cli @cluster @licensing @bridge', () => {
@@ -512,8 +482,7 @@ test.describe
           'active slots exceed the cap without a soft-claim'
         ).toBeLessThanOrEqual(slots.max);
 
-        // Per-machine cross-check: each node's own licence table is non-empty,
-        // so the count above is two real nodes rather than one counted twice.
+        // Per-machine cross-check: each node's own licence table is non-empty, so the count above is two real nodes rather than one counted twice.
         for (const m of [M1, M2]) {
           const per = await cli.run(['subscription', 'status', '-m', m]);
           expect(per.code, `subscription status -m ${m}: ${per.stderr.slice(-400)}`).toBe(0);
@@ -541,25 +510,19 @@ test.describe
         ]);
         expect(fork.code, `cluster fork: ${bothChannels(fork).slice(-800)}`).toBe(0);
 
-        // The fork's repos live under a NEW datastore identity. That re-mint is
-        // the whole metering mechanism: the licence store is keyed by it, so the
-        // inherited blobs are not at the path the fork looks in.
+        // The fork's repos live under a NEW datastore identity. That re-mint is the whole metering mechanism: the licence store is keyed by it, so the inherited blobs are not at the path the fork looks in.
         const forkStatuses = await licenseStatuses(M1);
         const forkIds = datastoreIds(forkStatuses).filter((id) => !parentIds.includes(id));
         expect(forkIds.length, 'the fork reused the parent datastore identity').toBeGreaterThan(0);
 
-        // Re-metering is lazy: the fork itself issues nothing, the next licensed
-        // touch does. Assert the pre-touch state so the reissue below is a real
-        // transition and not a repo that was already licensed.
+        // Re-metering is lazy: the fork itself issues nothing, the next licensed touch does. Assert the pre-touch state so the reissue below is a real transition and not a repo that was already licensed.
         const forkRepos = forkStatuses.filter((s) => forkIds.includes(s.datastoreId ?? ''));
         expect(forkRepos.length, 'the fork contains no repositories').toBeGreaterThan(0);
         for (const s of forkRepos) {
           expect(s.status, `${s.repositoryGuid} was already licensed on the fork`).toBe('missing');
         }
 
-        // The touch: an operate-tier verb validates the licence, renet answers
-        // exit 10 / missing, and the CLI's recovery reissues per repository.
-        // TRANSCRIPT-CONFIRM: the ref form for a forked cluster's repository.
+        // The touch: an operate-tier verb validates the licence, renet answers exit 10 / missing, and the CLI's recovery reissues per repository. TRANSCRIPT-CONFIRM: the ref form for a forked cluster's repository.
         const touch = await cli.run(['repo', 'up', `${CLUSTER_REPO}:${FORK_TAG}`]);
         expect(touch.code, `repo up on the fork: ${bothChannels(touch).slice(-800)}`).toBe(0);
 
@@ -593,12 +556,9 @@ test.describe
       });
 
       test('5. a placement that stops part-way says what exists and what to re-run', async () => {
-        // A replica set is placed one node at a time and is deliberately NOT
-        // rolled back, so any mid-loop failure must report the partial state.
-        // TRANSCRIPT-CONFIRM: the second run collides on the replica fork tag
+        // A replica set is placed one node at a time and is deliberately NOT rolled back, so any mid-loop failure must report the partial state. TRANSCRIPT-CONFIRM: the second run collides on the replica fork tag
         // (`<set>-r1`), which is the cheapest deterministic mid-loop failure; a
-        // genuine slot-wall trigger needs a server-side maxActivations setter,
-        // which does not exist today (reported as a finding).
+        // genuine slot-wall trigger needs a server-side maxActivations setter, which does not exist today (reported as a finding).
         const first = await cli.run([
           'repo',
           'replicate',
@@ -633,8 +593,7 @@ test.describe
       });
 
       test('6. the bridge agrees the fork exists (the CLI claims are not self-referential)', async () => {
-        // Ground truth from renet, the same cross-check suite 23 uses: the CLI's
-        // licence view above is only meaningful if the storage really forked.
+        // Ground truth from renet, the same cross-check suite 23 uses: the CLI's licence view above is only meaningful if the storage really forked.
         const res = await w1.executeViaBridge(
           'renet functions once --test-mode --debug --function repository_list'
         );

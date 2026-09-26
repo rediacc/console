@@ -4,7 +4,7 @@
  * Used by `repo tunnel` (forward a container port) and `vscode connect
  * --browser` (forward the in-sandbox VS Code server port). The repo key's
  * authorized_keys entry forces `renet sandbox-gateway`, which permits
- * port-forward channels — sessions stay sandboxed, forwarding works.
+ * port-forward channels, sessions stay sandboxed, forwarding works.
  */
 
 import type { ChildProcess } from 'node:child_process';
@@ -92,9 +92,7 @@ export async function findFreeLocalPort(): Promise<number> {
 export async function openRepoTunnel(spec: TunnelSpec): Promise<TunnelHandle> {
   const { connectionDetails, localPort, remoteIP, remotePort } = spec;
 
-  // Fail fast if the local port is taken — otherwise ssh would print
-  // "Address already in use" yet keep running, and we would wrongly
-  // report the tunnel as active.
+  // Fail fast if the local port is taken, otherwise ssh would print "Address already in use" yet keep running, and we would wrongly report the tunnel as active.
   await assertLocalPortFree(localPort);
 
   const sshConnection = new SSHConnection(

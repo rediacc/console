@@ -1,0 +1,30 @@
+# twin .ci/scripts/private/compose-healthcheck-smoke-test.sh blob e4e7791a06abff74a9eb7048ea0e44be8d73d31d
+exit: 3
+--- stdout ---
+--- stderr ---
+→ Registering worker 192.168.111.11 as machine 'worker-1'
+→ Cleanup (best-effort)
+--- calls ---
+[
+  [
+    "rdc",
+    "config",
+    "ssh",
+    "set",
+    "--key",
+    "<tmp>/.ssh/id_ed25519"
+  ],
+  [
+    "rdc",
+    "repo",
+    "down",
+    "healthcheck-smoke@worker-1"
+  ],
+  [
+    "rdc",
+    "repo",
+    "delete",
+    "healthcheck-smoke@worker-1",
+    "--yes"
+  ]
+]

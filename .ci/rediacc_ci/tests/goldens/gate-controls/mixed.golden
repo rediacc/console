@@ -1,0 +1,7 @@
+# twin .ci/scripts/lib/gate-controls.sh blob 081b8cbd81ecc06ae8543a590afe5978475614b7
+exit: 1
+--- stdout ---
+  ok    two
+--- stderr ---
+  FAIL  one (got 'a' want 'b')
+✗ mixed: 1 of 2 control(s) failed

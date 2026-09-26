@@ -57,7 +57,7 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
 });
 
 /**
- * ★ #74 — the datastore CHOKEPOINT.
+ * ★ #74, the datastore CHOKEPOINT.
  *
  * `executeRepoFunction` drives essentially the ENTIRE repo family (up, down, status,
  * validate, ownership, template, ...), and NOT ONE of those verbs declared the
@@ -68,7 +68,7 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
  * places, and nothing said so.
  *
  * The datastore is derived ONCE here, from the repo's recorded placement, instead of
- * asking N call sites to remember — because a future verb would forget, exactly as
+ * asking N call sites to remember, because a future verb would forget, exactly as
  * every existing one already had.
  *
  * ★ These are CHANNEL tests: they assert what actually REACHES the executor, not what
@@ -78,7 +78,7 @@ describe('executeRepoFunction threads the cluster target into execute()', () => 
  * ★★ And note WHY this was only ever caught on the kube path: #39's runtime assertion
  * made it AUDIBLE there (renet refuses when the declared runtime disagrees with the
  * datastore it resolves). In the DOCKER world there is no such assertion, so the same
- * divergence is silent — the kube path was not more broken, it was the only path that
+ * divergence is silent, the kube path was not more broken, it was the only path that
  * could tell us.
  */
 describe('executeRepoFunction declares the recorded datastore (#74)', () => {
@@ -119,8 +119,7 @@ describe('executeRepoFunction declares the recorded datastore (#74)', () => {
   });
 
   it('resolves the placement from the FAMILY, so a tagged ref reaches it too', async () => {
-    // Placement lives on the repo FAMILY, not the per-tag record. A fork must reach the
-    // same datastore as its parent, or it dispatches where its data is not.
+    // Placement lives on the repo FAMILY, not the per-tag record. A fork must reach the same datastore as its parent, or it dispatches where its data is not.
     const exec = mockRepo();
     mockPlacement({ datastore: 'pds3' });
 
@@ -130,9 +129,7 @@ describe('executeRepoFunction declares the recorded datastore (#74)', () => {
   });
 
   it('stays silent for a {machine} placement, so the machine default still applies', async () => {
-    // The fallback is CORRECT for a machine with no named datastore. #74 is that the
-    // caller said nothing when it had something to say, not that the default exists.
-    // A gate that refuses everything protects nothing.
+    // The fallback is CORRECT for a machine with no named datastore. #74 is that the caller said nothing when it had something to say, not that the default exists. A gate that refuses everything protects nothing.
     const exec = mockRepo();
     mockPlacement({ machine: 'm1' });
 

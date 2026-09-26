@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 
 /**
  * Open a URL in the platform default browser, detached so the CLI can keep
- * holding a foreground tunnel. Failures are reported, never thrown — the
+ * holding a foreground tunnel. Failures are reported, never thrown, the
  * URL is always printed separately for manual fallback.
  */
 /** Resolve the platform-specific command used to open a URL. */

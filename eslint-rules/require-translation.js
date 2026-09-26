@@ -174,6 +174,13 @@ export const requireTranslation = {
       },
 
       CallExpression(node) {
+        // ONLY A `t` IS A TRANSLATION CALL: a binding made by useTranslation() (the portal), or an identifier named `t` (the CLI imports one from its i18n module and prefixes every key `cli:`). A string with a colon reads as `ns:key`, and a key naming its own namespace used to skip the callee check entirely, so `cn('h-11 md:text-lg')` was reported as a missing key `text-lg` in a namespace `h-11` (ConfigRemote.tsx, 2026-09-26). The first fix accepted only the useTranslation() binding and silenced every CLI key; the lint-rule liveness gate caught it.
+        if (node.callee.type !== 'Identifier') return;
+        if (
+          node.callee.name !== 't' &&
+          findNamespacesForIdentifier(node.callee.name, node) === null
+        )
+          return;
         const keyNode = node.arguments?.[0];
         const keyValue = getStringValue(keyNode);
         if (!keyValue) return;

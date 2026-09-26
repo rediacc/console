@@ -1,9 +1,9 @@
 /**
- * MutationGate tests — knowledge-gate enforcement for agents vs humans.
+ * MutationGate tests, knowledge-gate enforcement for agents vs humans.
  *
  * NOTE: These tests mock `isAgentEnvironment` directly because the host process
  * may be running under Claude Code (CLAUDECODE=1 in parent ancestry) which
- * makes `_resetCache()` alone insufficient — the ancestry check reads /proc
+ * makes `_resetCache()` alone insufficient, the ancestry check reads /proc
  * and would keep detecting the parent agent.
  */
 
@@ -115,9 +115,7 @@ describe('MutationGate — human (symmetric with agent)', () => {
         newValue: 'new-cf-token',
       },
     ];
-    // Even with override scope set, humans don't get the agent-only branch
-    // (overrideScope is only consulted when isAgentEnvironment() is true).
-    // Without knowledge or rotation, refusal is expected.
+    // Even with override scope set, humans don't get the agent-only branch (overrideScope is only consulted when isAgentEnvironment() is true). Without knowledge or rotation, refusal is expected.
     expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
       PreconditionMismatchError
     );

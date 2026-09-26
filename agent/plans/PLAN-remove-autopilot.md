@@ -1,0 +1,97 @@
+# PLAN: remove Autopilot completely
+Status: compacted
+Full-Text-Blob: d2f66802c91b406d26dcbf5a82eca82444b45c4b
+Record-Sig: 52538477
+
+## Why
+The operator asked for the GitHub-side CI autonomy feature -- Autopilot, its workflow, its harness, its gates and its design doc -- to be removed completely.
+It was one workflow of 1,173 lines standing on a 6,490-line harness, three dedicated gates, 23 test files, 667 golden fixtures and 18 shadow parity ledgers, and nothing else in the repository depended on any of it.
+
+## Outcome
+Removed, in two commits. The mechanical bulk landed at 07e97e99a: 738 files deleted and roughly 37,000 lines removed, with package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .github/labels.yml, .ci/config/env-manifest.json, .ci/config/secret-supply.json and the docs all updated in the same change.
+The follow-up drain landed at 4e5781b7b: three further shrink-only baselines and registries the removal found beyond the plan's original scope.
+Re-verified independently in the same session: no `rediacc_ci.autopilot` import survives anywhere, and gen-gates-lock, gen-docs, check:ci-parity, check:ci-dead-bash, check:ci-shape-duplication and check:ci-label-inventory are all green.
+The live-side work -- deleting the two GitHub labels, the Actions variables, the private-key secret and the App's ruleset bypass actor -- was done first, because the label gate fails in the live-but-undeclared direction for the length of one PR if the declaration goes before the label.
+
+## Lessons
+- A scope check that reads every grep hit before deleting anything is what separates a removal from an outage. Three whole directories sat alphabetically beside Autopilot's and belonged to the unrelated Claude-Review gates; the marketing copy for automated storage in a tutorial caption matched the word and had nothing to do with the feature. All were excluded and untouched.
+- Generated and shrink-only files are drained by their own writer, never hand-edited. The language-policy baseline, the Python env registry, .ci/policy/README.md and scripts/data/doc-registry.md all name a deleted path, and each has a `--write-baseline` or a generator that removes it; hand-editing a golden that mirrors a real file drifts the corpus from the file.
+- A retired environment variable goes to the tombstone shard, not to the bin. env-manifest.json has a shard for exactly this, and moving the seventeen AUTOPILOT_* and GITHUB_AUTOPILOT_* names into it keeps the gate able to say the name is retired on purpose rather than merely missing.
+- One citation was left alone on purpose. `.claude/hooks/stop/calibrate-judge-rules.py` cites a bash fixture that a previous port wave had already deleted; the dangling pointer predates this removal, nothing machine-checks it, and repointing it at another dead path would have looked like a fix.
+
+## Boxes
+- [x] `grep -ril autopilot .` (excluding .git, node_modules) returns ONLY: the confirmed-unrelated packages/www tutorial hits, the frozen agent/ archives, the two flavor-text test fixtures (wlfix.py, test_wl_stuck_and_blockers.py), the historical docs/ci-overhaul/{06-progress,10-ci-port-baseline}.md snapshots, and the deliberately-kept historical-lesson comments in block_raw_pr_body_edit.py / its oracle twin, worklist.py/worklist_messages.py/wl_store.py/wl_checks.py, gitx.py, deploy_account.py, deploy_www.py, calibrate-judge-rules.py, and pr-epics/body.md -- nothing else.
+    (record) sig=560f1317 done=dfabd8052
+- [x] `npx tsx scripts/gen/gen-gates-lock.ts` (verify mode) exits 0.
+    (record) sig=e3709674 done=dfabd8052
+- [x] `npx tsx scripts/gen/gen-docs.ts` (verify mode) exits 0.
+    (record) sig=ab28f47a done=dfabd8052
+- [x] `python3 .ci/scripts/quality/check_language_policy.py` exits 0.
+    (record) sig=42945172 done=dfabd8052
+- [x] `python3 .ci/scripts/quality/check_python_env_registry.py` exits 0.
+    (record) sig=b0c3c466 done=dfabd8052
+- [x] `python3 .ci/scripts/quality/check_env_manifest.py` exits 0.
+    (record) sig=d49ba2b9 done=dfabd8052
+- [x] `npm run check:ci-parity` exits 0.
+    (record) sig=86c755dd done=dfabd8052
+- [x] `npm run check:ci-dead-bash` exits 0.
+    (record) sig=14fc2afe done=dfabd8052
+- [x] `npm run check:ci-label-inventory` and `check:ci-label-refs` exit 0 (only after the live labels are already deleted per section 5).
+    (record) sig=bf45959c done=dfabd8052
+- [x] `npm run check:ci-pytest` exits 0 with no collection errors (proves no leftover import of a deleted `.ci/rediacc_ci/autopilot/*` module anywhere).
+    (record) sig=827f20c5 done=dfabd8052
+- [x] Full CI green on the PR.
+    (record) sig=d4a24120 done=dfabd8052
+- [x] Delete the live GitHub labels `autopilot` and `autopilot-blocked` (`gh label delete`), and remove the Actions variables, the AUTOPILOT_PRIVATE_KEY secret, and the rediacc-autopilot App's ruleset bypass actor, on the live repo -- BEFORE the labels.yml edit below merges.
+    (record) sig=12bb0cfa done=dfabd8052
+- [x] Delete `.github/workflows/autopilot.yml`.
+    (record) sig=ccc43e6c done=dfabd8052
+- [x] Delete `.ci/rediacc_ci/autopilot/` (17 files).
+    (record) sig=dd17aeba done=dfabd8052
+- [x] Delete `.ci/rediacc_ci/quality/autopilot_no_bypass.py`, `.ci/rediacc_ci/quality/autopilot_breakpoint_alignment.py`, `.ci/rediacc_ci/security/autopilot_workflow_invariants.py`.
+    (record) sig=1bc3916f done=dfabd8052
+- [x] Delete `.ci/scripts/quality/check_autopilot_breakpoint_alignment.py`, `.ci/scripts/quality/check-autopilot-no-bypass.sh`, `.ci/scripts/ci/autopilot-guide-comment.cjs`, `.ci/scripts/autopilot/` (5 files).
+    (record) sig=dacbdfc9 done=dfabd8052
+- [x] Delete the 18 test_autopilot_*.py / test_quality_autopilot_no_bypass.py / test_security_autopilot_workflow_invariants.py files and the 5 test_gate_autopilot_*.py files.
+    (record) sig=8b614bbc done=dfabd8052
+- [x] Delete the 17 `.ci/rediacc_ci/tests/goldens/{autopilot-*,compose-prompt,fetch-review-threads,finish,linked-sub-prs,post-escalation,resolve-model-args,restore-trusted-config,review-payload,review-reply,state-comment,submodule-prs,sweep-campaigns,sweep-collect,update-state}` directories (667 files) -- leave `goldens/allowlist` alone (shared).
+    (record) sig=2f6b2fc6 done=dfabd8052
+- [x] Delete the 18 `.ci/shadow/{w7p2-autopilot-no-bypass,w7p6-autopilot-gate,w7p6-autopilot-push,w7p6-check-autopilot-workflow-invariants,w7p6-<each-remaining-module>}.observations.jsonl` files.
+    (record) sig=80e4d54c done=dfabd8052
+- [x] Remove check :ci-autopilot-workflow / check :ci-autopilot-bp-align from package.json (lines 35, 296) and scripts/ci-runner/manifest.ts (~4231-4241, ~4282-4292).
+    (record) sig=0ab601ac done=dfabd8052
+- [x] Regenerate scripts/ci-runner/gates.lock.json (gen-gates-lock.ts --write).
+    (record) sig=3bb35bb2 done=dfabd8052
+- [x] Remove the "Post the autopilot guide" step from the label-guide job in .github/workflows/ci.yml.
+    (record) sig=ce45ab14 done=dfabd8052
+- [x] Remove the autopilot / autopilot-blocked blocks from .github/labels.yml.
+    (record) sig=abbba5dd done=dfabd8052
+- [x] Remove the 4 autopilot.yml:* lines from .ci/policy/.profiler-coverage-allowlist.
+    (record) sig=b5a5df62 done=dfabd8052
+- [x] Drain .ci/config/language-policy-baseline.json (check_language_policy.py --write-baseline) and .ci/config/python-env-registry.json (check_python_env_registry.py --write-baseline).
+    (record) sig=1e6a61d5 done=dfabd8052
+- [x] Move the ~17 AUTOPILOT_*/GITHUB_AUTOPILOT_* names to the tombstone shard in .ci/config/env-manifest.json; remove the matching entries from .ci/config/secret-supply.json, .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json per their own gates' rules.
+    (record) sig=aba13d1f done=dfabd8052
+- [x] Regenerate scripts/data/doc-registry.md, docs/agent-reference/ci-gates.md's generated regions, and .ci/policy/README.md (gen-docs.ts --write); hand-edit ci-gates.md's prose at lines 128 and 290.
+    (record) sig=774f60fd done=dfabd8052
+- [x] Delete docs/ci-overhaul/03-v2-autonomy.md; edit the Autopilot-specific paragraphs/rows in README.md, 04-decisions.md, 05-execution-guide.md, PROMPT.md, 09-env-residue.md.
+    (record) sig=082e0867 done=dfabd8052
+- [x] Run every check in section 7 and the full CI suite; fix anything still red.
+    (record) sig=8a50c639 done=dfabd8052
+- [x] (Separate PR, private/account submodule) retire the AUTOPILOT_PRIVATE_KEY rotation entry and its Bitwarden Secrets Manager item.
+    (record) sig=a8e7d284 done=dfabd8052
+
+## Record
+Record-Kind: compacted
+Prior-Status: done
+Compacted-By: d778be9d
+Compacted-At: 2026-09-22T13:44:19Z
+Boxes: 0 attested, 0 open, 30 abandoned
+Epics: e87fa3ce
+Touched: docs/agent-reference/ci-gates.md, .claude/hooks/stop/worklist.py, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
+Gates: check:ci-dead-bash, check:ci-label-inventory, check:ci-label-refs, check:ci-parity, check:ci-pytest, check:ci-shape-duplication
+Why-Source: author
+Read-History: `git show d2f66802c91b406d26dcbf5a82eca82444b45c4b` recovers the text; `git log --find-object=d2f66802c91b406d26dcbf5a82eca82444b45c4b --all` names the commit
+
+## History
+- 2026-09-22T13:44:19Z compacted by d778be9d from `done` (record-sig 53e10957)

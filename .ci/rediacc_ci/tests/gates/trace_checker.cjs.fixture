@@ -1,0 +1,235 @@
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const root = process.argv[2];
+const table = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+const only = process.argv.slice(4);
+
+// Where each key is DEFINED. `jobs` empty means "every job in the file", which
+// is the right reading for a workflow that exists to serve exactly one key.
+const SITES = {
+  e2e_workers: { wf: 'ct-tests.yml', jobs: ['test-e2e-workers'] },
+  e2e_k8s_multinode: { wf: 'ct-tests.yml', jobs: ['test-e2e-k8s-multinode'] },
+  e2e_ceph_workers: { wf: 'ct-tests.yml', jobs: ['test-e2e-ceph-workers'] },
+  e2e_k8s_ceph: { wf: 'ct-tests.yml', jobs: ['test-e2e-k8s-ceph'] },
+  e2e_k8s: { wf: 'ct-tests.yml', jobs: ['test-e2e-k8s'] },
+  e2e_migrate: { wf: 'ct-tests.yml', jobs: ['test-e2e-migrate'] },
+  e2e_ceph: { wf: 'ct-tests.yml', jobs: ['test-e2e-ceph'] },
+  fork_isolation: { wf: 'ct-tests.yml', jobs: ['test-fork-isolation'] },
+  renet: { wf: 'ct-tests.yml', jobs: ['test-renet'] },
+  ops: { wf: 'ci-ops-test.yml', jobs: [] },
+  install_methods: { wf: 'ct-install-methods.yml', jobs: [] },
+  account_e2e: { wf: 'ct-tests.yml', jobs: ['test-account-e2e'] },
+  drills: { wf: 'ct-tests.yml', jobs: ['test-drills'] },
+  elite_run: { wf: 'ci.yml', jobs: ['elite-run-test'] },
+  license_enforcement: { wf: 'ct-tests.yml', jobs: ['test-license-enforcement'] },
+  update_flow: { wf: 'ct-update-flow.yml', jobs: [] },
+  package_tests: { wf: 'ci.yml', jobs: ['package-tests'] },
+  unit: { wf: 'ct-tests.yml', jobs: ['test-unit'] },
+};
+
+// Full-line comments are dropped before ANY scanning. Both the workflows and
+// the scripts document themselves with usage examples that name real paths
+// ("# .ci/scripts/test/run-e2e.sh --workers 2"), and reading those as inputs
+// would manufacture requirements out of prose. An inline trailing `#` is left
+// alone: stripping it would need to know whether the `#` is inside a quoted
+// shell word, and guessing wrong deletes a real path.
+// `sparse-checkout:` goes with them, and for the same reason: it names what
+// the runner FETCHES, not what the job reads. ct-install-methods.yml:222
+// sparse-checks-out `.ci/scripts` so its aggregator can reach one file in it,
+// and reading that as an input would put the entire script tree in the widest
+// closure in the table, refusing a greenlight on every harness edit. The file
+// the aggregator actually runs is named in its `run:` step and derived there.
+const stripComments = (text) =>
+  text
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line) && !/^\s*sparse-checkout:/.test(line))
+    .join('\n');
+
+// A job block: from `^  <id>:` to the next line at the same indent. Line-based
+// rather than YAML-parsed because there is no parser available here and the
+// shape is fixed by actionlint on the way in.
+const jobBlock = (text, id) => {
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => l === `  ${id}:`);
+  if (start === -1) return null;
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^ {2}[A-Za-z0-9_-]+:/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join('\n');
+};
+
+const allJobIds = (text) => {
+  const ids = [];
+  const lines = text.split('\n');
+  let inJobs = false;
+  for (const line of lines) {
+    if (/^jobs:/.test(line)) {
+      inJobs = true;
+      continue;
+    }
+    if (!inJobs) continue;
+    if (/^\S/.test(line)) break;
+    const m = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+    if (m) ids.push(m[1]);
+  }
+  return ids;
+};
+
+// Trailing punctuation a path picks up from surrounding YAML or shell.
+const cleanPath = (p) => p.replace(/["'`,;:)\]}\\]+$/, '').replace(/\/+$/, '');
+
+const scanCiPaths = (text) => {
+  const out = new Set();
+  const re = /\.ci\/[A-Za-z0-9_.\/-]+/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const p = cleanPath(m[0]);
+    if (p.length > 4) out.add(p);
+  }
+  return out;
+};
+
+// A step that runs `PYTHONPATH=.ci python3 -m rediacc_ci.<pkg>.<mod>` executes a MODULE, and that path never appears as `.ci/...` text, so the `.ci/` scan above cannot see it. Without this the closure went blind to every step flipped from a script to its port: a PR editing the port would inherit a green it did not earn. The module file is derived exactly, and the package root `.ci/rediacc_ci` is derived with it because the module imports siblings the workflow text cannot name.
+const scanModules = (text) => {
+  const out = new Set();
+  const re = /python3?\s+(?:-P\s+)?-m\s+rediacc_ci\.([A-Za-z0-9_.]+)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    out.add(`.ci/rediacc_ci/${m[1].split('.').join('/')}.py`);
+    out.add('.ci/rediacc_ci');
+  }
+  return out;
+};
+
+const exists = (p) => fs.existsSync(path.join(root, p));
+
+// One level into every script the workflow names directly, and ONLY along the
+// two edges that make a file an input to that script: it is SOURCED, or it is
+// INVOKED as a command. Both the `.ci/...` repo-relative form and the
+// `"$SCRIPT_DIR/../lib/common.sh"` sibling form are resolved; the latter is
+// what every script in this tree actually writes, and it is invisible to a
+// plain `.ci/` grep.
+//
+// SCANNING EVERY `.ci/` LITERAL IN THE BODY IS WHAT THIS DELIBERATELY DOES
+// NOT DO. .ci/config/constants.sh:32,39 define CI_DOCKER_DIR and
+// SERVICE_DOCKER_DIR pointing into .ci/docker; a body-wide scan pulled both
+// into package_tests, which sources constants.sh for two version pins and
+// never goes near Docker. A dictionary of paths that OTHER scripts use is not
+// a dependency of every script that sources it.
+const sweepScript = (rel) => {
+  const out = new Set();
+  const abs = path.join(root, rel);
+  if (!fs.existsSync(abs) || !rel.endsWith('.sh')) return out;
+  const dir = path.posix.dirname(rel);
+
+  const take = (raw) => {
+    let p = cleanPath(String(raw).replace(/^["']/, ''));
+    if (p.startsWith('$SCRIPT_DIR/')) {
+      p = path.posix.normalize(path.posix.join(dir, p.slice('$SCRIPT_DIR/'.length)));
+    }
+    if (p.startsWith('.ci/') && exists(p)) out.add(p);
+  };
+
+  for (const line of stripComments(fs.readFileSync(abs, 'utf8')).split('\n')) {
+    // Sourced: `source <path>` or `. <path>`.
+    const src = /^\s*(?:source|\.)\s+(\S+)/.exec(line);
+    if (src) take(src[1]);
+    // Invoked at command position, optionally behind sudo/bash/exec.
+    const inv = /^\s*(?:sudo\s+|bash\s+|exec\s+)*(["']?(?:\$SCRIPT_DIR|\.ci)\/[^"'\s]+)/.exec(line);
+    if (inv) take(inv[1]);
+  }
+  return out;
+};
+
+const deriveFor = (key) => {
+  const site = SITES[key];
+  if (!site) throw new Error(`no defining site recorded for key ${key}`);
+  const wfRel = `.github/workflows/${site.wf}`;
+  const raw = fs.readFileSync(path.join(root, wfRel), 'utf8');
+  const ids = site.jobs.length > 0 ? site.jobs : allJobIds(raw);
+
+  const required = new Set();
+  // The defining workflow file itself: its `if:` gate, its matrix, its env and
+  // its step order are all inputs to what the job does.
+  required.add(wfRel);
+
+  let checksOutSubmodules = false;
+
+  for (const id of ids) {
+    const block = jobBlock(raw, id);
+    if (block === null) throw new Error(`job block ${id} not found in ${wfRel}`);
+    const body = stripComments(block);
+
+    for (const p of scanCiPaths(body)) required.add(p);
+    for (const p of scanModules(body)) required.add(p);
+
+    // Local composite actions.
+    const usesRe = /uses:\s*\.\/(\.github\/actions\/[A-Za-z0-9_-]+)/g;
+    let m;
+    while ((m = usesRe.exec(body)) !== null) required.add(m[1]);
+
+    if (/submodules:\s*(true|recursive)/.test(body)) checksOutSubmodules = true;
+
+    // setup-workspace runs install-deps.sh on a cache miss (action.yml:77,81)
+    // and build-packages.sh whenever its flag is set (action.yml:91-93).
+    if (/uses:\s*\.\/\.github\/actions\/setup-workspace/.test(body)) {
+      required.add('.ci/scripts/setup/install-deps.sh');
+      if (/build-packages:\s*'true'/.test(body)) {
+        required.add('.ci/scripts/setup/build-packages.sh');
+      }
+    }
+
+    // Anything that resolves node_modules consumes the manifest and the
+    // lockfile, whether it says `npm ci` itself or leaves it to the action.
+    if (/\b(npm|npx)\s/.test(body) || /uses:\s*\.\/\.github\/actions\/setup-workspace/.test(body)) {
+      required.add('package.json');
+      required.add('package-lock.json');
+    }
+  }
+
+  // One-level sweep of every script named so far.
+  for (const p of [...required]) {
+    for (const q of sweepScript(p)) required.add(q);
+  }
+
+  // A derived path that is not in the tree is a stale WORKFLOW reference, not
+  // a table defect, and blaming the table for it would send the next session
+  // to the wrong file. Dropped here; test_gate_greenlight.py owns "declared paths
+  // must exist" from the other direction.
+  return { required: [...required].filter(exists).sort(), checksOutSubmodules };
+};
+
+const covers = (declared, p) =>
+  declared.some((entry) => entry === p || p.startsWith(`${entry}/`));
+
+let findings = 0;
+const keys = only.length > 0 ? only : Object.keys(table);
+for (const key of keys) {
+  const closure = table[key];
+  if (!closure) {
+    process.stdout.write(`UNCOVERED ${key} - key-absent-from-table\n`);
+    findings++;
+    continue;
+  }
+  const { required, checksOutSubmodules } = deriveFor(key);
+  process.stdout.write(`DERIVED ${key} ${required.length}\n`);
+  const declared = [...closure.paths, ...closure.submodules];
+  for (const p of required) {
+    if (!covers(declared, p)) {
+      process.stdout.write(`UNCOVERED ${key} ${p} not-in-closure\n`);
+      findings++;
+    }
+  }
+  if (checksOutSubmodules && closure.submodules.length === 0) {
+    process.stdout.write(`UNCOVERED ${key} - checks-out-submodules-but-pins-none\n`);
+    findings++;
+  }
+}
+
+process.exit(findings > 0 ? 1 : 0);

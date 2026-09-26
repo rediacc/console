@@ -161,8 +161,7 @@ export class StorageTestHelper {
    * Check if an object exists in a bucket.
    */
   async objectExists(bucket: string, key: string): Promise<boolean> {
-    // Use lsf with --files-only to check if file exists
-    // Returns the filename if it exists, empty if not
+    // Use lsf with --files-only to check if file exists Returns the filename if it exists, empty if not
     const result = await this.executeRclone(`lsf :s3:${bucket}/${key}`);
     return result.success && result.stdout.trim().length > 0;
   }

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: fr
-sourceHash: "c898204d1ff917f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Authentification
@@ -36,7 +36,7 @@ Les tokens API authentifient les opérations de machine à machine (activation d
 - `subscription:read` -- Lire les détails de l'abonnement
 
 **Fonctionnalités de sécurité :**
-- Liaison IP : la première requête verrouille le token à cette adresse IP
+- Liaison IP : un token ne vaut que pour l'adresse IP de sa première requête ; une nouvelle adresse demande une vérification TOTP ou une nouvelle connexion (voir ci-dessous)
 - Portée par équipe : les tokens peuvent être restreints à une équipe spécifique
 - Révocation automatique : les tokens sont révoqués lorsque le créateur est supprimé de l'organisation
 
@@ -46,6 +46,18 @@ Créer un token :
 # La valeur du token est affichée une seule fois -- conservez-la en sécurité
 ```
 
+#### Quand l'adresse IP change
+
+Un token lié à une adresse IP est refusé depuis toute autre adresse, par exemple quand le fournisseur d'accès attribue une nouvelle adresse. La CLI se charge du transfert :
+
+- **Terminal interactif, 2FA activée** : la CLI demande le code à 6 chiffres de l'application d'authentification, transfère le token vers la nouvelle adresse et relance la commande. Les codes de secours ne sont pas acceptés pour un transfert.
+- **Scripts et CI (sans terminal)** : la commande échoue et indique les deux solutions : lancer une fois n'importe quelle commande `rdc` dans un terminal interactif (par exemple `rdc subscription status`) et saisir le code, ou lancer `rdc subscription login`.
+- **2FA désactivée** : le token ne peut pas être transféré. `rdc subscription login` en émet un nouveau et, avec la 2FA activée, le prochain transfert ne demande qu'un code.
+- **Codes erronés** : 5 codes erronés en 15 minutes bloquent le transfert, d'abord pendant 5 minutes, puis deux fois plus longtemps à chaque fois, jusqu'à 1 heure. Après 4 blocages, le transfert est désactivé pour ce token jusqu'au prochain `rdc subscription login`.
+- **Les tokens d'executor** avec une liaison IP `unbound` ou `cloudflare` ne sont pas concernés.
+
+Chaque transfert apparaît dans le journal d'activité du portail, avec l'ancienne et la nouvelle adresse.
+
 ### Flux de code d'appareil
 
 La CLI peut s'authentifier sur les machines sans écran en utilisant le flux de code d'appareil :
@@ -53,7 +65,7 @@ La CLI peut s'authentifier sur les machines sans écran en utilisant le flux de 
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Affiche : Entrez le code XXXX-XXXX-XX sur https://www.rediacc.com/account/authorize
 # Après approbation, la CLI reçoit automatiquement les identifiants
 ```

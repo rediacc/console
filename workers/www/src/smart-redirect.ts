@@ -6,9 +6,7 @@
  * redirect. The route manifest is auto-generated at build time.
  */
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Types ---------------------------------------------------------------------------
 
 interface RouteEntry {
   path: string; // e.g., "/docs/installation"
@@ -31,9 +29,7 @@ interface ParsedRequest {
   keywords: string[];
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Constants ---------------------------------------------------------------------------
 
 import { SITE_LOCALES } from '../../../packages/locales/index.js';
 
@@ -42,9 +38,7 @@ const REDIRECT_THRESHOLD = 50;
 const FILE_EXT_RE = /\.\w{2,5}$/;
 const SKIP_PREFIXES = ['/account', '/assets', '/fonts', '/_astro', '/api', '/json'] as const;
 
-// ---------------------------------------------------------------------------
-// Manifest cache
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Manifest cache ---------------------------------------------------------------------------
 
 let manifestCache: RouteEntry[] | null = null;
 
@@ -58,15 +52,11 @@ async function loadManifest(assets: Fetcher): Promise<RouteEntry[]> {
   } catch {
     manifestCache = [];
   }
-  // `?? []` rather than a bare return: `manifestCache` is `RouteEntry[] | null` and TS
-  // cannot see that both branches above have assigned it. Narrowing here says the same
-  // thing the code already guarantees, without loosening the declared type.
+  // `?? []` rather than a bare return: `manifestCache` is `RouteEntry[] | null` and TS cannot see that both branches above have assigned it. Narrowing here says the same thing the code already guarantees, without loosening the declared type.
   return manifestCache ?? [];
 }
 
-// ---------------------------------------------------------------------------
-// URL parsing
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- URL parsing ---------------------------------------------------------------------------
 
 function parseRequestPath(pathname: string): ParsedRequest {
   // Strip trailing slash and lowercase
@@ -76,8 +66,7 @@ function parseRequestPath(pathname: string): ParsedRequest {
   // Detect language prefix
   let lang = 'en';
   let rest = segments;
-  // `SUPPORTED_LANGUAGES` is a readonly tuple of locale LITERALS, so `.includes()` will
-  // not take an arbitrary string. Widening the receiver for the membership test is the
+  // `SUPPORTED_LANGUAGES` is a readonly tuple of locale LITERALS, so `.includes()` will not take an arbitrary string. Widening the receiver for the membership test is the
   // narrow fix; casting `segments[0]` to the union would assert something not yet known.
   if (segments.length > 0 && (SUPPORTED_LANGUAGES as readonly string[]).includes(segments[0])) {
     lang = segments[0];
@@ -100,9 +89,7 @@ function parseRequestPath(pathname: string): ParsedRequest {
   return { lang, pathWithoutLang, section, slug, keywords };
 }
 
-// ---------------------------------------------------------------------------
-// Scoring helpers
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Scoring helpers ---------------------------------------------------------------------------
 
 function levenshtein(a: string, b: string): number {
   const m = a.length;
@@ -133,9 +120,7 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : intersection / union;
 }
 
-// ---------------------------------------------------------------------------
-// Main scoring
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Main scoring ---------------------------------------------------------------------------
 
 function scoreCandidate(req: ParsedRequest, candidate: RouteEntry): number {
   let score = 0;
@@ -177,9 +162,7 @@ function scoreCandidate(req: ParsedRequest, candidate: RouteEntry): number {
   return score;
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Public API ---------------------------------------------------------------------------
 
 /**
  * File-like paths (CSS, JS, images, fonts) and non-content prefixes never get

@@ -47,8 +47,7 @@ describe('explicit undefined keys', () => {
     expect(explicit).toContain('/credentials/ssh/knownHosts');
     expect(absent).not.toContain('/credentials/ssh/knownHosts');
 
-    // This inequality is the whole bug: two configs that look identical to a
-    // reader commit different pointer sets.
+    // This inequality is the whole bug: two configs that look identical to a reader commit different pointer sets.
     expect(explicit).not.toEqual(absent);
   });
 
@@ -61,8 +60,7 @@ describe('explicit undefined keys', () => {
     const pulledPointers = new Set(pulled.map((e) => e.pointer));
     const localPointers = new Set(local.map((e) => e.pointer));
 
-    // The local config is missing a pointer the server was told to expect, which
-    // is precisely what the anti-downgrade check rejects.
+    // The local config is missing a pointer the server was told to expect, which is precisely what the anti-downgrade check rejects.
     const dropped = [...pulledPointers].filter((p) => !localPointers.has(p));
     expect(dropped).toEqual(['/credentials/ssh/knownHosts']);
   });
@@ -84,11 +82,7 @@ describe('explicit undefined keys', () => {
   // ── The same trap, one level up: a whole top-level section ───────────
 
   it('an undefined-valued /policy key commits a pointer an absent one does not', () => {
-    // The third place this bug tried to land. `policy` now rides inside the
-    // ciphertext, so every path that rebuilds a config from a pull (the remote
-    // adapter, the CEK rotation, the container executor) has to restore it — and
-    // a careless `policy: full.policy` on a config that never had one would
-    // commit '/policy' against a blob that cannot back it.
+    // The third place this bug tried to land. `policy` now rides inside the ciphertext, so every path that rebuilds a config from a pull (the remote adapter, the CEK rotation, the container executor) has to restore it — and a careless `policy: full.policy` on a config that never had one would commit '/policy' against a blob that cannot back it.
     const withUndefined = pathsToCommit(configWithPolicy(undefined, true));
     const withAbsent = pathsToCommit(configWithPolicy(undefined, false));
 

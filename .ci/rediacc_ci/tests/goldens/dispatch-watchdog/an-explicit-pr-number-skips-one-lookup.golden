@@ -1,0 +1,6 @@
+# twin .ci/scripts/ci/dispatch-watchdog.sh blob c8ca37cdeeadfc67b363eae6054040dec089ea5c
+exit: 0
+--- stdout ---
+--- stderr ---
+call: gh api repos/rediacc/console/actions/runs/5 --jq .head_branch // ""
+✓ Dispatched watchdog generation 1 for run 5 on ref topic

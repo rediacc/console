@@ -1,0 +1,20 @@
+# twin .ci/scripts/test/test-install-script.sh blob 9aaa7b9e101389382861e34099479c242570cc27 over packages/www/public/install.sh blob a71c28af695ab19fa0cf9db435003f31dd8db286
+exit: 0
+--- stdout ---
+[0;32mPASS:[0m detect_platform matches uname
+[0;32mPASS:[0m detect_arch matches uname -m
+[0;32mPASS:[0m default channel + no server -> no rediacc.json
+[0;32mPASS:[0m non-default channel writes rediacc.json with correct fields and mode
+[0;32mPASS:[0m custom releases URL persists in rediacc.json
+[0;32mPASS:[0m present config + no jq -> untouched, prints follow-up command
+[0;32mPASS:[0m cleanup_legacy_state removes legacy versions/ dir
+[0;32mPASS:[0m cleanup_legacy_state removes staged-update/ dir
+[0;32mPASS:[0m legacy VERSIONS_DIR / MAX_VERSIONS constants removed
+[0;32mPASS:[0m no env, no config -> stable
+[0;32mPASS:[0m no env + config account.updateChannel=edge -> edge
+[0;32mPASS:[0m env REDIACC_CHANNEL=stable overrides config edge
+[0;32mPASS:[0m malformed config -> stable fallback
+[0;32mPASS:[0m config without updateChannel -> stable
+
+[0;32mPASS:[0m all install.sh unit cases
+--- stderr ---

@@ -1,0 +1,34 @@
+# Go packages blocked from auto-upgrade (require manual migration).
+#
+# Format: module/path  # BLOCKER: <substantive reason>
+#
+# The BLOCKER convention is enforced by .ci/scripts/quality/check-go-deps.sh
+# (see parse_blockered_list in .ci/scripts/lib/blocker-validator.sh): each
+# line needs a 30+ char reason that does not match the banned-phrase list.
+#
+# Minor/patch updates for non-blocked packages will fail CI. Major updates
+# are always reported but never auto-upgraded regardless of this list.
+
+# go-landlock — sandbox isolation primitive (security-critical)
+github.com/landlock-lsm/go-landlock  # BLOCKER: v0.9.0 is a 0.x minor that can change the Landlock config API; this gates repo-sandbox isolation, so adoption needs sandbox-behavior validation on a live cluster before bumping
+
+# BLOCKER: kubelet is consumed for exactly one thing, the stable pluginregistration/v1
+# types (GetInfo / NotifyRegistrationStatus), which have not changed. Taking v0.36.x buys
+# nothing and costs three things: it REQUIRES an untagged protobuf pseudo-version
+# (v1.36.12-0.20260120151049-f2248ac996af — upstream k8s 1.36 ships against an unreleased
+# protobuf commit; pinning protobuf to the tagged v1.36.11 drags kubelet down to
+# v0.36.0-alpha.2), it forces the go directive from 1.25 to 1.26, and it breaks the
+# generated RegistrationServer interface (needs UnimplementedRegistrationServer embedded),
+# which means editing the CSI registration path while that path is under active
+# investigation for the #87 staging bug. Revisit once protobuf v1.36.12 is tagged and a
+# kubelet release requires the tagged version.
+k8s.io/kubelet
+
+
+# BLOCKER: GO-2026-6443 (CVE-2026-84445, GHSA-2v4p-qf9q-27wj), a reachable server panic
+# via a missing :authority/Host header. grpc v1.84.0 is inside the affected range, and no
+# fixed 1.84.x is tagged; the fixed releases are v1.83.2 and a 1.85.0-dev pseudo-version.
+# renet pins v1.83.2, which renet main already runs. Measured 2026-09-24: check:ci-renet's
+# govulncheck refused v1.84.0 after check:ci-go-deps had demanded it. Lift when grpc tags a
+# release outside the advisory's affected ranges.
+google.golang.org/grpc

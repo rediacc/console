@@ -54,7 +54,7 @@ async function scanCurrentConfig(
       if (guid) addGuidSource(guidSources, guid, currentConfigName);
     }
   } catch {
-    // Current config unreadable — shouldn't happen but handle gracefully
+    // Current config unreadable, shouldn't happen but handle gracefully
   }
 }
 
@@ -170,7 +170,7 @@ function classifyGuid(
     };
   }
 
-  // Orphaned — safe to delete
+  // Orphaned, safe to delete
   return {
     guid,
     reason: sources?.length ? `forced (in ${sources.join(', ')})` : 'not in any config',
@@ -199,7 +199,7 @@ export async function analyzePrune(
   const { guidSources: allConfigGuids, unreadableConfigs } = await collectAllConfigGuids();
   const archivedGuids = await collectArchivedGuids();
 
-  // Warn about unreadable configs — block deletion unless --force
+  // Warn about unreadable configs, block deletion unless --force
   if (unreadableConfigs.length > 0) {
     outputService.warn(
       t('services.prune.unreadableConfigs', {

@@ -1,0 +1,12 @@
+# twin scripts/ops/build-server.sh blob 8869c152c26924da7feaa0f86a3ffdd9bd75abf4
+exit: 1
+--- stdout ---
+--- stderr ---
+error: missing private/renet/bin/renet-linux-amd64
+
+Run ./rdc.sh once to trigger the cross-compile, or download from a
+recent CI run:
+  gh run list --workflow ci.yml --branch $(git branch --show-current) --limit 5
+  gh run download <run-id> --name renet-binaries-<sha>
+--- calls ---
+--- staged ---

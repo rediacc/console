@@ -89,7 +89,7 @@ export function startProfiling(commandName: string, environment?: string): void 
     pyroscope.startCpuProfiling();
     pyroscope.startHeapProfiling();
   } catch {
-    // Fail silently — native module may not be available
+    // Fail silently, native module may not be available
   }
 }
 

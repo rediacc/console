@@ -5,12 +5,27 @@ on:
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+# This is a reusable workflow. A callee can never exceed what the calling job
+# grants, so each job's block below is also the contract its callers must meet.
+permissions: {}
+
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
+    # packages: read is REQUIRED and had no local declaration at all before
+    # this: the ghcr login uses github.token and the credential is then copied
+    # into the VM root docker config so `rdc repo up` pulls through it. This
+    # file declared no permissions, so the scope came only from whatever the
+    # caller happened to pass.
+    permissions:
+      contents: read
+      packages: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,
@@ -51,10 +66,11 @@ jobs:
             DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
             DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -112,7 +128,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
-        run: .ci/scripts/infra/build-renet.sh --nolicense
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always() && steps.embed-cache.outputs.cache-hit != 'true'
         with:
@@ -201,7 +217,7 @@ jobs:
         run: ping -c 3 -W 5 "${{ steps.status.outputs.bridge_ip }}"
 
       - name: "Verify: SSH connectivity"
-        run: .ci/scripts/infra/verify-ssh.sh "${{ steps.status.outputs.bridge_ip }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.verify_ssh "${{ steps.status.outputs.bridge_ip }}"
         env:
           SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
           CHOWN_PATH: ${{ runner.temp }}/renet
@@ -336,6 +352,9 @@ jobs:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
+    # Checkout and artifacts. No registry, no GitHub API.
+    permissions:
+      contents: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,
@@ -442,7 +461,7 @@ jobs:
         # variable's value, so `SSH_KEY: $HOME/...` would reach the script as
         # the literal string. $RUNNER_TEMP has a real context (`runner.temp`);
         # $HOME does not, so the shell has to do it.
-        run: SSH_KEY="$HOME/.ssh/id_ed25519" .ci/scripts/infra/verify-ssh.sh ${{ steps.status.outputs.vm_addrs }}
+        run: SSH_KEY="$HOME/.ssh/id_ed25519" PYTHONPATH=.ci python3 -m rediacc_ci.infra.verify_ssh ${{ steps.status.outputs.vm_addrs }}
         env:
           ATTEMPTS: 20
 
@@ -474,6 +493,9 @@ jobs:
     name: OPS Check (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
+    # Checkout and artifacts. No registry, no GitHub API.
+    permissions:
+      contents: read
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,

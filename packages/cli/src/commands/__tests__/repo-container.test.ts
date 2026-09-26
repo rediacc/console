@@ -71,8 +71,7 @@ describe('repo exec argument quoting', () => {
   });
 
   it('keeps a quoted argument as ONE word for the container shell', async () => {
-    // The bug: `cmd.join(' ')` produced `sh -c echo A B`, so the inner shell read
-    // `echo` as the script and `A`/`B` as $0/$1, printing an empty line.
+    // The bug: `cmd.join(' ')` produced `sh -c echo A B`, so the inner shell read `echo` as the script and `A`/`B` as $0/$1, printing an empty line.
     await run(['exec', 'shop', '-c', 'web', '--', 'sh', '-c', 'echo A B']);
     expect(lastParams().command).toBe("'sh' '-c' 'echo A B'");
   });

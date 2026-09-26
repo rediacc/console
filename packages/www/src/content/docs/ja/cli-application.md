@@ -7,7 +7,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "bb3ff8daf0bc61cb"
+sourceHash: "45817ef518e3ef75"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -217,7 +217,6 @@ rdc config remote enable [options]
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--headless` | {{t:cli.commands.config.remote.enable.optionHeadless}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--password` | {{t:cli.commands.config.remote.enable.optionPassword}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.config.remote.enable.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -249,6 +248,29 @@ rdc config remote status
 ```bash
 rdc config remote refresh
 ```
+
+<a id="cli-local-config-remote-versions"></a>
+#### versions
+
+{{t:cli.commands.config.remote.versions.description}}
+
+```bash
+rdc config remote versions
+```
+
+<a id="cli-local-config-remote-restore"></a>
+#### restore
+
+{{t:cli.commands.config.remote.restore.description}}
+
+```bash
+rdc config remote restore <version> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-field"></a>
 ### 1.12 field

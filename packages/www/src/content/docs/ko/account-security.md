@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ko
-sourceHash: "c898204d1ff917f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### 인증
@@ -36,7 +36,7 @@ API 토큰은 머신 간 작업(CLI 라이선스 활성화, 상태 확인)에 �
 - `subscription:read` -- 구독 세부 정보 읽기
 
 **보안 기능:**
-- IP 바인딩: 첫 번째 요청 시 해당 IP 주소에 토큰이 잠깁니다
+- IP 바인딩: 토큰은 첫 요청의 IP 주소에서만 유효합니다. 새 주소에서는 TOTP 확인이나 다시 로그인이 필요합니다(아래 참고)
 - 팀 범위 지정: 특정 팀으로 토큰을 제한할 수 있습니다
 - 자동 취소: 생성자가 조직에서 제거되면 토큰이 자동으로 취소됩니다
 
@@ -46,6 +46,18 @@ API 토큰은 머신 간 작업(CLI 라이선스 활성화, 상태 확인)에 �
 # 토큰 값은 한 번만 표시됩니다. 안전하게 보관하세요
 ```
 
+#### IP 주소가 바뀌었을 때
+
+한 IP 주소에 묶인 토큰은 다른 모든 주소에서 거부됩니다. 예를 들어 인터넷 제공업체가 새 주소를 할당한 경우입니다. 이동은 CLI가 처리합니다:
+
+- **대화형 터미널, 2FA 켜짐**: CLI가 인증 앱의 6자리 코드를 묻고, 토큰을 새 주소로 옮긴 뒤 명령을 다시 실행합니다. 이동에는 백업 코드를 쓸 수 없습니다.
+- **스크립트와 CI(터미널 없음)**: 명령이 실패하면서 두 가지 해결 방법을 알려 줍니다. 대화형 터미널에서 아무 `rdc` 명령(예: `rdc subscription status`)이나 한 번 실행하고 코드를 입력하거나, `rdc subscription login`을 실행합니다.
+- **2FA 꺼짐**: 토큰을 옮길 수 없습니다. `rdc subscription login`으로 새 토큰을 발급받으세요. 2FA를 켜 두면 다음 이동에는 코드만 있으면 됩니다.
+- **잘못된 코드**: 15분 안에 코드를 5번 틀리면 이동이 잠깁니다. 처음에는 5분이고, 이후 매번 두 배씩 늘어 최대 1시간입니다. 4번 잠기면 다음에 `rdc subscription login`을 실행할 때까지 해당 토큰의 이동이 비활성화됩니다.
+- IP 바인딩이 `unbound` 또는 `cloudflare`인 **executor 토큰**은 영향을 받지 않습니다.
+
+모든 이동은 이전 주소와 새 주소와 함께 포털의 활동 로그에 기록됩니다.
+
 ### 디바이스 코드 흐름
 
 CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인증할 수 있습니다:
@@ -53,7 +65,7 @@ CLI는 디바이스 코드 흐름을 사용하여 헤드리스 머신에서 인�
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # 표시: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # 승인 후 CLI가 자격 증명을 자동으로 수신합니다
 ```

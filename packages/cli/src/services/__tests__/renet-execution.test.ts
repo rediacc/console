@@ -287,10 +287,9 @@ describe('buildLocalVault', () => {
       expect(vault.repositories.myrepo.network_id).toBeUndefined();
     });
 
-    // ── secret_files (file-mode) — single-repo path ──────────────────
+    // ── secret_files (file-mode), single-repo path ──────────────────
     //
-    // This is the contract that makes `repo migrate` and `repo push --up`
-    // automatically carry secrets across machines. Both invoke `repo up` on
+    // This is the contract that makes `repo migrate` and `repo push --up` automatically carry secrets across machines. Both invoke `repo up` on
     // the target machine through this exact code path; the repo entry in
     // local config travels with all its secrets baked in.
 

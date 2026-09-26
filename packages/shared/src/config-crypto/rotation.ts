@@ -22,7 +22,11 @@
  */
 
 import type { RdcConfig } from '../config-schema/index.js';
-import { buildConfigPushPayload, decryptConfigPullPayload } from '../config-schema/index.js';
+import {
+  buildConfigPushPayload,
+  decryptConfigPullPayload,
+  fromFullConfig,
+} from '../config-schema/index.js';
 import { exportAesKey, fromBase64 } from './aes.js';
 import { cekHandoffEncrypt, cekWrap, generateCek } from './index.js';
 import type { EncryptedConfigPayload, FullConfig } from './types.js';
@@ -64,135 +68,23 @@ function buf(data: Uint8Array): ArrayBuffer {
 }
 
 /**
- * Project a decrypted envelope back onto the config document.
- *
- * A pull only carries the encrypted halves (every `resources` family, ssh,
- * policy, org secrets — the SENSITIVE_FIELDS list); the rest of an RdcConfig
- * is host-local and never leaves the client. The
- * commitment pointers are rooted at the DOCUMENT, though, so re-encryption has
- * to rebuild this shape before it can recompute them.
- *
- * This mirrors `RemoteConfigAdapter.pull()` exactly. It has to: the commitment
- * pointer set it produces is what the server's anti-downgrade check compares the
- * next push against, so a rotation that reconstructed a different shape would
- * either drop a committed pointer (rejected) or commit one the CLI never does
- * (rejected on the CLI's next push).
+ * Project a decrypted envelope back onto the config document: `fromFullConfig` (payload.ts), the one
+ * inverse of the push projection. The CLI pull, the executor, the portal session and the CEK
+ * rotation all rebuild through it, so the commitment pointer set a rebuilt document produces is the
+ * one the next push commits.
  */
-/**
- * credentials: ssh keys and/or the Cloudflare DNS token. The key is emitted only
- * when at least one is present.
- *
- * Every branch is SPREAD-IF-PRESENT, never `key: value ?? undefined`. The schema
- * walker keys off property EXISTENCE, so an explicit-undefined key commits a
- * phantom pointer the blob cannot back, and the next ordinary push then looks
- * like it dropped a sensitive path — anti-downgrade rejects it and config push
- * bricks for the whole org. Two bugs of exactly this shape have already been
- * caught; this rebuild must not plant a third.
- */
-function buildCredentials(decrypted: FullConfig): Record<string, unknown> {
-  const credentials: Record<string, unknown> = {};
-  const ssh = decrypted.ssh;
-  if (ssh?.privateKey) {
-    credentials.ssh = {
-      privateKey: ssh.privateKey as string,
-      ...(ssh.publicKey === undefined ? {} : { publicKey: ssh.publicKey as string }),
-      ...(ssh.knownHosts === undefined ? {} : { knownHosts: ssh.knownHosts as string }),
-    };
-  }
-  if (decrypted.cfDnsApiToken !== undefined) credentials.cfDnsApiToken = decrypted.cfDnsApiToken;
-  return credentials;
-}
-
-/**
- * The `resources` block. machines/repositories/storages always come back;
- * the remaining v3 families ride in the blob (SENSITIVE_FIELDS) and must come
- * back out here, or a pull/rotation silently loses them. Spread-if-present:
- * their leaves are public (uncommitted) EXCEPT deletedRepositories and
- * cloudProviders, whose pointers are committed — an explicit-undefined key here
- * would commit pointers the blob cannot back. Same discipline as buildCredentials.
- */
-function buildResources(decrypted: FullConfig): NonNullable<RdcConfig['resources']> {
-  return {
-    machines: (decrypted.machines ?? {}) as NonNullable<
-      NonNullable<RdcConfig['resources']>['machines']
-    >,
-    repositories: (decrypted.repositories ?? {}) as NonNullable<
-      NonNullable<RdcConfig['resources']>['repositories']
-    >,
-    storages: (decrypted.storages ?? {}) as NonNullable<
-      NonNullable<RdcConfig['resources']>['storages']
-    >,
-    ...(decrypted.datastores === undefined
-      ? {}
-      : {
-          datastores: decrypted.datastores as NonNullable<
-            NonNullable<RdcConfig['resources']>['datastores']
-          >,
-        }),
-    ...(decrypted.clusters === undefined
-      ? {}
-      : {
-          clusters: decrypted.clusters as NonNullable<
-            NonNullable<RdcConfig['resources']>['clusters']
-          >,
-        }),
-    ...(decrypted.backupStrategies === undefined
-      ? {}
-      : {
-          backupStrategies: decrypted.backupStrategies as NonNullable<
-            NonNullable<RdcConfig['resources']>['backupStrategies']
-          >,
-        }),
-    ...(decrypted.deletedRepositories === undefined
-      ? {}
-      : {
-          deletedRepositories: decrypted.deletedRepositories as NonNullable<
-            NonNullable<RdcConfig['resources']>['deletedRepositories']
-          >,
-        }),
-    ...(decrypted.cloudProviders === undefined
-      ? {}
-      : {
-          cloudProviders: decrypted.cloudProviders as NonNullable<
-            NonNullable<RdcConfig['resources']>['cloudProviders']
-          >,
-        }),
-  };
-}
-
 export function fullConfigToRdcConfig(decrypted: FullConfig): RdcConfig {
-  const credentials = buildCredentials(decrypted);
-
-  // Spread-if-present throughout (see buildCredentials for why property
-  // existence is load-bearing). Committed top-level sections (account.userEmail,
-  // defaults.universalUser, infra.*) and '/policy' must come back out or the
-  // re-push commits fewer pointers than the server stored.
-  const rebuilt = {
-    schemaVersion: 3,
-    id: decrypted.id,
-    version: decrypted.version,
-    ...(decrypted.account === undefined
-      ? {}
-      : { account: decrypted.account as RdcConfig['account'] }),
-    ...(decrypted.defaults === undefined
-      ? {}
-      : { defaults: decrypted.defaults as RdcConfig['defaults'] }),
-    ...(decrypted.infra === undefined ? {} : { infra: decrypted.infra as RdcConfig['infra'] }),
-    resources: buildResources(decrypted),
-    ...(decrypted.policy === undefined ? {} : { policy: decrypted.policy }),
-    ...(Object.keys(credentials).length > 0 ? { credentials } : {}),
-    encryption: { mode: 'plaintext' },
-  };
-  return rebuilt as RdcConfig;
+  return fromFullConfig(decrypted);
 }
 
 /**
  * Re-encrypt one pulled config under a new CEK.
  *
- * The field-commitment key is derived from the CEK, so every commitment in the
- * envelope changes with the key. A fresh FCK salt is generated (by omitting
- * `fckSalt`) rather than reused: the commitments have to be recomputed anyway,
- * and a new salt makes it obvious that the old envelope's HMACs are dead.
+ * The field-commitment key and the pointer-blinding key are derived from the CEK, so every
+ * commitment and every commitment key in the envelope changes with the key. A fresh FCK salt is
+ * generated (by omitting `fckSalt`) rather than reused: the commitments have to be recomputed anyway,
+ * and a new salt makes it obvious that the old envelope's HMACs are dead. The server applies no
+ * anti-downgrade check to a rotation (the keys cannot match across CEKs), so no prior is sent.
  */
 export async function reencryptConfig(params: {
   /** The pulled payload, as assembled from the pull response. */
@@ -206,11 +98,15 @@ export async function reencryptConfig(params: {
   sdkEpoch: number;
   /** Version to write: the snapshot version plus one. */
   version: number;
+  /** The store and config being rotated: the AAD binding of both the pulled and the new blob. */
+  storeId: string;
+  configId: string;
   teamId?: string;
 }): Promise<EncryptedConfigPayload> {
   const decrypted = await decryptConfigPullPayload(params.pulled, {
     cek: params.oldCek,
     sdkDerived: params.sdkDerivedForPull,
+    binding: { storeId: params.storeId, configId: params.configId, teamId: params.teamId ?? null },
   });
 
   return buildConfigPushPayload(fullConfigToRdcConfig(decrypted), {
@@ -218,6 +114,7 @@ export async function reencryptConfig(params: {
     sdkEpoch: params.sdkEpoch,
     sdkDerived: params.sdkDerivedForPush,
     cek: params.newCek,
+    storeId: params.storeId,
     teamId: params.teamId,
   });
 }

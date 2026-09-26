@@ -1,5 +1,5 @@
 /**
- * `rdc config field` — canonical pointer-addressed access to any config leaf.
+ * `rdc config field`, canonical pointer-addressed access to any config leaf.
  *
  * Subcommands:
  *   get <pointer>                          read a value (respects --reveal)
@@ -23,10 +23,10 @@ import {
   SENSITIVITY_REGISTRY,
 } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { digestForPointer, redactClone, shortFingerprint } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
+import { updateConfigAtPointer } from '../../services/config/synced-write.js';
 import { type AuditEventDraft, auditLog } from '../../services/core/audit-log.js';
 import {
   evaluateMutations,
@@ -38,7 +38,7 @@ import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 
 function configDir(): string {
-  // configFileStorage exposes the directory via a private method indirectly —
+  // configFileStorage exposes the directory via a private method indirectly ,
   // for audit log placement we use $XDG_CONFIG_HOME/rediacc (same convention).
   const xdg = process.env.XDG_CONFIG_HOME ?? `${process.env.HOME ?? ''}/.config`;
   return `${xdg}/rediacc`;
@@ -56,8 +56,8 @@ function emit(draft: AuditEventDraft): void {
  * Apply a JSON-Pointer mutation to the in-memory config, returning the new
  * config. Operates on the v2 shape via getByPointer/setByPointer semantics.
  *
- * Set/unset are persisted by the caller via configFileStorage.update —
- * MutationGate validates first.
+ * Set/unset/rotate are persisted by the caller via updateConfigAtPointer (pushed for a remote
+ * config unless the pointer is device-local); MutationGate validates first.
  */
 function applyMutation(config: unknown, pointer: string, newValue: unknown): unknown {
   if (pointer === '') return newValue;
@@ -89,8 +89,7 @@ function checkFieldReveal(pointer: string): void {
     });
     throw new ValidationError(t('errors.agent.fieldReveal', { pointer }));
   }
-  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in
-  // worker threads or stream wrappers, where isatty() would throw a TypeError.
+  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in worker threads or stream wrappers, where isatty() would throw a TypeError.
   if (!process.stdout.isTTY) {
     throw new ValidationError(t('errors.agent.revealRequiresTty'));
   }
@@ -193,8 +192,9 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         }
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(
+        await updateConfigAtPointer(
           configName,
+          pointer,
           (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg
         );
 
@@ -253,8 +253,9 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         }
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(
+        await updateConfigAtPointer(
           configName,
+          pointer,
           (cfg) => applyMutation(cfg, pointer, undefined) as typeof cfg
         );
 
@@ -301,8 +302,9 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
         });
 
         const configName = configService.getCurrentName();
-        await configFileStorage.update(
+        await updateConfigAtPointer(
           configName,
+          pointer,
           (cfg) => applyMutation(cfg, pointer, newValue) as typeof cfg
         );
 

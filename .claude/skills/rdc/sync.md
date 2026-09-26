@@ -6,9 +6,7 @@ For full command syntax and options, see [reference.md](reference.md).
 
 ## Targeting
 
-`rdc repo sync {upload,download,status} <repo-ref> --local <path>` takes the repo as a
-positional ref (`my-app`, `my-app:staging`) and derives the machine from it. There is no
-`-m` / `-r` flag pair any more.
+`rdc repo sync {upload,download,status} <repo-ref> --local <path>` takes the repo as a positional ref (`my-app`, `my-app:staging`) and derives the machine from it. There is no `-m` / `-r` flag pair any more.
 
 ## Behavior notes
 
@@ -54,8 +52,7 @@ Compare "files transferred" and "Total size" across syncs to verify delta behavi
 
 ### Cross-repo file sync
 
-To copy files between two repos (e.g., syncing app code updates). Each ref carries its own
-machine, so the two commands can target different machines without naming them:
+To copy files between two repos (e.g., syncing app code updates). Each ref carries its own machine, so the two commands can target different machines without naming them:
 ```bash
 # Download from source repo to local temp dir
 rdc repo sync download <source-repo> --local /tmp/sync-temp/

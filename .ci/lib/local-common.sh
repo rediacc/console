@@ -235,30 +235,29 @@ ensure_deps() {
         return 0
     fi
 
-    # Install with npm 10, which is what CI pins (.ci/scripts/quality/check-lockfile.sh)
-    # and what the lockfile's nested layout describes.
+    # Install with whatever npm is on PATH. npm 11 at the NPM_VERSION pin
+    # (.devcontainer/toolchain.env) is the only supported npm (issue #587), and the
+    # devbox image installs exactly that pin, so inside the devbox this writes the
+    # canonical lockfile form.
     #
-    # This is not cosmetic like the 27-line "dev": true flip. npm 11 HOISTS
-    # differently: it flattens zod to the 3.25.76 copy that transitives drag in,
-    # ignoring the workspace-local zod@4.4.3 the lockfile pins, and then
-    # `npm ls zod` reports `invalid: "^4.3.6" from packages/shared`. The visible
-    # symptom is packages/shared failing to compile with "Property 'uuid' does
-    # not exist" (v4 API against a v3 copy), which takes `./run.sh account dev`
-    # down with it. Reproduced on npm 11.9.0; npm@10 fixes it in one run.
+    # THE ZOD HOIST THAT ONCE PINNED THIS TO npm 10 NO LONGER REPRODUCES, measured
+    # 2026-09-06: npm 11.9.0 used to flatten zod to the 3.25.76 copy transitives drag
+    # in, breaking packages/shared ("Property 'uuid' does not exist"). Re-tested in a
+    # scratch copy of the root manifest, lockfile, .npmrc and workspace manifests,
+    # every zod copy landed where npm 10 put it, because package.json's `overrides`
+    # entry forcing zod ^4.4.3 makes the placement deterministic under either major.
     #
     # THERE WAS A SECOND, PLAIN `npm install` ABOVE THIS ONE until 2026-08-27,
     # left by a rebase that kept both sides of a conflict where one superseded
-    # the other. It ran whatever npm is on PATH -- precisely the command this
-    # comment exists to prevent -- and logged "Installing dependencies..." a
-    # second time. check:ci-native-rebuild found it by noticing that the install
+    # the other. It ran a second full install and logged "Installing dependencies..."
+    # a second time. check:ci-native-rebuild found it by noticing that the install
     # at that line had no native rebuild within its window.
+    # WHATEVER npm IS ON PATH. No major-version downgrade: see the measurement above.
     local npm_cmd=(npm)
-    local npm_major
-    npm_major="$(npm --version 2>/dev/null | cut -d. -f1)"
-    if [[ -n "$npm_major" ]] && [[ "$npm_major" != "10" ]]; then
-        log_warn "npm $npm_major detected; installing with npm@10 to match the lockfile layout"
-        npm_cmd=(npx -y npm@10)
-    fi
+
+    # A HOST STILL ON npm 10 writes the root package-lock.json in npm 10's form (27
+    # added `"dev": true` lines under node_modules/tsx/**). check:ci-lockfile refuses
+    # that form and prints the rewrite command, so it cannot be committed unnoticed.
 
     log_step "Installing dependencies..."
     (cd "$LOCAL_ROOT_DIR" && "${npm_cmd[@]}" install)
@@ -313,7 +312,10 @@ ensure_cli_built() {
     current_hash="$(
         {
             compute_tree_hash "$LOCAL_ROOT_DIR" packages/cli
-            cat "$packages_stamp" 2>/dev/null
+            # `|| true`: this `cat` is the group's LAST command, so without it a
+            # missing packages stamp became the pipeline's status under pipefail
+            # and the bare assignment killed the function with no message.
+            cat "$packages_stamp" 2>/dev/null || true
         } | _sha256sum | awk '{print $1}'
     )"
 
@@ -535,7 +537,10 @@ _version_gte() {
 # BASH_ENV file skips profiling when the binary is absent, and ensure_host_tools
 # already installs build-essential, so the next setup closes the gap.
 ensure_bashcov_sup() {
-    local src="$REPO_ROOT/.devcontainer/bashcov-sup.c"
+    # LOCAL_ROOT_DIR, not REPO_ROOT: nothing on this file's load path defines
+    # REPO_ROOT, so under the `set -u` every sourcer arms this line died with
+    # "REPO_ROOT: unbound variable" and `./run.sh setup` never built the binary.
+    local src="$LOCAL_ROOT_DIR/.devcontainer/bashcov-sup.c"
     local bin="$HOME/.local/share/rediacc/bin/bashcov-sup"
     [[ -f "$src" ]] || return 0
     if [[ -x "$bin" && ! "$src" -nt "$bin" ]]; then
@@ -778,12 +783,24 @@ ensure_renet_built() {
     # rebuild even though this function no longer passes a flag.
     local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-renet.stamp"
     local _license_mode="nolicense"
-    if [[ "${RDC_RENET_LICENSE:-0}" == "1" || "${RDC_BENCH:-0}" == "1" ]]; then
+    # `RDC_BENCH` WAS THE SECOND ARM HERE AND IT IS DEAD. `rdc.sh` contains the string
+    # ZERO times, `.ci/scripts/test/test-rdc-sh-env.sh:81` lists it among the dead names it
+    # enforces the absence of, and `docs/environment-variables.md:104`,
+    # `docs/agent-reference/local-env.md:106` and CLAUDE.md all say so. Bench is a CONFIG
+    # now -- `./rdc.sh --config bench` -- so the arm could only ever be taken by someone
+    # exporting a variable nothing else reads. Removed 2026-09-09; found by the W8 P2 env
+    # manifest, which is the first instrument in this repo that looks at bash reads at all.
+    if [[ "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
         _license_mode="enforce"
     fi
+    # The DEV public key: the environment wins, else the public-key cache that
+    # `./run.sh setup` writes from Bitwarden (`bws_env cache-to`, the
+    # ACCOUNT_ED25519_PUBLIC_KEY_DEV entry). PUBLIC values only, so builds stay
+    # offline (agent/plans/PLAN-account-env-to-bws.md T15).
     local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
-    if [[ -z "$_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
-        _account_key=$(sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
+    local _key_cache="$renet_dir/../account/.cache/public-keys.env"
+    if [[ -z "$_account_key" ]] && [[ -f "$_key_cache" ]]; then
+        _account_key=$(sed -n 's/^ACCOUNT_ED25519_PUBLIC_KEY=//p' "$_key_cache" | tr -d '\r')
     fi
     # Git-index fast path with the renet-specific full walk as fallback (the
     # generic walk lacks renet's bin//embed-assets prunes, so compute_tree_hash

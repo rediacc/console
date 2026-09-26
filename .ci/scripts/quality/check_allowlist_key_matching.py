@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """check:ci-allowlist-key-matching -- an allowlist key must be matched by EQUALITY.
 
-WHY THIS EXISTS. .ci/config/docker-npm-pin-exclusions.json is keyed `<path>:<line>` and
-was once consumed with `if k in line`. private/account/Dockerfile carries a bare
+WHY THIS EXISTS. .ci/config/docker-npm-pin-exclusions.json is keyed `<path>:<line>` and was once consumed with `if k in line`. private/account/Dockerfile carries a bare
 `npm install` on line 67 and `npm install --omit=dev && \\` on line 91, so the SHORT key
 claimed the LONG key's line, the long entry matched nothing, and the dead-entry report
 named the correct key as the one to delete. The fix was to match with `==`.
 
-THE INVARIANT THIS GATES is the matcher, not the key shape. A first draft of this gate
-refused configs where one key is a prefix of another; run against the tree it flagged
-those two npm-install keys, which are both live, both correct, and harmless under
-equality. That gate would have made a correct config carry an exemption for a
-non-problem. Key shapes are the SYMPTOM; `in` is the DEFECT.
+THE INVARIANT THIS GATES is the matcher, not the key shape. A first draft of this gate refused configs where one key is a prefix of another; run against the tree it flagged those two npm-install keys, which are both live, both correct, and harmless under equality. That gate would have made a correct config carry an exemption for a non-problem. Key shapes are the SYMPTOM; `in` is
+the DEFECT.
 
 THE RULE. In a script that loads a config under .ci/config/, a key drawn from that config
 must not be tested against a line of text with `in` or `.startswith(`. Compare with `==`,
@@ -42,18 +38,12 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 KEYISH = ("k", "key", "excl", "entry", "pat", "prefix")
 TEXTISH = ("line", "raw", "src", "text", "content", "body", "haystack")
 
-# The corpus cannot be allowed to vanish: a walk that lists nothing prints a tick that is
-# indistinguishable from a clean tree. See scripts/check-enumeration-vacuity.ts.
+# The corpus cannot be allowed to vanish: a walk that lists nothing prints a tick that is indistinguishable from a clean tree. See scripts/gates/check-enumeration-vacuity.ts.
 MIN_CONSUMERS = 2
 
 
-# TypeScript says the same thing with different words: `.includes(` and `.startsWith(`
-# are its substring tests. A TS arm is here because this gate scanned ONLY Python, and
-# that blind spot let a live one survive: scripts/check-unverified-downloads.ts matched
-# its allowlist with `f.url.includes(t)` over bare hosts, so
-# https://awscli.amazonaws.com.attacker.net/x.tgz carried the token and was waved through
-# by the gate whose entire job is refusing an unverified download. Fixed 2026-09-04, and
-# a Python-only sweep would not have found it.
+# TypeScript says the same thing with different words: `.includes(` and `.startsWith(` are its substring tests. A TS arm is here because this gate scanned ONLY Python, and that blind spot let a live one survive: scripts/gates/check-unverified-downloads.ts matched its allowlist with `f.url.includes(t)` over bare hosts, so https://awscli.amazonaws.com.attacker.net/x.tgz carried the
+# token and was waved through by the gate whose entire job is refusing an unverified download. Fixed 2026-09-04, and a Python-only sweep would not have found it.
 TS_TEXTISH = ("line", "raw", "src", "text", "content", "body", "haystack", "url", "ref")
 TS_KEYISH = ("k", "key", "t", "tok", "token", "excl", "entry", "pat", "prefix", "allow")
 
@@ -66,8 +56,7 @@ TS_SUBSTRING = re.compile(
 def ts_substring_matches(src: str) -> list[str]:
     """`<textish>.includes(<keyish>)` in a file that reads an allowlist.
 
-    Deliberately name-driven, exactly like the Python arm, and stated as a blind spot
-    rather than hidden: `.includes(` is far too common in TypeScript to flag on its own.
+    Deliberately name-driven, exactly like the Python arm, and stated as a blind spot rather than hidden: `.includes(` is far too common in TypeScript to flag on its own.
     """
     out: list[str] = []
     for i, line in enumerate(src.split("\n"), 1):

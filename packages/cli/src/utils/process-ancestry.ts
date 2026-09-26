@@ -11,7 +11,7 @@
  *   - linux:   /proc/<pid>/environ read in-process (exec-time, kernel-served)
  *   - darwin:  renet `process-ancestry` helper → kern.procargs2 (exec-time)
  *   - win32:   renet `process-ancestry` helper → PEB env block (live memory,
- *     weaker tier — a process can rewrite its own block, ancestors cannot be
+ *     weaker tier, a process can rewrite its own block, ancestors cannot be
  *     rewritten through any normal channel)
  *   - others:  verification unavailable; overrides fail closed
  */
@@ -30,7 +30,7 @@ export const OVERRIDE_VAR_CONFIG_EDIT = 'REDIACC_ALLOW_CONFIG_EDIT';
 export const OVERRIDE_VAR_CLUSTER = 'REDIACC_ALLOW_CLUSTER_OPS';
 
 /**
- * Every key the ancestry walk witnesses — one walk (one helper spawn on
+ * Every key the ancestry walk witnesses, one walk (one helper spawn on
  * macOS/Windows) covers every guard in the process.
  */
 const WITNESS_KEYS: readonly string[] = [
@@ -63,7 +63,7 @@ interface AncestryResult {
 
 /**
  * Read a process's initial environment from /proc/<pid>/environ.
- * This is immutable — set at exec time by the kernel, cannot be modified
+ * This is immutable, set at exec time by the kernel, cannot be modified
  * by the process itself (export/unset only changes the live heap copy).
  * Returns null if the file can't be read (permissions, non-Linux, etc.).
  */
@@ -96,8 +96,7 @@ export function readProcEnviron(pid: number | 'self'): Map<string, string> | nul
 function getLinuxParentPid(pid: number): number | null {
   try {
     const stat = readFileSync(`/proc/${pid}/stat`, 'utf-8');
-    // Format: pid (comm) state ppid ...
-    // The comm field can contain spaces and parens, so find the LAST ')' first
+    // Format: pid (comm) state ppid ... The comm field can contain spaces and parens, so find the LAST ')' first
     const closeParen = stat.lastIndexOf(')');
     if (closeParen === -1) return null;
     const fields = stat.slice(closeParen + 2).split(' ');
@@ -206,14 +205,14 @@ export function isAncestryVerificationAvailable(): boolean {
 }
 
 /**
- * Hardened agent detection — checks ancestor chain for agent env vars.
+ * Hardened agent detection, checks ancestor chain for agent env vars.
  * Even if the current process unset CLAUDECODE, an ancestor's /proc/environ
  * still has it (immutable).
  *
  * Linux only by design: this runs at CLI startup (isAgentEnvironment slow
  * path), and spawning the ancestry helper there would cost every
- * macOS/Windows invocation a process spawn. Override *legitimacy* — the
- * actual security gate — does use the helper on all platforms.
+ * macOS/Windows invocation a process spawn. Override *legitimacy*, the
+ * actual security gate, does use the helper on all platforms.
  */
 export function isAgentByAncestry(): boolean {
   if (process.platform !== 'linux') return false;
@@ -231,21 +230,18 @@ export function isAgentByAncestry(): boolean {
  * 4. If no → injected at or below agent boundary, illegitimate
  *
  * When ancestry verification is unavailable (unsupported platform, helper
- * missing/failed): fail closed — can't verify, don't trust.
+ * missing/failed): fail closed, can't verify, don't trust.
  */
 export function isOverrideLegitimate(overrideVar: string = OVERRIDE_VAR_GRAND): boolean {
   const { available, ancestors } = collectAncestry();
   if (!available) return false;
 
   if (ancestors.length === 0) {
-    // Linux: /proc itself unreadable (exotic containers) — historical fail
-    // open. A helper that ran but reported nothing is not trusted.
+    // Linux: /proc itself unreadable (exotic containers), historical fail open. A helper that ran but reported nothing is not trusted.
     return process.platform === 'linux';
   }
 
-  // Find the agent boundary: the HIGHEST ancestor (last in array, closest to init)
-  // that has an agent env var. We walk from current process upward, so the last
-  // match in the array is the highest in the tree.
+  // Find the agent boundary: the HIGHEST ancestor (last in array, closest to init) that has an agent env var. We walk from current process upward, so the last match in the array is the highest in the tree.
   let agentBoundaryIdx = -1;
   for (let i = ancestors.length - 1; i >= 0; i--) {
     if (hasAgentEnvVar(ancestors[i].env)) {
@@ -254,14 +250,10 @@ export function isOverrideLegitimate(overrideVar: string = OVERRIDE_VAR_GRAND): 
     }
   }
 
-  // No agent boundary found — not in agent mode, override is always legitimate
+  // No agent boundary found, not in agent mode, override is always legitimate
   if (agentBoundaryIdx === -1) return true;
 
-  // Check: does the agent boundary process's exec-time environment have the
-  // override? If the override is in the same process that introduced the
-  // agent env var, it was present when the agent started → set by user.
-  // If the override is NOT in the agent boundary but IS in a descendant,
-  // it was injected below the boundary.
+  // Check: does the agent boundary process's exec-time environment have the override? If the override is in the same process that introduced the agent env var, it was present when the agent started → set by user. If the override is NOT in the agent boundary but IS in a descendant, it was injected below the boundary.
   return ancestors[agentBoundaryIdx].env.has(overrideVar);
 }
 

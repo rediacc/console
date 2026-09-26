@@ -1,0 +1,5 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ only 2 label(s) parsed from fx/labels.yml (floor: 5). The file carries more than that, so this reader is broken, not the file.

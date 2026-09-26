@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 """PostCompact: open a new band epoch.
 
-Compaction is the event that makes every band the notice already announced
-untrue: usage has dropped, the transcript is a summary, and the recovery
-document matters more than it did a minute ago, not less. This hook bumps the
-epoch and clears the band ladder so `band-notice.py` will speak again on the
-way back up.
+Compaction is the event that makes every band the notice already announced untrue: usage has dropped, the transcript is a summary, and the recovery document matters more than it did a minute ago, not less. This hook bumps the epoch and clears the band ladder so `band-notice.py` will speak again on the way back up.
 
-It also records what the compaction produced. `compact_summary` is the only
-place a session can see what its own summary said, and its LENGTH is the
-cheapest available answer to "did the summary keep anything".
+It also records what the compaction produced. `compact_summary` is the only place a session can see what its own summary said, and its LENGTH is the cheapest available answer to "did the summary keep anything".
 
-PostCompact has no decision control, so there is nothing to return. Exit 0,
-always.
+PostCompact has no decision control, so there is nothing to return. Exit 0, always.
 """
 
 import sys
@@ -38,14 +31,10 @@ def main():
                 "reset_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "compact_trigger": event.get("trigger"),
                 "compact_summary_chars": len(summary),
-                # Survives the epoch: a disproven model cap is a fact about
-                # the session's window, and compaction does not change it.
+                # Survives the epoch: a disproven model cap is a fact about the session's window, and compaction does not change it.
                 "window_floor": st.get("window_floor"),
                 "threshold_corrected": st.get("threshold_corrected"),
-                # Deliberately NOT carried forward: usage, threshold, model.
-                # Usage in particular must not survive, or the usage-drop
-                # backstop in band-notice would fire on the next tool call and
-                # bump a second epoch for the same compaction.
+                # Deliberately NOT carried forward: usage, threshold, model. Usage in particular must not survive, or the usage-drop backstop in band-notice would fire on the next tool call and bump a second epoch for the same compaction.
             },
         )
     except Exception as exc:  # noqa: BLE001

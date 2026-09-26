@@ -1,0 +1,13 @@
+# twin .ci/scripts/build/pack-cli-npm.sh blob d9231defb48d8d5b124492d1f43d41e74a5bc74a
+exit: 1
+--- stdout ---
+--- stderr ---
+mkdir: Permission denied
+--- calls ---
+--- tree ---
+{
+  "alias": null,
+  "manifest": "{\n  \"name\": \"@rediacc/cli\",\n  \"version\": \"0.0.0-dev\",\n  \"private\": false\n}\n",
+  "out_dir": null,
+  "tmp_left": false
+}

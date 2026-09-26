@@ -10,7 +10,8 @@ i18n agent owns `private/renet/pkg/i18n/**` and is wrapping 18 hardcoded strings
 
 ## RCLONE IS GONE. Size-proven.
 
-`bin/renet-linux-amd64` 224,186,552 -> 201,269,432 B (-21.9 MiB); arm64 -20.4 MiB; `strings -a | grep -c rclone-linux` = 0 on both. `backup sync` no longer exists; push/pull/list/delete defaults flipped storage->machine. **SURVIVING DELIBERATELY:** `rdc storage browse` / `storage import` (operator's OWN rclone from PATH, the only in-product read path to the ~500 GiB OneDrive archive) and `ops rustfs configure-workers`. A `grep -rl rclone | xargs` sweep destroys both.
+`bin/renet-linux-amd64` 224,186,552 -> 201,269,432 B (-21.9 MiB); arm64 -20.4 MiB; `strings -a | grep -c rclone-linux` = 0 on both. `backup sync` no longer exists; push/pull/list/delete defaults flipped storage->machine. **SURVIVING DELIBERATELY:** `rdc storage browse` / `storage import` (operator's OWN rclone from PATH, the only in-product read path to the ~500 GiB OneDrive
+archive) and `ops rustfs configure-workers`. A `grep -rl rclone | xargs` sweep destroys both.
 
 **Capability delta the operator must decide:** `backup sync push --include-repo/--exclude-repo` filtered by repo NAME. `backup snapshot` has only `--repo <guid>`. Name filtering is gone; no replacement flag was invented.
 
@@ -20,7 +21,8 @@ i18n agent owns `private/renet/pkg/i18n/**` and is wrapping 18 hardcoded strings
 
 ## LOCAL ROUND TRIP PROVEN (hot). Cold was broken and is fixed.
 
-Source and restored sha256 identical, `cmp` clean, instrument proved twice. `--cold` could NEVER store a snapshot: my quiesce verify re-ran `discoverRunningRepos`, whose predicate is "the DOCKER DAEMON is up", while the barrier stops services with `Unmount:false` and the daemon only stops behind `if opts.Unmount`. It refused every repo it selected. Now checks CONTAINERS, fails closed. **Port 4800 is the ACCOUNT DEV GATEWAY (`.ci/config/constants.sh:59`), never an S3 endpoint** -- any watchdog text saying otherwise misdirects.
+Source and restored sha256 identical, `cmp` clean, instrument proved twice. `--cold` could NEVER store a snapshot: my quiesce verify re-ran `discoverRunningRepos`, whose predicate is "the DOCKER DAEMON is up", while the barrier stops services with `Unmount:false` and the daemon only stops behind `if opts.Unmount`. It refused every repo it selected. Now checks CONTAINERS, fails
+closed. **Port 4800 is the ACCOUNT DEV GATEWAY (`.ci/config/constants.sh:59`), never an S3 endpoint** -- any watchdog text saying otherwise misdirects.
 
 ## RELEASE BLOCKER, operator-only
 

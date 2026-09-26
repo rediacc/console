@@ -48,20 +48,10 @@ describe('renet licence tiers (generated contract)', () => {
         .filter(([name, entry]) => name.startsWith('repository_') && entry.tier === 'create')
         .map(([name]) => name)
         .sort();
-      // The class today, pinned literally so a wholesale regeneration that
-      // widens or empties it fails here instead of silently changing issuance.
+      // The class today, pinned literally so a wholesale regeneration that widens or empties it fails here instead of silently changing issuance.
       //
-      // ACKNOWLEDGMENT of the Wave-2 tier flip: the commit verbs joined this
-      // list when renet reconciled repository_commit / repository_commit_meta
-      // to CREATE. The CLI's answer is deliberately NOT the same for both.
-      // `repository_commit` provisions: its new immutable commit is a repo
-      // that does not exist yet, and renet's cmd layer validates a licence
-      // against that commit's name before doing anything
-      // (cmd/renet/repository_commit.go), so the CLI pre-issues for it.
-      // `repository_commit_meta` provisions nothing: it rewrites an already
-      // pushed commit's out-of-volume state mirror, its cmd layer runs no
-      // licence check at all, and the only check it meets resolves the
-      // EXISTING repo — so pre-issuance is subtracted for it.
+      // ACKNOWLEDGMENT of the Wave-2 tier flip: the commit verbs joined this list when renet reconciled repository_commit / repository_commit_meta to CREATE. The CLI's answer is deliberately NOT the same for both. `repository_commit` provisions: its new immutable commit is a repo that does not exist yet, and renet's cmd layer validates a licence against that commit's name before
+      // doing anything (cmd/renet/repository_commit.go), so the CLI pre-issues for it. `repository_commit_meta` provisions nothing: it rewrites an already pushed commit's out-of-volume state mirror, its cmd layer runs no licence check at all, and the only check it meets resolves the EXISTING repo, so pre-issuance is subtracted for it.
       expect(createTier).toEqual([
         'repository_commit',
         'repository_commit_meta',
@@ -78,9 +68,7 @@ describe('renet licence tiers (generated contract)', () => {
     });
 
     it('names the provisioning verbs whose target rides params.tag', () => {
-      // A param shape, not a tier: `repository_create` mints against
-      // `params.repository`, the other two against `params.tag` (the source
-      // repo is what `params.repository` names for them).
+      // A param shape, not a tier: `repository_create` mints against `params.repository`, the other two against `params.tag` (the source repo is what `params.repository` names for them).
       const tagTargeted = Object.keys(LICENSE_TIERS).filter(usesTagAsProvisioningTarget).sort();
       expect(tagTargeted).toEqual(['repository_commit', 'repository_fork']);
       expect(usesTagAsProvisioningTarget('repository_create')).toBe(false);
@@ -88,8 +76,7 @@ describe('renet licence tiers (generated contract)', () => {
     });
 
     it('rejects create-tier verbs outside the repository prefix', () => {
-      // Licensed by renet, but there is no repo to mint a licence against, so
-      // the CLI must not route them through pre-flight issuance.
+      // Licensed by renet, but there is no repo to mint a licence against, so the CLI must not route them through pre-flight issuance.
       for (const name of ['datastore_create', 'datastore_fork', 'kube_install']) {
         expect(getRenetFunctionLicenseTier(name)).toBe('create');
         expect(isRepoProvisioningFunction(name)).toBe(false);

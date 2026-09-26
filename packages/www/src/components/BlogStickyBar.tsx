@@ -7,12 +7,8 @@ interface Props {
 
 const DISMISSED_KEY = 'stickyBarDismissed';
 
-// Dismissal lives in sessionStorage, which the server does not have. Both renders must
-// start from the SAME value: reading sessionStorage during render made the server say
-// false and the browser say true for a returning reader, and React then discarded the
-// whole island rather than reconciling it. useSyncExternalStore is the shape React
-// provides for exactly this, with a separate server snapshot, so the stored value is
-// applied after hydration instead of during it.
+// Dismissal lives in sessionStorage, which the server does not have. Both renders must start from the SAME value: reading sessionStorage during render made the server say false and the browser say true for a returning reader, and React then discarded the whole island rather than reconciling it. useSyncExternalStore is the shape React provides for exactly this, with a separate
+// server snapshot, so the stored value is applied after hydration instead of during it.
 const dismissListeners = new Set<() => void>();
 
 function subscribeDismissed(onStoreChange: () => void): () => void {

@@ -1,0 +1,5 @@
+# twin .ci/scripts/ci/dispatch-watchdog.sh blob c8ca37cdeeadfc67b363eae6054040dec089ea5c
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ Dispatched watchdog generation 2 for run 123 on ref feat/x

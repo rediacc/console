@@ -106,8 +106,7 @@ export function createSessionManager(opts: {
   const closeInfo = new Map<string, { wallCloseMs: number }>();
   let currentSceneIndex = -1;
 
-  // Precompute each named session's last referencing scene index so it can
-  // be closed eagerly (bounds the recording length).
+  // Precompute each named session's last referencing scene index so it can be closed eagerly (bounds the recording length).
   const lastUse = new Map<string, number>();
   opts.storyboard.scenes.forEach((scene, i) => {
     if (scene.type === 'browser' && scene.session) lastUse.set(scene.session, i);
@@ -126,9 +125,7 @@ export function createSessionManager(opts: {
     const width: SessionWidth = spec.width ?? DEFAULT_SESSION_WIDTH;
     const { w, h } = paneSize(width);
     const scale = spec.recordScale && spec.recordScale > 1 ? spec.recordScale : 1;
-    // Record at the (possibly reduced) viewport size — Playwright never
-    // upscales frames into a larger canvas, it pads them; downstream ffmpeg
-    // filters do the upscale.
+    // Record at the (possibly reduced) viewport size — Playwright never upscales frames into a larger canvas, it pads them; downstream ffmpeg filters do the upscale.
     const viewport = { width: Math.round(w / scale), height: Math.round(h / scale) };
     const { url, proc } = await resolvePageSource(spec, `session ${name} (scene ${sceneId})`);
     const wallCreateMs = Date.now();
@@ -244,11 +241,10 @@ export function createSessionManager(opts: {
       return create(name, spec, sceneId, last);
     },
 
-    async acquireAnonymous(spec, need, sceneId) {
+    acquireAnonymous(spec, need, sceneId) {
       const name = `__anon:${sceneId}:${live.size + closed.size}`;
       console.log(`[video] creating anonymous session for scene ${sceneId}...`);
-      // Anonymous sessions live exactly as long as their own scene: the
-      // loop's closeFinished(currentSceneIndex) call closes them.
+      // Anonymous sessions live exactly as long as their own scene: the loop's closeFinished(currentSceneIndex) call closes them.
       return create(name, { ...spec, width: need }, sceneId, currentSceneIndex);
     },
 
@@ -302,8 +298,7 @@ export function createSessionManager(opts: {
       const durSec = end - start;
       cutSegmentMp4(session.result.webm, start, durSec, outMp4, padFilter);
       if (opts.debugFramesDir) {
-        // Sanitize ':' (and other Windows-illegal chars) from scene IDs like
-        // 'vscode-versions:left' so debug frame filenames never break checkout.
+        // Sanitize ':' (and other Windows-illegal chars) from scene IDs like 'vscode-versions:left' so debug frame filenames never break checkout.
         const safeId = sceneId.replaceAll(/[:<>"|?*]/g, '-');
         extractPosterJpg(
           session.result.webm,

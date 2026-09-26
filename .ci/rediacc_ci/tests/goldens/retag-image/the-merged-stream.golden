@@ -1,0 +1,18 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 0
+--- stdout ---
+→ Re-tagging all images...
+→ Re-tagging renet: ci-1 -> 0.5.0
+✓ Pushed :latest tag
+✓ Re-tagged renet successfully
+→ Re-tagging rdc: ci-1 -> 0.5.0
+✓ Pushed :latest tag
+✓ Re-tagged rdc successfully
+
+✓ Re-tag summary: 2 succeeded, 0 failed
+--- stderr ---
+--- calls ---
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/renet:0.5.0	ghcr.io/rediacc/renet:ci-1
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/renet:latest	ghcr.io/rediacc/renet:ci-1
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/rdc:0.5.0	ghcr.io/rediacc/rdc:ci-1
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/rdc:latest	ghcr.io/rediacc/rdc:ci-1

@@ -34,6 +34,16 @@ import {
   RdcConfigSchema,
 } from '../index.js';
 
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
+
 /** The authoritative family list, straight from the schema. */
 function resourceFamilyKeys(): string[] {
   const resources = RdcConfigSchema.shape.resources as z.ZodOptional<z.ZodObject<z.ZodRawShape>>;
@@ -42,12 +52,10 @@ function resourceFamilyKeys(): string[] {
 
 /**
  * Every top-level RdcConfig section, classified. A section is either part of
- * the plaintext envelope, carried inside the encrypted blob, or host-local by
- * design (never synced, and therefore never committed — see the `remote` and
- * `masterPasswordVerifier` entries in sensitivity.ts for the doctrine).
- * A new top-level section fails the classification test until it is added to
- * exactly one of these lists AND (if carried) to SENSITIVE_FIELDS +
- * toFullConfig + fullConfigToRdcConfig.
+ * the plaintext envelope, carried inside the encrypted blob, or device-local
+ * (DEVICE_LOCAL_POINTERS: never synced, and therefore never committed).
+ * A new top-level section syncs by default (T17); this list only pins the
+ * fixture's expectations, device-local-registry.test.ts is the gate.
  */
 const ENVELOPE_SECTIONS = ['schemaVersion', 'id', 'version'] as const;
 const CARRIED_SECTIONS = [
@@ -57,8 +65,9 @@ const CARRIED_SECTIONS = [
   'resources',
   'infra',
   'policy',
+  'state',
 ] as const;
-const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath', 'state'] as const;
+const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath'] as const;
 
 /**
  * A config populating EVERY resource family (schema-validated below, so a
@@ -171,13 +180,18 @@ async function pushPullRoundTrip(config: RdcConfig): Promise<RdcConfig> {
   const cek = await generateCek();
   const sdkDerived = await generateAesKey();
   const payload = await buildConfigPushPayload(config, {
+    storeId: STORE_ID,
     version: config.version + 1,
     sdkEpoch: 42,
     sdkDerived,
     cek,
   });
   // Real crypto both ways — the wire shape is exactly what a pull hands back.
-  const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+  const decrypted = await decryptConfigPullPayload(payload, {
+    cek,
+    sdkDerived,
+    binding: readerBinding(payload),
+  });
   return fullConfigToRdcConfig(decrypted);
 }
 
@@ -186,9 +200,7 @@ describe('resource families round trip', () => {
     const config = allFamiliesConfig();
     expect(() => RdcConfigSchema.parse(config)).not.toThrow();
 
-    // If this fails, a NEW family was added to ResourcesSchema: populate it in
-    // this fixture AND carry it in toFullConfig / fullConfigToRdcConfig /
-    // SENSITIVE_FIELDS, or it will be silently dropped by config sync.
+    // If this fails, a NEW family was added to ResourcesSchema: populate it in this fixture AND carry it in toFullConfig / fullConfigToRdcConfig / SENSITIVE_FIELDS, or it will be silently dropped by config sync.
     const missing = resourceFamilyKeys().filter(
       (key) => (config.resources as Record<string, unknown>)[key] === undefined
     );
@@ -208,10 +220,7 @@ describe('resource families round trip', () => {
 
   it('every top-level section is classified envelope, carried, or host-local', () => {
     const classified = [...ENVELOPE_SECTIONS, ...CARRIED_SECTIONS, ...HOST_LOCAL_SECTIONS];
-    // If this fails, a NEW top-level section was added to RdcConfigSchema:
-    // decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS +
-    // both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and
-    // make sure none of its leaves are committed in sensitivity.ts).
+    // If this fails, a NEW top-level section was added to RdcConfigSchema: decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS + both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and make sure none of its leaves are committed in sensitivity.ts).
     expect([...Object.keys(RdcConfigSchema.shape)].sort()).toEqual([...classified].sort());
   });
 
@@ -227,29 +236,30 @@ describe('resource families round trip', () => {
     }
   });
 
-  it('carried top-level sections survive; host-local sections stay home', async () => {
+  it('carried top-level sections survive; device-local sections stay home', async () => {
     const original = allFamiliesConfig();
     const rebuilt = await pushPullRoundTrip(original);
 
-    expect(rebuilt.account).toEqual(original.account);
+    // Everything in `account` but the device's login (DEVICE_LOCAL_POINTERS).
+    const syncedAccount: Record<string, unknown> = { ...(original.account ?? {}) };
+    delete syncedAccount.accountServer;
+    delete syncedAccount.e2ePublicKey;
+    expect(rebuilt.account).toEqual(syncedAccount);
+    expect(rebuilt.account?.accountServer).toBeUndefined();
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.policy).toEqual(original.policy);
+    // Runtime state is shared by every device of a store (T17): networkIds above all.
+    expect(rebuilt.state).toEqual(original.state);
 
-    // Host-local sections must NOT be resurrected from the blob: a pulled
-    // config must never overwrite this host's store pointer, runtime state, or
-    // at-rest settings with another host's.
+    // Device-local sections must NOT be resurrected from the blob: a pulled config must never overwrite this device's store pointer or at-rest settings with another device's.
     expect(rebuilt.remote).toBeUndefined();
-    expect(rebuilt.state).toBeUndefined();
     expect(rebuilt.renetPath).toBeUndefined();
     expect(rebuilt.encryption).toEqual({ mode: 'plaintext' });
   });
 
   it('a re-push after pull commits exactly the pointer set the server stored', async () => {
-    // THE anti-downgrade property that broke: the editor re-pushes the rebuilt
-    // config, so pathsToCommit(rebuilt) is what the next push commits. Any
-    // committed-but-not-carried section makes this set smaller than the
-    // original's and the server rejects the push as a conflict.
+    // THE anti-downgrade property that broke: the editor re-pushes the rebuilt config, so pathsToCommit(rebuilt) is what the next push commits. Any committed-but-not-carried section makes this set smaller than the original's and the server rejects the push as a conflict.
     const original = allFamiliesConfig();
     const before = pathsToCommit(original);
     const after = pathsToCommit(await pushPullRoundTrip(original));
@@ -268,11 +278,7 @@ describe('resource families round trip', () => {
 });
 
 describe('datastore fork keys', () => {
-  // `datastore fork` records the fork as a FLAT `name:tag` entry with a
-  // `parent` backref (mirroring renet's machine-side registry key), so the
-  // datastores record key must admit the colon that repository family keys
-  // deliberately forbid. Regression: the drill's `drill-ds:remeter` entry
-  // made every subsequent config load fail with "Invalid key in record".
+  // `datastore fork` records the fork as a FLAT `name:tag` entry with a `parent` backref (mirroring renet's machine-side registry key), so the datastores record key must admit the colon that repository family keys deliberately forbid. Regression: the drill's `drill-ds:remeter` entry made every subsequent config load fail with "Invalid key in record".
   it('accepts a name:tag datastores key in resources and state', () => {
     const config = allFamiliesConfig();
     const resources = config.resources as { datastores: Record<string, unknown> };

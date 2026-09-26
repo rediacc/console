@@ -1,0 +1,14 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Generating CLI manifest v1.2.3
+✓   Input: in
+✓   Output: out/manifest.json
+✗ jq is required for manifest generation
+--- calls ---
+CALL date	-u	+%Y-%m-%dT%H:%M:%SZ
+--- files ---
+{
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

@@ -13,7 +13,7 @@
  * in 13 locales. That is now this gate's corpus.
  *
  * The tutorial STORYBOARDS were considered and deliberately not taken, even though they
- * are a real current source of on-camera commands. `scripts/check-tutorial-commands.ts`
+ * are a real current source of on-camera commands. `scripts/gates/check-tutorial-commands.ts`
  * already validates them with the same `parseRdcCommand`, field-aware so it reads
  * `commandFull`/`teardownCommand` and never the abbreviated `command` label (measured:
  * 18 storyboards, 101 runnable commands, green). Pointing a second gate at that surface
@@ -171,9 +171,7 @@ function validateEnglishCommands(errors, capabilityMap) {
     const frozen = frozenById.get(item.sourceId);
 
     if (parsed.ok) {
-      // A FIXED command whose freeze entry survives is RED. Without this branch the
-      // ratchet only turns one way and a stale entry silently pre-authorises the next
-      // breakage at the same source.
+      // A FIXED command whose freeze entry survives is RED. Without this branch the ratchet only turns one way and a stale entry silently pre-authorises the next breakage at the same source.
       if (frozen) {
         addError(
           errors,
@@ -203,12 +201,8 @@ function validateEnglishCommands(errors, capabilityMap) {
       continue;
     }
 
-    // NOTE ON WHAT IS NOT SKIPPED. This used to wave through `excess-positional-args`
-    // and `missing-mandatory-option`, on the reasoning that "landing page demos use
-    // simplified commands for visual appeal". That was true of the ANIMATED TERMINAL
-    // this gate was written for, and it is not true of `bottomCta.command`, which the
-    // page presents in a copy-me code block as the command to run. An abbreviated
-    // decoration and an unrunnable instruction are different things.
+    // NOTE ON WHAT IS NOT SKIPPED. This used to wave through `excess-positional-args` and `missing-mandatory-option`, on the reasoning that "landing page demos use simplified commands for visual appeal". That was true of the ANIMATED TERMINAL this gate was written for, and it is not true of `bottomCta.command`, which the page presents in a copy-me code block as the command to run.
+    // An abbreviated decoration and an unrunnable instruction are different things.
     const mapEntry = capabilityMap.get(item.sourceId);
     if (!mapEntry) {
       addError(
@@ -259,8 +253,7 @@ function validateEnglishCommands(errors, capabilityMap) {
     }
   }
 
-  // A frozen entry whose SOURCE is gone is stale too (the CTA was deleted, or the key
-  // renamed), and it would otherwise sit here forever describing nothing.
+  // A frozen entry whose SOURCE is gone is stale too (the CTA was deleted, or the key renamed), and it would otherwise sit here forever describing nothing.
   for (const entry of KNOWN_UNRUNNABLE_CTA_COMMANDS) {
     if (!seenSourceIds.has(entry.sourceId)) {
       addError(
@@ -359,14 +352,9 @@ function printSummary(errors, mapEntries, strictMode, counts) {
   // unsupported=0" — and then "✓ valid". Read cold, that says "this gate validated nothing",
   // and it very nearly got the gate deleted as vacuous.
   //
-  // It is the opposite. The capability map is the list of commands EXCUSED from parsing
-  // (with gap notes). An EMPTY map is the STRICTEST possible setting: nothing is excused, so
-  // every rdc command on the landing surfaces must parse against the live CLI. This gate is
-  // what caught the homepage hero teaching `rdc cluster fork --name prod` — a command the P4
-  // reshape deleted.
+  // It is the opposite. The capability map is the list of commands EXCUSED from parsing (with gap notes). An EMPTY map is the STRICTEST possible setting: nothing is excused, so every rdc command on the landing surfaces must parse against the live CLI. This gate is what caught the homepage hero teaching `rdc cluster fork --name prod` — a command the P4 reshape deleted.
   //
-  // A gate whose success message understates what it did is one bad reading away from being
-  // removed. So it now reports the commands it CHECKED first.
+  // A gate whose success message understates what it did is one bad reading away from being removed. So it now reports the commands it CHECKED first.
   console.log(
     colors.dim(
       `Collected ${counts.total} landing command block(s); ${counts.rdcChecked} are rdc ` +
@@ -442,18 +430,10 @@ function main() {
   const counts = validateEnglishCommands(errors, capabilityMap);
   validateLocaleParity(errors);
 
-  // ZERO commands has two causes that need opposite responses, and only one of them is
-  // "nothing to do". If a landing command SOURCE exists and the collector yields nothing,
-  // the collector is broken and reporting success is the empty-scan failure. If no source
-  // exists at all, there is genuinely nothing to validate.
+  // ZERO commands has two causes that need opposite responses, and only one of them is "nothing to do". If a landing command SOURCE exists and the collector yields nothing, the collector is broken and reporting success is the empty-scan failure. If no source exists at all, there is genuinely nothing to validate.
   //
-  // THIS GATE HAS ALREADY BEEN ON BOTH SIDES OF THAT LINE, which is why the refusal is
-  // worth its length. The `terminal.lines` blocks and index.astro's `heroTerminalLines`
-  // both went away for real, so the honest answer became "no sources" and the gate exited 0
-  // on an empty scan for weeks. It read as coverage. The commands had not left the site,
-  // they had MOVED to `bottomCta.command`, which the collector did not know about. So the
-  // count below spans EVERY known landing command shape, and adding a shape to the site
-  // without adding it here reproduces exactly that failure.
+  // THIS GATE HAS ALREADY BEEN ON BOTH SIDES OF THAT LINE, which is why the refusal is worth its length. The `terminal.lines` blocks and index.astro's `heroTerminalLines` both went away for real, so the honest answer became "no sources" and the gate exited 0 on an empty scan for weeks. It read as coverage. The commands had not left the site, they had MOVED to `bottomCta.command`,
+  // which the collector did not know about. So the count below spans EVERY known landing command shape, and adding a shape to the site without adding it here reproduces exactly that failure.
   const sources = countLandingTerminalSources('en');
   const sourceCount =
     (sources.homepageArray ? 1 : 0) + sources.terminalBlocks + sources.ctaCommands;

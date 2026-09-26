@@ -1,48 +1,31 @@
 """When CI goes red, put the commits that could have caused it in front of the session.
 
-THE BLIND SPOT, and it is the operator's observation rather than a theory: an agent
-debugging a failure reads the CODE and never the HISTORY. This repo writes unusually
-substantial commit messages -- they carry measurements, rejected hypotheses and
-corrections -- so the cheapest evidence available is the one thing systematically skipped.
+THE BLIND SPOT, and it is the operator's observation rather than a theory: an agent debugging a failure reads the CODE and never the HISTORY. This repo writes unusually substantial commit messages -- they carry measurements, rejected hypotheses and corrections -- so the cheapest evidence available is the one thing systematically skipped.
 
-MEASURED ON THE SESSION THAT PROMPTED THIS. `packages/www/scripts/
-test-tutorial-player-release-gate.js` went red four times. Across 2,494 Bash calls in that
-session's transcript there were ZERO `git log`/`blame`/`bisect` invocations naming it,
+MEASURED ON THE SESSION THAT PROMPTED THIS. `packages/www/scripts/ test-tutorial-player-release-gate.js` went red four times. Across 2,494 Bash calls in that session's transcript there were ZERO `git log`/`blame`/`bisect` invocations naming it,
 while eight lines of `git log --oneline -- <that file>` held both decisive facts: the
-readiness matcher had changed minutes earlier (and was the regression), and the same gate
-had failed before. The session guessed wrong twice and only got there via a downloaded
-artifact, hours later.
+readiness matcher had changed minutes earlier (and was the regression), and the same gate had failed before. The session guessed wrong twice and only got there via a downloaded artifact, hours later.
 
-WHY THIS IS MECHANICAL AND NOT A JUDGED RULE, which is structural and not a preference.
-The red-CI path emits and EXITS before the judge is ever reached: `wl_checks` adds the
-`ci-red` violation, the `if violations and not pause:` block calls `C.emit`, and
-`wl_core.emit` ends with `sys.exit(0)` -- all of it upstream of `wl_judge.run_judge`. A
-judged history rule could not fire on the stop that matters. And no model is needed: every
-fact wanted here comes from `git log` plus the failing job name already in hand.
+WHY THIS IS MECHANICAL AND NOT A JUDGED RULE, which is structural and not a preference. The red-CI path emits and EXITS before the judge is ever reached: `wl_checks` adds the `ci-red` violation, the `if violations and not pause:` block calls `C.emit`, and `wl_core.emit` ends with `sys.exit(0)` -- all of it upstream of `wl_judge.run_judge`. A judged history rule could not fire on
+the stop that matters. And no model is needed: every fact wanted here comes from `git log` plus the failing job name already in hand.
 
-IT DEMANDS NOTHING, DELIBERATELY. It appends facts to a block that is already being
-emitted. That is what keeps it from becoming a wall -- this repo has the scar of a rule
-that fired on every stop -- and it cannot be faked, because there is no claim to make.
-Enforcement (checking the session actually ran the command) is a later increment, and only
+IT DEMANDS NOTHING, DELIBERATELY. It appends facts to a block that is already being emitted. That is what keeps it from becoming a wall -- this repo has the scar of a rule that fired on every stop -- and it cannot be faked, because there is no claim to make. Enforcement (checking the session actually ran the command) is a later increment, and only
 if the printed facts turn out to be skimmed.
 """
 
 import re
 import subprocess
 
-# The literal string the block body carries. A later increment greps the transcript for it
-# to confirm the demand was issued, so it is load-bearing rather than decorative.
+# The literal string the block body carries. A later increment greps the transcript for it to confirm the demand was issued, so it is load-bearing rather than decorative.
 HISTORY_MARKER = "READ THE HISTORY BEFORE YOU GUESS"
 
 # How far back to look when no last-green head is banked.
 FALLBACK_WINDOW = "HEAD~10"
-# Commits and suspects shown. A block nobody finishes reading is a block that taught
-# nothing, and the top few are where a regression from this session's own work will be.
+# Commits and suspects shown. A block nobody finishes reading is a block that taught nothing, and the top few are where a regression from this session's own work will be.
 MAX_COMMITS = 8
 MAX_SUSPECTS = 5
 
-# Tokens too generic to imply a connection between a job name and a path. Without this,
-# "test" alone matches most of the tree and every commit looks like a suspect.
+# Tokens too generic to imply a connection between a job name and a path. Without this, "test" alone matches most of the tree and every commit looks like a suspect.
 STOPWORDS = frozenset(
     (
         "test",
@@ -99,21 +82,14 @@ def tokens(text):
 def suspects(root, window, job_tokens):
     """[(sha, subject, [paths])] for commits in `window` touching a matching path.
 
-    THE JOB -> FILE BRIDGE IS A TOKEN MATCH, NOT A RESOLUTION CHAIN. An exact chain does
-    exist -- workflow step name, to the `npm run` key, to the workspace script, to the file
-    -- and it was rejected: it is three files of parsing across a workspace, and this repo
-    already has `wl_reggate.gate_reachable` on record as a manifest-walking probe that
-    returned False for EVERY gate, "the same defect as a check that cannot fail". A token
-    match needs no parsing and degrades to silence rather than to a confident wrong answer.
+    THE JOB -> FILE BRIDGE IS A TOKEN MATCH, NOT A RESOLUTION CHAIN. An exact chain does exist -- workflow step name, to the `npm run` key, to the workspace script, to the file -- and it was rejected: it is three files of parsing across a workspace, and this repo already has `wl_reggate.gate_reachable` on record as a manifest-walking probe that returned False for EVERY gate, "the
+    same defect as a check that cannot fail". A token match needs no parsing and degrades to silence rather than to a confident wrong answer.
     """
     if not job_tokens:
         return []
     out = []
-    # AN EXPLICIT RECORD SEPARATOR, because `--name-only` puts a BLANK LINE between the
-    # format line and the file list. Splitting on "\n\n" therefore cuts INSIDE a commit,
-    # not between commits, and every block after the first begins with a path -- so the
-    # separator test failed and every commit was skipped. Caught by running it against the
-    # real failure and getting a confident "NONE" for a file two commits had just touched.
+    # AN EXPLICIT RECORD SEPARATOR, because `--name-only` puts a BLANK LINE between the format line and the file list. Splitting on "\n\n" therefore cuts INSIDE a commit, not between commits, and every block after the first begins with a path -- so the separator test failed and every commit was skipped. Caught by running it against the real failure and getting a confident "NONE"
+    # for a file two commits had just touched.
     log = _git(root, "log", "--format=%x1e%H%x1f%s", "--name-only", window)
     if not log:
         return []
@@ -131,10 +107,7 @@ def suspects(root, window, job_tokens):
 def render(root, rows, last_green):
     """The block text, or "" when there is nothing worth saying.
 
-    RETURNING "" IS A REAL ANSWER in three of the four cases, which is what stops this
-    becoming a deferral pile: no window, no commits, or no commit touching anything named
-    like the failing job. That last one is affirmative evidence for a FLAKE, so it is
-    printed rather than swallowed.
+    RETURNING "" IS A REAL ANSWER in three of the four cases, which is what stops this becoming a deferral pile: no window, no commits, or no commit touching anything named like the failing job. That last one is affirmative evidence for a FLAKE, so it is printed rather than swallowed.
     """
     if not rows:
         return ""
@@ -157,9 +130,7 @@ def render(root, rows, last_green):
         " (no last-green head banked yet, so this is a guess)" if not last_green else "",
     )
     if not found:
-        # AFFIRMATIVE EVIDENCE, not silence. "Nothing you changed is named like the thing
-        # that broke" is the correct read of a flake, and it is the read this session got
-        # wrong three times before an agent measured the base rate.
+        # AFFIRMATIVE EVIDENCE, not silence. "Nothing you changed is named like the thing that broke" is the correct read of a flake, and it is the read this session got wrong three times before an agent measured the base rate.
         return (
             "%s\n  NONE of them touches a file named like the failing job. That is evidence\n"
             "  FOR a flake and against a regression -- check whether this job has failed\n"
@@ -170,19 +141,27 @@ def render(root, rows, last_green):
         body.append("    %s  %s" % (sha, subject[:88]))
         body.extend("               %s" % p for p in paths)
     body.append("  Start here:  git log -p -1 %s -- %s" % (found[0][0], found[0][2][0]))
+    # THE SECOND LAYER OF THE SAME EVIDENCE (W12 P2.3). The commits above say what CHANGED in these files; a compacted plan record says why the plan wanted them that way, which is the half a `git log` cannot show. Appended here rather than at the wl_checks call site because the suspect paths only exist here.
+    #
+    # DEGRADES TO SILENCE, matching this module's stated fail semantics: it can only ADD to a block already being emitted, so losing it loses a hint and can never grant an exit that was otherwise refused.
+    try:
+        import wl_planrec as R  # noqa: PLC0415 -- optional, and the block must not depend on it
+
+        why = R.why_for_paths(root, [pth for _s, _sub, paths in found for pth in paths])
+        if why:
+            body.append("")
+            body.extend("  " + ln for ln in why.split("\n"))
+    except Exception:  # noqa: BLE001 -- see above
+        pass
     return "\n".join(body)
 
 
 def apply_verdict(root, rows, last_green):
     """(kind, text). kind is 'fire' when there is something to print, else 'silent'.
 
-    Shaped like the judged rules' `apply_verdict` on purpose: `check_judged_rule_wiring`
-    discovers a rule by a `*_MARKER` plus this function, so deleting the call site turns
-    that gate red. A rule nothing calls does not run, and this one has no other symptom.
+    Shaped like the judged rules' `apply_verdict` on purpose: `check_judged_rule_wiring` discovers a rule by a `*_MARKER` plus this function, so deleting the call site turns that gate red. A rule nothing calls does not run, and this one has no other symptom.
 
-    FAIL SEMANTICS ARE wl_classsweep's: any git failure or unreadable window degrades to
-    silent. It can only ADD to a block that is already happening, so degrading loses a
-    hint and can never grant an exit that was otherwise refused.
+    FAIL SEMANTICS ARE wl_classsweep's: any git failure or unreadable window degrades to silent. It can only ADD to a block that is already happening, so degrading loses a hint and can never grant an exit that was otherwise refused.
     """
     try:
         text = render(root, rows, last_green)

@@ -1,0 +1,22 @@
+# rediacc_ci allowlist golden
+# reader: ts:scripts/lib/blocker-validator.ts::parseBlockeredList
+# command: parseBlockeredList(<corpus>, '#'); printf '%s\t%s\t%s\n' line entry blocker
+# projection: records
+# source: .ci/config/content-quality-allowlist.txt
+# corpus: corpus/ci-config-content-quality-allowlist.list
+# comment-char: #
+# corpus-sha256: 0ab00d825852ec420c1a17c68f7d039508a01a2eedd355013b921b78d2aa6434
+# ---
+6	packages/www/src/content/docs/en/cli-application.md	
+7	packages/www/src/content/docs/ar/cli-application.md	
+8	packages/www/src/content/docs/de/cli-application.md	
+9	packages/www/src/content/docs/es/cli-application.md	
+10	packages/www/src/content/docs/fr/cli-application.md	
+11	packages/www/src/content/docs/ja/cli-application.md	
+12	packages/www/src/content/docs/ru/cli-application.md	
+13	packages/www/src/content/docs/tr/cli-application.md	
+14	packages/www/src/content/docs/zh/cli-application.md	
+15	packages/www/src/content/docs/et/cli-application.md	
+16	packages/www/src/content/docs/it/cli-application.md	
+17	packages/www/src/content/docs/ko/cli-application.md	
+18	packages/www/src/content/docs/pt/cli-application.md	

@@ -227,23 +227,14 @@ export type ApiTokenScope =
   | 'subscription:read'
   | 'audit:write'
   | 'delegation:renew'
-  // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an
-  // executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is
-  // privileged (owner/admin only); `proxy:exec` is creatable by any member.
+  // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
   | 'proxy:admin'
-  // Config plane: `config:enroll` lets a headless CLI add a password key slot to
-  // its own config-store membership (rdc config remote enable --password).
-  // Creatable by any member — not privileged.
+  // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --password). Creatable by any member — not privileged.
   | 'config:enroll'
-  // Backup plane: `backup:read` lets a CLI query the subscription's backup
-  // storage state through the tunnel (usage, manifest index, verify). Read-only,
-  // creatable by any member — not privileged. The MACHINE never holds this: it
-  // commits its own manifests via the license-blob storage session.
+  // Backup plane: `backup:read` lets a CLI query the subscription's backup storage state through the tunnel (usage, manifest index, verify). Read-only, creatable by any member — not privileged. The MACHINE never holds this: it commits its own manifests via the license-blob storage session.
   | 'backup:read'
-  // `backup:manage` declares the server-enforced GFS retention policy, which
-  // SCHEDULES DELETIONS. It is deliberately not folded into `backup:read`: a
-  // token minted to show a usage bar must not be able to shrink history.
+  // `backup:manage` declares the server-enforced GFS retention policy, which SCHEDULES DELETIONS. It is deliberately not folded into `backup:read`: a token minted to show a usage bar must not be able to shrink history.
   | 'backup:manage';
 
 /**
@@ -329,3 +320,57 @@ export interface SubscriptionValidationResult {
   /** Whether the subscription is in grace period */
   inGracePeriod?: boolean;
 }
+
+// ─── API token IP rebind (PLAN-token-ip-rebind.md) ───────────────────── A first-use API token is bound to the IP of its first caller. When the caller's address changes, the account server refuses with the body below, and a current TOTP code from the token creator's authenticator moves the binding (POST API_TOKEN_IP_REBIND_PATH with the same bearer token).
+
+/** `code` on the 403 a first-use token gets from an address other than its bound one. */
+export const TOKEN_IP_MISMATCH = 'TOKEN_IP_MISMATCH' as const;
+
+/**
+ * What can clear a TOKEN_IP_MISMATCH: 'totp' when the token's creator has 2FA
+ * enabled (the rebind route will accept a code), 'relogin' otherwise.
+ */
+export type TokenIpRebindHint = 'totp' | 'relogin';
+
+/** The 403 body. `error` is byte-identical to the pre-rebind text, so older CLIs still match it. */
+export interface TokenIpMismatchBody {
+  error: string;
+  code: typeof TOKEN_IP_MISMATCH;
+  rebind: TokenIpRebindHint;
+}
+
+/** The rebind route, authenticated by the token being moved (no scope, no IP check). */
+export const API_TOKEN_IP_REBIND_PATH = '/account/api/v1/api-token-ip/rebind' as const;
+
+export interface ApiTokenIpRebindRequest {
+  /** A current 6-digit TOTP code (/^\d{6}$/). Backup codes are refused. */
+  code: string;
+}
+
+export interface ApiTokenIpRebindResponse {
+  /** false when the token was already bound to the caller's address (nothing written, no code spent). */
+  rebound: boolean;
+  boundIp: string;
+}
+
+/**
+ * Refusal codes from the rebind route (on top of TOKEN_IP_MISMATCH from the
+ * auth middleware and TOTP_INVALID for a wrong code):
+ * - TOTP_INVALID 400, body carries `attemptsRemaining`
+ * - TOTP_REPLAYED 409, the code's time step is at or below the last one used
+ * - IP_REBIND_LOCKED 429, body carries `retryAfter` (seconds) plus a Retry-After header
+ * - IP_REBIND_DISABLED 403, the failure cap was reached; only re-login helps
+ * - IP_REBIND_UNAVAILABLE 409, body carries `reason`
+ * - CLIENT_IP_UNKNOWN 400, the caller's address cannot be determined
+ */
+export const API_TOKEN_IP_REBIND_ERROR_CODES = {
+  TOTP_INVALID: 'TOTP_INVALID',
+  TOTP_REPLAYED: 'TOTP_REPLAYED',
+  IP_REBIND_LOCKED: 'IP_REBIND_LOCKED',
+  IP_REBIND_DISABLED: 'IP_REBIND_DISABLED',
+  IP_REBIND_UNAVAILABLE: 'IP_REBIND_UNAVAILABLE',
+  CLIENT_IP_UNKNOWN: 'CLIENT_IP_UNKNOWN',
+} as const;
+
+/** `reason` on IP_REBIND_UNAVAILABLE. */
+export type ApiTokenIpRebindUnavailableReason = 'not_first_use' | 'no_creator' | 'no_totp';

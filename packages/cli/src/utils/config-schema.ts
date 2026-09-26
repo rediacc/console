@@ -55,19 +55,14 @@ export const MachineConfigSchema = z.object({
 
 // ── Per-repo secrets ──────────────────────────────────────────────
 //
-// Single source of truth for the secret schemas + size caps is
-// config-schema/schemas.ts in packages/shared (spec 04 §5.1: the caps must live in one place). Imported
-// and re-exported here so the flat `RepositoryConfigSchema` below (used by
-// `config repository add` validation) and existing importers keep working.
+// Single source of truth for the secret schemas + size caps is config-schema/schemas.ts in packages/shared (spec 04 §5.1: the caps must live in one place). Imported and re-exported here so the flat `RepositoryConfigSchema` below (used by `config repository add` validation) and existing importers keep working.
 import {
   BackupDestinationSchema,
   SecretEntrySchema,
   SecretKeySchema,
 } from '@rediacc/shared/config-schema';
 
-// BackupDestinationSchema is re-exported, never redefined. A hand-maintained copy
-// lived here and drifted: it validated `config repository`/strategy input, so any
-// field the shared schema gained was stripped before it reached the config.
+// BackupDestinationSchema is re-exported, never redefined. A hand-maintained copy lived here and drifted: it validated `config repository`/strategy input, so any field the shared schema gained was stripped before it reached the config.
 export { BackupDestinationSchema, SecretEntrySchema, SecretKeySchema };
 
 export const RepositoryConfigSchema = z.object({

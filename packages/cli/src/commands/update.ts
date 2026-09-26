@@ -4,11 +4,13 @@ import { dirname, join } from 'node:path';
 import { DEFAULTS, STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
-import { t } from '../i18n/index.js';
 import { configFileStorage } from '../adapters/config-file-storage.js';
+import { t } from '../i18n/index.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
 import { getEffectiveConfigName } from '../services/config/config-name.js';
+import { updateSyncedConfig } from '../services/config/synced-write.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr } from '../services/core/request-context.js';
 import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update/update-state.js';
 import {
@@ -45,7 +47,7 @@ export async function handleChannelSwitch(
     outputService.error(t('commands.update.configMissing', { name }));
     process.exit(1);
   }
-  await configFileStorage.update(name, (cfg) => ({
+  await updateSyncedConfig(name, (cfg) => ({
     ...cfg,
     account: { ...(cfg.account ?? {}), updateChannel: channel },
   }));
@@ -101,12 +103,12 @@ async function handleUpdateResult(
   result: Awaited<ReturnType<typeof performUpdate>>
 ): Promise<void> {
   if (result.success && result.error === 'commands.update.errors.binaryBusy') {
-    process.stderr.write('\n');
+    writeStderr('\n');
     outputService.info(t('commands.update.stagedFallback', { version: result.toVersion }));
     return;
   }
   if (result.success && result.fromVersion !== result.toVersion) {
-    process.stderr.write('\n');
+    writeStderr('\n');
     outputService.success(
       t('commands.update.success', { from: result.fromVersion, to: result.toVersion })
     );
@@ -129,18 +131,10 @@ async function handleUpdateResult(
  * Handle the update execution flow.
  */
 async function handleUpdate(force: boolean): Promise<void> {
-  // applyPendingUpdate may already have replaced the on-disk binary at
-  // startup (index.ts:62). When that happened, the in-memory VERSION constant
-  // is the OLD version (baked into the binary that just got replaced), so a
-  // naive "VERSION vs manifest" comparison would falsely decide we are still
-  // outdated and run selfReplace again — that overwrites .old with the same
-  // new version, leaving `current` and `.old` at the same bytes and turning
-  // `rdc update --rollback` into a silent no-op.
+  // applyPendingUpdate may already have replaced the on-disk binary at startup (index.ts:62). When that happened, the in-memory VERSION constant is the OLD version (baked into the binary that just got replaced), so a naive "VERSION vs manifest" comparison would falsely decide we are still outdated and run selfReplace again, that overwrites .old with the same new version, leaving
+  // `current` and `.old` at the same bytes and turning `rdc update --rollback` into a silent no-op.
   //
-  // We still call checkForUpdate() so that a release published AFTER the
-  // staged version (e.g. startup applied 1.0.7, manifest now at 1.0.8) is
-  // not silently missed. The decision uses the effective post-apply version
-  // (`appliedAtStartup ?? VERSION`) instead of the stale in-memory VERSION.
+  // We still call checkForUpdate() so that a release published AFTER the staged version (e.g. startup applied 1.0.7, manifest now at 1.0.8) is not silently missed. The decision uses the effective post-apply version (`appliedAtStartup ?? VERSION`) instead of the stale in-memory VERSION.
   const appliedAtStartup = force ? null : getAppliedAtStartup();
   if (!force && !appliedAtStartup && (await tryApplyPending())) return;
 
@@ -149,9 +143,7 @@ async function handleUpdate(force: boolean): Promise<void> {
 
   // Effective current = post-apply version if applyPendingUpdate ran this
   // process; otherwise the binary's compiled-in VERSION. checkResult's
-  // updateAvailable was computed against the stale in-memory VERSION, so
-  // recompute against the effective one — this is what catches "manifest is
-  // newer than what we just applied" without re-installing the same version.
+  // updateAvailable was computed against the stale in-memory VERSION, so recompute against the effective one, this is what catches "manifest is newer than what we just applied" without re-installing the same version.
   const effectiveCurrent = appliedAtStartup ?? VERSION;
   const newerAvailable =
     !!checkResult.latestVersion && compareVersions(effectiveCurrent, checkResult.latestVersion) < 0;
@@ -169,7 +161,7 @@ async function handleUpdate(force: boolean): Promise<void> {
     onProgress: (downloaded, total) => {
       if (total > 0) {
         const percent = Math.round((downloaded / total) * 100);
-        process.stderr.write(`\r${t('commands.update.progress', { percent: percent.toString() })}`);
+        writeStderr(`\r${t('commands.update.progress', { percent: percent.toString() })}`);
       }
     },
   });
@@ -216,7 +208,7 @@ async function handleRollback(): Promise<void> {
       // Rollback the rollback: restore current binary
       await fs.rename(rollbackTmp, execPath).catch((restoreErr: unknown) => {
         const msg = restoreErr instanceof Error ? restoreErr.message : String(restoreErr);
-        process.stderr.write(
+        writeStderr(
           `CRITICAL: Failed to restore binary during rollback. CLI may be broken. Please reinstall. Error: ${msg}\n`
         );
       });
@@ -379,8 +371,7 @@ export function registerUpdateCommand(program: Command): void {
     .option('--check-only', t('commands.update.checkOnly'))
     .option('--rollback', t('commands.update.rollback'))
     .option('--status', t('commands.update.statusDescription'))
-    // No .choices(): the channel is a free-form R2 path segment (edge, stable, and
-    // per-PR pr-N channels are all legal), so the set is open by design.
+    // No .choices(): the channel is a free-form R2 path segment (edge, stable, and per-PR pr-N channels are all legal), so the set is open by design.
     .option('--channel <channel>', t('commands.update.channelDescription'))
     .action(async (options) => {
       try {

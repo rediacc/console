@@ -56,12 +56,8 @@ const LearnMenu: React.FC<LearnMenuProps> = ({ lang, isOpen, onToggle, onClose }
 
   // State drives the popover; the UA's own dismissals drive state back.
   //
-  // The inline `left` is NOT laziness about CSS. A popover renders in the top layer, whose
-  // containing block is the VIEWPORT, so the panel does not inherit its wrapper's position
-  // and a purely declarative rule cannot know where the trigger sits. Measured before this
-  // existed: panel at left 0 with its trigger at left 855. The same mistake had already
-  // been made twice in this header, so it is measured from the trigger at open time and
-  // clamped to the viewport so a narrow window cannot push it off-screen.
+  // The inline `left` is NOT laziness about CSS. A popover renders in the top layer, whose containing block is the VIEWPORT, so the panel does not inherit its wrapper's position and a purely declarative rule cannot know where the trigger sits. Measured before this existed: panel at left 0 with its trigger at left 855. The same mistake had already been made twice in this header, so
+  // it is measured from the trigger at open time and clamped to the viewport so a narrow window cannot push it off-screen.
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;

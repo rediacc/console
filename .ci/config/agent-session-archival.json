@@ -1,0 +1,29 @@
+{
+  "$comment": [
+    "ONE number, read by check:ci-agent-session-archival and by nothing else --",
+    "yet. It is in a file rather than in the gate for the reason every other",
+    "retention in .ci/config is: the number is a judgment call that will be",
+    "retuned, and a retune must not be a code change.",
+    "",
+    "grace_days is STACKED ON TOP of the hook's own abandonment horizon,",
+    "WORKLIST_DEAD_HOURS (24h), which wl_store.agent_state_dead applies and this",
+    "gate reuses rather than redefines. A session's agent/<session>/ directory",
+    "becomes a finding once it is ABANDONED by that oracle AND grace_days have",
+    "passed on top -- roughly 15 days idle in total at the value below.",
+    "",
+    "WHY A GRACE PERIOD AT ALL, rather than reding the moment a directory goes",
+    "abandoned. The 24h horizon is met by 18 of the 19 peer directories on the",
+    "tree this gate landed against. A gate keyed on it alone would red on every",
+    "unrelated PR, blaming whoever's branch runs CI next for eighteen other",
+    "sessions going idle -- a fact about the passage of time, not about a diff,",
+    "and the exact shape that gets suppressed within a day.",
+    "",
+    "HOW 14 WAS CHOSEN, and what would falsify it. Long enough that ordinary",
+    "session cadence (a session paused over a long weekend, a weekly review",
+    "wave) clears the debt before the clock fires; short enough that the debt",
+    "still comes due. If routine housekeeping turns out to run less often than",
+    "every two weeks, this gate will red on unrelated PRs again, and THIS is the",
+    "line to change -- not the gate, and never an allowlist."
+  ],
+  "grace_days": 14
+}

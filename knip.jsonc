@@ -3,17 +3,82 @@
   // Fully strict: files, exports, types, duplicates, dependencies all enforced.
   // Every entry in an ignore* array below needs a `// BLOCKER:` comment per the
   // repo convention (CLAUDE.md); one BLOCKER covers the entries after it until a
-  // blank line. Gate: scripts/check-knip-blockers.ts (+ knip's own
+  // blank line. Gate: scripts/gates/check-knip-blockers.ts (+ knip's own
   // --treat-config-hints-as-errors catches ignores that stop matching anything).
   // In-code exceptions use `/** @public BLOCKER: <reason> */` JSDoc tags.
   "workspaces": {
     ".": {
       "entry": [
-        "scripts/*.ts"
+        "scripts/*.ts",
+        // W9 P2: the 125 check-*.ts gates moved to scripts/gates/. They are entry
+        // points (npm scripts run them directly), not imported by anything, so
+        // without this glob knip reports every one of them as an unused file.
+        "scripts/gates/*.ts",
+        // SAME REASON, one level out: these three are executed BY PATH from bash,
+        // from Python, or by hand, and knip only follows TypeScript imports. It
+        // reported all three as unused files, and acting on that would have been
+        // destructive rather than tidy:
+        //   shadow-gate.ts            <- .ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:70
+        //     runs it as `LIB`. It is the comparator that proves the W7P6 bash->Python
+        //     ports equivalent, so deleting it removes the instrument the port
+        //     campaign is measured with.
+        //   generate-third-party-licenses.ts <- GENERATOR_REL in
+        //     .ci/rediacc_ci/build/prepare_cli_assets.py:123, and named again in
+        //     .ci/rediacc_ci/ci/generate_tag.py:176.
+        //   fetch-directive-snapshot.ts is a documented hand-run maintenance tool
+        //     (`--check` compares the vendored NIS2 snapshots against EUR-Lex); the
+        //     snapshots it writes are the source of truth for
+        //     scripts/gates/check-directive-quotes.ts.
+        // Listed as explicit files rather than a `scripts/gen/*.ts` glob, so a
+        // genuinely dead file appearing next to them is still reported.
+        // DELIBERATELY ABSENT, and measured rather than assumed: scripts/gen/gen-docs.ts
+        // and scripts/gen/gen-gates-lock.ts left the "scripts/*.ts" glob when W9 P2 moved
+        // them here on 2026-09-20, and listing them looked necessary for the same reason
+        // the three above are listed. It is not. Knip resolves a file named by a
+        // package.json script as an entry on its own, and those two are named by
+        // `gen:docs`, `gen:gates-lock` and `check:ci-gates-lock`; adding them reds this
+        // config with "Remove redundant entry pattern" under
+        // --treat-config-hints-as-errors. The three above are listed precisely because no
+        // npm script names them -- bash, Python and the operator's own hand run those.
+        "scripts/lib/shadow-gate.ts",
+        "scripts/gen/generate-third-party-licenses.ts",
+        "scripts/gen/fetch-directive-snapshot.ts",
+        // Run BY PATH from .ci/rediacc_ci/quality/gate_tree_writes.py (check:ci-gate-tree-writes), which no npm script names.
+        "scripts/lib/tree-write-sites.ts",
+        // Loaded BY PATH, not by import: .ci/scripts/quality/lint-rule-liveness.mjs:449
+        // `import(path.join(ROOT, 'scripts/data/source-rules.ts'))`, which knip cannot
+        // follow. It is the per-rule scope table the liveness gate derives its universe from.
+        "scripts/data/source-rules.ts",
+        // The rule-unit harness (run by check:ci-lint-rule-units) imports `applyFixes` from
+        // scripts/lib/rule-host.ts. Outside knip's view, that export read as unused, and deleting
+        // it on that advice broke the gate (2026-09-26).
+        "eslint-rules/__tests__/*.js"
       ],
+      // AN EXPORT USED INSIDE ITS OWN FILE IS NOT DEAD, and in this repo it is
+      // usually load-bearing. `check-doc-region-parity.ts:297` matches
+      // /^export const (\w+Provider): Provider =/ -- the KEYWORD is part of the
+      // contract it verifies -- and the gate-header probe in
+      // `.ci/rediacc_ci/tests/gates/test_gate_gate_header.py` imports
+      // `analyzeGateHeader` from an embedded TypeScript snippet, which knip cannot
+      // see at all. Dropping those `export`s to satisfy knip broke both gates.
+      // This setting keeps the finding that matters -- an export used NOWHERE, not
+      // even in its own file, is still reported, which is how the genuinely dead
+      // `rel` helper in scripts/lib/repo-root.ts was found and removed.
+      "ignoreExportsUsedInFile": true,
       "project": [
         "*.{js,ts}",
-        "scripts/**/*.ts"
+        "scripts/**/*.ts",
+        // THE FLAT CONFIG IS SPLIT, and this glob is what lets knip see it.
+        // `eslint.config.js` is a 50-line root that splices six modules from
+        // `eslint.config/`. `*.{js,ts}` matches the root only, so every plugin
+        // imported by those modules was invisible and knip reported all ten as
+        // unused devDependencies: @eslint/js, @eslint/json, globals, and the
+        // jsx-a11y / playwright / react / react-hooks / regexp / sonarjs /
+        // unicorn plugins. Removing them on that advice would have broken
+        // linting outright -- `unicorn/prefer-string-replace-all` is a rule this
+        // repo actively enforces. Widening the project glob makes the analysis
+        // MORE complete rather than suppressing the finding.
+        "eslint.config/**/*.js"
       ]
     },
     "packages/locales": {
@@ -176,7 +241,7 @@
     }
   },
   "ignoreDependencies": [
-    // BLOCKER: npx-invoked by .ci/scripts/quality/check-lockfile.sh; declared at root so the pinned version resolves from the workspace tree instead of a network fetch — no JS import exists for knip to see
+    // BLOCKER: npx-invoked by .ci/scripts/quality/check_lockfile.py; declared at root so the pinned version resolves from the workspace tree instead of a network fetch — no JS import exists for knip to see
     "lockfile-lint",
     // BLOCKER: TypeScript ambient type packages are compile-time inputs resolved by tsc, never imported as runtime modules
     "@types/*",
@@ -187,7 +252,6 @@
 
     // BLOCKER: the @vitest/* family and zod are declared across workspaces (cli, shared, www, json, bridge-tests) purely as version pins so syncpack sameRange + the root zod override keep one physical copy; vitest/consumers resolve them transitively
     "@vitest/coverage-v8",
-    "@vitest/runner",
     "@vitest/ui",
     "@vitest/utils",
     "zod",
@@ -195,7 +259,7 @@
     // BLOCKER: declared in packages/www to carry the 5.9.3 security override pin for the @astrojs/rss transitive chain (see _overridesReasons.fast-xml-parser); www code never imports it directly
     "fast-xml-parser",
 
-    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
+    // BLOCKER: declared in packages/www, which owns browser testing, and imported from the hoisted tree by scripts/gates/check-browser-smoke.ts at the root. Declaring it a second time at root would create a second range to hold in sync with a package check:deps deliberately blocks from upgrading (a playwright bump changes the pinned browser revisions and needs E2E revalidation), so one declaration in one workspace is the correct shape
     "playwright"
   ],
   "ignoreBinaries": [
@@ -231,7 +295,7 @@
     "pdftotext",
     "rclone",
 
-    // BLOCKER: go toolchain spawned by scripts/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
+    // BLOCKER: go toolchain spawned by scripts/gen/generate-third-party-licenses.ts to run go-licenses for the renet Go-dependency section of THIRD_PARTY_LICENSES; host toolchain, not an npm dependency
     "go"
   ]
 }

@@ -2,32 +2,18 @@ import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import type { ExecResult } from '../../src/utils/bridge/types';
 
-// Suite 15 (`E2E K8s` job): a k8s repo end to end on the DATASTORE-CLUSTER model
-// (redesign spec 06 §15). It promotes the wave3b deliverable-5 transcript
-// (scratchpad/reports/p1-wave3b-vm.md) to a suite: a cluster-attached LOCAL
-// datastore + a kube repo with a DECLARED VOLUME and a DECLARED SECRET, brought
-// up through the runtime-generic `repository up` dispatch (kube arm:
+// Suite 15 (`E2E K8s` job): a k8s repo end to end on the DATASTORE-CLUSTER model (redesign spec 06 §15). It promotes the wave3b deliverable-5 transcript (scratchpad/reports/p1-wave3b-vm.md) to a suite: a cluster-attached LOCAL datastore + a kube repo with a DECLARED VOLUME and a DECLARED SECRET, brought up through the runtime-generic `repository up` dispatch (kube arm:
 // ApplyIsolation → ProvisionVolumes → InjectSecrets → Deploy).
 //
-// What it proves on the NEW model:
-//   - anchor cluster: the control plane lives INSIDE a cluster-labeled control
+// What it proves on the NEW model: - anchor cluster: the control plane lives INSIDE a cluster-labeled control
 //     datastore (`ds-control-<cluster>`); `kube install` on its mount is the
-//     whole cluster (spec 02 §1 / 04 §1). Dedicated non-loopback node IP.
-//   - kube repo up: repository_up on a repo folder inside a cluster-attached
-//     data datastore materializes the isolation trio (PSA-restricted namespace +
-//     default-deny NetworkPolicies + repo-namespace VAP), a no-provisioner
-//     StorageClass, a bound local PV per declared volume, a Running pod, the
-//     ROLE ConfigMap, and the wave3b per-namespace Opaque Secret transport.
+// whole cluster (spec 02 §1 / 04 §1). Dedicated non-loopback node IP. - kube repo up: repository_up on a repo folder inside a cluster-attached data datastore materializes the isolation trio (PSA-restricted namespace + default-deny NetworkPolicies + repo-namespace VAP), a no-provisioner StorageClass, a bound local PV per declared volume, a Running pod, the ROLE ConfigMap, and the
+// wave3b per-namespace Opaque Secret transport.
 //   - LOCAL-tier fork: a local datastore fork is REFUSED by design (gate C8);
-//     repos inside a local datastore fork individually by REFLINK. So the fork
-//     proof here is `repository fork` (CoW repo clone) + `repository up` on the
-//     fork: instant, data diverges, parent untouched.
+// repos inside a local datastore fork individually by REFLINK. So the fork proof here is `repository fork` (CoW repo clone) + `repository up` on the fork: instant, data diverges, parent untouched.
 //
-// RED-UNTIL-LIVE-RUN (spec 06 authoring bar): this file is authored to COMPILE
-// (tsc) + keep the coverage gate green; its BODY is not executed by this wave
-// (no live k3s-on-a-worker + RAM window). The live follow-up (P3 gate item 5)
-// must exercise: node Ready on 10.150.x.1, the 9 up-verification checks, the F5
-// default-SC hazard, and the reflink fork divergence — mirroring p1-wave3b-vm.md.
+// RED-UNTIL-LIVE-RUN (spec 06 authoring bar): this file is authored to COMPILE (tsc) + keep the coverage gate green; its BODY is not executed by this wave (no live k3s-on-a-worker + RAM window). The live follow-up (P3 gate item 5) must exercise: node Ready on 10.150.x.1, the 9 up-verification checks, the F5 default-SC hazard, and the reflink fork divergence — mirroring
+// p1-wave3b-vm.md.
 //
 // Gated on K8S_MODE=1 + at least one worker VM.
 const enabled = process.env.K8S_MODE === '1';
@@ -35,9 +21,7 @@ const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolea
 const canRun = enabled && workers.length >= 1;
 
 // KEEP_CLUSTER=1: iteration mode (never set on CI). First run builds the world
-// and leaves it standing (teardown + afterAll skipped). Subsequent runs ADOPT
-// the standing cluster: setup tests fast-path to verification, the CSI battery
-// pre-cleans its own residue, and a single test can be re-run alone:
+// and leaves it standing (teardown + afterAll skipped). Subsequent runs ADOPT the standing cluster: setup tests fast-path to verification, the CSI battery pre-cleans its own residue, and a single test can be re-run alone:
 //   KEEP_CLUSTER=1 K8S_MODE=1 ... run-e2e.sh --config playwright.k8s.config.ts   # build
 //   KEEP_CLUSTER=1 K8S_MODE=1 npx playwright test --config playwright.k8s.config.ts --grep "8\."
 // Finish with a normal (flagless) run, or tear down by hand.
@@ -45,8 +29,7 @@ const KEEP = process.env.KEEP_CLUSTER === '1';
 
 const K3S = '/usr/local/bin/rediacc-k3s';
 const CLUSTER = 'prod';
-// The anchor: a cluster-labeled control datastore whose mount holds the k3s
-// data-dir (the control-plane image IS the cluster).
+// The anchor: a cluster-labeled control datastore whose mount holds the k3s data-dir (the control-plane image IS the cluster).
 const CTRL_DS = `ds-control-${CLUSTER}`;
 const CTRL_MOUNT = `/mnt/rediacc-ds/${CTRL_DS}`;
 const CTRL_NET = '2816';
@@ -58,20 +41,15 @@ const REPO = 'shop';
 const REPO_NET = '2880';
 const NS = REPO; // the repo's namespace mirrors its name
 const SC = `rediacc-ds-${DATA_DS}`; // the repo's no-provisioner StorageClass (static local PV)
-// The per-datastore DYNAMIC CSI StorageClass (spec 09 §9, applied at datastore
-// attach) + the one cluster-level VolumeSnapshotClass (spec 09 §11). Used by the
-// CSI battery (tests 7-9b): dynamic PVC, snapshot/restore, clone.
+// The per-datastore DYNAMIC CSI StorageClass (spec 09 §9, applied at datastore attach) + the one cluster-level VolumeSnapshotClass (spec 09 §11). Used by the CSI battery (tests 7-9b): dynamic PVC, snapshot/restore, clone.
 const CSI_SC = `rediacc-csi-${DATA_DS}`;
 const VSCLASS = 'rediacc-csi';
 const APP_SECRET_VALUE = 's3cr3t-prod';
 const FORK_REPO = `${REPO}-joseph`;
 const FORK_NET = '2944';
 
-// The kube repo's declared app: an annotated ClusterIP Service (routable), a PVC
-// naming the repo's rediacc StorageClass (the F5 hazard guard — a PVC that omits
-// it is silently adopted by stock k3s local-path), and a restricted-PSA-compliant
-// Deployment that writes a marker into the local PV so fork divergence is
-// observable. `scanDeclaredVolumes` reads the PVC to provision the LUKS volume.
+// The kube repo's declared app: an annotated ClusterIP Service (routable), a PVC naming the repo's rediacc StorageClass (the F5 hazard guard — a PVC that omits it is silently adopted by stock k3s local-path), and a restricted-PSA-compliant Deployment that writes a marker into the local PV so fork divergence is observable. `scanDeclaredVolumes` reads the PVC to provision the LUKS
+// volume.
 const APP_MANIFEST = `apiVersion: v1
 kind: Service
 metadata:
@@ -138,9 +116,7 @@ spec:
             claimName: data
 `;
 
-// A minimal Rediaccfile: the kube repo runs its lifecycle through up()/health()
-// exactly like a docker repo (the runtime-generic dispatch), and the manifests/
-// deploy rides the Deploy phase.
+// A minimal Rediaccfile: the kube repo runs its lifecycle through up()/health() exactly like a docker repo (the runtime-generic dispatch), and the manifests/ deploy rides the Deploy phase.
 const REDIACCFILE = `#!/usr/bin/env bash
 up() { :; }
 down() { :; }
@@ -199,9 +175,7 @@ test.describe
       return res.stdout.trim();
     };
 
-    // --- CSI battery helpers (tests 7-9b) -------------------------------------
-    // The dynamic-provisioning tests use bare Pods with their own labels/names
-    // (not the web Deployment), so they need generic apply/wait/read helpers.
+    // --- CSI battery helpers (tests 7-9b) ------------------------------------- The dynamic-provisioning tests use bare Pods with their own labels/names (not the web Deployment), so they need generic apply/wait/read helpers.
     const kubectlApply = async (yaml: string): Promise<ExecResult> => {
       const b64 = Buffer.from(yaml).toString('base64');
       return w1.executeViaBridge(
@@ -214,9 +188,7 @@ test.describe
       /\sRunning\s/.test((await kubectl(`-n ${ns} get pod ${pod} --no-headers`)).stdout);
     const podMarker = async (ns: string, pod: string): Promise<string> =>
       (await kubectl(`-n ${ns} exec ${pod} -- cat /data/marker.txt`)).stdout.trim();
-    // A restricted-PSA-compliant single-container pod that keeps a PVC mounted at
-    // /data and (optionally) seeds a marker only when /data is empty. seccomp
-    // RuntimeDefault is mandatory under PSA restricted (spec 09 §9; the #84 caveat).
+    // A restricted-PSA-compliant single-container pod that keeps a PVC mounted at /data and (optionally) seeds a marker only when /data is empty. seccomp RuntimeDefault is mandatory under PSA restricted (spec 09 §9; the #84 caveat).
     const csiPod = (name: string, claim: string, seed?: string): string => {
       const cmd = seed
         ? `test -s /data/marker.txt || echo ${seed} > /data/marker.txt; exec tail -f /dev/null`
@@ -265,8 +237,7 @@ spec:
     requests:
       storage: 1Gi
 ${dataSource ?? ''}`;
-    // Delete a bare pod + its PVC and wait for the volume to actually release
-    // (reclaimPolicy Delete ⇒ the driver removes the .img). Keeps the CSI battery
+    // Delete a bare pod + its PVC and wait for the volume to actually release (reclaimPolicy Delete ⇒ the driver removes the .img). Keeps the CSI battery
     // from leaking mounts into test 10's no-leak assertion.
     const csiCleanup = async (pods: string[], pvcs: string[]): Promise<void> => {
       for (const p of pods) {
@@ -277,28 +248,17 @@ ${dataSource ?? ''}`;
       }
     };
 
-    // Bring the kube repo up carrying its declared secret. Secrets ride the SAME
-    // CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment
-    // → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque
-    // Secret (wave3b). So the up call must carry the env var (bridge-once cannot).
+    // Bring the kube repo up carrying its declared secret. Secrets ride the SAME CLI transport as the docker path: REDIACC_SECRET_<NAME> in the environment → collectEnvSecrets → SecretSet.Env → InjectSecrets → per-namespace Opaque Secret (wave3b). So the up call must carry the env var (bridge-once cannot).
     const repoUpWithSecret = async (name: string): Promise<ExecResult> =>
       w1.executeViaBridge(
         `sudo env REDIACC_SECRET_APP_SECRET=${APP_SECRET_VALUE} renet repository up ` +
           `--name ${name} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
       );
 
-    // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER
-    // the datastore mount (kubelet pod volumes) and containerd overlays mounted at
-    // /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they
-    // hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds
-    // neither, so the datastore release is then CORRECTLY refused by the
-    // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what
-    // it created; the missing product porcelain is gate finding #20 (4 witnesses).
+    // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER the datastore mount (kubelet pod volumes) and containerd overlays mounted at /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore (they hold it busy from OUTSIDE its path). `kube uninstall` (cgroup-kill) unwinds neither, so the datastore release is then CORRECTLY refused by the
+    // no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain is gate finding #20 (4 witnesses).
     //
-    // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH
-    // does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded
-    // on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a
-    // SIBLING datastore (a prefix match) out of the list.
+    // Shell form: executeViaBridge relays through THREE shells and escapeForNestedSSH does NOT escape `$`, so this stays variable-free (a `$(...)` would be expanded on the LOCAL host). Excluding `^<root>/` from the outside-holder branch keeps a SIBLING datastore (a prefix match) out of the list.
     const unwindSubmounts = async (runner: BridgeTestRunner, mount: string): Promise<void> => {
       const root = mount.replace(/\/[^/]+$/, '');
       const select =
@@ -313,8 +273,7 @@ ${dataSource ?? ''}`;
       );
     };
 
-    // Every mountpoint the PRODUCT owns under the repo folder (the per-volume LUKS
-    // mounts). `repository down` must leave none (CT-07 converge, no leak).
+    // Every mountpoint the PRODUCT owns under the repo folder (the per-volume LUKS mounts). `repository down` must leave none (CT-07 converge, no leak).
     const repoVolumeMounts = async (): Promise<string[]> => {
       const res = await w1.executeViaBridge(
         `grep -F "${DATA_MOUNT}/repos/" /proc/mounts | cut -d" " -f2 || true`
@@ -325,19 +284,14 @@ ${dataSource ?? ''}`;
         .filter(Boolean);
     };
 
-    // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner
-    // / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore,
-    // and NO verb ever stops them (`renet kube csi-node-down` exists with zero
-    // callers) → every storage release hits EBUSY with no mount holder to find. Gate
-    // finding #26. The suite stops what the product started.
+    // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore, and NO verb ever stops them (`renet kube csi-node-down` exists with zero callers) → every storage release hits EBUSY with no mount holder to find. Gate finding #26. The suite stops what the product started.
     const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
       await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
     };
 
     const teardownAll = async (): Promise<void> => {
       await csiNodeDown(w1);
-      // Repos down first (releases the LUKS volume mounts), then the fork, then
-      // the cluster + datastores. Every step tolerates already-absent state.
+      // Repos down first (releases the LUKS volume mounts), then the fork, then the cluster + datastores. Every step tolerates already-absent state.
       for (const [n, net] of [
         [FORK_REPO, FORK_NET],
         [REPO, REPO_NET],
@@ -354,23 +308,17 @@ ${dataSource ?? ''}`;
       await w1.executeViaBridge(`sudo renet datastore detach --name ${CTRL_DS} 2>/dev/null; true`);
       await w1.executeViaBridge(`sudo renet datastore delete --name ${CTRL_DS} 2>/dev/null; true`);
       await w1.executeViaBridge(`sudo ip link del rdk${CTRL_NET} 2>/dev/null; true`);
-      // The zot pull-through cache (test R1) is a machine-scoped systemd unit, not
-      // a repo/cluster resource, so nothing above removes it — stop it here.
+      // The zot pull-through cache (test R1) is a machine-scoped systemd unit, not a repo/cluster resource, so nothing above removes it — stop it here.
       await w1.executeViaBridge('sudo systemctl stop rediacc-zot 2>/dev/null; true');
     };
 
-    // KEEP iteration state: true when a standing cluster from a previous
-    // KEEP_CLUSTER run was detected and adopted instead of torn down.
+    // KEEP iteration state: true when a standing cluster from a previous KEEP_CLUSTER run was detected and adopted instead of torn down.
     let adopted = false;
 
     test.beforeAll(async () => {
       w1 = BridgeTestRunner.forWorker(1);
       if (KEEP) {
-        // The harness's global setup REBOOTS the VMs, so a standing cluster is
-        // mid-recovery here (autostart reconciler reattaches the datastores,
-        // systemd restarts k3s). A single readiness probe would falsely demote
-        // to a full rebuild: check for the control datastore RECORD (cheap,
-        // survives reboot) and only then wait out the boot.
+        // The harness's global setup REBOOTS the VMs, so a standing cluster is mid-recovery here (autostart reconciler reattaches the datastores, systemd restarts k3s). A single readiness probe would falsely demote to a full rebuild: check for the control datastore RECORD (cheap, survives reboot) and only then wait out the boot.
         const rec = await w1.executeViaBridge(
           `sudo renet datastore list --json 2>/dev/null | grep -c '"${CTRL_DS}"'; true`
         );
@@ -388,12 +336,8 @@ ${dataSource ?? ''}`;
     });
 
     test('R1. zot pull-through cache: registry up + wire BEFORE k3s so image pulls resolve through it', async () => {
-      // Revives the coverage the (now deleted) kube-registry.test.ts anchor stood
-      // in for. Bring the zot cache online and point containerd/k3s at it BEFORE
-      // the k3s install (test 1), so the workload image pull (test 4) resolves
-      // THROUGH the cache. `up` extracts the embedded zot binary + renders its
-      // sync.onDemand config + installs the rediacc-zot unit; `wire` writes the
-      // containerd certs.d hosts.toml + k3s registries.yaml.
+      // Revives the coverage the (now deleted) kube-registry.test.ts anchor stood in for. Bring the zot cache online and point containerd/k3s at it BEFORE the k3s install (test 1), so the workload image pull (test 4) resolves THROUGH the cache. `up` extracts the embedded zot binary + renders its sync.onDemand config + installs the rediacc-zot unit; `wire` writes the containerd
+      // certs.d hosts.toml + k3s registries.yaml.
       if (!adopted) {
         expect(
           w1.isSuccess(
@@ -428,18 +372,14 @@ ${dataSource ?? ''}`;
           mountPath: CTRL_MOUNT,
           networkId: CTRL_NET,
           role: 'server',
-          // R1 wired the zot mirror, but kube install must NAME the registries
-          // file or k3s starts without --private-registry and every pull silently
-          // bypasses the cache (found live: the R2 through-pull assert stayed
-          // empty until this line existed — the wire verb alone is half a wiring).
+          // R1 wired the zot mirror, but kube install must NAME the registries file or k3s starts without --private-registry and every pull silently bypasses the cache (found live: the R2 through-pull assert stayed empty until this line existed — the wire verb alone is half a wiring).
           registriesYaml: '/etc/rancher/k3s/registries.yaml',
         });
         expect(w1.isSuccess(install)).toBe(true);
       }
       expect(await poll(() => nodeReady(), 120_000)).toBe(true);
 
-      // S1 verdict 1: the node's InternalIP is the dedicated non-loopback node IP
-      // (10.150.x.1), NOT a 127/8 loopback.
+      // S1 verdict 1: the node's InternalIP is the dedicated non-loopback node IP (10.150.x.1), NOT a 127/8 loopback.
       const ip = await kubectl(
         'get nodes -o jsonpath="{.items[0].status.addresses[?(@.type==\\"InternalIP\\")].address}"'
       );
@@ -457,8 +397,7 @@ ${dataSource ?? ''}`;
     });
 
     test('3. cluster-attached data datastore + kube repo folder + node-label for local PVs', async () => {
-      // A cluster-attached LOCAL data datastore. Its cluster backref makes repos
-      // on it dispatch to KubeRuntime.
+      // A cluster-attached LOCAL data datastore. Its cluster backref makes repos on it dispatch to KubeRuntime.
       if (!adopted) {
         expect(
           w1.isSuccess(
@@ -529,9 +468,7 @@ ${dataSource ?? ''}`;
       );
       expect(vap.code, vap.stderr).toBe(0);
 
-      // (4) no-provisioner StorageClass: Retain + WaitForFirstConsumer. Read each
-      // field via jsonpath (compact, exact) — `-o json` pretty-prints with `": "`
-      // so a compact `"key":"value"` substring never matches.
+      // (4) no-provisioner StorageClass: Retain + WaitForFirstConsumer. Read each field via jsonpath (compact, exact) — `-o json` pretty-prints with `": "` so a compact `"key":"value"` substring never matches.
       const scProvisioner = await kubectl(`get storageclass ${SC} -o jsonpath="{.provisioner}"`);
       expect(scProvisioner.stdout.trim()).toBe('kubernetes.io/no-provisioner');
       const scReclaim = await kubectl(`get storageclass ${SC} -o jsonpath="{.reclaimPolicy}"`);
@@ -550,8 +487,7 @@ ${dataSource ?? ''}`;
       const pvcSc = await kubectl(`-n ${NS} get pvc data -o jsonpath="{.spec.storageClassName}"`);
       expect(pvcSc.stdout.trim()).toBe(SC);
 
-      // (7) pod Running with the marker in the local PV. On an adopted cluster
-      // test 6 has already reseeded the parent marker, so accept either value.
+      // (7) pod Running with the marker in the local PV. On an adopted cluster test 6 has already reseeded the parent marker, so accept either value.
       expect(await poll(() => podRunning(NS), 120_000)).toBe(true);
       expect(await marker(NS)).toMatch(
         adopted ? /^(original-data|parent-data-)/ : /^original-data$/
@@ -569,8 +505,7 @@ ${dataSource ?? ''}`;
       );
       expect(role.stdout.trim()).toBe('primary');
 
-      // (9) the declared secret landed as the labeled Opaque Secret + is seen in
-      // the pod (env transport end to end).
+      // (9) the declared secret landed as the labeled Opaque Secret + is seen in the pod (env transport end to end).
       const secret = await kubectl(
         `-n ${NS} get secret rediacc-env -o jsonpath="{.data.APP_SECRET}"`
       );
@@ -580,10 +515,7 @@ ${dataSource ?? ''}`;
     });
 
     test('5. F5 hazard: stock k3s local-path is the DEFAULT SC; the rediacc SC is not', async () => {
-      // The PVC MUST name the rediacc SC or it is silently adopted by local-path
-      // (the default), escaping the forkable per-volume LUKS image. Assert the
-      // default-SC layout that makes the hazard real, and that our PVC bound to
-      // the rediacc SC rather than local-path.
+      // The PVC MUST name the rediacc SC or it is silently adopted by local-path (the default), escaping the forkable per-volume LUKS image. Assert the default-SC layout that makes the hazard real, and that our PVC bound to the rediacc SC rather than local-path.
       const defaultSc = await kubectl(
         `get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\\.kubernetes\\.io/is-default-class=="true")].metadata.name}'`
       );
@@ -592,26 +524,14 @@ ${dataSource ?? ''}`;
     });
 
     test('6. `repository fork` on a kube repo: folder+volumes cloned, own namespace, ROLE=fork, secrets scrubbed (F1, design 06 §3)', async () => {
-      // F1 (P4): the kube arm of `repo fork`, which RETIRES the old CT-11 refusal.
-      // The parent's PLACEMENT selects the engine — there is no runtime flag. ONE
-      // reflink of the repo folder clones the manifests AND every per-volume LUKS
-      // image (repos/<repo>/volumes/<pvc>.img is kept mount-boundary-free precisely
+      // F1 (P4): the kube arm of `repo fork`, which RETIRES the old CT-11 refusal. The parent's PLACEMENT selects the engine — there is no runtime flag. ONE reflink of the repo folder clones the manifests AND every per-volume LUKS image (repos/<repo>/volumes/<pvc>.img is kept mount-boundary-free precisely
       // so the folder forks as a single unit = one snapshot spanning the repo's
       // volumes). The fork then deploys as its OWN repo: its own name → its own
       // namespace, manifests re-rendered to it, ROLE=fork, and its namespace scrubbed
-      // fork-empty (F6 at namespace scope, via KubeRuntime.Fork).
-      // SEED a value only the PARENT could have written. This is what makes the clone
-      // PROVABLE: the app's entrypoint writes 'original-data' whenever the marker file
-      // is empty, so a fork whose volume was freshly provisioned (rather than carrying
-      // the parent's cloned LUKS image) would ALSO read 'original-data' — the two are
-      // indistinguishable. A unique value the fork's own pod would never write is the
-      // only assertion that proves the DATA rode the reflink. (Live-caught: the first
-      // version of this test could not tell a clone from a fresh volume, and passed
+      // fork-empty (F6 at namespace scope, via KubeRuntime.Fork). SEED a value only the PARENT could have written. This is what makes the clone PROVABLE: the app's entrypoint writes 'original-data' whenever the marker file is empty, so a fork whose volume was freshly provisioned (rather than carrying the parent's cloned LUKS image) would ALSO read 'original-data' — the two are
+      // indistinguishable. A unique value the fork's own pod would never write is the only assertion that proves the DATA rode the reflink. (Live-caught: the first version of this test could not tell a clone from a fresh volume, and passed
       // while the parent's writes were in fact never reaching the clone.)
-      // Adopted standing fork → skip seed+fork; the lineage proof degrades
-      // gracefully: parent and fork still carry the SAME seeded value from the
-      // original fork (nothing writes the marker after it), which a fresh
-      // volume could not reproduce.
+      // Adopted standing fork → skip seed+fork; the lineage proof degrades gracefully: parent and fork still carry the SAME seeded value from the original fork (nothing writes the marker after it), which a fresh volume could not reproduce.
       const forkStanding =
         adopted &&
         (await kubectl(`get ns ${FORK_REPO} --no-headers`)).code === 0 &&
@@ -637,9 +557,7 @@ ${dataSource ?? ''}`;
       const forkNs = await kubectl(`get ns ${FORK_REPO} -o jsonpath="{.metadata.name}"`);
       expect(forkNs.stdout.trim()).toBe(FORK_REPO);
 
-      // The DATA rode the reflink: the fork's volume carries the PARENT'S SEEDED value,
-      // which the fork's own entrypoint would never write. Wait for the pod to be
-      // exec-able first (Running is set before the entrypoint's first read completes).
+      // The DATA rode the reflink: the fork's volume carries the PARENT'S SEEDED value, which the fork's own entrypoint would never write. Wait for the pod to be exec-able first (Running is set before the entrypoint's first read completes).
       expect(await poll(() => podRunning(FORK_REPO))).toBe(true);
       expect(await poll(async () => (await marker(FORK_REPO)).length > 0)).toBe(true);
       expect(await marker(FORK_REPO)).toBe(seeded);
@@ -650,14 +568,8 @@ ${dataSource ?? ''}`;
       );
       expect(role.stdout.trim()).toBe('fork');
 
-      // F6 at NAMESPACE scope — asserted so it can actually FAIL for the right reason.
-      // A bare "the fork's secret is empty" check is unfalsifiable: it also passes when
-      // the kubectl call simply fails (missing namespace, broken exec), and it never
-      // shows the fork's WORKLOAD is free of the parent's material. So prove absence
-      // END TO END, on a channel already proven live: the marker read above establishes
-      // that exec into the fork's pod WORKS, so an empty APP_SECRET here is a real
-      // absence rather than a failed command. The parent's pod DOES see this value
-      // (test 4), which is what makes the fork's not seeing it meaningful.
+      // F6 at NAMESPACE scope — asserted so it can actually FAIL for the right reason. A bare "the fork's secret is empty" check is unfalsifiable: it also passes when the kubectl call simply fails (missing namespace, broken exec), and it never shows the fork's WORKLOAD is free of the parent's material. So prove absence END TO END, on a channel already proven live: the marker read
+      // above establishes that exec into the fork's pod WORKS, so an empty APP_SECRET here is a real absence rather than a failed command. The parent's pod DOES see this value (test 4), which is what makes the fork's not seeing it meaningful.
       const forkEnvVar = await kubectl(`-n ${FORK_REPO} exec deploy/web -- printenv APP_SECRET`);
       expect(forkEnvVar.stdout.trim()).not.toBe(APP_SECRET_VALUE);
       expect(forkEnvVar.stdout.trim()).toBe('');
@@ -667,9 +579,7 @@ ${dataSource ?? ''}`;
       );
       expect(forkSecret.stdout.trim()).toBe('');
 
-      // The PARENT is untouched: its seeded data, its secret, AND its role survive.
-      // The parent staying `primary` is what makes the fork's `fork` above a real
-      // distinction rather than a value that happens to be written everywhere.
+      // The PARENT is untouched: its seeded data, its secret, AND its role survive. The parent staying `primary` is what makes the fork's `fork` above a real distinction rather than a value that happens to be written everywhere.
       expect(await marker(NS)).toBe(seeded);
       const parentSecret = await kubectl(
         `-n ${NS} get secret rediacc-env -o jsonpath="{.data.APP_SECRET}"`
@@ -682,11 +592,7 @@ ${dataSource ?? ''}`;
     });
 
     test('7. CSI dynamic PVC: pod-triggered WFFC provisioning binds a per-datastore CSI volume + marker persists', async () => {
-      // spec 09 §12 e2e item 1: a PVC on the DYNAMIC per-datastore CSI class
-      // (rediacc-csi-<ds>, WaitForFirstConsumer) is provisioned only once a
-      // consuming pod schedules; the pod writes a marker into the CSI volume.
-      // KEEP iteration: a prior run (or a mid-battery failure) may have left
-      // battery residue standing — pre-clean so the battery is re-entrant.
+      // spec 09 §12 e2e item 1: a PVC on the DYNAMIC per-datastore CSI class (rediacc-csi-<ds>, WaitForFirstConsumer) is provisioned only once a consuming pod schedules; the pod writes a marker into the CSI volume. KEEP iteration: a prior run (or a mid-battery failure) may have left battery residue standing — pre-clean so the battery is re-entrant.
       if (KEEP) {
         await csiCleanup(
           ['csi-writer', 'csi-restored', 'csi-cloned', 'csi-toobig-pod'],
@@ -713,11 +619,7 @@ ${dataSource ?? ''}`;
     });
 
     test('8. CSI VolumeSnapshot restore is point-in-time (snapshot precedes the 2nd write)', async () => {
-      // spec 09 §12 e2e item 2. Snapshot csi-dyn (holding only 'csi-original'),
-      // THEN write a 2nd marker, THEN restore the snapshot into a new PVC. The
-      // restored volume must carry the 1st marker and NOT the 2nd — that is what
-      // proves point-in-time restore rather than copy-of-latest (same
-      // falsifiability discipline as test 6's secret check).
+      // spec 09 §12 e2e item 2. Snapshot csi-dyn (holding only 'csi-original'), THEN write a 2nd marker, THEN restore the snapshot into a new PVC. The restored volume must carry the 1st marker and NOT the 2nd — that is what proves point-in-time restore rather than copy-of-latest (same falsifiability discipline as test 6's secret check).
       const snapYaml = `apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshot
 metadata:
@@ -761,8 +663,7 @@ spec:
     });
 
     test('9. CSI clone (PVC→PVC dataSource) is independent of its parent', async () => {
-      // spec 09 §12 e2e item 3. Clone csi-dyn into a new PVC, write into the CLONE,
-      // and assert the PARENT is unchanged — divergence proof in both directions.
+      // spec 09 §12 e2e item 3. Clone csi-dyn into a new PVC, write into the CLONE, and assert the PARENT is unchanged — divergence proof in both directions.
       const cloneDs = `  dataSource:
     name: csi-dyn
     kind: PersistentVolumeClaim
@@ -815,8 +716,7 @@ spec:
         'no scheduling/provisioning event for the oversize pod'
       ).toBeGreaterThan(0);
 
-      // Tear the whole CSI battery down so test 10's no-leak assertion sees only
-      // the repo's own declared volume (reclaimPolicy Delete removes the .img).
+      // Tear the whole CSI battery down so test 10's no-leak assertion sees only the repo's own declared volume (reclaimPolicy Delete removes the .img).
       await csiCleanup(
         ['csi-writer', 'csi-restored', 'csi-cloned', 'csi-toobig-pod'],
         ['csi-dyn', 'csi-restore', 'csi-clone', 'csi-toobig']
@@ -827,28 +727,14 @@ spec:
     });
 
     test('R9. pulls route through the zot mirror (containerd wired + zot serves the image)', async () => {
-      // Placed LAST: an auxiliary cache-integration assert must not mask the
-      // primary coverage above (.serial skips everything after a failure —
-      // learned when this assert hid the whole CSI battery for six runs).
+      // Placed LAST: an auxiliary cache-integration assert must not mask the primary coverage above (.serial skips everything after a failure — learned when this assert hid the whole CSI battery for six runs).
       //
-      // Two prior evidence channels turned out invalid and are documented so
-      // nobody resurrects them:
-      //   - the blob store: zot v2's on-demand sync SERVES manifest-list
-      //     images while failing to COMMIT them ("invalid manifest content",
+      // Two prior evidence channels turned out invalid and are documented so nobody resurrects them: - the blob store: zot v2's on-demand sync SERVES manifest-list images while failing to COMMIT them ("invalid manifest content",
       //     observed live for k3s's own images — ledgered as #96);
-      //   - the zot journal: renet configures zot at log level "warn"
-      //     (pkg/kube/registry/zot.go), so a SUCCESSFUL serve logs nothing —
-      //     only failing syncs appear. Absence of evidence there is not
-      //     evidence of a bypass.
-      // What CAN be asserted deterministically:
-      //   (1) k3s ingested the wiring — its generated containerd config
-      //       names the mirror endpoint. NOTE the relocated data-dir: this
-      //       cluster's k3s lives INSIDE the control datastore (the image IS
-      //       the cluster), so the agent tree is under the mount, not
+      // - the zot journal: renet configures zot at log level "warn" (pkg/kube/registry/zot.go), so a SUCCESSFUL serve logs nothing — only failing syncs appear. Absence of evidence there is not evidence of a bypass. What CAN be asserted deterministically: (1) k3s ingested the wiring — its generated containerd config names the mirror endpoint. NOTE the relocated data-dir: this
+      // cluster's k3s lives INSIDE the control datastore (the image IS the cluster), so the agent tree is under the mount, not
       //       /var/lib/rancher;
-      //   (2) the wired runtime still runs workloads (pod smoke below) —
-      //       upstream fallback keeps the fleet usable even when the cache
-      //       itself is broken.
+      // (2) the wired runtime still runs workloads (pod smoke below) — upstream fallback keeps the fleet usable even when the cache itself is broken.
       const containerdCfg = await w1.executeViaBridge(
         `sudo grep -rl '127.0.0.1:5000' ${CTRL_MOUNT}/.rediacc/k3s/data/agent/etc/containerd/ 2>/dev/null | head -5; true`
       );
@@ -856,11 +742,7 @@ spec:
         containerdCfg.stdout.trim(),
         'k3s generated no containerd config referencing the mirror — registries.yaml was not ingested'
       ).not.toBe('');
-      // #96 tripwire (LOUD, not blocking until #96 lands): zot's serve path
-      // is broken on this fleet — observed live, an on-demand manifest GET
-      // can HANG indefinitely (one unbounded curl ate the whole 360s test
-      // timeout) while containerd's pulls succeed via upstream fallback.
-      // Bounded + logged; flip serve and catalog to hard asserts with #96.
+      // #96 tripwire (LOUD, not blocking until #96 lands): zot's serve path is broken on this fleet — observed live, an on-demand manifest GET can HANG indefinitely (one unbounded curl ate the whole 360s test timeout) while containerd's pulls succeed via upstream fallback. Bounded + logged; flip serve and catalog to hard asserts with #96.
       const serve = await w1.executeViaBridge(
         `curl -s --max-time 60 -o /dev/null -w '%{http_code}' -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json' http://127.0.0.1:5000/v2/library/busybox/manifests/1.36; true`
       );
@@ -885,14 +767,8 @@ spec:
 
     test('10. teardown: repository down (no leak) + cluster + datastores + dummy interface removed', async () => {
       test.skip(KEEP, 'KEEP_CLUSTER=1: cluster left standing for iteration');
-      // BOTH repos come down: the FORK first, then the parent. Since F1 landed, test 6
-      // creates a real fork — its own namespace with a RUNNING pod holding its own
-      // cloned per-volume LUKS mounts. Those are live holders of the data datastore,
-      // and a DATA-datastore release must never kill node processes, so the product
-      // (correctly) refuses the detach while they exist: the workload has to be
-      // stopped before its storage is released. `repository down` on the fork deletes
-      // its namespace and releases its volumes; then the parent's does the same.
-      // `repository down` releases the per-volume LUKS mounts (CT-07 converge, no leak).
+      // BOTH repos come down: the FORK first, then the parent. Since F1 landed, test 6 creates a real fork — its own namespace with a RUNNING pod holding its own cloned per-volume LUKS mounts. Those are live holders of the data datastore, and a DATA-datastore release must never kill node processes, so the product (correctly) refuses the detach while they exist: the workload has to
+      // be stopped before its storage is released. `repository down` on the fork deletes its namespace and releases its volumes; then the parent's does the same. `repository down` releases the per-volume LUKS mounts (CT-07 converge, no leak).
       const downFork = await w1.executeViaBridge(
         `sudo renet repository down --name ${FORK_REPO} --datastore ${DATA_MOUNT} --network-id ${FORK_NET}`
       );
@@ -901,21 +777,15 @@ spec:
         `sudo renet repository down --name ${REPO} --datastore ${DATA_MOUNT} --network-id ${REPO_NET}`
       );
       expect(down.code, `down ${REPO}: ${down.stderr}`).toBe(0);
-      // CT-07 no-leak, asserted DIRECTLY: `repository down` released every per-volume
-      // LUKS mount the product owns under the repo folder.
+      // CT-07 no-leak, asserted DIRECTLY: `repository down` released every per-volume LUKS mount the product owns under the repo folder.
       expect(await repoVolumeMounts(), 'LUKS volume mounts leaked by repository down').toEqual([]);
 
-      // What still holds the datastores is node-side residue no lifecycle verb clears:
-      // the CSI daemons the product itself started (#26 — the holder that actually
-      // blocks the release) and k3s's leftover containerd/kubelet kernel mounts (#20).
+      // What still holds the datastores is node-side residue no lifecycle verb clears: the CSI daemons the product itself started (#26 — the holder that actually blocks the release) and k3s's leftover containerd/kubelet kernel mounts (#20).
       await csiNodeDown(w1);
       await unwindSubmounts(w1, DATA_MOUNT);
-      // Detach as a bounded CONVERGENCE poll: kubelet/containerd release
-      // their mounts asynchronously after pod/namespace deletion, so a
-      // just-torn-down node can hold the datastore for a few more seconds.
+      // Detach as a bounded CONVERGENCE poll: kubelet/containerd release their mounts asynchronously after pod/namespace deletion, so a just-torn-down node can hold the datastore for a few more seconds.
       // The product correctly refuses while holders exist (no lazy unmount);
-      // the test retries within a bound instead of racing it — observed
-      // live: a detach refused at T+0 succeeded seconds later.
+      // the test retries within a bound instead of racing it — observed live: a detach refused at T+0 succeeded seconds later.
       expect(
         await poll(async () => w1.isSuccess(await w1.datastoreDetach(DATA_DS)), 60_000, 5_000),
         `${DATA_DS} detach did not converge within 60s — holders never drained`

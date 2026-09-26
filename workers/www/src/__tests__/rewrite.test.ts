@@ -37,9 +37,7 @@ describe('shouldRewrite', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// rewriteOrigin
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- rewriteOrigin ---------------------------------------------------------------------------
 
 function makeResponse(body: string, contentType: string): Response {
   return new Response(body, { headers: { 'content-type': contentType } });
@@ -106,9 +104,7 @@ describe('rewriteOrigin', () => {
   });
 
   it('rewrites multiple occurrences of the production origin', async () => {
-    // replaceAll guards against the historical bug where only the first
-    // occurrence got rewritten and stale references leaked into rendered
-    // sitemaps / canonical tags below the fold.
+    // replaceAll guards against the historical bug where only the first occurrence got rewritten and stale references leaked into rendered sitemaps / canonical tags below the fold.
     const body = [
       'canonical: https://www.rediacc.com/a',
       'og:url: https://www.rediacc.com/b',
@@ -145,12 +141,9 @@ describe('rewriteOrigin', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Host → channel contract for the www → portal handoff.
-// The marketing site derives the account-portal channel from the host
+// --------------------------------------------------------------------------- Host → channel contract for the www → portal handoff. The marketing site derives the account-portal channel from the host
 // (packages/www/src/utils/marketing-host.ts); these cases pin the worker
-// behavior that model depends on.
-// ---------------------------------------------------------------------------
+// behavior that model depends on. ---------------------------------------------------------------------------
 
 describe('host→channel contract (www → portal handoff)', () => {
   it('edge marketing host maps to the edge channel', () => {

@@ -1,10 +1,8 @@
 import type { Ora } from 'ora';
+import { writeStderr } from '../services/core/request-context.js';
 import { getOutputFormat } from './errors.js';
 
-// esbuild bundles this literal `require` and defers ora's module init
-// (chalk / cli-cursor / string-width setup) to the first interactive
-// spinner. Spinners only run in a TTY, so piped/CI/JSON-output runs —
-// including --version/--help — never pay ora's startup cost.
+// esbuild bundles this literal `require` and defers ora's module init (chalk / cli-cursor / string-width setup) to the first interactive spinner. Spinners only run in a TTY, so piped/CI/JSON-output runs, including --version/--help, never pay ora's startup cost.
 declare const require: NodeJS.Require;
 let oraFactory: typeof import('ora')['default'] | undefined;
 function loadOra(): typeof import('ora')['default'] {
@@ -13,6 +11,16 @@ function loadOra(): typeof import('ora')['default'] {
 }
 
 let currentSpinner: Ora | null = null;
+
+/**
+ * Options for every ora spinner in the CLI. `discardStdin: false` keeps the terminal in cooked mode, so Ctrl-C stays a
+ * real SIGINT: ora's default puts stdin in RAW mode and listens for 0x03 with `prependListener('data')`, which never
+ * starts a stream that has not flowed yet, so the byte was swallowed and every spinner (e.g. `config remote enable`
+ * waiting on the browser) ignored Ctrl-C (2026-09-25).
+ */
+export function oraOptions(text: string): { text: string; discardStdin: false } {
+  return { text, discardStdin: false };
+}
 
 /**
  * Check if we're in an interactive environment (TTY).
@@ -31,7 +39,7 @@ export function startSpinner(text: string): Ora | null {
     currentSpinner.stop();
   }
   const ora = loadOra();
-  currentSpinner = ora({ text, stream: process.stderr }).start();
+  currentSpinner = ora({ ...oraOptions(text), stream: process.stderr }).start();
   return currentSpinner;
 }
 
@@ -57,6 +65,23 @@ export function stopSpinner(success = true, text?: string): void {
   currentSpinner = null;
 }
 
+/**
+ * Run `fn` with the running spinner paused, for a prompt that must own the
+ * terminal mid-operation. The same spinner resumes with its text afterwards,
+ * unless `fn` stopped or replaced it.
+ */
+export async function suspendSpinner<T>(fn: () => Promise<T>): Promise<T> {
+  const spinner = currentSpinner;
+  if (!spinner?.isSpinning) return fn();
+  const text = spinner.text;
+  spinner.stop();
+  try {
+    return await fn();
+  } finally {
+    if (currentSpinner === spinner) spinner.start(text);
+  }
+}
+
 export async function withSpinner<T>(
   text: string,
   fn: () => Promise<T>,
@@ -69,11 +94,11 @@ export async function withSpinner<T>(
       // Avoid polluting machine-readable output formats
       const format = getOutputFormat();
       if (successText && format === 'table') {
-        process.stderr.write(`✓ ${successText}\n`);
+        writeStderr(`✓ ${successText}\n`);
       }
       return result;
     } catch (error) {
-      console.error(`✗ ${text.replace('...', '')} failed`);
+      writeStderr(`✗ ${text.replace('...', '')} failed\n`);
       throw error;
     }
   }

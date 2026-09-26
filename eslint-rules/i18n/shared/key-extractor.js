@@ -8,9 +8,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Cache for extracted keys
-let extractedKeysCache = null;
-let cacheTimestamp = 0;
+/**
+ * Cache for extracted keys, KEYED BY SOURCE DIRECTORY.
+ *
+ * It was a single unkeyed slot plus one timestamp until 2026-09-06, which meant
+ * the second caller within the TTL got the FIRST caller's key set no matter
+ * which directory it asked about. That is not hypothetical here: this repository
+ * has three unrelated locale trees (packages/cli, private/account/web,
+ * private/account), require-path-option.js exists precisely because no rule can
+ * guess which one a config block means, and eslint.config.js is free to
+ * configure no-unused-keys once per tree. Two blocks in one eslint run would
+ * have made the second tree report against the first tree's usage, which shows
+ * up as unused-key findings that are simply wrong, or as silence that is worse.
+ *
+ * The bug was latent only because the rule is currently 'off' everywhere. It was
+ * found by writing the rule's first RuleTester spec: two fixtures in one process
+ * returned identical results.
+ */
+const extractedKeysCache = new Map();
 const CACHE_TTL = 30000; // 30 seconds cache TTL
 
 /**
@@ -111,8 +126,9 @@ const recordUsedKey = (usedKeys, fullKey) => {
 export const extractUsedKeys = (sourceDir) => {
   // Check cache
   const now = Date.now();
-  if (extractedKeysCache && now - cacheTimestamp < CACHE_TTL) {
-    return extractedKeysCache;
+  const cached = extractedKeysCache.get(sourceDir);
+  if (cached && now - cached.timestamp < CACHE_TTL) {
+    return cached.keys;
   }
 
   const usedKeys = new Map(); // namespace -> Set of keys
@@ -127,8 +143,7 @@ export const extractUsedKeys = (sourceDir) => {
   }
 
   // Update cache
-  extractedKeysCache = usedKeys;
-  cacheTimestamp = now;
+  extractedKeysCache.set(sourceDir, { keys: usedKeys, timestamp: now });
 
   return usedKeys;
 };
@@ -169,11 +184,16 @@ export const getUsedKeysForNamespace = (sourceDir, namespace) => {
 };
 
 /**
- * Clear the cache (useful for testing)
+ * Clear the cache (useful for testing).
+ *
+ * Pass a directory to drop only that entry; pass nothing to drop all of them.
  */
-export const clearKeyExtractorCache = () => {
-  extractedKeysCache = null;
-  cacheTimestamp = 0;
+export const clearKeyExtractorCache = (sourceDir) => {
+  if (sourceDir === undefined) {
+    extractedKeysCache.clear();
+    return;
+  }
+  extractedKeysCache.delete(sourceDir);
 };
 
 export default {

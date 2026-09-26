@@ -1,6 +1,6 @@
 ---
 title: Armazenamento de Configuração
-description: Sincronização de configuração encriptada zero-knowledge com desbloqueio por passkey, palavra-passe mestra ou código de recuperação
+description: Sincronização de configuração encriptada no dispositivo, com desbloqueio por passkey, palavra-passe mestra ou código de recuperação
 category: Guides
 tags:
   - account
@@ -8,13 +8,13 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "e4b2eecb8bdf0015"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "ccced160d151eeeb"
+sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
 # Armazenamento de Configuração
 
-O armazenamento de configuração fornece sincronização encriptada zero-knowledge da sua configuração CLI entre dispositivos. As suas configurações são encriptadas no lado do cliente com uma chave de encriptação de conteúdo (CEK); o servidor nunca vê dados em texto simples.
+O armazenamento de configuração sincroniza uma configuração do CLI entre dispositivos. As configurações são encriptadas no dispositivo com uma chave de encriptação de conteúdo (CEK) que o servidor nunca detém. A secção [Segurança](#security) indica exatamente o que isso protege e o que não protege.
 
 ## Métodos de desbloqueio (slots de chave)
 
@@ -26,7 +26,7 @@ Existe uma CEK por armazenamento, protegida de forma independente para cada mét
 | **Palavra-passe mestra** | Uma palavra-passe à sua escolha, reforçada com PBKDF2-SHA256 (600.000 iterações) | Funciona sem hardware compatível com PRF; também permite a inscrição headless do CLI |
 | **Código de recuperação** | Um código gerado no formato `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Mostrado apenas uma vez na criação; guarde-o num local seguro |
 
-Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, pelo que a propriedade zero-knowledge se mantém nos três métodos: o segredo do slot nunca chega ao servidor.
+Todos os métodos alimentam o mesmo processo: o slot produz um segredo que se combina com um segredo guardado no servidor para desbloquear a CEK. Nenhuma das duas metades é suficiente por si só, e o segredo do slot nunca chega ao servidor. Um slot de palavra-passe mestra é o mais fraco dos três: o servidor tem tudo o que é necessário para testar tentativas de palavra-passe offline, por isso a palavra-passe tem de ser forte. Os slots de passkey e de código de recuperação não têm esta fraqueza.
 
 Os slots são geridos no portal, na página Armazenamento de Configuração. As organizações que queiram exigir desbloqueio apenas por hardware podem ativar a política **exigir passkey**, que recusa e revoga slots não-passkey em todo o armazenamento.
 
@@ -44,12 +44,13 @@ O requisito de PRF aplica-se apenas ao slot de passkey. Os métodos de palavra-p
 
 1. Navegue até **Armazenamento de Configuração** na barra lateral e clique em **Configurar Armazenamento de Configuração**
 2. A lista de verificação de requisitos valida o seu browser, 2FA e estado da sessão
-3. Clique em **Iniciar Configuração**. Para um slot de passkey, precisará de tocar na sua chave de segurança duas vezes:
-   - Primeiro toque: regista a passkey
-   - Segundo toque: deriva as chaves de encriptação via PRF
-4. Configuração concluída; o segredo da sua passkey fica armazenado no keyring do seu sistema operativo
+3. Escolha o primeiro método de desbloqueio e clique em **Criar armazenamento de configuração**:
+   - **Passkey**, se o seu provedor suportar PRF: você toca a chave de segurança duas vezes, uma para registrá-la e outra para derivar as chaves de criptografia.
+   - **Senha mestra**, que funciona em qualquer navegador, inclusive com provedores de passkey sem PRF, como o Bitwarden.
+   - Opcionalmente, um **código de recuperação**, exibido uma única vez, para guardar antes de o armazenamento ser criado.
+4. Configuração concluída. A CLI guarda o segredo de desbloqueio no chaveiro do seu sistema operacional.
 
-Após a configuração, adicione um slot de palavra-passe mestra ou de código de recuperação a partir da página Armazenamento de Configuração, para que um autenticador perdido ou não suportado não o deixe bloqueado para sempre.
+Uma passkey pode ser adicionada depois na página Config Storage. Mantenha pelo menos dois métodos de desbloqueio, para que um autenticador perdido ou incompatível não bloqueie seu acesso.
 
 ## Compatibilidade de Fornecedores PRF
 
@@ -60,7 +61,7 @@ Após a configuração, adicione um slot de palavra-passe mestra ou de código d
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplataforma |
-| Extensão Bitwarden | ❌ | Em desenvolvimento |
+| Extensão Bitwarden | ❌ | Use antes uma palavra-passe mestra |
 | Windows Hello | ❌ | Não suportado |
 
 ## Inscrição headless do CLI
@@ -86,7 +87,23 @@ Depois de ativada, a configuração mantém uma **cache de leitura** completa, e
 
 - **As leituras funcionam offline.** O conteúdo em cache é servido com um aviso de desatualização no stderr, identificado com a versão e o carimbo de data/hora em cache (`cachedVersion` / `cachedAt`).
 - **As escritas exigem o servidor e falham de forma fechada.** Não existe fila de escrita offline: uma escrita que não consiga alcançar o servidor termina em erro e indica o servidor. Se um comando de escrita foi bem-sucedido, a alteração está no servidor.
-- **As edições concorrentes a partir de duas máquinas** resolvem-se por obtenção-repetição-reenvio (pull-replay-repush) ao nível do conjunto de recursos, para que uma edição simultânea noutro local não sobreponha a sua.
+- **As edições concorrentes a partir de duas máquinas** resolvem-se por obtenção-repetição-reenvio (pull-replay-repush): o servidor só aceita um envio sobre a versão que substitui, e o envio perdedor é repetido sobre a cópia atualizada, pelo que uma edição simultânea noutro local não é sobrescrita.
+- **Uma configuração local** (sem bloco `remote`) não é afetada por nada disto e funciona totalmente offline.
+
+## O que sincroniza
+
+Tudo numa configuração é sincronizado, incluindo o ID de rede de cada repositório, exceto estes campos locais ao dispositivo: `schemaVersion`, `version`, `remote`, `encryption`, `renetPath`, `credentials.masterPasswordVerifier`, e os campos de sessão `account.accountServer` e `account.e2ePublicKey`. Iniciar e terminar sessão é por dispositivo.
+
+## Versões e restauro
+
+O servidor mantém as últimas 50 versões de cada configuração.
+
+```bash
+rdc config remote versions
+rdc config remote restore <version>
+```
+
+Um restauro publica o conteúdo antigo como uma nova versão sobre a atual; nunca recua o número de versão. Todos os dispositivos recebem o conteúdo restaurado na próxima obtenção (pull), e o restauro fica registado no registo de auditoria.
 
 ## Rotação de chaves
 
@@ -95,6 +112,7 @@ Rodar a CEK do armazenamento volta a protegê-la sob uma nova geração:
 - Os **códigos de recuperação são sempre invalidados** pela rotação; gere e guarde um novo depois
 - Um **slot de palavra-passe mestra** só sobrevive se a palavra-passe for reintroduzida durante o assistente de rotação
 - Um slot deixado numa geração mais antiga é reportado como obsoleto em vez de falhar com um erro de desencriptação críptico
+- Os tokens de configuração dos outros membros são revogados, e um dispositivo que ainda tenha a chave antiga é instruído a reativar com `rdc config remote enable`
 
 ## Gestão de Membros
 
@@ -110,11 +128,23 @@ As configurações no armazenamento têm ainda âmbito por equipa, mas esse âmb
 
 ## Segurança
 
-- **Zero-knowledge**: O servidor armazena dados triplamente encriptados que não consegue desencriptar
-- **Chave dividida**: A desencriptação requer tanto o segredo do seu slot (cliente) como o segredo do servidor (servidor)
-- **Tokens rotativos**: Cada chamada de API usa um token novo; os tokens antigos autodestroem-se
-- **Vinculação de IP**: Os tokens ficam vinculados ao seu IP no primeiro uso
-- **Revogação instantânea**: Os membros removidos perdem o acesso em 30 segundos
+**O que está protegido.** As configurações armazenadas são confidenciais perante um comprometimento do armazenamento do servidor e perante um operador passivo. Cada blob está vinculado ao seu armazenamento, configuração, equipa e versão, pelo que o servidor não pode trocar o blob de uma configuração pelo de outra nem alterá-lo sem ser detetado.
+
+**O que não está protegido.** Um operador que sirva código malicioso no portal pode ler a chave no browser. Um operador também pode reter a versão mais recente de um dispositivo que nunca a viu.
+
+| O servidor consegue | O servidor não consegue |
+|---|---|
+| Ver os IDs de configuração, equipas, números de versão, carimbos de data/hora, tamanhos dos blobs, quantos campos uma configuração contém e o tipo de cada campo, e os endereços IP dos clientes | Ver nomes de máquinas, repositórios ou armazenamentos (são ofuscados) ou qualquer valor de configuração |
+| Recusar, atrasar ou eliminar configurações e o seu histórico | Servir o conteúdo de uma configuração como se fosse outra, ou editá-lo, sem que o dispositivo detete isso |
+| Servir uma versão antiga a um dispositivo que nunca viu uma mais recente | Servir ao CLI uma versão mais antiga do que outra que já viu: o CLI recusa-a |
+| Testar tentativas de palavra-passe mestra offline | Abrir um slot de passkey ou de código de recuperação |
+
+Outras proteções:
+
+- **Chave dividida**: a desencriptação requer tanto o segredo do slot (no dispositivo) como o segredo do servidor
+- **A eliminação exige conhecimento**: remover um valor confirmado de uma configuração exige provar que o valor era conhecido, para que um agente com acesso parcial não consiga eliminar campos silenciosamente
+- **Tokens rotativos**: cada pedido roda o token de configuração; um token está vinculado ao endereço IP do seu primeiro uso e expira ao fim de 7 dias
+- **Revogação**: remover um membro elimina de imediato os seus slots de chave e tokens; o que já tinha obtido permanece no seu dispositivo, e uma rotação da CEK impede que uma chave que tenha guardado abra versões posteriores
 
 ## Resolução de Problemas
 
@@ -124,7 +154,8 @@ As configurações no armazenamento têm ainda âmbito por equipa, mas esse âmb
 | X25519 não suportado | Versão do browser demasiado antiga | Atualize para Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Já configurado | Existe um armazenamento para a sua organização | Visite /account/config-storage para gerir |
 | Armazenamento de configuração não configurado | Servidor sem armazenamento de blobs | Contacte o seu administrador para configurar R2/RustFS |
-| Token expirado | Sem atividade há 24 horas | Execute qualquer comando de armazenamento de configuração para atualizar |
+| Token expirado | Sem atividade durante 7 dias, ou a máquina mudou de rede | Renovado automaticamente através do login; se não houver login guardado, execute `rdc subscription login` ou `rdc config remote enable` |
+| A configuração voltou numa versão mais antiga | O servidor devolveu uma cópia mais antiga do que a que este dispositivo já tinha visto | Nada mudou localmente; tente novamente e reporte se persistir |
 | Não é possível remover o último membro | Bloquearia o armazenamento permanentemente | Adicione primeiro outro membro |
 | Slot obsoleto | O slot é anterior à última rotação de chaves | Adicione o slot novamente (os códigos de recuperação têm de ser regenerados após cada rotação) |
 

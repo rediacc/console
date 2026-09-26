@@ -4,7 +4,7 @@
  * **Write-only model (V2).** Mirrors GitHub Actions secrets:
  *   - `set` / `unset` write or delete.
  *   - `list` returns names + modes (never values, never digests).
- *   - `get` returns `{ key, mode, digest }` only — the plaintext value is
+ *   - `get` returns `{ key, mode, digest }` only, the plaintext value is
  *     never returned to anyone (human or agent). Use `--current` to verify
  *     a value you already know via passwd-style precondition.
  *
@@ -19,7 +19,7 @@
  * **Addressing (reshape P4).** Every verb takes a positional `<ref>` and
  * resolves the repo through `resolveRepoRefLocal`. Secret ops are config-local
  * (no remote round-trip, no machine dispatch), so they resolve the family/tag
- * WITHOUT deriving a placement machine — that keeps them working on a repo whose
+ * WITHOUT deriving a placement machine, that keeps them working on a repo whose
  * datastore is detached or whose placement is not yet reconciled. The composite
  * `name:tag` key the flat-view store indexes by is rebuilt from the resolved
  * `name` + `tag` (the flattened repositories map is always keyed that way).
@@ -96,9 +96,7 @@ function hashValue(s: string): string {
 }
 
 function buildSecretPointer(repoKey: string, secretKey: string): string {
-  // RFC 6901: escape `~` → `~0`, `/` → `~1` in segment values. v3 keys
-  // repositories by name into families of structural tags, so the composite
-  // `name:tag` key splits into the `<name>/tags/<tag>` path.
+  // RFC 6901: escape `~` → `~0`, `/` → `~1` in segment values. v3 keys repositories by name into families of structural tags, so the composite `name:tag` key splits into the `<name>/tags/<tag>` path.
   const escape = (s: string) => s.replaceAll('~', '~0').replaceAll('/', '~1');
   const colon = repoKey.indexOf(':');
   const base = colon === -1 ? repoKey : repoKey.slice(0, colon);
@@ -113,10 +111,7 @@ function buildSecretPointer(repoKey: string, secretKey: string): string {
  * resolved tag before it can touch the map.
  */
 async function resolveSecretRepoKey(ref: string): Promise<{ name: string; repoKey: string }> {
-  // Config-local: secret ops read/write the config only (secrets are injected at
-  // up() time, never set on a machine), so resolve the family/tag WITHOUT deriving
-  // a placement machine. This keeps secret get/list/set/unset working on a repo
-  // whose datastore is detached or whose placement is not yet reconciled.
+  // Config-local: secret ops read/write the config only (secrets are injected at up() time, never set on a machine), so resolve the family/tag WITHOUT deriving a placement machine. This keeps secret get/list/set/unset working on a repo whose datastore is detached or whose placement is not yet reconciled.
   const { name, tag } = await resolveRepoRefLocal(ref);
   return { name, repoKey: `${name}:${tag}` };
 }
@@ -155,9 +150,7 @@ async function handleSecretGet(ref: string, options: SecretGetOptions): Promise<
     );
   }
 
-  // Write-only model: NEVER return the plaintext value, regardless of caller.
-  // Digest lets the user verify "is this still the value I think it is" via
-  // the --current ceremony on a subsequent `set`.
+  // Write-only model: NEVER return the plaintext value, regardless of caller. Digest lets the user verify "is this still the value I think it is" via the --current ceremony on a subsequent `set`.
   const pointer = buildSecretPointer(repoKey, options.key);
   const digest = shortFingerprint(entry.value);
   const format = getOutputFormat();

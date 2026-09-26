@@ -1,0 +1,11 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 0
+--- stdout ---
+
+--- stderr ---
+→ Re-tagging api: a -> b
+✓ Destination matches source digest, skipping: ghcr.io/rediacc/api:b (sha256:same)
+✓ Re-tag summary: 1 succeeded, 0 failed
+--- calls ---
+docker	buildx	imagetools	inspect	ghcr.io/rediacc/api:b	--format	{{.Manifest.Digest}}
+docker	buildx	imagetools	inspect	ghcr.io/rediacc/api:a	--format	{{.Manifest.Digest}}

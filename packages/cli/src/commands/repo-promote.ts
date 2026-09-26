@@ -29,14 +29,12 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
     const { machineName, repoKey, kubeCluster } = await resolveRepoRef(ref);
 
     // Promote swaps two LUKS images inside one docker datastore; there is no
-    // kubernetes equivalent in v1, so refuse a cluster-placed repo early rather
-    // than failing downstream with a confusing renet error.
+    // kubernetes equivalent in v1, so refuse a cluster-placed repo early rather than failing downstream with a confusing renet error.
     if (kubeCluster) {
       throw new ValidationError(t('errors.cluster.dockerOnlyVerb', { verb: 'promote' }));
     }
 
-    // Destructive verb: resolve the STRICT key so a bare ambiguous ref fails
-    // closed (#495) instead of promoting (or refusing) the wrong record.
+    // Destructive verb: resolve the STRICT key so a bare ambiguous ref fails closed (#495) instead of promoting (or refusing) the wrong record.
     const { key: forkRef, config: forkConfig } =
       await configService.resolveDestructiveTarget(repoKey);
 
@@ -76,7 +74,7 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
       functionName: 'repository_promote',
       machineName,
       // #74: both images are the same FAMILY, so one recorded placement answers
-      // for the grand and the fork alike — a fork lives beside its parent.
+      // for the grand and the fork alike, a fork lives beside its parent.
       datastore: await recordedDatastoreMount(grandEntry.name),
       params: {
         parent: grandEntry.config.repositoryGuid,

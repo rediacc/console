@@ -88,8 +88,7 @@ export function reverseFindings(
         badKeys.push(`${slug}.${lang}`);
         continue;
       }
-      // Count only COMPLETE sets, and only for slugs the gate actually requires --
-      // a half-published locale is not ready to flip and must not be reported as such.
+      // Count only COMPLETE sets, and only for slugs the gate actually requires -- a half-published locale is not ready to flip and must not be reported as such.
       if (required.includes(slug) && missingManifestFields(manifest, slug, lang).length === 0) {
         langsSeen.set(lang, (langsSeen.get(lang) ?? 0) + 1);
       }
@@ -104,10 +103,7 @@ export function reverseFindings(
   return { badKeys: badKeys.sort(), readyToFlip, orphanSlugs: orphanSlugs.sort() };
 }
 
-// Exported so check-solution-video-engine.ts asks the SAME question about which slugs
-// require video. Duplicating this would let the two gates disagree about scope, and the
-// fail-safe branches below (an unparseable config counts as required) are exactly the
-// subtlety a second copy would get wrong.
+// Exported so check-solution-video-engine.ts asks the SAME question about which slugs require video. Duplicating this would let the two gates disagree about scope, and the fail-safe branches below (an unparseable config counts as required) are exactly the subtlety a second copy would get wrong.
 export function listSlugs(): string[] {
   if (!fs.existsSync(solutionsPagesDir)) return [];
   return (

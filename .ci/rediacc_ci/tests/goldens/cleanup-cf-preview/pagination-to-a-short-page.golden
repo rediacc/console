@@ -1,0 +1,37 @@
+# twin .ci/scripts/housekeeping/cleanup-cf-preview.sh blob 462ca490e7184f30b7fed025efddb7c3241b9a4d
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Cleaning up CF Pages preview deployments for branch: feature-x
+→ Found 26 preview deployments for branch 'feature-x'
+✓ Deleted 26 of 26 deployments for branch 'feature-x'
+--- calls ---
+curl	-s	-X	GET	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments?env=preview&per_page=25&page=1	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	GET	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments?env=preview&per_page=25&page=2	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	GET	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments?env=preview&per_page=25&page=3	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-0?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-2?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-4?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-6?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-8?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-10?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-12?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-14?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-16?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-18?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-20?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-22?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-1-24?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-0?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-2?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-4?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-6?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-8?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-10?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-12?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-14?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-16?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-18?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-20?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-22?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json
+curl	-s	-X	DELETE	https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/rediacc/deployments/dep-2-24?force=true	-H	Authorization: Bearer tok-fixture	-H	Content-Type: application/json

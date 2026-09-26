@@ -31,16 +31,14 @@ describe('resolvePrerequisites', () => {
     expect(verdict.kind).toBe('run');
   });
 
-  // The instrument control. This is the case the whole module exists for: a
-  // missing prerequisite with nobody saying why must be a RED, never a skip.
+  // The instrument control. This is the case the whole module exists for: a missing prerequisite with nobody saying why must be a RED, never a skip.
   it('FAILS CLOSED when a prerequisite is missing and no declaration is set', () => {
     const verdict = resolve([met, unmet]);
     expect(verdict.kind).toBe('undeclared');
     if (verdict.kind !== 'undeclared') throw new Error('unreachable');
     expect(verdict.missing).toEqual(['VM_WORKERS (two worker VMs)']);
     expect(verdict.message).toContain('That is a FAILURE, not a skip');
-    // The failure text must be actionable on both sides: how to satisfy it,
-    // and the exact var that declares the omission.
+    // The failure text must be actionable on both sides: how to satisfy it, and the exact var that declares the omission.
     expect(verdict.message).toContain('run `./run.sh ops up`');
     expect(verdict.message).toContain(
       "E2E_EXPECT_NO_CLUSTER_VMS='<why this environment has none>'"

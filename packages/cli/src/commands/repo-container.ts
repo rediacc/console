@@ -1,5 +1,5 @@
 /**
- * `rdc repo logs` / `rdc repo exec` (spec 03 §5.4, R2-F14) — the two verbs that
+ * `rdc repo logs` / `rdc repo exec` (spec 03 §5.4, R2-F14), the two verbs that
  * replace `term connect`'s container side door.
  *
  * The old shape was `term connect -m <m> -r <repo> --container <c> --log-lines
@@ -29,6 +29,7 @@
 
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -48,12 +49,9 @@ function resolveContainer(
   kubeCluster: string | undefined,
   requested: string | undefined
 ): string | undefined {
-  // An explicit choice is always honored; renet reports a bad name itself, and its
-  // error names the containers that DO exist, which is the message we would write.
+  // An explicit choice is always honored; renet reports a bad name itself, and its error names the containers that DO exist, which is the message we would write.
   if (requested) return requested;
-  // Undefined lets renet apply the single-container default. It knows the live
-  // container set; the CLI would have to round-trip to learn it, and the answer
-  // could change between the probe and the call anyway.
+  // Undefined lets renet apply the single-container default. It knows the live container set; the CLI would have to round-trip to learn it, and the answer could change between the probe and the call anyway.
   void repoKey;
   void machineName;
   void kubeCluster;
@@ -97,8 +95,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           const result = await getExecutor().execute({
             functionName: 'container_logs',
             machineName,
-            // #74: the container lives in the repo's compose project, which renet
-            // resolves through the repo's mount — the machine default is not it.
+            // #74: the container lives in the repo's compose project, which renet resolves through the repo's mount, the machine default is not it.
             datastore: await recordedDatastoreMount(repoKey),
             params: {
               repository: repoKey,
@@ -149,17 +146,12 @@ export function registerRepoContainerCommands(repo: Command): void {
           const result = await getExecutor().execute({
             functionName: 'container_exec',
             machineName,
-            // #74: same as container_logs — the exec target is resolved through
-            // the repo's mount, so the recorded datastore has to travel.
+            // #74: same as container_logs, the exec target is resolved through the repo's mount, so the recorded datastore has to travel.
             datastore: await recordedDatastoreMount(repoKey),
             params: {
               repository: repoKey,
               ...(container && { container }),
-              // Quote EACH argv element, then join. renet hands this string to
-              // `/bin/sh -c` as one argv element (pkg/functions/commands/
-              // container.go), so a bare join let the container's shell re-split
-              // it: `-- sh -c "echo A B"` arrived as `sh -c echo A B`, silently
-              // running something the operator never typed.
+              // Quote EACH argv element, then join. renet hands this string to `/bin/sh -c` as one argv element (pkg/functions/commands/ container.go), so a bare join let the container's shell re-split it: `-- sh -c "echo A B"` arrived as `sh -c echo A B`, silently running something the operator never typed.
               command: cmd.map(shellQuote).join(' '),
               ...(options.user && { user: options.user }),
               ...(options.interactive && { tty: true }),
@@ -169,14 +161,11 @@ export function registerRepoContainerCommands(repo: Command): void {
             ...(kubeCluster !== undefined && { kubeCluster }),
           });
 
-          // The remote exit code IS the result (§1 deviation). Anything else makes
-          // `repo exec <ref> -- test -f /x` a command whose answer cannot be read.
+          // The remote exit code IS the result (§1 deviation). Anything else makes `repo exec <ref> -- test -f /x` a command whose answer cannot be read.
           if (!result.success) {
-            // A NON-ZERO remote exit is not a CLI failure, it is the answer. Only a
-            // dispatch failure (exitCode 0 with success false, or an SSH-level error)
-            // becomes an exception.
+            // A NON-ZERO remote exit is not a CLI failure, it is the answer. Only a dispatch failure (exitCode 0 with success false, or an SSH-level error) becomes an exception.
             if (result.exitCode !== 0) {
-              process.exitCode = result.exitCode;
+              setExitCode(result.exitCode);
               return;
             }
             throw new Error(result.error ?? t('errors.container.execFailed'));

@@ -17,13 +17,13 @@ export interface SftpFileEntry {
   remoteRelative: string;
   absolutePath: string;
   size: number;
-  /** Octal mode bits (rwxrwxrwx) — preserved on the remote via chmod. */
+  /** Octal mode bits (rwxrwxrwx), preserved on the remote via chmod. */
   mode: number;
 }
 
 export interface SftpSymlinkEntry {
   remoteRelative: string;
-  /** Target as recorded by readlink — may be relative or absolute. */
+  /** Target as recorded by readlink, may be relative or absolute. */
   target: string;
 }
 
@@ -114,8 +114,7 @@ async function walkLocalDir(
   exclude: string[]
 ): Promise<WalkResult> {
   // Compile excludes once for the entire walk; recompiling per-entry was a
-  // hot-loop allocation (one regex object per pattern per file/dir), which
-  // mattered on repos with thousands of files.
+  // hot-loop allocation (one regex object per pattern per file/dir), which mattered on repos with thousands of files.
   const compiled = compilePatterns(exclude);
   const result: WalkResult = { files: [], symlinks: [] };
   const ctx: DirEntryCtx = { basePath, exclude: compiled, result };

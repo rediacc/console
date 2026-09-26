@@ -1,0 +1,15 @@
+# twin .ci/scripts/docker/create-manifest.sh blob b18c560bcfc37ac057d50b987187addf6573a51a
+exit: 0
+--- stdout ---
+Usage: <root>/<SELF> (--image NAME | --image-path PATH) --tag TAG [--push-latest] [--dry-run]
+
+Create multi-arch Docker manifest from architecture-specific images
+
+Options:
+  --image NAME      Image name relative to PUBLISH_DOCKER_REGISTRY (api, bridge, ...)
+  --image-path PATH Full image path (e.g., ghcr.io/rediacc/server)
+  --tag TAG         Tag for the manifest
+  --push-latest     Also create and push :latest manifest
+  --dry-run         Preview without creating manifest
+--- stderr ---
+--- calls ---

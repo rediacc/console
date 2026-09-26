@@ -16,6 +16,8 @@ const update = vi.fn<(name: string, fn: (cfg: RdcConfig) => RdcConfig) => Promis
 vi.mock('../../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
     update: (name: string, fn: (cfg: RdcConfig) => RdcConfig) => update(name, fn),
+    // A local config: updateSyncedConfig edits the file (a remote one is pushed).
+    exists: () => Promise.resolve(false),
   },
 }));
 
@@ -29,7 +31,7 @@ function configWith(name: string): RdcConfig {
 }
 
 /**
- * A cluster that OWNS a datastore, which in turn holds a repo — plus a sibling
+ * A cluster that OWNS a datastore, which in turn holds a repo, plus a sibling
  * cluster with the same shape, which must survive untouched.
  */
 function configWithDatastores(name: string): RdcConfig {
@@ -90,10 +92,7 @@ describe('removeClusterFromStore (#22)', () => {
 
     await removeClusterFromStore('cfg', 'b1src');
 
-    // #89: state.datastores[dscp].attachedTo named `b1src-cp-1`. Machine names are
-    // DETERMINISTIC, so a same-name recreate re-mints that machine — and the stale hint
-    // re-aims derived-machine routing at a brand-new machine that has no such datastore.
-    // #22's own failure mode, arriving through the field #22 did not clear.
+    // #89: state.datastores[dscp].attachedTo named `b1src-cp-1`. Machine names are DETERMINISTIC, so a same-name recreate re-mints that machine, and the stale hint re-aims derived-machine routing at a brand-new machine that has no such datastore. #22's own failure mode, arriving through the field #22 did not clear.
     expect(mutated?.state?.datastores).not.toHaveProperty('dscp');
     expect(mutated?.state?.repos).not.toHaveProperty('shop');
 

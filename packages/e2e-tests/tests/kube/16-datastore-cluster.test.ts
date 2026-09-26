@@ -2,40 +2,27 @@ import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import type { ExecResult } from '../../src/utils/bridge/types';
 
-// Suite 16 (`Bridge Datastore Cluster` job, flagship): the datastore-cluster
-// GROUP-SNAP FORK proof (redesign spec 06 §16; CONTRACT.md CT-01k/CT-02k). The
-// old per-namespace ceph-csi/RADOS-namespace subject is DELETED — the NEW
-// subject is a whole cluster-attached, ceph-group-backed datastore forked
-// atomically:
+// Suite 16 (`Bridge Datastore Cluster` job, flagship): the datastore-cluster GROUP-SNAP FORK proof (redesign spec 06 §16; CONTRACT.md CT-01k/CT-02k). The old per-namespace ceph-csi/RADOS-namespace subject is DELETED — the NEW subject is a whole cluster-attached, ceph-group-backed datastore forked atomically:
 //
-//   cluster-attached rbd datastore(s)  ─ group snapshot ─▶ datastore_fork
+// cluster-attached rbd datastore(s) ─ group snapshot ─▶ datastore_fork
 //     ─ attach --writes {local|ceph} ─▶ kube identity-rewrite --operation fork
 //
-// It promotes the P2-A proven battery (scratchpad/p2a-fork-battery.sh, the
-// live-run FOLLOW-UP #1) to a suite, KEEPING the multinode fork PROOF SHAPE:
+// It promotes the P2-A proven battery (scratchpad/p2a-fork-battery.sh, the live-run FOLLOW-UP #1) to a suite, KEEPING the multinode fork PROOF SHAPE:
 //   - GROUP snapshot atomic across the cluster's ceph datastores; the parent is
-//     NEVER stopped (a continuous liveness loop witnesses it).
+// NEVER stopped (a continuous liveness loop witnesses it).
 //   - datastore_fork clones each member from the group snap (clone-format-2);
-//     attach --writes selects the fork's write home (local dm-COW overlay vs a
-//     durable ceph RW clone — the new axis).
-//   - kube identity-rewrite --operation fork runs the F1-F8 PKI re-mint on the
-//     fork's control-plane clone: the fork's kine carries NO parent CA (CT-01k,
-//     a fail-loud fingerprint refusal makes a silent parent-CA fork impossible)
+// attach --writes selects the fork's write home (local dm-COW overlay vs a durable ceph RW clone — the new axis). - kube identity-rewrite --operation fork runs the F1-F8 PKI re-mint on the fork's control-plane clone: the fork's kine carries NO parent CA (CT-01k, a fail-loud fingerprint refusal makes a silent parent-CA fork impossible)
 //     and NO parent secret material; the parent admin cert is REJECTED (401) by
-//     the fork API but STILL WORKS (200) against the parent (CT-02k).
+// the fork API but STILL WORKS (200) against the parent (CT-02k).
 //   - a MIGRATE leg: an in-place CA-PRESERVING relocate (operation=migrate)
-//     keeps the CA + secrets (the fork/migrate arm split, spec 05 §3).
+// keeps the CA + secrets (the fork/migrate arm split, spec 05 §3).
 //
-// RED-UNTIL-LIVE-RUN (spec 06 authoring bar + P2 FOLLOW-UP #1): authored to
-// COMPILE + keep the coverage gate green; the BODY is not executed by this wave
-// (needs a RAM-adequate host + healthy ceph — the exact blocker that descoped
-// the live P2-A run). The live follow-up must produce the full identity battery
+// RED-UNTIL-LIVE-RUN (spec 06 authoring bar + P2 FOLLOW-UP #1): authored to COMPILE + keep the coverage gate green; the BODY is not executed by this wave (needs a RAM-adequate host + healthy ceph — the exact blocker that descoped the live P2-A run). The live follow-up must produce the full identity battery
 // (parent-vs-fork CA fingerprints, old-cred 401/200, secret absence, ROLE=fork,
 // kine/storage markers, continuous parent liveness, the migrate leg).
 //
 // Gated on K8S_MODE=1 + a ceph topology (VM_CEPH_NODES) + TWO worker VMs
-// (control on worker 1, fork dest on worker 2 — S1 verdict 2 forbids two k3s in
-// one host netns, so the fork server relocates to a second machine).
+// (control on worker 1, fork dest on worker 2 — S1 verdict 2 forbids two k3s in one host netns, so the fork server relocates to a second machine).
 const enabled = process.env.K8S_MODE === '1';
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
 const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
@@ -47,8 +34,7 @@ const W1_IP = `${NET}.${workers[0] ?? '11'}`; // control plane (real private NIC
 const W2_IP = `${NET}.${workers[1] ?? '12'}`; // fork dest (real private NIC)
 
 const CLUSTER = 'cephprod';
-// The anchor control datastore + the data datastore, both ceph-group-backed so
-// the whole cluster forks via ONE atomic group snapshot.
+// The anchor control datastore + the data datastore, both ceph-group-backed so the whole cluster forks via ONE atomic group snapshot.
 const CTRL_DS = `ds-control-${CLUSTER}`;
 const CTRL_MOUNT = `/mnt/rediacc-ds/${CTRL_DS}`;
 const CTRL_NET = '2944';
@@ -65,8 +51,7 @@ const FORK_DATA_MOUNT = `${DATA_MOUNT}-${FORK_TAG}`;
 const FORK_NET = '3008';
 const FKC = `${FORK_CTRL_MOUNT}/.rediacc/k3s/kubeconfig.yaml`;
 
-// A storage-level marker written into the data datastore: by construction it must
-// ride the ceph clone into the fork (the PV-data isolation claim).
+// A storage-level marker written into the data datastore: by construction it must ride the ceph clone into the fork (the PV-data isolation claim).
 const DATA_MARKER = `${DATA_MOUNT}/repos/shop/volumes/data-marker`;
 const FORK_DATA_MARKER = `${FORK_DATA_MOUNT}/repos/shop/volumes/data-marker`;
 const APP_SECRET_VALUE = 's3cr3t-cephprod';
@@ -115,8 +100,7 @@ test.describe
       return res.code === 0 && /\sReady\b/.test(res.stdout);
     };
 
-    // The k3s server-ca fingerprint identifies the cluster PKI. A fork MUST NOT
-    // share it (F1); a migrate MUST preserve it.
+    // The k3s server-ca fingerprint identifies the cluster PKI. A fork MUST NOT share it (F1); a migrate MUST preserve it.
     const caFingerprintOn = async (runner: BridgeTestRunner, mount: string): Promise<string> => {
       const res = await runner.executeViaBridge(
         `sudo openssl x509 -in ${mount}/.rediacc/k3s/data/server/tls/server-ca.crt -noout -fingerprint -sha256`
@@ -124,8 +108,7 @@ test.describe
       return res.stdout.trim();
     };
 
-    // Stage the ceph admin keyring + ceph.conf on a worker (renet shells rbd for
-    // clones), plus load krbd.
+    // Stage the ceph admin keyring + ceph.conf on a worker (renet shells rbd for clones), plus load krbd.
     const stageCephClient = async (runner: BridgeTestRunner): Promise<void> => {
       for (const f of ['ceph.conf', 'ceph.client.admin.keyring']) {
         const read = await cephNode.executeViaBridge(`sudo base64 -w0 /etc/ceph/${f}`);
@@ -140,11 +123,7 @@ test.describe
       await runner.executeViaBridge('sudo modprobe rbd || true');
     };
 
-    // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner
-    // / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore,
-    // and NO verb ever stops them (`renet kube csi-node-down` exists with zero
-    // callers) → every storage release hits EBUSY with no mount holder to find. Gate
-    // finding #26. The suite stops what the product started.
+    // `renet kube install` auto-starts the node CSI units (rediacc-csi / -provisioner / -snapshotter) as HOST daemons whose socket + state live INSIDE the datastore, and NO verb ever stops them (`renet kube csi-node-down` exists with zero callers) → every storage release hits EBUSY with no mount holder to find. Gate finding #26. The suite stops what the product started.
     const csiNodeDown = async (runner: BridgeTestRunner): Promise<void> => {
       await runner.executeViaBridge('sudo renet kube csi-node-down 2>/dev/null; true');
     };
@@ -197,9 +176,7 @@ test.describe
     });
 
     test('2. anchor cluster on a ceph control datastore + a ceph data datastore', async () => {
-      // The control plane lives inside a cluster-labeled CEPH control datastore
-      // (so it joins the group snapshot). Real-NIC bind for cross-machine fork
-      // reachability.
+      // The control plane lives inside a cluster-labeled CEPH control datastore (so it joins the group snapshot). Real-NIC bind for cross-machine fork reachability.
       expect(
         w1.isSuccess(
           await w1.datastoreCreate({
@@ -240,9 +217,7 @@ test.describe
       await writeFileOn(w1, DATA_MARKER, 'cephprod-original');
       await w1.executeViaBridge('sync');
 
-      // kine-resident parent state the fork scrub must act on: a repo namespace,
-      // the ROLE ConfigMap (primary), a labeled rediacc-env Secret, a THIRD-PARTY
-      // operator secret, and an app-data marker ConfigMap.
+      // kine-resident parent state the fork scrub must act on: a repo namespace, the ROLE ConfigMap (primary), a labeled rediacc-env Secret, a THIRD-PARTY operator secret, and an app-data marker ConfigMap.
       const K = (args: string) => kubectlOn(w1, KC, args);
       await K('create namespace shop');
       await K(
@@ -286,23 +261,15 @@ test.describe
     });
 
     test('4. GROUP snapshot atomic across the cluster ceph datastores; parent never stopped', async () => {
-      // Start a background parent-liveness loop: the group snapshot + clone must
-      // NOT interrupt the parent API (quiesce flushes via syncfs, never stops the
-      // parent — the loop below witnesses continuous liveness across the capture).
+      // Start a background parent-liveness loop: the group snapshot + clone must NOT interrupt the parent API (quiesce flushes via syncfs, never stops the parent — the loop below witnesses continuous liveness across the capture).
       await w1.executeViaBridge(
         `sudo bash -c 'rm -f /tmp/live.stop; (while [ ! -f /tmp/live.stop ]; do ` +
           `${K3S} kubectl --kubeconfig ${KC} get --raw=/readyz >>/tmp/live.log 2>&1 || echo UNREACHABLE >>/tmp/live.log; ` +
           `sleep 2; done) >/dev/null 2>&1 &'`
       );
 
-      // This capture FEEDS THE FORK (test 5), so fork semantics apply: pass
-      // quiesce so the product's fork-path flush lands every just-seeded kine
-      // write (the `shop` namespace + configmaps from test 3) and the storage
-      // marker into the member RBD images before the snap — "every write that
-      // completed before the fork is in the fork". The bare snapshot verb stays
-      // crash-consistent by documented contract; quiesce is the fork path's
-      // explicit opt-in, which is the honest product mechanism here (not a
-      // test-side sync papering over a race).
+      // This capture FEEDS THE FORK (test 5), so fork semantics apply: pass quiesce so the product's fork-path flush lands every just-seeded kine write (the `shop` namespace + configmaps from test 3) and the storage marker into the member RBD images before the snap — "every write that completed before the fork is in the fork". The bare snapshot verb stays crash-consistent by
+      // documented contract; quiesce is the fork path's explicit opt-in, which is the honest product mechanism here (not a test-side sync papering over a race).
       const snap = await w1.datastoreSnapshotCreate({
         group: CLUSTER,
         snapshot: SNAP,
@@ -329,12 +296,8 @@ test.describe
     });
 
     test('6. attach the clones on the dest with --writes local (ephemeral dm-COW overlay)', async () => {
-      // Prep the fork DEST (w2) with the package set a fork of a DIFFERENT cluster
-      // needs: ceph-common (`rbd`, which `datastore attach` shells) + sqlite3 (the
-      // fork's `kube identity-rewrite` F2 kine-scrub shells `sqlite3`). The CLI
-      // cluster-fork seeds this via prepareForkDest → kube_fork_dest_prep; the raw
-      // primitive path must too, or identity-rewrite (test 7) fails "sqlite3 not
-      // found on PATH".
+      // Prep the fork DEST (w2) with the package set a fork of a DIFFERENT cluster needs: ceph-common (`rbd`, which `datastore attach` shells) + sqlite3 (the fork's `kube identity-rewrite` F2 kine-scrub shells `sqlite3`). The CLI cluster-fork seeds this via prepareForkDest → kube_fork_dest_prep; the raw primitive path must too, or identity-rewrite (test 7) fails "sqlite3 not found
+      // on PATH".
       expect(w2.isSuccess(await w2.kubeForkDestPrep()), 'kube_fork_dest_prep on w2').toBe(true);
 
       // Free the dest host netns for the fork server: stop any k3s already on w2.
@@ -342,11 +305,7 @@ test.describe
         `for u in $(systemctl list-units 'rediacc-k3s-*.service' --no-legend --plain 2>/dev/null | awk '{print $1}'); do sudo systemctl stop "$u" || true; done`
       );
 
-      // Cross-node fork attach requires the fork's registry RECORD on the dest
-      // first. datastore_fork registered each fork on w1 (the source) only; the
-      // CLI cluster-fork ferries `datastore list --json` → base64 → datastore_adopt
-      // on the dest before attaching (cluster-fork.ts). Replicate that here: w2's
-      // registry has no `<parent>:f1` row until we adopt the ferried record.
+      // Cross-node fork attach requires the fork's registry RECORD on the dest first. datastore_fork registered each fork on w1 (the source) only; the CLI cluster-fork ferries `datastore list --json` → base64 → datastore_adopt on the dest before attaching (cluster-fork.ts). Replicate that here: w2's registry has no `<parent>:f1` row until we adopt the ferried record.
       const listRes = await w1.executeViaBridge('sudo renet datastore list --json');
       const records = JSON.parse(listRes.stdout) as { name: string }[];
       for (const parent of [CTRL_DS, DATA_DS]) {
@@ -360,8 +319,7 @@ test.describe
         expect(adopt.code, `adopt ${forkName} on w2: ${adopt.stderr}`).toBe(0);
       }
 
-      // --writes local: the fork's writes land in a local dm-COW overlay over the
-      // RO clone (the ephemeral disposition — the new axis vs --writes ceph).
+      // --writes local: the fork's writes land in a local dm-COW overlay over the RO clone (the ephemeral disposition — the new axis vs --writes ceph).
       for (const parent of [CTRL_DS, DATA_DS]) {
         const attach = await w2.datastoreAttach({ name: `${parent}:${FORK_TAG}`, writes: 'local' });
         expect(w2.isSuccess(attach), `attach ${parent}:${FORK_TAG}: ${attach.stderr}`).toBe(true);
@@ -388,8 +346,7 @@ test.describe
     });
 
     test('8. CT-01k: the fork carries a FRESH CA + NO parent secret material; ROLE=fork', async () => {
-      // (a) fork server-ca fingerprint MUST differ from the parent's (a fail-loud
-      // fingerprint refusal makes a byte-identical CA impossible by construction).
+      // (a) fork server-ca fingerprint MUST differ from the parent's (a fail-loud fingerprint refusal makes a byte-identical CA impossible by construction).
       const forkCa = await caFingerprintOn(w2, FORK_CTRL_MOUNT);
       expect(forkCa).toMatch(/Fingerprint=/);
       expect(forkCa).not.toBe(parentCaFingerprint);
@@ -418,8 +375,7 @@ test.describe
     });
 
     test('9. CT-02k: the parent admin cert is REJECTED (401) by the fork but WORKS (200) on the parent', async () => {
-      // Run from the control host (it has the old cert). The fork API is on the
-      // dest's new IP with the new CA → 401; the parent API is unchanged → 200.
+      // Run from the control host (it has the old cert). The fork API is on the dest's new IP with the new CA → 401; the parent API is unchanged → 200.
       const vsFork = await w1.executeViaBridge(
         `curl -sk --cert /tmp/old-admin.crt --key /tmp/old-admin.key https://${W2_IP}:6443/api/v1/nodes -o /dev/null -w '%{http_code}'`
       );
@@ -443,8 +399,7 @@ test.describe
     });
 
     test('11. MIGRATE leg: in-place CA-PRESERVING relocate keeps the CA + secrets', async () => {
-      // The migrate arm (spec 05 §3): CA preserved, serving leaf regenerated for
-      // the (same) IP, networkID kept, secrets STAY — the opposite of the fork arm.
+      // The migrate arm (spec 05 §3): CA preserved, serving leaf regenerated for the (same) IP, networkID kept, secrets STAY — the opposite of the fork arm.
       const before = await caFingerprintOn(w1, CTRL_MOUNT);
       const migrate = await w1.kubeIdentityRewrite({
         mountPath: CTRL_MOUNT,
@@ -466,14 +421,8 @@ test.describe
     });
 
     test('12. teardown: discard the forks, uninstall, delete the datastores, drop the pool', async () => {
-      // The fork node leaves, then discards its fork records. kube uninstall's
-      // teardown primitive (renet nodeteardown) now OWNS releasing every holder — the
-      // k3s + containerd units, the pause/containerd/shim processes, and the kubelet
-      // submounts + the /run/k3s containerd overlays whose lowerdir points into the ds
-      // (the #29/#43 class it caught live) — so the old test-side csiNodeDown /
-      // unwindSubmounts / dm-holder probes are gone (spec/10 item 13: since #26 the
-      // product owns teardown, and #29 is resolved). The fork discard, which used to
-      // fail with the anonymous dm EBUSY, now just succeeds.
+      // The fork node leaves, then discards its fork records. kube uninstall's teardown primitive (renet nodeteardown) now OWNS releasing every holder — the k3s + containerd units, the pause/containerd/shim processes, and the kubelet submounts + the /run/k3s containerd overlays whose lowerdir points into the ds (the #29/#43 class it caught live) — so the old test-side csiNodeDown
+      // / unwindSubmounts / dm-holder probes are gone (spec/10 item 13: since #26 the product owns teardown, and #29 is resolved). The fork discard, which used to fail with the anonymous dm EBUSY, now just succeeds.
       expect(
         w2.isSuccess(await w2.kubeUninstall({ mountPath: FORK_CTRL_MOUNT, networkId: FORK_NET }))
       ).toBe(true);
@@ -483,20 +432,14 @@ test.describe
         `fork ctrl discard: ${(forkDetach.stdout + forkDetach.stderr).slice(-400)}`
       ).toBe(true);
       expect(w2.isSuccess(await w2.datastoreDetach(`${DATA_DS}:${FORK_TAG}`, true))).toBe(true);
-      // A fork's record is CROSS-MACHINE (#36: created on the control via datastore_fork
-      // AND adopted on the dest). The dest discards above cleaned w2; the control-side
-      // vestiges on w1 must be discarded too, or the group-snapshot delete refuses on
-      // them (#45). The shared clone image is already gone from the dest's discard, so
-      // this exercises #45's ENOENT idempotency (discard succeeds, record removed).
+      // A fork's record is CROSS-MACHINE (#36: created on the control via datastore_fork AND adopted on the dest). The dest discards above cleaned w2; the control-side vestiges on w1 must be discarded too, or the group-snapshot delete refuses on them (#45). The shared clone image is already gone from the dest's discard, so this exercises #45's ENOENT idempotency (discard succeeds,
+      // record removed).
       expect(w1.isSuccess(await w1.datastoreDetach(`${CTRL_DS}:${FORK_TAG}`, true))).toBe(true);
       expect(w1.isSuccess(await w1.datastoreDetach(`${DATA_DS}:${FORK_TAG}`, true))).toBe(true);
       expect(
         w1.isSuccess(await w1.kubeUninstall({ mountPath: CTRL_MOUNT, networkId: CTRL_NET }))
       ).toBe(true);
-      // Delete the GROUP snapshot before the datastores: discardFork leaves group snaps
-      // to `datastore snapshot delete`, and rbd cannot remove an image that still has a
-      // snapshot. With every fork clone discarded (above), the group snap now has no
-      // live clones and deletes cleanly.
+      // Delete the GROUP snapshot before the datastores: discardFork leaves group snaps to `datastore snapshot delete`, and rbd cannot remove an image that still has a snapshot. With every fork clone discarded (above), the group snap now has no live clones and deletes cleanly.
       expect(
         w1.isSuccess(await w1.datastoreSnapshotDelete({ group: CLUSTER, snapshot: SNAP }))
       ).toBe(true);

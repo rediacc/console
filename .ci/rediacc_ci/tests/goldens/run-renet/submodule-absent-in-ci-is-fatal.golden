@@ -1,0 +1,9 @@
+# twin .ci/scripts/private/run-renet.sh blob fc9910e7aa1ac53dcc07ece0f26fa68ee7ee6179
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Renet submodule is required in CI but missing: <root>/private/renet/.ci/ci.sh
+✗   A gate skipped here would report success while checking nothing.
+✗   Fix the workflow checkout (submodules: true, or git submodule update --init).
+--- calls ---
+[]

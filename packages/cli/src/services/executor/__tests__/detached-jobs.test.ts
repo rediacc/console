@@ -36,7 +36,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetSubscriptionTokenState,
   mockBuildLocalVault,
-  mockProvisionRenetToRemote,
+  mockAcquireRemoteRenet,
   mockReadSSHKey,
   mockReadOptionalSSHKey,
   mockVerifyMachineSetup,
@@ -56,7 +56,7 @@ const {
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
   mockBuildLocalVault: vi.fn(() => '{"vault":"ok"}'),
-  mockProvisionRenetToRemote: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
+  mockAcquireRemoteRenet: vi.fn(() => ({ remotePath: '/usr/bin/renet', uploaded: false })),
   mockReadSSHKey: vi.fn(() => 'PRIVATE_KEY'),
   mockReadOptionalSSHKey: vi.fn(() => 'PUBLIC_KEY'),
   mockVerifyMachineSetup: vi.fn(),
@@ -100,14 +100,9 @@ vi.mock('../../../utils/agent-guard.js', () => ({
   isAgentEnvironment: vi.fn().mockReturnValue(false),
 }));
 
-// Opportunistic licence refresh is cooldown-gated against a file in the real
-// user state dir. Left unmocked, whether it runs depends on when the developer
-// last used the CLI on this machine — so a licence-recovery assertion would
-// pass or fail based on unrelated local history.
+// Opportunistic licence refresh is cooldown-gated against a file in the real user state dir. Left unmocked, whether it runs depends on when the developer last used the CLI on this machine, so a licence-recovery assertion would pass or fail based on unrelated local history.
 //
-// Defaulted to "not due" so these tests observe only the REACTIVE path they are
-// about. Otherwise every command here would also refresh during setup, and
-// `toHaveBeenCalledTimes(1)` below would be counting two unrelated things.
+// Defaulted to "not due" so these tests observe only the REACTIVE path they are about. Otherwise every command here would also refresh during setup, and `toHaveBeenCalledTimes(1)` below would be counting two unrelated things.
 vi.mock('../../account/license-refresh-state.js', () => ({
   isRefreshDue: vi.fn().mockResolvedValue(false),
   markRefreshAttempted: vi.fn().mockResolvedValue(undefined),
@@ -115,7 +110,7 @@ vi.mock('../../account/license-refresh-state.js', () => ({
 
 vi.mock('../../renet/renet-execution.js', () => ({
   buildLocalVault: mockBuildLocalVault,
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
   readSSHKey: mockReadSSHKey,
   readOptionalSSHKey: mockReadOptionalSSHKey,
   verifyMachineSetup: mockVerifyMachineSetup,
@@ -157,9 +152,7 @@ describe('reconstructing detached stdout for parseCapturedJson (bug #31/#32)', (
 
 describe('recovery decision for a detached exit-10 result (bug #33)', () => {
   it('a reconstructed detached result routes into license recovery', () => {
-    // A detached job that hit LICENSE_REQUIRED carries the marker as an output
-    // event, which the collector puts back into stdout. Both the exit-code gate
-    // and the failure parse must fire, or the retry never happens.
+    // A detached job that hit LICENSE_REQUIRED carries the marker as an output event, which the collector puts back into stdout. Both the exit-code gate and the failure parse must fire, or the retry never happens.
     const collector = createJobOutputCollector();
     collector.consume({
       type: 'output',

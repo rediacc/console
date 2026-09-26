@@ -1,0 +1,13 @@
+# twin .ci/scripts/quality/check-review-turn-capacity.sh blob c29a748594eee4b8e0d02d89cb8582f3568dc6de
+exit: 1
+--- stdout ---
+--- stderr ---
+[0;31m✗[0m review turn budget can starve a review it routes:
+  REGRESSION: 2802 lines still routes to 50 turns; 50 is the budget that starved PR #553
+DENSITY: 2802 lines gives 50 turns = 17/KLOC, under the 22/KLOC floor (achievable here: the ceiling is 140)
+DENSITY: 4999 lines gives 50 turns = 10/KLOC, under the 22/KLOC floor (achievable here: the ceiling is 140)
+DENSITY: 5000 lines gives 50 turns = 10/KLOC, under the 22/KLOC floor (achievable here: the ceiling is 140)
+
+  Fix emit_review_turns() in .ci/scripts/review/claude-review-gate.sh.
+  A starved review burns its whole budget, posts nothing, and still spends an
+  attempt against a finite allowance -- it is the expensive outcome, not the cheap one.

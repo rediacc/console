@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 """Controls for wl_liveness.teammate_state -- the subagent idle/liveness verdict.
 
-Every control here is a RED/GREEN PAIR or it is not a control. The one that
-matters most is Control 1, the mutation pair: an idle fixture asserting `idle`
-proves nothing on its own, because a function that returned "idle"
-unconditionally would pass it. Flipping the single `stop_reason` field to
-`tool_use` and asserting the claim STOPS is what makes the first assertion mean
-something. See agent/PLAN-subagent-idle-detection.md.
+Every control here is a RED/GREEN PAIR or it is not a control. The one that matters most is Control 1, the mutation pair: an idle fixture asserting `idle` proves nothing on its own, because a function that returned "idle" unconditionally would pass it. Flipping the single `stop_reason` field to `tool_use` and asserting the claim STOPS is what makes the first assertion mean
+something. See agent/plans/PLAN-subagent-idle-detection.md.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
 import sys
-import tempfile
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import wl_liveness as L
 
-TMP = pathlib.Path(tempfile.mkdtemp())
+# `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit(
+        "%s: .ci/rediacc_ci/runtmp.py is missing; this suite cannot make its run dir" % __file__
+    )
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+TMP = pathlib.Path(runtmp.run_dir("teammate-idle-suite-"))
 SUB = TMP / "sess" / "subagents"
 SUB.mkdir(parents=True)
 
@@ -35,16 +41,13 @@ STREAM = {
     "type": "assistant",
     "message": {"stop_reason": None, "content": [{"type": "text", "text": "..."}]},
 }
-# An ended turn whose content still carries a tool_use block. stop_reason alone
-# would call this idle; the content check is what refuses.
+# An ended turn whose content still carries a tool_use block. stop_reason alone would call this idle; the content check is what refuses.
 MIXED = {
     "type": "assistant",
     "message": {"stop_reason": "end_turn", "content": [{"type": "tool_use", "name": "Bash"}]},
 }
 
-# A counter OBJECT rather than two module globals. `global` in a test harness
-# is the shape that lets a helper silently stop counting -- rebind the name in
-# one branch and the tally goes quiet while every case still prints PASS.
+# A counter OBJECT rather than two module globals. `global` in a test harness is the shape that lets a helper silently stop counting -- rebind the name in one branch and the tally goes quiet while every case still prints PASS.
 TALLY = {"ok": 0, "fail": 0}
 
 
@@ -123,21 +126,7 @@ def run():
             "working",
         )
 
-        print("== 5. blocking_rung_due learns the idle key (the poll/latch deadlock guard) ==")
-        check(
-            "the idle rung is due once",
-            L.blocking_rung_due({"ladder": {}}, "k", 200, "s1", idle=True),
-            True,
-        )
-        latched = {"ladder": {"k": {"idle": "s1"}}}
-        check(
-            "it latches (fire_once)", L.blocking_rung_due(latched, "k", 200, "s1", idle=True), False
-        )
-        check(
-            "a moved stamp re-arms it",
-            L.blocking_rung_due(latched, "k", 200, "s2", idle=True),
-            True,
-        )
+        print("== 5. the idle-worker block threshold ==")
         check("WORKER_IDLE_BLOCK_MIN is the operator's 15", L.WORKER_IDLE_BLOCK_MIN, 15)
 
         print("== 6. the sidecar SHARPENS the number and never manufactures the verdict ==")
@@ -160,10 +149,7 @@ def run():
         )
 
         print("== 7. the edge resolves a tail the transcript CANNOT read ==")
-        # Found by live probe, not by reasoning: a finished agent's last record
-        # was `assistant / stop_reason: None / ['text']` -- a streaming partial,
-        # which classifies as working. Without the edge it reads as working
-        # forever, which is this item's own blindness in a safer-looking hat.
+        # Found by live probe, not by reasoning: a finished agent's last record was `assistant / stop_reason: None / ['text']` -- a streaming partial, which classifies as working. Without the edge it reads as working forever, which is this item's own blindness in a safer-looking hat.
         j = make("e1", STREAM, age_min=5)
         L.idle_edge = lambda _cwd, _sid, _name: None
         check(
@@ -178,10 +164,7 @@ def run():
             L.teammate_state("/x", "sess", "e1")[0],
             "idle",
         )
-        # THE GUARD THAT MAKES TRUSTING THE EDGE SAFE. A teammate that resumes
-        # writes, so its mtime moves past the edge. Without this arm the two
-        # assertions above would pass just as well for code that ignored the
-        # resume entirely -- which is the false-death this design refuses.
+        # THE GUARD THAT MAKES TRUSTING THE EDGE SAFE. A teammate that resumes writes, so its mtime moves past the edge. Without this arm the two assertions above would pass just as well for code that ignored the resume entirely -- which is the false-death this design refuses.
         L.idle_edge = lambda _cwd, _sid, _name: edge_at - 600
         check(
             "an edge OLDER than the last write means it resumed -> working",

@@ -1,5 +1,5 @@
 /**
- * `rdc config prune` — sweep stale leftovers from the local config file.
+ * `rdc config prune`, sweep stale leftovers from the local config file.
  * The action layer is intentionally thin: parse flags, call the service,
  * render. All policy lives in `services/config-prune.ts`.
  */

@@ -11,14 +11,12 @@ import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { scanHostKeys } from '../../utils/host-keys.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { writeStdout } from '../core/request-context.js';
 import { createQuietStderrPump } from '../executor/output-lines.js';
 import { machineConnections } from '../machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from './renet-execution.js';
 
-// Re-exported so the provisioning call sites (services/tofu/provision.ts,
-// services/cluster/cluster-provision.ts) keep importing it from the bootstrap
-// module they already depend on. The implementation lives in utils/host-keys.ts
-// because the command layer needs it too.
+// Re-exported so the provisioning call sites (services/tofu/provision.ts, services/cluster/cluster-provision.ts) keep importing it from the bootstrap module they already depend on. The implementation lives in utils/host-keys.ts because the command layer needs it too.
 export { scanHostKeys };
 
 /** Poll until SSH is reachable (host keys scannable), or throw after timeout. */
@@ -27,8 +25,7 @@ export async function waitForSSH(ip: string, port: number, timeoutMs = 120_000):
   const interval = 5_000;
 
   while (Date.now() - start < timeoutMs) {
-    // scanHostKeys returns '' rather than throwing on any failure, so an
-    // empty result — not an exception — is the "not up yet" signal.
+    // scanHostKeys returns '' rather than throwing on any failure, so an empty result, not an exception, is the "not up yet" signal.
     if (scanHostKeys(ip, port)) return;
     await sleep(interval);
   }
@@ -49,7 +46,8 @@ export async function bootstrapMachine(
   const sshPrivateKey =
     updatedConfig.sshPrivateKey ?? (await readSSHKey(updatedConfig.ssh.privateKeyPath));
 
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    'provision',
     updatedConfig,
     machine,
     sshPrivateKey,
@@ -62,13 +60,11 @@ export async function bootstrapMachine(
     const datastorePath = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
     const datastoreSize = updatedConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE;
     const cmd = `sudo ${remoteRenetPath} setup --auto --datastore ${datastorePath} --datastore-size ${datastoreSize}`;
-    // renet's setup narrates itself at info level, and those lines are 121+
-    // columns. Withhold them and replay only if setup actually failed, so the
-    // terminal (and the tutorial recording) shows the steps, not the logrus.
+    // renet's setup narrates itself at info level, and those lines are 121+ columns. Withhold them and replay only if setup actually failed, so the terminal (and the tutorial recording) shows the steps, not the logrus.
     const stderrPump = createQuietStderrPump({ echoAll: options.debug });
     const exitCode = await lease.sftp.execStreaming(cmd, {
       onStdout: (data) => {
-        if (options.debug) process.stdout.write(data);
+        if (options.debug) writeStdout(data);
       },
       onStderr: (data) => stderrPump.write(String(data)),
     });

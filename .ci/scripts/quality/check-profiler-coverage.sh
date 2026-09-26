@@ -1,4 +1,13 @@
 #!/bin/bash
+# HEADER REMOVED 2026-09-08 BY THE W7 P4 CUTOVER, and the FILE deliberately stays.
+# check:ci-profiler-coverage is now registered to the Python port's entry point,
+# .ci/scripts/quality/check_profiler_coverage.py, so a header here would declare a
+# registration that has moved and gate-bind refuses that by name:
+#   package.json runs ".ci/scripts/quality/check_profiler_coverage.py" but its header derives ".ci/scripts/quality/check-profiler-coverage.sh"
+# This script is NOT dead: it is the differential twin the port is compared
+# against, and invariant 5 forbids deleting a twin in the change that ports
+# it. Deletion is W7 P5's job, in a later change.
+
 # Every job that runs on a Linux runner must be profiled, and every job that is
 # profiled must be configured correctly.
 #
@@ -51,7 +60,7 @@
 # instrument, never a clean tree -- this repo has shipped gates that checked
 # zero files for weeks.
 #
-# TEST SEAMS (all optional, used by .ci/scripts/test/gates/test-profiler-coverage.sh):
+# TEST SEAMS (all optional, used by .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py):
 #   PROFILER_COVERAGE_WORKFLOW_DIR   directory of workflow YAML to scan
 #   PROFILER_COVERAGE_ALLOWLIST      allowlist path
 #   PROFILER_COVERAGE_ACTION_DIR     directory holding the profiler action.yml
@@ -79,7 +88,7 @@ REPO_ROOT="$(get_repo_root)"
 cd "$REPO_ROOT"
 
 WORKFLOW_DIR="${PROFILER_COVERAGE_WORKFLOW_DIR:-.github/workflows}"
-ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.profiler-coverage-allowlist}"
+ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.ci/policy/.profiler-coverage-allowlist}"
 ACTION_DIR="${PROFILER_COVERAGE_ACTION_DIR:-.github/actions/profiler}"
 
 # Composite actions that carry the profiler on behalf of every job calling them.
@@ -93,7 +102,7 @@ read -r -a WRAPPER_DIRS <<<"${PROFILER_COVERAGE_WRAPPER_DIRS-.github/actions/set
 
 # Extra `uses:` strings that count as coverage, taken on trust and NOT verified.
 # Empty by default. This is the extension seam for a wrapper that lives outside
-# this repo's action tree, and it is also what test-profiler-coverage.sh drives
+# this repo's action tree, and it is also what test_gate_profiler_coverage.py drives
 # to prove the wrapper path is live code rather than a comment.
 read -r -a EXTRA_COVERING_ACTIONS <<<"${PROFILER_COVERAGE_COVERING_ACTIONS:-}"
 
@@ -347,7 +356,7 @@ got="$(covering_uses "$SELFTEST_DIR/block.txt" "./.github/actions/profiler")"
 got="$(covering_uses "$SELFTEST_DIR/caller.txt" "./.github/actions/profiler")"
 [ "$got" = "0" ] || selftest_fail "covering_uses(negative)" "$got" "0"
 
-# LC_ALL=C: same sibling risk as test-scope-gate-outputs.sh (see
+# LC_ALL=C: same sibling risk as test_gate_scope_gate_outputs.py (see
 # docs/agent-reference/TRAPS.md) -- a shell `sort` compared against a
 # hand-written literal is locale-dependent by construction. Currently correct
 # under en_US.UTF-8 only because 'i' < 'r' in both orderings; pinned so it stays

@@ -1,25 +1,12 @@
-"""wl_planfile: keep a committed `agent/PLAN-*.md` checkbox list and the
-worklist IN STEP, so a plan survives compaction as something traceable rather
-than as eighteen boxes nobody can account for.
+"""wl_planfile: keep a committed `agent/PLAN-*.md` checkbox list and the worklist IN STEP, so a plan survives compaction as something traceable rather than as eighteen boxes nobody can account for.
 
-WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02
-`agent/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4
-ticked ones, and its own `## Tasks` section stated the contract in as many
-words:
+WHY THIS EXISTS, from a measurement rather than from theory. On 2026-09-02 `agent/plans/PLAN-secret-namespace-migration.md` carried 18 open `- [ ]` lines and 4 ticked ones, and its own `## Tasks` section stated the contract in as many words:
 
     "Checkbox lines are what `wl_planfid.plan_tasks` parses, so this list and
      the worklist must stay in step: one `worklist.py --add` item per line."
 
-The worklist held ZERO of them. Nothing in this directory read the file: the
-only mention of `agent/PLAN-*.md` in worklist.py is the SUGGESTION string
-triage prints when it tells you where to write a plan, and `wl_planfid` -- the
-one module that does parse checkbox tasks -- reads the HARNESS plan named by
-the transcript's `plan_mode_exit` record, never a committed one. So the durable
-document that exists precisely to outlive a compaction could go stale in the
-one way that makes it useless: you can read the 18 boxes and not know which are
-live. The operator's words: "the stop hook doesn't really enforce for todo
-items in the planning file but it should ... otherwise we cannot trace/update
-the planfile in sake of multiple contexts because of compaction".
+The worklist held ZERO of them. Nothing in this directory read the file: the only mention of `agent/PLAN-*.md` in worklist.py is the SUGGESTION string triage prints when it tells you where to write a plan, and `wl_planfid` -- the one module that does parse checkbox tasks -- reads the HARNESS plan named by the transcript's `plan_mode_exit` record, never a committed one. So the
+durable document that exists precisely to outlive a compaction could go stale in the one way that makes it useless: you can read the 18 boxes and not know which are live. The operator's words: "the stop hook doesn't really enforce for todo items in the planning file but it should ... otherwise we cannot trace/update the planfile in sake of multiple contexts because of compaction".
 
 ------------------------------------------------------------------------------
 THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
@@ -35,7 +22,7 @@ THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
    stop by construction: it is drained on the allow path and survives a block.
 
 2. THE NOISE CONTROL IS THE QUEUE'S OWN, PLUS A CAP, NOT A NEW LATCH.
-   `OUTQ_PER_STOP` is 1, so at most one advisory section reaches any stop at
+   `OUTQ_PER_STOP` is 3, so at most three advisory sections reach any stop at
    all; `outq_add`'s content signature suppresses an unchanged body inside
    `REPORT_REFRESH_MIN` (6h) and re-fires IMMEDIATELY when the body changes.
    That is exactly the "only when the plan changed" policy, for free and
@@ -88,35 +75,20 @@ THE FOUR DESIGN CHOICES, each of which had a worse obvious alternative.
 ------------------------------------------------------------------------------
 PARSING IS `wl_planfid.plan_tasks`, CALLED THREE TIMES, NOT FORKED.
 
-`plan_tasks` returns the plan's tasks but throws away WHICH BOX each came from,
-and this check needs open-versus-done. Copying its body to keep the mark would
-fork a parser whose rules are load-bearing (fence tracking, action-heading
-bullets, the `[?]`/`[>]` exclusion, dedup, the 8-char floor). Instead the split
-is derived from the real parser by set difference:
+`plan_tasks` returns the plan's tasks but throws away WHICH BOX each came from, and this check needs open-versus-done. Copying its body to keep the mark would fork a parser whose rules are load-bearing (fence tracking, action-heading bullets, the `[?]`/`[>]` exclusion, dedup, the 8-char floor). Instead the split is derived from the real parser by set difference:
 
     every    = plan_tasks(text)                        # boxes + action bullets
     no_open  = plan_tasks(text minus `- [ ]` lines)
     no_done  = plan_tasks(text minus `- [x]` lines)
     open     = every - no_open      done = every - no_done
 
-A plain bullet under an action heading survives both deletions, so it lands in
-NEITHER set and is never reported -- which is the conservative reading of the
-contract, whose subject is checkbox lines. `- [?]` and `- [>]` lines are not
-checkboxes to `CHECKBOX_RE` and survive both deletions too, so they are
-excluded for free rather than by a second rule that could drift out of step.
+A plain bullet under an action heading survives both deletions, so it lands in NEITHER set and is never reported -- which is the conservative reading of the contract, whose subject is checkbox lines. `- [?]` and `- [>]` lines are not checkboxes to `CHECKBOX_RE` and survive both deletions too, so they are excluded for free rather than by a second rule that could drift out of step.
 
 ------------------------------------------------------------------------------
-WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session
-to `--add` an item that already exists, which is duplicate tracking and real
-harm; a missed one leaves today's status quo. So matching is GENEROUS: a plan
-task counts as tracked when any worklist item in ANY state (open, done,
-deferred, leased) contains it or is contained by it at `wl_planfid.TASK_MATCH`,
-in EITHER direction, and items belonging to any session count. The constants are
-imported rather than restated so the calibration stays in one place.
+WHICH DIRECTION A WRONG ANSWER COSTS MORE. A false "untracked" sends a session to `--add` an item that already exists, which is duplicate tracking and real harm; a missed one leaves today's status quo. So matching is GENEROUS: a plan task counts as tracked when any worklist item in ANY state (open, done, deferred, leased) contains it or is contained by it at
+`wl_planfid.TASK_MATCH`, in EITHER direction, and items belonging to any session count. The constants are imported rather than restated so the calibration stays in one place.
 
-BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the
-parser resolves to zero open tasks is named as unreadable rather than counted as
-clean, per the V_PR_UNREADABLE convention: a check that cannot see must say so.
+BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the parser resolves to zero open tasks is named as unreadable rather than counted as clean, per the V_PR_UNREADABLE convention: a check that cannot see must say so.
 """
 
 import os
@@ -126,36 +98,25 @@ import re
 import wl_core as C
 import wl_planfid as P
 
-# ---------------------------------------------------------------------------
-# Bounds. Every one of these exists so a pathological file cannot turn the Stop
-# hook into a slow path; none of them may silently drop a finding without the
-# render saying it did.
+# --------------------------------------------------------------------------- Bounds. Every one of these exists so a pathological file cannot turn the Stop hook into a slow path; none of them may silently drop a finding without the render saying it did.
 
-# In-scope plans whose BODY is read per stop, newest mtime first. Applied AFTER
-# the status and ownership filters, and the remainder is REPORTED rather than
-# dropped: a cap that hides the plan you needed reads exactly like a clean run,
-# which is the failure this whole module exists to stop. Measured on this repo:
-# 62 plans, 36 in scope by status, ~10 ms to read them all, so the cap is
+# In-scope plans whose BODY is read per stop, newest mtime first. Applied AFTER the status and ownership filters, and the remainder is REPORTED rather than dropped: a cap that hides the plan you needed reads exactly like a clean run, which is the failure this whole module exists to stop. Measured on this repo: 62 plans, 36 in scope by status, ~10 ms to read them all, so the cap is
 # headroom against a pathological directory and not a routine truncation.
 PLAN_MAX_READ = int(os.environ.get("WORKLIST_PLANFILE_MAX_READ", "40"))
 # Untracked tasks QUOTED. The rest are counted. See design note 2.
 PLAN_TASK_SHOW = int(os.environ.get("WORKLIST_PLANFILE_SHOW", "3"))
-# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was
-# about quoted lines being a wall -- so the number moves and the reason is kept by
-# making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan
-# allowance. Three one-line headers is not a wall; nine quoted `--add` recipes is.
+# S2: plans rendered per stop. Design note 2 capped this at 1 and its ARGUMENT was about quoted lines being a wall -- so the number moves and the reason is kept by making PLAN_TASK_SHOW a budget shared ACROSS the plans shown, not a per-plan allowance. Three one-line headers is not a wall; nine quoted `--add` recipes is.
 PLAN_PLANS_SHOW = int(os.environ.get("WORKLIST_PLANFILE_PLANS_SHOW", "3"))
 # Stale-box examples quoted in the reverse direction.
 PLAN_STALE_SHOW = int(os.environ.get("WORKLIST_PLANFILE_STALE_SHOW", "2"))
-# A plan bigger than this is not read. 400 KB is ~10x the largest plan here.
-PLAN_MAX_BYTES = int(os.environ.get("WORKLIST_PLANFILE_MAX_BYTES", str(400 * 1024)))
+# A plan bigger than this is not read. Raised from 400 KB to 1 MB on 2026-09-22: PLAN-tooling-transformation.md alone reached 646 KB (the next-largest plan is 175 KB), and the 400 KB floor made `_read` return None for it silently -- `is_adopted` then read that as "not adopted" instead of "cannot tell", so an ADOPTED plan's own boxes went untracked with no finding anywhere.
+# 1 MB keeps real headroom over the current outlier without being large enough to hide a genuinely pathological file; see `_read`'s own oversized-vs-missing split below for the file this size still cannot survive.
+PLAN_MAX_BYTES = int(os.environ.get("WORKLIST_PLANFILE_MAX_BYTES", str(1024 * 1024)))
 TASK_QUOTE_CHARS = 96
 
-# Statuses that put a plan OUT of scope. See design note 4: this is a blocklist
-# on purpose, so an unrecognised status is noisy rather than invisible.
+# Statuses that put a plan OUT of scope. See design note 4: this is a blocklist on purpose, so an unrecognised status is noisy rather than invisible.
 #
-# FINISHED -- history. Demanding that history stay in step with a live worklist
-# is how a check earns its way into being ignored.
+# FINISHED -- history. Demanding that history stay in step with a live worklist is how a check earns its way into being ignored.
 FINISHED_STATES = frozenset(
     {
         "done",
@@ -175,11 +136,13 @@ FINISHED_STATES = frozenset(
         "withdrawn",
         "archived",
         "historical",
+        # W12: a COMPACTED plan is finished by construction. `--plan-compact` refuses open boxes without `--park`, so every box in a `compacted`
+        # record carries a `done=` the ledger attests -- which is a stronger
+        # claim than any other word in this set makes. It belongs here for the ordinary reason too: the record's boxes are history, and demanding that history stay in step with a live worklist is how a check earns its way into being ignored. See wl_planrec.py.
+        "compacted",
     }
 )
-# NOT STARTED -- a proposal. Its boxes are a sketch of work nobody has taken
-# on, and demanding worklist items for a sketch is the "18 legitimately
-# not-yet-started tasks" wall this check must not become.
+# NOT STARTED -- a proposal. Its boxes are a sketch of work nobody has taken on, and demanding worklist items for a sketch is the "18 legitimately not-yet-started tasks" wall this check must not become.
 NOT_STARTED_STATES = frozenset(
     {
         "draft",
@@ -193,15 +156,18 @@ NOT_STARTED_STATES = frozenset(
         "exploratory",
         "deferred",
         "rejected",
+        # W12: `parked` is a plan whose TEXT is compacted while its work is not finished. Not-started rather than finished, and the difference is load-bearing in three places: the census tier counts its open boxes instead of hiding them, check_plan_boxes.py's A3 (a finished Status may not sit over open boxes) does not fire on it, and check-plan-housekeeping.sh keeps it ON the
+        # clock. A parked record buys a smaller file, never an exemption. See wl_planrec.py.
+        "parked",
     }
 )
 
-# The two checkbox shapes, spelled here ONLY to delete lines before handing the
-# text back to the real parser. Nothing downstream reads them as tasks.
-OPEN_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[ \]\s+\S")
+# The two checkbox shapes, spelled here ONLY to delete lines before handing the text back to the real parser. Nothing downstream reads them as tasks.
+# OPEN_BOX_LINE also matches `?` and `>`: neither is DONE, so both stay in the open bucket the same way a worklist item's own `?`/`>` states still count as outstanding (CLOSED_STATES below). Treating them as open, not as a third invisible bucket, is the minimal fix that restores check_plan_boxes.py's own
+# advertised remedy ("mark it - [?]") without a signature change rippling into every caller of plan_boxes/reconcile.
+OPEN_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[ ?>]\]\s+\S")
 DONE_BOX_LINE = re.compile(r"^\s*[-*+]\s+\[[xX]\]\s+\S")
-# A worklist state that means the item is no longer outstanding. ' ', '?' and
-# '>' are the open three (wl_checks uses the same triple).
+# A worklist state that means the item is no longer outstanding. ' ', '?' and '>' are the open three (wl_checks uses the same triple).
 CLOSED_STATES = frozenset({"x"})
 
 
@@ -212,9 +178,7 @@ def _drop_lines(text, rx):
 def plan_boxes(text):
     """(open_tasks, done_tasks) for one plan body, via wl_planfid.plan_tasks.
 
-    Three calls to the REAL parser and two set differences -- see the module
-    docstring for why this is not a re-implementation. Order is the plan's own,
-    which is the order a reader will find them in the file.
+    Three calls to the REAL parser and two set differences -- see the module docstring for why this is not a re-implementation. Order is the plan's own, which is the order a reader will find them in the file.
     """
     every = P.plan_tasks(text)
     if not every:
@@ -227,10 +191,7 @@ def plan_boxes(text):
 def raw_box_counts(text):
     """(open, done) counted straight off the raw lines, with no parser at all.
 
-    The anti-vacuity control. If a plan plainly holds `- [ ]` lines and
-    plan_boxes resolves none of them, the check is BLIND on that file and says
-    so; without this second, dumber count there is nothing to compare against
-    and 'no findings' would be indistinguishable from 'saw nothing'.
+    The anti-vacuity control. If a plan plainly holds `- [ ]` lines and plan_boxes resolves none of them, the check is BLIND on that file and says so; without this second, dumber count there is nothing to compare against and 'no findings' would be indistinguishable from 'saw nothing'.
     """
     o = d = 0
     for ln in (text or "").splitlines():
@@ -244,22 +205,14 @@ def raw_box_counts(text):
 def item_rows(fold):
     """[(id, state, base_text)] for every item in the fold, any owner, any state.
 
-    ANY OWNER: the question is "is this task tracked", and a peer tracking it
-    is tracked. ANY STATE: a ticked item is what a `- [x]` box should match, so
-    filtering to open items would report every finished task as untracked.
+    ANY OWNER: the question is "is this task tracked", and a peer tracking it is tracked. ANY STATE: a ticked item is what a `- [x]` box should match, so filtering to open items would report every finished task as untracked.
 
-    BASE text, not `rec['text']`: that field accumulates every update note
-    forever (one live item reached ~20 concatenated lines), and a token bag
-    inflated by twenty notes matches almost anything -- which would silently
-    turn this check off by declaring everything tracked. The extraction mirrors
-    wl_store.brief_text's own fallback rather than importing it, because
-    brief_text appends the LATEST note, which is the part being excluded.
+    BASE text, not `rec['text']`: that field accumulates every update note forever (one live item reached ~20 concatenated lines), and a token bag inflated by twenty notes matches almost anything -- which would silently turn this check off by declaring everything tracked. The extraction mirrors wl_store.brief_text's own fallback rather than importing it, because brief_text appends
+    the LATEST note, which is the part being excluded.
     """
     rows = []
     for r in list(getattr(fold, "items", None) or []):
-        # Typed rather than try/except-guarded: a record that is not a mapping
-        # is skipped, while a genuine bug in the three lines below still raises
-        # into the caller's one wrapper instead of being swallowed per record.
+        # Typed rather than try/except-guarded: a record that is not a mapping is skipped, while a genuine bug in the three lines below still raises into the caller's one wrapper instead of being swallowed per record.
         if not isinstance(r, dict):
             continue
         base = str(r.get("basetext") or "").strip()
@@ -274,9 +227,7 @@ def item_rows(fold):
 def _toks(s):
     """wl_planfid's own normalisation, deliberately NOT a variant of it.
 
-    No stopword list: TASK_MATCH was calibrated at 0.7 against text tokenised
-    exactly this way, and stripping connectives would move the threshold's
-    meaning while leaving its number alone.
+    No stopword list: TASK_MATCH was calibrated at 0.7 against text tokenised exactly this way, and stripping connectives would move the threshold's meaning while leaving its number alone.
     """
     return set(P._norm(s).split())
 
@@ -284,9 +235,7 @@ def _toks(s):
 def prepare(rows):
     """[(id, state, tokens)] -- the item side tokenised ONCE.
 
-    Not an optimisation for its own sake: `reconcile` asks about every task, so
-    tokenising inside the inner loop is items x tasks (48 x 22 on this repo's
-    live plan) of work on the path that lets every session end a turn.
+    Not an optimisation for its own sake: `reconcile` asks about every task, so tokenising inside the inner loop is items x tasks (48 x 22 on this repo's live plan) of work on the path that lets every session end a turn.
     """
     out = []
     for iid, state, text in rows:
@@ -299,15 +248,9 @@ def prepare(rows):
 def match_item(task, prepared):
     """(item_id, state) of the worklist item that stands for this task, or None.
 
-    Takes PREPARED rows (see `prepare`), not raw ones: `reconcile` asks about
-    every task, and tokenising the item side inside that loop is items x tasks
-    of work on the path that lets every session in this repo end a turn.
+    Takes PREPARED rows (see `prepare`), not raw ones: `reconcile` asks about every task, and tokenising the item side inside that loop is items x tasks of work on the path that lets every session in this repo end a turn.
 
-    Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that
-    quotes a long task line, and an item whose wording the task line is a short
-    version of, are both tracking. Generous on purpose -- see the module
-    docstring on which direction a wrong answer costs more. Ties break on the
-    strongest overlap so the id quoted back is the best one, not the first one.
+    Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that quotes a long task line, and an item whose wording the task line is a short version of, are both tracking. Generous on purpose -- see the module docstring on which direction a wrong answer costs more. Ties break on the strongest overlap so the id quoted back is the best one, not the first one; a tie AT the same overlap prefers a non-closed item over a closed one, since first-wins-on-ties otherwise means re-adding a box after ticking its original item under near-identical wording matches the dead item forever (found 2026-09-23: PLAN-tooling-transformation.md's W7P5-a/W1P6 boxes kept reporting stale_open against their own already-ticked originals, because the ticked item was earlier in fold order than the fresh replacement and both scored identically).
     """
     tt = _toks(task)
     if len(tt) < P.MIN_MATCH_TOKENS:
@@ -319,7 +262,14 @@ def match_item(task, prepared):
             continue
         if inter / len(tt) >= P.TASK_MATCH or inter / len(it) >= P.TASK_MATCH:
             score = inter / float(min(len(tt), len(it)))
-            if best is None or score > best[0]:
+            better = best is None or score > best[0]
+            tie_prefers_open = (
+                best is not None
+                and score == best[0]
+                and state not in CLOSED_STATES
+                and best[2] in CLOSED_STATES
+            )
+            if better or tie_prefers_open:
                 best = (score, iid, state)
     return None if best is None else (best[1], best[2])
 
@@ -327,10 +277,9 @@ def match_item(task, prepared):
 def reconcile(open_tasks, done_tasks, rows):
     """The three findings for one plan, as ([untracked], [stale_open], n_reopened).
 
-    untracked    open `- [ ]` boxes with no worklist item at all -- the core.
-    stale_open   open `- [ ]` boxes whose item is TICKED: the plan is behind the
+    untracked open `- [ ]` boxes with no worklist item at all -- the core. stale_open open `- [ ]` boxes whose item is TICKED: the plan is behind the
                  work, and the fix is one character in a file this session owns.
-    n_reopened   `- [x]` boxes whose item is still open. COUNT ONLY, no quotes:
+    n_reopened `- [x]` boxes whose item is still open. COUNT ONLY, no quotes:
                  the remedy is a tick, and ticks already have a gate of their
                  own with evidence rules this check has no business restating.
     """
@@ -349,9 +298,19 @@ def reconcile(open_tasks, done_tasks, rows):
     return untracked, stale_open, reopened
 
 
+def _oversized(path):
+    """True when the file exists and is too large for `_read`, False otherwise (including when it does not exist)."""
+    try:
+        return pathlib.Path(path).stat().st_size > PLAN_MAX_BYTES
+    except OSError:
+        return False
+
+
 def _read(path):
-    """A plan's text, or None. NEVER raises: this runs on the path that lets
-    every session in the repo end a turn."""
+    """A plan's text, or None. NEVER raises: this runs on the path that lets every session in the repo end a turn.
+
+    None does not distinguish "missing" from "too large to read" -- callers that need that distinction call `_oversized` separately, which is what `plan_rows` does so an adopted-but-oversized plan is reported BLIND rather than silently treated as if it did not exist.
+    """
     try:
         p = pathlib.Path(path)
         if p.stat().st_size > PLAN_MAX_BYTES:
@@ -364,10 +323,7 @@ def _read(path):
 def _owner(plan_owner, root, rel):
     """The plan's declared Owner, or None when it cannot be read.
 
-    None means UNOWNED, which `wl_core.owned_by_me` treats as in scope. That is
-    the deliberate direction: a header this cannot parse should make the check
-    noisy, never silent, for the same reason an untagged worklist item counts as
-    yours.
+    None means UNOWNED, which `wl_core.owned_by_me` treats as in scope. That is the deliberate direction: a header this cannot parse should make the check noisy, never silent, for the same reason an untagged worklist item counts as yours.
     """
     try:
         return plan_owner(root, rel)
@@ -375,37 +331,152 @@ def _owner(plan_owner, root, rel):
         return None
 
 
+# THE ADOPTION MARKER `worklist.py --migrate <me> --plan <path>` writes into a plan's Owner line: "Owner: <me> (adopted from <prev> <date>)". It is the one place a session states, in a committed document, that it is executing the plan, which is what separates an ADOPTED plan from one that merely names this session as its Owner.
+ADOPTED_MARKER = "(adopted from"
+# ONE HOME FOR BOTH HALVES OF THE CONTRACT. `worklist.py --migrate --plan` WRITES the Owner line from this format and `is_adopted` READS it back with the pattern below, so a wording change on either side cannot silently disarm the adopted-plan order; test-planfile.py round-trips the two.
+ADOPTED_OWNER_FMT = "Owner: %s " + ADOPTED_MARKER + " %s %s)"
+ADOPTED_RE = re.compile(r"^\*{0,2}Owner\*{0,2}:[^\n]*" + re.escape(ADOPTED_MARKER), re.MULTILINE)
+ADOPTED_HEADER_LINES = 12
+
+
+def is_adopted(root, rel):
+    """True when the plan's header carries the adoption marker. False on any read failure: a check that cannot read the header must fall back to the advisory census, never to a block."""
+    text = _read(pathlib.Path(root) / rel)
+    if text is None:
+        return False
+    return bool(ADOPTED_RE.search("\n".join(text.splitlines()[:ADOPTED_HEADER_LINES])))
+
+
 def in_scope_status(status):
     s = str(status or "").strip().lower()
     return s not in FINISHED_STATES and s not in NOT_STARTED_STATES
 
 
-def plan_rows(root, recs, fold, session_id, plan_owner):
-    """[dict] of findings, newest plan first. `recs` and `plan_owner` are passed
-    in rather than imported so this module never depends on wl_checks, which
-    imports it (and so the selftest can drive it with fixtures).
+# --------------------------------------------------------------------------- DECIDED, NOT DONE: a FINISHED status over open boxes, licensed by a `Ruling:` line.
+#
+# THE GAP THIS CLOSES (worklist #87cff418, 2026-09-24). Two plans held boxes the operator had DECIDED would not be done, and no state said so honestly. A FINISHED status switches every "stop counting" reader off (plan_rows below, wl_planenforce's clock, check_plan_implementation, the wl_store census), which is right for such boxes, but check_plan_boxes.py's G-A3 refused
+# it over open boxes, because an unexplained finished header is also exactly how a session hides live work. `parked` is not the answer and was never meant to be: it is a NOT_STARTED word, deliberately kept on every clock ("a parked record buys a smaller file, never an exemption"). So the plans stayed `draft` with prose saying "superseded", and one was carried as a red.
+#
+# THE ONE STATE: any FINISHED status may sit over open boxes when the header carries `Ruling:` and EVERY reference on that line RE-RESOLVES. The difference between an honest close and a hidden box is then a citation a machine can check, not a word a session chose. Two reference shapes:
+#
+#   Ruling: #d9785655                       a worklist item, which must exist, not be tombstoned, and be CLOSED (`x`): a `[?]` is a question still being asked, and an open item is not a decision.
+#   Ruling: "<operator quote>" in <path>    the quote, whitespace-normalised, must occur in that committed file. The file may not be a plan: a plan quoting itself would resolve by construction.
+#
+# RE-RESOLVES means every run, not once. A ruling whose item is later tombstoned, or whose quote is edited out of its file, makes the plan an unexplained finished header again, and check_plan_boxes.py says so on the next run of any branch.
+#
+# WHAT THIS CANNOT CHECK: that the cited decision is ABOUT these boxes. It proves a closed decision exists, not that it says what the header claims. The first live application of this state found exactly that gap (PLAN-stop-hook-rulings-campaign.md cited #373907ed as parking sections 2 to 6 when the recorded answer was "build 2+3 and 5"), which is why the census names the
+# citation it accepted rather than staying silent about it.
+RULING_HEADER_LINES = ADOPTED_HEADER_LINES
+RULING_LINE_RE = re.compile(r"^\*{0,2}Ruling\*{0,2}:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
+# Ids are hex and NOT fixed width (8 for new items, 12 for migrated ones), so the width is a set, never a single length.
+RULING_ID_RE = re.compile(r"#([0-9a-f]{12}|[0-9a-f]{8})\b")
+RULING_QUOTE_RE = re.compile(r'"([^"]{12,})"[ \t]+in[ \t]+`?([^\s`]+)`?')
+RULING_CLOSED = CLOSED_STATES
 
-    Returns (rows, unread) where `unread` is how many in-scope plans the read
-    cap kept this stop from opening. Never silently zero-truncated: see
+
+def ruling_line(text):
+    """The `Ruling:` value in the plan's header block, or "" when there is none."""
+    head = "\n".join((text or "").splitlines()[:RULING_HEADER_LINES])
+    m = RULING_LINE_RE.search(head)
+    return m.group(1).strip() if m else ""
+
+
+def ruling_refs(line):
+    """([item ids], [(quote, path)]) cited on one `Ruling:` value."""
+    return RULING_ID_RE.findall(line or ""), RULING_QUOTE_RE.findall(line or "")
+
+
+def _squash(s):
+    return " ".join(str(s or "").split())
+
+
+def resolve_ruling(root, rel, text, item_states):
+    """(ok, why) for a plan's `Ruling:` line. PURE apart from reading cited quote files.
+
+    `item_states` is {item_id: state} over EVERY session's items with tombstoned ones absent: the Stop hook passes its own fold, the CI gate passes `store_item_states(root)`. Every reference must resolve; one dangling citation beside a good one is still a false statement in the header, so it refuses.
+    """
+    line = ruling_line(text)
+    if not line:
+        return False, "no `Ruling:` line in the first %d header lines" % RULING_HEADER_LINES
+    ids, quotes = ruling_refs(line)
+    if not ids and not quotes:
+        return False, (
+            "`Ruling: %s` cites neither a worklist item (`#<id>`) nor a quote "
+            '(`"<operator quote>" in <path>`)' % line
+        )
+    ok_parts = []
+    for iid in ids:
+        state = item_states.get(iid)
+        if state is None:
+            return False, "`Ruling:` cites #%s, which is not an item in the worklist store" % iid
+        if state not in RULING_CLOSED:
+            return False, (
+                "`Ruling:` cites #%s, which is still [%s]: an open or deferred item is a "
+                "question, not a decision" % (iid, state)
+            )
+        ok_parts.append("#%s" % iid)
+    for quote, path in quotes:
+        name = path.rsplit("/", 1)[-1]
+        if path == rel or (name.startswith("PLAN-") and name.endswith(".md")):
+            return False, (
+                "`Ruling:` quotes %s, which is a plan; a plan's own words cannot be the "
+                "evidence for closing it" % path
+            )
+        target = pathlib.Path(root) / path
+        try:
+            if ".." in pathlib.PurePosixPath(path).parts:
+                raise ValueError(path)
+            body = target.read_text(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            return False, "`Ruling:` quotes %s, which is not a readable file" % path
+        if _squash(quote) not in _squash(body):
+            return False, '`Ruling:` quotes "%s", which does not occur in %s' % (
+                _quote(quote),
+                path,
+            )
+        ok_parts.append("a quote in %s" % path)
+    return True, ", ".join(ok_parts)
+
+
+def fold_item_states(fold):
+    """{id: state} from the Stop hook's own fold. Tombstoned items are already absent from `fold.items`."""
+    out = {}
+    for r in list(getattr(fold, "items", None) or []):
+        if isinstance(r, dict) and r.get("id"):
+            out[str(r["id"])] = str(r.get("state") or " ")
+    return out
+
+
+def store_item_states(root):
+    """{id: state} folded from the COMMITTED store under `<root>/agent/worklist/`, tombstones dropped.
+
+    The CI half of `fold_item_states`. It reads the tracked files directly rather than through `wl_store.store_dir`, whose TMPDIR legacy log and `WORKLIST_STORE_DIR` override describe one machine, not the commit being judged; the fold itself is `wl_store._fold_events`, so the two halves cannot disagree about what a sequence of events means. Imported lazily because wl_store imports this module.
+    """
+    import wl_store as S  # noqa: PLC0415
+
+    events = []
+    for f in sorted((pathlib.Path(root) / "agent" / S.STORE_DIR_NAME).glob("*.jsonl")):
+        try:
+            events.extend(S._parse_events(f.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue
+    events.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    records = S._fold_events(events)[0]
+    return {rid: str(r.get("state") or " ") for rid, r in records.items() if r.get("state") != "~"}
+
+
+def plan_rows(root, recs, fold, session_id, plan_owner):
+    """[dict] of findings, newest plan first. `recs` and `plan_owner` are passed in rather than imported so this module never depends on wl_checks, which imports it (and so the selftest can drive it with fixtures).
+
+    Returns (rows, unread) where `unread` is how many in-scope plans the read cap kept this stop from opening. Never silently zero-truncated: see
     PLAN_MAX_READ.
 
-    Each dict: rel, status, n_open, n_done, untracked, stale_open, reopened,
-    blind. `blind` is a string when the parser could not resolve boxes the raw
-    text plainly holds, and is a FINDING rather than a skip.
+    Each dict: rel, status, n_open, n_done, untracked, stale_open, reopened, blind. `blind` is a string when the parser could not resolve boxes the raw text plainly holds, and is a FINDING rather than a skip.
     """
     rows = item_rows(fold)
-    # Status first because it is free (plan_records already parsed it), then
-    # ownership, which costs a header read. Only what survives both is capped,
-    # so the cap counts plans this session actually had a reason to open.
-    # S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that
-    # history stay in step with a live worklist is how a check earns its way into
-    # being ignored, and design note 4 is right about that half. NOT_STARTED is no
-    # longer EXEMPT though: it becomes a one-line census row with no quotes and no
-    # recipes. The premise that made it an exemption ("a proposal's boxes are a
-    # sketch") stopped being true here -- measured 2026-09-02, `draft` is this repo's
-    # default header on plans under ACTIVE execution, and six of eight box-carrying
-    # files carried it, hiding 72 of 88 open boxes. One line each is the price of
-    # seeing them; the full treatment stays for plans that claim to be running.
+    # Status first because it is free (plan_records already parsed it), then ownership, which costs a header read. Only what survives both is capped, so the cap counts plans this session actually had a reason to open. S3: THREE tiers, not two. FINISHED is still skipped outright -- demanding that history stay in step with a live worklist is how a check earns its way into being
+    # ignored, and design note 4 is right about that half. NOT_STARTED is no longer EXEMPT though: it becomes a one-line census row with no quotes and no recipes. The premise that made it an exemption ("a proposal's boxes are a sketch") stopped being true here -- measured 2026-09-02, `draft` is this repo's default header on plans under ACTIVE execution, and six of eight
+    # box-carrying files carried it, hiding 72 of 88 open boxes. One line each is the price of seeing them; the full treatment stays for plans that claim to be running.
     owned = [
         rec
         for rec in list(recs)
@@ -414,12 +485,35 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
     ]
     scoped = [rec for rec in owned if in_scope_status(rec[1])]
     census_only = [rec for rec in owned if not in_scope_status(rec[1])]
+    # FINISHED plans are skipped above, and that skip is only honest when nothing is open under them or a `Ruling:` licenses what is (see resolve_ruling). Without this pass an unexplained finished header over live boxes would be the one shape every "stop counting" reader in the hook agrees to ignore -- the same shape check_plan_boxes.py's G-A3 refuses in CI.
+    finished = [
+        rec
+        for rec in list(recs)
+        if str(rec[1] or "").strip().lower() in FINISHED_STATES
+        and C.owned_by_me(_owner(plan_owner, root, rec[0]), session_id)
+    ]
     unread = max(0, len(scoped) - PLAN_MAX_READ)
     out = []
     for rec in scoped[:PLAN_MAX_READ]:
         rel, status = rec[0], rec[1]
-        text = _read(pathlib.Path(root) / rel)
-        if text is None or len(text) < P.MIN_PLAN_CHARS:
+        path = pathlib.Path(root) / rel
+        text = _read(path)
+        if text is None:
+            if _oversized(path):
+                out.append(
+                    {
+                        "rel": rel,
+                        "status": status,
+                        "n_open": 0,
+                        "n_done": 0,
+                        "untracked": [],
+                        "stale_open": [],
+                        "reopened": 0,
+                        "blind": "over PLAN_MAX_BYTES (%d), not read at all" % PLAN_MAX_BYTES,
+                    }
+                )
+            continue
+        if len(text) < P.MIN_PLAN_CHARS:
             continue
         raw_open, raw_done = raw_box_counts(text)
         if not raw_open and not raw_done:
@@ -446,9 +540,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
                 "blind": blind,
             }
         )
-    # The census tier. Counts only, and only when the plan HAS open boxes -- a
-    # not-started plan with nothing open is silent, or every prose sketch in the
-    # tree grows a line.
+    # The census tier. Counts only, and only when the plan HAS open boxes -- a not-started plan with nothing open is silent, or every prose sketch in the tree grows a line.
     for rec in census_only[:PLAN_MAX_READ]:
         rel, status = rec[0], rec[1]
         text = _read(pathlib.Path(root) / rel)
@@ -473,6 +565,42 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
                 "census": True,
             }
         )
+    states = None
+    for rec in finished[:PLAN_MAX_READ]:
+        rel, status = rec[0], rec[1]
+        text = _read(pathlib.Path(root) / rel)
+        if text is None or len(text) < P.MIN_PLAN_CHARS:
+            continue
+        if not raw_box_counts(text)[0]:
+            continue
+        try:
+            open_tasks, done_tasks = plan_boxes(text)
+        except Exception:  # noqa: BLE001 -- same contract as the loops above
+            open_tasks, done_tasks = [], []
+        if not open_tasks:
+            continue
+        if states is None:
+            states = fold_item_states(fold)
+        try:
+            ok, why = resolve_ruling(root, rel, text, states)
+        except Exception as exc:  # noqa: BLE001 -- a header read must never wedge a stop
+            ok, why = False, "the `Ruling:` line could not be checked (%s)" % exc
+        if ok:
+            continue
+        out.append(
+            {
+                "rel": rel,
+                "status": status,
+                "n_open": len(open_tasks),
+                "n_done": len(done_tasks),
+                "untracked": [],
+                "stale_open": [],
+                "reopened": 0,
+                "blind": None,
+                "census": True,
+                "unruled": why,
+            }
+        )
     return out, unread
 
 
@@ -484,20 +612,26 @@ def _quote(t):
 def render(row, n_more_plans=0, unread=0, budget=None):
     """The advisory body for ONE plan, or "" when there is nothing to say.
 
-    Prints the SHAPE (boxes seen, open, done, items scanned is implicit in the
-    verdicts) and not merely the verdict, so a reader can tell a real finding
+    Prints the SHAPE (boxes seen, open, done, items scanned is implicit in the verdicts) and not merely the verdict, so a reader can tell a real finding
     from a parser that saw nothing.
 
-    `budget` is S2's SHARED quote allowance: render_all hands each plan whatever
-    is left of PLAN_TASK_SHOW rather than giving every plan its own. That is what
-    lets three plans be shown without tripling the wall design note 2 was about --
-    the note's number moves, its reason does not.
+    `budget` is S2's SHARED quote allowance: render_all hands each plan whatever is left of PLAN_TASK_SHOW rather than giving every plan its own. That is what lets three plans be shown without tripling the wall design note 2 was about -- the note's number moves, its reason does not.
     """
     if not row:
         return ""
+    if row.get("unruled"):
+        # A census-shaped row (no quotes, no budget) because the remedy is one header line, not a set of --add recipes. It is still a finding, and check:ci-plan-boxes reds on the same plan.
+        return (
+            "PLAN FILE (finished over open boxes) -- %s [Status: %s], %d open box(es), %d ticked.\n"
+            "  A finished Status switches every plan check off for this file, and it may\n"
+            "  only do that over open boxes when a `Ruling:` header line re-resolves: %s.\n"
+            "  Cite the decision (`Ruling: #<closed worklist id>` or\n"
+            '  `Ruling: "<operator quote>" in <path>`), tick the boxes, or reopen the Status.\n'
+            "  check:ci-plan-boxes (G-A3) refuses this plan until then."
+            % (row["rel"], row["status"], row["n_open"], row["n_done"], row["unruled"])
+        )
     if row.get("census"):
-        # S3's third tier: one line, no quotes, no recipes. It exists to make a
-        # not-started plan's boxes VISIBLE, not to demand anything about them.
+        # S3's third tier: one line, no quotes, no recipes. It exists to make a not-started plan's boxes VISIBLE, not to demand anything about them.
         return (
             "PLAN FILE (census) -- %s [Status: %s], %d open box(es), %d ticked.\n"
             "  Not-started plans are exempt from the checks above, so this is the only\n"
@@ -563,12 +697,8 @@ def render(row, n_more_plans=0, unread=0, budget=None):
 def render_all(rows, unread=0):
     """S2: up to PLAN_PLANS_SHOW plans in one advisory, sharing ONE quote budget.
 
-    The budget is why three plans is not three times the noise. Each plan spends
-    what it needs of PLAN_TASK_SHOW and the next one gets the remainder, so the
-    total number of quoted `--add` recipes is the same as it was when exactly one
-    plan was rendered. A plan whose budget has run out still gets its header and
-    its counts -- it is named, not hidden, which is the difference between a cap
-    and a silence.
+    The budget is why three plans is not three times the noise. Each plan spends what it needs of PLAN_TASK_SHOW and the next one gets the remainder, so the total number of quoted `--add` recipes is the same as it was when exactly one plan was rendered. A plan whose budget has run out still gets its header and its counts -- it is named, not hidden, which is the difference between a
+    cap and a silence.
     """
     if not rows:
         return ""
@@ -586,7 +716,4 @@ def render_all(rows, unread=0):
     return "\n".join(out)
 
 
-# ---------------------------------------------------------------------------
-# CONTROLS live in test-planfile.py beside this file, and are run by
-# .claude/hooks/test-hooks.sh. Keeping them out of here keeps the import that
-# every Stop pays for free of fixtures.
+# --------------------------------------------------------------------------- CONTROLS live in test-planfile.py beside this file, and are run by .claude/hooks/test-hooks.sh. Keeping them out of here keeps the import that every Stop pays for free of fixtures.

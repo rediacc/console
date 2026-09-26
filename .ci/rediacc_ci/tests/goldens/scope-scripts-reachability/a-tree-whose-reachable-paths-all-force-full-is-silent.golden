@@ -1,0 +1,10 @@
+# twin .ci/scripts/quality/check-scope-scripts-reachability.sh blob 3ccfb3f3173ed0300fddef4ba081054d78383eca
+exit: 0
+--- stdout ---
+[0;32m✓[0m every root scripts/ and .ci/scripts/ path reachable from a gated job forces full CI
+  (24 .ci/scripts and 1 dispatch reference(s) scanned;
+   extractor controls fired, so this is not an empty pass)
+  Blind spot: scanning is workflow-WIDE, not per-job. A path referenced from
+  an ungated job is held to the same rule, which is conservative, and a
+  second-level dependency (a script a scanned script calls) is not followed.
+--- stderr ---

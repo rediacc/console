@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """Retire a GitHub org secret whose Bitwarden twin is now the live source.
 
-WHAT THIS IS FOR. The cutover flipped every CONSUMER read from `secrets.X` to
-`env.BWS_X`. What is left of X in the tree is scaffolding that exists only to prove
-the twin matched while the flip was in progress:
+WHAT THIS IS FOR. The cutover flipped every CONSUMER read from `secrets.X` to `env.BWS_X`. What is left of X in the tree is scaffolding that exists only to prove the twin matched while the flip was in progress:
 
   1. the `GH_<NAME>:` line and the SHADOW_NAMES entry in each job's
      "Compare shadow secrets against GitHub" step -- and the whole step, but ONLY
@@ -13,14 +11,9 @@ the twin matched while the flip was in progress:
   3. the callee's `on.workflow_call.secrets.<NAME>` declaration, which is dead the
      moment nothing in it reads the name.
 
-Deleting the GitHub secret itself is NOT done here and never will be: this script
-PRINTS the `gh secret delete` lines and stops. An org secret cannot be restored, the
-value is not in the tree, and a script that both edits code and destroys the only
-copy of a credential is a script that can do half the job and leave no way back.
+Deleting the GitHub secret itself is NOT done here and never will be: this script PRINTS the `gh secret delete` lines and stops. An org secret cannot be restored, the value is not in the tree, and a script that both edits code and destroys the only copy of a credential is a script that can do half the job and leave no way back.
 
-ORDER MATTERS AND THIS TOOL DOES NOT ENFORCE IT. Land the edit, let CI go green, and
-only then run the printed commands. Doing it the other way round blanks the reads
-this edit has not removed yet.
+ORDER MATTERS AND THIS TOOL DOES NOT ENFORCE IT. Land the edit, let CI go green, and only then run the printed commands. Doing it the other way round blanks the reads this edit has not removed yet.
 
 Usage:
   retire-shadowed-secrets.py <NAME> [<NAME>...]            # report only (default)
@@ -41,10 +34,7 @@ ROOT = Path(os.environ.get("RETIRE_ROOT") or Path(__file__).resolve().parents[3]
 COMPARE_STEP = "Compare shadow secrets against GitHub"
 
 
-# A wrong RETIRE_ROOT makes the glob below return nothing, and every edit this script
-# performs is then a silent no-op that still reports "already retired?" -- which is this
-# script's own entry in the WHY block of scripts/check-enumeration-vacuity.ts. Measured
-# 2026-09-04: 33 workflow files. The floor catches a bad root, not today's count.
+# A wrong RETIRE_ROOT makes the glob below return nothing, and every edit this script performs is then a silent no-op that still reports "already retired?" -- which is this script's own entry in the WHY block of scripts/gates/check-enumeration-vacuity.ts. Measured 2026-09-04: 33 workflow files. The floor catches a bad root, not today's count.
 MIN_WORKFLOWS = int(os.environ.get("RETIRE_MIN_WORKFLOWS", "20"))
 
 
@@ -78,10 +68,7 @@ def step_span(lines: list[str], i: int) -> tuple[int, int]:
 def retire_in_text(text: str, names: set[str]) -> tuple[str, list[str]]:
     """Rewrite one workflow's text. Returns (new_text, what changed).
 
-    Line-addressed and re-scanned after every removal rather than done in one pass:
-    the three edits below overlap (removing a GH_ line can empty a SHADOW_NAMES list
-    which empties a step), and a single pass over stale indices is how a rewrite lands
-    in the neighbouring key.
+    Line-addressed and re-scanned after every removal rather than done in one pass: the three edits below overlap (removing a GH_ line can empty a SHADOW_NAMES list which empties a step), and a single pass over stale indices is how a rewrite lands in the neighbouring key.
     """
     lines = text.split("\n")
     changed: list[str] = []
@@ -143,9 +130,7 @@ def retire_in_text(text: str, names: set[str]) -> tuple[str, list[str]]:
                     if lines[k].strip() and len(lines[k]) - len(lines[k].lstrip()) < ind
                 ]
                 if "secrets:" in anc[:2] and "workflow_call:" in anc[:4]:
-                    # The declaration owns its indented body (`required: true`), so the
-                    # span runs to the next line at or above this indent. step_span is
-                    # the wrong tool here: this is not a step.
+                    # The declaration owns its indented body (`required: true`), so the span runs to the next line at or above this indent. step_span is the wrong tool here: this is not a step.
                     j = i + 1
                     while j < len(lines) and (
                         not lines[j].strip() or len(lines[j]) - len(lines[j].lstrip()) > ind
@@ -205,11 +190,8 @@ def selftest() -> int:
     got2, ch2 = retire_in_text(live, {"DROP_ME"})
     check("CONTROL: a live consumer read is left alone", got2 == live and not ch2, ch2)
 
-    # NO LIVE-TREE ASSERTION HERE, deliberately, and the first draft had one. A
-    # selftest proves the INSTRUMENT on planted text; whether the anchor still matches
-    # the real tree is a fact about the tree, and main() owns that verdict. With both,
-    # a renamed step exited 2 with "control failed" and never reached the message that
-    # explains what actually happened -- one check made the clearer one unreachable.
+    # NO LIVE-TREE ASSERTION HERE, deliberately, and the first draft had one. A selftest proves the INSTRUMENT on planted text; whether the anchor still matches the real tree is a fact about the tree, and main() owns that verdict. With both, a renamed step exited 2 with "control failed" and never reached the message that explains what actually happened -- one check made the clearer
+    # one unreachable.
 
     # A caller's passthrough goes; a same-shaped line NOT under `secrets:` does not.
     call = (
@@ -249,15 +231,9 @@ def main(argv: list[str]) -> int:
         print(__doc__, file=sys.stderr)
         return 1
 
-    # THE ANCHOR, CHECKED BEFORE THE VERDICT. Every edit this tool makes is found by
-    # matching one literal step name, so a rename of that step turns the whole tool
-    # into a silent no-op -- and its own --selftest would keep passing, because that
-    # runs against planted fixtures rather than the tree.
+    # THE ANCHOR, CHECKED BEFORE THE VERDICT. Every edit this tool makes is found by matching one literal step name, so a rename of that step turns the whole tool into a silent no-op -- and its own --selftest would keep passing, because that runs against planted fixtures rather than the tree.
     #
-    # This is the difference between "already retired" and "I can no longer see the
-    # thing I edit", which the report used to collapse into one ambiguous line. The
-    # operator runs this against production secrets; the two answers must not look
-    # alike.
+    # This is the difference between "already retired" and "I can no longer see the thing I edit", which the report used to collapse into one ambiguous line. The operator runs this against production secrets; the two answers must not look alike.
     anchors = sum(
         1 for f in files() if COMPARE_STEP in f.read_text(encoding="utf-8", errors="replace")
     )
@@ -284,14 +260,8 @@ def main(argv: list[str]) -> int:
             print("      - %s" % c)
         if apply:
             f.write_text(new, encoding="utf-8")
-    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from
-    # the argument list. This tool exists to stop a deletion from blanking a live read,
-    # and it was printing three delete lines while TWO of the names still had one:
-    # breakpoint.yml's app-token (that job hands a human a shell, so it deliberately
-    # never fetches from Bitwarden) and watchdog-monitor.yml's tier-1 classifier (its
-    # fetch cannot move ahead of the monitor without `continue-on-error`, which
-    # check-workflows.sh bans). Both survivals are correct and documented; printing
-    # `gh secret delete` for them was not.
+    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from the argument list. This tool exists to stop a deletion from blanking a live read, and it was printing three delete lines while TWO of the names still had one: breakpoint.yml's app-token (that job hands a human a shell, so it deliberately never fetches from Bitwarden) and watchdog-monitor.yml's
+    # tier-1 classifier (its fetch cannot move ahead of the monitor without `continue-on-error`, which check-workflows.sh bans). Both survivals are correct and documented; printing `gh secret delete` for them was not.
     live = {}
     for f in files():
         text = f.read_text(encoding="utf-8", errors="replace")
@@ -321,10 +291,7 @@ def main(argv: list[str]) -> int:
             "are not. That is a clean answer, not a broken scan."
             % (", ".join(sorted(names)), anchors)
         )
-        # STILL SAY WHICH NAMES ARE FREE. "Nothing to rewrite" is exactly the state
-        # after a successful --apply, and it is the moment somebody reaches for the
-        # delete commands -- so this path must answer the deletion question rather
-        # than only reporting that the edit is done.
+        # STILL SAY WHICH NAMES ARE FREE. "Nothing to rewrite" is exactly the state after a successful --apply, and it is the moment somebody reaches for the delete commands -- so this path must answer the deletion question rather than only reporting that the edit is done.
         if free:
             print("\nFree to delete now (CI green first):")
             for n in free:

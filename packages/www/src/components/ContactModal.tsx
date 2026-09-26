@@ -88,14 +88,8 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
     e.preventDefault();
     setState('loading');
     setErrorMsg('');
-    // Same shape as ContactForm, and before the captcha guard for the same
-    // reason: an empty form passes that one and POSTs an empty payload, so the
-    // visitor is told "Something went wrong" about their own blank fields.
-    // BOUND FIRST, then tested -- the shape PartnerApplicationForm.tsx:149 uses.
-    // Testing `nameRef.current?.value.trim()` inline reads identically to a
-    // human and is invisible to check-form-validation, whose fieldIdentifiers()
-    // only recognises a field that is assigned to a variable. It also stops the
-    // payload below reading each ref a second time.
+    // Same shape as ContactForm, and before the captcha guard for the same reason: an empty form passes that one and POSTs an empty payload, so the visitor is told "Something went wrong" about their own blank fields. BOUND FIRST, then tested -- the shape PartnerApplicationForm.tsx:149 uses. Testing `nameRef.current?.value.trim()` inline reads identically to a human and is
+    // invisible to check-form-validation, whose fieldIdentifiers() only recognises a field that is assigned to a variable. It also stops the payload below reading each ref a second time.
     const name = nameRef.current?.value.trim() ?? '';
     const email = emailRef.current?.value.trim() ?? '';
     const message = messageRef.current?.value.trim() ?? '';
@@ -106,8 +100,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
     }
     if (captchaEnabled && !captcha.token) {
       setState('error');
-      // The widget is present and unsolved, or it never loaded at all. Only the second
-      // one needs a retry, and saying "complete the captcha" there points at nothing.
+      // The widget is present and unsolved, or it never loaded at all. Only the second one needs a retry, and saying "complete the captcha" there points at nothing.
       setErrorMsg(captchaMessage(captcha, t('captchaUnavailable'), t('captchaRequired')));
       return;
     }

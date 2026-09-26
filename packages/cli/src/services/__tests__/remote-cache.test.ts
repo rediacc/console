@@ -69,13 +69,44 @@ describe('mergeRemoteIntoCache', () => {
     expect(merged.version).toBe(9);
   });
 
-  it('local defaults and account overrides survive over the pulled values', () => {
+  it('account and defaults follow the pulled copy with no local override (operator ruling D3, F5)', () => {
     const merged = mergeRemoteIntoCache(local, pulled, 5);
 
-    expect(merged.defaults?.language).toBe('tr');
-    // Non-overridden pulled defaults still come through.
-    expect(merged.defaults?.datastoreSize).toBe('90%');
-    expect(merged.account?.userEmail).toBe('me@example.com');
+    // A local override kept every device's first-pulled value forever, and its next push reverted
+    // another device's change.
+    expect(merged.defaults).toEqual({ language: 'en', datastoreSize: '90%' });
+    // The pulled copy carries no account section, so no synced account key survives locally; the
+    // device's own login does (logout is per device, ruling 2026-09-25).
+    expect(merged.account).toEqual({ accountServer: 'https://eu.rediacc.com' });
+  });
+
+  it("keeps this device's login over the pulled copy's, absence included", () => {
+    const withLogin: RdcConfig = {
+      ...pulled,
+      account: {
+        userEmail: 'ops@example.com',
+        accountServer: 'https://us.other',
+        e2ePublicKey: 'K',
+      },
+    };
+    expect(mergeRemoteIntoCache(local, withLogin, 5).account).toEqual({
+      userEmail: 'ops@example.com',
+      accountServer: 'https://eu.rediacc.com',
+    });
+    // A device that logged out keeps no login, whatever the pull carries.
+    const loggedOut: RdcConfig = { ...local, account: { userEmail: 'me@example.com' } };
+    expect(mergeRemoteIntoCache(loggedOut, withLogin, 5).account).toEqual({
+      userEmail: 'ops@example.com',
+    });
+  });
+
+  it('keeps the host-local renetPath, which the server copy never carries', () => {
+    // 2026-09-25: the first remote enable dropped a dev machine's renetPath, silently
+    // switching it back to the default renet binary.
+    const withPath: RdcConfig = { ...local, renetPath: '/opt/dev/renet' };
+    expect(mergeRemoteIntoCache(withPath, pulled, 5).renetPath).toBe('/opt/dev/renet');
+    // Control: no local override leaves the field absent, not blank.
+    expect(mergeRemoteIntoCache(local, pulled, 5)).not.toHaveProperty('renetPath');
   });
 
   it('leaves remote undefined when local has no pointer (defensive)', () => {
@@ -97,8 +128,7 @@ describe('writeRemoteCache', () => {
 
     await writeRemoteCache('cfg', pulled, 5);
 
-    // The version-bumping paths are never touched — cache writes are
-    // observations, not declared intent.
+    // The version-bumping paths are never touched, cache writes are observations, not declared intent.
     expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(1);
     expect(mockConfigFileStorage.update).not.toHaveBeenCalled();
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();

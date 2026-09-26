@@ -85,6 +85,8 @@ DRILL_PASSWORD="DrillLicense123!"
 # this file owns and teardown restores that same number.
 START_MAX_ACTIVATIONS=3
 RDC="$DRILL_ROOT_DIR/rdc.sh"
+# This drill targets only the disposable local ops VMs, so a renet built from a dirty private/renet tree may be uploaded to them.
+export REDIACC_ALLOW_DIRTY_RENET=1
 
 CONFIG_NAME="drill-license"
 CONFIG_HOME=""
@@ -392,8 +394,9 @@ setup_sandbox() {
     # license-enforcing flavor with the dev account key baked in. The default
     # dev build is nolicense (a permit-all stub that would make every leg
     # vacuous); RDC_RENET_LICENSE=1 flips build.sh dev to enforcing, and
-    # ensure_renet_built picks up ED25519_PUBLIC_KEY from private/account/.env
-    # on its own. The build stamp hashes the effective mode, so this forces a
+    # ensure_renet_built picks up ACCOUNT_ED25519_PUBLIC_KEY from the
+    # environment or from the public-key cache ./run.sh setup writes
+    # (private/account/.cache/public-keys.env) on its own. The build stamp hashes the effective mode, so this forces a
     # rebuild here and the next plain ./rdc.sh rebuilds nolicense right back —
     # nothing sticky is left behind for other sessions.
     export RDC_RENET_LICENSE=1

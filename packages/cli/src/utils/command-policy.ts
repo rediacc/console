@@ -22,10 +22,10 @@ import {
 export interface CommandPolicy {
   /** Block grand (non-fork) repos in agent mode. Override: REDIACC_ALLOW_GRAND_REPO */
   grandGuard: boolean;
-  /** Block fork repos — command is nonsensical on interim fork environments */
+  /** Block fork repos, command is nonsensical on interim fork environments */
   forkBlocked: boolean;
   /**
-   * Block in agent mode. Absolute for most commands (run, mcp — no override).
+   * Block in agent mode. Absolute for most commands (run, mcp, no override).
    * The `cluster <verb>` family is the one exception: it can be deliberately
    * unlocked per cluster by the operator via REDIACC_ALLOW_CLUSTER_OPS,
    * ancestry-verified exactly like REDIACC_ALLOW_GRAND_REPO.
@@ -61,8 +61,7 @@ export const CMD = {
   REPO_BRANCH: 'repo branch',
   REPO_CHECKOUT: 'repo checkout',
   REPO_MERGE: 'repo merge',
-  // Feature layer (spec §5.4): gate class B. Replicate and canary never mutate
-  // the primary's data — replicate forks it, canary shares it — so grandGuard is
+  // Feature layer (spec §5.4): gate class B. Replicate and canary never mutate the primary's data, replicate forks it, canary shares it, so grandGuard is
   // the whole gate; no class-D cluster unlock is required (they stay inside one
   // cluster's datastores, and replicate is the flagship agent-safe demo).
   REPO_REPLICATE: 'repo replicate',
@@ -71,14 +70,8 @@ export const CMD = {
   REPO_CANARY_CREATE: 'repo canary create',
   REPO_CANARY_WEIGHT: 'repo canary weight',
   REPO_CANARY_REMOVE: 'repo canary remove',
-  // NOTE: `repo secret` subcommands intentionally have no CMD entries.
-  // The V2 write-only model removed grandGuard from secret commands —
-  // mutation-gate is the safety property, not a command-level policy.
-  // If a future need arises (e.g. an entirely new agent gate), reintroduce
-  // CMD.REPO_SECRET_* and add a metadata entry that references it.
-  // These were 'term repo' / 'vscode repo' — SYNTHETIC paths that never existed in
-  // the tree (term has only ever had `connect`). Keyed to the real leaves now, so
-  // the policy gate and the command tree finally agree on the same string.
+  // NOTE: `repo secret` subcommands intentionally have no CMD entries. The V2 write-only model removed grandGuard from secret commands, mutation-gate is the safety property, not a command-level policy. If a future need arises (e.g. an entirely new agent gate), reintroduce CMD.REPO_SECRET_* and add a metadata entry that references it. These were 'term repo' / 'vscode repo' ,
+  // SYNTHETIC paths that never existed in the tree (term has only ever had `connect`). Keyed to the real leaves now, so the policy gate and the command tree finally agree on the same string.
   TERM_CONNECT: 'term connect',
   VSCODE_CONNECT: 'vscode connect',
   RUN: 'run',
@@ -91,8 +84,7 @@ export const CMD = {
   CLUSTER_JOIN: 'cluster join',
   CLUSTER_EVICT: 'cluster evict',
   CLUSTER_SNAPSHOT_CREATE: 'cluster snapshot create',
-  // Datastore mutations are class D: a datastore holds every repo in it, so
-  // moving or destroying one is an infrastructure act, not a repo act.
+  // Datastore mutations are class D: a datastore holds every repo in it, so moving or destroying one is an infrastructure act, not a repo act.
   DATASTORE_CREATE: 'datastore create',
   DATASTORE_ATTACH: 'datastore attach',
   DATASTORE_DETACH: 'datastore detach',
@@ -196,7 +188,7 @@ function auditClusterOverride(commandPath: string, clusterName: string): void {
  * Enforce the infrastructure-operations guard (gate class D, spec §4.7): the verb
  * is blocked in agent mode unless the operator set REDIACC_ALLOW_CLUSTER_OPS
  * before the agent started. Both a missing override and an agent-injected
- * (self-set) one fail closed — only the operator can authorize this, and never
+ * (self-set) one fail closed, only the operator can authorize this, and never
  * from inside the agent.
  *
  * `subject` is the name the per-name unlock matches, and it is the SUBJECT of the
@@ -250,6 +242,7 @@ export async function assertCommandPolicy(
 
   if (!repoName) return;
 
+  // A bare (or `:base`) ref resolves to the family's grand whatever its tag (configService.getRepository).
   const repo = await configService.getRepository(repoName);
   if (!repo) return;
   const isFork = !!(repo.grandGuid && repo.grandGuid !== repo.repositoryGuid);

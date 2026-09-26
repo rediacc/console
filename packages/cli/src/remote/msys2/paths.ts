@@ -53,8 +53,7 @@ function getBundledMsys2Path(): string | null {
     return pathCache.get(cacheKey) ?? null;
   }
 
-  // Check if running in Electron with bundled resources
-  // process.resourcesPath is set by Electron to point to the app resources directory
+  // Check if running in Electron with bundled resources process.resourcesPath is set by Electron to point to the app resources directory
   const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
   if (resourcesPath) {
     const bundlePath = join(resourcesPath, 'msys2-bundle');
@@ -209,8 +208,7 @@ export function getMsys2Environment(): Record<string, string> {
     PATH: `${binPath};${process.env.PATH ?? ''}`,
     // Set HOME for SSH config and known_hosts
     HOME: process.env.USERPROFILE ?? '',
-    // Disable MSYS2 automatic path conversion (we handle it ourselves)
-    // This prevents rsync 3.3.0+ from prefixing target paths incorrectly
+    // Disable MSYS2 automatic path conversion (we handle it ourselves) This prevents rsync 3.3.0+ from prefixing target paths incorrectly
     MSYS_NO_PATHCONV: '1',
     MSYS2_ARG_CONV_EXCL: '*',
     // Ensure consistent locale

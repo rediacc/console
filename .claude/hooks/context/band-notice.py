@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """PostToolUse: state the context budget once per band, per compaction epoch.
 
-This replaces a 60-minute timer with the only signal that actually predicts
-compaction. It reads the transcript tail, derives the auto-compact threshold
-the way Claude Code derives it, and when usage crosses a band it has not yet
-crossed in this epoch it returns `hookSpecificOutput.additionalContext`.
+This replaces a 60-minute timer with the only signal that actually predicts compaction. It reads the transcript tail, derives the auto-compact threshold the way Claude Code derives it, and when usage crosses a band it has not yet crossed in this epoch it returns `hookSpecificOutput.additionalContext`.
 
 THREE THINGS THIS HOOK DELIBERATELY DOES NOT DO:
 
@@ -13,6 +10,12 @@ THREE THINGS THIS HOOK DELIBERATELY DOES NOT DO:
    out-of-band system command trips the model's prompt-injection defenses and
    gets surfaced to the user instead of acted on, and an instruction that gets
    surfaced instead of acted on is a trigger that does not fire.
+   ONE DOCUMENTED EXCEPTION, by operator order of 2026-09-24: the stop-hook
+   retro order (ctx_budget.RETRO_ORDER, agent/plans/PLAN-stop-hook-retro-20260924.md
+   section 8, standing procedure P3.1 of PLAN-stop-hook-continuity.md). It is
+   emitted once per session per band, only after STATE.md has been rewritten
+   past the crossing, and it is framed as a repo procedure naming its own
+   source rather than as a system command, for the reason above.
 2. It does not repeat. One statement per band per epoch. A reminder attached
    to every tool result would be noise inside a minute, and noise is how a
    real signal gets ignored.
@@ -45,12 +48,9 @@ def emit(text):
 
 
 def describe_state_md(path, st, usage, threshold):
-    """A factual line about the recovery document, including how stale it is
-    IN CONTEXT TERMS rather than in minutes.
+    """A factual line about the recovery document, including how stale it is IN CONTEXT TERMS rather than in minutes.
 
-    Minutes were the old trigger and they were the wrong unit: a session can
-    burn 200K tokens in ten minutes or 5K in an hour. What matters is how much
-    of the window has gone by since the document was last true.
+    Minutes were the old trigger and they were the wrong unit: a session can burn 200K tokens in ten minutes or 5K in an hour. What matters is how much of the window has gone by since the document was last true.
     """
     if not path.is_file():
         return "No compact-recovery document exists for this session at %s." % path.as_posix()
@@ -73,27 +73,15 @@ def describe_state_md(path, st, usage, threshold):
 def build_text(band_name, usage, res, st, state_md):
     """THE PERCENTAGE COUNTS DOWN, because the status line counts down.
 
-    This used to report `usage / threshold` -- 98% meaning "nearly full". Claude
-    Code's own display says "N% until auto-compact", which reads 2% at that same
-    moment. Two numbers for one quantity, pointing opposite ways, in a notice
-    whose entire job is to be believed at a glance: the operator saw 100% and 0%
-    describing the same instant and asked for them aligned. So the only
+    This used to report `usage / threshold` -- 98% meaning "nearly full". Claude Code's own display says "N% until auto-compact", which reads 2% at that same moment. Two numbers for one quantity, pointing opposite ways, in a notice whose entire job is to be believed at a glance: the operator saw 100% and 0% describing the same instant and asked for them aligned. So the only
     percentage this hook prints is REMAINING, in the status line's direction.
 
-    It will still not match the status line DIGIT for digit, and that is
-    expected rather than a bug to chase: Claude Code divides by its internal
-    token estimate over the message list, this divides by the measured threshold
-    in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction
-    and the unit are what were misleading; the residual gap is a few points.
+    It will still not match the status line DIGIT for digit, and that is expected rather than a bug to chase: Claude Code divides by its internal token estimate over the message list, this divides by the measured threshold in reported-prompt tokens (see COMPACT_MARGIN in ctx_budget). The direction and the unit are what were misleading; the residual gap is a few points.
     """
     threshold = res["threshold"]
     headroom = threshold - usage
-    # A NEGATIVE HEADROOM IS NEVER A FACT ABOUT THE SESSION, only ever a fact
-    # about this hook's denominator: a session past its compaction threshold
-    # has compacted, by definition. Printing "-226,179 tokens" once is enough
-    # to make every later notice ignorable, so the number is not printed -- and
-    # the percentage now shares that guard rather than sitting outside it,
-    # since a negative headroom is exactly the case that produces "-2.4%".
+    # A NEGATIVE HEADROOM IS NEVER A FACT ABOUT THE SESSION, only ever a fact about this hook's denominator: a session past its compaction threshold has compacted, by definition. Printing "-226,179 tokens" once is enough to make every later notice ignorable, so the number is not printed -- and the percentage now shares that guard rather than sitting outside it, since a negative
+    # headroom is exactly the case that produces "-2.4%".
     if headroom >= 0:
         head = "%.1f%% until auto-compact, a headroom of %s tokens." % (
             100.0 * headroom / threshold,
@@ -160,10 +148,7 @@ def build_text(band_name, usage, res, st, state_md):
 def main():
     event = B.read_event()
 
-    # A live end-to-end delivery probe. The control suite and the operator use
-    # this to answer "does additionalContext actually reach the model in THIS
-    # install", which is a question the documentation cannot answer. One shot:
-    # the marker is consumed so it can never become a permanent nag.
+    # A live end-to-end delivery probe. The control suite and the operator use this to answer "does additionalContext actually reach the model in THIS install", which is a question the documentation cannot answer. One shot: the marker is consumed so it can never become a permanent nag.
     try:
         force = B.state_dir() / "force-emit"
         if force.exists():
@@ -187,8 +172,7 @@ def main():
         B.log_error("band-notice/dump", exc)
 
     try:
-        # A subagent has its own context window and does not own STATE.md.
-        # Telling it about the main session's budget is both wrong and useless.
+        # A subagent has its own context window and does not own STATE.md. Telling it about the main session's budget is both wrong and useless.
         if event.get("agent_id"):
             return
 
@@ -205,20 +189,13 @@ def main():
         st = B.load_state(session_id)
         state_md = B.state_md_path(project, session_id)
 
-        # `window_floor` is this session's own evidence: it has carried more
-        # than any configured window allows, which no pin can argue with. The
-        # cap-disproof mechanism that used to sit beside it was deleted once the
-        # pin rule made it unreachable; see ctx_budget.resolve_threshold.
+        # `window_floor` is this session's own evidence: it has carried more than any configured window allows, which no pin can argue with. The cap-disproof mechanism that used to sit beside it was deleted once the pin rule made it unreachable; see ctx_budget.resolve_threshold.
         floor = st.get("window_floor")
         res = B.resolve_threshold(model, project, window_floor=floor)
         if not res["threshold"] or res["threshold"] <= 0:
             return
-        # EVIDENCE BEATS CONFIGURATION. A session that has carried more tokens
-        # than the derived threshold allows, without compacting, has proven the
-        # threshold wrong. This is the generalisation of the model-cap
-        # disproof, and it catches the case that has no other tell: a session
-        # started BEFORE the window was pinned is running on the old window,
-        # and reads the new one out of settings on every tool call.
+        # EVIDENCE BEATS CONFIGURATION. A session that has carried more tokens than the derived threshold allows, without compacting, has proven the threshold wrong. This is the generalisation of the model-cap disproof, and it catches the case that has no other tell: a session started BEFORE the window was pinned is running on the old window, and reads the new one out of settings
+        # on every tool call.
         high = max(usage, int(st.get("high_water") or 0))
         st["high_water"] = high
         if high > res["threshold"]:
@@ -226,33 +203,23 @@ def main():
             if ceiling > (res["window"] or 0):
                 st["window_floor"] = ceiling
                 res = B.resolve_threshold(model, project, window_floor=ceiling)
-                # Re-seat the ladder under the corrected threshold rather than
-                # clearing it. Clearing would replay every band the session has
-                # already passed; leaving it would suppress the bands it has
-                # not reached yet under the new, larger denominator.
+                # Re-seat the ladder under the corrected threshold rather than clearing it. Clearing would replay every band the session has already passed; leaving it would suppress the bands it has not reached yet under the new, larger denominator.
                 st["band"] = B.band_for(usage, res["threshold"])
                 st["threshold_corrected"] = True
 
-        # A compaction this hook did not see still has to reset the ladder.
-        # PostCompact is the primary reset; this is the backstop for a
-        # compaction that happened while the hook was unregistered or failing.
+        # A compaction this hook did not see still has to reset the ladder. PostCompact is the primary reset; this is the backstop for a compaction that happened while the hook was unregistered or failing.
         prev_usage = st.get("usage") or 0
         if prev_usage and usage < prev_usage * 0.75:
             st = {
                 "epoch": int(st.get("epoch", 0)) + 1,
                 "band": -1,
                 "reset_reason": "usage_drop",
-                # Carried across the reset on purpose: the window did not
-                # change because the conversation was summarised. high_water
-                # deliberately does NOT survive -- it is a fact about the
-                # epoch that just ended.
+                # Carried across the reset on purpose: the window did not change because the conversation was summarised. high_water deliberately does NOT survive -- it is a fact about the epoch that just ended.
                 "window_floor": st.get("window_floor"),
                 "threshold_corrected": st.get("threshold_corrected"),
             }
 
-        # Track when STATE.md was last written, in context terms. Cheap: one
-        # stat per tool call, and it is what makes the notice say something
-        # more useful than a wall-clock age.
+        # Track when STATE.md was last written, in context terms. Cheap: one stat per tool call, and it is what makes the notice say something more useful than a wall-clock age.
         try:
             mtime = state_md.stat().st_mtime if state_md.is_file() else None
         except OSError:
@@ -266,14 +233,43 @@ def main():
         st["threshold"] = res["threshold"]
         st["model"] = model
 
+        # THE RETRO ORDER (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.11). A crossing only records `retro_due`; the order waits for the first tool call after STATE.md was rewritten past that crossing, so the recovery document is written before any retro work starts. The ledger, not this state file, is the dedupe record: this file is reset on every epoch.
+        texts = []
+        due = st.get("retro_due")
+        if due and mtime is not None and mtime > float(due.get("at") or 0):
+            st.pop("retro_due", None)
+            me8 = B.session_slug(session_id)
+            if not B.retro_ordered(B.retro_rows(project), me8, due.get("band")):
+                state_at = B.utc_stamp(mtime)
+                B.retro_order_row(
+                    project,
+                    me8,
+                    due.get("band"),
+                    transcript,
+                    usage=usage,
+                    threshold=res["threshold"],
+                    epoch=st.get("epoch", 0),
+                    state_md_at=state_at,
+                )
+                texts.append(
+                    B.RETRO_ORDER
+                    % {
+                        "band": due.get("band"),
+                        "me8": me8,
+                        "state_at": state_at,
+                        "date": time.strftime("%Y%m%d", time.gmtime()),
+                    }
+                )
+
         if band > int(st.get("band", -1)):
             st["band"] = band
             st["band_name"] = B.BANDS[band][0]
-            B.save_state(session_id, st)
-            emit(build_text(B.BANDS[band][0], usage, res, st, state_md))
-            return
+            st["retro_due"] = {"band": B.BANDS[band][0], "at": time.time(), "usage": usage}
+            texts.append(build_text(B.BANDS[band][0], usage, res, st, state_md))
 
         B.save_state(session_id, st)
+        if texts:
+            emit("\n\n".join(texts))
     except Exception as exc:  # noqa: BLE001 -- a PostToolUse hook must never break a tool call
         B.log_error("band-notice", exc)
 

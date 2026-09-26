@@ -42,24 +42,21 @@ describe('machine-slot pre-flight', () => {
   });
 
   it('names the limit, the 5-hour float and the upgrade path in the refusal', async () => {
-    // The three things an operator stuck at the wall can actually act on. A
-    // bare "limit reached" leaves them with nothing but a support ticket.
+    // The three things an operator stuck at the wall can actually act on. A bare "limit reached" leaves them with nothing but a support ticket.
     await expect(assertMachineSlotsAvailable({ machineCount: 9 })).rejects.toThrow(
       /5 hours.*upgrading the plan.*Enterprise or partner/s
     );
   });
 
   it('does not charge for machines that already hold a slot', async () => {
-    // Re-running a placement that got part-way must not be refused for slots
-    // its own earlier run already claimed.
+    // Re-running a placement that got part-way must not be refused for slots its own earlier run already claimed.
     await expect(
       assertMachineSlotsAvailable({ machineCount: 4, alreadyActive: 3 })
     ).resolves.toBeUndefined();
   });
 
   it('stays silent when the numbers cannot be read', async () => {
-    // Nobody signed in: the server still enforces the cap at issuance, so an
-    // invented refusal here would block a run that would have succeeded.
+    // Nobody signed in: the server still enforces the cap at issuance, so an invented refusal here would block a run that would have succeeded.
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
     await expect(assertMachineSlotsAvailable({ machineCount: 100 })).resolves.toBeUndefined();
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
@@ -89,9 +86,7 @@ describe('machine-slot pre-flight', () => {
 
 describe('mid-provisioning failure state', () => {
   it('reports what exists, what never started, and the command to resume', () => {
-    // The contract: nothing is rolled back. Destroying working deployments to
-    // tidy up an accounting failure would be worse than the failure, and the
-    // rollback would itself need slots to undo.
+    // The contract: nothing is rolled back. Destroying working deployments to tidy up an accounting failure would be worse than the failure, and the rollback would itself need slots to undo.
     const message = partialPlacementGuidance({
       placed: ['node-1', 'node-2'],
       remaining: ['node-3'],

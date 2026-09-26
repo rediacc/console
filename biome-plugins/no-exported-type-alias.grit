@@ -1,0 +1,30 @@
+// Replaces the ESLint `no-restricted-syntax` entry at
+// eslint.config/typescript.js:372-375 (selector: `ExportNamedDeclaration >
+// TSTypeAliasDeclaration:not([typeParameters]) > TSTypeAnnotation >
+// TSTypeReference`). Bans a plain exported type alias to another type
+// reference (`export type Foo = Bar`, or `export type Foo = Bar<Baz>`): use
+// the original type directly rather than creating an alias.
+//
+// The RHS regex is a syntactic stand-in for "is a TSTypeReference": a
+// dotted identifier with optional generic arguments, and nothing else -- no
+// union (`|`), intersection (`&`), object literal (`{`), tuple/array
+// (`[`), function type (`(`), or literal type (quotes). Measured against
+// the real tree (2026-09-24): the unconstrained version matched 151 exports,
+// all of them unions, `Omit<...> & {...}` intersections or string-literal
+// unions -- none a bare type reference -- so this narrowing was not
+// optional. `export type $name<$tp> = $val` (a generic alias) is excluded by
+// construction, since that snippet shape has no `$tp` slot to match into.
+// A bare TS primitive keyword (`string`, `number`, ...) also passes the
+// identifier-shaped regex but is a keyword type, not a TSTypeReference, so
+// it is excluded by name (5 of the measured 52 pre-exclusion matches were
+// this shape: `export type X = string;`).
+language js
+
+`export type $name = $val` where {
+  $val <: r"^[A-Za-z_$][A-Za-z0-9_$]*(?:\.[A-Za-z_$][A-Za-z0-9_$]*)*(?:<[^;{}]*>)?$",
+  not { $val <: r"^(?:string|number|boolean|void|unknown|any|never|object|bigint|symbol|undefined|null)$" },
+  register_diagnostic(
+    span = $name,
+    message = "Do not create type aliases. Use the original type directly instead of creating an alias."
+  )
+}

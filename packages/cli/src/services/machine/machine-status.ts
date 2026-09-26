@@ -10,13 +10,14 @@ import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isDevBuild } from '../../utils/platform.js';
 import {
-  readRuntimeRepoLicenseStatuses,
   type RuntimeRepoLicenseStatus,
+  readRuntimeRepoLicenseStatuses,
 } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { writeStderr } from '../core/request-context.js';
 import { buildRenetEnvPrefix } from '../executor/local-executor.js';
-import { provisionRenetToRemote } from '../renet/renet-execution.js';
+import { acquireRemoteRenet } from '../renet/renet-execution.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
 import { machineConnections } from './machine-connection.js';
@@ -28,7 +29,7 @@ interface FetchStatusOptions {
 }
 
 /**
- * Build the `renet list all` invocation. Exported for unit testing — the
+ * Build the `renet list all` invocation. Exported for unit testing, the
  * caller-provided sections filter must propagate into `--sections`.
  */
 export function buildListCommand(params: {
@@ -47,7 +48,7 @@ export function buildListCommand(params: {
  *
  * Flow:
  * 1. Load machine config from local context
- * 2. Provision renet binary to remote
+ * 2. Resolve remote renet (read-only, never uploads; warns on drift)
  * 3. SSH: run `sudo renet list all --datastore <path> --json`
  * 4. Parse JSON output as ListResult
  */
@@ -65,27 +66,24 @@ export async function fetchMachineStatus(
   const lease = await machineConnections.acquire(machineName);
 
   try {
-    // Provision renet binary to remote
+    // Resolve the remote renet read-only: status never replaces the machine's binary
     if (options.debug) {
-      outputService.info(`Provisioning renet to ${machine.ip}...`);
+      outputService.info(`Checking renet on ${machine.ip}...`);
     }
 
-    // Fetch OTLP creds the same way `rdc run` / `repo up` do via
-    // local-executor, so the spawned renet sends its own telemetry to
-    // otlp.rediacc.io — keeping `machine query` consistent with other paths
-    // that shell out to renet. This is an independent, unauthenticated HTTP
-    // round-trip to the account server: it depends on neither the machine
-    // nor renet provisioning, so run it concurrently with provisioning
-    // rather than sequentially after it. It never throws (default-deny to
-    // null), so Promise.all cannot reject on the telemetry branch. Respect
-    // the opt-out short-circuit so we skip the fetch entirely when disabled.
+    // Fetch OTLP creds the same way `rdc run` / `repo up` do via local-executor, so the spawned renet sends its own telemetry to otlp.rediacc.io, keeping `machine query` consistent with other paths that shell out to renet. This is an independent, unauthenticated HTTP round-trip to the account server: it depends on neither the machine nor the renet check, so run it concurrently
+    // with that check rather than sequentially after it. It never throws (default-deny to null), so Promise.all cannot reject on the telemetry branch. Respect the opt-out short-circuit so we skip the fetch entirely when disabled.
     const telemetryOff = isTelemetryDisabled();
     const otlpCredsPromise = telemetryOff ? Promise.resolve(null) : fetchOtlpCredentials();
 
     const [{ remotePath: remoteRenetPath }, otlpCreds] = await Promise.all([
-      provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, lease.sshPrivateKey, {
-        debug: options.debug,
-      }),
+      acquireRemoteRenet(
+        'read-only',
+        { renetPath: localConfig.renetPath },
+        machine,
+        lease.sshPrivateKey,
+        { debug: options.debug, machineName }
+      ),
       otlpCredsPromise,
     ]);
 
@@ -118,7 +116,7 @@ export async function fetchMachineStatus(
       onStderr: (data) => {
         stderr += data.toString();
         if (options.debug) {
-          process.stderr.write(data);
+          writeStderr(data);
         }
       },
     });
@@ -159,11 +157,12 @@ export async function fetchRepoLicenseDetail(
   try {
     const lease = await machineConnections.acquire(machineName);
     try {
-      const { remotePath } = await provisionRenetToRemote(
+      const { remotePath } = await acquireRemoteRenet(
+        'read-only',
         await configService.getLocalConfig(),
         lease.machine,
         lease.sshPrivateKey,
-        { skipRouterRestart: true }
+        { machineName }
       );
       return await readRuntimeRepoLicenseStatuses(
         lease.machine,

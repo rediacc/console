@@ -86,17 +86,11 @@ function resolveUrl(castKey: string, lang: string, field: TutorialField): string
   };
   if (!VIDEO_CDN_BASE_URL) return localFallback[field];
 
-  // asSparse + optional chaining, because every level here is SPARSE at read
-  // time: a cast key, a locale under it, or a single field can each be absent
+  // asSparse + optional chaining, because every level here is SPARSE at read time: a cast key, a locale under it, or a single field can each be absent
   // while that locale is still being published. VideoManifest describes what a
-  // WRITER produces, so its levels are total, and trusting that made all three
-  // index accesses look infallible to TypeScript while the runtime still
-  // returned undefined -- so `if (!assetPath)` could never run, because the
-  // expression above it threw first.
+  // WRITER produces, so its levels are total, and trusting that made all three index accesses look infallible to TypeScript while the runtime still returned undefined -- so `if (!assetPath)` could never run, because the expression above it threw first.
   //
-  // src/utils/solution-video.ts already carries a comment saying this exact
-  // crash "failed the whole CDN build rather than degrading one player". The
-  // fix was applied there and never swept to here.
+  // src/utils/solution-video.ts already carries a comment saying this exact crash "failed the whole CDN build rather than degrading one player". The fix was applied there and never swept to here.
   const assetPath = manifest().tutorials?.[castKey]?.[lang]?.[field]?.path;
   if (!assetPath) return localFallback[field];
 

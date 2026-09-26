@@ -1,0 +1,8 @@
+# twin .ci/docker/run-in-web.sh blob 471f42e09b48310dfbe892adb5066dd5c3098e81
+exit: 0
+--- stdout ---
+[fake hostcmd] ok
+--- stderr ---
+[fake hostcmd] ran
+--- trace ---
+hostcmd cwd=<root> argv=ok

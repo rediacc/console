@@ -42,13 +42,11 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { COMMAND_TREE_PATH } from '../lib/paths.js';
 import { FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM } from '../lib/cli-exempt-lists.js';
 import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
-// Commander usage placeholders. A line like `rdc repo [options]` is printing
-// usage, not teaching positional syntax, so it must not be reported.
+// Commander usage placeholders. A line like `rdc repo [options]` is printing usage, not teaching positional syntax, so it must not be reported.
 const USAGE_PLACEHOLDER_RES = [
   /^\[options\](?!\w)/,
   /^\[command\.\.\.\](?!\w)/,
@@ -58,9 +56,6 @@ const USAGE_PLACEHOLDER_RES = [
 ];
 
 const isUsagePlaceholder = (afterPath) => USAGE_PLACEHOLDER_RES.some((re) => re.test(afterPath));
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
@@ -76,9 +71,7 @@ const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
   return new RegExp(
-    // A prose word that ends the clause is not an argument. German splits separable
-    // verbs ("fuehren Sie rdc config reconcile aus."), so the particle lands after the
-    // command and used to read as a positional. Kept identical to the shared detector in
+    // A prose word that ends the clause is not an argument. German splits separable verbs ("fuehren Sie rdc config reconcile aus."), so the particle lands after the command and used to read as a positional. Kept identical to the shared detector in
     // scripts/lib/positional-cli-detector.ts — an ESLint rule cannot import a .ts module,
     // which is why this regex exists twice; if you change one, change the other.
     `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
@@ -105,9 +98,7 @@ const classifyCommandPath = (node, commandPath, leaves, parents) => {
 
   const isLeaf = (node.subcommands ?? []).length === 0;
   const takesPositional = (node.arguments ?? []).length > 0;
-  // A command that takes a positional belongs in NEITHER pass: after P4
-  // `rdc repo up <repo-ref>` is the syntax we want the help text to teach.
-  // The parent set used to be every path, which flagged that correct form.
+  // A command that takes a positional belongs in NEITHER pass: after P4 `rdc repo up <repo-ref>` is the syntax we want the help text to teach. The parent set used to be every path, which flagged that correct form.
   if (isLeaf && !takesPositional) leaves.add(commandPath);
   if (!isLeaf && !takesPositional) parents.add(commandPath);
 };
@@ -199,8 +190,7 @@ export const noPositionalCliSyntax = {
     const derivedCommands = [];
     if (autoDerive) {
       const { leaves, parents } = loadPathsFromTree();
-      // Leaf-command pass: reject ANY non-flag next token. Sorted
-      // longest-first so the most specific leaf wins on dedup.
+      // Leaf-command pass: reject ANY non-flag next token. Sorted longest-first so the most specific leaf wins on dedup.
       const sortedLeaves = [...leaves].sort((a, b) => b.length - a.length);
       for (const p of sortedLeaves) {
         derivedCommands.push({
@@ -210,9 +200,7 @@ export const noPositionalCliSyntax = {
           source: 'derived',
         });
       }
-      // Parent pass: reject a placeholder/interpolation next token. A parent
-      // expects a SUBCOMMAND there, and a placeholder can never name one.
-      // Sorted longest-first so the most specific path wins.
+      // Parent pass: reject a placeholder/interpolation next token. A parent expects a SUBCOMMAND there, and a placeholder can never name one. Sorted longest-first so the most specific path wins.
       const sortedParents = [...parents].sort((a, b) => b.length - a.length);
       for (const p of sortedParents) {
         derivedCommands.push({

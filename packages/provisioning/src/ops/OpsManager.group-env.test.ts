@@ -4,10 +4,7 @@ import { buildGroupEnv } from '../factories';
 import type { ProvisioningConfig, VMNetworkConfig } from '../types';
 import { OpsManager } from './OpsManager';
 
-// Capture every child_process.spawn call so we can assert the environment each
-// ops subprocess actually receives. This is the env-bleed guard for driving two
-// concurrent KVM groups from one harness process (wave 8): a group's up/down
-// must carry its own VM_NET / DOCKER_REGISTRY and never the ambient group's.
+// Capture every child_process.spawn call so we can assert the environment each ops subprocess actually receives. This is the env-bleed guard for driving two concurrent KVM groups from one harness process (wave 8): a group's up/down must carry its own VM_NET / DOCKER_REGISTRY and never the ambient group's.
 const { spawnCalls } = vi.hoisted(() => ({
   spawnCalls: [] as { command: string; args: string[]; env: NodeJS.ProcessEnv }[],
 }));
@@ -116,9 +113,7 @@ describe('OpsManager threads groupEnv into ops subprocesses', () => {
 
     const call = lastSpawn();
     expect(call.args.slice(0, 2)).toEqual(['ops', 'down']);
-    // `ops down` keys VM destruction off VM_WORKERS/VM_BRIDGE + VM_GROUP: group B's
-    // must be its own disjoint IDs under its own group so it never tears down the
-    // ops fleet's or group A's VMs.
+    // `ops down` keys VM destruction off VM_WORKERS/VM_BRIDGE + VM_GROUP: group B's must be its own disjoint IDs under its own group so it never tears down the ops fleet's or group A's VMs.
     expect(call.env.VM_WORKERS).toBe('51');
     expect(call.env.VM_BRIDGE).toBe('5');
     expect(call.env.VM_GROUP).toBe('edge');

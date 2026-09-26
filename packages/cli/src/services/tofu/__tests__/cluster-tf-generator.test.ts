@@ -6,8 +6,7 @@ import {
   generateClusterTfJson,
 } from '../cluster-tf-generator.js';
 
-// Fake resolved mappings — the generator is provider-agnostic, so a fabricated
-// mapping fully exercises it without depending on the registry.
+// Fake resolved mappings, the generator is provider-agnostic, so a fabricated mapping fully exercises it without depending on the registry.
 
 const linodeMapping: ProviderMapping = {
   source: 'linode/linode',
@@ -100,9 +99,7 @@ describe('generateClusterTfJson', () => {
   });
 
   it('leads with a public interface then the L2 VLAN, MTU only in outputs (linode)', () => {
-    // Verified against linode provider v3: config-profile interfaces are
-    // positional (public must be eth0 for SSH), and neither `device` nor `mtu`
-    // is a valid config-interface argument — MTU is surfaced via the output.
+    // Verified against linode provider v3: config-profile interfaces are positional (public must be eth0 for SSH), and neither `device` nor `mtu` is a valid config-interface argument, MTU is surfaced via the output.
     const tf = generateClusterTfJson({ ...twoPoolSpec, mapping: linodeMapping });
     const instances = (tf.resource as Record<string, Record<string, Record<string, unknown>>>)
       .linode_instance;

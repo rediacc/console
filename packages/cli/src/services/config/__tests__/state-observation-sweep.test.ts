@@ -1,13 +1,13 @@
 /**
  * BUG #89, swept across its class.
  *
- * #22 established the principle — "state is observation; when the thing is gone, its state
- * goes with it" — and applied it to ONE field. #89 found the same hole in
+ * #22 established the principle, "state is observation; when the thing is gone, its state
+ * goes with it", and applied it to ONE field. #89 found the same hole in
  * `removeClusterFromStore`. These are its SIBLINGS: every other remover that drops a
  * `resources.*` declaration must drop the matching `state.*` observation too.
  *
  * It matters because `state.datastores[*].attachedTo` IS the derived-machine routing hint,
- * and `resolve-machine` throws only when the hint is ABSENT — a hint that is merely WRONG is
+ * and `resolve-machine` throws only when the hint is ABSENT, a hint that is merely WRONG is
  * followed. Machine names are deterministic, so a stale hint does not dangle: it re-aims at
  * a brand-new, same-named machine.
  */
@@ -21,6 +21,8 @@ vi.mock('../../../adapters/config-file-storage.js', () => ({
   configFileStorage: {
     update: (name: string, fn: (cfg: RdcConfig) => RdcConfig) => update(name, fn),
     updateState: (name: string, fn: (cfg: RdcConfig) => RdcConfig) => updateState(name, fn),
+    // A local config: updateSyncedConfig edits the file (a remote one is pushed).
+    exists: () => Promise.resolve(false),
   },
 }));
 vi.mock('../config-resources.js', () => ({
@@ -96,8 +98,7 @@ describe('dropMachineObservations: `machine remove` (#89 class, third site)', ()
     await dropMachineObservations('cfg', 'm1');
 
     expect(mutated?.state?.machines).not.toHaveProperty('m1');
-    // The hazard: a hint naming a machine that is gone. resolve-machine FOLLOWS a wrong
-    // hint (it only throws on a missing one), and machine names are deterministic.
+    // The hazard: a hint naming a machine that is gone. resolve-machine FOLLOWS a wrong hint (it only throws on a missing one), and machine names are deterministic.
     expect(mutated?.state?.datastores).not.toHaveProperty('onM1');
 
     // The other machine, and both DECLARATIONS, are untouched.

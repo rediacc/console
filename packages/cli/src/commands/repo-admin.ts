@@ -5,7 +5,7 @@ import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
 import { handleError } from '../utils/errors.js';
 
-/** `repo admin archive {list,restore,purge}` — archived-record bookkeeping. */
+/** `repo admin archive {list,restore,purge}`, archived-record bookkeeping. */
 function registerArchive(admin: Command, program: Command): void {
   const archive = admin
     .command('archive')
@@ -83,7 +83,7 @@ function registerArchive(admin: Command, program: Command): void {
 }
 
 /**
- * Create the `repo admin` parent — the niche plumbing verbs moved off the daily
+ * Create the `repo admin` parent, the niche plumbing verbs moved off the daily
  * surface (spec/03 §5.4). `archive` lands here; the rest of the subtree
  * (validate/fsck/ownership/autostart/template) is registered onto the returned
  * parent by repo-maintenance.ts and repo-extended.ts, which own those verbs'

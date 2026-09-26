@@ -16,10 +16,13 @@
  * `\x1b[2mready in\x1b[22m 4739 \x1b[2mms\x1b[22m` -- the escape sits exactly BETWEEN
  * `in` and the space, the one place the needle cannot survive it.
  */
+// ESC is built rather than written into the literal: no-control-regex refuses a control character in a regex.
+const ESC = String.fromCharCode(0x1b);
+const CSI_SEQUENCE = new RegExp(`${ESC}\\[[0-9;?]*[ -/]*[@-~]`, 'g');
+
 export function stripAnsi(text) {
   // General CSI, not just SGR: astro also emits cursor and erase sequences.
-  // eslint-disable-next-line no-control-regex
-  return text.replaceAll(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '');
+  return text.replaceAll(CSI_SEQUENCE, '');
 }
 
 /**

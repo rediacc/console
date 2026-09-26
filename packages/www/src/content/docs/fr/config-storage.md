@@ -1,7 +1,7 @@
 ---
 title: Stockage de configuration
 description: >-
-  Synchronisation chiffrée à connaissance nulle des configurations, avec
+  Synchronisation chiffrée côté client des configurations, avec
   déverrouillage par passkey, mot de passe principal ou code de récupération
 category: Guides
 tags:
@@ -10,13 +10,13 @@ tags:
 subcategory: account
 order: 8
 language: fr
-sourceHash: "e4b2eecb8bdf0015"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "ccced160d151eeeb"
+sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
 # Stockage de configuration
 
-Le stockage de configuration fournit une synchronisation chiffrée à connaissance nulle de votre configuration CLI entre appareils. Vos configurations sont chiffrées côté client avec une clé de chiffrement de contenu (CEK), le serveur ne voit jamais les données en clair.
+Le stockage de configuration synchronise une configuration CLI entre appareils. Les configurations sont chiffrées sur l'appareil avec une clé de chiffrement de contenu (CEK) que le serveur ne détient jamais. La section [Sécurité](#security) précise exactement contre quoi cela protège, et contre quoi non.
 
 ## Méthodes de déverrouillage (emplacements de clé)
 
@@ -28,7 +28,7 @@ Chaque store possède une seule CEK, enveloppée indépendamment pour chaque mé
 | **Mot de passe principal** | Un mot de passe de votre choix, étiré avec PBKDF2-SHA256 (600 000 itérations) | Fonctionne sans matériel compatible PRF ; permet aussi l'enrôlement CLI sans interface |
 | **Code de récupération** | Un code généré au format `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Affiché une seule fois à la création, conservez-le en lieu sûr |
 
-Chaque méthode alimente le même mécanisme : l'emplacement produit un secret qui se combine à un secret détenu par le serveur pour déballer la CEK. Aucune des deux moitiés ne suffit seule, si bien que la propriété de connaissance nulle tient pour les trois méthodes : le secret de l'emplacement n'atteint jamais le serveur.
+Chaque méthode alimente le même mécanisme : l'emplacement produit un secret qui se combine à un secret détenu par le serveur pour déballer la CEK. Aucune des deux moitiés ne suffit seule, et le secret de l'emplacement n'atteint jamais le serveur. Un emplacement mot de passe principal est le plus faible des trois : le serveur détient tout ce qu'il faut pour tester des mots de passe hors ligne, d'où l'exigence d'un mot de passe robuste. Les emplacements passkey et code de récupération n'ont pas cette faiblesse.
 
 Les emplacements se gèrent depuis le portail, sur la page Stockage de configuration. Les organisations qui souhaitent un déverrouillage exclusivement matériel peuvent activer la politique **exiger une passkey**, qui refuse et révoque les emplacements non-passkey pour tout le store.
 
@@ -46,12 +46,13 @@ L'exigence PRF ne s'applique qu'à l'emplacement passkey. Les méthodes mot de p
 
 1. Accédez à **Stockage de configuration** dans la barre latérale, puis cliquez sur **Configurer le stockage de configuration**
 2. La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session
-3. Cliquez sur **Démarrer la configuration**. Pour un emplacement passkey, vous devrez toucher votre clé de sécurité deux fois :
-   - Premier toucher : enregistre le passkey
-   - Second toucher : dérive les clés de chiffrement via PRF
-4. Configuration terminée, votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation
+3. Choisissez la première méthode de déverrouillage, puis cliquez sur **Créer l'espace de configuration** :
+   - **Passkey**, si votre fournisseur prend en charge PRF : vous touchez votre clé de sécurité deux fois, une fois pour l'enregistrer et une fois pour dériver les clés de chiffrement.
+   - **Mot de passe maître**, qui fonctionne avec n'importe quel navigateur, y compris les fournisseurs de passkeys sans PRF comme Bitwarden.
+   - En option, un **code de récupération**, affiché une seule fois et à conserver avant la création du stockage.
+4. La configuration est terminée. La CLI conserve le secret de déverrouillage dans le trousseau de votre système.
 
-Une fois la configuration terminée, ajoutez un emplacement mot de passe principal ou code de récupération depuis la page Stockage de configuration, pour qu'un authentificateur perdu ou non pris en charge ne puisse pas vous bloquer l'accès.
+Une passkey peut être ajoutée plus tard depuis la page Config Storage. Gardez au moins deux méthodes de déverrouillage, pour qu'un authentificateur perdu ou non pris en charge ne vous bloque pas.
 
 ## Compatibilité des fournisseurs PRF
 
@@ -62,7 +63,7 @@ Une fois la configuration terminée, ajoutez un emplacement mot de passe princip
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplateforme |
-| Extension Bitwarden | ❌ | En développement |
+| Extension Bitwarden | ❌ | Utilisez plutôt un mot de passe principal |
 | Windows Hello | ❌ | Non supporté |
 
 ## Enrôlement CLI sans interface
@@ -88,7 +89,23 @@ Une fois activée, la configuration conserve un **cache de lecture** complet, ch
 
 - **Les lectures fonctionnent hors ligne.** Le contenu en cache est servi avec un avertissement d'obsolescence sur stderr, étiqueté avec la version et l'horodatage mis en cache (`cachedVersion` / `cachedAt`).
 - **Les écritures nécessitent le serveur et échouent proprement.** Il n'existe pas de file d'écriture hors ligne : une écriture qui ne peut pas atteindre le serveur échoue en nommant le serveur concerné. Si une commande d'écriture a réussi, le changement est sur le serveur.
-- **Les modifications concurrentes depuis deux machines** se résolvent par pull-replay-repush au niveau du bucket de ressources, de sorte qu'une modification simultanée ailleurs n'écrase pas la vôtre.
+- **Les modifications concurrentes depuis deux machines** se résolvent par pull-replay-repush : le serveur n'accepte un push que par-dessus la version qu'il remplace, et le push perdant est rejoué sur la copie fraîche, de sorte qu'une modification simultanée ailleurs n'est pas écrasée.
+- **Une configuration locale** (sans bloc `remote`) n'est pas concernée par tout cela et fonctionne entièrement hors ligne.
+
+## Ce qui se synchronise
+
+Tout dans une configuration se synchronise, y compris l'ID réseau de chaque dépôt, à l'exception de ces champs propres à l'appareil : `schemaVersion`, `version`, `remote`, `encryption`, `renetPath`, `credentials.masterPasswordVerifier`, ainsi que les champs de connexion `account.accountServer` et `account.e2ePublicKey`. La connexion et la déconnexion se font par appareil.
+
+## Versions et restauration
+
+Le serveur conserve les 50 dernières versions de chaque configuration.
+
+```bash
+rdc config remote versions
+rdc config remote restore <version>
+```
+
+Une restauration publie l'ancien contenu comme une nouvelle version par-dessus la version actuelle ; le numéro de version ne recule jamais. Chaque appareil reçoit le contenu restauré à son prochain pull, et la restauration est enregistrée dans le journal d'audit.
 
 ## Rotation de clé
 
@@ -97,6 +114,7 @@ Faire tourner la CEK du store la réenveloppe sous une nouvelle génération :
 - **Les codes de récupération sont toujours invalidés** par la rotation, générez-en et sauvegardez-en un nouveau ensuite
 - Un **emplacement mot de passe principal** ne survit que si le mot de passe est ressaisi pendant l'assistant de rotation
 - Un emplacement resté sur une ancienne génération est signalé comme obsolète plutôt que d'échouer avec une erreur de déchiffrement obscure
+- Les tokens de configuration des autres membres sont révoqués, et un appareil qui détient encore l'ancienne clé est invité à se réactiver avec `rdc config remote enable`
 
 ## Gestion des membres
 
@@ -112,11 +130,23 @@ Les configurations du store sont en outre limitées par équipe, mais cette limi
 
 ## Sécurité
 
-- **Connaissance nulle** : Le serveur stocke des données triplement chiffrées qu'il ne peut pas déchiffrer
-- **Clé divisée** : Le déchiffrement nécessite à la fois votre secret d'emplacement (client) et le secret du serveur (serveur)
-- **Jetons rotatifs** : Chaque appel API utilise un jeton neuf ; les anciens jetons s'autodétruisent
-- **Liaison IP** : Les jetons sont liés à votre IP lors de la première utilisation
-- **Révocation instantanée** : Les membres supprimés perdent l'accès en 30 secondes
+**Ce qui est protégé.** Les configurations stockées sont confidentielles face à une compromission du stockage du serveur et face à un opérateur passif. Chaque blob est lié à son store, sa configuration, son équipe et sa version, si bien que le serveur ne peut pas substituer le blob d'une configuration à celui d'une autre, ni le modifier sans que cela se voie.
+
+**Ce qui n'est pas protégé.** Un opérateur qui sert du code de portail malveillant peut lire la clé dans le navigateur. Un opérateur peut aussi retenir la version la plus récente face à un appareil qui ne l'a jamais vue.
+
+| Le serveur peut | Le serveur ne peut pas |
+|---|---|
+| Voir les ids de configuration, les équipes, les numéros de version, les horodatages, la taille des blobs, le nombre de champs qu'une configuration engage et le type de chacun, ainsi que les adresses IP des clients | Voir les noms de machines, de dépôts ou de stores (ils sont aveuglés), ni aucune valeur de configuration |
+| Refuser, retarder ou supprimer des configurations et leur historique | Servir le contenu d'une configuration comme s'il s'agissait d'une autre, ou le modifier, sans que l'appareil le détecte |
+| Servir une ancienne version à un appareil qui n'en a jamais vu de plus récente | Servir au CLI une version plus ancienne qu'une autre déjà vue : le CLI la refuse |
+| Tester des mots de passe principaux hors ligne | Ouvrir un emplacement passkey ou code de récupération |
+
+Autres garanties :
+
+- **Clé divisée** : le déchiffrement nécessite à la fois le secret de l'emplacement (sur l'appareil) et le secret du serveur
+- **La suppression exige la connaissance** : retirer une valeur engagée d'une configuration exige de prouver que cette valeur était connue, si bien qu'un acteur à accès partiel ne peut pas retirer des champs en silence
+- **Jetons rotatifs** : chaque requête fait tourner le jeton de configuration ; un jeton est lié à l'IP de sa première utilisation et expire au bout de 7 jours
+- **Révocation** : supprimer un membre efface d'un coup ses emplacements de clé et ses jetons ; ce qu'il avait déjà récupéré reste sur son appareil, et une rotation de la CEK empêche une clé conservée d'ouvrir des versions ultérieures
 
 ## Dépannage
 
@@ -126,7 +156,8 @@ Les configurations du store sont en outre limitées par équipe, mais cette limi
 | X25519 not supported | Version du navigateur trop ancienne | Mettez à jour vers Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Already configured | Un stockage existe déjà pour votre organisation | Visitez /account/config-storage pour gérer |
 | Config storage not configured | Le serveur ne dispose pas de stockage blob | Contactez votre administrateur pour configurer R2/RustFS |
-| Token expired | Aucune activité pendant 24 heures | Exécutez n'importe quelle commande de stockage de configuration pour actualiser |
+| Token expired | Aucune activité pendant 7 jours, ou la machine a changé de réseau | Renouvelé automatiquement via la connexion ; si aucune connexion n'est enregistrée, exécutez `rdc subscription login` ou `rdc config remote enable` |
+| Config came back at an older version | Le serveur a renvoyé une copie plus ancienne que celle déjà vue par cet appareil | Rien n'a changé localement ; réessayez, et signalez-le si cela persiste |
 | Cannot remove last member | Verrouillerait le stockage de façon permanente | Ajoutez d'abord un autre membre |
 | Stale slot | L'emplacement date d'avant la dernière rotation de clé | Réajoutez l'emplacement (les codes de récupération doivent être régénérés après chaque rotation) |
 

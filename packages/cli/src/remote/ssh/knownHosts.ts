@@ -30,7 +30,7 @@ function decodeKnownHosts(known_hosts: string): string {
  * @param known_hosts - Host entry to write (plain text)
  * @returns Path to the temporary known_hosts file
  */
-export async function createTempKnownHostsFile(known_hosts?: string): Promise<string> {
+export function createTempKnownHostsFile(known_hosts?: string): Promise<string> {
   let content = '';
 
   if (known_hosts) {

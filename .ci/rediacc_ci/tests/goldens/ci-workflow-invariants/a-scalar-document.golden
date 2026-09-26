@@ -1,0 +1,8 @@
+# twin .ci/scripts/security/check-ci-workflow-invariants.sh blob 23c86d2113491f7e0d9ac4adaada5b9d885f21d8
+exit: 1
+--- stdout ---
+--- stderr ---
+Traceback (most recent call last):
+  File "<stdin>", line 15, in <module>
+AttributeError: 'str' object has no attribute 'get'
+✗ INVARIANT-FAIL: analysis of <work>/wf.yml failed (exit 1); an unparsed workflow cannot pass

@@ -14,13 +14,12 @@ The CLI surface is `rdc config remote`:
 | `rdc config remote refresh` | Force a re-fetch of the config from remote storage |
 | `rdc config rotate-cek` | Rotate the client-controlled encryption key |
 
-Uploads are implicit: once remote is enabled, config writes go to the store. There is no
-separate push command.
+Uploads are implicit: once remote is enabled, config writes go to the store. There is no separate push command.
 
 ## Agent Limitations
 
 - **Setup**: `config remote enable` needs a browser (passkey + PRF ceremony) or an approved
-  device-code handoff, so it is not available to agents unattended
+device-code handoff, so it is not available to agents unattended
 - **Member management**: Requires web portal (elevated + 2FA) — not available to agents
 - Agents can read config storage status via the account web API but cannot modify
 

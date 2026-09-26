@@ -54,4 +54,5 @@ type TelemetryDetailValue = string | number | boolean | null | undefined;
 /**
  * Context object for telemetry events.
  */
-export type TelemetryContext = Record<string, TelemetryDetailValue>;
+type TelemetryContext = Record<string, TelemetryDetailValue>;
+export type { TelemetryContext };

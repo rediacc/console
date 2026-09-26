@@ -11,6 +11,7 @@
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { envFilePath } from './backup-env-file.js';
 import type {
   ReconcileOptions,
@@ -29,9 +30,9 @@ async function runRemoteCommand(
 ): Promise<void> {
   const exitCode = await sftp.execStreaming(command, {
     onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
+      if (options.debug) writeStdout(data);
     },
-    onStderr: (data) => process.stderr.write(data),
+    onStderr: (data) => writeStderr(data),
   });
   if (exitCode !== 0) {
     throw new Error(`${errorMessage} (exit ${exitCode})`);
@@ -64,9 +65,9 @@ async function stageFile(
   const exitCode = await sftp.execStreaming(writeCmd, {
     stdin: content,
     onStdout: (data) => {
-      if (options.debug) process.stdout.write(data);
+      if (options.debug) writeStdout(data);
     },
-    onStderr: (data) => process.stderr.write(data),
+    onStderr: (data) => writeStderr(data),
   });
   if (exitCode !== 0) {
     throw new Error(`Failed to stage ${stagingPath} (exit ${exitCode})`);
@@ -76,7 +77,7 @@ async function stageFile(
 
 async function cleanupOrphanedStaging(sftp: SFTPClient): Promise<void> {
   // rm -v prints one line per removed file; any output means a prior run
-  // left staging files behind — flag that to the operator.
+  // left staging files behind, flag that to the operator.
   const cmd =
     `sudo sh -c 'rm -fv /etc/systemd/system/rediacc-backup-*.new ` +
     `/etc/rediacc/backup-*.env.new 2>/dev/null; true'`;
@@ -149,7 +150,7 @@ async function stageEnvFile(
     staged.push({ stagingPath, finalPath });
   } else {
     // Env file previously existed but is no longer needed. No staging/rollback
-    // for removals — the deploy semantics accept this as a directed change.
+    // for removals, the deploy semantics accept this as a directed change.
     await runRemoteCommand(
       sftp,
       `sudo rm -f ${shellQuote(finalPath)}`,
@@ -299,9 +300,7 @@ export async function executePlan(
   await finalizeSystemd(sftp, plan, options);
 }
 
-// ---------------------------------------------------------------------------
-// Phase F — Post-deploy verification
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase F, Post-deploy verification ---------------------------------------------------------------------------
 
 function diagnoseTimer(timer: string, rec: Record<string, string> | undefined): string | null {
   if (!rec) return `${timer}: no state returned by systemctl show`;
@@ -334,9 +333,7 @@ export async function verifyPostDeploy(sftp: SFTPClient, plan: ReconcilePlan): P
   }
 }
 
-// ---------------------------------------------------------------------------
-// Phase G — Emit plan summary
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Phase G, Emit plan summary ---------------------------------------------------------------------------
 
 function formatDiffLine(diff: StrategyDiff): string {
   let line = `${diff.action} ${diff.name}`;

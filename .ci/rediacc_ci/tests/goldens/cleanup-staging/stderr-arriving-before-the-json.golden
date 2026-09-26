@@ -1,0 +1,15 @@
+# twin .ci/scripts/docker/cleanup-staging.sh blob 86b359d6b2224d0e347315083323debfd2b8d0da
+exit: 0
+--- stdout ---
+
+
+--- stderr ---
+→ Cleaning up staging tags: staging-abc
+→ Deleting staging tag for renet: staging-abc
+⚠ Package renet not found or not accessible (may not exist yet)
+→ Deleting staging tag for rdc: staging-abc
+⚠ Package rdc not found or not accessible (may not exist yet)
+✓ Cleanup summary: 2 succeeded
+--- calls ---
+gh	api	/orgs/rediacc/packages/container/renet/versions	--paginate
+gh	api	/orgs/rediacc/packages/container/rdc/versions	--paginate

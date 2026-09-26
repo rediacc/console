@@ -1,0 +1,68 @@
+# twin .ci/scripts/quality/check-hook-integrity.sh blob 36c6ea0802307520e07f0b3ab4b3de7154f849d3
+exit: 0
+--- stdout ---
+import json, os, re, sys
+with open(sys.argv[1], encoding="utf-8") as fh:
+    spec = json.load(fh)
+sources, dirs = spec["sources"], spec["dirs"]
+src = ""
+for path in sources:
+    try:
+        src += open(path, encoding="utf-8", errors="replace").read() + "\n"
+    except OSError:
+        pass
+# The suite names a guard by its directory's LAST SEGMENT plus its filename,
+# because that is how it joins $DIR. The key is the caller's declared path, and
+# the two are related here rather than by any assumption about a root. A
+# duplicate segment is refused before this runs.
+segs = sorted({os.path.basename(k.rstrip("/")) for k in dirs})
+chain_re = "|".join(re.escape(c) for c in segs)
+# EXTENSION-AGNOSTIC for the same reason the disk globs are: after the hook
+# port a case in the suite names `pre-bash/block_x.py`, and a reader anchored to
+# `.sh` would count zero cases for it. B would then report a fully covered guard
+# as newly uncovered -- loud rather than silent, but wrong, and a gate that is
+# wrong is a gate that gets suppressed. Measured a no-op on the suite it was
+# widened against: 81 direct case matches before and after, identical set.
+guard_re = r"(?:%s)/[A-Za-z0-9_.-]+\.(?:sh|py)" % chain_re
+
+counts = {}
+def bump(guard, rc):
+    b, a = counts.get(guard, (0, 0))
+    counts[guard] = (b + (rc == "2"), a + (rc == "0"))
+
+# 1. Direct case calls.
+for rc, guard in re.findall(r"\b(?:check|check_out)\s+([0-9]+)\s+(%s)" % guard_re, src):
+    bump(guard, rc)
+
+# 2. Helper wrappers. A shell function whose body names exactly ONE guard under
+#    $DIR is a case wrapper for it; its call sites take the expected rc first,
+#    the same shape `check` uses. `check` and `check_out` themselves name their
+#    guard through a VARIABLE, so they cannot match here and do not need
+#    excluding by name.
+for m in re.finditer(r"^([A-Za-z_][A-Za-z0-9_]*)\(\)\s*\{(.*?)^\}", src, re.M | re.S):
+    fn, body = m.group(1), m.group(2)
+    named = set(re.findall(r"\$DIR/(%s)" % guard_re, body))
+    if len(named) != 1:
+        continue
+    guard = named.pop()
+    for rc in re.findall(r"^[ \t]*%s\s+([0-9]+)\b" % re.escape(fn), src, re.M):
+        bump(guard, rc)
+
+# 3. A dedicated test file covers both directions by definition.
+for key, d in sorted(dirs.items()):
+    if not os.path.isdir(d):
+        continue
+    seg = os.path.basename(key.rstrip("/"))
+    for name in sorted(os.listdir(d)):
+        # Same prefix and extension rule as the on-disk glob below, including the
+        # underscore spelling a Python port produces. splitext rather than
+        # name[:-3], which only happens to be right while every extension is
+        # three characters long.
+        if not (name.startswith(("block-", "block_")) and name.endswith((".sh", ".py"))):
+            continue
+        b, a = counts.get("%s/%s" % (seg, name), (0, 0))
+        stem = os.path.splitext(name)[0]
+        if any(os.path.exists(os.path.join(d, "test-%s%s" % (stem, ext))) for ext in (".py", ".sh")):
+            b, a = b + 1, a + 1
+        print("%s/%s" % (key, name), b, a)
+--- stderr ---

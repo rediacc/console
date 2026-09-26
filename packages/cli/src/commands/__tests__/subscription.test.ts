@@ -15,7 +15,7 @@ const {
   mockGetTeam,
   mockGetCurrent,
   mockReadSSHKey,
-  mockProvisionRenetToRemote,
+  mockAcquireRemoteRenet,
   mockGetSubscriptionServerUrl,
   mockGetSubscriptionScopeMismatch,
   mockSaveStoredSubscriptionToken,
@@ -42,7 +42,7 @@ const {
   mockGetTeam: vi.fn(),
   mockGetCurrent: vi.fn(),
   mockReadSSHKey: vi.fn(),
-  mockProvisionRenetToRemote: vi.fn(),
+  mockAcquireRemoteRenet: vi.fn(),
   mockGetSubscriptionServerUrl: vi.fn(() => 'http://localhost:4800'),
   mockGetSubscriptionScopeMismatch: vi.fn((token, configTeamName) => {
     if (configTeamName && token.teamName && configTeamName !== token.teamName) {
@@ -114,7 +114,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
 
 vi.mock('../../services/renet/renet-execution.js', () => ({
   readSSHKey: mockReadSSHKey,
-  provisionRenetToRemote: mockProvisionRenetToRemote,
+  acquireRemoteRenet: mockAcquireRemoteRenet,
 }));
 
 vi.mock('../../services/core/output.js', () => ({
@@ -161,7 +161,7 @@ describe('subscription command helpers', () => {
     });
     mockGetTeam.mockResolvedValue('Platform');
     mockReadSSHKey.mockResolvedValue('PRIVATE_KEY');
-    mockProvisionRenetToRemote.mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
+    mockAcquireRemoteRenet.mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
       serverUrl: 'http://localhost:4800',
@@ -243,10 +243,7 @@ describe('subscription command helpers', () => {
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
   });
 
-  // Regression (2026-08-26): the account view's entire output IS the remote
-  // report, so a swallowed fetch error made `subscription status` exit 0 having
-  // printed nothing at all -- hiding a real, actionable server reason such as
-  // "Token is bound to a different IP address" on a token minted elsewhere.
+  // Regression (2026-08-26): the account view's entire output IS the remote report, so a swallowed fetch error made `subscription status` exit 0 having printed nothing at all -- hiding a real, actionable server reason such as "Token is bound to a different IP address" on a token minted elsewhere.
   it('status surfaces the account server error instead of exiting silently', async () => {
     mockFetchLicenseReportOrThrow.mockRejectedValue(
       new Error('Token is bound to a different IP address')
@@ -258,8 +255,7 @@ describe('subscription command helpers', () => {
     expect(mockOutputInfo).not.toHaveBeenCalledWith('commands.subscription.status.remote');
   });
 
-  // Same swallow, same class: refresh reported a generic "could not read"
-  // string and dropped the server's own reason on the floor.
+  // Same swallow, same class: refresh reported a generic "could not read" string and dropped the server's own reason on the floor.
   it('refresh surfaces the account server error rather than a generic failure', async () => {
     mockFetchLicenseReportOrThrow.mockRejectedValue(
       new Error('Token is bound to a different IP address')
@@ -294,7 +290,7 @@ describe('subscription command helpers', () => {
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
-  it('status -m renders activation and the repo license table from one renet provisioning', async () => {
+  it('status -m renders activation and the repo license table from one read-only renet check', async () => {
     mockReadMachineActivationStatus.mockResolvedValue({
       machineId: 'machine-activation-id',
       active: true,
@@ -326,8 +322,9 @@ describe('subscription command helpers', () => {
 
     await executeMachineStatus('hostinger');
 
-    // Both sections share one renet provisioning.
-    expect(mockProvisionRenetToRemote).toHaveBeenCalledTimes(1);
+    // Both sections share one renet resolution, and a status read never provisions.
+    expect(mockAcquireRemoteRenet).toHaveBeenCalledTimes(1);
+    expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
     expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith(
       'commands.subscription.activation.status.header:hostinger'
@@ -380,8 +377,7 @@ describe('subscription command helpers', () => {
 
     await executeMachineStatus('hostinger');
 
-    // Error-styled, not info: a machine whose scheduled backups have silently
-    // stopped copying data is the one line in this table nobody is watching for.
+    // Error-styled, not info: a machine whose scheduled backups have silently stopped copying data is the one line in this table nobody is watching for.
     expect(mockOutputError).toHaveBeenCalledWith(
       'commands.subscription.repo.status.blockedBackup:repo-blocked:2026-08-01T03:00:00Z:expired:the installed license expired'
     );
@@ -486,7 +482,7 @@ describe('subscription command helpers', () => {
 
     expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
     expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
-    expect(mockProvisionRenetToRemote).not.toHaveBeenCalled();
+    expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
@@ -501,6 +497,8 @@ describe('subscription command helpers', () => {
   it('refresh -m runs repo batch refresh and prints the summary', async () => {
     await executeMachineRefresh('hostinger');
 
+    // Refresh writes licenses on the machine, so it may bring renet up to date.
+    expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('provision');
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockOutputSuccess).toHaveBeenCalledWith('commands.subscription.refresh.success');
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
@@ -523,10 +521,7 @@ describe('subscription command helpers', () => {
     );
   });
 
-  // #74. This is the ONLY caller that passes no requestedSizeGb, so it is the
-  // one that reaches the size probe inside refreshRepoLicenseIdentity. Without
-  // the mount, that probe measures the machine's default datastore for a repo
-  // that lives on a named one, finds nothing, and reissues at the 1 GB floor.
+  // #74. This is the ONLY caller that passes no requestedSizeGb, so it is the one that reaches the size probe inside refreshRepoLicenseIdentity. Without the mount, that probe measures the machine's default datastore for a repo that lives on a named one, finds nothing, and reissues at the 1 GB floor.
   it('refresh --repo declares the datastore the repo is recorded on', async () => {
     mockGetCurrent.mockResolvedValue({
       resources: {
@@ -556,8 +551,7 @@ describe('subscription command helpers', () => {
     );
   });
 
-  // CONTROL, other direction: a repo on the machine's implicit default declares
-  // nothing, leaving the machine's own datastore in place.
+  // CONTROL, other direction: a repo on the machine's implicit default declares nothing, leaving the machine's own datastore in place.
   it('refresh --repo sends no mount for a repo with no named-datastore placement', async () => {
     mockGetCurrent.mockResolvedValue({
       resources: { repositories: { shop: { grand: 'latest', tags: { latest: {} } } } },

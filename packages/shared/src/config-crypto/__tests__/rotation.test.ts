@@ -34,6 +34,16 @@ import {
 } from '../index.js';
 import type { CekHandoffBlob } from '../types.js';
 
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
+
 const TEST_CONFIG: RdcConfig = {
   schemaVersion: 3,
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -41,9 +51,7 @@ const TEST_CONFIG: RdcConfig = {
   account: { userEmail: 'admin@example.com' },
   resources: {
     machines: { prod: { ip: '10.0.0.1', user: 'rediacc' } },
-    // v3 families: rotation re-encrypts through fullConfigToRdcConfig, which
-    // silently dropped these before the family-drop fix. Carried here so the
-    // rotation path itself pins the round trip, not just the push/pull tests.
+    // v3 families: rotation re-encrypts through fullConfigToRdcConfig, which silently dropped these before the family-drop fix. Carried here so the rotation path itself pins the round trip, not just the push/pull tests.
     datastores: { ds1: { backend: { kind: 'local', machine: 'prod', path: '/mnt/pool' } } },
     clusters: {
       c1: { provider: 'kvm', pools: [{ name: 'p', role: 'hyperconverged', count: 1 }] },
@@ -84,6 +92,7 @@ describe('CEK rotation', () => {
 
     // The config as it sits on the server: pushed under the OLD CEK.
     const pulled = await buildConfigPushPayload(TEST_CONFIG, {
+      storeId: STORE_ID,
       version: 1,
       sdkEpoch: pullEpoch,
       sdkDerived: sdkForPull,
@@ -101,6 +110,8 @@ describe('CEK rotation', () => {
       sdkDerivedForPush: sdkForPush,
       sdkEpoch: pushEpoch,
       version: 2,
+      storeId: STORE_ID,
+      configId: TEST_CONFIG.id,
       teamId: 'team-1',
     });
 
@@ -111,7 +122,11 @@ describe('CEK rotation', () => {
 
     // The old CEK is dead against the new blob.
     await expect(
-      decryptConfigPullPayload(reencrypted, { cek: oldCek, sdkDerived: sdkForPush })
+      decryptConfigPullPayload(reencrypted, {
+        cek: oldCek,
+        sdkDerived: sdkForPush,
+        binding: readerBinding(reencrypted),
+      })
     ).rejects.toThrow();
 
     // ── Distribution: initiator self-wrap + member handoff ──
@@ -142,6 +157,7 @@ describe('CEK rotation', () => {
     const initiatorView = await decryptConfigPullPayload(reencrypted, {
       cek: initiatorCek,
       sdkDerived: sdkForPush,
+      binding: readerBinding(reencrypted),
     });
     expect(initiatorView.machines).toEqual({ prod: { ip: '10.0.0.1', user: 'rediacc' } });
 
@@ -154,14 +170,14 @@ describe('CEK rotation', () => {
     const memberView = await decryptConfigPullPayload(reencrypted, {
       cek: memberCek,
       sdkDerived: sdkForPush,
+      binding: readerBinding(reencrypted),
     });
     expect(memberView.ssh).toEqual({
       privateKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nrotation-test\n',
     });
     expect(memberView.teamId).toBe('team-1');
 
-    // The committed account section and the v3 families made it through the
-    // re-encryption intact.
+    // The committed account section and the v3 families made it through the re-encryption intact.
     expect(memberView.account).toEqual(TEST_CONFIG.account);
     expect(memberView.datastores).toEqual(TEST_CONFIG.resources?.datastores);
     expect(memberView.clusters).toEqual(TEST_CONFIG.resources?.clusters);

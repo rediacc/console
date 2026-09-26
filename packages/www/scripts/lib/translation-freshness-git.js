@@ -56,22 +56,15 @@ function tryFetchBaseRef(repoRoot, baseRef) {
     return;
   }
 
-  // `--depth` ON A FULL CLONE DOES NOT LIMIT A FETCH -- IT TRUNCATES THE
-  // REPOSITORY. Measured 2026-09-03 against the real remote: a complete
-  // checkout went from 2467 reachable commits to 114, with one graft written to
+  // `--depth` ON A FULL CLONE DOES NOT LIMIT A FETCH -- IT TRUNCATES THE REPOSITORY. Measured 2026-09-03 against the real remote: a complete checkout went from 2467 reachable commits to 114, with one graft written to
   // .git/shallow, purely from running this line. Nothing here needed that; the
-  // depth was an optimisation for the shallow CI checkout this gate used to run
-  // in.
+  // depth was an optimisation for the shallow CI checkout this gate used to run in.
   //
-  // The damage lands on WHATEVER RUNS NEXT IN THE SAME JOB, which is why it went
-  // unnoticed for so long. In ci-quality's `i18n` job this ran inside check:i18n
-  // and silently shallowified a checkout that actions/checkout had deliberately
+  // The damage lands on WHATEVER RUNS NEXT IN THE SAME JOB, which is why it went unnoticed for so long. In ci-quality's `i18n` job this ran inside check:i18n and silently shallowified a checkout that actions/checkout had deliberately
   // taken with `fetch-depth: 0`; check:ci-plan-housekeeping, four steps later,
-  // then refused with "SHALLOW at a boundary that 58 plan(s) sit on" and every
-  // reader went looking at the checkout, which was innocent.
+  // then refused with "SHALLOW at a boundary that 58 plan(s) sit on" and every reader went looking at the checkout, which was innocent.
   //
-  // So: depth only where a depth already exists. On a full clone the base ref's
-  // objects are present anyway, so the unlimited fetch is the cheap one.
+  // So: depth only where a depth already exists. On a full clone the base ref's objects are present anyway, so the unlimited fetch is the cheap one.
   const depth = isShallow(repoRoot) ? '--depth=50 ' : '';
   try {
     execSync(
@@ -108,15 +101,12 @@ export function detectChangedFiles(repoRoot, baseRefArg) {
     return fromEnv;
   }
 
-  // NOT `??`: on a push event GitHub sets GITHUB_BASE_REF to the EMPTY STRING
-  // rather than leaving it unset, and an empty base ref makes every git rev-parse
-  // below fail. Empty has to fall through to the default exactly like absent.
+  // NOT `??`: on a push event GitHub sets GITHUB_BASE_REF to the EMPTY STRING rather than leaving it unset, and an empty base ref makes every git rev-parse below fail. Empty has to fall through to the default exactly like absent.
   const baseRef = firstNonEmpty(baseRefArg, process.env.GITHUB_BASE_REF, DEFAULT_BASE_REF);
   tryFetchBaseRef(repoRoot, baseRef);
   const candidates = [`origin/${baseRef}`, baseRef];
 
-  // Untracked files are always included so that new translation files
-  // (not yet staged/committed) are recognized as "changed in this PR".
+  // Untracked files are always included so that new translation files (not yet staged/committed) are recognized as "changed in this PR".
   let untracked = [];
   try {
     untracked = git(['ls-files', '--others', '--exclude-standard', '--full-name'], repoRoot);

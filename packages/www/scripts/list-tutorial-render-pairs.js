@@ -3,28 +3,16 @@
 // Which (tutorial, language) pairs need a video rendered?
 // ---------------------------------------------------------------------------
 //
-// One place that answers that question, for every caller: `./run.sh www tutorials video`,
-// the pair-level render watch, and any ad-hoc check. It used to be duplicated as a bash
-// loop in run.sh and again in a scratchpad daemon, which is how a readiness predicate
-// drifts — the two already disagreed, because the daemon silently dropped the audio-
-// directory precondition.
+// One place that answers that question, for every caller: `./run.sh www tutorials video`, the pair-level render watch, and any ad-hoc check. It used to be duplicated as a bash loop in run.sh and again in a scratchpad daemon, which is how a readiness predicate drifts — the two already disagreed, because the daemon silently dropped the audio- directory precondition.
 //
-// EMISSION IS LANG-MAJOR, and that is load-bearing rather than cosmetic.
-// generate-tutorial-video.ts caches recorded browser segments under
+// EMISSION IS LANG-MAJOR, and that is load-bearing rather than cosmetic. generate-tutorial-video.ts caches recorded browser segments under
 // public/assets/tutorials/browser-segments/ keyed "${tutorial}.${scene.id}.${hash}.mp4"
 // with NO language in the key, because the footage is language-independent. Tutorial-major
-// ordering therefore puts N languages of the SAME tutorial in flight at --jobs N and, on a
-// cold cache, all N record the same scene and copyFileSync to one path. Lang-major puts N
-// DISTINCT tutorials in flight, so the shared key is never contended.
+// ordering therefore puts N languages of the SAME tutorial in flight at --jobs N and, on a cold cache, all N record the same scene and copyFileSync to one path. Lang-major puts N DISTINCT tutorials in flight, so the shared key is never contended.
 //
-// STALENESS IS READ FROM THE ARTIFACTS, never from a list anything maintains: a pair is
-// stale when its timeline JSON is NEWER than its .mp4, or the .mp4 is missing. That is
-// self-correcting — re-narrate anything and it becomes eligible again automatically, with
-// no bookkeeping to drift out of sync.
+// STALENESS IS READ FROM THE ARTIFACTS, never from a list anything maintains: a pair is stale when its timeline JSON is NEWER than its .mp4, or the .mp4 is missing. That is self-correcting — re-narrate anything and it becomes eligible again automatically, with no bookkeeping to drift out of sync.
 //
-// CAVEAT that the mtime test depends on: generate-tutorial-video.ts must write the .mp4
-// ATOMICALLY. If a killed render can leave a truncated file with a fresh mtime, this
-// predicate will call that pair done forever. See docs/tutorial-render-watch.md (S3).
+// CAVEAT that the mtime test depends on: generate-tutorial-video.ts must write the .mp4 ATOMICALLY. If a killed render can leave a truncated file with a fresh mtime, this predicate will call that pair done forever. See docs/tutorial-render-watch.md (S3).
 //
 // Usage:
 //   node packages/www/scripts/list-tutorial-render-pairs.js [options]
@@ -98,9 +86,7 @@ export function listRenderPairs(opts) {
         .sort((a, b) => a.localeCompare(b))
     : [];
 
-  // Refuse rather than report "0 pairs". A predicate that answers cheerfully on an empty
-  // tree is the vacuous-gate failure mode: every caller reads "nothing to do" and a broken
-  // checkout looks identical to a finished one.
+  // Refuse rather than report "0 pairs". A predicate that answers cheerfully on an empty tree is the vacuous-gate failure mode: every caller reads "nothing to do" and a broken checkout looks identical to a finished one.
   if (casts.length === 0 || locales.length === 0) {
     throw new Error(
       `Refusing to run: found ${casts.length} .cast file(s) under ${tutorialsRoot} and ` +
@@ -126,8 +112,7 @@ export function listRenderPairs(opts) {
     for (const cast of wanted) {
       const timelinePath = path.join(timelineRoot, lang, `${cast}.json`);
       if (!fs.existsSync(timelinePath)) continue;
-      // Precondition carried over from run.sh's original bash enumeration: without the
-      // per-locale audio directory there is nothing to mux, and the render would fail.
+      // Precondition carried over from run.sh's original bash enumeration: without the per-locale audio directory there is nothing to mux, and the render would fail.
       if (!fs.existsSync(path.join(tutorialsRoot, 'audio', lang, cast))) continue;
 
       if (opts.requireProvider) {
@@ -228,8 +213,7 @@ function selftest() {
   const mp4 = path.join(videoDir, 'tutorial-alpha.mp4');
   fs.writeFileSync(mp4, 'x');
   const tl = path.join(timelines, 'en', 'tutorial-alpha.json');
-  // mp4 NEWER than timeline -> must NOT be listed. This is the control that catches a
-  // predicate which just returns everything.
+  // mp4 NEWER than timeline -> must NOT be listed. This is the control that catches a predicate which just returns everything.
   fs.utimesSync(tl, new Date(1000), new Date(1000));
   fs.utimesSync(mp4, new Date(2000), new Date(2000));
   check(

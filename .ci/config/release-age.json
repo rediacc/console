@@ -1,0 +1,11 @@
+{
+  "$comment": [
+    "The freshness window this repo's dependency gates apply before acting on a just-published version, in MINUTES.",
+    "A release becomes actionable at the next UTC midnight after it has aged this window, so a day's upgrades batch together instead of trickling in hourly.",
+    "Motivation: smash-and-grab supply-chain attacks (Axios 1.14.1 RAT, live about 4h, March 2026).",
+    "Read by scripts/lib/release-age.ts, the one implementation every freshness gate reaches (check-deps, check-actions, the pin freshness gates, rediacc_ci.core.release_age, go_deps, audit).",
+    "npm does NOT enforce this window at install time. It lived in .npmrc as minimum-release-age until npm 11 began warning about the unknown key on every command.",
+    "check:ci-npmrc asserts this value and refuses the key's return to .npmrc."
+  ],
+  "minimum_release_age_minutes": 1440
+}

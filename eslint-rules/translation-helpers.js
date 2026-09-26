@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { REPO_ROOT } from './lib/paths.js';
 
-export const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** Kept as a named export because two rules import it under this name. */
+export const ROOT_DIR = REPO_ROOT;
 
 const cachedResourcesByDir = new Map();
 

@@ -1,6 +1,11 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
-import { exitProcess, writeStderr, writeStdout } from '../services/core/request-context.js';
+import {
+  exitProcess,
+  setExitCode,
+  writeStderr,
+  writeStdout,
+} from '../services/core/request-context.js';
 import type { ExecuteResult } from '../services/executor/local-executor.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { getOutputFormat } from './errors.js';
@@ -50,8 +55,7 @@ export function renderLocalExecutionFailure(
   const message = result.error ?? fallbackMessage;
   const code = result.errorCode ?? LOCAL_EXECUTION_FAILED_CODE;
   const exitCode = typeof result.exitCode === 'number' ? result.exitCode : 1;
-  // Skip the tail when the executor already echoed the full output
-  // (non-capture failure path).
+  // Skip the tail when the executor already echoed the full output (non-capture failure path).
   const outputTail = result.outputEchoed
     ? undefined
     : failureOutputTail(message, result.stderr, result.stdout);
@@ -78,7 +82,7 @@ export function renderLocalExecutionFailure(
     if (isAgentEnvironment()) {
       exitProcess(exitCode);
     }
-    process.exitCode = exitCode;
+    setExitCode(exitCode);
     return;
   }
 
@@ -89,5 +93,5 @@ export function renderLocalExecutionFailure(
   if (isAgentEnvironment()) {
     exitProcess(exitCode);
   }
-  process.exitCode = exitCode;
+  setExitCode(exitCode);
 }

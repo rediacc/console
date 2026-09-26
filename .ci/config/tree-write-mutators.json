@@ -1,0 +1,46 @@
+{
+  "_why": "The commands that WRITE a path when a gate spawns them, read by BOTH halves of check:ci-gate-tree-writes (.ci/rediacc_ci/quality/gate_tree_writes.py for Python, scripts/lib/tree-write-sites.ts for TS/JS) so the two scanners cannot disagree about what a mutator is. It lives in .ci/config rather than .ci/policy because it is data, not a BLOCKER-gated decision (.ci/policy/README.md section 1). The pair/list split is pool_writer_safety.py's bash scanner: cp/mv/install/ln write their LAST argument, rm/mkdir/touch/chmod/truncate/tee write every non-flag argument.",
+  "git": {
+    "subcommands": [
+      "add",
+      "am",
+      "apply",
+      "checkout",
+      "cherry-pick",
+      "clean",
+      "commit",
+      "merge",
+      "mv",
+      "rebase",
+      "reset",
+      "restore",
+      "rm",
+      "stash",
+      "switch",
+      "update-index",
+      "worktree"
+    ],
+    "_target": "the -C argument, else the cwd option, else the process cwd (the repo root under run.ts)"
+  },
+  "in_place": {
+    "perl": "-i",
+    "sed": "-i"
+  },
+  "pair": ["cp", "install", "ln", "mv"],
+  "list": ["chmod", "mkdir", "rm", "tee", "touch", "truncate"],
+  "output_flag": {
+    "go": { "subcommand": "build", "flag": "-o" }
+  },
+  "install": {
+    "npm": ["ci", "i", "install"],
+    "npx": ["ci", "i", "install"]
+  },
+  "write_flag": {
+    "biome": ["--write"],
+    "eslint": ["--fix"],
+    "prettier": ["--write"]
+  },
+  "extract": {
+    "tar": { "flag": "-x", "dest": "-C" }
+  }
+}

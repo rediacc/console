@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// configService mock — all methods are hoisted so the module factory can use them.
+// configService mock, all methods are hoisted so the module factory can use them.
 const mockGetLocalMachine = vi.hoisted(() => vi.fn());
 const mockGetStorage = vi.hoisted(() => vi.fn());
 const mockListRepositories = vi.hoisted(() => vi.fn());

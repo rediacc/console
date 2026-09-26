@@ -7,10 +7,7 @@ import { outputService } from '../../core/output.js';
 import { localExecutorService } from '../../executor/local-executor.js';
 import { evictCluster, joinCluster } from '../cluster-membership.js';
 
-// The machine-slot pre-flight reaches the account server. Stub it: a unit test
-// must not depend on whether the box running it happens to hold a live
-// subscription token. Its own behaviour is covered in
-// services/__tests__/license-preflight.test.ts.
+// The machine-slot pre-flight reaches the account server. Stub it: a unit test must not depend on whether the box running it happens to hold a live subscription token. Its own behaviour is covered in services/__tests__/license-preflight.test.ts.
 vi.mock('../../account/license-preflight.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../account/license-preflight.js')>()),
   assertMachineSlotsAvailable: vi.fn().mockResolvedValue(undefined),
@@ -78,9 +75,7 @@ describe('joinCluster', () => {
     await joinCluster('adopted', { cluster: 'prod' });
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    // ★ #25: no repository_create. An agent's k3s state is a disposable cache and
-    // `renet kube join` MkdirAll's its own data-dir, so the per-node "cluster image"
-    // repo bought nothing and cost a LUKS volume + GUID + config record per node.
+    // ★ #25: no repository_create. An agent's k3s state is a disposable cache and `renet kube join` MkdirAll's its own data-dir, so the per-node "cluster image" repo bought nothing and cost a LUKS volume + GUID + config record per node.
     expect(calls.map((c) => c.functionName)).toEqual(['kube_join_token', 'kube_join']);
     // Token read from the control plane's anchor datastore mount.
     expect(calls[0]).toMatchObject({
@@ -130,9 +125,7 @@ describe('evictCluster', () => {
     await evictCluster('adopted', {});
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    // ★ #20: the control plane forgetting the Node is only HALF an eviction. The
-    // evicted machine must also stop running its own k3s agent, or it keeps a
-    // stale kubelet alive and blocks a later re-adopt.
+    // ★ #20: the control plane forgetting the Node is only HALF an eviction. The evicted machine must also stop running its own k3s agent, or it keeps a stale kubelet alive and blocks a later re-adopt.
     expect(calls.map((c) => c.functionName)).toEqual(['kube_node_remove', 'kube_uninstall']);
     expect(calls[0]).toMatchObject({
       machineName: 'prod-cp-1',

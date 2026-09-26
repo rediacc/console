@@ -1,0 +1,22 @@
+exit: 0
+--- stdout ---
+I am abcd1234 on branch ? at <ts>
+
+MY OPEN SLICE (the verb printed per item is the next command; base your report on this, not on memory):
+WORKLIST GUIDE (derived from the store, not from memory):
+  - [ ] #77778888 a plain open item with no lease at all
+
+OWNERSHIP: 4 open in this repo, 1 mine, 3 a peer session's.
+  The hook blocks only on mine. A peer's items are REPORTED to the operator and never worked, never ticked.
+OPEN DEFERRALS OF MINE: 0. A queue of these is over-asking, not a backlog:
+  anything settleable from the code, the request, or a sensible default was mine to decide.
+
+ARE MY [>] LEASES BELIEVABLE:
+  (none: no in-flight background work claimed by me)
+
+WAITING FOR ME FROM PEER SESSIONS (silence means nothing is waiting):
+
+DURABLE CONTEXT: my STATE.md 2023-11-14 22:13:20; 3 plan file(s) under agent/
+  2 peer session folder(s) beside mine under agent/. Theirs to write, mine to read.
+  These survive a reboot. The worklist event log is tracked under agent/worklist/ and survives too; only locks, caches and briefs live under $TMPDIR.
+--- stderr ---

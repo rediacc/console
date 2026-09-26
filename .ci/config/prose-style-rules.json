@@ -1,0 +1,963 @@
+{
+  "why": [
+    "R1-R18, the writing style this repo enforces: make the WORK the subject, or use the",
+    "shared 'we'. Never 'you', never 'I'. This file is the single source of truth for the",
+    "rules; .ci/rediacc_ci/quality/prose_style.py reads it and holds no rule text of its own.",
+    "",
+    "WHY JSON AND NOT YAML, which the brief asked for first. PyYAML is NOT importable by the",
+    "interpreter that runs this repo's pytest suite. Measured 2026-09-16:",
+    "",
+    "    $ .ci/cache/toolchain/uv-tools/pytest/bin/python -c 'import yaml'",
+    "    ModuleNotFoundError: No module named 'yaml'",
+    "",
+    "pytest is provisioned by `uv tool install`, which builds an ISOLATED virtual environment,",
+    "so the system interpreter's PyYAML 6.0.3 is not on its path. .ci/rediacc_ci/workflows.py",
+    "records the same constraint and paid for it with a hand-written YAML subset parser. A",
+    "rules file this gate's own tests cannot load is a gate that cannot be tested, so the",
+    "format is JSON, which every interpreter here reads from the standard library.",
+    "",
+    "EVERY RULE CARRIES ITS EXAMPLES, and the examples ARE the test fixtures:",
+    ".ci/rediacc_ci/tests/test_quality_prose_style.py generates one case per example. An",
+    "example with no expectation would be decoration, so each one states what must happen:",
+    "",
+    "    flag        at least one rule must fire on it, and when the OWNING rule carries",
+    "                patterns, the owning rule must be among those that fire -- unless the",
+    "                example names a `caught_by`, which is then the rule that must fire",
+    "    caught_by   the rule that REALLY catches this example, when it is not the rule the",
+    "                example belongs to. R11's `Your feedback...` is a hidden-you, which is",
+    "                R11's subject, but the word `your` is R1's pattern and R11 has no reason",
+    "                to carry a second copy of it. Recording that is better than either",
+    "                duplicating the pattern or weakening the assertion to `something fired`,",
+    "                which is how an example comes to rely on a neighbouring rule silently.",
+    "    clean       no rule may fire on it",
+    "    undetected  beyond mechanical detection, and SAID SO rather than quietly dropped.",
+    "                Asserted NOT to fire, and counted in the gate's shape line, so the",
+    "                coverage gap is visible in every run instead of living in this comment.",
+    "",
+    "THE `undetected` ROWS ARE THE HONEST PART. R12's 'The project failed.' and R3's good",
+    "example 'The build failed after the last change.' are the SAME surface shape, and telling",
+    "them apart needs to know whether the subject is a project or a build. A pattern that",
+    "flagged one would flag the other, so neither is flagged and this file says why.",
+    "",
+    "SEVERITY: `error` exits non-zero, `warning` prints and does not. SCOPES name where a rule",
+    "applies; `all` is every scope. A scope a rule does not list is a place the rule is not",
+    "checked, which is how R11's imperative arm stays out of code comments and commit subjects."
+  ],
+  "globals": {
+    "max_line_length": 768,
+    "scopes": [
+      "ai_output",
+      "user_prompt",
+      "comment",
+      "markdown",
+      "commit",
+      "pr"
+    ],
+    "ignore_markers": [
+      "<!-- style-ok -->",
+      "# style-ok",
+      "// style-ok"
+    ],
+    "env_off": "PROSE_STYLE",
+    "env_prompt_hints": "PROSE_STYLE_PROMPT_HINTS",
+    "include": [
+      "*.md",
+      "*.py",
+      "*.ts",
+      "*.tsx",
+      "*.js",
+      "*.cjs",
+      "*.mjs",
+      "*.go",
+      ".ci/config/*.json",
+      ".ci/policy/*.json",
+      ".ci/config/*.txt"
+    ],
+    "exclude_dirs": [
+      ".git",
+      "node_modules",
+      "__pycache__",
+      ".ci/cache",
+      "private",
+      "dist",
+      "build",
+      ".venv",
+      "vendor",
+      ".artifacts"
+    ],
+    "exempt_paths": [
+      {
+        "glob": ".ci/config/content-quality-allowlist.txt",
+        "reason": "BLOCKER: a one-path-per-line data list, not prose. markdown_lines() reads consecutive short lines as a hard-wrapped paragraph and flags R19, but reflowing a path list would corrupt it -- one path per line is the format, not a wrapping accident."
+      },
+      {
+        "glob": ".ci/config/directive-quotes-allowlist.txt",
+        "reason": "BLOCKER: same shape as content-quality-allowlist.txt, a path-per-line data list rather than prose, exempted for the same reason before an edit happens to trip the same R19 false positive."
+      },
+      {
+        "glob": "agent/*/STATE.md",
+        "reason": [
+          "BLOCKER: live per-session coordination scratch, written continuously by running",
+          "sessions. A CI gate that reds because a CONCURRENT session wrote a 430-character",
+          "line in its own notes is failing for a reason unrelated to the commit under test,",
+          "which is flakiness wearing a gate's name. Measured 2026-09-16: 10 of the tracked",
+          "STATE.md files already carry over-length lines, and the two that triggered this",
+          "entry belong to the session that dispatched the work, so they were not this",
+          "session's to rewrite either."
+        ]
+      },
+      {
+        "glob": "agent/archive/*/*/STATE.md",
+        "reason": "BLOCKER: the archived copies of the same scratch, kept as a record. Rewriting a record to satisfy a line-length rule would falsify the record."
+      },
+      {
+        "glob": "agent/archive/REPORT-*.md",
+        "reason": [
+          "BLOCKER: the same class as the archived STATE.md above, and the same reason. A",
+          "session report is frozen when it is written; rewriting one to satisfy a",
+          "line-length or a pronoun rule would falsify the record it exists to be. Its",
+          "findings were already frozen debt at agent/REPORT-<slug>.md and re-keyed when S5",
+          "of agent/plans/PLAN-agent-tree-lifecycle.md moved the file into the archive class the",
+          "operator ruled it belongs to, so this entry silences nothing that was being",
+          "reported before the move."
+        ]
+      },
+      {
+        "glob": "agent/pr/*.md",
+        "reason": [
+          "BLOCKER: a GENERATED artifact, not authored prose. `worklist.py --publish` renders",
+          "this file from the append-only worklist event log, so every line in it is the text",
+          "of a worklist item, and most of those items belong to sessions that have ended. The",
+          "four R2 findings that triggered this entry (#043041d3, #0d972047, #1e5ce54d,",
+          "#2e642173) were all written by f4da5c2e and are ticked and closed; the only way to",
+          "clear them at the artifact is to rewrite a dead session's history in an",
+          "append-only store. check_plan_citations.py settled the same scope question for the",
+          "same tree and the same reason: `agent/pr/*.md, agent/worklist/*   OUT. Generated.",
+          "The fix for a dead pointer in a generated file is a change to the generator, and",
+          "reporting it at the artifact teaches the wrong lesson.` Prose style in a rendered",
+          "snapshot of historical items is that case exactly. The generator, and the style of",
+          "items written from here on, remain in scope through the source files themselves."
+        ]
+      }
+    ],
+    "exempt_why": [
+      "EXEMPT IS NOT EXCLUDED, and the difference is the whole point. An `exclude_dirs` entry",
+      "leaves no trace; an `exempt_paths` entry is COUNTED and PRINTED on every run, so the",
+      "debt cannot be forgotten and a growing exemption list is visible in the shape line",
+      "rather than discoverable only by reading this file.",
+      "",
+      "Every entry carries a `BLOCKER:` reason, the same convention",
+      "docs/agent-reference/suppressions.md requires of every other allowlist in this tree.",
+      "",
+      "`agent/PLAN-*.md` is deliberately NOT here: it is an authored document that a",
+      "person reads, which is exactly what this style is for. `agent/pr/*.md` WAS here",
+      "until it turned out to be generated, not authored -- see its own entry above."
+    ],
+    "exclude_why": [
+      "private/ holds four GIT SUBMODULES (account, elite, homebrew-tap, renet), which are",
+      "separate repositories. Measured 2026-09-16: they carried 27,015 of the 38,040 findings",
+      "on the first full sweep, 71 percent of the total, and not one of those files is this",
+      "repository's to rewrite. A gate whose baseline is mostly another repo's debt reports on",
+      "a tree it cannot fix.",
+      "",
+      "packages/www is excluded on a reason that does NOT survive checking, and the record is",
+      "corrected here rather than quietly inherited. The entry blamed the i18n naturalization",
+      "ledger, which is packages/www/src/i18n/translations/*.json; `include` anchors its JSON",
+      "globs to .ci/config/*.json and .ci/policy/*.json, so not one of those files was ever in",
+      "this corpus and no reflow could have re-keyed them. What the exclusion actually hides is",
+      "863 tracked markdown files, held out for a hazard that applies to none of the ones named.",
+      "",
+      "A REAL hazard does sit under it, measured 2026-09-17 rather than assumed, and it attaches",
+      "to different files: packages/www/scripts/validate-translation-freshness.js:75 digests",
+      "normalizeText(body), and normalizeText at :41 maps CRLF and trims the tail and nothing",
+      "else, so internal newlines reach the hash. Rewrapping one English doc therefore re-keys",
+      "the sourceHash every locale copy carries, and countBodyLines at :49 reads line counts on",
+      "top of that. The split is 62 narrow paragraphs under packages/www/plans (no ledger, safe",
+      "to reflow), 42 under src/content/docs/en and 20 in locale copies (baseline, never",
+      "reflow), 2 elsewhere. Detection is safe everywhere; only the REWRITE is constrained, so",
+      "the entry is GONE as of 2026-09-17 and the reflow is scoped to the untranslated subtree",
+      "instead. .claude/agents/i18n-guardian.md:28 corroborates the hazard independently: it",
+      "names validate-translation-freshness.js as the locale-docs gate and says it reports the",
+      "exact sourceHash/sourceCommit to stamp after an English edit. Stamping without",
+      "re-translating would assert a currency the translation does not have, which is why the",
+      "en docs and the locale copies are baselined rather than rewrapped.",
+      "",
+      ".sh is absent from `include` on purpose and not by oversight:",
+      "shell scripts are a shrinking surface under this repo's bash-to-Python migration, and",
+      "teaching this tool a comment syntax it will outlive is effort spent backwards.",
+      "",
+      "exclude_dirs now only describes TRACKED directories that are out of scope. discover()",
+      "enumerates `git ls-files`, so a gitignored or never-added path is excluded structurally",
+      "and needs no entry here. `.claude/hooks/context/state` was one such entry, added after",
+      "944aa6210 froze six of its ignored files into this gate's committed baseline; it is gone",
+      "because the corpus itself is now git's answer rather than the walking machine's."
+    ],
+    "locale_copy_pattern": "^packages/www/src/content/[^/]+/(?!en/)[a-z]{2}(?:-[a-z]+)?/",
+    "locale_copy_why": [
+      "A TRANSLATED COPY IS HELD TO THE WIDTH RULES ONLY. Every other rule matches English words, so on a",
+      "locale copy it reports the language, not the prose: R2 fired on the Italian article `I` in",
+      "packages/www/src/content/docs/it/installation.md:218 (2026-09-24). The English source under /en/ keeps",
+      "every rule, and the wording of a translation is owned by the naturalization pipeline (docs/i18n/CONVENTIONS.md)."
+    ]
+  },
+  "rules": [
+    {
+      "id": "R1",
+      "title": "No \"you\"",
+      "description": "The words you, your, yours and yourself are not used to address the reader. The work becomes the subject instead.",
+      "severity": "error",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [
+        "(?i)(?<![-/.\\w])\\byou\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byour\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byours\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byourself\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byourselves\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\byou'(?:re|ve|ll|d)\\b(?![-/]\\w)(?!\\.\\w)"
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Did you run the tests?",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "Have the tests been run?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The plan lives in PLAN-commit-as-you-go.md now.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Did you.",
+          "expect": "flag",
+          "kind": "bad"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "title": "No \"I\"",
+      "description": "The words I, me, my, mine and myself are not used, nor the openers \"Let me\" and \"I'll\". A short ownership of one's own mistake is the one exception, and even there the word \"I\" stays out.",
+      "severity": "error",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [
+        "(?<![-/.\\w])\\bI\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?<![-/.\\w])\\bI'(?:m|ll|ve|d)\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\blet\\x20me\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bme\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bmy\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bmine\\b(?![-/]\\w)(?!\\.\\w)",
+        "(?i)(?<![-/.\\w])\\bmyself\\b(?![-/]\\w)(?!\\.\\w)"
+      ],
+      "exceptions": [
+        "(?i)\\bmy (?:mistake|error|bad|fault|apologies|apology)\\b",
+        "\\bI/O\\b",
+        "(?i)\\bi18n\\b",
+        "(?i)\\bi\\.e\\.",
+        "(?i)\\b(?:phase|part|section|appendix|volume|chapter|type|class|tier|group|annex) I+\\b",
+        "(?i)\\bmy(?:sql|sqli)\\b"
+      ],
+      "exceptions_why": [
+        "`I/O`, `i18n` and `i.e.` are not the pronoun, and a gate that flagged them would be",
+        "deleted within a week. Roman numerals are admitted only behind a noun that takes one",
+        "(`Phase I`), never bare: a bare capital I in running prose IS the pronoun."
+      ],
+      "examples": [
+        {
+          "text": "Let me check the logs.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "Checking the logs now.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "I think this is wrong.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "This seems worth another look.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "My mistake; the fix is on the way.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The I/O layer buffers writes.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Phase I covered the survey.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The route is GET /portal/me for the profile.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Ask me.",
+          "expect": "flag",
+          "kind": "bad"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "title": "Passive and state structures",
+      "description": "Agentless passive, modal passive, get-passive, need + -ing, \"is yet to be\", and ergative verbs are the preferred ways to say what happened without naming who.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Has the link been shared?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Could the file be sent over today?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Did the file get sent?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The report needs updating.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The contract is yet to be signed.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The build failed after the last change.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "title": "Impersonal frames",
+      "description": "\"It...\", \"There...\", and seem/appear move the sentence off a person and onto the situation.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "It might be worth checking again.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Was there a chance to look at the proposal?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "The file appears to be missing.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "title": "Focus on the work and its state",
+      "description": "Nominalization, status adjectives (ready, pending, due, outstanding), verbless questions, gerund subjects and wh-clefts all put the artifact where the person was.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Is the review done?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Any update on the file?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Sending the file today would help.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "What would help is a short summary.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "title": "Shared \"we\"",
+      "description": "\"We\" and \"Let's\" are allowed, for shared work. They are not used to spread the blame for one's own mistake.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Let's see how we can fix this.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "We could take another look at the schema together.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "title": "Hedging",
+      "description": "Could, might, would, perhaps, maybe and possibly carry a claim better than an absolute does. Absolutes are flagged.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [
+        "(?i)\\b(?:will|won't|will not|shall|can|can't|cannot|could|would|wouldn't)\\s+(?:\\w+\\s+)?(?:never|always)\\b",
+        "(?i)\\bdefinitely\\b",
+        "(?i)\\bimpossible\\b",
+        "(?i)\\bobviously\\b",
+        "(?i)\\bundoubtedly\\b"
+      ],
+      "patterns_why": [
+        "THE BARE WORDS `never` AND `always` WERE THE FIRST CUT, AND THEY DID NOT",
+        "DISCRIMINATE. Measured on this tree 2026-09-16: R7 produced 7,710 of the 10,944",
+        "findings in the initial baseline, 70 percent of the total, and a warning that fires",
+        "on seven of every ten findings is noise by construction rather than a signal.",
+        "",
+        "Reading the matches says why. In this repository `never` and `always` are how an",
+        "INVARIANT is stated -- 'never hand-edit this file', 'an entry without paths is ALWAYS",
+        "selected', 'the ADDED side must be empty, never merely smaller'. That is a",
+        "specification, and a specification is supposed to be absolute. R7 is about an",
+        "unhedged CLAIM ABOUT THE FUTURE, which is what its own bad example is: 'That will",
+        "never work.'",
+        "",
+        "So the two words are anchored behind a MODAL, which is the grammar that turns a",
+        "description into a prediction. `will never work` and `can never fire` fire; `never",
+        "hand-edit this file` and `a gate that never fires` do not.",
+        "",
+        "COPULAS WERE IN THE ANCHOR FOR ONE ROUND AND CAME BACK OUT, on evidence from the same",
+        "sweep. `was never bash` is a statement of fact about the past and `an entry without",
+        "paths is ALWAYS selected` is a specification; neither is an unhedged claim about what",
+        "will happen, which is what R7's own bad example is. A modal is the only form that",
+        "reliably marks the difference.",
+        "",
+        "`certainly` left the list at the same time: its common use here is concessive ('this",
+        "is certainly slower, and correct'), which is hedging rather than the absence of it."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "That will never work.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "This may not work as expected; worth testing first.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "title": "No flattery",
+      "description": "Praise goes to the work, not to the person. Opening a reply by complimenting the asker is the shape this refuses.",
+      "severity": "error",
+      "scopes": [
+        "ai_output",
+        "pr",
+        "commit",
+        "comment"
+      ],
+      "patterns": [
+        "(?i)\\bgreat question\\b",
+        "(?i)\\bexcellent question\\b",
+        "(?i)\\bgood (?:question|catch|point)\\b",
+        "(?i)\\byou'?re absolutely right\\b",
+        "(?i)\\byou are absolutely right\\b",
+        "(?i)\\byou'?re (?:amazing|brilliant|awesome|right)\\b",
+        "(?i)\\bamazing job\\b",
+        "(?i)^\\s*perfect[!.]",
+        "(?i)\\bnice work\\b"
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "You did an amazing job.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "The project came together really well.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Great question!",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "Perfect!",
+          "expect": "flag",
+          "kind": "bad"
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "title": "Thanks are welcome, not flattering",
+      "description": "Thanking is not flattery. Thanks are said in full, and directed at what the help produced.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Thanks, this was really helpful.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Thanks to Mark for his help on this.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "title": "Group address when criticizing",
+      "description": "No names are used in criticism. A group reminder carries the same information without pointing.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "detection_why": [
+        "Naming a person is only a defect when the sentence is CRITICAL, and no pattern",
+        "separates 'Ahmet reviewed the schema' from 'Ahmet always gossips'. A name detector",
+        "would flag every attribution line in the repository, including the ones R9 asks for."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Ahmet always gossips.",
+          "expect": "undetected",
+          "kind": "bad"
+        },
+        {
+          "text": "Gossip can really hurt a team.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Just a reminder for everyone: timesheets are due Friday.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "title": "Hidden \"you\"",
+      "description": "An imperative in a request or a piece of feedback addresses the reader without the word. So does \"your\", and so does the generic \"you\".",
+      "severity": "warning",
+      "scopes": [
+        "ai_output",
+        "pr",
+        "markdown"
+      ],
+      "patterns": [
+        "^(?:Send|Run|Add|Fix|Check|Update|Make|Create|Delete|Remove|Write|Call|Tell|Give|Install|Open|Push|Merge|Submit|Share|Reply|Respond|Contact|Rerun|Retry|Rebase|Revert|Stop|Start)\\b"
+      ],
+      "exceptions": [],
+      "exempt_scopes_why": [
+        "`comment` is absent because an imperative code comment ('Return early if empty') is the",
+        "house idiom and addresses nobody. `commit` is absent because this repository's commit",
+        "subjects are Conventional-Commits-shaped and frequently imperative by convention;",
+        "measured over the last 200 commits, median 71 characters, p90 84, max 98. The brief's",
+        "own text exempts both, and compatibility with the conventions already in the tree wins."
+      ],
+      "examples": [
+        {
+          "text": "Send the file.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "Could the file be sent?",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Run npm install.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "Next step: `npm install`.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Your feedback would be helpful.",
+          "expect": "flag",
+          "kind": "bad",
+          "caught_by": "R1"
+        },
+        {
+          "text": "Any feedback would be appreciated.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "You never know.",
+          "expect": "flag",
+          "kind": "bad",
+          "caught_by": "R1"
+        },
+        {
+          "text": "Hard to say.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "title": "Softer wording",
+      "description": "A blunt verdict about an outcome reads as a verdict about whoever produced it. The same fact lands better as a state to look into.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "detection_why": [
+        "'The project failed.' and R3's good example 'The build failed after the last change.'",
+        "are the same surface shape. Separating them needs to know what kind of noun the",
+        "subject is, so neither is flagged and the gap is declared instead of guessed at."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "The project failed.",
+          "expect": "undetected",
+          "kind": "bad"
+        },
+        {
+          "text": "The project didn't work out as planned.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This is a problem.",
+          "expect": "undetected",
+          "kind": "bad"
+        },
+        {
+          "text": "This is something to look into.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "title": "Make things easier and give good news",
+      "description": "A cost is reported with its path forward attached, rather than as a closed door.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "This is impossible.",
+          "expect": "flag",
+          "kind": "bad",
+          "caught_by": "R7"
+        },
+        {
+          "text": "This will take some time, but it's doable.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "title": "Soft refusal",
+      "description": "A refusal names the constraint, or names a better route, rather than the speaker's willingness.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [
+        "(?i)\\bthat'?s not my job\\b",
+        "(?i)\\bnot my (?:job|problem|department)\\b"
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "No, I can't.",
+          "expect": "flag",
+          "kind": "bad",
+          "caught_by": "R2"
+        },
+        {
+          "text": "Unfortunately that won't be possible this week.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "That's not my job.",
+          "expect": "flag",
+          "kind": "bad",
+          "caught_by": "R2"
+        },
+        {
+          "text": "Maria might be the best person for this.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "title": "Leave the argument",
+      "description": "Repeating a point louder, or dismissing it, both keep the argument going. Another wording, or a pause, ends it.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [
+        "(?i)^\\s*whatever[.!]?\\s*$",
+        "(?i)\\bas (?:I|we) (?:already )?(?:said|told|mentioned|explained)\\b",
+        "(?i)\\bI already told you\\b"
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "I already told you!",
+          "expect": "flag",
+          "kind": "bad",
+          "caught_by": "R15"
+        },
+        {
+          "text": "Here's another way to put it.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "Whatever.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "Let's leave it there for now and revisit later.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R16",
+      "title": "Euphemism for private matters",
+      "description": "A private matter is reported at the level of its effect on the work, not in its details.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [],
+      "detection": "advisory",
+      "detection_why": [
+        "Detecting this would mean a medical-vocabulary list, which is both unbounded and the",
+        "wrong instrument: 'He has a stomach bug' is a defect and 'the stomach bug fix landed'",
+        "is not, and only the surrounding sentence knows which."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "He has a stomach bug.",
+          "expect": "undetected",
+          "kind": "bad"
+        },
+        {
+          "text": "He's feeling unwell today.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "title": "Keep the balance",
+      "description": "The passive is not used to hide responsibility for one's own mistake. Heavy passive throughout a passage is flagged on the same grounds.",
+      "severity": "warning",
+      "scopes": [
+        "all"
+      ],
+      "patterns": [
+        "(?i)\\bmistakes were made\\b",
+        "(?i)\\berrors were made\\b",
+        "(?i)\\bit was decided\\b"
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "Mistakes were made.",
+          "expect": "flag",
+          "kind": "bad"
+        },
+        {
+          "text": "My error; a fix is on the way.",
+          "expect": "clean",
+          "kind": "good"
+        }
+      ]
+    },
+    {
+      "id": "R18",
+      "title": "Line length",
+      "description": "A line past the 768-character floor is flagged only when it does not end on a genuine sentence-ending period and a genuine sentence break also sat at or before that floor; a line that reaches its own end on a real full stop is never flagged, whatever earlier breaks it also passed over -- several whole sentences merged onto one long line are exactly the shape this floor allows, not the shape it exists to catch. A line with no break anywhere before its own end may likewise run to any length, since 768 is where wrapping is allowed, not where it must happen, and R19 already polices wrapping narrower than a paragraph's natural width from the other direction.",
+      "severity": "error",
+      "scopes": [
+        "markdown",
+        "comment",
+        "pr",
+        "commit"
+      ],
+      "patterns": [],
+      "detection": "measured",
+      "detection_why": [
+        "Length is counted, not matched. The floor lives in `globals.max_line_length` because",
+        "the reflow subcommand needs the same number, and two copies of a width is how a reflow",
+        "starts producing lines its own linter refuses.",
+        "A line that closes on its own genuine sentence-ending period is never a finding,",
+        "however many earlier sentence breaks it also passed over: merging several whole",
+        "sentences onto one long line is the shape this floor is meant to allow.",
+        "Only a line that both runs past the floor AND does not end on such a period is",
+        "checked further, by a search for the first genuine sentence-ending period at or",
+        "before it. A period only counts when immediately followed by whitespace or the",
+        "line's own end, which is what rules out a decimal and a dotted version number,",
+        "since the period inside either is followed by a digit; the remaining candidates",
+        "are filtered against a short abbreviation list (\"e.g.\", \"i.e.\", \"etc.\", \"Dr.\" and",
+        "the like) so those do not read as sentence ends either. No such break at or before",
+        "the floor means no finding, however long the line runs."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "A line well under the limit.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "One continuous clause that never finds a place to pause before it finally reaches its own natural end after running for quite a very long while indeed and just keeps right on going without a single earlier stopping point anywhere in it at all, no comma or dash offering a real place to break it either, and it keeps extending further still, word after word, with nowhere sane to stop early, until it finally, at long last, reaches its own true conclusion.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This sentence is short and ends quickly right here. So does this second one, right after it, running a little longer than the first. And a third sentence follows immediately, adding still more words before it too comes to a stop. And a fourth sentence keeps the paragraph going even further, spelling out one more complete idea in full before it, too, reaches its own natural stopping point. A fifth sentence adds still more length to the paragraph, carrying the running total well past the point any of the earlier sentences alone would have reached. Several complete sentences merged onto one long line this way are fine, however many places earlier they could each have broken instead, as long as the line itself reaches its own true conclusion on a genuine full stop.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This sentence is short and ends quickly right here. xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "expect": "flag",
+          "kind": "bad"
+        }
+      ]
+    },
+    {
+      "id": "R19",
+      "title": "Under-wrap",
+      "description": "A paragraph of 3+ lines hard-wrapped at a uniform width well under the limit is rewrapped wider, not left narrow. The reflow subcommand exists to fix this in bulk; this rule stops a new one from being added the same way.",
+      "severity": "error",
+      "scopes": [
+        "markdown",
+        "comment",
+        "pr",
+        "commit"
+      ],
+      "patterns": [],
+      "detection": "underwrap",
+      "detection_why": [
+        "A heuristic over the whole paragraph, not a per-line regex: 3+ lines, all but the last",
+        "within a narrow width band of each other, that common width at or under 40% of",
+        "`globals.max_line_length`, and the shared reflow primitive actually producing fewer",
+        "lines when applied. A naive \"would joining change anything\" test fires on 99.99% of",
+        "this repository's real markdown corpus, measured live 2026-09-17, and is therefore not",
+        "a debt detector at all -- see agent/plans/PLAN-prose-style-under-wrap.md."
+      ],
+      "exceptions": [],
+      "examples": [
+        {
+          "text": "A paragraph that already uses close to the full available width on every line before it naturally ends, so there is nothing narrow to fix here at all.",
+          "expect": "clean",
+          "kind": "good"
+        },
+        {
+          "text": "This is a line that is deliberately\nkept narrow so that joining works\nas the paragraph's whole intent shows.",
+          "expect": "flag",
+          "kind": "bad"
+        }
+      ]
+    }
+  ]
+}

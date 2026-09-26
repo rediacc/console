@@ -87,17 +87,14 @@ export const RESOURCE_DISCOVERY: Record<ResourceKind, DiscoverySource> = {
   // ResourcesSchema family (config-schema/schemas.ts).
   strategy: { source: 'config', family: 'backupStrategies' },
 
-  // ── Command-sourced (run a discovery command, extract a field) ──────────
-  // VERIFIED: machine status `-o json` (buildEnrichedJson, commands/machine/
-  // status.ts) emits a top-level `containers` array whose elements carry `.name`.
+  // ── Command-sourced (run a discovery command, extract a field) ────────── VERIFIED: machine status `-o json` (buildEnrichedJson, commands/machine/ status.ts) emits a top-level `containers` array whose elements carry `.name`.
   container: {
     source: 'command',
     pathKey: 'machine status',
     needs: ['machine'],
     extract: 'containers[].name',
   },
-  // `repo admin template list` iterates the embedded TEMPLATES and prints
-  // `tmpl.name` (commands/repo-extended.ts). Templates are static/embedded, so
+  // `repo admin template list` iterates the embedded TEMPLATES and prints `tmpl.name` (commands/repo-extended.ts). Templates are static/embedded, so
   // a console may source them without a machine; needs is therefore empty.
   template: {
     source: 'command',
@@ -105,8 +102,7 @@ export const RESOURCE_DISCOVERY: Record<ResourceKind, DiscoverySource> = {
     needs: [],
     extract: 'name',
   },
-  // `datastore snapshot list <datastore>` prints the renet
-  // `datastore_snapshot_list` payload verbatim (commands/datastore.ts). The
+  // `datastore snapshot list <datastore>` prints the renet `datastore_snapshot_list` payload verbatim (commands/datastore.ts). The
   // renet-side element shape is not verifiable from console source; `[].name`
   // is the most likely field and the console degrades to free text otherwise.
   snapshot: {
@@ -125,9 +121,7 @@ export const RESOURCE_DISCOVERY: Record<ResourceKind, DiscoverySource> = {
   },
   // `backup list` honors `-o json`, emitting the standard success envelope whose
   // `data` is the rendered rows array `{ mode, name, guid, size, modified }`
-  // (renderBackupList, commands/repo-backup-list.ts). `name` is the resolved
-  // display name that `backup restore <artifact-ref>` resolves against a
-  // repository, so `[].name` offers each artifact. A console may pass --storage
+  // (renderBackupList, commands/repo-backup-list.ts). `name` is the resolved display name that `backup restore <artifact-ref>` resolves against a repository, so `[].name` offers each artifact. A console may pass --storage
   // from context. Artifact refs use the shared ref grammar.
   artifact: {
     source: 'command',

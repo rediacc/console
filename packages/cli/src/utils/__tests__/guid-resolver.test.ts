@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-// guid-resolver imports configService at module load (used only by loadGuidMap).
-// Stub it so importing the pure resolver functions has no side effects.
+// guid-resolver imports configService at module load (used only by loadGuidMap). Stub it so importing the pure resolver functions has no side effects.
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: { getRepositoryGuidMap: vi.fn(() => Promise.resolve({})) },
 }));

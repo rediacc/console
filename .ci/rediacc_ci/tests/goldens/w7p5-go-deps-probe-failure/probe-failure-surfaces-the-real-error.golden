@@ -1,0 +1,9 @@
+# twin .ci/scripts/quality/check-go-deps.sh blob d8d7166e61dcc7e1d5f0d7f8e62908edc1c4c887
+exit: 1
+--- stdout ---
+
+  fakemod: go-list exit=1 go: go.mod requires go >= 1.25.0 (running go 1.24.0)
+--- stderr ---
+→ Checking Go deps in fakemod...
+✗ Go dependency probe FAILED — this is not the same as 'up-to-date':
+✗ Fix the Go toolchain or module access and re-run; the gate cannot vouch for these modules.

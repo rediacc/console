@@ -1,5 +1,5 @@
 /**
- * `rdc repo replicate` — instant read replicas (spec 05 §1) as MANAGED STATE on
+ * `rdc repo replicate`, instant read replicas (spec 05 §1) as MANAGED STATE on
  * the repo (R2-F17 / spec §4.4): there is exactly ONE replica set per repo, so
  * every leaf here is keyed by the repo REF and the set's name, snapshot and fork
  * tags are all derived from it. Orchestration lives in
@@ -67,7 +67,7 @@ export function registerRepoReplicateCommands(repo: Command): void {
     .summary(t('commands.repo.replicate.descriptionShort'))
     .description(t('commands.repo.replicate.description'))
     .argument('<ref>', t('options.repoRef'))
-    // Deliberately NOT requiredOption — see the trap note at the top of the file.
+    // Deliberately NOT requiredOption, see the trap note at the top of the file.
     .option('--replicas <n>', t('commands.repo.replicate.replicasOption'))
     .option('--image <image>', t('commands.repo.replicate.imageOption'))
     .option('--port <port>', t('commands.repo.replicate.portOption'))

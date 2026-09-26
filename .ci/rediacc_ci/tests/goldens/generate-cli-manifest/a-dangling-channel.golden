@@ -1,0 +1,10 @@
+# twin .ci/scripts/build/generate-cli-manifest.sh blob 65e5a49bf3a4b75569a2365724b01eb56bc7beba
+exit: 1
+--- stdout ---
+--- stderr ---
+<SELF>: line 44: $2: unbound variable
+--- calls ---
+--- files ---
+{
+  "in/rdc-linux-x64.sha256": "file:11814d0e060824d9"
+}

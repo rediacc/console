@@ -1,0 +1,12 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 0
+--- stdout ---
+
+--- stderr ---
+→ Re-tagging all images...
+→ Re-tagging renet: a -> b
+✓ Re-tagged renet successfully
+→ Re-tagging rdc: a -> b
+✓ Re-tagged rdc successfully
+✓ Re-tag summary: 2 succeeded, 0 failed
+--- calls ---

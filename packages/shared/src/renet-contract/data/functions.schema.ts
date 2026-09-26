@@ -372,6 +372,9 @@ export const MachineUninstallParamsSchema = z.object({});
 /** Get renet version */
 export const MachineVersionParamsSchema = z.object({});
 
+/** List network IDs in use on the machine */
+export const NetworkUsedParamsSchema = z.object({});
+
 /** Disable automatic repository start on boot */
 export const RepositoryAutostartDisableParamsSchema = z.object({});
 
@@ -670,6 +673,7 @@ export const FUNCTION_SCHEMAS = {
   machine_ssh_test: MachineSshTestParamsSchema,
   machine_uninstall: MachineUninstallParamsSchema,
   machine_version: MachineVersionParamsSchema,
+  network_used: NetworkUsedParamsSchema,
   repository_autostart_disable: RepositoryAutostartDisableParamsSchema,
   repository_autostart_disable_all: RepositoryAutostartDisableAllParamsSchema,
   repository_autostart_enable: RepositoryAutostartEnableParamsSchema,

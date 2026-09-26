@@ -2,8 +2,8 @@
  * The policy document must survive the encrypted round trip.
  *
  * This is the regression test for the worst bug found in the proxy campaign.
- * `selectiveEncrypt` builds the ciphertext by copying SENSITIVE_FIELDS, and
- * `policy` was not in that list, while `toFullConfig` did not copy it either.
+ * `selectiveEncrypt` built the ciphertext by copying a hand-kept field list
+ * (retired by T17 for the one device-local exclusion list), and `policy` was not in it, while `toFullConfig` did not copy it either.
  * So the rules were dropped twice over: a push discarded them, and a pull could
  * not have returned them anyway.
  *
@@ -27,6 +27,16 @@ import { evaluatePolicy, type PolicyContext, type PolicyDocument } from '../../p
 import { buildConfigPushPayload, decryptConfigPullPayload } from '../payload.js';
 import type { RdcConfig } from '../schemas.js';
 import { pathsToCommit } from '../walker.js';
+
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
 
 /** Rules with teeth: an explicit deny, a team grant, and a user override. */
 const POLICY: PolicyDocument = {
@@ -60,12 +70,17 @@ async function keys() {
 async function roundTrip(config: RdcConfig): Promise<RdcConfig> {
   const { cek, sdkDerived } = await keys();
   const payload = await buildConfigPushPayload(config, {
+    storeId: STORE_ID,
     version: config.version + 1,
     sdkEpoch: 9,
     sdkDerived,
     cek,
   });
-  const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+  const decrypted = await decryptConfigPullPayload(payload, {
+    cek,
+    sdkDerived,
+    binding: readerBinding(payload),
+  });
   return fullConfigToRdcConfig(decrypted);
 }
 
@@ -85,6 +100,7 @@ describe('policy survives the encrypted round trip', () => {
   it('is actually carried INSIDE the ciphertext, not the plaintext envelope', async () => {
     const { cek, sdkDerived } = await keys();
     const payload = await buildConfigPushPayload(configWith(POLICY), {
+      storeId: STORE_ID,
       version: 4,
       sdkEpoch: 9,
       sdkDerived,
@@ -97,7 +113,11 @@ describe('policy survives the encrypted round trip', () => {
     expect(envelopeJson).not.toContain('dev@example.com');
 
     // But the ciphertext must yield them back.
-    const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+    const decrypted = await decryptConfigPullPayload(payload, {
+      cek,
+      sdkDerived,
+      binding: readerBinding(payload),
+    });
     expect((decrypted as { policy?: PolicyDocument }).policy).toEqual(POLICY);
   });
 
@@ -130,9 +150,7 @@ describe('policy survives the encrypted round trip', () => {
   it('a deny rule still denies after the round trip', async () => {
     const recovered = await roundTrip(configWith(POLICY));
 
-    // This is the assertion that would have failed before the fix: with the
-    // policy dropped, evaluatePolicy(undefined, ...) fell through to the
-    // missing-document default and this command was ALLOWED for an owner.
+    // This is the assertion that would have failed before the fix: with the policy dropped, evaluatePolicy(undefined, ...) fell through to the missing-document default and this command was ALLOWED for an owner.
     const decision = evaluatePolicy(recovered.policy, ctx({ commandPath: 'repo delete' }));
     expect(decision.allowed).toBe(false);
     expect(decision.reason).toMatch(/explicitly denies/);
@@ -149,8 +167,7 @@ describe('policy survives the encrypted round trip', () => {
   it('a config with no policy round-trips with no policy KEY at all', async () => {
     const recovered = await roundTrip(configWith(undefined));
 
-    // Not `policy: undefined` — absent. A present-but-undefined key would commit
-    // '/policy' and make the next ordinary push look like a downgrade.
+    // Not `policy: undefined` — absent. A present-but-undefined key would commit '/policy' and make the next ordinary push look like a downgrade.
     expect('policy' in recovered).toBe(false);
     expect(pathsToCommit(recovered)).not.toContain('/policy');
   });
@@ -159,8 +176,7 @@ describe('policy survives the encrypted round trip', () => {
     const original = configWith(POLICY);
     const recovered = await roundTrip(original);
 
-    // Anti-downgrade compares these sets. A pointer that appears or vanishes
-    // across a round trip bricks the next push for the whole org.
+    // Anti-downgrade compares these sets. A pointer that appears or vanishes across a round trip bricks the next push for the whole org.
     expect(pathsToCommit(recovered)).toContain('/policy');
     expect(pathsToCommit(recovered)).toEqual(pathsToCommit(original));
   });

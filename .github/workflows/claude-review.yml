@@ -50,8 +50,10 @@ on:
         default: 'claude-sonnet-5'
         options: ['claude-sonnet-5', 'claude-opus-5']
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # One review pipeline per head branch; a newer green push supersedes an
 # in-flight review of the old head. workflow_dispatch has no branch/ref in

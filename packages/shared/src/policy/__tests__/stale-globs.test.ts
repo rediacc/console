@@ -35,10 +35,7 @@ describe('the hazard itself', () => {
     // Before the rename the rule works.
     expect(ask('repo takeover').allowed).toBe(false);
 
-    // P4 renames the leaf to `repo promote` (spec 03 §5.4, R2-F16). The document
-    // is untouched, still valid, still parses. And the forbidden operation is now
-    // ALLOWED — no error, no warning, nothing in the audit trail saying the rule
-    // died. THIS is why an unmatched deny is a hard failure and not a warning.
+    // P4 renames the leaf to `repo promote` (spec 03 §5.4, R2-F16). The document is untouched, still valid, still parses. And the forbidden operation is now ALLOWED — no error, no warning, nothing in the audit trail saying the rule died. THIS is why an unmatched deny is a hard failure and not a warning.
     expect(ask('repo promote').allowed).toBe(true);
 
     // The detector is what turns that silence into a refusal.
@@ -65,8 +62,7 @@ describe('findStaleCommandGlobs', () => {
   });
 
   it('accepts a wildcard that spans segments', () => {
-    // `repo *` reaches `repo list`, so it is live. A detector that demanded exact
-    // paths would red on every real policy ever written.
+    // `repo *` reaches `repo list`, so it is live. A detector that demanded exact paths would red on every real policy ever written.
     const policy = doc({ commands: { allow: ['repo *'], deny: ['cluster *'] } });
 
     expect(findStaleCommandGlobs(policy, AFTER_RENAME)).toEqual({ deny: [], allow: [] });
@@ -86,8 +82,7 @@ describe('findStaleCommandGlobs', () => {
       users: { 'dev@example.com': { commands: { allow: ['*'], deny: ['machine query'] } } },
     };
 
-    // A deny buried in a team or user rule fails open exactly like one in the
-    // defaults, so it has to be reachable by the detector.
+    // A deny buried in a team or user rule fails open exactly like one in the defaults, so it has to be reachable by the detector.
     expect(findStaleCommandGlobs(policy, AFTER_RENAME).deny).toEqual([
       'machine query',
       'repo takeover',
@@ -109,8 +104,7 @@ describe('staleDenyRefusal', () => {
   it('names the glob and says a rename is the likely cause', () => {
     const message = staleDenyRefusal(['repo takeover']);
 
-    // The author has to learn WHICH rule stopped being a rule, or they cannot
-    // re-key it — and re-keying, not deleting, is almost always the right fix.
+    // The author has to learn WHICH rule stopped being a rule, or they cannot re-key it — and re-keying, not deleting, is almost always the right fix.
     expect(message).toContain('"repo takeover"');
     expect(message).toContain('renamed');
   });

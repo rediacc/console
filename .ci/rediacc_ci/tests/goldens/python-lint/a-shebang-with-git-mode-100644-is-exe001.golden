@@ -1,0 +1,11 @@
+# twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702
+exit: 1
+--- stdout ---
+info: linting 13 Python file(s) with ruff 0.16.1
+All checks passed!
+13 files already formatted
+--- stderr ---
+[0;31m✗[0m probe_exe.py has a shebang but git mode is 100644 (EXE001 in CI)
+    fix: git update-index --chmod=+x probe_exe.py
+
+[0;31m✗[0m 1 Python file(s) have a git mode CI will reject.

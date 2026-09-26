@@ -1,37 +1,25 @@
 #!/usr/bin/env python3
 """Every agent under .claude/agents must be REACHABLE by the stop hook's hint matcher.
 
-WHY THIS EXISTS. On 2026-08-15 the operator had to say "there is bench server
-deployment" by hand, because the word `bench` appeared ZERO times across all
-seven agent `description` fields and exactly once in the whole directory:
-account-dev.md:81, in the BODY. The knowledge existed and the matching surface
-did not. A specialist nobody can be pointed at is a specialist nobody uses, and
-nothing in the tree could tell the difference between "the matcher is healthy
-and this stop is quiet" and "the matcher is dead".
+WHY THIS EXISTS. On 2026-08-15 the operator had to say "there is bench server deployment" by hand, because the word `bench` appeared ZERO times across all seven agent `description` fields and exactly once in the whole directory: account-dev.md:81, in the BODY. The knowledge existed and the matching surface did not. A specialist nobody can be pointed at is a specialist nobody uses,
+and nothing in the tree could tell the difference between "the matcher is healthy and this stop is quiet" and "the matcher is dead".
 
-WHY "IS THE MATCHER SILENT" IS THE WRONG TEST, and this is the whole design.
-A healthy matcher on a quiet stop emits nothing, exactly like a broken one.
-Counting hints cannot separate them. So this plants a one-line specimen per
-agent -- the sentence a session would actually type -- and asserts the matcher
-picks that agent, above threshold and by margin. In the SAME run it asserts
-five neutral haystacks match nothing at all. Either half alone is worthless:
-"everything fires" and "everything is silent" both pass a one-sided test.
+WHY "IS THE MATCHER SILENT" IS THE WRONG TEST, and this is the whole design. A healthy matcher on a quiet stop emits nothing, exactly like a broken one. Counting hints cannot separate them. So this plants a one-line specimen per agent -- the sentence a session would actually type -- and asserts the matcher picks that agent, above threshold and by margin. In the SAME run it asserts
+five neutral haystacks match nothing at all. Either half alone is worthless: "everything fires" and "everything is silent" both pass a one-sided test.
 
-ADDING AN AGENT MEANS ADDING A SPECIMEN. That is deliberate friction, and it is
-the assertion that carries the feature: the specimen table's key set must EQUAL
-the set of agent files, in both directions, so a new agent with a vague
-description fails here rather than being quietly unreachable for six months.
+ADDING AN AGENT MEANS ADDING A SPECIMEN. That is deliberate friction, and it is the assertion that carries the feature: the specimen table's key set must EQUAL the set of agent files, in both directions, so a new agent with a vague description fails here rather than being quietly unreachable for six months.
 
-CONTROL-FIRST. Before the real corpus is judged at all, the matcher and this
-gate's own evaluator are driven against a synthetic fixture with planted
-defects: a blanked description must be reported DEAD, a specimen for a deleted
-agent must be reported STALE, an agent with no specimen must be reported
-UNPROVEN, and a threshold raised out of reach must silence a match that
-otherwise fires. If any planted defect passes, this gate declares itself broken
-and exits non-zero WITHOUT issuing a verdict on the real corpus. A verdict from
-an instrument that cannot fail is worse than no verdict.
+CONTROL-FIRST. Before the real corpus is judged at all, the matcher and this gate's own evaluator are driven against a synthetic fixture with planted defects: a blanked description must be reported DEAD, a specimen for a deleted agent must be reported STALE, an agent with no specimen must be reported UNPROVEN, and a threshold raised out of reach must silence a match that otherwise
+fires. If any planted defect passes, this gate declares itself broken and exits non-zero WITHOUT issuing a verdict on the real corpus. A verdict from an instrument that cannot fail is worse than no verdict.
 
-Design: agent/PLAN-agent-hints-implementation.md (sections 5 and 6).
+Design: agent/plans/PLAN-agent-hints-implementation.md (sections 5 and 6).
+
+---- gate ----
+step: Agent hints can actually fire
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -41,35 +29,29 @@ import re
 import sys
 import tempfile
 
+import _cipath  # noqa: F401
+from rediacc_ci import paths
+
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 AGENTS_DIR = os.path.join(REPO_ROOT, ".claude", "agents")
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
 
-# A corpus this small cannot discriminate anything, and a directory that lost
-# its files would otherwise look exactly like a corpus where every agent passes.
+# A corpus this small cannot discriminate anything, and a directory that lost its files would otherwise look exactly like a corpus where every agent passes.
 MIN_AGENTS = 3
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
 NC = "\033[0m"
 
-# The thresholds are IMPORTED from the hook module, never re-declared here (see
-# resolve_thresholds): a gate that carries its own copy proves a configuration
-# nothing runs. These are only the names to look for.
+# The thresholds are IMPORTED from the hook module, never re-declared here (see resolve_thresholds): a gate that carries its own copy proves a configuration nothing runs. These are only the names to look for.
 SCORE_ATTRS = ("AGENT_HINT_MIN_SCORE", "MIN_SCORE", "HINT_MIN_SCORE", "DEFAULT_MIN_SCORE")
 MARGIN_ATTRS = ("AGENT_HINT_MIN_MARGIN", "MIN_MARGIN", "HINT_MIN_MARGIN", "DEFAULT_MIN_MARGIN")
 
 MAX_SPECIMEN_CHARS = 200
 
-# One line per agent, phrased the way a session states its task. None is a
-# substring of its agent's description: the lazy specimen is "paste the
-# description in", which proves only that a string matches itself.
+# One line per agent, phrased the way a session states its task. None is a substring of its agent's description: the lazy specimen is "paste the description in", which proves only that a string matches itself.
 SPECIMENS = {
-    # REGRESSION 2026-08-15. "bench" appeared ZERO times in any agent description
-    # and once in account-dev's BODY (account-dev.md:81). The knowledge existed
-    # and the matching surface did not, so the operator had to hint by hand. If
-    # this specimen stops firing, someone has removed the bench nouns from the
-    # description again.
+    # REGRESSION 2026-08-15. "bench" appeared ZERO times in any agent description and once in account-dev's BODY (account-dev.md:81). The knowledge existed and the matching surface did not, so the operator had to hint by hand. If this specimen stops firing, someone has removed the bench nouns from the description again.
     "account-dev": "there is bench server deployment, deploy the account worker to bench and reset the D1",
     "ops-vms": "spin up the fleet of VMs for the bridge test and check hypervisor status",
     "backup-storage": "the restore drill fails on round-trip verification of a snapshot",
@@ -85,9 +67,7 @@ SPECIMENS = {
     "test-advisor": "this fix landed and nothing stops it coming back, decide which regression surface owns it",
 }
 
-# Neutral haystacks. Every one of them is ordinary work that no specialist owns.
-# They run inline on EVERY invocation, never behind a flag: a control you have to
-# remember to run is how a control stops controlling anything.
+# Neutral haystacks. Every one of them is ordinary work that no specialist owns. They run inline on EVERY invocation, never behind a flag: a control you have to remember to run is how a control stops controlling anything.
 CONTROLS = (
     "fix a typo in the README",
     "update CLAUDE.md session defaults and the worklist stop hook docs",
@@ -107,9 +87,7 @@ def agent_names(agents_dir: str) -> set[str]:
 
 
 def load_matcher():
-    # ORDER MATTERS. The agents directory is checked by the caller BEFORE this
-    # runs, because against the anti-vacuity harness's empty fixture neither
-    # .claude/agents nor .claude/hooks exists, and an unguarded import would die
+    # ORDER MATTERS. The agents directory is checked by the caller BEFORE this runs, because against the anti-vacuity harness's empty fixture neither .claude/agents nor .claude/hooks exists, and an unguarded import would die
     # with ModuleNotFoundError: a non-zero exit for an environment reason wearing
     # a vacuity failure's exit code.
     if not os.path.isdir(HOOK_DIR):
@@ -119,10 +97,10 @@ def load_matcher():
             f"{HOOK_DIR}/wl_agents.py not found. The hint matcher is gone or renamed; "
             "fix the wiring deliberately rather than letting this gate pass over its absence."
         )
-    sys.path.insert(0, HOOK_DIR)
+    # Through the package's resolver, not a bare insert: `paths.on_sys_path` is idempotent, and this hop runs inside a FUNCTION that a caller may call more than once, which is the case a hand-written insert leaves duplicate copies behind for. HOOK_DIR is passed rather than recomputed so the die() messages above and the directory actually added stay the same string.
+    paths.on_sys_path(HOOK_DIR)
     try:
-        # Deferred deliberately: HOOK_DIR must be on sys.path first, and a
-        # top-level import would make this gate uncollectable outside the repo.
+        # Deferred deliberately: HOOK_DIR must be on sys.path first, and a top-level import would make this gate uncollectable outside the repo.
         import wl_agents  # noqa: PLC0415
     except ImportError as exc:
         die(f"cannot import wl_agents ({exc}). Refusing to pass while measuring nothing.")
@@ -163,8 +141,7 @@ def evaluate(matcher, corpus, uniq, specimens, names, min_score, min_margin) -> 
     """Findings, one string per problem. Empty means every agent is reachable."""
     out: list[str] = []
 
-    # (a) Universe equality, both directions. This is the assertion that makes
-    # "prove your new agent is reachable" a build requirement.
+    # (a) Universe equality, both directions. This is the assertion that makes "prove your new agent is reachable" a build requirement.
     out.extend(
         f"UNPROVEN: {missing} has no specimen. Add one line to SPECIMENS phrased the way "
         "a session would state that task, so the agent is provably reachable."
@@ -179,9 +156,7 @@ def evaluate(matcher, corpus, uniq, specimens, names, min_score, min_margin) -> 
     for name in sorted(set(specimens) & names):
         text = specimens[name]
 
-        # (e) Anti-tautology. The empty check comes first because "" is a
-        # substring of every description, so an emptied specimen would otherwise
-        # be reported as tautological, which sends the reader to the wrong fix.
+        # (e) Anti-tautology. The empty check comes first because "" is a substring of every description, so an emptied specimen would otherwise be reported as tautological, which sends the reader to the wrong fix.
         if not text.strip():
             out.append(
                 f"EMPTY SPECIMEN: {name} has no specimen text, so nothing about it is proven. "
@@ -224,8 +199,7 @@ def evaluate(matcher, corpus, uniq, specimens, names, min_score, min_margin) -> 
                 "rather than reporting a near miss, so this is the only place it is visible."
             )
         else:
-            # The ranking and the hook's own entry point must agree, or this gate
-            # is grading something the hook never calls.
+            # The ranking and the hook's own entry point must agree, or this gate is grading something the hook never calls.
             hint = matcher.best_hint(text, uniq, min_score, min_margin)
             if hint is None or hint[0] != name:
                 got = "nothing" if hint is None else hint[0]
@@ -248,8 +222,7 @@ def write_agent(path: str, name: str, description: str) -> None:
 def controls_fired(matcher, min_score, min_margin) -> list[str]:
     """Drive the matcher and THIS gate's evaluator against planted defects.
 
-    Returns the list of planted defects that were NOT caught. Anything in it
-    means the instrument cannot fail, so no verdict may be issued.
+    Returns the list of planted defects that were NOT caught. Anything in it means the instrument cannot fail, so no verdict may be issued.
     """
     missed: list[str] = []
     fixture_specs = {
@@ -274,8 +247,7 @@ def controls_fired(matcher, min_score, min_margin) -> list[str]:
                 evaluate(matcher, corpus, uniq, specimens, names, min_score, min_margin),
             )
 
-        # CONTROL 0: on a HEALTHY fixture the evaluator must be silent. Without
-        # this every "caught it" below could be an evaluator that fails always.
+        # CONTROL 0: on a HEALTHY fixture the evaluator must be silent. Without this every "caught it" below could be an evaluator that fails always.
         _corpus, uniq, findings = judge(fixture_specs)
         if findings:
             die(
@@ -315,22 +287,12 @@ def controls_fired(matcher, min_score, min_margin) -> list[str]:
 def glued_stopword_seams(src: str) -> list:
     """Literal seams in _STOPWORD_TEXT that silently merge two words into one.
 
-    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with
-    NOTHING between them, so a literal that does not end in a space glues its
-    last word to the next literal's first word. Two waves rebased together each
-    appended a line to this list; one lacked the trailing space, `touched` and
-    `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing
-    failed: the list still parsed, still had a plausible length, and the two
-    lost words simply started scoring as domain terms again.
+    THE DEFECT, 2026-08-26. Adjacent Python string literals concatenate with NOTHING between them, so a literal that does not end in a space glues its last word to the next literal's first word. Two waves rebased together each appended a line to this list; one lacked the trailing space, `touched` and `see` became `touchedsee`, and BOTH tokens stopped being stopwords. Nothing
+    failed: the list still parsed, still had a plausible length, and the two lost words simply started scoring as domain terms again.
 
-    That is the shape this whole gate exists for -- a matcher that is quietly
-    less healthy than it looks -- so the check belongs here rather than in a new
-    gate of its own.
+    That is the shape this whole gate exists for -- a matcher that is quietly less healthy than it looks -- so the check belongs here rather than in a new gate of its own.
 
-    COMMENT LINES ARE STRIPPED FIRST. The comments in that block quote phrases
-    in double quotes ("just push and SEE what CI says"), and a naive scan reads
-    them as literals and reports seventeen seams instead of one. Mention is not
-    execution, in an analysis tool as much as in a guard.
+    COMMENT LINES ARE STRIPPED FIRST. The comments in that block quote phrases in double quotes ("just push and SEE what CI says"), and a naive scan reads them as literals and reports seventeen seams instead of one. Mention is not execution, in an analysis tool as much as in a guard.
     """
     m = re.search(r"_STOPWORD_TEXT = \((.*?)\n\)", src, re.DOTALL)
     if not m:
@@ -419,8 +381,7 @@ def main() -> int:
         if hint is not None:
             fired.append(f'"{control}" -> {hint[0]} at {float(hint[1]):g} on {hint[2]}')
     if fired:
-        # Reported FIRST and alone: with the matcher firing on wallpaper, a green
-        # specimen table means everything matches everything.
+        # Reported FIRST and alone: with the matcher firing on wallpaper, a green specimen table means everything matches everything.
         print(
             f"{RED}✗{NC} NEGATIVE CONTROL FIRED. The matcher is too loose, so no verdict on the "
             "specimens is meaningful:",
@@ -447,29 +408,18 @@ def main() -> int:
         )
         return 1
 
-    # --- the PUSH-BACK, over the same specimen table -------------------------
-    # Reusing the specimens is the point, not a shortcut: it makes push-back
-    # coverage automatic for every agent that exists now and every agent added
-    # later, with no second table to keep in sync. A new agent that earns a
-    # specimen earns its push-back the same day.
+    # --- the PUSH-BACK, over the same specimen table ------------------------- Reusing the specimens is the point, not a shortcut: it makes push-back coverage automatic for every agent that exists now and every agent added later, with no second table to keep in sync. A new agent that earns a specimen earns its push-back the same day.
     #
-    # Asserted in BOTH directions in one pass, because either half alone is
-    # worthless. A rule that fires on everything and a rule that fires on
-    # nothing both pass a one-sided test.
+    # Asserted in BOTH directions in one pass, because either half alone is worthless. A rule that fires on everything and a rule that fires on nothing both pass a one-sided test.
     pb_findings = []
     for name in sorted(names):
         specimen = SPECIMENS.get(name)
         if not specimen:
             continue  # the equality assertion above already failed for this
-        # POSITIVE: the same sentence a session would type, prefixed with the
-        # surrender that motivated this feature.
-        # ONE SENTENCE, joined by a colon. Two sentences would put the claim
-        # and its subject in different haystacks, which the checker rejects on
-        # purpose -- and a gate that asserted the two-sentence shape would be
-        # demanding the very false positive this feature was fixed to stop
-        # making. The colon form is what the live sentence actually looked like.
+        # POSITIVE: the same sentence a session would type, prefixed with the surrender that motivated this feature. ONE SENTENCE, joined by a colon. Two sentences would put the claim and its subject in different haystacks, which the checker rejects on purpose -- and a gate that asserted the two-sentence shape would be demanding the very false positive this feature was fixed to
+        # stop making. The colon form is what the live sentence actually looked like.
         giving_up = f"It doesn't reproduce: {specimen}"
-        hit, errs = matcher.pushback_for(giving_up, AGENTS_DIR)
+        (_, hit), errs = matcher.pushback_for(giving_up, AGENTS_DIR)
         if errs:
             pb_findings.append(f"{name}: corpus errors during push-back: {errs}")
         elif not hit:
@@ -479,24 +429,15 @@ def main() -> int:
             )
         elif hit[0] != name:
             pb_findings.append(f"{name}: push-back named {hit[0]} instead")
-        # NEGATIVE: the identical sentence WITHOUT a give-up claim must stay
-        # silent. This is the half that keeps the push-back from degrading into
-        # a second, louder copy of the topic hint.
-        quiet, _ = matcher.pushback_for(specimen, AGENTS_DIR)
+        # NEGATIVE: the identical sentence WITHOUT a give-up claim must stay silent. This is the half that keeps the push-back from degrading into a second, louder copy of the topic hint.
+        (_q_claims, quiet), _ = matcher.pushback_for(specimen, AGENTS_DIR)
         if quiet:
             pb_findings.append(
                 f"{name}: pushed back on a specimen carrying NO give-up claim "
-                f"({quiet[2]}), so it fires on topic alone"
+                f"({_q_claims}), so it fires on topic alone"
             )
-    # NEGATIVE: give-up language with no specialist domain must stay silent too.
-    # The last two are LIVE REGRESSIONS, both from the first hour this check
-    # existed, and both were false positives it produced about ITSELF:
-    #   - a message that quotes the trigger phrases while explaining them
-    #     (a mention is not a claim), and
-    #   - a give-up sentence whose domain words sit in a LATER sentence, which
-    #     scored 5.0 against pr-babysitter while the true ceph case scored 4.0
-    #     -- proof that no threshold separates them and that the claim's own
-    #     sentence is the only honest haystack.
+    # NEGATIVE: give-up language with no specialist domain must stay silent too. The last two are LIVE REGRESSIONS, both from the first hour this check existed, and both were false positives it produced about ITSELF: - a message that quotes the trigger phrases while explaining them (a mention is not a claim), and - a give-up sentence whose domain words sit in a LATER sentence,
+    # which scored 5.0 against pr-babysitter while the true ceph case scored 4.0 -- proof that no threshold separates them and that the claim's own sentence is the only honest haystack.
     for neutral in (
         "This cannot be done without a token, so it is pre-existing and not mine.",
         "It doesn't reproduce and there is no local way to check the changelog wording.",
@@ -511,65 +452,53 @@ def main() -> int:
         ),
         # THE FOUR THAT ACTUALLY MISFIRED, 2026-08-26, verbatim.
         #
-        # Each drew a push-back from a specialist on ORDINARY ENGLISH, because
-        # discriminative() asks only whether a term is unique across 13
-        # documents, and uniqueness there is a weak proxy for specificity.
-        # `while` reached media-pipeline ("render finished pairs WHILE the GPU
-        # narrates"); `miss`/`see`/`suite` reached e2e-local ("MISSING
+        # Each drew a push-back from a specialist on ORDINARY ENGLISH, because discriminative() asks only whether a term is unique across 13 documents, and uniqueness there is a weak proxy for specificity. `while` reached media-pipeline ("render finished pairs WHILE the GPU narrates"); `miss`/`see`/`suite` reached e2e-local ("MISSING
         # bin/renet", "just push and SEE what CI says", "E2E SUITES");
         # `step`/`stop` reached gate-author; `next` reached media-pipeline.
         #
-        # THEY BELONG HERE, NOT IN CONTROLS. Placing them there first was a
-        # control that could not fire: CONTROLS is judged by the HINT matcher at
+        # THEY BELONG HERE, NOT IN CONTROLS. Placing them there first was a control that could not fire: CONTROLS is judged by the HINT matcher at
         # MIN_SCORE=2, and these sentences score 1.0, so removing a stopword
-        # left the gate green. Measured, not reasoned: deleting `while` from the
-        # stopword list passed a run with them in CONTROLS and fails with them
-        # here. The push-back floor is 1.0, which is where the damage was.
+        # left the gate green. Measured, not reasoned: deleting `while` from the stopword list passed a run with them in CONTROLS and fails with them here. The push-back floor is 1.0, which is where the damage was.
         #
-        # The fix could NOT have been to raise PUSHBACK_MIN_SCORE: it sits below
-        # the hint's floor deliberately, and the sentence this whole check was
-        # built for -- "neither local worker has /etc/ceph" -- scores exactly 1.0
-        # on `ceph`, so lifting it to 2 would silence the motivating incident,
-        # which is pinned as a positive regression a few lines below.
-        # THE MISFIRE THAT ACTUALLY REPRODUCES, 2026-08-26, verbatim.
+        # The fix could NOT have been to raise PUSHBACK_MIN_SCORE: it sits below the hint's floor deliberately, and the sentence this whole check was built for -- "neither local worker has /etc/ceph" -- scores exactly 1.0 on `ceph`, so lifting it to 2 would silence the motivating incident, which is pinned as a positive regression a few lines below. THE MISFIRE THAT ACTUALLY
+        # REPRODUCES, 2026-08-26, verbatim.
         #
-        # `while` reached media-pipeline because its description says "render
-        # finished pairs WHILE the GPU narrates", and discriminative() asks only
-        # whether a term is unique across 13 documents. Uniqueness there is a
-        # weak proxy for specificity, so ordinary English scored as a domain
-        # term. Deleting the conjunction line from wl_agents._STOPWORD_TEXT makes
-        # this line fire and this gate exit 1; that was measured, not assumed.
+        # `while` reached media-pipeline because its description says "render finished pairs WHILE the GPU narrates", and discriminative() asks only whether a term is unique across 13 documents. Uniqueness there is a weak proxy for specificity, so ordinary English scored as a domain term. Deleting the conjunction line from wl_agents._STOPWORD_TEXT makes this line fire and this gate
+        # exit 1; that was measured, not assumed.
         #
-        # ONLY ONE OF THE FOUR MISFIRES IS PINNED HERE, deliberately. The other
-        # three (miss/see/suite, step/stop, next) score above the push-back floor
-        # but are suppressed by pushback_for's mention-is-not-a-claim rule, which
-        # is correct behaviour, so no phrasing of them can fail this gate. They
-        # were written, measured silent under their own planted defects, and
-        # removed rather than left in looking like coverage. A control that
-        # cannot fire is worse than an absent one: it reports protection nobody
-        # has. Their stopwords are still covered by the four planted defects the
-        # anti-vacuity harness runs above.
+        # ONLY ONE OF THE FOUR MISFIRES IS PINNED HERE, deliberately. The other three (miss/see/suite, step/stop, next) score above the push-back floor but are suppressed by pushback_for's mention-is-not-a-claim rule, which is correct behaviour, so no phrasing of them can fail this gate. They were written, measured silent under their own planted defects, and removed rather than
+        # left in looking like coverage. A control that cannot fire is worse than an absent one: it reports protection nobody has. Their stopwords are still covered by the four planted defects the anti-vacuity harness runs above.
         "pre-existing bug fixed while there: setup ran bare npm install",
+        #
+        # THE `verb` MISFIRE, 2026-09-08, verbatim, and the same shape one class wider. `verb` sits in exactly ONE description (backup-storage: "the rdc backup and rdc datastore CLI verbs") so discriminative() hands it over at full weight, while the word is house vocabulary everywhere else -- CLAUDE.md says "Use the VERBS, not the file", and worklist_messages.py prints it back at
+        # the session every stop. This sentence is about a stdin hang in worklist.py itself; `no way to` supplied the impossibility half and `verb` the whole of the domain half, scoring on the single term ['verb']. Deleting `"verb verbs"` from wl_agents._STOPWORD_TEXT makes this line fire and this gate exit 1; that was measured in a scratch repo root, not assumed. A real backup
+        # claim still fires, on ['chunk', 'datastore', 'prune', 'restore', 'snapshot', 'store'].
+        (
+            "the verb that writes the compaction-recovery document therefore had "
+            "no way to fail; it just stopped, and the liveness check reports it as alive"
+        ),
     ):
-        stray, _ = matcher.pushback_for(neutral, AGENTS_DIR)
+        (_, stray), _ = matcher.pushback_for(neutral, AGENTS_DIR)
         if stray:
             pb_findings.append(
                 f'"{neutral[:44]}..." pushed back to {stray[0]} on {stray[1]}, '
                 "so give-up language alone is enough to fire it"
             )
-    # POSITIVE REGRESSION: the sentence the operator pushed back on by hand. It
-    # is pinned verbatim because two separate bugs silenced it during
-    # development -- splitting on its colon, and stripping its apostrophe as a
-    # quote -- and both looked like a healthy quiet check from the outside.
+    # POSITIVE REGRESSION: the sentence the operator pushed back on by hand. It is pinned verbatim because two separate bugs silenced it during development -- splitting on its colon, and stripping its apostrophe as a quote -- and both looked like a healthy quiet check from the outside.
+    #
+    # PLAN-stop-hook-overhaul.md section 1.1 (2026-09-23) split DETECTION from ROUTING and this sentence is where that split shows: it scores exactly 1.0 on the single term `ceph`, the same score "verifi" and "yet" scored when they misrouted to the wrong specialist on ordinary English. Nothing distinguishes a thin true positive from a thin false positive by SCORE alone -- that is
+    # this check's own prior finding, cited at the top of this file's neighbouring comment as "not fixable by tuning" -- so routing now requires the HINT's OWN floor (MIN_SCORE/MIN_MARGIN) and this sentence no longer clears it. What survives, and what this asserts, is the CHALLENGE: `claims` still fires unconditionally on the give-up language, which is the half CLAUDE.md rule 3
+    # actually requires (probe before concluding a thing cannot be done) and the half a specific wrong agent name would not have improved anyway.
     _motivating = (
         "It doesn't reproduce: neither local worker has /etc/ceph or rbd. "
         "ops up fleet, ceph never provisioned."
     )
-    _mhit, _ = matcher.pushback_for(_motivating, AGENTS_DIR)
-    if not _mhit or _mhit[0] != "ops-vms":
+    (_mclaims, _mhit), _ = matcher.pushback_for(_motivating, AGENTS_DIR)
+    if not _mclaims:
         pb_findings.append(
-            "the motivating sentence no longer pushes back to ops-vms (got %r). "
-            "This check exists for that sentence; if it is silent the check is dead." % (_mhit,)
+            "the motivating sentence no longer registers a give-up claim at all "
+            "(got claims=%r, agent=%r). This check exists for that sentence; if the "
+            "CHALLENGE is silent the check is dead, regardless of routing." % (_mclaims, _mhit)
         )
 
     if pb_findings:

@@ -1,19 +1,19 @@
 /**
- * MCP Tool Factory — derives MCP tool definitions from the generated CLI contract.
+ * MCP Tool Factory, derives MCP tool definitions from the generated CLI contract.
  *
  * Iterates CLI_CONTRACT.commands (the single generated description of the `rdc`
  * surface) and builds a ToolDef for every command that carries `mcp` metadata in
  * COMMAND_METADATA. The zod schema, argv builder, and annotations are derived
- * from the contract's option/positional shape — including the `.choices()` enums
- * the big-bang enriched it with — rather than from a second, independent walk of
+ * from the contract's option/positional shape, including the `.choices()` enums
+ * the big-bang enriched it with, rather than from a second, independent walk of
  * the Commander tree.
  *
  * Split of sources: the STRUCTURE (which options/positionals a command has, their
  * value/variadic/choice shape, and their English descriptions) comes from the
- * contract. The MCP-specific SHAPING the contract does not carry — which options
+ * contract. The MCP-specific SHAPING the contract does not carry, which options
  * to drop (`excludeOptions`), which optional positionals to force-require
  * (`requiredArgs`), what to append (`appendArgs`), the LLM-tuned description
- * (`descriptionOverride`) — and the MCP policy (destructive/idempotent/timeout/
+ * (`descriptionOverride`), and the MCP policy (destructive/idempotent/timeout/
  * repoArg) still come from COMMAND_METADATA.mcp, which is where they are authored.
  * The contract merely mirrors that policy for its other consumers.
  */
@@ -33,11 +33,7 @@ import {
   WRITE_TIMEOUT,
 } from '../../config/command-metadata.js';
 
-// The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and
-// v4 subpaths are bundled there) while this workspace imports zod from its own
-// packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a
-// structurally-identical $ZodType interface, TS treats them as distinct nominal
-// types because they live at different file paths. Using the SDK's own
+// The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and v4 subpaths are bundled there) while this workspace imports zod from its own packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a structurally-identical $ZodType interface, TS treats them as distinct nominal types because they live at different file paths. Using the SDK's own
 // ZodRawShapeCompat alias keeps the registerTool() call site type-clean.
 
 export interface ToolDef {
@@ -56,8 +52,8 @@ export interface ToolDef {
  * Global options (long names without --) that are never exposed in MCP tools.
  *
  * The contract already drops the root-program globals (--output/--lang/--help/…);
- * this set is the MCP-specific extra — per-command flags like --yes/--quiet/
- * --fields/--config an agent must never drive — so it is still applied on top of
+ * this set is the MCP-specific extra, per-command flags like --yes/--quiet/
+ * --fields/--config an agent must never drive, so it is still applied on top of
  * the contract's option list.
  */
 const GLOBAL_EXCLUDED_OPTIONS = new Set([
@@ -82,7 +78,7 @@ function flagToSchemaKey(long: string): string {
 /**
  * Does a value-taking option take a REQUIRED value (`<v>`) rather than an
  * optional one (`[v]`)? The contract collapses both into `valueTaking`, so the
- * distinction — which decides whether the derived field is required — is read
+ * distinction, which decides whether the derived field is required, is read
  * back off the raw Commander flags string the contract carries verbatim. This is
  * exactly Commander's own `Option.required`.
  */
@@ -133,11 +129,7 @@ function deriveSchema(
     if (!argNames.has(key)) schema[key] = deriveOptionType(opt);
   }
 
-  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo
-  // verb exposes both, make BOTH optional MCP fields — a value-taking option
-  // otherwise derives to a REQUIRED field, so exposing both would demand both.
-  // The auto-deriver can't express "exactly one", so the runtime
-  // (resolveRepoTarget) enforces it and returns a clear error for neither/both.
+  // Mutually-exclusive target pair (design D14): -m XOR --cluster. When a repo verb exposes both, make BOTH optional MCP fields, a value-taking option otherwise derives to a REQUIRED field, so exposing both would demand both. The auto-deriver can't express "exactly one", so the runtime (resolveRepoTarget) enforces it and returns a clear error for neither/both.
   if ('machine' in schema && 'cluster' in schema) {
     schema.machine = (schema.machine as z.ZodType).optional();
     schema.cluster = (schema.cluster as z.ZodType).optional();
@@ -185,7 +177,7 @@ function pushOptionArgs(
 /**
  * Build a command factory function that converts MCP args to CLI argv.
  *
- * Positionals are emitted first in declared order, then the flags — the same
+ * Positionals are emitted first in declared order, then the flags, the same
  * serialisation rule the contract documents, so the argv a laptop would have
  * typed is reproduced exactly.
  */
@@ -212,7 +204,7 @@ function buildCommandFactory(
  *
  * `machine health` is auto-derived here like any other command. It used to be
  * skipped as experimental and shadowed by a hand-written `machine_health` tool
- * that actually ran `machine status --system` — so the tool named "health" never
+ * that actually ran `machine status --system`, so the tool named "health" never
  * invoked the health checker at all. That custom tool is gone; this one runs the
  * real command and returns its aggregated issues.
  */

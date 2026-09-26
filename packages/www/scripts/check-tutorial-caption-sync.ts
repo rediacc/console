@@ -53,16 +53,12 @@ const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 
 // All 13 site locales, sourced from packages/locales rather than hand-maintained.
 //
-// This gate fetches words.json from media.rediacc.com, so it only ever sees PUBLISHED
-// state. That has one sharp consequence: right after a publish it will report failures
+// This gate fetches words.json from media.rediacc.com, so it only ever sees PUBLISHED state. That has one sharp consequence: right after a publish it will report failures
 // from the pre-publish copies Cloudflare is still serving. Run
-// `.ci/scripts/deploy/purge-media-cache.sh` and re-check BEFORE believing any en-masse
-// finding — a stale cache has already produced one false 53-combo report here.
+// `.ci/scripts/deploy/purge-media-cache.sh` and re-check BEFORE believing any en-masse finding — a stale cache has already produced one false 53-combo report here.
 const AUDIO_LANGUAGES = SITE_LOCALES;
 
-// 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL
-// 3-word cue quite often lands three identical durations (seen live in
-// es/ru: [0.72,0.72,0.72]) -- a false positive. Estimate-fallback output
+// 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL 3-word cue quite often lands three identical durations (seen live in es/ru: [0.72,0.72,0.72]) -- a false positive. Estimate-fallback output
 // is uniform across every cue of the narration, so >= 4-word cues still
 // catch it reliably.
 const MIN_WORDS_FOR_CHECK = 4;
@@ -166,12 +162,9 @@ async function runPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
   return results;
 }
 
-// A 4-5 word cue on ASR's 0.08s quantization grid occasionally collides into
-// identical REAL durations (seen live: ko networking [0.4 x5] next to cues
+// A 4-5 word cue on ASR's 0.08s quantization grid occasionally collides into identical REAL durations (seen live: ko networking [0.4 x5] next to cues
 // with varied durations). The estimate fallback, by contrast, spreads ONE
-// uniform span across the whole narration -- so it shows up either as a
-// long flat cue or as a RUN of adjacent flat cues sharing the same span.
-// Isolated short flat cues whose neighbors vary are real alignment.
+// uniform span across the whole narration -- so it shows up either as a long flat cue or as a RUN of adjacent flat cues sharing the same span. Isolated short flat cues whose neighbors vary are real alignment.
 const DEFINITE_FLAT_WORDS = 6;
 
 /** `flat` are the fatal-candidate cues; `totalCues` is the denominator for the budget. */
@@ -179,11 +172,7 @@ type FlatResult = { flat: FlatCue[]; totalCues: number };
 
 function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatResult {
   // NOTE: no special <=1-word rule for CJK. Slide/intro/outro cues carry a
-  // single word entry spanning the cue BY DESIGN in every language (see
-  // CueGroup in vtt-emit.ts), which is indistinguishable from the old
-  // pre-Intl.Segmenter collapsed shape. Post-fix, an estimate fallback
-  // always yields multi-token cues (Intl.Segmenter), so the flat-spread
-  // logic covers CJK the same way it covers everything else.
+  // single word entry spanning the cue BY DESIGN in every language (see CueGroup in vtt-emit.ts), which is indistinguishable from the old pre-Intl.Segmenter collapsed shape. Post-fix, an estimate fallback always yields multi-token cues (Intl.Segmenter), so the flat-spread logic covers CJK the same way it covers everything else.
   const candidates = doc.cues.map((cue) => {
     if (cue.words.length < MIN_WORDS_FOR_CHECK) return null;
     const durations = cue.words.map((w) => w.end - w.start);

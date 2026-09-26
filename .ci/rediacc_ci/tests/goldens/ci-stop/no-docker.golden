@@ -1,0 +1,12 @@
+# twin .ci/scripts/infra/ci-stop.sh blob ba8f203d6863be2d5c92289cc6ecac210222f391
+exit: 0
+--- stdout ---
+Stopping Rediacc CI services...
+  Stopping Docker Compose services...
+  Docker compose down failed, forcing container removal
+All services stopped
+--- stderr ---
+/tmp/tmpe2tl_yv1/no-docker/tree/.ci/scripts/infra/ci-stop.sh: line 27: docker: command not found
+--- calls ---
+--- backend-state ---
+removed

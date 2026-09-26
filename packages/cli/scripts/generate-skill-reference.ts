@@ -12,6 +12,8 @@
  * Usage:
  *   npx tsx packages/cli/scripts/generate-skill-reference.ts > reference.md
  */
+import { writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { cli } from '../src/cli.js';
 import { type CommandMeta, getCommandMeta } from '../src/config/command-metadata.js';
@@ -122,6 +124,30 @@ function collectAnnotations(meta: CommandMeta): string[] {
   return annotations;
 }
 
+/** The prose-style line floor, `globals.max_line_length` in .ci/config/prose-style-rules.json. */
+const PROSE_LINE_FLOOR = 768;
+
+/**
+ * Split a description past the prose-style floor at sentence breaks, so the generated file passes R18 without a hand edit that `rdc.sh` would overwrite on its next regeneration.
+ * A description that already ends on a full stop is left whole, since R18 never flags that shape, and so is one with no sentence break to use. The rendered markdown is unchanged: consecutive lines are one paragraph.
+ */
+function wrapAtSentences(text: string): string[] {
+  if (text.length <= PROSE_LINE_FLOOR || text.endsWith('.')) return [text];
+  const sentences = text.split(/(?<=[.!?])\s+(?=[A-Z(])/);
+  const out: string[] = [];
+  let current = '';
+  for (const sentence of sentences) {
+    if (current && current.length + 1 + sentence.length > PROSE_LINE_FLOOR) {
+      out.push(current);
+      current = sentence;
+    } else {
+      current = current ? `${current} ${sentence}` : sentence;
+    }
+  }
+  if (current) out.push(current);
+  return out;
+}
+
 /** Render a single command's markdown block into lines. */
 function renderCommandBlock(lines: string[], cmd: CommandCapability): void {
   const argSyntax = cmd.arguments
@@ -130,7 +156,7 @@ function renderCommandBlock(lines: string[], cmd: CommandCapability): void {
   lines.push(`### rdc ${cmd.name}${argSyntax ? ` ${argSyntax}` : ''}`, '');
 
   if (cmd.description) {
-    lines.push(cmd.description, '');
+    lines.push(...wrapAtSentences(cmd.description), '');
   }
 
   renderOptions(lines, cmd.options);
@@ -165,4 +191,14 @@ function generateReferenceMarkdown(commands: CommandCapability[]): string {
   return lines.join('\n');
 }
 
-process.stdout.write(generateReferenceMarkdown(walkCommands(cli)));
+// STDOUT BY DEFAULT, because rdc.sh captures it into a temp file and only swaps it in when it looks right. `--write` is for a person running `npm run generate:skill-reference`, which used to print the reference and leave .claude/skills/rdc/reference.md untouched.
+const markdown = generateReferenceMarkdown(walkCommands(cli));
+if (process.argv.includes('--write')) {
+  const target = fileURLToPath(
+    new URL('../../../.claude/skills/rdc/reference.md', import.meta.url)
+  );
+  writeFileSync(target, markdown);
+  process.stderr.write(`wrote ${target}\n`);
+} else {
+  process.stdout.write(markdown);
+}

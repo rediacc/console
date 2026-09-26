@@ -2,8 +2,7 @@
 // Queue Vault Validation
 // =============================================================================
 //
-// Bridge function validation uses the generated functions schema.
-// Vault structure validation uses the generated Zod schemas.
+// Bridge function validation uses the generated functions schema. Vault structure validation uses the generated Zod schemas.
 //
 
 import {
@@ -87,8 +86,7 @@ export function assertBridgeFunction(functionName: string): void {
  * @returns Error object if not a valid function, null if valid
  */
 export function validatePublicBridgeFunction(functionName: string): BridgeFunctionError | null {
-  // All functions in the generated file are public
-  // Visibility validation for internal/experimental is done by renet
+  // All functions in the generated file are public Visibility validation for internal/experimental is done by renet
   return validateBridgeFunction(functionName);
 }
 

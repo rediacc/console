@@ -1,0 +1,30 @@
+# twin .ci/scripts/build/build-linux-packages.sh blob 2e21617dc5eeed091a89917aa35c43cb41edad7a
+exit: 0
+--- stdout ---
+--- stderr ---
+--- calls ---
+call: build-linux-pkg --binary dist/cli/rdc-linux-x64 --version 0.0.0-dev --arch amd64 --format deb --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-arm64 --version 0.0.0-dev --arch arm64 --format deb --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-x64 --version 0.0.0-dev --arch amd64 --format rpm --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-arm64 --version 0.0.0-dev --arch arm64 --format rpm --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-x64 --version 0.0.0-dev --arch amd64 --format apk --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-arm64 --version 0.0.0-dev --arch arm64 --format apk --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-x64 --version 0.0.0-dev --arch amd64 --format archlinux --output dist/packages
+cwd: .
+call: build-linux-pkg --binary dist/cli/rdc-linux-arm64 --version 0.0.0-dev --arch arm64 --format archlinux --output dist/packages
+cwd: .
+--- packages ---
+rdc-0.0.0-dev-amd64.apk
+rdc-0.0.0-dev-amd64.archlinux
+rdc-0.0.0-dev-amd64.deb
+rdc-0.0.0-dev-amd64.rpm
+rdc-0.0.0-dev-arm64.apk
+rdc-0.0.0-dev-arm64.archlinux
+rdc-0.0.0-dev-arm64.deb
+rdc-0.0.0-dev-arm64.rpm

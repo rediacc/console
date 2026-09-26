@@ -1,0 +1,21 @@
+# twin .ci/scripts/ci/assert-install-methods-complete.sh blob 8cbcd4c65fcdb42795a86d453d07b770c76b7cdc
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ All installation method tests passed for version 1.2.3
+--- summary ---
+## Earlier step
+
+keep me
+## Install Method Test Results
+
+| Platform | Result |
+|----------|--------|
+| Linux x64 (Binary, Docker, APT, DNF, APK, Pacman, Quick, Linuxbrew) | success |
+| Linux arm64 (Binary, Docker, Quick) | success |
+| macOS ARM64 (Binary, Homebrew) | success |
+| macOS x64 (Binary, Homebrew) | success |
+| Windows x64 (Binary) | success |
+| Windows arm64 (Binary) | success |
+
+**Status:** All installation method tests passed for version 1.2.3

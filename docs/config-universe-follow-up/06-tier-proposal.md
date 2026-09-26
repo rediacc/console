@@ -1,10 +1,6 @@
 # Tier proposal: all 154 pending functions, for bulk approval
 
-`private/renet/pkg/license/tiermap.go` holds 162 registered bridge functions.
-**8 are decided, 154 carry `pending: true`.** A pending entry evaluates to
-`TierNone` today, exactly as the old `default:` did, so nothing here changes
-behaviour until it is approved and applied. That is the point: the 154 are
-visible and countable rather than silently free.
+`private/renet/pkg/license/tiermap.go` holds 162 registered bridge functions. **8 are decided, 154 carry `pending: true`.** A pending entry evaluates to `TierNone` today, exactly as the old `default:` did, so nothing here changes behaviour until it is approved and applied. That is the point: the 154 are visible and countable rather than silently free.
 
 This proposes a tier for every one of them. Approve, amend, or reject by group.
 
@@ -21,20 +17,17 @@ From `runtime.go:94-104`:
 | `TierRepoLicenseFull` | Full validation **including expiry**. |
 | `TierRepoLicenseOperate` | Validation with **expiry skipped**. |
 
-The 8 decided entries are not arbitrary; they encode a principle worth stating
-explicitly, because every proposal below follows it:
+The 8 decided entries are not arbitrary; they encode a principle worth stating explicitly, because every proposal below follows it:
 
 - `repository_create`, `repository_fork` -> **Create**. New licensed entity.
 - `repository_expand`, `repository_resize` -> **Full**. These GROW capacity,
-  which is the thing being sold, so expiry must bite.
+which is the thing being sold, so expiry must bite.
 - `repository_up`, `repository_up_all` -> **Operate**. Running something that
-  already exists must not break the day a licence lapses.
+already exists must not break the day a licence lapses.
 - `repository_delete`, `repository_down` -> **None**. You must never be locked
-  out of stopping or removing your own data.
+out of stopping or removing your own data.
 
-**The customer must never be trapped.** Stop, remove, inspect and diagnose stay
-free in every group below. An expired licence should block growth and new
-creation, not hold a running system hostage or prevent an exit.
+**The customer must never be trapped.** Stop, remove, inspect and diagnose stay free in every group below. An expired licence should block growth and new creation, not hold a running system hostage or prevent an exit.
 
 ---
 
@@ -116,36 +109,20 @@ creation, not hold a running system hostage or prevent an exit.
 | `backup_delete` | **None** | Reclaim. |
 | `backup_push`, `backup_pull` | **Full** *(proposed)* | See below. |
 
-**This group is the live finding, not a routine proposal.** `backup_push`,
-`backup_pull`, `backup_delete` and `backup_list` are registered and **not
-licence-gated today**, proven live: with an enforcing binary and no licence,
-`repository create` exits 10 `LICENSE_REQUIRED` while `backup list` sails past
-licensing and fails on a missing flag.
+**This group is the live finding, not a routine proposal.** `backup_push`, `backup_pull`, `backup_delete` and `backup_list` are registered and **not licence-gated today**, proven live: with an enforcing binary and no licence, `repository create` exits 10 `LICENSE_REQUIRED` while `backup list` sails past licensing and fails on a missing flag.
 
-That contradicted the marketing copy, and the earlier decision was to correct
-the copy rather than gate the functions. **Proposing `Full` for push/pull
-reverses that.** It is the one group here with a real product consequence, so it
-is called out separately rather than buried in a table. Say the word and it
-stays `None`.
+That contradicted the marketing copy, and the earlier decision was to correct the copy rather than gate the functions. **Proposing `Full` for push/pull reverses that.** It is the one group here with a real product consequence, so it is called out separately rather than buried in a table. Say the word and it stays `None`.
 
 ---
 
 ## What applying this changes
 
-Nothing until it is approved. The mechanical change is dropping `pending: true`
-and setting the tier on each entry. `TestTierMapCoversRegistry` already fails the
-build if a registered function is missing, and the console-side gate reports the
-pending count and fails when it GROWS, so neither can regress silently.
+Nothing until it is approved. The mechanical change is dropping `pending: true` and setting the tier on each entry. `TestTierMapCoversRegistry` already fails the build if a registered function is missing, and the console-side gate reports the pending count and fails when it GROWS, so neither can regress silently.
 
-The behaviour change on the day it lands: functions moving off `TierNone` start
-validating a repo licence. Everything proposed as `None` above keeps working
-exactly as it does today, which is deliberate: reads, stops, removals and
-diagnostics must never be the thing an expired licence blocks.
+The behaviour change on the day it lands: functions moving off `TierNone` start validating a repo licence. Everything proposed as `None` above keeps working exactly as it does today, which is deliberate: reads, stops, removals and diagnostics must never be the thing an expired licence blocks.
 
 ## What I could not decide for you
 
 - **`backup_push` / `backup_pull`**: reverses a decision you already took.
 - **`repository_exec` and `container_exec`**: proposed `Operate`, but an argument
-  exists for `None` since exec is how a customer rescues a broken system. I
-  chose `Operate` because exec into a licensed repo is normal operation, not
-  rescue; rescue has `machine_*` and the stop/remove verbs, all `None`.
+exists for `None` since exec is how a customer rescues a broken system. I chose `Operate` because exec into a licensed repo is normal operation, not rescue; rescue has `machine_*` and the stop/remove verbs, all `None`.

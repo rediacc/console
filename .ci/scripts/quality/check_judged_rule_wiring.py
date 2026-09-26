@@ -1,26 +1,15 @@
 #!/usr/bin/env python3
 """A judged stop-rule that nothing CALLS is a rule that does not run.
 
-THE GAP THIS CLOSES, measured 2026-09-01. `wl_shapedup` shipped with 239 controls in
-`test-judge-schema.py` and every one of them exercises the module in ISOLATION --
-`read_verdict`, `apply_verdict`, the latch, the driver. Not one asserts that
-`wl_checks.py` actually calls it. Delete the single line `wl_shapedup.run(...)` at its
-call site and all 239 controls stay green while the rule silently stops running.
+THE GAP THIS CLOSES, measured 2026-09-01. `wl_shapedup` shipped with 239 controls in `test-judge-schema.py` and every one of them exercises the module in ISOLATION -- `read_verdict`, `apply_verdict`, the latch, the driver. Not one asserts that `wl_checks.py` actually calls it. Delete the single line `wl_shapedup.run(...)` at its call site and all 239 controls stay green while the
+rule silently stops running.
 
-That is the i18n lesson exactly: the thing was built, tested, and unenforced. A rule whose
-call site can be deleted without a red is indistinguishable, from CI's point of view, from
-a rule that was never written.
+That is the i18n lesson exactly: the thing was built, tested, and unenforced. A rule whose call site can be deleted without a red is indistinguishable, from CI's point of view, from a rule that was never written.
 
-WHAT check-rubric-calibration.sh DOES AND DOES NOT COVER. It hashes the PROMPT TEXT of
-SWEEP_PROMPT, BRAVE_PROMPT and REGGATE_PROMPT against a recorded manifest, so a calibrated
-rubric cannot change without being re-calibrated. It says nothing about whether the rule is
-invoked -- the text can be perfectly preserved in a module nobody imports.
+WHAT check-rubric-calibration.sh DOES AND DOES NOT COVER. It hashes the PROMPT TEXT of SWEEP_PROMPT, BRAVE_PROMPT and REGGATE_PROMPT against a recorded manifest, so a calibrated rubric cannot change without being re-calibrated. It says nothing about whether the rule is invoked -- the text can be perfectly preserved in a module nobody imports.
 
-THE INVARIANT. Every module under `.claude/hooks/stop/` that defines BOTH a `*_MARKER`
-constant and an `apply_verdict` function is a judged rule. Each one must be imported by,
-and CALLED from, the stop path (`wl_checks.py` or `wl_judge.py`). The set is discovered,
-never listed: a hand-maintained list of wired rules is the same unkept promise this gate
-exists to distrust, and a new rule added without wiring would simply be absent from it.
+THE INVARIANT. Every module under `.claude/hooks/stop/` that defines BOTH a `*_MARKER` constant and an `apply_verdict` function is a judged rule. Each one must be imported by, and CALLED from, the stop path (`wl_checks.py` or `wl_judge.py`). The set is discovered, never listed: a hand-maintained list of wired rules is the same unkept promise this gate exists to distrust, and a new
+rule added without wiring would simply be absent from it.
 
 ---- gate ----
 step: Judged rule wiring
@@ -34,23 +23,21 @@ import re
 import sys
 import tempfile
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 STOP = os.path.join(ROOT, ".claude", "hooks", "stop")
 # The modules that DRIVE a stop. A rule is wired iff one of these calls it.
 DRIVERS = ("wl_checks.py", "wl_judge.py")
-# Below this, discovery is broken rather than the tree being empty. Raised 3 -> 4 when
-# wl_histfirst landed: a floor that sits below the real count lets a rule be deleted
-# without the floor noticing, which is the failure this gate exists to prevent.
+# Below this, discovery is broken rather than the tree being empty. Raised 3 -> 4 when wl_histfirst landed: a floor that sits below the real count lets a rule be deleted without the floor noticing, which is the failure this gate exists to prevent.
 MIN_RULES = 4
 
 
 def judged_rules(stop_dir):
     """{module: marker} for every module that looks like a judged rule.
 
-    DISCOVERED, not listed. Both signals are required: a `*_MARKER` (the string that makes
-    the judge ask the question) and an `apply_verdict` (the function that acts on the
-    answer). Either alone is something else -- wl_reggate has a verdict applier under a
-    different name and no marker of its own, and several modules define constants.
+    DISCOVERED, not listed. Both signals are required: a `*_MARKER` (the string that makes the judge ask the question) and an `apply_verdict` (the function that acts on the answer). Either alone is something else -- wl_reggate has a verdict applier under a different name and no marker of its own, and several modules define constants.
     """
     found = {}
     for name in sorted(os.listdir(stop_dir)):
@@ -81,18 +68,14 @@ def wiring_of(module, drivers):
 
     IMPORT IS NOT ENOUGH, and that distinction is the whole gate. `import wl_shapedup` at
     the top of a file whose call site was deleted still satisfies a grep for the name;
-    ruff would even keep it if anything else referenced it. Only an actual call means the
-    rule runs, so the two are reported separately and the CALL is what is required.
+    ruff would even keep it if anything else referenced it. Only an actual call means the rule runs, so the two are reported separately and the CALL is what is required.
     """
     imported, called = [], []
     # `import wl_x`, `import wl_x as X`, `from wl_x import ...`
     imp = re.compile(r"^\s*(?:import\s+%s\b|from\s+%s\s+import)" % (module, module), re.MULTILINE)
     for name, raw in drivers.items():
-        # COMMENTS ARE NOT CALLS, and the first cut of this got it wrong -- its own SANITY
-        # control caught it. `# wl_shapedup.run(...) used to be here` matched the call
-        # regex, so the exact defect the gate exists for (call site deleted, import and a
-        # comment left behind) read as wired. Same mention-vs-invocation distinction the
-        # pre-bash guards keep paying for, in a gate written to catch a deletion.
+        # COMMENTS ARE NOT CALLS, and the first cut of this got it wrong -- its own SANITY control caught it. `# wl_shapedup.run(...) used to be here` matched the call regex, so the exact defect the gate exists for (call site deleted, import and a comment left behind) read as wired. Same mention-vs-invocation distinction the pre-bash guards keep paying for, in a gate written to
+        # catch a deletion.
         src = re.sub(r"(?m)^\s*#.*$", "", raw)
         src = re.sub(r"(?<!:)#.*$", "", src, flags=re.MULTILINE)
         if imp.search(src):
@@ -101,8 +84,7 @@ def wiring_of(module, drivers):
             r"^\s*import\s+%s\s+as\s+([A-Za-z_][A-Za-z0-9_]*)" % module, src, re.MULTILINE
         )
         names = [module] + ([alias.group(1)] if alias else [])
-        # A CALL, not a mention: the name followed by a dot, an attribute, and an open
-        # paren. `wl_shapedup.run(` counts; the word inside a comment does not.
+        # A CALL, not a mention: the name followed by a dot, an attribute, and an open paren. `wl_shapedup.run(` counts; the word inside a comment does not.
         if any(re.search(r"\b%s\.[A-Za-z_][A-Za-z0-9_]*\(" % re.escape(n), src) for n in names):
             called.append(name)
     return imported, called
@@ -124,15 +106,7 @@ def judge(rules, drivers):
 
 def selftest():
     """Controls, both directions. A gate that cannot fail is worse than none."""
-    ok = True
-
-    def check(label, cond):
-        nonlocal ok
-        if cond:
-            print("  PASS  %s" % label)
-        else:
-            ok = False
-            print("  FAIL  %s" % label, file=sys.stderr)
+    check = controls.Checker()
 
     wired = {"wl_checks.py": "import wl_rule\nx = wl_rule.run(a, b)\n", "wl_judge.py": ""}
     imported_only = {
@@ -152,8 +126,7 @@ def selftest():
         "the finding names which driver imported it",
         "wl_checks.py" in judge(rules, imported_only)[0][2],
     )
-    # A comment mentioning the call must not read as the call. This is the same
-    # mention-vs-invocation distinction the pre-bash guards keep paying for.
+    # A comment mentioning the call must not read as the call. This is the same mention-vs-invocation distinction the pre-bash guards keep paying for.
     check(
         "CONTROL: a commented-out call is not a call",
         len(judge(rules, {"wl_checks.py": "import wl_rule\n#wl_rule.run(a)\n", "wl_judge.py": ""}))
@@ -177,7 +150,7 @@ def selftest():
         check("CONTROL: a marker alone is not a judged rule", "wl_marker_only" not in got)
         check("CONTROL: apply_verdict alone is not a judged rule", "wl_verdict_only" not in got)
         check("CONTROL: a non-wl_ module is out of scope", "notwl" not in got)
-    return ok
+    return check.ok
 
 
 def main():

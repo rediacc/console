@@ -7,7 +7,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 
 /**
  * SSH key management. In v2, SSH always persists as inline content under
- * `config.credentials.ssh`. Path-only storage is no longer supported —
+ * `config.credentials.ssh`. Path-only storage is no longer supported ,
  * `--key <path>` reads the file and inlines the content on save.
  */
 export function registerSSHCommands(config: Command, program: Command): void {
@@ -69,8 +69,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
           }
         }
 
-        // "No key" is an answer, not an absence of one: table mode gets the hint,
-        // every machine-readable format gets the same envelope shape as a hit.
+        // "No key" is an answer, not an absence of one: table mode gets the hint, every machine-readable format gets the same envelope shape as a hit.
         if (!hasEmbedded && format === 'table') {
           outputService.info(t('commands.config.ssh.show.noKey'));
           return;

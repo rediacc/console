@@ -5,14 +5,14 @@
  * bag, so a dispatch that declares nothing runs against the machine's default
  * docker datastore. Every verb outside `executeRepoFunction` declared nothing,
  * so on a repo living in a named datastore they addressed a path the repo has
- * never been at — `stat /mnt/rediacc/repositories/<guid>: no such file or
+ * never been at, `stat /mnt/rediacc/repositories/<guid>: no such file or
  * directory` where the verb errored at all, and silently wrong answers where it
  * did not (`repo log` on an empty listing looks like "no commits").
  *
  * One representative per fix shape rather than one per site: these four cover a
  * read verb, a container verb, a mutating branching verb, and the ref-vs-machine
  * split that `trim` and `policy` share. The assertions read the ExecuteOptions
- * the command produced — a check on output would pass against the broken build.
+ * the command produced, a check on output would pass against the broken build.
  */
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -147,10 +147,7 @@ describe('repo verbs declare the recorded datastore (#74)', () => {
     expect(lastDatastore()).toBeUndefined();
   });
 
-  // The machine-wide arm of trim (and, identically, policy) addresses the
-  // machine's OWN default datastore by definition. Declaring the repo's mount
-  // there would be wrong, not merely unnecessary — which is why the ref arm and
-  // the machine arm are pinned separately.
+  // The machine-wide arm of trim (and, identically, policy) addresses the machine's OWN default datastore by definition. Declaring the repo's mount there would be wrong, not merely unnecessary, which is why the ref arm and the machine arm are pinned separately.
   it('trim --machine stays on the machine default even when a repo is placed elsewhere', async () => {
     placeOnNamedDatastore();
 

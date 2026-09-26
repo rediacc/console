@@ -1,0 +1,7 @@
+# twin .ci/scripts/ci/assert-install-methods-complete.sh blob 8cbcd4c65fcdb42795a86d453d07b770c76b7cdc
+exit: 0
+--- stdout ---
+--- stderr ---
+✓ All installation method tests passed for version 1.2.3
+--- summary ---
+<no summary written>

@@ -84,10 +84,7 @@ const result = await esbuild.build({
   // Note: shebang comes from src/index.ts - no banner needed
   external: [],
   plugins: [grpcProtoStubPlugin, nativeModulesPlugin],
-  // .py files are embedded as TEXT, not compiled. The VS Code bootstrap runs a
-  // real Python program on the remote host; keeping it in a .py file instead of
-  // a template literal is what lets ruff lint and format it, and what stopped it
-  // being a place values could be interpolated into as code.
+  // .py files are embedded as TEXT, not compiled. The VS Code bootstrap runs a real Python program on the remote host; keeping it in a .py file instead of a template literal is what lets ruff lint and format it, and what stopped it being a place values could be interpolated into as code.
   loader: { '.py': 'text' },
   logLevel: 'silent',
   define: {

@@ -1,0 +1,31 @@
+# twin .ci/scripts/ci/profiler/panel.sh blob 7c1e340f56711c529ad241bbe2345d12083c81e7
+exit: 0
+--- stdout ---
+::notice title=Runner sizing (profiler)::slim fits: peak 0.46 cores and 1.21 GiB inside a 1 core / 5 GB box, finishing in 6m 10s. | PROFILER_BASELINE_V1 job=quality-code runner_label=ubuntu-slim tier=CGROUP_V2 env=unknown cpu_peak_milli=460 mem_peak_bytes=1297088512 wall_s=370 cpu_ceil_milli=1000 mem_ceil_bytes=5368709120 samples=37 findings=0 verdict=SLIM_FIT
+--- stderr ---
+--- summary ---
+
+## Runner Profile
+
+**Runner:** ubuntu-slim (tier CGROUP_V2; cpu via CGROUP_V2, memory via CGROUP_V2)
+**Detected ceilings:** 1.00 cores / 5.00 GiB
+**Wall clock:** 6m 10s (44% of the 14m 0s declared timeout, 41% of the 15m 0s slim hard cap)
+**Samples:** 37 of ~37 expected (0 gaps)
+
+| Minute | CPU mean | CPU peak | RAM mean | RAM peak | Disk (ws) | Net rx | Net tx |
+|---|---|---|---|---|---|---|---|
+| 00-01 | 0.44 | 0.46 | 1.18 GiB | 1.18 GiB | 7.63 GiB | 488 KiB | 244 KiB |
+| 01-02 | 0.44 | 0.46 | 1.18 GiB | 1.18 GiB | 7.63 GiB | 586 KiB | 293 KiB |
+| 02-03 | 0.44 | 0.46 | 1.19 GiB | 1.19 GiB | 7.63 GiB | 586 KiB | 293 KiB |
+| 03-04 | 0.44 | 0.46 | 1.19 GiB | 1.20 GiB | 7.63 GiB | 586 KiB | 293 KiB |
+| 04-05 | 0.44 | 0.46 | 1.20 GiB | 1.20 GiB | 7.63 GiB | 586 KiB | 293 KiB |
+| 05-06 | 0.44 | 0.46 | 1.20 GiB | 1.21 GiB | 7.63 GiB | 586 KiB | 293 KiB |
+| 06-07 | 0.44 | 0.44 | 1.21 GiB | 1.21 GiB | 7.63 GiB | 98 KiB | 49 KiB |
+
+**CPU:** mean 0.44 (44% of ceiling) / p95 0.46 / peak 0.46 cores
+**RAM:** mean 1.19 GiB (24% of ceiling) / p95 1.21 GiB / peak 1.21 GiB
+**Disk peak (filesystem used):** workspace 7.63 GiB, runner temp 879 MiB
+**Headroom:** 56% under the declared timeout, 59% under the slim hard cap
+**Advisory:** slim fits: peak 0.46 cores and 1.21 GiB inside a 1 core / 5 GB box, finishing in 6m 10s.
+
+

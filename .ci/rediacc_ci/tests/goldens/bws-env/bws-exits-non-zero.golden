@@ -1,0 +1,6 @@
+# twin .ci/lib/bws-env.sh blob 60766fb1b77e8bb7befab8a172c5a5ed6b58248c
+exit: 1
+--- stdout ---
+--- stderr ---
+bws-env: bws secret list failed. If the token is expired this is what
+  that looks like; see .ci/config/bws-token-expiry.json.

@@ -36,25 +36,77 @@
     "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
+    "ACCOUNT_ED25519_PRIVATE_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_ED25519_PUBLIC_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_JWT_SECRET_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_SERVER_API_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_X25519_PRIVATE_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "ACCOUNT_X25519_PUBLIC_KEY_DEV": {
+      "kind": "no-github-twin",
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+    },
+    "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "AWS_IAM_ADMIN_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "AWS_SES_ACCESS_KEY_ID_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+    },
     "AWS_SES_HOST": {
       "kind": "no-github-twin",
       "reason": "SMTP endpoint hostname; the account server talks to SES over the API. git log -S finds one commit, the one that added the map entry."
     },
     "AWS_SES_REGION": {
       "kind": "no-github-twin",
-      "reason": "Public data, already committed in the clear at regions.json:17,35,53. No workflow requests it and no deploy path reads the stored copy: cd-deploy-account takes it from matrix.sesRegion, cd-deploy-worker from vars.AWS_SES_REGION_EU, and only run.sh:1533 reads private/account/.env. It sits in the store as an inert leftover -- keeping it costs nothing and deleting it is the operator's call. (This reason used to argue it 'should never enter a secret store' while sitting in one, which is an argument for a deletion nobody had made.)"
+      "reason": "Public data, already committed in the clear at regions.json:17,35,53. No workflow requests the stored copy: cd-deploy-account takes the region from matrix.sesRegion, and cd-deploy-worker and ci.yml's deploy-preview take it from the separate AWS_SES_REGION_EU secret, which replaced the Actions variable of that name on 2026-09-24 (agent/plans/PLAN-github-actions-to-bitwarden.md). The only other holder is private/account/.env, which assigns the same name for the local account server. It sits in the store as an inert leftover -- keeping it costs nothing and deleting it is the operator's call."
+    },
+    "AWS_SES_SECRET_ACCESS_KEY_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
+    },
+    "CF_EMAIL": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "CF_GLOBAL_API_KEY": {
+      "kind": "no-github-twin",
+      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
+    },
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh; bench is deliberately not deployed by any workflow."
     },
     "GITHUB_APP_CLIENT_SECRET": {
       "kind": "no-github-twin",
       "reason": "no OAuth or web flow exists in console, account, renet or elite; CI authenticates as the App with its private key. Stored so the App's credential set lives in one place."
     },
-    "GITHUB_AUTOPILOT_APP_ID": {
-      "kind": "no-github-twin",
-      "reason": "an Actions VARIABLE (vars.AUTOPILOT_APP_ID), not a secret, and unshadowable by construction: the comparator fails on an empty side, so a request line would turn the shadow RED. See autopilot.yml:58-62."
-    },
     "OBS_OTLP_CREDENTIALS": {
       "kind": "no-github-twin",
       "reason": "pre-regional leftover holding ONE region's value; the deploy uses the regional trio below. One stored value cannot be compared against three genuinely different regional secrets."
+    },
+    "OBS_OTLP_CREDENTIALS_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "The bench collector credential, JSON {user,pass}, seeded 2026-09-24 from the retired bench env file (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local scripts/ops/deploy-bench.sh, and written by `rotation rotate otlp-bench` through its bitwarden-sm consumer; no workflow deploys bench."
     },
     "OBS_OTLP_PASSWORD": {
       "kind": "no-github-twin",
@@ -64,9 +116,17 @@
       "kind": "no-github-twin",
       "reason": "human-readable half of the collector login; everything consumes the joined OBS_OTLP_CREDENTIALS."
     },
+    "OTEL_ENDPOINT": {
+      "kind": "no-github-twin",
+      "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."
+    },
     "R2_TOKEN_AUTH_API": {
       "kind": "no-github-twin",
       "reason": "the raw bearer VALUE of a Cloudflare R2 API token, the third artifact beside id and sha256(value). Unattributed; identify it in the Cloudflare dashboard before revoking."
+    },
+    "RELEASE_GPG_REVOCATION_CERT": {
+      "kind": "no-github-twin",
+      "reason": "The release key's revocation certificate, generated and stored 2026-09-24 (docs/code-signing-guide.md:559). It is kept, never used by CI: importing it revokes the signing key, so no workflow may request it."
     },
     "SMTP_FROM": {
       "kind": "no-github-twin",
@@ -109,15 +169,5 @@
       "reason": "an endpoint identifier, not a credential."
     }
   },
-  "no_fetch_jobs": {
-    ".github/workflows/breakpoint.yml#session": {
-      "reason": "BLOCKER: this job's whole purpose is to put a human on a shell inside the runner ('Start debug shell'), and the bws-secrets action exports through GITHUB_ENV, which reaches every later step of the job. Fetching here would hand that human the GitHub App private key -- which mints tokens for any preset and any repository -- where the shell today only has a readonly one-hour token for console and elite, plus the Cloudflare tunnel token and the SES EU pair. Every real consumer in this job keeps its credential in its own step `env:`, which is step-scoped and does not leak that way. Cutting this job over needs a different shape, not a fetch: mint the app token in a job with no shell in it and pass the token down."
-    },
-    ".ci/breakpoint/workflow/breakpoint.yml#session": {
-      "reason": "BLOCKER: the frozen template the .github copy above is vendored from; check-breakpoint-drift.sh requires the two to be byte-identical, so the exemption has to name both. Same reason, same job."
-    },
-    ".github/workflows/watchdog-monitor.yml#monitor": {
-      "reason": "BLOCKER: this job cannot consume a Bitwarden value without moving its fetch ahead of 'Monitor jobs and cancel on failure', and a step there is only safe with continue-on-error, which check-workflows.sh bans outright ('Silently ignores step/job failures'). Tried on 2026-09-04 and reverted in 90cc4367b: CHECK 6 of check-workflow-gates.sh accepted it on the property, the banned-patterns gate refused it four minutes into CI. The trade is not worth it -- the value is the tier-1 classifier's Cloudflare token and tier 1 has been returning HTTP 402 continuously, so flipping a dead code path would buy a policy exception. This job keeps reading GitHub and its secret retires with the last of them."
-    }
-  }
+  "no_fetch_jobs": {}
 }

@@ -71,8 +71,7 @@ export async function* readLines(stream: ReadableStream<Uint8Array>): AsyncGener
       buffer += decoder.decode(value, { stream: true });
       buffer = yield* drainCompleteLines(buffer);
 
-      // No newline arrived and the pending line is already oversized: this is
-      // the flood case. Stop before the next chunk doubles the allocation.
+      // No newline arrived and the pending line is already oversized: this is the flood case. Stop before the next chunk doubles the allocation.
       if (buffer.length > MAX_LINE_BYTES) throw new LineTooLongError();
     }
 

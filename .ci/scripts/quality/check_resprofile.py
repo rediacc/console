@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """check:ci-resprofile -- structural findings from the PREVIOUS run's process-tree captures.
 
-WHY THE PREVIOUS RUN. Gates run in parallel; a capture of a gate still running is
-incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts
-rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads
-the completed set. The first run therefore has nothing to judge, and says so.
+WHY THE PREVIOUS RUN. Gates run in parallel; a capture of a gate still running is incomplete, so a gate that judged THIS run would read torn files. scripts/ci-runner/run.ts rotates `.ci/cache/profiles` -> `.ci/cache/profiles.prev` at start, and this gate reads the completed set. The first run therefore has nothing to judge, and says so.
 
 WHAT IS ENFORCED, AND THE ONE RULE. A finding class may ENFORCE only while it is
 admissible: J >= 20 judgeable captures and a one-sided 95% upper bound on its fire rate
@@ -13,20 +10,23 @@ Every predicate is dilation-invariant (wall stretched by k changes no verdict) a
 is proven per run: the captures are re-derived at k=2.3 and the two finding sets must be
 byte-identical or the gate refuses its own verdict.
 
-PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until
-.ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from
-real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason
-the pristine pass is not a permanent hole. Seeding from one machine's first run is how a
-bad number gets enshrined, so the seed command refuses an EMPTY corpus outright; seeds
-accumulate, and only a NAMED --reseed-class can replace a class's numbers.
+PRISTINE BOOTSTRAP, copied from .runner-advice-allowlist. Until .ci/config/resprofile-baseline.json is SEEDED (`--seed <captures-dir>`, by a human, from real numbers), the gate WARNS and exits 0. Seeded means enforced, which is the only reason the pristine pass is not a permanent hole. Seeding from one machine's first run is how a bad number gets enshrined, so the seed command
+refuses an EMPTY corpus outright; seeds accumulate, and only a NAMED --reseed-class can replace a class's numbers.
 
-THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding.
-Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a
-finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts
-on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
+THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after seeding. Past it, if no commit in the last 30 days mentions `resprofile:` AND touches a file a finding named, this gate FAILS with the remedy `git rm` -- a metrics layer nobody acts on is write-only data, and this hook directory already holds one (wl_admit.py:596-600).
 
-ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean:
-warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
+ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean: warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
+
+KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilation control fired for real, standalone, twice: "a predicate is reading wall-clock", after a heavily-serialized battery (`npx tsx scripts/ci-runner/run.ts --jobs 4 --heavy-limit 1`,
+3354s wall, k=2.3). It went green again on the next run because the triggering captures
+live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via `.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for c in caps])` will name the offending predicate; nobody
+has spent the ~56 minutes yet.
+
+---- gate ----
+step: Resource profile (previous run's captures)
+needs: none
+lane: quality-branch
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -38,17 +38,20 @@ import sys
 import time
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls, paths
+
 ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])
-sys.path.insert(0, str(ROOT / ".claude" / "hooks" / "stop"))
+# The hop onto the Stop hook's directory, through the package's own resolver. `paths.on_sys_path` is idempotent where a bare `sys.path.insert(0, d)` is not, and `paths.hooks_stop_dir` is the ONE place the `.claude/hooks/stop` literal lives, so the move planned for that program is a one-line change there rather than a sweep of nine call sites. ROOT is passed explicitly: this gate
+# honours its own RESPROFILE_ROOT override, which the resolver's default root does not read.
+paths.on_sys_path(paths.hooks_stop_dir(ROOT))
 import wl_profile as W  # noqa: E402
 
 BASELINE = ROOT / ".ci" / "config" / "resprofile-baseline.json"
 
 
 def _default_captures() -> Path:
-    """`.ci/cache/profiles.prev` is a POINTER FILE naming the last completed run's
-    capture folder under ~/.claude/resprofile/<repo>/<day>/<run>/ (time-based, durable,
-    outside the tree). A missing pointer is "no captures", never an error."""
+    """`.ci/cache/profiles.prev` is a POINTER FILE naming the last completed run's capture folder under ~/.claude/resprofile/<repo>/<day>/<run>/ (time-based, durable, outside the tree). A missing pointer is "no captures", never an error."""
     ptr = ROOT / ".ci" / "cache" / "profiles.prev"
     try:
         return Path(ptr.read_text(encoding="utf-8").strip())
@@ -94,9 +97,7 @@ def selftest() -> int:
     check("wl_profile selftest is green (the deriver is the instrument)", W.selftest() == 0)
     ok, why = W.admissible(0, 19)
     check("admission floor: J=19 is report-only", not ok and "denominator" in why)
-    # THE TRIGGER MUST BE ABLE TO FIRE, and the previous one could not: it ran after
-    # the pristine return, every --seed reset its sunset, and it grepped prose. These
-    # three controls are exactly those three defects, planted.
+    # THE TRIGGER MUST BE ABLE TO FIRE, and the previous one could not: it ran after the pristine return, every --seed reset its sunset, and it grepped prose. These three controls are exactly those three defects, planted.
     check(
         "kill trigger: an anchor in the FUTURE is silent",
         kill_trigger_fired({"installed": "2999-01-01T00:00:00Z"}) is None,
@@ -117,9 +118,7 @@ def selftest() -> int:
         load_baseline() is None or load_baseline().get("format") == 1,
     )
 
-    # The retirement trigger's "acted on" test, in both directions. Its whole job is
-    # to tell work from talk about work, so a control that only plants real code would
-    # miss the exact case that got through on the first try.
+    # The retirement trigger's "acted on" test, in both directions. Its whole job is to tell work from talk about work, so a control that only plants real code would miss the exact case that got through on the first try.
     check(
         "acted-on: a commit touching only the layer does NOT count",
         not acts_outside([".claude/hooks/stop/wl_profile.py", ".devcontainer/bashcov-sup.c"]),
@@ -127,7 +126,11 @@ def selftest() -> int:
     check(
         "acted-on: the layer PLUS prose about the layer still does NOT count",
         not acts_outside(
-            [".claude/hooks/stop/wl_profile.py", "agent/PLAN-resprofile-wave2.md", "README.md"]
+            [
+                ".claude/hooks/stop/wl_profile.py",
+                "agent/plans/PLAN-resprofile-wave2.md",
+                "README.md",
+            ]
         ),
     )
     check(
@@ -135,10 +138,7 @@ def selftest() -> int:
         acts_outside([".claude/hooks/stop/wl_profile.py", "packages/cli/src/commands/repo.ts"]),
     )
 
-    # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from
-    # the bash corpus read as a clean tree for the running devbox's whole life, so a
-    # control that only proves the happy path would reproduce the original defect in
-    # the check that was written to catch it.
+    # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from the bash corpus read as a clean tree for the running devbox's whole life, so a control that only proves the happy path would reproduce the original defect in the check that was written to catch it.
     import tempfile  # noqa: PLC0415
     import time as _t  # noqa: PLC0415
 
@@ -171,12 +171,8 @@ def selftest() -> int:
 def seed(captures_dir: Path, reseed: set[str]) -> int:
     caps = captures_in(captures_dir)
     j = sum(c.judgeable for c in caps)
-    # AN EMPTY SEED IS REFUSED, and the gate-test is what made that rule honest. The
-    # first draft carried a "refuse a silent shrink" guard that could never fire: seeds
-    # ACCUMULATE F and J, so nothing but a NAMED --reseed-class can ever lower them,
-    # and the guard was a control that passed vacuously. What a seed must not do is
-    # claim to have measured when it read nothing -- the vacuity rule from
-    # .ci/scripts/ci/profiler/report.awk, applied to the baseline.
+    # AN EMPTY SEED IS REFUSED, and the gate-test is what made that rule honest. The first draft carried a "refuse a silent shrink" guard that could never fire: seeds ACCUMULATE F and J, so nothing but a NAMED --reseed-class can ever lower them, and the guard was a control that passed vacuously. What a seed must not do is claim to have measured when it read nothing -- the vacuity
+    # rule from .ci/scripts/ci/profiler/report.awk, applied to the baseline.
     if j == 0:
         print(
             f"✗ refusing to seed from {captures_dir}: 0 judgeable capture(s). A baseline seeded from nothing enshrines nothing. Name a real run folder.",
@@ -214,15 +210,14 @@ def seed(captures_dir: Path, reseed: set[str]) -> int:
     return 0
 
 
-# The layer's own files. A commit that only maintains the profiler is not evidence
-# that the profiler earned anything, so the trailer must touch something ELSE.
+# The layer's own files. A commit that only maintains the profiler is not evidence that the profiler earned anything, so the trailer must touch something ELSE.
 LAYER_FILES = (
     ".claude/hooks/stop/wl_resprofile.py",
     ".claude/hooks/stop/wl_ressample.py",
     ".claude/hooks/stop/wl_profile.py",
     ".claude/hooks/profile/",
     ".ci/scripts/quality/check_resprofile.py",
-    ".ci/scripts/test/gates/test-resprofile.sh",
+    ".ci/rediacc_ci/tests/gates/test_gate_resprofile.py",
     ".devcontainer/bashcov-sup.c",
 )
 SUNSET_DAYS = 30
@@ -232,17 +227,10 @@ ACTED_ON_FLOOR = 2
 def acts_outside(files: list[str]) -> bool:
     """Did this commit change something the ranking could plausibly have DRIVEN?
 
-    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first
-    commit ever to carry a `Resprofile:` trailer changed wl_profile.py,
-    check_resprofile.py and agent/PLAN-resprofile-wave2.md -- three files, all of
-    them the layer or a document about the layer -- and this function accepted it,
-    because the plan file is not in LAYER_FILES. The retirement trigger asks whether
-    the profiler drove work in the CODEBASE; a commit that only writes about the
-    profiler answers that question with its own subject.
+    PROSE DOES NOT COUNT, and that exclusion was paid for immediately. The first commit ever to carry a `Resprofile:` trailer changed wl_profile.py, check_resprofile.py and agent/plans/PLAN-resprofile-wave2.md -- three files, all of them the layer or a document about the layer -- and this function accepted it, because the plan file is not in LAYER_FILES. The retirement trigger asks
+    whether the profiler drove work in the CODEBASE; a commit that only writes about the profiler answers that question with its own subject.
 
-    So: at least one changed file outside the layer that is not documentation. Docs
-    are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees
-    whatever the extension.
+    So: at least one changed file outside the layer that is not documentation. Docs are `.md` anywhere, plus everything under agent/ and docs/, which are prose trees whatever the extension.
     """
     for f in files:
         if any(f.startswith(x) for x in LAYER_FILES):
@@ -258,9 +246,7 @@ def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
 
     A TRAILER, not a grep for the word. The previous version ran
     `git log --grep=resprofile:`, which matches prose -- including a commit that
-    merely maintains the profiler, and including this very docstring. The repo
-    already enforces a trailer shape for PR-TASK (a trailer must START a line), so
-    the same discipline applies here and the query becomes mechanical.
+    merely maintains the profiler, and including this very docstring. The repo already enforces a trailer shape for PR-TASK (a trailer must START a line), so the same discipline applies here and the query becomes mechanical.
     """
     try:
         out = subprocess.run(
@@ -298,11 +284,7 @@ def acted_on_commits(days: int = SUNSET_DAYS) -> list[str]:
 def kill_trigger_fired(base: dict | None) -> str | None:
     """Evaluated even when PRISTINE -- the previous version could never fire.
 
-    It ran AFTER main()'s pristine return, and the baseline is deliberately unseeded,
-    so the layer's own design deferred the act that armed its retirement. Worse, every
-    `--seed` rewrote `sunset` to now + 30 days, making an accumulate-seed a free
-    extension. Both are fixed here: the window is measured from `installed` (set once)
-    and the check runs before any other verdict.
+    It ran AFTER main()'s pristine return, and the baseline is deliberately unseeded, so the layer's own design deferred the act that armed its retirement. Worse, every `--seed` rewrote `sunset` to now + 30 days, making an accumulate-seed a free extension. Both are fixed here: the window is measured from `installed` (set once) and the check runs before any other verdict.
     """
     anchor = (base or {}).get("installed") or (base or {}).get("sunset")
     if not anchor:
@@ -324,17 +306,11 @@ def kill_trigger_fired(base: dict | None) -> str | None:
 def bash_corpus_today(corpus: Path | None = None) -> tuple[int, str]:
     """(records written today, a phrase saying where I looked).
 
-    Counted rather than merely existence-checked: bash_env.sh creates the day folder
-    before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a
-    missing one beside a populated exit.jsonl -- is the exact signature of the hole.
+    Counted rather than merely existence-checked: bash_env.sh creates the day folder before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a missing one beside a populated exit.jsonl -- is the exact signature of the hole.
     """
     import time  # noqa: PLC0415
 
-    # `corpus` is injectable ONLY so selftest() can drive both answers against a
-    # fixture. ROOT cannot serve that purpose: it is also this file's import path for
-    # wl_profile, so pointing it at a temp dir makes the module fail to load rather
-    # than report an empty corpus -- which is how the first attempt at this control
-    # "passed" by crashing before it reached the check.
+    # `corpus` is injectable ONLY so selftest() can drive both answers against a fixture. ROOT cannot serve that purpose: it is also this file's import path for wl_profile, so pointing it at a temp dir makes the module fail to load rather than report an empty corpus -- which is how the first attempt at this control "passed" by crashing before it reached the check.
     root = corpus or (Path.home() / ".claude" / "resprofile")
     slug = str(ROOT).lstrip("/").replace("/", "-")
     day = root / slug / time.strftime("%Y-%m-%d", time.gmtime())
@@ -359,19 +335,14 @@ def main(argv: list[str]) -> int:
         rs = {argv[i + 1] for i, a in enumerate(argv) if a == "--reseed-class"}
         return seed(Path(argv[argv.index("--seed") + 1]), rs)
 
-    print("resprofile: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("resprofile", selftest):
+        return refusal
 
     cdir = Path(argv[argv.index("--captures") + 1]) if "--captures" in argv else DEFAULT_CAPTURES
     base = load_baseline()
     pristine = base is None
 
-    # BEFORE ANYTHING ELSE, because the previous placement made it unreachable: it
-    # ran after the pristine return, and the baseline is deliberately unseeded.
+    # BEFORE ANYTHING ELSE, because the previous placement made it unreachable: it ran after the pristine return, and the baseline is deliberately unseeded.
     kt = kill_trigger_fired(base)
     if kt:
         print(f"✗ KILL TRIGGER: {kt}", file=sys.stderr)
@@ -384,14 +355,10 @@ def main(argv: list[str]) -> int:
         return 0 if pristine else 1
     # THE BASH CORPUS IS THE OTHER HALF, and its silence used to read as clean.
     #
-    # bash_env.sh probes two explicit paths for bashcov-sup and skips SILENTLY when
-    # neither exists -- which is what the running devbox did for its whole life, so
-    # this scope recorded no bash at all while every gate below reported a healthy
-    # tree. That is the same shape as an empty captures dir, and it gets the same
-    # answer: UNJUDGEABLE, warn while pristine and fail once seeded, never "clean".
+    # bash_env.sh probes two explicit paths for bashcov-sup and skips SILENTLY when neither exists -- which is what the running devbox did for its whole life, so this scope recorded no bash at all while every gate below reported a healthy tree. That is the same shape as an empty captures dir, and it gets the same answer: UNJUDGEABLE, warn while pristine and fail once seeded, never
+    # "clean".
     #
-    # TODAY'S file only. An older day proves the writer worked then, not now, and
-    # "it used to record" is exactly the reassurance this check must not give.
+    # TODAY'S file only. An older day proves the writer worked then, not now, and "it used to record" is exactly the reassurance this check must not give.
     bl, bwhy = bash_corpus_today()
     if bl == 0:
         print(

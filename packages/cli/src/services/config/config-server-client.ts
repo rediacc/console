@@ -23,6 +23,14 @@ export interface ConfigServerFetchOptions {
   configToken: string;
   /** Account server URL (e.g., 'https://account.rediacc.com') */
   serverUrl: string;
+  /**
+   * Test seam: the fetch that carries the tunnel request. Production passes nothing and the global
+   * fetch is used. The round-trip harness routes each device through its own fetch so two devices
+   * in one process can call from different client addresses.
+   */
+  fetchImpl?: typeof fetch;
+  /** Test seam: the server's E2E key. Production passes nothing and getServerKeyMaterial() resolves it. */
+  serverKey?: { key: CryptoKey; keyId: string };
 }
 
 export interface ConfigServerResponse<T> {
@@ -36,11 +44,31 @@ export class ConfigServerError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code?: string
+    public readonly code?: string,
+    /**
+     * The token the server rotated to before it failed the request. The request still spent the
+     * old token, so the caller must persist this one (F9); absent when the server rotated nothing
+     * (a tunnel-level failure, or a rejection before the token was accepted).
+     */
+    public readonly newServerToken?: string,
+    /** A 409 `precondition_failed`: the commitment keys the server refused (blinded in envelope v3). */
+    public readonly mismatchedPaths?: string[]
   ) {
     super(message);
     this.name = 'ConfigServerError';
   }
+}
+
+/** The ConfigServerError for an inner status of 400 or more, carrying what the error body names. */
+function serverErrorFrom(
+  status: number,
+  parsed: { error?: string; code?: string; newServerToken?: string; mismatchedPaths?: unknown }
+): ConfigServerError {
+  const msg = parsed.error ?? `Config server returned HTTP ${status}`;
+  const paths = Array.isArray(parsed.mismatchedPaths)
+    ? parsed.mismatchedPaths.filter((p): p is string => typeof p === 'string')
+    : undefined;
+  return new ConfigServerError(msg, status, parsed.code, parsed.newServerToken, paths);
 }
 
 /** Default HTTP method for config server requests. */
@@ -67,7 +95,7 @@ export async function configServerFetch<T = unknown>(
   }
 
   // Encrypt the request via E2E tunnel
-  const { key: serverKey, keyId } = await getServerKeyMaterial();
+  const { key: serverKey, keyId } = options.serverKey ?? (await getServerKeyMaterial());
   const { envelope, aesKey } = await sealRequest(
     serverKey,
     keyId,
@@ -79,7 +107,7 @@ export async function configServerFetch<T = unknown>(
 
   // Send through the tunnel
   const tunnelUrl = `${options.serverUrl}/account/api/v1/tunnel`;
-  const resp = await fetch(tunnelUrl, {
+  const resp = await (options.fetchImpl ?? fetch)(tunnelUrl, {
     method: 'POST',
     headers: { 'Content-Type': E2E_CONTENT_TYPE },
     body: JSON.stringify(envelope),
@@ -101,13 +129,11 @@ export async function configServerFetch<T = unknown>(
     error?: string;
     code?: string;
     newServerToken?: string;
+    mismatchedPaths?: unknown;
   };
 
   // Check the inner HTTP status
-  if (status >= 400) {
-    const msg = parsed.error ?? `Config server returned HTTP ${status}`;
-    throw new ConfigServerError(msg, status, parsed.code);
-  }
+  if (status >= 400) throw serverErrorFrom(status, parsed);
 
   return {
     data: parsed,

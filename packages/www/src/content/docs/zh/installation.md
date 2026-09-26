@@ -8,7 +8,7 @@ tags:
 subcategory: setup
 order: 1
 language: zh
-sourceHash: "4ab3480402e5985a"
+sourceHash: "f80f4bf22d4accf1"
 sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
@@ -215,7 +215,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 ## 远程二进制更新
 
-当您对远程机器执行命令时，CLI 会自动配置匹配的 `renet` 二进制文件。如果二进制文件已更新，路由服务器（`rediacc-router`）会自动重启以采用新版本。
+会更改机器的命令（例如部署、备份和 `rdc machine setup`）会自动配置匹配的 `renet` 二进制文件。如果二进制文件已更新，路由服务器（`rediacc-router`）会自动重启以采用新版本。`rdc machine status`、`rdc repo list` 等只读命令绝不会替换二进制文件：它们直接使用机器上已有的版本，并在该版本与 CLI 自带版本不一致时显示警告。
 
 重启是透明的，**不会造成停机**：
 
@@ -225,4 +225,4 @@ docker pull ghcr.io/rediacc/rdc:edge
 - **现有客户端连接（HTTP、TCP、UDP）不受影响。** 路由服务器是配置提供者 -- 它不在数据路径中。Traefik 直接处理所有流量。
 - 您的应用容器不会受到影响 -- 只有系统级的路由服务器进程会重启。
 
-要跳过自动重启，请向任何命令传递 `--skip-router-restart`，或设置环境变量 `REDIACC_SKIP_ROUTER_RESTART=1`。
+要跳过自动重启，请向会配置 renet 的命令传递 `--skip-router-restart`，或设置环境变量 `REDIACC_SKIP_ROUTER_RESTART=1`。

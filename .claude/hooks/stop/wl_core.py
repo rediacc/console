@@ -1,9 +1,6 @@
 """wl_core: shared primitives for the worklist Stop hook.
 
-Stdlib-only, no sibling imports, no I/O beyond what each helper documents.
-Everything here is used by at least two sibling modules; single-consumer
-logic lives with its consumer. WHY comments for each check stay with the
-check, not here.
+Stdlib-only, no sibling imports, no I/O beyond what each helper documents. Everything here is used by at least two sibling modules; single-consumer logic lives with its consumer. WHY comments for each check stay with the check, not here.
 """
 
 import datetime
@@ -17,18 +14,14 @@ import sys
 import tempfile
 import time
 
-# `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
-# Owner accepts any word-ish label, not just hex: a named agent tagged items
-# "(perf6-daemon)", the old hex-only charset failed to parse it, the item read
-# as UNTAGGED, and untagged defaults to mine -- so every OTHER session was
-# blocked on that agent's work. Non-prefix labels now parse as owners and are
-# reported-never-blocking for everyone (including the labeler: only a tag that
-# is a PREFIX of your session id binds you).
+import wl_common
+
+# `- [ ] (5546d4bb) do the thing` -> state " ", owner "5546d4bb" Owner accepts any word-ish label, not just hex: a named agent tagged items "(perf6-daemon)", the old hex-only charset failed to parse it, the item read as UNTAGGED, and untagged defaults to mine -- so every OTHER session was blocked on that agent's work. Non-prefix labels now parse as owners and are
+# reported-never-blocking for everyone (including the labeler: only a tag that is a PREFIX of your session id binds you).
 ITEM = re.compile(
     r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
 )
-# Same shape but INCLUDING tombstones, for the md-sync pass which must see a
-# `[~]` flip as a deletion rather than as an unparseable line.
+# Same shape but INCLUDING tombstones, for the md-sync pass which must see a `[~]` flip as a deletion rather than as an unparseable line.
 ITEM_ANY = re.compile(
     r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
 )
@@ -36,39 +29,26 @@ LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
 # worker:<background-task-id> on a lease line names the OS-checkable delegate.
 WORKER = re.compile(r"worker:([A-Za-z0-9._-]{1,40})")
 DEFAULT_TOKEN = re.compile(r"\bDEFAULT:[ \t]*\S")
-# v12 justification tokens (operator, 2026-07-30: "Too many '[?]'. This is an
-# escape hatch... there should be a field in json like 'why' and possibly
-# many"). A deferral now carries WHY (why THIS session cannot settle it right
-# now) and HOW (the concrete action or evidence that would resolve it), plus
-# optional TRIED / NEEDS / BLOCKED_ON. They live as inline tokens in the item
-# text (so the markdown inbox round-trips them) AND as a real `j` field on
-# the store event (so nothing downstream re-parses prose it wrote itself).
+# v12 justification tokens (operator, 2026-07-30: "Too many '[?]'. This is an escape hatch... there should be a field in json like 'why' and possibly many"). A deferral now carries WHY (why THIS session cannot settle it right now) and HOW (the concrete action or evidence that would resolve it), plus optional TRIED / NEEDS / BLOCKED_ON. They live as inline tokens in the item text
+# (so the markdown inbox round-trips them) AND as a real `j` field on the store event (so nothing downstream re-parses prose it wrote itself).
 JUST_TOKEN = re.compile(r"\b(WHY|HOW|TRIED|NEEDS|BLOCKED_ON|DEFAULT):")
-# WHY values that describe avoidance rather than inability. Deliberately a
-# SHORT list of unambiguous shapes: this regex is the cheap gate at creation
-# time; whether a why that passes it is actually TRUE is the judge's question.
+# WHY values that describe avoidance rather than inability. Deliberately a SHORT list of unambiguous shapes: this regex is the cheap gate at creation time; whether a why that passes it is actually TRUE is the judge's question.
 VAGUE_WHY_RE = re.compile(
     r"\b(did ?not get (to|around)|didn'?t get (to|around)|no time|not yet"
     r"|too busy|later|low priority|will (do|get to)|have?n'?t (had|gotten"
     r"|got around))\b",
     re.IGNORECASE,
 )
-# Same charset the worklist owner tag accepts, so a request's from/to can be
-# written into a `- [?]` line on escalation without re-validation.
+# Same charset the worklist owner tag accepts.
 PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
 
-# Leases beyond this horizon are invalid: a `- [>]` marked "until next year"
-# would be a bypass, not a delegation. 120 also aligns the lease horizon with
-# the top rung of the v10 liveness ladder.
+# Leases beyond this horizon are invalid: a `- [>]` marked "until next year" would be a bypass, not a delegation. 120 also aligns the lease horizon with the top rung of the v10 liveness ladder.
 MAX_LEASE_MIN = 120
 
 
 def parse_justification(text):
     """{field: value} for every WHY:/HOW:/TRIED:/NEEDS:/BLOCKED_ON: token in a
-    deferral's text, keys lowercased. A value runs to the next known token
-    (DEFAULT: included, so the tokens compose in any order) or to the end of
-    the line. Empty values are absent, so `bool(j.get("why"))` is the whole
-    presence test."""
+    deferral's text, keys lowercased. A value runs to the next known token (DEFAULT: included, so the tokens compose in any order) or to the end of the line. Empty values are absent, so `bool(j.get("why"))` is the whole presence test."""
     out = {}
     matches = list(JUST_TOKEN.finditer(text or ""))
     for i, m in enumerate(matches):
@@ -91,10 +71,7 @@ def stamp_now():
 
 
 def stamp_ahead(minutes):
-    """An ISO8601Z stamp `minutes` from now. Used where a message promises a
-    bound (the background check-in's next-earliest time): a claimed latch a
-    reader cannot check from the message alone is not a latch, it is a
-    slogan."""
+    """An ISO8601Z stamp `minutes` from now. Used where a message promises a bound (the background check-in's next-earliest time): a claimed latch a reader cannot check from the message alone is not a latch, it is a slogan."""
     return (utcnow() + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -134,21 +111,32 @@ def lease_state(line):
     return "fresh"
 
 
+def lease_remaining_tag(line):
+    """`, 59m left` for a fresh lease, `` for anything else.
+
+    A DEADLINE THAT IS ONLY ABSOLUTE IS AMBIGUOUS TO A READER IN A DIFFERENT DAY. UTC and a +0200 local clock disagree about the DATE for two hours out of every twenty-four, and during that window an `until:2026-09-08T23:36Z` reads as yesterday to anyone whose own clock says the 9th. That happened on 2026-09-08 and cost a round trip: the lease had 59 minutes left and was reported
+    as expired.
+
+    Relative time has no timezone, so it cannot be misread. Absolute stays too, because it is the form the store round-trips.
+    """
+    m = LEASE.search(line or "")
+    if not m or lease_state(line) != "fresh":
+        return ""
+    stamp = m.group(1)
+    fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
+    try:
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
+    except ValueError:
+        return ""
+    return ", %dm left" % max(0, round((until - utcnow()).total_seconds() / 60))
+
+
 # LINEAGE ALIASES: the ids a compaction gave to ONE conversation.
 #
-# A compaction can hand a continuous session a new id, and the ownership rule --
-# correctly -- then refuses to let it resolve its own items. On 2026-09-02 that
-# left four settled decisions open all night, reported to the operator as a
-# peer's, while the session reasoned about a peer that did not exist.
+# A compaction can hand a continuous session a new id, and the ownership rule -- correctly -- then refuses to let it resolve its own items. On 2026-09-02 that left four settled decisions open all night, reported to the operator as a peer's, while the session reasoned about a peer that did not exist.
 #
-# _LINEAGE maps a BOUND id to the set of ids proven to be the same conversation.
-# It is keyed on the bound id rather than held as a bare set for one reason: a
-# peer session loading this module must never pick up my aliases. `bind_lineage`
-# is called once, with the identity this process actually resolved to.
-# The bound id is held under a reserved key INSIDE the mapping rather than in a
-# separate module global: one object, one write, and no `global` statement for a
-# linter to object to. The key cannot collide with a session id because a session
-# id never contains a space.
+# _LINEAGE maps a BOUND id to the set of ids proven to be the same conversation. It is keyed on the bound id rather than held as a bare set for one reason: a peer session loading this module must never pick up my aliases. `bind_lineage` is called once, with the identity this process actually resolved to. The bound id is held under a reserved key INSIDE the mapping rather than in a
+# separate module global: one object, one write, and no `global` statement for a linter to object to. The key cannot collide with a session id because a session id never contains a space.
 _BOUND_KEY = "bound id"
 _LINEAGE = {}
 
@@ -156,8 +144,7 @@ _LINEAGE = {}
 def bind_lineage(session_id, aliases):
     """Declare that `session_id` is also known by `aliases` (proven, not guessed).
 
-    Called once per process from the store load, after the `lineage` events have
-    been folded and the chain resolved transitively.
+    Called once per process from the store load, after the `lineage` events have been folded and the chain resolved transitively.
     """
     if not session_id:
         return
@@ -168,8 +155,7 @@ def bind_lineage(session_id, aliases):
 def lineage_of(session_id):
     """The proven aliases of `session_id`, or an empty set.
 
-    Returns nothing for an id that is not the bound one, which is what keeps a
-    peer from inheriting this process's adoptions.
+    Returns nothing for an id that is not the bound one, which is what keeps a peer from inheriting this process's adoptions.
     """
     bound = _LINEAGE.get(_BOUND_KEY)
     if not session_id or bound is None:
@@ -180,14 +166,9 @@ def lineage_of(session_id):
 
 
 def owned_by_me(owner, session_id):
-    """An UNTAGGED item is mine: that is the safe default, since the cost of
-    wrongly claiming one is doing a little extra work, while the cost of wrongly
-    disowning one is silently dropping it. A tag is a PREFIX of the session id
-    (CLAUDE.md asks for a short prefix, not the whole uuid).
+    """An UNTAGGED item counts as this session's: that is the safe default, since the cost of wrongly claiming one is doing a little extra work, while the cost of wrongly disowning one is silently dropping it. A tag is a PREFIX of the session id (CLAUDE.md asks for a short prefix, not the whole uuid).
 
-    An ANCESTOR's tag is also mine, but only when a `lineage` event has proven the
-    two ids are one conversation (see wl_lineage.py, which requires a compaction
-    boundary AND shared conversational record uuids). This is the single chokepoint
+    An ANCESTOR's tag is also mine, but only when a `lineage` event has proven the two ids are one conversation (see wl_lineage.py, which requires a compaction boundary AND shared conversational record uuids). This is the single chokepoint
     for 25 call sites, so the compaction fix cannot roll out half-applied.
     """
     if owner is None:
@@ -200,90 +181,31 @@ def owned_by_me(owner, session_id):
 
 
 def same_session(a, b):
-    """Two prefixes/ids denote one session when either is a prefix of the
-    other. Symmetric, because CLI callers pass short prefixes while the Stop
-    event carries the full id, and either side of a comparison can be either.
+    """Two prefixes/ids denote one session when either is a prefix of the other. Symmetric, because CLI callers pass short prefixes while the Stop event carries the full id, and either side of a comparison can be either.
 
-    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its ~40 callers
-    compare PEERS -- request routing, the brief roster, the dead-session sweep, the
-    waiter -- and a predecessor is genuinely gone for every one of those purposes.
-    Widening this would silently change all forty; the ancestor branch belongs in
-    `owned_by_me`, which is about who may RESOLVE an item.
+    DELIBERATELY NOT LINEAGE-AWARE, and that is not an oversight. Its callers compare PEERS -- the brief roster, the dead-session sweep, phantom detection -- and a predecessor is genuinely gone for every one of those purposes. Widening this would silently change all of them; the ancestor branch belongs in `owned_by_me`, which is about who may RESOLVE an item.
     """
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
-# The identity a `<me>` argument may name without being checked against the
-# environment. "operator" is the HUMAN's reply handle: the Stop report prints
-# `worklist.py --answer operator <id> '<words>'` for a person to run in whatever
-# shell they have open, and if that shell happens to be a Claude session's Bash
-# the env check would refuse the one command that line exists to get run. It is
-# a name, not a session prefix, and it was never verifiable.
-#
-# THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt,
-# a session can run `--answer operator <its-own-request-id>` and answer its own
-# question, slipping past the self-answer refusal in wl_requests (which compares
-# `me` to the asker). This is PRE-EXISTING -- it was true before any identity
-# checking existed and is not a regression from it -- and it is recorded here
-# rather than fixed because both obvious fixes are worse than the hole:
-#
-#   * "refuse when a session id IS resolvable" breaks the exact case the
-#     exemption exists for. The documented path is a human pasting the mailed
-#     command into a Claude session's Bash, and that process has a perfectly
-#     resolvable CLAUDE_CODE_SESSION_ID. The fix would refuse the operator.
-#   * "refuse when the answering session is the asker" fails too: the operator
-#     may legitimately paste the answer into the very session that asked, which
-#     is the commonest way it happens.
-#
-# There is no narrower rule, and the reason is structural rather than a gap in
-# imagination: from inside this process, a session forging an operator answer
-# and the operator answering through that session's shell are the SAME syscall,
-# from the same pid, with the same environment. Nothing observable separates
-# them. Any check would be inferring intent from evidence that does not carry
-# it -- which is the shape of validation that produced the incident this module
-# exists to prevent.
-#
-# If this is ever worth closing, the honest mechanism is a SHARED SECRET carried
-# alongside the request (a per-request token the report prints and --answer
-# requires), not an inference. That makes the operator's answer provable instead of
-# assumed. Until someone wants that, an operator answer is trusted by
-# construction, and this comment is why.
-UNCHECKED_ME = ("operator",)
-# A `<me>` must be at least this long. GENERALISED from --poll/--wait, which
-# have carried the floor since they were written for a reason that applies
-# everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook
-# derives from the full session id, so it half-works instead of failing. It
-# also closes the hole `same_session`'s symmetry would leave open -- `--add d`
-# would otherwise be accepted by every session whose id starts with "d".
+# A `<me>` must be at least this long, for a reason that applies everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook derives from the full session id, so it half-works instead of failing. It also closes the hole `same_session`'s symmetry would leave open -- `--add d` would
+# otherwise be accepted by every session whose id starts with "d".
 ME_MIN_LEN = 8
 
 
 def resolve_session_id():
     """This process's TRUE session id, or "" when the environment cannot say.
 
-    ONE definition, deliberately: two answers to "who am I" is how the drift
-    this function exists to catch starts again.
+    ONE definition, deliberately: two answers to "who am I" is how the drift this function exists to catch starts again.
 
-    WORKLIST_SESSION_ID first, and it is an identity ASSERTION rather than a
-    suppression flag -- the test suite declares its fixture id with it, and an
-    operator acting for a dead session declares that session's id. A boolean
-    bypass was rejected: it would suppress the check without stating a claim,
-    which is the exact shape docs/agent-reference/suppressions.md exists to prevent,
-    and
+    WORKLIST_SESSION_ID first, and it is an identity ASSERTION rather than a suppression flag -- the test suite declares its fixture id with it, and an operator acting for a dead session declares that session's id. A boolean bypass was rejected: it would suppress the check without stating a claim, which is the exact shape docs/agent-reference/suppressions.md exists to prevent, and
     it would be reachable by a session trying to get past its own mistake.
 
     CLAUDE_CODE_SESSION_ID, not CLAUDE_SESSION_ID. The latter DOES NOT EXIST;
-    the name was verified against a live Bash-tool child's environment rather
-    than guessed, and a wrong name here resolves to "" forever, which every
-    caller treats as pass -- a check that cannot fire, wearing the costume of
-    one that works. The harness injects it per child spawn and rotates it on
-    /clear, so it is "current id", not "id at startup", and it is
-    platform-neutral (no /proc, no filesystem assumption). Sub-agents inherit
-    the PARENT's value, which is why a sub-agent tagging items with the parent
-    prefix is correct and this check does not fire on the sub-agent fleet.
+    the name was verified against a live Bash-tool child's environment rather than guessed, and a wrong name here resolves to "" forever, which every caller treats as pass -- a check that cannot fire, wearing the costume of one that works. The harness injects it per child spawn and rotates it on /clear, so it is "current id", not "id at startup", and it is platform-neutral (no
+    /proc, no filesystem assumption). Sub-agents inherit the PARENT's value, which is why a sub-agent tagging items with the parent prefix is correct and this check does not fire on the sub-agent fleet.
 
-    Returns "" rather than raising. "" means CANNOT VERIFY, and the honest
-    response to that is to say nothing, not to accuse.
+    Returns "" rather than raising. "" means CANNOT VERIFY, and the honest response to that is to say nothing, not to accuse.
     """
     return str(
         os.environ.get("WORKLIST_SESSION_ID") or os.environ.get("CLAUDE_CODE_SESSION_ID") or ""
@@ -293,51 +215,31 @@ def resolve_session_id():
 def check_me(me):
     """(ok, message) for a `<me>` argument: is this session really that one?
 
-    THE DEFECT THIS CLOSES, in one paragraph because the fix is only obvious
-    once you have seen it. Every `<me>` in this CLI was accepted on SHAPE alone
-    (PREFIX_RE), and nothing had ever compared one to reality. A session copied
-    a SUB-AGENT's namespace token out of a Task-spawn tool result
-    (`agent_id: search-renet2@session-4c3e095a`) and used it as its own `<me>`
+    THE DEFECT THIS CLOSES, in one paragraph because the fix is only obvious once you have seen it. Every `<me>` in this CLI was accepted on SHAPE alone (PREFIX_RE), and nothing had ever compared one to reality. A session copied a SUB-AGENT's namespace token out of a Task-spawn tool result (`agent_id: search-renet2@session-4c3e095a`) and used it as its own `<me>`
     for 26 hours: 219 calls under the wrong identity and 20 under the right one,
     from the same process. Every individual operation SUCCEEDED, because writes
-    and reads key off the same unvalidated string -- so one typo splits a session
-    into two half-sessions, each internally consistent, and nothing downstream
-    can tell. The cost was a peer's message sitting unread in the other half's
-    inbox for 34 hours while it auto-escalated.
+    and reads key off the same unvalidated string -- so one typo splits a session into two half-sessions, each internally consistent, and nothing downstream can tell. The cost was work sitting unseen in the other half for 34 hours.
 
-    ASYMMETRIC on purpose: `sid.startswith(me)`, not `same_session(me, sid)`.
-    On the CLI `me` is always a claim about SELF, never a peer id, so the
-    symmetry that makes same_session right for peer comparisons is exactly what
+    ASYMMETRIC on purpose: `sid.startswith(me)`, not `same_session(me, sid)`. On the CLI `me` is always a claim about SELF, never a peer id, so the symmetry that makes same_session right for peer comparisons is exactly what
     would let a one-character `me` through here. same_session is NOT changed;
     its other callers compare peers, where symmetry is correct.
 
-    REFUSES rather than warns (operator decision). A warning beside a
-    successful command is what the failing session skimmed past for a day:
-    shape-only validation passing silently is what let this through in the
-    first place, and a warning would be read past the same way. A non-zero exit
-    costs one turn and the message carries the copy-paste fix.
+    REFUSES rather than warns (operator decision). A warning beside a successful command is what the failing session skimmed past for a day: shape-only validation passing silently is what let this through in the first place, and a warning would be read past the same way. A non-zero exit costs one turn and the message carries the copy-paste fix.
     """
     me = me or ""
-    if me in UNCHECKED_ME:
-        return True, ""
     sid = resolve_session_id()
     if not sid:
-        # UNVERIFIABLE, so silent. A plain operator terminal has no session id
-        # and must not be accused of impersonating one.
+        # UNVERIFIABLE, so silent. A plain operator terminal has no session id and must not be accused of impersonating one.
         return True, ""
     if len(me) < ME_MIN_LEN and os.environ.get("WORKLIST_SESSION_ID") != me:
-        # The floor is skipped ONLY on an exact declared match, and that
-        # exception is a bug fix, not a loophole. Legacy sub-agents tagged items
+        # The floor is skipped ONLY on an exact declared match, and that exception is a bug fix, not a loophole. Legacy sub-agents tagged items
         # with their NAME (`w2s-en`, 6 chars), and those items still need
         # reading and reassigning. Without this, `WORKLIST_SESSION_ID=w2s-en
         # --list --open w2s-en` was REFUSED and then advised to "rerun with
         # <me>=w2s-en" -- the value it had just rejected. An instruction that
-        # tells you to retry the thing it refused leaves no next move at all,
-        # and it made two real items unreadable.
+        # tells you to retry the thing it refused leaves no next move at all, and it made two real items unreadable.
         #
-        # Safe because the floor guards against an UNDER-SPECIFIED guess about
-        # self, and an exact match to an explicit declaration is not a guess.
-        # A bare short `me` with no declaration is still refused, which is the
+        # Safe because the floor guards against an UNDER-SPECIFIED guess about self, and an exact match to an explicit declaration is not a guess. A bare short `me` with no declaration is still refused, which is the
         # case the floor was built for.
         return False, _identity_msg(
             me,
@@ -350,17 +252,15 @@ def check_me(me):
 
 
 def _identity_msg(me, sid, why):
-    """The refusal text. Names the variable it read, because the next session to
-    hit this needs the mechanism to be inspectable, not just the verdict."""
+    """The refusal text. Names the variable it read, because the next session to hit this needs the mechanism to be inspectable, not just the verdict."""
     src = (
         "WORKLIST_SESSION_ID" if os.environ.get("WORKLIST_SESSION_ID") else "CLAUDE_CODE_SESSION_ID"
     )
     return (
         "identity mismatch: you passed <me>=%s but %s (%s).\n"
-        "Writing as one identity and reading as another gives you two inboxes "
-        "and neither of them is complete: every call succeeds, the halves stay "
-        "internally consistent, and a peer's message waits in the one you are "
-        "not reading.\n"
+        "Writing as one identity and reading as another splits your items in "
+        "two and neither half is complete: every call succeeds, the halves stay "
+        "internally consistent, and items wait in the one you are not reading.\n"
         "  rerun with <me>=%s\n"
         "If you really mean to act as another session, declare it rather than "
         "assert it by hand:\n"
@@ -370,8 +270,7 @@ def _identity_msg(me, sid, why):
 
 
 def project_root(start):
-    """Nearest ancestor holding .git. This repo uses worktrees, where .git is a
-    FILE, not a directory, so test existence rather than is_dir().
+    """Nearest ancestor holding .git. This repo uses worktrees, where .git is a FILE, not a directory, so test existence rather than is_dir().
 
     Resolves from WHEREVER IT IS POINTED, deliberately. It cannot tell a repo
     from a repo nested inside one, and it must not try -- see project_start(),
@@ -387,20 +286,11 @@ def project_root(start):
 def projects_dir(root):
     """Where this repo's session TRANSCRIPTS live, or "" when nothing says.
 
-    ONE definition, for the same reason resolve_session_id is one definition.
-    The Stop hook has always derived this from the event's transcript_path
-    (exact, and it keeps preferring that), but the CLI write path has no event
-    to derive it from and still has to answer "is this section's owner alive?".
-    Two answers to that question is how the drift starts.
+    ONE definition, for the same reason resolve_session_id is one definition. The Stop hook has always derived this from the event's transcript_path (exact, and it keeps preferring that), but the CLI write path has no event to derive it from and still has to answer "is this section's owner alive?". Two answers to that question is how the drift starts.
 
-    The convention, verified on this machine rather than assumed: the harness
-    writes ~/.claude/projects/<abs-repo-path-with-/-as->/<session-uuid>.jsonl,
-    e.g. /home/muhammed/.claude/projects/-home-muhammed-monorepo-console/.
+    The convention, verified on this machine rather than assumed: the harness writes ~/.claude/projects/<abs-repo-path-with-/-as->/<session-uuid>.jsonl, e.g. /home/muhammed/.claude/projects/-home-muhammed-monorepo-console/.
 
-    Returns "" rather than guessing when the directory is absent: "" means
-    CANNOT SAY, and owner_age_hours already treats that as "unknown owner",
-    which is the conservative direction (unknown never reads as dead by
-    transcript, only by its own section stamp).
+    Returns "" rather than guessing when the directory is absent: "" means CANNOT SAY, and owner_age_hours already treats that as "unknown owner", which is the conservative direction (unknown never reads as dead by transcript, only by its own section stamp).
     """
     env = os.environ.get("WORKLIST_PROJECTS_DIR")
     if env:
@@ -420,10 +310,7 @@ _HOOK_ROOT_DEPTH = 3
 def hook_repo_root():
     """The repo this hook FILE lives in, or None if it does not look like one.
 
-    Immune to cwd by construction, which is the whole point: settings.json
-    invokes every hook as "$CLAUDE_PROJECT_DIR/.claude/hooks/...", so this
-    answers the same thing the env var does at hook time, and keeps answering
-    it when a human runs the CLI from a subdirectory with no env var set.
+    Immune to cwd by construction, which is the whole point: settings.json invokes every hook as "$CLAUDE_PROJECT_DIR/.claude/hooks/...", so this answers the same thing the env var does at hook time, and keeps answering it when a human runs the CLI from a subdirectory with no env var set.
     """
     try:
         cand = pathlib.Path(__file__).resolve().parents[_HOOK_ROOT_DEPTH]
@@ -437,13 +324,8 @@ def hook_repo_root():
 def project_start(event=None):
     """Where root resolution STARTS. cwd is the LAST resort, never the first.
 
-    WHY THIS EXISTS, measured 2026-08-06. The Stop event's cwd is wherever the
-    session last worked, and this tree has repos INSIDE the repo: submodules
-    (private/renet) and gitignored non-submodule siblings (private/growth).
-    Resolving from cwd walked project_root() straight into one of those and
-    read ITS branch -- a session on 0804-1 was told to bootstrap `agent/main/`
-    because private/growth happened to be on main. Confirmed twice, on both
-    kinds of nested repo, so it is not a submodule quirk.
+    WHY THIS EXISTS, measured 2026-08-06. The Stop event's cwd is wherever the session last worked, and this tree has repos INSIDE the repo: submodules (private/renet) and gitignored non-submodule siblings (private/growth). Resolving from cwd walked project_root() straight into one of those and read ITS branch -- a session on 0804-1 was told to bootstrap `agent/main/` because
+    private/growth happened to be on main. Confirmed twice, on both kinds of nested repo, so it is not a submodule quirk.
 
     The ladder, and the reason for each rung:
 
@@ -459,12 +341,8 @@ def project_start(event=None):
     3. The event's cwd, then getcwd(). Kept only as a floor for a copy of these
        hooks living somewhere that is not a repo.
 
-    THE FIX THAT LOOKS RIGHT AND IS NOT: teaching project_root() to skip a
-    `.git` file pointing into `/modules/`. This repo is ITSELF a submodule
-    (`gitdir: ../.git/modules/console`), so that walks PAST console, changes
-    the store slug from home_muhammed_monorepo_console to
-    home_muhammed_monorepo, and orphans every open item in one step. Tried and
-    reverted. Anchoring the START is the fix; the WALK is fine as it is.
+    THE FIX THAT LOOKS RIGHT AND IS NOT: teaching project_root() to skip a `.git` file pointing into `/modules/`. This repo is ITSELF a submodule (`gitdir: ../.git/modules/console`), so that walks PAST console, changes the store slug from home_muhammed_monorepo_console to home_muhammed_monorepo, and orphans every open item in one step. Tried and reverted. Anchoring the START is the
+    fix; the WALK is fine as it is.
     """
     env = os.environ.get("CLAUDE_PROJECT_DIR")
     if env:
@@ -480,14 +358,8 @@ def project_start(event=None):
 
 
 def worklist_for(start):
-    # TMPDIR first, then tempfile's search. NOT a bare gettempdir(): on POSIX
-    # that also honours TEMP and TMP, so a machine with TEMP set and TMPDIR
-    # unset would resolve a DIFFERENT worklist path than the old expression did
-    # and silently orphan every live session's open items. This spelling is
-    # byte-identical to `os.environ.get("TMPDIR", "/tmp")` wherever TMPDIR is
-    # set or absent-with-/tmp-present (verified on this machine), and it is what
-    # gives Windows -- which sets TEMP/TMP and never TMPDIR -- a real temp dir
-    # instead of a literal "/tmp" it cannot create.
+    # TMPDIR first, then tempfile's search. NOT a bare gettempdir(): on POSIX that also honours TEMP and TMP, so a machine with TEMP set and TMPDIR unset would resolve a DIFFERENT worklist path than the old expression did and silently orphan every live session's open items. This spelling is byte-identical to `os.environ.get("TMPDIR", "/tmp")` wherever TMPDIR is set or
+    # absent-with-/tmp-present (verified on this machine), and it is what gives Windows -- which sets TEMP/TMP and never TMPDIR -- a real temp dir instead of a literal "/tmp" it cannot create.
     d = pathlib.Path(os.environ.get("TMPDIR") or tempfile.gettempdir()) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
     root = project_root(start)
@@ -520,31 +392,17 @@ AGENT_BRANCH_RE = re.compile(r"[^A-Za-z0-9._-]+")
 def git_branch(root):
     """The slugified current branch, or "" when HEAD is not on one.
 
-    NOTHING UNDER agent/ IS KEYED ON THIS ANY MORE (2026-08-18): the working
-    notes tree is per session, and the only remaining caller is the sub-agent
-    REPORT store in TMPDIR (wl_report), which keys per branch on purpose
-    because a report is most wanted after its branch is gone.
+    NOTHING UNDER agent/ IS KEYED ON THIS ANY MORE (2026-08-18): the working notes tree is per session, and the only remaining caller is the sub-agent REPORT store in TMPDIR (wl_report), which keys per branch on purpose because a report is most wanted after its branch is gone.
 
-    `symbolic-ref --short -q` and NOT `rev-parse --abbrev-ref HEAD`. The latter
-    returns the LITERAL STRING "HEAD" on a detached HEAD, and that string slugs
-    to a perfectly valid directory name, so it would silently seed a junk
-    `HEAD` universe during every interactive rebase. Measured on this worktree:
-    `private/renet` is detached, where abbrev-ref returns "HEAD" and
-    symbolic-ref returns empty. Empty is the honest answer, and callers treat it
-    as "cannot resolve a branch" rather than as a branch name.
+    `symbolic-ref --short -q` and NOT `rev-parse --abbrev-ref HEAD`. The latter returns the LITERAL STRING "HEAD" on a detached HEAD, and that string slugs to a perfectly valid directory name, so it would silently seed a junk `HEAD` universe during every interactive rebase. Measured on this worktree: `private/renet` is detached, where abbrev-ref returns "HEAD" and symbolic-ref
+    returns empty. Empty is the honest answer, and callers treat it as "cannot resolve a branch" rather than as a branch name.
 
-    Slugged because a branch may contain a slash, which would otherwise nest a
-    directory one level deeper than any caller expects.
+    Slugged because a branch may contain a slash, which would otherwise nest a directory one level deeper than any caller expects.
 
-    WORKLIST_AGENT_BRANCH is not decoration. It is how the test suite drives
-    this without a git repo (its fixture leaves `.git` unusable, so
-    `symbolic-ref` exits 128 and every branch-dependent check would be SKIPPED,
-    which is a gate that never fires in its own suite), and it is the escape
-    hatch for a session working mid-rebase.
+    WORKLIST_AGENT_BRANCH is not decoration. It is how the test suite drives this without a git repo (its fixture leaves `.git` unusable, so `symbolic-ref` exits 128 and every branch-dependent check would be SKIPPED, which is a gate that never fires in its own suite), and it is the escape hatch for a session working mid-rebase.
 
     timeout=5, not `_git`'s default 20: the Stop hook's own budget is 15s, so a
-    20s git call could outlive the hook that is waiting for it. `symbolic-ref`
-    is a local read and returns instantly, so 5 is generous.
+    20s git call could outlive the hook that is waiting for it. `symbolic-ref` is a local read and returns instantly, so 5 is generous.
     """
     b = os.environ.get("WORKLIST_AGENT_BRANCH")
     if b is None:
@@ -563,9 +421,7 @@ def git_branch(root):
 
 
 def _cron_field(spec, lo, hi):
-    """The sorted set of matching values for one cron field, or None on any
-    shape this parser does not understand (the caller treats None as
-    unparseable and skips the cron rather than guessing)."""
+    """The sorted set of matching values for one cron field, or None on any shape this parser does not understand (the caller treats None as unparseable and skips the cron rather than guessing)."""
     vals = set()
     for raw_part in spec.split(","):
         part = raw_part.strip()
@@ -593,20 +449,12 @@ def _cron_field(spec, lo, hi):
 
 
 def cron_next(schedule, now=None):
-    """The next fire time (UTC datetime) of a 5-field cron expression after
-    `now`, or None when the expression is unparseable or never fires within
-    60 days.
+    """The next fire time (UTC datetime) of a 5-field cron expression after `now`, or None when the expression is unparseable or never fires within 60 days.
 
-    WHY THIS EXISTS (operator, 2026-07-30): the Stop event's `session_crons`
-    carries the FULL expansion of every scheduled task -- id, schedule, and
-    the exact prompt that will fire -- but the hook was ignoring it and
-    reporting the loop from a hand-declared sidecar that goes stale. The
-    truthful answer to "when does work resume, and what happens then?" is
-    computable from the event; this is the computing half.
+    WHY THIS EXISTS (operator, 2026-07-30): the Stop event's `session_crons` carries the FULL expansion of every scheduled task -- id, schedule, and the exact prompt that will fire -- but the hook was ignoring it and reporting the loop from a hand-declared sidecar that goes stale. The truthful answer to "when does work resume, and what happens then?" is computable from the event;
+    this is the computing half.
 
-    Standard cron semantics including the one everyone forgets: when BOTH
-    day-of-month and day-of-week are restricted, the entry fires when EITHER
-    matches. dow accepts 0-7 with both 0 and 7 meaning Sunday. Python's
+    Standard cron semantics including the one everyone forgets: when BOTH day-of-month and day-of-week are restricted, the entry fires when EITHER matches. dow accepts 0-7 with both 0 and 7 meaning Sunday. Python's
     weekday() has Monday=0, cron has Sunday=0; the +1 %% 7 below is that
     conversion, worth naming because it reads like an off-by-one.
     """
@@ -652,34 +500,21 @@ def tasks_dir(session_id):
     return os.path.join(home, "session-" + session_id[:8])
 
 
-# v19: THE TASK DIR IS NOT ALWAYS NAMED AFTER THE STOP EVENT'S SESSION ID.
-# On 2026-08-08 a session's tasks lived under session-6e7fb45f (the harness
+# v19: THE TASK DIR IS NOT ALWAYS NAMED AFTER THE STOP EVENT'S SESSION ID. On 2026-08-08 a session's tasks lived under session-6e7fb45f (the harness
 # team id) while every Stop event said session_id=d136ac61, so pending_tasks
-# read a directory that did not exist and returned [] for the whole session --
-# the exact "two queues, one supervisor, watching the empty one" failure the
-# v5 docstring below describes, reintroduced one naming scheme later, and
+# read a directory that did not exist and returned [] for the whole session -- the exact "two queues, one supervisor, watching the empty one" failure the v5 docstring below describes, reintroduced one naming scheme later, and
 # INVISIBLE because "missing dir = no evidence" is also the function's
 # legitimate no-manufactured-blocks safety.
 #
-# The join that survives the rename: the session TRANSCRIPT (whose path the
-# Stop event does carry) contains every TaskCreate result verbatim --
-# "Task #<id> created successfully: <subject>" -- and a directory holding a
-# task with that exact id whose subject matches is this session's directory.
-# Content-based, deterministic, and refuses on ambiguity (0 or 2+ matching
-# dirs resolve to None, which downstream treats as "no evidence", never a
-# manufactured block). Cached per process so the fallback's directory scan
-# runs at most once per hook invocation.
+# The join that survives the rename: the session TRANSCRIPT (whose path the Stop event does carry) contains every TaskCreate result verbatim -- "Task #<id> created successfully: <subject>" -- and a directory holding a task with that exact id whose subject matches is this session's directory. Content-based, deterministic, and refuses on ambiguity (0 or 2+ matching dirs resolve to
+# None, which downstream treats as "no evidence", never a manufactured block). Cached per process so the fallback's directory scan runs at most once per hook invocation.
 _TASKS_DIR_CACHE = {}
 _TASK_CREATED_RE = re.compile(r"Task #(\d+) created successfully: ([^\"\\\n]{10,})")
 
 
 def _taskdir_cache_file(key):
-    # Same /tmp family the hook already uses. Persisting the resolution is what
-    # lets TRANSCRIPT-LESS processes (the --state CLI verb at worklist.py:884,
-    # any other verb) agree with the stop battery: without it, world_sig written
-    # by the CLI and world_sig checked by the hook would hash DIFFERENT task
-    # sets whenever the primary dir is empty, and STATE.md would look eternally
-    # stale. Found by review on #559 (the sweep finding).
+    # Same /tmp family the hook already uses. Persisting the resolution is what lets TRANSCRIPT-LESS processes (the --state CLI verb at worklist.py:884, any other verb) agree with the stop battery: without it, world_sig written by the CLI and world_sig checked by the hook would hash DIFFERENT task sets whenever the primary dir is empty, and STATE.md would look eternally stale.
+    # Found by review on #559 (the sweep finding).
     return os.path.join(tempfile.gettempdir(), "claude-worklist", "taskdir." + key)
 
 
@@ -690,16 +525,11 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
     if key in _TASKS_DIR_CACHE:
         return _TASKS_DIR_CACHE[key]
     d = tasks_dir(session_id)
-    # An EMPTY primary dir is "no evidence", not an answer: the live failure
-    # had a zero-file session-d136ac61 relic (created 2026-07-23, before the
-    # harness renamed its task store) shadowing the real session-6e7fb45f.
-    # Only a primary dir that actually holds a task settles the question.
+    # An EMPTY primary dir is "no evidence", not an answer: the live failure had a zero-file session-d136ac61 relic (created 2026-07-23, before the harness renamed its task store) shadowing the real session-6e7fb45f. Only a primary dir that actually holds a task settles the question.
     if os.path.isdir(d) and glob.glob(os.path.join(d, "*.json")):
         _TASKS_DIR_CACHE[key] = d
         return d
-    # Durable cache next: a previous process (with a transcript) may have
-    # resolved this already. Validated before trust -- the dir must still exist
-    # and still hold a task; a stale pointer is discarded, never followed.
+    # Durable cache next: a previous process (with a transcript) may have resolved this already. Validated before trust -- the dir must still exist and still hold a task; a stale pointer is discarded, never followed.
     try:
         cf = _taskdir_cache_file(key)
         if os.path.isfile(cf):
@@ -718,9 +548,7 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
                 size = fh.tell()
                 fh.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
                 tail = fh.read().decode("utf-8", "replace")
-            # Newest creations first: the last one is the least likely to have
-            # been deleted since. Subjects are read out of JSONL, so cut each
-            # at the first escape sequence and prefix-match on what is left.
+            # Newest creations first: the last one is the least likely to have been deleted since. Subjects are read out of JSONL, so cut each at the first escape sequence and prefix-match on what is left.
             matches = _TASK_CREATED_RE.findall(tail)[-5:][::-1]
             cands = set()
             for tid, raw_subj in matches:
@@ -760,12 +588,9 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
 def pending_tasks(session_id, transcript_path=None):
     """Harness Task-list items that are not done, as [(id, subject, status)].
 
-    THE POINT OF v5. The hook used to see only the markdown worklist, and a
-    session kept that at zero open items while six tasks sat pending in the
-    harness. Two queues, one supervisor, watching the empty one.
+    THE POINT OF v5. The hook used to see only the markdown worklist, and a session kept that at zero open items while six tasks sat pending in the harness. Two queues, one supervisor, watching the empty one.
 
-    Never raises: a missing or malformed task dir means "no evidence of pending
-    work", which cannot manufacture a block out of nothing.
+    Never raises: a missing or malformed task dir means "no evidence of pending work", which cannot manufacture a block out of nothing.
     """
     if not session_id:
         return []
@@ -787,16 +612,10 @@ def pending_tasks(session_id, transcript_path=None):
 
 
 def actionable_tasks(session_id, transcript_path=None):
-    """Pending harness tasks whose every recorded blocker is finished, as
-    [(id, subject)] -- the tasks a waiting session could be working RIGHT NOW.
+    """Pending harness tasks whose every recorded blocker is finished, as [(id, subject)] -- the tasks a waiting session could be working RIGHT NOW.
 
-    v19, operator directive 2026-08-08: a session sat in "pure background
-    wait" for hours while a fully-planned task was pending and unblocked; the
-    check-in kept saying "this is not a demand for other work" because the
-    pure-wait state never consulted the harness queue. A pending task with an
-    unresolved `blockedBy` is legitimately parked; one without is not.
-    A blocker id whose file no longer exists counts as resolved (deleted
-    tasks vanish from the dir). Never raises."""
+    v19, operator directive 2026-08-08: a session sat in "pure background wait" for hours while a fully-planned task was pending and unblocked; the check-in kept saying "this is not a demand for other work" because the pure-wait state never consulted the harness queue. A pending task with an unresolved `blockedBy` is legitimately parked; one without is not. A blocker id whose
+    file no longer exists counts as resolved (deleted tasks vanish from the dir). Never raises."""
     if not session_id:
         return []
     d = _resolve_tasks_dir(session_id, transcript_path)
@@ -831,8 +650,7 @@ def actionable_tasks(session_id, transcript_path=None):
 
 def task_statuses(session_id, transcript_path=None):
     """{id: (status, subject)} for ALL harness tasks, completed included.
-    pending_tasks() serves the queue; this serves the completion-evidence
-    check and the liveness ladder, which need TRANSITIONS, not the queue."""
+    pending_tasks() serves the queue; this serves the completion-evidence check and the liveness ladder, which need TRANSITIONS, not the queue."""
     if not session_id:
         return {}
     d = _resolve_tasks_dir(session_id, transcript_path) or tasks_dir(session_id)
@@ -873,43 +691,19 @@ TRANSCRIPT_TAIL_BYTES = int(os.environ.get("WORKLIST_TAIL_BYTES", "2000000"))
 def transcript_tail(path, want=None, tries=6, delay=0.25):
     """(last_assistant_text, tool_names_since_last_user, readable) from the tail.
 
-    THE RACE THIS RIDES OUT, found the hard way: the gate blocked a message that
-    DID carry its `## Remaining` heading. Re-reading the transcript afterwards
-    showed the heading present in a single text block, so the extraction was
-    fine and the file simply had not been flushed when the hook ran. A check that
-    reads the transcript to judge the message that just ended is racing the
+    THE RACE THIS RIDES OUT, found the hard way: the gate blocked a message that DID carry its `## Remaining` heading. Re-reading the transcript afterwards showed the heading present in a single text block, so the extraction was fine and the file simply had not been flushed when the hook ran. A check that reads the transcript to judge the message that just ended is racing the
     writer, so when `want` is absent it retries briefly before believing it.
 
-    `readable` distinguishes "I read the message and the heading is absent" from
-    "I could not read any assistant text at all". Those need different verdicts:
-    the first is the session's fault, the second is this hook's.
+    `readable` distinguishes "I read the message and the heading is absent" from "I could not read any assistant text at all". Those need different verdicts: the first is the session's fault, the second is this hook's.
 
-    Tail-read, because the transcript is tens of MB and the hook runs on every
-    stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so
-    this is not the expensive part of anything.
+    Tail-read, because the transcript is tens of MB and the hook runs on every stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so this is not the expensive part of anything.
     """
-    if not path or not os.path.exists(path):
+    # The first (probably partial) line is dropped unless the read started at byte 0.
+    recs = wl_common.tail_records(path, TRANSCRIPT_TAIL_BYTES)
+    if recs is None:
         return "", [], False
-    try:
-        with open(path, "rb") as f:
-            f.seek(0, 2)
-            size = f.tell()
-            f.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
-            chunk = f.read()
-    except OSError:
-        return "", [], False
-    # Drop the first (probably partial) line unless we read from byte 0.
-    lines = chunk.split(b"\n")
-    if size > TRANSCRIPT_TAIL_BYTES:
-        lines = lines[1:]
     turn_texts, since_user = [], []
-    for raw in lines:
-        if not raw.strip():
-            continue
-        try:
-            rec = json.loads(raw)
-        except ValueError:
-            continue
+    for rec in recs:
         rtype = rec.get("type")
         if rtype == "user":
             # A new operator turn resets what "this turn" means.
@@ -922,18 +716,14 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "text" and block.get("text", "").strip():
-                # EVERY narration line before a tool call is its own text block,
-                # so the LAST block mid-turn is a one-liner, not the answer. That
-                # is what made this check fire on a message that did carry its
-                # heading. Judge the whole turn's output instead.
+                # EVERY narration line before a tool call is its own text block, so the LAST block mid-turn is a one-liner, not the answer. That is what made this check fire on a message that did carry its heading. Judge the whole turn's output instead.
                 turn_texts.append(block["text"])
             elif block.get("type") == "tool_use" and block.get("name"):
                 since_user.append(block["name"])
     last_text = "\n\n".join(turn_texts)
     readable = bool(last_text)
     if want is not None and readable and want.search(last_text) is None and tries > 1:
-        # Not there yet. Give the writer a moment rather than calling the session
-        # a liar about a message it actually wrote.
+        # Not there yet. Give the writer a moment rather than calling the session a liar about a message it actually wrote.
         time.sleep(delay)
         return transcript_tail(path, want, tries - 1, delay)
     return last_text, since_user, readable
@@ -941,12 +731,8 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
 
 # ARM THE EXIT RECORDER, LAST, and inside a suppress that swallows everything.
 #
-# wl_core is imported by 16 modules and by every one of the ~880 python3
-# invocations the case suite makes, so this line is the single seam that turns
-# "profile every hook process" into one edit with no settings change, no wrapper
-# and no per-guard work. It is also, for the same reason, the single line that
-# could break every hook at once -- which is why the import itself is guarded, why
-# wl_resprofile.install() never raises, why its exit handler writes nothing to
+# wl_core is imported by 16 modules and by every one of the ~880 python3 invocations the case suite makes, so this line is the single seam that turns "profile every hook process" into one edit with no settings change, no wrapper and no per-guard work. It is also, for the same reason, the single line that could break every hook at once -- which is why the import itself is guarded,
+# why wl_resprofile.install() never raises, why its exit handler writes nothing to
 # stdout or stderr, and why WORKLIST_PROFILE=off exists. A profiler that can
 # change the exit code of the thing it measures is not a profiler.
 try:

@@ -106,7 +106,7 @@ export class CliRunner {
   }
 
   /**
-   * Resolve the CLI. CI installs it globally (install-cli-global.sh runs in
+   * Resolve the CLI. CI installs it globally (rediacc_ci.setup.install_cli_global runs in
    * every e2e job), so prefer `rdc` on PATH there; locally fall back to the
    * built bundle via node. `E2E_CLI_BIN` overrides both.
    */
@@ -114,40 +114,29 @@ export class CliRunner {
     const configName = options.configName ?? E2E_CLI_CONFIG;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      // License-less ops VMs (07 §2). CI shells have no agent ancestor, so the
-      // REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
+      // License-less ops VMs (07 §2). CI shells have no agent ancestor, so the REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
       ...(options.licensing ? {} : { REDIACC_SKIP_MACHINE_ACTIVATION: '1' }),
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',
       REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
       ...options.env,
     };
-    // An inherited value would defeat `licensing: true` silently, since the
-    // spread above only omits the key rather than clearing it.
+    // An inherited value would defeat `licensing: true` silently, since the spread above only omits the key rather than clearing it.
     if (options.licensing) delete env.REDIACC_SKIP_MACHINE_ACTIVATION;
 
     if (process.env.E2E_CLI_BIN) {
       return new CliRunner(process.env.E2E_CLI_BIN, [], env, undefined, configName);
     }
 
-    // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves its
-    // local renet from config.renetPath (default the bare name `renet`, a PATH
-    // lookup). On a dev box PATH finds /usr/bin/renet — the HOST'S installed
-    // PRODUCTION build — and the CLI's first machine connection DEPLOYS that
-    // into the fleet's install slot, silently replacing the dev renet the
-    // harness setup put there and breaking every bridge surface the production
-    // build lacks (found live: `functions` vanished fleet-wide right after
+    // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves its local renet from config.renetPath (default the bare name `renet`, a PATH lookup). On a dev box PATH finds /usr/bin/renet — the HOST'S installed PRODUCTION build — and the CLI's first machine connection DEPLOYS that into the fleet's install slot, silently replacing the dev renet the harness setup put
+    // there and breaking every bridge surface the production build lacks (found live: `functions` vanished fleet-wide right after
     // suite 23's own preflight; both binaries report 0.0.0-dev so the version
-    // guard never rejects the downgrade). The pin is an ABSOLUTE
-    // config.renetPath (written by initConfig): resolveRenetPath uses an
+    // guard never rejects the downgrade). The pin is an ABSOLUTE config.renetPath (written by initConfig): resolveRenetPath uses an
     // absolute existing path DIRECTLY, no PATH lookup to lose; the PATH prepend
     // is belt-and-suspenders.
     //
     // Resolved BEFORE the CI branch on purpose: the harness sets CI=true in
-    // .env to make Playwright behave CI-like locally, which used to route into
-    // the CI branch WITHOUT the pin — so a local run kept deploying the host's
-    // production renet. resolveDevRenet returns undefined when no dev binary
-    // exists (real CI / SEA), making the pin a safe no-op there.
+    // .env to make Playwright behave CI-like locally, which used to route into the CI branch WITHOUT the pin — so a local run kept deploying the host's production renet. resolveDevRenet returns undefined when no dev binary exists (real CI / SEA), making the pin a safe no-op there.
     const devRenetPath = resolveDevRenet();
     if (devRenetPath) {
       env.PATH = `${path.dirname(devRenetPath)}${path.delimiter}${env.PATH ?? ''}`;
@@ -226,9 +215,7 @@ export class CliRunner {
    */
   async initConfig(sshKeyPath: string): Promise<CliResult> {
     const result = await this.exec(['config', 'init', this.configName, '--ssh-key', sshKeyPath]);
-    // Pin the dev renet as an ABSOLUTE top-level renetPath (host-local field,
-    // unencrypted per config sensitivity rules) so the CLI never PATH-guesses
-    // and downgrades the fleet to the host's production binary. See create().
+    // Pin the dev renet as an ABSOLUTE top-level renetPath (host-local field, unencrypted per config sensitivity rules) so the CLI never PATH-guesses and downgrades the fleet to the host's production binary. See create().
     if (this.devRenetPath) {
       const file = CliRunner.configFilePath(this.configName);
       const cfg = JSON.parse(readFileSync(file, 'utf8')) as { renetPath?: string };

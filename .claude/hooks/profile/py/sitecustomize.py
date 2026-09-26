@@ -1,35 +1,18 @@
 """Arm the resource exit-recorder for EVERY python3 under this repo.
 
-WHY THIS FILE EXISTS. `wl_core.py` arms `wl_resprofile.install()`, so coverage was
-"processes that import wl_core", not "every python3" -- and the progress doc claimed
-the latter. Measured 2026-09-03: three `python3 -c pass` calls added ZERO records to
-exit.jsonl. `sitecustomize` is imported by `site` at interpreter startup, before any
-user code, which is the only seam that reaches a plain `python3` without rewriting
-the command (a PreToolUse hook cannot mutate tool_input.command).
+WHY THIS FILE EXISTS. `wl_core.py` arms `wl_resprofile.install()`, so coverage was "processes that import wl_core", not "every python3" -- and the progress doc claimed the latter. Measured 2026-09-03: three `python3 -c pass` calls added ZERO records to exit.jsonl. `sitecustomize` is imported by `site` at interpreter startup, before any user code, which is the only seam that reaches
+a plain `python3` without rewriting the command (a PreToolUse hook cannot mutate tool_input.command).
 
-WHY IT IS SEPARATE FROM wl_resprofile, and why it imports so little. Importing that
-module costs +33 ms at interpreter start because it pulls in json, pathlib and
-tempfile. That is fine for a hook process, which imports them anyway; it is not fine
-on EVERY python3, where it roughly doubles startup. So this file carries its own
-minimal recorder: os, sys, time, resource, atexit, and `%`-formatted JSON. The
-record is byte-compatible with wl_resprofile's `v:1` shape, deliberately, so one
-reader serves both.
+WHY IT IS SEPARATE FROM wl_resprofile, and why it imports so little. Importing that module costs +33 ms at interpreter start because it pulls in json, pathlib and tempfile. That is fine for a hook process, which imports them anyway; it is not fine on EVERY python3, where it roughly doubles startup. So this file carries its own minimal recorder: os, sys, time, resource, atexit, and
+`%`-formatted JSON. The record is byte-compatible with wl_resprofile's `v:1` shape, deliberately, so one reader serves both.
 
-WE SHADOW THE DISTRO sitecustomize, so we re-export it. `/usr/lib/python3.14/
-sitecustomize.py` installs apport's exception hook; PYTHONPATH precedes stdlib on
-sys.path, so ours wins and apport would silently vanish. Its five lines are
-reproduced verbatim at the end.
+WE SHADOW THE DISTRO sitecustomize, so we re-export it. `/usr/lib/python3.14/ sitecustomize.py` installs apport's exception hook; PYTHONPATH precedes stdlib on sys.path, so ours wins and apport would silently vanish. Its five lines are reproduced verbatim at the end.
 
-CONTRACTS, and they are not optional because this runs on every interpreter:
-never print, never raise, never change the exit status, and write nothing when the
+CONTRACTS, and they are not optional because this runs on every interpreter: never print, never raise, never change the exit status, and write nothing when the
 cwd is outside the repo. `WORKLIST_PROFILE=off` disables it. A root that resolves to
-`/` is REFUSED -- that is how a module copied to a fixture path once made every cwd
-on the machine in scope, and the stray `~/.claude/resprofile/<day>/` folder it left
-is still there.
+`/` is REFUSED -- that is how a module copied to a fixture path once made every cwd on the machine in scope, and the stray `~/.claude/resprofile/<day>/` folder it left is still there.
 
-ONE RECORD PER PROCESS. `_WL_SITEPROFILE` marks the interpreter as armed; wl_core's
-own `install()` is idempotent by `atexit` but would double-count, so it checks the
-same marker.
+ONE RECORD PER PROCESS. `_WL_SITEPROFILE` marks the interpreter as armed; wl_core's own `install()` is idempotent by `atexit` but would double-count, so it checks the same marker.
 """
 
 import atexit
@@ -97,8 +80,7 @@ def _run_delay_ns():
 
     That sysctl is 0 on this kernel and the counter is live anyway: measured
     2026-09-03, two burners pinned to one core read run_delay=752ms while a third
-    alone on its own core read 0. wl_resprofile reported this signal dead from the
-    sysctl, which is the mirror image of trusting a flag over a measurement.
+    alone on its own core read 0. wl_resprofile reported this signal dead from the sysctl, which is the mirror image of trusting a flag over a measurement.
     """
     try:
         with open("/proc/self/schedstat") as fh:
@@ -114,10 +96,7 @@ def _esc(s):
 
 def _on_exit(root, day_dir):
     try:
-        # THE RICHER RECORDER WINS. A hook process imports wl_core, which arms
-        # wl_resprofile with PSI, cgroup scope and availability flags this file
-        # deliberately does not pay for. It stamps the marker "super" when it does,
-        # and the check happens HERE, at exit, so atexit ordering cannot decide it.
+        # THE RICHER RECORDER WINS. A hook process imports wl_core, which arms wl_resprofile with PSI, cgroup scope and availability flags this file deliberately does not pay for. It stamps the marker "super" when it does, and the check happens HERE, at exit, so atexit ordering cannot decide it.
         if os.environ.get(_ARMED) == "super":
             return
         rs = resource.getrusage(resource.RUSAGE_SELF)
@@ -174,8 +153,7 @@ def _install():
 
 _install()
 
-# The distro sitecustomize we shadow, verbatim: install the apport exception
-# handler if available.
+# The distro sitecustomize we shadow, verbatim: install the apport exception handler if available.
 try:
     import apport_python_hook
 except ImportError:

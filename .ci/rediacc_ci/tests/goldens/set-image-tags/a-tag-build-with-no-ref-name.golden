@@ -1,0 +1,7 @@
+# twin .ci/scripts/ci/set-image-tags.sh blob 6922deff8d4d7a06c67586e73d09a392c4bf46d9
+exit: 1
+--- stdout ---
+--- stderr ---
+<prog>: line 81: GITHUB_REF_NAME: GITHUB_REF_NAME is not set for a tag build
+--- github env ---
+""

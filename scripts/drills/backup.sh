@@ -102,6 +102,8 @@ DRILL_EMAIL="drill-backup-$(date +%s)@rediacc.io"
 DRILL_PASSWORD="DrillBackup123!"
 CONFIG_NAME="drill-backup"
 RDC="$DRILL_ROOT_DIR/rdc.sh"
+# This drill targets only the disposable local ops VMs, so a renet built from a dirty private/renet tree may be uploaded to them.
+export REDIACC_ALLOW_DIRTY_RENET=1
 RENET_BIN="${DRILL_RENET_BIN:-$DRILL_ROOT_DIR/private/renet/bin/renet}"
 
 # The chunk store: the SAME RustFS `./run.sh account dev` starts for config
@@ -232,7 +234,7 @@ leg_enabled() {
 # it. Without this a typo is SILENT: `--legs a,b,c,d,e,f,g,h,jj` drops leg jj,
 # runs everything else, and prints PASSED for a narrower battery than the
 # operator asked for. The harness protects against the empty case (zero
-# assertions reports SKIPPED, never PASSED — see check-drill-verdicts.sh), but
+# assertions reports SKIPPED, never PASSED — see check_drill_verdicts.py), but
 # nothing protected against a partially-mistyped list.
 KNOWN_LEGS="a b c d e f g h i j k"
 validate_legs() {

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// `config list` must keep listing when one config file is unparseable:
-// the bad entry degrades to a status:"invalid" row instead of aborting.
+// `config list` must keep listing when one config file is unparseable: the bad entry degrades to a status:"invalid" row instead of aborting.
 
 const { mockList, mockLoad, mockPrint, mockError } = vi.hoisted(() => ({
   mockList: vi.fn(),

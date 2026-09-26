@@ -20,8 +20,25 @@
 readonly DEVBOX_LIB_LOADED=1
 
 DEVBOX_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=/dev/null
-source "$DEVBOX_LIB_DIR/find-port.sh"
+
+# Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
+# rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
+# `derive_slot` and `find_port_block` below name the module directly.
+#
+# The shim's LOAD-TIME refusal is kept deliberately. This file's slot decides
+# which URL a bookmark resolves to, so a missing interpreter must be a named
+# failure rather than a plausible wrong number. REDIACC_CI_ROOT is the
+# package's single environment override (see .ci/rediacc_ci/paths.py).
+DEVBOX_CI_DIR="${REDIACC_CI_ROOT:+$REDIACC_CI_ROOT/.ci}"
+DEVBOX_CI_DIR="${DEVBOX_CI_DIR:-$(cd "$DEVBOX_LIB_DIR/.." && pwd)}"
+if [[ ! -d "$DEVBOX_CI_DIR/rediacc_ci/core" ]]; then
+    echo "devbox.sh: cannot find rediacc_ci under '$DEVBOX_CI_DIR' (set REDIACC_CI_ROOT)" >&2
+    return 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "devbox.sh: python3 is required; the port logic lives in rediacc_ci.core.ports" >&2
+    return 1
+fi
 
 DEVBOX_LABEL_KEY="com.rediacc.devbox.worktree"
 # The hostname the container was BUILT with, baked in as a label so it can be
@@ -67,7 +84,8 @@ devbox_mount_root() {
 devbox_container_name() {
     local wt slot
     wt="$(devbox_worktree)"
-    slot="$(derive_slot "$wt" 100)"
+    slot="$(PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports derive-slot "$wt" 100)"
     printf 'rediacc-devbox-%s-%s\n' "$slot" "$(basename "$wt")"
 }
 
@@ -128,7 +146,8 @@ devbox_base_port() {
     fi
 
     # First time: derive from the worktree path.
-    find_port_block "$(devbox_worktree)" \
+    PYTHONPATH="$DEVBOX_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-port-block "$(devbox_worktree)" \
         "$DEVBOX_PORT_RANGE_START" "$DEVBOX_PORT_RANGE_END" "$DEVBOX_PORT_BLOCK"
 }
 
@@ -443,6 +462,56 @@ _devbox_bind_if_present() {
     fi
 }
 
+# The tracked scripts bound into every devbox, one "<source under .devcontainer/>:<container path>" pair per line. Data rather than inline `-v` flags so devbox_up and devbox_missing_binds read ONE list: a bind exists only from `docker run` on, so a container created before a line was added lacks it forever, and devbox_missing_binds is how devbox_up notices and recreates.
+#
+# devbox-bws.sh is the login-shell hook that exports BWS_ACCESS_TOKEN from the host's token-only file ~/.config/rediacc/bws-access-token (the file bound read-only by devbox_home_binds, never copied), so `bws` works inside the devbox without the token entering the image, Config.Env, a label or a log.
+devbox_script_binds() {
+    printf '%s\n' \
+        "devbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh" \
+        "devbox-autostart.sh:/usr/local/bin/devbox-autostart.sh" \
+        "start-ttyd.sh:/usr/local/bin/start-ttyd.sh" \
+        "devbox-bws.sh:/etc/profile.d/zz-devbox-bws.sh"
+}
+
+# Host files bound by NAME into the container user's home, one "<path relative to $HOME>:<mode>" pair per line (mode empty for read-write). Each is bound only when it exists on the host (_devbox_bind_if_present says why).
+#
+# .config/rediacc/bws-access-token is the console's own bootstrap credential, the token-only file devbox-bws.sh reads. Its directory is the rdc CLI's READ-WRITE state, so the FILE is bound read-only on top of that directory bind (listed after it): a CLI or E2E run in the container can neither delete nor rewrite the root credential.
+DEVBOX_CONTAINER_HOME="/home/vscode"
+devbox_home_binds() {
+    printf '%s\n' \
+        ".gitconfig:ro" \
+        ".git-credentials:ro" \
+        ".config/gh:" \
+        ".claude:" \
+        ".claude.json:" \
+        ".config/rediacc:" \
+        ".config/rediacc/bws-access-token:ro"
+}
+
+# Print each bind destination the existing container does NOT have mounted, one per line: every devbox_script_binds entry, plus every devbox_home_binds entry whose host source exists now (one created on the host after the container was, such as .config/rediacc/bws-access-token, is drift too). Empty when there is no container, or when docker cannot inspect it: an unanswerable probe must never be the reason a container is destroyed.
+devbox_missing_binds() {
+    local d cid mounts pair dest
+    d="$(devbox_docker)"
+    cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || return 0
+    mounts="$($d inspect -f '{{range .Mounts}}{{.Destination}}{{"\n"}}{{end}}' "$cid" 2>/dev/null)" || return 0
+    [[ -n "$mounts" ]] || return 0
+    while IFS= read -r pair; do
+        dest="${pair#*:}"
+        if ! grep -qxF -- "$dest" <<<"$mounts"; then
+            printf '%s\n' "$dest"
+        fi
+    done < <(devbox_script_binds)
+    while IFS= read -r pair; do
+        pair="${pair%%:*}"
+        [[ -e "$HOME/$pair" ]] || continue
+        dest="$DEVBOX_CONTAINER_HOME/$pair"
+        if ! grep -qxF -- "$dest" <<<"$mounts"; then
+            printf '%s\n' "$dest"
+        fi
+    done < <(devbox_home_binds)
+}
+
 devbox_up() { # devbox_up [force_pull] [--no-rehost]
     local force_pull="${1:-false}"
     # The opt-out, honoured from either side: the positional flag for a direct
@@ -490,6 +559,27 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         fi
     fi
 
+    # RECREATE ON BIND DRIFT, under the same guard and opt-out as the hostname. Without it, a bind added to devbox_script_binds never reaches an existing container: "already running" returns early below and `docker start` keeps the old mount table.
+    if [[ -n "$cid" ]]; then
+        local missing_binds missing_one
+        missing_binds="$(devbox_missing_binds)"
+        if [[ -n "$missing_binds" ]]; then
+            log_warn "Bind drift: the container predates these bind mounts:"
+            while IFS= read -r missing_one; do log_info "  $missing_one"; done <<<"$missing_binds"
+            if [[ "$rehost" != true ]]; then
+                log_info "--no-rehost given: leaving it alone. Those files stay absent inside it."
+            else
+                log_warn "About to DESTROY and recreate this container to add them:"
+                log_info "  container:  $(devbox_container_name)"
+                log_info "  killed:     anything running inside it (account dev, VS Code sessions, agents)"
+                log_info "  kept:       the repo itself -- it is a bind mount from the host"
+                log_info "  keep the container as it is instead: DEVBOX_NO_REHOST=1 ./run.sh devbox up"
+                devbox_remove || return 1
+                cid=""
+            fi
+        fi
+    fi
+
     if devbox_container_running; then
         log_info "Devbox already running for this worktree"
         devbox_status
@@ -516,6 +606,108 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     name="$(devbox_container_name)"
     docker_gid="$(getent group docker 2>/dev/null | cut -d: -f3)"
 
+    # KVM PASSTHROUGH, and why it is conditional rather than unconditional.
+    #
+    # Until 2026-09-07 this `docker run` passed no `--device` at all, so a devbox
+    # on a KVM-capable host had NO /dev/kvm and `rdc ops` could never boot a VM
+    # inside it. The image has shipped qemu-kvm, libvirt-daemon-system, virtinst
+    # and dnsmasq-base since the beginning (.devcontainer/Dockerfile:148-155), so
+    # everything was provisioned for a device that was never bound -- which is
+    # why this survived so long: nothing was missing except the one flag.
+    #
+    # THE GID IS DERIVED, NEVER HARDCODED, and this is the part that makes the
+    # difference between a bound device and a usable one. `--device` reproduces
+    # the host's owning GROUP inside the container, not the container's own `kvm`
+    # group: measured here, the host device is gid 991 while the image's `kvm`
+    # group is gid 105. So the Dockerfile's `usermod -aG kvm vscode` grants
+    # NOTHING on the bound node, and start-kvm.sh papered over that with
+    # `sudo chmod 0666 /dev/kvm` -- world-writable, at runtime, needing sudo.
+    # Adding the HOST gid to the container user is the same trick this function
+    # already plays for docker two lines up, it needs no sudo, and it widens no
+    # permissions beyond what the host already models.
+    #
+    # WHAT LIBVIRT'S DEFAULT NETWORK NEEDS, measured rather than assumed. It is a
+    # NAT bridge, so starting it creates virbr0 and brings it up: that needs
+    # NET_ADMIN. It ALSO writes a per-bridge sysctl, and that is the part no
+    # capability can grant -- docker mounts /proc/sys read-only, so the real
+    # error (recovered only by removing the `2>/dev/null` at start-kvm.sh:136)
+    # was:
+    #
+    #   cannot write to '/proc/sys/net/ipv6/conf/virbr0/disable_ipv6'
+    #   on bridge 'virbr0': Read-only file system
+    #
+    # SYS_ADMIN plus a remount in start-kvm.sh is how /proc/sys becomes writable,
+    # and the alternative was measured before it was rejected. Operator ruling
+    # 2026-09-07, on these numbers:
+    #
+    #   --security-opt systempaths=unconfined   works, adds NO capability, but
+    #     flips /proc/sysrq-trigger and /proc/sys/kernel/core_pattern from
+    #     read-only to WRITABLE. The first can reboot the host; the second is a
+    #     documented container-escape vector. (/proc/kcore is readable+writable
+    #     either way, so it is not part of the delta.)
+    #   --cap-add SYS_ADMIN + remount           works, keeps docker's /proc masks
+    #     intact so both of those stay read-only. SYS_ADMIN is a broad capability,
+    #     but it widens what the container may DO rather than handing it two
+    #     concrete host-damage primitives.
+    #   --privileged                            strictly wider than either and
+    #     buys nothing more here.
+    #
+    # TWO ROUTES THAT NEED NO PRIVILEGE AT ALL WERE TRIED AND REFUTED, recorded so
+    # nobody repeats the experiments:
+    #
+    #   network XML with ipv6="yes"                    -> 0 active. libvirt writes
+    #     net.ipv6.conf.virbr0.disable_ipv6 regardless of what the network declares.
+    #   --sysctl net.ipv6.conf.{all,default}.disable_ipv6=1 -> 0 active. Setting the
+    #     namespaced sysctl does not stop libvirt writing the per-bridge one, which
+    #     does not exist until virbr0 does.
+    #
+    # THE MINIMUM WAS MEASURED, not guessed. Three probes on this host, counting
+    # active networks after libvirtd came up:
+    #
+    #   NET_ADMIN + NET_RAW + unconfined -> 1 active
+    #   NET_ADMIN           + unconfined -> 1 active
+    #   no caps             + unconfined -> 0 active
+    #
+    # So NET_RAW is NOT required and was dropped: dnsmasq gets its DHCP socket
+    # without it here. `--privileged` would also work and is what most guides
+    # reach for; it is refused because it grants every capability plus
+    # unrestricted device access to a container that already mounts the
+    # workspace, when one capability and one unmask are provably enough.
+    #
+    # Empty on a host without KVM, and every expansion below then vanishes, so a
+    # machine with no nested virtualisation still starts a clean devbox.
+    local kvm_gid=""
+    if [ -e /dev/kvm ]; then
+        kvm_gid="$(stat -c '%g' /dev/kvm 2>/dev/null || true)"
+    fi
+
+    # /dev/net/tun IS A SECOND DEVICE, and binding only /dev/kvm is a half fix.
+    # Found 2026-09-07 by driving the real thing: with /dev/kvm bound, libvirtd
+    # running and the default network ACTIVE, `./rdc.sh ops up --basic` still
+    # died inside virt-install with
+    #
+    #   ERROR Unable to open /dev/net/tun, is tun module loaded?
+    #
+    # because a container gets no /dev/net at all unless the node is passed in.
+    # qemu opens /dev/net/tun itself to attach the guest NIC to virbr0, so a
+    # devbox with KVM but no tun boots a CPU that cannot be given a network
+    # interface: every VM fails at creation.
+    #
+    # NO --group-add here, deliberately, and the asymmetry with /dev/kvm above
+    # is a property of the two nodes rather than an oversight. The host's
+    # /dev/kvm is 0660 root:<kvm gid>, so access needs the owning group; the
+    # host's /dev/net/tun is 0666 root:root, so it is already world readable and
+    # writable and the container user needs nothing. Adding its owning gid would
+    # mean adding gid 0.
+    #
+    # Gated on the node existing rather than on kvm_gid: they are separate host
+    # facts (tun is a module, KVM is hardware plus a module), so a host missing
+    # either one still starts a clean devbox with the other bound.
+    local tun_dev=""
+    if [ -e /dev/net/tun ]; then
+        tun_dev=/dev/net/tun
+    fi
+
     local vscode_port=$((base_port + DEVBOX_OFFSET_VSCODE))
     local studio_port=$((base_port + DEVBOX_OFFSET_STUDIO))
     local term_port=$((base_port + DEVBOX_OFFSET_TERM))
@@ -525,7 +717,11 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # absolute, and a nested `docker -v $(pwd)` is resolved by the host daemon,
     # so only an identical path is correct in both.
     binds+=(-v "$mount_root:$mount_root")
-    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/devbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh:ro")
+    # The tracked scripts, from devbox_script_binds, all read-only. The notes below say why autostart and start-ttyd are bound rather than baked; devbox-bws.sh is bound so the token is read from the host file at shell start and never baked.
+    local script_pair
+    while IFS= read -r script_pair; do
+        binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/${script_pair%%:*}:${script_pair#*:}:ro")
+    done < <(devbox_script_binds)
     # The entrypoint resolves its helper as `$(dirname "$0")/devbox-autostart.sh`,
     # i.e. /usr/local/bin/. Bind-mounted rather than baked into the image for the
     # same reason as the entrypoint itself: both are edited far more often than
@@ -533,7 +729,6 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # simply never be tested. Missing this bind is silent -- the entrypoint's
     # `[ -x "$AUTOSTART" ]` guard turns "the file is not there" into "autostart
     # is disabled", which looks exactly like working as intended.
-    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/devbox-autostart.sh:/usr/local/bin/devbox-autostart.sh:ro")
     # start-ttyd.sh, for the third time and the same reason. It is ALSO baked into
     # the image (Dockerfile COPYs it, and the hub invokes that copy by name), so
     # skipping this bind looks harmless -- the file is there either way. It is not:
@@ -541,20 +736,18 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     # terminal would be untestable locally and land unverified. Measured while
     # wiring this up: the container was running an August 23 copy whose idempotency
     # guard read a PID file nothing ever wrote.
-    binds+=(-v "$DEVBOX_LIB_DIR/../../.devcontainer/start-ttyd.sh:/usr/local/bin/start-ttyd.sh:ro")
     [[ -S /var/run/docker.sock ]] && binds+=(-v /var/run/docker.sock:/var/run/docker.sock)
 
     # Credentials and agent config, named rather than the whole $HOME: ~/.ssh
     # and cloud credentials stay out of the container.
-    local container_home="/home/vscode"
-    while IFS= read -r line; do [[ -n "$line" ]] && binds+=("$line"); done < <(
-        _devbox_bind_if_present "$HOME/.gitconfig" "$container_home/.gitconfig" ro
-        _devbox_bind_if_present "$HOME/.git-credentials" "$container_home/.git-credentials" ro
-        _devbox_bind_if_present "$HOME/.config/gh" "$container_home/.config/gh"
-        _devbox_bind_if_present "$HOME/.claude" "$container_home/.claude"
-        _devbox_bind_if_present "$HOME/.claude.json" "$container_home/.claude.json"
-        _devbox_bind_if_present "$HOME/.config/rediacc" "$container_home/.config/rediacc"
-    )
+    # The list is devbox_home_binds, shared with devbox_missing_binds.
+    local home_pair home_rel
+    while IFS= read -r home_pair; do
+        home_rel="${home_pair%%:*}"
+        while IFS= read -r line; do [[ -n "$line" ]] && binds+=("$line"); done < <(
+            _devbox_bind_if_present "$HOME/$home_rel" "$DEVBOX_CONTAINER_HOME/$home_rel" "${home_pair#*:}"
+        )
+    done < <(devbox_home_binds)
 
     local slug conflicts line
     slug="$(devbox_slug)"
@@ -639,6 +832,11 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         "${labels[@]}" \
         "${binds[@]}" \
         ${docker_gid:+--group-add "$docker_gid"} \
+        ${kvm_gid:+--device /dev/kvm} \
+        ${tun_dev:+--device /dev/net/tun} \
+        ${kvm_gid:+--group-add "$kvm_gid"} \
+        ${kvm_gid:+--cap-add NET_ADMIN} \
+        ${kvm_gid:+--cap-add SYS_ADMIN} \
         -e HOST_UID="$(id -u)" \
         -e HOST_GID="$(id -g)" \
         -e DOCKER_GID="${docker_gid:-}" \
@@ -953,7 +1151,13 @@ devbox_mount_ok() {
 devbox_identity_ok() {
     local out
     out="$(devbox_exec "git -C '$(devbox_worktree)' status --porcelain" 2>&1)" || true
-    if printf '%s' "$out" | grep -q 'dubious ownership'; then
+    # `[ -n "$(...)" ]`, not `| grep -q`. $out is `git status --porcelain` over the
+    # whole worktree, so it is UNBOUNDED, and this file sets no pipefail of its own
+    # but INHERITS it from every sourcer (scripts/dev/worktree.sh:12, and
+    # .ci/lib/local-common.sh:937,983 via rdc.sh:11). Losing grep -q's race here is
+    # silent in the worst direction: the detector stops seeing "dubious ownership"
+    # and devbox_identity_ok returns SUCCESS on a broken exec identity.
+    if [ -n "$(printf '%s' "$out" | grep 'dubious ownership')" ]; then
         log_error "devbox exec identity is wrong: git refuses the worktree as another user's"
         log_info "Exec as 'vscode' (the entrypoint renumbers it to your uid), never as root."
         return 1

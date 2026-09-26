@@ -1,8 +1,4 @@
-// IMPORTANT: temp-config-env MUST be the first import so it redirects the
-// config dir before config-file-storage captures getConfigDir(). This file is
-// listed in biome.json's organizeImports-off override precisely so the sort
-// cannot move this line down into the block below and reintroduce the ENOENT
-// redirect race (a mechanical `biome check --write` did exactly that once).
+// IMPORTANT: temp-config-env MUST be the first import so it redirects the config dir before config-file-storage captures getConfigDir(). This file is listed in biome.json's organizeImports-off override precisely so the sort cannot move this line down into the block below and reintroduce the ENOENT redirect race (a mechanical `biome check --write` did exactly that once).
 import { TEST_CONFIG_HOME } from './helpers/temp-config-env.js';
 
 import { readFileSync } from 'node:fs';
@@ -149,7 +145,7 @@ describe('persist unification (R2-F3 data-loss regression + per-field encryption
     expect((await configFileStorage.load(CONFIG_NAME)).version).toBe(v0 + 1);
   });
 
-  it('T6: remote push includes spec buckets and excludes state', async () => {
+  it('T6: remote push includes spec buckets and state (T17)', async () => {
     await configFileStorage.update(CONFIG_NAME, (cfg) => ({
       ...cfg,
       resources: {
@@ -182,6 +178,7 @@ describe('persist unification (R2-F3 data-loss regression + per-field encryption
     expect(pushed).toBeDefined();
     expect(pushed?.resources?.clusters?.c1).toBeDefined();
     expect(pushed?.resources?.machines?.m1).toBeDefined();
-    expect(pushed?.state).toBeUndefined();
+    // T17: state syncs with the rest; the adapter's projection leaves only the device-local pointers home.
+    expect(pushed?.state).toEqual(config.state);
   });
 });

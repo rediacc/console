@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Assert the sanctioned-command registry still says something true.
 
-A registry row is a rule agents are held to, so a row that has quietly stopped
-matching is worse than no row: it reads as an active guard while guarding
-nothing. Three things are checked per row, and all three are about the row
-being HONEST rather than about its content:
+A registry row is a rule agents are held to, so a row that has quietly stopped matching is worse than no row: it reads as an active guard while guarding nothing. Three things are checked per row, and all three are about the row being HONEST rather than about its content:
 
   * its own `example` must still match its `pattern` -- otherwise the rule is
     dead and nobody can tell by reading it;
@@ -14,8 +11,7 @@ being HONEST rather than about its content:
   * any tool named in `use` must exist on disk -- pointing an agent at a
     replacement that is not there turns a block into a dead end.
 
-Called by check-ci-watch-recipe.sh; kept as a file rather than an inline
-heredoc so shfmt and shellcheck see plain shell in the caller.
+Called by `rediacc_ci.quality.ci_watch_recipe` as `python3 <path> <registry> <root>`; kept as its own file, which is how the retired bash twin invoked it too.
 """
 
 import importlib.util

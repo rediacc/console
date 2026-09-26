@@ -4,9 +4,7 @@ For full command syntax and options, see [reference.md](reference.md).
 
 ## High-level container commands (PREFERRED)
 
-Container operations are first-class `repo` verbs. They take a repo ref positionally
-(`my-app`, `my-app:staging`) and derive the machine from it. The container is selected
-with `-c` and is only needed when the repo runs more than one.
+Container operations are first-class `repo` verbs. They take a repo ref positionally (`my-app`, `my-app:staging`) and derive the machine from it. The container is selected with `-c` and is only needed when the repo runs more than one.
 
 ```bash
 rdc repo logs <repo> -c <container> --lines 50      # logs (add -f to follow)
@@ -28,12 +26,9 @@ rdc repo exec <repo> -c <container> -i -- bash      # interactive shell in the c
 | Check repo status | `rdc repo status <repo>` |
 | Check machine health | `rdc machine health` |
 
-`rdc repo exec` passes the container command's own exit code straight through, so it
-works in scripts and conditionals.
+`rdc repo exec` passes the container command's own exit code straight through, so it works in scripts and conditionals.
 
-**Flag placement:** everything after `--` is sent to the container verbatim, so the CLI's
-own flags (`-c`, `-i`, `-u`, `--debug`) must come **before** `--`. A `--debug` written
-after `--` becomes an argument of the remote command and never turns on CLI debug output.
+**Flag placement:** everything after `--` is sent to the container verbatim, so the CLI's own flags (`-c`, `-i`, `-u`, `--debug`) must come **before** `--`. A `--debug` written after `--` becomes an argument of the remote command and never turns on CLI debug output.
 
 ## rdc run — Low-Level Escape Hatch (hidden, debugging only)
 

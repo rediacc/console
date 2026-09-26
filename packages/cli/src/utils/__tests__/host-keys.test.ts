@@ -7,9 +7,7 @@ import {
   shortFingerprint,
 } from '../host-keys.js';
 
-// Real hostinger host keys observed during the incident that motivated this
-// module: the pin that had gone stale, and the key the host was actually
-// offering. Using real blobs keeps the fingerprint assertions honest.
+// Real hostinger host keys observed during the incident that motivated this module: the pin that had gone stale, and the key the host was actually offering. Using real blobs keeps the fingerprint assertions honest.
 const OLD_ED25519 = 'AAAAC3NzaC1lZDI1NTE5AAAAICrdYxwn02/Fqco8Pn6DTkW6dG2yogjIOe4K1bxuw06f';
 const NEW_ED25519 = 'AAAAC3NzaC1lZDI1NTE5AAAAIDo5MxnUtG9Ie+slGgDyHWlx7r6VWsV0yF9K5vVzZG6/';
 const RSA = 'AAAAB3NzaC1yc2EAAAADAQABAAABgQCkAMTTKw+6MbBy9EdCNhXac6xKxzqeErEQrwPvSfTmN5dpxyqp';
@@ -113,8 +111,7 @@ describe('classifyKeyChange', () => {
   });
 
   it('compares per algorithm rather than across the whole file', () => {
-    // ed25519 rotated, rsa untouched. Reporting "a key changed" without the
-    // algorithm would lose which one.
+    // ed25519 rotated, rsa untouched. Reporting "a key changed" without the algorithm would lose which one.
     const before = `${line(OLD_ED25519)}\n${line(RSA, 'ssh-rsa')}`;
     const after = `${line(NEW_ED25519)}\n${line(RSA, 'ssh-rsa')}`;
     const byType = Object.fromEntries(
@@ -132,8 +129,7 @@ describe('classifyKeyChange', () => {
   });
 
   it('ignores an algorithm the host no longer offers', () => {
-    // A server dropping a legacy algorithm is not the same security event as a
-    // key changing, so it must not appear as a change.
+    // A server dropping a legacy algorithm is not the same security event as a key changing, so it must not appear as a change.
     const before = `${line(OLD_ED25519)}\n${line(RSA, 'ssh-rsa')}`;
     const changes = classifyKeyChange(before, line(OLD_ED25519));
     expect(changes.map((c) => c.type)).toEqual(['ssh-ed25519']);

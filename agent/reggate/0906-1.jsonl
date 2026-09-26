@@ -1,0 +1,23 @@
+{"kind":"charge","sig":"4caa5b018e9e","why":"proven","at":"2026-09-07T21:09:05Z","br":"0906-1"}
+{"kind":"charge","sig":"d320a2e7a168","why":"proven","at":"2026-09-07T22:21:42Z","br":"0906-1"}
+{"kind":"charge","sig":"e751f27a0b85","why":"proven","at":"2026-09-08T00:25:03Z","br":"0906-1"}
+{"kind":"charge","sig":"757ea2957ebc","why":"proven","at":"2026-09-08T01:16:13Z","br":"0906-1"}
+{"kind":"charge","sig":"b5e08a8c7c0d","why":"proven","at":"2026-09-08T02:23:32Z","br":"0906-1"}
+{"kind":"charge","sig":"e4fe4482c8d8","why":"proven","at":"2026-09-08T02:47:17Z","br":"0906-1"}
+{"kind":"charge","sig":"46fa2fa552e9","why":"proven","at":"2026-09-08T03:41:30Z","br":"0906-1"}
+{"kind":"charge","sig":"57c29d78592f","why":"proven","at":"2026-09-08T06:56:24Z","br":"0906-1"}
+{"kind":"charge","sig":"0a22a48d5b80","why":"proven","at":"2026-09-08T10:20:43Z","br":"0906-1"}
+{"kind":"charge","sig":"d2644f4827fb","why":"proven","at":"2026-09-08T15:27:46Z","br":"0906-1"}
+{"kind":"charge","sig":"d1463c08a18a","why":"proven","at":"2026-09-08T16:28:17Z","br":"0906-1"}
+{"kind":"debt","sig":"d95acc3ab2b9","blind_spot":"Tests did not verify worklist.py --state behavior when stdin is unavailable or non-tty, allowing a blocking read to proceed undetected in non-interactive invocation contexts.","surface":"unit","artifact":".ci/test-worklist.py","charged":11,"at":"2026-09-08T16:32:23Z","br":"0906-1"}
+{"kind":"charge","sig":"d95acc3ab2b9","why":"capped","at":"2026-09-08T16:32:23Z","br":"0906-1"}
+{"kind":"charge","sig":"0cdfe5be76f1","why":"proven","at":"2026-09-08T16:50:23Z","br":"0906-1"}
+{"kind":"charge","sig":"8de0ae5e94e0","why":"proven","at":"2026-09-08T17:27:05Z","br":"0906-1"}
+{"kind":"debt","sig":"b49739dccf14","blind_spot":"Shell hook stdin handling is not tested by static gates. A hook reading stdin without closing the fd hangs silently during execution; code analysis cannot detect runtime blocking behavior.","surface":"hooks","artifact":".claude/hooks/test-hooks.sh","charged":14,"at":"2026-09-08T17:44:29Z","br":"0906-1"}
+{"kind":"charge","sig":"b49739dccf14","why":"capped","at":"2026-09-08T17:44:29Z","br":"0906-1"}
+{"kind":"charge","sig":"eb0c79e306e0","why":"proven","at":"2026-09-09T03:01:32Z","br":"0906-1"}
+{"kind":"charge","sig":"4c74ebcf80b5","why":"proven","at":"2026-09-09T06:53:02Z","br":"0906-1"}
+{"kind":"charge","sig":"76bc4ed56f66","why":"proven","at":"2026-09-10T08:29:10Z","br":"0906-1"}
+{"kind":"charge","sig":"3c7ecc10ae3d","why":"proven","at":"2026-09-10T11:26:26Z","br":"0906-1"}
+{"kind":"debt","sig":"dbf46e5a4ba4","blind_spot":"Exit code alone cannot detect silent jq type errors; jq may return null or empty without failing when given mismatched types, so gates checking only exit status miss corrupted output.","surface":"gates","artifact":".github/workflows/ci-quality.yml","charged":19,"at":"2026-09-10T11:58:15Z","br":"0906-1"}
+{"kind":"charge","sig":"dbf46e5a4ba4","why":"capped","at":"2026-09-10T11:58:15Z","br":"0906-1"}

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: tr
-sourceHash: "c898204d1ff917f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### Kimlik Doğrulama
@@ -36,7 +36,7 @@ API tokenleri makineler arası işlemleri doğrular (CLI lisans aktivasyonu, dur
 - `subscription:read` -- Abonelik detaylarını okuma
 
 **Güvenlik özellikleri:**
-- IP bağlama: ilk istek tokeni o IP adresine kilitler
+- IP bağlama: bir token yalnızca ilk isteğinin geldiği IP adresinde geçerlidir; yeni bir adres için TOTP doğrulaması ya da yeniden giriş gerekir (aşağıya bakın)
 - Ekip kapsamlandırma: tokenler belirli bir ekiple sınırlandırılabilir
 - Otomatik iptal: oluşturucu organizasyondan kaldırıldığında tokenler iptal edilir
 
@@ -46,6 +46,18 @@ Token oluşturma:
 # Token değeri yalnızca bir kez gösterilir -- güvenli şekilde saklayın
 ```
 
+#### IP adresi değiştiğinde
+
+Bir IP adresine bağlı token başka her adresten reddedilir; örneğin internet sağlayıcısı yeni bir adres verdiğinde. Taşımayı CLI üstlenir:
+
+- **Etkileşimli terminal, 2FA açık**: CLI kimlik doğrulama uygulamasındaki 6 haneli kodu sorar, tokeni yeni adrese taşır ve komutu yeniden çalıştırır. Taşıma için yedek kodlar kabul edilmez.
+- **Betikler ve CI (terminal yok)**: komut başarısız olur ve iki çözümü de belirtir: etkileşimli bir terminalde herhangi bir `rdc` komutunu bir kez çalıştırıp (örneğin `rdc subscription status`) kodu girmek ya da `rdc subscription login` çalıştırmak.
+- **2FA kapalı**: token taşınamaz. `rdc subscription login` yeni bir token verir; 2FA açıkken bir sonraki taşıma için yalnızca kod yeterlidir.
+- **Yanlış kodlar**: 15 dakika içinde 5 yanlış kod taşımayı kilitler; önce 5 dakika, sonra her seferinde iki katı, en fazla 1 saat. 4 kilitten sonra o token için taşıma, bir sonraki `rdc subscription login` işlemine kadar kapatılır.
+- IP bağlaması `unbound` veya `cloudflare` olan **executor tokenleri** bundan etkilenmez.
+
+Her taşıma, eski ve yeni adresle birlikte portalın etkinlik günlüğünde görünür.
+
 ### Cihaz Kodu Akışı
 
 CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulaması yapabilir:
@@ -53,7 +65,7 @@ CLI, cihaz kodu akışını kullanarak ekransız makinelerde kimlik doğrulamas�
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Gösterir: XXXX-XXXX-XX kodunu https://www.rediacc.com/account/authorize adresine girin
 # Onaydan sonra CLI otomatik olarak kimlik bilgilerini alır
 ```

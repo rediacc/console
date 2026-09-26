@@ -1,0 +1,4 @@
+# The staged renet binary (deploy-proxy.sh writes it); the directory is tracked so the
+# Dockerfile COPY always has a source.
+*
+!.gitignore

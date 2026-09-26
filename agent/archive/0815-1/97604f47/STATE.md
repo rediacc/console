@@ -26,15 +26,18 @@ It is deliberately unpushed: pushing supersedes CI 32036929682 attempt 2, which 
 
 ## Why the merge is held
 
-GitHub is mid-incident: `githubstatus.com/api/v2/status.json` returns "Partial System Outage", indicator `major`, live at 14:2xZ. Merging #568 IS the release path -- git tag, GitHub Release, R2 upload, EDGE DEPLOY. Pausing is reversible; a half-deployed edge is not. Landing CI 32036929682 failed attempt 1 (mac-x64, opensuse-16.0 E2E, plus CI Complete reflecting them); the watchdog auto-retried and ATTEMPT 2 is clean so far at 54/0. Watch `brsafsxwc`.
+GitHub is mid-incident: `githubstatus.com/api/v2/status.json` returns "Partial System Outage", indicator `major`, live at 14:2xZ. Merging #568 IS the release path -- git tag, GitHub Release, R2 upload, EDGE DEPLOY. Pausing is reversible; a half-deployed edge is not. Landing CI 32036929682 failed attempt 1 (mac-x64, opensuse-16.0 E2E, plus CI Complete reflecting them); the watchdog
+auto-retried and ATTEMPT 2 is clean so far at 54/0. Watch `brsafsxwc`.
 
 ## A wrong diagnosis of mine, corrected in d3d0d0cd0
 
-I claimed `repos/<r>/issues/<n>/comments` 404s on PRIVATE repos "under this token" and wrote that into a code comment. FALSE. Sampling 8 calls per repo: the private repo passed ONCE and failed 7 times while the public passed 8/8, and one success disproves a permissions story outright. It was incident load. The GraphQL fallback STAYS -- it keeps the gate runnable through a degraded API, and both instruments failing still fails closed.
+I claimed `repos/<r>/issues/<n>/comments` 404s on PRIVATE repos "under this token" and wrote that into a code comment. FALSE. Sampling 8 calls per repo: the private repo passed ONCE and failed 7 times while the public passed 8/8, and one success disproves a permissions story outright. It was incident load. The GraphQL fallback STAYS -- it keeps the gate runnable through a degraded
+API, and both instruments failing still fails closed.
 
 ## Next action
 
-WAIT for the outage to clear, then in order: push `d3d0d0cd0` -> let CI go green -> `gh pr merge 568 --repo rediacc/console --rebase --auto` (never `--admin`, never `--squash`) -> `git checkout main && git merge --ff-only origin/main` -> `git submodule update --init --recursive` -> CHECK THE `bump-none` LABEL FIRST, because a release-free merge is a normal outcome and "no Release run" then means correct, not missing -> if release-worthy, watch Console CI on `main`, then the Release run -> re-sync, since CD pushes two `[skip ci]` commits back to `main` -> finish ON `main` and say so; the next task needs a fresh `MMDD-N` branch before any tracked file is edited.
+WAIT for the outage to clear, then in order: push `d3d0d0cd0` -> let CI go green -> `gh pr merge 568 --repo rediacc/console --rebase --auto` (never `--admin`, never `--squash`) -> `git checkout main && git merge --ff-only origin/main` -> `git submodule update --init --recursive` -> CHECK THE `bump-none` LABEL FIRST, because a release-free merge is a normal outcome and "no Release
+run" then means correct, not missing -> if release-worthy, watch Console CI on `main`, then the Release run -> re-sync, since CD pushes two `[skip ci]` commits back to `main` -> finish ON `main` and say so; the next task needs a fresh `MMDD-N` branch before any tracked file is edited.
 
 If the operator says proceed despite the outage, do it. The hold is my judgement, not their instruction.
 

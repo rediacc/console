@@ -23,7 +23,8 @@ The OTLP and Pyroscope ingest endpoints use basic auth against a Traefik middlew
 | Renet | Received via `REDIACC_OTLP_USER` / `REDIACC_OTLP_PASS` env vars, injected by the CLI when spawning `renet execute` via SSH. Renet never contacts the account server itself. |
 | Account Server | Read from the `OTLP_CLIENT_CREDENTIALS` Cloudflare Worker secret on each regional deployment. |
 
-Previously (before renet#51), credentials were baked into the CLI bundle via esbuild `define` and into the renet binary via Go `-ldflags -X`. Both paths leaked the credentials: esbuild `define` inlines the value as a JS string literal, and Go records the full ldflags line in `.go.buildinfo` (recoverable via `go version -m` or `strings`). The runtime-fetch model fixes both leaks and enables per-region credentials that rotate without rebuilds.
+Previously (before renet#51), credentials were baked into the CLI bundle via esbuild `define` and into the renet binary via Go `-ldflags -X`. Both paths leaked the credentials: esbuild `define` inlines the value as a JS string literal, and Go records the full ldflags line in `.go.buildinfo` (recoverable via `go version -m` or `strings`). The runtime-fetch model fixes both leaks and
+enables per-region credentials that rotate without rebuilds.
 
 **Default-deny and opt-out.** Telemetry is disabled (no requests sent) when any of these is true:
 - The account server returns `{otlp: null}` for this region (bench, on-premise, or intentionally disabled).

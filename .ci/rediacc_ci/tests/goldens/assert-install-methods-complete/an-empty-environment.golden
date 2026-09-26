@@ -1,0 +1,18 @@
+# twin .ci/scripts/ci/assert-install-methods-complete.sh blob 8cbcd4c65fcdb42795a86d453d07b770c76b7cdc
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Some installation method tests failed
+--- summary ---
+## Install Method Test Results
+
+| Platform | Result |
+|----------|--------|
+| Linux x64 (Binary, Docker, APT, DNF, APK, Pacman, Quick, Linuxbrew) | <unset> |
+| Linux arm64 (Binary, Docker, Quick) | <unset> |
+| macOS ARM64 (Binary, Homebrew) | <unset> |
+| macOS x64 (Binary, Homebrew) | <unset> |
+| Windows x64 (Binary) | <unset> |
+| Windows arm64 (Binary) | <unset> |
+
+**Status:** Some installation method tests failed

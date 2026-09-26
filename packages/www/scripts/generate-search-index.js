@@ -52,8 +52,7 @@ function generateSearchIndex() {
     const searchIndex = [];
     let idCounter = 0;
 
-    // Translations are deliberately NOT indexed: indexing them buried the blog
-    // and docs hits under hundreds of UI-string matches.
+    // Translations are deliberately NOT indexed: indexing them buried the blog and docs hits under hundreds of UI-string matches.
 
     // Part 2: Index blog posts
     console.log('📝 Indexing blog posts...');
@@ -82,10 +81,7 @@ function generateSearchIndex() {
       fs.mkdirSync(publicDir, { recursive: true });
     }
 
-    // Group entries by language and write one JSON per locale. The runtime
-    // fetches /search-index-<lang>.json so visitors only download their own
-    // locale (~10x smaller than the combined file). search-index.json is kept
-    // as a byte-identical copy of the English file for backward compat.
+    // Group entries by language and write one JSON per locale. The runtime fetches /search-index-<lang>.json so visitors only download their own locale (~10x smaller than the combined file). search-index.json is kept as a byte-identical copy of the English file for backward compat.
     const byLang = new Map();
     for (const entry of searchIndex) {
       const lang = entry.language ?? DEFAULT_LANG;
@@ -93,8 +89,7 @@ function generateSearchIndex() {
       byLang.get(lang).push(entry);
     }
 
-    // Stale per-locale files left over from a previous generation would
-    // pollute git status and confuse the freshness check. Sweep before write.
+    // Stale per-locale files left over from a previous generation would pollute git status and confuse the freshness check. Sweep before write.
     for (const file of fs.readdirSync(publicDir)) {
       if (/^search-index(-[a-z]{2})?\.json$/.test(file)) {
         fs.unlinkSync(path.join(publicDir, file));
@@ -109,15 +104,13 @@ function generateSearchIndex() {
       console.log(`  → ${path.relative(projectRoot, outPath)}: ${entries.length} items`);
     }
 
-    // Backward-compat fallback: any consumer that hardcoded the legacy URL
-    // gets English content rather than a 404.
+    // Backward-compat fallback: any consumer that hardcoded the legacy URL gets English content rather than a 404.
     const enPath = path.join(publicDir, 'search-index-en.json');
     const fallbackPath = path.join(publicDir, 'search-index.json');
     if (fs.existsSync(enPath)) {
       fs.copyFileSync(enPath, fallbackPath);
     } else {
-      // No English content was indexed (would happen only if src/content/docs/en/ vanished).
-      // Write an empty array so the runtime fetch still succeeds.
+      // No English content was indexed (would happen only if src/content/docs/en/ vanished). Write an empty array so the runtime fetch still succeeds.
       fs.writeFileSync(fallbackPath, '[]\n');
     }
 
@@ -168,8 +161,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           const { data: frontmatter, content: rawContent } = matter(fileContent);
 
           // Resolve `{{t:...}}` exactly as the rendered page does. This generator reads
-          // the markdown itself rather than going through Astro's remark pipeline, so
-          // without this the index shipped the raw placeholders: 2,122 per locale, and a
+          // the markdown itself rather than going through Astro's remark pipeline, so without this the index shipped the raw placeholders: 2,122 per locale, and a
           // docs search returned titles reading `{{t:cli.docs.sectionTitles.backup}}`.
           // The built HTML was clean the whole time, which is why nobody saw it.
           const content = resolveKeys(rawContent, langDir, filePath);
@@ -225,12 +217,8 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
             });
           }
 
-          // Walk the markdown body section by section (split on H2/H3).
-          // Each section produces ONE index entry whose `body` is the full
-          // stripped section text — that's what makes buried terms searchable.
-          // Every section also carries the stable English fragment its heading
-          // renders with (see src/plugins/heading-anchors.mjs), so a result can
-          // land ON the matching section instead of the top of the page.
+          // Walk the markdown body section by section (split on H2/H3). Each section produces ONE index entry whose `body` is the full stripped section text — that's what makes buried terms searchable. Every section also carries the stable English fragment its heading renders with (see src/plugins/heading-anchors.mjs), so a result can land ON the matching section instead of the
+          // top of the page.
           const slug = file.replace(/\.mdx?$/, '');
           const collection = path.basename(collectionDir);
           const sectionAnchors = englishAnchorsFor(collection, file).filter(
@@ -240,10 +228,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
             (h) => h.depth === 2 || h.depth === 3
           );
           if (sectionHeadings.length !== sectionAnchors.length) {
-            // The build enforces full heading alignment with the English source
-            // (rehype-stable-heading-ids); a mismatch here means THIS script's
-            // sectioning drifted from that contract, and a silently wrong
-            // fragment is worse than a loud failure.
+            // The build enforces full heading alignment with the English source (rehype-stable-heading-ids); a mismatch here means THIS script's sectioning drifted from that contract, and a silently wrong fragment is worse than a loud failure.
             throw new Error(
               `${collection}/${langDir}/${file}: ${sectionHeadings.length} H2/H3 section(s) ` +
                 `but ${sectionAnchors.length} English anchor(s); cannot assign search fragments`
@@ -304,16 +289,13 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           });
         }
 
-        // Index other fields same as above...
-        // (keep existing indexing logic)
+        // Index other fields same as above... (keep existing indexing logic)
       });
     }
 
     console.log(`  ✓ Indexed ${totalFiles} ${category.toLowerCase()} files`);
   } catch (error) {
-    // Swallowing this used to ship a build with a silently truncated index:
-    // the generator deletes the previous files before writing (see the sweep
-    // above), so a half-indexed run is strictly worse than a loud failure.
+    // Swallowing this used to ship a build with a silently truncated index: the generator deletes the previous files before writing (see the sweep above), so a half-indexed run is strictly worse than a loud failure.
     console.error(`✗ Failed to index ${category}:`, error.message);
     throw error;
   }
@@ -335,9 +317,7 @@ function truncateExcerpt(text, maxLength = 150) {
 function splitIntoSections(markdown, fallbackHeading, boundaries) {
   const lines = markdown.split('\n');
   const sections = [];
-  // Boundary lines come from the SAME fence-aware scan that assigns heading
-  // ids (heading-anchors.mjs), so section count and fragment count cannot
-  // disagree the way two independent regexes once could.
+  // Boundary lines come from the SAME fence-aware scan that assigns heading ids (heading-anchors.mjs), so section count and fragment count cannot disagree the way two independent regexes once could.
   const boundaryByLine = new Map(boundaries.map((b) => [b.line, b]));
   let currentHeading = fallbackHeading;
   let currentFragment; // the intro section lands at the top of the page
@@ -358,8 +338,7 @@ function splitIntoSections(markdown, fallbackHeading, boundaries) {
       currentBody.push(line);
       continue;
     }
-    // Drop MDX ESM imports/exports at the source so they never appear in any
-    // section body — defence in depth alongside stripMarkdown's later pass.
+    // Drop MDX ESM imports/exports at the source so they never appear in any section body — defence in depth alongside stripMarkdown's later pass.
     if (!inFence && /^\s*(?:import|export)\s+/.test(line)) {
       continue;
     }
@@ -391,12 +370,10 @@ function stripMarkdown(text) {
   return (
     text
       .replaceAll(/<!--[\s\S]*?-->/g, ' ')
-      // MDX: strip top-of-file ESM imports/exports so they do not pollute the
-      // search index with module paths and identifiers.
+      // MDX: strip top-of-file ESM imports/exports so they do not pollute the search index with module paths and identifiers.
       .replaceAll(/^\s*import\s+[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, ' ')
       .replaceAll(/^\s*export\s+(?:default\s+)?[\s\S]*?;?\s*$/gm, ' ')
-      // MDX: strip JSX components (capitalised tag names) so component names
-      // and prop values do not leak into search results.
+      // MDX: strip JSX components (capitalised tag names) so component names and prop values do not leak into search results.
       .replaceAll(/<[A-Z][A-Za-z0-9]*\b[^>]*\/>/g, ' ')
       .replaceAll(/<[A-Z][A-Za-z0-9]*\b[^>]*>[\s\S]*?<\/[A-Z][A-Za-z0-9]*>/g, ' ')
       .replaceAll(/^```.*$/gm, ' ')
@@ -414,6 +391,5 @@ function stripMarkdown(text) {
   );
 }
 
-// Run generator. The boolean is the verdict; exiting 0 on failure made a lost
-// index invisible to both the CLI caller and the build integration.
+// Run generator. The boolean is the verdict; exiting 0 on failure made a lost index invisible to both the CLI caller and the build integration.
 process.exit(generateSearchIndex() ? 0 : 1);

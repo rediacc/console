@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Controls for wl_ci.adhoc_watch and wl_ci.ci_watch_armed.
 
-These two decide whether the Stop hook BLOCKS the turn, so both directions
-matter more than usual: a miss lets a hand-rolled CI watch keep producing the
-verdicts that cost this repo a superseded attempt and an already-cancelled run,
+These two decide whether the Stop hook BLOCKS the turn, so both directions matter more than usual: a miss lets a hand-rolled CI watch keep producing the verdicts that cost this repo a superseded attempt and an already-cancelled run,
 while a false positive stops unrelated background work and gets the guard
 deleted. Every control below is a pair.
 
-Two regressions are pinned here by name because both shipped and were caught by
-the worklist suite rather than by reasoning:
+Two regressions are pinned here by name because both shipped and were caught by the worklist suite rather than by reasoning:
 
   * `adhoc_watch` matched a generic worker whose description merely contained
     "watch" near a long number, with no gh call anywhere in it. CI_WATCH_RE is
@@ -51,9 +48,7 @@ BANNED = "gh run" + " watch 30514648812 --exit-status"
 HAND_ROLLED = 'until [ "$(gh run view $R --json status --jq .status)" = "completed" ]; do :; done'
 SANCTIONED = ".ci/scripts/ci/ci-trace.py --wait"
 
-# ---------------------------------------------------------------------------
-# adhoc_watch: what BLOCKS the turn
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- adhoc_watch: what BLOCKS the turn ---------------------------------------------------------------------------
 control("the banned watch tool is caught", W.adhoc_watch([bg("b1", BANNED)])[0], "b1")
 control("a hand-rolled status loop is caught", W.adhoc_watch([bg("b2", HAND_ROLLED)])[0], "b2")
 control(
@@ -72,9 +67,7 @@ control(
     "",
 )
 
-# THE REGRESSION. A generic worker whose description says "watch" near a long
-# number, with no gh call at all. This blocked the turn in b04809f6 and broke
-# an unrelated worklist case; it must never block again.
+# THE REGRESSION. A generic worker whose description says "watch" near a long number, with no gh call at all. This blocked the turn in b04809f6 and broke an unrelated worklist case; it must never block again.
 control(
     "CONTROL: a long sleep called 'silent watch' has no gh in it and must not block",
     W.adhoc_watch([bg("bwd", "sleep 371" + "7171718", "silent watch")])[0],
@@ -86,9 +79,7 @@ control(
     "",
 )
 
-# ---------------------------------------------------------------------------
-# ci_watch_armed: what counts as watching THIS head
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- ci_watch_armed: what counts as watching THIS head ---------------------------------------------------------------------------
 ROWS = [{"run": 30514648812, "name": "Quality / Static"}]
 SHA = "28ecc159c0de1234"
 

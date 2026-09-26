@@ -4,8 +4,9 @@ import { t } from '../i18n/index.js';
 import type { SFTPClient } from '../remote/sftp/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr, writeStdout } from '../services/core/request-context.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
 
 /** Resolve which strategy names to trigger. */
@@ -28,10 +29,10 @@ async function triggerDeployedUnit(
   outputService.info(`Triggering ${serviceName}...`);
   const exitCode = await sftp.execStreaming(`sudo systemctl start ${serviceName}`, {
     onStdout: (data) => {
-      if (debug) process.stdout.write(data);
+      if (debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
   if (exitCode === 0) {
@@ -54,10 +55,7 @@ async function triggerAdhocBackup(
   const { _testing } = await import('../services/backup/backup-schedule.js');
 
   const enabledDests = config.destinations.filter((d) => d.enabled !== false);
-  // INVERTED 2026-08-15. This used to require the rclone `storage` kind and
-  // refuse hosted-service; the rclone path has been removed, so the chunk store
-  // is the only destination an ad-hoc run can drive. Left as-is, this function
-  // would now refuse every destination there is.
+  // INVERTED 2026-08-15. This used to require the rclone `storage` kind and refuse hosted-service; the rclone path has been removed, so the chunk store is the only destination an ad-hoc run can drive. Left as-is, this function would now refuse every destination there is.
   for (const dest of enabledDests) {
     if (dest.kind !== 'hosted-service') {
       throw new Error(
@@ -95,10 +93,10 @@ async function triggerAdhocBackup(
 
   const exitCode = await sftp.execStreaming(systemdRunCmd, {
     onStdout: (data) => {
-      if (debug) process.stdout.write(data);
+      if (debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
 
@@ -146,7 +144,8 @@ async function runBackupNow(
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
   // Provision renet to get the remote path
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    'provision',
     { renetPath: localConfig.renetPath },
     machine,
     sshPrivateKey,
@@ -182,17 +181,16 @@ async function runBackupNow(
 
 /** Try to cancel a single systemd unit if active. Returns true if cancelled. */
 async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
-  // Only a running unit is worth stopping — a failed one has already exited, so
-  // `systemctl stop` on it would be a no-op reported as a cancellation.
+  // Only a running unit is worth stopping, a failed one has already exited, so `systemctl stop` on it would be a no-op reported as a cancellation.
   const state = await readServiceState(sftp, unit);
   if (state !== 'active' && state !== 'activating') return false;
   outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
   const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
     onStdout: (data) => {
-      if (debug) process.stdout.write(data);
+      if (debug) writeStdout(data);
     },
     onStderr: (data) => {
-      process.stderr.write(data);
+      writeStderr(data);
     },
   });
   if (exitCode === 0) {
@@ -252,7 +250,7 @@ async function cancelStrategyUnits(sftp: SFTPClient, name: string, debug?: boole
  * Returns the state verbatim rather than a boolean. Collapsing it to
  * active-or-not made a FAILED unit render exactly like a healthy idle one, which
  * is how a backup stayed broken for six days while this command kept reporting
- * "idle" — the string systemd hands back already said `failed`, and the old code
+ * "idle", the string systemd hands back already said `failed`, and the old code
  * threw it away one line later.
  */
 async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<string> {
@@ -301,11 +299,7 @@ async function buildStatusRow(sftp: SFTPClient, name: string): Promise<Record<st
   };
 }
 
-async function showBackupStatus(
-  machineName: string,
-  strategyFilter?: string,
-  debug?: boolean
-): Promise<void> {
+async function showBackupStatus(machineName: string, strategyFilter?: string): Promise<void> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -315,12 +309,8 @@ async function showBackupStatus(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  // Provision renet (needed for SSH connection)
+  // Read-only: only `systemctl is-active` runs, so no renet binary is resolved here.
   outputService.info(`Connecting to ${machine.ip}...`);
-  await provisionRenetToRemote({ renetPath: localConfig.renetPath }, machine, sshPrivateKey, {
-    debug,
-  });
-
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;
 
@@ -342,7 +332,7 @@ async function showBackupStatus(
         `journalctl -u rediacc-backup-${strategyFilter}.service --no-pager -n 20 2>/dev/null || echo "(no logs)"`,
         {
           onStdout: (data) => {
-            process.stdout.write(data);
+            writeStdout(data);
           },
           onStderr: () => {},
         }
@@ -375,8 +365,7 @@ export function registerBackupOpsCommands(backup: Command): void {
         });
         if (!options.dryRun) {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
-          // DR nudge: enabling backups without config-storage enrollment leaves
-          // the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
+          // DR nudge: enabling backups without config-storage enrollment leaves the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
           const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
           await warnIfConfigStorageUnenrolled();
         }
@@ -407,7 +396,7 @@ export function registerBackupOpsCommands(backup: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (strategy: string | undefined, options) => {
       try {
-        await showBackupStatus(options.machine, strategy, options.debug);
+        await showBackupStatus(options.machine, strategy);
       } catch (error) {
         handleError(error);
       }

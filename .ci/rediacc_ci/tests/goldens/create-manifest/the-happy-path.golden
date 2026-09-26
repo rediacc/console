@@ -1,0 +1,23 @@
+# twin .ci/scripts/docker/create-manifest.sh blob b18c560bcfc37ac057d50b987187addf6573a51a
+exit: 0
+--- stdout ---
+Name:      <redacted>
+Platform:  linux/amd64
+Platform:  linux/arm64
+
+--- stderr ---
+→ Creating multi-arch manifest for api:1.2.3
+✓   Manifest: ghcr.io/rediacc/api:1.2.3
+✓   Sources:  ghcr.io/rediacc/api:1.2.3-amd64 ghcr.io/rediacc/api:1.2.3-arm64
+→ Creating manifest: ghcr.io/rediacc/api:1.2.3
+✓ Created manifest: ghcr.io/rediacc/api:1.2.3
+→ Creating manifest: ghcr.io/rediacc/api:latest
+✓ Created manifest: ghcr.io/rediacc/api:latest
+→ Verifying manifest...
+✓ Manifest verified: ghcr.io/rediacc/api:1.2.3
+✓ Manifest creation complete
+--- calls ---
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/api:1.2.3	ghcr.io/rediacc/api:1.2.3-amd64	ghcr.io/rediacc/api:1.2.3-arm64
+docker	buildx	imagetools	create	-t	ghcr.io/rediacc/api:latest	ghcr.io/rediacc/api:1.2.3-amd64	ghcr.io/rediacc/api:1.2.3-arm64
+docker	buildx	imagetools	inspect	ghcr.io/rediacc/api:1.2.3
+docker	buildx	imagetools	inspect	ghcr.io/rediacc/api:1.2.3

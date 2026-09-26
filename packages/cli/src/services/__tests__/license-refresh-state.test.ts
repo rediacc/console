@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The cooldown lives in the CONFIG (`state.licenseRefresh`), not in a sidecar
-// file. The previous implementation wrote `license-refresh-state.json` under the
-// user's state dir, which made behaviour depend on machine-local litter: this
-// suite passed on a developer box that had run `rdc` recently and failed in CI,
-// because the sidecar's mere presence decided which code path executed.
+// The cooldown lives in the CONFIG (`state.licenseRefresh`), not in a sidecar file. The previous implementation wrote `license-refresh-state.json` under the user's state dir, which made behaviour depend on machine-local litter: this suite passed on a developer box that had run `rdc` recently and failed in CI, because the sidecar's mere presence decided which code path executed.
 let mockState: Record<string, unknown> = {};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
@@ -53,16 +49,14 @@ describe('license refresh cooldown', () => {
     expect(await isRefreshDue('hostinger', NOW + LICENSE_REFRESH_COOLDOWN_MS)).toBe(true);
   });
 
-  // The cooldown is per machine: refreshing one must not starve another, or a
-  // multi-machine estate would only ever keep one machine's licences current.
+  // The cooldown is per machine: refreshing one must not starve another, or a multi-machine estate would only ever keep one machine's licences current.
   it('tracks machines independently', async () => {
     await markRefreshAttempted('hostinger', NOW);
     expect(await isRefreshDue('hostinger', NOW + 60_000)).toBe(false);
     expect(await isRefreshDue('my-server', NOW + 60_000)).toBe(true);
   });
 
-  // A clock moving backwards (NTP correction, VM resume) would otherwise leave a
-  // future timestamp behind and suppress refreshes until real time caught up.
+  // A clock moving backwards (NTP correction, VM resume) would otherwise leave a future timestamp behind and suppress refreshes until real time caught up.
   it('treats a future timestamp as due rather than recent', async () => {
     await markRefreshAttempted('hostinger', NOW + 10 * LICENSE_REFRESH_COOLDOWN_MS);
     expect(await isRefreshDue('hostinger', NOW)).toBe(true);
@@ -94,8 +88,7 @@ describe('license refresh cooldown', () => {
     expect(await isRefreshDue('b', NOW + 60_000)).toBe(false);
   });
 
-  // Cooldown must be long enough that routine commands do not each pay for an
-  // SSH scan plus an account-server round trip.
+  // Cooldown must be long enough that routine commands do not each pay for an SSH scan plus an account-server round trip.
   it('uses a cooldown measured in hours, not minutes', () => {
     expect(LICENSE_REFRESH_COOLDOWN_MS).toBeGreaterThanOrEqual(60 * 60 * 1000);
   });

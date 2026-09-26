@@ -1,0 +1,12 @@
+# twin .ci/scripts/security/check-commands.sh blob 89f759b8611b181b8d52d089060ce9ed590aee96
+exit: 1
+--- stdout ---
+info: Checking shell scripts for CI-incompatible commands...
+  Line: mapfile -t x < f
+  Fix:  bash 4+ only - use while read loop
+
+
+info: These commands may not be available in ubuntu-slim or other minimal CI images
+--- stderr ---
+[0;31merror: scripts/dev/thing.sh:2: 'mapfile' not available in minimal CI[0m
+[0;31merror: Found 1 CI-incompatible command(s)[0m

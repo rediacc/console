@@ -1,43 +1,33 @@
 #!/usr/bin/env python3
 """An apt source rewritten to ONE mirror must carry a fallback to another.
 
-WHY THIS EXISTS, from a defect that took down four consecutive CI attempts on
-2026-08-19. `.devcontainer/Dockerfile` rewrote every apt source to
-`azure.archive.ubuntu.com`, on a documented assumption written into the file: that
-mirror sits in the same data centers as the runners and "effectively never loses
-connectivity from them". It lost connectivity for over ninety minutes. Because ALL
-sources pointed at that one host, the surrounding five-attempt retry loop hammered
-the same dead mirror five times and could not help.
+WHY THIS EXISTS, from a defect that took down four consecutive CI attempts on 2026-08-19. `.devcontainer/Dockerfile` rewrote every apt source to `azure.archive.ubuntu.com`, on a documented assumption written into the file: that mirror sits in the same data centers as the runners and "effectively never loses connectivity from them". It lost connectivity for over ninety minutes.
+Because ALL sources pointed at that one host, the surrounding five-attempt retry loop hammered the same dead mirror five times and could not help.
 
-The retry loop was not the bug and was working exactly as designed. Retrying a
-single point of failure is still a single point of failure.
+The retry loop was not the bug and was working exactly as designed. Retrying a single point of failure is still a single point of failure.
 
-WHY NO EXISTING GATE CAUGHT IT, which is the whole reason this file exists rather
-than a comment in the Dockerfile. Every check in this repo that looks at retry
-logic counts ATTEMPTS. None asked whether the attempts could ever reach a
-DIFFERENT source. A loop with five retries and one host passes every existing
-notion of "has retries" while being strictly equivalent to no retries at all when
-that host is down. The fix was applied by hand; nothing prevented its return, and
-a revert or a newly added single-mirror block would have been invisible.
+WHY NO EXISTING GATE CAUGHT IT, which is the whole reason this file exists rather than a comment in the Dockerfile. Every check in this repo that looks at retry logic counts ATTEMPTS. None asked whether the attempts could ever reach a DIFFERENT source. A loop with five retries and one host passes every existing notion of "has retries" while being strictly equivalent to no retries
+at all when that host is down. The fix was applied by hand; nothing prevented its return, and a revert or a newly added single-mirror block would have been invisible.
 
-WHAT IT REQUIRES. If a Dockerfile RUN block rewrites apt sources to a specific
-mirror host, that same block must name at least TWO distinct hosts, so a failure
-of the first can fall through to the second. It does not mandate a particular
-mirror, a particular retry count, or a particular shape of fallback; it only
-refuses the shape that has already cost this repo a night.
+WHAT IT REQUIRES. If a Dockerfile RUN block rewrites apt sources to a specific mirror host, that same block must name at least TWO distinct hosts, so a failure of the first can fall through to the second. It does not mandate a particular mirror, a particular retry count, or a particular shape of fallback; it only refuses the shape that has already cost this repo a night.
 
-AND IT CHECKS THE SEQUENCING, because naming a second host is necessary and not
-sufficient. A fallback guarded on the LAST loop iteration fires after the final
-attempt, so nothing is left to use it: two hosts appear, the shallow reading of
-this gate passes, and the build still dies exactly as before. That is the precise
-shape of box-ticking a regression gate is supposed to refuse, so the guard
-iteration is compared against the loop bound and a fallback that cannot help is
-reported with the numbers that make it useless.
+AND IT CHECKS THE SEQUENCING, because naming a second host is necessary and not sufficient. A fallback guarded on the LAST loop iteration fires after the final attempt, so nothing is left to use it: two hosts appear, the shallow reading of this gate passes, and the build still dies exactly as before. That is the precise shape of box-ticking a regression gate is supposed to refuse,
+so the guard iteration is compared against the loop bound and a fallback that cannot help is reported with the numbers that make it useless.
 
-WHAT IT DELIBERATELY DOES NOT DO. It does not police Dockerfiles that never
-rewrite apt sources. The stock `archive.ubuntu.com` is already a load-balanced
-pool of many machines, so a file that leaves sources alone is not carrying the
-single-point-of-failure this gate is about.
+WHAT IT DELIBERATELY DOES NOT DO. It does not police Dockerfiles that never rewrite apt sources. The stock `archive.ubuntu.com` is already a load-balanced pool of many machines, so a file that leaves sources alone is not carrying the single-point-of-failure this gate is about.
+
+---- gate ----
+step: Dockerfile mirror resilience
+needs: none
+selftest: true
+why: An apt source rewritten to ONE mirror must carry a fallback to another.
+     Born 2026-08-19, when azure.archive.ubuntu.com refused connections for
+     ninety minutes and took down four consecutive CI attempts: every apt
+     source had been rewritten to that single host, so the surrounding
+     five-attempt retry loop hammered the same dead mirror five times.
+     Existing checks counted retry ATTEMPTS and never asked whether the
+     attempts could reach a different SOURCE, which is why nothing caught it.
+---- end gate ----
 """
 
 import pathlib
@@ -45,25 +35,21 @@ import re
 import subprocess
 import sys
 
-# A sed that rewrites an apt source URL to a specific host. The captured group is
-# the DESTINATION host, which is what has to vary for a fallback to exist.
+import _cipath  # noqa: F401
+from rediacc_ci.controls import plant
+
+# A sed that rewrites an apt source URL to a specific host. The captured group is the DESTINATION host, which is what has to vary for a fallback to exist.
 REWRITE = re.compile(r"s\|https?://[^|]*?ubuntu[^|]*?\|https?://([a-z0-9.-]+)/", re.IGNORECASE)
 
-# Anti-vacuity floor. This repo has hundreds of tracked Dockerfiles and shell
-# scripts; a scan finding none means the glob broke, not that the tree is clean.
+# Anti-vacuity floor. This repo has hundreds of tracked Dockerfiles and shell scripts; a scan finding none means the glob broke, not that the tree is clean.
 MIN_SCANNED = 50
 
 
 def tracked_files(root):
     """Every tracked Dockerfile AND shell script.
 
-    SHELL SCRIPTS WERE ADDED THE HARD WAY, hours after the Dockerfile-only
-    version shipped. The same single-mirror rewrite lived in
-    `.ci/scripts/test/test-install-methods.sh`, which drives apt inside
-    ubuntu:22.04 and ubuntu:24.04 containers, and it took down `Validate
-    Promotion` in the very next CI run while this gate reported the tree clean.
-    A gate scoped to the file where a defect was FOUND, rather than to the shape
-    of the defect, sweeps the instance and misses the class.
+    SHELL SCRIPTS WERE ADDED THE HARD WAY, hours after the Dockerfile-only version shipped. The same single-mirror rewrite lived in `.ci/scripts/test/test-install-methods.sh`, which drives apt inside ubuntu:22.04 and ubuntu:24.04 containers, and it took down `Validate Promotion` in the very next CI run while this gate reported the tree clean. A gate scoped to the file where a
+    defect was FOUND, rather than to the shape of the defect, sweeps the instance and misses the class.
 
     Uses git so an untracked scratch file cannot change the verdict either way.
     """
@@ -91,16 +77,17 @@ def tracked_files(root):
 def run_blocks(text):
     """Each RUN instruction as one logical line, backslash continuations joined.
 
-    A fallback lives in the SAME block as the rewrite it protects, because that is
-    the only place it can run between two attempts of the same loop.
+    A fallback lives in the SAME block as the rewrite it protects, because that is the only place it can run between two attempts of the same loop.
     """
-    joined = re.sub(r"\\\s*\n", " ", text)
+    # COMMENTS ARE STRIPPED BEFORE THE JOIN, because that is the order Docker itself uses: a comment line inside a continued instruction is REMOVED, and the continuation closes over it. Joining first instead made a mid-RUN comment terminate the block, and everything after it -- in .devcontainer/ Dockerfile, the entire fallback arm -- fell outside the block the gate then judged. The
+    # gate reported that file as "pinned to a SINGLE mirror" while its fallback sat 60 lines further down the SAME RUN, and pointed at that same file as the example to copy. A parser that ends a block early does not under-report; it reports the opposite of the truth.
+    decommented = "\n".join(ln for ln in text.split("\n") if not ln.lstrip().startswith("#"))
+    joined = re.sub(r"\\\s*\n", " ", decommented)
     return [ln for ln in joined.split("\n") if ln.lstrip().startswith("RUN ")]
 
 
 def offenders(text):
-    """[(reason, block_excerpt)] for blocks whose apt sourcing cannot survive one
-    dead mirror.
+    """[(reason, block_excerpt)] for blocks whose apt sourcing cannot survive one dead mirror.
 
     TWO classes, because naming a second host is necessary and not sufficient.
 
@@ -117,10 +104,7 @@ def offenders(text):
     bad = []
     blocks = run_blocks(text)
     if not blocks and REWRITE.search(text):
-        # A shell script, not a Dockerfile: there is no RUN instruction to scope
-        # by, so the whole file is one scope. Coarser than the Dockerfile path on
-        # purpose, and still decisive for the shape that matters: a file that
-        # rewrites apt to exactly one host names one destination and nothing else.
+        # A shell script, not a Dockerfile: there is no RUN instruction to scope by, so the whole file is one scope. Coarser than the Dockerfile path on purpose, and still decisive for the shape that matters: a file that rewrites apt to exactly one host names one destination and nothing else.
         blocks = [re.sub(r"\\\s*\n", " ", text)]
     for block in blocks:
         hosts = {m.group(1).lower() for m in REWRITE.finditer(block)}
@@ -150,12 +134,8 @@ def offenders(text):
                 )
             )
         elif guard is not None and last is None:
-            # ANTI-VACUITY. Both sequencing checks above are guarded on having
-            # parsed a number, so an edit that makes the loop unreadable would
-            # skip them SILENTLY and the file would pass while nothing had been
-            # verified. A conditional fallback whose loop cannot be parsed is
-            # reported as unverifiable rather than waved through: this gate must
-            # not be able to say "fine" when it means "I could not tell".
+            # ANTI-VACUITY. Both sequencing checks above are guarded on having parsed a number, so an edit that makes the loop unreadable would skip them SILENTLY and the file would pass while nothing had been verified. A conditional fallback whose loop cannot be parsed is reported as unverifiable rather than waved through: this gate must not be able to say "fine" when it means "I
+            # could not tell".
             bad.append(
                 (
                     "fallback is guarded on iteration %d but the retry loop's bounds "
@@ -169,24 +149,17 @@ def offenders(text):
 # An iteration test against a literal, in the shapes shell actually uses.
 #
 # This started as `[ "$i" = "N" ]` only, and review caught the consequence: `[[ $i -eq N ]]`
-# is a real idiom, used elsewhere in the very delta that added this gate, and a fallback
-# guarded that way was INVISIBLE here. Both sequencing checks are conditioned on finding a
-# guard, so not finding one meant reporting nothing, and the gate passed on exactly the
-# defect it exists to catch. That is the vacuity class this file's own header warns about,
+# is a real idiom, used elsewhere in the very delta that added this gate, and a fallback guarded that way was INVISIBLE here. Both sequencing checks are conditioned on finding a guard, so not finding one meant reporting nothing, and the gate passed on exactly the defect it exists to catch. That is the vacuity class this file's own header warns about,
 # so it is worth being explicit: `[` and `[[`, and `=`, `==` or `-eq`.
 #
-# Declared ONCE and shared by both readers below. They had identical copies, which is how
-# a fix lands in one and not the other.
+# Declared ONCE and shared by both readers below. They had identical copies, which is how a fix lands in one and not the other.
 ITER_TEST = r'\[\[?\s*"?\$\{?\w+\}?"?\s*(?:==?|-eq)\s*"?(\d+)"?\s*\]\]?'
 
 
 def giveup_iteration(block):
     """Iteration N of an iteration guard whose body EXITS.
 
-    A fallback can be correctly placed relative to the loop bound and still never
-    run, because an earlier iteration bails out first. Loop bound and fallback
-    position are each fine in isolation; only their relation to the give-up point
-    decides whether the fallback is reachable.
+    A fallback can be correctly placed relative to the loop bound and still never run, because an earlier iteration bails out first. Loop bound and fallback position are each fine in isolation; only their relation to the give-up point decides whether the fallback is reachable.
     """
     best = None
     for m in re.finditer(ITER_TEST, block):
@@ -211,9 +184,7 @@ def last_attempt(block):
 def fallback_iteration(block):
     """Iteration N from a `[ "$i" = "N" ]` guard that wraps a source rewrite.
 
-    Returns the guard that protects a REWRITE, not the guard that protects the
-    give-up branch, which is why the search is anchored on a following sed rather
-    than on any equality test.
+    Returns the guard that protects a REWRITE, not the guard that protects the give-up branch, which is why the search is anchored on a following sed rather than on any equality test.
     """
     best = None
     for m in re.finditer(ITER_TEST, block):
@@ -232,11 +203,8 @@ def selftest():
         nonlocal ok
         if not cond:
             ok = False
-        # `% (detail,)`, NOT `% detail`. With a list or tuple detail the bare form treats
-        # it as the argument LIST, so an empty list raises TypeError and a 2-element one
-        # raises too. That turns a control FAILURE into a traceback, which is the worst
-        # possible time to lose the message: found while mutation-testing this very file,
-        # where a genuinely failing control crashed instead of printing what it wanted.
+        # `% (detail,)`, NOT `% detail`. With a list or tuple detail the bare form treats it as the argument LIST, so an empty list raises TypeError and a 2-element one raises too. That turns a control FAILURE into a traceback, which is the worst possible time to lose the message: found while mutation-testing this very file, where a genuinely failing control crashed instead of
+        # printing what it wanted.
         print(
             "  %s  %s%s"
             % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %r" % (detail,))
@@ -256,8 +224,7 @@ def selftest():
     )
     none = "RUN apt-get update && apt-get install -y curl\n"
 
-    # A fallback that fires only on the LAST attempt: two hosts are named, so the
-    # shallow "does a second host appear" test passes, and it still cannot help.
+    # A fallback that fires only on the LAST attempt: two hosts are named, so the shallow "does a second host appear" test passes, and it still cannot help.
     too_late = (
         "RUN find /etc/apt -name 'sources.list' | xargs -r sed -i \\\n"
         "        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\\n"
@@ -300,10 +267,7 @@ def selftest():
         fallback_iteration(both),
     )
 
-    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the
-    # bound check above is satisfied, and it still never runs because an earlier
-    # iteration bails out first. Loop bound and fallback position are each fine in
-    # isolation; only their RELATION to the give-up point decides reachability.
+    # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the bound check above is satisfied, and it still never runs because an earlier iteration bails out first. Loop bound and fallback position are each fine in isolation; only their RELATION to the give-up point decides reachability.
     stranded = (
         "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
         "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
@@ -335,11 +299,7 @@ def selftest():
 
     # THE DOUBLE-BRACKET BLINDSPOT, found in review. The iteration test used to be
     # `[ "$i" = "N" ]` and NOTHING else, so a fallback guarded `[[ $i -eq N ]]` was
-    # invisible: both sequencing checks are conditioned on finding a guard, so finding
-    # none meant reporting none, and the gate passed on the very defect it exists to
-    # catch. `[[ ... -eq ... ]]` is not hypothetical; it is already used elsewhere in the
-    # delta that added this file. Each shape below is the SAME defect written a different
-    # legal way, and every one must still be caught.
+    # invisible: both sequencing checks are conditioned on finding a guard, so finding none meant reporting none, and the gate passed on the very defect it exists to catch. `[[ ... -eq ... ]]` is not hypothetical; it is already used elsewhere in the delta that added this file. Each shape below is the SAME defect written a different legal way, and every one must still be caught.
     for label, test in (
         ("[[ $i -eq N ]]", "[[ $i -eq 5 ]]"),
         ('[[ "$i" == "N" ]]', '[[ "$i" == "5" ]]'),
@@ -359,8 +319,7 @@ def selftest():
             len(offenders(variant)) == 1 and "after the " in offenders(variant)[0][0],
             offenders(variant),
         )
-    # CONTROL for the control: the same bracket shapes must NOT manufacture a finding
-    # when the fallback is early, or the fix would just be "report more".
+    # CONTROL for the control: the same bracket shapes must NOT manufacture a finding when the fallback is early, or the fix would just be "report more".
     early_dbl = (
         "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
         "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
@@ -375,8 +334,7 @@ def selftest():
         (offenders(early_dbl), fallback_iteration(early_dbl)),
     )
 
-    # ANTI-VACUITY. Both sequencing checks are guarded on having parsed a number,
-    # so an unparseable loop would skip them silently and the file would pass
+    # ANTI-VACUITY. Both sequencing checks are guarded on having parsed a number, so an unparseable loop would skip them silently and the file would pass
     # while NOTHING had been verified. That is the exact shape this repo calls a
     # gate that cannot fail, and it must be reported instead.
     unparseable = (
@@ -398,8 +356,7 @@ def selftest():
         "unverifiable" in offenders(unparseable)[0][0] if offenders(unparseable) else False,
         offenders(unparseable),
     )
-    # A fallback applied EVERY iteration has no guard at all, so there is nothing
-    # to sequence and nothing to be unverifiable about. It must stay legal.
+    # A fallback applied EVERY iteration has no guard at all, so there is nothing to sequence and nothing to be unverifiable about. It must stay legal.
     check(
         "an unconditional fallback needs no guard and still passes",
         fallback_iteration(both) is None and offenders(both) == [],
@@ -410,13 +367,32 @@ def selftest():
     # Not everything is its business.
     check("a block that never rewrites apt is ignored", offenders(none) == [])
     check("an empty file is ignored", offenders("") == [])
-    # Continuation joining is load-bearing: the rewrite and its fallback are on
-    # different physical lines, so a scanner that reads line-by-line sees only the
-    # rewrite and reports a false positive on correct code.
+    # Continuation joining is load-bearing: the rewrite and its fallback are on different physical lines, so a scanner that reads line-by-line sees only the rewrite and reports a false positive on correct code.
     check(
         "continuations are joined, so a multi-line block reads as one",
         len(run_blocks(both)) == 1,
         run_blocks(both),
+    )
+    # A COMMENT INSIDE THE RUN, which is the shape that made this gate report the opposite of the truth. Docker removes such a line and closes the continuation over it; joining first instead ended the block there, so a fallback below the comment fell outside the block and a correct Dockerfile was reported "pinned to a SINGLE mirror". Both directions, because the repair must not
+    # also swallow the finding it exists to make.
+    commented = plant(
+        both, " && for i in 1 2 3", "    # a comment Docker strips\n    && for i in 1 2 3", 1
+    )
+    check(
+        "a comment INSIDE a RUN does not end the block",
+        len(run_blocks(commented)) == 1,
+        run_blocks(commented),
+    )
+    check(
+        "...and the fallback below that comment is still seen",
+        offenders(commented) == [],
+        offenders(commented),
+    )
+    pinned_with_comment = plant(commented, "http://archive.ubuntu.com/ubuntu|g", "x|g")
+    check(
+        "CONTROL: a block pinned to one host is STILL reported when it has a comment",
+        offenders(pinned_with_comment) != [],
+        offenders(pinned_with_comment),
     )
     print("  %s" % ("all mirror-resilience controls passed" if ok else "*** FAILURES ***"))
     return ok

@@ -4,12 +4,9 @@
 // AI TROUBLESHOOTING GUIDE
 // ---------------------------------------------------------------------------
 //
-// This validator checks that tutorial timeline JSON files and audio assets
-// are consistent with the transcript files.
+// This validator checks that tutorial timeline JSON files and audio assets are consistent with the transcript files.
 //
-// IMPORTANT: This script must run AFTER validate-tutorial-transcripts.js.
-// If transcripts contain TODO placeholders, fix those FIRST -- otherwise
-// the TTS generator will synthesize the literal TODO text as spoken audio.
+// IMPORTANT: This script must run AFTER validate-tutorial-transcripts.js. If transcripts contain TODO placeholders, fix those FIRST -- otherwise the TTS generator will synthesize the literal TODO text as spoken audio.
 //
 // COMMON ERRORS AND FIXES:
 //
@@ -44,23 +41,14 @@ const ROOT = path.resolve(__dirname, '..');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const TIMELINE_DIR = path.join(ROOT, 'src', 'data', 'tutorial-timeline');
 const AUDIO_DIR = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio');
-// All 13 site locales. This gate runs in CI *after* `sync-media-from-r2.sh --audio-only`
-// (ci-quality.yml), so it validates PUBLISHED audio — which is why it stayed at ten while
-// ar/et/tr were narrated locally but unpublished. All three are published now, so the list
-// is the full set, sourced from packages/locales rather than hand-maintained.
-// `--lang <code>` still validates any single locale on demand.
+// All 13 site locales. This gate runs in CI *after* `sync-media-from-r2.sh --audio-only` (ci-quality.yml), so it validates PUBLISHED audio — which is why it stayed at ten while ar/et/tr were narrated locally but unpublished. All three are published now, so the list is the full set, sourced from packages/locales rather than hand-maintained. `--lang <code>` still validates any
+// single locale on demand.
 const AUDIO_LANGUAGES = SITE_LOCALES;
 
-// --lang/--cast/--quiet exist so an orchestrator can ask "is locale X finished and
-// consistent?" between a narration run and dispatching its renders. Everything this
-// file already checks -- transcriptHash vs a recomputed hash, step count vs transcript
-// events, per-step id/markerIndex/narrationText equality, replay monotonicity, audioSrc
-// existence, wordTimings structure and ordering -- is exactly that readiness question,
-// so the alternative (a done-marker file written by the producer) would be a weaker
-// claim about the same thing.
+// --lang/--cast/--quiet exist so an orchestrator can ask "is locale X finished and consistent?" between a narration run and dispatching its renders. Everything this file already checks -- transcriptHash vs a recomputed hash, step count vs transcript events, per-step id/markerIndex/narrationText equality, replay monotonicity, audioSrc existence, wordTimings structure and ordering
+// -- is exactly that readiness question, so the alternative (a done-marker file written by the producer) would be a weaker claim about the same thing.
 function parseCliArgs(argv) {
-  // Typed: without it TypeScript infers `null` from the initializer and every
-  // `opts.langs ? …` guard below reads as dead code, though `--lang` fills it in.
+  // Typed: without it TypeScript infers `null` from the initializer and every `opts.langs ? …` guard below reads as dead code, though `--lang` fills it in.
   /** @type {{ langs: Set<string> | null; casts: Set<string> | null; quiet: boolean }} */
   const opts = { langs: null, casts: null, quiet: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -109,27 +97,15 @@ function shouldValidateLang(lang) {
   return CLI.langs ? CLI.langs.has(lang) : AUDIO_LANGUAGES.includes(lang);
 }
 
-// Engines allowed to have produced a timeline. A set rather than one string because the
-// migration to voxcpm2 re-narrates 180 timelines and cannot land atomically, so both
-// values are legitimately present mid-flight. Keep this in sync with
-// tutorial_tts/audio.py::get_engine: the point is to reject an UNKNOWN provider (a typo,
-// or an engine nobody reviewed), not to pin one.
+// Engines allowed to have produced a timeline. A set rather than one string because the migration to voxcpm2 re-narrates 180 timelines and cannot land atomically, so both values are legitimately present mid-flight. Keep this in sync with tutorial_tts/audio.py::get_engine: the point is to reject an UNKNOWN provider (a typo, or an engine nobody reviewed), not to pin one.
 const KNOWN_TTS_PROVIDERS = new Set(['qwen3-tts', 'voxcpm2']);
-// NO locale reuses English audio any more. ar/et/tr used to have timelines DERIVED from
-// the en timelines by derive-fallback-timeline.ts, because Qwen3-TTS could not voice
+// NO locale reuses English audio any more. ar/et/tr used to have timelines DERIVED from the en timelines by derive-fallback-timeline.ts, because Qwen3-TTS could not voice
 // them; VoxCPM2 now narrates all 13 natively, so those three have their own mp3s and
-// their own word timings like every other locale. derive-fallback-timeline.ts is dormant
-// (its FALLBACK_LANGUAGES is empty) and refuses to overwrite a locale that has real
-// narration.
+// their own word timings like every other locale. derive-fallback-timeline.ts is dormant (its FALLBACK_LANGUAGES is empty) and refuses to overwrite a locale that has real narration.
 
-// The audio tree is synced to R2, not committed to git (see
-// .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally,
-// which is expected, not a bug. Only assert individual files exist when the
-// tree is present at all (e.g. after `./run.sh www tutorials generate` or
+// The audio tree is synced to R2, not committed to git (see .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally, which is expected, not a bug. Only assert individual files exist when the tree is present at all (e.g. after `./run.sh www tutorials generate` or
 // `.ci/scripts/deploy/sync-media-from-r2.sh --audio-only`); every other
-// check in this file (hash consistency, wordTimings structure, replay-range
-// sanity) still runs regardless, since none of that depends on the mp3
-// bytes actually being on disk.
+// check in this file (hash consistency, wordTimings structure, replay-range sanity) still runs regardless, since none of that depends on the mp3 bytes actually being on disk.
 const AUDIO_TREE_PRESENT = fs.existsSync(AUDIO_DIR);
 
 const colors = {
@@ -385,9 +361,7 @@ function main() {
     console.log('='.repeat(60));
   }
 
-  // A selective run that matches nothing must FAIL, not pass. As a readiness gate this
-  // is the whole point: "validate locale et" silently checking zero files and exiting 0
-  // would tell an orchestrator that an unnarrated locale is ready to render.
+  // A selective run that matches nothing must FAIL, not pass. As a readiness gate this is the whole point: "validate locale et" silently checking zero files and exiting 0 would tell an orchestrator that an unnarrated locale is ready to render.
   if ((CLI.langs || CLI.casts) && pairs.length === 0) {
     console.error(
       colors.red(
@@ -398,10 +372,7 @@ function main() {
     process.exit(1);
   }
 
-  // Likewise fail-closed on a selective run with no audio on disk. The default run
-  // tolerates a missing tree (a clean checkout legitimately has none), but an explicit
-  // --lang is asking whether real files are ready, and "skipped the file checks" is not
-  // an answer to that.
+  // Likewise fail-closed on a selective run with no audio on disk. The default run tolerates a missing tree (a clean checkout legitimately has none), but an explicit --lang is asking whether real files are ready, and "skipped the file checks" is not an answer to that.
   if ((CLI.langs || CLI.casts) && !AUDIO_TREE_PRESENT) {
     console.error(
       colors.red(

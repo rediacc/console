@@ -1,0 +1,30 @@
+# rediacc_ci allowlist golden
+# reader: bash:.ci/scripts/lib/blocker-validator.sh::parse_blockered_list
+# command: parse_blockered_list <corpus> A B '#'; for k in ${!B[@]}; printf '%s\t%s\n'; LC_ALL=C sort
+# projection: pairs
+# source: .e2e-coverage-allowlist
+# corpus: corpus/e2e-coverage-allowlist.list
+# comment-char: #
+# corpus-sha256: 543d18e94f73fcdfd4139950435313e6f2f989e2cb1f0dc9aad2c67a09585126
+# ---
+backup_delete	legacy renet functions that predate the packages/e2e-tests suite and
+backup_list	legacy renet functions that predate the packages/e2e-tests suite and
+backup_restore	`backup restore` IS tested end to end, but not by a suite CI runs, and
+ceph_client_mount	legacy renet functions that predate the packages/e2e-tests suite and
+ceph_client_unmount	legacy renet functions that predate the packages/e2e-tests suite and
+ceph_clone_image	legacy renet functions that predate the packages/e2e-tests suite and
+container_remove	legacy renet functions that predate the packages/e2e-tests suite and
+machine_uninstall	machine_uninstall tears the renet install off a machine, so exercising
+repository_autostart_disable	legacy renet functions that predate the packages/e2e-tests suite and
+repository_autostart_disable_all	legacy renet functions that predate the packages/e2e-tests suite and
+repository_autostart_enable	legacy renet functions that predate the packages/e2e-tests suite and
+repository_autostart_enable_all	legacy renet functions that predate the packages/e2e-tests suite and
+repository_autostart_list	legacy renet functions that predate the packages/e2e-tests suite and
+repository_cat	legacy renet functions that predate the packages/e2e-tests suite and
+repository_commit_meta	legacy renet functions that predate the packages/e2e-tests suite and
+repository_diff	legacy renet functions that predate the packages/e2e-tests suite and
+repository_down_all	legacy renet functions that predate the packages/e2e-tests suite and
+repository_ownership	legacy renet functions that predate the packages/e2e-tests suite and
+repository_prune	legacy renet functions that predate the packages/e2e-tests suite and
+repository_template_apply	legacy renet functions that predate the packages/e2e-tests suite and
+repository_up_all	legacy renet functions that predate the packages/e2e-tests suite and

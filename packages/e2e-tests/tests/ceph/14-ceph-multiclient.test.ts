@@ -62,12 +62,8 @@ test.describe
     });
 
     test('3. seed shared base data into the source image', async () => {
-      // Seed on a WORKER, not the ceph node: cephadm-managed ceph nodes have no
-      // host rbd/ceph binary, but workers get ceph-common + the admin keyring
-      // (ConfigureClients). Mount via the /dev/rbd/<pool>/<image> udev symlink
-      // rather than capturing `rbd map` output in $(...): the two-hop SSH would
-      // command-substitute $(...) on the bridge (which has no rbd), so the whole
-      // command must be substitution-free and run on the worker.
+      // Seed on a WORKER, not the ceph node: cephadm-managed ceph nodes have no host rbd/ceph binary, but workers get ceph-common + the admin keyring (ConfigureClients). Mount via the /dev/rbd/<pool>/<image> udev symlink rather than capturing `rbd map` output in $(...): the two-hop SSH would command-substitute $(...) on the bridge (which has no rbd), so the whole command must be
+      // substitution-free and run on the worker.
       const dev = `/dev/rbd/${pool}/${image}`;
       const seed =
         `sudo rbd map ${pool}/${image} && sudo udevadm settle && sudo mkdir -p ${seedMount} && ` +

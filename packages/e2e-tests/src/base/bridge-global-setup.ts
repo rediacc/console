@@ -11,25 +11,6 @@ import { getOpsManager } from '../utils/bridge/OpsManager';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
 
 /**
- * Ensure .env file exists by copying from .env.example if not present.
- */
-function ensureEnvFile() {
-  const e2eDir = path.resolve(__dirname, '..', '..');
-  const envPath = path.join(e2eDir, '.env');
-  const envExamplePath = path.join(e2eDir, '.env.example');
-
-  if (fs.existsSync(envPath) || !fs.existsSync(envExamplePath)) {
-    return;
-  }
-
-  // eslint-disable-next-line no-console
-  console.log('Creating .env from .env.example...');
-  fs.copyFileSync(envExamplePath, envPath);
-  // eslint-disable-next-line no-console
-  console.log('Created .env file');
-}
-
-/**
  * Wait for Ceph cluster health check
  */
 async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
@@ -45,22 +26,12 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
   while (Date.now() - startedAt < healthTimeoutMs) {
     attempt += 1;
 
-    // NEVER KILL RENET BEFORE OUR OWN DEADLINE. This call used to pass a hard
-    // 120000, while renet's internal wait is CephHealthTimeout, 600s by default
-    // (opsconfig/config.go:262, overridable via CEPH_HEALTH_TIMEOUT, which
-    // nothing in this repo sets). So every single invocation was SIGTERM'd at
-    // 120s, one fifth of the way through renet's own poll.
+    // NEVER KILL RENET BEFORE OUR OWN DEADLINE. This call used to pass a hard 120000, while renet's internal wait is CephHealthTimeout, 600s by default (opsconfig/config.go:262, overridable via CEPH_HEALTH_TIMEOUT, which nothing in this repo sets). So every single invocation was SIGTERM'd at 120s, one fifth of the way through renet's own poll.
     //
-    // OpsCommandRunner's timeout path returns `code: -1` and appends
-    // "Timeout exceeded" to whatever stderr had arrived so far
-    // (OpsCommandRunner.ts:59-62), and -1 is not 0, so the loop below read it as
-    // "not healthy yet" and retried. The 1200s budget was therefore spent on
-    // nine truncated attempts, and the error the nightly finally surfaced was
-    // our own timeout marker rather than renet's diagnosis.
+    // OpsCommandRunner's timeout path returns `code: -1` and appends "Timeout exceeded" to whatever stderr had arrived so far (OpsCommandRunner.ts:59-62), and -1 is not 0, so the loop below read it as "not healthy yet" and retried. The 1200s budget was therefore spent on nine truncated attempts, and the error the nightly finally surfaced was our own timeout marker rather than
+    // renet's diagnosis.
     //
-    // Giving the call the whole remaining budget lets renet's wait run to its
-    // own conclusion and return the real reason. The outer loop stays as a thin
-    // retry for the case where budget remains after renet gives up.
+    // Giving the call the whole remaining budget lets renet's wait run to its own conclusion and return the real reason. The outer loop stays as a thin retry for the case where budget remains after renet gives up.
     const remainingMs = healthTimeoutMs - (Date.now() - startedAt);
     const healthResult = await opsManager.runOpsCommand(['ceph', 'health'], [], remainingMs);
     if (healthResult.code === 0) {
@@ -69,15 +40,9 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
       return;
     }
 
-    // Exit 11 means renet RECORDED a provisioning failure: the cluster was never
-    // built, so no amount of polling will make it healthy. Retrying to the full
-    // budget here is what turned a 3-second diagnosis into a 20-minute one, and
-    // it is why the nightly reported a generic "Ceph health check failed"
-    // instead of the real cause.
+    // Exit 11 means renet RECORDED a provisioning failure: the cluster was never built, so no amount of polling will make it healthy. Retrying to the full budget here is what turned a 3-second diagnosis into a 20-minute one, and it is why the nightly reported a generic "Ceph health check failed" instead of the real cause.
     //
-    // renet's stderr on this path carries the ORIGINAL provisioning error, e.g.
-    // "failed to install prerequisites on node 22: ssh command failed:
-    // signal: killed" (an OOM kill during apt), so surface it verbatim.
+    // renet's stderr on this path carries the ORIGINAL provisioning error, e.g. "failed to install prerequisites on node 22: ssh command failed: signal: killed" (an OOM kill during apt), so surface it verbatim.
     //
     // ProvisionUnavailableExitCode, private/renet/pkg/infra/ceph/provisionstate.go.
     // 10 is taken by LicenseRequiredExitCode; those are the only two.
@@ -290,11 +255,7 @@ function writeSetupErrorLog(error: unknown) {
  * Do NOT call provisionCeph() separately as this causes duplicate provisioning conflicts.
  */
 async function bridgeGlobalSetup(_config: FullConfig) {
-  ensureEnvFile();
-  // KEEP_CLUSTER implies skip-reset: iteration mode exists to reuse a standing
-  // cluster, and a VM reboot both costs minutes per invocation and races the
-  // suite against boot recovery (observed live: a scoped re-run red on
-  // half-regenerated containerd config). CI sets neither flag.
+  // KEEP_CLUSTER implies skip-reset: iteration mode exists to reuse a standing cluster, and a VM reboot both costs minutes per invocation and races the suite against boot recovery (observed live: a scoped re-run red on half-regenerated containerd config). CI sets neither flag.
   const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1' || process.env.KEEP_CLUSTER === '1';
 
   /* eslint-disable no-console */
@@ -330,12 +291,8 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     const cephNodes = opsManager.getCephVMIps();
     if (cephNodes.length > 0) {
       await waitForCephHealth(opsManager);
-      // Cluster health is NOT the whole precondition. HEALTH_OK is silent about
-      // whether the workers were configured as clients, and on 2026-08-16 a
-      // SIGKILLed ceph-common install left worker 12 without /etc/ceph while the
-      // cluster reported HEALTH_OK and the recorded failure was erased. The
-      // suite ran anyway and failed 6 minutes later with "can't open ceph.conf".
-      // Asking the workers directly turns that into a named failure here.
+      // Cluster health is NOT the whole precondition. HEALTH_OK is silent about whether the workers were configured as clients, and on 2026-08-16 a SIGKILLed ceph-common install left worker 12 without /etc/ceph while the cluster reported HEALTH_OK and the recorded failure was erased. The suite ran anyway and failed 6 minutes later with "can't open ceph.conf". Asking the workers
+      // directly turns that into a named failure here.
       await opsManager.verifyCephClientsReady();
     }
 
@@ -348,8 +305,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     // eslint-disable-next-line no-console
     console.log('  ✓ Renet deployed to all VMs');
 
-    // Step 3: Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies
-    // This is required for fresh base images that don't have Docker pre-installed
+    // Step 3: Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies This is required for fresh base images that don't have Docker pre-installed
     await setupAllVMs(opsManager);
 
     // Step 4: Verify all VMs are ready

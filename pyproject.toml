@@ -1,0 +1,441 @@
+# THE PYTHON CONFIG FOR THIS REPOSITORY, IN ONE FILE.
+#
+# WHY IT IS HERE AND NOT IN ruff.toml. Until W1 phase 2 the ruff tables lived in
+# a root `ruff.toml` and there was no pytest config at all, because there was no
+# pytest: uv, uvx, pip and pipx were all absent on the host these gates run on
+# (measured 2026-09-06, recorded in .ci/bootstrap.sh). Phase 1 fixed that, and a
+# second tool immediately raised the question of where ITS config goes. Three
+# proposals were drafted; docs/ci-overhaul/08-driver-contract.md section 2
+# settled it: ONE pyproject.toml at the repo root holding both tables.
+#
+# The reason is discovery, not taste. Both tools walk up from the file they are
+# judging and stop at the first pyproject.toml, so a single root file is found
+# from every subdirectory by both of them, with no `--config` argument anywhere.
+# That is why .ci/scripts/quality/check-python-lint.sh no longer passes one: a
+# `--config` flag is a second place the config path is written down, and this
+# repo has already paid for split definitions more than once.
+#
+# THIS IS NOT A PACKAGING MANIFEST. There is no [project] table and no build
+# backend, deliberately. Nothing here is published to PyPI, and `.ci/rediacc_ci`
+# is imported by putting `.ci` on sys.path (see .ci/rediacc_ci/paths.py), not by
+# installing it. A [project] table would invite `pip install -e .` on a host
+# where pip does not exist, which is the dead end this whole workstream started
+# from.
+
+# =============================================================================
+# ruff -- lint and format
+# =============================================================================
+# Python lint + format config. Enforced by .ci/scripts/quality/check-python-lint.sh
+# (npm run check:ci-python-lint), which is reachable from `npm run ci`.
+#
+# WHY THIS EXISTS. Until 2026-08-06 this repo had 91 `check:ci-*` gates covering
+# TypeScript, shell and Go, and ZERO covering Python -- while 13 of its 15 tracked
+# .py files are the Stop-hook program that gates every agent turn. The hook
+# modules already carried `# noqa: BLE001` and `# noqa: PLC0415`, so ruff had been
+# run against them once, by hand, and nothing had enforced it since: suppressions
+# with no gate behind them.
+#
+# The first thing this config caught was a live NameError in wl_checks.guided_slice
+# (F821, fixed in 6e3957e9d) that BOTH hook suites -- 584 and 118 assertions --
+# passed straight over, because reaching it needs root=None and a plan-subagent
+# triage at once. It then failed SOFT into a bare except that replaced the whole
+# worklist guide with an apology. That is the exact class this gate is for.
+#
+# `select = ["ALL"]` is deliberate: new ruff rules opt IN automatically, and every
+# exclusion below is stated here rather than sprinkled as per-line noqa. Nothing is
+# silenced to get past a finding -- `RUF100` (unused-noqa) stays ON, so if an ignore
+# here ever orphans an existing suppression the gate says so.
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+# private/ holds submodules and gitignored sibling repos with their own CI. The
+# gate also passes an explicit file list from `git ls-files`, so this is a
+# backstop against someone running bare `ruff check .`.
+extend-exclude = ["private"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # -- Annotations and docstring style. ~810 ANN + ~250 D findings, all churn.
+    #    The hook docstrings are load-bearing PROSE that records why a line is
+    #    the way it is; D209/D205/D401 would rewrite the prose to satisfy a
+    #    shape rule. Type annotations on 12.4k lines of untyped code buy 5 real
+    #    findings (measured with mypy --strict: 1061 errors, 96.7% of them
+    #    no-untyped-def/no-untyped-call).
+    "ANN",
+    "D",
+    "DOC",
+    "CPY001",
+    # INP001: implicit namespace package.
+    #
+    # THE REASON, AND ITS EXPIRY DATE. `.claude/hooks/stop` is deliberately not
+    # an importable package: every module there is reached by a sys.path hop to
+    # its own directory, and settings.json invokes the hooks as plain scripts.
+    # Adding an __init__.py to satisfy a lint rule would change how a program
+    # that gates every agent turn is loaded, for no behavioural gain.
+    #
+    # SCHEDULED TO CHANGE IN PHASE 5, not silently dropped. W5 ports those hooks
+    # into `.claude/rediacc_hooks`, a real package with a real `tests/`
+    # directory, at which point the directory this ignore exists for no longer
+    # exists either. Re-examine the ignore THEN -- and note that removing it is
+    # not free even then, because `.ci/scripts/quality` and `scripts/ops` are
+    # also flat directories of scripts and would light up.
+    "INP001",
+
+    # -- Owned by the formatter, or documented by ruff as conflicting with it.
+    "E501",
+    "COM812",
+    "ISC001",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+
+    # -- 373 hits and zero bug yield: "%s" % x is this program's house style,
+    #    used consistently across every message catalogue.
+    "UP031",
+
+    # -- A Stop hook's stdout IS its interface; the harness parses it.
+    "T201",
+    "T203",
+
+    # -- Complexity metrics. 95 findings that demand RESTRUCTURING code whose
+    #    behaviour is pinned by 702 assertions. Refactoring a hook to satisfy a
+    #    metric is the failure mode those suites exist to catch.
+    "C901",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR0914",
+    "PLR0915",
+    "PLR0917",
+    "PLR2004",
+
+    # -- Signature and naming churn across an API the suites pin by name.
+    "FBT001",
+    "FBT002",
+    "FBT003",
+    "N812",
+    "SLF001",
+    "PTH", # ~60 os.path -> pathlib rewrites, zero bug yield
+
+    # -- Exception-message and try/except style preferences, not defects.
+    "TRY003",
+    "TRY300",
+    "TRY301",
+    "TRY400",
+    "EM101",
+    "EM102",
+    "EM103",
+
+    # -- bandit rules that are false positives FOR THIS PROGRAM specifically.
+    "S324", # sha1 here is a cache/dedup key, never a security primitive
+    "S603", # list-arg subprocess of git/gh is the design, not an injection
+    "S607",
+    "S108", # /tmp paths are the harness's own documented scratch contract
+    "S110", # duplicates SIM105, and its "log it" advice is wrong for a hook
+    #         whose silence on a poll stop is a deliberate context economy
+
+    # -- Commented-out-code and unicode-confusable heuristics. ERA001 cannot
+    #    tell prose from code in a file this heavily commented; the RUF00x
+    #    confusables fire on legitimate non-ASCII in user-facing strings.
+    "ERA001",
+    "PERF203",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+# WHAT A PER-FILE IGNORE IS FOR, since `select = ["ALL"]` means the list above is
+# already long: a rule that is correct everywhere EXCEPT in one shape of file.
+# Widening the global `ignore` to accommodate tests would switch the rule off for
+# the 100 non-test Python files too, which is the opposite of what is wanted.
+[tool.ruff.lint.per-file-ignores]
+# TWO SEGMENTS, NOT ONE, because `.ci/rediacc_ci/tests/gates/` is a real pytest
+# root too -- `testpaths` (below) already lists it beside `.ci/rediacc_ci/tests`
+# and `.claude/rediacc_hooks/tests`, and its 160 files are genuinely
+# pytest-collected there, so their bare `assert`s get the same rewriting the
+# reasoning below already rests on. A single `tests/test_*.py` segment missed
+# every file one directory deeper than a literal `tests/`, which is why this
+# glob was silently blind to that whole gates/ tree.
+"**/tests/**/test_*.py" = [
+    # S101 (assert used). `assert` IS the pytest interface: pytest rewrites the
+    # statement to produce its diff output, so a test written with `if not x:
+    # raise` gets a worse failure message and buys nothing. Every OTHER file in
+    # this repo is still held to S101, which is the point of scoping it here --
+    # an `assert` in a gate is a real finding, because gates run under -O in
+    # nobody's environment and a stripped assertion is a check that vanished.
+    "S101",
+    # Docstring rules are already off repo-wide in the `ignore` list above (the
+    # whole "D" set), so a test file needs nothing extra for missing docstrings.
+    # Stated rather than listed: a redundant "D103" here would read as load
+    # bearing to the next person and survive the day "D" is narrowed.
+    #
+    # S311 (non-cryptographic random). A test seeding `random.Random(seed)` for
+    # reproducible coverage of a shuffle/pick algorithm is exercising the
+    # algorithm, not producing a secret -- flagging it the same way a real
+    # token generator would be flagged buys nothing and would train a reviewer
+    # to skip the rule's real hits. Every OTHER file in this repo is still held
+    # to S311.
+    "S311",
+]
+"**/rediacc_hooks/guards/test-*.py" = [
+    # THE GLOB READ `test-block_*.py` UNTIL THE FIRST `warn_` HARNESS ARRIVED, and
+    # the narrower spelling was a fact about which guards happened to have a
+    # dedicated suite rather than a rule about what these files are. The rule is
+    # the one the paragraphs below state -- a per-guard control harness beside its
+    # guard, named as `check-hook-integrity.sh` demands -- and it is true of
+    # `test-warn_staged_shape_duplication.py` in exactly the same way.
+    #
+    # N999 (invalid module name). These are per-guard control harnesses,
+    # not modules: nothing imports them, `guards.stems()` admits only
+    # `block_`/`warn_`/`require_` prefixes, and pytest's `test_*.py` glob does
+    # not match a hyphen either. They run as scripts, from the delegate table in
+    # `.claude/rediacc_hooks/tests/test_hooks_delegates.py`.
+    #
+    # THE HYPHEN IS REQUIRED BY A GATE, which is why this is a config entry and
+    # not a rename. `.ci/scripts/quality/check-hook-integrity.sh` credits a
+    # guard with BOTH directions when a dedicated suite sits beside it under the
+    # exact name `test-<stem>.py`, where <stem> is the guard module's own
+    # filename stem. Renaming to `test_block_unverified_push.py` would make that
+    # file invisible to the gate, and two of these four are the ONLY coverage
+    # those guards have -- their block direction needs a planted pre-push
+    # receipt and a fixture repo, which the one-line `check` helper in the suite
+    # cannot express. The gate would then report a fully covered guard as
+    # newly uncovered, and the cheap way to clear that is to baseline it, which
+    # retires the assertion for good.
+    #
+    # They only started tripping N999 when the W5 P7 cutover moved them beside
+    # their guards, which is inside a package; at their old path
+    # (.claude/hooks/pre-bash/) there is no __init__.py and ruff did not treat
+    # them as modules.
+    "N999",
+]
+"**/hooks/{stop,context}/test-*.py" = [
+    # S311, THE SAME SIBLING FIX AS THE tests/test_*.py GLOB ABOVE, missed here
+    # because these run as scripts under `.claude/hooks/{stop,context}/`, not
+    # inside a `tests/` directory pytest collects -- `worklist.py`'s own
+    # outq_drain() reproducibility control seeds `random.Random(seed)` for the
+    # exact reason given above: exercising a same-tier sampling algorithm
+    # deterministically is not producing a secret. No S101 entry here: these
+    # files use a `control(label, got, want)` helper rather than bare
+    # `assert`, so that rule never fires on this class.
+    "S311",
+]
+
+[tool.ruff.format]
+docstring-code-format = false
+
+# =============================================================================
+# mypy -- static type checking
+# =============================================================================
+# Enforced by .ci/scripts/quality/check_python_types.py (npm run
+# check:ci-python-types), which is reachable from `npm run ci`.
+#
+# WHY IT EXISTS. ruff does not do type INFERENCE. `select = ["ALL"]` catches an
+# unused import and an undefined name, and stops exactly where TypeScript's
+# `tsc --noEmit` begins: a call with the wrong argument count, an attribute that
+# does not exist on the object, a `None` flowing into a parameter that cannot
+# take one, a three-tuple appended to a list of pairs. Until this table there was
+# no Python equivalent of that gate anywhere in this repo, while every TypeScript
+# tree in it has been type-checked since the beginning.
+#
+# WHY mypy AND NOT pyright, AND THE REASON IS MEASURED RATHER THAN CULTURAL.
+# pyright was the first candidate: this is an npm monorepo, `pyright` ships an
+# npm package that `npm ci` would install for free, and it reads as the sibling
+# of `npx tsc --noEmit`. It was installed at 1.1.414 and pointed at this tree,
+# and it analysed THREE files out of 1,126.
+#
+#     Auto-excluding **/.*
+#     Found 3 source files
+#
+# pyright's CLI unconditionally excludes every directory whose name starts with a
+# dot, and there is no config key or flag that turns that off (the escape hatch,
+# `useDefaultExcludes`, is settable only by a language-server host). Listing
+# `.ci` in `include` does not help, and neither does naming a file directly:
+#
+#     $ pyright .ci/rediacc_ci/paths.py
+#     No source files found.
+#     0 errors, 0 warnings, 0 informations        <- exit 0
+#
+# Every line of Python in this repository lives under `.ci/` or `.claude/`. So
+# the npm-native option is a gate that reports a clean tree having read none of
+# it, with exit 0 -- which is the precise failure this repo's gate-authoring
+# discipline exists to prevent, bought at the price of one config key. mypy has
+# no such rule, takes the file list it is given, and is what the ruff table above
+# was already quoting measurements from.
+#
+# THE COST IS ONE PIN AND ONE INSTALL LINE: MYPY_VERSION in
+# .devcontainer/toolchain.env, and `needs: python-mypy` on the gate header, which
+# scripts/gate-bind.ts turns into the pip install that precedes the gate in its
+# CI step. That is the same shape `needs: python-yaml` already has.
+#
+# THE LEAST STRICT SETTING THAT STILL FINDS BUGS, which is this repo's standing
+# posture for a new gate. The ruff table above already records the measurement
+# that rules out the other end: mypy --strict on this tree reported 1061 errors,
+# 96.7% of them no-untyped-def/no-untyped-call -- i.e. "this untyped program is
+# untyped", which is not a defect report and which no baseline can drain because
+# draining it means annotating 12.4k lines. Nothing here demands an annotation.
+# What it does do is check the bodies of functions that HAVE none, which is where
+# all the real findings in this tree are; see check_untyped_defs below.
+[tool.mypy]
+# Matching ruff's `target-version`. The stdlib stubs mypy compares against are
+# version-dependent, so this is part of what makes the finding set reproducible.
+python_version = "3.12"
+
+# THE ONE FLAG THAT MAKES THIS GATE WORTH RUNNING HERE. By default mypy skips the
+# BODY of any function with no annotations, which in this codebase is most of
+# them: without this the gate reads 1,126 files and reports almost nothing, i.e.
+# it is green because it looked away. It demands no annotations of anyone -- it
+# only says that the code inside an unannotated function must still be
+# self-consistent.
+check_untyped_defs = true
+
+# THIRD-PARTY RESOLUTION IS AN ENVIRONMENT FACT, NOT A TREE FACT, and a
+# shrink-only baseline must contain none of those. Whether `import yaml` resolves
+# depends on whether the interpreter mypy runs under happens to have PyYAML --
+# true on this host, not true in a lane that never pip-installed it, and not true
+# inside the uv tool venv that provisions pytest. A baselined finding that STOPS
+# firing FAILS this gate and demands a drain, so an environment-dependent finding
+# would make the gate flap between hosts over code nobody touched. These two keys
+# together make every non-stdlib import resolve to Any everywhere, identically.
+#
+# NOT A HOLE, because the class already has an owner: check:ci-python-gate-deps
+# reads the imports of every .py a workflow step runs and requires a `pip install`
+# earlier in the same job to name anything outside the standard library. That
+# gate asks "will this import exist at runtime"; this one asks "is this code
+# type-correct". Neither implies the other.
+ignore_missing_imports = true
+no_site_packages = true
+
+# WHERE THE FIRST-PARTY PACKAGES ARE, so `import rediacc_ci` and
+# `import rediacc_hooks` resolve to the real source rather than to Any -- which
+# is the difference between checking this repo's own call sites and skipping
+# them. Same fact `[tool.pytest.ini_options].pythonpath` states for pytest.
+mypy_path = ".ci,.claude"
+
+# private/ holds submodules and gitignored sibling repos with their own CI.
+# .ci/cache/ is this repo's gitignored scratch: uv tool venvs, the pytest cache,
+# and the control fixture this gate plants and deletes on every run.
+exclude = ['^private/', '^\.ci/cache/']
+
+# Gitignored and per-worktree, for the reason [tool.pytest.ini_options].cache_dir
+# states at length: the default would put an untracked directory in every
+# `git status` of a tree several sessions share.
+cache_dir = ".ci/cache/mypy"
+
+# The gate parses this output, so the shape is pinned here rather than passed on
+# the command line, where a future caller could quietly drop it. `pretty` in
+# particular reflows an error across several lines with a source excerpt and a
+# caret, which turns one finding into something no line-oriented parser can key.
+show_error_codes = true
+pretty = false
+color_output = false
+error_summary = false
+
+# =============================================================================
+# pytest -- the test runner .ci/bootstrap.sh provisions
+# =============================================================================
+# Run by .ci/rediacc_ci/check_pytest.py (the gate), which is what enforces the
+# floors. `pytest` typed by hand from the repo root does the same thing minus
+# the anti-vacuity refusals.
+[tool.pytest.ini_options]
+# The pin is in .devcontainer/toolchain.env; this is only a floor, and it exists
+# because `pythonpath` (below) is a pytest 7+ ini key that OLDER pytest silently
+# ignores. Silently: the suite would then fail with ModuleNotFoundError and the
+# reason would be a version, not the code. minversion turns that into a message.
+minversion = "7.0"
+
+# WHERE THE TESTS ARE. Three roots now. The driver contract's arbitration named
+# the third one `.ci/tests/gates`; W7 P3 landed it at `.ci/rediacc_ci/tests/gates`
+# instead, so the ported battery is a SUBPACKAGE of the suite that already exists
+# (`rediacc_ci.tests.gates.*`) rather than a second top-level tree needing its own
+# `__init__.py` story and its own sys.path answer. The path is what moved; the
+# arbitration's point -- one named root per body of tests -- is unchanged.
+#
+# WHY A NESTED ROOT IS LISTED AT ALL, since `.ci/rediacc_ci/tests` already collects
+# it recursively. `check_pytest.corpus_test_count` globs `test_*.py` in each root
+# NON-recursively, so tests one directory deeper are collected by pytest and absent
+# from the corpus the collection floor is compared against. Naming the subdirectory
+# is what puts it under check_pytest's per-root "this root holds no test functions"
+# refusal -- the one that catches a whole suite collapsing while the summed total
+# stays comfortably above the floor. Measured 2026-09-07 on the same tree, with the
+# gates root already on disk: BEFORE the edit `corpus 1152 across 2 root(s)` /
+# `8768 collected`, AFTER `corpus 1204 across 3 root(s)` / `8769 collected`. The
+# collected count is +1 and not +52 because listing a parent and its child does NOT
+# double-collect -- pytest dedupes the args -- so the whole 52 was ALREADY being run
+# and simply was not being counted; the +1 is one test added between the two
+# measurements. That gap between "run" and "counted" is the hole this line closes.
+#
+# NO PAIRED EDIT TO check_test_file_orphans' SEARCH_DIRS IS NEEDED HERE, and that
+# is worth stating rather than leaving the next reader to wonder whether the pairing
+# above was forgotten: its `discover()` uses rglob, and `.ci/rediacc_ci/tests` is
+# already in SEARCH_DIRS, so every file under the new root was already a subject.
+# `collected_roots()` reads THIS list, so the new root confers reachability the day
+# it is added and stops the day it is removed.
+testpaths = [
+    ".ci/rediacc_ci/tests",
+    ".ci/rediacc_ci/tests/gates",
+    ".claude/rediacc_hooks/tests",
+]
+
+# THE IMPORT PATH, IN ONE PLACE. The package directory is `.ci/rediacc_ci`, so
+# the importable name is `rediacc_ci` with `.ci` on sys.path. Everything else in
+# this repo achieves that with a hand-written `sys.path.insert` -- 33 of them at
+# last count, in five different spellings. pytest has an ini key for exactly
+# this, so the test suite uses it and the hand-written hop does not reappear
+# here. Non-test consumers get the same answer from rediacc_ci.paths.
+pythonpath = [".ci"]
+
+# NOT under the repo root. `.pytest_cache/` is NOT in .gitignore (checked with
+# `git check-ignore`), so the default location would put an untracked directory
+# in every `git status` of a tree that several sessions share. `.ci/cache/` is
+# already gitignored and already per-worktree, which is where the rest of this
+# workstream's scratch lives (.ci/bootstrap.sh installs uv and pytest there).
+cache_dir = ".ci/cache/pytest"
+
+# -ra              a reason line for every non-passing outcome, so a skip is
+#                  never silent -- a skipped test reads exactly like a passing
+#                  one in the summary count the gate parses.
+# --strict-markers an unregistered @pytest.mark typo is an error, not a marker
+#                  that quietly matches nothing.
+# --strict-config  an unknown key in THIS table is an error. Without it a typo
+#                  here (`testpath`, `pythonpaths`) is ignored in silence, and
+#                  the failure surfaces as an empty collection much later.
+# `--dist loadgroup` HERE, not only on the gate's argv. `XDIST_GROUP` (rediacc_ci.xdist_groups) is inert under xdist's default `load`, and a bare `pytest -n auto` is the natural thing to type: on 2026-09-24 one did exactly that, test_guards_differential.py's session fixture (about 17,000 inodes and 6,000 bash forks) was built on
+# each of 24 workers, 656,000 inodes in one basetemp, and /tmp hit its inode cap. It has to be an ARGUMENT: xdist workers re-parse the controller's argv and ini (`xdist/workermanage.py`), so an option changed in a hook never reaches them, which was tried and measured. Without `-n` it is inert (a serial run is unchanged), and an explicit `--dist` on the command line still wins.
+addopts = "-ra --strict-markers --strict-config --dist loadgroup"
+
+# `/tmp` is a tmpfs, and a tmpfs has a HARD INODE CAP independent of its size --
+# 1,048,576 here. On 2026-09-14 that cap was reached with 19G of the 29G still
+# free, which halted every session on this box: creating any file returns ENOSPC,
+# so `df -h` reads healthy and the real number is `df -i`. The consumer was
+# `/tmp/pytest-of-developer/`, holding 780,047 inodes -- pytest's own `tmp_path`
+# trees, which this suite's differential cases build in bulk at roughly 70k
+# inodes per run.
+#
+# pytest's default is `all`, which keeps EVERY test's tmp_path for the last
+# `tmp_path_retention_count` (3) sessions. Three runs of this suite is therefore
+# ~210k inodes, a fifth of the cap, parked permanently and re-exhausted by any
+# busy day. `failed` keeps only the trees belonging to tests that FAILED, which
+# is the half anyone ever opens: measured on an isolated 3-test corpus, `all`
+# retained 3 directories and `failed` retained 1, the failing one.
+#
+# Scope, so this is not mistaken for more than it is: it bounds ACCUMULATION
+# ACROSS runs, which is what caused the outage. Peak usage DURING a single run
+# is unchanged, because the trees still get created and are reaped at session
+# end. `tmp_path_retention_count` is deliberately left at its default of 3 --
+# with the policy narrowed to failures, three sessions of failed-test trees is
+# cheap and is exactly what you want when debugging an intermittent red.
+tmp_path_retention_policy = "failed"
+
+# Default is ["test_*.py", "*_test.py"]. Pinned to one form so the gate's
+# corpus-derived floor (which counts `def test_` in these files) and pytest's
+# own collection cannot disagree about which files are in scope.
+python_files = ["test_*.py"]
+
+# A warning that is only printed is a warning nobody reads. `error` makes the
+# suite fail on one instead, which is the same argument the ignore list above
+# makes for RUF100: a suppression with no gate behind it is not a decision.
+filterwarnings = ["error"]

@@ -92,9 +92,7 @@ export async function resolvePageSource(
     proc.stdout.on('data', (chunk: Buffer) => {
       // ANSI stripped for the same reason the release gate strips it: a command run
       // under `CI=true` colours its output even with no TTY, and the escape lands
-      // inside the value being parsed. Here that surfaces as the confusing
-      // `printed "<esc>[36mhttp://..." , not a URL` rather than a silent hang, but it
-      // is the same defect and it is swept here rather than waiting to be hit.
+      // inside the value being parsed. Here that surfaces as the confusing `printed "<esc>[36mhttp://..." , not a URL` rather than a silent hang, but it is the same defect and it is swept here rather than waiting to be hit.
       buffer += stripAnsi(chunk.toString());
       const newline = buffer.indexOf('\n');
       if (newline >= 0) {
@@ -122,8 +120,7 @@ export async function resolvePageSource(
  * the live page; pure inline styles, no external CSS.
  */
 async function showClickIndicator(page: Page, target: Locator, timeoutMs: number): Promise<void> {
-  // boundingBox returns main-viewport coordinates even for elements inside
-  // iframes, so the indicator (injected into the top document) lines up.
+  // boundingBox returns main-viewport coordinates even for elements inside iframes, so the indicator (injected into the top document) lines up.
   const box = await target
     .first()
     .boundingBox({ timeout: timeoutMs })
@@ -197,8 +194,7 @@ export async function runActions(
 ): Promise<void> {
   const showClicks = opts.showClicks ?? true;
   for (const action of actions ?? []) {
-    // Selector scope: the page itself, or — when the action targets UI
-    // docked inside an iframe — that frame.
+    // Selector scope: the page itself, or — when the action targets UI docked inside an iframe — that frame.
     const scope: Page | FrameLocator = action.frame
       ? page.locator(substituteEnv(action.frame)).first().contentFrame()
       : page;
@@ -522,10 +518,7 @@ export async function compileBrowserSplit(
   const left = await acquireForPane(ctx, scene, scene.left, leftId);
   const right = await acquireForPane(ctx, scene, scene.right, rightId);
 
-  // Symmetric marks: both panes' slices span the same wall window, so the
-  // composited halves stay in sync. Pane actions run SEQUENTIALLY (left
-  // fully, then right) with a single visible cursor at a time — parallel
-  // panes with two cursors are impossible to follow.
+  // Symmetric marks: both panes' slices span the same wall window, so the composited halves stay in sync. Pane actions run SEQUENTIALLY (left fully, then right) with a single visible cursor at a time — parallel panes with two cursors are impossible to follow.
   await ctx.sessions.markStart(left.session, leftId);
   await ctx.sessions.markStart(right.session, rightId);
   await runActions(left.session.page, scene.left.actions, { showClicks: left.showClicks });
@@ -553,8 +546,7 @@ export async function compileBrowserSplit(
       trimMp4Duration(leftSeg, leftEq, durSec);
       trimMp4Duration(rightSeg, rightEq, durSec);
       const stacked = path.join(ctx.tmp, `${scene.id}.stacked.mp4`);
-      // A thin black spacer between the panes so the two surfaces read as
-      // separate windows instead of one fused frame.
+      // A thin black spacer between the panes so the two surfaces read as separate windows instead of one fused frame.
       const PANE_GAP = 16;
       const paneW = (VIDEO_W - PANE_GAP) / 2;
       execFileSync(
@@ -567,8 +559,7 @@ export async function compileBrowserSplit(
           rightEq,
           '-filter_complex',
           // shortest=1 is load-bearing: the color gap source is INFINITE,
-          // and hstack's default (end with the longest input) would encode
-          // forever.
+          // and hstack's default (end with the longest input) would encode forever.
           `[0:v]scale=${paneW}:${VIDEO_H}[l];[1:v]scale=${paneW}:${VIDEO_H}[r];color=c=black:s=${PANE_GAP}x${VIDEO_H}:r=${FPS}[gap];[l][gap][r]hstack=inputs=3:shortest=1[v]`,
           '-map',
           '[v]',

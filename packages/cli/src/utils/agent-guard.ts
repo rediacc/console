@@ -12,7 +12,7 @@ import {
 
 const AGENT_ENV_VARS = ['REDIACC_AGENT', 'CLAUDECODE', 'GEMINI_CLI', 'COPILOT_CLI'] as const;
 
-// Cache results — ancestry walk is expensive, only need to do once per process.
+// Cache results, ancestry walk is expensive, only need to do once per process.
 let _isAgent: boolean | undefined;
 const _overrideLegit = new Map<string, boolean>();
 
@@ -26,7 +26,7 @@ function checkProcessEnvForAgent(): boolean {
 
 /**
  * Detect if the current process is running inside an AI agent environment.
- * On Linux, also checks ancestor /proc/environ — catches agents that unset
+ * On Linux, also checks ancestor /proc/environ, catches agents that unset
  * their env vars to bypass detection.
  */
 export function isAgentEnvironment(): boolean {
@@ -38,8 +38,7 @@ export function isAgentEnvironment(): boolean {
     return true;
   }
 
-  // Slow path: check ancestor chain (Linux only)
-  // Catches: unset CLAUDECODE, env -i, script-based bypass
+  // Slow path: check ancestor chain (Linux only) Catches: unset CLAUDECODE, env -i, script-based bypass
   _isAgent = isAgentByAncestry();
   return _isAgent;
 }
@@ -69,7 +68,7 @@ export function isLegitimateWildcardOverride(): boolean {
 
 /**
  * Assert that the current agent is allowed to access a machine directly (no repository context).
- * Machine-level SSH is extremely powerful — agents should only connect to repository contexts.
+ * Machine-level SSH is extremely powerful, agents should only connect to repository contexts.
  * Throws ValidationError unless REDIACC_ALLOW_GRAND_REPO=* is set by the user.
  */
 export function assertAgentMachineAccess(machineName: string): void {
@@ -86,7 +85,7 @@ export function assertAgentMachineAccess(machineName: string): void {
 
 /**
  * Assert that the current agent is allowed to create a new repository.
- * Agents operate in fork-only mode — creating a grand repo is blocked because the agent
+ * Agents operate in fork-only mode, creating a grand repo is blocked because the agent
  * can't operate on it afterwards. Use `repo fork` instead.
  * Throws ValidationError unless the user authorized this repo by name (or `*`)
  * via REDIACC_ALLOW_GRAND_REPO, set before the agent started.
@@ -117,7 +116,7 @@ export function configEditOverrideScope(): string | null {
   const raw = process.env[OVERRIDE_VAR_CONFIG_EDIT];
   if (!raw) return null;
   if (isAgentEnvironment() && !isOverrideAllowed(OVERRIDE_VAR_CONFIG_EDIT)) {
-    // Agent set its own override — reject.
+    // Agent set its own override, reject.
     return null;
   }
   return raw;

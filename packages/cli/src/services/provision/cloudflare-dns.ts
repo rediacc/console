@@ -2,7 +2,7 @@
  * Cloudflare DNS API client for managing DNS records.
  *
  * Used by push-infra to auto-create machine subdomain records.
- * Uses native https module — no external dependencies.
+ * Uses native https module, no external dependencies.
  */
 
 import { request as httpsRequest } from 'node:https';

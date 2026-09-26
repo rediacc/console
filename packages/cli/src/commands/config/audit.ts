@@ -1,5 +1,5 @@
 /**
- * `rdc config audit {log, tail, verify}` — inspect the append-only
+ * `rdc config audit {log, tail, verify}`, inspect the append-only
  * hash-chained audit log at `<configdir>/audit.log.jsonl`.
  */
 
@@ -9,6 +9,7 @@ import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { type AuditEntry, readAuditLog, verifyChain } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
+import { writeStderr, writeStdout } from '../../services/core/request-context.js';
 import { handleError } from '../../utils/errors.js';
 
 function auditLogPath(): string {
@@ -85,13 +86,13 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
     .action(() => {
       const path = auditLogPath();
       if (!existsSync(path)) {
-        process.stderr.write(`Audit log not found: ${path}\n`);
+        writeStderr(`Audit log not found: ${path}\n`);
         process.exit(1);
       }
       // Print existing entries first, then stream new ones.
       const existing = readAuditLog(path);
       for (const entry of existing) {
-        process.stdout.write(`${JSON.stringify(entry)}\n`);
+        writeStdout(`${JSON.stringify(entry)}\n`);
       }
       // watchFile polls mtime; good enough for a user-facing tail command.
       let lastSize = existsSync(path) ? statSync(path).size : 0;
@@ -100,7 +101,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
           const stream = createReadStream(path, { start: lastSize, end: curr.size });
           const rl = createInterface({ input: stream });
           rl.on('line', (line) => {
-            if (line.trim()) process.stdout.write(`${line}\n`);
+            if (line.trim()) writeStdout(`${line}\n`);
           });
           lastSize = curr.size;
         }

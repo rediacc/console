@@ -1,0 +1,6 @@
+# twin .ci/scripts/infra/verify-ssh.sh blob 03a853b7a3ab7d8da3ff395bfc38cfc95e420151
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Required command 'ssh' is not available
+--- calls ---

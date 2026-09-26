@@ -1,0 +1,513 @@
+# twin .claude/hooks/test-hooks.sh blob 5be28c8d1ebf30c38454f32a9f3ee13a95d0774a
+ok   [0] ../rediacc_hooks/guards/test-block_destructive_git_restore.py: ✓ block-destructive-git-restore: 16 blocked, 15 allowed (both directions pinned)
+ok   [0] ../rediacc_hooks/guards/test-block_git_amend.py: FAILURES: 0
+ok   [0] ../rediacc_hooks/guards/test-block_host_toolchain_run.py: FAILURES: 0  (24 case(s), devbox_present=False)
+ok   [0] ../rediacc_hooks/guards/test-block_prose_style_commit.py: FAILURES: 0
+ok   [0] ../rediacc_hooks/guards/test-block_prose_style_edit.py: FAILURES: 0
+ok   [0] ../rediacc_hooks/guards/test-block_unproven_bulk_transform.py: FAILURES: 0
+ok   [0] ../rediacc_hooks/guards/test-block_unverified_push.py: FAILURES: 0  (16 case(s), 9 block / 7 allow)
+ok   [0] ../rediacc_hooks/guards/test-warn_staged_shape_duplication.py: FAILURES: 0
+ok   [0] adhoc CONTROL: a DOC quoting the banned recipe is not a use of it
+ok   [0] adhoc: a one-shot read is not a watch
+ok   [0] adhoc: an unrelated command passes
+ok   [0] adhoc: no command in the payload is not a violation
+ok   [0] adhoc: the sanctioned body update passes
+ok   [0] adhoc: the sanctioned tracer passes
+ok   [0] admin-merge: --auto on non-rediacc repo ignored
+ok   [0] admin-merge: command-position mention in heredoc body ignored
+ok   [0] admin-merge: non-merge command ignored
+ok   [0] admin-merge: prose mention in heredoc ignored
+ok   [0] admin-merge: quoted commit-msg --admin mention ignored
+ok   [0] admin-merge: sibling gh --repo does not donate to the merge segment
+ok   [0] agent-browser CONTROL: echoing it is not running it
+ok   [0] agent-browser: absolute path outside the repo is fine
+ok   [0] agent-browser: open then an absolute screenshot is fine
+ok   [0] agent-browser: open writes no file
+ok   [0] agent-browser: selector plus absolute path
+ok   [0] agent-state: TRAPS.md untouched
+ok   [0] agent-state: a session's own RULES.md untouched
+ok   [0] agent-state: docs/agent-reference/ is not this guard's tree either
+ok   [0] agent-state: docs/agent/ is not this guard's tree
+ok   [0] agent-state: non-agent files untouched
+ok   [0] agent-state: root-level plan files untouched
+ok   [0] agent-state: the notes tree README untouched
+ok   [0] agent-state: the shared RULES.md edits untouched
+ok   [0] amend: benign
+ok   [0] background-waiter CONTROL: a QUOTED-delimiter heredoc body is data, not commands
+ok   [0] background-waiter CONTROL: checking whether one already runs
+ok   [0] background-waiter CONTROL: merely reading the module
+ok   [0] background-waiter CONTROL: the same command in the foreground
+ok   [0] background-waiter CONTROL: the unquoted-delimiter form too
+ok   [0] bash-write CONTROL: MENTIONING a live script while writing a different file
+ok   [0] bash-write CONTROL: READING a live script is not writing to it
+ok   [0] bash-write CONTROL: RUNNING it is not writing to it
+ok   [0] bash-write CONTROL: a .sh nothing is running is untouched
+ok   [0] bash-write CONTROL: a NON-SHELL process carrying the name in argv is not running it
+ok   [0] bash-write CONTROL: a bash-shaped assignment MENTION inside replacement text
+ok   [0] bash-write CONTROL: a chain evaluator is not a job you can corrupt
+ok   [0] bash-write CONTROL: a heredoc writing a .py that MENTIONS a live script
+ok   [0] bash-write CONTROL: a name CONTAINING the live one is not the live one
+ok   [0] bash-write CONTROL: a one-letter name does not match /bin/bash
+ok   [0] bash-write CONTROL: a variable expansion yields no phantom candidate
+ok   [0] bash-write CONTROL: an ASCII arrow in prose is not a redirect
+ok   [0] bash-write CONTROL: grepping it is not writing to it
+ok   [0] bash-write CONTROL: the guard goes quiet once the process exits
+ok   [0] binary-deploy CONTROL: pulling a log back is diagnosis, not a deploy
+ok   [0] blanket-git-add CONTROL: a real pathspec WITH redirection is still allowed
+ok   [0] blanket-git-add CONTROL: worktree add is NOT this guard's business
+ok   [0] blanket-git-add: -A WITH a pathspec is the escape, allowed
+ok   [0] blanket-git-add: -C plus a pathspec is allowed
+ok   [0] blanket-git-add: a named file is allowed
+ok   [0] branch-name CONTROL: a delete is not a creation
+ok   [0] branch-name CONTROL: a legal name with a remote start point
+ok   [0] branch-name CONTROL: a read is not a creation
+ok   [0] branch-name CONTROL: a variable assignment holding the words runs nothing
+ok   [0] branch-name CONTROL: checking out an existing branch is not a creation
+ok   [0] branch-name CONTROL: renaming OUT of a suffix is how you FIX it
+ok   [0] branch-name CONTROL: the shape named inside a heredoc BODY is prose
+ok   [0] chain-head jq CONTROL: silent and exit 0 when jq IS present
+ok   [0] ci-polling: a bare gh run view is not a poll
+ok   [0] ci-polling: a bare sleep is not a poll
+ok   [0] ci-polling: attempt-stable watch ok
+ok   [0] ci-polling: prose showing the sanctioned until-loop is NOT blocked
+ok   [0] ci-polling: terminal-state watch ok
+ok   [0] ci-polling: the documented workaround (file by path) passes
+ok   [0] ci-polling: the gh api watch loop is not a gh-run-view poll
+ok   [0] ci-reverse-poll: attempt-stable watch ok
+ok   [0] ci-reverse-poll: terminal-state watch ok
+ok   [0] cli-bundle CONTROL: echoing it is not running it
+ok   [0] cli-bundle CONTROL: the path is an output flag, not the program
+ok   [0] cli-bundle CONTROL: the repo's own build entry is not the bundle
+ok   [0] commit-meta CONTROL: GREPPING for the banned trailer is how you audit it
+ok   [0] commit-meta CONTROL: a git verb and the word commit in DIFFERENT clauses
+ok   [0] commit-meta CONTROL: prose naming the rule is not a violation of it
+ok   [0] commit-meta CONTROL: the gap does not span two && clauses
+ok   [0] compacted-record: a plain plan is out of scope
+ok   [0] compacted-record: a prose-only Edit is allowed
+ok   [0] context/test-context-bands.py: 82 checks, 0 failures
+ok   [0] destructive-git: branch create is NOT blocked
+ok   [0] destructive-git: branch switch is NOT blocked
+ok   [0] destructive-git: clean --dry-run is read-only
+ok   [0] destructive-git: stash list is read-only
+ok   [0] destructive-git: stash show is read-only
+ok   [0] destructive-git: unrelated git command
+ok   [0] empty-commit: 0 check-runs -> allowed, advises no rerun
+ok   [0] force-push: --set-upstream ok
+ok   [0] force-push: --tags ok
+ok   [0] force-push: a flag past a pipe is a different command
+ok   [0] force-push: a plus inside a branch name is not a force refspec
+ok   [0] force-push: plain push ok
+ok   [0] force-push: the /pr-merge GitLab refspec push is NOT blocked
+ok   [0] git-amend CONTROL: quoting the rule is not amending
+ok   [0] git-empty-commit CONTROL: echoing it is not committing
+ok   [0] git-empty-commit CONTROL: unquoted prose is not a command
+ok   [0] host-toolchain CONTROL: echoing a gate name is not running it
+ok   [0] host-toolchain CONTROL: npx running an actual npm package is untouched
+ok   [0] host-toolchain CONTROL: prose mentioning tool names is not a command
+ok   [0] host-toolchain: a gate needing no extra toolchain
+ok   [0] host-toolchain: already routed through the devbox
+ok   [0] host-toolchain: an unrelated command
+ok   [0] host-toolchain: bare tool, host has it
+ok   [0] inline-python CONTROL: TypeScript that merely MENTIONS python
+ok   [0] inline-python CONTROL: ordinary TypeScript
+ok   [0] inline-python CONTROL: the identical content in Markdown
+ok   [0] inline-python CONTROL: the identical content in a real .py file
+ok   [0] inline-workflow-run: non-workflow file ok
+ok   [0] inline-workflow-run: thin block ok
+ok   [0] long-sleep: 10s ok
+ok   [0] long-sleep: arm order does not decide the verdict
+ok   [0] long-sleep: attempt-stable watch ok in background
+ok   [0] long-sleep: short background sleep ok
+ok   [0] long-sleep: terminal-state watch ok
+ok   [0] long-sleep: the documented workaround (message by path) passes
+ok   [0] merge-unpushed CONTROL: a branch in sync merges freely
+ok   [0] merge-unpushed CONTROL: a merge for a DIFFERENT repo is out of scope
+ok   [0] merge-unpushed CONTROL: a push is not a merge
+ok   [0] merge-unpushed CONTROL: gh pr view is not a merge
+ok   [0] nondraft-create: console with --draft ok
+ok   [0] nondraft-create: non-create command ignored
+ok   [0] nondraft-create: plain create on private submodule ok
+ok   [0] one-pr CONTROL: a non-create gh command is ignored
+ok   [0] one-pr CONTROL: the first PR is allowed
+ok   [0] one-pr CONTROL: with no open PR the first one is allowed
+ok   [0] pathspecless-commit: ALLOW a commit inside /tmp, which is never this checkout
+ok   [0] pathspecless-commit: ALLOW a git add, which is a different guard's business
+ok   [0] pathspecless-commit: ALLOW a named pathspec
+ok   [0] pathspecless-commit: ALLOW a throwaway fixture repo, which every port agent must seal
+ok   [0] pathspecless-commit: ALLOW an amend, which chooses no new content
+ok   [0] pathspecless-commit: ALLOW git -C into a scratch repo
+ok   [0] pathspecless-commit: ALLOW several named paths
+ok   [0] plan-tasks: a non-plan path is out of scope
+ok   [0] plan-tasks: a plan with a checkbox list passes
+ok   [0] plan-tasks: a stub under 400 chars is exempt
+ok   [0] plan-tasks: amending a legacy prose plan is grandfathered, with a note
+ok   [0] plan-tasks: amending a plan that already has a task list passes
+ok   [0] premature-ready CONTROL: a green CI Complete lets the flip through
+ok   [0] premature-ready: --undo always allowed
+ok   [0] premature-ready: non-ready command ignored
+ok   [0] premature-ready: prose mention in heredoc ignored
+ok   [0] premature-ready: quoted commit-msg mention ignored
+ok   [0] protected-files CONTROL: checkout then READ is not a restore
+ok   [0] protected-files CONTROL: echoing it is not restoring
+ok   [0] protected-files CONTROL: reading the file is untouched
+ok   [0] raw-pr-body CONTROL: CREATE --body that ALREADY carries the block passes
+ok   [0] raw-pr-body CONTROL: CREATE --body-file that ALREADY carries the block passes
+ok   [0] raw-pr-body CONTROL: CREATE with no body flag is out of scope
+ok   [0] raw-pr-body CONTROL: PATCH inline body carrying every marker passes
+ok   [0] raw-pr-body CONTROL: PATCH that touches no body is out of scope
+ok   [0] raw-pr-body CONTROL: PATCH whose file carries EVERY generated marker passes
+ok   [0] raw-pr-body CONTROL: a GET of the body is not a write
+ok   [0] raw-pr-body CONTROL: an edit carrying EVERY generated marker passes
+ok   [0] raw-pr-body CONTROL: an unreadable --body-file is ALLOWED, not refused blind
+ok   [0] raw-pr-body CONTROL: the edit's --add-label is not the create's --body
+ok   [0] raw-pr-body(non-body passes)
+ok   [0] raw-pr-body(prose passes)
+ok   [0] raw-pr-body(tool passes)
+ok   [0] rebase-status reads a real gitlink halt and classifies it
+ok   [0] rebase-status reads a real judgement halt and classifies it
+ok   [0] rebase-status reads a real registry halt and classifies it
+ok   [0] remote-drift: aligned local pushes freely
+ok   [0] remote-drift: non-push commands untouched
+ok   [0] resolve-gitlinks --execute clears a real gitlink halt
+ok   [0] roundlog CONTROL: CREATING one passes -- a file that does not exist has no appendix
+ok   [0] roundlog CONTROL: a copy between two innocent .md paths still passes
+ok   [0] roundlog CONTROL: a python write to a DIFFERENT .md that merely QUOTES a round log
+ok   [0] roundlog CONTROL: the verb does refuse to create, so the pair check is not vacuous
+ok   [0] roundlog: a briefing has its own contract, not this guard's
+ok   [0] roundlog: a short bundle containing a is a real append
+ok   [0] roundlog: a targeted Edit of an existing log passes
+ok   [0] roundlog: a targeted Edit passes (it cannot swallow an unnamed appendix)
+ok   [0] roundlog: an unrelated command is untouched
+ok   [0] roundlog: an unrelated cp beside a read passes
+ok   [0] roundlog: an unrelated file is untouched
+ok   [0] roundlog: an unrelated mv beside a read passes
+ok   [0] roundlog: appending passes (it cannot truncate)
+ok   [0] roundlog: cp with the log as SOURCE is a read
+ok   [0] roundlog: long --append is a real append
+ok   [0] roundlog: reading passes
+ok   [0] roundlog: tee -a passes (it cannot truncate)
+ok   [0] roundlog: the guard and the verb must not BOTH refuse creation (verb=2 guard=0 -- at least one door is open)
+ok   [0] roundlog: the hook's OWN filename beside a read passes
+ok   [0] roundlog: the sanctioned verb passes
+ok   [0] running-script CONTROL: a .sh nothing is running is untouched
+ok   [0] running-script CONTROL: a NON-SHELL process carrying the name in argv is not running it
+ok   [0] running-script CONTROL: a SHELL process mentioning the name outside argv position is not running it
+ok   [0] running-script CONTROL: a non-shell file is out of scope
+ok   [0] running-script CONTROL: a one-letter name does not match /bin/bash
+ok   [0] running-script CONTROL: no file_path names nothing
+ok   [0] running-script CONTROL: the guard goes quiet once the process exits
+ok   [0] self-pgrep CONTROL: a one-shot count beside the WORD while is not a loop
+ok   [0] self-pgrep CONTROL: a one-shot count is not a wait loop
+ok   [0] self-pgrep CONTROL: an artifact waiter names no process at all
+ok   [0] self-pgrep CONTROL: the bracket-class remedy exits promptly
+ok   [0] self-pgrep CONTROL: the bracket-class remedy is allowed
+ok   [0] settled(design passes)
+ok   [0] settled(fact passes)
+ok   [0] settled(how-clause passes)
+ok   [0] settled(mention of the rule passes)
+ok   [0] settled(that-clause passes)
+ok   [0] settled(unrelated permission passes)
+ok   [0] ssh-docker CONTROL: echoing it is not running it
+ok   [0] ssh-docker: bridge allowed
+ok   [0] ssh-file-write CONTROL: echoing it is not writing
+ok   [0] ssh-file-write: dev-null read ok
+ok   [0] ssh-file-write: stderr redirect is a read
+ok   [0] stale-index: CONTROL: a non-commit is out of scope
+ok   [0] stale-index: CONTROL: commit -a is not index-only
+ok   [0] stale-index: CONTROL: unquoted prose is not a command
+ok   [0] stale-index: a staged-then-edited path is named
+ok   [0] stale-index: after a separator, still named
+ok   [0] stale-pr-branch: non-MMDD name is out of scope
+ok   [0] stale-pr-branch: not a create, ignored
+ok   [0] stale-pr-branch: today's MMDD allowed
+ok   [0] stop suites: 27 ported module(s) collected by check:ci-pytest, not re-run here
+ok   [0] stop/test-adhoc-watch.py: 15 control(s) passed
+ok   [0] stop/test-always-tier.py: always-tier control: 66 check key(s), 28 invariant(s), 1 dynamic call(s), ok
+ok   [0] stop/test-completion-evidence.py: ok  deferred-finding detector: 4 hit, 4 missed, control fired; sweep sentinel still matche
+ok   [0] stop/test-judge-schema.py: 416 control(s) passed
+ok   [0] stop/test-plan-status-parse.py: 22 control(s) passed
+ok   [0] stop/test-planfile.py: 130 control(s) passed
+ok   [0] stop/test-planindex.py: 58 checks, 0 failures
+ok   [0] stop/test-planrec.py: 199 control(s) passed
+ok   [0] stop/test-reggate-ledger.py: 19 control(s) passed
+ok   [0] stop/test-teammate-idle.py: 20 control(s) passed
+ok   [0] stop/wl_admit.py --selftest: 18 control(s) passed
+ok   [0] stop/wl_ci.py --selftest: 15 control(s) passed
+ok   [0] stop/wl_git.py --selftest: 63 control(s) passed
+ok   [0] stop/wl_planfid.py --selftest: 72 control(s) passed
+ok   [0] stop/wl_profile.py: 35 control(s) passed
+ok   [0] stop/wl_resprofile.py: 17 control(s) passed
+ok   [0] stop/wl_ressample.py: 13 control(s) passed
+ok   [0] stop/wl_roundlog.py --selftest: 19 control(s) passed
+ok   [0] suppressions CONTROL: a fenced example of the wrong way stays writable
+ok   [0] suppressions CONTROL: prose INSIDE a code comment
+ok   [0] suppressions CONTROL: prose in Markdown naming the directive
+ok   [0] suppressions: clean
+ok   [0] target-root: -C into another repo is that repo's business, not ours
+ok   [0] target-root: a cd into another repo exempts the whole line
+ok   [0] target-root: block-unverified-push ignores another repo's push
+ok   [0] target-root: warn-remote-drift ignores another repo's push
+ok   [0] unlinked-author CONTROL: a tag writes a tagger, not a commit author
+ok   [0] unlinked-author CONTROL: grepping for an address is not a commit at all
+ok   [0] unlinked-author CONTROL: prose naming a bad address is not a bad author
+ok   [0] untagged-commit CONTROL: a PIPED message is genuinely unreadable, so it ALLOWS
+ok   [0] untagged-commit CONTROL: a non-commit is out of scope
+ok   [0] untagged-commit CONTROL: a real trailer passes
+ok   [0] untagged-commit: -F <file> is READ from disk, and a real trailer passes
+ok   [0] untagged-commit: a heredoc body IS read, and a real trailer in it passes
+ok   [0] unverified-push CONTROL: a dry run publishes nothing, so it buys no CI round
+ok   [0] unverified-push CONTROL: a non-push is out of scope
+ok   [0] unverified-push CONTROL: a submodule push advances no console branch
+ok   [0] unverified-push CONTROL: prose about pushing is not a push
+ok   [0] warn-hook-change: a commit never blocks
+ok   [0] warn-hook-change: an unrelated command never blocks
+ok   [0] wiring CONTROL: the drop fixture's subject is really registered
+ok   [0] wiring: every hook on disk is registered, every registration exists
+ok   [0] worktree-add: list is not create
+ok   [0] worktree-add: list ok
+ok   [0] worktree-add: prose is not an invocation
+ok   [0] worktree-add: prune is not create
+ok   [0] worktree-add: quoted prose mention ignored
+ok   [0] worktree-add: remove is not create
+ok   [0] worktree-add: remove ok
+ok   [0] worktree-add: unrelated git command ok
+ok   [1] wiring CONTROL: a dropped registration is caught as UNWIRED
+ok   [1] wiring CONTROL: a registration with no file is caught as DANGLING
+ok   [2] adhoc: a hand-rolled status loop is refused
+ok   [2] adhoc: gh pr edit --body is refused (it exits 1 and does not write)
+ok   [2] adhoc: the banned watch command is refused
+ok   [2] admin-merge: --admin banned
+ok   [2] admin-merge: --admin=value bypass blocked
+ok   [2] admin-merge: GNU long-option wrapper (bash --norc -c) bypass blocked
+ok   [2] admin-merge: GNU long-option wrapper (bash --posix -c) bypass blocked
+ok   [2] admin-merge: bash -c wrapper bypass blocked
+ok   [2] admin-merge: bundled-flag wrapper (bash -lc) bypass blocked
+ok   [2] admin-merge: double-quoted path ("/bin/bash" -c) bypass blocked
+ok   [2] admin-merge: eval wrapper bypass blocked
+ok   [2] admin-merge: multi-flag wrapper (bash -eux -c) bypass blocked
+ok   [2] admin-merge: path-qualified shell (/bin/bash -c) bypass blocked
+ok   [2] admin-merge: relative-path shell (./bash -c) bypass blocked
+ok   [2] admin-merge: separate-flag wrapper (sh -eu -c) bypass blocked
+ok   [2] admin-merge: sh -c wrapper bypass blocked
+ok   [2] admin-merge: single-quoted path ('/bin/bash' -c) bypass blocked
+ok   [2] admin-merge: value-taking-flag wrapper (bash -o pipefail -c) bypass blocked
+ok   [2] admin-merge: variable-indirection bypass blocked
+ok   [2] agent-browser: absolute path inside the repo
+ok   [2] agent-browser: bare filename resolves against $PWD
+ok   [2] agent-browser: open then an in-repo screenshot
+ok   [2] agent-browser: pdf with a relative path
+ok   [2] agent-browser: the SECOND output command is bare
+ok   [2] agent-browser: unknown flag is eaten as the output path
+ok   [2] agent-state: Edit blocked (rewrite, never append)
+ok   [2] agent-state: MultiEdit blocked
+ok   [2] agent-state: aimless Write (no Next action) blocked
+ok   [2] agent-state: the legacy dotted path is blocked too
+ok   [2] agent-state: the real session path is reached, deep in an absolute path
+ok   [2] agent-state: the retired branch/session path is blocked too
+ok   [2] agent-state: thin Write blocked
+ok   [2] agent-state: well-shaped Write is ALSO blocked (shape was never the defect)
+ok   [2] background-waiter: a heredoc feeding a SHELL is still the command
+ok   [2] background-waiter: a shell & makes it untracked
+ok   [2] bash-write: a NUMBERED stderr redirect is still a redirect
+ok   [2] bash-write: a redirect onto a live script is refused
+ok   [2] bash-write: an APPEND onto a live script is refused
+ok   [2] bash-write: an in-place edit of a live script is refused
+ok   [2] bash-write: copying over a live script is refused
+ok   [2] bash-write: open(path,w) in a heredoc is refused, not only write_text
+ok   [2] bash-write: unidentifiable target falls back to the broad scan
+ok   [2] binary-deploy
+ok   [2] blanket-git-add: --all with no pathspec
+ok   [2] blanket-git-add: -A with no pathspec
+ok   [2] blanket-git-add: a bare -- with no pathspec is still blanket
+ok   [2] blanket-git-add: a lone dot
+ok   [2] blanket-git-add: after a command separator
+ok   [2] blanket-git-add: dot plus redirection
+ok   [2] blanket-git-add: fd redirection is not a pathspec
+ok   [2] blanket-git-add: sh -c wrapper bypass
+ok   [2] blanket-git-add: stdout redirection is not a pathspec
+ok   [2] blanket-git-add: the repo-root magic pathspec
+ok   [2] branch-name: a bare word is refused
+ok   [2] branch-name: a real creation AFTER a heredoc still fires
+ok   [2] branch-name: a slashed feature name is refused
+ok   [2] branch-name: a suffixed safety copy is refused
+ok   [2] branch-name: renaming INTO a suffix is refused
+ok   [2] chain-head jq: a PostToolUse Bash payload is REFUSED when jq is missing
+ok   [2] chain-head jq: a PreToolUse Bash payload is REFUSED when jq is missing
+ok   [2] ci-polling
+ok   [2] ci-polling: classic poll with && blocks
+ok   [2] ci-polling: classic poll with ; blocks
+ok   [2] ci-polling: polling hidden in bash -c is still caught
+ok   [2] ci-polling: prose showing an INLINE poll is blocked on purpose (operator ruling 2026-08-25)
+ok   [2] ci-reverse-poll
+ok   [2] cli-bundle
+ok   [2] cli-bundle: hidden in eval is still caught
+ok   [2] commit-meta
+ok   [2] commit-meta: a PR body carries it too
+ok   [2] commit-meta: a tag message carries the same rule
+ok   [2] commit-meta: flags between the verb and the subcommand are still reached
+ok   [2] commit-meta: git -C <path> commit is still reached
+ok   [2] compacted-record: a Write over a record is refused
+ok   [2] compacted-record: a bare-blob old_string is refused
+ok   [2] destructive-git: after a command separator
+ok   [2] destructive-git: bare stash
+ok   [2] destructive-git: checkout a lone dot
+ok   [2] destructive-git: clean
+ok   [2] destructive-git: restore
+ok   [2] destructive-git: restore in a submodule via -C
+ok   [2] destructive-git: stash pop
+ok   [2] destructive-git: the exact 2026-08-14 command
+ok   [2] empty-commit: 3 check-runs -> blocked, DOES advise the rerun
+ok   [2] empty-commit: a claim that is not HEAD is refused
+ok   [2] empty-commit: unreadable check-runs API fails closed
+ok   [2] force-push: +HEAD:<branch> is the same force in shorthand
+ok   [2] force-push: --mirror behind a cd is still caught
+ok   [2] force-push: --mirror is a force of every ref
+ok   [2] force-push: a leading + on a refspec forces that ref
+ok   [2] force-push: a plus-prefixed branch shorthand forces too
+ok   [2] force-push: eval wrapper bypass
+ok   [2] force-push: eval wrapper bypass, refspec form
+ok   [2] force-push: sh -c wrapper bypass
+ok   [2] git-amend
+ok   [2] git-amend: an amend hidden in eval is still caught
+ok   [2] git-amend: an amend hidden in sh -c is still caught
+ok   [2] git-empty-commit
+ok   [2] git-empty-commit: hidden in bash -c is still caught
+ok   [2] git-force-push
+ok   [2] host-toolchain: npx cannot run a pinned non-npm tool
+ok   [2] host-toolchain: npx misuse, short flag form
+ok   [2] inline-python: a Python program inside a .ts is refused
+ok   [2] inline-workflow-run: 9-line block blocked
+ok   [2] long-sleep
+ok   [2] long-sleep: 90s in the FOREGROUND still blocked
+ok   [2] long-sleep: a commit message quoting a literal long sleep is blocked on purpose (operator ruling 2026-08-25)
+ok   [2] long-sleep: a heredoc fed to bash is still scanned
+ok   [2] long-sleep: background is not unlimited
+ok   [2] long-sleep: hidden in bash -c is still caught
+ok   [2] long-sleep: the same watch unbackgrounded is blocked
+ok   [2] merge-unpushed SANITY: an unpushed commit refuses the merge
+ok   [2] merge-unpushed: --repo console is still this checkout
+ok   [2] nondraft-create: console without --draft
+ok   [2] nondraft-create: draft on private submodule
+ok   [2] nondraft-create: draft-on-private caught in the second segment (no --repo donation)
+ok   [2] nondraft-create: second create on the line is judged too (no --draft donation)
+ok   [2] nondraft-create: sh -c wrapper bypass blocked
+ok   [2] one-pr: a second create is blocked when one is open
+ok   [2] one-pr: a second create is blocked while one is open
+ok   [2] one-pr: an unreadable PR list blocks rather than assuming none
+ok   [2] one-pr: sh -c wrapping does not bypass it
+ok   [2] pathspecless-commit: -a stages every modified tracked file
+ok   [2] pathspecless-commit: -m with no pathspec
+ok   [2] pathspecless-commit: a -- with nothing after it is the bare form in disguise
+ok   [2] pathspecless-commit: a /tmp MESSAGE FILE is not a /tmp repo, so this is still blocked
+ok   [2] pathspecless-commit: the bare form
+ok   [2] plan-tasks: a plan with no list at all is blocked
+ok   [2] plan-tasks: a prose plan whose DECISIONS parse as tasks is blocked
+ok   [2] plan-tasks: an edit CREATING a prose plan is blocked
+ok   [2] plan-tasks: the block names the exact syntax to add
+ok   [2] plan-tasks: the block says which states do NOT parse
+ok   [2] plan-tasks: the harness plan directory is in scope too
+ok   [2] premature-ready: a red CI Complete refuses the flip
+ok   [2] premature-ready: flipping ready while CI is not SUCCESS is refused
+ok   [2] protected-files
+ok   [2] protected-files: hidden in sh -c is still caught
+ok   [2] raw-pr-body(blocked)
+ok   [2] raw-pr-body(edit dropping the block blocked)
+ok   [2] raw-pr-body(edit with an unreadable body still blocked)
+ok   [2] raw-pr-body: CREATE --body with no epic block is refused (was allowed)
+ok   [2] raw-pr-body: CREATE --body-file with no epic block is refused (was allowed)
+ok   [2] raw-pr-body: EDIT is refused even WITH the block -- it rewrites the whole body
+ok   [2] raw-pr-body: PATCH -F body=@file with no block is refused (was allowed)
+ok   [2] raw-pr-body: PATCH carrying ONLY the epic block still drops pushed-head
+ok   [2] raw-pr-body: PATCH with a path behind a shell variable is unreadable, refused
+ok   [2] raw-pr-body: PATCH with an inline body and no block is refused
+ok   [2] raw-pr-body: PATCH with an unreadable body file is refused, not trusted
+ok   [2] raw-pr-body: a create beside it does not let a raw EDIT through
+ok   [2] raw-pr-body: an edit carrying ONLY the epic block still drops pushed-head
+ok   [2] raw-pr-body: the refusal prescribes the PATCH form the sanctioned guard accepts
+ok   [2] remote-drift: push from a stale local is blocked
+ok   [2] resolve-gitlinks refuses a MIXED set and changes nothing
+ok   [2] roundlog: a bare tee still truncates
+ok   [2] roundlog: a decoy -a on another file does not license a bare tee
+ok   [2] roundlog: a python write whose ASSIGNED target is the log is blocked
+ok   [2] roundlog: a python write whose open() TARGET is the log is blocked
+ok   [2] roundlog: a whole-file Write over an EXISTING log is blocked
+ok   [2] roundlog: an UNRESOLVABLE target still fires (fail closed)
+ok   [2] roundlog: cp ONTO the log is blocked
+ok   [2] roundlog: cp ONTO the log still blocked
+ok   [2] roundlog: mv ONTO the log is blocked
+ok   [2] roundlog: mv away removes the log, still blocked
+ok   [2] roundlog: os.replace ONTO the log is a write, and is blocked
+ok   [2] roundlog: sed -i is blocked
+ok   [2] roundlog: shutil.copy ONTO the log is a write, and is blocked
+ok   [2] roundlog: shutil.move ONTO the log is a write, and is blocked
+ok   [2] roundlog: tee --output-error=warn truncates, and is not an -a
+ok   [2] roundlog: tee WITHOUT -a is blocked
+ok   [2] roundlog: the exact 2026-08-19 heredoc is blocked
+ok   [2] roundlog: truncate on the log is blocked
+ok   [2] roundlog: truncating redirection is blocked
+ok   [2] running-script: editing a .sh a live process is executing is refused
+ok   [2] self-pgrep PREMISE: a self-matching wait really does hang (timed out at 3s)
+ok   [2] self-pgrep: a loop whose pattern matches its own command line
+ok   [2] self-pgrep: the double-quoted form too
+ok   [2] self-pgrep: the while form fires like the until form
+ok   [2] settled(branch)
+ok   [2] settled(commit)
+ok   [2] settled(pr)
+ok   [2] ssh-docker
+ok   [2] ssh-docker: hidden in sh -c is still caught
+ok   [2] ssh-file-write
+ok   [2] stale-pr-branch: sh -c wrapper bypass blocked
+ok   [2] stale-pr-branch: yesterday's MMDD blocked
+ok   [2] suppressions(MultiEdit)
+ok   [2] suppressions(new_string)
+ok   [2] suppressions: a real directive in a .ts still blocks
+ok   [2] target-root CONTROL: -C into a subdirectory of THIS repo is still this repo
+ok   [2] target-root CONTROL: a -C that resolves to no repo is not an exemption
+ok   [2] target-root SANITY: an untagged commit in THIS repo is refused
+ok   [2] unlinked-author: --author= override is refused (quoted value survives the scan)
+ok   [2] unlinked-author: -c user.email override is refused
+ok   [2] unlinked-author: GIT_AUTHOR_EMAIL override is refused
+ok   [2] untagged-commit: -F <file> with no trailer is refused (was silently allowed)
+ok   [2] untagged-commit: a MENTION is not a trailer (anchored to line start)
+ok   [2] untagged-commit: a heredoc with NO trailer is refused (was silently allowed)
+ok   [2] untagged-commit: a message with no trailer is refused
+ok   [2] untagged-commit: an id naming NO epic is refused, not just a missing one
+ok   [2] worktree-add
+ok   [2] worktree-add: -C before the subcommand
+ok   [2] worktree-add: after a command separator
+ok   [2] worktree-add: interpreter prefix puts bash in command position, not the script
+ok   [2] worktree-add: run.sh wrapper
+ok   [2] worktree-add: sh -c wrapper bypass
+ok   [2] worktree-add: wrapper after a separator
+ok   [2] worktree-add: wrapper with flags
+ok   [fires] trapguard: a NON-zero cancelled count still fires
+ok   [fires] trapguard: a cancelled run gets a warning
+ok   [fires] trapguard: a completed rebase points at verify-rebase
+ok   [fires] trapguard: a failure-filtered query returning EMPTY is warned about
+ok   [fires] trapguard: a message-callback fires on arm 2 even when arm 1 has nothing to say
+ok   [fires] trapguard: a real rewrite AFTER a heredoc still fires
+ok   [fires] trapguard: a zero count does not mask a real cancelled conclusion
+ok   [fires] trapguard: all-deletions diff for an UNTRACKED file still on disk is warned about
+ok   [fires] trapguard: an --invert-paths prefix with a LIVE tracked file under it fires
+ok   [fires] trapguard: an interrupted command whose tail was a restore is warned about
+ok   [fires] trapguard: the interrupted FLAG alone fires without the timeout text
+ok   [fires] trapguard: the timeout TEXT alone fires without the interrupted flag
+ok   [silent] trapguard CONTROL: --analyze is a READ of history and is never warned about
+ok   [silent] trapguard CONTROL: --cached is exempt (the index IS the subject there)
+ok   [silent] trapguard CONTROL: a TRACKED file losing lines is an ordinary diff, not a phantom
+ok   [silent] trapguard CONTROL: a bare restore with no preceding step stays silent
+ok   [silent] trapguard CONTROL: a cancelled COUNT of zero is the good behaviour, not the trap
+ok   [silent] trapguard CONTROL: a no-op rebase has nothing to verify
+ok   [silent] trapguard CONTROL: a normal mixed diff stays silent
+ok   [silent] trapguard CONTROL: a rebase named in a string is not a rebase
+ok   [silent] trapguard CONTROL: a rewrite named inside a heredoc BODY is prose, not a run
+ok   [silent] trapguard CONTROL: an --invert-paths prefix with nothing tracked under it stays silent
+ok   [silent] trapguard CONTROL: an all-success run is NOT warned about
+ok   [silent] trapguard CONTROL: an empty response does not fire (absence is not a cancellation)
+ok   [silent] trapguard CONTROL: an empty result from an UNfiltered query is not that shape
+ok   [silent] trapguard CONTROL: interrupted with nothing to put back stays silent
+ok   [silent] trapguard CONTROL: the JSON zero-count shape is silent too
+ok   [silent] trapguard CONTROL: the SAME command one segment narrower (0 tracked) stays silent
+ok   [silent] trapguard CONTROL: the SAME output for an absent path stays silent
+ok   [silent] trapguard CONTROL: the same command completing is not warned about
+ok   [silent] trapguard CONTROL: the untracked audio cache prefix stays silent too

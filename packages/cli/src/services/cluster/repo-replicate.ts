@@ -1,5 +1,5 @@
 /**
- * `rdc repo replicate` — instant read replicas (spec 05 §1, the flagship demo).
+ * `rdc repo replicate`, instant read replicas (spec 05 §1, the flagship demo).
  *
  * Composes the P1/P2 fork-attach primitives (datastore snapshot + fork + attach
  * --writes local dm-COW overlay, all landed) with generated k8s objects:
@@ -21,7 +21,7 @@
  * fill, the F10 allocation-churn effect applies per replica); the FORK is
  * constant-time regardless of DB size, but each replica then runs a
  * crash-recovery pass proportional to WAL/checkpoint distance with cold caches
- * (F15) — the "1 TB -> 10 replicas in seconds" number holds with a
+ * (F15), the "1 TB -> 10 replicas in seconds" number holds with a
  * recently-checkpointed primary; L4 Service balancing is per-connection so
  * long-lived DB connections can skew (use --headless for driver-side balancing).
  */
@@ -47,7 +47,7 @@ const NAMED_DS_BASE = '/mnt/rediacc-ds';
 /** A cluster node available to host a replica. */
 export interface ReplicaNode {
   machine: string;
-  /** Private IP — kube_node_label resolves the k8s node by InternalIP. */
+  /** Private IP, kube_node_label resolves the k8s node by InternalIP. */
   ip: string;
 }
 
@@ -55,10 +55,10 @@ export interface ReplicaNode {
 export interface ProvisionReplicasInput {
   repo: string;
   /**
-   * The repo's GUID — its STORAGE identity (#93: storage speaks GUID, k8s
+   * The repo's GUID, its STORAGE identity (#93: storage speaks GUID, k8s
    * objects speak name). The repo folder on the datastore is `repos/<guid>`
    * (#83: `repo create` dispatches `repository create --name <guid>`), so the
-   * fork — a byte-clone of the parent — carries `repos/<guid>` too, and every
+   * fork, a byte-clone of the parent, carries `repos/<guid>` too, and every
    * storage-facing verb must address it by GUID; `repo` is only for k8s names.
    */
   repoGuid: string;
@@ -99,7 +99,7 @@ export function replicaSetNameFor(repoKey: string): string {
 }
 
 /** The repo's managed replica set, or undefined when it has none. */
-export async function getReplicaSetForRepo(repoKey: string): Promise<ReplicaSet | undefined> {
+export function getReplicaSetForRepo(repoKey: string): Promise<ReplicaSet | undefined> {
   return getReplicaSet(replicaSetNameFor(repoKey));
 }
 
@@ -120,9 +120,7 @@ export async function provisionReplicaDatastores(
     throw new Error(`Cannot replicate "${input.repo}": the cluster has no nodes to host replicas.`);
   }
 
-  // Replicas land round-robin, so the machines this touches are the distinct
-  // nodes the rotation reaches — fewer than `replicas` when replicas outnumber
-  // nodes. Asked before the snapshot, because everything after it is placement.
+  // Replicas land round-robin, so the machines this touches are the distinct nodes the rotation reaches, fewer than `replicas` when replicas outnumber nodes. Asked before the snapshot, because everything after it is placement.
   const targetMachines = [
     ...new Set(
       Array.from({ length: input.replicas }, (_, i) => input.nodes[i % input.nodes.length].machine)
@@ -146,10 +144,7 @@ export async function provisionReplicaDatastores(
     try {
       await provisionOneReplica(input, i, node);
     } catch (error) {
-      // A replica set is placed one node at a time, so any failure part-way
-      // leaves a real, working partial deployment behind. Say what exists and
-      // what to re-run rather than letting a bare bridge error imply that
-      // nothing happened, or that everything did.
+      // A replica set is placed one node at a time, so any failure part-way leaves a real, working partial deployment behind. Say what exists and what to re-run rather than letting a bare bridge error imply that nothing happened, or that everything did.
       throw new Error(
         `${error instanceof Error ? error.message : String(error)}\n\n${partialPlacementGuidance({
           placed,
@@ -182,12 +177,8 @@ export async function provisionOneReplica(
 ): Promise<void> {
   const tag = replicaTag(input.setName, index);
   const forkName = `${input.datastore}:${tag}`;
-  // Clone the datastore from the snapshot (constant-time, DB-size-independent).
-  // datastore_fork registers the fork record ONLY in the control machine's
-  // registry; when the replica lands on a DIFFERENT node, its registry has no
-  // such record, so we ferry the record (the `datastore fork --json` output)
-  // there via datastore_adopt before attaching (finding #36; mirrors the
-  // cluster-fork cross-machine path, cluster-fork.ts:203-218 / finding #14).
+  // Clone the datastore from the snapshot (constant-time, DB-size-independent). datastore_fork registers the fork record ONLY in the control machine's registry; when the replica lands on a DIFFERENT node, its registry has no such record, so we ferry the record (the `datastore fork --json` output) there via datastore_adopt before attaching (finding #36; mirrors the cluster-fork
+  // cross-machine path, cluster-fork.ts:203-218 / finding #14).
   const forkRes = await getExecutor().execute({
     functionName: 'datastore_fork',
     machineName: input.controlMachine,
@@ -218,28 +209,16 @@ export async function provisionOneReplica(
     input.debug
   );
   if (node.machine !== input.controlMachine) {
-    // The fork record now lives on the replica node and is attached there; the
-    // control's copy (from datastore_fork) is vestigial. Forget it on control
-    // (registry-only; the fork is DETACHED there and the clone is owned by the
-    // node's record) so a later re-fork of the SAME tag — `repo replicate
-    // refresh`, which discards on the node then re-forks on control — does not
-    // collide with a stale control record (finding #40).
+    // The fork record now lives on the replica node and is attached there; the control's copy (from datastore_fork) is vestigial. Forget it on control (registry-only; the fork is DETACHED there and the clone is owned by the node's record) so a later re-fork of the SAME tag, `repo replicate refresh`, which discards on the node then re-forks on control, does not collide with a
+    // stale control record (finding #40).
     await dispatch('datastore_forget', input.controlMachine, { name: forkName }, input.debug);
   }
-  // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a
-  // BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/
-  // <pvc>.img` AND the empty directory that image was mounted over. The replica's
-  // PV points at that directory. Without this step the image is never opened, the
-  // pod bind-mounts the empty dir, and the replica comes up healthy, Ready, and
-  // EMPTY — no FailedMount, no event, no symptom except missing data.
+  // Open the repo's per-volume LUKS images on the fork (bug #49). The fork is a BLOCK-layer clone, so it carries the ciphertext `<fork>/repos/<GUID>/volumes/ <pvc>.img` AND the empty directory that image was mounted over. The replica's PV points at that directory. Without this step the image is never opened, the pod bind-mounts the empty dir, and the replica comes up healthy,
+  // Ready, and EMPTY, no FailedMount, no event, no symptom except missing data.
   //
-  // By GUID, never by name (#93, found live by B1): the repo folder on the
-  // datastore — and therefore on its byte-clone fork — is `repos/<guid>`, so a
-  // name-based `repo:` param stats `repos/<name>` and aborts every replicate.
+  // By GUID, never by name (#93, found live by B1): the repo folder on the datastore, and therefore on its byte-clone fork, is `repos/<guid>`, so a name-based `repo:` param stats `repos/<name>` and aborts every replicate.
   //
-  // It MUST precede kube_node_label: the label is the scheduling gate (the PV's
-  // nodeAffinity key), so opening first means a pod can never be scheduled onto a
-  // volume that is not yet mounted.
+  // It MUST precede kube_node_label: the label is the scheduling gate (the PV's nodeAffinity key), so opening first means a pod can never be scheduled onto a volume that is not yet mounted.
   await dispatch(
     'datastore_volumes_open',
     node.machine,
@@ -315,7 +294,7 @@ export interface ReplicaRenderInput {
   /** Repo name = the k8s namespace + the workload/Service base name. */
   repo: string;
   /**
-   * The repo's GUID — the on-datastore folder identity (#93: storage speaks
+   * The repo's GUID, the on-datastore folder identity (#93: storage speaks
    * GUID, k8s objects speak name). Only PATHS use it: the replica PV points
    * into the fork mount at `mounts/volumes/<guid>/<pvc>`, mirroring what the
    * parent's volumes-open/CSI produce (kubevolume.MountPath keyed by the renet

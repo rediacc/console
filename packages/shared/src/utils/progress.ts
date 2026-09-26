@@ -29,9 +29,7 @@ export function extractMostRecentProgress(output: string): number | null {
     lastIndex = lastMatch.index || -1;
   }
 
-  // Pattern 2: rsync/rclone format "N% speed" (transfer tools)
-  // Matches both byte format and human-readable format (K/M/G)
-  // Examples: "199,884,800  18%  190.59MB/s" or "1.5G  18%  190.59MB/s"
+  // Pattern 2: rsync/rclone format "N% speed" (transfer tools) Matches both byte format and human-readable format (K/M/G) Examples: "199,884,800 18% 190.59MB/s" or "1.5G 18% 190.59MB/s"
   const transferPattern = /\s+(\d+)%\s+[\d.,]+[KMG]?B\/s/g;
   const transferMatches = [...output.matchAll(transferPattern)];
 
@@ -45,8 +43,7 @@ export function extractMostRecentProgress(output: string): number | null {
     }
   }
 
-  // Pattern 3: renet format "[operation] N% - message"
-  // Examples: "[setup] 45% - Installing packages" or "[sync] 100% - Complete"
+  // Pattern 3: renet format "[operation] N% - message" Examples: "[setup] 45% - Installing packages" or "[sync] 100% - Complete"
   const renetProgressPattern = /\[[^\]]+\]\s+(\d+(?:\.\d+)?)%/g;
   const renetMatches = [...output.matchAll(renetProgressPattern)];
 
@@ -67,13 +64,10 @@ export function extractMostRecentProgress(output: string): number | null {
 
 /** Clean message by removing ANSI codes and emojis */
 function cleanProgressMessage(message: string): string {
-  return (
-    message
-      // eslint-disable-next-line no-control-regex
-      .replaceAll(/\x1b\[[0-9;]*m/g, '')
-      .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
-      .trim()
-  );
+  return message
+    .replaceAll(/\x1b\[[0-9;]*m/g, '')
+    .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
+    .trim();
 }
 
 /** Pattern for msg_progress format "message - N%" */

@@ -207,8 +207,7 @@ export function computeRoi(inputs: RoiInputs): RoiOutputs {
   const complianceSavings = (currentAuditHours - rediaccAuditHours) * adminHourlyRate;
   const auditHoursSaved = currentAuditHours - rediaccAuditHours;
 
-  // --- Insurance (research Section 9.4) ---
-  // 30% premium reduction on estimated premium (~10% of annual downtime risk)
+  // --- Insurance (research Section 9.4) --- 30% premium reduction on estimated premium (~10% of annual downtime risk)
   const insuranceSavings = incidentsPerYear > 0 ? currentDowntimeRisk * 0.03 : 0;
 
   // --- Summary ---

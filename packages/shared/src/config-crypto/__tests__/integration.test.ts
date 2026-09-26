@@ -8,12 +8,14 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  blindPointer,
   cekHandoffDecrypt,
   cekHandoffEncrypt,
   cekUnwrap,
   cekWrap,
   configDecrypt,
   configEncrypt,
+  derivePointerBlindingKey,
   deriveWrappingKey,
   exportAesKey,
   generateAesKey,
@@ -32,7 +34,7 @@ import {
   selectiveEncrypt,
   toBase64,
 } from '../index.js';
-import type { FullConfig } from '../types.js';
+import type { EncryptedConfigPayload, FullConfig } from '../types.js';
 
 // ─── AES-256-GCM ────────────────────────────────────────────────────────────
 
@@ -329,6 +331,13 @@ describe('CEK Handoff', () => {
 
 // ─── Selective Encryption ────────────────────────────────────────────────────
 
+const STORE = 'store-1';
+
+/** The binding a reader of `payload` holds: the store, and the config and team it was sealed for. */
+function bindingOf(payload: EncryptedConfigPayload) {
+  return { storeId: STORE, configId: payload.envelope.id, teamId: payload.envelope.teamId ?? null };
+}
+
 describe('Selective Encryption', () => {
   const sampleConfig: FullConfig = {
     envelopeVersion: 2,
@@ -351,10 +360,11 @@ describe('Selective Encryption', () => {
     const epoch = 5913166;
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: epoch,
       commitEntries: [],
     });
-    const result = await selectiveDecrypt(payload, cek, sdkKey);
+    const result = await selectiveDecrypt(payload, cek, sdkKey, bindingOf(payload));
 
     expect(result.id).toBe(sampleConfig.id);
     expect(result.version).toBe(sampleConfig.version);
@@ -370,6 +380,7 @@ describe('Selective Encryption', () => {
     const cek = await generateCek();
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 5913166,
       commitEntries: [],
     });
@@ -377,7 +388,7 @@ describe('Selective Encryption', () => {
     expect(payload.envelope.version).toBe(42);
     expect(payload.envelope.sdkEpoch).toBe(5913166);
     expect(payload.envelope.teamId).toBe('team-xyz');
-    expect(payload.envelope.envelopeVersion).toBe(2);
+    expect(payload.envelope.envelopeVersion).toBe(3);
     expect(payload.envelope.commitments.alg).toBe('HMAC-SHA256');
   });
 
@@ -386,6 +397,7 @@ describe('Selective Encryption', () => {
     const cek = await generateCek();
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 5913166,
       commitEntries: [],
     });
@@ -394,17 +406,20 @@ describe('Selective Encryption', () => {
     expect(payload.encryptedBlob).not.toContain('secret');
   });
 
-  it('tampered blob fails HMAC verification', async () => {
+  it('tampered blob fails the integrity check', async () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 5913166,
       commitEntries: [],
     });
     payload.encryptedBlob = `${payload.encryptedBlob.slice(0, -4)}XXXX`; // tamper
 
-    await expect(selectiveDecrypt(payload, cek, sdkKey)).rejects.toThrow(/integrity check failed/);
+    await expect(selectiveDecrypt(payload, cek, sdkKey, bindingOf(payload))).rejects.toThrow(
+      /integrity check failed/
+    );
   });
 
   it('handles config with missing optional fields', async () => {
@@ -420,21 +435,23 @@ describe('Selective Encryption', () => {
     const cek = await generateCek();
 
     const payload = await selectiveEncrypt(minimalConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 1,
       commitEntries: [],
     });
-    const result = await selectiveDecrypt(payload, cek, sdkKey);
+    const result = await selectiveDecrypt(payload, cek, sdkKey, bindingOf(payload));
     expect(result.id).toBe('minimal-id');
     expect(result.version).toBe(1);
     expect(result.machines).toBeUndefined();
     expect(result.ssh).toBeUndefined();
   });
 
-  it('envelope v2 stores field commitments for sensitive paths', async () => {
+  it('envelope v3 stores field commitments under blinded pointers', async () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 1,
       commitEntries: [
         { pointer: '/machines/server1/ip', value: '10.0.0.1' },
@@ -442,10 +459,16 @@ describe('Selective Encryption', () => {
       ],
     });
 
-    expect(payload.envelope.commitments.fields['/machines/server1/ip']).toBeDefined();
-    expect(payload.envelope.commitments.fields['/ssh/privateKey']).toBeDefined();
+    const blinding = await derivePointerBlindingKey(cek, sampleConfig.id);
+    const ipKey = await blindPointer(blinding, '/machines/server1/ip');
+    expect(payload.envelope.commitments.fields[ipKey]).toBeDefined();
+    expect(
+      payload.envelope.commitments.fields[await blindPointer(blinding, '/ssh/privateKey')]
+    ).toBeDefined();
     expect(payload.envelope.commitments.fckSalt).not.toBe('');
-    expect(payload.envelope.commitments.fields['/machines/server1/ip'].kind).toBe('string');
+    expect(payload.envelope.commitments.fields[ipKey].kind).toBe('string');
+    // No pointer name reaches the envelope (F14).
+    expect(JSON.stringify(payload.envelope)).not.toMatch(/server1|privateKey|machines/);
   });
 
   it('selectiveDecrypt rejects v1 envelopes', async () => {
@@ -453,6 +476,7 @@ describe('Selective Encryption', () => {
     const cek = await generateCek();
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 1,
       commitEntries: [],
     });
@@ -461,7 +485,7 @@ describe('Selective Encryption', () => {
       ...payload,
       envelope: { ...payload.envelope, envelopeVersion: 1 as unknown as 2 },
     };
-    await expect(selectiveDecrypt(v1Payload, cek, sdkKey)).rejects.toThrow(
+    await expect(selectiveDecrypt(v1Payload, cek, sdkKey, bindingOf(payload))).rejects.toThrow(
       /Unsupported envelope version/
     );
   });
@@ -501,6 +525,7 @@ describe('Full Lifecycle', () => {
     };
 
     const payload = await selectiveEncrypt(config, sdkDerived, unwrappedCek, {
+      storeId: STORE,
       sdkEpoch: epoch,
       commitEntries: [{ pointer: '/machines/prod/ip', value: '192.168.1.1' }],
     });
@@ -508,8 +533,7 @@ describe('Full Lifecycle', () => {
     // Server encrypts (Layer 3: Org)
     const stored = await orgEncrypt(payload.encryptedBlob, orgPassphrase);
 
-    // ── PULL ──
-    // Server decrypts Layer 3
+    // ── PULL ── Server decrypts Layer 3
     const afterOrg = await orgDecrypt(stored, orgPassphrase);
 
     // Server re-derives SDK for the stored epoch
@@ -518,15 +542,14 @@ describe('Full Lifecycle', () => {
     // CLI unwraps CEK (same wrapping key)
     const cekPull = await cekUnwrap(wrappedCEK, wrappingKey);
 
-    // CLI verifies HMAC and decrypts
-    // Re-compute HMAC for the server-decrypted blob (same as original client-encrypted blob)
-    // Note: afterOrg should equal payload.encryptedBlob since orgEncrypt/orgDecrypt is a round-trip
+    // CLI verifies HMAC and decrypts Re-compute HMAC for the server-decrypted blob (same as original client-encrypted blob) Note: afterOrg should equal payload.encryptedBlob since orgEncrypt/orgDecrypt is a round-trip
     expect(afterOrg).toBe(payload.encryptedBlob);
 
     const result = await selectiveDecrypt(
       { envelope: payload.envelope, encryptedBlob: afterOrg, hmac: payload.hmac },
       cekPull,
-      sdkDerivedPull
+      sdkDerivedPull,
+      { storeId: STORE, configId: 'push-test' }
     );
 
     expect(result.id).toBe('push-test');
@@ -591,6 +614,7 @@ describe('Full Lifecycle', () => {
     };
 
     const payload = await selectiveEncrypt(config, sdkKey, cek, {
+      storeId: STORE,
       sdkEpoch: 12345,
       commitEntries: [],
     });

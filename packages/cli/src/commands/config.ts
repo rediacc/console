@@ -5,15 +5,16 @@ import { getSubscriptionServerUrl } from '../services/account/subscription-auth.
 import type { ReconcileDeps } from '../services/config/config-reconcile.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerAuditCommands } from './config/audit.js';
+import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
-import { registerCurrentCommand } from './config/current.js';
 
 /** Build display data for a self-hosted config. */
 async function buildSelfHostedDisplay(
@@ -147,7 +148,7 @@ export async function buildInitAccountUpdate(
 
 /**
  * Merge the pieces an `init` action collects into a single RdcConfig ready
- * for `configFileStorage.save`. Pure — no I/O — so unit tests can drive it
+ * for `configFileStorage.save`. Pure, no I/O, so unit tests can drive it
  * and assert the resulting shape, which is where the v1→v2 regression hid.
  */
 export function mergeInitUpdates(
@@ -192,9 +193,7 @@ const DEFAULT_KEYS: Record<string, 'language' | 'datastoreSize' | 'pruneGraceDay
 const RETIRED_KEYS = new Set(['team', 'region', 'machine']);
 
 function resolveDefaultKey(key: string): 'language' | 'datastoreSize' | 'pruneGraceDays' {
-  // hasOwn, not a truthiness check on the lookup: index access is typed as always
-  // present (no noUncheckedIndexedAccess), so `if (!DEFAULT_KEYS[key])` reads as dead
-  // code to the type system even though an unknown key is exactly what it catches.
+  // hasOwn, not a truthiness check on the lookup: index access is typed as always present (no noUncheckedIndexedAccess), so `if (!DEFAULT_KEYS[key])` reads as dead code to the type system even though an unknown key is exactly what it catches.
   if (!Object.hasOwn(DEFAULT_KEYS, key)) {
     const valid = Object.keys(DEFAULT_KEYS).join(', ');
     if (RETIRED_KEYS.has(key)) {
@@ -238,8 +237,7 @@ async function applyRevealGate(cfg: RdcConfig): Promise<void> {
     throw new ValidationError(t('errors.agent.showReveal'));
   }
 
-  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in
-  // worker threads or stream wrappers, where isatty() would throw a TypeError.
+  // Use process.stdout.isTTY, not isatty(fd): the fd can be undefined in worker threads or stream wrappers, where isatty() would throw a TypeError.
   if (!process.stdout.isTTY) {
     throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
   }
@@ -286,6 +284,7 @@ async function buildReconcileDeps(
 ): Promise<ReconcileDeps> {
   const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
+  const { updateSyncedConfig } = await import('../services/config/synced-write.js');
   const noop = async () => {};
   return {
     loadConfig: async () => {
@@ -305,7 +304,7 @@ async function buildReconcileDeps(
     writeResources: dryRun
       ? noop
       : async (updater) => {
-          await configFileStorage.update(cfgName, updater);
+          await updateSyncedConfig(cfgName, updater);
         },
   };
 }
@@ -315,9 +314,7 @@ async function runReconcileInner(program: Command, options: ReconcileCliOptions)
   const cfgName = configService.getEffectiveConfigName();
   const filter = options.machine;
 
-  // --accept-observed rewrites a declaration from "observed on exactly one
-  // machine", which is meaningless when --machine scanned only a subset:
-  // rewriting from partial evidence is a guess. Refuse the combination
+  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination
   // (spec/04 §4.3); run it unfiltered instead.
   if (options.acceptObserved && filter?.length) {
     throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
@@ -341,7 +338,7 @@ async function runReconcileInner(program: Command, options: ReconcileCliOptions)
   );
   // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
   if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
-    process.exitCode = 6;
+    setExitCode(6);
   }
 }
 
@@ -397,13 +394,17 @@ ${t('help.examples')}
         const accountUpdate = await buildInitAccountUpdate(options.server);
 
         const mpUpdate = await handleMasterPasswordSetup(options);
-        const merged: RdcConfig = mergeInitUpdates(newConfig, {
-          renetPath: options.renetPath,
-          accountUpdate,
-          sshContent,
-          mpUpdate,
-        });
-        await configFileStorage.save(merged, configName);
+        const parts = { renetPath: options.renetPath, accountUpdate, sshContent, mpUpdate };
+        const { isRemoteConfigFile, updateSyncedConfig } = await import(
+          '../services/config/synced-write.js'
+        );
+        if (exists && (await isRemoteConfigFile(configName))) {
+          // Re-initializing a remote config edits the store, not only this host's cache of it.
+          await updateSyncedConfig(configName, (cfg) => mergeInitUpdates(cfg, parts));
+        } else {
+          const merged: RdcConfig = mergeInitUpdates(newConfig, parts);
+          await configFileStorage.save(merged, configName);
+        }
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {
         handleError(error);
@@ -449,15 +450,13 @@ ${t('help.examples')}
         const name = configService.getCurrentName();
 
         if (!cfg) {
-          // Same contract as the list commands: a machine-readable format gets an
-          // explicit null payload, never an empty stdout.
+          // Same contract as the list commands: a machine-readable format gets an explicit null payload, never an empty stdout.
           if (format === 'table') outputService.info(t('commands.config.show.noConfig', { name }));
           else outputService.print(null, format);
           return;
         }
 
-        // Default: redact sensitive values. --reveal opts in (humans only).
-        // The redactor is schema-driven (packages/shared/src/config-schema/walker.ts).
+        // Default: redact sensitive values. --reveal opts in (humans only). The redactor is schema-driven (packages/shared/src/config-schema/walker.ts).
         if (options.reveal) {
           await applyRevealGate(cfg);
         } else {
@@ -587,7 +586,7 @@ ${t('help.examples')}
 
   registerConfigPruneCommand(config);
 
-  // config reconcile — rebuild the state bucket from machine truth (R2-F2).
+  // config reconcile, rebuild the state bucket from machine truth (R2-F2).
   config
     .command('reconcile')
     .description(t('commands.config.reconcile.description'))
@@ -596,9 +595,7 @@ ${t('help.examples')}
     .option('--accept-observed', t('commands.config.reconcile.optionAcceptObserved'))
     .action((options: ReconcileCliOptions) => runReconcile(program, options));
 
-  // config rotate-cek — destructive, org-wide (Q3): registered here, not under
-  // `config remote`, because it rotates the ORGANIZATION's key, not this device's
-  // link. The impl still lives in config-remote.ts alongside the store internals.
+  // config rotate-cek, destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
   config
     .command('rotate-cek')
     .description(t('commands.config.rotateCek.description'))

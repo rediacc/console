@@ -1,0 +1,5628 @@
+[
+  {
+    "id": "check:version",
+    "run": "npm run check:version",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-workspace-versions.ts",
+      "syncpack"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Versions"
+    }
+  },
+  {
+    "id": "check:deps",
+    "run": "npm run check:deps",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-deps.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "External dependency freshness"
+    }
+  },
+  {
+    "id": "check:lint",
+    "run": "npm run check:lint",
+    "slow": true,
+    "gate": false,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "scripts/eslint-heap.sh",
+      "biome"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lint"
+    }
+  },
+  {
+    "id": "check:lint:cli",
+    "run": "npm run check:lint:cli",
+    "slow": true,
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "scripts/eslint-heap.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lint"
+    }
+  },
+  {
+    "id": "check:lint:web",
+    "run": "npm run check:lint:web",
+    "slow": true,
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "scripts/eslint-heap.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lint"
+    }
+  },
+  {
+    "id": "check:lint:tooling",
+    "run": "npm run check:lint:tooling",
+    "slow": true,
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "scripts/eslint-heap.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lint"
+    }
+  },
+  {
+    "id": "check:lint:account",
+    "run": "npm run check:lint:account",
+    "slow": true,
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "biome",
+      "scripts/eslint-heap.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lint"
+    }
+  },
+  {
+    "id": "lint:unused",
+    "run": "npm run lint:unused",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "leaves": [
+      ".ci/rediacc_ci/quality/typecheck_workers.py",
+      "knip"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Unused exports (knip)"
+    }
+  },
+  {
+    "id": "check:ci-knip-blockers",
+    "run": "npm run check:ci-knip-blockers",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-knip-blockers.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "knip BLOCKER reasons"
+    }
+  },
+  {
+    "id": "check:format",
+    "run": "npm run check:format",
+    "gate": true,
+    "leaves": [
+      "biome"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Format"
+    }
+  },
+  {
+    "id": "check:i18n",
+    "run": "npm run check:i18n",
+    "slow": true,
+    "gate": false,
+    "leaves": [
+      "scripts/gates/check-translation-hashes.ts",
+      "scripts/gates/check-translation-completeness.ts",
+      "scripts/gates/check-translation-key-usage.ts",
+      "scripts/__tests__/check-translation-key-usage.control.ts",
+      "scripts/__tests__/check-docs-render-parity.control.ts",
+      "scripts/__tests__/check-page-locale-imports.control.ts",
+      "scripts/gates/check-cli-i18n-key-usage.ts",
+      "packages/cli/scripts/check-cli-i18n-help-render.ts",
+      "scripts/gates/check-docs-inline-translations.ts",
+      "scripts/gates/check-docs-untranslated-text.ts",
+      "scripts/gates/check-account-email-templates.ts",
+      "packages/www/scripts/validate-cli-docs.js",
+      "packages/www/scripts/validate-docs-cli-usage.js",
+      "packages/www/scripts/validate-landing-cli-usage.js",
+      "packages/www/scripts/validate-translation-freshness.js",
+      "packages/www/scripts/validate-content.js",
+      "packages/www/scripts/validate-content-accuracy.js",
+      "packages/www/scripts/validate-comparison-refs.js",
+      "scripts/gates/check-component-hardcoded-strings.ts",
+      "scripts/gates/check-cli-docs.ts",
+      "scripts/gates/check-i18n-naturalization.ts",
+      "scripts/gates/check-locale-only-edits.ts",
+      "scripts/gates/check-i18n-ledger-growth.ts",
+      "scripts/gates/check-dead-translation-keys.ts",
+      "scripts/gates/check-em-dash-surfaces.ts",
+      "packages/www/scripts/check-client-i18n-freshness.ts",
+      "scripts/gates/check-locale-currency-integrity.ts",
+      "scripts/__tests__/check-locale-currency-integrity.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:i18n:key-usage",
+    "slow": true,
+    "run": "npm run check:i18n:key-usage",
+    "gate": true,
+    "leaves": [
+      "scripts/__tests__/check-translation-key-usage.control.ts",
+      "scripts/gates/check-translation-key-usage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-hashes",
+    "run": "npm run check:ci-i18n-hashes",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-translation-hashes.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-completeness",
+    "run": "npm run check:ci-i18n-completeness",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-translation-completeness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-docs-render-parity",
+    "run": "npm run check:ci-i18n-docs-render-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/__tests__/check-docs-render-parity.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-page-locale-imports",
+    "slow": true,
+    "run": "npm run check:ci-i18n-page-locale-imports",
+    "gate": true,
+    "leaves": [
+      "scripts/__tests__/check-page-locale-imports.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-docs-inline",
+    "run": "npm run check:ci-i18n-docs-inline",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-inline-translations.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-docs-untranslated",
+    "run": "npm run check:ci-i18n-docs-untranslated",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-untranslated-text.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-account-email-templates",
+    "run": "npm run check:ci-i18n-account-email-templates",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-account-email-templates.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-hardcoded-strings",
+    "run": "npm run check:ci-i18n-hardcoded-strings",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-component-hardcoded-strings.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-naturalization",
+    "run": "npm run check:ci-i18n-naturalization",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-i18n-naturalization.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-cli-docs",
+    "run": "npm run check:ci-i18n-www-cli-docs",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-cli-docs.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-docs-cli-usage",
+    "run": "npm run check:ci-i18n-www-docs-cli-usage",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-docs-cli-usage.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-landing-cli-usage",
+    "run": "npm run check:ci-i18n-www-landing-cli-usage",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-landing-cli-usage.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-translation-freshness",
+    "run": "npm run check:ci-i18n-www-translation-freshness",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-translation-freshness.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-content",
+    "run": "npm run check:ci-i18n-www-content",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-content.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-content-accuracy",
+    "run": "npm run check:ci-i18n-www-content-accuracy",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-content-accuracy.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-www-comparison-refs",
+    "run": "npm run check:ci-i18n-www-comparison-refs",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-comparison-refs.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-cli-key-usage",
+    "run": "npm run check:ci-i18n-cli-key-usage",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-cli-i18n-key-usage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-cli-help-render",
+    "run": "npm run check:ci-i18n-cli-help-render",
+    "gate": true,
+    "leaves": [
+      "packages/cli/scripts/check-cli-i18n-help-render.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:cli-docs",
+    "run": "npm run check:cli-docs",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-cli-docs.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-locale-currency",
+    "run": "npm run check:ci-locale-currency",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-locale-currency-integrity.ts",
+      "scripts/__tests__/check-locale-currency-integrity.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-locale-only",
+    "run": "npm run check:ci-i18n-locale-only",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-locale-only-edits.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-ledger-growth",
+    "run": "npm run check:ci-i18n-ledger-growth",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-i18n-ledger-growth.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-media",
+    "run": "npm run check:ci-i18n-media",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-tutorial-transcripts.js",
+      "packages/www/scripts/validate-tutorial-audio.js",
+      "packages/www/scripts/validate-tutorial-cast-output.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Tutorial media"
+    }
+  },
+  {
+    "id": "check:ci-rubric-calibration",
+    "run": "npm run check:ci-rubric-calibration",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_rubric_calibration.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Rubric calibration"
+    }
+  },
+  {
+    "id": "check:ci-www-build-token",
+    "run": "npm run check:ci-www-build-token",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_www_build_token.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "www build token"
+    }
+  },
+  {
+    "id": "check:ci-shape-duplication",
+    "run": "npm run check:ci-shape-duplication",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-shape-duplication.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Shape duplication"
+    }
+  },
+  {
+    "id": "check:ci-fetch-retry",
+    "run": "npm run check:ci-fetch-retry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_fetch_retry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Fetch retry"
+    }
+  },
+  {
+    "id": "check:ci-judged-rule-wiring",
+    "run": "npm run check:ci-judged-rule-wiring",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_judged_rule_wiring.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Judged rule wiring"
+    }
+  },
+  {
+    "id": "check:ci-review-prompt-render",
+    "run": "npm run check:ci-review-prompt-render",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_review_prompt_render.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Review prompt render"
+    }
+  },
+  {
+    "id": "check:ci-git-history-depth",
+    "run": "npm run check:ci-git-history-depth",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_git_history_depth.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Git history depth"
+    }
+  },
+  {
+    "id": "check:ci-typecheck-scope-coverage",
+    "run": "npm run check:ci-typecheck-scope-coverage",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-typecheck-scope-coverage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Typecheck scope coverage"
+    }
+  },
+  {
+    "id": "check:types",
+    "run": "npm run check:types",
+    "slow": true,
+    "gate": true,
+    "mutex": [
+      "build-artifacts"
+    ],
+    "heavy": true,
+    "leaves": [
+      "tsc",
+      "astro",
+      ".ci/rediacc_ci/quality/typecheck_workers.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "TypeScript"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-healthcheck-headroom",
+    "run": "npm run check:ci-tutorial-healthcheck-headroom",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tutorial_healthcheck_headroom.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Tutorial healthcheck headroom"
+    }
+  },
+  {
+    "id": "check:ci-guard-mutations",
+    "run": "npm run check:ci-guard-mutations",
+    "slow": true,
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "copies packages/cli sources into packages/cli/.guard-mutations.<pid>.<rand>.tmp and mutates them there",
+    "leaves": [
+      "scripts/gates/check-guard-mutations.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Guard mutations"
+    }
+  },
+  {
+    "id": "check:test-cli",
+    "run": "npm run check:test-cli",
+    "slow": true,
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run CLI unit tests"
+    }
+  },
+  {
+    "id": "check:test-shared",
+    "run": "npm run check:test-shared",
+    "gate": true,
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run shared package tests"
+    }
+  },
+  {
+    "id": "check:test-www",
+    "run": "npm run check:test-www",
+    "gate": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run www unit tests"
+    }
+  },
+  {
+    "id": "check:test:tutorial-player",
+    "env": {
+      "PUBLIC_VIDEO_CDN_BASE_URL": "https://media.rediacc.com"
+    },
+    "run": "npm run check:test:tutorial-player",
+    "slow": true,
+    "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "writes its run artifacts under artifacts/tutorial-player-release-gate/<timestamp> in the repo",
+    "paths": [
+      "packages/www/**",
+      "packages/shared/**",
+      "packages/locales/**",
+      "package.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "packages/www/scripts/test-tutorial-player-release-gate.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Tutorial player release gate"
+    }
+  },
+  {
+    "id": "check:test-workers",
+    "run": "npm run check:test-workers",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Worker unit tests (workers/www, workers/proxy)"
+    }
+  },
+  {
+    "id": "check:ci-install-sh-config",
+    "run": "npm run check:ci-install-sh-config",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/release/install_sh_config_check.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "install.sh config tests"
+    }
+  },
+  {
+    "id": "check:ci-rdc-sh-env",
+    "run": "npm run check:ci-rdc-sh-env",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/security/rdc_sh_env_check.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "rdc.sh env tests"
+    }
+  },
+  {
+    "id": "check:ci-job-aggregation",
+    "run": "npm run check:ci-job-aggregation",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_ci_job_aggregation.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CI job aggregation"
+    }
+  },
+  {
+    "id": "check:ci-swallowed-failures",
+    "run": "npm run check:ci-swallowed-failures",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_swallowed_failures.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Swallowed failures"
+    }
+  },
+  {
+    "id": "check:ci-probe-parity",
+    "run": "npm run check:ci-probe-parity",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_probe_parity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Capability-probe parity"
+    }
+  },
+  {
+    "id": "check:ci-drill-verdicts",
+    "run": "npm run check:ci-drill-verdicts",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_drill_verdicts.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Drill verdict logic"
+    }
+  },
+  {
+    "id": "check:ci-account-probes",
+    "run": "npm run check:ci-account-probes",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_account_probes.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Dev-stack liveness probes"
+    }
+  },
+  {
+    "id": "check:ci-npmrc",
+    "run": "npm run check:ci-npmrc",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_npmrc.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Block legacy-peer-deps workarounds"
+    }
+  },
+  {
+    "id": "check:ci-setup-idempotency",
+    "run": "npm run check:ci-setup-idempotency",
+    "gate": true,
+    "paths": [
+      ".ci/lib/**",
+      "run.sh",
+      ".ci/legacy/**",
+      ".ci/scripts/quality/check_setup_idempotency.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_setup_idempotency.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Setup path idempotency"
+    }
+  },
+  {
+    "id": "check:ci-native-rebuild",
+    "run": "npm run check:ci-native-rebuild",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-native-rebuild.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Native modules rebuilt after every root install"
+    }
+  },
+  {
+    "id": "check:ci-git-tool-safety",
+    "run": "npm run check:ci-git-tool-safety",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-git-tool-safety.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Mediated git tool stays lease-only and dry-run by default"
+    }
+  },
+  {
+    "id": "check:ci-bootstrap-idempotency",
+    "run": "npm run check:ci-bootstrap-idempotency",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-bootstrap-idempotency.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Bootstrap paths install through the dependency stamp"
+    }
+  },
+  {
+    "id": "check:ci-pr-task-trailers",
+    "env": {
+      "PR_BASE_REF": "origin/${{ github.event.pull_request.base.ref }}",
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref || github.ref_name }}"
+    },
+    "run": "npm run check:ci-pr-task-trailers",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pr-task-trailers.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Every commit names its epic"
+    }
+  },
+  {
+    "id": "check:ci-merge-method-prose",
+    "run": "npm run check:ci-merge-method-prose",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-merge-method-prose.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Instruction files do not prescribe a rejected merge method"
+    }
+  },
+  {
+    "id": "check:ci-shell-declared-commands",
+    "run": "npm run check:ci-shell-declared-commands",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-shell-declared-commands.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CI scripts declare the binaries they execute"
+    }
+  },
+  {
+    "id": "check:ci-pr-epic-block",
+    "env": {
+      "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
+      "PR_HEAD_REF": "${{ github.event.pull_request.head.ref || github.ref_name }}",
+      "PR_NUMBER": "${{ github.event.pull_request.number }}"
+    },
+    "run": "npm run check:ci-pr-epic-block",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pr-epic-block.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "PR epic block matches the published worklist"
+    }
+  },
+  {
+    "id": "check:ci-control-vacuity",
+    "run": "npm run check:ci-control-vacuity",
+    "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_control_vacuity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Control-first gates prove their plant landed"
+    }
+  },
+  {
+    "id": "check:ci-devcontainer-scripts",
+    "run": "npm run check:ci-devcontainer-scripts",
+    "gate": true,
+    "paths": [
+      ".devcontainer/**",
+      ".ci/scripts/quality/check_devcontainer_scripts.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_devcontainer_scripts.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Devcontainer script stderr visibility"
+    }
+  },
+  {
+    "id": "check:ci-shell-size",
+    "run": "npm run check:ci-shell-size",
+    "gate": true,
+    "paths": [
+      "**/*.sh",
+      ".ci/scripts/quality/check_shell_size.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_shell_size.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Shell file size"
+    }
+  },
+  {
+    "id": "check:ci-devbox-exec",
+    "run": "npm run check:ci-devbox-exec",
+    "gate": true,
+    "paths": [
+      ".ci/lib/devbox.sh",
+      ".ci/scripts/quality/check_devbox_exec.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_devbox_exec.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Devbox exec invocation"
+    }
+  },
+  {
+    "id": "check:ci-toolchain-pins",
+    "run": "npm run check:ci-toolchain-pins",
+    "slow": true,
+    "gate": true,
+    "paths": [
+      ".devcontainer/**",
+      ".github/workflows/**",
+      ".ci/scripts/**",
+      ".ci/legacy/**",
+      ".ci/config/constants.sh",
+      "run.sh"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_toolchain_pins.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Toolchain pins"
+    }
+  },
+  {
+    "id": "check:ci-toolchain-env-dockerfile-sync",
+    "run": "npm run check:ci-toolchain-env-dockerfile-sync",
+    "gate": true,
+    "paths": [
+      ".devcontainer/toolchain.env",
+      ".devcontainer/Dockerfile",
+      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_toolchain_env_dockerfile_sync.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Toolchain env/Dockerfile sync"
+    }
+  },
+  {
+    "id": "check:ci-host-toolchain-coverage",
+    "run": "npm run check:ci-host-toolchain-coverage",
+    "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/quality/toolchain_pins.py",
+      ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
+      ".ci/scripts/quality/check_host_toolchain_coverage.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_host_toolchain_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Host toolchain runtime coverage"
+    }
+  },
+  {
+    "id": "check:ci-git-op-conditionals",
+    "run": "npm run check:ci-git-op-conditionals",
+    "gate": true,
+    "paths": [
+      ".claude/hooks/**/*.sh",
+      ".ci/scripts/quality/*.sh",
+      ".ci/scripts/quality/*.py",
+      ".ci/rediacc_ci/quality/git_op_conditionals.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_git_op_conditionals.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Git-op conditional guards"
+    }
+  },
+  {
+    "id": "check:ci-go-tool-path",
+    "run": "npm run check:ci-go-tool-path",
+    "gate": true,
+    "paths": [
+      ".ci/**",
+      "scripts/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_go_tool_path.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Go tool PATH"
+    }
+  },
+  {
+    "id": "check:ci-gate-prerequisites",
+    "run": "npm run check:ci-gate-prerequisites",
+    "gate": true,
+    "paths": [
+      ".github/workflows/**",
+      "package.json",
+      "packages/*/package.json",
+      "workers/*/package.json",
+      ".ci/scripts/quality/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_ci_gate_prerequisites.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate prerequisites"
+    }
+  },
+  {
+    "id": "check:ci-pr-head-ref-completeness",
+    "run": "npm run check:ci-pr-head-ref-completeness",
+    "gate": true,
+    "paths": [
+      ".github/workflows/**",
+      "package.json",
+      ".ci/scripts/**",
+      "scripts/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_pr_head_ref_completeness.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "PR_HEAD_REF completeness"
+    }
+  },
+  {
+    "id": "check:ci-guard-mention-anchoring",
+    "slow": true,
+    "run": "npm run check:ci-guard-mention-anchoring",
+    "gate": true,
+    "paths": [
+      ".claude/rediacc_hooks/guards/**",
+      ".claude/rediacc_hooks/dispatch.py",
+      ".ci/scripts/quality/check_guard_mention_anchoring.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_guard_mention_anchoring.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Guard mention anchoring"
+    }
+  },
+  {
+    "id": "check:ci-gate-manifest",
+    "run": "npm run check:ci-gate-manifest",
+    "gate": true,
+    "paths": [
+      "scripts/ci-runner/**",
+      "scripts/gates/check-gate-manifest.ts"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "scripts/gates/check-gate-manifest.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate manifest self-consistency"
+    }
+  },
+  {
+    "id": "check:ci-trap-registry",
+    "run": "npm run check:ci-trap-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_trap_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Trap registry dispositions"
+    }
+  },
+  {
+    "id": "check:ci-tree-shape",
+    "run": "npm run check:ci-tree-shape",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tree_shape.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Tree shape"
+    }
+  },
+  {
+    "id": "check:ci-runner-selftest",
+    "run": "npm run check:ci-runner-selftest",
+    "gate": true,
+    "paths": [
+      "scripts/ci-runner/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "scripts/ci-runner/run.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CI runner selftest"
+    }
+  },
+  {
+    "id": "check:ci-hook-integrity",
+    "run": "npm run check:ci-hook-integrity",
+    "gate": true,
+    "paths": [
+      ".claude/hooks/**",
+      "scripts/data/hook-inventory-baseline.json",
+      "scripts/data/hook-coverage-baseline.json",
+      ".ci/scripts/quality/check_hook_integrity.py",
+      "scripts/data/hook-audit-scope.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_hook_integrity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Hook integrity"
+    }
+  },
+  {
+    "id": "check:ci-pipefail-grep-q",
+    "run": "npm run check:ci-pipefail-grep-q",
+    "slow": true,
+    "gate": true,
+    "paths": [
+      ".ci/scripts/**",
+      "scripts/**",
+      ".claude/hooks/**",
+      ".ci/lib/**",
+      ".devcontainer/**",
+      ".ci/media/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_pipefail_grep_q.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "No racing pipefail/grep -q detectors"
+    }
+  },
+  {
+    "id": "check:ci-watch-recipe",
+    "run": "npm run check:ci-watch-recipe",
+    "gate": true,
+    "paths": [
+      ".claude/skills/ci-watch/**",
+      ".claude/commands/**",
+      ".claude/agents/**",
+      ".claude/hooks/**",
+      "docs/agent-reference/**",
+      ".ci/scripts/quality/check_ci_watch_recipe.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_ci_watch_recipe.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CI-watch recipe has one source"
+    }
+  },
+  {
+    "id": "check:ci-cli-doc-coverage",
+    "run": "npm run check:ci-cli-doc-coverage",
+    "gate": true,
+    "paths": [
+      ".ci/scripts/ci/ci-trace.py",
+      ".claude/skills/ci-watch/**",
+      "scripts/ci-runner/run.ts",
+      "docs/agent-reference/ci-gates.md",
+      ".ci/scripts/quality/check_cli_doc_coverage.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_cli_doc_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CLI docs stay in sync with their scripts' real flags"
+    }
+  },
+  {
+    "id": "check:ci-ceph-image-pin",
+    "run": "npm run check:ci-ceph-image-pin",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-ceph-image-pin.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Ceph image pin freshness"
+    }
+  },
+  {
+    "id": "check:ci-naturalization-model-policy",
+    "run": "npm run check:ci-naturalization-model-policy",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-naturalization-model-policy.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Naturalization model policy"
+    }
+  },
+  {
+    "id": "check:ci-script-exec-bit",
+    "run": "npm run check:ci-script-exec-bit",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_script_exec_bit.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Block non-executable invoked scripts"
+    }
+  },
+  {
+    "id": "check:ci-lockfile",
+    "run": "npm run check:ci-lockfile",
+    "slow": true,
+    "gate": true,
+    "paths": [
+      "**/package-lock.json",
+      "**/package.json",
+      "private/account",
+      ".ci/scripts/quality/check_lockfile.py",
+      ".ci/scripts/lib/common.sh"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_lockfile.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Lockfile"
+    }
+  },
+  {
+    "id": "check:ci-peer-deps",
+    "run": "npm run check:ci-peer-deps",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_peer_deps.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Verify no peer dependency conflicts"
+    }
+  },
+  {
+    "id": "check:ci-security-audit",
+    "env": {
+      "GH_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-security-audit",
+    "slow": true,
+    "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "writes npm audit reports (audit-prod.json and friends) and .audit-advisory-cache at the repo root",
+    "leaves": [
+      ".ci/rediacc_ci/security/audit.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Audit"
+    }
+  },
+  {
+    "id": "check:ci-scope-scripts-reachability",
+    "run": "npm run check:ci-scope-scripts-reachability",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_scope_scripts_reachability.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Scope map, reachable scripts/ paths force full CI"
+    }
+  },
+  {
+    "id": "check:ci-mutate-check",
+    "run": "npm run check:ci-mutate-check",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_mutate_check.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Mutation runner self-test"
+    }
+  },
+  {
+    "id": "check:ci-shell-lint",
+    "run": "npm run check:ci-shell-lint",
+    "slow": true,
+    "gate": true,
+    "paths": [
+      "**/*.sh",
+      ".devcontainer/toolchain.env",
+      ".ci/rediacc_ci/security/shellcheck.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/rediacc_ci/security/shellcheck.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Shell lint"
+    }
+  },
+  {
+    "id": "check:ci-shell-format",
+    "run": "npm run check:ci-shell-format",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/security/shfmt.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Shell format"
+    }
+  },
+  {
+    "id": "check:ci-python-lint",
+    "run": "npm run check:ci-python-lint",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_python_lint.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python lint + format (ruff)"
+    }
+  },
+  {
+    "id": "check:ci-python-types",
+    "run": "npm run check:ci-python-types",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_python_types.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python types (mypy)"
+    }
+  },
+  {
+    "id": "check:ci-python-control-plants",
+    "run": "npm run check:ci-python-control-plants",
+    "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/**",
+      ".ci/scripts/quality/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_python_control_plants.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python control plants"
+    }
+  },
+  {
+    "id": "check:ci-bws-map",
+    "run": "npm run check:ci-bws-map",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bws_map.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Bitwarden secret map"
+    }
+  },
+  {
+    "id": "check:ci-actions-vars",
+    "run": "npm run check:ci-actions-vars",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_actions_vars.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "GitHub Actions variables"
+    }
+  },
+  {
+    "id": "check:ci-account-env-retired",
+    "run": "npm run check:ci-account-env-retired",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_account_env_retired.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Account env files retired"
+    }
+  },
+  {
+    "id": "check:ci-bws-rotation-notice",
+    "run": "npm run check:ci-bws-rotation-notice",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bws_rotation_notice.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "BWS rotation notice"
+    }
+  },
+  {
+    "id": "check:ci-actions-allowlist",
+    "run": "npm run check:ci-actions-allowlist",
+    "gate": true,
+    "paths": [
+      ".github/workflows/*.yml",
+      ".github/actions/**/action.yml",
+      ".ci/breakpoint/workflow/*.yml",
+      ".ci/config/actions-allowlist.json",
+      ".ci/scripts/quality/check_actions_allowlist.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_actions_allowlist.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Actions allowlist"
+    }
+  },
+  {
+    "id": "check:ci-plan-housekeeping",
+    "run": "npm run check:ci-plan-housekeeping",
+    "gate": true,
+    "paths": [
+      "agent/plans/**",
+      ".ci/config/plan-lifecycle.json",
+      ".ci/policy/.plan-housekeeping-allowlist",
+      ".ci/scripts/quality/check_plan_housekeeping.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_housekeeping.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Plan file housekeeping"
+    }
+  },
+  {
+    "id": "check:ci-resprofile",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "noProfile": true,
+    "run": "npm run check:ci-resprofile",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_resprofile.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Resource profile (previous run's captures)"
+    }
+  },
+  {
+    "id": "check:ci-step-env-parity",
+    "run": "npm run check:ci-step-env-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-ci-step-env-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Step env parity"
+    }
+  },
+  {
+    "id": "check:ci-env-manifest",
+    "run": "npm run check:ci-env-manifest",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_env_manifest.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Env manifest"
+    }
+  },
+  {
+    "id": "check:ci-env-file-adoption",
+    "run": "npm run check:ci-env-file-adoption",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_env_file_adoption.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Env file adoption"
+    }
+  },
+  {
+    "id": "check:ci-hook-exec-baseline",
+    "run": "npm run check:ci-hook-exec-baseline",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hook_exec_baseline.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Hook exec baseline"
+    }
+  },
+  {
+    "id": "check:ci-hook-cross-os",
+    "run": "npm run check:ci-hook-cross-os",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hook_cross_os.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Hook cross-OS seams"
+    }
+  },
+  {
+    "id": "check:ci-vendored-blocker-derivation",
+    "run": "npm run check:ci-vendored-blocker-derivation",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_vendored_blocker_derivation.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Vendored blocker derivation"
+    }
+  },
+  {
+    "id": "check:ci-plant-proofs",
+    "run": "npm run check:ci-plant-proofs",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_plant_proofs.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Control plant proofs"
+    }
+  },
+  {
+    "id": "check:ci-python-env-registry",
+    "slow": true,
+    "run": "npm run check:ci-python-env-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_python_env_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python env registry"
+    }
+  },
+  {
+    "id": "check:ci-secret-supply",
+    "run": "npm run check:ci-secret-supply",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_secret_supply.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Secret supply"
+    }
+  },
+  {
+    "id": "check:ci-worklist-env-registry",
+    "run": "npm run check:ci-worklist-env-registry",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_worklist_env_registry.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Worklist env registry"
+    }
+  },
+  {
+    "id": "check:ci-gate-test-real-file-plants",
+    "run": "npm run check:ci-gate-test-real-file-plants",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_gate_test_real_file_plants.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate-test real-file plants"
+    }
+  },
+  {
+    "id": "check:ci-tmpfs-health",
+    "run": "npm run check:ci-tmpfs-health",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tmpfs_health.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Tmpfs health"
+    }
+  },
+  {
+    "id": "check:ci-rdc-native",
+    "run": "npm run check:ci-rdc-native",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_rdc_native.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "rdc.sh wrapper budget and --native arms"
+    }
+  },
+  {
+    "id": "check:ci-domain-partition",
+    "run": "npm run check:ci-domain-partition",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-domain-partition.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "scripts/ domain partition"
+    }
+  },
+  {
+    "id": "check:ci-dead-python",
+    "run": "npm run check:ci-dead-python",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_dead_python.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Dead Python"
+    }
+  },
+  {
+    "id": "check:ci-policy-inventory",
+    "run": "npm run check:ci-policy-inventory",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_policy_inventory.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Policy inventory"
+    }
+  },
+  {
+    "id": "check:ci-plan-boxes",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-boxes",
+    "gate": true,
+    "paths": [
+      "agent/plans/**",
+      ".ci/config/plan-boxes.json",
+      ".ci/scripts/quality/check_plan_boxes.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_boxes.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan checkbox ledger"
+    }
+  },
+  {
+    "id": "check:ci-plan-implementation",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-implementation",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_plan_implementation.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan implementation clock"
+    }
+  },
+  {
+    "id": "check:ci-decision-ids",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-decision-ids",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_decision_ids.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Decision ids"
+    }
+  },
+  {
+    "id": "check:ci-plan-citations",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-citations",
+    "gate": true,
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      ".ci/scripts/quality/check_plan_citations.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_citations.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan citations"
+    }
+  },
+  {
+    "id": "check:ci-plan-record",
+    "slow": true,
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}"
+    },
+    "run": "npm run check:ci-plan-record",
+    "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "appends the daily census row to the tracked agent/ledgers/census-plan-record.jsonl",
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      ".ci/scripts/quality/check_plan_record.py",
+      ".claude/hooks/stop/wl_planrec.py",
+      ".claude/hooks/stop/wl_planindex.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_record.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan records"
+    }
+  },
+  {
+    "id": "check:ci-plan-folders",
+    "run": "npm run check:ci-plan-folders",
+    "gate": true,
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      ".ci/config/plan-lifecycle.json",
+      ".ci/config/plan-boxes.json",
+      ".ci/scripts/quality/check_plan_folders.py",
+      ".ci/rediacc_ci/quality/plan_lifecycle.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_folders.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan folders and retention"
+    }
+  },
+  {
+    "id": "check:ci-plan-deps",
+    "run": "npm run check:ci-plan-deps",
+    "gate": true,
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      ".ci/scripts/quality/check_plan_deps.py",
+      ".claude/hooks/stop/wl_plandeps.py",
+      ".claude/hooks/stop/wl_planfile.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_deps.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Plan dependencies"
+    }
+  },
+  {
+    "id": "check:ci-agent-session-archival",
+    "run": "npm run check:ci-agent-session-archival",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_agent_session_archival.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Agent session archival"
+    }
+  },
+  {
+    "id": "check:ci-lint-rule-units",
+    "run": "npm run check:ci-lint-rule-units",
+    "gate": true,
+    "paths": [
+      "eslint-rules/**",
+      "scripts/gates/check-lint-rule-units.ts"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "scripts/gates/check-lint-rule-units.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Lint rule unit specs"
+    }
+  },
+  {
+    "id": "check:ci-gates-lock",
+    "run": "npm run check:ci-gates-lock",
+    "gate": true,
+    "paths": [
+      "scripts/ci-runner/manifest.ts",
+      "scripts/ci-runner/gates.lock.json",
+      "scripts/gen/gen-gates-lock.ts"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "scripts/gen/gen-gates-lock.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gates lock"
+    }
+  },
+  {
+    "id": "check:ci-doc-region-parity",
+    "run": "npm run check:ci-doc-region-parity",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-doc-region-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Doc region parity"
+    }
+  },
+  {
+    "id": "gen:gates-lock",
+    "run": "npm run gen:gates-lock",
+    "gate": false,
+    "leaves": [
+      "scripts/gen/gen-gates-lock.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: an emitter, not a validation. CI verifies the committed lock through check:ci-gates-lock, which runs the same file in its default checking mode; a step pointer here would claim CI regenerates the artifact it is meant to be holding still."
+    }
+  },
+  {
+    "id": "gen:docs",
+    "run": "npm run gen:docs",
+    "gate": false,
+    "leaves": [
+      "scripts/gen/gen-docs.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: an emitter, not a validation. Same shape as gen:gates-lock above: CI checks the generated doc regions rather than rewriting them, so no CI step invokes this script."
+    }
+  },
+  {
+    "id": "check:ci-syncpack-sources",
+    "run": "npm run check:ci-syncpack-sources",
+    "gate": true,
+    "paths": [
+      ".syncpackrc.json",
+      ".ci/config/syncpack-source-exclusions.json",
+      ".ci/scripts/quality/check_syncpack_sources.py",
+      "**/package.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_syncpack_sources.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "syncpack source coverage"
+    }
+  },
+  {
+    "id": "check:ci-secret-reachability",
+    "run": "npm run check:ci-secret-reachability",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_secret_reachability.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Secret reachability"
+    }
+  },
+  {
+    "id": "check:ci-secret-scope",
+    "run": "npm run check:ci-secret-scope",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-secret-scope.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Secret scope"
+    }
+  },
+  {
+    "id": "check:ci-release-key-canonical",
+    "run": "npm run check:ci-release-key-canonical",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_release_key_canonical.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Release key canonical"
+    }
+  },
+  {
+    "id": "check:ci-staging-tag-guard",
+    "run": "npm run check:ci-staging-tag-guard",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/quality/staging_tag_guard.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Staging tag guard"
+    }
+  },
+  {
+    "id": "check:ci-release-signing-coverage",
+    "run": "npm run check:ci-release-signing-coverage",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_release_signing_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Release signing coverage"
+    }
+  },
+  {
+    "id": "check:ci-tracked-credentials",
+    "run": "npm run check:ci-tracked-credentials",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-tracked-credentials.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Tracked credentials"
+    }
+  },
+  {
+    "id": "check:ci-scope-completeness",
+    "run": "npm run check:ci-scope-completeness",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_scope_completeness.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Scope completeness"
+    }
+  },
+  {
+    "id": "check:ci-hooks-resolvable",
+    "run": "npm run check:ci-hooks-resolvable",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hooks_resolvable.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Hooks resolvable"
+    }
+  },
+  {
+    "id": "check:ci-dockerfile-mirror-resilience",
+    "run": "npm run check:ci-dockerfile-mirror-resilience",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_dockerfile_mirror_resilience.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Dockerfile mirror resilience"
+    }
+  },
+  {
+    "id": "check:ci-workflow-submodule-deps",
+    "run": "npm run check:ci-workflow-submodule-deps",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_workflow_submodule_deps.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Workflow submodule deps"
+    }
+  },
+  {
+    "id": "check:ci-python-gate-deps",
+    "run": "npm run check:ci-python-gate-deps",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_python_gate_deps.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Python gate deps"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-cli-validity",
+    "run": "npm run check:ci-tutorial-cli-validity",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tutorial_cli_validity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Tutorial CLI validity"
+    }
+  },
+  {
+    "id": "check:ci-e2e-case-blind",
+    "run": "npm run check:ci-e2e-case-blind",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_e2e_case_blind_assertions.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "E2E case-blind assertions"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-no-skips",
+    "run": "npm run check:ci-tutorial-no-skips",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tutorial_no_skips.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Tutorials cannot skip themselves"
+    }
+  },
+  {
+    "id": "check:ci-dead-service-methods",
+    "run": "npm run check:ci-dead-service-methods",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-dead-service-methods.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Dead service methods"
+    }
+  },
+  {
+    "id": "check:ci-retired-commands",
+    "run": "npm run check:ci-retired-commands",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-retired-commands-in-docs.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Retired commands in docs"
+    }
+  },
+  {
+    "id": "check:ci-inner-timeout-reachable",
+    "run": "npm run check:ci-inner-timeout-reachable",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_inner_timeout_reachable.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Inner kill timers are reachable"
+    }
+  },
+  {
+    "id": "check:ci-control-in-string",
+    "run": "npm run check:ci-control-in-string",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-control-in-string.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Controls are not written inside string literals"
+    }
+  },
+  {
+    "id": "check:ci-timeout-headroom",
+    "run": "npm run check:ci-timeout-headroom",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_job_timeout_headroom.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "CI job timeout headroom"
+    }
+  },
+  {
+    "id": "check:ci-runner-advice",
+    "run": "npm run check:ci-runner-advice",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_runner_advice.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Runner sizing advice"
+    }
+  },
+  {
+    "id": "check:ci-no-inline-python",
+    "run": "npm run check:ci-no-inline-python",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_inline_python.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "No inline Python in JS/TS"
+    }
+  },
+  {
+    "id": "check:ci-i18n-value-types",
+    "run": "npm run check:ci-i18n-value-types",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_i18n_value_types.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "i18n value types match English"
+    }
+  },
+  {
+    "id": "check:ci-lint-rule-liveness",
+    "run": "npm run check:ci-lint-rule-liveness",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_lint_rule_liveness.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Enabled lint rules can actually fire"
+    }
+  },
+  {
+    "id": "check:ci-agent-hint-liveness",
+    "run": "npm run check:ci-agent-hint-liveness",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_agent_hint_liveness.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Agent hints can actually fire"
+    }
+  },
+  {
+    "id": "check:ci-hint-corpus",
+    "run": "npm run check:ci-hint-corpus",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_hint_corpus.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Behavioral hints can actually fire"
+    }
+  },
+  {
+    "id": "check:ci-video-player-invariants",
+    "run": "npm run check:ci-video-player-invariants",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-video-player-invariants.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Video player invariants"
+    }
+  },
+  {
+    "id": "check:ci-skill-size",
+    "run": "npm run check:ci-skill-size",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-skill-size.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Self-improving skill size"
+    }
+  },
+  {
+    "id": "check:ci-docs-browse-invariants",
+    "run": "npm run check:ci-docs-browse-invariants",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-browse-invariants.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Docs browse invariants"
+    }
+  },
+  {
+    "id": "check:ci-docs-copy-units",
+    "run": "npm run check:ci-docs-copy-units",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-copy-units.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Docs code-block copy units"
+    }
+  },
+  {
+    "id": "check:ci-docs-thumb-coverage",
+    "run": "npm run check:ci-docs-thumb-coverage",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-thumb-coverage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Docs thumbnail coverage"
+    }
+  },
+  {
+    "id": "check:ci-sentence-wrapping",
+    "run": "npm run check:ci-sentence-wrapping",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-sentence-wrapping.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Sentence wrapping"
+    }
+  },
+  {
+    "id": "check:ci-test-file-orphans",
+    "run": "npm run check:ci-test-file-orphans",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_test_file_orphans.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Test-file orphan check"
+    }
+  },
+  {
+    "id": "check:ci-agent-model-roster",
+    "run": "npm run check:ci-agent-model-roster",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_agent_model_roster.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Agent model roster matches its documented reasons"
+    }
+  },
+  {
+    "id": "check:ci-lint-scope-coverage",
+    "run": "npm run check:ci-lint-scope-coverage",
+    "slow": true,
+    "gate": true,
+    "paths": [
+      "**/*.js",
+      "**/*.cjs",
+      "**/*.mjs",
+      "**/*.ts",
+      "**/*.tsx",
+      "package.json",
+      "eslint.config.js",
+      "biome.json",
+      ".ci/scripts/quality/check_lint_scope_coverage.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_lint_scope_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Every source file reaches a linter"
+    }
+  },
+  {
+    "id": "check:ci-format-scope",
+    "run": "npm run check:ci-format-scope",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_format_scope.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Format command covers its config's scope"
+    }
+  },
+  {
+    "id": "check:ci-checkout-cone",
+    "run": "npm run check:ci-checkout-cone",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_checkout_cone.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Checkout cone covers what steps run"
+    }
+  },
+  {
+    "id": "check:ci-battery-clean-tree",
+    "run": "npm run check:ci-battery-clean-tree",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_battery_clean_tree.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Battery clean-tree guard"
+    }
+  },
+  {
+    "id": "check:ci-workflow-env-provision",
+    "run": "npm run check:ci-workflow-env-provision",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_workflow_env_provision.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Workflow env provision"
+    }
+  },
+  {
+    "id": "check:ci-shell-commands",
+    "run": "npm run check:ci-shell-commands",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/security/check_commands.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Shell commands exist on the runner image"
+    }
+  },
+  {
+    "id": "check:ci-gate-id-convention",
+    "run": "npm run check:ci-gate-id-convention",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_gate_id_convention.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Gate registration follows the gates/ convention"
+    }
+  },
+  {
+    "id": "check:ci-pool-writer-safety",
+    "run": "npm run check:ci-pool-writer-safety",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_pool_writer_safety.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Pool-registered tests do not write the real tree"
+    }
+  },
+  {
+    "id": "check:ci-gate-tree-writes",
+    "slow": true,
+    "run": "npm run check:ci-gate-tree-writes",
+    "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/**",
+      ".ci/scripts/**",
+      "scripts/**",
+      "packages/*/scripts/**",
+      "eslint-rules/**",
+      ".ci/breakpoint/scripts/**",
+      ".claude/hooks/**",
+      "package.json",
+      "scripts/ci-runner/gates.lock.json",
+      ".ci/config/tree-write-mutators.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_gate_tree_writes.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gates that write the real tree declare it"
+    }
+  },
+  {
+    "id": "check:ci-review-turn-capacity",
+    "run": "npm run check:ci-review-turn-capacity",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_review_turn_capacity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Review turn budget cannot starve a routed review"
+    }
+  },
+  {
+    "id": "check:ci-review-cap-coherence",
+    "run": "npm run check:ci-review-cap-coherence",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_review_cap_coherence.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Review cap is measured coherently"
+    }
+  },
+  {
+    "id": "check:ci-gate-reachability-coverage",
+    "run": "npm run check:ci-gate-reachability-coverage",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_gate_reachability_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Gate-reachability probe agrees with registrations"
+    }
+  },
+  {
+    "id": "check:ci-gate-cwd-independence",
+    "run": "npm run check:ci-gate-cwd-independence",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-gate-cwd-independence.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate cwd independence"
+    }
+  },
+  {
+    "id": "check:ci-fixture-event-timestamps",
+    "run": "npm run check:ci-fixture-event-timestamps",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-fixture-event-timestamps.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Fixture event timestamps"
+    }
+  },
+  {
+    "id": "check:ci-worklist-path-resolution",
+    "run": "npm run check:ci-worklist-path-resolution",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-worklist-path-resolution.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Worklist path resolution"
+    }
+  },
+  {
+    "id": "check:ci-worklist-event-builders",
+    "run": "npm run check:ci-worklist-event-builders",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-worklist-event-builders.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Worklist event builders"
+    }
+  },
+  {
+    "id": "check:ci-workflows",
+    "run": "npm run check:ci-workflows",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_workflows.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Workflow banned patterns"
+    }
+  },
+  {
+    "id": "check:ci-greenlight-closures",
+    "run": "npm run check:ci-greenlight-closures",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_greenlight_closures.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Greenlight closure paths"
+    }
+  },
+  {
+    "id": "check:ci-workflow-gates",
+    "run": "npm run check:ci-workflow-gates",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/security/check-workflow-gates.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Workflow structural gates"
+    }
+  },
+  {
+    "id": "check:ci-actionlint",
+    "run": "npm run check:ci-actionlint",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/security/actionlint.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Workflow lint (actionlint)"
+    }
+  },
+  {
+    "id": "check:ci-breakpoint-drift",
+    "run": "npm run check:ci-breakpoint-drift",
+    "gate": true,
+    "leaves": [
+      ".ci/breakpoint/scripts/check-breakpoint-drift.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Breakpoint drift"
+    }
+  },
+  {
+    "id": "check:ci-app-admin-perm",
+    "run": "npm run check:ci-app-admin-perm",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_no_app_admin_perm.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "App admin permission"
+    }
+  },
+  {
+    "id": "check:ci-tracked-sidecars",
+    "run": "npm run check:ci-tracked-sidecars",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_tracked_sidecars.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Tracked runtime sidecars"
+    }
+  },
+  {
+    "id": "check:ci-scans-tracked-paths",
+    "run": "npm run check:ci-scans-tracked-paths",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_ci_scans_tracked_paths.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "CI executes only tracked paths"
+    }
+  },
+  {
+    "id": "check:ci-agent-browser-exit",
+    "run": "npm run check:ci-agent-browser-exit",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_agent_browser_exit.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "agent-browser exit status"
+    }
+  },
+  {
+    "id": "check:ci-silent-failures",
+    "run": "npm run check:ci-silent-failures",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_silent_failure_patterns.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Silent-failure patterns"
+    }
+  },
+  {
+    "id": "check:ci-compose-env",
+    "run": "npm run check:ci-compose-env",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_compose_env.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Compose env"
+    }
+  },
+  {
+    "id": "check:ci-e2e-coverage",
+    "run": "npm run check:ci-e2e-coverage",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_e2e_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Check E2E test coverage for all renet functions"
+    }
+  },
+  {
+    "id": "check:ci-e2e-skip-hygiene",
+    "run": "npm run check:ci-e2e-skip-hygiene",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-e2e-skip-hygiene.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Check E2E skip hygiene (no collected-then-skipped suites)"
+    }
+  },
+  {
+    "id": "check:ci-audit-coverage",
+    "run": "npm run check:ci-audit-coverage",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_audit_coverage.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Check audit logging coverage for CLI operations"
+    }
+  },
+  {
+    "id": "check:ci-cli-contract",
+    "run": "npm run check:ci-cli-contract",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:packages"
+    ],
+    "mutex": [
+      "build-artifacts"
+    ],
+    "leaves": [
+      ".ci/scripts/quality/check_cli_contract.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "CLI contract"
+    }
+  },
+  {
+    "id": "check:ci-command-tree",
+    "run": "npm run check:ci-command-tree",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:packages"
+    ],
+    "mutex": [
+      "build-artifacts"
+    ],
+    "leaves": [
+      ".ci/scripts/quality/check_command_tree.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Command tree"
+    }
+  },
+  {
+    "id": "check:ci-command-planes",
+    "run": "npm run check:ci-command-planes",
+    "gate": true,
+    "leaves": [
+      "packages/cli/scripts/check-command-planes.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Command planes"
+    }
+  },
+  {
+    "id": "check:ci-design-tree",
+    "run": "npm run check:ci-design-tree",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-design-tree.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Design tree"
+    }
+  },
+  {
+    "id": "check:ci-i18n-placeholders",
+    "run": "npm run check:ci-i18n-placeholders",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-i18n-placeholders.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n placeholders"
+    }
+  },
+  {
+    "id": "check:ci-i18n-untranslated",
+    "run": "npm run check:ci-i18n-untranslated",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-i18n-untranslated.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n untranslated"
+    }
+  },
+  {
+    "id": "check:ci-i18n-cross-locale",
+    "run": "npm run check:ci-i18n-cross-locale",
+    "gate": false,
+    "leaves": [
+      "scripts/gates/check-i18n-cross-locale.ts",
+      "scripts/gates/check-locale-de-contamination.ts",
+      "scripts/gates/check-locale-config-divergence.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n cross-locale"
+    }
+  },
+  {
+    "id": "check:ci-i18n-cross-locale-core",
+    "run": "npm run check:ci-i18n-cross-locale-core",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-i18n-cross-locale.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n cross-locale"
+    }
+  },
+  {
+    "id": "check:ci-docs-structure-parity",
+    "run": "npm run check:ci-docs-structure-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-structure-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Docs structure parity"
+    }
+  },
+  {
+    "id": "check:ci-locale-de-contamination",
+    "run": "npm run check:ci-locale-de-contamination",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-locale-de-contamination.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n cross-locale"
+    }
+  },
+  {
+    "id": "check:ci-locale-sources",
+    "run": "npm run check:ci-locale-sources",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-locale-sources.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Locale sources"
+    }
+  },
+  {
+    "id": "check:ci-i18n-command-parity",
+    "run": "npm run check:ci-i18n-command-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-cli-docs.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n command parity"
+    }
+  },
+  {
+    "id": "check:ci-config-migrations",
+    "run": "npm run check:ci-config-migrations",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_config_migrations.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Check config-migration runner + fixtures"
+    }
+  },
+  {
+    "id": "check:ci-schema-coverage",
+    "run": "npm run check:ci-schema-coverage",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-schema-coverage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Schema coverage"
+    }
+  },
+  {
+    "id": "check:ci-shared-constant-duplication",
+    "run": "npm run check:ci-shared-constant-duplication",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-shared-constant-duplication.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Shared constant duplication"
+    }
+  },
+  {
+    "id": "check:ci-shared-esm-resolvable",
+    "run": "npm run check:ci-shared-esm-resolvable",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-shared-esm-resolvable.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Shared ESM resolvable"
+    }
+  },
+  {
+    "id": "check:ci-runtime-imports-are-deps",
+    "run": "npm run check:ci-runtime-imports-are-deps",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-runtime-imports-are-deps.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Runtime imports are dependencies"
+    }
+  },
+  {
+    "id": "check:ci-backup-manifest-shape-parity",
+    "run": "npm run check:ci-backup-manifest-shape-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-backup-manifest-shape-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Backup manifest shape parity"
+    }
+  },
+  {
+    "id": "check:ci-fetch-integrity",
+    "run": "npm run check:ci-fetch-integrity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-ci-fetch-integrity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CI fetch integrity"
+    }
+  },
+  {
+    "id": "check:ci-aws-credential-bridge",
+    "run": "npm run check:ci-aws-credential-bridge",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-aws-credential-bridge.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "AWS credential bridge"
+    }
+  },
+  {
+    "id": "check:ci-worker-secret-names",
+    "run": "npm run check:ci-worker-secret-names",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-worker-secret-names.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Worker secret names"
+    }
+  },
+  {
+    "id": "check:ci-builder-env-contract",
+    "run": "npm run check:ci-builder-env-contract",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-builder-env-contract.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Builder env contract"
+    }
+  },
+  {
+    "id": "check:ci-backup-bucket-conformance",
+    "run": "npm run check:ci-backup-bucket-conformance",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-backup-bucket-conformance.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Backup bucket conformance"
+    }
+  },
+  {
+    "id": "check:ci-backup-protocol-conformance",
+    "run": "npm run check:ci-backup-protocol-conformance",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-backup-protocol-conformance.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Backup protocol conformance"
+    }
+  },
+  {
+    "id": "check:ci-no-client-key-composition",
+    "run": "npm run check:ci-no-client-key-composition",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-no-client-key-composition.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "No client-side key composition"
+    }
+  },
+  {
+    "id": "check:ci-retention-knob-parity",
+    "run": "npm run check:ci-retention-knob-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-retention-knob-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Retention knob parity"
+    }
+  },
+  {
+    "id": "check:ci-test-scripts-reachable",
+    "run": "npm run check:ci-test-scripts-reachable",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-test-scripts-reachable.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Test suites are CI-reachable"
+    }
+  },
+  {
+    "id": "check:ci-editorconfig",
+    "run": "npm run check:ci-editorconfig",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_editorconfig.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "EditorConfig"
+    }
+  },
+  {
+    "id": "check:ci-account-portal",
+    "run": "npm run check:ci-account-portal",
+    "slow": true,
+    "gate": true,
+    "paths": [
+      "private/account",
+      ".ci/scripts/quality/check_account_portal.py",
+      ".ci/rediacc_ci/quality/account_portal.py",
+      ".ci/scripts/lib/common.sh",
+      "packages/www/scripts/build-account-onboarding.ts",
+      "packages/www/src/data/account-onboarding.json",
+      "packages/www/src/data/tutorial-storyboard/**",
+      "packages/www/src/data/tutorial-transcripts/**",
+      "packages/locales/**",
+      "package.json"
+    ],
+    "pathsOrigin": "declared",
+    "heavy": true,
+    "leaves": [
+      ".ci/scripts/quality/check_account_portal.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Check account portal (typecheck + build)"
+    }
+  },
+  {
+    "id": "check:ci-account-server",
+    "run": "npm run check:ci-account-server",
+    "slow": true,
+    "gate": true,
+    "mutex": [
+      "account-vitest"
+    ],
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      ".ci/rediacc_ci/private/run_account.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Run account integration tests"
+    }
+  },
+  {
+    "id": "check:ci-account-layer-isolation",
+    "run": "npm run check:ci-account-layer-isolation",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "leaves": [
+      "eslint"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Check account route layer isolation"
+    }
+  },
+  {
+    "id": "check:ci-account-config-auth",
+    "run": "npm run check:ci-account-config-auth",
+    "gate": true,
+    "leaves": [
+      "node"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check config token auth requires org membership"
+    }
+  },
+  {
+    "id": "check:ci-account-no-node-env-routes",
+    "run": "npm run check:ci-account-no-node-env-routes",
+    "gate": true,
+    "leaves": [
+      "grep",
+      "echo"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Assert no NODE_ENV branching in account routes"
+    }
+  },
+  {
+    "id": "check:ci-account-no-admin-role",
+    "run": "npm run check:ci-account-no-admin-role",
+    "gate": true,
+    "leaves": [
+      "grep",
+      "echo"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check no admin user role (must be root)"
+    }
+  },
+  {
+    "id": "check:ci-account-scope-audit",
+    "run": "npm run check:ci-account-scope-audit",
+    "gate": true,
+    "mutex": [
+      "account-vitest"
+    ],
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check scope registry audit"
+    }
+  },
+  {
+    "id": "check:ci-test-account-web",
+    "run": "npm run check:ci-test-account-web",
+    "slow": true,
+    "gate": true,
+    "mutex": [
+      "account-vitest"
+    ],
+    "weight": 2,
+    "heavy": true,
+    "leaves": [
+      "vitest"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Account portal unit tests"
+    }
+  },
+  {
+    "id": "check:ci-renet",
+    "run": "npm run check:ci-renet",
+    "gate": true,
+    "paths": [
+      "private/renet",
+      ".ci/rediacc_ci/private/run_renet.py",
+      ".ci/rediacc_ci/core/common.py"
+    ],
+    "pathsOrigin": "declared",
+    "slow": true,
+    "mutex": [
+      "renet-bin"
+    ],
+    "leaves": [
+      ".ci/rediacc_ci/private/run_renet.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Run renet quality"
+    }
+  },
+  {
+    "id": "check:ci-go-deps",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}"
+    },
+    "run": "npm run check:ci-go-deps",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_go_deps.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check Go dependency freshness"
+    }
+  },
+  {
+    "id": "check:ci-renet-types",
+    "run": "npm run check:ci-renet-types",
+    "gate": true,
+    "mutex": [
+      "renet-bin",
+      "tree:repo"
+    ],
+    "writesTree": "builds bin/renet inside the private/renet submodule (go build -o bin/renet)",
+    "leaves": [
+      ".ci/scripts/quality/check_renet_types.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check renet types freshness"
+    }
+  },
+  {
+    "id": "check:ci-renet-tiers",
+    "run": "npm run check:ci-renet-tiers",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_renet_tier_map.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step \"Run renet tests\"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes"
+    }
+  },
+  {
+    "id": "check:ci-embed-credits",
+    "run": "npm run check:ci-embed-credits",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-embed-credits.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check embed credits consistency"
+    }
+  },
+  {
+    "id": "check:ci-embed-arch-parity",
+    "run": "npm run check:ci-embed-arch-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-embed-arch-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check embed arch parity"
+    }
+  },
+  {
+    "id": "check:ci-embed-asset-freshness",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-embed-asset-freshness",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-embed-asset-freshness.ts",
+      "scripts/__tests__/github-token.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check embed-asset upstream freshness"
+    }
+  },
+  {
+    "id": "check:ci-unverified-downloads",
+    "run": "npm run check:ci-unverified-downloads",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-unverified-downloads.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Check every Dockerfile download is cryptographically verified"
+    }
+  },
+  {
+    "id": "check:ci-devcontainer-pins",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-devcontainer-pins",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-devcontainer-pin-freshness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check devcontainer pin upstream freshness"
+    }
+  },
+  {
+    "id": "check:ci-embed-asset-versions",
+    "run": "npm run check:ci-embed-asset-versions",
+    "gate": true,
+    "slow": true,
+    "leaves": [
+      "scripts/gates/check-embed-asset-versions.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check embedded asset versions match their pins"
+    }
+  },
+  {
+    "id": "check:ci-recovery-context",
+    "run": "npm run check:ci-recovery-context",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-recovery-context.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check recovery functions get an uncancellable context"
+    }
+  },
+  {
+    "id": "check:ci-no-otlp-creds",
+    "run": "npm run check:ci-no-otlp-creds",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_no_otlp_creds.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-build-renet.yml",
+      "job": "build-renet",
+      "step": "Assert no OTLP credentials baked into the built binaries"
+    }
+  },
+  {
+    "id": "check:ci-subscription-schema",
+    "run": "npm run check:ci-subscription-schema",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_subscription_schema.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check subscription schema consistency"
+    }
+  },
+  {
+    "id": "check:ci-pricing-consistency",
+    "run": "npm run check:ci-pricing-consistency",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pricing-consistency.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Pricing consistency"
+    }
+  },
+  {
+    "id": "check:ci-seo",
+    "run": "npm run check:ci-seo",
+    "slow": true,
+    "gate": false,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-seo.ts",
+      "scripts/gates/check-client-bundle-budget.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "SEO"
+    }
+  },
+  {
+    "id": "check:ci-seo-core",
+    "run": "npm run check:ci-seo-core",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-seo.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "SEO"
+    }
+  },
+  {
+    "id": "check:ci-docs-render-parity",
+    "run": "npm run check:ci-docs-render-parity",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-docs-render-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Docs render parity"
+    }
+  },
+  {
+    "id": "check:ci-page-locale-imports",
+    "run": "npm run check:ci-page-locale-imports",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-page-locale-imports.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Page locale imports"
+    }
+  },
+  {
+    "id": "check:ci-external-links",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-external-links",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-external-links.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "External links"
+    }
+  },
+  {
+    "id": "check:ci-dkim-notify",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}"
+    },
+    "run": "npm run check:ci-dkim-notify",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-dkim-notify.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "DKIM notify DNS"
+    }
+  },
+  {
+    "id": "check:ci-css-dom-refs",
+    "run": "npm run check:ci-css-dom-refs",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-css-dom-refs.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "CSS DOM references"
+    }
+  },
+  {
+    "id": "check:ci-svg-theme-reach",
+    "run": "npm run check:ci-svg-theme-reach",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-svg-theme-reach.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "SVG theme reach"
+    }
+  },
+  {
+    "id": "check:ci-dead-css",
+    "run": "npm run check:ci-dead-css",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-dead-css.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Dead CSS"
+    }
+  },
+  {
+    "id": "check:ci-viewport-unit-mixing",
+    "run": "npm run check:ci-viewport-unit-mixing",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-viewport-unit-mixing.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Dead CSS"
+    }
+  },
+  {
+    "id": "check:ci-illustration-contract",
+    "run": "npm run check:ci-illustration-contract",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-illustration-contract.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Dead CSS"
+    }
+  },
+  {
+    "id": "check:ci-redirects",
+    "run": "npm run check:ci-redirects",
+    "slow": true,
+    "gate": false,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-redirect-integrity.ts",
+      "scripts/gates/check-anchor-integrity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Redirects"
+    }
+  },
+  {
+    "id": "check:ci-redirect-integrity",
+    "run": "npm run check:ci-redirect-integrity",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-redirect-integrity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Redirects"
+    }
+  },
+  {
+    "id": "check:ci-browser-smoke",
+    "run": "npm run check:ci-browser-smoke",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/quality/browser_smoke.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Browser smoke"
+    }
+  },
+  {
+    "id": "check:ci-captcha-recovery",
+    "run": "npm run check:ci-captcha-recovery",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-captcha-recovery.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Captcha recovery"
+    }
+  },
+  {
+    "id": "check:ci-page-density",
+    "run": "npm run check:ci-page-density",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/quality/page_density.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Page density"
+    }
+  },
+  {
+    "id": "check:ci-landmarks",
+    "run": "npm run check:ci-landmarks",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-landmarks.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Landmarks"
+    }
+  },
+  {
+    "id": "check:ci-ssr-locale",
+    "run": "npm run check:ci-ssr-locale",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-ssr-locale.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "SSR locale"
+    }
+  },
+  {
+    "id": "check:ci-docker-image-freshness",
+    "env": {
+      "DOCKERHUB_TOKEN": "${{ env.BWS_DOCKERHUB_TOKEN }}"
+    },
+    "run": "npm run check:ci-docker-image-freshness",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docker-image-freshness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Docker image freshness"
+    }
+  },
+  {
+    "id": "check:ci-baseline-key-semantics",
+    "run": "npm run check:ci-baseline-key-semantics",
+    "gate": true,
+    "paths": [
+      "scripts/gates/check-baseline-key-semantics.ts",
+      "scripts/data/dead-translation-keys-baseline.json",
+      "scripts/data/dead-css-baseline.json",
+      "scripts/data/sentence-wrapping-baseline.json",
+      "scripts/data/em-dash-surfaces-baseline.json",
+      "scripts/data/locale-de-contamination-baseline.json",
+      "scripts/data/docker-image-freshness-baseline.json",
+      "scripts/data/shell-declared-commands-baseline.json",
+      "scripts/data/static-nowrap-baseline.json",
+      "scripts/data/hook-coverage-baseline.json",
+      "scripts/data/css-dom-refs-baseline.json",
+      "scripts/data/hook-inventory-baseline.json",
+      ".ci/scripts/quality/job-timeout-baseline.json",
+      ".ci/scripts/quality/runner-sizing-baseline.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "scripts/gates/check-baseline-key-semantics.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Baseline key semantics"
+    }
+  },
+  {
+    "id": "check:ci-test-gate-wiring",
+    "run": "npm run check:ci-test-gate-wiring",
+    "gate": true,
+    "paths": [
+      "package.json",
+      "scripts/ci-runner/manifest.ts",
+      "scripts/gates/check-test-gate-wiring.ts"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      "scripts/gates/check-test-gate-wiring.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Test-gate wiring"
+    }
+  },
+  {
+    "id": "check:ci-search-index",
+    "run": "npm run check:ci-search-index",
+    "gate": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "regenerates the tracked packages/www/public search-index files in place and restores them from a temp backup",
+    "leaves": [
+      "scripts/gates/check-search-index-freshness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Search index"
+    }
+  },
+  {
+    "id": "check:ci-cta-bolt",
+    "run": "npm run check:ci-cta-bolt",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "packages/www/scripts/check-cta-bolt-uniqueness.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "CTA bolt"
+    }
+  },
+  {
+    "id": "check:ci-content-quality",
+    "run": "npm run check:ci-content-quality",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_content_quality.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Check content for AI slop patterns"
+    }
+  },
+  {
+    "id": "check:ci-prose-style",
+    "run": "npm run check:ci-prose-style",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_prose_style.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Check prose style (the work, not the person)"
+    }
+  },
+  {
+    "id": "check:ci-nis2-quotes",
+    "run": "npm run check:ci-nis2-quotes",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-directive-quotes.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Verify NIS2 directive quotations match the official source"
+    }
+  },
+  {
+    "id": "check:cli-examples",
+    "run": "npm run check:cli-examples",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gen/validate-cli-examples.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "CLI examples"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-commands",
+    "run": "npm run check:ci-tutorial-commands",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-tutorial-commands.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate tutorial storyboard commands against the live CLI"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-noninteractive",
+    "run": "npm run check:ci-tutorial-noninteractive",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-tutorial-noninteractive.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate tutorial commands are non-interactive"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-parity",
+    "run": "npm run check:ci-tutorial-parity",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-tutorial-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate tutorial cast/storyboard/transcript/mdx parity"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-casts",
+    "run": "npm run check:ci-tutorial-casts",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/validate-tutorial-cast-output.js"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Block fallback hacks and error output in tutorial recordings"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-render-queue",
+    "run": "npm run check:ci-tutorial-render-queue",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/list-tutorial-render-pairs.js"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_tutorial_render_queue.py",
+      "blocker": "BLOCKER: the predicate needs the render ledger and media manifest that only the tutorial pipeline writes, and test_gate_tutorial_render_queue.py:94 runs `node \"$PREDICATE\" --selftest` against the real tree under check:ci-pytest, so the real scan does execute in CI (ci-quality.yml quality-security, \"Python package tests\")"
+    }
+  },
+  {
+    "id": "check:ci-locale-tutorial-assets",
+    "run": "npm run check:ci-locale-tutorial-assets",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-locale-tutorial-assets.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate per-locale tutorial video assets exist"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-card-fonts",
+    "run": "npm run check:ci-tutorial-card-fonts",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-tutorial-card-fonts.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate tutorial card fonts cover every locale"
+    }
+  },
+  {
+    "id": "check:ci-solution-videos",
+    "run": "npm run check:ci-solution-videos",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-solution-videos.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate localized solution videos exist"
+    }
+  },
+  {
+    "id": "check:ci-solution-video-engine",
+    "run": "npm run check:ci-solution-video-engine",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-solution-video-engine.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate solution narration engine is current"
+    }
+  },
+  {
+    "id": "check:ci-tutorial-caption-sync",
+    "run": "npm run check:ci-tutorial-caption-sync",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-tutorial-caption-sync.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate published tutorial word-timing sync (real ASR alignment, not estimated)"
+    }
+  },
+  {
+    "id": "check:ci-account-onboarding",
+    "run": "npm run check:ci-account-onboarding",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-account-onboarding.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate account onboarding splash against canonical tutorials"
+    }
+  },
+  {
+    "id": "check:ci-overrides-reasons",
+    "run": "npm run check:ci-overrides-reasons",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-overrides-reasons.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "BLOCKER validator — package.json overrides"
+    }
+  },
+  {
+    "id": "check:ci-syncpack-reasons",
+    "run": "npm run check:ci-syncpack-reasons",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-syncpack-reasons.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "BLOCKER validator — syncpack versionGroups"
+    }
+  },
+  {
+    "id": "check:ci-suppression-liveness",
+    "run": "npm run check:ci-suppression-liveness",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-suppression-liveness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Suppression liveness — are our allowlist entries still needed?"
+    }
+  },
+  {
+    "id": "check:ci-dead-bash",
+    "run": "npm run check:ci-dead-bash",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-dead-bash.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Dead bash"
+    }
+  },
+  {
+    "id": "check:actions",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:actions",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-actions.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Action freshness"
+    }
+  },
+  {
+    "id": "check:ci-jq-boolean-default",
+    "run": "npm run check:ci-jq-boolean-default",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-jq-boolean-default.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "jq boolean defaults"
+    }
+  },
+  {
+    "id": "check:ci-dead-case-arms",
+    "run": "npm run check:ci-dead-case-arms",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_dead_case_arms.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py",
+      "blocker": "BLOCKER: the gate is CONTROL-FIRST -- it plants a dead case arm with a runtime-generated key and refuses to report on the real tree unless its scanner catches that arm, so a green IS the fire proof; test_gate_dead_case_arms.py:test_real_tree_is_clean_and_the_control_fired runs it seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security)"
+    }
+  },
+  {
+    "id": "check:ci-label-refs",
+    "run": "npm run check:ci-label-refs",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_label_references.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_label_references.py",
+      "blocker": "BLOCKER: test_gate_label_references.py:test_real_tree_is_clean_and_excludes_this_file runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security, \"Python package tests\"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions"
+    }
+  },
+  {
+    "id": "check:ci-label-inventory",
+    "run": "npm run check:ci-label-inventory",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_label_inventory.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_label_inventory.py",
+      "blocker": "BLOCKER: test_gate_label_inventory.py:test_real_tree_reconciles_against_an_injected_live_list runs the gate seam-free over the REAL .github/labels.yml under check:ci-pytest (ci-quality.yml quality-security) with the live list injected, so the real parse, the declared floor and the create-on-demand check execute every CI run; the live GitHub read runs on npm"
+    }
+  },
+  {
+    "id": "check:ci-profiler-coverage",
+    "run": "npm run check:ci-profiler-coverage",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_profiler_coverage.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py",
+      "blocker": "BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction"
+    }
+  },
+  {
+    "id": "check:ci-go-module-sync",
+    "run": "npm run check:ci-go-module-sync",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_go_module_sync.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check Go module sync against the renet worktree"
+    }
+  },
+  {
+    "id": "check:ci-workflow-orphan-step-keys",
+    "run": "npm run check:ci-workflow-orphan-step-keys",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-workflow-orphan-step-keys.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Workflow orphan step keys"
+    }
+  },
+  {
+    "id": "check:ci-workflow-invariants",
+    "run": "npm run check:ci-workflow-invariants",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/security/ci_workflow_invariants.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py",
+      "blocker": "BLOCKER: no quality lane runs this against the live workflow, but test_gate_ci_workflow_invariants.py:35-36 points both GATE and REAL at the real .github/workflows/ci.yml, so check:ci-pytest (ci-quality.yml quality-security, \"Python package tests\") executes the real scan over the real tree every CI run"
+    }
+  },
+  {
+    "id": "check:ci-client-i18n",
+    "run": "npm run check:ci-client-i18n",
+    "gate": true,
+    "leaves": [
+      "packages/www/scripts/check-client-i18n-freshness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-em-dash-surfaces",
+    "run": "npm run check:ci-em-dash-surfaces",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-em-dash-surfaces.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-locale-config-divergence",
+    "run": "npm run check:ci-locale-config-divergence",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-locale-config-divergence.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n cross-locale"
+    }
+  },
+  {
+    "id": "check:ci-dead-translation-keys",
+    "run": "npm run check:ci-dead-translation-keys",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-dead-translation-keys.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-anchor-integrity",
+    "run": "npm run check:ci-anchor-integrity",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-anchor-integrity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Redirects"
+    }
+  },
+  {
+    "id": "check:ci-player-css-scope",
+    "run": "npm run check:ci-player-css-scope",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-player-css-scope.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Player CSS scope"
+    }
+  },
+  {
+    "id": "check:ci-client-bundle-budget",
+    "run": "npm run check:ci-client-bundle-budget",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-client-bundle-budget.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "SEO"
+    }
+  },
+  {
+    "id": "check:ci-language-policy",
+    "run": "npm run check:ci-language-policy",
+    "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/**",
+      "scripts/ops/**",
+      "scripts/drills/**",
+      "scripts/dev/**"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_language_policy.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Language policy"
+    }
+  },
+  {
+    "id": "check:ci-layout-overflow",
+    "run": "npm run check:ci-layout-overflow",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-layout-overflow.ts"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py",
+      "blocker": "BLOCKER: no quality lane owns CSS overflow, and the two shapes it detects are invisible to a browser scan because querySelectorAll returns no pseudo-elements; test_gate_layout_overflow.py:98 runs the gate seam-free against the real stylesheets under check:ci-pytest, so every declaration block is parsed each CI run, and the mutant beside it reds the controls"
+    }
+  },
+  {
+    "id": "check:ci-hydration-clean",
+    "run": "npm run check:ci-hydration-clean",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-hydration-clean.ts"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py",
+      "blocker": "BLOCKER: no quality lane reads React state initializers, and the defect is decidable only from the source pair (server render, client render); test_gate_hydration_clean.py:92 runs the gate seam-free against the real packages/www components under check:ci-pytest, so the real scan runs every CI run, and the mutant beside it requires the indirect control to go red"
+    }
+  },
+  {
+    "id": "check:ci-form-validation",
+    "run": "npm run check:ci-form-validation",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-form-validation.ts"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_form_validation.py",
+      "blocker": "BLOCKER: no quality lane inspects form submit handlers, and the defect is a MISSING guard rather than a present one, so nothing else can express it; test_gate_form_validation.py:100 runs the gate seam-free against the real components under check:ci-pytest, so the real scan of all six forms runs every CI run, and the mutant case beside it requires the control to go red"
+    }
+  },
+  {
+    "id": "check:ci-changed-selection",
+    "slow": true,
+    "run": "npm run check:ci-changed-selection",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-changed-selection.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Changed-file selection contract"
+    }
+  },
+  {
+    "id": "check:ci-source-rules",
+    "run": "npm run check:ci-source-rules",
+    "gate": false,
+    "leaves": [
+      "scripts/gates/check-source-rules.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate is red until that plan clears them; it runs by hand until then (2026-09-26)."
+    }
+  },
+  {
+    "id": "check:ci-max-lines",
+    "run": "npm run check:ci-max-lines",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-max-lines.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "No source file exceeds the line-count budget"
+    }
+  },
+  {
+    "id": "check:ci-paths-origin",
+    "run": "npm run check:ci-paths-origin",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-paths-origin.ts"
+    ],
+    "paths": [
+      "scripts/ci-runner/manifest.ts",
+      "scripts/ci-runner/gate-spec.ts",
+      "scripts/gates/check-paths-origin.ts",
+      "scripts/ci-runner/gates.lock.json"
+    ],
+    "pathsOrigin": "declared",
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Paths-origin provenance"
+    }
+  },
+  {
+    "id": "check:ci-setup-port-parity",
+    "run": "npm run check:ci-setup-port-parity",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/setup/port_parity.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Setup port parity"
+    }
+  },
+  {
+    "id": "check:ci-parity",
+    "run": "npm run check:ci-parity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-ci-parity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Validate parity between the local gate set and the CI quality surface"
+    }
+  },
+  {
+    "id": "test:write-once-guard",
+    "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/deploy/write_once_guard_check.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Write-once guard tests"
+    }
+  },
+  {
+    "id": "test:install-script",
+    "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/release/install_script_check.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Install-script tests"
+    }
+  },
+  {
+    "id": "build:packages",
+    "run": "npm run build:packages",
+    "gate": false,
+    "mutex": [
+      "build-artifacts"
+    ],
+    "heavy": true,
+    "leaves": [
+      "tsc"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a prerequisite, not a validation; CI gets the same artifacts from the per-lane build steps (ci-quality.yml quality-code TypeScript, quality-packages CLI contract) and has no single step that corresponds to this node"
+    }
+  },
+  {
+    "id": "build:www",
+    "env": {
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run build:www",
+    "slow": true,
+    "gate": false,
+    "mutex": [
+      "www-dist"
+    ],
+    "heavy": true,
+    "leaves": [
+      "astro"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Build www (produces dist/route-manifest.json)"
+    }
+  },
+  {
+    "id": "check:ci-quality-complete",
+    "run": "npm run check:ci-quality-complete",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-quality-complete.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-wiring",
+      "step": "Quality shard aggregation"
+    }
+  },
+  {
+    "id": "check:ci-quality-gates",
+    "run": "npm run check:ci-quality-gates",
+    "gate": false,
+    "leaves": [
+      ".ci/rediacc_ci/battery.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "gate-test:run-sh",
+    "run": ".ci/scripts/test/gates/test-run-sh.sh",
+    "gate": true,
+    "qualityGateTest": true,
+    "leaves": [
+      ".ci/scripts/test/gates/test-run-sh.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "check:ci-release-bump-skip",
+    "run": "npm run check:ci-release-bump-skip",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_release_bump_skip.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/scripts/quality/check_release_bump_skip.py",
+      "blocker": "BLOCKER: the gate IS the test -- it drives the real dispatch-release.sh decide branch with a shimmed gh through all five paths, so ci-quality.yml quality-security runs the real decision every CI run; it exists because a bump-none merge and a broken decision both produce \"no release\" and only the emitted signal distinguishes them, which no release gate could see"
+    }
+  },
+  {
+    "id": "check:ci-regions-sync",
+    "run": "npm run check:ci-regions-sync",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_regions_sync.py"
+    ],
+    "ci": {
+      "kind": "test",
+      "test": ".ci/rediacc_ci/tests/gates/test_gate_regions_sync.py",
+      "blocker": "BLOCKER: test_gate_regions_sync.py drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json, and check:ci-pytest (ci-quality.yml quality-security, \"Python package tests\") runs it every CI run; its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install"
+    }
+  },
+  {
+    "id": "gate-test:toolchain",
+    "run": ".ci/scripts/test/gates/test-toolchain.sh",
+    "gate": true,
+    "qualityGateTest": true,
+    "leaves": [
+      ".ci/scripts/test/gates/test-toolchain.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "check:ci-pytest",
+    "run": "npm run check:ci-pytest",
+    "gate": true,
+    "slow": true,
+    "weight": 8,
+    "leaves": [
+      ".ci/rediacc_ci/check_pytest.py"
+    ],
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "test_gate_gate_anti_vacuity.py and test_gate_generate_tag_inputs.py (the pytest ports in the real-tree xdist group) overwrite tracked files while they run",
+    "paths": [
+      ".ci/rediacc_ci/**",
+      ".claude/rediacc_hooks/**",
+      ".ci/scripts/test/gates/**",
+      ".claude/hooks/**",
+      ".claude/settings.json",
+      ".ci/scripts/test/lib/git-fixture.sh",
+      ".ci/scripts/quality/check_inline_python.py",
+      "pyproject.toml"
+    ],
+    "pathsOrigin": "declared",
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Python package tests"
+    }
+  },
+  {
+    "id": "check:ci-pathspec-scope",
+    "run": "npm run check:ci-pathspec-scope",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_pathspec_scope.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Pathspec scope"
+    }
+  },
+  {
+    "id": "check:ci-package-key-budget",
+    "run": "npm run check:ci-package-key-budget",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-package-key-budget.ts"
+    ],
+    "paths": [
+      "scripts/gates/check-package-key-budget.ts",
+      "package.json",
+      "scripts/ci-runner/manifest.ts",
+      "scripts/data/package-key-budget-baseline.json"
+    ],
+    "pathsOrigin": "declared",
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Package key budget"
+    }
+  },
+  {
+    "id": "gate-test:blocker-golden-corpus",
+    "run": ".ci/scripts/test/gates/test-blocker-golden-corpus.sh",
+    "gate": true,
+    "qualityGateTest": true,
+    "leaves": [
+      ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "gate-test:media-r2",
+    "run": ".ci/scripts/test/gates/test-media-r2.sh",
+    "gate": true,
+    "qualityGateTest": true,
+    "leaves": [
+      ".ci/scripts/test/gates/test-media-r2.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "gate-test:runner-advice",
+    "run": ".ci/scripts/test/gates/test-runner-advice.sh",
+    "reads": [
+      "tree:repo"
+    ],
+    "gate": true,
+    "qualityGateTest": true,
+    "leaves": [
+      ".ci/scripts/test/gates/test-runner-advice.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "Quality-gate unit tests"
+    }
+  },
+  {
+    "id": "check:ci-schema-call-sites",
+    "run": "npm run check:ci-schema-call-sites",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_schema_call_sites.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Schema call sites"
+    }
+  },
+  {
+    "id": "check:ci-allowlist-key-matching",
+    "run": "npm run check:ci-allowlist-key-matching",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_allowlist_key_matching.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Allowlist key matching"
+    }
+  },
+  {
+    "id": "check:ci-environment-names",
+    "run": "npm run check:ci-environment-names",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_environment_names.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Environment names"
+    }
+  },
+  {
+    "id": "check:ci-gate-bind",
+    "run": "npm run check:ci-gate-bind",
+    "gate": true,
+    "leaves": [
+      "scripts/gate-bind.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Gate binding"
+    }
+  },
+  {
+    "id": "check:ci-enumeration-vacuity",
+    "run": "npm run check:ci-enumeration-vacuity",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-enumeration-vacuity.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Enumeration vacuity"
+    }
+  },
+  {
+    "id": "check:ci-docker-npm-pins",
+    "run": "npm run check:ci-docker-npm-pins",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_docker_npm_pins.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Dockerfile npm pins"
+    }
+  },
+  {
+    "id": "check:ci-proxy-linux-packages",
+    "run": "npm run check:ci-proxy-linux-packages",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-linux-packages.sh"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: CI runs the un-reduced subject at .github/workflows/ci.yml job package-tests, step \"Run Linux package tests\", which installs each package inside eight distro containers. That job is outside paritySurface(), so this proxy is the local half and CI is the full half; a step pointer would claim CI runs the --dry-run form, which it does not."
+    }
+  },
+  {
+    "id": "check:ci-proxy-rdc-update",
+    "run": "npm run check:ci-proxy-rdc-update",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-rdc-update.sh"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: CI runs .ci/scripts/test/test-rdc-update.sh all in .github/workflows/ct-update-flow.yml:70 against a real SEA binary from build-cli-linux-x64. A developer checkout has only the node bundle, so the happy and rollback scenarios cannot run here; the proxy names both every run and runs all seven once RDC_BINARY is set."
+    }
+  },
+  {
+    "id": "check:ci-proxy-license-e2e",
+    "run": "npm run check:ci-proxy-license-e2e",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-license-e2e.sh"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: CI runs the identical script at .github/workflows/ct-tests.yml:1848, a workflow outside paritySurface(). The subject needs passwordless sudo to install fixtures under the hardcoded /var/lib/rediacc/license, so it is cannot-run rather than failing on a host without it."
+    }
+  },
+  {
+    "id": "check:ci-proxy-go-unit",
+    "run": "npm run check:ci-proxy-go-unit",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-go-unit.sh"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: CI runs the full suite under root with -race via ct-tests.yml -> rediacc_ci.private.run_renet -> private/renet/.ci/scripts/test/run-tests.sh. This proxy drops root, the race detector and the account-server phase, and excludes the 8 packages whose tests need privilege, so it covers 60 of 68 and must not claim the CI step."
+    }
+  },
+  {
+    "id": "check:ci-proxy-ops-host-check",
+    "run": "npm run check:ci-proxy-ops-host-check",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-ops-host-check.sh"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: the CI step .github/workflows/ci-ops-test.yml:573-575 is \"renet ops host check || true\" and therefore cannot fail on any platform; the only real assertion on its output is Windows-only at :584-589. A step pointer would claim coverage that the trailing || true removes."
+    }
+  },
+  {
+    "id": "check:ci-proxy-cli-manifest",
+    "run": "npm run check:ci-proxy-cli-manifest",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/proxies/cli_manifest.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: .ci/rediacc_ci/build/generate_cli_manifest.py runs only on the release path in cd-stage.yml, which is outside paritySurface(), and had no test of any kind. The proxy drives it against a synthetic dist directory in a tmpdir, so it asserts the generator rather than a release."
+    }
+  },
+  {
+    "id": "check:ci-proxy-docker-prepull",
+    "run": "npm run check:ci-proxy-docker-prepull",
+    "slow": true,
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/proxies/docker_prepull.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: .ci/rediacc_ci/infra/docker_prepull.py runs inside docker build jobs outside paritySurface() and had no test. The proxy needs a live daemon and a reachable registry, both of which are cannot-run rather than findings on a developer machine."
+    }
+  },
+  {
+    "id": "check:ci-proxy-ensure-nfpm",
+    "run": "npm run check:ci-proxy-ensure-nfpm",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-ensure-nfpm.sh"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: ensure-nfpm.sh is invoked by ci.yml and cd-stage.yml as a setup step, never as a validation, and is the single site enforcing NFPM_VERSION and its sha256. The proxy runs it in a throwaway repo root so the cold-cache fetch-and-verify branch is actually reached; a step pointer would name a step that installs rather than asserts."
+    }
+  },
+  {
+    "id": "check:test-provisioning",
+    "run": "npm run check:test-provisioning",
+    "gate": true,
+    "weight": 2,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-unit-tests.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run provisioning unit tests"
+    }
+  },
+  {
+    "id": "check:test-e2e-unit",
+    "run": "npm run check:test-e2e-unit",
+    "gate": true,
+    "weight": 2,
+    "leaves": [
+      ".ci/scripts/test/proxies/proxy-unit-tests.sh"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-packages",
+      "step": "Run e2e-tests unit suite"
+    }
+  },
+  {
+    "id": "check:ci-install-table",
+    "run": "npm run check:ci-install-table",
+    "gate": true,
+    "leaves": [
+      ".ci/rediacc_ci/setup/tools.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Install table"
+    }
+  },
+  {
+    "id": "check:ci-gen-manifest",
+    "run": "npm run check:ci-gen-manifest",
+    "gate": true,
+    "leaves": [
+      "scripts/gen/gen-manifest.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Generated manifest regions"
+    }
+  },
+  {
+    "id": "check:ci-w7p5a-real-run-blockers",
+    "run": "npm run check:ci-w7p5a-real-run-blockers",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_w7p5a_real_run_blockers.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "W7P5-a real-run blocklist"
+    }
+  },
+  {
+    "id": "check:ci-bash-lib-ported",
+    "run": "npm run check:ci-bash-lib-ported",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bash_lib_ported.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Bash-lib port completeness"
+    }
+  },
+  {
+    "id": "check:ci-container-build-context",
+    "run": "npm run check:ci-container-build-context",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_container_build_context.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Container build context"
+    }
+  },
+  {
+    "id": "check:ci-proxy-image-smoke",
+    "run": "npm run check:ci-proxy-image-smoke",
+    "slow": true,
+    "gate": true,
+    "heavy": true,
+    "mutex": [
+      "tree:repo"
+    ],
+    "writesTree": "stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY)",
+    "leaves": [
+      ".ci/scripts/quality/check_proxy_image_smoke.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)"
+    }
+  },
+  {
+    "id": "check:ci-cli-proxy-safe-output",
+    "run": "npm run check:ci-cli-proxy-safe-output",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_cli_proxy_safe_output.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "CLI proxy-safe output"
+    }
+  },
+  {
+    "id": "check:ci-portal-sitekey-guard",
+    "run": "npm run check:ci-portal-sitekey-guard",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_portal_sitekey_guard.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Portal site-key guard"
+    }
+  },
+  {
+    "id": "check:ci-turnstile-drift",
+    "run": "npm run check:ci-turnstile-drift",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_turnstile_drift.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Turnstile widget drift"
+    }
+  }
+]

@@ -119,10 +119,7 @@ function initImageModal() {
   imageContainer.addEventListener('touchend', endDrag);
 }
 
-// Open image modal
-// Note: This function is called from React components and Astro templates via window.openImageModal
-// When imageSrc is not in imageGallery, the modal renders the one-off image directly
-// (no prev/next navigation, no image indicator) — keeps the same UI for solution-page illustrations.
+// Open image modal Note: This function is called from React components and Astro templates via window.openImageModal When imageSrc is not in imageGallery, the modal renders the one-off image directly (no prev/next navigation, no image indicator) — keeps the same UI for solution-page illustrations.
 function openImageModal(imageSrc, imageAlt) {
   // Store trigger for focus restoration
   imageModalTrigger = document.activeElement;
@@ -305,9 +302,7 @@ function touchDrag(e) {
   }
 }
 
-// Delegate clicks on .sp-illustration-trigger buttons (solution-page illustrations).
-// Astro processes the SVG and the rendered <img> ends up with a hashed URL, so we read
-// the resolved src/alt from the inner <img> at click time.
+// Delegate clicks on .sp-illustration-trigger buttons (solution-page illustrations). Astro processes the SVG and the rendered <img> ends up with a hashed URL, so we read the resolved src/alt from the inner <img> at click time.
 function bindIllustrationTriggers() {
   document.addEventListener('click', (e) => {
     const trigger = e.target.closest?.('.sp-illustration-trigger');

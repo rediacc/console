@@ -9,9 +9,9 @@
  *
  * TWO SECRETS, TWO SOURCES, ON PURPOSE:
  *
- *   the config TOKEN  — "may fetch the bytes". Minted by the account server for
+ *   the config TOKEN , "may fetch the bytes". Minted by the account server for
  *                       the executor, against the executor's OWN credential.
- *   the config KEY    — "may open the bytes". Granted by the USER, per session,
+ *   the config KEY   , "may open the bytes". Granted by the USER, per session,
  *                       over X25519, held in RAM only.
  *
  * Neither half is sufficient. An executor holding a config token and no grant
@@ -21,7 +21,7 @@
  * WHY THE EXECUTOR MINTS ITS OWN TOKEN rather than the client handing one over:
  * config tokens ROTATE on use (three uses, then exhausted). Two holders of one
  * chain race each other and the loser's copy dies. A browser could absorb that
- * and re-bootstrap silently, but the CLI could not — bootstrap-session is
+ * and re-bootstrap silently, but the CLI could not, bootstrap-session is
  * 2FA-gated, so a CLI whose config token died would need a human at a browser to
  * get its own `config remote` access back. Lending the executor the client's
  * token would break the client as a side effect of using --proxy. Separate,
@@ -96,13 +96,10 @@ export function createContainerConfigLoader(
   ): Promise<RdcConfig> {
     pruneDeadSessions();
 
-    // A request that names its session (the console's X-Config-Session) gets
-    // THAT session's key, ownership-checked; one that does not falls back to
-    // the principal's latest grant (the CLI proxy path).
+    // A request that names its session (the console's X-Config-Session) gets THAT session's key, ownership-checked; one that does not falls back to the principal's latest grant (the CLI proxy path).
     const sessionId = sessions.sessionForExec(principal, configSessionId);
     if (!sessionId) {
-      // Same message the store itself produces, so the client is told the one
-      // thing that will fix this rather than shown a stack trace.
+      // Same message the store itself produces, so the client is told the one thing that will fix this rather than shown a stack trace.
       throw new SessionError(
         'This session has no config key yet. Complete the key grant before running commands.'
       );
@@ -114,8 +111,7 @@ export function createContainerConfigLoader(
     const cached = cache.get(sessionId);
     if (cached) return cached;
 
-    // Minted for THIS principal. The account server checks they are in the
-    // executor's org and are an active config-store member before answering.
+    // Minted for THIS principal. The account server checks they are in the executor's org and are an active config-store member before answering.
     const grant = await mintExecutorGrant(principal.userId);
     const target = pickConfig(grant.configs, principal.teamId);
 
@@ -124,13 +120,14 @@ export function createContainerConfigLoader(
     const payload: EncryptedConfigPayload = {
       envelope: pull.envelope,
       encryptedBlob: pull.configData,
-      hmac: pull.hmac ?? '',
+      hmac: pull.hmac,
     };
 
-    // The key is the SESSION's, never the executor's — it has none of its own.
+    // The key is the SESSION's, never the executor's, it has none of its own. The binding is the config the executor asked for: a blob the server serves for another store, config or team does not open (envelope v3 AAD).
     const decrypted = await decryptConfigPullPayload(payload, {
       cek,
       sdkDerived: await importAesKey(fromBase64(pull.sdk_derived)),
+      binding: { storeId: grant.storeId, configId: target.configId, teamId: target.teamId },
     });
 
     const config = fullConfigToRdcConfig(decrypted);

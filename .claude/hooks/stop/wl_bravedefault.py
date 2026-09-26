@@ -2,14 +2,9 @@
 
 WHY THIS EXISTS, in the operator's words: "I want braver defaults!"
 
-CLAUDE.md already says a `DEFAULT:` is time-boxed autonomy, not a parking bay,
-and that an unanswered deferral whose window closes "becomes an order to do the
-default". That machinery is real -- wl_checks executes expired defaults. It is
-also decorative whenever the default does NOTHING: the timer fires, the no-op
-executes, and the item is exactly the parking bay the rule forbids.
+CLAUDE.md already says a `DEFAULT:` is time-boxed autonomy, not a parking bay, and that an unanswered deferral whose window closes "becomes an order to do the default". That machinery is real -- wl_checks executes expired defaults. It is also decorative whenever the default does NOTHING: the timer fires, the no-op executes, and the item is exactly the parking bay the rule forbids.
 
-MEASURED, not theorised. Every default written in the session that commissioned
-this rule, plus one from a live peer, in one evening:
+MEASURED, not theorised. Every default written in the session that commissioned this rule, plus one from a live peer, in one evening:
 
     DEFAULT: keep carrying it.
     DEFAULT: leave it on its branch.
@@ -18,25 +13,13 @@ this rule, plus one from a live peer, in one evening:
 
 Four for four, all inaction.
 
-THE PROMPT INVITES IT. The catalogue asks for `DEFAULT: <what you do if
-unanswered>` in four places, which reads perfectly well as "nothing". Rewording
-those is worth doing and is not enough on its own, which is why this is a judged
-rule: telling a no-op apart from an action is a reading of what the sentence
-COMMITS TO, and a regex cannot do it. "hold until CI green" and "land the work
-when CI is green" differ by one verb and by everything.
+THE PROMPT INVITES IT. The catalogue asks for `DEFAULT: <what you do if unanswered>` in four places, which reads perfectly well as "nothing". Rewording those is worth doing and is not enough on its own, which is why this is a judged rule: telling a no-op apart from an action is a reading of what the sentence COMMITS TO, and a regex cannot do it. "hold until CI green" and "land the
+work when CI is green" differ by one verb and by everything.
 
-(Merging, pushing main and releasing are excluded from the braver form on
-purpose. They are the operator's, this judge is already forbidden to order them
--- sanitize_next_action rewrites any next_action that does -- and an example
-list that offered "merge it into the open PR" as the brave default would have
-generated orders the sanitiser then blanked. That is not hypothetical: it was
-in the first draft of this rubric.)
+(Merging, pushing main and releasing are excluded from the braver form on purpose. They are the operator's, this judge is already forbidden to order them -- sanitize_next_action rewrites any next_action that does -- and an example list that offered "merge it into the open PR" as the brave default would have generated orders the sanitiser then blanked. That is not hypothetical: it
+was in the first draft of this rubric.)
 
-THE BOUNDARY, drawn explicitly, because "never hold" would be wrong. A hold is
-legitimate when the act it declines is IRREVERSIBLE or lands on someone else:
-publishing, releasing, deleting, pushing to a second repo, spending money,
-mailing a human. So the rule does not ask "does it hold?" -- it asks WHY it
-holds, as one of five reasons, and rejects exactly two of them:
+THE BOUNDARY, drawn explicitly, because "never hold" would be wrong. A hold is legitimate when the act it declines is IRREVERSIBLE or lands on someone else: publishing, releasing, deleting, pushing to a second repo, spending money, mailing a human. So the rule does not ask "does it hold?" -- it asks WHY it holds, as one of five reasons, and rejects exactly two of them:
 
     irreversible     the act cannot be undone            -> legitimate
     outward          it leaves this repo or reaches a
@@ -47,43 +30,28 @@ holds, as one of five reasons, and rejects exactly two of them:
                      other way"                          -> REJECTED
     none             no reason given at all              -> REJECTED
 
-`preference` is the whole point. The operator "almost always takes the
-recommended action", so deferring on the possibility that they might not is not
-caution, it is a round trip bought with a certainty.
+`preference` is the whole point. The operator "almost always takes the recommended action", so deferring on the possibility that they might not is not caution, it is a round trip bought with a certainty.
 
-TRIGGER BOUNDARY. Asked only on a stop whose remaining list actually contains a
-`- [?]` carrying a `DEFAULT:` token -- the same token wl_checks already requires
-on every deferral. No deferrals, no question, no cost. That is a narrow trigger
-on purpose: this rule reads on EVERY stop that has a parked decision, which is
-most of them, and a rule that fires always is a rule that gets skimmed.
+TRIGGER BOUNDARY. Asked only on a stop whose remaining list actually contains a `- [?]` carrying a `DEFAULT:` token -- the same token wl_checks already requires on every deferral. No deferrals, no question, no cost. That is a narrow trigger on purpose: this rule reads on EVERY stop that has a parked decision, which is most of them, and a rule that fires always is a rule that gets
+skimmed.
 
-FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or
-malformed object degrades to a reported non-answer and never blocks, because the
-only thing this object can do is turn a stop into a continue.
+FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or malformed object degrades to a reported non-answer and never blocks, because the only thing this object can do is turn a stop into a continue.
 
-WEDGE BOUND. Unlike the class sweep, this rule needs no marker to persist -- the
-timid `[?]` sits in the worklist until it is rewritten, so the trigger renews
-itself. The marker exists ONLY as a cap: three fires on the same deferral inside
-the TTL and it goes quiet, so a session that cannot satisfy the judge is not
-walled in by it. The cap resets when the deferral changes, which is the event
-that means the session responded.
+WEDGE BOUND. Unlike the class sweep, this rule needs no marker to persist -- the timid `[?]` sits in the worklist until it is rewritten, so the trigger renews itself. The marker exists ONLY as a cap: three fires on the same deferral inside the TTL and it goes quiet, so a session that cannot satisfy the judge is not walled in by it. The cap resets when the deferral changes, which is
+the event that means the session responded.
 """
 
 import hashlib
 import os
 
+import wl_common
 import wl_core as C
 import wl_rules
 
-# The substring the prompt section carries; judge_schema_for requires the object
-# iff this is present, the same contract as the other two optional objects.
+# The substring the prompt section carries; judge_schema_for requires the object iff this is present, the same contract as the other two optional objects.
 BRAVE_MARKER = "A DEFAULT THAT DOES NOTHING IS NOT A DEFAULT"
 
-# THE SAME TOKEN the rest of the program already requires on every `- [?]`,
-# IMPORTED rather than re-spelled. A second copy of this regex would drift from
-# the first the day either changes, which is precisely the defect the sibling
-# rule in wl_classsweep exists to catch; writing it twice here would be that
-# rule failing inside its own pull request.
+# THE SAME TOKEN the rest of the program already requires on every `- [?]`, IMPORTED rather than re-spelled. A second copy of this regex would drift from the first the day either changes, which is precisely the defect the sibling rule in wl_classsweep exists to catch; writing it twice here would be that rule failing inside its own pull request.
 DEFAULT_TOKEN = C.DEFAULT_TOKEN
 
 HOLD_REASONS = ("irreversible", "outward", "cost-on-others", "preference", "none")
@@ -175,11 +143,25 @@ cannot un-see it. Sitting still reaches nobody.
 REVERSIBLE IS NOT OUTWARD. Deploying, republishing regenerated content,
 pushing to a preview or edge environment, regenerating and shipping files --
 all of these can be done again or rolled back, so they are ACTIONS, not holds.
-"Publish the regenerated files when the pass finishes, or hold" defaults to
-PUBLISHING. Reserve `outward` for the thing that cannot be recalled once it
-has left.
+Reserve `outward` for the thing that cannot be recalled once it has left, and
+judge it from the deferral's own text and what its action touches, not from the
+verb: a step that reaches an audience or an external account is not reversible
+however routine it looks.
   preference       nothing is at risk; it holds only because the operator
                    might have wanted it the other way.
+
+COST-ON-OTHERS IS NARROW. It holds only when the ACT ITSELF spends a
+resource someone else owns: a paid run on another person's budget, a human
+paged or asked to review, another session's work blocked or overwritten.
+The session's own work landing in the tree, or a regenerated artefact that
+can be redone, spends nobody's resource.
+
+WAITING FOR AN EVENT IS NOT A REASON. A default that waits for something
+the session itself will observe ("until CI is green", "when the pass
+finishes", "after the run lands") describes continuing. Judge the act the
+wait postpones: if that act is not irreversible, outward or cost-on-others,
+the hold is timid, and the braver form performs the act when the event
+lands instead of reporting and waiting to be told.
   none             no reason is given at all.
 
 The first three are legitimate reasons to default to not-doing. The last two
@@ -208,9 +190,7 @@ def prompt_section(remaining_lines):
     return BRAVE_PROMPT if has_deferral_with_default(remaining_lines) else ""
 
 
-def _clean(obj, key, limit):
-    v = obj.get(key)
-    return v.strip()[:limit] if isinstance(v, str) else ""
+_clean = wl_common.clean
 
 
 def read_verdict(out):
@@ -228,14 +208,11 @@ def read_verdict(out):
     if bd["changes_state"]:
         return "silent", "the default commits to an action: %s" % _clean(bd, "default_text", 160)
     if reason not in TIMID_REASONS:
-        # A justified hold. The reason is KEPT in the note so an operator can
-        # audit whether "irreversible" was true, which is the only way this
-        # escape hatch can be checked at all.
+        # A justified hold. The reason is KEPT in the note so an operator can audit whether "irreversible" was true, which is the only way this escape hatch can be checked at all.
         return "silent", "holding is justified (%s): %s" % (reason, _clean(bd, "default_text", 120))
     quote = _clean(bd, "quote", 300)
     if not quote:
-        # Which deferral? Without that the order cannot be acted on, and an
-        # unactionable block is the noise that gets a rule routed around.
+        # Which deferral? Without that the order cannot be acted on, and an unactionable block is the noise that gets a rule routed around.
         return "degraded", "brave_default fired without naming the deferral"
     return "fire", {
         "quote": quote,
@@ -256,10 +233,7 @@ V_ACTION_GENERIC = (
     "Rewrite that deferral's DEFAULT as the action you would take alone -- the recommended "
     "one, stated as an executable step, not as a hold. %s"
 )
-# SHORT, and the WHY leads: apply_order caps next_action at 200 characters, and
-# the first draft of this string put the rewrite instruction first, where the cap
-# ate the reason -- the same failure the sibling rule records above its own
-# V_ACTION_DROPPED. Caught by the test, not by reading it.
+# SHORT, and the WHY leads: apply_order caps next_action at 200 characters, and the first draft of this string put the rewrite instruction first, where the cap ate the reason -- the same failure the sibling rule records above its own V_ACTION_DROPPED. Caught by the test, not by reading it.
 V_ACTION_RESERVED = (
     "Suggestion DROPPED: it named `%s`, which needs the operator's ask (standing order 1). "
     "Rewrite that DEFAULT as the action you would take alone, leaving the work UNCOMMITTED."
@@ -282,27 +256,16 @@ def enforce(out, payload):
         payload["default_text"][:80] or "(nothing)",
         _WHY.get(payload["hold_reason"], "for no stated reason"),
     )
-    # THE ORDER IS MODEL TEXT, AND A DEFAULT EXECUTES. `braver` becomes a `[?]`
-    # deferral's DEFAULT, which runs on a timer with nobody reading it first -- so a
-    # destructive string here is worse than the same string in a sweep order, not
-    # better. But the threshold is NARROWER than wl_classsweep's, deliberately: a
-    # braver default may legitimately write ("delete the stale baseline entries" is
-    # exactly what this rule exists to push a session toward), while the git verbs
-    # that discard uncommitted work are unacceptable on every path in this repo,
-    # because the tree carries other sessions' work. See wl_rules.TREE_DESTROYING.
+    # THE ORDER IS MODEL TEXT, AND A DEFAULT EXECUTES. `braver` becomes a `[?]` deferral's DEFAULT, which runs on a timer with nobody reading it first -- so a destructive string here is worse than the same string in a sweep order, not better. But the threshold is NARROWER than wl_classsweep's, deliberately: a braver default may legitimately write ("delete the stale baseline
+    # entries" is exactly what this rule exists to push a session toward), while the git verbs that discard uncommitted work are unacceptable on every path in this repo, because the tree carries other sessions' work. See wl_rules.TREE_DESTROYING.
     proposed = payload["braver"] or payload["instruction"]
     verb = wl_rules.names_tree_destroying(proposed)
     reserved = wl_rules.names_operator_reserved(proposed)
     if verb:
         action = V_ACTION_UNSAFE % verb
     elif reserved:
-        # NOT a safety refusal -- nothing here destroys anything. It is the
-        # standing order: committing, branching, pushing and opening a PR need
-        # the operator's ask, so an order carrying one tells the session to break
-        # a rule it must then quietly disobey. Measured 2026-09-02: this rule
-        # emitted "... then commit to the open branch" and the session did the
-        # rename and silently dropped the commit, which is the workaround this
-        # repo treats as a bug report.
+        # NOT a safety refusal -- nothing here destroys anything. It is the standing order: committing, branching, pushing and opening a PR need the operator's ask, so an order carrying one tells the session to break a rule it must then quietly disobey. Measured 2026-09-02: this rule emitted "... then commit to the open branch" and the session did the rename and silently dropped
+        # the commit, which is the workaround this repo treats as a bug report.
         action = V_ACTION_RESERVED % reserved
     elif payload["braver"]:
         action = V_ACTION % payload["braver"]
@@ -326,10 +289,7 @@ def _key(quote):
 def apply_verdict(out, path=None):
     """(kind, note). Mutates `out` when the rule fires; owns the cap.
 
-    kind is 'fire', 'silent', 'degraded' or 'capped'. 'capped' means the same
-    deferral has already been blocked on BRAVE_MAX_FIRES times inside the TTL:
-    the finding stands but the session is let past, because a rule that cannot
-    be satisfied must not be a wall.
+    kind is 'fire', 'silent', 'degraded' or 'capped'. 'capped' means the same deferral has already been blocked on BRAVE_MAX_FIRES times inside the TTL: the finding stands but the session is let past, because a rule that cannot be satisfied must not be a wall.
     """
     kind, payload = read_verdict(out)
     if kind != "fire":

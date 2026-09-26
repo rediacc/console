@@ -1,12 +1,14 @@
 /**
  * Pure cluster helpers + config-store writes, split out of config-resources.ts
  * to keep that file under the line budget. These take a plain config value or a
- * config name; they do not import the ConfigService, so there is no import
- * cycle. ConfigService exposes thin methods that delegate here.
+ * config name; they do not import the ConfigService statically, so there is no import
+ * cycle. ConfigService exposes thin methods that delegate here. Declaration writes go
+ * through updateSyncedConfig, which pushes them for a remote config.
  */
 
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { CloudProviderConfig, ClusterConfig, RdcConfig } from '../../types/index.js';
+import { updateSyncedConfig } from './synced-write.js';
 
 /** Projected `<cluster>-<pool>-<n>` names across all clusters -> owning cluster. */
 function projectedMemberNames(config: RdcConfig | null): Map<string, string> {
@@ -96,7 +98,7 @@ export async function writeClusterToStore(
   name: string,
   clusterConfig: ClusterConfig
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => ({
+  await updateSyncedConfig(configName, (cfg) => ({
     ...cfg,
     resources: {
       ...(cfg.resources ?? {}),
@@ -110,7 +112,7 @@ export async function updateClusterInStore(
   name: string,
   updates: Partial<ClusterConfig>
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     clusters[name] = { ...clusters[name], ...updates };
@@ -146,15 +148,11 @@ export async function setClusterMemberIdsInStore(
 }
 
 export async function removeClusterFromStore(configName: string, name: string): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const clusters = { ...(cfg.resources?.clusters ?? {}) };
     if (!(name in clusters)) throw new Error(`Cluster "${name}" not found`);
     delete clusters[name];
-    // BUG #22: also drop the parallel state.clusters entry. Leaving it stranded a
-    // dead cluster in state after destroy (B1 witnessed b1src/rdst twice), and —
-    // worse — a same-name recreate would inherit the old memberIds ledger and
-    // renumber onto the wrong VM ids. State is observation; when the cluster is
-    // gone, its state goes with it.
+    // BUG #22: also drop the parallel state.clusters entry. Leaving it stranded a dead cluster in state after destroy (B1 witnessed b1src/rdst twice), and, worse, a same-name recreate would inherit the old memberIds ledger and renumber onto the wrong VM ids. State is observation; when the cluster is gone, its state goes with it.
     const stateClusters = { ...(cfg.state?.clusters ?? {}) };
     delete stateClusters[name];
 
@@ -162,17 +160,11 @@ export async function removeClusterFromStore(configName: string, name: string): 
     // else the cluster owned kept its observation: state.datastores still named
     // `<cluster>-cp-1` as the holder of a datastore whose cluster was gone.
     //
-    // That is not untidiness, it is a routing hazard. `state.datastores[*].attachedTo` IS
-    // the derived-machine routing hint, and machine names are DETERMINISTIC — a same-name
-    // recreate re-mints `<cluster>-cp-1`, so the stale hint does not dangle harmlessly, it
-    // re-aims at a brand-new, same-named machine that has no such datastore. resolve-machine
-    // throws only when the hint is ABSENT; a hint that is merely WRONG is trusted.
+    // That is not untidiness, it is a routing hazard. `state.datastores[*].attachedTo` IS the derived-machine routing hint, and machine names are DETERMINISTIC, a same-name recreate re-mints `<cluster>-cp-1`, so the stale hint does not dangle harmlessly, it re-aims at a brand-new, same-named machine that has no such datastore. resolve-machine throws only when the hint is ABSENT;
+    // a hint that is merely WRONG is trusted.
     //
-    // So the observation goes, and the DECLARATION stays. That split is the whole rule:
-    // `resources.*` is what the operator declared and may well intend to recreate; a spec
-    // outliving its cluster is defensible. `state.*` is what we observed, and an observation
-    // of a world that no longer exists is a lie by construction. Do not "fix" this by also
-    // deleting the resources — that would discard the operator's intent.
+    // So the observation goes, and the DECLARATION stays. That split is the whole rule: `resources.*` is what the operator declared and may well intend to recreate; a spec outliving its cluster is defensible. `state.*` is what we observed, and an observation of a world that no longer exists is a lie by construction. Do not "fix" this by also deleting the resources, that would
+    // discard the operator's intent.
     const ownedDatastores = new Set(
       Object.entries(cfg.resources?.datastores ?? {})
         .filter(([, ds]) => ds.cluster === name)
@@ -208,7 +200,7 @@ export async function writeCloudProviderToStore(
   name: string,
   config: CloudProviderConfig
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => ({
+  await updateSyncedConfig(configName, (cfg) => ({
     ...cfg,
     resources: {
       ...(cfg.resources ?? {}),
@@ -221,7 +213,7 @@ export async function removeCloudProviderFromStore(
   configName: string,
   name: string
 ): Promise<void> {
-  await configFileStorage.update(configName, (cfg) => {
+  await updateSyncedConfig(configName, (cfg) => {
     const providers = { ...(cfg.resources?.cloudProviders ?? {}) };
     if (!(name in providers)) throw new Error(`Cloud provider "${name}" not found`);
     delete providers[name];
@@ -231,7 +223,7 @@ export async function removeCloudProviderFromStore(
 
 /**
  * #89, third site of the class: `machine remove` dropped the DECLARATION and kept the
- * OBSERVATION — `state.machines[m]`, and every `state.datastores[*]` hint still naming `m`.
+ * OBSERVATION, `state.machines[m]`, and every `state.datastores[*]` hint still naming `m`.
  *
  * The datastore half is the one that bites. `state.datastores[*].attachedTo` IS the
  * derived-machine routing hint; `resolve-machine` throws only when it is ABSENT, so a hint

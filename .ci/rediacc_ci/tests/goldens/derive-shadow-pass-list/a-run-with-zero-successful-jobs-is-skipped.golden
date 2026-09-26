@@ -1,0 +1,11 @@
+# twin scripts/ops/derive-shadow-pass-list.sh blob 878eee5e76e52f74caeea6122bff700cb3e2b2e5
+exit: 1
+--- stdout ---
+--- stderr ---
+# deriving from branch shadow-branch, up to 6 run(s) per shadow-carrying workflow
+# 1 shadow-carrying workflow(s)
+# verdicts seen: 0, clean-pass names: 0, names with a non-match: 0
+REFUSING: no passing compare found on shadow-branch. Push and let CI run; a cancelled run reports nothing.
+--- calls ---
+CALL gh	run	list	--workflow=shadow-a.yml	--branch	shadow-branch	--limit	6	--json	databaseId	-q	.[].databaseId
+CALL gh	run	view	101	--json	jobs	-q	[.jobs[]|select(.conclusion=="success")|.name]|length

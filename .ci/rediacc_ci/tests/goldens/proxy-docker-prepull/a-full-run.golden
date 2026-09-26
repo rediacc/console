@@ -1,0 +1,16 @@
+# twin .ci/scripts/test/proxies/proxy-docker-prepull.sh blob ecdda088f1c11dd126e84fd756ca5b362e011bea
+exit: 0
+--- stdout ---
+proxy docker-prepull: local stand-in for .ci/rediacc_ci/infra/docker_prepull.py
+proxy docker-prepull: toolchain complete, 3 requirement(s) satisfied
+PASS: no arguments is refused, not treated as an empty success (exit 1)
+PASS: the refusal prints its usage
+PASS: a bare ref pulls (exit 0)
+PASS: the bare-ref run reported the count it pulled
+PASS: hello-world:latest is present in the local daemon after the pull
+PASS: the <ref>=<platform> form pulls (exit 0)
+PASS: the ref=platform run reported the count it pulled
+PASS: two specs in one call (exit 0)
+PASS: the two-spec run reported 2
+proxy docker-prepull: 9 check(s) passed, 3 requirement(s) present
+--- stderr ---

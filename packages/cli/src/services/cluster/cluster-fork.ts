@@ -1,6 +1,6 @@
 /**
  * Whole-cluster fork / rehearse / migrate lifecycle (docs/design/04-cluster-fork-migrate.md).
- * Split out of cluster-kube.ts (max-lines): a PURE move — these sequence the same
+ * Split out of cluster-kube.ts (max-lines): a PURE move, these sequence the same
  * renet datastore_/kube_/repository_ bridge primitives via the shared install/naming
  * helpers exported from cluster-kube.ts. No behavior change.
  *   - FORK    = quiesced (syncfs) rbd group snapshot → clone → fenced attach (--writes)
@@ -40,7 +40,7 @@ export interface ForkClusterOptions {
   cluster?: string;
   /**
    * Write disposition for the fork's datastores (04 §2): `local` = ephemeral
-   * dm-COW overlay over a read-only clone (zero Ceph footprint — a throwaway test
+   * dm-COW overlay over a read-only clone (zero Ceph footprint, a throwaway test
    * cluster), `ceph` = durable RW clone. Default `local`.
    */
   writes?: 'local' | 'ceph';
@@ -56,7 +56,7 @@ export interface ForkClusterOptions {
 }
 
 /**
- * What a fork produced — enough to tear it down (cluster rehearse discards it).
+ * What a fork produced, enough to tear it down (cluster rehearse discards it).
  */
 export interface ForkResult {
   /** Destination control-plane machine name. */
@@ -91,7 +91,7 @@ interface DatastoreRecord {
 
 /**
  * List the source cluster's CEPH-backed, non-fork datastores (the control
- * datastore + every data datastore) — the group-snap membership and the set to
+ * datastore + every data datastore), the group-snap membership and the set to
  * clone. Read from the machine registry via `datastore_list`; the control
  * datastore `ds-control-<cluster>` is guaranteed present first.
  */
@@ -102,7 +102,7 @@ async function listClusterCephDatastores(
 ): Promise<string[]> {
   const res = await dispatch('datastore_list', machineName, {}, { debug, capture: true });
   // datastore_list shells out to `renet datastore list --json`; captured stdout is
-  // the `[datastore_list] [...]` bridge relay format — strip the prefix (finding #10).
+  // the `[datastore_list] [...]` bridge relay format, strip the prefix (finding #10).
   const records = parseCapturedJson<DatastoreRecord[]>(res.stdout);
   const members = records
     .filter((r) => !r.implicit && !r.fork && r.backend === 'ceph' && r.cluster === clusterName)
@@ -120,10 +120,10 @@ async function listClusterCephDatastores(
 }
 
 /**
- * Fork a whole cluster onto a destination cluster's nodes — the ANCHOR+REJOIN
+ * Fork a whole cluster onto a destination cluster's nodes, the ANCHOR+REJOIN
  * model (04 §2, promoted from the P2-A proven battery). The control-plane image
  * IS the cluster, so we move the ANCHOR (a quiesced group snapshot of the
- * cluster's datastores — the parent NEVER stops) and let agents REJOIN fresh with
+ * cluster's datastores, the parent NEVER stops) and let agents REJOIN fresh with
  * the new-CA token. This is F1-safe by construction: the control-plane identity
  * rewrite runs `--operation fork`, which re-mints the whole PKI and scrubs
  * secrets, so the fork can NEVER carry the parent cluster's CA key.
@@ -143,9 +143,7 @@ export async function forkCluster(
         `Provision or name a destination cluster and pass --cluster <dest>.`
     );
   }
-  // Validate against the allowed set on a string-typed value: an unvalidated CLI
-  // string (or a test bypassing the type) must still be rejected, but the typed
-  // union would make the literal comparison "always false" to the checker.
+  // Validate against the allowed set on a string-typed value: an unvalidated CLI string (or a test bypassing the type) must still be rejected, but the typed union would make the literal comparison "always false" to the checker.
   const writesRaw: string = options.writes ?? DEFAULTS.CLUSTER.FORK_WRITES;
   if (writesRaw !== 'local' && writesRaw !== 'ceph') {
     throw new Error(`--writes must be "local" or "ceph" (got "${writesRaw}").`);
@@ -163,14 +161,10 @@ export async function forkCluster(
     throw new Error(`Both "${clusterName}" and "${options.cluster}" need a k8s-server member.`);
   }
 
-  // 0. Fail fast (finding #8): refuse a dest whose control node already runs its
-  //    own k3s (:6443 collision) BEFORE any snapshot/clone work — dispatch
-  //    nothing destructive on a bad target.
+  // 0. Fail fast (finding #8): refuse a dest whose control node already runs its own k3s (:6443 collision) BEFORE any snapshot/clone work, dispatch nothing destructive on a bad target.
   await assertDestNotRunningOwnK3s(options.cluster, dstControl.name, options.debug);
 
-  // 0b. Give the dest members SOURCE-ceph access + the rbd/sqlite3 tooling the
-  //     adopt/attach + kine-scrub need (findings #7/#15) — createCluster only
-  //     seeds a cluster's own nodes with its own ceph.
+  // 0b. Give the dest members SOURCE-ceph access + the rbd/sqlite3 tooling the adopt/attach + kine-scrub need (findings #7/#15), createCluster only seeds a cluster's own nodes with its own ceph.
   await prepareForkDest(clusterName, source, dstMembers, options.debug);
 
   const snapshot = `fork-${options.tag}`;
@@ -179,12 +173,8 @@ export async function forkCluster(
       `group snapshot (parent stays live)...`
   );
 
-  // 1. ONE atomic group snapshot across the cluster's ceph datastores — QUIESCED
-  //    (fork semantics, #440: a fork carries what you just wrote), so every member
-  //    is syncfs-flushed, inner filesystems first, before the instant. syncfs
-  //    flushes without pausing: no drain, no stop — the parent never notices
-  //    (04 §2 step 1). The bare cluster-snapshot verb stays crash-consistent and
-  //    never passes quiesce.
+  // 1. ONE atomic group snapshot across the cluster's ceph datastores, QUIESCED (fork semantics, #440: a fork carries what you just wrote), so every member is syncfs-flushed, inner filesystems first, before the instant. syncfs flushes without pausing: no drain, no stop, the parent never notices (04 §2 step 1). The bare cluster-snapshot verb stays crash-consistent and never
+  // passes quiesce.
   const clusterDatastores = await listClusterCephDatastores(
     srcControl.name,
     clusterName,
@@ -197,12 +187,9 @@ export async function forkCluster(
     { debug: options.debug }
   );
 
-  // 2. Clone each datastore from the group snap (clone-format-2 per-call). The
-  //    fork records are `<ds>:<tag>` DETACHED (04 §2 step 2). datastore_fork
+  // 2. Clone each datastore from the group snap (clone-format-2 per-call). The fork records are `<ds>:<tag>` DETACHED (04 §2 step 2). datastore_fork
   //    registers the fork record ONLY in the SOURCE machine's registry; the attach
-  //    below runs on the DEST, whose registry has no such record — so we ferry the
-  //    record (the `datastore fork --json` output) to the dest and `datastore_adopt`
-  //    it there before attaching (finding #14: cross-machine fork-record propagation).
+  // below runs on the DEST, whose registry has no such record, so we ferry the record (the `datastore fork --json` output) to the dest and `datastore_adopt` it there before attaching (finding #14: cross-machine fork-record propagation).
   for (const ds of clusterDatastores) {
     const forkRes = await dispatch(
       'datastore_fork',
@@ -221,7 +208,7 @@ export async function forkCluster(
   }
 
   // 3. Attach every clone on the destination control node with --writes composing
-  //    (one beefy machine mounts all — 04 §2 step 3 / §3). `local` = ephemeral
+  //    (one beefy machine mounts all, 04 §2 step 3 / §3). `local` = ephemeral
   //    dm-COW overlay, `ceph` = durable RW clone.
   for (const ds of clusterDatastores) {
     await dispatch(
@@ -234,7 +221,7 @@ export async function forkCluster(
 
   // 4. Control-plane identity rewrite, operation=FORK: the F1-safe 8-step PKI
   //    re-mint + secret scrub + ROLE=fork rewrite + stale-Node delete, with a NEW
-  //    networkID (04 §2 step 4). The clone mounts at the stable-name path.
+  // networkID (04 §2 step 4). The clone mounts at the stable-name path.
   const controlDs = controlDatastore(clusterName);
   const forkMount = forkDatastoreMount(controlDs, options.tag);
   const forkNet = await configService.allocateNetworkId();
@@ -257,8 +244,7 @@ export async function forkCluster(
   );
 
   // 5. Fresh agents REJOIN the fork with the NEW-CA token (04 §2 step 5; agents
-  //    are disposable, dst count is free). The fork's F8 already deleted the
-  //    parent's stale Node objects, so fresh agents register clean.
+  // are disposable, dst count is free). The fork's F8 already deleted the parent's stale Node objects, so fresh agents register clean.
   const tokenRes = await dispatch(
     'kube_join_token',
     dstControl.name,
@@ -287,7 +273,7 @@ export async function forkCluster(
   }
 
   // 6. --up + health gate (04 §4): gate the fork control plane on readiness before
-  //    declaring success (the rollback window — the parent is untouched throughout).
+  //    declaring success (the rollback window, the parent is untouched throughout).
   if (options.up) {
     await clusterHealthGate(dstControl.name, forkMount, options.debug);
   }
@@ -369,7 +355,7 @@ export interface RehearseClusterOptions {
  * Rehearse a cluster: boot an EPHEMERAL throwaway fork of the latest state on a
  * destination, health-gate it, report, and DISCARD it (05 §2 rung 1 + 04 §4).
  * This is a thin wrapper over `forkCluster` with `--writes local` (zero Ceph
- * footprint) + `role=rehearsal` (the fork runs SECRETLESS — apps see
+ * footprint) + `role=rehearsal` (the fork runs SECRETLESS, apps see
  * REDIACC_ROLE=rehearsal and degrade gracefully) + `--up` (health gate). It is
  * the "costs ~nothing, catches most" pre-release rung: a fork rehearsal proves a
  * release/upgrade boots healthy before it touches the live cluster. The parent is
@@ -391,7 +377,7 @@ export async function rehearseCluster(
   outputService.info(`Rehearse "${clusterName}" [${tag}] on "${destCluster}" (ephemeral fork)...`);
 
   // ★ BUG #44: resolve the destination CONTROL MACHINE up front. The failure path
-  // below needs it, and `options.cluster` is a CLUSTER name, not a machine — the
+  // below needs it, and `options.cluster` is a CLUSTER name, not a machine, the
   // catch used to pass it straight into discardRehearsal's `destControl` (machine)
   // parameter, so every teardown step dispatched at a machine that does not exist.
   // tryDispatch is best-effort, so it swallowed the errors and a FAILED rehearsal
@@ -487,12 +473,12 @@ export interface MigrateClusterOptions {
 }
 
 /**
- * Migrate a cluster's control plane to another machine — the anchor-model
+ * Migrate a cluster's control plane to another machine, the anchor-model
  * IN-CEPH FENCED REMAP (04 §3): a pure datastore failover with ZERO data copy.
  * The control-plane data-dir lives in the rbd-backed control datastore, so
  * relocating it is: down() the source CP → detach the datastore (release its
  * exclusive lock) → attach on the destination (FENCING any stale holder) →
- * identity rewrite `--operation migrate` (CA PRESERVED — same principal —
+ * identity rewrite `--operation migrate` (CA PRESERVED, same principal ,
  * networkID KEPT, IP-only) → health-gate the destination before declaring done.
  * Node-to-node moves inside one Ceph reach stop being "migrate" and become this
  * failover; today's backup_push block transfer disappears for this case.
@@ -500,7 +486,7 @@ export interface MigrateClusterOptions {
  * Cross-site migrate (different Ceph reach: rbd-mirror / iterated export-diff
  * between separate ceph clusters, or ceph→local) needs a datastore-level transfer
  * transport that is NOT a landed primitive (the old backup_push was repo-image
- * level, from the pre-anchor model) — it is a documented P3 follow-up; this path
+ * level, from the pre-anchor model), it is a documented P3 follow-up; this path
  * refuses cleanly rather than do a half-correct transfer.
  */
 export async function migrateCluster(
@@ -531,13 +517,13 @@ export async function migrateCluster(
   );
 
   // 0a. Seed the dest with SOURCE-ceph client access + the rbd/sqlite3 tooling the
-  //     fenced attach needs (finding #19) — a fresh bare dest has neither, and
+  //     fenced attach needs (finding #19), a fresh bare dest has neither, and
   //     createCluster only seeds a cluster's own nodes. Non-destructive to the
   //     source (a config/package push), so it precedes everything.
   await prepareMigrateDest(clusterName, source, options.to, options.debug);
 
   // 0b. Ferry the control-datastore RECORD to the dest and ADOPT it (registry-only,
-  //    no disk work), then VERIFY — BEFORE anything destructive (finding #18). The
+  //    no disk work), then VERIFY, BEFORE anything destructive (finding #18). The
   //    per-machine registry holds the control-datastore record ONLY on the source,
   //    so a naive dest attach fails "not registered on this machine" AFTER the
   //    source is already downed+detached, stranding the cluster. Adopting the plain
@@ -552,12 +538,12 @@ export async function migrateCluster(
   );
   await verifyDatastoreRegistered(options.to, controlDs, options.debug);
 
-  // The cutover clock starts at the source down() — everything above is registry
+  // The cutover clock starts at the source down(), everything above is registry
   // paperwork the live source never notices (zero downtime contribution).
   const downStart = Date.now();
 
   // 1. down() the source control plane so the datastore is consistent before the
-  //    lock is released (04 §4 step 0 — a clean shutdown, not a crash).
+  //    lock is released (04 §4 step 0, a clean shutdown, not a crash).
   await dispatch(
     'kube_prep_fork',
     control.name,
@@ -569,7 +555,7 @@ export async function migrateCluster(
   await dispatch('datastore_detach', control.name, { name: controlDs }, { debug: options.debug });
 
   // 3. Attach on the destination, FENCING any stale holder (rbd lock break + osd
-  //    blocklist). Same mount path (mount-path stability, 04 §6) — PV objects in
+  //    blocklist). Same mount path (mount-path stability, 04 §6), PV objects in
   //    kine reference it and need zero rewriting. On an attach-layer failure, roll
   //    back to the source (re-attach + restart its CP) so a mid-cutover error never
   //    leaves BOTH sides down; the found registry failure mode is already excluded
@@ -607,7 +593,7 @@ export async function migrateCluster(
     { debug: options.debug }
   );
 
-  // 5. Health-gate the destination control plane before declaring done — the
+  // 5. Health-gate the destination control plane before declaring done, the
   //    rollback window (04 §4 step 4): the source is only released once the gate
   //    passes (here the datastore already moved, so a gate failure is surfaced
   //    loudly for operator recovery rather than silently succeeding).
@@ -617,7 +603,7 @@ export async function migrateCluster(
 
   // 6. Single-mounter invariant: drop the SOURCE's now-stale control-datastore
   //    record so it can never become a second attach candidate for the SAME shared
-  //    rbd image now serving on the dest. Registry-only (Forget), NEVER delete — the
+  //    rbd image now serving on the dest. Registry-only (Forget), NEVER delete, the
   //    image is the moved data, so `datastore delete` (rbd rm) would destroy it.
   //    Best-effort: the cutover already succeeded and is healthy, so a forget hiccup
   //    warns (with the manual command) rather than failing an otherwise-good migrate.
@@ -646,7 +632,7 @@ export async function migrateCluster(
 
 /**
  * Capture a datastore's full registry record (base64 of its JSON) from
- * `datastore_list` on a machine — the migrate record-ferry (finding #18), mirroring
+ * `datastore_list` on a machine, the migrate record-ferry (finding #18), mirroring
  * how the fork path ferries `datastore fork --json`. The list emits each row as the
  * flattened Record plus its `name`, so the captured object carries the ceph
  * pool/image + cluster backref the dest needs to reconstruct the row.

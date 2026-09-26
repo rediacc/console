@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
-"""check:ci-bws-map -- every secret a workflow requests from Bitwarden must be
-one the committed map can resolve, and the map must be fresh.
+"""check:ci-bws-map -- every secret a workflow requests from Bitwarden must be one the committed map can resolve, and the map must be fresh.
 
-THE GATE THIS REPLACES. check-workflow-gates.sh CHECK 2 proves that a reusable
-workflow reads only secrets its caller passes, by comparing `secrets.X` reads
-against `secrets:` declarations. It exists because OTLP_CLIENT_CREDENTIALS once
-shipped EMPTY to every account Worker and nothing caught it. The moment secrets
-arrive as $GITHUB_ENV injections from bitwarden/sm-action, there is no
-`secrets.X` left to read, CHECK 2's USE_RE matches nothing, and it goes green
-asserting nothing. This gate is its replacement on the Bitwarden side, and it
-must be in place BEFORE the first workflow flips.
+THE GATE THIS REPLACES. check-workflow-gates.sh CHECK 2 proves that a reusable workflow reads only secrets its caller passes, by comparing `secrets.X` reads against `secrets:` declarations. It exists because OTLP_CLIENT_CREDENTIALS once shipped EMPTY to every account Worker and nothing caught it. The moment secrets arrive as $GITHUB_ENV injections from bitwarden/sm-action, there is
+no `secrets.X` left to read, CHECK 2's USE_RE matches nothing, and it goes green asserting nothing. This gate is its replacement on the Bitwarden side, and it must be in place BEFORE the first workflow flips.
 
 WHAT IS ASSERTED
   1. every NAME requested through .github/actions/bws-secrets exists in
@@ -29,20 +22,11 @@ DELIBERATELY NOT ASSERTED
   - that a value is non-empty. sm-action exports "" without complaint and zod
     normalises "" to undefined; that is the deploy scripts' non-empty guards.
 
-CALLER FLOOR. The shadow-run wired 20 workflow files to the composite on
-2026-09-02, so MIN_CALLERS is 20: an edit that silently drops the wiring from a
-file now fails here instead of quietly narrowing what the shadow compares.
-Raise it when a new workflow gains the composite; never lower it to get past
-a red.
+CALLER FLOOR. The shadow-run wired 20 workflow files to the composite on 2026-09-02, so MIN_CALLERS is 20: an edit that silently drops the wiring from a file now fails here instead of quietly narrowing what the shadow compares. Raise it when a new workflow gains the composite; never lower it to get past a red.
 
 COVERAGE, ADDED 2026-09-02, AND WHY ONE DIRECTION WAS NEVER ENOUGH.
-Assertion 1 is `requested SUBSET-OF map`. Measured on the real tree, 53 secrets
-were mapped and 35 requested, and the 18-name gap was an EXACT BIJECTION with
-"has no GitHub secret of that name" -- the shadow's left operand is a GitHub
-secret, so a name with no twin has nothing to compare against. That is one
-mechanical consequence, not eighteen decisions. But nothing said so, and nothing
-would have noticed a nineteenth that was a real omission. Three more assertions,
-each the converse of something already checked:
+Assertion 1 is `requested SUBSET-OF map`. Measured on the real tree, 53 secrets were mapped and 35 requested, and the 18-name gap was an EXACT BIJECTION with "has no GitHub secret of that name" -- the shadow's left operand is a GitHub secret, so a name with no twin has nothing to compare against. That is one mechanical consequence, not eighteen decisions. But nothing said so, and
+nothing would have noticed a nineteenth that was a real omission. Three more assertions, each the converse of something already checked:
 
   5. COVERAGE. Every name in the map is requested by some call site, or carries
      an entry in .ci/config/bws-unrequested.json whose `kind` this gate
@@ -84,8 +68,22 @@ each the converse of something already checked:
      every one of them, and nothing said so. secret-rename.py now refuses a
      `secrets.` context the way it already refused a `vars.` one.
 
-Control-first: the parser is proven on synthetic input in both directions
-before any verdict, and the failure direction is proven by a planted name.
+ 14. THE SELLER RECORD'S FIELDS. `SELLER_PROFILE_JSON` is one vault entry
+     that the fetch expands into nine SELLER_* variables, so the map and
+     `check:ci-secret-supply` both see one name and neither sees the nine.
+     The fields `rediacc_ci.core.bws_env.JSON_REQUIRED` promises must equal the
+     SELLER_* LOCAL names the `account-dev` profile in
+     .ci/config/secret-supply.json binds, parsed with bws_env's own
+     `parse_spec`. Either side empty refuses rather than passing.
+
+Control-first: the parser is proven on synthetic input in both directions before any verdict, and the failure direction is proven by a planted name.
+
+---- gate ----
+step: Bitwarden secret map
+needs: submodules
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -99,11 +97,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-# Overridable so a gate-test can drive the REAL scan against a fixture tree
-# instead of only the pure-logic selftest. This is not an escape hatch: every
-# anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and
-# blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at
-# an empty directory reds rather than passes.
+import _cipath  # noqa: F401
+from rediacc_ci import workflows
+
+# IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the `account-dev` profile actually binds, and a second copy of the nine names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
+from rediacc_ci.core.bws_env import JSON_REQUIRED as BWS_ENV_JSON_REQUIRED
+from rediacc_ci.core.bws_env import parse_spec as bws_parse_spec
+
+# Overridable so a gate-test can drive the REAL scan against a fixture tree instead of only the pure-logic selftest. This is not an escape hatch: every anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at an empty directory reds rather than passes.
 ROOT = Path(os.environ.get("BWS_MAP_ROOT") or Path(__file__).resolve().parents[3])
 MAP = ROOT / ".ci" / "config" / "bws-secret-map.json"
 ACTION_REF = "./.github/actions/bws-secrets"
@@ -111,59 +112,42 @@ ACTION_REF = "./.github/actions/bws-secrets"
 EXEMPT = ROOT / ".ci" / "config" / "bws-unrequested.json"
 REACH = ROOT / ".ci" / "config" / "secret-reachability.json"
 PREIMAGE = ROOT / ".ci" / "config" / "github-secret-preimage.json"
-RENAME_TABLE = ROOT / "scripts" / "dev" / "secret-rename.py"
+RENAME_TABLE = ROOT / "scripts" / "ops" / "secret-rename.py"
 REGIONS = ROOT / "regions.json"
 DEPLOY_DIR = ROOT / ".ci" / "scripts" / "deploy"
 
-# Call sites live in two places. .ci/breakpoint/workflow/ is a REAL bws-secrets
-# caller that this gate used to miss entirely, because it globbed .github only
-# (recorded as a blind spot in the migration plan's Part 16).
+# Call sites live in two places. .ci/breakpoint/workflow/ is a REAL bws-secrets caller that this gate used to miss entirely, because it globbed .github only (recorded as a blind spot in the migration plan's Part 16).
 EXTRA_WORKFLOW_DIRS = [ROOT / ".ci" / "breakpoint" / "workflow"]
 
-# Own-git repositories console's index cannot see. Same list secret-rename.py
-# carries, and for the same reason.
+# Own-git repositories console's index cannot see. Same list secret-rename.py carries, and for the same reason.
 SIBLING_REPOS = ("private/growth", "private/generative")
 
 MAX_MAP_AGE_DAYS = 45
 
-# The two population floors are env-overridable ONLY so the gate-test can judge a
-# small fixture tree. Lowering them against the REAL tree would be suppressing a
-# finding, which is why the defaults live here and the test sets them explicitly.
+# The two population floors are env-overridable ONLY so the gate-test can judge a small fixture tree. Lowering them against the REAL tree would be suppressing a finding, which is why the defaults live here and the test sets them explicitly.
 MIN_MAP_ENTRIES = int(os.environ.get("BWS_MIN_MAP_ENTRIES", "30"))
-# 19 since 2026-09-05, down from 20: watchdog-monitor.yml's fetch was REMOVED on purpose.
-# It existed solely to feed the shadow comparator, and that comparator is gone -- the org
+# 19 since 2026-09-05, down from 20: watchdog-monitor.yml's fetch was REMOVED on purpose. It existed solely to feed the shadow comparator, and that comparator is gone -- the org
 # secrets it compared against were deleted, so every comparison read "EMPTY (github=unset)
-# -- nothing was compared" and took all of CI down with it. That job's own read stays on
-# GitHub deliberately (CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives), so nothing
-# consumed the fetch any more.
+# -- nothing was compared" and took all of CI down with it. That job's own read stays on GitHub deliberately (CLAUDE_CODE_OAUTH_TOKEN is repo-scoped and survives), so nothing consumed the fetch any more.
 #
-# 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on
-# purpose (it exported four credentials into a job that hands a human a shell), and the
-# frozen template counts as a second file. A floor that is lowered to match a deliberate
-# removal is honest; one lowered to match a finding is not, which is why the reason is
-# written here rather than in a commit nobody re-reads.
+# 20 since 2026-09-04, down from 22: the breakpoint session job's fetch was REMOVED on purpose (it exported four credentials into a job that hands a human a shell), and the frozen template counts as a second file. A floor that is lowered to match a deliberate removal is honest; one lowered to match a finding is not, which is why the reason is written here rather than in a commit
+# nobody re-reads.
 MIN_CALLERS = int(os.environ.get("BWS_MIN_CALLERS", "19"))  # files, not jobs; see the docstring
 
 # A BARE REFERENCE, not a whole expression. This used to demand the reference BE the
 # entire `${{ ... }}`, so `env.BWS_X` inside a compound expression was INVISIBLE --
-# and a multi-line ternary is exactly how the deploy workflows pick between the live
-# and sandbox Stripe keys:
+# and a multi-line ternary is exactly how the deploy workflows pick between the live and sandbox Stripe keys:
 #     STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
-#       && env.BWS_STRIPE_SECRET_KEY
+# && env.BWS_STRIPE_SECRET_KEY
 #       || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-# Four live reads read as DEAD FETCHES under the old pattern, and assertion 13
-# inherited the same blind spot: it could not check the ordering of a read it could
-# not see. Matching the reference itself is both simpler and correct.
+# Four live reads read as DEAD FETCHES under the old pattern, and assertion 13 inherited the same blind spot: it could not check the ordering of a read it could not see. Matching the reference itself is both simpler and correct.
 BWS_READ_RE = re.compile(r"\benv\.(BWS_[A-Z0-9_]+)")
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 ENV_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def parse_requests(yaml_text: str) -> list[tuple[int, str, str]]:
-    """[(line_no, name, env_name)] for every `secrets:` block under a
-    `uses: ./.github/actions/bws-secrets` step. A hand parser on purpose: the
-    shape is fixed and pulling in a YAML dependency for it would add a way for
-    this gate to go stale."""
+    """[(line_no, name, env_name)] for every `secrets:` block under a `uses: ./.github/actions/bws-secrets` step. A hand parser on purpose: the shape is fixed and pulling in a YAML dependency for it would add a way for this gate to go stale."""
     out: list[tuple[int, str, str]] = []
     lines = yaml_text.split("\n")
     i = 0
@@ -198,12 +182,17 @@ def parse_requests(yaml_text: str) -> list[tuple[int, str, str]]:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Coverage helpers (assertions 5-7). Each RE-DERIVES what an allowlist would
-# otherwise be trusted for.
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Coverage helpers (assertions 5-7). Each RE-DERIVES what an allowlist would otherwise be trusted for. ---------------------------------------------------------------------------
 
-JOB_RE = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+# JOB_RE, call_sites, job_index and job_at ARE IMPORTED, NOT DEFINED, and that is the point of the lift. This file grew all four first; `check_actions_vars.py` then needed the same corpus and the same "which job owns line N" answer, and a second copy of either is a second answer to one question -- the exact defect class this gate exists to find in the secret tables it reads.
+# `rediacc_ci.workflows` now holds the single copy (see its own note at the `JOB_RE` definition, citing PLAN-github-actions-to-bitwarden.md Decision 4).
+#
+# `call_sites` IS WRAPPED RATHER THAN RE-EXPORTED because the shared one takes an explicit root while this gate resolves everything against its own overridable ROOT, which `BWS_MAP_ROOT` repoints so a gate test can drive the real scan over a fixture tree. Passing ROOT at the one call site keeps that override working; importing the bare function would silently scan the real
+# repository from inside a fixture run.
+JOB_RE = workflows.JOB_RE
+job_index = workflows.job_index
+job_at = workflows.job_at
+
 USE_RE = re.compile(r"(?<![\w./-])secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 CALLS_REUSABLE_RE = re.compile(r"^\s*uses: \./\.github/workflows/")
 SUFFIX_RE = re.compile(r'^\s*[A-Za-z_][A-Za-z0-9_]*="([A-Z0-9_]+)_\$\{SUFFIX\}"', re.MULTILINE)
@@ -212,20 +201,14 @@ NOT_SHADOWED = {"GITHUB_TOKEN", "BWS_ACCESS_TOKEN"}
 
 
 def call_sites() -> list[Path]:
-    """Every file that may carry a bws-secrets request block."""
-    out = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
-    out += sorted((ROOT / ".github" / "actions").glob("*/action.yml"))
-    for d in EXTRA_WORKFLOW_DIRS:
-        out += sorted(d.glob("*.yml"))
-    return out
+    """Every file that may carry a bws-secrets request block, from the shared corpus."""
+    return workflows.call_sites(ROOT)
 
 
 def rename_pairs() -> list[tuple[str, str]]:
     """(old, new) from secret-rename.py's RENAMES, read as data.
 
-    Imported by exec rather than by parsing, because a second copy of the table
-    is a second thing to get wrong -- and this gate's whole subject is two
-    records disagreeing about a name."""
+    Imported by exec rather than by parsing, because a second copy of the table is a second thing to get wrong -- and this gate's whole subject is two records disagreeing about a name."""
     ns: dict = {}
     text = RENAME_TABLE.read_text(encoding="utf-8")
     m = re.search(r"^RENAMES: list\[tuple\[str, str\]\] = \[.*?^\]", text, re.DOTALL | re.MULTILINE)
@@ -235,32 +218,13 @@ def rename_pairs() -> list[tuple[str, str]]:
     return list(ns.get("RENAMES", []))
 
 
-def job_index(lines: list[str]) -> list[tuple[int, str]]:
-    return [(i, m.group(1)) for i, line in enumerate(lines) if (m := JOB_RE.match(line))]
-
-
-def job_at(index: list[tuple[int, str]], i: int) -> str | None:
-    cur = None
-    for start, name in index:
-        if start <= i:
-            cur = name
-        else:
-            break
-    return cur
-
-
 def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:
     """Re-derive a `superseded-at-runtime` claim against the ACTUAL branch.
 
     The first version of this asked whether `== "ASIA"` and `${PREFIX_EU`
-    appeared ANYWHERE in the script, which an audit defeated three ways in one
-    sitting: invert the condition so the substitution applies to the other
-    regions, comment the assignments out, or delete the whole block and leave a
-    comment naming both strings. All three kept the exemption. A substring test
-    over a whole file is not a re-derivation, it is a coincidence detector.
+    appeared ANYWHERE in the script, which an audit defeated three ways in one sitting: invert the condition so the substitution applies to the other regions, comment the assignments out, or delete the whole block and leave a comment naming both strings. All three kept the exemption. A substring test over a whole file is not a re-derivation, it is a coincidence detector.
 
-    So: find the branch that tests this suffix, take its BODY up to the matching
-    `fi`, strip comments, and require the reassignment to be in there.
+    So: find the branch that tests this suffix, take its BODY up to the matching `fi`, strip comments, and require the reassignment to be in there.
     """
     other = str(rec.get("superseded_by", ""))
     if not other:
@@ -306,11 +270,7 @@ def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:
 def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tuple[int, int]]:
     """Assertion 8: every stored name must APPEAR IN THE CODE.
 
-    Operator, 2026-09-02: "we should always have what we have at bitwarden side
-    in the code. That way we can also do proper renaming." Assertions 1 and 5
-    only reach names a WORKFLOW requests. A secret consumed by a deploy script,
-    a submodule, or a sibling repo can sit in the store while nothing in the tree
-    ever spells it -- which is precisely the state that makes a rename unsafe,
+    Operator, 2026-09-02: "we should always have what we have at bitwarden side in the code. That way we can also do proper renaming." Assertions 1 and 5 only reach names a WORKFLOW requests. A secret consumed by a deploy script, a submodule, or a sibling repo can sit in the store while nothing in the tree ever spells it -- which is precisely the state that makes a rename unsafe,
     because a rename tool can only move a name it can see.
 
     Two exclusions, both deliberate:
@@ -321,9 +281,7 @@ def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tu
         lists it. Neither does `agent/`: a plan discussing a name is not the code
         using it.
 
-    Submodules are IN, via --recurse-submodules, and so are the gitignored
-    sibling repos, which have their own git and are invisible to console's index
-    -- the blindness that let a rename break private/growth's publish pipeline.
+    Submodules are IN, via --recurse-submodules, and so are the gitignored sibling repos, which have their own git and are invisible to console's index -- the blindness that let a rename break private/growth's publish pipeline.
     """
     names = sorted(n for n in secrets if not n.startswith("_"))
     if not names:
@@ -380,26 +338,18 @@ def represented_problems(secrets: dict, exemptions: dict) -> tuple[list[str], tu
 def load_preimage(path: Path | None = None) -> tuple[dict[str, str], list[str]]:
     """{github name it is READ under} -> {name the store holds}, plus problems.
 
-    WHY THIS RELATION EXISTS AT ALL. The migration gave every credential one
-    name at every layer it controls. It does not control GitHub: the operator
-    ruled the org secrets are being DELETED, not renamed, and `gh secret set`
-    cannot re-supply a value it is forbidden to read, so renaming there means
+    WHY THIS RELATION EXISTS AT ALL. The migration gave every credential one name at every layer it controls. It does not control GitHub: the operator ruled the org secrets are being DELETED, not renamed, and `gh secret set` cannot re-supply a value it is forbidden to read, so renaming there means
     retyping 45 values by hand. So `${{ secrets.X }}` -- and only there -- keeps
     the old spelling, and this file is the dictionary.
 
-    It is SCAFFOLD, and the assertions below are what stop it becoming a second
-    exemption list. Every entry must earn its place twice: the store side must
-    be a name the map really holds, and the GitHub side must really be read by
-    a workflow. An entry that fails either is dead weight to be deleted, not a
-    licence. When the org secrets go, so does the file, and assertion 9 goes
-    back to demanding an exact match.
+    It is SCAFFOLD, and the assertions below are what stop it becoming a second exemption list. Every entry must earn its place twice: the store side must be a name the map really holds, and the GitHub side must really be read by a workflow. An entry that fails either is dead weight to be deleted, not a licence. When the org secrets go, so does the file, and assertion 9 goes back
+    to demanding an exact match.
     """
     src = path or PREIMAGE
     try:
         doc = json.loads(src.read_text(encoding="utf-8"))
     except FileNotFoundError:
-        # ABSENT IS LEGAL, and it is the END STATE. Once the org secrets are
-        # deleted every read is an exact match and there is nothing to alias.
+        # ABSENT IS LEGAL, and it is the END STATE. Once the org secrets are deleted every read is an exact match and there is nothing to alias.
         return {}, []
     except (OSError, ValueError) as exc:
         return {}, [f"cannot read {src} ({exc}); assertion 9 is blind"]
@@ -426,10 +376,7 @@ def load_preimage(path: Path | None = None) -> tuple[dict[str, str], list[str]]:
         if store_name.startswith("$"):
             continue
         bind(github_name, store_name, "preimage")
-    # renamed_away is the reverse shape: the STORE keeps the illegal name and
-    # the workflow layer uses GitHub's. `gh secret set GITHUB_ZZ_PROBE` answers
-    # HTTP 422 "Secret names must not start with GITHUB_." (probed 2026-09-02),
-    # so these are not deferred renames, they are impossible ones.
+    # renamed_away is the reverse shape: the STORE keeps the illegal name and the workflow layer uses GitHub's. `gh secret set GITHUB_ZZ_PROBE` answers HTTP 422 "Secret names must not start with GITHUB_." (probed 2026-09-02), so these are not deferred renames, they are impossible ones.
     for store_name, github_name in (doc.get("renamed_away") or {}).items():
         if store_name.startswith("$"):
             continue
@@ -444,11 +391,7 @@ def load_preimage(path: Path | None = None) -> tuple[dict[str, str], list[str]]:
 def preimage_problems(alias: dict[str, str], secrets: dict, read: set[str]) -> list[str]:
     """Assertion 10: no row of the pre-image file may be dead scaffold.
 
-    Both directions, because each hides a different mistake. A row whose STORE
-    name is not in the map is a typo that would make assertion 9 forgive a read
-    resolving to nothing -- the precise failure this whole file exists to stop.
-    A row whose GITHUB name nothing reads is a rename that already finished, and
-    leaving it behind is how a temporary list becomes permanent.
+    Both directions, because each hides a different mistake. A row whose STORE name is not in the map is a typo that would make assertion 9 forgive a read resolving to nothing -- the precise failure this whole file exists to stop. A row whose GITHUB name nothing reads is a rename that already finished, and leaving it behind is how a temporary list becomes permanent.
     """
     out = []
     for github_name, store_name in sorted(alias.items()):
@@ -468,10 +411,7 @@ def preimage_problems(alias: dict[str, str], secrets: dict, read: set[str]) -> l
     return out
 
 
-# The gh CLI reads these from the environment; they are not shadow legs and never
-# were. Measured 2026-09-02: they are the ONLY two `GH_*` names across all 22 caller
-# files that are not part of a shadow triple, which is what makes assertion 11 an
-# equality rather than a subset.
+# The gh CLI reads these from the environment; they are not shadow legs and never were. Measured 2026-09-02: they are the ONLY two `GH_*` names across all 22 caller files that are not part of a shadow triple, which is what makes assertion 11 an equality rather than a subset.
 GH_CLI_ENV = frozenset({"TOKEN", "APP_TOKEN", "REPO"})
 SHADOW_NAMES_RE = re.compile(r"^\s*SHADOW_NAMES:\s*(.+)$", re.MULTILINE)
 GH_ENV_RE = re.compile(r"^\s*GH_([A-Z0-9_]+):", re.MULTILINE)
@@ -486,26 +426,18 @@ MIN_LEDGER_REASON = 80
 def expected_mismatch_problems() -> tuple[list[str], int, int]:
     """Assertion 12: every excused shadow mismatch is recorded, and every record is used.
 
-    SHADOW_EXPECTED_MISMATCH stops a KNOWN value drift from failing its job. That is
-    the right call -- the drift is already the operator's, and blocking on it took the
-    CI watchdog down on 2026-09-03 without it monitoring anything -- but it is also an
-    escape hatch, and an escape hatch with no liveness rule becomes a blanket
-    exemption. The runtime half is in the compare step itself (an excused name that
-    starts MATCHING fails until its entry is deleted). This is the static half:
+    SHADOW_EXPECTED_MISMATCH stops a KNOWN value drift from failing its job. That is the right call -- the drift is already the operator's, and blocking on it took the CI watchdog down on 2026-09-03 without it monitoring anything -- but it is also an escape hatch, and an escape hatch with no liveness rule becomes a blanket exemption. The runtime half is in the compare step itself
+    (an excused name that starts MATCHING fails until its entry is deleted). This is the static half:
 
       a. an excused name must have a ledger entry carrying a substantive BLOCKER
          reason, the run that found it, and the door that says who can resolve it;
       b. a ledger entry must be excused by at least one workflow, or it is describing
          a drift nothing acts on.
 
-    Both directions, because they fail in opposite ways: (a) is an exemption nobody
-    wrote down, (b) is a reason that outlived the thing it excused.
+    Both directions, because they fail in opposite ways: (a) is an exemption nobody wrote down, (b) is a reason that outlived the thing it excused.
     """
     problems: list[str] = []
-    # Collect what the tree excuses FIRST. A tree that excuses nothing needs no
-    # ledger, and demanding one anyway would make this assertion fail on every
-    # fixture tree instead of on a real defect. The moment anything IS excused the
-    # ledger becomes mandatory, and unreadable means refuse rather than forgive.
+    # Collect what the tree excuses FIRST. A tree that excuses nothing needs no ledger, and demanding one anyway would make this assertion fail on every fixture tree instead of on a real defect. The moment anything IS excused the ledger becomes mandatory, and unreadable means refuse rather than forgive.
     excusing: list[tuple[str, str, set[str]]] = []
     for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -581,31 +513,17 @@ def shadow_triple_problems() -> tuple[list[str], int]:
 
     THE COMPARE STEP DERIVES BOTH SIDES BY STRING CONCATENATION -- `gv="GH_$n"`,
     `bv="BWS_$n"` over the words in SHADOW_NAMES -- so a name that is renamed in one
-    of the three places and not the others produces `GH_<new>` unset, which the step
-    reports as "EMPTY ... nothing was compared". It fails LOUDLY, which is right, but
-    it fails in CI, minutes after a push, on a defect that is a pure text property of
-    the file.
+    of the three places and not the others produces `GH_<new>` unset, which the step reports as "EMPTY ... nothing was compared". It fails LOUDLY, which is right, but it fails in CI, minutes after a push, on a defect that is a pure text property of the file.
 
-    It cost a CI round to learn: a rename pass rewrote the bare `GITHUB_APP_PRIVATE_KEY`
-    in SHADOW_NAMES but not the `GH_`/`BWS_`-prefixed forms, because its lookbehind
-    treated the `_` in `GH_` as a word character. 104 lines across 15 files, and the
-    first thing that noticed was run 33690518859. secret-rename.py's own pattern has
-    carried an optional `(GH_|BWS_)` group for exactly this reason since it was
-    written; the repair script did not, and nothing compared them.
+    It cost a CI round to learn: a rename pass rewrote the bare `GITHUB_APP_PRIVATE_KEY` in SHADOW_NAMES but not the `GH_`/`BWS_`-prefixed forms, because its lookbehind treated the `_` in `GH_` as a word character. 104 lines across 15 files, and the first thing that noticed was run 33690518859. secret-rename.py's own pattern has carried an optional `(GH_|BWS_)` group for exactly
+    this reason since it was written; the repair script did not, and nothing compared them.
 
-    Set equality, not containment, in both directions: an orphan `GH_X` with no
-    SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
+    Set equality, not containment, in both directions: an orphan `GH_X` with no SHADOW_NAMES entry is a leg that will never be compared, which is the silent half.
 
-    ONE EXEMPTION, AND THE CUTOVER IS WHY. This assertion was written when every fetch
-    was a SHADOW -- fetched only to be compared -- so a fetched name absent from
-    SHADOW_NAMES could only mean a broken triple. After a name is cut over that is no
+    ONE EXEMPTION, AND THE CUTOVER IS WHY. This assertion was written when every fetch was a SHADOW -- fetched only to be compared -- so a fetched name absent from SHADOW_NAMES could only mean a broken triple. After a name is cut over that is no
     longer true: the fetch feeds a LIVE READ (`${{ env.BWS_X }}`) and its comparator is
-    deleted along with the GitHub secret it compared against. Reported 26 such names
-    the moment the first three were retired, every one of them correct.
-    So a fetched name is accounted for when it is EITHER compared (in SHADOW_NAMES) or
-    CONSUMED (read in that file). Not neither -- that is still the silent case this
-    assertion exists for, and assertion 13 separately proves each consumer has its
-    fetch above it.
+    deleted along with the GitHub secret it compared against. Reported 26 such names the moment the first three were retired, every one of them correct. So a fetched name is accounted for when it is EITHER compared (in SHADOW_NAMES) or CONSUMED (read in that file). Not neither -- that is still the silent case this assertion exists for, and assertion 13 separately proves each
+    consumer has its fetch above it.
     """
     problems: list[str] = []
     files = call_sites()
@@ -650,20 +568,12 @@ def unmapped_read_problems(
 ) -> tuple[list[str], int, set[str]]:
     """Assertion 9: an org secret a workflow READS must be in the map, or exempt.
 
-    Assertion 6 checks the other direction and, by construction, only reaches names
-    the map ALREADY holds (`if bw_name not in secrets ... continue`). So a workflow
-    that starts reading a brand-new org secret nobody put in the store is invisible
-    to 5 (map -> requested), 6 (skips unmapped) and 7 (only SUFFIX literals under
-    .ci/scripts/deploy). That is the cutover-ships-blank shape with no scan on it.
+    Assertion 6 checks the other direction and, by construction, only reaches names the map ALREADY holds (`if bw_name not in secrets ... continue`). So a workflow that starts reading a brand-new org secret nobody put in the store is invisible to 5 (map -> requested), 6 (skips unmapped) and 7 (only SUFFIX literals under .ci/scripts/deploy). That is the cutover-ships-blank shape
+    with no scan on it.
 
-    Scoped to secrets the reachability record says console can actually READ, so a
-    typo'd `secrets.FOO` is left to actionlint rather than reported twice here.
+    Scoped to secrets the reachability record says console can actually READ, so a typo'd `secrets.FOO` is left to actionlint rather than reported twice here.
 
-    `alias` is the pre-image relation (see load_preimage): during the cutover a
-    workflow reads GitHub's older spelling while the store holds the new one, so
-    a read is satisfied by EITHER. Aliasing is the one thing this gate must not
-    do generously -- every row is itself asserted by assertion 10, in both
-    directions, so a typo here cannot quietly forgive a read that resolves to
+    `alias` is the pre-image relation (see load_preimage): during the cutover a workflow reads GitHub's older spelling while the store holds the new one, so a read is satisfied by EITHER. Aliasing is the one thing this gate must not do generously -- every row is itself asserted by assertion 10, in both directions, so a typo here cannot quietly forgive a read that resolves to
     nothing.
     """
     read: set[str] = set()
@@ -706,8 +616,7 @@ def load_no_fetch_jobs(path: Path | None = None) -> dict:
 def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
     """The only escape hatch, and it is re-derived rather than believed.
 
-    `path` is injectable so selftest() can drive every refusal against a fixture
-    instead of against the real allowlist."""
+    `path` is injectable so selftest() can drive every refusal against a fixture instead of against the real allowlist."""
     src = path or EXEMPT
     label = src.relative_to(ROOT) if src.is_relative_to(ROOT) else src
     problems: list[str] = []
@@ -760,20 +669,12 @@ def load_exemptions(path: Path | None = None) -> tuple[dict, list[str]]:
 def read_order_problems() -> tuple[list[str], int]:
     """Assertion 13: every `${{ env.BWS_X }}` read has a fetch of X EARLIER in its job.
 
-    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one
-    asks whether a job that reads a GitHub secret also fetches its twin; this asks
-    whether a job that reads a BITWARDEN value ever fetched it. The failure it catches
-    is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY
-    STRING, not an error, and app-token's complaint then names the App rather than the
-    key.
+    THE CONVERSE OF ASSERTION 12, and the one the cutover can actually break. That one asks whether a job that reads a GitHub secret also fetches its twin; this asks whether a job that reads a BITWARDEN value ever fetched it. The failure it catches is silent by construction: `env.BWS_APP_PRIVATE_KEY` with no fetch is an EMPTY STRING, not an error, and app-token's complaint then
+    names the App rather than the key.
 
-    ORDER, not just presence, because seven jobs on this branch had the fetch step
-    AFTER app-token -- the shape that made the cutover a reordering rather than a
-    substitution. A fetch that runs later supplies nothing to a read above it.
+    ORDER, not just presence, because seven jobs on this branch had the fetch step AFTER app-token -- the shape that made the cutover a reordering rather than a substitution. A fetch that runs later supplies nothing to a read above it.
 
-    It matters most for what CI never runs. Nine of these files are cron- or
-    dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1,
-    cleanup-preview, backfill-release-sentinel); a mistake there ships and waits.
+    It matters most for what CI never runs. Nine of these files are cron- or dispatch-only (cd-deploy-*, promote-stable, housekeeping, edge-clone-d1, cleanup-preview, backfill-release-sentinel); a mistake there ships and waits.
     """
     problems: list[str] = []
     n = 0
@@ -794,8 +695,7 @@ def read_order_problems() -> tuple[list[str], int]:
 
 
 def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
-    """The pure half of assertion 13, so the controls can plant a workflow instead of
-    a repo. Returns (problems, reads seen)."""
+    """The pure half of assertion 13, so the controls can plant a workflow instead of a repo. Returns (problems, reads seen)."""
     problems: list[str] = []
     n = 0
     index = job_index(lines)
@@ -831,12 +731,63 @@ def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
     return problems, n
 
 
+# --------------------------------------------------------------------------- Assertion 14: the seller record's fields. `private/account/.env` is retired; every local secret now arrives through a named profile in `.ci/config/secret-supply.json`, and `check:ci-secret-supply` proves each profile's specs resolve in the map. What that gate cannot see is a JSON record whose fields the fetch expands. ---------------------------------------------------------------------------
+
+SUPPLY = ROOT / ".ci" / "config" / "secret-supply.json"
+# The profile `./run.sh account dev` runs under, and the only one that binds the invoice seller's identity.
+SELLER_PROFILE = "account-dev"
+SELLER_RECORD = "SELLER_PROFILE_JSON"
+
+
+def seller_field_problems(
+    supply: Path | None = None, declared: set[str] | None = None
+) -> tuple[list[str], int]:
+    """Assertion 14d. (problems, SELLER_* fields compared).
+
+    The nine SELLER_* fields `bws_env.JSON_REQUIRED[SELLER_PROFILE_JSON]` promises to bind must be exactly the SELLER_* LOCAL names the `account-dev` profile binds. A tenth field added to the profile without being added there would bind a partial record and return 0; a field dropped from the profile would leave a promised line blank on an invoice.
+
+    Specs are parsed with `bws_env.parse_spec`, imported rather than re-typed, so the `STORE > LOCAL` grammar this compares is the one the fetch applies. `supply` and `declared` are injectable so selftest() drives the real function against fixtures.
+    """
+    src = SUPPLY if supply is None else supply
+    want = set(BWS_ENV_JSON_REQUIRED.get(SELLER_RECORD, ())) if declared is None else set(declared)
+    try:
+        doc = json.loads(src.read_text(encoding="utf-8"))
+        profile = doc["consumers"][SELLER_PROFILE]
+        specs = list(profile.get("required") or []) + list(profile.get("optional") or [])
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+        return [
+            f"cannot read the {SELLER_PROFILE!r} profile from {src} ({exc}); assertion 14 is blind, which is not a pass"
+        ], 0
+    bound = set()
+    for raw in specs:
+        spec = bws_parse_spec(str(raw))
+        if spec and spec[1].startswith("SELLER_"):
+            bound.add(spec[1])
+    # ANTI-VACUITY. Two empty sets are equal, so a profile that lost every SELLER field and a declaration that lost the record would agree perfectly and pass. Either side empty means the comparison has no subject.
+    if not want or not bound:
+        return [
+            (
+                f"bws_env.JSON_REQUIRED[{SELLER_RECORD!r}] declares {len(want)} field(s) and the "
+                f"{SELLER_PROFILE!r} profile binds {len(bound)} SELLER_* name(s) -- an empty side "
+                f"makes the comparison vacuous, so it refuses rather than passes"
+            )
+        ], 0
+    if want != bound:
+        return [
+            (
+                f"bws_env.JSON_REQUIRED[{SELLER_RECORD!r}] and the {SELLER_PROFILE!r} profile in "
+                f"{src.name} disagree about the record's fields "
+                f"(profile-only: {sorted(bound - want) or 'none'}; declared-only: "
+                f"{sorted(want - bound) or 'none'}) -- the fetch would bind a partial record and return 0"
+            )
+        ], len(want)
+    return [], len(want)
+
+
 def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
     """Assertions 5, 6 and 7. Every one is the converse of assertion 1.
 
-    `no_fetch` maps "<path>#<job>" to a record whose `reason` says why that ONE job must
-    not fetch a secret it reads. Name-scoped exemptions cannot express that: the names in
-    question are read by nearly every job in the tree.
+    `no_fetch` maps "<path>#<job>" to a record whose `reason` says why that ONE job must not fetch a secret it reads. Name-scoped exemptions cannot express that: the names in question are read by nearly every job in the tree.
     """
     problems: list[str] = []
     no_fetch = no_fetch or {}
@@ -859,6 +810,10 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
     # ---- gather every request and every DIRECT read, per job -----------------
     requested: set[str] = set()
     direct_reads = 0
+    # THE SCAN'S OWN PULSE, separate from `direct_reads`. Once the last GitHub-side rename is gone (2026-09-14: BREAKPOINT_TUNNEL_TOKEN was the final one -- `github-secret-preimage.json` was itself deleted as its own docstring's documented end state), `direct_reads` legitimately reaches ZERO: every consumer reads its Bitwarden-sourced env var, none reads `secrets.X` for a mapped
+    # name any more. A vacuity guard keyed on `direct_reads` cannot tell that apart from `USE_RE` silently breaking or `call_sites()` returning nothing, which is the actual failure this assertion exists to catch. This counter proves the scan MACHINERY still runs across real content -- every `secrets.X` reference the regex finds on an uncommented line, mapped or not, shadowed or not
+    # -- so the guard below fires on a broken scan and stays silent on a finished migration.
+    total_secret_uses = 0
     for f in call_sites():
         text = f.read_text(encoding="utf-8")
         lines = text.split("\n")
@@ -870,8 +825,7 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
         if not index:
             continue
         # A job that CALLS a reusable workflow declares `secrets:` to pass down;
-        # the callee requests them itself. Computed, never exempted -- the
-        # file-level version of this rule opens with 48 false positives.
+        # the callee requests them itself. Computed, never exempted -- the file-level version of this rule opens with 48 false positives.
         passthrough = {
             job_at(index, i) for i, line in enumerate(lines) if CALLS_REUSABLE_RE.match(line)
         }
@@ -880,6 +834,7 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
             if line.lstrip().startswith("#"):
                 continue
             for gh_name in USE_RE.findall(line):
+                total_secret_uses += 1
                 if gh_name in NOT_SHADOWED:
                     continue
                 bw_name = renames.get(gh_name, gh_name)
@@ -893,9 +848,7 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
             unfetched = sorted(set(reads) - reqs_by_job.get(job, set()))
             key = f"{f.relative_to(ROOT)}#{job}"
             if key in no_fetch and unfetched:
-                # Claimed AND live: the entry only stands while the job really does read
-                # something it does not fetch. The converse -- an entry naming a job with
-                # nothing left to forgive -- is reported below, not silently tolerated.
+                # Claimed AND live: the entry only stands while the job really does read something it does not fetch. The converse -- an entry naming a job with nothing left to forgive -- is reported below, not silently tolerated.
                 seen_no_fetch.add(key)
                 continue
             for bw_name in unfetched:
@@ -905,15 +858,19 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
                     f"{f.relative_to(ROOT)}:{reads[bw_name]} job {job!r} reads a secret it never "
                     f"requests ({bw_name}); at cutover that job fetches nothing for it"
                 )
-    if direct_reads == 0:
+    if total_secret_uses == 0:
         problems.append(
-            "no job reads any mapped secret directly; the per-job scan lost its subject"
+            "not one `secrets.X` reference was found anywhere in the scanned workflows; "
+            "the per-job scan lost its subject (broken regex, empty corpus, or a "
+            "call_sites() that stopped returning files) -- ZERO direct reads of a "
+            "Bitwarden-mapped name is the expected, GREEN end state once migration is "
+            "complete, so this counts EVERY `secrets.X` use, mapped or not, to tell a "
+            "finished migration apart from a scan that stopped running"
         )
     for key, rec in sorted(no_fetch.items()):
         # A MALFORMED ENTRY MUST REPORT, NOT CRASH. Writing the reason as a bare string
         # instead of {"reason": ...} raised AttributeError out of this gate, which reads
-        # as a broken gate rather than a broken config -- and the traceback names this
-        # line, not the file the author actually edited.
+        # as a broken gate rather than a broken config -- and the traceback names this line, not the file the author actually edited.
         if not isinstance(rec, dict):
             problems.append(
                 f"no_fetch_jobs entry {key!r} is a {type(rec).__name__}, not an object. "
@@ -985,11 +942,7 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
         for prefix in SUFFIX_RE.findall(script.read_text(encoding="utf-8"))
         for suffix in suffixes
     }
-    # Re-derived for EVERY such exemption, mapped or not. Assertion 7 used to be
-    # the only caller, and it short-circuits on `built in secrets` -- so the same
-    # kind applied to a MAPPED name was accepted on nothing but a non-empty
-    # string, making the weakest-checked kind also the one with no expiry and no
-    # worklist id. Found by audit, not by design.
+    # Re-derived for EVERY such exemption, mapped or not. Assertion 7 used to be the only caller, and it short-circuits on `built in secrets` -- so the same kind applied to a MAPPED name was accepted on nothing but a non-empty string, making the weakest-checked kind also the one with no expiry and no worklist id. Found by audit, not by design.
     for name, rec in sorted(exemptions.items()):
         if rec.get("kind") == "superseded-at-runtime":
             problems.extend(superseded_problems(name, rec, suffixes))
@@ -1027,12 +980,8 @@ jobs:
           secrets: |
             DECOY_NOT_OURS"""
     got = parse_requests(fixture)
-    # SYNTHETIC names on purpose. This fixture used real ones, and
-    # secret-rename.py's table collapsed the aliased line -- the old name and its
-    # replacement are the SAME token once a collapse row applies, so the one case
-    # proving aliases parse became name-equals-env, while every assertion still
-    # passed because the `want` list was rewritten in lockstep. A control whose
-    # point survives only until a find-and-replace runs is not a control. (Write
+    # SYNTHETIC names on purpose. This fixture used real ones, and secret-rename.py's table collapsed the aliased line -- the old name and its replacement are the SAME token once a collapse row applies, so the one case proving aliases parse became name-equals-env, while every assertion still passed because the `want` list was rewritten in lockstep. A control whose point survives
+    # only until a find-and-replace runs is not a control. (Write
     # a retiring name in braced form, FOO_{EU,US,ASIA}, or this comment gets
     # rewritten by the rename it is describing -- which is how it read at first.)
     want = [
@@ -1055,11 +1004,7 @@ jobs:
     if not ok2:
         return 1
 
-    # ---- the escape hatch's own integrity, both directions -------------------
-    # The allowlist is the one place this gate can be talked out of a finding, so
-    # every way of writing a bad entry is planted here and required to red WITH
-    # the matching message. The clean case is required to stay silent, because
-    # "every fixture reds" is a check that cannot pass.
+    # ---- the escape hatch's own integrity, both directions ------------------- The allowlist is the one place this gate can be talked out of a finding, so every way of writing a bad entry is planted here and required to red WITH the matching message. The clean case is required to stay silent, because "every fixture reds" is a check that cannot pass.
     def probe(doc: object) -> list[str]:
         with tempfile.TemporaryDirectory() as d:
             f = Path(d) / "ex.json"
@@ -1130,11 +1075,7 @@ jobs:
         print(f"        got {got}")
         bad += 1
 
-    # ---- the pre-image relation, in BOTH directions --------------------------
-    # This is the second escape hatch, and it is younger and more dangerous than
-    # the allowlist: an allowlist entry says "do not look", while a pre-image row
-    # says "look somewhere ELSE", so a wrong row makes assertion 9 report a clean
-    # resolution for a read that resolves to nothing. Every way of writing one
+    # ---- the pre-image relation, in BOTH directions -------------------------- This is the second escape hatch, and it is younger and more dangerous than the allowlist: an allowlist entry says "do not look", while a pre-image row says "look somewhere ELSE", so a wrong row makes assertion 9 report a clean resolution for a read that resolves to nothing. Every way of writing one
     # badly is planted, and the clean case is required to stay silent.
     def probe_pre(doc: object) -> list[str]:
         with tempfile.TemporaryDirectory() as d:
@@ -1166,10 +1107,7 @@ jobs:
     if not ok_pre_clean:
         bad += 1
 
-    # Assertion 10, both legs. A row is dead scaffold if its STORE side is not in
-    # the map (which would forgive a read resolving to nothing) or if its GITHUB
-    # side is no longer read (a finished rename left behind). Neither leg is
-    # visible to assertion 9, which is exactly why they are planted separately.
+    # Assertion 10, both legs. A row is dead scaffold if its STORE side is not in the map (which would forgive a read resolving to nothing) or if its GITHUB side is no longer read (a finished rename left behind). Neither leg is visible to assertion 9, which is exactly why they are planted separately.
     ok10a = any(
         "the map holds no" in m
         for m in preimage_problems({"GH_OLD": "STORE_TYPO"}, {"STORE_REAL": {}}, {"GH_OLD"})
@@ -1189,10 +1127,7 @@ jobs:
     if not ok10c:
         bad += 1
 
-    # Assertion 8's two pure-logic edges. The corpus scan itself shells out to
-    # git and is exercised against the real tree; what is pinned here is the
-    # underscore skip and the refusal to judge an empty name set -- together they
-    # are the only ways this assertion can go quiet without looking.
+    # Assertion 8's two pure-logic edges. The corpus scan itself shells out to git and is exercised against the real tree; what is pinned here is the underscore skip and the refusal to judge an empty name set -- together they are the only ways this assertion can go quiet without looking.
     only_underscore = represented_problems({"_PARKED_ON_PURPOSE": {"id": "x"}}, {})[0]
     ok5 = any("refusing to pass vacuously" in m for m in only_underscore)
     print(
@@ -1201,9 +1136,7 @@ jobs:
     if not ok5:
         bad += 1
 
-    # Assertion 12, the per-job escape hatch, in all three directions. It is the ONE
-    # place this gate forgives a job for not fetching what it reads, so a plant that
-    # survives here is a door anyone can walk through.
+    # Assertion 12, the per-job escape hatch, in all three directions. It is the ONE place this gate forgives a job for not fetching what it reads, so a plant that survives here is a door anyone can walk through.
     real_ex = load_exemptions()[0]
     real_map = (json.loads(MAP.read_text(encoding="utf-8")) if MAP.exists() else {}).get(
         "secrets"
@@ -1226,9 +1159,7 @@ jobs:
     if not ok12b:
         bad += 1
 
-    # ASSERTION 13, all four answers. It is the only check that looks at the BITWARDEN
-    # side of a read, and its failure mode is an EMPTY STRING rather than an error, so
-    # a control set that only proved the happy path would prove nothing worth having.
+    # ASSERTION 13, all four answers. It is the only check that looks at the BITWARDEN side of a read, and its failure mode is an EMPTY STRING rather than an error, so a control set that only proved the happy path would prove nothing worth having.
     good = [
         "jobs:",
         "  j:",
@@ -1258,9 +1189,7 @@ jobs:
             [*good[:7], "  k:", "    steps:", *good[7:]],
             "fetches it",
         ),
-        # The compound-expression case. Under the old whole-expression pattern this
-        # read was invisible, so the fetch below it raised nothing at all -- the
-        # check passed by not looking.
+        # The compound-expression case. Under the old whole-expression pattern this read was invisible, so the fetch below it raised nothing at all -- the check passed by not looking.
         (
             "read order: a read inside a MULTI-LINE ternary is seen",
             [
@@ -1288,6 +1217,56 @@ jobs:
     print(f"  {'PASS' if ok4 else 'FAIL'}  a missing allowlist refuses rather than passing")
     if not ok4:
         bad += 1
+
+    # ---- assertion 14: the seller record's fields, both directions plus vacuity ----
+    #
+    # Driven through the REAL function against a synthetic supply file, so each probe exercises the code path the live run takes.
+    fields = [f"SELLER_F{i}" for i in range(9)]
+
+    def seller14(bound: list[str], declared: list[str]) -> list[str]:
+        with tempfile.TemporaryDirectory() as d:
+            sup = Path(d) / "secret-supply.json"
+            specs = ["ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET", *bound]
+            sup.write_text(
+                json.dumps({"consumers": {SELLER_PROFILE: {"optional": specs}}}),
+                encoding="utf-8",
+            )
+            return seller_field_problems(sup, set(declared))[0]
+
+    checks14 = [
+        (
+            "CONTROL: a profile binding exactly the declared fields is silent",
+            lambda: seller14(fields, fields) == [],
+        ),
+        (
+            "14d: a profile missing one declared SELLER field is named",
+            lambda: any("SELLER_F8" in m for m in seller14(fields[:-1], fields)),
+        ),
+        (
+            "14d: a profile binding an undeclared SELLER field is named",
+            lambda: any("SELLER_EXTRA" in m for m in seller14([*fields, "SELLER_EXTRA"], fields)),
+        ),
+        (
+            "14d: an aliased spec is compared by its LOCAL name",
+            lambda: seller14([*fields[:-1], "SELLER_F8_EU > SELLER_F8"], fields) == [],
+        ),
+        (
+            "14d: both sides empty REFUSES rather than passing",
+            lambda: any("vacuous" in m for m in seller14([], [])),
+        ),
+        (
+            "14d: a missing supply file refuses rather than passing",
+            lambda: any(
+                "blind" in m
+                for m in seller_field_problems(Path("/nonexistent/supply.json"), set(fields))[0]
+            ),
+        ),
+    ]
+    for label, probe14 in checks14:
+        good14 = probe14()
+        print(f"  {'PASS' if good14 else 'FAIL'}  {label}")
+        if not good14:
+            bad += 1
     return 1 if bad else 0
 
 
@@ -1333,23 +1312,14 @@ def main() -> int:
     callers = 0
     workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
     if not workflows:
-        # ZERO FILES is not "zero callers". Zero callers among real workflows is
-        # the pre-cutover state and passes with a note below; zero workflow files
-        # means the scan lost its subject entirely, and a gate that passes over
-        # an empty set is the failure mode this repo names most often.
-        # test-gate-anti-vacuity.sh caught exactly this on the first run: the
-        # map is copied into its empty tree, so without this clause the gate
-        # exited 0 there asserting nothing.
+        # ZERO FILES is not "zero callers". Zero callers among real workflows is the pre-cutover state and passes with a note below; zero workflow files means the scan lost its subject entirely, and a gate that passes over an empty set is the failure mode this repo names most often. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` caught exactly this on the first run: the map is copied into its empty
+        # tree, so without this clause the gate exited 0 there asserting nothing.
         print(
             "✗ no workflow files under .github/workflows; refusing to pass vacuously",
             file=sys.stderr,
         )
         return 1
-    # call_sites() rather than a second hand-built list: assertions 1 and 2 used
-    # to glob .github only, so .ci/breakpoint/workflow/breakpoint.yml was covered
-    # by assertion 5 and invisible to the two that check map membership and
-    # env-name shape. A gate keeping two lists of its own inputs will drift
-    # between them, which is the same defect it exists to find elsewhere.
+    # call_sites() rather than a second hand-built list: assertions 1 and 2 used to glob .github only, so .ci/breakpoint/workflow/breakpoint.yml was covered by assertion 5 and invisible to the two that check map membership and env-name shape. A gate keeping two lists of its own inputs will drift between them, which is the same defect it exists to find elsewhere.
     files = call_sites()
     for f in files:
         reqs = parse_requests(f.read_text(encoding="utf-8"))
@@ -1381,20 +1351,19 @@ def main() -> int:
         problems += rep_problems
         read_problems, n_read, read = unmapped_read_problems(secrets, exemptions, alias)
         problems += read_problems
-        # 10. The scaffold does not rot. Run even when 9 found nothing: a dead
-        # row is invisible to 9 by construction (it only widens what 9 forgives).
+        # 10. The scaffold does not rot. Run even when 9 found nothing: a dead row is invisible to 9 by construction (it only widens what 9 forgives).
         if not alias_problems:
             problems += preimage_problems(alias, secrets, read)
-        # 11. The shadow triple agrees. Independent of everything above: it is a
-        # text property of one file, and it is the one the compare step turns into
-        # a CI failure minutes after a push.
+        # 11. The shadow triple agrees. Independent of everything above: it is a text property of one file, and it is the one the compare step turns into a CI failure minutes after a push.
         tri_problems, tri_files = shadow_triple_problems()
         problems += tri_problems
-        # 12. Every excused mismatch is recorded, and every record is used. Also a
-        # text property, and the one that decides whether a known drift stays visible
-        # or quietly becomes permanent.
+        # 12. Every excused mismatch is recorded, and every record is used. Also a text property, and the one that decides whether a known drift stays visible or quietly becomes permanent.
         exp_problems, n_ledger, n_excusing = expected_mismatch_problems()
         problems += exp_problems
+
+    # 14. The seller record's fields agree. Deliberately OUTSIDE the block above: that block is skipped when the map itself is unusable, and 14d compares `bws_env` against `secret-supply.json`, neither of which depends on the map being readable today.
+    seller_problems, n_seller = seller_field_problems()
+    problems += seller_problems
 
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
@@ -1439,6 +1408,11 @@ def main() -> int:
             f"({n_excusing} step(s)) and every excuse names a ledger entry with its run and its "
             f"door -- none is a blanket exemption"
         )
+    print(
+        f"✓ seller record: the {n_seller} SELLER_* field(s) bws_env promises to bind for "
+        f"{SELLER_RECORD} are exactly the ones the {SELLER_PROFILE!r} profile in "
+        f"secret-supply.json binds"
+    )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(
         "  where a missing UUID fails the whole fetch; an EMPTY value is the deploy scripts' job."

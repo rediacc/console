@@ -10,8 +10,7 @@ user-invocable: false
 
 ## How to run
 
-In development: `./rdc.sh <command>` (builds deps, runs via tsx, ~5s startup overhead).
-In production: `rdc <command>` directly.
+In development: `./rdc.sh <command>` (builds deps, runs via tsx, ~5s startup overhead). In production: `rdc <command>` directly.
 
 Each `./rdc.sh` invocation has bootstrap overhead. Chain independent commands with `&&` or `;` to minimize total invocations.
 
@@ -44,13 +43,9 @@ Every command also supports `--help`:
 ## Key patterns
 
 - **Refs, not flags**: The thing a command acts on is a positional ref. A repo ref
-  is `name`, `name:tag` for a fork, and optionally `name@machine` /
-  `name:tag@machine` to assert where it lives. A bare `name` is the grand
-  (production) repo.
+is `name`, `name:tag` for a fork, and optionally `name@machine` / `name:tag@machine` to assert where it lives. A bare `name` is the grand (production) repo.
 - **The machine is derived**: `rdc repo up shop` finds shop's machine from config.
-  Only commands that name a not-yet-placed thing still take `-m <machine>`
-  (`repo create`, `datastore create`) or take it as a batch filter
-  (`repo up --all -m <machine>`).
+Only commands that name a not-yet-placed thing still take `-m <machine>` (`repo create`, `datastore create`) or take it as a batch filter (`repo up --all -m <machine>`).
 - **`--debug`**: Verbose output for troubleshooting.
 - **`--dry-run`**: Preview without executing (supported by repo and sync commands).
 - **`--output json`**: Machine-readable output (global option).

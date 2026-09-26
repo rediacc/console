@@ -1,0 +1,7 @@
+# twin .ci/scripts/ci/assert-install-methods-complete.sh blob 8cbcd4c65fcdb42795a86d453d07b770c76b7cdc
+exit: 1
+--- stdout ---
+--- stderr ---
+.ci/scripts/ci/assert-install-methods-complete.sh: line 37: <base>/nonexistent-dir/summary.md: No such file or directory
+--- summary ---
+<no summary written>

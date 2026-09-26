@@ -1,10 +1,6 @@
 """Message catalogue for worklist.py, the Stop hook.
 
-WHY THIS FILE EXISTS (operator request, 2026-07-30): worklist.py had grown
-past 3300 lines and a large share of that was user-facing prose -- violation
-texts, block reasons, the judge prompts. A future session must be able to
-load and reason about the LOGIC without spending its context on prose it
-will not change, so the prose lives here and the logic imports it.
+WHY THIS FILE EXISTS (operator request, 2026-07-30): worklist.py had grown past 3300 lines and a large share of that was user-facing prose -- violation texts, block reasons, the judge prompts. A future session must be able to load and reason about the LOGIC without spending its context on prose it will not change, so the prose lives here and the logic imports it.
 
 THE CONTRACT, deliberately boring:
   - Named %-format template constants ONLY. No logic, no functions, no
@@ -27,17 +23,11 @@ WHAT IS DELIBERATELY NOT HERE:
     worklist.py. Those must work when THIS file is missing or broken, so
     they cannot live in it.
   - Short one-line formats entangled with control flow (CLI die() one
-    liners, systemMessage part headers, xsession_ok reason returns). Moving
+    liners, systemMessage part headers, phantom-check reason returns). Moving
     a two-line string behind a name saves nothing and costs a hop.
 
-FAILURE MODE (decided, not accidental): worklist.py imports this module
-inside a try/except. On ImportError or any load-time breakage it installs a
-shim whose every attribute access raises, so query modes that use no
-messages (--path, --brief, --poll on an empty inbox) keep working, while the
-first message USE on the Stop path raises and is caught by the __main__
-crash handler, which BLOCKS with the traceback. A broken catalogue therefore
-fails closed and names itself; it can never fail open (a top-level crash
-used to read as ALLOW) and never wedges the path-query plumbing.
+FAILURE MODE (decided, not accidental): worklist.py imports this module inside a try/except. On ImportError or any load-time breakage it installs a shim whose every attribute access raises, so query modes that use no messages (--path, --brief) keep working, while the first message USE on the Stop path raises and is caught by the __main__ crash handler,
+which BLOCKS with the traceback. A broken catalogue therefore fails closed and names itself; it can never fail open (a top-level crash used to read as ALLOW) and never wedges the path-query plumbing.
 """
 
 # ---- stop-path violations (the block body, one constant per check) ---------
@@ -79,10 +69,7 @@ V_OPEN_ITEMS = (
     "state that actually applies:\n%s"
 )
 
-# ---- v21: the idle-stall gate (see wl_checks.idle_stall) --------------------
-# Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next
-# session to hunt for a wording that gets past it; the rule it is enforcing --
-# what a turn may legitimately end on -- is the thing worth carrying forward.
+# ---- v21: the idle-stall gate (see wl_checks.idle_stall) -------------------- Stated POSITIVELY on purpose. A refusal that only says "no" teaches the next session to hunt for a wording that gets past it; the rule it is enforcing -- what a turn may legitimately end on -- is the thing worth carrying forward.
 
 V_IDLE_STALL = (
     "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND. %d open item(s) are yours, "
@@ -104,14 +91,9 @@ V_IDLE_STALL = (
     "it> HOW: <what concretely resolves it>'"
 )
 
-# ---- v23: THE PENDING-ASK GATE (wl_admit.pending_ask) -----------------------
-# The message a session gets for ANNOUNCING an ask it never made. Two
-# substitutions: the announcing line quoted back, then the session prefix for
-# the --defer exit.
+# ---- v23: THE PENDING-ASK GATE (wl_admit.pending_ask) ----------------------- The message a session gets for ANNOUNCING an ask it never made. Two substitutions: the announcing line quoted back, then the session prefix for the --defer exit.
 #
-# It quotes the line rather than describing it because the first question a
-# wrongly-accused session asks is "which sentence?", and a gate that cannot
-# answer that gets argued with instead of obeyed.
+# It quotes the line rather than describing it because the first question a wrongly-accused session asks is "which sentence?", and a gate that cannot answer that gets argued with instead of obeyed.
 V_PENDING_ASK = (
     "YOU ANNOUNCED A QUESTION AND THEN STOPPED WITHOUT ASKING IT. Your closing "
     "span says:\n    %s\n"
@@ -132,10 +114,7 @@ V_PENDING_ASK = (
     "repo keeps paying for."
 )
 
-# The refusal-ledger advisory. Two substitutions: how many of THIS session's
-# questions the pre-ask hook refused, and the ledger path. ADVISORY and
-# ROTATING on purpose: a refusal is not a violation, and the only thing worth
-# saying is that the file exists and has rows in it.
+# The refusal-ledger advisory. Two substitutions: how many of THIS session's questions the pre-ask hook refused, and the ledger path. ADVISORY and ROTATING on purpose: a refusal is not a violation, and the only thing worth saying is that the file exists and has rows in it.
 N_ASK_REFUSALS = (
     "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
     "%d question(s) from this session were REFUSED by "
@@ -167,28 +146,12 @@ V_UNDEFAULTED = (
     "unanswered -- 'hold' is not one>' to each, then execute the default next turn:\n%s"
 )
 
-V_REQUESTS_WAITING = (
-    "%d cross-session REQUEST(S) are waiting on you. The asker cannot see your "
-    "context, so silence is a black hole: do it or answer with what you know, or "
-    "decline with a real reason. A broadcast wants whoever owns the area; if that "
-    "is not you, declining 'not my area: <why>' releases you:\n%s\n"
-    "    .claude/hooks/stop/worklist.py --answer %s <id> '<what you did or know>'\n"
-    "    .claude/hooks/stop/worklist.py --decline %s <id> '<why not>'"
-)
-
-V_ANSWERS_UNACKED = (
-    "your request(s) were ANSWERED and the answer is unacknowledged. This block IS "
-    "the delivery (the block reason is the only channel you actually read): act on "
-    "each answer now -- a decline means route around it or raise a [?] to the "
-    "operator -- then acknowledge so it never blocks you again:\n%s\n"
-    "    .claude/hooks/stop/worklist.py --ack %s <id>"
-)
-
 V_COMPLETION_EVIDENCE = (
     "COMPLETION WITHOUT EVIDENCE. S-2 was marked completed on another spike's "
     "evidence, nothing recorded a result anywhere, and the hole surfaced hours "
     "later. A completion must leave a record: a sha, a run id, a file:line, an "
-    "exit code, or a URL. You have it in hand at completion time, so this costs "
+    "exit code (rc=N counts), a URL, or ASKED:<YYYY-MM-DDTHH:MMZ> for an operator "
+    "answer. You have it in hand at completion time, so this costs "
     "one paste; if you do NOT have it, the item is not done.\n%s%s"
     "    For ticks, put the evidence IN THE LINE (it is the durable record). "
     "For tasks, put it on the line mentioning the #id in your message."
@@ -198,8 +161,7 @@ V_COMPLETION_TASKS = "  task(s) flipped to completed with no evidence near their
 
 V_IDLE = (
     "NOTHING WILL WAKE THIS SESSION. Task(s) %s wait, yet no background task is "
-    "running, no [>] lease is fresh, and no work cron is scheduled (the "
-    "5-minute inbox poll does not count: it only reacts to other sessions), "
+    "running, no [>] lease is fresh, and no work cron is scheduled, "
     "so after this stop the work sits until the operator notices -- the Wave "
     "C shape, where no third stop ever came and the stuck counter never had "
     "a chance to fire. Give the work a wake-up before stopping: start it "
@@ -207,22 +169,6 @@ V_IDLE = (
     "loop (CronCreate, then declare it with --loop), or if a task truly "
     "waits on the operator, ask with AskUserQuestion and record it as "
     "'You (User Thinks So)'."
-)
-
-V_XSESSION_BAD = (
-    "'waiting-cross-session' must cite an OPEN request YOU asked, or it is "
-    "just a synonym for blocked wearing a checkable-looking name:\n%s\n"
-    "Post the ask and put its #id on the Remaining line:\n"
-    "    .claude/hooks/stop/worklist.py --ask %s <recipient|*> '<what you "
-    "need> DEFAULT: <the ACTION you take alone if unanswered -- 'hold' is not one>'\n"
-    "or change the state word to one that is true."
-)
-
-V_BRIEF = (
-    "session brief is %s%s. Other sessions share this worktree and cannot see "
-    "what you are doing. Run:\n"
-    "    .claude/hooks/stop/worklist.py --brief %s '<=200 chars: what you are "
-    "changing right now>'"
 )
 
 V_STALE_LOCAL = (
@@ -263,7 +209,7 @@ above, which works on a completed job inside a live run.
 
 Then brief a sub-agent with the job name, the failing step and the log excerpt
 (Agent tool, subagent_type general-purpose) and have it come back with a fix
-rather than a theory. Investigation parallelises; do not read 95 jobs yourself.
+rather than a theory. Investigation parallelises; do not read every failing job yourself.
 
 THIS CANNOT TRAP YOU: it blocks at most %d consecutive stop(s) per failure set
 (this is %d), then downgrades to a report for that set forever. To clear it now,
@@ -368,50 +314,26 @@ still red and still yours to decide about:
 %s"""
 
 V_LOOP_DIED = (
-    "YOUR WORK LOOP DIED. This session had %d work cron(s) and now has none "
-    "(the 5-minute inbox poll does not count: it only reacts to other "
-    "sessions), so nothing will drive the work forward again. That is the "
+    "YOUR WORK LOOP DIED. This session had %d work cron(s) and now has none, "
+    "so nothing will drive the work forward again. That is the "
     "failure this check exists for. Recreate it with CronCreate, or say out "
     "loud in your message that the loop is deliberately finished."
 )
 
-V_NO_POLL_CRON = (
-    "THIS SESSION HAS A LOOP BUT NOTHING LISTENING FOR CROSS-SESSION MAIL. "
-    "Requests land between your stops, and an hourly loop makes the asker wait "
-    "up to an hour for what costs you seconds.\n"
-    "TWO shapes satisfy this check. The waiter is the better one and is listed "
-    "first deliberately -- it was built, shipped, and then not adopted because "
-    "nothing ever mentioned it:\n"
-    "  (a) A WAITER, launched as a BACKGROUND task (run_in_background: true), "
-    "no quotes anywhere in the command line:\n"
-    "        python3 .claude/hooks/stop/wl_wait.py %s --timeout 60\n"
-    "      It blocks until something NEW arrives for you and then exits, and "
-    "its EXIT is the notification -- seconds of latency instead of up to a "
-    "cron period, and no turn spent on an empty inbox. It fires ONCE, so "
-    "relaunch it in the same turn you act on what it reports. Run "
-    "`python3 .claude/hooks/stop/wl_wait.py --help` for the full contract.\n"
-    "  (b) A POLL CRON, which is also still worth keeping BESIDE a waiter:\n"
-    "        CronCreate with schedule '0 * * * *' (or a faster rung on the "
-    "5/10/20/40/60 ladder) and a prompt that runs\n"
-    "            .claude/hooks/stop/worklist.py --poll %s\n"
-    "        and, if it prints NOTHING, stops immediately with no summary and "
-    "no commentary; if it prints requests, acts on them.\n"
-    "WHY BOTH IS NOT REDUNDANT: a waiter arms against a snapshot taken when it "
-    "launched, so it is a CHANGE detector and can never see a request that "
-    "predates it. The cron is what still surfaces a backlog. The stop after an "
-    "empty poll is silent and near-free, so the cadence costs almost nothing."
-)
-
 V_MANY_WORK_CRONS = (
-    "%d work crons are live on this session: %s. ONE work loop plus the "
-    "5-minute inbox poll is the required shape; a second work schedule fires "
+    "%d work crons are live on this session: %s. ONE work loop is the "
+    "required shape; a second work schedule fires "
     "the same review twice at different phases and each firing costs a turn. "
     "Delete the redundant one with CronDelete."
 )
 
-V_MANY_POLL_CRONS = (
-    "%d poll crons (*/5, */10, */20, */40 or hourly) are live; one is the shape. Delete the "
-    "extra with CronDelete."
+V_BG_ORPHAN = (
+    "%d ORPHAN BACKGROUND SHELL(S) FOUND UNDER THIS SESSION'S OWN HARNESS, %d minute(s) or "
+    "older, that nothing currently bookkeeps:\n%s"
+    "ADVISORY ONLY -- this check never kills anything. Each row is a real OS process, still "
+    "alive, resolved as a descendant of this session's own harness pid (never a sibling "
+    "session's tree). Read the command line, decide whether it is still needed, and if not, "
+    "kill it by hand; `worklist.py --reap` retires bookkeeping only, never an OS process."
 )
 
 V_AGENT_STATE = (
@@ -448,16 +370,6 @@ V_AGENT_BOOTSTRAP = (
 V_AGENT_STILL_ABSENT = (
     "agent/%s/ is still absent; the bootstrap commands were shown on an "
     "earlier stop. Create it, then write STATE.md via worklist.py --state."
-)
-
-N_AGENT_PEERS = (
-    "NOTE: other sessions own directories beside yours under agent/, each "
-    "with its own STATE.md. They are theirs; read them for cross-session "
-    "context and NEVER write in one. Since the split you cannot lose a peer's "
-    "document by accident at all -- not even with a raw `cat >`, because you "
-    "would have to name their path to do it. One marked ABANDONED has an owner "
-    "the liveness horizon calls gone; nothing deletes it, so treat it as a "
-    "record to read rather than a slot to reclaim:\n%s"
 )
 
 CLI_LOOP_USAGE = (
@@ -528,8 +440,8 @@ CLI_UNKNOWN_VERB = (
     "battery run against an empty event), and with stdin open it hung forever.\n"
     "A typo must not be able to do either.\n"
     "Verbs: --add --triage --tick --defer --lease --update --list --state --path\n"
-    "       --compact --brief --loop --poll --ask --answer --decline --ack\n"
-    "       --requests --reports --wait --session-start --post-compact --help\n"
+    "       --compact --brief --loop --reports --session-start --post-compact\n"
+    "       --help\n"
     "The Stop hook itself takes NO arguments; that is how it stays reachable.\n"
 )
 
@@ -559,143 +471,8 @@ N_ROSTER_STALE = (
     "are done: python3 %s --reap %s <task-id>..."
 )
 
-N_WAITER_NUDGE = (
-    "NOT LISTENING: %d live peer session(s) can send you work and nothing here "
-    "would wake you. Start a waiter as a BACKGROUND task (run_in_background: "
-    "true), no quotes anywhere in the command:\n"
-    "    python3 %s %s --timeout %d\n"
-    "It blocks until something new arrives and then EXITS -- the exit is the "
-    "notification. It fires once, so relaunch it in the turn you act on it."
-)
-
-N_WAITER_DRAINED = (
-    "DRAINED, AND STILL HOLDING A WAITER. Nothing of yours is open, in flight "
-    "or pending as a task, and every live background task you have is an inbox "
-    "waiter (%d). A waiter earns its keep while you have work to do with what "
-    "it hears; with none it is a process holding for up to an hour on behalf of "
-    "a session that has finished. Stop it and end clean:\n"
-    "%s\n"
-    "Start a FRESH one the moment you pick work up again (a stopped waiter "
-    "cannot be resumed, and it would not see anything that arrived meanwhile "
-    "anyway): python3 %s %s --timeout %d"
-)
-
-# FIVE ROUNDS, FIVE DIFFERENT STATEMENTS, AND IT NEVER GIVES UP.
-#
-# A violation that repeats itself verbatim becomes wallpaper: the session reads
-# the first line, recognises it, and skips the rest -- so an identical fifth
-# nudge is weaker than the first, not stronger. Each rung here adds a FACT the
-# previous one did not carry (who is blocked, that the answer may already be
-# sitting unread, that withdrawing is a legitimate exit, how long this has
-# gone on) rather than simply raising its voice.
-#
-# Past the last rung the message stops changing but the check keeps firing.
-# Giving up would return the session to exactly the state this exists to
-# prevent -- stopped, not listening, waiting forever for something it cannot
-# hear -- and a check that tires before the session does is not a check.
-V_ASK_NOLISTEN_LADDER = (
-    # 1 -- plainest statement of the fact plus the command.
-    (
-        "YOU ASKED %(n)d QUESTION%(s)s AND ARE NOT LISTENING FOR THE ANSWER.\n"
-        "%(rows)s"
-        "Posting a request is this session choosing to depend on a reply. Without a\n"
-        "waiter the answer sits unseen until your next stop, so if you stop now you\n"
-        "may wait indefinitely for something already delivered.\n"
-        "%(cmd)s"
-    ),
-    # 2 -- name who is holding the obligation.
-    (
-        "STILL NOT LISTENING (round 2). The session%(s2)s below %(is_are)s holding an\n"
-        "obligation to answer YOU, and cannot know you have stopped reading:\n"
-        "%(rows)s"
-        "They answer into a channel nothing here is watching.\n"
-        "%(cmd)s"
-    ),
-    # 3 -- the answer may ALREADY be there.
-    (
-        "ROUND 3, AND THE REPLY MAY ALREADY BE WAITING. A waiter is not only for\n"
-        "future answers: it exits the moment anything new arrives, including a reply\n"
-        "posted minutes ago that you have not read.\n"
-        "%(rows)s"
-        "Check now, before assuming silence: python3 %(hook)s --poll %(me)s\n"
-        "%(cmd)s"
-    ),
-    # 4 -- withdrawing is a legitimate exit, and the honest one.
-    (
-        "ROUND 4. There are TWO ways out of this and only one of them is a waiter.\n"
-        "%(rows)s"
-        "If you no longer need the answer, SAY SO to the recipient instead of\n"
-        "leaving the question open -- an open request is an obligation on them, and\n"
-        "abandoning it silently is the thing this whole channel exists to stop:\n"
-        "    python3 %(hook)s --ask %(me)s <them> 'withdrawing #<id>, no longer needed'\n"
-        "%(cmd)s"
-    ),
-    # 5 and after -- terminal, and honest that it will not relent.
-    (
-        "ROUND %(round)d. THIS CHECK WILL NOT STOP FIRING, and it is not going to\n"
-        "tire before you do. It has now asked %(round)d times.\n"
-        "%(rows)s"
-        "Nothing here is a judgement about the work; it is that you are waiting on\n"
-        "an answer through a channel you are not watching, which ends one of two\n"
-        "ways: start the waiter, or withdraw the question. Both are one command.\n"
-        "%(cmd)s"
-    ),
-)
-
-V_ASK_NOLISTEN_CMD = (
-    "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere\n"
-    "in the command line (a quoted path renders the waiter `unverifiable`, which\n"
-    "does not satisfy this check -- it is confirmed against the OS, not believed):\n"
-    # SIXTY, not 900. `--timeout` is in MINUTES (wl_wait.DEFAULT_TIMEOUT_MIN,
-    # `timeout_min * 60.0`), so 900 asked for a FIFTEEN-HOUR wait while
-    # V_NO_WAITER and wl_wait.HELP both said 60. A session shown both picks one
-    # and its waiter then lapses at an hour while the other message insists it
-    # should still be running.
-    "    python3 %s %s --timeout 60\n"
-    "Its EXIT is the notification, and it fires ONCE: relaunch it in the same\n"
-    "turn you act on what it reports.\n"
-)
-
-V_NO_WAITER = (
-    "THIS SESSION HAS A WORK LOOP AND %d LIVE PEER(S), AND IS NOT LISTENING. "
-    "No confirmed waiter is running, so a request addressed to you sits unseen "
-    "until your next stop or poll -- and a peer blocked on your answer waits "
-    "that long for something that costs you seconds.\n"
-    "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES "
-    "anywhere in the command line (a quoted path renders the waiter "
-    "`unverifiable`, which does not satisfy this check):\n"
-    "    python3 %s %s --timeout 60\n"
-    "Its EXIT is the notification. It fires ONCE, so relaunch it in the same "
-    "turn you act on what it reports; this check is what catches you if you "
-    "forget. `--help` on that path explains the whole contract.\n"
-    "This does NOT replace the poll cron: a waiter cannot see a request that "
-    "predates it, so keep the hourly cron as the backlog backstop."
-)
-
-# THE LAPSE, which used to be invisible. wl_wait.wait() unlinked its heartbeat
-# on both exits, so "my waiter died 40 minutes ago" and "I have never listened"
-# left the filesystem in the same state -- and the hook is far more lenient
-# about the second. The tombstone makes the difference readable; this message
-# is what the difference is FOR, so it names which of the two exits happened.
-V_WAITER_LAPSED = (
-    "YOUR WAITER LAPSED (%s) %d MINUTE(S) AGO AND YOU HAVE NOT RELAUNCHED IT. "
-    "%d live peer(s) can address you and nothing here is listening. This is not "
-    "the gentle 'you have never started one' nudge: you started one, it told "
-    "you on the way out that it fires ONCE and must be relaunched, and it was "
-    "not. Every request sent since then is sitting unread.\n"
-    "    python3 %s %s --timeout 60\n"
-    "as a BACKGROUND task (run_in_background: true), NO QUOTES anywhere in the "
-    "command line. If you are genuinely finished, say so and close your open "
-    "items instead -- a drained session is told to stop its waiter, not to keep "
-    "one."
-)
-
-# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it
-# already is. The four boxes are read off `.claude/commands/pr-babysit.md`
-# ("The console PR rides as a draft until green; stops at green +
-# Claude-reviewed + threads-resolved PRs; never merges") rather than invented
-# here, and the two the hook cannot observe are backed by ticked worklist
-# items, which is the same evidence discipline every other tick carries.
+# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` ("The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges") rather than invented here, and the two the hook cannot observe are backed by ticked worklist items, which is the
+# same evidence discipline every other tick carries.
 V_PR_FINISH = (
     "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
     "(%s) and PR #%s has not reached the finish line stated in "
@@ -710,12 +487,8 @@ V_PR_FINISH = (
     "Never merge, and never push main: that stays the operator's call."
 )
 
-# ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that
-# it cannot be rotated away; it is NOT a licence to print five long blocks,
-# because "a prompt that fires always is a prompt that gets skimmed" and a
-# skimmed invariant is a rotated one with extra steps. So the excess is NAMED,
-# never dropped: key plus its opening line, which is the line every one of
-# these messages puts its verdict on.
+# ONE LINE PER INVARIANT that was not quoted in full. The tier's value is that it cannot be rotated away; it is NOT a licence to print five long blocks, because "a prompt that fires always is a prompt that gets skimmed" and a skimmed invariant is a rotated one with extra steps. So the excess is NAMED, never dropped: key plus its opening line, which is the line every one of these
+# messages puts its verdict on.
 R_ALWAYS_COLLAPSED = "ALSO BLOCKING, IN BRIEF (quoted in full on a later stop):\n%s"
 
 N_UNREAD_REPORTS = (
@@ -730,7 +503,7 @@ N_UNREAD_REPORTS = (
 
 CLI_REASSIGN_USAGE = (
     "usage: --reassign <my-prefix> <phantom-prefix>\n"
-    "Moves OPEN items and OPEN requests off an identity that never stopped "
+    "Moves OPEN items off an identity that never stopped "
     "(no .lastevent-<prefix>.json) and onto you. History is not rewritten: the "
     "events still record who wrote them.\n"
 )
@@ -745,7 +518,7 @@ CLI_REASSIGN_YOUNG = (
     "floor, so it may be a session mid-turn rather than a phantom.\n"
     "The .lastevent- file is written at a session's FIRST STOP, so a peer that "
     "has added items and not yet stopped looks exactly like a dead one. Moving "
-    "its OPEN items and request routing now would take work from someone still "
+    "its OPEN items now would take work from someone still "
     "doing it.\n"
     "Wait until it is past the same age the advisory backstop uses, or confirm "
     "with the operator that %s is genuinely gone.\n"
@@ -761,21 +534,24 @@ CLI_REASSIGN_ALIVE = (
 CLI_REASSIGN_DONE = (
     "reassigned %s -> %s\n"
     "  items:    %s\n"
-    "  requests: %s\n"
-    "Both logs were APPENDED to, never rewritten, so the history still says the "
-    "phantom wrote them -- only the ownership and the routing moved.\n"
-    "Check the inbox you could not see before:\n"
-    "    worklist.py --poll %s\n"
+    "The log was APPENDED to, never rewritten, so the history still says the "
+    "phantom wrote them -- only the ownership moved.\n"
+    "Check the items you could not see before:\n"
     "    worklist.py --list --open %s"
 )
 
 CLI_MIGRATE_USAGE = (
     "usage: worklist.py --migrate <me> --candidates [--json]\n"
     "       worklist.py --migrate <me> <prev> [<prev>...]\n"
+    "       worklist.py --migrate <me> --plan <path> [<path>...]\n"
     "List sessions whose remaining work is not live here, then continue the ones\n"
     "you name: their open, in-flight and deferred items are re-tagged to you and\n"
     "the originals are ticked 'migrated to'. Nothing is deleted; a LIVE session is\n"
-    "refused. Use it after a restart or a machine switch (/migrate wraps it).\n"
+    "refused. A candidate can also be a committed agent/plans/PLAN-*.md carrying open\n"
+    "boxes whose declared owner is idle -- --plan re-stamps that plan's Owner:\n"
+    "line to you (no box is touched); a store migration never does this on its\n"
+    "own, it only prints the command. Use it after a restart or a machine switch\n"
+    "(/migrate wraps it).\n"
 )
 
 CLI_ADOPT_USAGE = (
@@ -826,10 +602,10 @@ N_PHANTOM_IDENTITY = (
     "that file is written on every Stop hook, so a real session always has one. "
     "The commonest cause is a session that mistyped its own <me> once and kept "
     "using it: writes and reads then key off the same wrong string, every call "
-    "succeeds, and the session ends up with two inboxes and reads only one. "
-    "That cost a peer's message 34 hours here.\n%s\n"
+    "succeeds, and the session ends up with two identities and sees the items "
+    "of only one.\n%s\n"
     "    take the work over:  python3 %s --reassign %s <prefix>\n"
-    "It moves OPEN items and OPEN requests only; the history stays truthful "
+    "It moves OPEN items only; the history stays truthful "
     "about who wrote what. If you know the prefix is a live peer that simply "
     "has not stopped yet, ignore this -- it is report-only and never blocks."
 )
@@ -847,15 +623,8 @@ N_CL_FOREIGN = (
     "never blocked on.%s"
 )
 
-# THE OWNER'S ORDER, SAID TO SOMEBODY ELSE, was the bug (found by the automated
-# review on PR #563). Drift used to build ONE body -- V_CL_FLIP, which ends
-# "...in this turn" -- and route it either to a blocking violation or to this
-# advisory, so a session that does not own the handoff read a direct
-# instruction to repair another session's artifacts and header. That is not
-# theoretical: a peer's shared STATE.md was destroyed here by a session obeying
-# an instruction addressed to whoever happened to read it. This constant states
-# the same FACTS and names no action for the reader. V_CL_FLIP keeps its
-# imperative, because on that path the reader IS the owner.
+# THE OWNER'S ORDER, SAID TO SOMEBODY ELSE, was the bug (found by the automated review on PR #563). Drift used to build ONE body -- V_CL_FLIP, which ends "...in this turn" -- and route it either to a blocking violation or to this advisory, so a session that does not own the handoff read a direct instruction to repair another session's artifacts and header. That is not theoretical:
+# a peer's shared STATE.md was destroyed here by a session obeying an instruction addressed to whoever happened to read it. This constant states the same FACTS and names no action for the reader. V_CL_FLIP keeps its imperative, because on that path the reader IS the owner.
 V_PLAN_DRIFT = (
     "%d committed plan file(s) under agent/ describe work you have since "
     "moved past:\n%s\n"
@@ -901,19 +670,12 @@ N_CADENCE_PAUSE = (
     "same checks are waiting at the next stop.%s"
 )
 
-# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it
-# spent both. The pause named the check CATEGORIES ("open-items; requests") and
-# nothing else, so a session paused over a `requests` check was told a label
-# while ANOTHER session sat blocked on an answer it could have given in
-# seconds. Reported by the operator watching exactly that happen.
+# A PAUSE SPENDS THE DEMAND, NOT THE INFORMATION -- and until 2026-08-27 it spent both. The pause named the check CATEGORIES and nothing else, so a session paused over a check that somebody else was waiting on was told a label and nothing more.
 #
-# Cross-session obligations are carried through the pause in full, because they
-# are the one class where the cost of staying quiet lands on somebody else. A
-# session may reasonably defer its own open items for a turn; it cannot
-# reasonably defer a peer without knowing the peer is there.
+# Obligations a worker or teammate is waiting on are carried through the pause in full, because they are the one class where the cost of staying quiet lands on somebody else. A session may reasonably defer its own open items for a turn; it cannot reasonably defer a waiting worker without knowing it is there.
 N_CADENCE_PAUSE_CARRIED = (
-    "\n\nCARRIED THROUGH THE PAUSE, because another session is waiting on you "
-    "and cannot see that you stood down:\n%s"
+    "\n\nCARRIED THROUGH THE PAUSE, because a worker or teammate is waiting on "
+    "you and cannot see that you stood down:\n%s"
 )
 
 N_CL_DOOR_PARKED = (
@@ -953,9 +715,7 @@ CLI_STATE_REFUSED = (
     "other session's section.\n"
 )
 
-# The waitled refusal, which needs to teach rather than merely deny: the habit it
-# breaks is invisible from inside a single session and only shows up across a
-# compaction boundary.
+# The waitled refusal, which needs to teach rather than merely deny: the habit it breaks is invisible from inside a single session and only shows up across a compaction boundary.
 V_SOLO_GRIND = (
     "%s OPEN ITEMS AND NO WRITER TEAMMATE. This is not a violation and it does not\n"
     "block; it is the one thing a per-stop check cannot see and a human watching\n"
@@ -990,10 +750,7 @@ CLI_STATE_WAIT_LED = (
     "Nothing was written; the previous STATE.md is untouched.\n"
 )
 
-# The refusal an in-flight session running the pre-section instructions will
-# meet mid-task, so it states the whole contract rather than merely saying no.
-# Piping the whole document in was the old habit, and it is the exact habit
-# that destroyed a peer's live campaign document on 2026-08-09.
+# The refusal an in-flight session running the pre-section instructions will meet mid-task, so it states the whole contract rather than merely saying no. Piping the whole document in was the old habit, and it is the exact habit that destroyed a peer's live campaign document on 2026-08-09.
 CLI_STATE_WHOLE_DOC = (
     "STATE REFUSED: the body you piped in carries a '## SESSION' heading, so it "
     "looks like the WHOLE document rather than your own section.\n"
@@ -1008,15 +765,10 @@ CLI_STATE_WHOLE_DOC = (
     "Nothing was written; the previous document is untouched.\n"
 )
 
-# WHY THESE TWO EXIST (cross-session report #7c1c2629, 2026-08-05, reproduced
-# before fixing). `--state` used to require argv[2] to be RECOGNISED at all:
+# WHY THESE TWO EXIST (cross-session report #7c1c2629, 2026-08-05, reproduced before fixing). `--state` used to require argv[2] to be RECOGNISED at all:
 # `len(sys.argv) > 2 and sys.argv[1] == "--state"`. A bare `--state`, or one
-# whose body was passed as argv instead of on stdin, therefore fell through
-# every branch into the Stop-HOOK path, which reads the hook event from stdin
-# and so BLOCKED FOREVER on a terminal. It cost the reporting session a
-# ten-minute tool timeout, and the control that proves it is stdin rather than
-# a lock is one redirect: `--state </dev/null` returns instantly, the same
-# command without it hangs.
+# whose body was passed as argv instead of on stdin, therefore fell through every branch into the Stop-HOOK path, which reads the hook event from stdin and so BLOCKED FOREVER on a terminal. It cost the reporting session a ten-minute tool timeout, and the control that proves it is stdin rather than a lock is one redirect: `--state </dev/null` returns instantly, the same command
+# without it hangs.
 CLI_STATE_USAGE = (
     "usage: worklist.py --state <session-prefix> <<'EOF' ... EOF\n"
     "The STATE.md body is read from STDIN, never from argv. A bare `--state` "
@@ -1024,11 +776,7 @@ CLI_STATE_USAGE = (
     "now refuses here instead.\n"
 )
 
-# The second half of the same report: the body arrives on stdin, so passing it
-# as arguments left `body` empty and the shape check said `thin: 0 chars`.
-# That reads as "your document was too short" when the truth is "your document
-# never arrived", and the reporter chased the wrong thing twice. Empty stdin is
-# now its own message, and it names the extra argv when that is the likely
+# The second half of the same report: the body arrives on stdin, so passing it as arguments left `body` empty and the shape check said `thin: 0 chars`. That reads as "your document was too short" when the truth is "your document never arrived", and the reporter chased the wrong thing twice. Empty stdin is now its own message, and it names the extra argv when that is the likely
 # cause.
 CLI_STATE_NO_BODY = (
     "STATE REFUSED: no body arrived on stdin%s. The document is read from "
@@ -1044,26 +792,15 @@ CLI_STATE_NO_DIR = (
     "    mkdir -p agent/%s\n"
 )
 
-# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on
-# every stop. The operator deleted that section outright ("we don't need to
-# print next wakeup times... let's go for efficient ai context usage"); this is
-# the one row of it that was ever actionable, and it is silent unless a
-# schedule is genuinely broken.
+# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on every stop. The operator deleted that section outright ("we don't need to print next wakeup times... let's go for efficient ai context usage"); this is the one row of it that was ever actionable, and it is silent unless a schedule is genuinely broken.
 V_BROKEN_SCHEDULE = (
     "%d scheduled task(s) carry a schedule this hook CANNOT PARSE:\n%s\n"
     "    An unparseable schedule is invisible to every other check here -- it "
-    "counts as neither an inbox poll nor a work loop, so the cron-shape "
-    "checks, the poll backoff ladder and the loop-death detector all skip it, "
+    "counts as no work loop, so the cron-shape checks and the loop-death "
+    "detector both skip it, "
     "and the task may never fire at all. Fix the schedule (delete the job and "
     "recreate it with a valid 5-field cron expression, same prompt verbatim), "
     "or delete it if it is no longer wanted."
-)
-
-V_DOCS_DRIFT = (
-    "the design docs have DRIFTED: %d commits have touched %s since %s was last "
-    "updated. Those documents are how a new or compacted session understands this "
-    "work, so code moving without them deletes the next session's starting "
-    "context. Update the ones your changes invalidated, in this turn."
 )
 
 # ---- the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md, wl_checklist) ---
@@ -1127,13 +864,45 @@ V_UNCONFIRMED = (
 
 V_UNCITED = (
     "a blocker is a CLAIM ABOUT REALITY and these carry no source:\n%s\n"
-    "This is the Wave C failure exactly: the report said 'blocked on Wave B "
-    "landing' while 05-execution-guide.md:108 said it lands with every stage "
-    "flag off, and nothing challenged it because the SHAPE was valid and only "
-    "the CONTENT was wrong. Cite the line that blocks you as <path>:<line>, or "
+    "A blocker can be perfectly shaped and still wrong: a report that says "
+    "'blocked on X landing' while the cited document says X can be built and "
+    "left switched off is not blocked, and nothing challenges it unless a "
+    "source is named. Cite the line that blocks you as <path>:<line>, or "
     "if you cannot find one, that is your answer: it is not blocked, so go do "
     "it. Waiting on something real (a run, an agent) belongs in a [>] lease or "
     "a background task instead, which this check already exempts."
+)
+
+V_PLAN_ADOPTED = (
+    "%(rel)s WAS ADOPTED BY THIS SESSION, so its open boxes are this session's mission, not an advisory. "
+    "%(n_open)d box(es) are open and %(n_gap)d of them have no live worklist item, so stopping now "
+    "would leave them untracked and unfinished. Adopting a plan is the statement 'this session is "
+    "executing it', which is what separates it from a plan that merely names this session as Owner "
+    "(that stays an advisory and never blocks). Track the boxes, then work them in order:\n%(recipes)s\n"
+    "A box that genuinely cannot be worked now goes to the operator instead of staying invisible:\n"
+    "    .claude/hooks/stop/worklist.py --defer %(me)s <id> '<question> DEFAULT: <action> WHY: <why it "
+    "cannot be settled> HOW: <what resolves it>'\n"
+    "If the plan stopped being this session's, hand it back by editing its Owner line. If the "
+    "operator DECIDED its open boxes will not be done, close it honestly: a finished Status "
+    "(superseded, abandoned) plus a header line `Ruling: #<closed worklist id>` (or "
+    '`Ruling: "<operator quote>" in <path>`) naming that decision. check:ci-plan-boxes (G-A3) '
+    "refuses a finished Status over open boxes without a Ruling that re-resolves, and `parked` "
+    "does not close anything: its boxes stay on every clock."
+)
+
+# THE BODY IS BUILT BY `wl_planenforce.render`, NOT BY THIS STRING, and the split is deliberate rather than untidy. Every number in that body -- the ceiling, the day, the three ownership buckets, the one named box and its signature -- is arithmetic the module computed, and a format string with fourteen `%(...)s` holes is a place where the caller and the message drift out of step
+# silently. What lives here is the one sentence the ladder's own T_MISSION comment demands be said out loud, wrapped around that body.
+V_PLAN_UNIMPLEMENTED = (
+    "PLANS ARE NOT IMPLEMENTED, and that is the thing this repo was asked to stop doing. "
+    "The operator's ruling was ALL, after seeing the census and the branch age; what it earned "
+    "is a CLOCK, not an exemption, and the clock is the only thing standing between this and a "
+    "gate that reds on the mere existence of an open box.\n\n"
+    "%(body)s\n\n"
+    "THIS BLOCK HAS NO FIRE CAP, because its exit is arithmetic and printed above: close the "
+    "named number of boxes, or move them through one of the five doors, and it goes quiet. "
+    "Three earlier checks in this hook blocked with no reachable exit and each one is now a "
+    "plan about the incident it caused; a cap is what an unreachable exit needs, and this exit "
+    "is reachable."
 )
 
 V_FOUND_NOT_FIXED = (
@@ -1155,13 +924,24 @@ V_DEFERRED_FINDING = (
     "`--defer` it with a DEFAULT and the door named. Then drop the phrase."
 )
 
+V_DEFLECTED_FINDING = (
+    'this turn dismissed a finding without fixing, tracking or door-naming it: "%s"\n'
+    "CLAUDE.md rule 2: a finding is fixed, `--add`ed, or `--defer`red with a door in the "
+    "session that finds it -- 'pre-existing'/'unrelated'/'environmental' is not one of the "
+    "three doors on its own. What would have kept this quiet: a `worklist.py --add/--defer` "
+    "call, a `#<id>` citation, or a `door:operator-only|operator-deferred|no-write-access` "
+    "token anywhere in this turn. None of those appeared. Either do one now, or state in one "
+    "line what was already run to verify the claim."
+)
+
 V_SWEEP_MOMENT = (
     "GOOD MOMENT TO SWEEP. Nothing of yours is open, nothing is in flight, and you "
     "just closed %s -- which makes this the cheapest point in the whole session to "
     "clear what you noticed on the way but never wrote down.\n"
-    "Think back over this turn's work: a comment that turned out stale, a gate you "
-    "worked around, an error message that named the wrong cause, a sibling of the "
-    "bug you just fixed. CLAUDE.md asks you to sweep the CLASS, not the instance.\n"
+    "Start from the artifact, not from memory: `git diff` (or `git diff-tree` for the last "
+    "commit), and for each function, message or constant that changed, look for another "
+    "copy of it that should change too, or a comment that no longer matches the code. "
+    "CLAUDE.md asks you to sweep the CLASS, not the instance.\n"
     "If there is nothing, say so in one line and stop -- that is a complete answer. "
     "If there is something, `--add` it now while you still have the context loaded; "
     "rediscovering it later costs a session."
@@ -1198,13 +978,8 @@ V_NO_REMAINING = (
     "'## Remaining' section listing what is left and who it is blocked on:\n%s"
 )
 
-# ---- v11: the store-derived stop guide --------------------------------------
-# WHY (operator, 2026-07-30): "--list should be used always on stop hook to
-# output enforced guided instructions." The v10 store stamped every item and
-# the hand-authored Remaining prose ignored all of it, so the report is now
-# derived from the store on EVERY stop, allow and block alike. The per-line
-# bodies are assembled in wl_checks.guided_slice (structural, one format per
-# item state); these three carry the surrounding prose.
+# ---- v11: the store-derived stop guide -------------------------------------- WHY (operator, 2026-07-30): "--list should be used always on stop hook to output enforced guided instructions." The v10 store stamped every item and the hand-authored Remaining prose ignored all of it, so the report is now derived from the store on EVERY stop, allow and block alike. The per-line bodies
+# are assembled in wl_checks.guided_slice (structural, one format per item state); these three carry the surrounding prose.
 
 GUIDE_HEADER = (
     "WORKLIST GUIDE (derived from the store, not from memory; base your Remaining section on THIS):"
@@ -1222,13 +997,23 @@ GUIDE_TRUNCATED = (
     "for the full slice)"
 )
 
+# agent/plans/PLAN-plan-priority-concurrency.md section 2: rows inside one obligation band are ordered by plan rank (dependencies, operator priority, AI priority, age). When the plans cannot be read the rows fall back to age order, and the guide SAYS so rather than presenting a blind order as a ranked one. Substitution: the read problem.
+N_GUIDE_ORDER_BLIND = "  (plan priority order unavailable, rows are in age order: %s)"
+# Section 5c's residual: an item whose plan a live exclusive plan or a live plan's Owns holds still shows, with the hold and its exit. Substitutions: the hold reason, the session prefix, the item id.
+N_GUIDE_HELD = (
+    "\n        held: %s\n        a writer spawn is refused until the holder finishes; queue it: "
+    "--lease %s %s +120 worker:queue"
+)
+
+# The same fact on a queued row: nothing to do, queue-slot names the item once the holder finishes. Substitution: the hold reason.
+N_GUIDE_HELD_QUEUED = "\n        held: %s\n        queue-slot names it once the holder finishes"
+
 # ---- v12: deferral justification, the audit, and the CI-waiting force -------
 
 V_UNJUSTIFIED = (
     "%d deferred item(s) have sat %d+ minutes with NO justification on "
-    "record. A [?] that costs nothing to hold is an escape hatch: thirty "
-    "once piled up untouched, and one of them requested a feature that had "
-    "ALREADY been built. Each of these either gets done now or earns its "
+    "record. A [?] that costs nothing to hold is an escape hatch: parked "
+    "items pile up untouched, and some ask for work already done. Each of these either gets done now or earns its "
     "seat, this turn:\n%s\n%s"
     "    do it:      .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
     "    or justify: .claude/hooks/stop/worklist.py --defer %s <id> "
@@ -1292,6 +1077,20 @@ CLI_DEFER_VAGUE_WHY = (
     "this session settling it alone, in at least a sentence."
 )
 
+CLI_DEFER_ALREADY_SETTLED = (
+    "REFUSED: the tree already answers this deferral's question. %s -- %s\n"
+    "A [?] asks the operator for something this session cannot settle; this "
+    "one is settled by a fact checked just now. The item stays open [ ] work: "
+    "act on that fact and tick it with the citation as evidence. If the fact "
+    "does not really answer the question, defer again with a WHY: that says so."
+)
+
+CLI_RESERVED_ACTOR = (
+    "REFUSED: <me>=%s is a reserved actor, written only by the machinery that "
+    "owns it, so a session using it would forge that machinery's record. "
+    "Pass YOUR session-id prefix."
+)
+
 DEFER_AUDIT_PROMPT = """
 
 DEFERRAL AUDIT. ALSO fill the `defer_audit` array: exactly one entry per item
@@ -1299,8 +1098,8 @@ below, using the same id. These are [?] deferrals this session parked on the
 operator, each with the justification it wrote for itself. Audit them as a
 HARD reviewer: the null hypothesis is that the session is avoiding work,
 because deferring costs nothing and holding a deferral costs nothing, and
-that is exactly how thirty of these once sat for two hours -- one of them
-requesting a feature that had ALREADY been built.
+that is exactly how a pile of these sits untouched -- some of them asking
+for work that was ALREADY done.
 
 Interrogate each record:
   - WHY: is it a real inability, or a preference? Could the session settle
@@ -1390,27 +1189,32 @@ N_LADDER_PING = (
     "(this becomes a block at 90 minutes; --update resets the clock)"
 )
 
-# ---- the allow-report output queue ------------------------------------------
-# The judge stamp is the bare confirmation that a paid call happened; the FULL
-# form carries the reason and is reserved for a stop whose context was just
-# rebuilt or whose reason changed (operator, 2026-07-31: the approval reason
-# was reprinted on every single stop).
+# ---- the allow-report output queue ------------------------------------------ The judge stamp is the bare confirmation that a paid call happened; the FULL form carries the reason and is reserved for a stop whose context was just rebuilt or whose reason changed (operator, 2026-07-31: the approval reason was reprinted on every single stop).
 
 N_JUDGE_STAMP = "Stop-gate judge (%s) %s."
 
 N_JUDGE_STAMP_FULL = "Stop-gate judge (%s) %s: %s"
 
 N_OUTQ_MORE = (
-    "(%d more report section(s) queued; one is released per stop, highest "
-    "priority first, oldest first inside a priority. Raise "
-    "WORKLIST_REPORT_PER_STOP to drain faster.)"
+    "(%d more report section(s) queued; up to 3 release per stop, highest "
+    "priority first, randomized among same-priority sections. The rest "
+    "surface on later stops, no knob to widen the drain.)"
 )
 
-# ---- the specialist-agent hint (wl_agents) ----------------------------------
-# NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader
-# who sees "Matched on: fork, cap" dismisses it in one second instead of
-# opening a 9 KB agent file to find out why it was suggested. It is also what
-# makes the matcher debuggable in the field without a debug flag.
+# THE QUEUE USED TO DRAIN ON THE ALLOW PATH ONLY, so a session blocked at every stop never saw a word of it: measured 2026-09-17, ten plan boxes stayed unseen across roughly twenty consecutive blocked stops. Since 2026-09-24 (operator ruling "One quoted + others named", agent/plans/PLAN-stop-hook-continuity.md P0.2) a blocked stop carries a DIGEST: one line per queued section, highest priority first, at
+# most OUTQ_DIGEST_MAX of them. A section whose whole text is one line is DELIVERED by the digest and leaves the queue; a longer body is only named here and still releases in full on a clean stop.
+N_OUTQ_DIGEST = "QUEUED ADVISORIES (%d queued; one-line ones are delivered here, longer ones are named and release in full on a clean stop):\n%s"
+N_OUTQ_DIGEST_MORE = "    (+%d more queued)"
+# The ladder's collapsed digest line (agent/plans/PLAN-stop-hook-retro-20260924.md R.9).
+N_OUTQ_LADDER_LINE = "%d quiet in-flight subject(s) (%s); the full ping releases on a clean stop"
+
+# PURELY OBSERVATIONAL, changes no verdict: names whether the first-touch onboarding notice (onboard.py) was already delivered this session, so a reader of a refusal does not have to separately wonder whether the session ever saw it.
+# P2.4: an item whose every BLOCKED_BY blocker has closed is open work again.
+N_UNBLOCKED = "UNBLOCKED #%s: every item it was waiting on has closed, so it is open work again: %s"
+
+N_ONBOARD_DELIVERED = "(Onboarding notice: delivered this session, epoch %s.)"
+
+# ---- the specialist-agent hint (wl_agents) ---------------------------------- NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader who sees "Matched on: fork, cap" dismisses it in one second instead of opening a 9 KB agent file to find out why it was suggested. It is also what makes the matcher debuggable in the field without a debug flag.
 
 N_AGENT_HINT = (
     "Specialist agent available: %s (.claude/agents/%s.md).\n"
@@ -1420,15 +1224,23 @@ N_AGENT_HINT = (
     "  Agent tool, or ignore this line if it is not the domain you are in."
 )
 
-# ---- the push-back (wl_agents.pushback_for) ---------------------------------
-# NOT an accusation and deliberately not phrased as one: concluding that
-# something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only
-# concluding it WITHOUT PROBING. So this quotes the claim back, names the file
-# that may already answer it, and asks for one command. A session that has
-# already probed clears it in a sentence.
+# ---- the rotating behavioral hint (wl_hints) -------------------------------- NAMING THE ID AND SOURCE is the same self-refuting design N_AGENT_HINT uses: a wrong hint is dismissed in one second by opening what it cites, rather than taken on faith.
+
+N_BEHAVIOR_HINT = "TIP (hint %d of %d, rotating): %s  [%s -- %s]"
+
+N_HINT_CORPUS_ERR = (
+    "Hint corpus problem (the rotating behavioral hint is degraded until fixed):\n%s"
+)
+
+N_HINT_PROPOSALS_PENDING = (
+    "%d hint proposal(s) are waiting in agent/ledgers/hint-proposals.jsonl, not yet promoted into "
+    "docs/agent-reference/HINTS.md. Promotion is a reviewed hand edit to that file, never automatic."
+)
+
+# ---- the push-back (wl_agents.pushback_for) --------------------------------- NOT an accusation and deliberately not phrased as one: concluding that something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only concluding it WITHOUT PROBING. So this quotes the claim back, names the file that may already answer it, and asks for one command. A session that has already
+# probed clears it in a sentence.
 #
-# It names the matched terms for the same reason the hint does: a wrong
-# push-back must be refutable in one second, not by opening a 9 KB file.
+# It names the matched terms for the same reason the hint does: a wrong push-back must be refutable in one second, not by opening a 9 KB file.
 
 V_AGENT_PUSHBACK = (
     "You just claimed %s, in a domain .claude/agents/%s.md already covers.\n"
@@ -1443,10 +1255,19 @@ V_AGENT_PUSHBACK = (
     "  and this is the check that asks you to prove it. Fires ONCE per specialist."
 )
 
-# A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a
-# crash and never to a quiet skip: the matcher runs on the path that ends every
-# turn, so an exception here is a session that cannot stop, and a silent skip is
-# an agent that has stopped being reachable while everything still looks fine.
+# THE AGENT-FREE HALF of the same conjunction, PLAN-stop-hook-overhaul.md section 1.1: pushback_for now separates the CHALLENGE (a give-up claim was made) from the ROUTING (a specialist can be confidently named for it), and a claim that clears the give-up scan but not the hint's own confidence floor still deserves the challenge -- CLAUDE.md rule 3 forbids concluding something is
+# impossible WITHOUT PROBING, and that rule does not stop applying just because no specific file names the domain. Naming a specialist here would be the exact 1.0-score misrouting this split was built to remove ("verifi", "yet"), so this asks for the probe generically instead of guessing a file to read.
+V_GIVEUP_CLAIM = (
+    "You just claimed %s.\n"
+    "  No specialist file matched confidently enough to name one -- see .claude/agents/\n"
+    "  for the roster anyway, in case one applies. Whether or not one does, CLAUDE.md\n"
+    '  rule 3 still applies: "Cannot be done here" is a claim, not a finding, until\n'
+    "  something was actually run to test it. Clear it either way: run the probe and\n"
+    "  report what it said, or state in one line what was already tried. Fires ONCE\n"
+    "  per distinct claim set per session."
+)
+
+# A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a crash and never to a quiet skip: the matcher runs on the path that ends every turn, so an exception here is a session that cannot stop, and a silent skip is an agent that has stopped being reachable while everything still looks fine.
 N_AGENT_CORPUS_ERR = "Agent corpus problem (specialist hints are degraded until fixed):\n%s"
 
 # ---- block-reason wrappers (the `reason` field of an emitted block) ---------
@@ -1460,19 +1281,24 @@ R_BLOCK = (
 
 # ---- v13: the focused block (operator, 2026-07-31: "single and focused
 # message at a time... 1-2 sentence each time"). One rotating check per stop;
-# the others are a bare count. ALWAYS-tier texts (latched one-shots and hook
-# integrity) still ride in full when present, because hiding a latched message
+# the others are a bare count. ALWAYS-tier texts (latched one-shots and hook integrity) still ride in full when present, because hiding a latched message
 # swallows it forever. R_BLOCK stays verbatim for WORKLIST_FOCUS=off.
 
+# THE SELF-REPAIR ORDER HAS AN OUTLET since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.5). "Fix it" alone left two options, a full fix turn or ignoring it; `--hint-propose` records the lesson in agent/ledgers/hint-proposals.jsonl for a human to promote, which is the channel's first advertisement outside the hint corpus itself.
 R_BLOCK_FOCUS = (
     "Do not stop yet.\n\n%s\n\n"
     "(%s. Fix THIS, then stop. A check that fires wrongly is a bug in %s; "
-    "you are the session that fixes it.)"
+    "you are the session that fixes it, or, if it cannot be fixed this turn, records the lesson: "
+    "worklist.py --hint-propose %s '<lesson>' SOURCE: <check-key>.)"
 )
 
 R_FOCUS_MORE = (
-    "%d more check(s) outstanding; the next stop surfaces the next one, rotation forgets nothing"
+    "%d more check(s) outstanding, each named above; the next stop quotes the next one in full, "
+    "rotation forgets nothing"
 )
+
+# The rotating tail, NAMED rather than counted (operator ruling 2026-09-24, /ask: "One quoted + others named"). One line per outstanding rotating check, in the order later stops will quote them. Supersedes the 2026-07-31 bare count for blocked stops only; the allow path is unchanged.
+R_ROTATING_COLLAPSED = "ALSO OUTSTANDING, NAMED (each is quoted in full on a later stop):\n%s"
 
 R_FOCUS_ONLY = "no other checks are outstanding"
 
@@ -1493,11 +1319,13 @@ V_BG_REPORT = (
     "Nothing is pending except %d background job(s), which is a LEGITIMATE "
     "state: this is not a demand for other work. The hook's own read of each "
     "worker's output stream:\n%s\n"
-    "    Confirm each worker in one line in your reply (what it is doing and "
-    "whether the stream evidence matches), --update any leased item riding "
-    "one, and restart or replace anything marked POSSIBLY STUCK. Then stop. "
-    "If nothing at all moves between wakes, this check-in stands down by "
-    "itself and the hook asks you to slow the poll cron instead."
+    "    Confirm each worker WITH A STREAM in one line (what it is doing and "
+    'whether the stream evidence matches); a row marked "no output stream '
+    'yet" is a teammate agent reporting at completion and needs no such '
+    "confirmation here. --update any leased item riding a worker, and "
+    "restart or replace anything marked POSSIBLY STUCK. Then stop. If "
+    "nothing at all moves between wakes, this check-in stands down by "
+    "itself."
 )
 
 V_BG_REPORT_TASKS = (
@@ -1557,18 +1385,20 @@ R_JUDGE_CONTINUE = (
 )
 
 R_REGGATE_BLOCK = (
-    "A FIX LANDED AND NO REGRESSION GATE PROTECTS IT. This is the i18n "
-    "lesson: the defect was fixed by hand and nothing prevented its "
-    "return, because every existing gate was blind to it by construction.\n\n"
+    "A FIX LANDED AND NO REGRESSION GATE PROTECTS IT. The defect was fixed "
+    "by hand and nothing prevents its return, because every existing check "
+    "was blind to it by construction.\n\n"
     "  judge's blind spot:  %s\n"
     "  judge's instruction: %s\n%s%s\n"
     "Three exits, pick one THIS turn:\n"
-    "  1. WRITE THE GATE control-first: a new scripts/check-*.ts or "
-    ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
-    "from `npm run ci` (transitively; defined-but-never-run does not "
-    "count). The next stop runs it bounded, and a green run IS the "
-    "planted-defect proof, because a control-first gate self-fails when "
-    "its own control cannot fire.\n"
+    "  1. ADD THE REGRESSION TEST at the surface the judge named in its "
+    "instruction (a check:ci-* gate only when that is the surface; a "
+    "behavioural defect belongs in the e2e, ops, install, unit or hooks "
+    "suite instead). It must FAIL against the pre-fix tree and be REACHABLE "
+    "from `npm run ci` or from that surface's own runner (defined-but-never-run "
+    "does not count). For a gate the next stop runs it bounded, and a green "
+    "run IS the planted-defect proof, because a control-first gate self-fails "
+    "when its own control cannot fire.\n"
     "  2. DEFER to the operator, the ONLY exit that ends a finding without a "
     "fix, and only for a decision that is genuinely theirs: append to the "
     "worklist\n"
@@ -1584,44 +1414,19 @@ R_REGGATE_BLOCK = (
     "access)."
 )
 
+# The rest of the same verdict, riding the regression-gate block (P2.7): the class sweep and proof orders `wl_rules.apply_order` wrote into it, numbered after the gate so one turn can discharge all of them.
+R_REGGATE_ALSO = (
+    "\n\nALSO OWED ON THIS FIX-SET, from the same verdict (discharge these in the same turn):\n"
+    "  2. %s\n"
+    "     NEXT: %s"
+)
+
 R_REGGATE_HALLUCINATED = (
     "  you cited %r as existing coverage but no such check:* key "
     "exists, so that coverage is HALLUCINATED and counts as none.\n"
 )
 
-# ---- CLI texts (request_cli) ------------------------------------------------
-
-CLI_REQUEST_USAGE = (
-    "usage: --ask <my-prefix> <to-prefix|*> <text...>\n"
-    "       --answer <my-prefix> <id> <text...>\n"
-    "       --decline <my-prefix> <id> <reason...>\n"
-    "       --ack <my-prefix> <id>"
-)
-
-CLI_ASK_OPERATOR_NO_DEFAULT = (
-    "REFUSED: a request to the operator must carry a DEFAULT:. It leaves this "
-    "machine as an email and is answered by a human who may be asleep, so "
-    "without a stated fallback you have volunteered to stall until they wake "
-    "up. Re-ask with '... DEFAULT: <the ACTION you take alone -- 'hold' is not one>'."
-)
-
-CLI_ASK_UNKNOWN_RECIPIENT = (
-    "REFUSED: %s has never briefed in this store, so a request addressed there "
-    "lands in an inbox nobody reads. That is not hypothetical -- peers asked an "
-    "identity that never existed and their request sat until it auto-escalated "
-    "34 hours later with 'recipient silent for 2062min'.\n"
-    "Sessions that HAVE briefed here: %s\n"
-    "Use one of those, '*' to broadcast to every live session, or 'operator' "
-    "for the human. If you believe that session is real but silent, it has "
-    "never run --brief; ask it to, or broadcast."
-)
-
-CLI_BODY_REFUSED = (
-    "%s is %d chars, limit %d. REFUSED rather than silently truncated: "
-    "the tail is often the crucial part, and a clipped payload that "
-    "reports success is how findings get lost. Shorten it, or put the "
-    "detail in a file and cite the path."
-)
+# ---- CLI texts (item verbs) -------------------------------------------------
 
 CLI_ITEM_USAGE = (
     "usage: --add <my-prefix> <text...>\n"
@@ -1630,27 +1435,37 @@ CLI_ITEM_USAGE = (
     "                                an issue reference alone is refused unless it names a door:)\n"
     "       --defer <my-prefix> <id> <question... DEFAULT: <action> WHY: <why you cannot settle it> HOW: <what resolves it>>\n"
     "                                (optional: TRIED:, NEEDS:, BLOCKED_ON: <person|system|run-id>)\n"
-    "       --lease <my-prefix> <id> <+minutes|until-ISO8601Z> worker:<bg-task-id> [note...]\n"
+    "       --lease <my-prefix> <id>[,<id>...] <+minutes|until-ISO8601Z> worker:<bg-task-id|lead> [note...]\n"
+    "       --relay <my-prefix> <old-worker> <new-worker>   move every lease on one worker to another\n"
     "       --update <my-prefix> <id> <what moved...>\n"
+    "       --status <my-prefix> [<agent-id>|all]   read a worker's transcript; answers the roster's 20-minute ping\n"
     "       --list"
 )
 
-CLI_TICK_NO_EVIDENCE = (
-    "REFUSED: ticking #%s needs evidence in the line (a real sha, a run id, "
-    "a file:line that resolves, an exit code, or a URL). You have it in hand "
-    "at completion time, so this costs one paste; if you do NOT have it, the "
-    "item is not done."
+CLI_RELAY_USAGE = (
+    "usage: --relay <my-prefix> <old-worker> <new-worker>\n"
+    "Moves every [>] lease this session holds on <old-worker> to <new-worker> in one call."
 )
 
-# ---- v16: the fix-in-session rule, the triage verb, the tick door gate ------
-# WHY (operator, 2026-07-31): a finding is FIXED in the session that finds it.
-# "It is big" was the standing excuse for filing an issue and calling the
-# finding handled, and --tick took a bare issue URL as evidence, so the excuse
-# was not merely rhetorical, it worked. The machinery now answers the size
-# question itself (--triage) and refuses a completion whose only evidence is
-# an issue reference. Underscore-prefixed, so the suite's catalogue-arity
-# sweep skips it: it is a fragment reused inside several constants, never
-# rendered on its own.
+# EVERY accepted shape is named (R20260924.21): R.8 added `rc=N`, a bare basename and `ASKED:`, and three refusals in a row on 2026-09-24 quoted "16:0xZ" because this text never said so. The second %s is wl_checks.tick_refusal_hint: the newest operator answer's minute, ready to paste, or "".
+CLI_TICK_NO_EVIDENCE = (
+    "REFUSED: ticking #%s needs evidence in the line. Accepted shapes:\n"
+    "  sha                       a real commit or object of this repo, a submodule, or a repo under private/\n"
+    "  run id                    a CI run number (9 or more digits)\n"
+    "  file:line                 a path:line that resolves, or a bare name.ext:N naming one tracked file\n"
+    "  exit code                 `exit 0`, `exit code: 1`, or rc=N\n"
+    "  URL                       any https:// link (an issue link alone also needs its door:)\n"
+    "  ASKED:<YYYY-MM-DDTHH:MMZ> an operator AskUserQuestion answer within 5 minutes of that minute\n"
+    "You have it in hand at completion time, so this costs one paste; if you do NOT have it, the "
+    "item is not done.%s"
+)
+
+CLI_TICK_ASKED_HINT = (
+    "\nThe newest operator answer in this session's transcript, ready to paste: ASKED:%s"
+)
+
+# ---- v16: the fix-in-session rule, the triage verb, the tick door gate ------ WHY (operator, 2026-07-31): a finding is FIXED in the session that finds it. "It is big" was the standing excuse for filing an issue and calling the finding handled, and --tick took a bare issue URL as evidence, so the excuse was not merely rhetorical, it worked. The machinery now answers the size
+# question itself (--triage) and refuses a completion whose only evidence is an issue reference. Underscore-prefixed, so the suite's catalogue-arity sweep skips it: it is a fragment reused inside several constants, never rendered on its own.
 _DOORS = (
     "The three last-resort doors, and there are exactly three:\n"
     "  door:operator-only      the fix needs powers this session does not "
@@ -1707,7 +1522,7 @@ CLI_TRIAGE_PLAN = (
     "  2. Flip that header to 'Status: executing' and implement it now. Use a "
     "writer sub-agent when the plan's file set is disjoint from what you "
     "already have in flight, or when your context is heavy: state its exact "
-    "file ownership, at most 2 writers, and forbid git checkout, restore, "
+    "file ownership, at most 4 writers, and forbid git checkout, restore, "
     "stash and any sync or regenerate script. Implement inline otherwise.\n"
     "  3. Ride the current PR when the risk is compatible, otherwise cut the "
     "fix its own branch this same session. Then:\n"
@@ -1746,11 +1561,11 @@ CLI_TRIAGE_SELF = (
     "INLINE if small and local: fix it now, then\n"
     "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<evidence>'\n"
     "PLAN+SUBAGENT if bigger: a Plan agent writes the design to "
-    "agent/PLAN-<slug>.md with a 'Status: draft' header, you "
-    "flip it to executing, and you implement it THIS session (a writer "
-    "sub-agent when the file set is disjoint or the context is heavy, at most "
-    "2, inline otherwise), riding the current PR when the risk is compatible "
-    "or its own branch when it is not.\n"
+    "agent/plans/PLAN-<slug>.md with a 'Status: draft' header, then the "
+    "header flips to executing and implementation happens THIS session (a "
+    "writer sub-agent when the file set is disjoint or the context is heavy, "
+    "at most 4, inline otherwise), riding the current PR when the risk is "
+    "compatible or its own branch when it is not.\n"
     "OPERATOR-ONLY only through a door:\n"
     + _DOORS
     + "A finding is fixed in the session that finds it. Filing an issue "
@@ -1759,12 +1574,8 @@ CLI_TRIAGE_SELF = (
 
 # ---- SessionStart / PostCompact additionalContext ---------------------------
 
-# HONEST ABOUT WHAT IT IS. This used to open "those documents are the
-# starting context for the work", which is a claim about YOUR task that the
-# hook has no way to know: it fires for every session in the repo, and a
-# session working on something unrelated was told to go read a program it has
-# nothing to do with. The docs are standing material for one surface; say so,
-# name the surface, and let the session decide whether it is in it.
+# HONEST ABOUT WHAT IT IS. This used to open "those documents are the starting context for the work", which is a claim about YOUR task that the hook has no way to know: it fires for every session in the repo, and a session working on something unrelated was told to go read a program it has nothing to do with. The docs are standing material for one surface; say so, name the surface,
+# and let the session decide whether it is in it.
 CTX_SESSION_START = (
     "STANDING PROGRAM DOCS (background, not an assignment): this project "
     "keeps the design of its %s surface in %s. READ ALL OF THEM before you "
@@ -1780,11 +1591,8 @@ CTX_SESSION_START_STALE = (
     "were last updated. Reconcile them early, not at the end."
 )
 
-# v16: the plan-file convention. agent/PLAN-<slug>.md is the DURABLE design
-# record, committed, as opposed to the per-session agent/<me>/ directories
-# whose STATE.md is the volatile cursor. A plan survives compaction and a
-# machine loss, so a session that never reads them re-litigates decisions that
-# were already paid for.
+# v16: the plan-file convention. agent/plans/PLAN-<slug>.md is the DURABLE design record, committed, as opposed to the per-session agent/<me>/ directories whose STATE.md is the volatile cursor.
+# A plan survives compaction and a machine loss, so a session that never reads them re-litigates decisions that were already paid for. agent/PLAN-<slug>.md is the legacy location, now a stub-only namespace after the migration to agent/plans/ -- see agent/README.md.
 CTX_PLANS = (
     "DURABLE PLANS, committed under agent/ and written to survive compaction "
     "and a lost machine:\n%s\n\n"
@@ -1827,9 +1635,7 @@ CTX_POSTCOMPACT_MISSING = (
 
 # Appended as its OWN block rather than widened into CTX_POSTCOMPACT_BRIEFING,
 # for two reasons: it keeps that message's arity frozen, and it has to ride the
-# MISSING branch too. Before sections existed, a compacted session on a branch
-# where only a peer had written got no state content whatsoever, which is a
-# strictly worse briefing than the file in front of it contains.
+# MISSING branch too. Before sections existed, a compacted session on a branch where only a peer had written got no state content whatsoever, which is a strictly worse briefing than the file in front of it contains.
 CTX_POSTCOMPACT_PEERS = (
     "=== OTHER SESSIONS' STATE.md, from the sibling directories under "
     "agent/ ===\n"
@@ -1838,6 +1644,60 @@ CTX_POSTCOMPACT_PEERS = (
     "what they decided, and never write in one. `--state` only ever touches "
     "your own directory.\n\n%s"
 )
+
+# The hook's own read, rendered at PostCompact beside the STATE.md body (agent/plans/PLAN-stop-hook-continuity.md P1.2): branch, short HEAD, and this session's guide slice.
+CTX_POSTCOMPACT_FACTS = (
+    "=== computed facts (read by the hook now, not written by anyone) ===\nbranch %s at %s\n%s"
+)
+
+# The stop-hook retro at PostCompact (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.12), appended after the briefing, the facts and the plans on BOTH arms, once per session. `when` differs by arm: on the missing-STATE arm the retro waits for STATE.md to be written first. Framed as a repo procedure naming its source, never as a system command.
+CTX_POSTCOMPACT_RETRO = "STOP-HOOK RETRO (standing procedure PLAN-stop-hook-continuity.md P3.1): compaction replaced this session's context, but its transcript is intact at %(transcript)s. %(when)s, run `python3 .claude/hooks/stop/worklist.py --retro-brief %(me8)s post-compact` and dispatch it as ONE background Agent with subagent_type Plan; save what it returns to agent/plans/PLAN-stop-hook-retro-%(date)s.md. It covers transcript bytes %(from)d-%(to)d, everything since the last retro. Emitted once per session."
+CTX_POSTCOMPACT_RETRO_WHEN_BRIEFED = "After reading the briefing above"
+CTX_POSTCOMPACT_RETRO_WHEN_MISSING = "After you write STATE.md"
+# Prefixed to the PostCompact briefing when the compaction was a sub-agent's (R20260924.16): the payload carries the lead's session_id, so the STATE.md in the briefing is the lead's, and no retro is ordered for it.
+CTX_POSTCOMPACT_SUBAGENT = "This compaction is sub-agent %s's; the STATE.md below is the lead's."
+
+# The item wl_retro.sync (or --retro-brief) adds for an `ordered` ledger row. The ordinary open-items check enforces it; `#<id>` in the brief is what the auto-lease links to the Plan agent; the plan path is the tick evidence that closes it.
+RETRO_ITEM = (
+    "(%(me8)s) stop-hook retro %(band)s %(date)s: dispatch the Plan agent "
+    "(--retro-brief %(me8)s %(band)s) and save agent/plans/PLAN-stop-hook-retro-%(date)s.md"
+)
+
+CLI_RETRO_BRIEF_USAGE = (
+    "usage: worklist.py --retro-brief <my-prefix> <band>\n"
+    "  band is one of: early, late, post-compact.\n"
+    "Prints the brief for the read-only Plan agent that writes the stop-hook retro,\n"
+    "and creates its tracking item on first use.\n"
+)
+
+# The brief --retro-brief prints: the Plan agent's whole prompt. Every input is named with its path so the agent reads files, not this session's memory.
+RETRO_BRIEF = """STOP-HOOK RETRO for session %(me8)s, band %(band)s, %(date)s. Tracking item #%(item)s.
+
+You are a read-only Plan agent. Write the retro of the friction the Stop hook caused this session, and RETURN it as your final message; the lead saves it verbatim to %(plan)s (it updates that file when it already exists, so continue its task numbering rather than restarting it).
+
+INPUTS
+- The lead transcript: %(transcript)s, bytes %(from_off)d-%(to_off)d (everything since the previous retro). Read that range only.
+- Blocked stops since the previous retro, from %(blocklog)s (one row per blocked stop; `key` leads, `named` are the other outstanding keys, `judge` the judge's flags):
+%(blocks)s
+- Hint proposals since the previous retro (agent/ledgers/hint-proposals.jsonl):
+%(hints)s
+- Judge verdicts since the previous retro (%(judgelog)s):
+%(judge)s
+- Admissions since the previous retro (%(admitlog)s):
+%(admit)s
+- Refused --tick calls since the previous retro (%(ticklog)s):
+%(ticks)s
+
+DO NOT RE-PROPOSE any of these boxes; cite one by id when a friction is already covered or when its fix did not hold:
+%(boxes)s
+
+OUTPUT FORMAT (the format of agent/plans/PLAN-stop-hook-retro-20260924.md):
+- Header lines: `Status: ready`, `First-Seen: <date>`, `Owner: %(me8)s (adopted from retro <your agent id> %(date)s)`, `Updated: <date>`.
+- A **Scope** paragraph with the window and the counts above, then `## Ranking by cost to the session` as a table (rank, point, count in this window, turns lost, already fixed by?).
+- One `## <n>. <friction>` section per friction: what happened (with transcript byte offsets or ledger rows as evidence), the root cause with file:line, and the fix.
+- `## Decisions` with DEFAULT, WHY and HOW for each, `## Sequencing`, then `## Tasks` as `- [ ] **R%(date)s.<n>** <task>. Test: <test file>.` boxes, then `### Critical Files for Implementation`.
+- Only friction that survives the current code. Measure, do not estimate: every number cites the row or offset it was counted from.
+"""
 
 CTX_POSTCOMPACT_BRIEFING = (
     "You are picking up an in-progress session and your context was just "
@@ -1866,6 +1726,34 @@ second gate for it buys nothing. It is not automatically covered -- decide -- bu
 do not reach for `gate_needed: true` here by reflex.
 """
 
+# The provenance label FIXSET_GROUND_TRUTH interpolates: git's own answer for where this file list came from, since a tick-based fix-set has no resolvable commit yet and the honest answer for it is the whole dirty tree, not a diff. `None` is the key for an unrecognised or missing provenance (a caller that has not adopted the parameter), which reads the same as the fallback rather than asserting the stronger diff-tree claim it cannot back up.
+FIXSET_PROVENANCE = {
+    "diff-tree": "resolved from the fix-set's own commit(s)",
+    "status-fallback": (
+        "the fix-set has no resolvable commit yet, so this is the whole working tree's current `git status --porcelain`"
+    ),
+    "status-minus-live-writers": (
+        "the fix-set has no resolvable commit yet, so this is the working tree's current `git status --porcelain` minus every file a writer agent changed while it is still live or an item leased to it is not ticked; those belong to that writer's own tick"
+    ),
+    "item-writers": (
+        "the fix-set is a tick of an item worked by writer agents, so this is the working tree's current `git status --porcelain` narrowed to the files those writers changed (edit tools and Bash writes alike); the rest of the tree is other work"
+    ),
+    None: "provenance unknown",
+}
+
+FIXSET_GROUND_TRUTH = """
+
+ACTUAL FILES THIS FIX-SET TOUCHED, computed directly by git just now (%(count)d
+file(s), %(how)s), never narrated:
+%(files)s%(more)s
+
+The class_sweep and proof_obligation objects below are ONLY about this list and
+the message below. A finding that names a file count, a directory, or a scope
+NOT in this list is not describing the current fix-set -- it is either a
+misreading of the traps note above (which is history, not a report on this
+stop) or an invention, and must not be reported as a fresh finding either way.
+"""
+
 REGGATE_PROMPT = """
 
 A FIX LANDED THIS TURN, so ALSO fill the `regression_gate` object. The fix-set:
@@ -1880,19 +1768,16 @@ defect -- it caught it once and will catch it again. Answer `gate_needed: false`
 and name that gate in `existing_gate`. Do NOT demand a second gate for a defect
 the first one found.
 
-MEASURED 2026-09-04/05, which is why this question exists. Two sessions spent
-roughly 8 and 3 rounds respectively in a self-generating loop: writing gate A
-produced finding B (A's own selftest tail tripped check:ci-shape-duplication,
-A's new file tripped check:ci-gate-manifest leaf-tracked), and fixing B produced
-C. Every one of those findings had ALREADY been caught by an existing gate, so
-the correct verdict was `covered` naming that gate. Each unnecessary round cost a
-full CI cycle on a PR that was already green, reviewed and threads-resolved.
+WHY THIS QUESTION EXISTS. Writing a new gate for a defect an existing gate
+already caught starts a loop: the new gate produces its own findings, fixing
+those produces more, and every round costs a full CI cycle on a change that was
+already green. When an existing gate would have failed, the correct verdict is
+`covered`, naming that gate from the key list below and never from memory.
 
-(1) BLIND SPOT: state the property of this defect that made every existing
-check blind to it. This repo's own example: every i18n gate compared a locale
-against English, so text copied from one non-English locale into another
-differed from English and passed every gate; no check ever compared two
-non-English locales, so the defect was invisible BY CONSTRUCTION.
+(1) BLIND SPOT: state the property of THIS defect that made every existing
+check blind to it, in terms of what those checks compare or observe. A defect
+is invisible BY CONSTRUCTION when no check ever looks at the relationship it
+broke; say which relationship that was.
 
 (2) EXISTING COVERAGE: would any gate in the list below have FAILED against
 the tree BEFORE the fix? Naming a gate that catches a different symptom does
@@ -2060,6 +1945,14 @@ round or a
 wasted session to learn. Use them to tell a REAL constraint from an excuse: a
 blocker that matches one of these is credible, and a blocker that contradicts
 one is not. Do not treat the absence of a matching line as evidence either way.
+
+THESE ARE PAST INCIDENTS, NOT A REPORT ABOUT THIS STOP. None of them describes
+the session's CURRENT message or diff; each already happened, in an earlier
+session, and was already fixed. Never restate one of them -- its file count,
+its directory name, its scope -- as a NEW finding about the message below. A
+finding about the current fix-set is legitimate only when every specific it
+names (a file, a count, a path) is quoted or clearly implied by the message
+itself, never borrowed from one of these lines.
 %(traps)s
 
 Sources the session CITED for its blockers, quoted from the tree:
@@ -2081,10 +1974,8 @@ Never use em dashes. Keep next_action concrete and small enough to do now.
 """
 
 
-# `--help` used to fall through to the Stop-hook path, where stdin is not JSON,
-# so asking this tool how to use it produced a BLOCK accusing the caller of a
-# hook bug. A tool whose help text is an error message teaches people to guess.
-USAGE = """worklist.py -- shared per-repo worklist and cross-session inbox.
+# `--help` used to fall through to the Stop-hook path, where stdin is not JSON, so asking this tool how to use it produced a BLOCK accusing the caller of a hook bug. A tool whose help text is an error message teaches people to guess.
+USAGE = """worklist.py -- shared per-repo worklist.
 
 Items (v10: a JSONL event store; the old markdown file still works as an
 inbox and is synced in, but the verbs are the first-class interface):
@@ -2104,8 +1995,18 @@ inbox and is synced in, but the verbs are the first-class interface):
                                 validated now and audited later, and the
                                 DEFAULT executes after the window
                                 (optional: TRIED:, NEEDS:, BLOCKED_ON:)
-  --lease <me> <id> <+min|ISO8601Z> worker:<bg-id> [note]   mark in-flight
-                                on a NAMED background worker
+  --lease <me> <id>[,<id>...] <+min|ISO8601Z> worker:<bg-id> [note]
+                                mark in-flight on a NAMED background worker;
+                                worker:lead = driven inline, covered while a
+                                background task of yours runs (at most 3)
+  --lease <me> <id> release [note]
+                                put an in-flight item back to open work
+                                (its worker finished, the item is not done)
+  --relay <me> <old-worker> <new-worker>
+                                move every lease on one worker to another
+  (item text) BLOCKED_BY:#id[,#id]
+                                waiting on those items: reported `waiting`,
+                                not open, until every blocker closes
   --update <me> <id> <text...>  record progress (resets the liveness ladder)
   --list                        render every item with ids and ages
   --list --open [<me>]          only the ACTIONABLE slice, with the exact
@@ -2113,30 +2014,45 @@ inbox and is synced in, but the verbs are the first-class interface):
 
 Query:
   --path                        print the worklist file path
-  --requests <me>               list cross-session requests addressed to you
-  --poll <me>                   inbox poll; prints NOTHING when empty (exit 0)
-
-Cross-session messaging:
-  --ask <me> <to> <text...>     ask another session (or '*') a question
-  --answer <me> <id> <text...>  answer a request addressed to you
-  --decline <me> <id> <why...>  decline it, with a real reason
-  --ack <me> <id>               acknowledge without answering
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
+  --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]
+                                a PR wind-down: finish, don't start (plan,
+                                queue and hygiene pushes park, writer spawns
+                                are refused); `--focus <me>` prints the state
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
+Plan records (W12):
+  --plan-compact <me>           LIST what can be compacted and what each one
+                                would refuse (oldest first). No path, no write.
+  --plan-revive <me>            LIST the records on disk and whether each
+                                one's blob still resolves
+  --plan-compact <me> <agent/plans/PLAN-x.md> [--write] [--park]
+                 [--why author|auto|model]
+                                turn a FINISHED plan into an attested record
+                                that keeps its own path. The full text stays
+                                recoverable from a git BLOB (content-addressed,
+                                so `gh pr merge --rebase` cannot break it) and
+                                every box keeps its `done=` proof from the
+                                committed ledger. Prints the record; --write
+                                puts it on disk. --park records a plan whose
+                                work is unfinished: its text shrinks, its
+                                housekeeping clock does not stop.
+  --plan-revive <me> <agent/plans/PLAN-x.md> [--write]
+                                restore a record's full text from its blob
+
 Maintenance:
   --compact                     drop tombstones and fold the event log
-  --reassign <me> <phantom>     take over the OPEN items and requests of an
+  --reassign <me> <phantom>     take over the OPEN items of an
                                 identity that never stopped (the Stop hook
                                 names one when it finds one); history is
                                 appended to, never rewritten
 
 Every <me> is checked against this process's real session id
 (CLAUDE_CODE_SESSION_ID) and a mismatch is REFUSED, because writing as one
-identity and reading as another gives you two inboxes and neither is complete.
+identity and reading as another splits your items and neither view is complete.
 To act deliberately as another session, declare it: WORKLIST_SESSION_ID=<id>.
 
 Item states: `- [ ]` open, `- [x]` done, `- [?]` deferred with a DEFAULT,
@@ -2148,18 +2064,10 @@ With no arguments this runs as the Stop hook and expects a JSON event on stdin.
 """
 
 
-# A dirty gitlink is the one tree state where the standing "sweep everything with
-# git add -A" rule silently changes what a PR DEPENDS ON. It happened: a subagent
-# committed inside private/renet on its own branch, which necessarily moved the
-# superproject's gitlink, and a blind sweep would have repointed the console PR at
-# a commit living only on an unmerged branch. That does not lose work (the branch
-# usually descends from the old pointer) but it adds a submodule PR to the merge
-# chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
+# A dirty gitlink is the one tree state where the standing "sweep everything with git add -A" rule silently changes what a PR DEPENDS ON. It happened: a subagent committed inside private/renet on its own branch, which necessarily moved the superproject's gitlink, and a blind sweep would have repointed the console PR at a commit living only on an unmerged branch. That does not lose
+# work (the branch usually descends from the old pointer) but it adds a submodule PR to the merge chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
 #
-# Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is
-# LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only
-# the human-or-agent deciding can say which case this is, so the check hands over
-# the facts rather than a verdict.
+# Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only the human-or-agent deciding can say which case this is, so the check hands over the facts rather than a verdict.
 V_SUBMODULE_POINTER = """SUBMODULE POINTER MOVED IN THE WORKTREE (%d): %s
 
 `git add -A` would COMMIT this pointer move, changing what this PR depends on.
@@ -2174,64 +2082,9 @@ Decide explicitly, then act:
     is pushed. Verify both first; this is not an undo you can take back."""
 
 
-# ---- poll backoff (advisory) -------------------------------------------------
-# The inbox poll defaults to every 5 minutes, which costs 12 firings an hour forever on a
-# session nobody is talking to. These two notes tell the session to move along the ladder
-# in wl_checks.POLL_BACKOFF_LADDER. They are notes, never violations: the session performs
-# the cron swap itself so the change is visible, and can decline.
-N_POLL_BACKOFF = (
-    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
-    "INBOX HAS BEEN QUIET FOR %d MINUTES at a %d-minute poll. Double the interval so a\n"
-    "session nobody is talking to stops paying for it. Swap the poll cron in ONE turn --\n"
-    "a stop landing between the delete and the create trips the no-poll-cron check:\n"
-    "    CronDelete <the '%s' job id>\n"
-    "    CronCreate cron '%s'   (%d minutes), same prompt VERBATIM, recurring true\n"
-    "The ladder is 5 -> 10 -> 20 -> 40 -> 60 and stops at 60, because a poll slower than\n"
-    "the 70-minute fast-path horizon would pay the full battery on every firing. Drop back\n"
-    "to */5 as soon as a real request arrives."
-)
-# ---- v17: the no-op wake ladder ---------------------------------------------
-# The backoff notes above are advisory sections that ride a full report. These
-# two REPLACE the report: on a wake where the hook can prove nothing changed,
-# they are the entire output of the stop. See wl_checks.quiet_wake_note for
-# what "nothing changed" is measured against.
-N_QUIET_WAKE = (
-    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
-    "%d CONSECUTIVE QUIET WAKES: same items, same tasks, same HEAD, no inbox\n"
-    "traffic, and not one new byte on any worker's output stream. Waking every\n"
-    "%d minutes to learn that is the only thing this session is spending, so\n"
-    "the one useful action is to wake less often. Swap the poll cron in ONE\n"
-    "turn -- a stop landing between the delete and the create trips the\n"
-    "no-poll-cron check:\n"
-    "    delete the current poll job ('%s')\n"
-    "    create it again with '%s'   (%d minutes), same prompt VERBATIM, recurring true\n"
-    "This message is the WHOLE stop report on purpose: the worker roster, the\n"
-    "worklist guide and the advisory sections are all suppressed while nothing\n"
-    "is moving, and every one of them returns the moment something does. The\n"
-    "ladder is 5 -> 10 -> 20 -> 40 -> 60. Drop straight back to */5 when a real\n"
-    "request arrives."
-)
-N_QUIET_WAKE_CAPPED = (
-    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
-    "%d CONSECUTIVE QUIET WAKES at the %d-minute cap, which is the slowest rung\n"
-    "(a poll slower than the 70-minute fast-path horizon would pay the full\n"
-    "battery on every firing, so the ladder stops here). Nothing to reschedule.\n"
-    "This one line is the whole stop report while nothing moves; if the wait\n"
-    "itself has stopped being worth holding, end it and say so."
-)
-
-N_POLL_BACKOFF_RESET = (
-    "A REQUEST IS WAITING while the poll is backed off to '%s'. Latency matters again:\n"
-    "swap back to the bottom rung in ONE turn -- CronDelete the current poll job, then\n"
-    "CronCreate cron '%s' with the same prompt verbatim."
-)
-
-
-# ---------------------------------------------------------------------------
-# --roundlog: the pr-babysit round log's STATUS block.
+# --------------------------------------------------------------------------- --roundlog: the pr-babysit round log's STATUS block.
 #
-# These exist because on 2026-08-19 a heartbeat tick refreshed STATUS with
-# `text[:i] + new`, which replaces from the STATUS heading to END OF FILE and
+# These exist because on 2026-08-19 a heartbeat tick refreshed STATUS with `text[:i] + new`, which replaces from the STATUS heading to END OF FILE and
 # took the whole history appendix with it. The verb makes that unexpressible;
 # these messages make the guarantee VISIBLE, because a silent success is what
 # let the truncation pass for a routine update in the first place.
@@ -2251,11 +2104,7 @@ CLI_ROUNDLOG_REFUSED = (
     "ROUNDLOG REFUSED (%s: %s). Nothing was written; the previous round log is untouched.\n"
 )
 
-# Refusing to CREATE is deliberate. A round log without a wave header is missing
-# exactly the half a warm-start needs most: intent, sanctioned reds, frozen
-# surfaces, and the baselines with the commands that measure them. Writing
-# STATUS into an empty document would report success while producing a log that
-# answers none of the questions it exists to answer.
+# Refusing to CREATE is deliberate. A round log without a wave header is missing exactly the half a warm-start needs most: intent, sanctioned reds, frozen surfaces, and the baselines with the commands that measure them. Writing STATUS into an empty document would report success while producing a log that answers none of the questions it exists to answer.
 CLI_ROUNDLOG_NO_LOG = (
     "ROUNDLOG REFUSED: %s does not exist, or carries no '## Wave header' "
     "section. This verb REPLACES a STATUS block, it does not create a round log: "
@@ -2265,16 +2114,11 @@ CLI_ROUNDLOG_NO_LOG = (
 )
 
 
-# ---------------------------------------------------------------------------
-# The admission detector's judge prompt (see wl_admit.py for the whole design).
+# --------------------------------------------------------------------------- The admission detector's judge prompt (see wl_admit.py for the whole design).
 #
-# Appended to the judge's existing prompt ONLY on stops where the cheap prefilter
-# fired, so an ordinary stop's judge call is byte-identical to today's.
+# Appended to the judge's existing prompt ONLY on stops where the cheap prefilter fired, so an ordinary stop's judge call is byte-identical to today's.
 #
-# The negatives below are not invented. Each one is a real message from this
-# repo's own transcripts that a naive "did you make a mistake" classifier would
-# fire on, and the counterfactual near-miss in particular would make the detector
-# fire on every careful design discussion in the repo.
+# The negatives below are not invented. Each one is a real message from this repo's own transcripts that a naive "did you make a mistake" classifier would fire on, and the counterfactual near-miss in particular would make the detector fire on every careful design discussion in the repo.
 ADMISSION_PROMPT = """
 ADMISSION CHECK. Fill the optional `admission` object.
 
@@ -2331,12 +2175,8 @@ on. Missing a real one lets the next session repeat it.
 
 # ---- v20 PLAN FIDELITY (wl_planfid.py) --------------------------------------
 #
-# Operator, 2026-08-19, on a session that seeded a twenty-task approved plan with
-# two items named "www round 4 Wave A" and "www round 4 Waves B-D": "you took it
-# easy and wrote Round 4 which is not precise! We need individual items for stop
-# hook." The wording of this block is deliberately about the INSTRUMENT rather
-# than about tidiness: an umbrella item does not merely read badly, it makes the
-# open-item gate unable to tell one task from twenty.
+# Operator, 2026-08-19, on a session that seeded a twenty-task approved plan with two items named "www round 4 Wave A" and "www round 4 Waves B-D": "you took it easy and wrote Round 4 which is not precise! We need individual items for stop hook." The wording of this block is deliberately about the INSTRUMENT rather than about tidiness: an umbrella item does not merely read badly,
+# it makes the open-item gate unable to tell one task from twenty.
 V_PLANFID = (
     "AN APPROVED PLAN IS NOT DECOMPOSED INTO TRACKED ITEMS. One umbrella item "
     "hides however many tasks it covers, and every check in this hook then reads "
@@ -2361,9 +2201,7 @@ V_PLANFID = (
     "     and the deferral machinery prints it to them every stop."
 )
 
-# Never silent. The check fails OPEN (see wl_planfid's header on why this one
-# does not share wl_judge's no-escape-hatch contract), so the only thing standing
-# between a broken judge and a silently dead check is this line.
+# Never silent. The check fails OPEN (see wl_planfid's header on why this one does not share wl_judge's no-escape-hatch contract), so the only thing standing between a broken judge and a silently dead check is this line.
 V_PLANFID_DEGRADED = (
     "Stop hook: the plan-fidelity check could not run (%s). It is NOT blocking on "
     "its own unavailability, so decompose the approved plan yourself if it is not "
@@ -2429,3 +2267,387 @@ sound. Being wrong in the "unfaithful" direction walls in a session that did the
 right thing and teaches everyone to route around this check, so when the item
 list plausibly covers the plan, say so.
 """
+
+
+# ---- W12: plan records ------------------------------------------------------- The verbs that compact a finished plan into an attested record. Prose here, reasons beside the code in worklist.py, per this file's contract.
+
+CLI_PLANREC_USAGE = (
+    "usage: worklist.py --plan-compact <me>            list the candidates\n"
+    "       worklist.py --plan-revive  <me>            list the records\n"
+    "       worklist.py --plan-compact <me> <agent/plans/PLAN-x.md> [--write] [--park]\n"
+    "                   [--why author|auto|model]\n"
+    "       worklist.py --plan-revive  <me> <agent/plans/PLAN-x.md> [--write]\n"
+    "\n"
+    "A plan file that nobody has touched for delete_days goes RED in\n"
+    "check:ci-plan-housekeeping, and the operator's rule is that nothing is\n"
+    "deleted. Compaction is the third door: the file keeps its path, so every\n"
+    "citation of it still resolves, and its full text moves into a git blob.\n"
+    "\n"
+    "Without --write nothing is written; the record goes to stdout so you can\n"
+    "read it first. --why picks where the prose comes from:\n"
+    "  author  placeholders you fill in (the default). A `compacted` record\n"
+    "          with an unfilled placeholder is RED in check:ci-plan-record.\n"
+    "  auto    the plan's own Why/Problem/Status/Outcome sections, verbatim.\n"
+    "  model   one bounded haiku call, with every unresolvable pointer it\n"
+    "          writes replaced by [unresolved] before anything is saved.\n"
+)
+
+CLI_PLANREC_REFUSED = "%s\n\nNothing was written."
+
+CLI_PLANREC_WROTE = (
+    "wrote %(rel)s as a %(status)s record (%(bytes)d bytes, was %(was)d)\n"
+    "  Full-Text-Blob: %(blob)s\n"
+    "  recover the full text with:  git show %(blob)s\n"
+    "  find its commit with:        git log --find-object=%(blob)s --all\n"
+    "  undo this:                   worklist.py --plan-revive %(me)s %(rel)s --write\n"
+    "\n"
+    "NOT COMMITTED, and that is deliberate. The text is recoverable RIGHT NOW\n"
+    "anyway: the blob is already in the object store because this path was\n"
+    "committed before it was compacted -- which is exactly why a dirty path is\n"
+    "refused. Committing the record is the operator's call. Two things must\n"
+    "land in the SAME commit as this file, or two gates disagree with each\n"
+    "other:\n"
+    "  npm run check:ci-plan-boxes -- --update      # the box ledger\n"
+    "  npm run check:ci-plan-record -- --update     # agent/INDEX.md\n"
+)
+
+CLI_PLANREC_DRY = "%s\n---- the record above is NOT on disk. Re-run with --write to save it. ----\n"
+
+CLI_PLANWHY_USAGE = (
+    "usage: worklist.py --plan-why [<me>] <path>\n"
+    "\n"
+    "What the COMPACTED history says about one file. A finished plan keeps its\n"
+    "path and shrinks to a record whose full text is a git blob; the record's\n"
+    "`Touched:` trailer names the files its plan cited, and agent/INDEX.md carries\n"
+    "the reverse map. This verb reads that map.\n"
+    "\n"
+    "It writes nothing, so it takes no session prefix -- one is accepted and\n"
+    "ignored, because the sibling verbs need it and the habit is worth honouring.\n"
+)
+
+CLI_PLANWHY_HIT = (
+    "%(path)s appears in the compacted history:\n\n%(body)s\n\n"
+    "Those records are the reading copy. `git show <blob>` recovers the plan in\n"
+    "full; `worklist.py --plan-revive <me> <record> --write` puts it back on disk\n"
+    "as a live plan, which also puts it back on the housekeeping clock.\n"
+)
+
+# THE EMPTY ANSWER, said out loud. A verb that printed nothing here would be read as broken, and the next session would stop asking -- so the two ways of finding nothing get two different sentences, and each says what was searched.
+CLI_PLANWHY_NO_EDGE = (
+    "nothing is recorded about %(path)s.\n"
+    "\n"
+    "That is an answer, not a silence: %(index)s was read and the %(n)d compacted\n"
+    "record(s) it indexes name no path matching this one. Either no finished plan\n"
+    "ever cited this file, or the plans that did are still live plans -- this verb\n"
+    "reads the RECORDS, so a live plan's reasoning is not in scope for it.\n"
+    "\n"
+    "  git log --oneline -- %(path)s        the commits, which are not indexed here\n"
+)
+
+CLI_PLANWHY_NO_INDEX = (
+    "nothing is recorded about %(path)s, because there is no edge table to read.\n"
+    "\n"
+    "%(index)s carries no record edges -- either the file is absent, or (since W12\n"
+    "P1.7) it exists carrying only the `## Plan census` SessionStart reads. Both are\n"
+    "the CORRECT state until the first plan is compacted -- an empty generated table\n"
+    "would be a document that says nothing -- so this is not a fault to fix. It\n"
+    "becomes an answer as soon as a record exists:\n"
+    "\n"
+    "  worklist.py --plan-compact <me>              what can be compacted today\n"
+    "  npm run check:ci-plan-record -- --update     writes the index\n"
+)
+
+CLI_PLANTICK_USAGE = (
+    "usage: worklist.py --plan-tick <me> <agent/plans/PLAN-x.md> <box> <evidence...> [--write]\n"
+    "\n"
+    "Tick ONE box in a plan and update the committed box ledger in the same run.\n"
+    "\n"
+    "<box>       an 8-hex box signature, or any text that matches exactly one open\n"
+    "            box. Ambiguity is refused rather than resolved by picking the\n"
+    "            first -- the wrong box ticked is worse than a second command.\n"
+    "<evidence>  mandatory, and it goes into the plan on its own indented line\n"
+    "            beneath the box. Name the command, the file:line or the run id.\n"
+    "\n"
+    "WHY BOTH FILES. .ci/config/plan-boxes.json is a COMMITTED second reading of\n"
+    "the same boxes, and check:ci-plan-boxes compares the two for equality. A box\n"
+    "ticked by hand with the ledger left alone is a red tree whose remedy is a\n"
+    "regenerate nobody remembers to run.\n"
+    "\n"
+    "Without --write nothing is written.\n"
+)
+
+CLI_PLANTICK_DRY = (
+    "would tick one box in %(rel)s and update the ledger:\n"
+    "  %(note)s\n"
+    "\n---- NOTHING was written. Re-run with --write. ----\n"
+)
+
+CLI_PLANTICK_WROTE = (
+    "ticked one box in %(rel)s and updated %(ledger)s\n"
+    "  %(note)s\n"
+    "\n"
+    "NOT COMMITTED. THREE files must land in the SAME commit -- the plan, the box\n"
+    "ledger, and the investigation ledger that licensed this tick. The box ledger\n"
+    "is a reading OF the plan, so a commit carrying one without the other is read\n"
+    "by check:ci-plan-boxes as a box that vanished rather than one that was\n"
+    "ticked; and check:ci-plan-implementation re-resolves the investigation row's\n"
+    "pointers for every box this branch moved open -> done, so a tick that lands\n"
+    "without its row reds there instead.\n"
+    "\n"
+    "  git add %(rel)s %(ledger)s %(investigation)s\n"
+)
+
+CLI_PLANINV_USAGE = (
+    "usage: worklist.py --plan-investigate <me> <agent/plans/PLAN-x.md> <box>\n"
+    "                   <absent|present|partial> <kind>:<token> <kind>:<token>...\n"
+    "                   -- <note...> [--write]\n"
+    "\n"
+    "Record, BEFORE implementing a box, what the tree already holds about it.\n"
+    "The operator's ask in one sentence: investigate whether it is implemented\n"
+    "before implementing it. `--plan-tick` refuses a box with no row here.\n"
+    "\n"
+    "<box>       an 8-hex box signature, or text matching exactly one open box.\n"
+    "<verdict>   absent   the work is not in the tree. Implement it.\n"
+    "            present  the work is ALREADY DONE and only the record is stale.\n"
+    "                     A complete, honourable answer: it licenses an immediate\n"
+    "                     --plan-tick, and it is the cheapest way to close a box.\n"
+    "            partial  some of it exists; say which part; the box stays open.\n"
+    "<kind>:<token>\n"
+    "            at least TWO pointers of at least TWO DISTINCT kinds. Every one\n"
+    "            is re-resolved by this process -- git objects, the filesystem,\n"
+    "            package.json scripts, TRAPS.md ids -- and none is trusted from\n"
+    "            the text. A `gate:` pointer must additionally be reachable from\n"
+    "            `npm run ci`, because a gate nothing runs proves nothing.\n"
+    "            Kinds: blob, tree, commit, ancestor, fileline, gate, plan, trap.\n"
+    "<note>      after a bare `--`, at least 40 characters. This is what a later\n"
+    "            reader uses to decide whether to re-open the question.\n"
+    "\n"
+    "Without --write nothing is written; the resolution table is printed either\n"
+    "way, so a dry run is a cheap way to find out which pointer is dead.\n"
+)
+
+CLI_PLANINV_DRY = (
+    "would record one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
+    "  head %(head)s on %(br)s\n"
+    "  every pointer re-resolved just now, none taken from the text:\n"
+    "%(table)s\n"
+    "\n---- NOTHING was written. Re-run with --write. ----\n"
+)
+
+CLI_PLANINV_WROTE = (
+    "recorded one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
+    "  head %(head)s on %(br)s\n"
+    "  appended to %(ledger)s\n"
+    "%(table)s\n"
+    "\n"
+    "%(next)s\n"
+    "\n"
+    "NOT COMMITTED. The ledger is append-only and rides the same commit as the\n"
+    "tick it licenses.\n"
+    "\n"
+    "  git add %(ledger)s\n"
+)
+
+CLI_PLANINV_NEXT = {
+    "absent": (
+        "verdict `absent` is a FALSIFIABLE ASSERTION about the tree at that head, and\n"
+        "--plan-tick re-checks it: if this box's tick then cites a file:line that\n"
+        "already resolved at that head, the tick is REFUSED, because the\n"
+        "investigation claimed the absence of something it could have found. So\n"
+        "implement it, and cite the work you actually did."
+    ),
+    "present": (
+        "verdict `present` means the work landed and only the record was stale, which\n"
+        'is CLAUDE.md\'s own "Search first" case. Close the box now:\n'
+        "  worklist.py --plan-tick <me> <plan> <sig> '<evidence>' --write"
+    ),
+    "partial": (
+        "verdict `partial` leaves the box OPEN on purpose. The note names the half\n"
+        "that exists; the remaining half is ordinary work, and this row is what stops\n"
+        "the next session re-deriving the same half."
+    ),
+}
+
+CLI_PLANREC_REVIVED = (
+    "restored %(rel)s from blob %(blob)s (%(bytes)d bytes)\n"
+    "  The record is gone and the plan is a live plan again, which means it is\n"
+    "  back on the housekeeping clock.\n"
+    "\n"
+    "  COMMIT BEFORE YOU COMPACT IT AGAIN. --plan-compact refuses a dirty path,\n"
+    "  and the path is dirty right now because this verb just rewrote it. That\n"
+    "  refusal is not bureaucracy: the record's pointer is the hash of the bytes\n"
+    "  on disk and the record then OVERWRITES those bytes, so compacting an\n"
+    "  uncommitted file would leave its text in no commit and no working tree."
+)
+
+# ---- the parallel-writer roster (wl_roster; agent/plans/PLAN-parallel-writer-roster.md) ----------
+#
+# Every remedy below is an action the session completes ALONE, so no roster block can deadlock: stop an agent, message it, lease, release, tick, or read it with --status. The cap and the 20-minute ping are the operator's numbers, and no variable changes either one.
+
+V_ROSTER_CAP = (
+    "PARALLEL-WRITER CAP EXCEEDED: %d writer agent(s) are live and the cap is %d "
+    "(operator, 2026-09-24; there is no override). The writer roster, oldest first:\n"
+    "%s\n"
+    "  Stop the newest excess writer(s) now, TaskStop %s, then release or re-lease the "
+    "items they held:\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> release\n"
+    "  Read-only work belongs to Plan or Explore agents, which the cap does not count."
+)
+
+V_ROSTER_SILENT = (
+    "SILENT WORKER: %d supervised agent(s) have shown no evidence for %d minutes or more: no "
+    "transcript write, no tool call in flight, no status, SendMessage or SubagentStop report, or "
+    "their last --status found no growth:\n"
+    "%s\n"
+    "  Ask each one directly (SendMessage to its id) or stop it (TaskStop <id>), then release "
+    "or re-lease its items:\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> release"
+)
+
+V_ROSTER_UNLEASED = (
+    "UNLEASED WRITER: %d live writer agent(s) hold no lease, directly or through a parent "
+    "agent, so nothing ties them to the work they are doing:\n"
+    "%s\n"
+    "  Lease the item each one works on (a child agent inherits its parent's lease):\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <item> +60 worker:<agent-id>"
+)
+
+V_ROSTER_DEAD = (
+    "LEASED TO A FINISHED WORKER: %d item(s) are leased to an agent that is not live, and no "
+    "agent in its lineage is live either:\n"
+    "%s\n"
+    "  Read what it left, then close each item with evidence, release it, or re-lease it to a "
+    "live worker:\n"
+    "    .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> release"
+)
+
+# agent/plans/PLAN-stop-hook-retro-20260924.md R.5: only the K oldest queued items are named, K being the free writer slots less a HOLD_FOR reservation. R20260925.5: an item waiting on an open BLOCKED_BY blocker is skipped, and the last line names that token as the remedy.
+V_QUEUE_SLOT = (
+    "QUEUED WORK AND A FREE WRITER SLOT: %(free)d slot(s) free, %(queued)d queued: start "
+    "%(ids)s. Spawn a writer for each and move its lease onto it:\n"
+    "    .claude/hooks/stop/worklist.py --lease %(me)s <id> +60 worker:<agent-id>\n"
+    "  The other queued items stay covered behind the cap. A slot meant for one named item is "
+    "held by leasing ONE queued item with HOLD_FOR:#<id> in its note.\n"
+    "  Waiting on another item? A queued item whose BLOCKED_BY blocker is still open is skipped "
+    "here and never fails closed:\n"
+    "    .claude/hooks/stop/worklist.py --update %(me)s <id> 'BLOCKED_BY:#<blocker>'"
+    "%(held)s"
+)
+# agent/plans/PLAN-plan-priority-concurrency.md section 5c: a queued item whose plan is held by a live exclusive plan or a live plan owning the same files is skipped by queue-slot, and V_QUEUE_SLOT names it on one of these lines (at most QUEUE_HELD_SHOWN, the rest counted). Substitutions: the item id, its rank tag, the hold reason.
+N_QUEUE_HELD = "\n  held back: #%s %s -- %s"
+N_QUEUE_HELD_MORE = "\n  held back: %d more queued item(s), same reason class"
+
+# THE STOP-SIDE BACKSTOP OF THE PLAN-CONCURRENCY SPAWN GUARD (agent/plans/PLAN-plan-priority-concurrency.md section 5c, `roster-concurrency`): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one of them started. Substitutions: the count, the rendered rows, the session prefix.
+V_ROSTER_CONCURRENCY = (
+    "PLAN CONCURRENCY BROKEN: %d live writer(s) of this session serve plans that a live exclusive "
+    "plan forbids, or that claim the same files as another live writer's plan. The spawn guard "
+    "(block_plan_concurrency) was bypassed or blind when one of them started:\n"
+    "%s\n"
+    "  Stop one (TaskStop <agent-id>) and queue its work until the other finishes:\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> +120 worker:queue"
+)
+
+# An expired or malformed lease fails closed into an open item (wl_store.classify_items). The last clause is the remedy for an item that is really waiting on another (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5): a BLOCKED_BY token makes it `waiting` instead of open. Substitutions: the item's display line, the lease state, the session prefix, the item id.
+N_LEASE_FAILED_CLOSED = (
+    "%s   <- [>] lease %s; finish it, renew the lease, or tick it; waiting on another item? "
+    ".claude/hooks/stop/worklist.py --update %s %s 'BLOCKED_BY:#<blocker>'"
+)
+
+# The allow line of a cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md): live writers / cap, their short ids, the queued count, how many work-order checks stood down, and when the next status is owed.
+N_CAP_WAIT = (
+    "CAP-SATURATED WAIT: %d/%d writer slots live (%s); %d item(s) queued behind the cap; "
+    "%d work-order check(s) stood down until a slot frees. Next status due %s."
+)
+# The concurrency-saturated variant (agent/plans/PLAN-plan-priority-concurrency.md section 5c): a writer slot is free, but every queued item is held by a live plan. Live writers / cap, their short ids, the queued count, the holder plans, the stood-down count, the next status due.
+N_CAP_WAIT_CONC = (
+    "CONCURRENCY-SATURATED WAIT: %d/%d writer slots live (%s); all %d queued item(s) are held by "
+    "a live plan (%s); %d work-order check(s) stood down until the holder finishes. Next status "
+    "due %s."
+)
+# Appended to a STATE.md demand the cap-saturated wait KEPT because compaction is imminent.
+N_CAP_WAIT_COMPACTION = (
+    "(Kept although every writer slot is full: the context is in its last band before auto-compact, "
+    "and the recovery document must be current before it is summarised.)"
+)
+# FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md). The allow line of a focused stop: mode, PR, since, parked checks, held advisories, and the session prefix for the off command.
+N_FOCUS = (
+    "FOCUS MODE (%s PR #%s since %s): %d check(s) parked, %d advisory(ies) held; CI red, dead "
+    "watches, unread reports, STATE.md near compaction and hook integrity still block. Ends on "
+    "--focus %s off or when the PR merges."
+)
+# The one-line parked summary on the stop that detects the end: why, the parked keys (top 6 then "+N more"), held advisories, refused spawns.
+N_FOCUS_ENDED = (
+    "FOCUS ENDED (%s): parked for %s: %s; %d advisory(ies) held, draining from this stop; %d "
+    "writer spawn(s) refused. The full battery applies from this stop."
+)
+# Appended to a STATE.md demand focus KEPT because compaction is imminent.
+N_FOCUS_COMPACTION = (
+    "(Kept although focus mode is on: the context is in its last band before auto-compact, and "
+    "the recovery document must be current before it is summarised.)"
+)
+# Advisory: the merged/closed read failed, so focus continues (the 24-hour cap bounds it).
+N_FOCUS_PR_UNREADABLE = (
+    "focus: could not read whether PR #%s on %s merged (%s); focus continues until the PR reads "
+    "merged, --focus off, or the %d-hour cap."
+)
+# The PostCompact line: a compacted session must know that writer spawns are refused.
+CTX_POSTCOMPACT_FOCUS = (
+    "FOCUS MODE IS ON (%s PR #%s on %s since %s): finish, don't start. Writer spawns are refused "
+    "except declared focus-fix work (`focus-fix:#<id>` naming an item carrying pr:%s). End it "
+    "with `.claude/hooks/stop/worklist.py --focus %s off`."
+)
+
+CLI_FOCUS_USAGE = (
+    "usage: worklist.py --focus <me> babysit|merge [--pr <n>] [--branch <b>]\n"
+    "       worklist.py --focus <me> off\n"
+    "       worklist.py --focus <me>\n"
+    "\n"
+    "Focus mode is a PR wind-down: finish, don't start. Running writers and in-flight\n"
+    "items finish; new writer spawns are refused except declared fix work\n"
+    "(`focus-fix:#<id>` in the spawn, naming an open item carrying pr:<n>). The Stop\n"
+    "hook parks plan, queue and hygiene pushes and keeps CI red, dead watches, unread\n"
+    "reports, STATE.md near compaction and hook integrity. It ends on `off`, when the\n"
+    "PR merges or closes, or after 24 hours. The branch defaults to the checkout's\n"
+    "and may not be main or a detached HEAD.\n"
+)
+CLI_FOCUS_ON = (
+    "focus ON for %s: %s, PR #%s on %s. Writer spawns are refused except `focus-fix:#<id>` "
+    "work naming an item that carries pr:%s; plan, queue and hygiene pushes park until "
+    "`--focus %s off` or the PR merges."
+)
+CLI_FOCUS_PR_UNKNOWN = (
+    "focus: no open PR found for %s (%s); recorded with no PR number. The Stop hook fills it "
+    "in from the CI read once the PR exists."
+)
+CLI_FOCUS_OFF = "focus OFF for %s (was %s, PR #%s, since %s)."
+CLI_FOCUS_NOT_ON = "focus is not on for %s; nothing to end."
+CLI_FOCUS_STATUS = "focus: %s, PR #%s on %s since %s; %d check(s) parked so far."
+CLI_FOCUS_REFUSED = "focus: %s"
+
+N_ROSTER_HONEST = (
+    "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "
+    "leased to a live worker, so the pushes a supervised wait would draw stand down; the cap "
+    "and the status ping still apply.\n"
+    "%s"
+)
+
+CLI_STATUS_ROW = (
+    "%(id)s (%(type)s) %(desc)r\n"
+    "  lineage: %(lineage)s; live children: %(children)s\n"
+    "  transcript: %(size)d bytes, last grew %(quiet)s ago; edit tool calls: %(edits)d\n"
+    "  last tool call: %(tool)s\n"
+    "  last text: %(text)s\n"
+    "  recorded: %(verdict)s"
+)
+
+CLI_STATUS_NONE = (
+    "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
+    "agent started since it; an id that finished its turn is not live."
+)
+
+CLI_STATUS_BLIND = (
+    "--status: cannot locate this session's subagents directory for %r, so no transcript was "
+    "read and nothing was recorded. Pass the full session prefix of the session that spawned "
+    "the workers."
+)

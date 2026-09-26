@@ -47,15 +47,8 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
     e.preventDefault();
     setState('loading');
     setErrorMsg('');
-    // BEFORE the captcha guard, deliberately: an empty form sails straight past
-    // that one, POSTs an empty payload, and renders "Something went wrong" from
-    // the network-error branch -- which reads as a broken site rather than as a
-    // form the visitor has not filled in.
-    // BOUND FIRST, then tested -- the shape PartnerApplicationForm.tsx:149 uses.
-    // Testing `nameRef.current?.value.trim()` inline reads identically to a
-    // human and is invisible to check-form-validation, whose fieldIdentifiers()
-    // only recognises a field that is assigned to a variable. It also stops the
-    // payload below reading each ref a second time.
+    // BEFORE the captcha guard, deliberately: an empty form sails straight past that one, POSTs an empty payload, and renders "Something went wrong" from the network-error branch -- which reads as a broken site rather than as a form the visitor has not filled in. BOUND FIRST, then tested -- the shape PartnerApplicationForm.tsx:149 uses. Testing `nameRef.current?.value.trim()`
+    // inline reads identically to a human and is invisible to check-form-validation, whose fieldIdentifiers() only recognises a field that is assigned to a variable. It also stops the payload below reading each ref a second time.
     const name = nameRef.current?.value.trim() ?? '';
     const email = emailRef.current?.value.trim() ?? '';
     const message = messageRef.current?.value.trim() ?? '';
@@ -66,8 +59,7 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
     }
     if (captchaEnabled && !captcha.token) {
       setState('error');
-      // The widget is present and unsolved, or it never loaded at all. Only the second
-      // one needs a retry, and saying "complete the captcha" there points at nothing.
+      // The widget is present and unsolved, or it never loaded at all. Only the second one needs a retry, and saying "complete the captcha" there points at nothing.
       setErrorMsg(captchaMessage(captcha, t('captchaUnavailable'), t('captchaRequired')));
       return;
     }

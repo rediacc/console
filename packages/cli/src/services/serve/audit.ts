@@ -64,9 +64,7 @@ export function createExecutorAudit(
               success: event.success,
               durationMs: event.durationMs,
               destructive: event.destructive,
-              // Params are NOT shipped: they routinely carry repository names,
-              // and can carry a secret value on a `repo secret set`. The audit
-              // trail records WHAT ran and WHO ran it, not the payload.
+              // Params are NOT shipped: they routinely carry repository names, and can carry a secret value on a `repo secret set`. The audit trail records WHAT ran and WHO ran it, not the payload.
             },
           },
         ],

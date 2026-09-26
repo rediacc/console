@@ -61,16 +61,13 @@ async function resolvePolicyTarget(
     }
     return {
       machineName: resolved.machineName,
-      // #74: the ref arm addresses ONE repo, so it must be read from the datastore
-      // that repo is recorded on. The machine-wide arm below addresses the
-      // machine's own default policy and correctly declares nothing.
+      // #74: the ref arm addresses ONE repo, so it must be read from the datastore that repo is recorded on. The machine-wide arm below addresses the machine's own default policy and correctly declares nothing.
       datastore: await recordedDatastoreMount(resolved.repoKey),
       params: { name: repo.repositoryGuid },
     };
   }
 
-  // Machine-wide form: address the machine's default policy on -m (errors when
-  // -m is also absent, as before).
+  // Machine-wide form: address the machine's default policy on -m (errors when -m is also absent, as before).
   const target = await resolveRepoTarget({ machine });
   return { machineName: target.machineName, params: {} };
 }
@@ -173,7 +170,7 @@ async function handlePolicySet(ref: string | undefined, options: PolicySetOption
   await runPolicyFunction('repository_policy_set', target, options.debug);
 }
 
-/** Register `repo policy set|get` — automatic size management policy
+/** Register `repo policy set|get`, automatic size management policy
  * (rediacc/renet#76): online auto-grow + scheduled trim, applied by the
  * machine-side storage-maintain timer. There is deliberately no auto-shrink:
  * quota shrink stays the offline, operator-run `repo resize`. */

@@ -1,0 +1,71 @@
+{
+  ".ci/lib/devbox.sh": [
+    "_devbox_bind_if_present",
+    "devbox_base_port",
+    "devbox_branch",
+    "devbox_build_image",
+    "devbox_container_id",
+    "devbox_container_name",
+    "devbox_container_running",
+    "devbox_docker",
+    "devbox_doctor",
+    "devbox_ensure_image",
+    "devbox_exec",
+    "devbox_home_binds",
+    "devbox_identity_ok",
+    "devbox_image_digest",
+    "devbox_image_present",
+    "devbox_logs",
+    "devbox_missing_binds",
+    "devbox_mount_ok",
+    "devbox_mount_root",
+    "devbox_network_ensure",
+    "devbox_proxy_ensure",
+    "devbox_proxy_running",
+    "devbox_proxy_stop",
+    "devbox_remove",
+    "devbox_router_hosts",
+    "devbox_script_binds",
+    "devbox_shell",
+    "devbox_slug",
+    "devbox_slug_active",
+    "devbox_slug_basename",
+    "devbox_slug_conflicts",
+    "devbox_state_get",
+    "devbox_state_write",
+    "devbox_status",
+    "devbox_stop",
+    "devbox_up",
+    "devbox_url",
+    "devbox_worktree",
+    "devbox_writable_ok"
+  ],
+  ".ci/lib/service.sh": [
+    "_service_compose"
+  ],
+  ".ci/scripts/lib/blocker-validator.sh": [
+    "_blocker_emit",
+    "_blocker_py"
+  ],
+  ".ci/scripts/lib/common.sh": [
+    "_gh_probe",
+    "get_repo_root",
+    "gh_json",
+    "gh_retry",
+    "log_debug",
+    "log_error",
+    "log_info",
+    "log_step",
+    "log_warn",
+    "pr_diff_loc",
+    "review_attempt_class_is_infra"
+  ],
+  ".ci/scripts/lib/toolchain.sh": [
+    "_toolchain_need_checksums",
+    "_toolchain_os",
+    "_toolchain_sha256sum",
+    "toolchain_keys",
+    "toolchain_load",
+    "toolchain_pairs"
+  ]
+}

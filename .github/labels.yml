@@ -42,15 +42,6 @@
   color: "FEF2C0"
   description: "Forces an unconditional full CI round, bypassing the scope engine's job skips"
 
-# Autopilot (per-PR babysit loop)
-- name: autopilot
-  color: "1D76DB"
-  description: "Arms the autopilot babysit loop for this PR (manual arming path; workflow dispatch is the other)"
-
-- name: autopilot-blocked
-  color: "B60205"
-  description: "Escalation latch: the autopilot refuses further rounds on this PR until a human removes this"
-
 # Release control
 - name: rollback
   color: "D93F0B"
@@ -85,7 +76,7 @@
 
 # The fourth member of the family, and the only one that subtracts: it skips the
 # WHOLE release rather than choosing its size. Created on demand by the applier
-# (see the CREATE_ON_DEMAND allowlist in check-label-inventory.sh) for the same
+# (see the CREATE_ON_DEMAND allowlist in label_inventory.py) for the same
 # ordering reason `ci` is.
 - name: bump-none
   color: "C5DEF5"

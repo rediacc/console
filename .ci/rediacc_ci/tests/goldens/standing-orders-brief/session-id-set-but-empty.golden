@@ -1,0 +1,5 @@
+exit: 0
+--- stdout ---
+  (no CLAUDE_CODE_SESSION_ID in this environment: cannot tell my items from a peer's.
+   Every count below would be a guess, so none are printed.)
+--- stderr ---

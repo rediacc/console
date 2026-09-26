@@ -130,11 +130,9 @@ export function getDoneLabel(name: string): string {
   return doneLabels[name] ?? name;
 }
 
-// ---------------------------------------------------------------------------
-// End-of-command timing summary: proportional bars + waterfall.
+// --------------------------------------------------------------------------- End-of-command timing summary: proportional bars + waterfall.
 // Pure string builders so they are unit-testable; callers decide whether to
-// print (TTY only) and pass the wall-clock duration they displayed as Total.
-// ---------------------------------------------------------------------------
+// print (TTY only) and pass the wall-clock duration they displayed as Total. ---------------------------------------------------------------------------
 
 const BAR_WIDTH = 24;
 const WATERFALL_WIDTH = 44;
@@ -309,7 +307,7 @@ export function workloadSplit(
 /**
  * Attribution footer: separates the Rediacc pipeline from service startup,
  * which is defined by the repository's own Rediaccfile/containers. Factual
- * and neutral — when service startup dominates, an informational note makes
+ * and neutral, when service startup dominates, an informational note makes
  * clear which part the pipeline controls (and finished quickly).
  */
 export function buildAttribution(

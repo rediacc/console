@@ -56,11 +56,9 @@ const commandContext = new Map<string, { startTime: number }>();
  */
 let telemetryReady: Promise<void> = Promise.resolve();
 
-// formatDuration removed — timeline handles all timing display
+// formatDuration removed, timeline handles all timing display
 
-// Telemetry is initialized in the preAction hook after `fetchOtlpCredentials()`
-// resolves so the OTel SDK is constructed with the correct per-region auth
-// header from the start. Before that, any telemetry calls are no-ops.
+// Telemetry is initialized in the preAction hook after `fetchOtlpCredentials()` resolves so the OTel SDK is constructed with the correct per-region auth header from the start. Before that, any telemetry calls are no-ops.
 
 /**
  * Get the full command name including parent commands.
@@ -119,11 +117,7 @@ async function setUserAndSubscriptionContext(): Promise<void> {
   }
 }
 
-// Output-format precedence when --output not explicitly set:
-//   1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv)
-//   2. Auto-JSON for non-TTY or agent environments
-//   3. Default 'table' from .option()
-// Used by tutorial recording to keep human-readable output even though
+// Output-format precedence when --output not explicitly set: 1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv) 2. Auto-JSON for non-TTY or agent environments 3. Default 'table' from .option() Used by tutorial recording to keep human-readable output even though
 // CLAUDECODE=1 in the parent shell triggers agent detection.
 function resolveOutputFormat(optsValue: OutputFormat, source: string | undefined): OutputFormat {
   if (source !== 'default') {
@@ -210,37 +204,23 @@ export function createCli(): Command {
         configService.setRuntimeConfig(opts.config);
       }
 
-      // Initialize or update i18n language. Before the proxy branch: a proxied
-      // run still renders here, so it needs its strings.
+      // Initialize or update i18n language. Before the proxy branch: a proxied run still renders here, so it needs its strings.
       await ensureI18n(opts.lang ?? (await configService.getLanguage()), opts.lang);
 
-      // Fire-and-forget: start the machine work as a detached job and return the
-      // instant it starts, leaving it running (finding #2 of the detach handoff).
-      // Refuse it up front for a command that cannot become a job, so the
-      // operator gets a clear message rather than a flag that silently did
-      // nothing. Set before the proxy branch, which never returns.
+      // Fire-and-forget: start the machine work as a detached job and return the instant it starts, leaving it running (finding #2 of the detach handoff). Refuse it up front for a command that cannot become a job, so the operator gets a clear message rather than a flag that silently did nothing. Set before the proxy branch, which never returns.
       if (opts.background) {
         const commandPath = commandPathOf(actionCommand);
         assertDetachable(commandPath, getCommand(commandPath));
         setBackgroundRequested(true);
       }
 
-      // Run the command at a remote executor instead of here. Explicit opt-in
-      // only: an inferred mode was what made the retired cloud adapter leak
-      // conditionals through every layer.
+      // Run the command at a remote executor instead of here. Explicit opt-in only: an inferred mode was what made the retired cloud adapter leak conditionals through every layer.
       //
-      // Interception is at the COMMAND, not deeper. A command's action body reads
-      // and writes local config on its way to the executor seam, and a proxy
-      // client holds no config, so intercepting at the seam meant dying with
-      // "Repository not found in context" before the wire was ever touched. This
-      // hook runs before every action, so exiting here means the local action
-      // never runs at all, which is what makes the client genuinely thin.
+      // Interception is at the COMMAND, not deeper. A command's action body reads and writes local config on its way to the executor seam, and a proxy client holds no config, so intercepting at the seam meant dying with "Repository not found in context" before the wire was ever touched. This hook runs before every action, so exiting here means the local action never runs at all,
+      // which is what makes the client genuinely thin.
       const proxyUrl = (opts.proxy as string | undefined) ?? process.env.REDIACC_PROXY_URL;
       if (proxyUrl) {
-        // Refuse a command the proxy cannot serve (interactive TTY, client-side
-        // file transfer, or an effect that only exists on this laptop) up front,
-        // so the operator gets a clear message instead of a confusing failure
-        // mid-request.
+        // Refuse a command the proxy cannot serve (interactive TTY, client-side file transfer, or an effect that only exists on this laptop) up front, so the operator gets a clear message instead of a confusing failure mid-request.
         const commandPath = commandPathOf(actionCommand);
         const entry = getCommand(commandPath);
         assertProxyCapable(commandPath, entry?.proxyCapable ?? false, entry?.proxyBlockedReason);
@@ -261,15 +241,11 @@ export function createCli(): Command {
         });
       }
 
-      // Telemetry must never gate the user's command. The OTLP credential
-      // fetch (unauthenticated, ~100-300ms to the account server) used to be
+      // Telemetry must never gate the user's command. The OTLP credential fetch (unauthenticated, ~100-300ms to the account server) used to be
       // awaited here on EVERY invocation; it now runs CONCURRENTLY with the
       // command. Ordering inside the chain is unchanged (credentials before
       // `initialize()` so the exporter gets its auth header; user context
-      // after initialize). Executor paths that inject the credentials into
-      // renet env await the same memoized fetch, and the postAction hook
-      // awaits this chain before ending the command span, so no telemetry is
-      // lost — the span's duration comes from the startTime captured here.
+      // after initialize). Executor paths that inject the credentials into renet env await the same memoized fetch, and the postAction hook awaits this chain before ending the command span, so no telemetry is lost, the span's duration comes from the startTime captured here.
       const commandName = getFullCommandName(actionCommand);
       const startTime = Date.now();
       commandContext.set(commandName, { startTime });
@@ -280,8 +256,7 @@ export function createCli(): Command {
             const otlpCreds = await fetchOtlpCredentials();
             telemetryService.setRuntimeOtlpCredentials(otlpCreds);
           } catch {
-            // Any failure (network, malformed response) leaves the token null
-            // and telemetry disabled. Never blocks the actual command.
+            // Any failure (network, malformed response) leaves the token null and telemetry disabled. Never blocks the actual command.
           }
         }
         await telemetryService.initialize({ serviceVersion: VERSION });
@@ -299,11 +274,9 @@ export function createCli(): Command {
       // License auto-refresh is now handled per-operation in services/license.ts
     })
     .hook('postAction', async (_thisCommand, actionCommand) => {
-      // Timeline rendering handles timing display for executor commands.
-      // No additional "Completed in X (total: Y)" message needed.
+      // Timeline rendering handles timing display for executor commands. No additional "Completed in X (total: Y)" message needed.
 
-      // The deferred telemetry chain from preAction must land before the
-      // command span is closed — for fast commands it may still be in flight.
+      // The deferred telemetry chain from preAction must land before the command span is closed, for fast commands it may still be in flight.
       await telemetryReady;
 
       // Stop profiling before ending telemetry

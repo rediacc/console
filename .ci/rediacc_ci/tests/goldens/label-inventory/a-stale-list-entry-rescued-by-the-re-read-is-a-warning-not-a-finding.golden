@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-label-inventory.sh blob 13627d4c05edbdecca46be3ef0d973c2a99cf3de
+exit: 0
+--- stdout ---
+--- stderr ---
+⚠ 'golf' was missing from the label list but a direct re-read found it. The list read was stale (the repo's labels were being edited mid-run); dropping the finding rather than accusing a live label of deletion.
+✓ label inventory reconciled: 6 declared, 5 live (source: fx/live.txt (injected)); names, descriptions and colours all agree

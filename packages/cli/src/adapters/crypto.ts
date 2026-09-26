@@ -19,8 +19,7 @@ class NodeCryptoProvider implements ICryptoProvider {
 
     const authTag = cipher.getAuthTag();
 
-    // Combine: salt + iv + ciphertext + authTag
-    // Note: In web crypto, authTag is appended to ciphertext automatically
+    // Combine: salt + iv + ciphertext + authTag Note: In web crypto, authTag is appended to ciphertext automatically
     const combined = Buffer.concat([salt, iv, encrypted, authTag]);
 
     return combined.toString('base64');
@@ -64,7 +63,7 @@ class NodeCryptoProvider implements ICryptoProvider {
     return key.toString('base64');
   }
 
-  private async deriveKeyBuffer(password: string, salt: Buffer): Promise<Buffer> {
+  private deriveKeyBuffer(password: string, salt: Buffer): Promise<Buffer> {
     return pbkdf2Async(
       password,
       salt,

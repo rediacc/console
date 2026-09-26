@@ -6,7 +6,7 @@ import { outputService, wrapProse } from '../core/output.js';
  * banner on stdout"). The contract that keeps `--output json` pipeable is:
  *
  *   - human/progress messages (info/success/warn/error) → STDERR (console.error)
- *   - the actual data payload (print) → STDOUT (console.log)
+ *   - the actual data payload (print) → STDOUT (process.stdout.write)
  *
  * So `rdc … --output json | jq` and `> out.json` stay clean even while progress
  * is shown. (The `./rdc.sh` dev-wrapper banner is separately routed to stderr via
@@ -19,7 +19,7 @@ describe('outputService stream routing (#490 bug 2)', () => {
   });
 
   it('routes info/success/warn/error to stderr, never stdout', () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     outputService.info('preparing');
@@ -32,22 +32,21 @@ describe('outputService stream routing (#490 bug 2)', () => {
   });
 
   it('routes the data payload (print) to stdout only', () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     outputService.print({ value: 42 }, 'json');
 
     expect(log).toHaveBeenCalledTimes(1);
     expect(err).not.toHaveBeenCalled();
-    // What lands on stdout must be a single parseable JSON document (the
-    // standard envelope), carrying the payload under `data`.
-    const printed = (log.mock.calls[0]?.[0] ?? '') as string;
+    // What lands on stdout must be a single parseable JSON document (the standard envelope), carrying the payload under `data`.
+    const printed = String(log.mock.calls[0]?.[0] ?? '');
     expect(() => JSON.parse(printed)).not.toThrow();
     expect(JSON.parse(printed).data).toEqual({ value: 42 });
   });
 
   it('progress messages alongside json output leave stdout pure', () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Simulate a command: progress, then the JSON document.
@@ -56,7 +55,7 @@ describe('outputService stream routing (#490 bug 2)', () => {
 
     // Exactly one stdout write, and it is valid JSON.
     expect(log).toHaveBeenCalledTimes(1);
-    expect(() => JSON.parse(log.mock.calls[0]?.[0] as string)).not.toThrow();
+    expect(() => JSON.parse(String(log.mock.calls[0]?.[0]))).not.toThrow();
   });
 });
 
@@ -113,9 +112,7 @@ describe('wrapProse', () => {
   it('leaves an over-long token INTACT and emits no blank filler line', () => {
     const url = `https://example.com/${'x'.repeat(80)}`;
     // The long token must come FIRST. The `line === ''` guard only fires against an
-    // EMPTY accumulator, so a short word ahead of it makes both branches behave
-    // identically and the test proves nothing (verified by mutation: it stayed
-    // green with the guard removed).
+    // EMPTY accumulator, so a short word ahead of it makes both branches behave identically and the test proves nothing (verified by mutation: it stayed green with the guard removed).
     const out = wrapProse(`${url} trailing words here`, 20);
     expect(out).toContain(url);
     expect(out.filter((l) => l.trim() === '')).toEqual([]);

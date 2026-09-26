@@ -1,21 +1,10 @@
 #!/usr/bin/env python3
 """A job the profiler says fits ubuntu-slim must actually be on ubuntu-slim.
 
-WHY THIS EXISTS. Standard runners are free and unlimited on this public repo,
-which is precisely what makes oversizing invisible: a job using ~1 core on a
-4-vCPU ubuntu-latest VM burns four cores' worth of electricity to do one core's
-work and no bill ever says so. The profiler
-(.ci/scripts/ci/profiler/) turns that into a MEASUREMENT and prints an advisory
-into the job summary -- and an advisory nobody is obliged to read is a habit,
-not an invariant. Advisories decay the same way coverage does: the first one
-gets acted on, the tenth gets scrolled past, and six months later the panel says
-MOVE TO ubuntu-slim on twelve jobs that nobody has moved.
+WHY THIS EXISTS. Standard runners are free and unlimited on this public repo, which is precisely what makes oversizing invisible: a job using ~1 core on a 4-vCPU ubuntu-latest VM burns four cores' worth of electricity to do one core's work and no bill ever says so. The profiler (.ci/scripts/ci/profiler/) turns that into a MEASUREMENT and prints an advisory into the job summary --
+and an advisory nobody is obliged to read is a habit, not an invariant. Advisories decay the same way coverage does: the first one gets acted on, the tenth gets scrolled past, and six months later the panel says MOVE TO ubuntu-slim on twelve jobs that nobody has moved.
 
-This closes that half. The measurement is committed
-(runner-sizing-baseline.json), the verdict is re-derived from it offline, and a
-job whose own profile says it fits slim while its `runs-on:` says otherwise is
-RED until it is either moved or written down in .runner-advice-allowlist with a
-reason.
+This closes that half. The measurement is committed (runner-sizing-baseline.json), the verdict is re-derived from it offline, and a job whose own profile says it fits slim while its `runs-on:` says otherwise is RED until it is either moved or written down in .runner-advice-allowlist with a reason.
 
 FOUR RELATIONS:
   (a) COST         -- a MOVE_TO_SLIM verdict on a job that is not on slim.
@@ -34,37 +23,26 @@ FOUR RELATIONS:
 
 VERDICTS ARE RE-DERIVED, NOT READ. classify() below mirrors report.awk's
 advise() exactly, and the row's own `verdict=` token is used only as a CONTROL:
---refresh warns when the two disagree, which is what turns a silent divergence
-between the two implementations into a visible one. The gate test
-(.ci/scripts/test/gates/test-runner-advice.sh) drives real awk output through
-classify() for three profiles to pin the agreement.
+--refresh warns when the two disagree, which is what turns a silent divergence between the two implementations into a visible one. The gate test (.ci/scripts/test/gates/test-runner-advice.sh) drives real awk output through classify() for three profiles to pin the agreement.
 
 WHICH ROWS ARE BELIEVED. usable() below defers entirely to the row's own
 `verdict=` token: report.awk owns the trust decision, because only it can see
-the container fingerprint and the runner environment. The first real harvest
-(2026-08-09) seeded ZERO jobs for exactly this reason -- every ubuntu-latest row
+the container fingerprint and the runner environment. The first real harvest (2026-08-09) seeded ZERO jobs for exactly this reason -- every ubuntu-latest row
 came back `tier=PROC_HOST runner_label=unknown verdict=NONE`, since
-setup-workspace does not thread runner-label and the advisor refused to speak.
-The fix was in report.awk (a github-hosted VM with no container fingerprint is
-an exclusive machine, so its /proc numbers are the job's own), not here: this
-file simply stopped being handed NONE for the majority of the fleet.
+setup-workspace does not thread runner-label and the advisor refused to speak. The fix was in report.awk (a github-hosted VM with no container fingerprint is an exclusive machine, so its /proc numbers are the job's own), not here: this file simply stopped being handed NONE for the majority of the fleet.
 
-KNOWN COUPLING. classify() uses the DEFAULT thresholds report.awk assumes
-(840 s declared, 900 s hard cap). panel.sh can forward per-job overrides via
-PROFILER_DECLARED_S / PROFILER_HARD_S, and a job that does so would have its
-row computed against different numbers than this file re-derives. Nothing
-forwards them today; the --refresh disagreement warning is what would surface
-it on the day something does.
+KNOWN COUPLING. classify() uses the DEFAULT thresholds report.awk assumes (840 s declared, 900 s hard cap). panel.sh can forward per-job overrides via PROFILER_DECLARED_S / PROFILER_HARD_S, and a job that does so would have its row computed against different numbers than this file re-derives. Nothing forwards them today; the --refresh disagreement warning is what would surface it
+on the day something does.
 
-THE BOOTSTRAP, in one line each: a PRISTINE baseline (refreshed_at null, zero
-jobs) warns and passes, because there is provably nothing to check; any other
-below-floor shape is a hard VACUOUS refusal; and --refresh will not write a
-baseline below the floor. See is_pristine() for why those three are one
-argument rather than three conveniences.
+THE BOOTSTRAP, in one line each: a PRISTINE baseline (refreshed_at null, zero jobs) warns and passes, because there is provably nothing to check; any other below-floor shape is a hard VACUOUS refusal; and --refresh will not write a baseline below the floor. See is_pristine() for why those three are one argument rather than three conveniences.
 
-WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a
-workflow. It asserts one thing: that a measured, repeatedly-observed fit is
-either taken or justified.
+WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a workflow. It asserts one thing: that a measured, repeatedly-observed fit is either taken or justified.
+
+---- gate ----
+step: Runner sizing advice
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import argparse
@@ -76,9 +54,11 @@ import re
 import subprocess
 import sys
 
-# --- The thresholds. These MIRROR .ci/scripts/ci/profiler/report.awk's advise()
-# --- and its BEGIN block. Changing one without the other is what the gate
-# --- test's awk/python parity case exists to catch.
+import _cipath  # noqa: F401
+from rediacc_ci.core import allowlist
+from rediacc_ci.policy_paths import policy_path
+
+# --- The thresholds. These MIRROR .ci/scripts/ci/profiler/report.awk's advise() --- and its BEGIN block. Changing one without the other is what the gate --- test's awk/python parity case exists to catch.
 CPU_KEEP_MILLI = 1000
 MEM_KEEP_BYTES = 4831838208
 DECLARED_S = 840
@@ -90,18 +70,13 @@ SLIM_MEM_CEIL_BYTES = 6442450944
 SLIM_LABEL = "ubuntu-slim"
 
 # `runs-on: ${{ ... }}` resolves at dispatch time and no static parse can say
-# what it will be. Recorded rather than guessed, and NEVER fired on: a job whose
-# runner is chosen per run cannot be "on the wrong runner" from here.
+# what it will be. Recorded rather than guessed, and NEVER fired on: a job whose runner is chosen per run cannot be "on the wrong runner" from here.
 DYNAMIC = "DYNAMIC"
 
-# One observation is an anecdote. A job is only told to move once the same
-# verdict has survived this many distinct runs, because the cheapest way to
-# discredit this gate is to move a job on the strength of one unusually quiet
-# afternoon.
+# One observation is an anecdote. A job is only told to move once the same verdict has survived this many distinct runs, because the cheapest way to discredit this gate is to move a job on the strength of one unusually quiet afternoon.
 MIN_OBSERVED_RUNS = 3
 
-# Vacuity floor. An empty baseline makes every comparison vacuous and the gate
-# would exit 0 reading exactly like full coverage.
+# Vacuity floor. An empty baseline makes every comparison vacuous and the gate would exit 0 reading exactly like full coverage.
 MIN_BASELINE_JOBS = 5
 
 # A baseline nobody refreshes stops describing reality. Loud, not silent.
@@ -117,19 +92,13 @@ INT_FIELDS = (
     "mem_ceil_bytes",
 )
 
-# The baseline's on-disk contract. Bump this ONLY together with a migration of
-# the committed file, and expect the gate to refuse every older copy loudly --
-# which is the point. Without a version, a shape change reaches this gate as a
-# KeyError traceback or, worse, as a silent misparse that reports a clean tree.
+# The baseline's on-disk contract. Bump this ONLY together with a migration of the committed file, and expect the gate to refuse every older copy loudly -- which is the point. Without a version, a shape change reaches this gate as a KeyError traceback or, worse, as a silent misparse that reports a clean tree.
 BASELINE_FORMAT = 1
 
-# Top-level keys every format-1 baseline must carry. `_comment` and
-# `refreshed_from` are prose and deliberately optional.
+# Top-level keys every format-1 baseline must carry. `_comment` and `refreshed_from` are prose and deliberately optional.
 REQUIRED_TOP_KEYS = ("refreshed_at", "jobs")
 
-# `env` is NOT required: it arrived after the first rows were harvested, and
-# classify() already defaults it to the untrusted side. Requiring it would
-# reject a record that is merely older, which is a different thing from wrong.
+# `env` is NOT required: it arrived after the first rows were harvested, and classify() already defaults it to the untrusted side. Requiring it would reject a record that is merely older, which is a different thing from wrong.
 REQUIRED_JOB_FIELDS = ("workflow", "runner_label", "tier")
 REQUIRED_JOB_INTS = (
     "cpu_peak_milli",
@@ -159,11 +128,7 @@ class BaselineFormatError(Exception):
 def read_baseline_json(path):
     """Parse the baseline and check its FORMAT only. Never raises a bare traceback.
 
-    Format-only, deliberately, because --refresh calls this: a refresh REPLACES
-    every job record, so refusing it over a malformed record would lock the
-    operator out of the one command that repairs it. A format it cannot read is
-    different in kind -- there is no way to know what the file even means, so
-    nothing may be written into it.
+    Format-only, deliberately, because --refresh calls this: a refresh REPLACES every job record, so refusing it over a malformed record would lock the operator out of the one command that repairs it. A format it cannot read is different in kind -- there is no way to know what the file even means, so nothing may be written into it.
     """
     try:
         raw = path.read_text(encoding="utf-8")
@@ -201,9 +166,7 @@ def read_baseline_json(path):
 def validate_records(data, path):
     """Every structural complaint about a format-1 baseline's contents.
 
-    Each message names the JOB and the FIELD, because the whole reason this
-    exists is that the alternative was a KeyError traceback pointing at a line
-    of this file rather than at the record that is wrong.
+    Each message names the JOB and the FIELD, because the whole reason this exists is that the alternative was a KeyError traceback pointing at a line of this file rather than at the record that is wrong.
     """
     problems = [
         "%s: missing required top-level key %r" % (path.name, key)
@@ -241,9 +204,7 @@ def validate_records(data, path):
         for field in REQUIRED_JOB_INTS:
             if field not in rec:
                 problems.append("%s: job %r is missing required field %r" % (path.name, job, field))
-            # bool is a subclass of int, and `true` here would arithmetic as 1
-            # rather than being rejected -- which is exactly the silent misparse
-            # this validator exists to replace.
+            # bool is a subclass of int, and `true` here would arithmetic as 1 rather than being rejected -- which is exactly the silent misparse this validator exists to replace.
             elif not isinstance(rec[field], int) or isinstance(rec[field], bool):
                 problems.append(
                     "%s: job %r field %r is %r, but it must be a whole number"
@@ -267,32 +228,15 @@ def load_baseline(path):
 def is_pristine(baseline):
     """The exact as-committed shape, and nothing that merely resembles it.
 
-    WHY AN EXCEPTION AT ALL. The bootstrap is otherwise structurally impossible.
-    The gate goes red on an unseeded baseline, and the baseline can only be
-    seeded from a run whose profiled jobs finished -- but the run that would
-    supply them contains this gate, which fails ~5 minutes in and takes the
-    slow lanes down with it. Two rounds of that yielded 3 harvestable jobs
-    against a floor of 5. So the floor made its own precondition unreachable.
+    WHY AN EXCEPTION AT ALL. The bootstrap is otherwise structurally impossible. The gate goes red on an unseeded baseline, and the baseline can only be seeded from a run whose profiled jobs finished -- but the run that would supply them contains this gate, which fails ~5 minutes in and takes the slow lanes down with it. Two rounds of that yielded 3 harvestable jobs against a floor
+    of 5. So the floor made its own precondition unreachable.
 
-    WHY IT IS SHAPE-EXACT. "Below the floor" and "never seeded" are different
-    states and only the second one is innocent. A baseline with 1-4 jobs is
-    evidence that a harvest ran and produced too little, or that somebody
-    deleted rows; a refreshed_at with no jobs is evidence that a write went
-    wrong halfway. Forgiving those would turn the exception into a way to
-    silence a real finding by truncating a file. So this matches the committed
-    shape and only that: the key PRESENT and null, and jobs PRESENT and empty.
-    A missing refreshed_at key is not this shape either -- it is a file
-    somebody has edited.
+    WHY IT IS SHAPE-EXACT. "Below the floor" and "never seeded" are different states and only the second one is innocent. A baseline with 1-4 jobs is evidence that a harvest ran and produced too little, or that somebody deleted rows; a refreshed_at with no jobs is evidence that a write went wrong halfway. Forgiving those would turn the exception into a way to silence a real finding
+    by truncating a file. So this matches the committed shape and only that: the key PRESENT and null, and jobs PRESENT and empty. A missing refreshed_at key is not this shape either -- it is a file somebody has edited.
 
-    The other half of the argument lives in refresh(), which refuses to WRITE
-    below the floor. Together they make "seeded" and "enforced" the same state,
-    which is what stops this from being a permanent hole.
+    The other half of the argument lives in refresh(), which refuses to WRITE below the floor. Together they make "seeded" and "enforced" the same state, which is what stops this from being a permanent hole.
     """
-    # The format clause is redundant when this is reached through load_baseline,
-    # which has already refused anything else. It is here so the predicate reads
-    # as the whole definition of "pristine" rather than as two thirds of it, and
-    # the gate test calls this function directly with a format-2 dict so the
-    # clause is pinned by a test rather than only by that reading.
+    # The format clause is redundant when this is reached through load_baseline, which has already refused anything else. It is here so the predicate reads as the whole definition of "pristine" rather than as two thirds of it, and the gate test calls this function directly with a format-2 dict so the clause is pinned by a test rather than only by that reading.
     if baseline.get("format") != BASELINE_FORMAT:
         return False
     if "refreshed_at" not in baseline or baseline["refreshed_at"] is not None:
@@ -307,10 +251,7 @@ class WorkflowUnreadableError(Exception):
 def runs_on(workflow_dir):
     """Map (workflow basename, job id) -> its `runs-on:` label, across every workflow.
 
-    Deliberately regex-based rather than yaml.safe_load, for the same reason
-    check_job_timeout_headroom.py is: the shape being read is two keys at two
-    fixed indentation levels, and this keeps the gate free of a PyYAML
-    dependency it would otherwise need on every runner. A parse that finds
+    Deliberately regex-based rather than yaml.safe_load, for the same reason check_job_timeout_headroom.py is: the shape being read is two keys at two fixed indentation levels, and this keeps the gate free of a PyYAML dependency it would otherwise need on every runner. A parse that finds
     nothing RAISES rather than returning {} -- an empty map would make every
     comparison below vacuous while the gate printed a clean line.
     """
@@ -356,14 +297,9 @@ def classify(rec):
     hosted-VM arm. Every ubuntu-latest job reports `runner_label=unknown`
     (setup-workspace does not thread the label), so without consulting env this
     function would re-derive NONE for precisely the records report.awk just
-    started producing verdicts for: the baseline would seed and the gate would
-    then fire on none of it.
+    started producing verdicts for: the baseline would seed and the gate would then fire on none of it.
 
-    The PROC_HOST-plus-container-fingerprint branch of advise() is still
-    deliberately absent. It yields NONE, usable() drops NONE rows, so a record
-    carrying that shape never reaches this function -- which is also why
-    trusting env here is not weaker than trusting it there: the fingerprint has
-    already been consulted, upstream, by the only code that can see it.
+    The PROC_HOST-plus-container-fingerprint branch of advise() is still deliberately absent. It yields NONE, usable() drops NONE rows, so a record carrying that shape never reaches this function -- which is also why trusting env here is not weaker than trusting it there: the fingerprint has already been consulted, upstream, by the only code that can see it.
     """
     tier = rec.get("tier", "")
     label = rec.get("runner_label", "")
@@ -383,9 +319,7 @@ def classify(rec):
     if tier == "PROC_HOST" and "slim" in label:
         return "NONE"
 
-    # A label is a claim; an enforced quota is a fact, and the fact wins. See
-    # the long comment above advise() in report.awk for why this is restricted
-    # to cgroup tiers.
+    # A label is a claim; an enforced quota is a fact, and the fact wins. See the long comment above advise() in report.awk for why this is restricted to cgroup tiers.
     on_slim = "slim" in label or (
         tier != "PROC_HOST"
         and 0 < cpu_ceil <= SLIM_CPU_CEIL_MILLI
@@ -517,11 +451,7 @@ def stale_allowlist(allowed, jobs, pairs):
 def controls(pairs):
     """Prove the detector can fire, in BOTH directions, before any real read.
 
-    A one-directional control is satisfiable by a broken checker: one that always
-    complains passes the positive control, one that never complains passes the
-    negative. Refusing a verdict when the instrument cannot be demonstrated is
-    the whole point -- an advisory that quietly stopped being enforced is the
-    very thing this gate replaces.
+    A one-directional control is satisfiable by a broken checker: one that always complains passes the positive control, one that never complains passes the negative. Refusing a verdict when the instrument cannot be demonstrated is the whole point -- an advisory that quietly stopped being enforced is the very thing this gate replaces.
     """
     workflow = min(wf for wf, _ in pairs)
     probe = dict(pairs)
@@ -591,31 +521,18 @@ def controls(pairs):
 
 
 def parse_allowlist(path):
-    """Entries with their BLOCKER reason. Same grammar as .profiler-coverage-allowlist.
+    """Entries with their BLOCKER reason, from the one parser in this tree.
 
-    Structure only: presence of a reason, and the shrink-only liveness above.
-    The PROSE quality bar is the shared validator's
-    (.ci/scripts/lib/blocker-validator.sh), applied to this file by the gate
-    test, so the banned-phrase list lives in exactly one place.
+    COLLAPSED 2026-09-09. This was a hand-rolled fourth copy of the grammar, twenty lines whose own docstring said it was "the same grammar as .profiler-coverage-allowlist". It was not quite: it had no INLINE `entry # BLOCKER: reason` branch, so an inline-form entry parsed with an EMPTY reason and this gate would have reported it at :964 as "missing a '# BLOCKER:' comment above it"
+    when the reason was on the line itself. Measured over the seventeen frozen real lists in .ci/rediacc_ci/tests/goldens/allowlist/corpus: fourteen parsed identically, three (cli-i18n-orphan, deps-upgrade, go-deps-upgrade) differed on exactly that branch, sixteen entries in all. Nothing changes for `.runner-advice-allowlist`, which uses the block form and is empty today.
+
+    A MISSING FILE IS STILL AN EMPTY DICT, which is this gate's contract: the
+    allowlist is optional and its absence means no exemptions. `missing_ok=True`
+    says so at the call site rather than inside the parser.
+
+    The PROSE quality bar stays the shared validator's, applied to this file by the gate test.
     """
-    entries = {}
-    if not os.path.isfile(path):
-        return entries
-    reason = ""
-    with open(path, encoding="utf-8") as handle:
-        for raw in handle:
-            line = raw.strip()
-            if not line:
-                reason = ""
-                continue
-            m = re.match(r"^#\s*BLOCKER:\s*(.+)$", line)
-            if m:
-                reason = m.group(1).strip()
-                continue
-            if line.startswith("#"):
-                continue
-            entries[line.split()[0]] = reason
-    return entries
+    return allowlist.pairs(allowlist.parse_file(path, missing_ok=True))
 
 
 def gh_json(args, root):
@@ -633,9 +550,7 @@ def gh_json(args, root):
 def parse_row(message):
     """A PROFILER_BASELINE_V1 annotation body -> its key/value dict, or None.
 
-    `env` is OPTIONAL and defaults to "unknown": rows harvested from runs that
-    predate the RUNNER_ENVIRONMENT field still parse, and they default to the
-    untrusted side rather than being retroactively believed.
+    `env` is OPTIONAL and defaults to "unknown": rows harvested from runs that predate the RUNNER_ENVIRONMENT field still parse, and they default to the untrusted side rather than being retroactively believed.
     """
     idx = message.find(ROW_MARKER)
     if idx < 0:
@@ -654,20 +569,12 @@ def parse_row(message):
 def usable(fields):
     """Whether a harvested row may enter the baseline.
 
-    THE VERDICT IS THE TRUST DECISION, so this defers to it rather than
-    re-litigating it. report.awk decides what is measurable from the tier, the
-    label, the container fingerprint and RUNNER_ENVIRONMENT; a github-hosted VM
-    now yields a real verdict, which is the whole point of the hosted-VM arm,
-    and that is how PROC_HOST rows reach the baseline.
+    THE VERDICT IS THE TRUST DECISION, so this defers to it rather than re-litigating it. report.awk decides what is measurable from the tier, the label, the container fingerprint and RUNNER_ENVIRONMENT; a github-hosted VM now yields a real verdict, which is the whole point of the hosted-VM arm, and that is how PROC_HOST rows reach the baseline.
 
     What this deliberately does NOT do is accept verdict=NONE when
     env=github-hosted. That reads like the same rule and is a fail-open: the
-    remaining ways a github-hosted row lands on NONE are a container
-    fingerprint and a slim label over host-sized limits -- the two shapes where
-    the numbers belong to the machine rather than the job. This function
-    receives strictly LESS evidence than advise() did (the row carries no
-    container hint), so overruling its refusal here would mean deciding from
-    less information that a reading nobody could attribute is attributable.
+    remaining ways a github-hosted row lands on NONE are a container fingerprint and a slim label over host-sized limits -- the two shapes where the numbers belong to the machine rather than the job. This function receives strictly LESS evidence than advise() did (the row carries no container hint), so overruling its refusal here would mean deciding from less information that a
+    reading nobody could attribute is attributable.
     """
     if fields.get("findings", "0") != "0":
         return False
@@ -679,8 +586,7 @@ def usable(fields):
 def merge_rows(rows, where):
     """Fold harvested rows into per-job maxima. Pure, so the gate test can drive it.
 
-    Returns (merged, contributing, warnings): the baseline records, the set of
-    run ids that contributed to each, and anything worth printing.
+    Returns (merged, contributing, warnings): the baseline records, the set of run ids that contributed to each, and anything worth printing.
     """
     merged = {}
     contributing = {}
@@ -724,9 +630,7 @@ def merge_rows(rows, where):
         rec["tier"] = fields.get("tier", rec["tier"])
         rec["env"] = fields.get("env", rec["env"])
         contributing.setdefault(key, set()).add(run_id)
-        # The row's own token against this file's re-derivation. Disagreement is
-        # the two implementations of advise() having drifted apart, which is
-        # invisible at every other moment.
+        # The row's own token against this file's re-derivation. Disagreement is the two implementations of advise() having drifted apart, which is invisible at every other moment.
         if classify(rec) != fields["verdict"]:
             warnings.append(
                 "%s reported verdict=%s but classify() re-derives %s from the merged "
@@ -762,8 +666,7 @@ def harvest(root, branch, event, limit):
 
     rows = []
     for run_id in run_ids:
-        # .jobs[].id IS the check-run id, which is what the annotations
-        # endpoint is keyed by. There is no separate lookup.
+        # .jobs[].id IS the check-run id, which is what the annotations endpoint is keyed by. There is no separate lookup.
         job_ids = gh_json(
             [
                 "api",
@@ -793,8 +696,7 @@ def harvest(root, branch, event, limit):
 
 def refresh(root, baseline_path, workflow_dir, branch, event, limit):
     """Rewrite the baseline from harvested annotations. Network lives HERE."""
-    # BEFORE the network, and before anything is written: a file whose format
-    # this gate cannot read is a file it must not merge into either.
+    # BEFORE the network, and before anything is written: a file whose format this gate cannot read is a file it must not merge into either.
     try:
         read_baseline_json(baseline_path)
     except BaselineFormatError as exc:
@@ -831,15 +733,8 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
         )
         return 1
 
-    # ALL OR NOTHING, and this is what makes the pristine exception in main()
-    # honest rather than a hole. The gate lets a PRISTINE baseline through with
-    # a warning because there is provably nothing to check yet; that reasoning
-    # only holds if "seeded" and "at or above the floor" are the same state. A
-    # partial harvest -- which is the normal outcome of a run that went red
-    # before the slow lanes finished -- would otherwise write a 2-job baseline
-    # that is neither pristine nor enforceable, and the gate would then refuse
-    # every run until somebody noticed. Leaving the file untouched keeps it in
-    # a state the gate has a defined answer for.
+    # ALL OR NOTHING, and this is what makes the pristine exception in main() honest rather than a hole. The gate lets a PRISTINE baseline through with a warning because there is provably nothing to check yet; that reasoning only holds if "seeded" and "at or above the floor" are the same state. A partial harvest -- which is the normal outcome of a run that went red before the slow
+    # lanes finished -- would otherwise write a 2-job baseline that is neither pristine nor enforceable, and the gate would then refuse every run until somebody noticed. Leaving the file untouched keeps it in a state the gate has a defined answer for.
     if len(merged) < MIN_BASELINE_JOBS:
         print(
             "harvest yielded %d job(s), below the %d-job floor; baseline left untouched.\n"
@@ -852,8 +747,7 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
         return 1
 
     data = read_baseline_json(baseline_path)
-    # Written explicitly rather than carried over, so a refresh of a file that
-    # somehow lost the key repairs it instead of propagating the gap.
+    # Written explicitly rather than carried over, so a refresh of a file that somehow lost the key repairs it instead of propagating the gap.
     data["format"] = BASELINE_FORMAT
     data["jobs"] = dict(sorted(merged.items()))
     data["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -887,10 +781,11 @@ def main(argv=None):
         or os.environ.get("RUNNER_ADVICE_WORKFLOW_DIR")
         or root / ".github/workflows"
     )
+    # THE FLAG AND THE ENVIRONMENT STAY IN FRONT OF THE SEAM (W4 P4a): both are per-run redirections a harness sets, and `policy_path` is deliberately blind to them so there is exactly one default location, not two live ones.
     allowlist_path = pathlib.Path(
         args.allowlist
         or os.environ.get("RUNNER_ADVICE_ALLOWLIST")
-        or root / ".runner-advice-allowlist"
+        or policy_path(".runner-advice-allowlist", root)
     )
 
     if not baseline_path.is_file() or not workflow_dir.is_dir():

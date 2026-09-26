@@ -18,6 +18,7 @@ import { t } from '../i18n/index.js';
 import { validateTag } from '../services/addressing/ref-parser.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { writeStderr, writeStdout } from '../services/core/request-context.js';
 import {
   type ExecuteResult,
   getExecutor,
@@ -81,21 +82,19 @@ const UP_PHASE_STEP_NAMES = new Set([
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
   const detail = step.detail ? ` (${step.detail})` : '';
-  process.stdout.write(
-    `✔ ${getDoneLabel(step.name)}${detail} (${formatStepDuration(step.duration_ms)})\n`
-  );
+  writeStdout(`✔ ${getDoneLabel(step.name)}${detail} (${formatStepDuration(step.duration_ms)})\n`);
 }
 
 /** Print "Total: <wall>" once at the true end and mark the timeline rendered. */
 function renderTimelineTotal(wallMs: number): void {
-  process.stdout.write(`\nTotal: ${formatStepDuration(wallMs)}\n`);
+  writeStdout(`\nTotal: ${formatStepDuration(wallMs)}\n`);
   outputService.setTimelineRendered();
 }
 
 /** Handle a log event: only show errors/warnings. */
 function handleLogEvent(event: RenetEvent): void {
   if (event.level === 'error' || event.level === 'fatal' || event.level === 'warning') {
-    process.stderr.write(`  ${event.msg ?? ''}\n`);
+    writeStderr(`  ${event.msg ?? ''}\n`);
   }
 }
 
@@ -108,7 +107,7 @@ function handleStepDoneEvent(
   if (!event.name || event.duration_ms === undefined) return;
   const label = getDoneLabel(event.name);
   const detail = event.detail ? ` (${event.detail})` : '';
-  process.stdout.write(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
+  writeStdout(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
   allSteps.push({
     name: event.name,
     duration_ms: event.duration_ms,
@@ -128,7 +127,7 @@ function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) =
         break;
       case 'step_start':
         if (event.name) stepStarts.set(event.name, Date.now());
-        process.stdout.write(`⠋ ${getActiveLabel(event.name ?? '')}...`);
+        writeStdout(`⠋ ${getActiveLabel(event.name ?? '')}...`);
         break;
       case 'step_done': {
         const startedAtMs = event.name ? stepStarts.get(event.name) : undefined;
@@ -141,7 +140,7 @@ function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) =
           event.msg &&
           (event.msg.includes('✔') || event.msg.includes('✗') || event.msg.includes('Error'))
         ) {
-          process.stdout.write(`  ${event.msg}`);
+          writeStdout(`  ${event.msg}`);
         }
         break;
     }
@@ -226,7 +225,7 @@ interface ForkPlan {
    * is actually asking: `renet repository fork` resolves the parent image under
    * `--datastore`, and the reflink lands beside it. It reads that flag from the
    * MACHINE VAULT, never from the params bag, so a caller that stays silent gets
-   * the machine's default docker datastore — and the fork of a repo living in a
+   * the machine's default docker datastore, and the fork of a repo living in a
    * named datastore then looks for its parent somewhere the parent has never
    * been.
    */
@@ -307,10 +306,7 @@ async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise
     functionName: 'repository_up',
     machineName: plan.options.machine,
     ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
-    // Same declaration as the fork leg: the fork lives in the parent's
-    // datastore, and `repository_up` resolves its image from the vault too.
-    // (The standalone `rdc repo up` gets this from executeRepoFunction; this
-    // leg bypasses that path, so it has to say so itself.)
+    // Same declaration as the fork leg: the fork lives in the parent's datastore, and `repository_up` resolves its image from the vault too. (The standalone `rdc repo up` gets this from executeRepoFunction; this leg bypasses that path, so it has to say so itself.)
     ...(plan.datastoreMount !== undefined && { datastore: plan.datastoreMount }),
     params: {
       repository: plan.forkKey,
@@ -341,7 +337,7 @@ function printTimingSummary(plan: ForkPlan, steps: TimelineStep[], wallMs: numbe
     epochMs: plan.startedAt,
     suggestDetach: Boolean(plan.options.up && !plan.options.detach),
   });
-  if (summary) process.stdout.write(`\n${summary}\n`);
+  if (summary) writeStdout(`\n${summary}\n`);
 }
 
 /**
@@ -384,15 +380,13 @@ async function runForkLeg(
   plan: ForkPlan,
   renetSteps: TimelineStep[]
 ): Promise<{ result: ExecuteResult; forkParams: Record<string, unknown>; compound: boolean }> {
-  // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg
-  // path remains for --checkpoint (restore-on-first-up semantics).
+  // PRIMARY: one compound `renet repository fork --up`. The legacy two-leg path remains for --checkpoint (restore-on-first-up semantics).
   let compound = Boolean(plan.options.up && !plan.options.checkpoint);
   let forkParams = buildForkParams(plan, compound);
   let result = await executeForkLeg(plan, forkParams, renetSteps);
 
   if (compound && !result.success && isUpFlagUnsupported(result)) {
-    // Remote renet predates fork --up: retry as a plain fork; the caller
-    // chains the legacy up leg.
+    // Remote renet predates fork --up: retry as a plain fork; the caller chains the legacy up leg.
     outputService.warn(
       `Remote renet does not support fork --up; falling back to fork + up (${plan.forkKey})`
     );
@@ -439,7 +433,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const orchestrated: TimelineStep[] = [];
   const renetSteps: TimelineStep[] = [];
 
-  // DNS records need only names — fire the HTTP call before any SSH work.
+  // DNS records need only names, fire the HTTP call before any SSH work.
   const dnsPromise = options.up
     ? recordTimelineStep(orchestrated, 'dns', () => ensureDns(forkKey, options.machine), {
         parallel: true,
@@ -457,14 +451,13 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
     return;
   }
 
-  // The fork exists from here on — identity refresh can run concurrently
+  // The fork exists from here on, identity refresh can run concurrently
   // with the up portion and the post-up tasks.
   const identityPromise = startIdentityRefresh(orchestrated, options, forkParams);
 
   let upResult: ExecuteResult | undefined;
   if (options.up && !(compound && compoundUpRan(result, renetSteps))) {
-    // Legacy/fallback up leg: --checkpoint flows, or a remote renet that
-    // silently ignored the compound --up params.
+    // Legacy/fallback up leg: --checkpoint flows, or a remote renet that silently ignored the compound --up params.
     upResult = await executeUpLeg(plan, renetSteps);
   }
 
@@ -495,14 +488,10 @@ export async function handleForkAction(
     '../utils/config-schema.js'
   );
   let forkKey = '';
-  // Rollback must only ever remove the row THIS invocation registered — a
-  // catch-all rollback would delete a pre-existing fork's config row
-  // (credential included) when registerFork fails with "already exists".
+  // Rollback must only ever remove the row THIS invocation registered, a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
   let registered = false;
   try {
-    // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag
-    // label grammar before any config mutation; `latest` stays reserved as the
-    // grand pointer that a fork must not clobber (#495).
+    // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag label grammar before any config mutation; `latest` stays reserved as the grand pointer that a fork must not clobber (#495).
     validateTag(tagName);
     assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
     assertForkOptions(options);
@@ -524,13 +513,10 @@ export async function handleForkAction(
     );
     registered = true;
 
-    // Resolved BEFORE the lease: it is a config read, and anything between
-    // acquire() and the try/finally below escapes the release on a throw.
+    // Resolved BEFORE the lease: it is a config read, and anything between acquire() and the try/finally below escapes the release on a throw.
     const datastoreMount = await recordedDatastoreMount(parent);
 
-    // Outer lease: every SSH consumer below (key deploy, fork/up legs,
-    // identity refresh, cert sync, service URLs) shares this pooled
-    // connection; the last release closes it.
+    // Outer lease: every SSH consumer below (key deploy, fork/up legs, identity refresh, cert sync, service URLs) shares this pooled connection; the last release closes it.
     const lease = await machineConnections.acquire(options.machine);
     try {
       await orchestrateFork({
@@ -602,8 +588,7 @@ export function registerRepoForkCommand(repo: Command): void {
             ...(options.checkpoint && { checkpoint: true }),
             ...(options.immutable && { immutable: true }),
             ...(options.up && { up: true }),
-            // `--no-wait` maps to the unchanged `detach` wire param: return once
-            // containers start, do not block on the health check.
+            // `--no-wait` maps to the unchanged `detach` wire param: return once containers start, do not block on the health check.
             ...(options.wait === false && { detach: true }),
             ...(options.debug && { debug: true }),
             ...(options.skipRouterRestart && { skipRouterRestart: true }),

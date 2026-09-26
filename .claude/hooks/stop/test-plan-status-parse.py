@@ -1,23 +1,12 @@
 #!/usr/bin/env python3
 """Controls for wl_checks.plan_records -- how a PLAN-*.md states its status.
 
-Why this exists. The stop hook nags about plans whose status is draft,
-executing, or UNKNOWN, and UNKNOWN is deliberately loud. So a parser that
-cannot see a status a plan plainly states does not fail quietly: it sends a
-session to rewrite accurate plans, sometimes plans belonging to OTHER sessions,
-to satisfy a regex. That happened twice.
+Why this exists. The stop hook nags about plans whose status is draft, executing, or UNKNOWN, and UNKNOWN is deliberately loud. So a parser that cannot see a status a plan plainly states does not fail quietly: it sends a session to rewrite accurate plans, sometimes plans belonging to OTHER sessions, to satisfy a regex. That happened twice.
 
-Round one is recorded in wl_checks.py's own comment: requiring a bare
-`Status: word` line missed `**Status: DESIGNED, not started.**` and five of
-twelve real plans read UNKNOWN. Round two, 2026-08-25: the anchored form still
-required `Status:` to START a line, and two real plans state it mid-line --
-`Owner: b7baf3ee - 2026-08-24 - status: BUILT` and
-`Branch: 0815-1. Status: design only, no code written.`
+Round one is recorded in wl_checks.py's own comment: requiring a bare `Status: word` line missed `**Status: DESIGNED, not started.**` and five of twelve real plans read UNKNOWN. Round two, 2026-08-25: the anchored form still required `Status:` to START a line, and two real plans state it mid-line -- `Owner: b7baf3ee - 2026-08-24 - status: BUILT` and `Branch: 0815-1. Status: design
+only, no code written.`
 
-Every control below is a PAIR. Asserting that the inline form parses proves
-nothing on its own, because a parser returning the first word it ever sees
-would pass it; the paired assertion is that a plan with NO status still reads
-UNKNOWN, and that a real leading `Status:` line still wins over inline text.
+Every control below is a PAIR. Asserting that the inline form parses proves nothing on its own, because a parser returning the first word it ever sees would pass it; the paired assertion is that a plan with NO status still reads UNKNOWN, and that a real leading `Status:` line still wins over inline text.
 """
 
 import pathlib
@@ -64,25 +53,21 @@ control(
     "design",
 )
 
-# 1b. THE PAIR. A plan that states no status at all must still read UNKNOWN, or
-#     the fallback above is just "match any word" wearing a regex.
+# 1b. THE PAIR. A plan that states no status at all must still read UNKNOWN, or the fallback above is just "match any word" wearing a regex.
 control(
     "CONTROL: no status anywhere still reads UNKNOWN",
     status_of("# PLAN: a thing\nOwner: someone\nBranch: 0815-1\nSome prose.\n"),
     "UNKNOWN",
 )
 
-# 2. Precedence is unchanged: a real leading Status line wins over inline text
-#    that appears EARLIER in the header.
+# 2. Precedence is unchanged: a real leading Status line wins over inline text that appears EARLIER in the header.
 control(
     "an anchored Status line wins over an earlier inline one",
     status_of("# PLAN: a thing\nNote: old status: superseded\nStatus: executing\n"),
     "executing",
 )
 
-# 2b. THE PAIR for precedence: with the anchored line removed, the inline one is
-#     what remains, so the case above is really testing precedence and not just
-#     "executing happens to be found".
+# 2b. THE PAIR for precedence: with the anchored line removed, the inline one is what remains, so the case above is really testing precedence and not just "executing happens to be found".
 control(
     "CONTROL: drop the anchored line and the inline one is used",
     status_of("# PLAN: a thing\nNote: old status: superseded\n"),
@@ -93,21 +78,14 @@ control(
 control("bare anchored line", status_of("# P\nStatus: draft\n"), "draft")
 control("markdown-emphasised", status_of("# P\n**Status: DESIGNED, not started.**\n"), "designed")
 
-# 4. A status below the header window is NOT the file's status. The window is
-#    what keeps a mention deep in a plan's prose from being read as its state.
+# 4. A status below the header window is NOT the file's status. The window is what keeps a mention deep in a plan's prose from being read as its state.
 below = (
     "# P\n" + "\n".join(f"line {i}" for i in range(C.PLAN_HEADER_LINES + 3)) + "\nStatus: done\n"
 )
 control("CONTROL: a status past the header window does not count", status_of(below), "UNKNOWN")
 
-# ---------------------------------------------------------------------------
-# 5. OWNERSHIP. plan_drift_rows promises "a PEER's items moving is not a reason to
-#    rewrite MY plan", but the scoping used to apply to the ITEMS only: any executing
-#    plan in agent/ was matched against them, so this session's ticks demanded edits to
-#    a plan headed `Owner: 9d92d9b6`. Same shape as the status bug above, which the
-#    module's own comment already recorded as sending a session at "plans that were
-#    already accurate and were not even its own".
-# ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- 5. OWNERSHIP. plan_drift_rows promises "a PEER's items moving is not a reason to rewrite MY plan", but the scoping used to apply to the ITEMS only: any executing plan in agent/ was matched against them, so this session's ticks demanded edits to a plan headed `Owner: 9d92d9b6`. Same shape as the status bug
+# above, which the module's own comment already recorded as sending a session at "plans that were already accurate and were not even its own". ---------------------------------------------------------------------------
 MINE = "e580532b-53bf-4b76-92d8-b15b242c96d5"
 
 
@@ -134,15 +112,10 @@ control(
     None,
 )
 
-# ---------------------------------------------------------------------------
-# THE 28% BLIND SPOT, fixed 2026-09-02. plan_owner used to return the first WORD
-# after `Owner:`. `owned_by_me` compares that against a session id, so any value
-# that is not a session id matched NO session -- forever -- and the plan read as
-# peer-owned to everyone. Measured on this repo: 13 of 46 plans, silently exempt
+# --------------------------------------------------------------------------- THE 28% BLIND SPOT, fixed 2026-09-02. plan_owner used to return the first WORD after `Owner:`. `owned_by_me` compares that against a session id, so any value that is not a session id matched NO session -- forever -- and the plan read as peer-owned to everyone. Measured on this repo: 13 of 46 plans,
+# silently exempt
 # from plan_drift_rows AND from the plan-task check. Nothing errored.
-# These pin BOTH directions: prose must not become a phantom owner, and a real id
-# must still be found when prose surrounds it.
-# ---------------------------------------------------------------------------
+# These pin BOTH directions: prose must not become a phantom owner, and a real id must still be found when prose surrounds it. ---------------------------------------------------------------------------
 control(
     "prose owner is UNOWNED, not a phantom peer named 'whichever'",
     owner_of("# P\nOwner: whichever session picks it up\nStatus: ready\n"),
@@ -179,12 +152,44 @@ control(
     None,
 )
 
-# The pair that matters: the same fixture is IN scope unowned and OUT of scope when a
-# peer owns it. Asserting only the peer case would pass for a check that returns
-# nothing at all.
+# The pair that matters: the same fixture is IN scope unowned and OUT of scope when a peer owns it. Asserting only the peer case would pass for a check that returns nothing at all.
 control("a peer's plan is not mine", C.C.owned_by_me("9d92d9b6", MINE), False)
 control("my own plan is mine", C.C.owned_by_me("e580532b", MINE), True)
 control("an unowned plan stays in scope", C.C.owned_by_me(None, MINE), True)
+
+
+# --------------------------------------------------------------------------- 6. PER-PLAN WORK. Every owned item used to count against every owned executing plan, so a session driving several plans saw each flagged by work on the others (found 2026-09-24). Driven through plan_drift_rows itself on a real temp tree: moves naming ONE plan flag that plan and leave its sibling silent.
+class _Fold:
+    def __init__(self, items):
+        self.items = items
+
+
+def drift_for(items):
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        (root / "agent" / "plans").mkdir(parents=True)
+        for name in ("PLAN-alpha.md", "PLAN-beta.md"):
+            (root / "agent" / "plans" / name).write_text(
+                "# P\nStatus: executing\nOwner: e580532b\n\n- [ ] a box\n", encoding="utf-8"
+            )
+        return sorted(rel for rel, _n in C.plan_drift_rows(root, _Fold(items), MINE))
+
+
+_LATER = "2999-01-01T00:00:00Z"
+_alpha_moves = [
+    {"owner": "e580532b", "upd": _LATER, "text": "PLAN-alpha.md [aa%02d]: box" % i}
+    for i in range(C.PLAN_DRIFT_MIN_MOVES)
+]
+control(
+    "moves naming PLAN-alpha flag PLAN-alpha only",
+    drift_for(_alpha_moves),
+    ["agent/plans/PLAN-alpha.md"],
+)
+_unrelated = [
+    {"owner": "e580532b", "upd": _LATER, "text": "npm 11 migration step %d" % i}
+    for i in range(C.PLAN_DRIFT_MIN_MOVES + 3)
+]
+control("CONTROL: moves naming no plan flag neither plan", drift_for(_unrelated), [])
 
 if Tally.fails:
     print(f"FAIL: {Tally.fails} of {Tally.count} control(s) failed", file=sys.stderr)

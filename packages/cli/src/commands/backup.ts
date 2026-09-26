@@ -21,7 +21,7 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
-/** `backup list [artifact-ref]` — list backup artifacts on a machine or storage. */
+/** `backup list [artifact-ref]`, list backup artifacts on a machine or storage. */
 function registerBackupList(backup: Command): void {
   backup
     .command('list')
@@ -57,11 +57,9 @@ function registerBackupList(backup: Command): void {
           if (explicitPath) baseParams.path = explicitPath;
 
           outputService.info(t('commands.backup.list.listing'));
-          // ONE call, and no hot/cold probe. renet enumerates the datastore now,
-          // which is what makes an artifact left by `repo push` at the root
+          // ONE call, and no hot/cold probe. renet enumerates the datastore now, which is what makes an artifact left by `repo push` at the root
           // visible; the old pair of probes only ever looked where SCHEDULED
-          // runs write, so a real copy reported an empty table. The per-entry
-          // subdirectory comes back on the entry itself.
+          // runs write, so a real copy reported an empty table. The per-entry subdirectory comes back on the entry itself.
           const entries = await fetchBackupList(baseParams, { machine, debug: options.debug });
           const tagged: TaggedBackupEntry[] = entries.map((e) => ({ ...e, mode: e.path ?? '' }));
 
@@ -112,7 +110,7 @@ async function resolveRestoreMachine(options: RestoreOptions): Promise<string> {
   throw new ValidationError(t('commands.backup.restore.placementRequired'));
 }
 
-/** `backup restore <artifact-ref>` — materialize a backup artifact into a live repo. */
+/** `backup restore <artifact-ref>`, materialize a backup artifact into a live repo. */
 function registerBackupRestore(backup: Command): void {
   backup
     .command('restore')
@@ -139,12 +137,8 @@ function registerBackupRestore(backup: Command): void {
         }
         const sourceType = 'machine';
 
-        // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and
-        // then dropped — the pull ran against the machine's default, so a restore
-        // the operator asked to land on a named datastore landed somewhere else.
-        // Record the placement as the birth record (the same field `repo create`
-        // writes) so every later verb derives the right mount, and declare it on
-        // the transfer below.
+        // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and then dropped, the pull ran against the machine's default, so a restore the operator asked to land on a named datastore landed somewhere else. Record the placement as the birth record (the same field `repo create` writes) so every later verb derives the right mount, and declare it on the transfer
+        // below.
         const placement = options.datastore
           ? { datastore: options.datastore }
           : { machine: targetMachine };
@@ -154,27 +148,17 @@ function registerBackupRestore(backup: Command): void {
         await configService.addRepository(compositeKey(targetName, 'latest'), {
           repositoryGuid: source.repositoryGuid,
           tag: 'latest',
-          // The restored record reuses the source's GUID, and the executor's
-          // credential map is keyed by GUID, so a fresh credential here does not
-          // give the restored repo its own key: it fights the source's over one
-          // map slot and one of the two images stops unlocking. Inherit, exactly
-          // as `repo fork` does.
+          // The restored record reuses the source's GUID, and the executor's credential map is keyed by GUID, so a fresh credential here does not give the restored repo its own key: it fights the source's over one map slot and one of the two images stops unlocking. Inherit, exactly as `repo fork` does.
           credential: source.credential,
           networkId,
           placement,
         });
 
-        // DR nudge: a restore into a config with no config-storage enrollment
-        // cannot recover the repo credential (the LUKS passphrase) on a fresh
-        // host — warn, never block (spec/02 decision 14).
+        // DR nudge: a restore into a config with no config-storage enrollment cannot recover the repo credential (the LUKS passphrase) on a fresh host, warn, never block (spec/02 decision 14).
         await warnIfConfigStorageUnenrolled();
 
-        // `--at` selects a point in time, which only the CHUNK store can answer:
-        // it addresses a snapshot in a manifest chain, not an artifact on a
-        // machine or a storage remote. So the flag routes to `backup_restore`
-        // rather than `backup_pull`. It is a route, not a second user-facing
-        // command: growing `rdc backup restore-snapshot` beside this one would
-        // make the operator choose between two verbs that mean the same thing.
+        // `--at` selects a point in time, which only the CHUNK store can answer: it addresses a snapshot in a manifest chain, not an artifact on a machine or a storage remote. So the flag routes to `backup_restore` rather than `backup_pull`. It is a route, not a second user-facing command: growing `rdc backup restore-snapshot` beside this one would make the operator choose between
+        // two verbs that mean the same thing.
         const ok = options.at
           ? await runChunkRestore({
               targetName,
@@ -238,8 +222,7 @@ async function resolveRestoreTarget(
   assertAgentRepoCreate(targetName);
 
   // The artifact carries its source repo's identity; the pushed copy on <place>
-  // is that repo under its GUID (06 §6.5). Look it up to learn the GUID we pull,
-  // then register the restored name as a fresh live record.
+  // is that repo under its GUID (06 §6.5). Look it up to learn the GUID we pull, then register the restored name as a fresh live record.
   const source = await configService.getRepository(ref.name);
   if (!source) {
     throw new ValidationError(t('commands.backup.restore.sourceUnknown', { name: ref.name }));
@@ -264,11 +247,7 @@ async function runRestorePull(args: {
   const { targetName, targetMachine, datastore, sourceType, from, debug, place } = args;
   outputService.info(t('commands.backup.restore.pulling', { name: targetName, place }));
   await deployRepoKeyIfNeeded(targetName, targetMachine);
-  // No `at` here. `backup_pull` no longer declares the parameter, and the
-  // caller routes `--at` to `backup_restore` before reaching this function.
-  // Passing one anyway would fail schema validation, which is the honest
-  // outcome: a parameter wired to a verb that refuses it is how the next
-  // session concludes the path works.
+  // No `at` here. `backup_pull` no longer declares the parameter, and the caller routes `--at` to `backup_restore` before reaching this function. Passing one anyway would fail schema validation, which is the honest outcome: a parameter wired to a verb that refuses it is how the next session concludes the path works.
   const pull = await getExecutor().execute({
     functionName: 'backup_pull',
     machineName: targetMachine,
@@ -292,7 +271,7 @@ async function runRestorePull(args: {
 /**
  * A snapshot id as `MintSnapshotID` writes it: RFC3339-basic UTC, a dash, and
  * 16 hex. Anything else in `--at` is a TIME, and resolving a time is the CLI's
- * job by explicit contract — the `backup_restore` FunctionDef says so in the
+ * job by explicit contract, the `backup_restore` FunctionDef says so in the
  * parameter description, because the machine has no manifest index to search.
  */
 const SNAPSHOT_ID_RE = /^\d{8}T\d{6}Z-[0-9a-f]{16}$/;
@@ -324,9 +303,7 @@ export async function resolveSnapshotAt(lineage: string, at: string): Promise<st
 
   // `.at(0)` rather than `[0]`: this repo does not set noUncheckedIndexedAccess,
   // so `candidates[0]` is TYPED as always-present and eslint then calls the guard
-  // below an unnecessary condition. It is not - an empty candidate list is the
-  // normal "no snapshot at or before this time" case, and dropping the guard to
-  // satisfy the linter would dereference undefined on the next line.
+  // below an unnecessary condition. It is not - an empty candidate list is the normal "no snapshot at or before this time" case, and dropping the guard to satisfy the linter would dereference undefined on the next line.
   const chosen = candidates.at(0);
   if (!chosen) {
     throw new ValidationError(t('commands.backup.restore.atNoSnapshot', { at }));
@@ -412,7 +389,7 @@ async function restoreDeploy(
 }
 
 /**
- * `rdc backup` — one noun for named strategies, machine-scoped scheduled runs,
+ * `rdc backup`, one noun for named strategies, machine-scoped scheduled runs,
  * and the artifacts they produce (spec/03 §5.6). Unifies what used to live under
  * `machine backup`, `repo backup`, and `config backup-strategy`.
  */

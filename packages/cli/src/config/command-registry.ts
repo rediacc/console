@@ -1,5 +1,5 @@
 /**
- * Command Registry — single source of truth for domain grouping. Help tags and
+ * Command Registry, single source of truth for domain grouping. Help tags and
  * runtime guards are auto-generated from this registry.
  */
 export const COMMAND_DOMAINS = {
@@ -29,10 +29,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
     name: 'machine',
     domain: 'INFRASTRUCTURE',
     subcommands: {
-      // containers/services/repos were folded into `machine status --containers`
-      // / `--services` / `--repositories` by the P4 reshape; they are not leaves
-      // any more, and a registry entry for a command that does not exist is a
-      // name waiting to be silently re-bound.
+      // containers/services/repos were folded into `machine status --containers` / `--services` / `--repositories` by the P4 reshape; they are not leaves any more, and a registry entry for a command that does not exist is a name waiting to be silently re-bound.
       health: {},
     },
   },

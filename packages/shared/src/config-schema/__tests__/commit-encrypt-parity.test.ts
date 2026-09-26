@@ -4,8 +4,9 @@
  * The server enforces two things the client must keep consistent:
  *   - pathsToCommit(config) — the sensitive pointers whose HMACs go in the
  *     envelope. Anti-downgrade rejects a push that commits FEWER than before.
- *   - SENSITIVE_FIELDS — the top-level sections that actually travel inside the
- *     ciphertext, and so survive a push -> pull round trip.
+ *   - the carried set — what actually travels inside the ciphertext (the whole
+ *     document minus DEVICE_LOCAL_POINTERS), and so survives a push -> pull
+ *     round trip.
  *
  * If a pointer is COMMITTED but its data is not CARRIED, a round trip (a CEK
  * rotation, a container config load, or an ordinary `config remote` pull) drops
@@ -31,15 +32,11 @@ function fullyPopulated(): RdcConfig {
     id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
     version: 5,
     encryption: { mode: 'plaintext' },
-    // Committed top-level sections — the addendum half of the family-drop bug:
-    // /account/userEmail rode in every CLI push's commitment set while the
-    // blob never carried `account`, so the editor's re-push failed
-    // anti-downgrade as a spurious conflict.
+    // Committed top-level sections — the addendum half of the family-drop bug: /account/userEmail rode in every CLI push's commitment set while the blob never carried `account`, so the editor's re-push failed anti-downgrade as a spurious conflict.
     account: { userEmail: 'admin@example.com', accountServer: 'https://eu.rediacc.com' },
     defaults: { universalUser: 'rediacc' },
     infra: { certEmail: 'ops@example.com', cfDnsZoneId: 'zone-1' },
-    // Host-local store pointer: commit:false in the registry (not synced,
-    // therefore not committed). Present to prove it commits nothing.
+    // Host-local store pointer: commit:false in the registry (not synced, therefore not committed). Present to prove it commits nothing.
     remote: {
       apiUrl: 'https://eu.rediacc.com',
       storeId: '3f2a1b0c-9d8e-4f7a-8b6c-5d4e3f2a1b0c',
@@ -49,8 +46,7 @@ function fullyPopulated(): RdcConfig {
     credentials: {
       ssh: { privateKey: 'PRIV', publicKey: 'PUB', knownHosts: 'kh' },
       cfDnsApiToken: 'cf-secret',
-      // Host-local to master-password mode: committed:false, so it must appear in
-      // NEITHER the commit set nor the blob. Present here to prove it is dropped.
+      // Host-local to master-password mode: committed:false, so it must appear in NEITHER the commit set nor the blob. Present here to prove it is dropped.
       masterPasswordVerifier: 'mpv',
     },
     policy: { version: 1, defaults: { commands: { allow: ['repo *'] } } },
@@ -60,9 +56,7 @@ function fullyPopulated(): RdcConfig {
       storages: {},
       cloudProviders: { cp1: { apiToken: 'provider-secret', sshUser: 'u' } },
       datastores: { ds1: { size: '10G', backend: { kind: 'local', machine: 'm1', path: '/x' } } },
-      // The families whose ABSENCE from this fixture let the family-drop bug
-      // ship: deletedRepositories commits credential pointers, so a fixture
-      // without it could not see toFullConfig failing to carry them.
+      // The families whose ABSENCE from this fixture let the family-drop bug ship: deletedRepositories commits credential pointers, so a fixture without it could not see toFullConfig failing to carry them.
       deletedRepositories: [
         {
           name: 'gone',

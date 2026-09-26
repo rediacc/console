@@ -36,8 +36,7 @@ describe('scanHeadings', () => {
 
 describe('englishAnchorsFor', () => {
   it('produces github-slugger ids with dedupe, matching what Astro renders', () => {
-    // The real English CLI reference: repeated command names (set, list, ...)
-    // must come out numbered, exactly as rehypeHeadingIds numbers them.
+    // The real English CLI reference: repeated command names (set, list, ...) must come out numbered, exactly as rehypeHeadingIds numbers them.
     const anchors = englishAnchorsFor('docs', 'cli-application.md');
     const ids = anchors.map((a) => a.id);
     expect(new Set(ids).size).toBe(ids.length);

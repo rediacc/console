@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """PreCompact: the deterministic floor under the band trigger.
 
-A PreCompact hook CANNOT make the model do anything. There is no model turn
-between this hook and the compaction, the event does not accept
-`additionalContext`, and it does not support `prompt` or `agent` hook types.
-Verified against Claude Code 2.1.235, not inferred. So this hook does the two
-things it actually can:
+A PreCompact hook CANNOT make the model do anything. There is no model turn between this hook and the compaction, the event does not accept `additionalContext`, and it does not support `prompt` or `agent` hook types. Verified against Claude Code 2.1.235, not inferred. So this hook does the two things it actually can:
 
 1. WRITES A FACTS SNAPSHOT, so something survives even when the band notice
    never fired or the session never acted on it.
@@ -25,16 +21,11 @@ things it actually can:
    the user typed, and that string is what the summarising model is told to
    honour. It is the one channel a PreCompact hook has into what survives.
 
-IT NEVER EXITS 2. Blocking a proactive compaction leaves the conversation
-running uncompacted toward the hard limit; blocking a recovery compaction
-surfaces the API's context-length error and fails the request. Neither is an
-acceptable outcome for a bookkeeping hook, so every path here returns 0.
+IT NEVER EXITS 2. Blocking a proactive compaction leaves the conversation running uncompacted toward the hard limit; blocking a recovery compaction surfaces the API's context-length error and fails the request. Neither is an acceptable outcome for a bookkeeping hook, so every path here returns 0.
 
-IT PRINTS NOTHING WHEN IT HAS NOTHING TO SAY. Non-empty output makes the
-manual-compact precompute cache report `miss_hook` and recompute the summary
+IT PRINTS NOTHING WHEN IT HAS NOTHING TO SAY. Non-empty output makes the manual-compact precompute cache report `miss_hook` and recompute the summary
 from scratch, so silence is the correct default rather than a missed
-opportunity. Note that Claude Code folds STDERR into the same string, so this
-hook must never write to stderr either; failures go to state/errors.log.
+opportunity. Note that Claude Code folds STDERR into the same string, so this hook must never write to stderr either; failures go to state/errors.log.
 """
 
 import os
@@ -156,10 +147,7 @@ def main():
                 "compaction on disk." % state_md.as_posix()
             )
         if ids:
-            # Bounded on purpose. Hook output is capped at 10,000 characters,
-            # and a live run produced 41 ids for a single session; an
-            # instruction that is mostly a list stops reading as an
-            # instruction. The full set is in the snapshot either way.
+            # Bounded on purpose. Hook output is capped at 10,000 characters, and a live run produced 41 ids for a single session; an instruction that is mostly a list stops reading as an instruction. The full set is in the snapshot either way.
             shown = ids[:MAX_IDS]
             tail = (
                 ""
@@ -184,6 +172,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # Explicit, and the whole point: exit 2 blocks compaction, and this hook
-    # must never do that.
+    # Explicit, and the whole point: exit 2 blocks compaction, and this hook must never do that.
     sys.exit(0)

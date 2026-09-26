@@ -80,8 +80,7 @@ describe('golden: deriveWrappingKey / cekUnwrap', () => {
   });
 
   it("deriveWrappingKey is HKDF(passkey || server, 'rediacc-wrapping-salt-v1', WRAPPING_KEY)", async () => {
-    // Pins the internal salt literal and the concatenation ORDER: passkey
-    // secret first, server secret second.
+    // Pins the internal salt literal and the concatenation ORDER: passkey secret first, server secret second.
     const combined = new Uint8Array(64);
     combined.set(PASSKEY_SECRET, 0);
     combined.set(SERVER_SECRET, 32);
@@ -120,8 +119,7 @@ describe('golden: slot secret derivation', () => {
 
   it('recovery code parses from messy input and derives the pinned secret', async () => {
     const canonical = 'RC1-7GV21VCB-YQ8C4CTM-FV1Z5KST-NVQVCMA9';
-    // Lowercase, no prefix, no dashes, Crockford aliases (l→1, I→1) — all must
-    // normalize back to the canonical form the secret was derived from.
+    // Lowercase, no prefix, no dashes, Crockford aliases (l→1, I→1) — all must normalize back to the canonical form the secret was derived from.
     const messy = '7gv2lvcb yq8c4ctm fvIz5kst nvqvcma9';
     expect(parseRecoveryCode(messy)).toBe(canonical);
 

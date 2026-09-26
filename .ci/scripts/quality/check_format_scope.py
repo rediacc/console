@@ -1,32 +1,27 @@
 #!/usr/bin/env python3
 """check:ci-format-scope -- a formatter command may not narrow its own config's scope.
 
-WHY THIS EXISTS, measured 2026-09-03. `check:format` ran
-`biome format packages/ private/account/` while biome.json's `files.includes` also
+WHY THIS EXISTS, measured 2026-09-03. `check:format` ran `biome format packages/ private/account/` while biome.json's `files.includes` also
 covers `scripts/`, `.ci/`, `workers/`, `eslint-rules/` and `.github/actions/`. The gate
-inspected a fraction of its own configured scope, so 35 files had drifted where nothing
-was looking -- and that blind spot is how a prettier run (not this repo's formatter, and
-nothing said so) put a 424-line quote-churn diff into the tree with every gate green.
+inspected a fraction of its own configured scope, so 35 files had drifted where nothing was looking -- and that blind spot is how a prettier run (not this repo's formatter, and nothing said so) put a 424-line quote-churn diff into the tree with every gate green.
 
-It is the same shape as the defect check_lint_scope_coverage.py was written for -- a
-narrowed path list making files invisible to a rule -- one tool over. That gate asserts
-FILES reach a linter; this asserts the COMMAND does not shrink what the config declares.
-Neither implies the other: a file can be lintable and unformatted.
+It is the same shape as the defect check_lint_scope_coverage.py was written for -- a narrowed path list making files invisible to a rule -- one tool over. That gate asserts FILES reach a linter; this asserts the COMMAND does not shrink what the config declares. Neither implies the other: a file can be lintable and unformatted.
 
-THE ORACLE IS THE TOOL'S OWN COUNT, not a reimplementation of biome's glob semantics. A
-gate that re-derives `files.includes` by hand would be a second, subtly different matcher
--- exactly the trap check_syncpack_sources.py records, where fnmatch's `*` crossed `/`
-and reported files as covered that the real tool never reads. So: run biome with the
-command's own arguments, run it with `.`, and compare the counts it reports. If the
-declared command sees fewer files than the config would, it narrows.
+THE ORACLE IS THE TOOL'S OWN COUNT, not a reimplementation of biome's glob semantics. A gate that re-derives `files.includes` by hand would be a second, subtly different matcher -- exactly the trap check_syncpack_sources.py records, where fnmatch's `*` crossed `/` and reported files as covered that the real tool never reads. So: run biome with the command's own arguments, run it
+with `.`, and compare the counts it reports. If the declared command sees fewer files than the config would, it narrows.
 
 WHAT THIS DOES NOT COVER, stated rather than implied: shfmt and ruff take explicit paths
 with no config-declared corpus to compare against, so there is no equivalent oracle for
-them and this gate does not pretend to one. Their scope is gated where it can be --
-check:ci-shell-lint and check:ci-python-lint enumerate from git rather than from a path
-list.
+them and this gate does not pretend to one. Their scope is gated where it can be -- check:ci-shell-lint and check:ci-python-lint enumerate from git rather than from a path list.
 
 Exit 1 on a narrowing command, 2 on a failed control.
+
+---- gate ----
+step: Format command covers its config's scope
+needs: none
+lane: quality-code
+slow: true
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -37,6 +32,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+import _cipath  # noqa: F401
+from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("FORMAT_SCOPE_ROOT") or Path(__file__).resolve().parents[3])
 # A floor: biome reporting zero files means the instrument is broken, not the tree clean.
@@ -52,9 +50,7 @@ def biome_count(args: list[str], root: Path = ROOT, fresh: bool = False) -> int 
 
     MEMOISED, because each call is a real ~5s pass over 2426 files and this gate asks
     the same question up to three times in one process. `fresh=True` is the one caller
-    that must NOT be served from the cache: the determinism control below compares two
-    SEPARATE runs, and a cached answer would make it compare a value with itself --
-    a control that cannot fail, which is the shape this repo has been fooled by before.
+    that must NOT be served from the cache: the determinism control below compares two SEPARATE runs, and a cached answer would make it compare a value with itself -- a control that cannot fail, which is the shape this repo has been fooled by before.
     """
     key = tuple(args)
     if not fresh and key in _COUNTS:
@@ -126,11 +122,7 @@ def selftest() -> int:
         narrowed is not None and narrowed < full,
         "narrowed=%s full=%s" % (narrowed, full),
     )
-    # CONTROL ON THE PLANT: `.` compared with itself must not look like a narrowing,
-    # or every verdict below is an artefact of the comparison rather than of the args.
-    # Two SEPARATE runs of the same args, not one cached answer: this proves the
-    # oracle is deterministic, so `mine < full` below reports the arguments rather
-    # than the variance of the instrument.
+    # CONTROL ON THE PLANT: `.` compared with itself must not look like a narrowing, or every verdict below is an artefact of the comparison rather than of the args. Two SEPARATE runs of the same args, not one cached answer: this proves the oracle is deterministic, so `mine < full` below reports the arguments rather than the variance of the instrument.
     check("CONTROL: the full scope does not narrow itself", biome_count(["."], fresh=True) == full)
     return bad
 
@@ -140,12 +132,8 @@ def main(argv: list[str]) -> int:
         n = selftest()
         print("%s format-scope selftest: %d failure(s)" % ("✓" if n == 0 else "✗", n))
         return 1 if n else 0
-    print("format scope: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("format scope", selftest):
+        return refusal
 
     args = declared_args()
     if args is None:

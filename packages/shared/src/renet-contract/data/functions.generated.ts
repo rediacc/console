@@ -496,6 +496,9 @@ export interface MachineUninstallParams {}
 /** Get renet version */
 export interface MachineVersionParams {}
 
+/** List network IDs in use on the machine */
+export interface NetworkUsedParams {}
+
 /** Disable automatic repository start on boot */
 export interface RepositoryAutostartDisableParams {}
 
@@ -854,6 +857,7 @@ export const RENET_FUNCTIONS = [
   'machine_ssh_test',
   'machine_uninstall',
   'machine_version',
+  'network_used',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',
@@ -1024,6 +1028,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'network_ensure_ips',
   'network_prune',
   'network_ps_status',
+  'network_used',
   'plugin_start',
   'plugin_status',
   'plugin_stop',
@@ -1117,6 +1122,7 @@ export type FunctionParamsMap = {
   machine_ssh_test: MachineSshTestParams;
   machine_uninstall: MachineUninstallParams;
   machine_version: MachineVersionParams;
+  network_used: NetworkUsedParams;
   repository_autostart_disable: RepositoryAutostartDisableParams;
   repository_autostart_disable_all: RepositoryAutostartDisableAllParams;
   repository_autostart_enable: RepositoryAutostartEnableParams;
@@ -1301,6 +1307,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'machine_version': {
     requirements: { machine: true, team: true },
   },
+  'network_used': {
+    requirements: { machine: true, team: true },
+  },
   'repository_autostart_disable': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1420,6 +1429,7 @@ export const FUNCTION_CATEGORIES = [
   'container',
   'kube',
   'machine',
+  'network',
   'repository',
 ] as const;
 
@@ -2624,6 +2634,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     params: {
     },
   },
+  'network_used': {
+    name: 'network_used',
+    category: 'network',
+    showInMenu: false,
+    requirements: { machine: true, team: true },
+    params: {
+    },
+  },
   'repository_autostart_disable': {
     name: 'repository_autostart_disable',
     category: 'repository',
@@ -3406,6 +3424,7 @@ export const queueFunctions: QueueFunctionsType = {
   machine_ssh_test: (params) => ({ functionName: 'machine_ssh_test', params }),
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
   machine_version: (params) => ({ functionName: 'machine_version', params }),
+  network_used: (params) => ({ functionName: 'network_used', params }),
   repository_autostart_disable: (params) => ({ functionName: 'repository_autostart_disable', params }),
   repository_autostart_disable_all: (params) => ({ functionName: 'repository_autostart_disable_all', params }),
   repository_autostart_enable: (params) => ({ functionName: 'repository_autostart_enable', params }),

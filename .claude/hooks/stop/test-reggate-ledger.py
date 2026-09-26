@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 """Controls for the reggate effort-cap ledger's ERROR paths.
 
-WHY THIS FILE EXISTS. The cap (operator ruling 2026-09-05T01:55Z) is an escape
-hatch from a blocking gate, so the question that matters is not "does it fire?"
-but "what happens when its own machinery breaks?" Every error path here has one
-correct direction -- FAIL STRICT -- and a silent flip to the lax direction is
-invisible from the outside: a demand that vanishes looks exactly like a demand
-that was never raised.
+WHY THIS FILE EXISTS. The cap (operator ruling 2026-09-05T01:55Z) is an escape hatch from a blocking gate, so the question that matters is not "does it fire?" but "what happens when its own machinery breaks?" Every error path here has one correct direction -- FAIL STRICT -- and a silent flip to the lax direction is invisible from the outside: a demand that vanishes looks exactly
+like a demand that was never raised.
 
 Three paths shipped with error handling and no test, which is what this fixes:
 
@@ -14,9 +10,7 @@ Three paths shipped with error handling and no test, which is what this fixes:
   branch_merged git fails  -> False (not merged), so the grace clock governs
   the cap       any raise  -> falls through to the normal block
 
-Each assertion is PAIRED with a control proving the opposite input produces the
-opposite answer. Without the pair, a function hard-coded to return the strict
-answer would pass every strict assertion while having stopped working.
+Each assertion is PAIRED with a control proving the opposite input produces the opposite answer. Without the pair, a function hard-coded to return the strict answer would pass every strict assertion while having stopped working.
 """
 
 import json
@@ -59,16 +53,13 @@ with tempfile.TemporaryDirectory() as td:
     p.rmdir()
 
     # CONTROL: the very same call on a READABLE ledger must say forgot=False.
-    # Without this, a read_ledger hard-wired to `return [], True` would satisfy
-    # the assertion above while having stopped reading anything at all.
+    # Without this, a read_ledger hard-wired to `return [], True` would satisfy the assertion above while having stopped reading anything at all.
     R.append_ledger(br, {"kind": "charge", "sig": "b", "why": "proven"}, root=root)
     recs, forgot = R.read_ledger(br, root)
     check("CONTROL: a readable ledger reports forgot=False", forgot, False)
     check("CONTROL: and it actually returns the record", len(recs), 1)
 
-    # A corrupt LINE is a different path from an unreadable FILE: the file opens,
-    # one line fails to parse, and the rest must survive rather than the whole
-    # ledger being discarded.
+    # A corrupt LINE is a different path from an unreadable FILE: the file opens, one line fails to parse, and the rest must survive rather than the whole ledger being discarded.
     with p.open("a", encoding="utf-8") as f:
         f.write("{not json\n")
     recs, forgot = R.read_ledger(br, root)
@@ -89,9 +80,7 @@ with tempfile.TemporaryDirectory() as td:
     with R.debt_path(br, root).open("a", encoding="utf-8") as f:
         f.write("{not json\n")
     _c, _r, _d, forgot = R.budget_state(br, root)
-    # THE LOAD-BEARING ONE. wl_checks gates the cap on `not forgot`, because an
-    # unreadable ledger folds to a FRESH budget -- the most permissive answer
-    # possible. Reporting forgot is what stops the cap firing on a fiction.
+    # THE LOAD-BEARING ONE. wl_checks gates the cap on `not forgot`, because an unreadable ledger folds to a FRESH budget -- the most permissive answer possible. Reporting forgot is what stops the cap firing on a fiction.
     check("a corrupt ledger still reports forgot=True at budget level", forgot, True)
 
 
@@ -101,8 +90,7 @@ with tempfile.TemporaryDirectory() as td:
     check("git failure reads as NOT merged", R.branch_merged("x", root), False)
     check("CONTROL: an empty branch name is also not merged", R.branch_merged("", root), False)
 
-# CONTROL for the pair above: in a REAL repo the probe returns a real answer, so
-# the two False results are the failure path and not the function being a stub.
+# CONTROL for the pair above: in a REAL repo the probe returns a real answer, so the two False results are the failure path and not the function being a stub.
 _real = R.branch_merged("main", pathlib.Path(__file__).resolve().parents[3])
 check("CONTROL: the probe returns a bool in a real repo", isinstance(_real, bool), True)
 
@@ -115,8 +103,7 @@ def cap_fires(remaining, forgot):
 
 check("cap fires when the budget is spent", cap_fires(0, False), True)
 check("cap does NOT fire while budget remains", cap_fires(1, False), False)
-# If this control ever flips, an unreadable ledger would start deferring real
-# demands on a budget nobody could read.
+# If this control ever flips, an unreadable ledger would start deferring real demands on a budget nobody could read.
 check("CONTROL: cap does NOT fire on an unreadable ledger", cap_fires(0, True), False)
 
 
@@ -128,8 +115,7 @@ with tempfile.TemporaryDirectory() as td:
         check("WORKLIST_STORE_DIR redirects the ledger", str(redirected).startswith(td), True)
     finally:
         del os.environ["WORKLIST_STORE_DIR"]
-    # CONTROL: without the override it falls back to the repo-relative path, so
-    # the assertion above is testing the override and not a constant.
+    # CONTROL: without the override it falls back to the repo-relative path, so the assertion above is testing the override and not a constant.
     check(
         "CONTROL: without it, the path is repo-relative",
         R.debt_dir(pathlib.Path("/tmp/x")) == pathlib.Path("/tmp/x/agent/reggate"),

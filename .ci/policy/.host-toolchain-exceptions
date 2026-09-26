@@ -1,0 +1,51 @@
+# Commands that may run on the HOST although this host lacks the toolchain.
+#
+# Read by .claude/rediacc_hooks/guards/block_host_toolchain_run.py, through
+# rediacc_ci.core.allowlist (the one BLOCKER parser) and the policy-path seam.
+# Nothing else reads it.
+#
+# FORMAT, one entry per line, the BLOCKER line directly above it:
+#     # BLOCKER: <why the host is the only place this can run, >=30 chars>
+#     <hit>@<tool>
+#
+# `<hit>` is whatever the guard matched -- a gate key (`check:ci-release-state`),
+# a script basename (`assert-edge-tag-exists.sh`) or a bare tool name (`bws`) --
+# and `<tool>` is the binary it was refused for. The `@` is the separator
+# because a gate key already carries colons. Both halves are required: an
+# exception is for one command needing one tool, never for a tool in general.
+#
+# ---------------------------------------------------------------------------
+# THE ONE LEGITIMATE CATEGORY
+# ---------------------------------------------------------------------------
+#
+# A host-only interactive authentication ceremony that a headless container
+# cannot complete: a browser handoff, a hardware key touch, a TTY the devbox
+# does not have. The work genuinely cannot happen inside the box, so routing it
+# there trades a missing tool for a hung command.
+#
+# ---------------------------------------------------------------------------
+# THE ONE ILLEGITIMATE CATEGORY, AND IT IS REFUSED MECHANICALLY
+# ---------------------------------------------------------------------------
+#
+# "the devbox does not have it". That is not an exception, it is a bug report
+# against .devcontainer/Dockerfile, and the fix is to add the tool there with an
+# explicit version and rebuild the IMAGE (not the container -- "devbox remove"
+# leaves the image untouched). An exception list that accepts a devbox gap turns
+# every image gap into a permanent host fallback, which is the outcome the
+# guard's own block message spends fourteen lines arguing against.
+#
+# The generic BLOCKER rules cannot catch this: "the devbox image has no aws" is
+# specific, well over the thirty-character floor, and passes every one of them.
+# So DEVBOX_GAP_PHRASES in the guard refuses the phrase family directly, and an
+# entry carrying one is IGNORED with a note saying so rather than silently
+# granting what it asked for.
+#
+# ---------------------------------------------------------------------------
+# EMPTY IS THE CORRECT STATE, measured 2026-09-23
+# ---------------------------------------------------------------------------
+#
+# All three tools this list was created alongside -- aws, bw, bws -- resolve
+# their credentials from plain environment variables in every consumer in this
+# tree, so none of them needs a TTY and none of them needs an entry. An empty
+# list cannot make the guard vacuous: with no entries the guard refuses and
+# routes exactly as it did before this file existed.

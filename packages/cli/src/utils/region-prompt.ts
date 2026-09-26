@@ -6,7 +6,7 @@
 
 import type { RegionInfo } from '@rediacc/shared/regions';
 import { t } from '../i18n/index.js';
-import { exitProcess } from '../services/core/request-context.js';
+import { exitProcess, writeStderr } from '../services/core/request-context.js';
 import { detectLikelyRegion } from '../services/provision/region-discovery.js';
 import { EXIT_CODES } from '../types/index.js';
 
@@ -18,12 +18,11 @@ export interface RegionSelection {
 
 export async function promptRegionSelection(regions: RegionInfo[]): Promise<RegionSelection> {
   if (process.stdin.isTTY !== true) {
-    console.error(t('errors.regionSelectionRequiresTTY'));
+    writeStderr(`${t('errors.regionSelectionRequiresTTY')}\n`);
     exitProcess(EXIT_CODES.INVALID_ARGUMENTS);
   }
 
-  // Lazy-load inquirer (rxjs + prompt graph) only when the region picker
-  // is actually shown during interactive login. `Separator` lives on the
+  // Lazy-load inquirer (rxjs + prompt graph) only when the region picker is actually shown during interactive login. `Separator` lives on the
   // default export; `createPromptModule` is a named export.
   const inquirer = await import('inquirer');
   const { createPromptModule } = inquirer;

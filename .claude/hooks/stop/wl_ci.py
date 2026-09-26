@@ -1,8 +1,4 @@
-"""wl_ci: publish-ref divergence, PR-body freshness, submodule pointer moves,
-and the v10 open-PR CI-trouble check. Pure movement from worklist.py; every
-branch here is paid for by an observed failure, so nothing was "simplified"
-in the extraction.
-"""
+"""wl_ci: publish-ref divergence, PR-body freshness, submodule pointer moves, and the v10 open-PR CI-trouble check. Pure movement from worklist.py; every branch here is paid for by an observed failure, so nothing was "simplified" in the extraction."""
 
 import contextlib
 import datetime
@@ -26,19 +22,14 @@ _git = C._git
 def publish_divergence(root):
     """(state, count, ref) -- has the branch we publish to moved without us?
 
-    OPERATOR'S RULE, "do not trust, verify". This session commits on a LOCAL
-    branch and publishes with `git push origin HEAD:<other-branch>`, so the two
-    names can diverge silently: another session, or a merge on the remote, puts
-    commits on the published ref that local HEAD does not contain, and the next
-    push either fails confusingly or publishes over work nobody looked at.
+    OPERATOR'S RULE, "do not trust, verify". This session commits on a LOCAL branch and publishes with `git push origin HEAD:<other-branch>`, so the two names can diverge silently: another session, or a merge on the remote, puts commits on the published ref that local HEAD does not contain, and the next push either fails confusingly or publishes over work nobody looked at.
 
     The dangerous direction is remote-ahead. Local-ahead is just unpushed work.
     """
     branch = _git(root, "rev-parse", "--abbrev-ref", "HEAD")
     if not branch or branch == "HEAD":
         return "unknown", 0, ""
-    # The published ref is whatever the PR is on; default to the sibling name the
-    # session pushes to, overridable for other setups.
+    # The published ref is whatever the PR is on; default to the sibling name the session pushes to, overridable for other setups.
     target = os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not target:
         return "unset", 0, ""
@@ -49,10 +40,7 @@ def publish_divergence(root):
     ahead = int(n) if n.isdigit() else 0
     if ahead:
         return "diverged", ahead, ref
-    # THE SECOND TRAP, found by a verification agent rather than by reasoning: a
-    # LOCAL branch sharing the publish target's name, left behind by an earlier
-    # rename. Nothing in the publish flow touches it, so it rots invisibly; the
-    # cost lands on whoever checks it out next and pushes from a stale base.
+    # THE SECOND TRAP, found by a verification agent rather than by reasoning: a LOCAL branch sharing the publish target's name, left behind by an earlier rename. Nothing in the publish flow touches it, so it rots invisibly; the cost lands on whoever checks it out next and pushes from a stale base.
     if _git(root, "rev-parse", "--verify", "--quiet", target):
         behind = _git(root, "rev-list", "--count", ref, "^%s" % target)
         unique = _git(root, "rev-list", "--count", target, "^%s" % ref)
@@ -61,30 +49,21 @@ def publish_divergence(root):
     return "ok", 0, ref
 
 
-def pr_body_freshness(root):
+def pr_body_freshness(root, ref=None):
     """(state, detail) -- did we push after the last PR-description edit?
 
-    FAIL FAST TO SAVE A CI ROUND. `Quality / Static` runs a PR-description
-    freshness gate, and the cost of failing it is a full ~55-minute round for a
-    mistake that takes ten seconds to fix. This session has made it twice, both
-    times by treating the body refresh as a separate step instead of part of the
-    push, which its own memory says not to do.
+    FAIL FAST TO SAVE A CI ROUND. `Quality / Static` runs a PR-description freshness gate, and the cost of failing it is a full ~55-minute round for a mistake that takes ten seconds to fix. This session has made it twice, both times by treating the body refresh as a separate step instead of part of the push, which its own memory says not to do.
 
-    Scoped to WORKLIST_PUBLISH_REF, so a session that has not opted in pays
-    nothing. When it IS set and the lookup fails, that is reported as a hook-side
-    inability rather than passing quietly.
+    Scoped to WORKLIST_PUBLISH_REF, so a session that has not opted in pays nothing. When it IS set and the lookup fails, that is reported as a hook-side inability rather than passing quietly.
     """
-    target = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    # `ref` is a focus-mode PR branch (wl_standdown): the session declared the PR its own, so the opt-in is that declaration.
+    target = ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not target:
         return "unset", ""
     tip = _git(root, "log", "-1", "--format=%cI", "origin/%s" % target)
     if not tip:
         return "no-ref", "origin/%s" % target
-    # GRAPHQL, NOT `gh pr list --json lastEditedAt`. That field does not exist on
-    # `pr list` OR on `pr view` -- both error out and print the valid-field list.
-    # This check found that itself on its first run, by reporting the failure as
-    # a blind read instead of passing quietly, which is the whole argument for
-    # making blindness its own verdict.
+    # GRAPHQL, NOT `gh pr list --json lastEditedAt`. That field does not exist on `pr list` OR on `pr view` -- both error out and print the valid-field list. This check found that itself on its first run, by reporting the failure as a blind read instead of passing quietly, which is the whole argument for making blindness its own verdict.
     slug = _git(root, "config", "--get", "remote.origin.url")
     m = re.search(r"[:/]([^/:]+)/([^/]+?)(?:\.git)?$", slug or "")
     if not m:
@@ -138,38 +117,21 @@ def pr_body_freshness(root):
 
 # ---- v10: CI trouble on the open PR (operator request, 2026-07-30) ---------
 #
-# THE ASK: "if there is only one active session and if there is an open PR for
-# the current branch, then stop hook should check the PR green/red status and
-# give feedback to make it green ... if there is no gh cli watch in the
-# background."
+# THE ASK: "if there is only one active session and if there is an open PR for the current branch, then stop hook should check the PR green/red status and give feedback to make it green ... if there is no gh cli watch in the background."
 #
 # WHAT THIS IS NOT. It is deliberately NOT "block while conclusion != success".
-# That shape was tried in the head, against one night of real runs, and it nags
-# four times about nothing:
+# That shape was tried in the head, against one night of real runs, and it nags four times about nothing:
 #
-#   * CANCELLED IS NOT RED. Four runs that night ended `cancelled` with ZERO
-#     failed jobs, each superseded by this session's own next push. And the
-#     watchdog FORCE-CANCELS a run when a real gate fails, so `cancelled` also
-#     means "something genuinely failed". The run-level rollup cannot tell those
-#     apart, so nothing here ever reads it as a verdict: every judgement comes
+# * CANCELLED IS NOT RED. Four runs that night ended `cancelled` with ZERO failed jobs, each superseded by this session's own next push. And the watchdog FORCE-CANCELS a run when a real gate fails, so `cancelled` also means "something genuinely failed". The run-level rollup cannot tell those apart, so nothing here ever reads it as a verdict: every judgement comes
 #     from PER-JOB conclusions (run 30514648812 was `cancelled` with
 #     `Quality / Static` = failure; run 30513152662 was `cancelled` with none).
-#   * A RUN THAT IS STILL GROWING IS NOT FINAL. Job count climbed 18 -> 37 -> 79
-#     -> 92 -> 95 inside one run. So nothing here ever concludes GREEN from a
-#     partial list. It only ever speaks about jobs that have ALREADY COMPLETED
+# * A RUN THAT IS STILL GROWING IS NOT FINAL. Job count climbed 18 -> 37 -> 79 -> 92 -> 95 inside one run. So nothing here ever concludes GREEN from a partial list. It only ever speaks about jobs that have ALREADY COMPLETED
 #     with a failing conclusion, which is a fact no later job can retract.
-#   * THE WATCHDOG MAY ALREADY BE FIXING IT. Jobs matching
-#     WATCHDOG_RETRY_ALLOWLIST_PATTERNS (.github/workflows/watchdog-monitor.yml)
-#     are auto-retried onto the SAME run as a later attempt. Telling the session
+# * THE WATCHDOG MAY ALREADY BE FIXING IT. Jobs matching WATCHDOG_RETRY_ALLOWLIST_PATTERNS (.github/workflows/watchdog-monitor.yml) are auto-retried onto the SAME run as a later attempt. Telling the session
 #     to investigate a leg that is about to be rerun burns a whole round; that
-#     night an opensuse E2E leg failed on a Docker Hub CDN reset, was retried,
-#     and the run went green at 95 jobs. Those failures are REPORTED, never
-#     blocked on, until the run is final and they are still red.
+# night an opensuse E2E leg failed on a Docker Hub CDN reset, was retried, and the run went green at 95 jobs. Those failures are REPORTED, never blocked on, until the run is final and they are still red.
 #
-# The output is a HANDOVER OF FACTS, in the shape submodule_pointer_moves() uses:
-# the failing job, its failing STEP, its run and attempt, and the exact command
-# that reads its log. "CI is red" alone is noise; a session cannot brief a
-# sub-agent with it.
+# The output is a HANDOVER OF FACTS, in the shape submodule_pointer_moves() uses: the failing job, its failing STEP, its run and attempt, and the exact command that reads its log. "CI is red" alone is noise; a session cannot brief a sub-agent with it.
 CI_RETRY_PATTERNS = [
     p.strip()
     for p in os.environ.get(
@@ -177,28 +139,14 @@ CI_RETRY_PATTERNS = [
     ).split(",")
     if p.strip()
 ]
-# PER-JOB conclusions that mean "this genuinely failed". CANCELLED, SKIPPED,
-# NEUTRAL and STALE are deliberately absent: see the CANCELLED note above.
+# PER-JOB conclusions that mean "this genuinely failed". CANCELLED, SKIPPED, NEUTRAL and STALE are deliberately absent: see the CANCELLED note above.
 CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED"}
 CI_LIVE_ROLLUP = {"PENDING", "EXPECTED"}
-# NEVER A FAILURE, regardless of conclusion. "Review Complete" is a check-run
-# posted directly by .ci/scripts/review/review-status.sh from a workflow no CI
-# job references -- its own `output.summary` says outright "this check ... can
-# never block Console CI". It reports the review-currency state (has this head
-# been reviewed yet), not a CI result, and its `conclusion` is `failure`
-# whenever a head is unreviewed, which is the common case right after a push.
-# Documented as a trap (docs/agent-reference/TRAPS.md,
-# "gh pr checks half is uncovered") since 2026-08-06 and never fixed here
-# until a session actually walked into it on 2026-08-30: the remedy on file
-# was "go read .output.summary by hand", which is a workaround repeated
-# indefinitely rather than a fix. Unlike CI_RETRY_PATTERNS this is not a name
-# SUBSTRING match against a shifting set of flaky suites -- it is one fixed,
-# permanently-non-blocking check name, so an exact match is correct and a
-# substring match would risk swallowing a real job that merely contains
-# "Review" in its name.
+# NEVER A FAILURE, regardless of conclusion. "Review Complete" is a check-run posted directly by .ci/scripts/review/review-status.sh from a workflow no CI job references -- its own `output.summary` says outright "this check ... can never block Console CI". It reports the review-currency state (has this head been reviewed yet), not a CI result, and its `conclusion` is `failure`
+# whenever a head is unreviewed, which is the common case right after a push. Documented as a trap (docs/agent-reference/TRAPS.md, "gh pr checks half is uncovered") since 2026-08-06 and never fixed here until a session actually walked into it on 2026-08-30: the remedy on file was "go read .output.summary by hand", which is a workaround repeated indefinitely rather than a fix.
+# Unlike CI_RETRY_PATTERNS this is not a name SUBSTRING match against a shifting set of flaky suites -- it is one fixed, permanently-non-blocking check name, so an exact match is correct and a substring match would risk swallowing a real job that merely contains "Review" in its name.
 CI_NONBLOCKING_CONTEXTS = {"Review Complete"}
-# Cost control (this hook runs on EVERY stop, including a 5-minute poll cron).
-# Keyed on the published tip SHA, so any push invalidates it immediately.
+# Cost control (this hook runs on EVERY stop, including a 5-minute poll cron). Keyed on the published tip SHA, so any push invalidates it immediately.
 CI_CACHE_LIVE_S = int(os.environ.get("WORKLIST_CI_CACHE_LIVE_S", "180"))
 CI_CACHE_FINAL_S = int(os.environ.get("WORKLIST_CI_CACHE_FINAL_S", "900"))
 # THE DEADLOCK CEILING. See ci_trouble()'s docstring.
@@ -215,8 +163,7 @@ def repo_slug(root):
 
 
 def _gh_json(root, args, timeout=25):
-    """(data, error) from `gh <args>`. Never raises; an error is a STRING, so
-    every caller can report blindness instead of guessing."""
+    """(data, error) from `gh <args>`. Never raises; an error is a STRING, so every caller can report blindness instead of guessing."""
     try:
         out = subprocess.run(
             ["gh", *args],
@@ -245,11 +192,7 @@ def _gh_json(root, args, timeout=25):
 
 
 def ci_query(owner, name, ref, cursor):
-    """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on
-    purpose: the rollup exposes the LATEST check run per context, so a watchdog
-    rerun replaces the failed attempt rather than appearing beside it. That is
-    what makes a rerun-in-flight read as IN_PROGRESS here, and this check go
-    quiet by itself while the watchdog works."""
+    """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on purpose: the rollup exposes the LATEST check run per context, so a watchdog rerun replaces the failed attempt rather than appearing beside it. That is what makes a rerun-in-flight read as IN_PROGRESS here, and this check go quiet by itself while the watchdog works."""
     after = ',after:"%s"' % cursor if cursor else ""
     return (
         '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",states:OPEN,first:1)'
@@ -264,11 +207,7 @@ def ci_query(owner, name, ref, cursor):
 def ci_branch_query(owner, name, ref, cursor):
     """The SAME rollup, read from the branch instead of from a PR.
 
-    `main` after a merge has no open PR, so ci_query's pullRequests(...) selector
-    returns zero nodes and the reader goes blind at exactly the point /pr-merge
-    step 5 needs it. The context selection set below is deliberately identical to
-    ci_query's: this is a second SOURCE for one payload, never a second
-    implementation of the reader.
+    `main` after a merge has no open PR, so ci_query's pullRequests(...) selector returns zero nodes and the reader goes blind at exactly the point /pr-merge step 5 needs it. The context selection set below is deliberately identical to ci_query's: this is a second SOURCE for one payload, never a second implementation of the reader.
     """
     after = ',after:"%s"' % cursor if cursor else ""
     return (
@@ -281,13 +220,9 @@ def ci_branch_query(owner, name, ref, cursor):
 def ci_rollup(root, ref, allow_branch=False):
     """(state, info) -- one paged read of the check rollup for `ref`.
 
-    state is ok | no-pr | no-ref | unreadable. `unreadable` is a real verdict, in
-    the V_PR_UNREADABLE style: a check that cannot see must SAY SO.
+    state is ok | no-pr | no-ref | unreadable. `unreadable` is a real verdict, in the V_PR_UNREADABLE style: a check that cannot see must SAY SO.
 
-    allow_branch DEFAULTS TO FALSE AND MUST STAY THAT WAY. The Stop hook reads
-    `no-pr` as a meaningful answer -- "this branch has no PR to be current with"
-    -- so silently substituting a branch read would CHANGE that check's meaning
-    rather than extend it. Only a caller that explicitly named a ref opts in.
+    allow_branch DEFAULTS TO FALSE AND MUST STAY THAT WAY. The Stop hook reads `no-pr` as a meaningful answer -- "this branch has no PR to be current with" -- so silently substituting a branch read would CHANGE that check's meaning rather than extend it. Only a caller that explicitly named a ref opts in.
     """
     owner, name = repo_slug(root)
     if not owner:
@@ -301,12 +236,9 @@ def ci_rollup(root, ref, allow_branch=False):
 def _rollup_pages(root, owner, name, ref, build_query, extract, source):
     """Page ONE rollup source into the common payload.
 
-    Both sources share this loop so CI_MAX_PAGES and the `truncated` flag cannot
-    drift apart between them -- a partial read that forgot to say it was partial
-    is the vacuity failure this reader exists to avoid.
+    Both sources share this loop so CI_MAX_PAGES and the `truncated` flag cannot drift apart between them -- a partial read that forgot to say it was partial is the vacuity failure this reader exists to avoid.
 
-    `extract(data)` returns (terminal_state, commit, pr) -- terminal_state is
-    None to continue paging.
+    `extract(data)` returns (terminal_state, commit, pr) -- terminal_state is None to continue paging.
     """
     contexts, cursor, commit, pr, roll = [], None, None, None, None
     truncated = True
@@ -319,8 +251,7 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source):
             return terminal, ref if terminal in ("no-pr", "no-ref") else commit
         roll = (commit or {}).get("statusCheckRollup")
         if not roll:
-            # No checks registered on this head yet. Not a verdict and not
-            # blindness: an empty context list simply produces silence below.
+            # No checks registered on this head yet. Not a verdict and not blindness: an empty context list simply produces silence below.
             truncated = False
             break
         ctx = roll.get("contexts") or {}
@@ -336,10 +267,7 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source):
         "source": source,
         "pr": (pr or {}).get("number"),
         "url": (pr or {}).get("url") or "",
-        # Carried so a GREEN verdict can name the next action. A reader must not
-        # flip the PR itself -- several watches can be armed at once and the
-        # ready-flip spends real review budget -- but it CAN stop the finish
-        # sequence depending on the agent remembering it exists.
+        # Carried so a GREEN verdict can name the next action. A reader must not flip the PR itself -- several watches can be armed at once and the ready-flip spends real review budget -- but it CAN stop the finish sequence depending on the agent remembering it exists.
         "draft": bool((pr or {}).get("isDraft")),
         "sha": (commit or {}).get("oid") or "",
         "rollup": ((roll or {}).get("state") or "EXPECTED"),
@@ -367,8 +295,7 @@ def _rollup_pr(root, owner, name, ref):
                 None,
             )
 
-    # `extract` returns its unreadable reason in the commit slot, which
-    # _rollup_pages passes straight through as `info`.
+    # `extract` returns its unreadable reason in the commit slot, which _rollup_pages passes straight through as `info`.
     return _rollup_pages(
         root, owner, name, ref, lambda c: ci_query(owner, name, ref, c), extract, "pr"
     )
@@ -381,8 +308,7 @@ def _rollup_branch(root, owner, name, ref):
         except (KeyError, TypeError):
             return "unreadable", "graphql response had no repository.ref", None
         if not node:
-            # A ref that does not exist is NOT the same answer as a ref with no
-            # checks, and conflating them is how a typo reads as a clean run.
+            # A ref that does not exist is NOT the same answer as a ref with no checks, and conflating them is how a typo reads as a clean run.
             return "no-ref", None, None
         target = node.get("target") or {}
         if not target.get("oid"):
@@ -403,22 +329,15 @@ def _rollup_branch(root, owner, name, ref):
 def ci_classify(info):
     """(live, hard, soft) from PER-JOB conclusions only.
 
-    `live` means the head still has work in flight, which is the ONLY thing the
-    run-level rollup is used for -- never as a pass/fail verdict.
+    `live` means the head still has work in flight, which is the ONLY thing the run-level rollup is used for -- never as a pass/fail verdict.
 
-    A completed failing job whose name matches the watchdog's retry allowlist is
-    SOFT while the head is live, because a retry may be inbound. Once the head
-    is final and it is STILL failing, the watchdog is done with it and it is
-    hard, which is the difference between "wait" and "go read the log".
+    A completed failing job whose name matches the watchdog's retry allowlist is SOFT while the head is live, because a retry may be inbound. Once the head is final and it is STILL failing, the watchdog is done with it and it is hard, which is the difference between "wait" and "go read the log".
     """
     rows, pending = [], 0
     for c in info.get("contexts") or []:
-        # Skipped BEFORE branching on shape, and before the pending count too:
-        # this context can be a StatusContext OR a CheckRun depending on how it
-        # was posted, and it must never contribute to "live" either -- it can
+        # Skipped BEFORE branching on shape, and before the pending count too: this context can be a StatusContext OR a CheckRun depending on how it was posted, and it must never contribute to "live" either -- it can
         # sit at conclusion=failure indefinitely (an unreviewed head is the
-        # NORMAL state right after a push), which would otherwise wedge the
-        # rollup as perpetually in-flight rather than genuinely final.
+        # NORMAL state right after a push), which would otherwise wedge the rollup as perpetually in-flight rather than genuinely final.
         if (c.get("context") or c.get("name") or "?") in CI_NONBLOCKING_CONTEXTS:
             continue
         if c.get("__typename") == "StatusContext":
@@ -467,17 +386,10 @@ def review_gate_row(info):
 
     state: absent | clean | red. `row` is the raw context dict, or None.
 
-    DELIBERATELY SEPARATE from ci_classify(). Folding this into hard/soft
-    would be exactly the bug CI_NONBLOCKING_CONTEXTS exists to prevent --
-    this function's whole job is to look at the ONE context ci_classify()
-    is told to ignore, using the same shape-matching ci_classify already
-    proved handles both CheckRun.name and StatusContext.context (see its
-    own selftest, "the filter matches on EITHER shape").
+    DELIBERATELY SEPARATE from ci_classify(). Folding this into hard/soft would be exactly the bug CI_NONBLOCKING_CONTEXTS exists to prevent -- this function's whole job is to look at the ONE context ci_classify() is told to ignore, using the same shape-matching ci_classify already proved handles both CheckRun.name and StatusContext.context (see its own selftest, "the filter
+    matches on EITHER shape").
 
-    `truncated` fails CLOSED to absent: a partial context page proves
-    nothing about a context it never reached, so this function never
-    asserts "clean" or "red" off a page that might not contain the row at
-    all. It can only ever MISS a real red (silence), never invent one.
+    `truncated` fails CLOSED to absent: a partial context page proves nothing about a context it never reached, so this function never asserts "clean" or "red" off a page that might not contain the row at all. It can only ever MISS a real red (silence), never invent one.
     """
     if info.get("truncated"):
         return "absent", None
@@ -493,11 +405,7 @@ def review_gate_row(info):
 
 
 def review_gate_detail(root, info, row):
-    """(title, summary, html_url) for the "Review Complete" check-run, read
-    directly, not guessed. This IS review-status.sh's own posted verdict --
-    the same text a human reads in `gh pr checks` -- so there is no second
-    definition of "what's wrong" to drift from the real gate.
-    """
+    """(title, summary, html_url) for the "Review Complete" check-run, read directly, not guessed. This IS review-status.sh's own posted verdict -- the same text a human reads in `gh pr checks` -- so there is no second definition of "what's wrong" to drift from the real gate."""
     data, err = _gh_json(
         root,
         [
@@ -540,14 +448,11 @@ def reviewmark_path(worklist, session_id):
 
 
 def review_red(root, worklist, session_id, cidetail, ack_text):
-    """(state, detail) -- is "Review Complete" red while the rest of this
-    PR's CI is clean, and has this already been reported enough times.
+    """(state, detail) -- is "Review Complete" red while the rest of this PR's CI is clean, and has this already been reported enough times.
 
     state: clean | absent | trouble | downgraded | unreadable
 
-    Only ever called when the CALLER already has a clean ci_classify()
-    verdict for this exact PR (see wl_checks.py), so this inherits
-    ci_trouble's own branch/PR scoping for free -- no independent repo scan.
+    Only ever called when the CALLER already has a clean ci_classify() verdict for this exact PR (see wl_checks.py), so this inherits ci_trouble's own branch/PR scoping for free -- no independent repo scan.
     """
     rstate, row = review_gate_row(cidetail)
     if rstate != "red":
@@ -585,13 +490,8 @@ def review_red(root, worklist, session_id, cidetail, ack_text):
     return "trouble", detail
 
 
-# v12 (operator, 2026-07-30): "hook should detect that is current session
-# sitting for CI pipeline? If so, it should FORCE current session to work on
-# waiting items!!!" The shape of a CI watch, matched against a background
-# task's command + description. Deliberately CONSERVATIVE: `gh run watch`,
-# an Actions run URL/path, a run-id-sized number near "watch", or "CI" near
-# "watch". A dev file-watcher (`npm run watch`) matches none of these, and a
-# false positive here turns a working session's stop into an accusation.
+# v12 (operator, 2026-07-30): "hook should detect that is current session sitting for CI pipeline? If so, it should FORCE current session to work on waiting items!!!" The shape of a CI watch, matched against a background task's command + description. Deliberately CONSERVATIVE: `gh run watch`, an Actions run URL/path, a run-id-sized number near "watch", or "CI" near "watch". A dev
+# file-watcher (`npm run watch`) matches none of these, and a false positive here turns a working session's stop into an accusation.
 CI_WATCH_RE = re.compile(
     r"gh\s+run\s+watch"
     r"|actions/runs/\d+"
@@ -604,11 +504,7 @@ CI_WATCH_RE = re.compile(
 def ci_watch_only(live_bg):
     """(watching, description) -- is watching CI the ONLY thing in flight?
 
-    True only when at least one RUNNING background task matches the CI-watch
-    shape and EVERY running background task does. One non-watch worker means
-    the session has real work delegated and is not merely sitting; no tasks
-    at all means there is nothing being waited on and the idle detector owns
-    that case. The description names the watches so the block can quote them.
+    True only when at least one RUNNING background task matches the CI-watch shape and EVERY running background task does. One non-watch worker means the session has real work delegated and is not merely sitting; no tasks at all means there is nothing being waited on and the idle detector owns that case. The description names the watches so the block can quote them.
     """
     names = []
     for b in live_bg or []:
@@ -623,16 +519,13 @@ def ci_watch_only(live_bg):
     return bool(names), "; ".join(names)
 
 
-# The sanctioned CI reader. A watch that is not this is a hand-rolled loop, and
-# hand-rolled loops failed four ways on 2026-08-25 while landing console#574:
-# a stale recipe in nine places, a verdict from a SUPERSEDED attempt, a verdict
+# The sanctioned CI reader. A watch that is not this is a hand-rolled loop, and hand-rolled loops failed four ways on 2026-08-25 while landing console#574: a stale recipe in nine places, a verdict from a SUPERSEDED attempt, a verdict
 # from a run a later push had cancelled, and a network blip that only a
 # correctly-written retry arm survived. See .ci/scripts/ci/ci-trace.py.
 def _sanctioned_match(blob):
     """True when the blob carries a shape the sanctioned registry replaces.
 
-    Imported lazily and defensively: this module runs on every stop, and a
-    missing or broken registry must not take the whole hook down with it.
+    Imported lazily and defensively: this module runs on every stop, and a missing or broken registry must not take the whole hook down with it.
     """
     try:
         lib = pathlib.Path(__file__).resolve().parent.parent / "lib" / "sanctioned.py"
@@ -646,8 +539,7 @@ def _sanctioned_match(blob):
         return False
 
 
-# Does this blob touch GitHub at all? Something that cannot be a CI watch is not
-# one, however much it says "watch".
+# Does this blob touch GitHub at all? Something that cannot be a CI watch is not one, however much it says "watch".
 GH_EVIDENCE_RE = re.compile(r"\bgh\b|actions/runs/\d+|ci-trace", re.IGNORECASE)
 
 CI_TRACE_RE = re.compile(r"ci-trace(?:\.py)?\b", re.IGNORECASE)
@@ -656,30 +548,16 @@ CI_TRACE_RE = re.compile(r"ci-trace(?:\.py)?\b", re.IGNORECASE)
 def adhoc_watch(live_bg):
     """(task_id, blob) for a RUNNING background task watching CI by hand, or ("","").
 
-    "By hand" means: it looks like a CI watch (CI_WATCH_RE, the same shape the
-    idle checks already use) and it is NOT ci-trace.py. The caller blocks the
-    turn on this, which is safe to make unconditional -- unlike ci_trouble, the
-    remedy is entirely within the session's reach: stop the task and run the
-    script. Nothing another session's push or an infrastructure flake can do
-    makes this unfixable, so there is no ceiling and no escape hatch.
+    "By hand" means: it looks like a CI watch (CI_WATCH_RE, the same shape the idle checks already use) and it is NOT ci-trace.py. The caller blocks the turn on this, which is safe to make unconditional -- unlike ci_trouble, the remedy is entirely within the session's reach: stop the task and run the script. Nothing another session's push or an infrastructure flake can do makes
+    this unfixable, so there is no ceiling and no escape hatch.
     """
     for b in live_bg or []:
         blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
         if CI_TRACE_RE.search(blob):
             continue
-        # TWO detectors, because each alone has a hole. CI_WATCH_RE is
-        # deliberately conservative (it also drives the idle checks, where a
-        # false positive turns a working session's stop into an accusation) and
-        # misses a bare `gh run view` poll with no "watch" word in it. The
-        # sanctioned registry catches exactly that shape -- and sharing it is
-        # the point: the pre-bash guard and this check then cannot disagree
-        # about what counts as hand-rolled, which is the class of drift this
-        # whole change exists to end.
-        # EVIDENCE OF GITHUB, not merely the word "watch". CI_WATCH_RE also
-        # matches "watch" sitting near any 9+ digit number, and a worklist
-        # fixture named `sleep 3717171718 silent watch` -- a generic background
-        # worker with no gh call anywhere in it -- was blocking the turn. A
-        # guard that stops unrelated work is a guard that gets removed.
+        # TWO detectors, because each alone has a hole. CI_WATCH_RE is deliberately conservative (it also drives the idle checks, where a false positive turns a working session's stop into an accusation) and misses a bare `gh run view` poll with no "watch" word in it. The sanctioned registry catches exactly that shape -- and sharing it is the point: the pre-bash guard and this
+        # check then cannot disagree about what counts as hand-rolled, which is the class of drift this whole change exists to end. EVIDENCE OF GITHUB, not merely the word "watch". CI_WATCH_RE also matches "watch" sitting near any 9+ digit number, and a worklist fixture named `sleep 3717171718 silent watch` -- a generic background worker with no gh call anywhere in it -- was
+        # blocking the turn. A guard that stops unrelated work is a guard that gets removed.
         if not GH_EVIDENCE_RE.search(blob):
             continue
         if CI_WATCH_RE.search(blob) or _sanctioned_match(blob):
@@ -692,22 +570,15 @@ def ci_watch_armed(live_bg, rows, sha):
 
     NOT "is some task running". A completed watch reported `completed/cancelled`
     for a run that had since been superseded, and another reported a FALSE
-    failure because a watchdog rerun flipped a terminal run back to in_progress.
-    So the test is: still running (the caller passes only those) AND naming this
-    head's run id or SHA. A bare `gh run watch` with no id does not count -- it
-    cannot be shown to be about this run.
+    failure because a watchdog rerun flipped a terminal run back to in_progress. So the test is: still running (the caller passes only those) AND naming this head's run id or SHA. A bare `gh run watch` with no id does not count -- it cannot be shown to be about this run.
     """
     needles = [str(r["run"]) for r in rows if r.get("run")]
     if sha:
         needles.append(sha[:12])
     for b in live_bg or []:
         blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
-        # THE SANCTIONED READER IS ALWAYS ABOUT THIS HEAD, so it needs no
-        # needle. ci-trace.py resolves the PR from the current branch and pins
-        # the head it starts on, exiting 3 if a push moves it -- it cannot be
-        # watching a stale run, which is the only thing the needle test ever
-        # guarded against. An explicit --ref points it elsewhere, so that form
-        # still has to prove itself the ordinary way.
+        # THE SANCTIONED READER IS ALWAYS ABOUT THIS HEAD, so it needs no needle. ci-trace.py resolves the PR from the current branch and pins the head it starts on, exiting 3 if a push moves it -- it cannot be watching a stale run, which is the only thing the needle test ever guarded against. An explicit --ref points it elsewhere, so that form still has to prove itself the
+        # ordinary way.
         if CI_TRACE_RE.search(blob) and "--ref" not in blob:
             return str(b.get("id") or (b.get("description") or "")[:60])
         if any(n and n in blob for n in needles):
@@ -718,10 +589,7 @@ def ci_watch_armed(live_bg, rows, sha):
 def ci_steps(root, info, rows, cached):
     """Fill in `step` and `attempt` for the first few failing jobs.
 
-    ONE bounded REST call per job, and only on the path that is about to speak.
-    `gh run view --log-failed` is deliberately not used anywhere here: it is
-    RUN-scoped even with --job, refuses while the run is in progress, and writes
-    the reason to stderr, so a 2>/dev/null capture reads as an empty log.
+    ONE bounded REST call per job, and only on the path that is about to speak. `gh run view --log-failed` is deliberately not used anywhere here: it is RUN-scoped even with --job, refuses while the run is in progress, and writes the reason to stderr, so a 2>/dev/null capture reads as an empty log.
     """
     for row in rows[:CI_STEP_LOOKUPS]:
         key = str(row.get("job") or "")
@@ -756,14 +624,9 @@ def cimark_path(worklist, session_id):
     return worklist.with_suffix(".cimark-%s" % (session_id or "unknown")[:8])
 
 
-# ---- v13: CI-queue-aware backpressure ---------------------------------------
-# OPERATOR (2026-07-31): "CI side has stuck because of many commits. They're in
-# the queue. For that situation stop hook should be smart to avoid pushing the
-# system in such cases... there could be possibility that allow us to work
-# locally until we see CI result to save time." Observed live the same night:
+# ---- v13: CI-queue-aware backpressure --------------------------------------- OPERATOR (2026-07-31): "CI side has stuck because of many commits. They're in the queue. For that situation stop hook should be smart to avoid pushing the system in such cases... there could be possibility that allow us to work locally until we see CI result to save time." Observed live the same night:
 # a Console CI run sat status=pending for 25+ minutes because pushes had queued
-# runs behind each other; every further push made the jam strictly worse while
-# buying nothing, since only the newest head's result matters.
+# runs behind each other; every further push made the jam strictly worse while buying nothing, since only the newest head's result matters.
 CI_QUEUE_MIN = int(os.environ.get("WORKLIST_CI_QUEUE_MIN", "10"))
 CI_QUEUE_DEPTH = int(os.environ.get("WORKLIST_CI_QUEUE_DEPTH", "2"))
 CI_QUEUE_CACHE_S = int(os.environ.get("WORKLIST_CI_QUEUE_CACHE_S", "180"))
@@ -783,19 +646,10 @@ def ci_queue_state(root, worklist, session_id):
     {"ref", "queued", "newest_age_min"}.
 
     Reads `actions/runs?branch=` rather than the head-commit rollup ON PURPOSE:
-    the observed failure is OLDER runs jamming the queue behind the newest
-    push, and the rollup only sees the head. Saturated iff the newest run has
-    sat in a queued-family status for CI_QUEUE_MIN minutes, or CI_QUEUE_DEPTH
-    or more runs are queued at once. A newest run that is in_progress with an
-    empty queue is `clear`: a result is coming, normal discipline stands.
+    the observed failure is OLDER runs jamming the queue behind the newest push, and the rollup only sees the head. Saturated iff the newest run has sat in a queued-family status for CI_QUEUE_MIN minutes, or CI_QUEUE_DEPTH or more runs are queued at once. A newest run that is in_progress with an empty queue is `clear`: a result is coming, normal discipline stands.
 
-    FAILURE MODE IS A DELIBERATE INVERSION of the blocks-when-blind rule that
-    governs the other CI checks. This check only ever GRANTS slack (permission
-    to hold pushes), so blindness must fail toward pressure: gh broken, slug
-    underivable, or non-JSON all return `unknown`, which callers treat exactly
-    like today's behavior -- no note, no relaxation. A blind slack-granter
-    would be an escape hatch. `unknown` is cached too, so a broken gh costs
-    one call per TTL, not one per stop.
+    FAILURE MODE IS A DELIBERATE INVERSION of the blocks-when-blind rule that governs the other CI checks. This check only ever GRANTS slack (permission to hold pushes), so blindness must fail toward pressure: gh broken, slug underivable, or non-JSON all return `unknown`, which callers treat exactly like today's behavior -- no note, no relaxation. A blind slack-granter would be an
+    escape hatch. `unknown` is cached too, so a broken gh costs one call per TTL, not one per stop.
     """
     ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not ref:
@@ -817,9 +671,7 @@ def ci_queue_state(root, worklist, session_id):
         )
         runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
         if runs is None and err:
-            # SAY WHY, rather than reporting a bare "unknown". A failed gh call
-            # and a genuinely empty queue used to be indistinguishable here,
-            # which is the blindness this program refuses everywhere else.
+            # SAY WHY, rather than reporting a bare "unknown". A failed gh call and a genuinely empty queue used to be indistinguishable here, which is the blindness this program refuses everywhere else.
             detail = {"ref": ref, "error": err}
         if isinstance(runs, list):
             queued, newest_age = 0, None
@@ -856,16 +708,13 @@ def ci_queue_state(root, worklist, session_id):
     return state, detail
 
 
-def ci_trouble(root, worklist, session_id, live_bg, ack_text):
+def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=False):
     """(state, detail) -- is the open PR in trouble nobody is on?
 
     state: unset | multi-session | no-pr | ok | watched | soft | trouble |
            downgraded | unreadable
 
-    THE ESCAPE, and why this one. A check that demands what a session cannot
-    produce deadlocks it: one did exactly that for a whole night here, blocking
-    every stop until morning. So there are TWO exits, and the second is
-    unconditional:
+    THE ESCAPE, and why this one. A check that demands what a session cannot produce deadlocks it: one did exactly that for a whole night here, blocking every stop until morning. So there are TWO exits, and the second is unconditional:
 
       1. ACKNOWLEDGEMENT. Naming the failing job in the stop message (or in a
          `- [?] ... DEFAULT:` line) clears the block. You cannot type
@@ -880,15 +729,15 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
          pre-existing red on a submodule harness), and over a silent bypass
          because the facts still have to reach the operator every stop.
 
-    A NEW failure set (new head SHA, or a different set of failing jobs) re-arms
-    the budget: a new red is worth interrupting for exactly once more.
+    A NEW failure set (new head SHA, or a different set of failing jobs) re-arms the budget: a new red is worth interrupting for exactly once more.
+
+    FOCUS MODE ARMS IT (agent/plans/PLAN-stop-hook-focus-mode.md section 3): the caller passes the focus's `ref` and `owned=True`. `--focus` is the session declaring the PR its own, which is the one fact the multi-session skip below could not know, so that skip does not apply. Both exits above still do.
     """
-    ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    ref = ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not ref:
         return "unset", None  # not opted in: zero network cost, same as pr_body_freshness
-    if not S.sole_live_session(worklist, session_id):
-        # With a second live session, red may be their push, and nagging this
-        # session about someone else's work is the failure mode to avoid.
+    if not owned and not S.sole_live_session(worklist, session_id):
+        # With a second live session, red may be their push, and nagging this session about someone else's work is the failure mode to avoid.
         return "multi-session", None
     tip = _git(root, "rev-parse", "origin/%s" % ref)
     if not tip:
@@ -917,11 +766,7 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
         return "ok", info
     watcher = ci_watch_armed(live_bg, hard + soft, info.get("sha") or tip)
     if watcher:
-        # The operator's own condition, and deliberately NOT gated on the run
-        # still being live. A watch keyed to this run is a wake-up whether the
-        # run is finishing or already finished; the window where a RUNNING watch
-        # coexists with a final run is the seconds before its last iteration
-        # prints, and firing into that window is a false alarm, not diligence.
+        # The operator's own condition, and deliberately NOT gated on the run still being live. A watch keyed to this run is a wake-up whether the run is finishing or already finished; the window where a RUNNING watch coexists with a final run is the seconds before its last iteration prints, and firing into that window is a false alarm, not diligence.
         _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
         return "watched", {"info": info, "hard": hard, "soft": soft, "watcher": watcher}
     ci_steps(root, info, hard or soft, steps)
@@ -947,6 +792,67 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
     return "trouble", detail
 
 
+def focuspr_path(worklist, session_id):
+    return worklist.with_suffix(".focuspr-%s" % (session_id or "unknown")[:8])
+
+
+def focus_pr_end(root, worklist, session_id, focus):
+    """(reason, error): "merged", "closed" or "" -- has the focus's PR finished? (agent/plans/PLAN-stop-hook-focus-mode.md section 3.)
+
+    ONE small GraphQL read, cached for wl_standdown.FOCUS_PR_TTL_S in a `.focuspr-<me8>` sidecar, and only while focus is on. The node must be the focus's PR number, or, while that is unknown, the newest one closed AFTER the focus began, so a reused branch name cannot end it. A failed read returns ("", error): focus continues (the 24-hour cap bounds a permanently blind check) and the caller reports it.
+    """
+    import wl_standdown  # noqa: PLC0415 -- sealed, stdlib only
+
+    branch = str((focus or {}).get("branch") or "")
+    if not branch:
+        return "", ""
+    cache_p = focuspr_path(worklist, session_id)
+    key = "%s|%s|%s" % (branch, (focus or {}).get("pr"), (focus or {}).get("at"))
+    with contextlib.suppress(OSError, ValueError, TypeError):
+        c = json.loads(cache_p.read_text(encoding="utf-8"))
+        if c.get("key") == key and time.time() - float(c.get("t") or 0) <= (
+            wl_standdown.FOCUS_PR_TTL_S
+        ):
+            return str(c.get("reason") or ""), ""
+    owner, name = repo_slug(root)
+    if not owner:
+        return "", "could not derive owner/name from remote.origin.url"
+    query = (
+        '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",'
+        "states:[MERGED,CLOSED],first:5,orderBy:{field:UPDATED_AT,direction:DESC})"
+        "{nodes{number state mergedAt closedAt}}}}"
+    ) % (owner, name, branch)
+    data, err = _gh_json(root, ["api", "graphql", "-f", "query=" + query])
+    if err:
+        return "", err
+    try:
+        nodes = data["data"]["repository"]["pullRequests"]["nodes"] or []
+    except (KeyError, TypeError):
+        return "", "graphql response had no pullRequests.nodes"
+    want = (focus or {}).get("pr")
+    since = str((focus or {}).get("at") or "")
+    hit = None
+    for n in nodes:
+        if not isinstance(n, dict):
+            continue
+        if want not in (None, "", 0):
+            if str(n.get("number")) == str(want):
+                hit = n
+                break
+            continue
+        closed = str(n.get("mergedAt") or n.get("closedAt") or "")
+        # Both are ISO8601 UTC seconds with a Z (C.stamp_now and GitHub's DateTime), so text order is time order.
+        if closed and closed >= since:
+            hit = n
+            break
+    reason = ""
+    if hit is not None:
+        reason = "merged" if str(hit.get("state")).upper() == "MERGED" else "closed"
+    with contextlib.suppress(OSError, TypeError):
+        cache_p.write_text(json.dumps({"key": key, "t": time.time(), "reason": reason}))
+    return reason, ""
+
+
 def _ci_cache_write(path, sha, state, info, steps, final):
     with contextlib.suppress(OSError, TypeError):
         path.write_text(
@@ -965,8 +871,7 @@ def _ci_cache_write(path, sha, state, info, steps, final):
 
 
 def ci_rows_text(rows, info):
-    """One line per failing job, plus the log incantation that actually works
-    on a completed job inside a live run."""
+    """One line per failing job, plus the log incantation that actually works on a completed job inside a live run."""
     out = []
     for r in rows[:6]:
         bits = ["    %s  %s" % (r["name"], r["conclusion"])]
@@ -990,16 +895,10 @@ def ci_rows_text(rows, info):
 def submodule_pointer_moves(root):
     """[(path, recorded_sha, worktree_sha, where)] for dirty gitlinks.
 
-    DELIBERATELY LOCAL. Every fact here comes from git in the working tree, so
-    this check cannot go "unreadable" on a network failure the way the PR
-    freshness check can. `where` is the containing-remote-branch summary, which
-    is the fact that actually decides the call: a pointer on the submodule's
-    default branch is an ordinary bump, while one that exists only on a feature
-    branch adds that branch's PR to this PR's merge chain.
+    DELIBERATELY LOCAL. Every fact here comes from git in the working tree, so this check cannot go "unreadable" on a network failure the way the PR freshness check can. `where` is the containing-remote-branch summary, which is the fact that actually decides the call: a pointer on the submodule's default branch is an ordinary bump, while one that exists only on a feature branch
+    adds that branch's PR to this PR's merge chain.
 
-    `git submodule status` marks a checked-out commit that differs from the
-    index with a leading '+'. That is precisely the state a blind `git add -A`
-    would convert into a committed dependency change.
+    `git submodule status` marks a checked-out commit that differs from the index with a leading '+'. That is precisely the state a blind `git add -A` would convert into a committed dependency change.
     """
     out = _git(root, "submodule", "status", "--cached")
     if not out:
@@ -1014,8 +913,7 @@ def submodule_pointer_moves(root):
         recorded, path = parts[0], parts[1]
         sub = pathlib.Path(root) / path
         live = _git(sub, "rev-parse", "HEAD") or "?"
-        # --contains over REMOTE branches only: a local-only branch proves
-        # nothing about what CI can fetch.
+        # --contains over REMOTE branches only: a local-only branch proves nothing about what CI can fetch.
         refs = _git(sub, "branch", "-r", "--contains", live) or ""
         names = [r.strip().lstrip("* ") for r in refs.splitlines() if r.strip()]
         names = [n for n in names if "->" not in n]
@@ -1041,19 +939,11 @@ def submodule_pointer_moves(root):
 def _selftest():
     """Controls for ci_classify. Run: wl_ci.py --selftest
 
-    Narrow on purpose: ci_classify is pure (info dict in, (live, hard, soft)
-    out), so this proves the CI_NONBLOCKING_CONTEXTS filter on synthetic
-    fixtures shaped like the real GraphQL contexts, not a live API read.
+    Narrow on purpose: ci_classify is pure (info dict in, (live, hard, soft) out), so this proves the CI_NONBLOCKING_CONTEXTS filter on synthetic fixtures shaped like the real GraphQL contexts, not a live API read.
     """
-    ok = True
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(label, cond, detail=""):
-        nonlocal ok
-        if not cond:
-            ok = False
-        print(
-            "  %s  %s%s" % ("PASS" if cond else "FAIL", label, "" if cond else "  <- %s" % detail)
-        )
+    check = wl_common.Checker()
 
     review_complete_only = {
         "rollup": "SUCCESS",
@@ -1158,10 +1048,7 @@ def _selftest():
         "hard=%r" % (hard,),
     )
 
-    # ---- review_gate_row / review_red: the "CI green, Review Complete red"
-    # stop-hook check. Deliberately separate fixtures from ci_classify's above
-    # -- this is the signal ci_classify is told to IGNORE, so the two must
-    # never be tested (or wired) as if they were the same question.
+    # ---- review_gate_row / review_red: the "CI green, Review Complete red" stop-hook check. Deliberately separate fixtures from ci_classify's above -- this is the signal ci_classify is told to IGNORE, so the two must never be tested (or wired) as if they were the same question.
     review_complete_red_only = {
         "rollup": "SUCCESS",
         "truncated": False,
@@ -1228,9 +1115,7 @@ def _selftest():
         review_gate_row(review_gate_unrelated)[0] == "absent",
     )
 
-    # review_red's ceiling/ack: needs a real worklist path for its marker
-    # file, so a temp dir stands in (same pattern other marker-file controls
-    # in this suite use).
+    # review_red's ceiling/ack: needs a real worklist path for its marker file, so a temp dir stands in (same pattern other marker-file controls in this suite use).
     with tempfile.TemporaryDirectory() as _rr_tmp:
         _rr_wl = pathlib.Path(_rr_tmp) / "worklist.md"
         _rr_ci = {
@@ -1285,8 +1170,7 @@ def _selftest():
         finally:
             globals()["review_gate_detail"] = _orig_detail
 
-    print("  %s" % ("all ci controls passed" if ok else "*** FAILURES ***"))
-    return 0 if ok else 1
+    return check.verdict("ci")
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ const STALE_CERT_PATTERN = /^.+-\d{4,5}\./;
 /** Default grace window for expiry-based pruning, in days. Certs whose notAfter
  *  is older than `now - DEFAULT_EXPIRY_GRACE_DAYS` are considered useless and
  *  removed. Grace exists because a cert that expired N minutes ago is still
- *  likely to be replaced by the next sync — we don't want to thrash. */
+ *  likely to be replaced by the next sync, we don't want to thrash. */
 const DEFAULT_EXPIRY_GRACE_DAYS = 7;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -46,7 +46,7 @@ const AUTO_SYNC_MIN_INTERVAL_HOURS = 6;
 
 /**
  * Returns true if the local cert cache's updatedAt is stale enough to
- * warrant a refresh. Pure function — pass `now` for deterministic tests.
+ * warrant a refresh. Pure function, pass `now` for deterministic tests.
  * Absent / unparseable `updatedAt` counts as stale.
  */
 export function isCertCacheStale(
@@ -273,7 +273,7 @@ export function pruneStaleAcmeCerts(acme: AcmeJson): { cleaned: AcmeJson; remove
  * that will be replaced on the next sync. Certs whose expiry cannot be
  * parsed are kept (unknown state is safer than wrong state).
  *
- * Pure function — does not mutate the input beyond per-resolver Certificates.
+ * Pure function, does not mutate the input beyond per-resolver Certificates.
  * Pass `now` to make tests deterministic; defaults to current time.
  */
 /**
@@ -292,12 +292,12 @@ function isCertPastCutoff(expiryIso: string | undefined, cutoffMs: number): bool
  * load-bearing. Names whose anchor isn't in this set are stale.
  *
  * Built once per `config prune` invocation from the operator's active
- * config — see `services/config-prune.ts::buildConfigAnchors`.
+ * config, see `services/config-prune.ts::buildConfigAnchors`.
  */
 export interface ConfigAnchors {
   /** Live + in-grace-archived repository GUIDs. */
   guids: ReadonlySet<string>;
-  /** Repository names (without `:tag`) — both live and archived-by-name. */
+  /** Repository names (without `:tag`), both live and archived-by-name. */
   repoNames: ReadonlySet<string>;
   /** Machine names from `resources.machines`. */
   machines: ReadonlySet<string>;
@@ -321,10 +321,7 @@ function isCertStaleByAnchor(
     case 'guid':
       return anchors.guids.has(a.anchor!) ? null : `unknown GUID ${a.anchor}`;
     case 'repo-name':
-      // Wildcard `*.<X>.<machine>.<baseDomain>` where X isn't a GUID. It's
-      // stale only when the machine itself is unknown — the head label could
-      // legitimately be a service subdomain (e.g. `*.erp.<machine>.<base>`),
-      // so we keep it as long as the machine is alive.
+      // Wildcard `*.<X>.<machine>.<baseDomain>` where X isn't a GUID. It's stale only when the machine itself is unknown, the head label could legitimately be a service subdomain (e.g. `*.erp.<machine>.<base>`), so we keep it as long as the machine is alive.
       return anchors.machines.has(a.machine!) ? null : `unknown machine ${a.machine}`;
     case 'service':
       return anchors.machines.has(a.machine!) ? null : `unknown machine ${a.machine}`;
@@ -344,7 +341,7 @@ function isCertStaleByAnchor(
  * in the active config. Mirrors the shape of `pruneStaleAcmeCerts` and
  * `pruneExpiredCerts` so callers can compose them in any order.
  *
- * `data[]` blobs are NOT touched here — they're regenerated from
+ * `data[]` blobs are NOT touched here, they're regenerated from
  * `Certificates[]` on the next `config cert-cache pull`, so manual blob
  * surgery would risk dropping a chain that still covers a kept name.
  */
@@ -376,7 +373,7 @@ export function pruneExpiredCerts(
   acme: AcmeJson,
   graceDays: number = DEFAULT_EXPIRY_GRACE_DAYS,
   now: Date = new Date(),
-  /** Override the expiry parser in tests — defaults to the real X509 parser. */
+  /** Override the expiry parser in tests, defaults to the real X509 parser. */
   parseExpiry: (certPem: string) => string | undefined = parseCertExpiry
 ): { cleaned: AcmeJson; removedCount: number } {
   const cutoffMs = now.getTime() - graceDays * MS_PER_DAY;
@@ -405,7 +402,7 @@ export function pruneExpiredCerts(
 
 /**
  * Connect to a machine via the shared connection pool, or reuse a
- * caller-provided SFTP session. `release` is a no-op for shared sessions —
+ * caller-provided SFTP session. `release` is a no-op for shared sessions ,
  * the caller keeps ownership of its own connection.
  */
 async function connectToMachine(
@@ -525,7 +522,7 @@ async function mergeWithLocalCache(
       );
     }
   } catch {
-    // Local cache corrupted — just use remote
+    // Local cache corrupted, just use remote
   }
 }
 

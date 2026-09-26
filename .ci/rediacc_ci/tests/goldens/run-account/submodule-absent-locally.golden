@@ -1,0 +1,8 @@
+# twin .ci/scripts/private/run-account.sh blob 3eeb89c8fed218f5937e2cb90e2210e72e218c47
+exit: 0
+--- stdout ---
+--- stderr ---
+⚠ Account server not available at <root>/private/account, skipping.
+⚠ CI is not 'true', so absence is a soft skip here; in CI it is a hard failure.
+--- calls ---
+[]

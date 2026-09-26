@@ -1,0 +1,20 @@
+# twin .ci/scripts/docker/retag-image.sh blob 5e261ceb531187621d6d95f32216a71516ae4d9d
+exit: 0
+--- stdout ---
+Usage: <root>/<SELF> --image NAME --from CI_TAG --to VERSION [--push-latest]
+       <root>/<SELF> --image-path PATH --from CI_TAG --to VERSION [--push-latest]
+       <root>/<SELF> --all --from CI_TAG --to VERSION [--push-latest]
+
+Options:
+  --image NAME       Re-tag image relative to PUBLISH_DOCKER_REGISTRY
+  --image-path PATH  Re-tag full image path (e.g., ghcr.io/rediacc/server)
+  --all              Re-tag all images in PUBLISH_IMAGES
+  --from TAG         Source CI tag
+  --to VERSION       Target semantic version
+  --push-latest      Also push :latest tag
+  --skip-if-exists   Skip if destination exists (idempotent)
+  --dry-run          Preview without executing
+
+Available images: renet rdc
+--- stderr ---
+--- calls ---

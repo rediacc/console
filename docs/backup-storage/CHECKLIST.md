@@ -45,7 +45,7 @@ Owner: 97604f47
       closed, proven both directions) + docs/backup-storage/08-cutover-runbook.md
 - [x] w7 Wave 5b-i: the PROBE BUCKET leg. `rediacc-backups-probe` created in R2
       (HEAD 404 before, 200 after; the probe name, never the bare
-      `rediacc-backups`), and `scripts/backup-cutover-preflight.sh` run against
+      `rediacc-backups`), and `scripts/ops/backup-cutover-preflight.sh` run against
       it: 6 checks, all passed — the first time that preflight has ever passed
       with a real store. The bucket immediately earned its keep: the tier-B
       delete probe found a latent data-loss defect in `deletePrefix` (string
@@ -60,12 +60,6 @@ Owner: 97604f47
       See 07-execution-record.md §9.
 
 <!--
-w6 was originally ONE row reading "integration, migration of real machines,
-cutover, decommission". It was split rather than ticked, because ticking it
-would have recorded migration, cutover and decommission as DONE when no machine
-has been migrated, nothing has been cut over, and rclone is still the only way
-to get data back. The credential-free half is genuinely complete; the rest is
-not mine to do. A handoff checklist that overstates is worse than one that is
-merely incomplete: the next session reads it as ground truth.
--->
+w6 was originally ONE row reading "integration, migration of real machines, cutover, decommission". It was split rather than ticked, because ticking it would have recorded migration, cutover and decommission as DONE when no machine has been migrated, nothing has been cut over, and rclone is still the only way to get data back. The credential-free half is genuinely complete; the
+rest is not mine to do. A handoff checklist that overstates is worse than one that is merely incomplete: the next session reads it as ground truth. -->
 

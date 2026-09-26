@@ -1,5 +1,5 @@
 /**
- * Derived-machine resolution (spec/03 §2.3, R2-F2) — the normative six-step
+ * Derived-machine resolution (spec/03 §2.3, R2-F2), the normative six-step
  * algorithm. `-m/--machine` disappears from repo verbs; every repo verb derives
  * its execution machine from the ref plus config placement, verifying the derived
  * answer against the machine before it acts.
@@ -7,7 +7,7 @@
  * This is a PURE function over a `PlacementView` (the config slices it needs) and
  * an injected `verifyMount` callback (step 5's remote round-trip). Keeping the
  * remote check injected is what lets the whole algorithm be unit-tested with
- * fixtures and no machine — the command layer wires the real config service and a
+ * fixtures and no machine, the command layer wires the real config service and a
  * real renet mount check; a read-only verb passes `readOnly: true` to skip step 5
  * (spec §2.3 tail).
  *
@@ -30,13 +30,13 @@ type StateDatastore = NonNullable<NonNullable<RdcConfig['state']>['datastores']>
 
 /** The config slices derived-machine resolution reads. */
 export interface PlacementView {
-  /** `resources.repositories` — families of structural tags. */
+  /** `resources.repositories`, families of structural tags. */
   families: Record<string, RepoFamily>;
-  /** `resources.datastores` — the named-datastore registry. */
+  /** `resources.datastores`, the named-datastore registry. */
   datastores: Record<string, DatastoreConfig>;
-  /** `state.datastores` — attach status (the routing hint step 5 verifies). */
+  /** `state.datastores`, attach status (the routing hint step 5 verifies). */
   stateDatastores: Record<string, StateDatastore>;
-  /** `resources.machines` — read only for cluster-membership @place acceptance. */
+  /** `resources.machines`, read only for cluster-membership @place acceptance. */
   machines: Record<string, MachineConfig>;
 }
 
@@ -49,17 +49,17 @@ export interface ResolveMachineOptions {
   readOnly?: boolean;
   /**
    * Destructive verbs whose doctrine is converge-to-absent (#45/#95: `repo
-   * delete`). A definite machine-arm absence is then NOT exit 12 — the resolve
+   * delete`). A definite machine-arm absence is then NOT exit 12, the resolve
    * succeeds with `imageAbsent: true` so the caller can skip the machine
    * dispatch and finish its config-side semantics. Found live: delete RETAINS
    * the config family by design ("may exist on other machines"), so deleting a
-   * repo whose image is already gone is a legitimate, expected sequence — the
+   * repo whose image is already gone is a legitimate, expected sequence, the
    * refusal only manufactured reconcile busywork.
    */
   absentOk?: boolean;
   /**
    * Step 5's cheap remote presence check. Resolves true when `machine` KNOWS the
-   * resolved tag's image (`repoGuid` appears in `repository_list`) — presence,
+   * resolved tag's image (`repoGuid` appears in `repository_list`), presence,
    * not mounted (a downed repo is unmounted and `repo up` must still work). The
    * `datastore` is the named-datastore arm's registry key (undefined = the
    * machine's implicit default datastore). Omitted => step 5 is skipped, which is
@@ -119,9 +119,7 @@ function resolveFamilyTag(
   parsedTag: string | undefined,
   view: PlacementView
 ): { family: RepoFamily; tag: string } {
-  // `in` guards, not `?.` — the PlacementView maps are typed non-undefined at
-  // the value (noUncheckedIndexedAccess is off), so a membership test is the
-  // codebase's lint-clean way to detect a missing key (as resolveStoredTag does).
+  // `in` guards, not `?.`, the PlacementView maps are typed non-undefined at the value (noUncheckedIndexedAccess is off), so a membership test is the codebase's lint-clean way to detect a missing key (as resolveStoredTag does).
   if (!(name in view.families)) {
     const known = Object.keys(view.families).sort();
     throw notFound(`repository "${name}" is not in this config.`, {
@@ -216,7 +214,7 @@ function assertPlaceMatches(
 
 /**
  * Step 5: verify the derived machine actually mounts the datastore before acting
- * (exit 12). A no-op for a read-only verb or when no verifier is injected — the
+ * (exit 12). A no-op for a read-only verb or when no verifier is injected, the
  * routing hint's own failure is the verification for those (spec §2.3 tail).
  */
 async function verifyBeforeExecuting(
@@ -237,8 +235,7 @@ async function verifyBeforeExecuting(
         `but ${candidate} does not mount it. Run "rdc config reconcile", then retry.`
     );
   }
-  // Converge-to-absent verbs (#45/#95) treat a definite absence as "already
-  // done" on the machine arm — the caller skips the dispatch.
+  // Converge-to-absent verbs (#45/#95) treat a definite absence as "already done" on the machine arm, the caller skips the dispatch.
   if (options.absentOk) return { imageAbsent: true };
   throw stateMismatch(
     `config places ${name} on ${candidate}, ` +
@@ -266,8 +263,7 @@ export async function resolveMachine(
     assertPlaceMatches(name, place, candidate, cluster, view);
   }
 
-  // Step 5: verify before executing — state is a routing hint, not truth. The
-  // resolved tag's GUID is the image the candidate machine must know.
+  // Step 5: verify before executing, state is a routing hint, not truth. The resolved tag's GUID is the image the candidate machine must know.
   const repoGuid = view.families[name].tags[tag].repositoryGuid;
   const { imageAbsent } = await verifyBeforeExecuting(
     name,

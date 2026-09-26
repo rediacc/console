@@ -28,15 +28,13 @@ const DocsSearchMount: React.FC<DocsSearchMountProps> = ({ categories, scope = '
 
   useEffect(() => {
     const open = () => setIsOpen(true);
-    // Delegated on `document`, so an Astro view transition swapping the header
-    // out does not need this island to rebind anything.
+    // Delegated on `document`, so an Astro view transition swapping the header out does not need this island to rebind anything.
     document.addEventListener('docs-search:open', open);
     return () => document.removeEventListener('docs-search:open', open);
   }, []);
 
   useEffect(() => {
-    // Cmd/Ctrl+K, or any other dispatcher of the site-wide modal's open event,
-    // closes this one. Mirrors the name resolution Navigation.tsx uses.
+    // Cmd/Ctrl+K, or any other dispatcher of the site-wide modal's open event, closes this one. Mirrors the name resolution Navigation.tsx uses.
     const globalEvent =
       (window as unknown as { SEARCH_HOTKEY_EVENT?: string }).SEARCH_HOTKEY_EVENT ?? 'search:open';
     const closeForGlobal = () => setIsOpen(false);

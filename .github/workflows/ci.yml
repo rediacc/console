@@ -29,18 +29,19 @@ on:
   # loop. A dispatch on main is schedule-equivalent BY CONSTRUCTION, not by
   # convention: `full_suite` is `github.event_name != 'push'` (true for both),
   # and "Generate channel context" yields an empty channel for anything that is
-  # not push or pull_request (both). assert-channel-for-event.sh has an explicit
+  # not push or pull_request (both). assert_channel_for_event has an explicit
   # workflow_dispatch arm asserting exactly that.
   workflow_dispatch:
 
-# Minimal default permissions — jobs that need more declare their own.
+# No default permissions: every job declares its own, below.
 # NOTE: `statuses: write` was removed. Nothing here ever wrote a commit status,
 # and the required check ("CI Complete") is bound to the github-actions app —
 # the same app that issues every job's GITHUB_TOKEN — so granting it repo-wide
 # handed PR-controlled code a plausible way to post that context itself.
-permissions:
-  contents: read
-  packages: read    # Most jobs pull from GHCR
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Supersede-cancellation, which was previously absent rather than disabled.
 #
@@ -96,6 +97,12 @@ jobs:
       contents: read
       packages: read
       checks: read
+      # validate-pr.cjs calls pulls.get AND pulls.listFiles on github.token.
+      # listFiles is NOT wrapped in a try/catch the way pulls.get is, so it is
+      # the endpoint's documented scope or a hard failure. This worked without
+      # the grant only because console is public; public-ness is not a
+      # permission, so declare it.
+      pull-requests: read
       # For the scope-engine shadow step only: it calls `gh run list` and
       # `gh run download` to look for an attested skip-plan on an ancestor
       # commit. Read-only, and the step cannot fail the job.
@@ -129,7 +136,7 @@ jobs:
       # cannot redden the nightly, whose reds should mean "main is broken",
       # not "the world moved"; 5 of 8 nightlies before 2026-08-04 were red on
       # external drift alone). Consumed by ci-quality.yml steps via the
-      # run-external-gate.sh wrapper; push never reaches quality (full_suite).
+      # run_external_gate wrapper; push never reaches quality (full_suite).
       external_quality: ${{ github.event_name != 'pull_request' && 'soft' || (contains(github.event.pull_request.labels.*.name, 'no-external-quality') && 'skip' || 'hard') }}
       # media_quality: TWO-state control for the gates that read in-flight
       # tutorial media (recorded .cast files and the transcript/audio/parity
@@ -226,11 +233,13 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+            FULL_CI > BWS_FULL_CI
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -263,7 +272,7 @@ jobs:
           # checks:read, which the app-token presets do not carry.
           CHECKS_TOKEN: ${{ github.token }}
         run: |
-          .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.initialize --output "$GITHUB_OUTPUT"
 
       - name: Generate channel context
         id: staging
@@ -285,14 +294,14 @@ jobs:
       - name: Assert channel matches event
         # Guard against someone reintroducing a dryrun-<sha> fallthrough
         # for schedule events.
-        run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_channel_for_event "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
       # LIVE as of D-1: the `run_<key>` outputs this step writes now gate 17
       # jobs. It was shadow-only until the reconciler had a clean run of real
       # PR traffic behind it.
       #
       # What "live" does and does not mean here. The step still always exits 0
-      # (scope-shadow.sh ends in an unconditional `exit 0` and every command
+      # (rediacc_ci.ci.scope_shadow ends in an unconditional `return 0` and every command
       # inside it is `|| true`-guarded), and it still emits nothing but
       # `run_<key>=false` lines for keys it rules OUT. So a failure, a timeout,
       # or a shallow clone produces no output lines at all, every consumer's
@@ -301,7 +310,7 @@ jobs:
       # reason: the script owns its own success, which keeps the guarantee
       # where the logic is.
       #
-      # OUTPUT_FILE is REQUIRED, not decoration. scope-shadow.sh treats an
+      # OUTPUT_FILE is REQUIRED, not decoration. rediacc_ci.ci.scope_shadow treats an
       # unset OUTPUT_FILE as "local run, decide nothing" and returns before
       # writing a single line, so dropping this prefix does not fall back to
       # $GITHUB_OUTPUT -- it silently disables scoping while every log line
@@ -317,15 +326,22 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           # Two independent full-CI overrides, both fail-open in the same
           # direction: FORCE_FULL_CI is the repo-wide kill switch (set the
-          # `FULL_CI` repository variable to disable scoping for everyone
-          # without a code change), FULL_CI_LABEL is the per-PR escape hatch
-          # (label a PR `full-ci` when you want the whole fleet on one commit).
+          # `FULL_CI` Bitwarden secret in ci-shared to `full-ci-on` to disable
+          # scoping for everyone without a code change), FULL_CI_LABEL is the
+          # per-PR escape hatch (label a PR `full-ci` when you want the whole
+          # fleet on one commit).
           #
-          # The repository variable must be the exact string `true`. The script
-          # compares literally, so `FULL_CI=1` or `FULL_CI=yes` reads as OFF
-          # and the kill switch does nothing. FULL_CI_LABEL needs no such care:
+          # THE STORED VALUE IS A SENTINEL, NOT A BOOLEAN, and the expression
+          # below maps it to the literal `true` the script compares against.
+          # bitwarden/sm-action masks every value it fetches, so a stored `true`
+          # or `false` would mask that word across this whole job, and a job
+          # output containing a masked value is dropped by the runner: this
+          # job's thirty-odd `run_*` outputs would vanish. Bitwarden also
+          # refuses an empty value, so the switch cannot be "unset" either;
+          # `full-ci-off` is its resting state. Any value other than
+          # `full-ci-on` reads as OFF. FULL_CI_LABEL needs no such care:
           # contains() already yields true or false.
-          FORCE_FULL_CI: ${{ vars.FULL_CI }}
+          FORCE_FULL_CI: ${{ env.BWS_FULL_CI == 'full-ci-on' && 'true' || '' }}
           FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
           # The PRE-EXISTING (non-scope) skip conditions, recorded into the plan
           # so the reconciler can tell "skipped because scope said so" from
@@ -338,7 +354,7 @@ jobs:
           FULL_SUITE: ${{ github.event_name != 'push' }}
           POINTER_BUMP_ONLY: ${{ steps.init.outputs.pointer_bump_only }}
           IS_BOT: ${{ steps.init.outputs.is_bot }}
-        run: OUTPUT_FILE="$GITHUB_OUTPUT" .ci/scripts/ci/scope-shadow.sh
+        run: OUTPUT_FILE="$GITHUB_OUTPUT" PYTHONPATH=.ci python3 -m rediacc_ci.ci.scope_shadow
 
       # if-no-files-found: ignore is what makes this succeed unconditionally:
       # the shadow step may legitimately produce neither file (no base/head
@@ -395,10 +411,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .ci/scripts
             .github/actions
             .ci/config
+            .ci/rediacc_ci
 
       - name: Cancel older runs
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-cancel-push')
@@ -406,7 +424,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/ci/cancel-older-runs.sh --timeout 60 --poll-interval 10
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.cancel_older_runs --timeout 60 --poll-interval 10
 
       # The monitor itself lives in watchdog-monitor.yml as a chain of short
       # ubuntu-slim generations: the 1-vCPU runner's 15-minute job cap is a
@@ -423,7 +441,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          .ci/scripts/ci/dispatch-watchdog.sh --run-id "$GITHUB_RUN_ID" \
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_watchdog --run-id "$GITHUB_RUN_ID" \
             --generation 1 --pr-number "${PR_NUMBER:-}" --head-ref "${HEAD_REF:-}"
 
   # ============================================================================
@@ -468,18 +486,6 @@ jobs:
         with:
           script: return await require('./.ci/scripts/ci/label-guide-comment.cjs')({github, context, core})
 
-      # A SECOND STEP HERE, not a second job. It needs exactly what this job
-      # already holds -- `pull-requests: write` plus the `.ci/scripts` sparse
-      # checkout -- and the argument in this job's header applies unchanged: a
-      # whole job to buy one more comment is the wrong trade, and a second job
-      # would also need its own entry in `needs` and in assert-ci-complete.sh.
-      # Same idempotence contract: it rewrites in place and writes nothing when
-      # the body is unchanged.
-      - name: Post the autopilot guide
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
-        with:
-          script: return await require('./.ci/scripts/ci/autopilot-guide-comment.cjs')({github, context, core})
-
   # ============================================================================
   # COLUMN 2: QUALITY
   # Jobs: quality (reusable workflow)
@@ -487,6 +493,13 @@ jobs:
   # ============================================================================
   quality:
     name: Quality
+    # ci-quality.yml's quality-static and quality-code declare
+    # pull-requests: read for the pulls endpoints they hit on github.token.
+    # A called workflow can never exceed its caller, so the caller must carry
+    # it too or GitHub fails the run at startup with no job and no log.
+    permissions:
+      contents: read
+      pull-requests: read
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml
@@ -517,6 +530,9 @@ jobs:
   # ============================================================================
   run-sh-tests:
     name: Entry Point (run.sh)
+    # Checkout plus the local profiler action. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true'
     runs-on: ubuntu-slim
@@ -539,16 +555,6 @@ jobs:
       - name: run.sh entry-point controls
         run: .ci/scripts/test/gates/test-run-sh.sh
 
-      - name: devbox probe controls
-        # Hermetic: fake docker binaries on a temp PATH, never the real daemon,
-        # so these run on a bare runner with no container available.
-        run: .ci/scripts/test/gates/test-devbox-probes.sh
-
-      - name: devbox hostname controls
-        # Hermetic: pure string/slug functions plus a real git fixture for the
-        # detached-HEAD case. No docker daemon, no network.
-        run: .ci/scripts/test/gates/test-devbox-slug.sh
-
       - name: gate toolchain resolver controls
         run: .ci/scripts/test/gates/test-toolchain.sh
 
@@ -564,6 +570,11 @@ jobs:
   # ============================================================================
   review-gate:
     name: Review Gate
+    # Reads review threads, review comments and report replies - but every one
+    # of those runs on the pr-read-preset App token, NOT github.token. This job
+    # looks like it needs pull-requests: read and does not.
+    permissions:
+      contents: read
     needs: [initialize, quality]
     runs-on: ubuntu-slim
     timeout-minutes: 14
@@ -571,8 +582,31 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because all THREE checks below are thin shims whose
+          # logic was ported out of them. check_resolved_threads.py says so in
+          # its own header -- "The logic lives in
+          # rediacc_ci.quality.resolved_threads; this file exists so the
+          # registry can invoke the port BY PATH" -- and each imports _cipath,
+          # which REFUSES to load when `.ci/rediacc_ci/__init__.py` is absent.
+          # A cone that stops at .ci/scripts therefore gets the shim and not
+          # the code, and the job dies with `RuntimeError: _cipath computed
+          # .../.ci as the .ci directory, but there is no rediacc_ci package in
+          # it` before any thread is read (job 104639221260).
+          #
+          # THAT CRASH IS NOT A VERDICT. It reports no unresolved threads
+          # because it never got far enough to look, while presenting as a
+          # Review Gate failure -- the shape check:ci-checkout-cone was written
+          # for, one level deeper than it reaches: it corroborates INVOKED
+          # paths, and says so deliberately, so a transitive import is outside
+          # what it can see.
+          #
+          # Swept before fixing: 116 files under .ci/scripts import _cipath,
+          # and this is the ONLY job that both invokes one and stops its cone
+          # short. All three of its checks share the fault and this one line
+          # fixes all three.
           sparse-checkout: |
             .ci/scripts
+            .ci/rediacc_ci
             .github/actions
             .ci/config
 
@@ -586,11 +620,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           # pr-read, not cd: the three scripts below only READ review state.
           # check-resolved-threads.sh / check-review-comments.sh /
@@ -599,13 +634,13 @@ jobs:
           preset: pr-read
           repositories: console
       - name: Check resolved threads
-        run: .ci/scripts/quality/check-resolved-threads.sh
+        run: .ci/scripts/quality/check_resolved_threads.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Check unreplied review comments
-        run: .ci/scripts/quality/check-review-comments.sh
+        run: .ci/scripts/quality/check_review_comments.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -615,7 +650,7 @@ jobs:
       # would otherwise be ignorable. Requires a substantive reply that
       # references the newest finished report by comment id.
       - name: Check unreplied review reports
-        run: .ci/scripts/quality/check-review-report-replies.sh
+        run: .ci/scripts/quality/check_review_report_replies.py
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -634,6 +669,10 @@ jobs:
   # ============================================================================
   stripe-sandbox:
     name: Stripe Sandbox
+    # First checkout on GITHUB_TOKEN; the private/account submodule comes in on
+    # the readonly-preset App token.
+    permissions:
+      contents: read
     needs: [initialize, quality, review-gate]
     runs-on: ubuntu-latest  # Needs Docker for account server
     timeout-minutes: 30
@@ -649,13 +688,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/scripts, because the compare step below RUNS one. It used to be
+          # 18 inline lines and needed no file; extracting it to
+          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+          # into "No such file or directory" three steps later (job 100795527686).
           sparse-checkout: |
             .github/actions
             .ci/config
-            # .ci/scripts, because the compare step below RUNS one. It used to be
-            # 18 inline lines and needed no file; extracting it to
-            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-            # into "No such file or directory" three steps later (job 100795527686).
             .ci/scripts
 
       - name: Fetch secrets from Bitwarden
@@ -673,10 +712,11 @@ jobs:
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
+            GITHUB_APP_ID > BWS_APP_ID
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
@@ -688,9 +728,8 @@ jobs:
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         with:
-          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -711,7 +750,7 @@ jobs:
 
       - name: Start account server
         id: deploy
-        run: bash .ci/scripts/infra/ci-start-account.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
         env:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -723,7 +762,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: bash .ci/scripts/infra/ci-stop.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_stop
 
 
   # ============================================================================
@@ -738,9 +777,13 @@ jobs:
   build-renet:
     name: Build (Renet)
     needs: [initialize]
+    # packages: READ, not write. No job in ci-build-renet.yml pushes: its one
+    # registry step is extract-renet, which does `docker create` against a ghcr
+    # image to copy the binary out of it. The write grant this replaces was
+    # never reachable by any step in the callee.
     permissions:
       contents: read
-      packages: write   # GHCR push
+      packages: read
     # pointer_bump_only gates the whole expensive pipeline here: build-cli,
     # build-docker(-fast) and everything needing them skip transitively when
     # this job skips (their ifs check needs.<build>.result == 'success').
@@ -798,9 +841,11 @@ jobs:
   build-cli:
     name: Build (CLI)
     needs: [initialize, build-renet]
+    # No packages: write. Unlike build-docker/build-renet, the callee
+    # (ci-build-cli.yml) declares contents: read and its one job touches no
+    # registry at all, so a packages grant here could never reach a step.
     permissions:
       contents: read
-      packages: write   # GHCR push
     if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-cli.yml
     with:
@@ -815,6 +860,9 @@ jobs:
   # ============================================================================
   update-flow-test:
     name: Tests + Infra / Update Flow
+    # The callee declares contents: read and makes no API call.
+    permissions:
+      contents: read
     needs: [initialize, build-cli]
     if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-cli.result == 'success' && needs.initialize.outputs.run_update_flow != 'false'
     uses: ./.github/workflows/ct-update-flow.yml
@@ -829,6 +877,9 @@ jobs:
   # ============================================================================
   package-tests:
     name: Tests + Infra / Linux Packages
+    # Checkout, then apt/nfpm locally. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -839,7 +890,7 @@ jobs:
       - name: Install packaging tools
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c rpm
-          .ci/scripts/build/ensure-nfpm.sh >>"$GITHUB_PATH"
+          PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
       - name: Run Linux package tests
         run: .ci/scripts/test/test-linux-packages.sh
@@ -855,6 +906,10 @@ jobs:
   # ============================================================================
   check-release-state:
     name: Check Release State
+    # Checkout with full history; the release-state bijection is checked
+    # against local git tags and R2. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -887,7 +942,7 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           IN_FLIGHT_VERSION: v${{ needs.initialize.outputs.next_version }}
-        run: .ci/scripts/quality/check-release-state.sh
+        run: .ci/scripts/quality/check_release_state.py
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
@@ -920,7 +975,7 @@ jobs:
       # advance the R2 channel pointer either -- an edge manifest naming an
       # untagged version breaks `rdc` auto-update and, worse, feeds
       # promote-stable a `ref: v<version>` that does not exist. See
-      # agent/PLAN-skip-release-gates-r2-manifest.md.
+      # agent/plans/PLAN-skip-release-gates-r2-manifest.md.
       skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
@@ -935,6 +990,12 @@ jobs:
   # ============================================================================
   tests:
     name: Tests + Infra
+    # packages: read is REQUIRED: ct-tests.yml logs into ghcr with github.token
+    # and PULLS. It was previously inherited from the workflow default, and a
+    # reusable callee cannot add a scope its caller did not pass.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, build-docker-fast]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
     # CALLED on push-to-main: its migration-test job has to run there (it
@@ -973,6 +1034,12 @@ jobs:
   # ============================================================================
   ops-tests:
     name: OPS Tests
+    # packages: read is REQUIRED and, until now, came from nothing local at
+    # all: ci-ops-test.yml declared no permissions of its own, so its ghcr PULL
+    # (github.token) was protected only by this workflow default.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, quality, review-gate, build-renet]
     # The explicit pointer_bump_only clause is load-bearing: this if never
     # references its build-renet need, so under always() the job would RUN on
@@ -997,6 +1064,12 @@ jobs:
   # ============================================================================
   elite-run-test:
     name: Elite Run
+    # packages: read for ci-pull-images.sh, which logs into ghcr with
+    # secrets.GITHUB_TOKEN and pulls. The recursive submodule checkout uses
+    # the readonly-preset App token.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, build-docker-fast]
     if: >-
       always() &&
@@ -1021,11 +1094,12 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
@@ -1037,7 +1111,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Set Image Tags
-        run: .ci/scripts/ci/set-image-tags.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.set_image_tags
         env:
           IMAGE_TAG: ${{ needs.initialize.outputs.image_tag }}
           WEB_TAG: ${{ needs.initialize.outputs.web_tag }}
@@ -1048,13 +1122,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           TAG: ${{ env.TAG }}
-        run: .ci/scripts/infra/ci-pull-images.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_pull_images
 
       - name: Start Elite Services
         env:
           TAG: ${{ env.TAG }}
           CI_MODE: 'true'
-        run: .ci/scripts/infra/ci-start-elite.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_elite
 
       - name: Run Health Check
         run: ./private/elite/scripts/healthcheck.sh
@@ -1067,7 +1141,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: .ci/scripts/infra/ci-stop-elite.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_stop_elite
 
   # ============================================================================
   # COLUMN 4E: BREAKPOINT LIFECYCLE
@@ -1092,6 +1166,10 @@ jobs:
   # ============================================================================
   breakpoint-lifecycle:
     name: Breakpoint Lifecycle
+    # Sparse checkout, then a Cloudflare quick tunnel that holds no credential
+    # by design. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize]
     runs-on: ubuntu-slim
     timeout-minutes: 8 # CHECK 3: slim jobs must declare <= 14
@@ -1143,6 +1221,13 @@ jobs:
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
+    # Checkout on GITHUB_TOKEN, private submodules on the readonly-preset App
+    # token, and a Cloudflare API-token deploy - not OIDC, so no id-token.
+    # This job deliberately has no environment: block, so it creates no
+    # deployment record and needs no deployments: write; see the comment below
+    # on the 25 orphaned pr-* environments that were deleted by hand.
+    permissions:
+      contents: read
     # `tests` was in `needs` and gated in the `if:`, and this job consumes
     # NOTHING from it. Its only artifact is `preview-pages-<sha>`, uploaded by
     # cd-stage.yml:223 through the `stage-artifacts` job, which is still
@@ -1168,10 +1253,10 @@ jobs:
     # A job-level `environment:` makes GitHub create the environment OBJECT and a
     # deployment record. This job created `pr-N` for every PR, and nothing in CI
     # can clean the objects up again: deleting one needs Administration:write,
-    # which check-no-app-admin-perm.sh deliberately forbids the CI App from
+    # which check:ci-app-admin-perm deliberately forbids the CI App from
     # holding, so a leaked token cannot delete `edge` or `stable`. The result was
     # 25 empty `pr-*` shells on /deployments, deleted by hand on 2026-09-03 with
-    # .ci/scripts/housekeeping/cleanup-pr-environments.sh.
+    # rediacc_ci.housekeeping.cleanup_pr_environments.
     #
     # Nothing depended on the block. Every secret and variable this job reads
     # resolves at repo or org scope (checked against the live scopes, including
@@ -1189,13 +1274,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/scripts, because the compare step below RUNS one. It used to be
+          # 18 inline lines and needed no file; extracting it to
+          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
+          # into "No such file or directory" three steps later (job 100795527686).
           sparse-checkout: |
             .github/actions
             .ci/config
-            # .ci/scripts, because the compare step below RUNS one. It used to be
-            # 18 inline lines and needed no file; extracting it to
-            # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-            # into "No such file or directory" three steps later (job 100795527686).
             .ci/scripts
 
       - name: Fetch secrets from Bitwarden
@@ -1218,10 +1303,16 @@ jobs:
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
             AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            ROOT_EMAIL > BWS_ROOT_EMAIL
+            AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
+            AWS_SES_FROM > BWS_AWS_SES_FROM
+            AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
@@ -1234,9 +1325,8 @@ jobs:
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         with:
-          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -1271,13 +1361,14 @@ jobs:
         run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account
         working-directory: private/account/web
         env:
-          # PR previews use the per-PR widget minted above, NOT vars.TURNSTILE_SITE_KEY.
+          # PR previews use the per-PR widget minted above, NOT the production
+          # TURNSTILE_SITE_KEY (once vars.TURNSTILE_SITE_KEY, now a Bitwarden secret).
           # The prod sitekey's widget is hostname-locked to apex/regional domains
           # and cannot include workers.dev subdomains without burning hostname slots.
           VITE_TURNSTILE_SITE_KEY: ${{ steps.create-widget.outputs.sitekey }}
@@ -1310,15 +1401,15 @@ jobs:
 
       # Deploy single combined pr-N Worker (static assets + embedded account server)
       - name: Deploy preview worker
-        run: .ci/scripts/deploy/deploy-www.sh --name "pr-${PR_NUMBER}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "pr-${PR_NUMBER}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Set preview worker secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # ONE NAME EVERYWHERE: the left side is the name the builder READS
           # and the key it WRITES into the Worker (private/account/src/types/
           # env.ts). The right side keeps the GitHub secret's current name.
@@ -1330,16 +1421,16 @@ jobs:
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
-          ROOT_EMAIL: ${{ vars.ROOT_EMAIL }}
+          ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
           AWS_SES_ACCESS_KEY_ID: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
           AWS_SES_SECRET_ACCESS_KEY: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
-          AWS_SES_REGION: ${{ vars.AWS_SES_REGION_EU }}
+          AWS_SES_REGION: ${{ env.BWS_AWS_SES_REGION_EU }}
           # Per-PR Turnstile secret comes from the create-widget step above,
           # paired with the per-PR sitekey baked into the Vite build.
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
-          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
-          AWS_SES_CONFIGURATION_SET: ${{ vars.AWS_SES_CONFIGURATION_SET }}
-        run: .ci/scripts/deploy/set-preview-worker-secrets.sh
+          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
+          AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
 
       - name: Deployment summary
         run: |
@@ -1360,6 +1451,10 @@ jobs:
   # ============================================================================
   smoke-test-preview:
     name: Smoke Test Preview
+    # Sparse checkout, then D1 seeding on a Cloudflare API token. The app-token
+    # step here was deliberately removed; no GitHub API remains.
+    permissions:
+      contents: read
     needs: [initialize, deploy-preview]
     runs-on: ubuntu-latest
     timeout-minutes: 14
@@ -1372,6 +1467,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .github/actions
             .ci/scripts
@@ -1382,6 +1478,7 @@ jobs:
             package-lock.json
             tsconfig.json
             .ci/config
+            .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
@@ -1395,13 +1492,13 @@ jobs:
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
 
       # No app-token step here on purpose: this job checks out no submodules
       # and `.npmrc` sets allow-git=none, so nothing needs authenticated git.
       # It previously minted a write-scoped token that no step ever consumed.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-node-npm
         with:
-          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -1415,11 +1512,11 @@ jobs:
         run: .ci/scripts/test/seed-smoke-test.sh
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
 
       - name: Wait for preview worker
-        run: .ci/scripts/deploy/wait-for-preview-worker.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.wait_for_preview_worker
 
       - name: Run license smoke test
         run: npx tsx .ci/scripts/test/smoke-test-preview.ts
@@ -1435,6 +1532,10 @@ jobs:
   # ============================================================================
   validate-install:
     name: Validate Install Methods
+    # Matches the callee: checkout plus a ghcr PULL.
+    permissions:
+      contents: read
+      packages: read
     needs: [initialize, stage-artifacts]
     # THE CHANNEL CONDITION IS LOAD-BEARING, and its absence was a standing red.
     #
@@ -1443,7 +1544,7 @@ jobs:
     # schedule run that step never executes, so the output is EMPTY, and empty
     # is not the string 'false' -- the guard reads like one and admits the job.
     #
-    # It then runs with channel='' (assert-channel-for-event.sh requires that
+    # It then runs with channel='' (assert_channel_for_event requires that
     # for schedule), so docker_tag is '' and constants.sh:27 rewrites it to
     # `latest`. The job pulls the last RELEASED image and asserts next_version
     # against it, which fails whenever main carries commits since the last tag.
@@ -1476,6 +1577,9 @@ jobs:
   # ============================================================================
   validate-promote:
     name: Validate Promotion
+    # Checkout, then aws s3api against R2 and the Cloudflare API. No GitHub API.
+    permissions:
+      contents: read
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     # 60, not 30, because on `main` this job has been running within MINUTES of
@@ -1561,8 +1665,9 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - name: Simulate promotion (copy + sed-fix)
-        run: .ci/scripts/deploy/simulate-promotion.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.simulate_promotion
         env:
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
@@ -1571,7 +1676,7 @@ jobs:
           AWS_MAX_ATTEMPTS: 10
           AWS_RETRY_MODE: adaptive
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
 
       - name: Test APT install from promoted channel
         run: |
@@ -1644,14 +1749,23 @@ jobs:
       actions: read
     if: always() && !cancelled()
     steps:
-      # The tier logic now lives in .ci/scripts/ci/assert-ci-complete.sh, so the
-      # repo must be on disk. Sparse: this job needs only that script + its lib.
+      # The tier logic lives in rediacc_ci.ci.assert_ci_complete, so the repo
+      # must be on disk. Sparse, and BOTH entries are load-bearing.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .ci/scripts
+          # .ci/rediacc_ci, because the step below runs `python3 -m
+          # rediacc_ci.ci.assert_ci_complete` and a cone that stops at
+          # .ci/scripts does not put that package on disk at all. The same
+          # class as the resolved-threads cone above: the job would die with
+          # ModuleNotFoundError before reading a single job result, and a
+          # crash is not a verdict. Added 2026-09-21, when the bash twin this
+          # cone was written for was already gone from the `run:` line.
+          sparse-checkout: |
+            .ci/scripts
+            .ci/rediacc_ci
 
       - name: Check all jobs passed
-        run: .ci/scripts/ci/assert-ci-complete.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_ci_complete
         env:
           POINTER_BUMP_ONLY: ${{ needs.initialize.outputs.pointer_bump_only }}
           RESULT_INITIALIZE: ${{ needs.initialize.result }}
@@ -1696,7 +1810,7 @@ jobs:
           # treats the same way every other consumer does: as "full CI", not as
           # an error.
           SCOPE_MODE: ${{ needs.initialize.outputs.scope_mode }}
-        run: .ci/scripts/ci/scope-reconcile-shadow.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.scope_reconcile_shadow
   # ============================================================================
   # FINALIZE RELEASE SENTINEL
   # Atomic commit point of the release pipeline. Writes `.released` sentinels
@@ -1732,10 +1846,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             .ci/scripts
             .github/actions
             .ci/config
+            .ci/rediacc_ci
 
       - name: Fetch secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
@@ -1784,7 +1900,7 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
         run: |
-          .ci/scripts/deploy/write-release-sentinel.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.write_release_sentinel \
             --version "${{ needs.initialize.outputs.next_version }}" \
             --channel "${{ needs.initialize.outputs.channel }}" \
             --commit-sha "${{ github.sha }}"
@@ -1809,7 +1925,7 @@ jobs:
         if: needs.initialize.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/ci/dispatch-release.sh --dispatch-only
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_release --dispatch-only
 
   # (Removed: assert-finalize-sentinel-ran was a single-purpose sentinel
   # job whose only step asserted that finalize-release-sentinel did not
@@ -1839,14 +1955,21 @@ jobs:
   pipeline-sentinel:
     name: Pipeline Sentinel
     runs-on: ubuntu-slim
+    # Sparse checkout, then string arithmetic over needs.*.result. No API.
+    permissions:
+      contents: read
     needs: [initialize, finalize-release-sentinel]
     timeout-minutes: 5
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # .ci/rediacc_ci, for the reason the ci-complete cone above gives:
+          # the step below runs `python3 -m rediacc_ci.ci.assert_job_succeeded`
+          # and this cone did not put that package on disk.
           sparse-checkout: |
             .ci/scripts
+            .ci/rediacc_ci
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
-        run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_job_succeeded finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"

@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Every test/control file must be REACHED by something that CI runs.
 
-THE DEFECT THIS CLOSES, paid for on 2026-08-23. `.claude/hooks/stop/
-test-teammate-idle.py` was added with 20 controls, passed 20/20 when invoked by
-hand, was committed, and ran NOWHERE. Its only mention anywhere else in the tree
-was inside a code comment. Both existing wiring gates were green throughout:
+THE DEFECT THIS CLOSES, paid for on 2026-08-23. `.claude/hooks/stop/ test-teammate-idle.py` was added with 20 controls, passed 20/20 when invoked by hand, was committed, and ran NOWHERE. Its only mention anywhere else in the tree was inside a code comment. Both existing wiring gates were green throughout:
 
   * `check-ci-parity.ts` compares the MANIFEST against the CI workflow surface.
     A file absent from the manifest is absent from both sides, so the two agree
@@ -12,63 +9,208 @@ was inside a code comment. Both existing wiring gates were green throughout:
   * `check_gate_reachability_coverage.py` asks whether every MANIFEST
     registration is reachable. It cannot ask about a file that never registered.
 
-Both answer "is what we declared wired up?". Neither answers "is there anything
-here we forgot to declare?" -- and that second question is the one an orphan
-fails. A test nobody runs is worse than no test: it reports 20/20 to whoever
-runs it by hand, and it is counted as coverage in review.
+Both answer "is what we declared wired up?". Neither answers "is there anything here we forgot to declare?" -- and that second question is the one an orphan fails. A test nobody runs is worse than no test: it reports 20/20 to whoever runs it by hand, and it is counted as coverage in review.
 
-WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model
-the runner; it is trying to catch a file with NO path to CI at all. So a file is
-reached if its basename appears anywhere outside itself in a shell script, a
-manifest, a workflow, or package.json. That admits a reference from an
-unreachable caller -- but a caller that is itself unreachable is a manifest
-problem, which is precisely what the other two gates DO see. The gaps are
-complementary on purpose.
+WHAT COUNTS AS REACHED, deliberately generous. This gate is not trying to model the runner; it is trying to catch a file with NO path to CI at all. There are four ways in, and they are checked in this order:
 
-ANTI-VACUITY. Zero discovered files is a failure, not a pass: a glob that stops
-matching would otherwise report success having checked nothing. The success line
-prints the counts so a collapse is visible rather than silent.
+  1. the file sits under a pytest root the ini collects (collected_roots),
+  2. a gate manifest entry NAMES it, read structurally from gates.lock.json
+     rather than text-matched in manifest.ts (manifest_tokens),
+  3. its basename appears outside itself, on a non-comment line, in a shell
+     script, a workflow, or package.json (referencing_files),
+  4. it sits directly in a directory `test_hooks_delegates.py` globs `test-*.py`
+     from at runtime (delegate_globbed).
+
+Way 4 exists because way 3 stopped being true for a class of file on 2026-09-22: `test_hooks_delegates.py`'s TAILED table moved from a hand-maintained list of literal filenames to a runtime glob, closing the gap that let `test-block_push_to_protected_branch.py` ship wired to nothing for a full session (its test file existed, passed by hand, and was never in the list). A
+glob has no literal basenames for `referencing_files` to find, so the files it now discovers need their own "collected, not mentioned" criterion -- the same shape as `collected_roots()` for pytest.
+
+That admits a reference from an unreachable caller -- but a caller that is itself unreachable is a manifest problem, which is precisely what the other two gates DO see. The gaps are complementary on purpose.
+
+ANTI-VACUITY. Zero discovered files is a failure, not a pass: a glob that stops matching would otherwise report success having checked nothing. The success line prints the counts so a collapse is visible rather than silent.
+
+---- gate ----
+step: Test-file orphan check
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
+import json
 import pathlib
 import re
 import subprocess
 import sys
+import tomllib
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 
-# Where test/control files live. Kept explicit rather than globbing the whole
-# tree: node_modules and vendored fixtures are full of test-*.js that this gate
-# has no business ruling on.
+# Where test/control files live. Kept explicit rather than globbing the whole tree: node_modules and vendored fixtures are full of test-*.js that this gate has no business ruling on. THE ONE EDIT, per the driver contract: all three pytest roots land together rather than one per workstream. Six test files under .ci/rediacc_ci/tests and the shellscan differential under
+# .claude/rediacc_hooks/tests were invisible to this gate until now, which is the shape it exists to catch -- a test file nothing runs.
 SEARCH_DIRS = (
     ".claude/hooks",
+    ".claude/rediacc_hooks/tests",
     ".ci/scripts/test/gates",
+    ".ci/rediacc_ci/tests",
 )
 NAME_RE = re.compile(r"^test[-_].*\.(py|sh|ts)$")
 
-# Files that legitimately run only by hand, each with a stated reason. Adding to
-# this list is a deliberate act; forgetting to wire a NEW test file is not,
-# which is the asymmetry that makes this gate work.
+# Files that legitimately run only by hand, each with a stated reason. Adding to this list is a deliberate act; forgetting to wire a NEW test file is not, which is the asymmetry that makes this gate work.
 EXEMPT = {
     # <basename>: reason
 }
 
-# Where a reference would live if the file were wired. DIRECTORIES, not globs.
-# `.claude/hooks/**/*.sh` was the first spelling and it silently missed
-# `.claude/hooks/test-hooks.sh` -- the single most likely caller in the tree --
-# because `**/` requires at least one intermediate directory and that file sits
-# at depth 1. The gate reported the freshly-wired file as an orphan, which is
-# how the bug was caught: a pathspec that is wrong in the narrowing direction
-# produces FALSE POSITIVES here, so it announced itself. Had it been wrong the
-# other way it would have gone quiet instead.
+# Where a reference would live if the file were wired. DIRECTORIES, not globs. `.claude/hooks/**/*.sh` was the first spelling and it silently missed `.claude/hooks/test-hooks.sh` -- the single most likely caller in the tree -- because `**/` requires at least one intermediate directory and that file sits at depth 1. The gate reported the freshly-wired file as an orphan, which is how
+# the bug was caught: a pathspec that is wrong in the narrowing direction produces FALSE POSITIVES here, so it announced itself. Had it been wrong the other way it would have gone quiet instead.
+#
+# `scripts/ci-runner` USED TO BE IN THIS TUPLE and was removed on 2026-09-06 (W2.4a). It was here for exactly one reason -- to text-match a basename inside the 5,700-line TypeScript literal in manifest.ts -- and registration is not a text fact, it is a structured one. See manifest_reached() below, which reads the committed JSON projection instead. The two were run side by side over
+# the live tree before the swap; the evidence is in that function's docstring.
+#
+# `.claude/rediacc_hooks/tests` AND `.py` JOINED THE TUPLES when `.claude/hooks/test-hooks.sh` was retired, and the pair is one change rather than two. Eleven control suites under `.claude/hooks/` were named by that harness and by nothing else; their new caller is `test_hooks_delegates.py`, which pytest collects because the directory is a `testpaths` root. Adding the directory
+# without the suffix would have matched no file in it, and the suffix without the directory would have widened four unrelated roots, so this gate would have gone on reporting eleven wired suites as orphans -- a pathspec wrong in the narrowing direction, which this comment already records once.
 REF_DIRS = (
     ".claude/hooks",
+    ".claude/rediacc_hooks/tests",
     ".ci/scripts",
     ".github/workflows",
-    "scripts/ci-runner",
     "package.json",
 )
-REF_SUFFIXES = (".sh", ".yml", ".yaml", ".ts", ".json")
+REF_SUFFIXES = (".sh", ".yml", ".yaml", ".ts", ".json", ".py")
+
+# The manifest's machine-readable projection. Generated by scripts/gen/gen-gates-lock.ts, kept faithful to scripts/ci-runner/manifest.ts by check:ci-gates-lock.
+LOCK = REPO / "scripts" / "ci-runner" / "gates.lock.json"
+
+
+def manifest_tokens():
+    """Every file path the gate manifest names, as a set of strings.
+
+    THE THIRD WAY OF BEING REACHED, and the one this gate got by accident until 2026-09-06. `scripts/ci-runner` was simply a REF_DIR, so "wired into the gate manifest" was decided by whether the basename appeared as text anywhere in a 5,700-line TypeScript literal. That is the same shape of reader that shipped wrong twice in this repo -- see `_manifest_entries` in
+    .claude/hooks/stop/wl_reggate.py (259 of 261 entries seen, found 2026-08-20) and the gate-id-convention gate (373 of 420, found 2026-09-06). A text match is not a registration; it happens to agree with one most of the time.
+
+    PROVED EQUIVALENT BEFORE THE SWAP, which is the only thing that makes a drain a drain rather than a silent re-scoping. Both readers were run over the live tree at commit ac817a647 on 2026-09-06:
+
+        checked: 164
+        OLD orphan set size: 0      NEW orphan set size: 0
+        SET EQUAL: True             per-file verdict differences: []
+        reached ONLY via scripts/ci-runner text: 115, all 115 reached by the lock
+
+    115 of the 164 files depended on that directory alone, so this was not a cosmetic swap; every one of them is covered structurally now.
+
+    THREE FIELDS, deliberately, and `ci.test` is the arguable one. It declares which CI job covers a gate rather than what the gate runs -- check-gate-id- convention.sh says so at length and refuses to police it. Including it here is still right, because this gate asks the strictly weaker question "does ANYTHING point at this file", and its own header calls that generosity a design
+    choice: a reference from an unreachable caller is a manifest problem, which the other two wiring gates DO see.
+
+    And the worry is empirically empty anyway, which is worth recording so the
+    next reader does not re-litigate it: all 13 `ci.kind == "test"` entries name
+    a path that `run` or `leaves` already contributes, so `ci.test` widens the token set by exactly nothing today. Re-measure rather than trust:
+
+        python3 -c "import json;d=json.load(open('scripts/ci-runner/gates.lock.json'));
+        rl={w for e in d for v in [e.get('run')]+(e.get('leaves') or [])
+            if isinstance(v,str) for w in [v]+v.split()};
+        print([e['ci']['test'] for e in d if isinstance(e.get('ci'),dict)
+               and e['ci'].get('kind')=='test' and e['ci'].get('test') not in rl])"
+    """
+    try:
+        with LOCK.open(encoding="utf-8") as fh:
+            parsed = json.load(fh)
+    except (OSError, ValueError):
+        return None  # cannot tell; the caller treats this as a failure, not a pass
+    if not isinstance(parsed, list):
+        return None
+    toks = set()
+    for entry in parsed:
+        if not isinstance(entry, dict):
+            continue
+        values = [entry.get("run")]
+        leaves = entry.get("leaves")
+        if isinstance(leaves, list):
+            values.extend(leaves)
+        ci = entry.get("ci")
+        if isinstance(ci, dict):
+            values.append(ci.get("test"))
+        for value in values:
+            if isinstance(value, str):
+                # A `run` is a command line, not always a bare path: split it so `bash x/y.sh --flag` still contributes `x/y.sh`.
+                toks.add(value)
+                toks.update(value.split())
+    return toks
+
+
+def manifest_reached(name, toks):
+    """True when a manifest entry names this file, by full path or by basename."""
+    return any(t == name or t.endswith("/" + name) for t in toks)
+
+
+def registration_route_selfcheck(toks):
+    """Prove the registration route can answer BOTH ways, on every invocation.
+
+    This route decides 148 of the 176 subjects, so if `manifest_reached` ever answered True unconditionally -- a token set containing "" would do it, and so would a looser suffix rule -- this gate would report a clean tree while checking nothing, which is the exact shape its own header exists to catch in other files. The discovery floor below does not cover this: it proves files
+    were FOUND, not that the verdict on them can vary.
+
+    Two directions, both cheap:
+      * a name the manifest registers nowhere must NOT be reached, and
+      * a name the manifest genuinely registers MUST be.
+
+    Returns None when both hold, else the message to print.
+    """
+    if not toks:
+        return "manifest_tokens() produced no tokens; the registration route cannot reach anything"
+    absent = "test-no-such-gate-script-0000000000.sh"
+    if manifest_reached(absent, toks):
+        return (
+            "CONTROL: %s is registered nowhere yet manifest_reached() says it is reached, "
+            "so the match is too loose and every subject would pass this route" % absent
+        )
+    present = next(
+        (t.rsplit("/", 1)[-1] for t in sorted(toks) if t.startswith(".ci/scripts/test/gates/")),
+        None,
+    )
+    if present is None:
+        return (
+            "CONTROL: no .ci/scripts/test/gates/ path among the manifest tokens; the lock "
+            "has changed shape and this route now recognises nothing"
+        )
+    if not manifest_reached(present, toks):
+        return (
+            "CONTROL: %s is named by the manifest yet manifest_reached() denies it, so real "
+            "registrations would be reported as orphans" % present
+        )
+    return None
+
+
+def collected_roots():
+    """The pytest roots, read from pyproject.toml's `testpaths`.
+
+    A SECOND WAY OF BEING REACHED, and without it this gate is wrong about an entire testing style. Everywhere else in this repo a test file is wired by something NAMING it -- a workflow step, a package.json key, a case list in test-hooks.sh -- so "nothing mentions you" is a sound proxy for "nothing runs you". pytest does not work that way: it COLLECTS by convention from the roots
+    the ini names, and a correctly wired pytest file is mentioned nowhere.
+
+    Adding the two pytest roots to SEARCH_DIRS on 2026-09-06 therefore reported all eight of them as orphans at once -- eight files that a green `check:ci-pytest` had just collected and passed. Eight simultaneous findings of the same shape is a gate being wrong, not a tree being broken.
+
+    Read from the ini rather than restated, so the two cannot drift; a root that disappears from `testpaths` stops conferring reachability the same day.
+    """
+    try:
+        with (REPO / "pyproject.toml").open("rb") as fh:
+            cfg = tomllib.load(fh)
+    except OSError:
+        return ()
+    listed = cfg.get("tool", {}).get("pytest", {}).get("ini_options", {}).get("testpaths", [])
+    return tuple(p.rstrip("/") + "/" for p in listed)
+
+
+# Directories `test_hooks_delegates.py`'s TAILED table globs `test-*.py` from at runtime, since 2026-09-22.
+# Kept as a plain directory tuple rather than importing that module: it pulls in pytest, and this gate must not gain a pytest dependency to answer a reachability question a directory listing already answers.
+# `test_hooks_delegates.py`'s own `test_tailed_discovery_meets_its_floor` is the anti-vacuity check on THAT side of the same claim -- this gate checks that a discovered file is REACHED, that one checks that discovery still finds ENOUGH; neither substitutes for the other.
+DELEGATE_GLOBBED_DIRS = (
+    ".claude/hooks/context/",
+    ".claude/hooks/stop/",
+    ".claude/rediacc_hooks/guards/",
+)
+
+
+def delegate_globbed(rel):
+    """True when `rel` sits DIRECTLY (not nested further) in a globbed directory and is a `.py` file -- the same shape `pathlib.Path.glob("test-*.py")` matches, non-recursive."""
+    return rel.endswith(".py") and any(
+        rel.startswith(d) and "/" not in rel[len(d) :] for d in DELEGATE_GLOBBED_DIRS
+    )
 
 
 def discover():
@@ -84,8 +226,7 @@ def discover():
 def referencing_files(name):
     """Files that mention `name`, excluding the file itself.
 
-    `git grep -l` rather than a Python walk: it honours .gitignore, so a stale
-    copy in an untracked scratch directory cannot make an orphan look reached.
+    `git grep -l` rather than a Python walk: it honours .gitignore, so a stale copy in an untracked scratch directory cannot make an orphan look reached.
     """
     try:
         r = subprocess.run(
@@ -110,11 +251,45 @@ def main():
         print("  green here would mean nothing. Fix the discovery before trusting this gate.")
         return 1
 
-    orphans, checked, exempted = [], 0, 0
+    roots = collected_roots()
+    toks = manifest_tokens()
+    if toks is None:
+        print(
+            "✗ could not read %s -- reporting UNCHECKED rather than fine.\n"
+            "  115 of this gate's subjects reach CI through a manifest registration and\n"
+            "  nothing else, so an unreadable lock would turn them into a wall of false\n"
+            "  orphans. It is generated by scripts/gen/gen-gates-lock.ts and guarded by\n"
+            "  check:ci-gates-lock, which is the gate that should be reporting this."
+            % LOCK.relative_to(REPO).as_posix()
+        )
+        return 1
+
+    broken = registration_route_selfcheck(toks)
+    if broken is not None:
+        print("\u2717 %s" % broken)
+        print("  This gate declares selftest: true. It has just failed its own control,")
+        print("  so its verdict on every other file is worthless. Fix manifest_reached()")
+        print("  or manifest_tokens() before trusting anything below.")
+        return 1
+
+    orphans, checked, exempted, collected, delegated = [], 0, 0, 0, 0
+    registered = 0
     for f in files:
         rel = f.relative_to(REPO).as_posix()
         if f.name in EXEMPT:
             exempted += 1
+            continue
+        # Reached by COLLECTION, not by mention. Not an exemption: the file must still sit under a root pytest is configured to collect, and check:ci-pytest runs that collection in CI and floors it.
+        if rel.endswith(".py") and any(rel.startswith(r) for r in roots):
+            collected += 1
+            continue
+        # Reached by REGISTRATION. `npm run ci` dispatches every manifest entry through scripts/ci-runner, so an entry naming this file IS a path to CI, and it is the path 115 of the 164 subjects take.
+        if manifest_reached(f.name, toks):
+            registered += 1
+            continue
+        # Reached by DELEGATE DISCOVERY: test_hooks_delegates.py globs this directory at runtime rather than naming files by hand.
+        if delegate_globbed(rel):
+            delegated += 1
             continue
         checked += 1
         refs = referencing_files(f.name)
@@ -123,8 +298,7 @@ def main():
             return 1
         # A mention inside the file itself proves nothing.
         outside = [r for r in refs if r != rel]
-        # A mention only in a comment is not a call. Cheap heuristic: require at
-        # least one reference line that is not comment-only.
+        # A mention only in a comment is not a call. Cheap heuristic: require at least one reference line that is not comment-only.
         real = []
         for r in outside:
             try:
@@ -149,14 +323,29 @@ def main():
         print("\n  A test nobody runs is worse than no test: it reports green to whoever")
         print("  runs it by hand and is counted as coverage in review.")
         print("\n  Wire it, by whichever of these fits:")
-        print("    - invoke it from a suite CI already runs (e.g. .claude/hooks/test-hooks.sh),")
-        print("    - or register it in scripts/ci-runner/manifest.ts with its CI step.")
+        print(
+            "    - invoke it from a suite CI already runs (e.g. the delegate table in"
+            " .claude/rediacc_hooks/tests/test_hooks_delegates.py),"
+        )
+        print("    - or register it in scripts/ci-runner/manifest.ts with its CI step, then")
+        print("      regenerate scripts/ci-runner/gates.lock.json (check:ci-gates-lock),")
+        print("      which is the file this gate now reads.")
         print("  Do NOT add it to EXEMPT to get past this; that list is for files that")
         print("  genuinely must not run in CI, and each entry states why.")
         return 1
 
     print(
-        "✓ all %d test file(s) are reached by something CI runs (%d exempt)" % (checked, exempted)
+        "✓ all %d test file(s) are reached by something CI runs "
+        "(%d registered in the gate manifest, %d collected by pytest, %d delegate-globbed, "
+        "%d exempt, %d reached by mention)"
+        % (
+            registered + collected + delegated + exempted + checked,
+            registered,
+            collected,
+            delegated,
+            exempted,
+            checked,
+        )
     )
     return 0
 

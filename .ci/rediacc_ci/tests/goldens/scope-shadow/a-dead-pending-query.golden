@@ -1,0 +1,139 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {},
+  "exempt_keys": [],
+  "planned_keys": 3
+}
+```
+
+_greenlight: nothing to ask (every eligible key is already planned to skip)._
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+scope_mode=reduced
+```
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {},
+  "exempt_keys": [],
+  "planned_keys": 3
+}
+```
+
+_greenlight: nothing to ask (every eligible key is already planned to skip)._
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+scope_mode=reduced
+```
+
+=== gh-output
+scope_mode=reduced
+=== plan.json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    }
+  },
+  "run_id": 12345,
+  "base_sha": null,
+  "head_sha": "deadbeefcafe",
+  "conditions": {}
+}=== greenlight.err
+<root>/.ci/scripts/ci/greenlight.cjs:5
+  throw new Error("greenlight: module load failed");
+  ^
+
+Error: greenlight: module load failed
+    at Object.<anonymous> (<root>/.ci/scripts/ci/greenlight.cjs:5:9)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.require (node:internal/modules/cjs/loader:1527:12)
+    at require (node:internal/modules/helpers:147:16)
+    at [eval]:3:22
+    at runScriptInThisContext (node:internal/vm:209:10)
+
+Node.js v22.23.2

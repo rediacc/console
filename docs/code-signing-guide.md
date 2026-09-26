@@ -556,15 +556,15 @@ Note: SSL.com with eSigner would be ~$1,249+/yr for Windows alone — not recomm
 ### Linux (Mostly Complete)
 
 - [x] Generate GPG keypair — `.ci/keys/gpg-public.asc` + `RELEASE_GPG_PRIVATE_KEY` secret
-- [ ] Generate revocation certificate and store securely (if not already done)
-- [x] Export private key to GitHub Actions secrets — `RELEASE_GPG_PRIVATE_KEY` + `RELEASE_GPG_PASSPHRASE`
+- [x] Generate revocation certificate and store securely — `RELEASE_GPG_REVOCATION_CERT` in Bitwarden Secrets Manager (`ci-shared`), generated 2026-09-24 for key `42EAD1408A684AB8F185F03F49BA687F0527C72B` and verified to revoke it on import
+- [x] Store the private key for CI — `RELEASE_GPG_PRIVATE_KEY` + `RELEASE_GPG_PASSPHRASE` in Bitwarden Secrets Manager (`ci-shared`), fetched by `./.github/actions/bws-secrets`
 - [x] APT repository signing — `build-pkg-repo.sh` signs `Release` → `Release.gpg` + `InRelease`
 - [x] RPM repository signing — `build-pkg-repo.sh` signs `repomd.xml`
 - [x] RPM package signing — `build-linux-pkg.sh` signs via nfpm YAML config (`$NFPM_RPM_KEY_FILE`)
 - [x] Public key distribution — `apt/gpg.key` + `rpm/gpg.key` in Pages bundle
 - [x] Repo hosted on GitHub Pages — deployed in `cd-v2.yml`
 - [x] Installation method testing — `ct-install-methods.yml` tests APT + DNF installs
-- [ ] Verify GPG key uses SHA-256+ (Debian 13 blocks SHA-1 in 2026)
+- [x] Verify GPG key uses SHA-256+ (Debian 13 blocks SHA-1 in 2026) — RSA 4096, self-signatures use SHA-512 (hash algorithm 10), digest preference SHA512 first; checked 2026-09-24
 - [ ] Optional: Migrate repo to Cloudflare R2 for lower latency
 
 ---

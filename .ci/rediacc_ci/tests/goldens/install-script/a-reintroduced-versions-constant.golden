@@ -1,0 +1,13 @@
+# twin .ci/scripts/test/test-install-script.sh blob 9aaa7b9e101389382861e34099479c242570cc27 over packages/www/public/install.sh blob a71c28af695ab19fa0cf9db435003f31dd8db286
+exit: 1
+--- stdout ---
+PASS: detect_platform matches uname
+PASS: detect_arch matches uname -m
+PASS: default channel + no server -> no rediacc.json
+PASS: non-default channel writes rediacc.json with correct fields and mode
+PASS: custom releases URL persists in rediacc.json
+PASS: present config + no jq -> untouched, prints follow-up command
+PASS: cleanup_legacy_state removes legacy versions/ dir
+PASS: cleanup_legacy_state removes staged-update/ dir
+--- stderr ---
+FAIL: VERSIONS_DIR / MAX_VERSIONS must not be defined under the new layout

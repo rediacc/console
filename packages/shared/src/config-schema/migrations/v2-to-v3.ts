@@ -52,8 +52,7 @@ function isObj(v: unknown): v is Obj {
 }
 
 function warn(message: string): void {
-  // console.warn goes to stderr on Node and is the one warn channel that also
-  // exists in Workers and browsers, so this module stays runtime-portable.
+  // console.warn goes to stderr on Node and is the one warn channel that also exists in Workers and browsers, so this module stays runtime-portable.
   console.warn(`config migration (v2→v3): ${message}`);
 }
 

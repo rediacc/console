@@ -162,8 +162,7 @@ describe('resolveMachine — @place (step 4)', () => {
       machines: { 'prod-1': machine() },
     });
     const err = await expectExit(() => resolveMachine('shop@backup-2', v), 12);
-    // Interpolate the names so the source has no contiguous `repo migrate shop`
-    // literal (flagged by no-positional-cli-syntax-source until w2b lands it).
+    // Interpolate the names so the source has no contiguous `repo migrate shop` literal (flagged by no-positional-cli-syntax-source until w2b lands it).
     const name = 'shop';
     const home = 'prod-1';
     const at = 'backup-2';

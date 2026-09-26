@@ -123,8 +123,7 @@ export function computeDelegationCertValidity(input: ComputeValidityInput): Comp
   const planDefault = PLAN_DELEGATION_CERT_DEFAULT_DAYS[input.planCode];
   const planMax = PLAN_DELEGATION_CERT_MAX_DAYS[input.planCode];
 
-  // An explicit override on the subscription replaces BOTH the default and
-  // the ceiling for that subscription. This is the admin escape hatch.
+  // An explicit override on the subscription replaces BOTH the default and the ceiling for that subscription. This is the admin escape hatch.
   const hasOverride = input.subscriptionOverrideDays !== null;
   const effectiveDefault = input.subscriptionOverrideDays ?? planDefault;
   const effectiveMax = input.subscriptionOverrideDays ?? planMax;

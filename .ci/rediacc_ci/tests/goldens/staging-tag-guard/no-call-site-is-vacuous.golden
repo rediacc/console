@@ -1,0 +1,8 @@
+# twin .ci/scripts/quality/check-staging-tag-guard.sh blob 669c6953216a759054ab3d380c616444b2b45989
+exit: 1
+--- stdout ---
+  ok    cleanup-staging.sh still refuses a non-staging tag
+--- stderr ---
+  FAIL  at least one executing call site was found (got '0' want '1')
+✗ VACUOUS: no executing call site of cleanup-staging.sh found under .ci or .github.
+  Either it is genuinely unused, or this scan broke. Check before trusting the tick.

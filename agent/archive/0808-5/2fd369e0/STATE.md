@@ -11,4 +11,5 @@
 
 ## Next action
 
-Process CI run 31278900664 when terminal: if red, read the COMPLETE failed-step log (gh api .../jobs/<id>/logs), tier the fix per the agent file, commit surgically, refresh PR body (lastEditedAt must move), push, re-arm the watch. If green: gh pr ready #560, arm review watch (claude-reviewed marker for head sha), address threads, final report, tear down cron 3a686f3a. If the watch died: re-check run state via gh api and re-arm (until status=completed; sleep 20; run_in_background:true). Never merge, never push main.
+Process CI run 31278900664 when terminal: if red, read the COMPLETE failed-step log (gh api .../jobs/<id>/logs), tier the fix per the agent file, commit surgically, refresh PR body (lastEditedAt must move), push, re-arm the watch. If green: gh pr ready #560, arm review watch (claude-reviewed marker for head sha), address threads, final report, tear down cron 3a686f3a. If the watch
+died: re-check run state via gh api and re-arm (until status=completed; sleep 20; run_in_background:true). Never merge, never push main.

@@ -1,0 +1,10 @@
+# twin .ci/lib/bws-env.sh blob 60766fb1b77e8bb7befab8a172c5a5ed6b58248c
+exit: 1
+--- stdout ---
+ALPHA_TOKEN
+--- stderr ---
+bws-env: 1 name(s) absent or empty in the store: BETA_TOKEN
+  An empty value is treated as ABSENT on purpose: zod strips an unknown key and
+  sm-action exports "" without complaint, so a blank ships a broken feature that
+  still returns 200. Fix the store; do not fall back to a local copy.
+bws-env: exported 1 secret(s)

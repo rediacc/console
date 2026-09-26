@@ -50,8 +50,10 @@ on:
         type: string
         default: ''
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 concurrency:
   group: backfill-release-sentinel-${{ inputs.version }}
@@ -62,6 +64,10 @@ jobs:
     name: Backfill ${{ inputs.version }}
     runs-on: ubuntu-slim
     timeout-minutes: 10
+    # The first sparse checkout uses the default token; every GitHub read
+    # after it (gh release view) runs on the readonly-preset App token.
+    permissions:
+      contents: read
     steps:
       # Sparse-checkout the action source first; the local app-token action
       # cannot resolve until it exists on disk.
@@ -94,12 +100,13 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
 
       - name: Generate app token
         id: app-token
         uses: ./.github/actions/app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           # FLIPPED: the Bitwarden value, fetched above, not the GitHub org secret.
           # This is the first live consumer of the shadow anywhere in the tree.
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
@@ -133,13 +140,13 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           INPUT_SHA: ${{ inputs.commit_sha }}
-        run: .ci/scripts/release/resolve-backfill-commit.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.resolve_backfill_commit
 
       - name: Verify GitHub Release exists with CLI assets
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ inputs.version }}
-        run: .ci/scripts/release/verify-release-assets.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.verify_release_assets
 
       - name: Confirm non-dry-run
         if: ${{ inputs.dry_run == false }}
@@ -164,7 +171,7 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
           COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
           DRY_RUN: ${{ inputs.dry_run }}
-        run: .ci/scripts/release/backfill-write-sentinel.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.backfill_write_sentinel
 
       - name: Re-probe R2 sentinel state
         if: ${{ inputs.dry_run == false }}
@@ -173,4 +180,4 @@ jobs:
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
-        run: .ci/scripts/release/reprobe-r2-sentinel.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.reprobe_r2_sentinel

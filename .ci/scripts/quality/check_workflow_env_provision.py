@@ -1,43 +1,38 @@
 #!/usr/bin/env python3
 """check:ci-workflow-env-provision -- a job may not use a variable nothing gives it.
 
-WHY THIS EXISTS, measured 2026-09-03 (run for 652233865, job 100717989555). The
-`quality-security` job ran
+WHY THIS EXISTS, measured 2026-09-03 (run for 652233865, job 100717989555). The `quality-security` job ran
 
     python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"
 
-and that variable is provisioned by a "Load gate toolchain pins" step which
-`quality-static` has and `quality-security` did not. The shell expanded it to
+and that variable is provisioned by a "Load gate toolchain pins" step which `quality-static` has and `quality-security` did not. The shell expanded it to
 EMPTY, pip was handed the literal `PyYAML==`, and CI reported
 
     ERROR: Could not find a version that satisfies the requirement PyYAML==
 
--- a message about pip, in a step named "Secret reachability", in a job whose
-actual defect was three steps earlier and entirely invisible in that text.
+-- a message about pip, in a step named "Secret reachability", in a job whose actual defect was three steps earlier and entirely invisible in that text.
 
-THE SHAPE, and it is why an unset variable is worse than a missing file: bash
-expands an undefined name to the empty string without a word of complaint, so
-the failure always surfaces somewhere downstream wearing somebody else's name.
-A step copied between jobs without the step that feeds it is the usual cause.
+THE SHAPE, and it is why an unset variable is worse than a missing file: bash expands an undefined name to the empty string without a word of complaint, so the failure always surfaces somewhere downstream wearing somebody else's name. A step copied between jobs without the step that feeds it is the usual cause.
 
-WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are
-judged: a name that appears in some `env:` block, is written to $GITHUB_ENV, or
-is emitted by toolchain.sh. Runner built-ins ($RUNNER_TEMP, $GITHUB_SHA, $HOME)
-are never provisioned by this tree, so they cannot be flagged, and no allowlist
-is needed to protect them. That is what keeps this at zero false positives
-across 124 jobs rather than becoming the kind of noise a gate gets suppressed for.
+WHAT IS AND IS NOT A FINDING. Only names this repo PROVISIONS SOMEWHERE are judged: a name that appears in some `env:` block, is written to $GITHUB_ENV, or is emitted by toolchain.sh. Runner built-ins ($RUNNER_TEMP, $GITHUB_SHA, $HOME) are never provisioned by this tree, so they cannot be flagged, and no allowlist is needed to protect them. That is what keeps this at zero false
+positives across 124 jobs rather than becoming the kind of noise a gate gets suppressed for.
 
-ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use
-$RENET_BINARY, which no workflow line defines: `.ci/scripts/infra/build-renet.sh`
-writes it to $GITHUB_ENV. Without following the script named in the run block
-this gate reports nine confident findings that are all wrong. (The first version
-DID -- because `m.lstrip('./')` strips every leading dot AND slash, turning
-`.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine
-findings looked like a real defect class. `removeprefix` is the fix, and a broken
-path resolver that reports MORE is the lucky direction; the same bug in a gate
-that reports less is silent.)
+ONE HOP INTO SCRIPTS, and it is load-bearing rather than a nicety. Nine jobs use $RENET_BINARY, which no workflow line defines: the renet build step writes it to $GITHUB_ENV. Without following the script named in the run block this gate reports nine confident findings that are all wrong. (The first version DID -- because `m.lstrip('./')` strips every leading dot AND slash, turning
+`.ci/scripts/...` into `ci/scripts/...`, which resolves to nothing. The nine findings looked like a real defect class. `removeprefix` is the fix, and a broken path resolver that reports MORE is the lucky direction; the same bug in a gate that reports less is silent.)
+
+THE HOP HAS TWO SPELLINGS SINCE W7P4-W, and missing the second is the same nine findings back. A cut-over step no longer names a path at all: it runs `PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense`, which the path regex cannot see. `MODULE` resolves that module spec to its file under `.ci/`, so both forms reach the same reader, and the real-tree control below
+pins the module form by name rather than the path form it replaced.
+
+A PYTHON WRITER IS RECOGNISED BY A DIFFERENT SHAPE, because a port has no `>> "$GITHUB_ENV"` to match: it opens the path and writes a `NAME=value` line. `GHENV_PY` is therefore the `NAME=` head of a string literal, and it is applied ONLY to a module whose text mentions `GITHUB_ENV` at all and only to a module the step itself names. Both narrowings matter: the pattern is loose, and
+its failure direction is to call a name PROVISIONED that is not, which hides a finding in that one job rather than inventing one across the tree.
 
 Exit 1 on any finding, 2 on a failed control.
+
+---- gate ----
+step: Workflow env provision
+needs: python-yaml
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -45,16 +40,15 @@ from __future__ import annotations
 import contextlib
 import pathlib
 import re
-import subprocess
 import sys
 import tempfile
 
-# Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py:
-# the CI step that runs this installs the pinned PyYAML immediately before it, and a
-# gate that quietly degrades when its parser is missing is the vacuity this tree has
-# rules about. A bare ImportError traceback names the missing module, which is the
-# right failure.
+import _cipath  # noqa: F401
+
+# Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py: the CI step that runs this installs the pinned PyYAML immediately before it, and a gate that quietly degrades when its parser is missing is the vacuity this tree has rules about. A bare ImportError traceback names the missing module, which is the right failure.
 import yaml
+from rediacc_ci import controls
+from rediacc_ci import proc as ci_proc
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 WORKFLOWS = ROOT / ".github" / "workflows"
@@ -69,22 +63,43 @@ USE = re.compile(r"\$\{?([A-Z][A-Z0-9_]{2,})\}?")
 ASSIGN = re.compile(r"^\s*(?:export\s+)?([A-Z][A-Z0-9_]{2,})=", re.MULTILINE)
 GHENV = re.compile(r'([A-Z][A-Z0-9_]{2,})\s*=.*>>\s*"?\$\{?GITHUB_ENV', re.MULTILINE)
 SCRIPT = re.compile(r"(?<![\w/.-])((?:\./)?(?:\.ci|scripts)/[\w./-]+\.(?:sh|py|ts|cjs))")
+# The cut-over spelling of the same hop: `python3 -m rediacc_ci.<pkg>.<mod>`.
+MODULE = re.compile(r"python3\s+(?:-\w+\s+)*-m\s+(rediacc_ci(?:\.[A-Za-z_][\w]*)+)")
+# `handle.write("RENET_BINARY=%s\n")` and its siblings. See the module docstring for why this is narrowed to modules that mention GITHUB_ENV.
+GHENV_PY = re.compile(r'["\']([A-Z][A-Z0-9_]{2,})=')
 
 
 def toolchain_names(root: pathlib.Path = ROOT) -> set[str]:
     """Names `toolchain.sh --env` writes into $GITHUB_ENV."""
-    try:
-        r = subprocess.run(
-            [str(root / ".ci/scripts/lib/toolchain.sh"), "--env"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
+    # Through the shared runner: `toolchain.sh` is a shell script that spawns
+    # children of its own, and a plain `subprocess.run(capture_output=True,
+    # timeout=...)` kills only the script and then blocks in communicate() on
+    # pipes a grandchild still holds. A spawn failure comes back as rc 127 with empty stdout, which yields the same empty set the OSError arm returned.
+    r = ci_proc.run(
+        [str(root / ".ci/scripts/lib/toolchain.sh"), "--env"],
+        cwd=str(root),
+        timeout=60,
+    )
+    if r.timed_out:
         return set()
     return {ln.split("=", 1)[0] for ln in r.stdout.split("\n") if "=" in ln}
+
+
+def module_names(root: pathlib.Path, run: str) -> set[str]:
+    """$GITHUB_ENV names written by the `rediacc_ci` modules this run block invokes.
+
+    The second spelling of the one hop. A module spec resolves to `.ci/<dotted path>.py`; a spec that resolves to nothing contributes nothing, which is the same silence a missing `.sh` already gets.
+    """
+    out: set[str] = set()
+    for spec in MODULE.findall(run):
+        mp = root / ".ci" / (spec.replace(".", "/") + ".py")
+        if not mp.is_file():
+            continue
+        with contextlib.suppress(OSError):
+            text = mp.read_text(encoding="utf-8")
+            if "GITHUB_ENV" in text:
+                out |= set(GHENV_PY.findall(text))
+    return out
 
 
 def scan(root: pathlib.Path, tools: set[str]):
@@ -118,6 +133,7 @@ def scan(root: pathlib.Path, tools: set[str]):
                     if sp.is_file():
                         with contextlib.suppress(OSError):
                             defs |= set(GHENV.findall(sp.read_text(encoding="utf-8")))
+                defs |= module_names(root, run)
                 uses |= {m for m in USE.findall(run) if not BUILTIN.match(m)}
             per_job[(wf.name, jname)] = (defs, uses)
             anywhere |= defs
@@ -180,24 +196,29 @@ def selftest() -> int:
         )
         check("CONTROL: runner built-ins are never flagged", not any("builtin" in x for x in f))
 
-    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY
-    # (written to $GITHUB_ENV by build-renet.sh) becomes nine false findings.
+    # CONTROL on the real tree: the script hop must resolve, or $RENET_BINARY (written to $GITHUB_ENV by the renet build) becomes nine false findings.
     hop = ROOT / ".ci/scripts/infra/build-renet.sh"
     check(
         "CONTROL: the one-hop script resolver finds a real $GITHUB_ENV writer",
         hop.is_file() and bool(GHENV.findall(hop.read_text(encoding="utf-8"))),
         str(hop),
     )
+    # CONTROL on the MODULE half, which is the one the nine jobs now go through: the path form above survives only because the `.sh` file is still on disk, unreferenced, so it would keep passing after the module resolver had gone quiet.
+    check(
+        "CONTROL: the module hop finds $RENET_BINARY through the cut-over spelling",
+        "RENET_BINARY"
+        in module_names(ROOT, "PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense"),
+    )
+    check(
+        "CONTROL: a module spec that resolves to nothing provisions nothing",
+        module_names(ROOT, "python3 -m rediacc_ci.nowhere.at_all") == set(),
+    )
     return bad
 
 
 def main() -> int:
-    print("workflow env provision: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("workflow env provision", selftest):
+        return refusal
 
     per_job, anywhere = scan(ROOT, toolchain_names())
     if len(per_job) < MIN_JOBS:

@@ -5,7 +5,7 @@
  * and sequence them across a cluster's members:
  *   - the control-plane data-dir lives INSIDE a dedicated, cluster-labeled control
  *     datastore (ds-control-<cluster>), so "the control-plane image IS the cluster"
- *     and it forks/migrates by moving that datastore — not by reflinking per-node
+ *     and it forks/migrates by moving that datastore, not by reflinking per-node
  *     images (the old drain+reflink recipe carried the parent CA and is deleted);
  *   - FORK = crash-consistent rbd group snapshot (parent never stops) → clone each
  *     datastore → attach on the dest with --writes composing → control-plane
@@ -122,7 +122,7 @@ function cephPoolsOf(cluster: ClusterConfig): ClusterPool[] {
  * Refuse a fork onto a destination whose control node is ALREADY running its own
  * k3s control plane (finding #8). The fork's identity rewrite boots the fork's
  * k3s bound to the dest control node's IP:6443, but stopK3sUnitsForRewrite only
- * stops the src/target networkID units — NOT a DIFFERENT cluster's control plane
+ * stops the src/target networkID units, NOT a DIFFERENT cluster's control plane
  * already bound to that IP:port. Two k3s servers, one IP:6443 → `bind: address
  * already in use`, failing deep in the identity rewrite AFTER the snapshot+clone.
  *
@@ -161,8 +161,8 @@ export async function assertDestNotRunningOwnK3s(
  * cluster has neither the source `/etc/ceph` client config (needed to map the
  * fork's rbd clone) NOR the package tooling the attach + kine-scrub shell out to
  * (`rbd` from ceph-common; `sqlite3`). Seed both on every dest member. A
- * local-tier source (no ceph pool) has nothing to seed — its fork clones are not
- * rbd-backed — so this is a no-op there.
+ * local-tier source (no ceph pool) has nothing to seed, its fork clones are not
+ * rbd-backed, so this is a no-op there.
  */
 export async function prepareForkDest(
   sourceClusterName: string,
@@ -194,11 +194,11 @@ export async function prepareForkDest(
 
 /**
  * Give a MIGRATE dest machine access to the SOURCE cluster's Ceph before the
- * fenced attach (finding #19 — the #7/#15 seeding class, migrate arm). The in-Ceph
+ * fenced attach (finding #19, the #7/#15 seeding class, migrate arm). The in-Ceph
  * remap maps the SAME rbd image (ds-control-<cluster>) on the destination, which
  * needs the source `/etc/ceph` client config + the `rbd`/sqlite3 tooling the attach
  * shells out to. createCluster only seeds a cluster's OWN nodes with its OWN ceph,
- * so a fresh bare dest of a DIFFERENT machine has neither — mirroring the fork
+ * so a fresh bare dest of a DIFFERENT machine has neither, mirroring the fork
  * dest's gap. Single machine (migrate moves one CP), so it seeds just `destMachine`.
  * A local-tier source has no ceph pool and never reaches here (the ceph-backend
  * guard rejects it first).
@@ -273,7 +273,7 @@ export async function dispatch(
  * is still allocated (it names the systemd unit and the node interface), and the
  * allocator's forward counter is persistent, so no id is ever handed out twice.
  */
-export async function allocateAgentNetworkId(): Promise<number> {
+export function allocateAgentNetworkId(): Promise<number> {
   return configService.allocateNetworkId();
 }
 

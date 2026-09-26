@@ -15,9 +15,7 @@ export function registerMachineCommands(program: Command): void {
     .summary(t('commands.machine.descriptionShort'))
     .description(t('commands.machine.description'));
 
-  // Config-CRUD + lifecycle: add/remove/list/scan-keys/setup, then the
-  // machine-reaching verbs. `machine query` is now `machine status` and folds in
-  // the retired containers/services/repos section commands as flags.
+  // Config-CRUD + lifecycle: add/remove/list/scan-keys/setup, then the machine-reaching verbs. `machine query` is now `machine status` and folds in the retired containers/services/repos section commands as flags.
   registerMachineRegistrationCommands(machine, program);
   registerStatusCommand(machine, program);
   registerHealthCommand(machine, program);

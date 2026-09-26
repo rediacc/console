@@ -1,0 +1,7 @@
+# twin .ci/scripts/private/run-account.sh blob 3eeb89c8fed218f5937e2cb90e2210e72e218c47
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Unknown stage: bogus
+--- calls ---
+[]

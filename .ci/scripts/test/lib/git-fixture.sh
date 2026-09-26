@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build throwaway git repos that halt a rebase on a CHOSEN kind of conflict.
 #
-# WHY THIS EXISTS. agent/PLAN-resumable-rebase-executor.md's step 2 needs
+# WHY THIS EXISTS. agent/plans/PLAN-resumable-rebase-executor.md's step 2 needs
 # controls that drive a REAL rebase, and this repo had no git fixture harness at
 # all -- which is why `wl_git.py`'s conflict work could only ever be tested as
 # pure functions over hand-written stage tables. A pure-function control proves

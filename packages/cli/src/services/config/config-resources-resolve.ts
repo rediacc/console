@@ -8,6 +8,7 @@
  * and `config-resources.ts` stays under its max-lines budget.
  */
 
+import { RESERVED_TAG } from '@rediacc/shared/ref';
 import type { ArchivedRepository, RepositoryConfig } from '../../types/index.js';
 import { parseRepoRef, RESERVED_GRAND_TAG } from '../../utils/config-schema.js';
 
@@ -51,18 +52,65 @@ function collectCandidates(
   return out;
 }
 
-/** Same exact-key + `:latest` fallback as `getRepositoryKey`. */
-export function resolveExactOrLatest(
+/** The grand pointers of a config's families, for {@link resolveRepoKey}. */
+export function grandTagsOf(
+  families: Readonly<Record<string, { grand: string }>> | undefined
+): Readonly<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (const [name, family] of Object.entries(families ?? {})) out[name] = family.grand;
+  return out;
+}
+
+/**
+ * The base name a ref addresses through its family's grand pointer, or
+ * undefined when it names a tag. A bare `shop` and the reserved `shop:base`
+ * both name the grand, whatever tag the grand is stored under.
+ */
+function grandRefBase(ref: string): string | undefined {
+  const parts = ref.split(':');
+  if (parts.length === 1) return ref;
+  if (parts.length === 2 && parts[1] === RESERVED_TAG) return parts[0];
+  return undefined;
+}
+
+/**
+ * The grand's tag for a family the config view does not carry a pointer for
+ * (a record added earlier in this same command, not yet persisted): the same
+ * rule persist uses to write the pointer (resource-state.ts deriveGrand), so the
+ * two cannot disagree.
+ */
+function derivedGrandTag(
+  repos: Record<string, RepositoryConfig>,
+  baseName: string
+): string | undefined {
+  const keys = Object.keys(repos)
+    .filter((key) => parseRepoRef(key).name === baseName)
+    .sort();
+  const grands = keys.filter((key) => !isForkConfig(repos[key])).map((k) => parseRepoRef(k).tag);
+  if (grands.includes(RESERVED_GRAND_TAG)) return RESERVED_GRAND_TAG;
+  const pick = grands[0] ?? (keys.length > 0 ? parseRepoRef(keys[0]).tag : undefined);
+  return pick;
+}
+
+/**
+ * Resolve a ref to its flat config key: the exact key when it exists, else,
+ * for a bare (or `:base`) ref, the family's GRAND, found through its recorded
+ * grand pointer rather than by assuming the grand is stored as `:latest`.
+ * resolve-machine.ts resolveStoredTag dispatches a bare ref the same way, so
+ * config lookups and machine dispatch agree on which repo a bare name means.
+ */
+export function resolveRepoKey(
   repos: Record<string, RepositoryConfig>,
   ref: string,
-  isBare: boolean
+  grandTags: Readonly<Record<string, string>> = {}
 ): string | undefined {
   if (ref in repos) return ref;
-  if (isBare) {
-    const latestKey = `${ref}:${RESERVED_GRAND_TAG}`;
-    if (latestKey in repos) return latestKey;
-  }
-  return undefined;
+  const baseName = grandRefBase(ref);
+  if (baseName === undefined) return undefined;
+  const grand = baseName in grandTags ? grandTags[baseName] : derivedGrandTag(repos, baseName);
+  if (grand === undefined) return undefined;
+  const key = `${baseName}:${grand}`;
+  return key in repos ? key : undefined;
 }
 
 /**
@@ -141,7 +189,7 @@ export function assertNoCredentialCollision(
 }
 
 /**
- * Refuse to restore a fork under a bare `<name>` or `<name>:latest` key —
+ * Refuse to restore a fork under a bare `<name>` or `<name>:latest` key ,
  * either would shadow / collide with the grand and re-create the #495
  * ambiguity. No-op for non-fork archives.
  */
@@ -164,9 +212,10 @@ export function assertRestoredForkKeyIsExplicit(
  */
 export function resolveDestructiveTargetFromRepos(
   repos: Record<string, RepositoryConfig>,
-  repoRef: string
+  repoRef: string,
+  grandTags: Readonly<Record<string, string>> = {}
 ): { key: string; config: RepositoryConfig } {
-  const isBare = !repoRef.includes(':');
+  const isBare = grandRefBase(repoRef) !== undefined;
   const baseName = parseRepoRef(repoRef).name;
   const candidates = collectCandidates(repos, baseName);
 
@@ -174,7 +223,7 @@ export function resolveDestructiveTargetFromRepos(
     throw new AmbiguousRepoTargetError(repoRef, candidates);
   }
 
-  const resolvedKey = resolveExactOrLatest(repos, repoRef, isBare);
+  const resolvedKey = resolveRepoKey(repos, repoRef, grandTags);
   if (!resolvedKey) {
     if (isBare && candidates.length === 1) {
       throw new Error(

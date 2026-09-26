@@ -59,8 +59,7 @@ export function useCaptchaGuard(): CaptchaGuard {
 
   const onSuccess = useCallback((next: string) => {
     setToken(next);
-    // A later success clears an earlier failure, so a widget that recovers on its own
-    // does not leave the retry prompt sitting under a solved challenge.
+    // A later success clears an earlier failure, so a widget that recovers on its own does not leave the retry prompt sitting under a solved challenge.
     setFailed(false);
   }, []);
 
@@ -85,12 +84,8 @@ export function useCaptchaGuard(): CaptchaGuard {
     setFailed(false);
   }, []);
 
-  // MEMOISED, and that is a correctness requirement rather than a micro-optimisation.
-  // Consumers put this object in `useCallback`/`useEffect` dependency lists (the lead
-  // magnet's `open` resets the captcha), and a fresh object every render would make
-  // every one of those callbacks unstable, re-running the effects that depend on them
-  // on each render. The handlers are already stable `useCallback`s, so the only thing
-  // that has to be pinned is the wrapper.
+  // MEMOISED, and that is a correctness requirement rather than a micro-optimisation. Consumers put this object in `useCallback`/`useEffect` dependency lists (the lead magnet's `open` resets the captcha), and a fresh object every render would make every one of those callbacks unstable, re-running the effects that depend on them on each render. The handlers are already stable
+  // `useCallback`s, so the only thing that has to be pinned is the wrapper.
   return useMemo(
     () => ({ token, failed, nonce, onSuccess, onExpire, onError, retry, reset }),
     [token, failed, nonce, onSuccess, onExpire, onError, retry, reset]

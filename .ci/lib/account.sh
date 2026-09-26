@@ -8,8 +8,28 @@
 [[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0
 readonly ACCOUNT_LIB_LOADED=1
 
-# Source port utilities
-source "$CI_LIB_DIR/find-port.sh"
+# Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
+# rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
+# Every port question below now names the module directly.
+#
+# The shim's LOAD-TIME refusal is kept, and it is not ceremony: without it a
+# missing interpreter turns `is-port-in-use` into "the port is free", i.e. a
+# plausible wrong number instead of a named failure. REDIACC_CI_ROOT is the
+# package's single environment override (see .ci/rediacc_ci/paths.py).
+ACCOUNT_CI_DIR="${REDIACC_CI_ROOT:+$REDIACC_CI_ROOT/.ci}"
+ACCOUNT_CI_DIR="${ACCOUNT_CI_DIR:-$(cd "$CI_LIB_DIR/.." && pwd)}"
+if [[ ! -d "$ACCOUNT_CI_DIR/rediacc_ci/core" ]]; then
+    echo "account.sh: cannot find rediacc_ci under '$ACCOUNT_CI_DIR' (set REDIACC_CI_ROOT)" >&2
+    return 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "account.sh: python3 is required; the port logic lives in rediacc_ci.core.ports" >&2
+    return 1
+fi
+# env_file_load: reads a KEY=value file without executing it, and lets the SHELL
+# win over the file. The committed dev.defaults.env is the only file it reads
+# here; every secret comes from Bitwarden through account_bws_exec.
+source "$(cd "$CI_LIB_DIR/../.." && pwd)/scripts/lib/env-file.sh"
 
 # =============================================================================
 # INTERNAL HELPERS
@@ -18,10 +38,87 @@ source "$CI_LIB_DIR/find-port.sh"
 ACCOUNT_DIR="$CONSOLE_ROOT_DIR/private/account"
 ACCOUNT_PIDS=()
 
+# account_bws_exec PROFILE RUN_SH_ARGS...
+# Re-run `./run.sh RUN_SH_ARGS...` once under `bws_env exec --profile PROFILE`,
+# so the profile's secrets (.ci/config/secret-supply.json `consumers`) reach this
+# process tree through its ENVIRONMENT and never through a file. Returns without
+# doing anything when the profile is already hydrated (REDIACC_BWS_PROFILES),
+# which is how the re-executed copy -- and any nested ./run.sh -- carries on.
+# An absent token or store entry is a refusal there, with no file fallback.
+account_bws_exec() {
+    local profile="$1"
+    shift
+    case ",${REDIACC_BWS_PROFILES:-}," in
+        *",${profile},"*) return 0 ;;
+    esac
+    PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.bws_env \
+        exec --profile "$profile" -- "$CONSOLE_ROOT_DIR/run.sh" "$@"
+}
+
+# The committed, non-secret dev constants (private/account/dev.defaults.env).
+# The shell wins over the file, as everywhere env_file_load is used.
+account_load_defaults() {
+    env_file_load "$ACCOUNT_DIR/dev.defaults.env"
+}
+
+# The running dev gateway's port, from this worktree's .account-state.
+account_state_gateway_port() {
+    [[ -f "$ACCOUNT_STATE_FILE" ]] || return 1
+    grep '^gateway_port=' "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2
+}
+
+# account_writer_stamp: who writes .account-state, as <hostname>/<pid namespace>.
+# The host and the devbox share this worktree, so they share the file, and a
+# pid means nothing outside the pid namespace that recorded it: a `pids=` line
+# written in the container names unrelated processes on the host.
+account_writer_stamp() {
+    local host ns
+    if [[ -r /proc/sys/kernel/hostname ]]; then
+        host="$(</proc/sys/kernel/hostname)"
+    else
+        host="$(uname -n)"
+    fi
+    ns="$(readlink /proc/self/ns/pid 2>/dev/null || true)"
+    printf '%s/%s\n' "$host" "${ns:-no-pid-ns}"
+}
+
+# account_state_owned: 0 when .account-state carries THIS writer's stamp, so its
+# pids are processes here. Otherwise it says whose they are and returns 1, and
+# the caller signals none of them. An unstamped file is refused the same way:
+# there is no telling which namespace its pids came from.
+account_state_owned() {
+    local writer self
+    writer="$(grep '^writer=' "$ACCOUNT_STATE_FILE" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+    self="$(account_writer_stamp)"
+    [[ -n "$writer" && "$writer" == "$self" ]] && return 0
+    log_warn "Not signalling the pids in ${ACCOUNT_STATE_FILE}: written by ${writer:-an unstamped writer}, not by this host and pid namespace (${self}). Skipping them."
+    return 1
+}
+
+# account_spawn DIR LOG CMD...: `(cd DIR && CMD...) >LOG 2>&1 &`, remembered in
+# ACCOUNT_PIDS, and started as the LEADER OF ITS OWN PROCESS GROUP (`set -m`), so
+# account_cleanup can end the whole tree rather than just the pid it holds. The
+# pid is left in ACCOUNT_SPAWNED for the caller's liveness checks.
+account_spawn() {
+    local dir="$1" log="$2"
+    shift 2
+    set -m
+    (cd "$dir" && "$@") >"$log" 2>&1 &
+    ACCOUNT_SPAWNED=$!
+    set +m
+    ACCOUNT_PIDS+=("$ACCOUNT_SPAWNED")
+}
+
 account_cleanup() {
     local exit_code=$?
     for pid in "${ACCOUNT_PIDS[@]}"; do
-        kill "$pid" 2>/dev/null || true
+        # The GROUP first. Signalling only the tracked pid left anything it did
+        # not take down with it running: a wrapper that dies before forwarding
+        # the signal, or a subshell that did not exec its last command, orphans
+        # the dev server, which then holds its port, and the next `account dev`
+        # drifts to the next free triple. A pid that leads no group (one this
+        # file did not start with account_spawn) falls back to the pid alone.
+        kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
         wait "$pid" 2>/dev/null || true
     done
     ACCOUNT_PIDS=()
@@ -43,7 +140,8 @@ account_allocate_ports() {
         base="$REDIACC_DEV_PORT_BASE"
         local offset
         for offset in 0 1 2; do
-            if is_port_in_use $((base + offset)); then
+            if PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+                python3 -m rediacc_ci.core.ports is-port-in-use $((base + offset)); then
                 log_error "Port $((base + offset)) is already in use inside this environment"
                 log_info "REDIACC_DEV_PORT_BASE pins the ports so the proxy labels stay valid; free it rather than drifting"
                 log_info "Leftovers: pkill -f 'astro dev'; pkill -f 'vite --port'; pkill -f dev-gateway.ts"
@@ -57,26 +155,20 @@ account_allocate_ports() {
         return 0
     fi
 
-    base=$(find_preferred_port "$ACCOUNT_DEV_PORT_PREFERRED" \
-        "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END")
-
-    # Verify next 2 ports are also free; if not, scan for 3 consecutive
-    if is_port_in_use $((base + 1)) || is_port_in_use $((base + 2)); then
-        local found=false
-        for candidate in $(seq "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END"); do
-            if ! is_port_in_use "$candidate" &&
-                ! is_port_in_use $((candidate + 1)) &&
-                ! is_port_in_use $((candidate + 2)); then
-                base=$candidate
-                found=true
-                break
-            fi
-        done
-        if [[ "$found" != "true" ]]; then
-            log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
-            exit 1
-        fi
-    fi
+    # ONE call, not a bash loop over a thousand candidates. This used to be
+    # `find_preferred_port` followed by a `seq` loop probing base, base+1 and
+    # base+2 for every candidate in 4800-5799. That was fine while
+    # is_port_in_use was bash (~5.7 ms a probe) and became a ~200-second worst
+    # case the moment it delegated to Python (~66 ms, one interpreter per
+    # probe). The answer is identical: a candidate below the first free port
+    # cannot start a free run, so scanning from the preferred base reaches the
+    # same port the two-stage version did.
+    base=$(PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-consecutive-free 3 \
+        "$ACCOUNT_DEV_PORT_PREFERRED" "$ACCOUNT_DEV_PORT_RANGE_END") || {
+        log_error "Cannot find 3 consecutive free ports in range ${ACCOUNT_DEV_PORT_PREFERRED}-${ACCOUNT_DEV_PORT_RANGE_END}"
+        exit 1
+    }
 
     GATEWAY_PORT=$base
     VITE_PORT=$((base + 1))
@@ -105,7 +197,8 @@ account_wait_port() {
     local announced=false
 
     while true; do
-        if is_port_in_use "$port"; then
+        if PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+            python3 -m rediacc_ci.core.ports is-port-in-use "$port"; then
             return 0
         fi
 
@@ -132,18 +225,18 @@ account_wait_port() {
 }
 
 # True when a RustFS (S3) endpoint is answering on the port. RustFS returns 403
-# on GET / (no anonymous access), so any HTTP status — not just 2xx — means the
+# on GET / (no anonymous access), so any HTTP status -- not just 2xx -- means the
 # service is up; a closed port yields curl code 000.
 #
 # Do NOT reintroduce `|| echo 000` here. curl ALREADY prints 000 on a refused
 # connection and exits non-zero, so the fallback appended a second one and the
-# captured value became "000000" — which is != "000", so this reported ALIVE for
+# captured value became "000000" -- which is != "000", so this reported ALIVE for
 # a dead port. Everything downstream believed it: account_dev logged "Reusing
 # RustFS already serving", never started the container, still exported
 # CONFIG_R2_*, and the gateway advertised a config store that answered
 # ECONNREFUSED on first use.
 #
-# `|| true` is the repo's established shape for this — .ci/breakpoint/scripts/
+# `|| true` is the repo's established shape for this -- .ci/breakpoint/scripts/
 # {start-tunnel,hold-breakpoint,reap-breakpoint-orphans}.sh all document the same
 # trap. It also keeps the assignment from aborting under `set -e`, which today is
 # masked only because both callers invoke this inside an `if`. An empty value
@@ -157,7 +250,7 @@ account_rustfs_alive() {
 
 # Force-remove ghost RustFS containers by name. A corrupt `docker compose`
 # project state can leave containers that block a fresh recreate but survive a
-# plain `docker rm` — `rm -f` clears them. Best-effort and never touches the
+# plain `docker rm` -- `rm -f` clears them. Best-effort and never touches the
 # live :9100 reuse path (a running RustFS must survive).
 account_docker_ghost_clean() {
     command -v docker &>/dev/null || return 0
@@ -169,8 +262,11 @@ account_docker_ghost_clean() {
 }
 
 # =============================================================================
-# ENSURE .ENV
+# DEV KEYS
 # =============================================================================
+# There is no private/account/.env any more (agent/plans/PLAN-account-env-to-bws.md).
+# The dev keypair lives in Bitwarden as the six ACCOUNT_*_DEV entries; this
+# generator is used only by account_reset, which pushes a fresh set there.
 
 account_generate_crypto_keys() {
     # Ed25519
@@ -200,128 +296,6 @@ account_generate_crypto_keys() {
     # Random secrets
     JWT_SEC=$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)
     API_K=$(openssl rand -base64 48 | tr -d '/+=' | cut -c1-64)
-}
-
-account_generate_fresh_env() {
-    log_step "Generating account .env..."
-    account_generate_crypto_keys
-
-    cat >"$ACCOUNT_DIR/.env" <<EOF
-# Auto-generated by ./run.sh — $(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-# Account server URL (used by rdc CLI for subscription commands)
-# Updated automatically by dev-gateway on startup with the actual port
-REDIACC_ACCOUNT_SERVER=http://localhost:4800
-
-# SQLite database path
-DATABASE_PATH=account.db
-
-# Ed25519 key pair (for subscription/license signing)
-ACCOUNT_ED25519_PRIVATE_KEY=${ED25519_PRIV}
-ACCOUNT_ED25519_PUBLIC_KEY=${ED25519_PUB}
-
-# X25519 key pair (for E2E encryption)
-ACCOUNT_X25519_PRIVATE_KEY=${X25519_PRIV}
-ACCOUNT_X25519_PUBLIC_KEY=${X25519_PUB}
-
-# Admin API key
-ACCOUNT_SERVER_API_KEY=${API_K}
-
-# JWT secret for session tokens
-ACCOUNT_JWT_SECRET=${JWT_SEC}
-
-# Stripe sandbox (uncomment and fill to enable Stripe features)
-# STRIPE_SANDBOX_SECRET_KEY=sk_test_...
-# STRIPE_SANDBOX_WEBHOOK_SECRET is auto-captured from stripe listen
-
-# Fixed webhook secret for E2E webhook simulation tests. Deliberately NOT named
-# STRIPE_WEBHOOK_SECRET: Bitwarden holds a real production secret under that
-# name, and one fetch-by-name away this fixture slot would have received it.
-STRIPE_E2E_WEBHOOK_SECRET=whsec_e2e_test_webhook_secret_for_simulation_only
-
-# Root email (receives alerts for disputes, refunds, etc.)
-# Set via GitHub variable ROOT_EMAIL or environment
-ROOT_EMAIL="${ROOT_EMAIL:-}"
-
-# Server port (used by standalone node entry, not the dev gateway)
-PORT=3000
-
-# WebAuthn passkey (for config storage setup)
-WEBAUTHN_RP_ID=localhost
-WEBAUTHN_RP_NAME=Rediacc
-WEBAUTHN_ORIGIN=http://localhost:4800
-EOF
-
-    log_info "Generated private/account/.env with fresh keys"
-}
-
-# Append a key=value to .env if the key doesn't already exist
-account_env_add_if_missing() {
-    local key="$1" value="$2" comment="${3:-}"
-    local env_file="$ACCOUNT_DIR/.env"
-    if ! grep -q "^${key}=" "$env_file" 2>/dev/null; then
-        [[ -n "$comment" ]] && echo -e "\n# ${comment}" >>"$env_file"
-        echo "${key}=${value}" >>"$env_file"
-        return 0
-    fi
-    return 1
-}
-
-# Ensure all required keys exist in .env, adding any that are missing
-account_ensure_env_keys() {
-    local env_file="$ACCOUNT_DIR/.env"
-    local added=0
-
-    # Generate keys only if we actually need them
-    local need_gen=false
-    for key in ACCOUNT_ED25519_PRIVATE_KEY ACCOUNT_ED25519_PUBLIC_KEY ACCOUNT_X25519_PRIVATE_KEY ACCOUNT_X25519_PUBLIC_KEY ACCOUNT_SERVER_API_KEY ACCOUNT_JWT_SECRET; do
-        if ! grep -q "^${key}=" "$env_file" 2>/dev/null; then
-            need_gen=true
-            break
-        fi
-    done
-
-    if [[ "$need_gen" == "true" ]]; then
-        account_generate_crypto_keys
-
-        account_env_add_if_missing "ACCOUNT_ED25519_PRIVATE_KEY" "$ED25519_PRIV" "Ed25519 key pair (for subscription/license signing)" && added=1
-        account_env_add_if_missing "ACCOUNT_ED25519_PUBLIC_KEY" "$ED25519_PUB" && added=1
-        account_env_add_if_missing "ACCOUNT_X25519_PRIVATE_KEY" "$X25519_PRIV" "X25519 key pair (for E2E encryption)" && added=1
-        account_env_add_if_missing "ACCOUNT_X25519_PUBLIC_KEY" "$X25519_PUB" && added=1
-        account_env_add_if_missing "ACCOUNT_SERVER_API_KEY" "$API_K" "Admin API key" && added=1
-        account_env_add_if_missing "ACCOUNT_JWT_SECRET" "$JWT_SEC" "JWT secret for session tokens" && added=1
-    fi
-
-    # Non-crypto defaults (only added if missing, never overridden)
-    account_env_add_if_missing "REDIACC_ACCOUNT_SERVER" "http://localhost:4800" "Account server URL" && added=1
-    account_env_add_if_missing "DATABASE_PATH" "account.db" "SQLite database path" && added=1
-    account_env_add_if_missing "STRIPE_E2E_WEBHOOK_SECRET" "whsec_e2e_test_webhook_secret_for_simulation_only" "E2E webhook-simulation fixture (not a credential)" && added=1
-    account_env_add_if_missing "PORT" "3000" "Server port" && added=1
-    # Account server's own outbound OTel endpoint (dev-gateway only; CF
-    # Workers use native tracing in prod). The CLI/renet client credentials
-    # are served at runtime from `OBS_OTLP_CREDENTIALS`, which the
-    # rotation tool writes here during `./run.sh rotation rotate otlp-<region>`.
-    account_env_add_if_missing "OTEL_ENDPOINT" "https://otlp.rediacc.io" "OTel OTLP endpoint" && added=1
-    # WebAuthn passkey (for config storage setup)
-    account_env_add_if_missing "WEBAUTHN_RP_ID" "localhost" "WebAuthn Relying Party ID" && added=1
-    account_env_add_if_missing "WEBAUTHN_RP_NAME" "Rediacc" "WebAuthn display name" && added=1
-    account_env_add_if_missing "WEBAUTHN_ORIGIN" "http://localhost:${GATEWAY_PORT:-4800}" "WebAuthn origin URL" && added=1
-    # Note: ROOT_EMAIL, STRIPE_SANDBOX_SECRET_KEY, AWS_SES_* are user-set values
-    # — only created in fresh generation, never added/overridden on ensure/reset
-
-    if [[ $added -gt 0 ]]; then
-        log_info "Added missing keys to existing .env"
-    fi
-}
-
-account_ensure_env() {
-    if [[ ! -f "$ACCOUNT_DIR/.env" ]]; then
-        account_generate_fresh_env
-        return 0
-    fi
-
-    # Ensure any newly added keys are present
-    account_ensure_env_keys
 }
 
 # =============================================================================
@@ -362,11 +336,14 @@ account_stripe_auto() {
     local stripe_log
     stripe_log=$(mktemp)
 
+    # Its own process group, like every job account_spawn starts; see account_cleanup.
+    set -m
     stripe listen \
         --api-key "$stripe_key" \
         --forward-to "http://localhost:${GATEWAY_PORT}/account/api/v1/webhooks/stripe" \
         >"$stripe_log" 2>&1 &
     local stripe_pid=$!
+    set +m
     ACCOUNT_PIDS+=("$stripe_pid")
 
     # Wait for webhook secret
@@ -384,7 +361,7 @@ account_stripe_auto() {
 
     if [[ -z "$webhook_secret" ]]; then
         log_warn "stripe listen did not output webhook secret within 30s"
-        log_info "Stripe features may not work — check stripe CLI auth"
+        log_info "Stripe features may not work -- check stripe CLI auth"
         return 0
     fi
 
@@ -397,6 +374,7 @@ account_stripe_auto() {
 # =============================================================================
 
 account_dev() {
+    account_bws_exec account-dev account dev
     check_node_version
 
     # Auto-kill previous instance from this worktree
@@ -406,8 +384,8 @@ account_dev() {
         old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
         log_step "Stopping previous account instance (gateway:${old_gateway:-?})..."
 
-        # Kill tracked child PIDs (vite, astro)
-        if [[ -n "$old_pids" ]]; then
+        # Kill tracked child PIDs (vite, astro), only when this writer recorded them
+        if [[ -n "$old_pids" ]] && account_state_owned; then
             for pid in ${old_pids//,/ }; do
                 kill "$pid" 2>/dev/null || true
             done
@@ -438,13 +416,10 @@ account_dev() {
     account_allocate_ports
     log_info "Ports: gateway=$GATEWAY_PORT vite=$VITE_PORT astro=$ASTRO_PORT"
 
-    # Generate .env if needed
-    account_ensure_env
-
-    # Load environment
-    set -a
-    source "$ACCOUNT_DIR/.env"
-    set +a
+    # Secrets arrived through account_bws_exec above; the non-secret constants
+    # come from the committed defaults file. The shell wins over the file, so
+    # `PORT=... ./run.sh account dev` still means what it says.
+    account_load_defaults || return 1
 
     # Dependencies
     ensure_deps
@@ -516,7 +491,7 @@ account_dev() {
             log_warn "RustFS failed to start (config storage disabled). If 'docker compose' is stuck on a ghost container, run: docker run -d --name rediacc-config-rustfs-dev -p 9100:9000 -e RUSTFS_VOLUMES=/data -e RUSTFS_ADDRESS=0.0.0.0:9000 -e RUSTFS_ACCESS_KEY=configadmin -e RUSTFS_SECRET_KEY=configadmin rustfs/rustfs:latest"
         fi
     else
-        log_info "Docker not available — config blob storage disabled"
+        log_info "Docker not available -- config blob storage disabled"
     fi
 
     # Start Astro dev server (marketing site)
@@ -526,17 +501,15 @@ account_dev() {
     # the container network -- a 127.0.0.1 bind is invisible to it, and the
     # symptom is a 502 from Traefik rather than anything pointing at the bind.
     local dev_bind="${REDIACC_DEV_BIND:-127.0.0.1}"
-    (cd "$CONSOLE_ROOT_DIR/packages/www" && npx astro dev --port "$ASTRO_PORT" --host "$dev_bind") \
-        >"$ACCOUNT_LOG_DIR/astro.log" 2>&1 &
-    local astro_pid=$!
-    ACCOUNT_PIDS+=("$astro_pid")
+    account_spawn "$CONSOLE_ROOT_DIR/packages/www" "$ACCOUNT_LOG_DIR/astro.log" \
+        npx astro dev --port "$ASTRO_PORT" --host "$dev_bind"
+    local astro_pid=$ACCOUNT_SPAWNED
 
     # Start Vite dev server (account portal SPA)
     log_step "Starting Vite dev server on :${VITE_PORT}..."
-    (cd "$ACCOUNT_DIR/web" && npx vite --port "$VITE_PORT" --host "$dev_bind") \
-        >"$ACCOUNT_LOG_DIR/vite.log" 2>&1 &
-    local vite_pid=$!
-    ACCOUNT_PIDS+=("$vite_pid")
+    account_spawn "$ACCOUNT_DIR/web" "$ACCOUNT_LOG_DIR/vite.log" \
+        npx vite --port "$VITE_PORT" --host "$dev_bind"
+    local vite_pid=$ACCOUNT_SPAWNED
 
     # Wait for both to be ready
     # Cold caches are slow: Astro's first content sync alone can take ~30s.
@@ -550,6 +523,7 @@ account_dev() {
     {
         echo "gateway_port=$GATEWAY_PORT"
         echo "pids=${ACCOUNT_PIDS[*]// /,}"
+        echo "writer=$(account_writer_stamp)"
         echo "worktree=$CONSOLE_ROOT_DIR"
         echo "started=$(date +%s)"
     } >"$ACCOUNT_STATE_FILE"
@@ -557,7 +531,7 @@ account_dev() {
     # Provision + print dev login credentials once the gateway is healthy
     account_dev_credentials "$GATEWAY_PORT" &
 
-    # Start gateway (foreground — keeps terminal alive). Precompute the WebAuthn
+    # Start gateway (foreground -- keeps terminal alive). Precompute the WebAuthn
     # origin so its ${GATEWAY_PORT} isn't expanded from the same env-prefix that
     # (re)assigns GATEWAY_PORT (that ordering is a shellcheck SC2097/SC2098 trap).
     local webauthn_origin="http://localhost:${GATEWAY_PORT}"
@@ -585,7 +559,7 @@ account_dev_credentials() {
     local base="http://127.0.0.1:${gateway_port}/account/api/v1"
 
     local i healthy=0
-    for i in $(seq 1 60); do
+    for ((i = 1; i <= 60; i++)); do
         if curl -sf -m 2 "http://127.0.0.1:${gateway_port}/health" >/dev/null 2>&1; then
             healthy=1
             break
@@ -629,7 +603,7 @@ account_dev_credentials() {
     # usable with a known password on a fresh start. This is a CONSTANT password
     # (never rotated): an idempotent re-seed cannot re-wrap the CEK without the
     # prior password, so a fixed one keeps re-runs working. Best-effort and does
-    # NOT gate the login banner below — config storage needs RustFS (Docker), so
+    # NOT gate the login banner below -- config storage needs RustFS (Docker), so
     # a Docker-less dev box still gets its logins printed.
     local store_pw="DevConsole123!"
     local seed_json seed_existing="" seed_recovery="" seed_totp=""
@@ -644,10 +618,11 @@ account_dev_credentials() {
     fi
 
     # 65 box-drawing dashes for the borders. account_banner_row's %-63s pads by
-    # BYTES, so every content string below stays ASCII-only — a multibyte glyph
+    # BYTES, so every content string below stays ASCII-only -- a multibyte glyph
     # (arrow / em dash) would shift the closing bar left and break the box.
     local rule
-    rule=$(printf '─%.0s' $(seq 1 65))
+    printf -v rule '%*s' 65 ''
+    rule=${rule// /─}
 
     local recovery_display
     if [[ "$seed_existing" == "1" ]]; then
@@ -697,7 +672,7 @@ account_banner_row() {
 }
 
 # Print the current TOTP code for a dev user (default dev-user@rediacc.io). Reads
-# the running gateway's port from the state file — the store + TOTP secret are
+# the running gateway's port from the state file -- the store + TOTP secret are
 # seeded by `account dev`, so the gateway must be up. Dev-only route.
 account_totp() {
     local email="${1:-dev-user@rediacc.io}"
@@ -741,7 +716,7 @@ account_stop() {
         local old_gateway old_pids
         old_gateway=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
         old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" 2>/dev/null | cut -d= -f2)
-        if [[ -n "$old_pids" ]]; then
+        if [[ -n "$old_pids" ]] && account_state_owned; then
             for pid in ${old_pids//,/ }; do
                 kill "$pid" 2>/dev/null || true
             done
@@ -762,7 +737,11 @@ account_stop() {
 
     local containers=(account-server)
     for container in "${containers[@]}"; do
-        if docker ps -a --format "{{.Names}}" 2>/dev/null | grep -q "^${container}$"; then
+        # `[ -n "$(...)" ]` rather than `| grep -q`. This file sets no pipefail of
+        # its own but INHERITS it from every sourcer, so grep -q's early exit can
+        # SIGPIPE docker and make that 141 the pipeline's verdict -- which SKIPS
+        # the teardown of a container that IS there.
+        if [ -n "$(docker ps -a --format "{{.Names}}" 2>/dev/null | grep "^${container}$")" ]; then
             docker stop "$container" 2>/dev/null || true
             docker rm "$container" 2>/dev/null || true
         fi
@@ -786,24 +765,22 @@ account_test() {
 }
 
 account_test_e2e() {
+    account_bws_exec account-e2e account test e2e "$@"
     check_node_version
 
-    # Load backend .env to extract secrets for E2E tests
-    local account_env="$ACCOUNT_DIR/.env"
-    if [[ ! -f "$account_env" ]]; then
-        log_error "Account .env not found. Run: ./run.sh account reset"
-        exit 1
-    fi
+    # Same rule as account_dev: the shell wins. An E2E run started with
+    # GATEWAY_PORT or REDIACC_ACCOUNT_SERVER already exported is pointing the
+    # tests somewhere on purpose.
+    account_load_defaults || return 1
 
-    set -a
-    source "$account_env"
-    set +a
-
-    # Check dev gateway is running
+    # Check dev gateway is running: an exported GATEWAY_PORT, then an exported
+    # REDIACC_ACCOUNT_SERVER, then this worktree's .account-state.
     local gateway_port="${GATEWAY_PORT:-}"
     if [[ -z "$gateway_port" ]]; then
-        # Try to detect from REDIACC_ACCOUNT_SERVER
         gateway_port=$(echo "${REDIACC_ACCOUNT_SERVER:-}" | grep -oP ':\K[0-9]+' || echo "")
+    fi
+    if [[ -z "$gateway_port" ]]; then
+        gateway_port=$(account_state_gateway_port || echo "")
     fi
 
     if [[ -z "$gateway_port" ]]; then
@@ -812,7 +789,8 @@ account_test_e2e() {
         exit 1
     fi
 
-    if ! is_port_in_use "$gateway_port"; then
+    if ! PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports is-port-in-use "$gateway_port"; then
         log_error "Dev gateway not running on port $gateway_port"
         log_info "Start it first: ./run.sh account dev"
         exit 1
@@ -858,25 +836,39 @@ account_reset() {
 
     log_step "Resetting account development environment"
 
-    local env_file="$ACCOUNT_DIR/.env"
-
-    if [[ -f "$env_file" ]]; then
-        # Regenerate crypto keys in-place, preserving user-added values
-        log_info "Regenerating crypto keys (preserving user values)..."
-        account_generate_crypto_keys
-
-        _sed_i "s|^ACCOUNT_ED25519_PRIVATE_KEY=.*|ACCOUNT_ED25519_PRIVATE_KEY=${ED25519_PRIV}|" "$env_file"
-        _sed_i "s|^ACCOUNT_ED25519_PUBLIC_KEY=.*|ACCOUNT_ED25519_PUBLIC_KEY=${ED25519_PUB}|" "$env_file"
-        _sed_i "s|^ACCOUNT_X25519_PRIVATE_KEY=.*|ACCOUNT_X25519_PRIVATE_KEY=${X25519_PRIV}|" "$env_file"
-        _sed_i "s|^ACCOUNT_X25519_PUBLIC_KEY=.*|ACCOUNT_X25519_PUBLIC_KEY=${X25519_PUB}|" "$env_file"
-        _sed_i "s|^ACCOUNT_JWT_SECRET=.*|ACCOUNT_JWT_SECRET=${JWT_SEC}|" "$env_file"
-        _sed_i "s|^ACCOUNT_SERVER_API_KEY=.*|ACCOUNT_SERVER_API_KEY=${API_K}|" "$env_file"
-
-        # Ensure any newly added keys exist
-        account_ensure_env_keys
-    else
-        account_generate_fresh_env
-    fi
+    # A fresh DEV keypair, pushed to the six ACCOUNT_*_DEV Bitwarden entries and
+    # read back. Values travel only through this process's environment into the
+    # store-from-env child; nothing is written to disk.
+    log_info "Generating a fresh DEV keypair and session secrets..."
+    account_generate_crypto_keys
+    ACCOUNT_ED25519_PRIVATE_KEY="$ED25519_PRIV" \
+        ACCOUNT_ED25519_PUBLIC_KEY="$ED25519_PUB" \
+        ACCOUNT_X25519_PRIVATE_KEY="$X25519_PRIV" \
+        ACCOUNT_X25519_PUBLIC_KEY="$X25519_PUB" \
+        ACCOUNT_JWT_SECRET="$JWT_SEC" \
+        ACCOUNT_SERVER_API_KEY="$API_K" \
+        PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.bws_env store-from-env \
+        "ACCOUNT_ED25519_PRIVATE_KEY_DEV > ACCOUNT_ED25519_PRIVATE_KEY" \
+        "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY" \
+        "ACCOUNT_X25519_PRIVATE_KEY_DEV > ACCOUNT_X25519_PRIVATE_KEY" \
+        "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY" \
+        "ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET" \
+        "ACCOUNT_SERVER_API_KEY_DEV > ACCOUNT_SERVER_API_KEY" || {
+        log_error "Pushing the DEV keys to Bitwarden failed; the database was NOT reset"
+        exit 1
+    }
+    unset ED25519_PRIV ED25519_PUB X25519_PRIV X25519_PUB JWT_SEC API_K
+    # This machine's public-key cache, so the next dev renet bakes the NEW key.
+    mkdir -p "$ACCOUNT_DIR/.cache"
+    PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.bws_env cache-to \
+        "$ACCOUNT_DIR/.cache/public-keys.env" \
+        "ACCOUNT_ED25519_PUBLIC_KEY_DEV > ACCOUNT_ED25519_PUBLIC_KEY" \
+        "ACCOUNT_X25519_PUBLIC_KEY_DEV > ACCOUNT_X25519_PUBLIC_KEY" ||
+        log_warn "Could not refresh the public-key cache; run ./run.sh setup"
+    log_warn "The DEV keys are shared: every machine's dev database holds licences"
+    log_warn "signed by the OLD key, and every OTHER machine's cached public key is now stale."
+    log_warn "On each of them: ./run.sh setup"
 
     # Reset database
     local db_path="$ACCOUNT_DIR/account.db"
@@ -974,8 +966,8 @@ account_seed_demo() {
 # ROTATION (secret rotation lifecycle for AWS IAM, CF tokens, CF Turnstile)
 # =============================================================================
 # Thin bash wrapper around the TypeScript rotation CLI in
-# private/account/scripts/rotation/. All actual logic — manifest read/write,
-# platform calls, state transitions — lives in TS so it's type-checked,
+# private/account/scripts/rotation/. All actual logic -- manifest read/write,
+# platform calls, state transitions -- lives in TS so it's type-checked,
 # testable, and stays inside the private submodule (the public console repo
 # does not contain rotation orchestration).
 #
@@ -983,6 +975,7 @@ account_seed_demo() {
 #
 # See /home/muhammed/.claude/plans/steady-munching-seal.md for the full design.
 account_rotation() {
+    account_bws_exec rotation rotation "$@"
     check_node_version
     cd "$ACCOUNT_DIR" || exit 1
     npx tsx scripts/rotation/index.ts "$@"
@@ -1035,9 +1028,6 @@ account_db() {
         return 1
     fi
 
-    # shellcheck source=/dev/null
-    source "$CONSOLE_ROOT_DIR/.ci/lib/find-port.sh"
-
     # Prefer this worktree's devbox slot so the URL is stable and two worktrees
     # can browse at once. Then STEP ASIDE if it is taken: when the browser runs
     # on the host while the devbox is up, docker-proxy already holds that port.
@@ -1050,9 +1040,9 @@ account_db() {
         # format with two independent readers is one edit away from them
         # disagreeing.
         #
-        # devbox.sh sources only find-port.sh, which this file already sources,
+        # devbox.sh sources no library at all since find-port.sh was deleted,
         # so pulling it in adds no constants.sh readonly hazard. Guarded so a
-        # second source is a no-op, because check-account-probes.sh sources this
+        # second source is a no-op, because check_account_probes.py sources this
         # file standalone under `set +eu` and that path is documented as fragile.
         if ! declare -F devbox_state_get >/dev/null 2>&1; then
             # shellcheck source=./devbox.sh
@@ -1066,7 +1056,9 @@ account_db() {
         [[ -n "$base" ]] && preferred=$((base + ${DEVBOX_OFFSET_STUDIO:-3}))
     fi
     local port
-    port="$(find_preferred_port "$preferred" "$((preferred + 1))" "$((preferred + 40))")" || {
+    port="$(PYTHONPATH="$ACCOUNT_CI_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+        python3 -m rediacc_ci.core.ports find-preferred-port \
+        "$preferred" "$((preferred + 1))" "$((preferred + 40))")" || {
         log_error "No free port near $preferred for the database browser"
         return 1
     }

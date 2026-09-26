@@ -107,17 +107,10 @@ on:
         type: string
         default: ''
 
-permissions:
-  contents: read
-  # packages: read is REQUIRED, not decorative. Without it the pre-pull gets
-  # part-way and then dies:
-  #     Pulling server:latest...  ghcr.io/rediacc/server:latest   OK
-  #     Pulling renet:latest...   Error response from daemon: denied
-  # `server` happens to be readable without it; `renet` is not, so the failure
-  # looked like a broken image reference rather than a missing scope. ci.yml
-  # carries the same line with the comment "Most jobs pull from GHCR"; this
-  # workflow simply omitted it.
-  packages: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 # Keyed on run_id, so the group is unique per run and can NEVER collide.
 # cancel-in-progress is therefore false rather than true: the old
@@ -141,6 +134,9 @@ jobs:
     name: Preflight
     runs-on: ubuntu-slim
     timeout-minutes: 5 # CHECK 3: slim jobs must declare <= 14
+    # Checkout, then a local preflight script. No GitHub API.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -161,6 +157,18 @@ jobs:
   # ==========================================================================
   session:
     name: Session (${{ inputs.tunnel-mode }})
+    # packages: read is REQUIRED, not decorative. Without it the pre-pull gets
+    # part-way and then dies:
+    #     Pulling server:latest...  ghcr.io/rediacc/server:latest   OK
+    #     Pulling renet:latest...   Error response from daemon: denied
+    # `server` happens to be readable without it; `renet` is not, so the failure
+    # looked like a broken image reference rather than a missing scope.
+    # The step is behind the `services` refusal below, so the scope is currently
+    # unexercised, but it must survive that refusal being lifted.
+    # No write scope of any kind: a later step hands a human a shell.
+    permissions:
+      contents: read
+      packages: read
     needs: [preflight]
     runs-on: ${{ inputs.runner }}
     # STATIC 350, and it has to be: GitHub Actions expressions have NO
@@ -184,33 +192,50 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # NO BITWARDEN SHADOW IN THIS JOB, and its absence is the deliberate part.
+      # NO FULL BITWARDEN SHADOW IN THIS JOB, and that absence is still deliberate
+      # (2026-09-02 through 2026-09-14). Every other job on the branch carries a
+      # `Fetch shadow secrets from Bitwarden` step listing the GitHub App private
+      # key, the Cloudflare tunnel token and the SES EU pair -- and the bws-secrets
+      # action exports through GITHUB_ENV, which puts a value in the environment of
+      # EVERY LATER STEP of the job. This job's later steps include `Start debug
+      # shell`: a human on a shell inside this runner. The full shadow would
+      # promote FOUR credentials from step scope to something that human can read
+      # out of the environment, and the App private key is the worst of them: it
+      # mints tokens for any preset and any repository, where the shell already
+      # only has a readonly, one-hour token for console and elite.
       #
-      # Every other job on the branch carries a `Fetch shadow secrets from Bitwarden`
-      # step plus its comparator. This one carried one too, listing the GitHub App
-      # private key, the Cloudflare tunnel token and the SES EU pair -- and the
-      # bws-secrets action exports through GITHUB_ENV, which puts a value in the
-      # environment of EVERY LATER STEP of the job.
+      # NARROW SINGLE-SECRET FETCH, added 2026-09-14 after `BREAKPOINT_TUNNEL_TOKEN`
+      # was deleted from GitHub secrets org-wide (migrated to Bitwarden Secrets
+      # Manager, like everything else). This is not the same shadow reintroduced:
+      # the `secrets:` list below names exactly one credential, so exactly one
+      # value reaches GITHUB_ENV -- never the App private key or the SES pair. A
+      # human seeing the tunnel token in this job's own shell is not a privilege
+      # escalation: the token's blast radius is one Cloudflare tunnel, which is
+      # this job's entire purpose, unlike a credential that mints access to other
+      # repositories or services.
       #
-      # This job's later steps include `Start debug shell`. That is its entire
-      # purpose: a human on a shell inside this runner. So the shadow quietly
-      # promoted four credentials from step scope -- where every real consumer below
-      # keeps them, each in its own `env:` -- to something that human can read out of
-      # the environment. The App private key is the worst of them: it mints tokens for
-      # any preset and any repository, where the shell already only has a readonly,
-      # one-hour token for console and elite.
-      #
-      # Nothing here consumed the shadow, and the twin-equality it proved is proven
-      # by roughly twenty other jobs, so removing it costs no information at all. If
-      # this job is ever cut over to Bitwarden, it needs a DIFFERENT shape than the
-      # others: mint the app token in a job that has no shell in it and pass the
-      # token, never fetch the key into the job that does.
+      # THREE CONFIGURATION VALUES RIDE THE SAME FETCH since 2026-09-24, when the
+      # GitHub Actions variables namespace moved to Bitwarden
+      # (agent/plans/PLAN-github-actions-to-bitwarden.md). The Cloudflare account
+      # id, the SES EU region and the SES sender address are not credentials: each
+      # was already printed in the clear in this job's step env blocks as a
+      # repository variable, so a human reading them out of the shell learns
+      # nothing new. The credential count reaching GITHUB_ENV is still one.
+      - name: Fetch tunnel token from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN > BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
+            AWS_SES_FROM > BWS_AWS_SES_FROM
 
       - name: Resolve tunnel mode
         id: mode
         env:
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
           BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
           BP_TUNNEL_MODE: ${{ inputs.tunnel-mode }}
@@ -240,11 +265,11 @@ jobs:
       # Restoring it is not a matter of fetching the key from Bitwarden: a later
       # step in this job hands a human a shell, and GITHUB_ENV/GITHUB_OUTPUT are
       # files any step can read, so the key would be readable by that human. The
-      # shape that would work is in agent/PLAN-breakpoint-secret-shape.md.
+      # shape that would work is in agent/plans/PLAN-breakpoint-secret-shape.md.
       - name: Refuse services, which needs a credential this job must not hold
         if: inputs.services != 'none'
         run: |
-          echo "::error::services='${{ inputs.services }}' is unavailable: it needs an app token minted from APP_PRIVATE_KEY to clone the private elite repo, and that org secret was deleted on 2026-09-05. This job deliberately holds no long-lived credential, because a later step hands a human a shell. Re-run with services=none, or see agent/PLAN-breakpoint-secret-shape.md."
+          echo "::error::services='${{ inputs.services }}' is unavailable: it needs an app token minted from APP_PRIVATE_KEY to clone the private elite repo, and that org secret was deleted on 2026-09-05. This job deliberately holds no long-lived credential, because a later step hands a human a shell. Re-run with services=none, or see agent/plans/PLAN-breakpoint-secret-shape.md."
           exit 1
 
       - name: Install desktop packages
@@ -298,8 +323,8 @@ jobs:
       - name: Start tunnel
         id: tunnel
         env:
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_ACTOR: ${{ github.actor }}
           BP_MODE: ${{ steps.mode.outputs.mode }}
@@ -326,9 +351,9 @@ jobs:
           # this step was actually doing. Fetching them from Bitwarden instead is
           # NOT the fix: a later step in this job hands a human a shell, and
           # GITHUB_ENV/GITHUB_OUTPUT are files any step can read. See
-          # agent/PLAN-breakpoint-secret-shape.md.
-          AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
-          AWS_SES_FROM: ${{ vars.AWS_SES_FROM }}
+          # agent/plans/PLAN-breakpoint-secret-shape.md.
+          AWS_DEFAULT_REGION: ${{ env.BWS_AWS_SES_REGION_EU }}
+          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
           # The URL and the tmate strings are DELIBERATELY ABSENT from this
           # env: block, and must never be added back. The runner prints every
@@ -358,8 +383,8 @@ jobs:
       - name: Teardown
         if: always()
         env:
-          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           BP_LABEL: ${{ inputs.tunnel-label }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |

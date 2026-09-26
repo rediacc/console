@@ -424,20 +424,16 @@ function computeContinuousSecurityTesting(vals: Record<string, number>): Compute
 }
 
 function computeDataSovereignty(vals: Record<string, number>): ComputeOutput {
-  // records: thousands of EU personal-data records under management
-  // spend: annual hyperscaler spend in thousands of EUR
-  // recoveryHours: hours per year on DORA Article 12 manual recovery testing
+  // records: thousands of EU personal-data records under management spend: annual hyperscaler spend in thousands of EUR recoveryHours: hours per year on DORA Article 12 manual recovery testing
   const records = vals.records;
   const spend = vals.spend;
   const recoveryHours = vals.recoveryHours;
 
-  // GDPR transfer-risk exposure: per-record fine quantum ~€0.04 × 0.1 annual probability,
-  // floored at €5k to reflect supervisory authority minimums.
+  // GDPR transfer-risk exposure: per-record fine quantum ~€0.04 × 0.1 annual probability, floored at €5k to reflect supervisory authority minimums.
   const transferRiskRaw = Math.round(records * 1000 * 0.04 * 0.1);
   const transferRisk = Math.max(5000, transferRiskRaw);
 
-  // Data Act 2027 exit penalty: 10% of annual hyperscaler spend until 12 Jan 2027 ceiling drops to 0,
-  // amortised as risk premium on next contract renewal.
+  // Data Act 2027 exit penalty: 10% of annual hyperscaler spend until 12 Jan 2027 ceiling drops to 0, amortised as risk premium on next contract renewal.
   const exitPenalty = Math.round(spend * 1000 * 0.1);
 
   // DORA Article 12 manual recovery testing: hours × €200 consultant rate.
@@ -445,8 +441,7 @@ function computeDataSovereignty(vals: Record<string, number>): ComputeOutput {
 
   const totalCost = transferRisk + exitPenalty + doraTesting;
 
-  // With Rediacc: zero transfer risk (no provider plaintext access), zero exit penalty (open btrfs/tar formats),
-  // DORA testing reduced to internal hours only (~10% of original rate via automation).
+  // With Rediacc: zero transfer risk (no provider plaintext access), zero exit penalty (open btrfs/tar formats), DORA testing reduced to internal hours only (~10% of original rate via automation).
   const rDoraTesting = Math.round(doraTesting * 0.1);
 
   return {

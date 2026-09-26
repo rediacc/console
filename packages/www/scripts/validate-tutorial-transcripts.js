@@ -74,16 +74,9 @@ function validateSchema(transcript, file, errors) {
 
   // CHAPTERS, and this block exists because its absence shipped.
   //
-  // This validator was already TODO-aware for events[].text, events[].afterText
-  // and narration.text -- but chapters were never inspected at all. So
-  // `chapters.cast-step-7` sat as a literal "TODO: translate chapter (...)" in
-  // ALL TWELVE non-English locales of tutorial-backup-restore and this file
-  // reported "All tutorial transcript files are valid" every single run.
+  // This validator was already TODO-aware for events[].text, events[].afterText and narration.text -- but chapters were never inspected at all. So `chapters.cast-step-7` sat as a literal "TODO: translate chapter (...)" in ALL TWELVE non-English locales of tutorial-backup-restore and this file reported "All tutorial transcript files are valid" every single run.
   //
-  // It was found by a human reading the JSON, not by any gate. A validator that
-  // checks three string fields for placeholders and silently ignores a fourth
-  // is worse than one that checks none: it produces a green line that reads as
-  // "the placeholders are gone".
+  // It was found by a human reading the JSON, not by any gate. A validator that checks three string fields for placeholders and silently ignores a fourth is worse than one that checks none: it produces a green line that reads as "the placeholders are gone".
   if (transcript.chapters !== undefined) {
     if (typeof transcript.chapters !== 'object' || Array.isArray(transcript.chapters)) {
       pushError(errors, file, 'chapters must be an object.', 'Use { "<id>": "<title>" }');
@@ -178,8 +171,7 @@ function validateSchema(transcript, file, errors) {
       );
     }
 
-    // Optional afterText (post-command narration). If present, must be a non-empty
-    // string and not a TODO placeholder.
+    // Optional afterText (post-command narration). If present, must be a non-empty string and not a TODO placeholder.
     if (event.afterText !== undefined) {
       if (typeof event.afterText !== 'string' || event.afterText.trim().length === 0) {
         pushError(
@@ -323,8 +315,7 @@ function validateOptionalLocale(castKey, lang, transcript, markers, file, errors
 // AI TROUBLESHOOTING GUIDE
 // ---------------------------------------------------------------------------
 //
-// This validator ensures tutorial transcripts stay in sync with cast files
-// (recorded terminal sessions) and that all locale transcripts match English.
+// This validator ensures tutorial transcripts stay in sync with cast files (recorded terminal sessions) and that all locale transcripts match English.
 //
 // ARCHITECTURE:
 //   Cast file (.cast)  -- recorded terminal session with "m" (marker) events

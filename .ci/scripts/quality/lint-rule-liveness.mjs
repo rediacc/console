@@ -28,43 +28,34 @@
  * there becomes a fourteenth "language" for every i18n rule and for the
  * locale-set gates that derive from @rediacc/locales.
  *
- * DESIGN: agent/PLAN-lint-rule-matrix-probe.md
+ * DESIGN: agent/plans/PLAN-lint-rule-matrix-probe.md
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { minimatch } from 'minimatch';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // .ci/scripts/quality/ -> repo root
 const ROOT = path.resolve(HERE, '../../..');
 
-// Several rules resolve paths against process.cwd() rather than against the
-// linted file: require-path-option.js:24 (every i18n localesDir) and
-// require-command-summary.js:59 (en/cli.json). A wrong cwd makes some of them
-// throw and others silently no-op, i.e. look dead. Pin it.
+// Several rules resolve paths against process.cwd() rather than against the linted file: require-path-option.js:24 (every i18n localesDir) and require-command-summary.js:59 (en/cli.json). A wrong cwd makes some of them throw and others silently no-op, i.e. look dead. Pin it.
 process.chdir(ROOT);
 
-const NAMESPACES = new Set(['custom', 'i18n', 'i18n-source']);
+// The plugin namespaces this gate ever covers: `custom`, `i18n`, `i18n-source`. No longer held in a variable -- the universe comes from `scripts/data/source-rules.ts`'s `RULE_IDS` now (see `sourceRulesUniverse()` below), and a `Set` that nothing read was itself an unreachable-code finding waiting to happen (`@typescript-eslint/no-unused-vars`, caught 2026-09-24).
 
-// Floors. Today the config resolves 35 registered / 30 enabled. These leave
-// room for a deliberate removal and none at all for the config resolving to
-// nothing, which is the failure that would otherwise exit 0 while proving
-// nothing -- indistinguishable from a healthy repo.
+// Floors. Today the config resolves 35 registered / 30 enabled. These leave room for a deliberate removal and none at all for the config resolving to nothing, which is the failure that would otherwise exit 0 while proving nothing -- indistinguishable from a healthy repo.
 const MIN_REGISTERED = 30;
 const MIN_ENABLED = 25;
 // Directory representatives the .tsx/.jsx reachability sweep must find (§6.3).
 const MIN_JSX_DIRS = 10;
 
-// ---------------------------------------------------------------------------
-// Registered but enabled nowhere, by an explicit and documented decision.
+// --------------------------------------------------------------------------- Registered but enabled nowhere, by an explicit and documented decision.
 // The banner at eslint.config.js:104-137 records why (7245 findings on waking,
-// plus a fixer that does not converge). This map must EQUAL registered-minus-
-// enabled exactly, so a FUTURE rule that becomes registered-but-never-enabled
-// -- dead wiring, the way custom/no-raw-api-calls was before it was deleted --
-// cannot slip in unremarked.
-// ---------------------------------------------------------------------------
+// plus a fixer that does not converge). This map must EQUAL registered-minus- enabled exactly, so a FUTURE rule that becomes registered-but-never-enabled -- dead wiring, the way custom/no-raw-api-calls was before it was deleted -- cannot slip in unremarked. ---------------------------------------------------------------------------
 const KNOWN_OFF = {
   'i18n/sorted-keys':
     "off since 2026-08-06: 2172 findings on waking, and its 'fixable' fixer does not converge",
@@ -77,18 +68,10 @@ const KNOWN_OFF = {
     'off since 2026-08-06: same wave, needs the hash sidecars re-scoped',
 };
 
-// ---------------------------------------------------------------------------
-// Enabled, alive as code, and unable to report on any file that exists.
-// This is a DISTINCT failure from a dead rule and it is recorded rather than
-// hidden: the gate stays green, the finding stays written down.
-// ---------------------------------------------------------------------------
-// EMPTY ON PURPOSE, and it should stay that way.
+// --------------------------------------------------------------------------- Enabled, alive as code, and unable to report on any file that exists. This is a DISTINCT failure from a dead rule and it is recorded rather than hidden: the gate stays green, the finding stays written down. --------------------------------------------------------------------------- EMPTY ON PURPOSE, and
+// it should stay that way.
 //
-// `custom/require-testid` lived here until 2026-08-15: it was 'error' on the
-// js/jsx/ts/tsx glob while every tree containing JSX switched it off, so it
-// protected ZERO files. The operator's answer was to ENABLE it rather than
-// keep documenting the exception. Measured before the change: packages/www
-// reports 0 findings across its 28 .tsx/.jsx files, so that tree was switched
+// `custom/require-testid` lived here until 2026-08-15: it was 'error' on the js/jsx/ts/tsx glob while every tree containing JSX switched it off, so it protected ZERO files. The operator's answer was to ENABLE it rather than keep documenting the exception. Measured before the change: packages/www reports 0 findings across its 28 .tsx/.jsx files, so that tree was switched
 // on immediately and for free; private/account/** stays off pending a sweep of
 // its 287 findings across 68 files, tracked as its own item.
 //
@@ -112,14 +95,9 @@ const KNOWN_UNREACHABLE = {};
  */
 const REACH_FLOOR = { 'custom/require-testid': 20 };
 
-// ---------------------------------------------------------------------------
-// Specimens that read a live value out of the tree.
+// --------------------------------------------------------------------------- Specimens that read a live value out of the tree.
 //
-// A stale specimen going silent reads EXACTLY like a dead rule, and that false
-// accusation is the thing this gate exists to avoid. Each of these entries
-// therefore carries a `precondition` that runs BEFORE the lint and, when it
-// fails, produces its own message saying so in as many words.
-// ---------------------------------------------------------------------------
+// A stale specimen going silent reads EXACTLY like a dead rule, and that false accusation is the thing this gate exists to avoid. Each of these entries therefore carries a `precondition` that runs BEFORE the lint and, when it fails, produces its own message saying so in as many words. ---------------------------------------------------------------------------
 const readJson = (rel) => JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
 
 const EN_CLI = 'packages/cli/src/i18n/locales/en/cli.json';
@@ -206,24 +184,14 @@ const preconditions = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// The matrix.
+// --------------------------------------------------------------------------- The matrix.
 //
-// `filePath` is a VIRTUAL path handed to lintText. It decides which config
-// block applies, so it must sit exactly where the enabling glob matches -- and
-// the gate re-checks that with calculateConfigForFile rather than trusting it,
-// because `packages/www/src/i18n/translations/*.json` is a SINGLE star and a
-// path one directory deeper resolves zero rules while looking like five dead
+// `filePath` is a VIRTUAL path handed to lintText. It decides which config block applies, so it must sit exactly where the enabling glob matches -- and the gate re-checks that with calculateConfigForFile rather than trusting it, because `packages/www/src/i18n/translations/*.json` is a SINGLE star and a path one directory deeper resolves zero rules while looking like five dead
 // ones.
 //
-// `mode`:
-//   in-config  - real severity, real options, no override. The strongest proof.
-//   option-dir - real path and severity, `localesDir` redirected at a temp
-//                fixture, because these two rules never read the linted text.
+// `mode`: in-config - real severity, real options, no override. The strongest proof. option-dir - real path and severity, `localesDir` redirected at a temp fixture, because these two rules never read the linted text.
 //   isolated   - own ESLint instance; the only mode for a rule that reports on
-//                the FILENAME, since no violating filename exists on disk and a
-//                virtual .ts path is rejected by the typed-linting projectService.
-// ---------------------------------------------------------------------------
+// the FILENAME, since no violating filename exists on disk and a virtual .ts path is rejected by the typed-linting projectService. ---------------------------------------------------------------------------
 const MATRIX = {
   // -- packages/cli/src/commands/backup.ts ---------------------------------
   'custom/no-direct-sftp-client': {
@@ -244,8 +212,7 @@ const MATRIX = {
   },
   'custom/require-translation': {
     filePath: 'packages/cli/src/commands/backup.ts',
-    // The `cli:` namespace prefix is load-bearing: an unprefixed key resolves
-    // no namespace and the rule returns silently.
+    // The `cli:` namespace prefix is load-bearing: an unprefixed key resolves no namespace and the rule returns silently.
     code: 'declare const t: any;\nt("cli:zz.nope");\n',
   },
   'custom/require-translation-key-arg': {
@@ -285,9 +252,7 @@ const MATRIX = {
   'custom/require-testid': {
     filePath: 'eslint-rules/zz-probe.js',
     // `Modal` is in requiredElements at eslint.config.js:437. This co-fires
-    // react/jsx-no-undef and no-undef, which is harmless: the assertion is per
-    // rule id. See KNOWN_UNREACHABLE -- this is the ONLY shape that can fire,
-    // and no real file in the repo has it.
+    // react/jsx-no-undef and no-undef, which is harmless: the assertion is per rule id. See KNOWN_UNREACHABLE -- this is the ONLY shape that can fire, and no real file in the repo has it.
     code: 'export const A = () => <Modal />;\n',
   },
 
@@ -320,9 +285,7 @@ const MATRIX = {
   },
   'custom/seo-no-hash-breadcrumb-url': {
     filePath: 'packages/www/src/components/AccountCta.tsx',
-    // THE VARIABLE NAME IS THE TRAP: the rule only looks inside an array whose
-    // declarator id matches /breadcrumb/i, so the identical object under any
-    // other name is silent.
+    // THE VARIABLE NAME IS THE TRAP: the rule only looks inside an array whose declarator id matches /breadcrumb/i, so the identical object under any other name is silent.
     code: 'const breadcrumbItems = [{ name: "S", url: "/en/#solutions" }];\nexport default breadcrumbItems;\n',
   },
   'custom/seo-no-trailing-slash-internal-link': {
@@ -331,12 +294,8 @@ const MATRIX = {
     code: 'export const X = () => <a href="/en/docs/" data-track="x">Docs</a>;\n',
   },
 
-  // -- packages/www/src/i18n/translations/tr.json --------------------------
-  // Key SHAPE matters as much as content: seo-title-length only looks at paths
-  // ending ".meta.title" (seo-title-length.js:53), seo-description-length at
-  // ".meta.description" (:51), and seo-no-duplicate-h1-title compares a sibling
-  // "hero.title" against "meta.title". Right text under the wrong key is
-  // silent, and reads exactly like a dead rule.
+  // -- packages/www/src/i18n/translations/tr.json -------------------------- Key SHAPE matters as much as content: seo-title-length only looks at paths ending ".meta.title" (seo-title-length.js:53), seo-description-length at ".meta.description" (:51), and seo-no-duplicate-h1-title compares a sibling "hero.title" against "meta.title". Right text under the wrong key is silent, and
+  // reads exactly like a dead rule.
   'i18n/seo-title-length': {
     filePath: 'packages/www/src/i18n/translations/tr.json',
     code: JSON.stringify({ pages: { x: { meta: { title: 'uzun baslik '.repeat(12) } } } }, null, 2),
@@ -391,8 +350,7 @@ const MATRIX = {
   'i18n/no-untranslated-values': {
     filePath: 'packages/cli/src/i18n/locales/tr/cli.json',
     // Byte-identical to en AND must survive the allowlist at eslint.config.js:46-81
-    // plus :670-687, which exempts anything with a dot, colon, at-sign or
-    // placeholder. cli.description is one of the few en values that qualifies.
+    // plus :670-687, which exempts anything with a dot, colon, at-sign or placeholder. cli.description is one of the few en values that qualifies.
     code: JSON.stringify({ cli: { description: EN_CLI_DESCRIPTION } }, null, 2),
     precondition: preconditions.cliDescriptionMatchesSpecimen,
   },
@@ -404,9 +362,7 @@ const MATRIX = {
     precondition: preconditions.configLoadedHasDuration,
   },
 
-  // -- option-override mode -------------------------------------------------
-  // These two never read the linted text beyond a type check: they read English
-  // off DISK from localesDir. A text-based liveness probe scores them dead while
+  // -- option-override mode ------------------------------------------------- These two never read the linted text beyond a type check: they read English off DISK from localesDir. A text-based liveness probe scores them dead while
   // they work. Probe path and severity stay real; only localesDir moves.
   'i18n/cross-language-consistency': {
     filePath: EN_CLI,
@@ -423,26 +379,39 @@ const MATRIX = {
 
   // -- isolated mode --------------------------------------------------------
   'custom/e2e-test-naming-convention': {
-    // Reports purely on the BASENAME (e2e-test-naming-convention.js:51/:76) and
-    // self-guards to paths containing packages/e2e-tests/tests (:62). No
-    // violating filename exists on disk -- the repo's files all conform, which
-    // is the rule doing its job -- and a virtual .ts path is rejected outright
-    // by the typed-linting projectService (allowDefaultProject covers only
-    // scripts/*.ts, scripts/utils/*.ts, packages/locales/*.js), which returns a
-    // FATAL parse error and runs zero rules. So the firing half runs in an
-    // isolated instance carrying only this rule and a plain TS parser, and the
-    // enabled half is proven separately with calculateConfigForFile against a
-    // REAL e2e test. The two together are the same claim the other 29 get in
+    // Reports purely on the BASENAME (e2e-test-naming-convention.js:51/:76) and self-guards to paths containing packages/e2e-tests/tests (:62). No violating filename exists on disk -- the repo's files all conform, which is the rule doing its job -- and a virtual .ts path is rejected outright by the typed-linting projectService (allowDefaultProject covers only scripts/*.ts and
+    // packages/locales/*.js), which returns a FATAL parse error and runs zero rules. So the firing half runs in an isolated instance carrying only this rule and a plain TS parser, and the enabled half is proven separately with calculateConfigForFile against a REAL e2e test. The two together are the same claim the other 29 get in
     // one step. Do not "simplify" this into the in-config mode; it cannot work.
     filePath: 'packages/e2e-tests/tests/zz_Bad-Name.test.ts',
     code: 'export const x = 1;\n',
     mode: 'isolated',
     enabledAt: 'packages/e2e-tests/tests/01-system-checks.test.ts',
+    controlCode: 'export const x = 1;\n',
+  },
+
+  // Net-new host-only ports (PLAN-biome-only-lint.md's rule map): NEITHER of
+  // these two ruleIds was ever registered in eslint.config.js, so there is no
+  // real ESLint config to resolve severity against at any path -- isolated
+  // mode is the only mode that can work here, same reasoning as the entry
+  // above, just for a rule with no ESLint history at all rather than one a
+  // typed-linting parse error rules out.
+  'custom/no-unused-underscore-var': {
+    filePath: 'packages/shared/src/index.ts',
+    code: 'const _biomeLivenessProbe = 1;\n',
+    mode: 'isolated',
+    enabledAt: 'packages/shared/src/index.ts',
+    controlCode: 'const _biomeLivenessProbe = 1;\nconsole.log(_biomeLivenessProbe);\n',
+  },
+  'custom/e2e-expect-expect': {
+    filePath: 'packages/e2e-tests/tests/zz_expect_probe.test.ts',
+    code: "test('probe', async () => {\n  console.log('no assertion');\n});\n",
+    mode: 'isolated',
+    enabledAt: 'packages/e2e-tests/tests/zz_expect_probe.test.ts',
+    controlCode: "test('probe', async () => {\n  expect(1).toBe(1);\n});\n",
   },
 };
 
-// Rules that can only ever report on JSX. "Enabled somewhere" is not the same
-// as "can ever report", and this is the check that tells those apart.
+// Rules that can only ever report on JSX. "Enabled somewhere" is not the same as "can ever report", and this is the check that tells those apart.
 const REQUIRES_JSX = new Set([
   'custom/require-testid',
   'custom/no-hardcoded-text',
@@ -451,9 +420,7 @@ const REQUIRES_JSX = new Set([
   'custom/seo-require-img-alt',
 ]);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Helpers ---------------------------------------------------------------------------
 const err = (...args) => console.error(...args);
 
 const severityOf = (value) => {
@@ -464,35 +431,58 @@ const severityOf = (value) => {
   return typeof raw === 'number' ? raw : 0;
 };
 
-/** Every rule the three custom namespaces register, and every one any block turns on. */
-const walkConfig = (blocks) => {
-  const registered = new Set();
-  for (const block of blocks) {
-    for (const [name, plugin] of Object.entries(block?.plugins ?? {})) {
-      if (!NAMESPACES.has(name)) continue;
-      for (const ruleName of Object.keys(plugin?.rules ?? {}))
-        registered.add(`${name}/${ruleName}`);
-    }
-  }
-  const enabled = new Set();
-  for (const block of blocks) {
-    for (const [ruleId, value] of Object.entries(block?.rules ?? {})) {
-      if (registered.has(ruleId) && severityOf(value) > 0) enabled.add(ruleId);
-    }
-  }
-  return { registered, enabled };
-};
+/**
+ * The universe used to come from walking eslint.config.js's `plugins`/`rules`
+ * blocks (last-match-wins across 6 modules). It now comes from
+ * `scripts/data/source-rules.ts`'s flat `RULE_IDS` -- the same table
+ * `check-source-rules.ts` (the host gate) runs against the real tree -- via
+ * `sourceRulesUniverse()` below.
+ *
+ * Pulling the registered rule OBJECT for isolated mode used to mean digging
+ * `block.plugins[ns].rules[name]` out of an eslint.config.js block. It is now
+ * a plain `import()` of the module path `RULE_INSTANCES` already records for
+ * that rule -- `ruleModuleExport()` below -- since a `RuleInstance` carries
+ * `modulePath`/`exportName` for exactly this purpose.
+ */
+async function sourceRulesUniverse() {
+  const mod = await import(path.join(ROOT, 'scripts/data/source-rules.ts'));
+  return { RULE_IDS: mod.RULE_IDS, RULE_INSTANCES: mod.RULE_INSTANCES };
+}
 
-/** Pull the registered rule OBJECTS out of the config, so the isolated instance
- *  proves the same object the real config would run, not a fresh import. */
-const registeredRuleObject = (blocks, ruleId) => {
-  const [ns, ...rest] = ruleId.split('/');
-  const name = rest.join('/');
-  for (const block of blocks) {
-    const plugin = block?.plugins?.[ns];
-    if (plugin?.rules?.[name]) return plugin.rules[name];
-  }
-  return null;
+/** Every `.js` rule module file under eslint-rules/, excluding helpers and tests:
+ *  the filesystem-truth half of dead-wiring detection now that there is no
+ *  ESLint plugin registration to walk. A file here that is neither wired into
+ *  `RULE_INSTANCES` (enabled) nor in `KNOWN_OFF_MODULES` (parked, documented)
+ *  is exactly the old "registered but enabled by no block" defect, just
+ *  detected from disk instead of from eslint.config.js. */
+const RULE_FILE_SKIP_DIRS = new Set(['lib', 'shared', '__tests__']);
+const RULE_FILE_SKIP_NAMES = new Set(['index.js', 'translation-helpers.js']);
+function allRuleModuleFiles(dir) {
+  const out = [];
+  const walk = (d) => {
+    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (RULE_FILE_SKIP_DIRS.has(entry.name)) continue;
+        walk(path.join(d, entry.name));
+      } else if (entry.name.endsWith('.js') && !RULE_FILE_SKIP_NAMES.has(entry.name)) {
+        out.push(path.relative(ROOT, path.join(d, entry.name)).split(path.sep).join('/'));
+      }
+    }
+  };
+  walk(dir);
+  return out.sort();
+}
+
+/** modulePath for each of KNOWN_OFF's 5 rules. `source-rules.ts`'s own docstring
+ *  says it deliberately excludes rules that are off everywhere, so these do not
+ *  appear in RULE_INSTANCES and must be listed here instead, same as KNOWN_OFF
+ *  itself is a hand-kept, deliberately-friction list. */
+const KNOWN_OFF_MODULES = {
+  'i18n/sorted-keys': 'eslint-rules/i18n/sorted-keys.js',
+  'i18n/no-unused-keys': 'eslint-rules/i18n/no-unused-keys.js',
+  'i18n/key-naming-convention': 'eslint-rules/i18n/key-naming-convention.js',
+  'i18n/no-empty-translations': 'eslint-rules/i18n/no-empty-translations.js',
+  'i18n/translation-staleness': 'eslint-rules/i18n/translation-staleness.js',
 };
 
 const firedRuleIds = (results) => {
@@ -530,63 +520,372 @@ const jsxCandidates = (dir, out) => {
   return out;
 };
 
+// --------------------------------------------------------------------------- Biome half: every GritQL plugin under biome-plugins/ must fire on a planted violation. Biome has no in-memory lint API, and GritQL plugins only evaluate when the CLI target is the project root `.` -- linting a subdirectory or a single file silently runs zero plugins (measured, see .ci/cache/biome-parity/biome-counts.md's "Environmental note", point 1). So the specimens are REAL files, run with `biome lint .` from a project root -- but that root is a MIRROR in an OS temp dir, never the repo itself. The mirror carries the repo's own biome.json VERBATIM and every biome-plugins/*.grit, and each fixture sits at the SAME repo-relative path it would have in the real tree, so each plugin's real `includes` is evaluated against the real path shape. Nothing is written into the shared tree, so a hard kill (which skips every `finally`) cannot leave a planted file or an append to a tracked file behind, and the gate needs no `tree:repo` mutex.
+// WHY NOT THE REAL TREE (wave 2 did that, verify3 VERDICT.md N2): it created 7 files, 2 of them in the private/account submodule, and APPENDED to the tracked private/account/src/services/email.service.ts, restoring it only in a `finally`. Under the parallel pool, any reader of the tree saw the planted files; after a SIGKILL the append stayed.
+// WHAT KEEPS THE MIRROR HONEST: a fixture's directory must exist in the real tree (a moved or renamed directory fails here instead of being silently invented in the mirror), and an `append` fixture starts from the real file's current content (read, never written).
 // ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
+const BIOME_BIN = path.join(ROOT, 'node_modules', '.bin', 'biome');
+
+// `var(--ant-` assembled from two pieces: written as one literal, this gate's own source is a no-ant-css-var violation (verify3 VERDICT.md N4 -- `biome lint .` counted 2 errors here).
+const ANT_CSS_VAR_PREFIX = ['var(', '--ant-'].join('');
+
+// One specimen per file in biome-plugins/. Adding a plugin without adding one here is caught below (missing/stale fixture check), the same discipline the
+// ESLint-side MATRIX enforces against RULE_IDS.
+const BIOME_PLUGIN_FIXTURES = [
+  {
+    plugin: 'no-d1-transaction',
+    file: 'private/account/src/__biome_plugin_liveness_d1.ts',
+    mode: 'create',
+    code: 'export async function __biomePluginLivenessD1(db: any) {\n  await db.transaction(async () => {\n    return 1;\n  });\n}\n',
+    message: 'db.transaction() is not supported on D1. Use sequential awaited operations instead.',
+  },
+  {
+    plugin: 'no-route-db-dynamic-import',
+    file: 'private/account/src/routes/__biome_plugin_liveness_route.ts',
+    mode: 'create',
+    code: "export async function __biomePluginLivenessRoute() {\n  return await import('../db/client');\n}\n",
+    message: 'Dynamic imports from the database layer are not allowed in routes.',
+  },
+  {
+    // This plugin's own `includes` names one file, not a directory glob, so the specimen is an append to the MIRROR's copy of the real file (the real file is only read): no other path is in this plugin's scope at all. Four arguments, the shape every real call site has.
+    plugin: 'no-email-literal-copy',
+    file: 'private/account/src/services/email.service.ts',
+    mode: 'append',
+    code: "\nexport function __biomePluginLivenessEmail(svc: any, to: string, r: any) {\n  svc.sendEmail(to, 'Subject line', r.html, r.text);\n}\n",
+    message:
+      'Do not hardcode email copy in EmailService. Render subject/html/text via translated email templates.',
+  },
+  {
+    plugin: 'no-constant-alias',
+    file: 'scripts/__biome_plugin_liveness_constant_alias.ts',
+    mode: 'create',
+    code: 'const LAYOUT = { HEADER_HEIGHT: 10 };\nexport const aliasVar = LAYOUT.HEADER_HEIGHT;\n',
+    message:
+      'Do not create local aliases from constants. Use the original property access directly (e.g. LAYOUT.HEADER_HEIGHT instead of const X = LAYOUT.HEADER_HEIGHT).',
+  },
+  {
+    plugin: 'no-ant-css-var',
+    file: 'scripts/__biome_plugin_liveness_ant_css_var.ts',
+    mode: 'create',
+    code: `export const cssVar = '${ANT_CSS_VAR_PREFIX}primary-color)';\n`,
+    message: `Do not use CSS variables (${ANT_CSS_VAR_PREFIX}*)). Remove color styling or use Ant Design component props instead.`,
+  },
+  {
+    plugin: 'no-t-default-value',
+    file: 'scripts/__biome_plugin_liveness_t_default.ts',
+    mode: 'create',
+    code: "declare function t(key: string, opts?: unknown): string;\nt('k', { defaultValue: 'x' });\n",
+    message:
+      'Do not use defaultValue in translation calls. Add the key to English translation JSON files instead.',
+  },
+  {
+    plugin: 'no-inline-style-prop',
+    file: 'packages/cli/src/__biome_plugin_liveness_inline_style.tsx',
+    mode: 'create',
+    code: 'export const BiomePluginLivenessInlineStyle = () => <div className="x" style={{ color: "red" }} />;\n',
+    message:
+      'Inline styles are not allowed. Use CSS utility classes from global.css or Ant Design component props instead.',
+  },
+  {
+    plugin: 'no-exported-type-alias',
+    file: 'scripts/__biome_plugin_liveness_exported_alias.ts',
+    mode: 'create',
+    code: 'type BiomePluginLivenessBase = { a: number };\nexport type BiomePluginLivenessAlias = BiomePluginLivenessBase;\n',
+    message:
+      'Do not create type aliases. Use the original type directly instead of creating an alias.',
+  },
+];
+
+/** Run `biome lint .` and parse its (experimental) JSON reporter. Biome exits 1
+ *  when diagnostics are present -- that is the expected, successful case here,
+ *  not a launch failure -- so stdout is read off the error too. */
+function biomeLintJson(cwd) {
+  let stdout = '';
+  try {
+    stdout = execFileSync(BIOME_BIN, ['lint', '.', '--reporter=json', '--max-diagnostics=none'], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      maxBuffer: 1024 * 1024 * 64,
+    });
+  } catch (e) {
+    if (typeof e.stdout === 'string' && e.stdout.length > 0) {
+      stdout = e.stdout;
+    } else {
+      throw new Error(`biome lint (cwd=${cwd}) did not run at all: ${e.message}`);
+    }
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch (parseErr) {
+    throw new Error(
+      `biome --reporter=json produced non-JSON stdout (cwd=${cwd}): ${parseErr.message}\n` +
+        stdout.slice(0, 1000)
+    );
+  }
+}
+
+/** Every GritQL diagnostic reports category "plugin" regardless of which
+ *  plugin fired it, so a fixture is identified by its (path, exact message)
+ *  pair, not by category. */
+function pluginFired(result, relFile, message) {
+  const posixFile = relFile.split(path.sep).join('/');
+  return (result.diagnostics ?? []).some(
+    (d) => d.category === 'plugin' && d.location?.path === posixFile && d.message === message
+  );
+}
+
+/** Write one fixture at its repo-relative path inside the mirror. Returns why it could not be planted, or null. The real tree is only READ: an `append` fixture starts from the real file's current content, and a fixture whose directory the real tree no longer has is refused rather than invented. */
+async function plantInMirror(mirrorRoot, fx) {
+  const realAbs = path.join(ROOT, fx.file);
+  const mustExist = fx.mode === 'append' ? realAbs : path.dirname(realAbs);
+  if (!fs.existsSync(mustExist))
+    return `${fx.plugin}: ${path.relative(ROOT, mustExist)} does not exist in the real tree`;
+  const mirrorAbs = path.join(mirrorRoot, fx.file);
+  await fs.promises.mkdir(path.dirname(mirrorAbs), { recursive: true });
+  const base = fx.mode === 'append' ? await fs.promises.readFile(realAbs, 'utf8') : '';
+  await fs.promises.writeFile(mirrorAbs, base + fx.code, 'utf8');
+  return null;
+}
+
+/** Every fixture planted in ONE temp mirror carrying the verbatim biome.json and every plugin, one `biome lint .` over it. */
+async function probeBiomePlugins(gritPlugins) {
+  const dead = [];
+  const missingDirs = [];
+  const mirrorRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'biome-plugin-liveness-'));
+  try {
+    await fs.promises.copyFile(path.join(ROOT, 'biome.json'), path.join(mirrorRoot, 'biome.json'));
+    await fs.promises.mkdir(path.join(mirrorRoot, 'biome-plugins'), { recursive: true });
+    for (const plugin of gritPlugins) {
+      await fs.promises.copyFile(
+        path.join(ROOT, 'biome-plugins', `${plugin}.grit`),
+        path.join(mirrorRoot, 'biome-plugins', `${plugin}.grit`)
+      );
+    }
+    const planted = [];
+    for (const fx of BIOME_PLUGIN_FIXTURES) {
+      const refusal = await plantInMirror(mirrorRoot, fx);
+      if (refusal) missingDirs.push(refusal);
+      else planted.push(fx);
+    }
+    const result = biomeLintJson(mirrorRoot);
+    for (const fx of planted) {
+      if (!pluginFired(result, fx.file, fx.message)) dead.push(fx.plugin);
+    }
+  } finally {
+    await fs.promises.rm(mirrorRoot, { recursive: true, force: true });
+  }
+  return { dead, missingDirs };
+}
+
+async function runBiomePluginLiveness() {
+  const gritPlugins = fs
+    .readdirSync(path.join(ROOT, 'biome-plugins'))
+    .filter((f) => f.endsWith('.grit'))
+    .map((f) => f.slice(0, -'.grit'.length))
+    .sort();
+  const fixturePlugins = BIOME_PLUGIN_FIXTURES.map((f) => f.plugin).sort();
+  const missingFixtures = gritPlugins.filter((g) => !fixturePlugins.includes(g));
+  const staleFixtures = fixturePlugins.filter((f) => !gritPlugins.includes(f));
+  const complete = missingFixtures.length === 0 && staleFixtures.length === 0;
+  const { dead, missingDirs } = complete
+    ? await probeBiomePlugins(gritPlugins)
+    : { dead: [], missingDirs: [] };
+  const controlFailures = await runBiomeControl();
+  return {
+    missingFixtures,
+    staleFixtures,
+    missingDirs,
+    dead,
+    controlFailures,
+    total: BIOME_PLUGIN_FIXTURES.length,
+  };
+}
+
+async function runBiomeControl() {
+  // ------------------------------------------------------------------------- CONTROL, inline on every run like the ESLint-half controls above: an
+  // isolated mirror where one plugin's `includes` is broken so it cannot match any real path. The same fixture that fires above must stay silent here, or this checker cannot tell firing from dead, and every "fired" verdict above would be unfalsifiable. -------------------------------------------------------------------------
+  const controlFailures = [];
+  const control = BIOME_PLUGIN_FIXTURES[0]; // no-d1-transaction
+  const mirrorRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'biome-plugin-control-'));
+  try {
+    await fs.promises.mkdir(path.join(mirrorRoot, 'biome-plugins'), { recursive: true });
+    await fs.promises.copyFile(
+      path.join(ROOT, 'biome-plugins', `${control.plugin}.grit`),
+      path.join(mirrorRoot, 'biome-plugins', `${control.plugin}.grit`)
+    );
+    await fs.promises.writeFile(
+      path.join(mirrorRoot, 'biome.json'),
+      JSON.stringify({
+        linter: { enabled: true },
+        files: { includes: ['**/*.ts'], ignoreUnknown: true },
+        plugins: [
+          {
+            path: `biome-plugins/${control.plugin}.grit`,
+            // Deliberately broken: no real path under this mirror can ever match.
+            includes: ['**/__biome-plugin-liveness-unreachable__/**'],
+          },
+        ],
+      })
+    );
+    const fixtureAbs = path.join(mirrorRoot, control.file);
+    await fs.promises.mkdir(path.dirname(fixtureAbs), { recursive: true });
+    await fs.promises.writeFile(fixtureAbs, control.code, 'utf8');
+
+    const controlResult = biomeLintJson(mirrorRoot);
+    if (pluginFired(controlResult, control.file, control.message)) {
+      controlFailures.push(
+        `${control.plugin} fired in the control mirror despite an includes pattern that cannot ` +
+          'match any real path. This checker cannot tell a firing plugin from a dead one, so ' +
+          'every "fired" verdict above would be unfalsifiable.'
+      );
+    }
+  } finally {
+    await fs.promises.rm(mirrorRoot, { recursive: true, force: true });
+  }
+
+  return controlFailures;
+}
+
+/** Print every Biome-half failure; true when there was one. Each section: its findings, a header, how one finding prints, and an optional closing line. */
+function reportBiomeHalf(biomeHalf) {
+  const sections = [
+    [
+      biomeHalf.missingFixtures,
+      `${biomeHalf.missingFixtures.length} GritQL plugin(s) under biome-plugins/ have no fixture in BIOME_PLUGIN_FIXTURES, so nothing proves they can fire:`,
+      (plugin) => `    ${plugin}.grit`,
+    ],
+    [
+      biomeHalf.staleFixtures,
+      `${biomeHalf.staleFixtures.length} stale BIOME_PLUGIN_FIXTURES entry(ies): a fixture for a plugin no longer under biome-plugins/:`,
+      (plugin) => `    ${plugin}`,
+    ],
+    [
+      biomeHalf.dead,
+      `${biomeHalf.dead.length} GritQL plugin(s) did NOT fire on a violation planted at its real repo-relative path under the real biome.json (in a temp mirror):`,
+      (plugin) => `    ${plugin}.grit`,
+      '  Fix the plugin or its biome.json `includes` -- do not lower its scope to hide this.',
+    ],
+    [
+      biomeHalf.missingDirs,
+      `${biomeHalf.missingDirs.length} GritQL fixture(s) name a path the real tree no longer has:`,
+      (line) => `    ${line}`,
+      "  Move the fixture to where the plugin's `includes` now points, or fix the `includes`.",
+    ],
+    [
+      biomeHalf.controlFailures,
+      'BIOME CONTROL FAILED: this checker cannot distinguish a firing plugin from a dead one.',
+      (line) => `    ${line}`,
+      'Refusing a verdict. Every "fired" result above would be unfalsifiable.',
+    ],
+  ];
+  let failed = false;
+  for (const [items, header, format, footer] of sections) {
+    if (items.length === 0) continue;
+    failed = true;
+    err(header);
+    for (const item of items) err(format(item));
+    if (footer) err(footer);
+  }
+  return failed;
+}
+
+// --------------------------------------------------------------------------- Main ---------------------------------------------------------------------------
 async function main() {
   const started = Date.now();
-  // Bare specifiers: this file lives inside the repo, so Node's resolver walks
-  // up to the repo's own node_modules. The launcher has already proven it exists.
+  // Bare specifiers: this file lives inside the repo, so Node's resolver walks up to the repo's own node_modules. The launcher has already proven it exists.
   const { ESLint } = await import('eslint');
-  const blocks = (await import(path.join(ROOT, 'eslint.config.js'))).default;
+  const { RULE_IDS, RULE_INSTANCES, GLOBAL_IGNORES } = await sourceRulesUniverse();
 
-  if (!Array.isArray(blocks)) {
-    err('VACUOUS INPUT: eslint.config.js did not default-export an array of config blocks');
+  if (!Array.isArray(RULE_IDS) || !Array.isArray(RULE_INSTANCES)) {
+    err(
+      'VACUOUS INPUT: scripts/data/source-rules.ts did not export RULE_IDS/RULE_INSTANCES arrays'
+    );
     return 1;
   }
 
-  const { registered, enabled } = walkConfig(blocks);
+  const enabled = new Set(RULE_IDS);
+  const registered = new Set([...enabled, ...Object.keys(KNOWN_OFF)]);
+
+  // Is `ruleId` enabled at `relPath`, per source-rules.ts's OWN files/ignores -- not eslint.config.js's. This replaces `calculateConfigForFile` for the enablement check below: a rule this table lists never existed in eslint.config.js at all (both `custom/e2e-expect-expect` and `custom/no-unused-underscore-var` are net-new host-only ports), so asking the real ESLint config whether it is "on" always says no, regardless of path -- the wrong tool now that source-rules.ts is the universe.
+  //
+  // ONE ruleId CAN HAVE SEVERAL RuleInstance entries (source-rules.ts's own docstring: "one entry per (rule, effective scope, effective options) triple"), e.g. `custom/no-positional-cli-syntax-source` has a separate instance for the CLI tree, the account-web tree and the www tree. A path is enabled for the rule if it matches ANY of that rule's instances, so this groups by ruleId into an ARRAY rather than keeping only the last one -- a `Map` built straight from `[ruleId, instance]` pairs silently drops every instance but the last for a rule with more than one, which read as "not enabled" for every OTHER instance's own paths.
+  const ruleInstancesById = new Map();
+  for (const instance of RULE_INSTANCES) {
+    const list = ruleInstancesById.get(instance.ruleId) ?? [];
+    list.push(instance);
+    ruleInstancesById.set(instance.ruleId, list);
+  }
+  const globalIgnores = Array.isArray(GLOBAL_IGNORES) ? GLOBAL_IGNORES : [];
+  function isEnabledAtPath(ruleId, relPath) {
+    const instances = ruleInstancesById.get(ruleId);
+    if (!instances || instances.length === 0) return false;
+    const posix = relPath.split(path.sep).join('/');
+    if (globalIgnores.some((g) => minimatch(posix, g))) return false;
+    return instances.some((info) => {
+      if (!info.files.some((g) => minimatch(posix, g))) return false;
+      return !(info.ignores ?? []).some((g) => minimatch(posix, g));
+    });
+  }
 
   if (registered.size < MIN_REGISTERED) {
     err(
-      `VACUOUS INPUT: only ${registered.size} rule(s) registered under the custom/i18n/i18n-source\n` +
-        `plugins (floor ${MIN_REGISTERED}). A config that resolves to nothing proves nothing and\n` +
-        'exits 0, which is exactly what a healthy repo looks like.'
+      `VACUOUS INPUT: only ${registered.size} rule(s) known between scripts/data/source-rules.ts's\n` +
+        `RULE_IDS and this file's KNOWN_OFF (floor ${MIN_REGISTERED}). A table that resolves to\n` +
+        'nothing proves nothing and exits 0, which is exactly what a healthy repo looks like.'
     );
     return 1;
   }
   if (enabled.size < MIN_ENABLED) {
     err(
-      `VACUOUS INPUT: only ${enabled.size} of ${registered.size} registered rule(s) are enabled\n` +
-        `anywhere (floor ${MIN_ENABLED}). Proving a handful of rules live while the rest are off\n` +
+      `VACUOUS INPUT: only ${enabled.size} of ${registered.size} known rule(s) are enabled\n` +
+        `(RULE_IDS, floor ${MIN_ENABLED}). Proving a handful of rules live while the rest are off\n` +
         'is not evidence the rule set works.'
     );
     return 1;
   }
 
-  // CLASS CONTROL: registered-minus-enabled must equal KNOWN_OFF exactly. This
-  // is what catches dead wiring -- a rule imported, registered, and switched on
-  // by no block anywhere.
-  const neverEnabled = [...registered].filter((r) => !enabled.has(r)).sort();
+  // DEAD-WIRING CONTROL, from disk rather than from an ESLint plugin walk: a
+  // rule module that exists under eslint-rules/ but is wired into neither
+  // RULE_INSTANCES (enabled) nor KNOWN_OFF_MODULES (parked, documented) is the
+  // same defect the eslint.config.js walk used to catch -- an import behind a
+  // rule nobody runs -- just found by scanning the files instead of the config.
+  const wiredModules = new Set(RULE_INSTANCES.map((r) => r.modulePath));
+  const ruleFiles = allRuleModuleFiles(path.join(ROOT, 'eslint-rules'));
+  const knownOffModulePaths = new Set(Object.values(KNOWN_OFF_MODULES));
+  const undocumented = ruleFiles.filter((f) => !wiredModules.has(f) && !knownOffModulePaths.has(f));
   const knownOff = Object.keys(KNOWN_OFF).sort();
-  const undocumented = neverEnabled.filter((r) => !(r in KNOWN_OFF));
-  const staleKnownOff = knownOff.filter((r) => !neverEnabled.includes(r));
+  const staleKnownOffModules = Object.entries(KNOWN_OFF_MODULES)
+    .filter(([ruleId]) => !(ruleId in KNOWN_OFF))
+    .map(([ruleId]) => ruleId);
+  const missingKnownOffFiles = Object.entries(KNOWN_OFF_MODULES).filter(
+    ([, modulePath]) => !fs.existsSync(path.join(ROOT, modulePath))
+  );
   if (undocumented.length > 0) {
     err(
-      `${undocumented.length} rule(s) are registered but enabled by NO config block, with no\n` +
-        'written reason. That is dead wiring: an import and a plugin registration behind a rule\n' +
-        'nobody runs. Either enable it (and add a specimen) or delete it; if it is deliberately\n' +
-        'parked, add it to KNOWN_OFF with the reason.'
+      `${undocumented.length} rule module file(s) under eslint-rules/ are wired into NEITHER\n` +
+        "scripts/data/source-rules.ts's RULE_INSTANCES nor this file's KNOWN_OFF_MODULES. That is\n" +
+        'dead wiring: a rule file nobody runs. Either add it to source-rules.ts (and a matrix\n' +
+        'specimen here) or delete it; if it is deliberately parked, add it to KNOWN_OFF and\n' +
+        'KNOWN_OFF_MODULES with the reason.'
     );
-    for (const rule of undocumented) err(`    ${rule}`);
+    for (const file of undocumented) err(`    ${file}`);
     return 1;
   }
-  if (staleKnownOff.length > 0) {
+  if (staleKnownOffModules.length > 0) {
     err(
-      `${staleKnownOff.length} KNOWN_OFF entry(ies) name a rule that is no longer registered-and-off.\n` +
-        'If it was turned back on it needs a matrix specimen instead; if it was deleted, drop the entry.'
+      `${staleKnownOffModules.length} KNOWN_OFF_MODULES entry(ies) name a ruleId no longer in\n` +
+        'KNOWN_OFF. Keep both maps in sync, or drop the entry if the rule was deleted.'
     );
-    for (const rule of staleKnownOff) err(`    ${rule}`);
+    for (const rule of staleKnownOffModules) err(`    ${rule}`);
+    return 1;
+  }
+  if (missingKnownOffFiles.length > 0) {
+    err(
+      `${missingKnownOffFiles.length} KNOWN_OFF_MODULES entry(ies) name a file that no longer exists:`
+    );
+    for (const [rule, modulePath] of missingKnownOffFiles) err(`    ${rule} -> ${modulePath}`);
+    err('  The rule was deleted; drop it from both KNOWN_OFF and KNOWN_OFF_MODULES.');
     return 1;
   }
 
@@ -612,11 +911,7 @@ async function main() {
 
   const eslint = new ESLint({ cwd: ROOT });
 
-  // -------------------------------------------------------------------------
-  // The temp fixture for the two cross-file locale rules. NEVER inside a
-  // locales tree: those rules enumerate languages by listing localesDir, so a
-  // directory planted there becomes a fourteenth language for every i18n rule
-  // and for the locale-set gates that read @rediacc/locales.
+  // ------------------------------------------------------------------------- The temp fixture for the two cross-file locale rules. NEVER inside a locales tree: those rules enumerate languages by listing localesDir, so a directory planted there becomes a fourteenth language for every i18n rule and for the locale-set gates that read @rediacc/locales.
   // -------------------------------------------------------------------------
   const fixtureRoot = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'lint-liveness-'));
   try {
@@ -625,10 +920,7 @@ async function main() {
     for (const [dir, en, tr] of [
       // tr is MISSING "b" -> both rules must fire.
       [asymmetric, { a: 'x', b: 'y' }, { a: 'x' }],
-      // Same key set, different values -> both rules must stay silent. The
-      // English side has to shrink too: leaving en at two keys here makes the
-      // "control" fixture asymmetric and the control fires, which is how the
-      // first draft of this file discovered its own bug.
+      // Same key set, different values -> both rules must stay silent. The English side has to shrink too: leaving en at two keys here makes the "control" fixture asymmetric and the control fires, which is how the first draft of this file discovered its own bug.
       [symmetric, { a: 'x' }, { a: 'y' }],
     ]) {
       await fs.promises.mkdir(path.join(dir, 'en'), { recursive: true });
@@ -646,16 +938,11 @@ async function main() {
         },
       });
 
-    // ---------------------------------------------------------------------
-    // CONTROLS. One per execution mode, all inline on every run, none behind a
-    // flag: a mode nobody remembers to run is how a control stops controlling
-    // anything. If any of these FIRES, the harness cannot tell firing from not
-    // firing and every verdict below it is meaningless.
+    // --------------------------------------------------------------------- CONTROLS. One per execution mode, all inline on every run, none behind a flag: a mode nobody remembers to run is how a control stops controlling anything. If any of these FIRES, the harness cannot tell firing from not firing and every verdict below it is meaningless.
     // ---------------------------------------------------------------------
     const controlFailures = [];
 
-    // 1. in-config mode: sorted-keys on already-sorted input (severity forced
-    //    on, since the rule is off by documented decision).
+    // 1. in-config mode: sorted-keys on already-sorted input (severity forced on, since the rule is off by documented decision).
     {
       const probe = new ESLint({
         cwd: ROOT,
@@ -688,12 +975,34 @@ async function main() {
       }
     }
 
-    // 3. isolated mode: a conforming filename must stay silent.
-    const e2eRule = registeredRuleObject(blocks, 'custom/e2e-test-naming-convention');
-    if (!e2eRule) {
-      err('custom/e2e-test-naming-convention is registered by no plugin block, so the isolated');
-      err('probe has nothing to run. The config walk and the plugin registration disagree.');
-      return 1;
+    // 3. isolated mode: a conforming/clean specimen must stay silent, for
+    // EVERY isolated-mode rule. Originally just custom/e2e-test-naming-
+    // convention; now also the two net-new host-only ports that never
+    // existed in eslint.config.js at all (custom/e2e-expect-expect,
+    // custom/no-unused-underscore-var), which is why this loop is generic
+    // over `matrixKeys` rather than one hard-coded rule.
+    const isolatedRuleIds = [...matrixKeys]
+      .filter((r) => (MATRIX[r].mode ?? 'in-config') === 'isolated')
+      .sort();
+    const isolatedRules = {};
+    for (const ruleId of isolatedRuleIds) {
+      if (!ruleId.startsWith('custom/')) {
+        err(`${ruleId}: isolated mode only supports the 'custom' namespace today (this file's`);
+        err('  isolated ESLint instance registers everything under one "custom" plugin object).');
+        return 1;
+      }
+      const info = ruleInstancesById.get(ruleId)?.[0];
+      const ruleModule = info
+        ? (await import(path.join(ROOT, info.modulePath)))[info.exportName]
+        : null;
+      if (!ruleModule) {
+        err(
+          `${ruleId} has no RULE_INSTANCES entry (or its module has no ` +
+            `${info?.exportName ?? '<unknown>'} export), so the isolated probe has nothing to run.`
+        );
+        return 1;
+      }
+      isolatedRules[ruleId.slice('custom/'.length)] = ruleModule;
     }
     const tsParser = await import('@typescript-eslint/parser');
     const isolated = new ESLint({
@@ -702,21 +1011,21 @@ async function main() {
       overrideConfig: {
         files: ['**/*.ts'],
         languageOptions: { parser: tsParser.default ?? tsParser },
-        plugins: { custom: { rules: { 'e2e-test-naming-convention': e2eRule } } },
-        rules: { 'custom/e2e-test-naming-convention': 'error' },
+        plugins: { custom: { rules: isolatedRules } },
+        rules: Object.fromEntries(isolatedRuleIds.map((r) => [r, 'error'])),
       },
     });
-    {
+    for (const ruleId of isolatedRuleIds) {
+      const entry = MATRIX[ruleId];
+      if (entry.controlCode === undefined) continue;
       const { fired } = firedRuleIds(
-        await isolated.lintText('export const x = 1;\n', {
-          filePath: path.join(ROOT, MATRIX['custom/e2e-test-naming-convention'].enabledAt),
+        await isolated.lintText(entry.controlCode, {
+          filePath: path.join(ROOT, entry.enabledAt),
           warnIgnored: false,
         })
       );
-      if (fired.has('custom/e2e-test-naming-convention')) {
-        controlFailures.push(
-          'isolated: custom/e2e-test-naming-convention fired on a CONFORMING filename'
-        );
+      if (fired.has(ruleId)) {
+        controlFailures.push(`isolated: ${ruleId} fired on a CONFORMING/clean specimen`);
       }
     }
 
@@ -727,9 +1036,7 @@ async function main() {
       return 1;
     }
 
-    // ---------------------------------------------------------------------
-    // The matrix run.
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------------------- The matrix run. ---------------------------------------------------------------------
     const dead = [];
     const specimenStale = [];
     const didNotParse = [];
@@ -751,11 +1058,12 @@ async function main() {
         }
       }
 
-      // Is the rule actually on at the probe path? "Enabled in some block" is a
-      // candidate, not a verdict: severity is last-block-wins per path.
+      // Is the rule actually on at the probe path, per source-rules.ts's own
+      // files/ignores? "Enabled in some block" is a candidate, not a
+      // verdict: two of these ruleIds have no eslint.config.js entry at all
+      // to ask calculateConfigForFile instead.
       const enablementPath = mode === 'isolated' ? entry.enabledAt : entry.filePath;
-      const resolved = await eslint.calculateConfigForFile(path.join(ROOT, enablementPath));
-      if (severityOf(resolved.rules?.[ruleId]) === 0) {
+      if (!isEnabledAtPath(ruleId, enablementPath)) {
         notEnabledAtProbe.push([ruleId, enablementPath]);
         continue;
       }
@@ -775,15 +1083,9 @@ async function main() {
       if (!fired.has(ruleId)) dead.push(ruleId);
     }
 
-    // ---------------------------------------------------------------------
-    // Reachability. For a rule that can only report on JSX, "enabled" is not
-    // "can ever report": require-testid is 'error' repo-wide and protects zero
-    // files, because every tsx/jsx path in the tree turns it off.
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------------------- Reachability. For a rule that can only report on JSX, "enabled" is not "can ever report": require-testid is 'error' repo-wide and protects zero files, because every tsx/jsx path in the tree turns it off. ---------------------------------------------------------------------
     const candidates = [...jsxCandidates(ROOT, new Map()).values()];
-    // A sweep over zero files declares every JSX rule unreachable, and one of
-    // them is SUPPOSED to be unreachable, so the degenerate case would look
-    // partly correct. Floor it. Today: ~30 directory representatives.
+    // A sweep over zero files declares every JSX rule unreachable, and one of them is SUPPOSED to be unreachable, so the degenerate case would look partly correct. Floor it. Today: ~30 directory representatives.
     if (candidates.length < MIN_JSX_DIRS) {
       err(
         `VACUOUS INPUT: the JSX sweep found only ${candidates.length} directory representative(s)\n` +
@@ -805,10 +1107,7 @@ async function main() {
     const newlyUnreachable = unreachable.filter((r) => !(r in KNOWN_UNREACHABLE));
     const nowReachable = Object.keys(KNOWN_UNREACHABLE).filter((r) => !unreachable.includes(r));
 
-    // ---------------------------------------------------------------------
-    // Verdicts. Each shape gets its OWN message, because "dead" is the one
-    // accusation that must never be made loosely.
-    // ---------------------------------------------------------------------
+    // --------------------------------------------------------------------- Verdicts. Each shape gets its OWN message, because "dead" is the one accusation that must never be made loosely. ---------------------------------------------------------------------
     if (specimenStale.length > 0) {
       for (const [ruleId, problem] of specimenStale) {
         err(
@@ -876,6 +1175,12 @@ async function main() {
       );
     }
 
+    // ------------------------------------------------------------------- The biome half. Independent of everything above (it needs no ESLint
+    // instance and no eslint.config.js), run here so one invocation gives one
+    // combined verdict instead of two gates to remember to run. -------------------------------------------------------------------------
+    const biomeHalf = await runBiomePluginLiveness();
+    const biomeFailed = reportBiomeHalf(biomeHalf);
+
     if (
       specimenStale.length > 0 ||
       didNotParse.length > 0 ||
@@ -883,7 +1188,8 @@ async function main() {
       dead.length > 0 ||
       newlyUnreachable.length > 0 ||
       nowReachable.length > 0 ||
-      belowFloor.length > 0
+      belowFloor.length > 0 ||
+      biomeFailed
     ) {
       return 1;
     }
@@ -893,11 +1199,9 @@ async function main() {
       `${matrixKeys.size} enabled custom/i18n rule(s) each fired on a planted violation ` +
         `(${registered.size} registered, ${knownOff.length} off by documented decision, ` +
         `${Object.keys(KNOWN_UNREACHABLE).length} enabled-but-unreachable and recorded); ` +
-        `3 negative controls stayed silent; ${elapsed}s`
+        `${2 + isolatedRuleIds.length} negative controls stayed silent; ${elapsed}s`
     );
-    // The reach counts are printed rather than merely asserted: a reader can
-    // see at a glance that the sweep resolved real files, instead of taking a
-    // silent pass as proof that it ran.
+    // The reach counts are printed rather than merely asserted: a reader can see at a glance that the sweep resolved real files, instead of taking a silent pass as proof that it ran.
     console.log(
       `  JSX reachability over ${candidates.length} directory representative(s): ` +
         [...reach].map(([r, n]) => `${r.replace('custom/', '')}=${n}`).join(', ')
@@ -905,11 +1209,14 @@ async function main() {
     for (const [rule, reason] of Object.entries(KNOWN_UNREACHABLE)) {
       console.log(`  RECORDED, not fixed: ${rule} -- ${reason}`);
     }
+    console.log(
+      `${biomeHalf.total} GritQL plugin(s) under biome-plugins/ each fired on a planted violation ` +
+        'at its real repo-relative path under the verbatim biome.json, in a temp mirror (nothing written to the ' +
+        'tree); 1 control (a broken `includes`) stayed silent.'
+    );
     return 0;
   } finally {
-    // ALWAYS, including on an exception: the fixture is outside the repo, but a
-    // leaked temp tree is still litter and the cleanup path must not depend on
-    // the happy path being taken.
+    // ALWAYS, including on an exception: the fixture is outside the repo, but a leaked temp tree is still litter and the cleanup path must not depend on the happy path being taken.
     await fs.promises.rm(fixtureRoot, { recursive: true, force: true });
   }
 }

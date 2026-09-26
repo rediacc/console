@@ -100,19 +100,12 @@ const stamp = Date.now();
 
 /** Own config namespace: suites 23/24 must not see these mutations. */
 const CFG = 'e2e-backup';
-// `~/.renet`, NOT `~/.rediacc`: the fallback is the harness's own renet data
-// dir (packages/provisioning getRenetDataDir), which is where `ops up` stages
-// the fleet key. The `.rediacc` spelling this file carried resolves to a path
-// that does not exist on a default box, so every bridge call fell back to
-// whatever ~/.ssh happened to hold. Suite 23 still carries the same typo.
+// `~/.renet`, NOT `~/.rediacc`: the fallback is the harness's own renet data dir (packages/provisioning getRenetDataDir), which is where `ops up` stages the fleet key. The `.rediacc` spelling this file carried resolves to a path that does not exist on a default box, so every bridge call fell back to whatever ~/.ssh happened to hold. Suite 23 still carries the same typo.
 const SSH_KEY =
   process.env.E2E_SSH_KEY ??
   `${process.env.RENET_DATA_DIR ?? `${process.env.HOME}/.renet`}/staging/.ssh/id_rsa`;
 
-// Machine registration for the CLI, same wiring suite 23 uses. The CLI needs
-// its own machine entries: the bridge runners SSH straight through, but `rdc
-// repo create` (the only thing that installs a repository license) addresses a
-// machine BY NAME out of the config.
+// Machine registration for the CLI, same wiring suite 23 uses. The CLI needs its own machine entries: the bridge runners SSH straight through, but `rdc repo create` (the only thing that installs a repository license) addresses a machine BY NAME out of the config.
 const NET_BASE = process.env.VM_NET_BASE ?? '192.168.111';
 const M1 = 'machine-11';
 const M2 = 'machine-12';
@@ -328,11 +321,7 @@ const readCliConfig = (cli: CliRunner): CliConfigFile =>
 const ensureDatastore = async (runner: BridgeTestRunner, label: string): Promise<void> => {
   const init = await runner.datastoreInitPool('10G', DS, false);
   if (init.code === 0) return;
-  // Without --force, renet REFUSES an existing BTRFS datastore by name
-  // ("datastore already exists", datastore_init.go:106-111). That refusal is
-  // the answer this function wants, so it is the success case, not a failure —
-  // and it is a more reliable probe than a shell test, whose `&&`/`||` has to
-  // survive two levels of SSH quoting to mean anything.
+  // Without --force, renet REFUSES an existing BTRFS datastore by name ("datastore already exists", datastore_init.go:106-111). That refusal is the answer this function wants, so it is the success case, not a failure — and it is a more reliable probe than a shell test, whose `&&`/`||` has to survive two levels of SSH quoting to mean anything.
   const output = runner.getCombinedOutput(init);
   expect(
     /already exists/i.test(output),
@@ -385,8 +374,7 @@ const provisionRepo = async (
   const status = await runner.executeViaBridge(
     `sudo renet repository license-status --output json 2>&1 || true`
   );
-  // The RAW streams, not `getCombinedOutput`: that helper lowercases what it
-  // returns (TestHelpers.ts:15), which is harmless for a keyword grep and fatal
+  // The RAW streams, not `getCombinedOutput`: that helper lowercases what it returns (TestHelpers.ts:15), which is harmless for a keyword grep and fatal
   // for JSON — every key comes back as `repositoryguid`, the lookup misses, and
   // a license that is right there reads as absent.
   const rawStatus = status.stdout + status.stderr;
@@ -404,8 +392,7 @@ const provisionRepo = async (
   expect(installed?.status, `license for ${guid} is not valid`).toBe('valid');
   expect(installed?.installed, `license for ${guid} was issued but not installed`).toBe(true);
 
-  // `repo create` leaves the repo MOUNTED with its docker daemon up. The
-  // snapshot verb reads the image underneath, so bring it down first.
+  // `repo create` leaves the repo MOUNTED with its docker daemon up. The snapshot verb reads the image underneath, so bring it down first.
   await runner.repositoryUnmount(guid, DS).catch(() => undefined);
   return { name, guid, credential, networkId: String(networkId) };
 };
@@ -450,9 +437,7 @@ const restoreLedger = async (cli: CliRunner, subscriptionId: string): Promise<vo
   }).catch(() => undefined);
 };
 
-// ---------------------------------------------------------------------------
-// ACCOUNT tier — usage arithmetic, the manifest index, and the quota surface
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- ACCOUNT tier — usage arithmetic, the manifest index, and the quota surface ---------------------------------------------------------------------------
 
 test.describe
   .serial('rdc backup control plane @cli @backup', () => {
@@ -495,8 +480,7 @@ test.describe
       const plantedLineage = `aaaaaaaa-0000-4000-8000-${String(stamp).slice(-12)}`;
 
       test.afterAll(async () => {
-        // Retire the planted lineage FIRST, then recompute the aggregate from
-        // what is left — the other order would fold the planted bytes back in.
+        // Retire the planted lineage FIRST, then recompute the aggregate from what is left — the other order would fold the planted bytes back in.
         await seam('seed-backup-ledger', {
           subscriptionId,
           storedBytes: 0,
@@ -514,8 +498,7 @@ test.describe
         subscriptionId = usage.subscriptionId;
         quotaBytes = usage.quotaBytes;
         expect(subscriptionId, 'usage carried no subscription id').not.toBe('');
-        // The quota is the only lever in this feature; a row that does not add
-        // up is a row somebody is billed against.
+        // The quota is the only lever in this feature; a row that does not add up is a row somebody is billed against.
         expect(usageViolations(usage), 'the usage row is internally inconsistent').toEqual([]);
         expect(quotaBytes, 'every subscription has a quota, the free one included').toBeGreaterThan(
           0
@@ -523,16 +506,10 @@ test.describe
       });
 
       test('2. planted usage above the quota surfaces as OVER LIMIT', async () => {
-        // The ledger seam plants bytes without uploading any: the quota surface
-        // is what is under test, not the uploader.
+        // The ledger seam plants bytes without uploading any: the quota surface is what is under test, not the uploader.
         //
-        // The aggregate has to be planted ON TOP of the lineage rows this
-        // subscription already holds, not instead of them. The seam overwrites
-        // the aggregate row but leaves per-lineage rows alone, so an aggregate
-        // of exactly `over` on an account that has ever uploaded anything makes
-        // the parts exceed the whole — `usageViolations` reports it, correctly,
-        // as a ledger that disagrees with itself, and the test fails on its own
-        // seeding rather than on the surface it is testing.
+        // The aggregate has to be planted ON TOP of the lineage rows this subscription already holds, not instead of them. The seam overwrites the aggregate row but leaves per-lineage rows alone, so an aggregate of exactly `over` on an account that has ever uploaded anything makes the parts exceed the whole — `usageViolations` reports it, correctly, as a ledger that disagrees with
+        // itself, and the test fails on its own seeding rather than on the surface it is testing.
         const baseline = await readUsage();
         const others = baseline.lineages.filter((l) => l.lineageGuid !== plantedLineage);
         const otherBytes = others.reduce((sum, l) => sum + l.storedBytes, 0);
@@ -562,19 +539,14 @@ test.describe
         expect(usage.overLimit, 'usage over the quota did not report OVER LIMIT').toBe(true);
         expect(usageViolations(usage), 'the over-limit row is inconsistent').toEqual([]);
 
-        // The human surface says it too, not only the JSON. `-o table` is
-        // REQUIRED, not decoration: with --output left at its default the CLI
-        // auto-selects json for a non-TTY stdout (cli.ts resolveOutputFormat),
-        // and a spawned CLI never has one — so the bare call this used to make
-        // could only ever return json, and the assertion could only ever fail.
+        // The human surface says it too, not only the JSON. `-o table` is REQUIRED, not decoration: with --output left at its default the CLI auto-selects json for a non-TTY stdout (cli.ts resolveOutputFormat), and a spawned CLI never has one — so the bare call this used to make could only ever return json, and the assertion could only ever fail.
         const table = await cli.run(['-o', 'table', 'backup', 'usage']);
         expect(table.code).toBe(0);
         expect(bothChannels(table)).toContain('OVER LIMIT');
       });
 
       test('3. control: seeding back under the quota clears it', async () => {
-        // Without this, a client that hard-coded overLimit (or a server that
-        // never clears the flag) would pass test 2.
+        // Without this, a client that hard-coded overLimit (or a server that never clears the flag) would pass test 2.
         const under = Math.max(0, Math.floor(quotaBytes / 4));
         const seeded = await seam('seed-backup-ledger', {
           subscriptionId,
@@ -603,9 +575,7 @@ test.describe
         ]);
         expect(result.code, `backup manifests: ${result.stderr.slice(-600)}`).toBe(0);
         expect(json?.data?.manifests, 'no manifests array in the response').toBeDefined();
-        // The index is ACCOUNT-wide, so it interleaves lineages and only the
-        // per-lineage slices are chains. Checking the mixed list would fail on
-        // any account holding two repos — which is every real one.
+        // The index is ACCOUNT-wide, so it interleaves lineages and only the per-lineage slices are chains. Checking the mixed list would fail on any account holding two repos — which is every real one.
         const byLineage = new Map<string, BackupManifest[]>();
         for (const m of json?.data?.manifests ?? []) {
           byLineage.set(m.lineageGuid, [...(byLineage.get(m.lineageGuid) ?? []), m]);
@@ -631,9 +601,7 @@ test.describe
     }
   });
 
-// ---------------------------------------------------------------------------
-// ENGINE tier — seed, incremental, verify, restore, quota refusal
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- ENGINE tier — seed, incremental, verify, restore, quota refusal ---------------------------------------------------------------------------
 
 test.describe
   .serial('chunk-store upload engine @cli @backup @engine', () => {
@@ -644,9 +612,7 @@ test.describe
     } else {
       const gate = announcePrerequisites(engineVerdict);
       if (gate.skip) {
-        // The declared-skip banner prints the OPERATOR's reason and the unmet
-        // prerequisite names; this adds the standing next step, so a reader does
-        // not have to rediscover what the tier wants.
+        // The declared-skip banner prints the OPERATOR's reason and the unmet prerequisite names; this adds the standing next step, so a reader does not have to rediscover what the tier wants.
         process.stderr.write(
           [
             '',
@@ -669,9 +635,7 @@ test.describe
 
       const verbs = chunkVerbs();
       const REPO_NAME = `e2ebk-engine-${String(stamp).slice(-8)}`;
-      // A write at a known offset in a known cell: the incremental's upload
-      // volume is then a BOUND, not a vibe. It is a bound on the FILESYSTEM's
-      // write, so FS_METADATA_CELLS widens it by the measured metadata cost.
+      // A write at a known offset in a known cell: the incremental's upload volume is then a BOUND, not a vibe. It is a bound on the FILESYSTEM's write, so FS_METADATA_CELLS widens it by the measured metadata cost.
       const WRITE_OFFSET = 8 * 1024 * 1024;
       const WRITE_LENGTH = 4096;
 
@@ -742,8 +706,7 @@ test.describe
         await ensureDatastore(w1, M1);
         await registerMachines(cli);
         repo = await provisionRepo(cli, w1, REPO_NAME, M1);
-        // A grand repo is its own lineage, and test 1 checks that claim against
-        // the verb's own record rather than leaving it an assumption.
+        // A grand repo is its own lineage, and test 1 checks that claim against the verb's own record rather than leaving it an assumption.
         lineage = repo.guid;
 
         const usage = await cli.runJson<CliEnvelope<BackupUsage>>(['backup', 'usage']);
@@ -751,17 +714,13 @@ test.describe
       });
 
       test.afterAll(async () => {
-        // Test 4 leaves the subscription OVER LIMIT, which refuses every upload
-        // on the account — the restore tier's own seed included.
+        // Test 4 leaves the subscription OVER LIMIT, which refuses every upload on the account — the restore tier's own seed included.
         await restoreLedger(cli, subscriptionId);
         await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
       });
 
       test('0. the run verb is really registered ON THE MACHINE', async () => {
-        // The tier's prerequisite probed the LOCAL binary; this probes the one
-        // the fleet actually runs. They differ whenever a deploy did not land,
-        // and without this the failure would surface as an unknown-command
-        // error in test 1 and be read as a broken upload.
+        // The tier's prerequisite probed the LOCAL binary; this probes the one the fleet actually runs. They differ whenever a deploy did not land, and without this the failure would surface as an unknown-command error in test 1 and be read as a broken upload.
         const help = await w1.executeViaBridge('renet backup --help 2>&1 || true');
         const text = w1.getCombinedOutput(help);
         expect(
@@ -775,19 +734,14 @@ test.describe
         const run = await runEngine(w1);
         expect(run.code, `seed run: ${w1.getCombinedOutput(run).slice(-800)}`).toBe(0);
 
-        // The verb's own report first: it is what a scheduled run leaves in
-        // the journal and what an operator reads, and it must agree with the
-        // server's index rather than being checked instead of it.
+        // The verb's own report first: it is what a scheduled run leaves in the journal and what an operator reads, and it must agree with the server's index rather than being checked instead of it.
         const records = recordsOf(run);
         expect(records.length, `no snapshot record on stdout:\n${run.stdout.slice(-800)}`).toBe(1);
         expect(snapshotRecordViolations(records[0])).toEqual([]);
         expect(records[0].status).toBe('stored');
         expect(records[0].chunksUploaded, 'the seed uploaded no chunks').toBeGreaterThan(0);
         expect(records[0].parentSnapshotId ?? '', 'a seed cannot have a parent').toBe('');
-        // The lineage the rest of this tier FILTERS on, taken from the verb
-        // rather than assumed: the object keys namespace on the grand guid the
-        // license carries, and a grand repo being its own lineage is a property
-        // of `repo create`, not a law.
+        // The lineage the rest of this tier FILTERS on, taken from the verb rather than assumed: the object keys namespace on the grand guid the license carries, and a grand repo being its own lineage is a property of `repo create`, not a law.
         expect(records[0].lineage, 'the snapshot recorded a different lineage').toBe(lineage);
 
         const after = await manifests();
@@ -805,9 +759,7 @@ test.describe
 
       test('2. an incremental after a known write sends only the cells it touched', async () => {
         expect(seedManifest, 'test 1 did not produce a seed').toBeDefined();
-        // A 4 KiB write inside one cell. Everything else in the FILE is
-        // untouched; ext4 still moves its own metadata, which is what
-        // FS_METADATA_CELLS below accounts for.
+        // A 4 KiB write inside one cell. Everything else in the FILE is untouched; ext4 still moves its own metadata, which is what FS_METADATA_CELLS below accounts for.
         await churn('churn.bin', `bs=${WRITE_LENGTH} count=1 seek=${WRITE_OFFSET / WRITE_LENGTH}`);
 
         const run = await runEngine(w1);
@@ -816,8 +768,7 @@ test.describe
         const records = recordsOf(run);
         expect(records.length).toBe(1);
         expect(snapshotRecordViolations(records[0])).toEqual([]);
-        // Cell-scoped at the RECORD level as well: the machine asked the server
-        // about a handful of hashes, not about the whole inventory.
+        // Cell-scoped at the RECORD level as well: the machine asked the server about a handful of hashes, not about the whole inventory.
         expect(records[0].chunksUploaded, 'the incremental uploaded nothing').toBeGreaterThan(0);
         expect(
           records[0].chunksUploaded,
@@ -830,9 +781,7 @@ test.describe
         const after = await manifests();
         const incremental = after[0];
         expect(incremental.snapshotId).not.toBe(seedManifest!.snapshotId);
-        // The whole economic claim of the design, as a bound rather than a
-        // comparison: a full re-upload passes "smaller than the seed" whenever
-        // the seed was bigger, and fails this.
+        // The whole economic claim of the design, as a bound rather than a comparison: a full re-upload passes "smaller than the seed" whenever the seed was bigger, and fails this.
         expect(
           incrementalViolations({
             seed: seedManifest!,
@@ -847,17 +796,14 @@ test.describe
       });
 
       test('3. `rdc backup verify --deep` re-hashes every cell and finds no drift', async () => {
-        // A repo REF, not a guid: `backup verify <repo-ref>` takes name[:tag]
-        // [@machine] and resolves the guid itself.
+        // A repo REF, not a guid: `backup verify <repo-ref>` takes name[:tag] [@machine] and resolves the guid itself.
         const result = await cli.run(['backup', 'verify', REPO_NAME, '--deep']);
         expect(result.code, `backup verify --deep: ${bothChannels(result).slice(-800)}`).toBe(0);
         expect(bothChannels(result)).toContain('verified');
       });
 
       test('4. an upload over quota is refused BEFORE any bytes move', async () => {
-        // Quota is enforced at grant-mint time by design: the refusal must
-        // arrive before I/O is spent, and it must name the quota rather than
-        // failing as a generic 4xx somewhere deep in the uploader.
+        // Quota is enforced at grant-mint time by design: the refusal must arrive before I/O is spent, and it must name the quota rather than failing as a generic 4xx somewhere deep in the uploader.
         const usage = await cli.runJson<CliEnvelope<BackupUsage>>(['backup', 'usage']);
         expect(subscriptionId).not.toBe('');
         const res = await seam('seed-backup-ledger', {
@@ -868,16 +814,13 @@ test.describe
         });
         expect(res.status).toBe(200);
 
-        // Churn something so the run has work to do; without it a refusal and
-        // a no-op look the same.
+        // Churn something so the run has work to do; without it a refusal and a no-op look the same.
         await churn('churn2.bin', 'bs=1M count=4');
 
         const before = (await manifests()).length;
         const run = await runEngine(w1);
 
-        // Exit 16 specifically, not merely non-zero: the verb reserves it for a
-        // quota refusal because the operator action is different (prune or
-        // upgrade, not debug), and a code nobody asserts degrades to noise.
+        // Exit 16 specifically, not merely non-zero: the verb reserves it for a quota refusal because the operator action is different (prune or upgrade, not debug), and a code nobody asserts degrades to noise.
         expect(
           run.code,
           `expected the quota exit code 16, got ${run.code}:\n${w1.getCombinedOutput(run).slice(-800)}`
@@ -889,9 +832,7 @@ test.describe
           'quota-refused'
         );
         expect(snapshotRecordViolations(records[0])).toEqual([]);
-        // Refused BEFORE any I/O: quota is enforced at grant-mint time, so a
-        // refusal that had already moved bytes would mean the enforcement point
-        // moved.
+        // Refused BEFORE any I/O: quota is enforced at grant-mint time, so a refusal that had already moved bytes would mean the enforcement point moved.
         expect(records[0].bytesUploaded, 'bytes moved despite the quota refusal').toBe(0);
         expect(records[0].grantsMinted, 'a grant was minted despite the quota refusal').toBe(0);
         expect((await manifests()).length, 'the refused run still committed a manifest').toBe(
@@ -903,17 +844,9 @@ test.describe
       });
 
       test('5. a second run of an UNCHANGED repository still succeeds', async () => {
-        // The single most common run there is: the hourly backup of a repo
-        // nobody wrote to. `renet backup snapshot --help` promises it —
-        // "Unchanged repositories still emit a record, with chunksUploaded 0" —
-        // and pkg/chunkstore/uploader.go:142-160 has a branch specifically for
-        // it, whose comment says getting it wrong "breaks the single most
-        // common run there is".
+        // The single most common run there is: the hourly backup of a repo nobody wrote to. `renet backup snapshot --help` promises it — "Unchanged repositories still emit a record, with chunksUploaded 0" — and pkg/chunkstore/uploader.go:142-160 has a branch specifically for it, whose comment says getting it wrong "breaks the single most common run there is".
         //
-        // Nothing above covers it: every other run in this tier has work to do,
-        // so the branch is only ever taken in steady state. This test is last
-        // in the block on purpose — it is the one most likely to be red, and a
-        // serial block stops at its first failure.
+        // Nothing above covers it: every other run in this tier has work to do, so the branch is only ever taken in steady state. This test is last in the block on purpose — it is the one most likely to be red, and a serial block stops at its first failure.
         const withWork = await runEngine(w1);
         expect(
           withWork.code,
@@ -940,9 +873,7 @@ test.describe
     }
   });
 
-// ---------------------------------------------------------------------------
-// RESTORE tier — the claim the whole feature rests on
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- RESTORE tier — the claim the whole feature rests on ---------------------------------------------------------------------------
 
 test.describe
   .serial('byte-identical restore @cli @backup @restore', () => {
@@ -994,16 +925,13 @@ test.describe
         w1 = BridgeTestRunner.forWorker(1);
         w2 = BridgeTestRunner.forWorker(2);
         cli = await loginCli();
-        // BOTH workers: the restore lands on w2, and a w2 with no datastore has
-        // nowhere to assemble the image. This tier used to init only w1 and
-        // then restore onto w2.
+        // BOTH workers: the restore lands on w2, and a w2 with no datastore has nowhere to assemble the image. This tier used to init only w1 and then restore onto w2.
         await ensureDatastore(w1, M1);
         await ensureDatastore(w2, M2);
         await registerMachines(cli);
         repo = await provisionRepo(cli, w1, REPO_NAME, M1);
 
-        // A seed to restore FROM. If this fails the restore assertion below
-        // would pass vacuously against an empty lineage.
+        // A seed to restore FROM. If this fails the restore assertion below would pass vacuously against an empty lineage.
         const seed = await w1.executeViaBridge(
           `sudo renet ${verbs.run} --repo "${repo.guid}" --datastore "${DS}"`
         );
@@ -1038,18 +966,10 @@ test.describe
         const latest = (json?.data?.manifests ?? []).filter((m) => m.lineageGuid === repo.guid)[0];
         expect(latest, 'no committed manifest to restore from').toBeDefined();
 
-        // Driven through the CLI rather than through `renet backup restore` on
-        // the machine, for a reason the raw call hides: restore resolves a
-        // repository license as its credential AND its address book
-        // (backup_restore.go resolveRestoreLicense), and when the target guid
-        // has none it falls back to ANY license installed on that machine. On a
-        // shared fleet the raw call therefore succeeds by borrowing a license
-        // some other suite left behind, and passes for a reason the test never
-        // states. `rdc backup restore` issues the target's own license first,
-        // which is also the path a user actually has.
+        // Driven through the CLI rather than through `renet backup restore` on the machine, for a reason the raw call hides: restore resolves a repository license as its credential AND its address book (backup_restore.go resolveRestoreLicense), and when the target guid has none it falls back to ANY license installed on that machine. On a shared fleet the raw call therefore
+        // succeeds by borrowing a license some other suite left behind, and passes for a reason the test never states. `rdc backup restore` issues the target's own license first, which is also the path a user actually has.
         //
-        // The CLI keeps the SOURCE guid on the target (it is the same image),
-        // so both hashes below address the same file name on two machines.
+        // The CLI keeps the SOURCE guid on the target (it is the same image), so both hashes below address the same file name on two machines.
         const restore = await cli.run([
           'backup',
           'restore',
@@ -1063,10 +983,7 @@ test.describe
         ]);
         expect(restore.code, `backup restore: ${bothChannels(restore).slice(-1200)}`).toBe(0);
 
-        // Not "the restore exited 0", not "the mount has the file": the
-        // ciphertext image on the second machine is the same bytes as the
-        // first. Everything else in this program is bookkeeping around this
-        // one equality.
+        // Not "the restore exited 0", not "the mount has the file": the ciphertext image on the second machine is the same bytes as the first. Everything else in this program is bookkeeping around this one equality.
         expect(
           await imageSha(w2, repo.guid),
           'the restored image is not byte-identical to the source'

@@ -1,0 +1,9 @@
+# twin .ci/scripts/test/proxies/proxy-docker-prepull.sh blob ecdda088f1c11dd126e84fd756ca5b362e011bea
+exit: 0
+--- stdout ---
+PASS: selftest toolchain present -> 0 (exit 0)
+PASS: selftest toolchain removed from PATH -> 77 (exit 77)
+PASS: selftest zero checks -> 1, never 0 (exit 1)
+PASS: selftest zero declared requirements -> 2 (exit 2)
+proxy-lib selftest: 4 case(s) passed
+--- stderr ---

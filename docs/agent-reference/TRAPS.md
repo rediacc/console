@@ -1,18 +1,12 @@
 # Traps
 
-Ways a session gets *fooled* — as opposed to ways it gets *blocked*. Each entry
-cost real time on a real wave, and each is written so the next reader can
-recognise the shape before paying for it again.
+Ways a session gets *fooled* — as opposed to ways it gets *blocked*. Each entry cost real time on a real wave, and each is written so the next reader can recognise the shape before paying for it again.
 
-Mechanics of a specific subsystem do not belong here. CI behaviour (watchdog
-semantics, job-roster growth, run-selection, gate quick-fixes) lives in
-[ci-gates.md](ci-gates.md); escape hatches and their `BLOCKER:` reasons live in
-[suppressions.md](suppressions.md). This file is about judgement.
+Mechanics of a specific subsystem do not belong here. CI behaviour (watchdog semantics, job-roster growth, run-selection, gate quick-fixes) lives in [ci-gates.md](ci-gates.md); escape hatches and their `BLOCKER:` reasons live in [suppressions.md](suppressions.md). This file is about judgement.
 
 **Every entry carries a disposition, and `check:ci-trap-registry` enforces it.**
 
-Each `## ` entry is followed immediately by three lines, and a new entry without
-them fails the gate:
+Each `## ` entry is followed immediately by three lines, and a new entry without them fails the gate:
 
 ```
 Trap-Id: stable-kebab-case-id      never renumbered, never reused after retirement
@@ -20,22 +14,15 @@ Enforced-By: <pointer>[, <pointer>...]   or the single token JUDGMENT-ONLY
 Residue: <what the instruments do not reach>   mandatory when JUDGMENT-ONLY
 ```
 
-A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, or
-`file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be
-LIVE, because the cheapest thing to name under a coverage gate is an instrument
-that cannot fire.
+A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire.
 
-`JUDGMENT-ONLY` is deliberately cheap to declare and is never counted against
-anything. Its count is the honest size of the unprotected surface, and it is
-the number worth reviewing:
+`JUDGMENT-ONLY` is deliberately cheap to declare and is never counted against anything. Its count is the honest size of the unprotected surface, and it is the number worth reviewing:
 
 ```
 grep -c 'JUDGMENT-ONLY' docs/agent-reference/TRAPS.md
 ```
 
-Only `JUDGMENT-ONLY` entries and entries with a non-empty `Residue` reach the
-stop-hook judge prompt and the PostCompact briefing. A mechanized trap leaves
-the prompt on purpose: something already watches it whether or not anyone reads.
+Only `JUDGMENT-ONLY` entries and entries with a non-empty `Residue` reach the stop-hook judge prompt and the PostCompact briefing. A mechanized trap leaves the prompt on purpose: something already watches it whether or not anyone reads.
 
 ---
 
@@ -44,47 +31,35 @@ Trap-Id: wrong-comment-is-a-delayed-defect
 Enforced-By: JUDGMENT-ONLY
 Residue: No parser knows what a comment OVERCLAIMS, and the next reader deletes a defensive line on the comment's own authority. "This looks removable and is not, because X" is unenforceable prose.
 
-A commit message ages into the log. **An in-code comment is what the next person
-reads immediately before deciding whether to change the line it describes.**
+A commit message ages into the log. **An in-code comment is what the next person reads immediately before deciding whether to change the line it describes.**
 
-Found 2026-08-04. A line read `${DRILL_KEEP_WORK:-0}` inside an EXIT trap. It
-looked redundant, and a comment was written calling it "dead code and, worse, a
-lie". Both the comment and the reasoning behind it were wrong: the default
-expansion is cheap insurance that keeps the trap from aborting under `set -u`
-if the source-then-init order ever changes. Had that comment shipped, the next
-reader would have deleted a defensive line **on the authority of the comment
-itself**, and the teardown would have died half-way, stranding a gateway and a
-sandbox.
+Found 2026-08-04. A line read `${DRILL_KEEP_WORK:-0}` inside an EXIT trap. It looked redundant, and a comment was written calling it "dead code and, worse, a lie". Both the comment and the reasoning behind it were wrong: the default expansion is cheap insurance that keeps the trap from aborting under `set -u` if the source-then-init order ever changes. Had that comment shipped, the
+next reader would have deleted a defensive line **on the authority of the comment itself**, and the teardown would have died half-way, stranding a gateway and a sandbox.
 
 So:
 
 - Overstating in a comment is not a style problem. It is a future defect with a
-  delay fuse, and the fuse is lit by someone who trusts you.
+delay fuse, and the fuse is lit by someone who trusts you.
 - When a line looks redundant, the comment's job is to say *why it is not*, or
-  to say plainly that nobody has checked. "This looks removable and is not,
-  because X" is worth more than any confident-sounding claim.
+to say plainly that nobody has checked. "This looks removable and is not, because X" is worth more than any confident-sounding claim.
 - If you catch a wrong comment before it ships, fix it forward as its own
-  change. It is cheaper than the incident it prevents.
+change. It is cheaper than the incident it prevents.
 
 ## A check that cannot fail is not evidence
 Trap-Id: check-cannot-fail
 Enforced-By: gate:check:ci-control-vacuity, gate:check:ci-dead-case-arms, gate:check:ci-lint-rule-liveness, gate:check:ci-suppression-liveness, gate:check:ci-gate-reachability-coverage
 Residue: A REGISTERED gate that cannot fire has four instruments. An ad-hoc probe typed in the moment has none: nothing can know what a one-off probe was meant to prove, and all nine 2026-08-04 instances were ad-hoc.
 
-Before believing a clean result, make the check produce a RED on known-bad input
-**through the same path**. An empty result and a skipped result are
-indistinguishable from the outside.
+Before believing a clean result, make the check produce a RED on known-bad input **through the same path**. An empty result and a skipped result are indistinguishable from the outside.
 
 Three real examples from one wave, all caught only because a control was run:
 
 - A `git archive` silently extracted nothing, so a `[ a -nt b ]` staleness test
-  compared two *absent* files and returned false — which looks exactly like a
-  genuine "not stale" answer.
+compared two *absent* files and returned false — which looks exactly like a genuine "not stale" answer.
 - A deliberately restricted `PATH` also hid `bash` itself, so the command under
-  test executed **neither** branch while appearing to run.
+test executed **neither** branch while appearing to run.
 - A log-collector script was written to gather diagnostics from a directory that
-  the tool being diagnosed **deletes on exit**. It would have collected nothing,
-  every time, and reported success.
+the tool being diagnosed **deletes on exit**. It would have collected nothing, every time, and reported success.
 
 This applies recursively: to the check, and to the check of the check.
 
@@ -93,76 +68,50 @@ Trap-Id: ruling-from-an-artifact-is-a-hypothesis
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing can tell which claim in a briefing, a diff or a review was LOAD-BEARING for the next decision, so nothing can tell a checked claim from a repeated one.
 
-A briefing, a config file, a diff, or a teammate's message describes what someone
-*believed* when they wrote it. When the claim is checkable, check it, then act.
+A briefing, a config file, a diff, or a teammate's message describes what someone *believed* when they wrote it. When the claim is checkable, check it, then act.
 
 Two from the same wave, in opposite directions:
 
 - A validator's suggestion text read "Sections added (translate and add these)".
-  It describes the **English** delta and never inspects the translation at all.
-  Taken at face value it would have caused twelve already-correct professional
-  translations to be rewritten.
+It describes the **English** delta and never inspects the translation at all. Taken at face value it would have caused twelve already-correct professional translations to be rewritten.
 - A colleague's correction invented a failure window ("the trap can fire before
-  the variable is set") that could not occur, because the trap is installed
-  inside a function called long after the assignment runs. The *conclusion* was
-  still right; the *mechanism* was not. Both halves matter, because the next
-  decision is made on the mechanism.
+the variable is set") that could not occur, because the trap is installed inside a function called long after the assignment runs. The *conclusion* was still right; the *mechanism* was not. Both halves matter, because the next decision is made on the mechanism.
 
-Report the refutation with the evidence, and say plainly that the ruling was
-wrong. Someone who is only ever agreed with is a single point of failure.
+Report the refutation with the evidence, and say plainly that the ruling was wrong. Someone who is only ever agreed with is a single point of failure.
 
 ## A version check can disagree with itself about what "installed" means
 Trap-Id: version-check-reads-a-different-source
 Enforced-By: JUDGMENT-ONLY
 Residue: node_modules, the lockfile, package.json and the registry are each right about a different question. Which one a given check read is not decidable from outside it.
 
-`scripts/check-deps.ts` runs `npm outdated` **against `node_modules`** at the repo
-root, but with `--package-lock-only` for submodule directories. So after editing
-`package.json` and regenerating the lockfile, the ROOT check still reports the old
-version until you actually install, while CI — which installs from the lockfile —
-is already satisfied.
+`scripts/gates/check-deps.ts` runs `npm outdated` **against `node_modules`** at the repo root, but with `--package-lock-only` for submodule directories. So after editing `package.json` and regenerating the lockfile, the ROOT check still reports the old version until you actually install, while CI — which installs from the lockfile — is already satisfied.
 
-The failure mode is not a red; it is chasing a phantom. You "fix" the gate, it
-still complains, and the obvious next move is to assume the fix did not take and
-start changing more things. Confirm which source a version check reads before
-concluding your change did not land: node_modules, the lockfile, `package.json`,
-and the registry can all disagree at the same moment, and each is right about a
-different question.
+The failure mode is not a red; it is chasing a phantom. You "fix" the gate, it still complains, and the obvious next move is to assume the fix did not take and start changing more things. Confirm which source a version check reads before concluding your change did not land: node_modules, the lockfile, `package.json`, and the registry can all disagree at the same moment, and each is
+right about a different question.
 
 ## Some dependencies can only move as a set
 Trap-Id: mutually-pinned-dependency-set
 Enforced-By: gate:check:ci-peer-deps
 Residue: The gate catches a HALF-APPLIED set after the fact. Nothing predicts that a per-package upgrade loop can never succeed on a mutually pinned family, which is the part that wastes the loop.
 
-`typescript-eslint`, `@typescript-eslint/eslint-plugin` and
-`@typescript-eslint/parser` peer-depend on each other at an **exact** version. Any
-upgrade that touches one at a time is a hard `ERESOLVE`, so a per-package upgrade
-loop can never succeed on them no matter how many times it is run:
+`typescript-eslint`, `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` peer-depend on each other at an **exact** version. Any upgrade that touches one at a time is a hard `ERESOLVE`, so a per-package upgrade loop can never succeed on them no matter how many times it is run:
 
 ```
 Conflicting peer dependency: @typescript-eslint/parser@8.66.0
   peer @typescript-eslint/parser@"^8.66.0" from @typescript-eslint/eslint-plugin@8.66.0
 ```
 
-They need one `package.json` edit covering all three, then a single lockfile
-regeneration. The same shape appears in the OpenTelemetry Go modules, which move
-as a family of ten. When an automated upgrade reports "some upgrades failed",
-check whether the failures are a MUTUALLY-PINNED SET before treating them as
-independent problems — and check the tree is still consistent afterwards, since a
-half-applied set is worse than none.
+They need one `package.json` edit covering all three, then a single lockfile regeneration. The same shape appears in the OpenTelemetry Go modules, which move as a family of ten. When an automated upgrade reports "some upgrades failed", check whether the failures are a MUTUALLY-PINNED SET before treating them as independent problems — and check the tree is still consistent
+afterwards, since a half-applied set is worse than none.
 
 ## Errors stack: fixing the first one promotes the second
 Trap-Id: errors-stack
 Enforced-By: JUDGMENT-ONLY
 Residue: Re-running the thing the fixed error was blocking is a habit. No artifact records that the second error was merely unreachable rather than absent.
 
-Clearing a build error does not reveal the next one, it *makes the next one
-reachable*. A drills leaf failed on a missing `llvm-strip`; with that fixed the
-same job failed again, on a different step entirely, for an unrelated reason.
-The red looked identical from the run summary both times.
+Clearing a build error does not reveal the next one, it *makes the next one reachable*. A drills leaf failed on a missing `llvm-strip`; with that fixed the same job failed again, on a different step entirely, for an unrelated reason. The red looked identical from the run summary both times.
 
-After fixing a blocking error, re-run the thing it was blocking. Clearing the
-first error is not progress until you have.
+After fixing a blocking error, re-run the thing it was blocking. Clearing the first error is not progress until you have.
 
 ## `npx eslint` cannot be run from inside a package directory
 Trap-Id: eslint-must-run-from-repo-root
@@ -177,45 +126,28 @@ option resolves to ".../packages/cli/packages/cli/src/i18n/locales/en", which
 is not an existing directory.
 ```
 
-`eslint.config.js` sets `localeDir` relative to the REPO ROOT, and ESLint
-resolves it against the CWD, so entering the package doubles the path. Run
-lint from the repo root, always -- there is no per-package invocation.
+`eslint.config.js` sets `localeDir` relative to the REPO ROOT, and ESLint resolves it against the CWD, so entering the package doubles the path. Run lint from the repo root, always -- there is no per-package invocation.
 
-The rule failing loudly is the correct half and worth preserving: it says in as
-many words that *a path that does not exist would make this rule read nothing
-and silently report no problems*. That is the vacuity class this file exists
-for, caught by a rule author who thought about it. Had it merely resolved to a
-missing directory and shrugged, every locale-interpolation check would have
-passed on zero files, and the green would have been indistinguishable from a
-clean tree.
+The rule failing loudly is the correct half and worth preserving: it says in as many words that *a path that does not exist would make this rule read nothing and silently report no problems*. That is the vacuity class this file exists for, caught by a rule author who thought about it. Had it merely resolved to a missing directory and shrugged, every locale-interpolation check would
+have passed on zero files, and the green would have been indistinguishable from a clean tree.
 
-The trap is not the error. The trap is concluding from it that the package's
-lint is broken, and going to fix `eslint.config.js` -- the config is right, the
-invocation is wrong.
+The trap is not the error. The trap is concluding from it that the package's lint is broken, and going to fix `eslint.config.js` -- the config is right, the invocation is wrong.
 
 ## A cancelled run is not a passed run, and it is not a failed one either
 Trap-Id: cancelled-run-not-passed
 Enforced-By: hook:cancelled-run-not-passed
 Residue: The `gh pr checks` half is uncovered: `Review Complete` appears there as a failing job with a /runs/ URL, and only `.output.summary` on the commit's check-runs says what it actually reports.
 
-The watchdog force-cancels a CI run on the first job failure. So a run that died
-on an unrelated red looks, through the usual filter, exactly like a run where
-everything you cared about passed:
+The watchdog force-cancels a CI run on the first job failure. So a run that died on an unrelated red looks, through the usual filter, exactly like a run where everything you cared about passed:
 
 ```
 gh api .../jobs --paginate --jq '.jobs[]|select(.conclusion=="failure")|.name'
 ```
 
-Both print nothing new about your job. The run-level conclusion says
-`cancelled` in both cases.
+Both print nothing new about your job. The run-level conclusion says `cancelled` in both cases.
 
-**Measured cost, 2026-08-06.** A flaky suite was being tracked across CI rounds
-to see whether it recurred. Three consecutive rounds were counted as "did not
-recur" when in fact the battery **never executed** — each run was cancelled by an
-earlier gate (a dependency red, an embed-pin red, a TypeScript cast). The tally
-said one-in-four; the truth was one-in-one, because three of the four rounds had
-measured nothing at all. Not-executed is a THIRD state, and collapsing it into
-"passed" inflates confidence exactly when evidence is scarcest.
+**Measured cost, 2026-08-06.** A flaky suite was being tracked across CI rounds to see whether it recurred. Three consecutive rounds were counted as "did not recur" when in fact the battery **never executed** — each run was cancelled by an earlier gate (a dependency red, an embed-pin red, a TypeScript cast). The tally said one-in-four; the truth was one-in-one, because three of the
+four rounds had measured nothing at all. Not-executed is a THIRD state, and collapsing it into "passed" inflates confidence exactly when evidence is scarcest.
 
 The fix is one line in the watch, and it is worth the noise:
 
@@ -223,14 +155,9 @@ The fix is one line in the watch, and it is worth the noise:
 gh api .../jobs --paginate --jq '.jobs[]|select(.name=="<your job>")|"job: \(.conclusion)"'
 ```
 
-Report the job's OWN conclusion, never the run's. Within one round of adding it,
-a run that read `cancelled` at run level reported `battery: success` — a real
-data point that would otherwise have been discarded.
+Report the job's OWN conclusion, never the run's. Within one round of adding it, a run that read `cancelled` at run level reported `battery: success` — a real data point that would otherwise have been discarded.
 
-The same shape hides in `gh pr checks`: `Review Complete` appears there as a
-failing job with a `/runs/` URL, but it is a check-run posted by a separate
-workflow. Read `.output.summary` on the commit's check-runs to see what it
-actually says.
+The same shape hides in `gh pr checks`: `Review Complete` appears there as a failing job with a `/runs/` URL, but it is a check-run posted by a separate workflow. Read `.output.summary` on the commit's check-runs to see what it actually says.
 
 
 ## `git diff <branch>` reads as DELETED for a file the worktree never tracked
@@ -238,75 +165,39 @@ Trap-Id: phantom-deletion-diff
 Enforced-By: hook:phantom-deletion-diff
 Residue:
 
-When a wave builds its branch with PLUMBING (temp `GIT_INDEX_FILE` + `write-tree` +
-`commit-tree` + `update-ref`) so that HEAD can stay put in a checkout shared with
-live peer sessions, the branch new files are UNTRACKED relative to HEAD.
-`git diff --stat <branch> -- <path>` then compares the branch against the INDEX,
-where an untracked file is simply absent, and reports the entire file as deleted.
-Observed 2026-08-09 on branch 0809-2: a healthy 462-line `wl_checklist.py` printed
-`1 file changed, 462 deletions(-)` while sitting intact on disk, and the reflex read
-is that a sub-agent deleted it. Nothing was damaged; the INSTRUMENT was wrong.
-Ask the content, not the index:
-`git show <branch>:<path> | diff - <path>`, or stage into the temp index and use
-`git diff-index --cached --name-status <branch>`. Same class as a failed existence
-check with the wrong path: a query that cannot see the thing it is asking about
-answers confidently and wrongly.
+When a wave builds its branch with PLUMBING (temp `GIT_INDEX_FILE` + `write-tree` + `commit-tree` + `update-ref`) so that HEAD can stay put in a checkout shared with live peer sessions, the branch new files are UNTRACKED relative to HEAD. `git diff --stat <branch> -- <path>` then compares the branch against the INDEX, where an untracked file is simply absent, and reports the entire
+file as deleted. Observed 2026-08-09 on branch 0809-2: a healthy 462-line `wl_checklist.py` printed `1 file changed, 462 deletions(-)` while sitting intact on disk, and the reflex read is that a sub-agent deleted it. Nothing was damaged; the INSTRUMENT was wrong. Ask the content, not the index: `git show <branch>:<path> | diff - <path>`, or stage into the temp index and use `git
+diff-index --cached --name-status <branch>`. Same class as a failed existence check with the wrong path: a query that cannot see the thing it is asking about answers confidently and wrongly.
 
 ## Editing a shell script while a background job is RUNNING it
 Trap-Id: edit-of-a-running-shell-script
-Enforced-By: file:.claude/hooks/pre-edit/block-edit-of-running-script.sh, file:.claude/hooks/pre-bash/block-bash-write-to-running-script.sh
+Enforced-By: gate:check:ci-pytest
 Residue: Scope is `.sh` only, deliberately: a `.ts` or `.py` is read into memory once, so editing it mid-run is confusing rather than corrupting and the guards stay silent there.
 
-Bash reads a script LAZILY, by byte offset, not into memory. Rewrite the file
-while a job is executing it and the interpreter resumes at its old offset inside
-the new bytes, so it starts parsing mid-token. The error it prints names a line
-that is innocent, and often no longer exists at that number.
+Bash reads a script LAZILY, by byte offset, not into memory. Rewrite the file while a job is executing it and the interpreter resumes at its old offset inside the new bytes, so it starts parsing mid-token. The error it prints names a line that is innocent, and often no longer exists at that number.
 
-Observed 2026-08-09: `test-hooks.sh` was edited (five cases appended, then
-`shfmt -w`) while a backgrounded umbrella run was still inside it. That run died
-with `line 380: syntax error near unexpected token (` pointing at
-`echo "... $n case(s) passed"`, a line that had been valid for months and now
-sits at 368. `bash -n` on the file was CLEAN throughout, which is the tell: a
-syntax error that the syntax checker cannot reproduce is not in the file, it is
-in the READER. Chasing the named line finds nothing wrong, because nothing is.
+Observed 2026-08-09: `test-hooks.sh` was edited (five cases appended, then `shfmt -w`) while a backgrounded umbrella run was still inside it. That run died with `line 380: syntax error near unexpected token (` pointing at `echo "... $n case(s) passed"`, a line that had been valid for months and now sits at 368. `bash -n` on the file was CLEAN throughout, which is the tell: a syntax
+error that the syntax checker cannot reproduce is not in the file, it is in the READER. Chasing the named line finds nothing wrong, because nothing is.
 
 So: never edit a script a background job is running. Let it finish, or copy the
-tree and edit the copy. And when a shell syntax error cites a line that looks
-fine, check whether anything rewrote the file mid-run before debugging the line.
+tree and edit the copy. And when a shell syntax error cites a line that looks fine, check whether anything rewrote the file mid-run before debugging the line.
 
-**Hit again on 2026-08-26, on the same file, with the same signature**: a
-backgrounded `test-hooks.sh` died at `line 1179: syntax error near unexpected
-token 'else'` while `bash -n` on that exact file was clean. Two occurrences of a
-trap this fully written up is a trap that needs a gate, so it now has one:
-`.claude/hooks/pre-edit/block-edit-of-running-script.sh` refuses an Edit or
-Write to a `.sh` file a live process is executing, and names the process. Scope
-is shell scripts only -- a `.ts` or `.py` file is read into memory once, so
-editing it mid-run is confusing rather than corrupting.
+**Hit again on 2026-08-26, on the same file, with the same signature**: a backgrounded `test-hooks.sh` died at `line 1179: syntax error near unexpected token 'else'` while `bash -n` on that exact file was clean. Two occurrences of a trap this fully written up is a trap that needs a gate, so it now has one: `.claude/hooks/pre-edit/block-edit-of-running-script.sh` refuses an Edit or
+Write to a `.sh` file a live process is executing, and names the process. Scope is shell scripts only -- a `.ts` or `.py` file is read into memory once, so editing it mid-run is confusing rather than corrupting.
 
 ## Rerunning Smoke Test Preview trades one failure for another
 Trap-Id: smoke-preview-rerun-swaps-the-failure
 Enforced-By: JUDGMENT-ONLY
 Residue: Both attempts report `Smoke Test Preview: failure`. Only reading WHICH assertions failed separates a deterministic red from two different environmental ones, and no instrument reads assertion lists.
 
-`gh run rerun --failed` is the standing remedy for a live-state gate, but it is
-WRONG for `Smoke Test Preview`, and the two attempts look like contradictory
-evidence unless you read both assertion lists.
+`gh run rerun --failed` is the standing remedy for a live-state gate, but it is WRONG for `Smoke Test Preview`, and the two attempts look like contradictory evidence unless you read both assertion lists.
 
-Observed 2026-08-10 on PR #567, same commit, two attempts:
-  attempt 1: license checks PASS, install.ps1 + marketing 404
-  attempt 2: install.ps1 + marketing PASS, license checks 403
+Observed 2026-08-10 on PR #567, same commit, two attempts: attempt 1: license checks PASS, install.ps1 + marketing 404 attempt 2: install.ps1 + marketing PASS, license checks 403
              "Token is bound to a different IP address"
 
-Neither attempt is the truth about the commit. The 404s are preview propagation,
-which time fixes. The 403 is a rerun artifact: the E2E token is bound to the IP
-of the runner that minted it, and a rerun lands on a different runner. Each
-attempt passes what the other failed, so a FRESH run (new commit, new token) is
-the remedy, not another rerun.
+Neither attempt is the truth about the commit. The 404s are preview propagation, which time fixes. The 403 is a rerun artifact: the E2E token is bound to the IP of the runner that minted it, and a rerun lands on a different runner. Each attempt passes what the other failed, so a FRESH run (new commit, new token) is the remedy, not another rerun.
 
-The trap for the reader is the job-level conclusion. Both attempts report
-`Smoke Test Preview: failure`, so a summary read says "reproduces, therefore
-real, therefore mine". It does not reproduce; it fails differently each time.
-Read WHICH assertions failed before concluding a red is deterministic.
+The trap for the reader is the job-level conclusion. Both attempts report `Smoke Test Preview: failure`, so a summary read says "reproduces, therefore real, therefore mine". It does not reproduce; it fails differently each time. Read WHICH assertions failed before concluding a red is deterministic.
 
 ## A killed command did not run its own cleanup
 Trap-Id: killed-command-skipped-its-cleanup
@@ -314,330 +205,206 @@ Enforced-By: hook:interrupted-cleanup-skipped
 Residue: The warning arrives AFTER the tree is already mutated. The habit that prevents it, mutating a copy under the scratchpad instead of the live tree, is not installable by a hook.
 
 MECHANIZED: `.claude/hooks/trapguard/dispatch.py::rule_interrupted_cleanup_skipped`
-fires on this shape, so you should meet it as an injected warning rather than here.
-The entry stays because the remedy is a habit no hook can install for you.
+fires on this shape, so you should meet it as an injected warning rather than here. The entry stays because the remedy is a habit no hook can install for you.
 
-A mutation test neutered a guard in the live tree, ran the suite, and restored it
-on the next line:
+A mutation test neutered a guard in the live tree, ran the suite, and restored it on the next line:
 
 ```
 python3 -c 'mutate'; bash test-worklist-v5.sh > mut.log; cp worklist.py.orig worklist.py
 ```
 
-The suite outlived the 2-minute tool timeout. The whole command took SIGTERM at
-`Exit code 143`, and the restore never ran. What came back was:
+The suite outlived the 2-minute tool timeout. The whole command took SIGTERM at `Exit code 143`, and the restore never ran. What came back was:
 
 ```
 syntax ok
 mutated: guard neutered
 ```
 
-Both lines true, and together they read like a step that finished. The working
-tree sat with a disabled guard in it, which is the worst possible state for a
-session whose next act is to trust that guard.
+Both lines true, and together they read like a step that finished. The working tree sat with a disabled guard in it, which is the worst possible state for a session whose next act is to trust that guard.
 
-The general shape: **an interrupted command's output is a truthful, complete
-looking account of the part that ran.** Nothing marks where it stopped. Any
-`;`-chained cleanup, restore, `git checkout --`, `rm -rf` of a sandbox, or
-`stash pop` is exactly as skippable as the timeout is long, and the risk rises
-with how slow the middle step is, which is the same thing that makes the timeout
-likely.
+The general shape: **an interrupted command's output is a truthful, complete looking account of the part that ran.** Nothing marks where it stopped. Any `;`-chained cleanup, restore, `git checkout --`, `rm -rf` of a sandbox, or `stash pop` is exactly as skippable as the timeout is long, and the risk rises with how slow the middle step is, which is the same thing that makes the
+timeout likely.
 
-The remedy is not "remember to check". It is to **mutate a copy, never the live
-tree**: put the sandbox under the scratchpad, mutate there, and let the kill
-strand nothing that matters. When the live tree genuinely must change, verify the
-restore landed by reading the file back, and never from the command's own output.
+The remedy is not "remember to check". It is to **mutate a copy, never the live tree**: put the sandbox under the scratchpad, mutate there, and let the kill strand nothing that matters. When the live tree genuinely must change, verify the restore landed by reading the file back, and never from the command's own output.
 
 ## A mutation test needs BOTH directions, or its red proves nothing
 Trap-Id: mutation-needs-both-directions
 Enforced-By: gate:check:ci-control-vacuity
 Residue: The vacuity gate proves a PLANT LANDED. Nothing proves the clean baseline pass was also run, so a case that is red on the untouched tree still reads as a successful mutation.
 
-The discipline is "plant the defect and watch the check go red". That half is not
-enough, and this session paid for the other half within the hour.
+The discipline is "plant the defect and watch the check go red". That half is not enough, and this session paid for the other half within the hour.
 
-Two new suite cases went red under a mutation that disabled the guard they
-covered. Signature looked perfect. They were also red on the untouched tree, so
-the mutation had demonstrated nothing at all: a case that can never pass goes red
-under every mutation, including one that changes nothing.
+Two new suite cases went red under a mutation that disabled the guard they covered. Signature looked perfect. They were also red on the untouched tree, so the mutation had demonstrated nothing at all: a case that can never pass goes red under every mutation, including one that changes nothing.
 
-The cause was `set -uo pipefail` (`test-worklist-v5.sh:5`) plus an assertion
-written as `refusing-command | grep -q needle`. The refusal exits 2 by design, and
-under `pipefail` a pipeline carries the first non-zero exit rather than grep's, so
-the `if` was false while grep was matching perfectly. **Never read an exit code
-after a pipe.** Capture first, then match, which is what every other refusal case
-in that suite already does:
+The cause was `set -uo pipefail` (`test-worklist-v5.sh:5`) plus an assertion written as `refusing-command | grep -q needle`. The refusal exits 2 by design, and under `pipefail` a pipeline carries the first non-zero exit rather than grep's, so the `if` was false while grep was matching perfectly. **Never read an exit code after a pipe.** Capture first, then match, which is what
+every other refusal case in that suite already does:
 
 ```bash
 OUT="$(cmd 2>&1)"; RC=$?
 if [[ "$RC" == "2" ]] && grep -qF needle <<<"$OUT"; then
 ```
 
-So a mutation run must always be two passes: **red with the defect planted, green
-without it**, and the second pass is the one that catches a broken fixture. Run
-them in one script so skipping the baseline takes deliberate effort.
+So a mutation run must always be two passes: **red with the defect planted, green without it**, and the second pass is the one that catches a broken fixture. Run them in one script so skipping the baseline takes deliberate effort.
 
-A smaller instance rode along in the same script, and it recurred **twice**, which
-is the part worth remembering. The failures filter was `grep '^FAIL'` while the
-suite indents its results, so it matched nothing and printed an empty "failures"
-section under a run that had failed, next to an exit code saying otherwise. That
-one got fixed to `^ *FAIL`, and fixing it felt like handling the class.
+A smaller instance rode along in the same script, and it recurred **twice**, which is the part worth remembering. The failures filter was `grep '^FAIL'` while the suite indents its results, so it matched nothing and printed an empty "failures" section under a run that had failed, next to an exit code saying otherwise. That one got fixed to `^ *FAIL`, and fixing it felt like
+handling the class.
 
-It was not. The SUMMARY filter in the same script was `grep -E '^(passed|failed)='`,
-and the suite's totals line is indented too (`  passed=669 failed=0`), so it also
-matched nothing. Confirmed by measurement, not memory: `^(passed|failed)=` matches
-zero, `^ *passed=` matches. Every "totals" read that night came back empty and got
-worked around rather than fixed, because the obvious instance had already been
-dealt with. **Fixing the first instance of a class is what stops you looking for
-the second.** It took an independent reviewer to find it.
+It was not. The SUMMARY filter in the same script was `grep -E '^(passed|failed)='`, and the suite's totals line is indented too (` passed=669 failed=0`), so it also matched nothing. Confirmed by measurement, not memory: `^(passed|failed)=` matches zero, `^ *passed=` matches. Every "totals" read that night came back empty and got worked around rather than fixed, because the obvious
+instance had already been dealt with. **Fixing the first instance of a class is what stops you looking for the second.** It took an independent reviewer to find it.
 
 ## Session liveness is judged by the harness task list, never by the agent roster
 Trap-Id: liveness-from-the-task-list-not-roster
 Enforced-By: file:.claude/hooks/stop/worklist.py
 Residue: There is deliberately no CI gate: the store is per-machine session state a runner does not have. And the printed id list is the harness's LAST WORD, not a roster; reading it as one is the trap inside the trap.
 
-After a Claude Code process restart, `ListAgents` shows zero subagents even while
-the writers it spawned are alive and editing; the reports directory being empty
-proves nothing either, because agents that report at completion have no output
-stream at all until they finish. Both signals read as "everyone is dead" while
-the OS-verifiable harness task list still carries the running ids. A lead trusted
-the roster once (2026-08-10, backup-storage wave 0), declared two live writers
-dead, and relaunched duplicates into their exclusive file sets; only a
-stop-the-line by one duplicate prevented two writers interleaving in one package.
+After a Claude Code process restart, `ListAgents` shows zero subagents even while the writers it spawned are alive and editing; the reports directory being empty proves nothing either, because agents that report at completion have no output stream at all until they finish. Both signals read as "everyone is dead" while the OS-verifiable harness task list still carries the running
+ids. A lead trusted the roster once (2026-08-10, backup-storage wave 0), declared two live writers dead, and relaunched duplicates into their exclusive file sets; only a stop-the-line by one duplicate prevented two writers interleaving in one package.
 
-The invariant, enforced by `worklist.py`/`wl_liveness.py`: every `- [>]` lease
-declares a `worker:<id>` that must verify against the harness's running
-background task ids. The hook refuses text-only refreshes of a lease whose
-worker is gone, and the lease-warning path prints the current live ids, which is
-also the sanctioned way to discover them.
+The invariant, enforced by `worklist.py`/`wl_liveness.py`: every `- [>]` lease declares a `worker:<id>` that must verify against the harness's running background task ids. The hook refuses text-only refreshes of a lease whose worker is gone, and the lease-warning path prints the current live ids, which is also the sanctioned way to discover them.
 
-**That printed list is not a roster of live workers, and reading it as one is
-the trap inside the trap.** It is the harness's LAST WORD, and an entry stays in
-it after its task's process has died. On 2026-08-15 a session leased a
-just-launched agent, was warned its id was unknown, read the accompanying list
-literally, concluded a worker on it was therefore alive, and came one command
-away from pointing a second writer at that dead worker's files. The list now
-annotates each id with minutes since its output stream last grew
-(`worklist.py:660`), so the dead entry renders as `bnkrmw2mt (55m)` rather than
-as a bare id indistinguishable from a healthy one. Probe the OUTPUT STREAM, which
-no self-report can fake; never the roster. There is deliberately no repository
-CI gate for this class: the worklist store is per-machine session state that CI
-runners do not have.
+**That printed list is not a roster of live workers, and reading it as one is the trap inside the trap.** It is the harness's LAST WORD, and an entry stays in it after its task's process has died. On 2026-08-15 a session leased a just-launched agent, was warned its id was unknown, read the accompanying list literally, concluded a worker on it was therefore alive, and came one
+command away from pointing a second writer at that dead worker's files. The list now annotates each id with minutes since its output stream last grew (`worklist.py:660`), so the dead entry renders as `bnkrmw2mt (55m)` rather than as a bare id indistinguishable from a healthy one. Probe the OUTPUT STREAM, which no self-report can fake; never the roster. There is deliberately no
+repository CI gate for this class: the worklist store is per-machine session state that CI runners do not have.
 
-Two instruments that lie during exactly this diagnosis, both measured: this
-box's `/usr/bin/find` is bfs 4.1.1, which REJECTS relative `-newermt` forms
-(`'-40 minutes'`, `'10 minutes ago'`) with exit 1, so under `2>/dev/null` a
-"what changed recently" sweep returns empty and reads as no activity; use
-absolute ISO timestamps or `stat -c '%y'` on the candidate files. And
-`grep -c $'\x00'` is not a NUL detector: bash strips the NUL from `$'\x00'`,
-the empty pattern matches every line, and the output is the file's line count
-regardless of content. Probe liveness with mtimes you computed yourself, and
-plant a control before trusting any zero.
+Two instruments that lie during exactly this diagnosis, both measured: this box's `/usr/bin/find` is bfs 4.1.1, which REJECTS relative `-newermt` forms (`'-40 minutes'`, `'10 minutes ago'`) with exit 1, so under `2>/dev/null` a "what changed recently" sweep returns empty and reads as no activity; use absolute ISO timestamps or `stat -c '%y'` on the candidate files. And `grep -c
+$'\x00'` is not a NUL detector: bash strips the NUL from `$'\x00'`, the empty pattern matches every line, and the output is the file's line count regardless of content. Probe liveness with mtimes you computed yourself, and plant a control before trusting any zero.
+
+## A subagent is live by the harness list AND its own transcript, and a lease is judged at stop time through the agent's lineage
+Trap-Id: subagent-liveness-needs-transcript-and-lineage
+Enforced-By: file:.claude/hooks/stop/wl_checks.py
+Residue: The PreToolUse cap guard cannot see a task list and ESTIMATES from the last Stop event plus the metas started since it; the Stop hook's `roster-cap` recount from the authoritative event is the backstop, and a replay against the `.lastevent-` sidecar is only as fresh as the last FULL stop.
+
+Measured on 2026-09-24 in one session running parallel writers, and every signal the old ladder read was wrong in a different direction. The Stop event listed 15 subagents as `running`; 11 of them had ended their turn (`stop_reason: end_turn`) between 8 and 54 minutes earlier, so "the harness lists it" is not "it is working". More than 30 leases carried `worker_verified: false` while their workers were live,
+because `--lease` checks the id against the PREVIOUS stop's snapshot and a lease is taken seconds after the spawn, before any snapshot has seen it: verification at lease time is structurally blind for a new worker. And a parent agent that finished while its depth-2 child kept working drew `ladder-gone` on the parent's items, because the child's `parentAgentId` lives only in the child's meta and the event carries no parent marker.
+
+What `wl_roster` does instead: an agent is LIVE when the event lists it AND its transcript's last record did not end the turn; a lease is COVERED when its worker or any descendant by `parentAgentId` is live, and DEAD otherwise; both are computed at stop time against the current event. Two smaller lies found while building it. A meta file's mtime is the agent's last (re)START, not its spawn: an agent listed in a 07:16Z event carried an
+08:05Z meta mtime, because a resume rewrites the meta. And the `.lastevent-` sidecar is written only by a full stop, so after an hour of silent poll stops a replay against it reads current transcripts beside a 58-minute-old roster, and a writer spawned in between reads as a dead lease; `wl_roster.explain_lastevent` names such agents rather than letting the replay pass for a verdict.
 
 ## A mutation proof run in place poisons everyone else's measurements
 Trap-Id: in-place-mutation-poisons-shared-tree
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing can tell a deliberate two-minute mutation window from ordinary editing. Mutating a copy, and announcing an unavoidable in-place window BEFORE running it, are both habits.
 
-Proving a test can fail means breaking the code on purpose, and the obvious way
-to do it is to edit the file, run the suite, and edit it back. In a shared
-checkout that is a two-minute window in which the tree is knowingly wrong, and
-nothing announces it. On 2026-08-14 a writer proved its isolation test this way
-while a verifier was measuring the same tree; the verifier copied the live
-service file mid-window and found the deliberately unscoped query in it. Anything
-anyone ran in that window measured a broken tree, and the next session to see the
-red would have had no way to know why. Worse, a checkpoint or a commit taken in
-that window captures the mutation as if it were the work.
+Proving a test can fail means breaking the code on purpose, and the obvious way to do it is to edit the file, run the suite, and edit it back. In a shared checkout that is a two-minute window in which the tree is knowingly wrong, and nothing announces it. On 2026-08-14 a writer proved its isolation test this way while a verifier was measuring the same tree; the verifier copied the
+live service file mid-window and found the deliberately unscoped query in it. Anything anyone ran in that window measured a broken tree, and the next session to see the red would have had no way to know why. Worse, a checkpoint or a commit taken in that window captures the mutation as if it were the work.
 
-The house rule, which costs nothing: mutate a COPY, never the shared tree.
-`rsync` the package to a scratchpad, symlink `node_modules` back so workspace
-imports still resolve, and run the suite in the copy. Zero-writes stays literally
-true, the re-cut-from-live rule is satisfied, and a verifier can work while a
-writer is live without either racing the other. Re-cut immediately before each
-round: a cut that symlinks a live sibling package still drifts when that sibling
-is rebuilt, which is the same staleness the rule exists to prevent.
+The house rule, which costs nothing: mutate a COPY, never the shared tree. `rsync` the package to a scratchpad, symlink `node_modules` back so workspace imports still resolve, and run the suite in the copy. Zero-writes stays literally true, the re-cut-from-live rule is satisfied, and a verifier can work while a writer is live without either racing the other. Re-cut immediately
+before each round: a cut that symlinks a live sibling package still drifts when that sibling is rebuilt, which is the same staleness the rule exists to prevent.
 
-If an in-place mutation is genuinely unavoidable, say so out loud BEFORE running
-it, keep the window to a single command, and re-verify the restore byte-for-byte
-(`diff -q` against a pre-mutation copy, not against memory) rather than trusting
-that the edit-back was exact.
+If an in-place mutation is genuinely unavoidable, say so out loud BEFORE running it, keep the window to a single command, and re-verify the restore byte-for-byte (`diff -q` against a pre-mutation copy, not against memory) rather than trusting that the edit-back was exact.
 
 ## "Clean vs HEAD" is the wrong baseline in a tree that was already dirty
 Trap-Id: clean-vs-head-is-the-wrong-baseline
-Enforced-By: file:.claude/hooks/pre-bash/block-destructive-git-restore.sh
+Enforced-By: gate:check:ci-pytest
 Residue: The guard refuses the command. It cannot repair a tree where the discard already happened, and "identical to what was there before I arrived" is not a state git can answer for.
 
-The forbidden-command rule (never `git checkout` / `restore` / `stash` / `clean`)
-is stated elsewhere. This entry is about why an agent that breaks it BELIEVES IT
-SUCCEEDED, which is what makes the damage silent.
+The forbidden-command rule (never `git checkout` / `restore` / `stash` / `clean`) is stated elsewhere. This entry is about why an agent that breaks it BELIEVES IT SUCCEEDED, which is what makes the damage silent.
 
-2026-08-14: a locale writer ran a script that incidentally touched
-`packages/www/src/i18n/translations/.translation-hashes.json`, a file outside its
-task. Wanting to leave no trace, it ran `git checkout --` on that one file, then
-checked `git status`, saw the file clean, and reported "touched then restored, net
-no-op". Every word of that was sincere and the conclusion was wrong.
+2026-08-14: a locale writer ran a script that incidentally touched `packages/www/src/i18n/translations/.translation-hashes.json`, a file outside its task. Wanting to leave no trace, it ran `git checkout --` on that one file, then checked `git status`, saw the file clean, and reported "touched then restored, net no-op". Every word of that was sincere and the conclusion was wrong.
 
-The file had been dirty BEFORE the session started: another session had left
-`sourceCommit 1ebd8aff` uncommitted in it. `git checkout --` does not undo YOUR
-change to a file. It discards ALL uncommitted changes to it. So the command
-reset past the prior state to HEAD, destroying the other session's value, and the
-resulting file looked *cleaner* than correct.
+The file had been dirty BEFORE the session started: another session had left `sourceCommit 1ebd8aff` uncommitted in it. `git checkout --` does not undo YOUR change to a file. It discards ALL uncommitted changes to it. So the command reset past the prior state to HEAD, destroying the other session's value, and the resulting file looked *cleaner* than correct.
 
-That is the trap: **after an unwanted edit, "clean vs HEAD" is not the target.
-The target is "identical to what was there before I arrived."** Those two are the
-same thing only in a tree with no uncommitted work, which is never true here.
+That is the trap: **after an unwanted edit, "clean vs HEAD" is not the target. The target is "identical to what was there before I arrived."** Those two are the same thing only in a tree with no uncommitted work, which is never true here.
 
 - The correct repair is forward: edit the value back, or leave it and say so. Both
-  keep every other change in the file.
+keep every other change in the file.
 - The only reason this was recoverable is that the session checkpoints include
-  UNTRACKED and pre-existing dirty state, so the original byte could be read out
-  of the session-start patch. A checkpoint that only captures your own work cannot
-  answer "what was here before".
+UNTRACKED and pre-existing dirty state, so the original byte could be read out of the session-start patch. A checkpoint that only captures your own work cannot answer "what was here before".
 - Damage was one metadata field. That was luck, not care: the same command on a
-  locale file mid-edit deletes a peer's work with nothing to reconstruct from.
+locale file mid-edit deletes a peer's work with nothing to reconstruct from.
 
-The tell, for a reviewer: a report that says "restored, no-op" and cites a clean
-`git status` as the proof. Ask what the file looked like BEFORE, and whether
-anyone checked.
+The tell, for a reviewer: a report that says "restored, no-op" and cites a clean `git status` as the proof. Ask what the file looked like BEFORE, and whether anyone checked.
 
 ## A green task notification can be reporting the shell, not the gate
 Trap-Id: green-notification-reports-the-shell
-Enforced-By: file:.ci/scripts/quality/check-swallowed-failures.sh
+Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
 Residue: The gate reads scripts in the tree. A wrapper typed into a Bash call, `cmd > log 2>&1; echo exit=$?`, lives in no file, and that is exactly where this one was paid for.
 
-A backgrounded `npm run check:lint` completed with **"exit code 0"** in its task
-notification while the gate itself was failing with 17 errors. Nothing was
-broken. The command was:
+A backgrounded `npm run check:lint` completed with **"exit code 0"** in its task notification while the gate itself was failing with 17 errors. Nothing was broken. The command was:
 
 ```
 npm run --silent check:lint > /tmp/checklint.log 2>&1; echo "check:lint exit=$?"
 ```
 
-A `;` list exits with the status of its LAST command, and `echo` always
-succeeds. So the wrapper honestly reported success for the shell invocation,
-which is not what anyone reads it as. The real status existed only as text
-inside the log, in the line the `echo` had written.
+A `;` list exits with the status of its LAST command, and `echo` always succeeds. So the wrapper honestly reported success for the shell invocation, which is not what anyone reads it as. The real status existed only as text inside the log, in the line the `echo` had written.
 
-This is the same defect as a gate that prints its failure and exits 0, moved one
-layer out. The layers that can each swallow a status independently:
+This is the same defect as a gate that prints its failure and exits 0, moved one layer out. The layers that can each swallow a status independently:
 
 - `cmd | grep ...` reports **grep's** status, and `grep` exits 1 on "no lines
-  matched", which is the normal outcome when a build is clean. `echo "exit=$?"`
-  after a pipe is therefore almost always measuring the wrong thing.
+matched", which is the normal outcome when a build is clean. `echo "exit=$?"` after a pipe is therefore almost always measuring the wrong thing.
 - `cmd; echo ...` reports the echo.
 - `( cd x && cmd )` reports the subshell, including a failed `cd`.
 - A task notification reports the whole invocation, whatever shape it had.
 
-Habits that survive all four: put the command last, or capture with
-`cmd; rc=$?; ...; exit $rc`, or use `${PIPESTATUS[0]}` and say out loud which
-element you read. When a summary and a log disagree, the log is the artifact and
-the summary is a claim about it.
+Habits that survive all four: put the command last, or capture with `cmd; rc=$?; ...; exit $rc`, or use `${PIPESTATUS[0]}` and say out loud which element you read. When a summary and a log disagree, the log is the artifact and the summary is a claim about it.
 
 ## A tool that cannot answer may report "nothing to do" in valid JSON
 Trap-Id: unobtained-is-not-empty
 Enforced-By: gate:check:deps
 Residue: check:deps now selftests both of its own failure shapes. Every other tool that answers in valid JSON from zero information is uncovered; asking which fact you are holding stays manual.
 
-`check:deps` answered **exit 0** and **exit 1** two minutes apart with no
-intervening change. The green run was not noise, and calling it a fluke was
-wrong: the gate fails OPEN whenever it cannot reach the npm registry, and it had
-just been run after several `npm install`s.
+`check:deps` answered **exit 0** and **exit 1** two minutes apart with no intervening change. The green run was not noise, and calling it a fluke was wrong: the gate fails OPEN whenever it cannot reach the npm registry, and it had just been run after several `npm install`s.
 
 Proven in one command:
 
 ```
-npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/check-deps.ts
+npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/gates/check-deps.ts
 → "All dependencies are up-to-date", exit 0
 ```
 
-The mechanism is worth knowing precisely, because "handle the error" does not
-cover it. `npm outdated --json` does **not** fail loudly on an unreachable
-registry. It prints a well-formed object:
+The mechanism is worth knowing precisely, because "handle the error" does not cover it. `npm outdated --json` does **not** fail loudly on an unreachable registry. It prints a well-formed object:
 
 ```json
 {"error":{"code":"ECONNREFUSED","summary":"request to .../typescript failed", ...}}
 ```
 
-That parses. It contains no outdated packages. So every downstream reader
-concludes there is no work, and the gate emits the **strongest claim it has** —
-everything is current — from **zero information**. Three separate `return {}`
-branches in the reader turned every other failure (no stdout, unparseable
-stdout, a throw with an empty payload) into the same false green.
+That parses. It contains no outdated packages. So every downstream reader concludes there is no work, and the gate emits the **strongest claim it has** — everything is current — from **zero information**. Three separate `return {}` branches in the reader turned every other failure (no stdout, unparseable stdout, a throw with an empty payload) into the same false green.
 
 The general shape, which is not specific to npm:
 
 - **An empty result and an unobtained result are different facts**, and most
-  tools flatten them into the same value. Ask which one you are holding.
+tools flatten them into the same value. Ask which one you are holding.
 - **Valid output is not a successful query.** A schema check passes on
-  `{"error": ...}`. Check for the tool's own failure envelope before trusting a
-  parse.
+`{"error": ...}`. Check for the tool's own failure envelope before trusting a parse.
 - **The most confident assertion is the one to distrust.** "Everything is
-  up-to-date", "no vulnerabilities", "no dead code" are all reachable by a check
-  that ran nothing.
+up-to-date", "no vulnerabilities", "no dead code" are all reachable by a check that ran nothing.
 - **Exit codes are the tool's opinion, not the truth.** Here npm exited 1 while
-  handing back a parseable body; elsewhere it exits 0 having learned nothing.
+handing back a parseable body; elsewhere it exits 0 having learned nothing.
 
-The fix that holds: make the unobtained case throw, and add a control that forces
-each failure shape and asserts the gate goes red **with the matching message** —
-`check:deps` now runs `--selftest` before every real run, covering both an empty
-probe and the error-envelope, and refusing a green that says "up-to-date". A
-control that only tests the shape you happened to hit is half a control: the
-empty-probe case was written first and would never have caught the
-error-envelope case, which is the one that actually shipped.
+The fix that holds: make the unobtained case throw, and add a control that forces each failure shape and asserts the gate goes red **with the matching message** — `check:deps` now runs `--selftest` before every real run, covering both an empty probe and the error-envelope, and refusing a green that says "up-to-date". A control that only tests the shape you happened to hit is half a
+control: the empty-probe case was written first and would never have caught the error-envelope case, which is the one that actually shipped.
 
 ## `--force` may force the wrong half
 Trap-Id: force-forces-the-wrong-half
 Enforced-By: gate:check:ci-embed-asset-versions
 Residue:
 
-Bumping the embedded rsync pin 3.4.4 → 3.5.0 meant editing
-`private/renet/embed-assets.lock.json` and both `ARG RSYNC_VERSION` /
-`ARG RSYNC_SHA256` stages in the Dockerfile, then restaging:
+Bumping the embedded rsync pin 3.4.4 → 3.5.0 meant editing `private/renet/embed-assets.lock.json` and both `ARG RSYNC_VERSION` / `ARG RSYNC_SHA256` stages in the Dockerfile, then restaging:
 
 ```
 ./build.sh embed_assets --force     # exit 0
 ```
 
-Green. The freshness gate went green. The credits gate went green. And the
-staged asset was **still 3.4.4**, same bytes, same August mtime:
+Green. The freshness gate went green. The credits gate went green. And the staged asset was **still 3.4.4**, same bytes, same August mtime:
 
 ```
 zstd -dc pkg/embed/assets/amd64/base/rsync-linux-amd64.zst > /tmp/r && /tmp/r --version
 → rsync  version 3.4.4
 ```
 
-`embed_assets` builds the Docker image only `if ! docker image inspect
-rediacc/renet:latest`. The image already existed, so `--force` forced
-**re-extraction from the stale image**, not a rebuild. A Dockerfile `ARG` change
-is invisible to it by construction. The rebuild is a separate verb,
-`./build.sh docker_image`.
+`embed_assets` builds the Docker image only `if ! docker image inspect rediacc/renet:latest`. The image already existed, so `--force` forced **re-extraction from the stale image**, not a rebuild. A Dockerfile `ARG` change is invisible to it by construction. The rebuild is a separate verb, `./build.sh docker_image`.
 
 Two things generalise:
 
 - **A flag's name is a promise about scope, and scope is where it lies.**
-  `--force` here means "re-extract even if the receipt looks current", not
-  "rebuild what the extract comes from". Read what the flag actually guards
-  before treating it as a big hammer.
+`--force` here means "re-extract even if the receipt looks current", not "rebuild what the extract comes from". Read what the flag actually guards before treating it as a big hammer.
 - **Every gate in the chain confirmed the pin, and no gate looked at the
-  payload.** Freshness compares the pin to upstream. Credits compare the ARG to
-  the lockfile to the generated attribution. All three agreed, and all three were
-  reading the same declaration rather than the artifact it describes. The only
-  check that caught it decompressed the binary and ran `--version`.
+payload.** Freshness compares the pin to upstream. Credits compare the ARG to the lockfile to the generated attribution. All three agreed, and all three were reading the same declaration rather than the artifact it describes. The only check that caught it decompressed the binary and ran `--version`.
 
-When a version bump touches something that gets *built* rather than downloaded,
-the acceptance test is the built thing answering its own version, never the
-manifest that requested it.
+When a version bump touches something that gets *built* rather than downloaded, the acceptance test is the built thing answering its own version, never the manifest that requested it.
 
-**This one is now an instrument, not just a lesson.**
-`check:ci-embed-asset-versions` (`scripts/check-embed-asset-versions.ts`,
-reachable from `npm run ci`) decompresses every staged asset and asks the binary
-its own version, executing it when the architecture matches the host and reading
-its string table when it does not. It is the only embed gate that opens the box.
-Three things keep it honest: it declares a MISMATCH only when a binary states a
-DIFFERENT version, never merely when it fails to state ours (the CSI sidecars
-ship with no version compiled in and would otherwise be red forever); it names
-every asset it could not probe instead of quietly counting it as fine; and a
-decay guard fails the run if rsync, criu or rclone ever come back unprobed,
+**This one is now an instrument, not just a lesson.** `check:ci-embed-asset-versions` (`scripts/gates/check-embed-asset-versions.ts`, reachable from `npm run ci`) decompresses every staged asset and asks the binary its own version, executing it when the architecture matches the host and reading its string table when it does not. It is the only embed gate that opens the box. Three
+things keep it honest: it declares a MISMATCH only when a binary states a DIFFERENT version, never merely when it fails to state ours (the CSI sidecars ship with no version compiled in and would otherwise be red forever); it names every asset it could not probe instead of quietly counting it as fine; and a decay guard fails the run if rsync, criu or rclone ever come back unprobed,
 because a check that stops checking is how this class returns.
 
 
@@ -646,67 +413,32 @@ Trap-Id: gate-scoped-away-from-your-file
 Enforced-By: gate:check:ci-lint-scope-coverage, gate:check:ci-shell-lint
 Residue: `shfmt` is deliberately NOT widened past `.claude`, so formatting coverage still names its roots by hand and can be scoped away from a new file. That asymmetry is a decision, not an oversight.
 
-A shell file added at `.claude/lib/` passed BOTH shell gates on 2026-08-15 while
-carrying a blatant SC2086. Not a missed error: a **green tick over a file neither
-gate had opened**. `shellcheck.sh` and `shfmt.sh` each walked four hardcoded
-roots (`.ci`, `.claude/hooks`, `run.sh`, `scripts/`), and a path outside them
-produced no error, no warning, and no mention. The omission is invisible by
-construction, which is what separates this from an ordinary bug: the output of a
-gate that skipped your file is byte-identical to the output of a gate that read
-it and approved.
+A shell file added at `.claude/lib/` passed BOTH shell gates on 2026-08-15 while carrying a blatant SC2086. Not a missed error: a **green tick over a file neither gate had opened**. `shellcheck.sh` and `shfmt.sh` each walked four hardcoded roots (`.ci`, `.claude/hooks`, `run.sh`, `scripts/`), and a path outside them produced no error, no warning, and no mention. The omission is
+invisible by construction, which is what separates this from an ordinary bug: the output of a gate that skipped your file is byte-identical to the output of a gate that read it and approved.
 
-The instinct on discovering it is to widen the glob to cover your own file. That
-instinct is the second half of the trap. Widening to `.claude/**` would have
-fixed the one file in hand and left thirteen others unscanned, among them
-`packages/www/public/install.sh` -- the PUBLIC installer users pipe into bash --
-and `rdc.sh`. Measure the whole uncovered set before choosing the fix; the
-instance you tripped over is rarely the worst one in it.
+The instinct on discovering it is to widen the glob to cover your own file. That instinct is the second half of the trap. Widening to `.claude/**` would have fixed the one file in hand and left thirteen others unscanned, among them `packages/www/public/install.sh` -- the PUBLIC installer users pipe into bash -- and `rdc.sh`. Measure the whole uncovered set before choosing the fix;
+the instance you tripped over is rarely the worst one in it.
 
-`shellcheck.sh` now enumerates from `git ls-files '*.sh'` (417 files), because a
-list of roots needs maintenance and an enumerator does not: a new script is
-covered the moment it is tracked. It also REFUSES an empty file list, since a
-gate that lints nothing exits 0 exactly like a gate that lints everything.
+`shellcheck.sh` now enumerates from `git ls-files '*.sh'` (417 files), because a list of roots needs maintenance and an enumerator does not: a new script is covered the moment it is tracked. It also REFUSES an empty file list, since a gate that lints nothing exits 0 exactly like a gate that lints everything.
 
-**The general rule: before trusting a gate's green, ask which files it actually
-opened, and prove it by planting a violation in the file you care about.** Any
-gate that names its inputs by directory, extension, or allowlist can be silently
-scoped away from the code you are changing. Note also that a correctness gate and
-a formatting gate deserve different answers here -- `shfmt` was deliberately NOT
-widened past `.claude`, because enumerating everything would demand reformatting
-eleven untouched files including deployed repository templates: churn, with no
-defect found. That asymmetry is documented in `shfmt.sh` so a later reader does
-not "fix" it.
+**The general rule: before trusting a gate's green, ask which files it actually opened, and prove it by planting a violation in the file you care about.** Any gate that names its inputs by directory, extension, or allowlist can be silently scoped away from the code you are changing. Note also that a correctness gate and a formatting gate deserve different answers here -- `shfmt`
+was deliberately NOT widened past `.claude`, because enumerating everything would demand reformatting eleven untouched files including deployed repository templates: churn, with no defect found. That asymmetry is documented in `shfmt.sh` so a later reader does not "fix" it.
 
 ## A Python gate that runs green on your machine and dies on the runner
 Trap-Id: python-gate-dies-on-the-runner
 Enforced-By: gate:check:ci-python-gate-deps
 Residue: It does not follow imports TRANSITIVELY: a gate that grows a helper module with its own third-party import is one hop outside what the gate sees.
 
-`check_workflow_submodule_deps.py` imported PyYAML, passed every local run, and
-died on the runner with `ModuleNotFoundError: No module named 'yaml'`. The
-module was in the author's environment and not on a clean Ubuntu runner, and
-nothing compared what a script imports against what its job installs.
+`check_workflow_submodule_deps.py` imported PyYAML, passed every local run, and died on the runner with `ModuleNotFoundError: No module named 'yaml'`. The module was in the author's environment and not on a clean Ubuntu runner, and nothing compared what a script imports against what its job installs.
 
-The tell is that **it never failed anywhere the author could see it**, which is
-the same shape as two other traps this repo has paid for: a suite case that
-silently no-opped under `GITHUB_ACTIONS`, and a gate registered in the manifest
-against a workflow step that did not exist. All three passed where they were run
-and meant nothing where they mattered.
+The tell is that **it never failed anywhere the author could see it**, which is the same shape as two other traps this repo has paid for: a suite case that silently no-opped under `GITHUB_ACTIONS`, and a gate registered in the manifest against a workflow step that did not exist. All three passed where they were run and meant nothing where they mattered.
 
-**This one is now a gate rather than a paragraph**: `check:ci-python-gate-deps`
-reads the imports of every `.py` a workflow step runs, drops stdlib and
-first-party modules, and requires a `pip install` in the same job to name what
-is left. Verified by replaying the real defect, which it reports as
-`check_workflow_submodule_deps.py imports 'yaml' and no pip install in this job
-names it`.
+**This one is now a gate rather than a paragraph**: `check:ci-python-gate-deps` reads the imports of every `.py` a workflow step runs, drops stdlib and first-party modules, and requires a `pip install` in the same job to name what is left. Verified by replaying the real defect, which it reports as `check_workflow_submodule_deps.py imports 'yaml' and no pip install in this job names
+it`.
 
-The reason it is a gate and not this paragraph: the stop-hook suite's own
-`setup()` carried a comment recording that 30 cases were once lost to an
-inherited `GITHUB_ACTIONS`, and a new call site was still added without the pin.
-A document an agent can skip is not a control.
+The reason it is a gate and not this paragraph: the stop-hook suite's own `setup()` carried a comment recording that 30 cases were once lost to an inherited `GITHUB_ACTIONS`, and a new call site was still added without the pin. A document an agent can skip is not a control.
 
-**It does not follow imports transitively.** A gate that grows a helper module
-with its own third-party import is one hop outside what this sees.
+**It does not follow imports transitively.** A gate that grows a helper module with its own third-party import is one hop outside what this sees.
 
 ## A green `packages/www` build can render the PREVIOUS version of a page
 Trap-Id: stale-content-cache-renders-old-page
@@ -720,18 +452,11 @@ Observed 2026-08-16 on `docs/en/backup-restore.md`, with timestamps:
 - `dist/en/docs/backup-restore/index.html` written 08:09:51, carrying the OLD headings
 - build completed 08:10:19, **exit 0**
 
-The built HTML contained a section id (`two-backup-paths`) that exists nowhere in
-the source tree. A second build, with no source change, produced the correct
-page.
+The built HTML contained a section id (`two-backup-paths`) that exists nowhere in the source tree. A second build, with no source change, produced the correct page.
 
-So the build succeeding is NOT evidence that the build built what you wrote. The
-content layer's cache can serve a stale entry while everything downstream reports
-success, and an agent that trusts the exit code will report a page as shipped
-when it has not.
+So the build succeeding is NOT evidence that the build built what you wrote. The content layer's cache can serve a stale entry while everything downstream reports success, and an agent that trusts the exit code will report a page as shipped when it has not.
 
-**What to do instead: grep the BUILT HTML for a phrase you just wrote.** If it is
-missing, build again. This is the same rule as everywhere else in this file --
-check the artifact, not the report of the artifact -- and it costs one grep.
+**What to do instead: grep the BUILT HTML for a phrase you just wrote.** If it is missing, build again. This is the same rule as everywhere else in this file -- check the artifact, not the report of the artifact -- and it costs one grep.
 
 <!-- MERGED 2026-08-16 from the gitignored .agent/TRAPS.md, which the stop hook
      read while THIS file reached nobody programmatically. The two corpora had
@@ -743,14 +468,10 @@ Trap-Id: review-scripts-come-from-main
 Enforced-By: JUDGMENT-ONLY
 Residue: The workflow comes from the PR and the review scripts from `main`, so a new arm is unusable until merged. Nothing compares a step's arm against main's copy of the script.
 
-A workflow step may only call `claude-review-gate.sh` arms that **already exist
-on main**. `claude-review-reusable.yml` checks the review scripts out with
-`ref: main, path: .review-scripts`, deliberately, so PR-authored review scripts
-can never execute. The workflow file itself comes from the PR.
+A workflow step may only call `claude-review-gate.sh` arms that **already exist on main**. `claude-review-reusable.yml` checks the review scripts out with `ref: main, path: .review-scripts`, deliberately, so PR-authored review scripts can never execute. The workflow file itself comes from the PR.
 
 Cost: run `30552035566`. A step called a `--record-invocation` arm added on the
-branch; `git show origin/main:...claude-review-gate.sh | grep -c record-invocation`
-returns 0, so the step failed instantly and took the review job red.
+branch; `git show origin/main:...claude-review-gate.sh | grep -c record-invocation` returns 0, so the step failed instantly and took the review job red.
 
 Corollary: a new script arm is unusable until merged. Inline it in the workflow
 (under `check-workflows.sh`'s 8-logic-line cap) or wait for the merge.
@@ -760,101 +481,70 @@ Trap-Id: breakpoint-is-vendored
 Enforced-By: gate:check:ci-breakpoint-drift
 Residue:
 
-`check-breakpoint-drift.sh` fails on ANY local edit, correctly, and there is no
-exemption list. Do not edit it to change CI behaviour.
+`check-breakpoint-drift.sh` fails on ANY local edit, correctly, and there is no exemption list. Do not edit it to change CI behaviour.
 
 Cost: one round. Editing `test-breakpoint-lifecycle.sh` failed the gate with
 `25 files verified, 0 accepted divergences`.
 
 Instead: tune from the CALL SITE. `start-tunnel.sh:44` reads
-`CONNECT_TIMEOUT="${ARG_CONNECT_TIMEOUT:-90}"` from the environment, so setting
-`ARG_CONNECT_TIMEOUT` in `ci.yml` costs zero drift. Measured: env set resolves
-180, unset resolves 90.
+`CONNECT_TIMEOUT="${ARG_CONNECT_TIMEOUT:-90}"` from the environment, so setting `ARG_CONNECT_TIMEOUT` in `ci.yml` costs zero drift. Measured: env set resolves 180, unset resolves 90.
 
 ## GitHub matrix fail-fast beats the `no-cancel-failure` label
 Trap-Id: matrix-fail-fast-beats-the-label
 Enforced-By: JUDGMENT-ONLY
 Residue: Checked 2026-08-27: check-ci-workflow-invariants.sh asserts nothing about `fail-fast`, so no gate reads it. The serial half (a red build skipping every downstream job) is not expressible as a workflow invariant at all.
 
-The label cannot reach it. Matrix fail-fast cancels every sibling before the
-watchdog is ever consulted, so on a branch being driven to green each round
-surfaces one failure instead of the whole surface.
+The label cannot reach it. Matrix fail-fast cancels every sibling before the watchdog is ever consulted, so on a branch being driven to green each round surfaces one failure instead of the whole surface.
 
-`ci-build-docker.yml` and `ci-build-renet.yml` set `fail-fast: false`;
-`ci-build-cli.yml` and `ci-ops-test.yml` did not until 2026-07-30.
+`ci-build-docker.yml` and `ci-build-renet.yml` set `fail-fast: false`; `ci-build-cli.yml` and `ci-ops-test.yml` did not until 2026-07-30.
 
-Related limit on the same label: it cannot make a DOWNSTREAM job run.
-`validate-install`, `validate-promote`, `deploy-preview` and
-`smoke-test-preview` all hang off `stage-artifacts.result == 'success'`, so a red
-build still leaves that whole half `skipped`. The label buys enumeration of the
-PARALLEL surface, not the SERIAL one.
+Related limit on the same label: it cannot make a DOWNSTREAM job run. `validate-install`, `validate-promote`, `deploy-preview` and `smoke-test-preview` all hang off `stage-artifacts.result == 'success'`, so a red build still leaves that whole half `skipped`. The label buys enumeration of the PARALLEL surface, not the SERIAL one.
 
 ## A step with no status function is skipped when an earlier step fails
 Trap-Id: accounting-step-needs-always
 Enforced-By: JUDGMENT-ONLY
 Residue: Checked 2026-08-27: no workflow gate distinguishes an ACCOUNTING step from a posting step, and the distinction is intent. Implicit `success()` is correct for the second and silently wrong for the first.
 
-Implicit `success()`. This is how a review that burned its full turn budget
-recorded nothing: the marker step was skipped, the cap counts posted reports, so
-a spent pass counted as zero and the same SHA would be re-reviewed at full price
-forever.
+Implicit `success()`. This is how a review that burned its full turn budget recorded nothing: the marker step was skipped, the cap counts posted reports, so a spent pass counted as zero and the same SHA would be re-reviewed at full price forever.
 
 Cost: run `30552035566`, `"subtype": "error_max_turns"`, zero bot comments on the
-PR, no marker. Predicted in advance by the S-2 spike for a budget halt; it
-arrived via `max_turns` instead.
+PR, no marker. Predicted in advance by the S-2 spike for a budget halt; it arrived via `max_turns` instead.
 
-Rule of thumb: if a step is an ACCOUNTING RECORD, it needs `always()`. If it
-POSTS something the model produced, leave it on implicit `success()` -- with no
-output there is nothing to post and it only adds a way to fail the job.
+Rule of thumb: if a step is an ACCOUNTING RECORD, it needs `always()`. If it POSTS something the model produced, leave it on implicit `success()` -- with no output there is nothing to post and it only adds a way to fail the job.
 
 ## A cache key must cover every input BAKED INTO the artifact
 Trap-Id: cache-key-misses-a-baked-in-input
 Enforced-By: JUDGMENT-ONLY
 Residue: A closure of PATHS cannot cover an input that is not a path, and a git tag is not a path. Nothing detects that an artifact is stamped with something its cache key never saw.
 
-`generate-tag.sh`'s closure hashes git OIDs at HEAD, documented as being "immune
-to the in-job version bump that dirties package.json". That immunity is right for
-a dirty working file and exactly wrong for the released version: a git TAG is not
-a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went
-insensitive to the one input the image is stamped with.
+`generate-tag.sh`'s closure hashes git OIDs at HEAD, documented as being "immune to the in-job version bump that dirties package.json". That immunity is right for a dirty working file and exactly wrong for the released version: a git TAG is not a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went insensitive to the one input the image is stamped with.
 
 Cost: two full rounds. Runs `30534726467` and `30542942037`,
-`Version mismatch: expected '1.2.13', got '1.2.12'`, deterministic and
-self-perpetuating because cutting a tag does not move the closure.
+`Version mismatch: expected '1.2.13', got '1.2.12'`, deterministic and self-perpetuating because cutting a tag does not move the closure.
 
 ## `git branch --merged` always lies here
 Trap-Id: git-branch-merged-lies-here
 Enforced-By: JUDGMENT-ONLY
 Residue: Rebase-merge leaves no shared commit, so ancestry answers confidently and wrongly. Only the PR knows, and no gate reads a human's branch-deletion list.
 
-All five repos are rebase-merge only, so a merged branch shares no commit with
-`main`. The ancestry test called all 75 console local branches unsafe to delete
-when 59 had merged PRs. Ask the PR, never ancestry.
+All five repos are rebase-merge only, so a merged branch shares no commit with `main`. The ancestry test called all 75 console local branches unsafe to delete when 59 had merged PRs. Ask the PR, never ancestry.
 
 ## A gate can pass on the exact body it was written to reject
 Trap-Id: gate-accepts-the-body-it-rejects
 Enforced-By: JUDGMENT-ONLY
 Residue: Whether a needle can appear in the bad case as well as the good one is a question about the SUBJECT's data, which no meta-gate holds. Grep for a field that only exists when populated.
 
-`wait-for-preview-worker.sh` waited for a "usable body" and its own comment said
-a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but
-`app.ts:154-173` declares `const keys = []` and always returns
-`c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
+`wait-for-preview-worker.sh` waited for a "usable body" and its own comment said a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but `app.ts:154-173` declares `const keys = []` and always returns `c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
 
-Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field
-that only exists inside a populated entry (`publicKeySpki`), not for the
-container.
+Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field that only exists inside a populated entry (`publicKeySpki`), not for the container.
 
 ## Read stdout and stderr SEPARATELY, and never `2>/dev/null`
 Trap-Id: read-stdout-and-stderr-separately
-Enforced-By: file:.ci/scripts/quality/check-swallowed-failures.sh
+Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
 Residue: The gate covers `2>/dev/null` and discarded exit statuses in TRACKED scripts. A one-off command typed into a tool call is in no file, and that is where three rounds went.
 
 Cost: at least three rounds this program. `gh run view --log-failed` is
-run-scoped even with `--job` and says so on stderr; a plan writer wrapped in
-`2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and
-`grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation
-probe look inconclusive.
+run-scoped even with `--job` and says so on stderr; a plan writer wrapped in `2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and `grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation probe look inconclusive.
 
 Use `gh api repos/OWNER/REPO/actions/jobs/<id>/logs` for a single job's log.
 
@@ -863,186 +553,107 @@ Trap-Id: helper-defined-below-its-first-use
 Enforced-By: JUDGMENT-ONLY
 Residue: Checked 2026-08-27: no gate covers it. Calling a shell function above its definition is legal bash, shellcheck is silent, and the failure lands on stderr while the suite counts the case as passed.
 
-`pass`/`fail` sat at line 2462 of `test-worklist-v5.sh` while cases above called
-them. The suite reported `253 passed, 0 failed` while three assertions emitted
-`pass: command not found` to stderr and counted nothing.
+`pass`/`fail` sat at line 2462 of `test-worklist-v5.sh` while cases above called them. The suite reported `253 passed, 0 failed` while three assertions emitted `pass: command not found` to stderr and counted nothing.
 
 Only visible because stderr was read separately. Define helpers at the top.
 
 ## A watch verdict is not evidence
 Trap-Id: a-watch-verdict-is-not-evidence
-Enforced-By: file:.claude/hooks/pre-bash/block-adhoc-sanctioned.sh
+Enforced-By: gate:check:ci-pytest
 Residue: The guard refuses ad-hoc watch loops. It cannot make a session RE-READ the Jobs API before acting on a verdict it already holds, nor notice a run that grew from 42 to 48 jobs while being read.
 
-This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch
-commands are now refused by `block-adhoc-sanctioned.sh`: the script keys on the
-PR head and reads `statusCheckRollup`, so a superseded run and a watchdog rerun
-are not mishandled, they are unrepresentable.
+This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch commands are now refused by `block-adhoc-sanctioned.sh`: the script keys on the PR head and reads `statusCheckRollup`, so a superseded run and a watchdog rerun are not mishandled, they are unrepresentable.
 
-Hand-rolled terminal-state watches have understated failures (reporting one failed job when
-the API showed the run cancelled with more), and `gh run watch` has dropped
-silently on terminal runs 4 times out of 4. Always re-read the Jobs API before
-acting on a verdict, and never treat a still-growing run as final -- one went
-42 -> 48 jobs while being read.
+Hand-rolled terminal-state watches have understated failures (reporting one failed job when the API showed the run cancelled with more), and `gh run watch` has dropped silently on terminal runs 4 times out of 4. Always re-read the Jobs API before acting on a verdict, and never treat a still-growing run as final -- one went 42 -> 48 jobs while being read.
 
 ## A background agent goes idle WITHOUT sending its report
 Trap-Id: agent-goes-idle-without-reporting
 Enforced-By: file:.claude/hooks/stop/worklist.py
 Residue: The lease ladder notices a worker that stopped. It cannot make the lead ASK for the artifact with SendMessage, and a re-asked agent summarises rather than sending what it wrote.
 
-Observed three times in one session: `skipplan`, `greenblock`, `stopplan`. Each
-finished real work and then emitted only an `idle_notification`. The findings sat
-unread in the agent's own transcript, in one case for hours, while this session
-reported the work as still in flight.
+Observed three times in one session: `skipplan`, `greenblock`, `stopplan`. Each finished real work and then emitted only an `idle_notification`. The findings sat unread in the agent's own transcript, in one case for hours, while this session reported the work as still in flight.
 
-The report is NOT delivered automatically. You must ask for it with
-`SendMessage` to the agent by name, and the ask should enumerate exactly what you
-want, because a re-asked agent will otherwise summarise rather than send the
-artifact.
+The report is NOT delivered automatically. You must ask for it with `SendMessage` to the agent by name, and the ask should enumerate exactly what you want, because a re-asked agent will otherwise summarise rather than send the artifact.
 
-Cost of not noticing: `skipplan`'s completed work was committed and pushed by a
-sweep before its report arrived, so it was verified against its gates rather than
-against its reasoning, which is the wrong order.
+Cost of not noticing: `skipplan`'s completed work was committed and pushed by a sweep before its report arrived, so it was verified against its gates rather than against its reasoning, which is the wrong order.
 
 Corollary: never write "agent is still running" in a status table on the strength
 of no message arriving. Check, or say you have not checked.
 
 ## A blanket `git add -A` sweep imports other sessions' half-landed work
 Trap-Id: blanket-git-add-imports-other-work
-Enforced-By: file:.claude/hooks/pre-bash/block-blanket-git-add.sh
+Enforced-By: file:.claude/rediacc_hooks/guards/block_blanket_git_add.py
 Residue: The guard names its escape, `git add -A -- <path>`. What stays judgment is what to do once a sweep-imported file reds your branch: ask the owner, and never weaken another session's gate to get green.
 
-The standing rule to commit and push everything every round is what keeps a
-shared tree clean, but it also picks up WIP that was never meant to be committed,
-and that WIP can red your branch.
+The standing rule to commit and push everything every round is what keeps a shared tree clean, but it also picks up WIP that was never meant to be committed, and that WIP can red your branch.
 
-Measured 2026-07-30: sweep `cefa43ca7` picked up another session's
-`check-solution-video-engine.ts` mid-campaign. It is wired into `npm run ci`, is
-absent from `origin/main`, and failed `273 of 273` on every run of branch 0730-2
-(run 30554973713, job 90913300683). Its owner's answer when asked: drop it, it
-was never meant to be committed yet, and `273/273 unknown` is CORRECT output
+Measured 2026-07-30: sweep `cefa43ca7` picked up another session's `check-solution-video-engine.ts` mid-campaign. It is wired into `npm run ci`, is absent from `origin/main`, and failed `273 of 273` on every run of branch 0730-2 (run 30554973713, job 90913300683). Its owner's answer when asked: drop it, it was never meant to be committed yet, and `273/273 unknown` is CORRECT output
 because no manifest entry carries the field until the publish writes it.
 
-So: when a sweep-imported file reds the branch, ASK THE OWNER via
-`worklist.py --ask` before touching it. Do not weaken another session's gate to
-get your own branch green, and do not assume a red gate is a broken gate. Removing
-it needs EVERY site at once (script, `package.json` ci chain, workflow step) or it
-stays red.
+So: when a sweep-imported file reds the branch, ask the operator, or leave a `[?]` worklist item naming the conflict, before touching it. Do not weaken another session's gate to turn a branch green, and do not assume a red gate is a broken gate. Removing it needs EVERY site at once (script, `package.json` ci chain, workflow step) or it stays red.
 
 ## A failed existence check with the WRONG PATH proves nothing
 Trap-Id: existence-check-with-the-wrong-path
 Enforced-By: JUDGMENT-ONLY
 Residue: `git show origin/main:<path>` exiting non-zero means "not at THAT path". Nothing can know which path you meant, so the answer has to come from `git ls-files` rather than from memory.
 
-`git show origin/main:<path>` exiting nonzero means "not at THAT path", not
-"not on main". Cost: `18-dual-group-migrate.test.ts` was reported absent from
-main and "arrived via a blanket sweep, unattributed" for hours, by two
-independent checks (an audit agent and this session), both probing
-`tests/18-dual-group-migrate.test.ts` when the file lives at
+`git show origin/main:<path>` exiting nonzero means "not at THAT path", not "not on main". Cost: `18-dual-group-migrate.test.ts` was reported absent from main and "arrived via a blanket sweep, unattributed" for hours, by two independent checks (an audit agent and this session), both probing `tests/18-dual-group-migrate.test.ts` when the file lives at
 `tests/migrate/18-dual-group-migrate.test.ts` and landed in merged PR #520.
 
-Verify existence with the path from `find`/`git ls-files`, never a remembered
-one. And when a zero-skip gate fires, read the line ABOVE the skip first: a
-serial suite skips the rest after a failure, so the skip is usually the
-symptom and the failure one line up is the story (run 30554973713: test 4
-"migrate cutover" failed, test 5 skipped as fallout).
+Verify existence with the path from `find`/`git ls-files`, never a remembered one. And when a zero-skip gate fires, read the line ABOVE the skip first: a serial suite skips the rest after a failure, so the skip is usually the symptom and the failure one line up is the story (run 30554973713: test 4 "migrate cutover" failed, test 5 skipped as fallout).
 
 ## Harness task output streams live under <tmp>/claude-<uid>/, not <tmp>/
 Trap-Id: task-output-lives-under-claude-uid
-Enforced-By: file:.claude/hooks/stop/worklist-cases/15-waiter-controls.sh:376
+Enforced-By: gate:check:ci-pytest
 Residue:
 
-Any hook code deriving a background task's output path must include the
-claude-<uid> segment: the real layout is
-<tmp>/claude-<uid>/<munged-cwd>/<session-id>/tasks/<task-id>.output, where
-munged-cwd is the cwd with every non-alphanumeric character replaced by '-'.
-A derivation that starts at bare gettempdir() resolves to a path that never
-exists, and the failure is SILENT (stat fails, the worker reads as "no
-output stream yet"). Found on the v15 check-in's first live firing; the
-end-to-end regression case is 163e in test-worklist-v5.sh, which drives the
-real derivation against a fixture TMPDIR with no env override.
+Any hook code deriving a background task's output path must include the claude-<uid> segment: the real layout is <tmp>/claude-<uid>/<munged-cwd>/<session-id>/tasks/<task-id>.output, where munged-cwd is the cwd with every non-alphanumeric character replaced by '-'. A derivation that starts at bare gettempdir() resolves to a path that never exists, and the failure is SILENT (stat
+fails, the worker reads as "no output stream yet"). Found on the v15 check-in's first live firing; the end-to-end regression case is 163e in test-worklist-v5.sh, which drives the real derivation against a fixture TMPDIR with no env override.
 
 ## A Python step's imports must be stdlib or installed IN THAT JOB
 Trap-Id: python-step-imports-need-a-job-install
 Enforced-By: gate:check:ci-python-gate-deps
 Residue: Not transitive, as above. Note also that this entry and `python-gate-dies-on-the-runner` are the SAME defect, recorded twice by the 2026-08-16 corpus merge and left as two entries.
 
-A gate imported PyYAML, passed every local run, and died on the runner with
-`ModuleNotFoundError: No module named 'yaml'`. The module was in the author's
-environment; a clean Ubuntu runner has no PyYAML.
+A gate imported PyYAML, passed every local run, and died on the runner with `ModuleNotFoundError: No module named 'yaml'`. The module was in the author's environment; a clean Ubuntu runner has no PyYAML.
 
-The tell is that it **never failed anywhere the author could see it**. That is
-the same shape as two other traps paid for the same night: a suite case that
-silently no-opped under `GITHUB_ACTIONS`, and a gate registered in the manifest
-against a workflow step that did not exist. All three passed where they were run
-and meant nothing where they mattered. "Reachable from `npm run ci`" and "runs
-in CI" are different claims and neither implies the other.
+The tell is that it **never failed anywhere the author could see it**. That is the same shape as two other traps paid for the same night: a suite case that silently no-opped under `GITHUB_ACTIONS`, and a gate registered in the manifest against a workflow step that did not exist. All three passed where they were run and meant nothing where they mattered. "Reachable from `npm run
+ci`" and "runs in CI" are different claims and neither implies the other.
 
-Install pinned, in the job, and assert the version on the next line so a failed
-install surfaces as itself rather than as an import error further down:
+Install pinned, in the job, and assert the version on the next line so a failed install surfaces as itself rather than as an import error further down:
 
     python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"
     python3 -c "import yaml; print('PyYAML', yaml.__version__)"
 
-This is now enforced by `check:ci-python-gate-deps`, which reads the imports of
-every `.py` a workflow step runs and requires a `pip install` in the same job to
-name what is not stdlib or first-party. It covers itself. It does NOT follow
-imports transitively, so a gate that grows a helper with its own third-party
-import is one hop outside what it sees.
+This is now enforced by `check:ci-python-gate-deps`, which reads the imports of every `.py` a workflow step runs and requires a `pip install` in the same job to name what is not stdlib or first-party. It covers itself. It does NOT follow imports transitively, so a gate that grows a helper with its own third-party import is one hop outside what it sees.
 
 ## A gate failure the serial rerun cannot reproduce is a CONCURRENCY artifact, not a flake
 Trap-Id: concurrency-artifact-not-a-flake
-Enforced-By: JUDGMENT-ONLY
-Residue: run-all.sh classifies gate tests T or W by hand, and a comment claiming isolation is not evidence of it. Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
+Enforced-By: gate:check:ci-pool-writer-safety, gate:check:ci-gate-tree-writes
+Residue: the scheduler serialises by the lock's `mutex` and `reads` claims, and two gates now check those claims against what the code does: `check:ci-pool-writer-safety` for gate tests, `check:ci-gate-tree-writes` for the gates themselves (every module their leaves reach, through imports and cross-language spawns). What neither sees: a write whose target the scanners cannot resolve and a pragma declares safe, product code under `packages/*/src`, and bare tools (tsc, astro, biome). Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
 
-`npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites
-tracked source files in place while other gates are reading them, so a reader
-can catch a half-written file. The 2026-08-17 battery failed
-`gate-test:claude-hooks` with
+`npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites tracked source files in place while other gates are reading them, so a reader can catch a half-written file. The 2026-08-17 battery failed `gate-test:claude-hooks` with
 
     .claude/hooks/test-hooks.sh: line 545: syntax error near unexpected token `fi'
 
 for a file that parses clean and scores 884/0 exit 0 when run directly, twice.
 
-Diagnose it by MTIME, not by re-reading the file, because by the time you look
-the file is whole again:
+Diagnose it by MTIME, not by re-reading the file, because by the time you look the file is whole again:
 
     find .claude .ci scripts packages -type f \
       -newermt '<battery start>' ! -newermt '<battery end>' \
       -not -path '*/node_modules/*' -printf '%TH:%TM:%TS %p\n' | sort
 
-A tracked file whose mtime lands inside the window while `git status` reports it
-UNMODIFIED is the signature: something rewrote it with identical content. Do not
-"fix" the file. Rerun the gate serially on a quiet tree; if it passes, the
-failure was the race, and the real defect is the writer.
+A tracked file whose mtime lands inside the window while `git status` reports it UNMODIFIED is the signature: something rewrote it with identical content. Do not "fix" the file. Rerun the gate serially on a quiet tree; if it passes, the failure was the race, and the real defect is the writer.
 
-THE 2026-08-17 CASE, SOLVED, because the answer generalises. The writer was
-`.ci/scripts/test/gates/test-generate-tag-inputs.sh:289` and `:311`, which
-overwrite the REAL `resolve-version.sh` with a stub and `cp` it back a second
-later (`generate-tag.sh` runs via `cd "$REPO_ROOT"` and offers no fixture seam).
-No literal path appears at either write site -- both go through a `$real`
-variable -- so every grep for the filename missed them. It was classified T
-("isolated by construction") rather than W in `run-all.sh` on the strength of
-its own comment claiming it "cannot disturb a shared tree": true of the tag
-namespace it avoids, false of the working tree it overwrites. A comment
-asserting safety is not evidence of safety, and here it actively caused the
+THE 2026-08-17 CASE, SOLVED, because the answer generalises. The writer was `.ci/scripts/test/gates/test-generate-tag-inputs.sh:289` and `:311`, which overwrite the REAL `resolve-version.sh` with a stub and `cp` it back a second later (`generate-tag.sh` runs via `cd "$REPO_ROOT"` and offers no fixture seam). No literal path appears at either write site -- both go through a `$real`
+variable -- so every grep for the filename missed them. It was classified T ("isolated by construction") rather than W in `run-all.sh` on the strength of its own comment claiming it "cannot disturb a shared tree": true of the tag namespace it avoids, false of the working tree it overwrites. A comment asserting safety is not evidence of safety, and here it actively caused the
 misclassification.
 
-TWO WAYS THIS MISLEADS THE INVESTIGATOR. First, a process snapshot taken when
-the mtime moves shows the SURVIVORS, not the culprit: poll-then-`ps` misses a
-child that has already exited, and reproducing "the three gates that were
-running" proved nothing because none of them was the writer. Second, and more
-embarrassing, A CONCURRENT AGENT EDITING FILES PRODUCES THE IDENTICAL SIGNATURE.
-Two of the three "victims" in this case were a peer session's own whole-file
-rewrites, each followed immediately by `bash -n` and a suite run -- the same
-write-execute shape, landing in the same window. Before hunting a gate, ask who
-else is working in the tree.
+TWO WAYS THIS MISLEADS THE INVESTIGATOR. First, a process snapshot taken when the mtime moves shows the SURVIVORS, not the culprit: poll-then-`ps` misses a child that has already exited, and reproducing "the three gates that were running" proved nothing because none of them was the writer. Second, and more embarrassing, A CONCURRENT AGENT EDITING FILES PRODUCES THE IDENTICAL
+SIGNATURE. Two of the three "victims" in this case were a peer session's own whole-file rewrites, each followed immediately by `bash -n` and a suite run -- the same write-execute shape, landing in the same window. Before hunting a gate, ask who else is working in the tree.
 
-Two ways this bites the reader rather than the writer. First, `| head` on the
-`find` output hides the decisive hit, because the interesting file is usually
-LAST in a sorted-ascending list dominated by `node_modules` churn -- this is the
-truncated-instrument trap wearing a timestamp. Second, the innocent explanation
-is genuinely common: build artifacts, generated search indexes and
+Two ways this bites the reader rather than the writer. First, `| head` on the `find` output hides the decisive hit, because the interesting file is usually LAST in a sorted-ascending list dominated by `node_modules` churn -- this is the truncated-instrument trap wearing a timestamp. Second, the innocent explanation is genuinely common: build artifacts, generated search indexes and
 `.tsbuildinfo` legitimately move. Filter those out before concluding anything.
 
 ## A dangerous line in a gate is not a fired line
@@ -1050,123 +661,63 @@ Trap-Id: a-dangerous-line-is-not-a-fired-line
 Enforced-By: JUDGMENT-ONLY
 Residue: Proving the code RAN, by rev-list and reflog, before attributing an effect to it is an investigative step. No instrument can attribute a working-tree change to the right writer.
 
-`.ci/scripts/quality/check-branch.sh` used to run `git rebase origin/main` and
-`git checkout <sha>` against the LIVE working tree. In a shared checkout holding
-300+ uncommitted files from several sessions that read like a catastrophe, and
-it was a real latent hazard -- but it was guarded: the script exited early when
-the branch was not behind the base, which is the normal case. (Those lines are
-gone as of 2026-08-27: the script now only REPORTS that a rebase is needed, and
-probes for conflicts with `git merge-tree --write-tree`, which writes loose
-objects and nothing else. The trap below is what survives it, and it is the part
-worth keeping.)
+`.ci/scripts/quality/check-branch.sh` used to run `git rebase origin/main` and `git checkout <sha>` against the LIVE working tree. In a shared checkout holding 300+ uncommitted files from several sessions that read like a catastrophe, and it was a real latent hazard -- but it was guarded: the script exited early when the branch was not behind the base, which is the normal case.
+(Those lines are gone as of 2026-08-27: the script now only REPORTS that a rebase is needed, and probes for conflicts with `git merge-tree --write-tree`, which writes loose objects and nothing else. The trap below is what survives it, and it is the part worth keeping.)
 
-Before attributing an observed effect to scary-looking code, prove the code RAN.
-`git rev-list --left-right --count origin/main...HEAD` answers the guard's own
-question, and `git reflog` shows whether a rebase actually happened. Blaming the
-alarming line without that check produces a confident, wrong root cause and
-leaves the real writer unfound.
+Before attributing an observed effect to scary-looking code, prove the code RAN. `git rev-list --left-right --count origin/main...HEAD` answers the guard's own question, and `git reflog` shows whether a rebase actually happened. Blaming the alarming line without that check produces a confident, wrong root cause and leaves the real writer unfound.
 
 ## Some dependencies can only move as a SET, and the second half looks like a network step
 Trap-Id: go-replace-set-moves-together
 Enforced-By: gate:check:ci-go-module-sync
 Residue:
 
-`.ci/scripts/private/license-mint/` is a standalone Go module that pulls renet in
-through `replace github.com/rediacc/renet => ../../../../private/renet`. That
-makes renet's dependency graph part of its own, so bumping a dependency in
-`private/renet/go.mod` and stopping there leaves license-mint pinning the old
-version. `go build` then refuses with:
+`.ci/scripts/private/license-mint/` is a standalone Go module that pulls renet in through `replace github.com/rediacc/renet => ../../../../private/renet`. That makes renet's dependency graph part of its own, so bumping a dependency in `private/renet/go.mod` and stopping there leaves license-mint pinning the old version. `go build` then refuses with:
 
     go: updates to go.mod needed; to update it:
             go mod tidy
 
-Two things make this one worth a trap entry rather than a footnote. It surfaces
-LATE -- `Tests + Infra / License Enforcement`, roughly 25 minutes into CI, past
-every quality lane -- and it READS AS INFRASTRUCTURE: the job announces
-"Building license-mint" and then prints a wall of `go: downloading ...` lines,
-one of which is the OLD version. The instinct is to blame a slow or flaky proxy.
-From renet's side there is nothing to see at all; the bump looks complete and
-self-contained, because the coupling lives entirely in the other module.
+Two things make this one worth a trap entry rather than a footnote. It surfaces LATE -- `Tests + Infra / License Enforcement`, roughly 25 minutes into CI, past every quality lane -- and it READS AS INFRASTRUCTURE: the job announces "Building license-mint" and then prints a wall of `go: downloading ...` lines, one of which is the OLD version. The instinct is to blame a slow or flaky
+proxy. From renet's side there is nothing to see at all; the bump looks complete and self-contained, because the coupling lives entirely in the other module.
 
-`check:ci-go-module-sync` now enforces it, and it DISCOVERS the modules rather
-than naming them, so a second module that replaces renet is covered the day it
-is added. It also fails when it finds ZERO, because a discovery gate that finds
-nothing has verified nothing rather than passed.
+`check:ci-go-module-sync` now enforces it, and it DISCOVERS the modules rather than naming them, so a second module that replaces renet is covered the day it is added. It also fails when it finds ZERO, because a discovery gate that finds nothing has verified nothing rather than passed.
 
-The general shape, which outlives this one file: when a change is correct in the
-module you edited and the build still fails elsewhere, ask what else declares a
-`replace` onto it. `grep -rl "replace github.com/rediacc/renet" --include=go.mod .`
-answers it in one command, and the fix is `go mod tidy` in each result.
+The general shape, which outlives this one file: when a change is correct in the module you edited and the build still fails elsewhere, ask what else declares a `replace` onto it. `grep -rl "replace github.com/rediacc/renet" --include=go.mod .` answers it in one command, and the fix is `go mod tidy` in each result.
 
 ## Widening a deletion prefix by one directory can delete a LIVE file while removing zero bytes
 Trap-Id: widening-a-deletion-prefix
 Enforced-By: hook:history-rewrite-controls
 Residue: The rule warns when a deletion prefix covers tracked files. The tree-identity control it names still has to be RUN, on both clones, and compared by a human.
 
-`git filter-repo --path packages/www/public/assets/videos --invert-paths` looks
-like a harmless generalisation of `--path packages/www/public/assets/videos/solutions`.
-It is one directory shorter, it covers the intended subtree, and it reads as
-tidier. It is not a generalisation. A path-selection argument under
-`--invert-paths` is a DELETION LIST, and widening a deletion list is never free.
+`git filter-repo --path packages/www/public/assets/videos --invert-paths` looks like a harmless generalisation of `--path packages/www/public/assets/videos/solutions`. It is one directory shorter, it covers the intended subtree, and it reads as tidier. It is not a generalisation. A path-selection argument under `--invert-paths` is a DELETION LIST, and widening a deletion list is
+never free.
 
-The parent directory carried **0.00 MB across 0 blobs** of history, so the wider
-prefix removed nothing extra from the pack -- and destroyed
-`packages/www/public/assets/videos/user-guide/.gitkeep`, the ONE tracked file in
-that tree. `git ls-files packages/www/public/assets/videos/` returns exactly one
-path, and that path was it. The command exited 0, the resulting pack size was
-right, and every progress line looked identical to the correct run. Nothing in
-the tool's own output distinguished the two.
+The parent directory carried **0.00 MB across 0 blobs** of history, so the wider prefix removed nothing extra from the pack -- and destroyed `packages/www/public/assets/videos/user-guide/.gitkeep`, the ONE tracked file in that tree. `git ls-files packages/www/public/assets/videos/` returns exactly one path, and that path was it. The command exited 0, the resulting pack size was
+right, and every progress line looked identical to the correct run. Nothing in the tool's own output distinguished the two.
 
-What caught it was the tree-identity control, not the reading:
-`git rev-parse main^{tree}` must print `444e9c09092a80bbb7defa6eea122e0de28a89eb`
-on the pristine clone and on the rewritten one. It did not. Naming the casualty
-then took one line: `comm -23` on two `git ls-tree -r main --name-only`
-listings.
+What caught it was the tree-identity control, not the reading: `git rev-parse main^{tree}` must print `444e9c09092a80bbb7defa6eea122e0de28a89eb` on the pristine clone and on the rewritten one. It did not. Naming the casualty then took one line: `comm -23` on two `git ls-tree -r main --name-only` listings.
 
-The rule that generalises: before adding or widening a prefix in a deletion
-list, run `git ls-files -- <prefix>` and read what is inside it, and re-run the
-tree-identity control after **every** change to the list. "It only adds an empty
-parent" is a claim about history size, and history size is not what a deletion
-list deletes.
+The rule that generalises: before adding or widening a prefix in a deletion list, run `git ls-files -- <prefix>` and read what is inside it, and re-run the tree-identity control after **every** change to the list. "It only adds an empty parent" is a claim about history size, and history size is not what a deletion list deletes.
 
 ## A destructive transform needs a BASELINE run to diff against, not just an invariant to assert
 Trap-Id: destructive-transform-needs-a-baseline
 Enforced-By: hook:history-rewrite-controls
 Residue: A control that has fired once is not a control for the next class of damage. Choosing WHICH narrower variant to diff the counts against is judgment, and it is the whole finding.
 
-A `--message-callback` for `git filter-repo` ended in an unconditional
-`return message.rstrip() + b'\n'`. The intent was to strip AI-attribution
-trailers from the 73 commit messages that carried them. What it actually did was
-normalize trailing whitespace on **all 6,177** commit messages, because the
-non-matching path fell through to the same return.
+A `--message-callback` for `git filter-repo` ended in an unconditional `return message.rstrip() + b'\n'`. The intent was to strip AI-attribution trailers from the 73 commit messages that carried them. What it actually did was normalize trailing whitespace on **all 6,177** commit messages, because the non-matching path fell through to the same return.
 
-Git is content-addressed. Commit messages that had differed only in trailing
-whitespace became byte-identical, and the commits COLLAPSED into single objects.
-**93 commits disappeared, and 96 legitimate co-author trailers went with them.**
+Git is content-addressed. Commit messages that had differed only in trailing whitespace became byte-identical, and the commits COLLAPSED into single objects. **93 commits disappeared, and 96 legitimate co-author trailers went with them.**
 
-What did NOT catch it is the whole point of this entry. Nothing errored; the run
-exited 0. `git count-objects -vH` reported a `size-pack` inside the expected
-range. And the tree-identity control from the entry above -- the one that had
-already proved itself by firing on a real casualty -- **PASSED**, because
-`main^{tree}` is a property of the FINAL tree and says nothing whatever about
-how many commits produced it. A control that has fired once is not thereby a
-control for the next class of damage.
+What did NOT catch it is the whole point of this entry. Nothing errored; the run exited 0. `git count-objects -vH` reported a `size-pack` inside the expected range. And the tree-identity control from the entry above -- the one that had already proved itself by firing on a real casualty -- **PASSED**, because `main^{tree}` is a property of the FINAL tree and says nothing whatever
+about how many commits produced it. A control that has fired once is not thereby a control for the next class of damage.
 
-What caught it was a SECOND run to diff against: the media-only variant, with no
-message callback at all. 6,174 commits against 6,081. Then tracing one named
-victim through both: "Add captcha key" appeared twice before the rewrite and
-once after.
+What caught it was a SECOND run to diff against: the media-only variant, with no message callback at all. 6,174 commits against 6,081. Then tracing one named victim through both: "Add captcha key" appeared twice before the rewrite and once after.
 
-Two rules come out of it. First, a callback must return the ORIGINAL BYTES when
-nothing matched -- an unconditional normalisation at the end of a matcher is a
-transform applied to the whole corpus wearing the costume of a filter. Second,
-when a transform can delete, run the narrower variant too and DIFF THE COUNTS,
-because the damage you did not anticipate is by construction the class your
-invariant does not cover.
+Two rules come out of it. First, a callback must return the ORIGINAL BYTES when nothing matched -- an unconditional normalisation at the end of a matcher is a transform applied to the whole corpus wearing the costume of a filter. Second, when a transform can delete, run the narrower variant too and DIFF THE COUNTS, because the damage you did not anticipate is by construction the
+class your invariant does not cover.
 
 ## A `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever
 Trap-Id: pgrep-f-matches-its-own-command-line
-Enforced-By: file:.claude/hooks/pre-bash/block-self-matching-pgrep.sh
+Enforced-By: gate:check:ci-pytest
 Residue: The second half is unguarded: a waiter whose condition has become true and which is still running is WEDGED, and liveness cannot tell it from patience. Only the exit CONDITION separates them.
 
 A background waiter written as
@@ -1174,321 +725,184 @@ A background waiter written as
     until [ -f .../trial3.git/filter-repo/commit-map ] \
        && ! pgrep -f 'filter-repo.*trial3' >/dev/null; do sleep 8; done
 
-ran for **317 minutes** after both of its conditions were factually satisfied. The
-file had existed since 13:15 and no `filter-repo` process had run for hours.
+ran for **317 minutes** after both of its conditions were factually satisfied. The file had existed since 13:15 and no `filter-repo` process had run for hours.
 
-`pgrep -f` matches against full command lines, and the *waiting shell's own*
-command line contains the literal string `filter-repo.*trial3`, because the
-pattern is part of the command being run. So `pgrep` always finds at least one
-match -- itself -- the negation is permanently false, and the loop cannot exit.
-Adding a second process (the `pgrep` in a later diagnostic) simply made it two.
+`pgrep -f` matches against full command lines, and the *waiting shell's own* command line contains the literal string `filter-repo.*trial3`, because the pattern is part of the command being run. So `pgrep` always finds at least one match -- itself -- the negation is permanently false, and the loop cannot exit. Adding a second process (the `pgrep` in a later diagnostic) simply made
+it two.
 
-Nothing looked wrong from outside. The Stop hook's own liveness check reported it
-as `silent but its OS process is VERIFIED ALIVE (a loop that prints only at the
-end is healthy)`, which is a correct reading of a loop that is genuinely running
-and genuinely printing nothing. A stuck-forever loop and a patiently-waiting loop
-are indistinguishable by liveness alone; only the exit CONDITION distinguishes
-them, and nothing was checking it.
+Nothing looked wrong from outside. The Stop hook's own liveness check reported it as `silent but its OS process is VERIFIED ALIVE (a loop that prints only at the end is healthy)`, which is a correct reading of a loop that is genuinely running and genuinely printing nothing. A stuck-forever loop and a patiently-waiting loop are indistinguishable by liveness alone; only the exit
+CONDITION distinguishes them, and nothing was checking it.
 
-Two rules. First, never put a string in a `pgrep -f` pattern that also appears in
-the command running it -- use `pgrep -f '[f]ilter-repo.*trial3'`, or match on a
-pid file, or check the artifact instead of the process. Second, a waiter whose
-condition has become true and which is still running is not "still working", it
-is WEDGED; when a wait outlives the thing it waits for by an order of magnitude,
-evaluate the condition by hand rather than trusting that it must still be false.
+Two rules. First, never put a string in a `pgrep -f` pattern that also appears in the command running it -- use `pgrep -f '[f]ilter-repo.*trial3'`, or match on a pid file, or check the artifact instead of the process. Second, a waiter whose condition has become true and which is still running is not "still working", it is WEDGED; when a wait outlives the thing it waits for by an
+order of magnitude, evaluate the condition by hand rather than trusting that it must still be false.
+
+## A `/proc/$(cat <pidfile> || echo <literal>)` liveness check with an always-alive fallback PID waits forever
+Trap-Id: proc-pid-fallback-always-alive
+Enforced-By: gate:check:ci-pytest
+Residue: v1 covers `/proc/<pid>` existence tests only, and only two fallbacks provably always alive by construction (`1`, init; `$$`, the shell's own PID). `kill -0 $(cat X || echo N)` is the same bug, uncovered. Any other literal PID is also uncovered -- the guard cannot prove it stays alive.
+
+A background wait loop's liveness check used this shape (task `b9fd3td29`, found by the agent that wrote it, wedged over 24 hours, during a Writer-F autopilot-removal batch on 2026-09-21/22):
+
+    until grep -q "ci-dead-bash" <out> && [ "$(tail -c 200 <out> | wc -c)" -gt 0 ] \
+          && ! [ -e /proc/$(cat <out>.pid 2>/dev/null || echo 1) ]; do sleep 5; done
+
+The third clause is unsatisfiable by construction. `<out>.pid` was never written, so `cat <out>.pid 2>/dev/null` fails every time, `||` falls back to the literal `echo 1`, and `/proc/1` (init) exists on every live Linux system. `! [ -e /proc/1 ]` is therefore permanently false, so the loop cannot exit, no matter what the first two clauses do.
+
+Nothing looked wrong from outside. The waiting shell's own OS process is genuinely alive and genuinely sleeping in a loop, so a liveness check on the PROCESS reports it as healthy -- correctly. Only the exit CONDITION distinguishes a wedged loop from a patient one, and this condition contained a sub-clause that was a disguised constant: `$(cat X || echo N)` reads as "the real PID,
+or a sensible fallback", but when `N` is a PID that is itself always alive (`1`, or `$$` -- the waiting shell's own PID, trivially alive for the whole time the loop could possibly run), the fallback branch is not a fallback at all. It is the answer, always, and the "real PID" branch never gets a chance to matter.
+
+This is the same class of trap as "a `pgrep -f <pattern>` guard inside a shell whose own command line contains that pattern waits forever" (above), and a different mechanism: that one is a pure text/regex self-reference; this one is a numeric/semantic question -- does a hardcoded fallback resolve to a PID that happens to be alive for the loop's entire possible lifetime. `echo 0` is
+the corresponding SAFE case and proves the difference: `/proc/0` never exists, so `cat X || echo 0` is an honest "assume not-yet-started" default, not a disguised constant.
+
+Two rules. First, never give a `$(cat <pidfile> || echo <N>)` substitution inside a `/proc/<pid>` or `kill -0` liveness test a fallback `N` that could itself be alive for as long as the loop can run -- `1` and `$$` both qualify and both must be treated as banned literals in this exact position, not just `1`. Second, write the wait correctly instead of defending the fallback: either
+write the pidfile BEFORE the loop starts and drop the `||` entirely (a missing pidfile is a hard error, not a value to guess), or treat a missing pidfile as "not started yet, keep waiting" (`[ ! -s <out>.pid ] || ! [ -e /proc/$(cat <out>.pid) ]`) rather than substituting a literal PID for it.
 
 ## A `cp -rs` mirror is a live handle on the real tree for every file you did not de-symlink
 Trap-Id: cp-rs-mirror-writes-through
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing knows which files of a mirror you intend to write. `find <mirror> -type l` before mutating anything is the check, and it is manual.
 
-`cp -rs` populates a mirror with SYMLINKS back to the originals, which is exactly
-what makes it a cheap way to build an isolation harness for mutation testing. It
-is also why writing into that mirror edits the REAL FILE unless you replaced the
-symlink first.
+`cp -rs` populates a mirror with SYMLINKS back to the originals, which is exactly what makes it a cheap way to build an isolation harness for mutation testing. It is also why writing into that mirror edits the REAL FILE unless you replaced the symlink first.
 
-Live case, 2026-08-23: an agent building a mutation harness de-symlinked the
-script under test but not the gate that exercised it, and a scripted edit to the
-runner block followed the symlink and rewrote the real
-`.ci/scripts/test/gates/test-backfill-commit-resolve.sh` in the working tree. It
-surfaced one run later as `line 285: CASE: unbound variable`. The file was
-untracked, so there was nothing to restore from; it had to be repaired forward.
+Live case, 2026-08-23: an agent building a mutation harness de-symlinked the script under test but not the gate that exercised it, and a scripted edit to the runner block followed the symlink and rewrote the real `.ci/scripts/test/gates/test-backfill-commit-resolve.sh` in the working tree. It surfaced one run later as `line 285: CASE: unbound variable`. The file was untracked, so
+there was nothing to restore from; it had to be repaired forward.
 
-Two things make this worth an entry rather than a shrug. First, the earlier
-mutation sweeps in the same session were safe **by luck of habit, not by design**
--- the agent happened only to write to the file it had copied. Second, the damage
-was silent at write time and only became visible on the next execution, so a
-sweep that finished without re-running the gate would have shipped a corrupted
-file as a passing one.
+Two things make this worth an entry rather than a shrug. First, the earlier mutation sweeps in the same session were safe **by luck of habit, not by design** -- the agent happened only to write to the file it had copied. Second, the damage was silent at write time and only became visible on the next execution, so a sweep that finished without re-running the gate would have shipped
+a corrupted file as a passing one.
 
-The rule: de-symlink EVERY file you intend to write, not just the one under test,
-and verify the mirror with `find <mirror> -type l` before mutating anything. When
-you do repair such a file, assert the repair mechanically -- the same session
-proved its runner whole by checking that the set of declared `test_*` functions
-equals the set invoked, which is a check that cannot be satisfied by eyeballing.
+The rule: de-symlink EVERY file you intend to write, not just the one under test, and verify the mirror with `find <mirror> -type l` before mutating anything. When you do repair such a file, assert the repair mechanically -- the same session proved its runner whole by checking that the set of declared `test_*` functions equals the set invoked, which is a check that cannot be
+satisfied by eyeballing.
 
 ## A sandbox built by symlinking a repo can lose git entirely, and every verifying check then answers "no evidence"
 Trap-Id: symlinked-sandbox-loses-git
 Enforced-By: JUDGMENT-ONLY
 Residue: A contaminated run is byte-for-byte the result a genuine mutation produces. Only a fixture asserting its OWN premises reds differently, and writing that premise is per-case judgment.
 
-The safe way to prove a control can FAIL is to mutate a copy rather than the
-live tree, so a killed command cannot strand the mutation. Building that copy by
-symlinking the repo and replacing one file is the obvious construction. In this
-checkout it silently destroys git.
+The safe way to prove a control can FAIL is to mutate a copy rather than the live tree, so a killed command cannot strand the mutation. Building that copy by symlinking the repo and replacing one file is the obvious construction. In this checkout it silently destroys git.
 
-`.git` is not always a directory. In a SUBMODULE or worktree checkout it is a
-small regular FILE containing a `gitdir:` line pointing elsewhere, often by a
-RELATIVE path. This was found in a checkout where `.git` was 32 bytes reading
-`gitdir: ../.git/modules/console`, because `console` was a submodule of a
-monorepo. A standalone clone of the same repo has a real `.git` directory and
-does NOT reproduce it, which is what makes this easy to dismiss as fixed.
-Symlink that file into a sandbox and the RELATIVE path no longer resolves:
+`.git` is not always a directory. In a SUBMODULE or worktree checkout it is a small regular FILE containing a `gitdir:` line pointing elsewhere, often by a RELATIVE path. This was found in a checkout where `.git` was 32 bytes reading `gitdir: ../.git/modules/console`, because `console` was a submodule of a monorepo. A standalone clone of the same repo has a real `.git` directory
+and does NOT reproduce it, which is what makes this easy to dismiss as fixed. Symlink that file into a sandbox and the RELATIVE path no longer resolves:
 
     $ git -C <sandbox> rev-parse --verify --quiet 444e9c09...^{object}
     fatal: not a git repository: <sandbox>/../.git/modules/console    # rc=128
 
-Every git-verifying assertion in that sandbox now answers False. Paid for on
-2026-08-23 while proving case `96b`, the control for `completion_evidence`, which
-git-verifies hex candidates: the contaminated run reported `passed=781 failed=1`
-with `96b` failing on `regression-real-sha-at-position-6 (got False)` -- which is
-**byte-for-byte the result the genuine mutation produces**. Same case, same
-count, same assertion. There is nothing in the output to tell the two apart, so
-it would have shipped as proof that a fix worked.
+Every git-verifying assertion in that sandbox now answers False. Paid for on 2026-08-23 while proving case `96b`, the control for `completion_evidence`, which git-verifies hex candidates: the contaminated run reported `passed=781 failed=1` with `96b` failing on `regression-real-sha-at-position-6 (got False)` -- which is **byte-for-byte the result the genuine mutation produces**.
+Same case, same count, same assertion. There is nothing in the output to tell the two apart, so it would have shipped as proof that a fix worked.
 
-What caught it was the fixture asserting its OWN premise. The case emits
-`fixture-sha-actually-resolves` before anything depends on that SHA, and it
-failed too -- an outcome the code under test cannot possibly cause. A precheck
-that can only fail environmentally is how a contaminated run confesses.
+What caught it was the fixture asserting its OWN premise. The case emits `fixture-sha-actually-resolves` before anything depends on that SHA, and it failed too -- an outcome the code under test cannot possibly cause. A precheck that can only fail environmentally is how a contaminated run confesses.
 
-Three rules. Write `.git` as a real file holding the ABSOLUTE gitdir. Run the
-sandbox UNMUTATED first and require it to reproduce the live result exactly
-(782/0 here) before mutating anything, because a sandbox is an instrument and an
-unproven instrument yields unproven verdicts. And have every fixture assert its
-own premises, so a broken world reds differently from a broken subject.
+Three rules. Write `.git` as a real file holding the ABSOLUTE gitdir. Run the sandbox UNMUTATED first and require it to reproduce the live result exactly (782/0 here) before mutating anything, because a sandbox is an instrument and an unproven instrument yields unproven verdicts. And have every fixture assert its own premises, so a broken world reds differently from a broken
+subject.
 
-Contamination is SCOPED, so do not discard neighbouring results reflexively: the
-sibling case `153f` ran in the same broken sandbox and its RED stood, because it
-only parses a markdown file and never calls git. Ask what the case depends on.
+Contamination is SCOPED, so do not discard neighbouring results reflexively: the sibling case `153f` ran in the same broken sandbox and its RED stood, because it only parses a markdown file and never calls git. Ask what the case depends on.
 
 ## A detector can match its own prose
 Trap-Id: detector-matches-its-own-prose
-Enforced-By: file:.claude/hooks/pre-bash/lib/command-scan.sh
+Enforced-By: file:.claude/rediacc_hooks/shellscan.py
 Residue: Only the HOOK half has a shared remedy, and two guards must deliberately not use it. The CI-gate half has three instances and no meta-gate: each needed a different fix, so there is nothing shared to enforce.
 
-**A gate that greps for a dangerous construct will eventually match text that
-merely LOOKS like that construct** — and it will name a file that is doing
-nothing wrong. Three instances now, all on this repo's own gates:
+**A gate that greps for a dangerous construct will eventually match text that merely LOOKS like that construct** — and it will name a file that is doing nothing wrong. Three instances now, all on this repo's own gates:
 
 - **`check-toolchain-pins.sh` A6** ("does this gate invoke a pinned tool?")
-  flagged `check-shell-size.sh`. Its only matches were two `echo` lines
-  *printing* the `# shellcheck extended-analysis=false` directive the gate tells
-  you to add. It never invokes shellcheck.
+flagged `check-shell-size.sh`. Its only matches were two `echo` lines *printing* the `# shellcheck extended-analysis=false` directive the gate tells you to add. It never invokes shellcheck.
 - **`check-control-vacuity.sh`** ("does this control prove its plant landed?")
-  flagged `check-devbox-exec.sh` and `check-shell-size.sh`. Their `sed` calls
-  were `s/^/.../` — one indenting a message for display, one generating a fixture
-  from `seq`. Neither mutates a copy of the subject, so neither has a plant that
-  could fail to land.
+flagged the devbox-exec gate and `check-shell-size.sh`. Their `sed` calls were `s/^/.../` — one indenting a message for display, one generating a fixture from `seq`. Neither mutates a copy of the subject, so neither has a plant that could fail to land.
 - **`check-swallowed-failures.sh`** (2026-08-27), fired on
-  `check-label-inventory.sh`'s label-drift capture — a capture that DOES check
-  its own exit status (`|| drift_rc=$?` then `if [ "$drift_rc" -ne 0 ]`), the
-  exact remedy the gate's own message recommends. The scanner folds a whole
-  `VAR="$( <multi-line command> )"` into ONE logical line before matching
-  `swallow_re` against it, so a COMMENT inside that same capture — explaining a
-  *prior, already-fixed* incident by quoting its literal shape (`` `|| true` ``,
-  `` `|| echo ""` ``) — made the current, correct capture match the pattern for
-  the defect it was explaining. The fix text became indistinguishable from the
-  bug it described.
+`check-label-inventory.sh`'s label-drift capture — a capture that DOES check its own exit status (`|| drift_rc=$?` then `if [ "$drift_rc" -ne 0 ]`), the exact remedy the gate's own message recommends. The scanner folds a whole `VAR="$( <multi-line command> )"` into ONE logical line before matching `swallow_re` against it, so a COMMENT inside that same capture — explaining a *prior,
+already-fixed* incident by quoting its literal shape (`` `|| true` ``, `` `|| echo ""` ``) — made the current, correct capture match the pattern for the defect it was explaining. The fix text became indistinguishable from the bug it described.
 
-A6 already stripped comments for exactly this reason ("judge the code, not the
-words describing it"). **The lesson is that comments are not the only place prose
-hides**: an echoed string is prose, a formatting pipe is not a mutation, a
-generated fixture is not a copy of the source, and a comment inside a folded
-multi-line capture is still inside the text the scanner matches against.
+A6 already stripped comments for exactly this reason ("judge the code, not the words describing it"). **The lesson is that comments are not the only place prose hides**: an echoed string is prose, a formatting pipe is not a mutation, a generated fixture is not a copy of the source, and a comment inside a folded multi-line capture is still inside the text the scanner matches
+against.
 
-**Why it fools you rather than blocking you:** the gate is red, the finding names
-a real file and a real line, and the fastest way to green is to do what it says.
-All three could have been "satisfied" — by exempting the file, by cargo-culting a
-proof-of-plant assertion into a display pipe, or by adding a waiver comment
-excusing a capture that was never broken. Any of those would have gone green
-while making the gate say something false, and left the detector wrong for the
-next author.
+**Why it fools you rather than blocking you:** the gate is red, the finding names a real file and a real line, and the fastest way to green is to do what it says. All three could have been "satisfied" — by exempting the file, by cargo-culting a proof-of-plant assertion into a display pipe, or by adding a waiver comment excusing a capture that was never broken. Any of those would
+have gone green while making the gate say something false, and left the detector wrong for the next author.
 
-**The check to run:** before satisfying a detector, ask whether the matched line
-actually DOES the dangerous thing, or merely contains its shape. If a gate you
-write greps for a construct, test it against its own documentation and its own
-output strings. When writing a comment that explains a bug BY QUOTING its exact
-syntax (`|| true`, `sys.exit(0)`, etc.), inside or near code a swallowed-failure
-or a similar shape-matching scanner also reads, paraphrase the shape instead of
-quoting it verbatim — "a no-op fallback", not `` `|| true` ``.
+**The check to run:** before satisfying a detector, ask whether the matched line actually DOES the dangerous thing, or merely contains its shape. If a gate you write greps for a construct, test it against its own documentation and its own output strings. When writing a comment that explains a bug BY QUOTING its exact syntax (`|| true`, `sys.exit(0)`, etc.), inside or near code a
+swallowed-failure or a similar shape-matching scanner also reads, paraphrase the shape instead of quoting it verbatim — "a no-op fallback", not `` `|| true` ``.
 
-Operator ruling 2026-08-26 said revisit a meta-gate once a third instance
-appeared; it has. Still not written for the CI gates — each instance there
-needed a different, specific fix (strip comments, require a real mutation,
-paraphrase instead of quote), so a meta-gate would have to generalize across
-three unrelated scanners rather than add one shared rule.
+Operator ruling 2026-08-26 said revisit a meta-gate once a third instance appeared; it has. Still not written for the CI gates — each instance there needed a different, specific fix (strip comments, require a real mutation, paraphrase instead of quote), so a meta-gate would have to generalize across three unrelated scanners rather than add one shared rule.
 
 ### The same class on the HOOK surface, where there IS one shared rule
 
-**2026-08-27: nine commands refused in a single session, every one a PreToolUse
-guard objecting to a command whose only offence was NAMING what it guards
-against** — on top of the six the previous wave recorded, and separate from the
-seventeen latent cases the sweep below found. (A tenth block that day was a TRUE
-positive: `test-hooks.sh` really was executing.) The guards are not gates and
-the remedy is not the gates' remedy, which is why this sits here as its own half.
+**2026-08-27: nine commands refused in a single session, every one a PreToolUse guard objecting to a command whose only offence was NAMING what it guards against** — on top of the six the previous wave recorded, and separate from the seventeen latent cases the sweep below found. (A tenth block that day was a TRUE positive: `test-hooks.sh` really was executing.) The guards are not
+gates and the remedy is not the gates' remedy, which is why this sits here as its own half.
 
-What it looks like: `echo 'sleep 30'` refused as a stall. `grep -rn
-'co-authored-by' docs/` refused as an attribution trailer — i.e. the command
-that AUDITS the rule refused by the rule. `git checkout main && cat
-.claude/settings.json` refused as a restore, because `.*` in the pattern spans
-`&&`. And `node packages/cli/bundle.mjs`, this repo's own `build:bundle`,
-refused as running the CLI bundle.
+What it looks like: `echo 'sleep 30'` refused as a stall. `grep -rn 'co-authored-by' docs/` refused as an attribution trailer — i.e. the command that AUDITS the rule refused by the rule. `git checkout main && cat .claude/settings.json` refused as a restore, because `.*` in the pattern spans `&&`. And `node packages/cli/bundle.mjs`, this repo's own `build:bundle`, refused as running
+the CLI bundle.
 
 **Two properties make this worse than the gate version, and both bit:**
 
 1. **The guard blocks its own repair.** `block-suppressions` refused the edit
-   fixing `block-suppressions`, because the fix's comment named the tokens.
-   `block-cli-bundle` and `block-protected-files` each refused the command
-   measuring them, because the probe's line carried the fixture text. There is
-   no way to write the fix without naming the thing.
+fixing `block-suppressions`, because the fix's comment named the tokens. `block-cli-bundle` and `block-protected-files` each refused the command measuring them, because the probe's line carried the fixture text. There is no way to write the fix without naming the thing.
 2. **A hook-chain sibling looks like a running job, permanently.**
-   `block-bash-write-to-running-script` found `block-binary-deploy.sh` "being
-   executed right now" — true, as a sibling in the chain evaluating that very
-   edit. Every pre-bash guard runs on every Bash call, so the block never
-   clears: there is no moment of quiet to wait for, and its own message says
-   "let it finish". It cost four blocked commands before the cause was visible.
+`block-bash-write-to-running-script` found `block-binary-deploy.sh` "being executed right now" — true, as a sibling in the chain evaluating that very edit. Every pre-bash guard runs on every Bash call, so the block never clears: there is no moment of quiet to wait for, and its own message says "let it finish". It cost four blocked commands before the cause was visible.
 
-**The shared rule the gates never had:** `.claude/hooks/pre-bash/lib/
-command-scan.sh`. `hook_scan_target` drops heredoc bodies and quoted spans while
-still EXTRACTING `sh -c` / `eval` payloads, so routing a guard through it removes
-false positives without weakening enforcement. Eleven guards already used it;
-every one of the nine refusals came from a guard that did not.
+**The shared rule the gates never had:** `.claude/hooks/pre-bash/lib/ command-scan.sh`. `hook_scan_target` drops heredoc bodies and quoted spans while still EXTRACTING `sh -c` / `eval` payloads, so routing a guard through it removes false positives without weakening enforcement. Eleven guards already used it; every one of the nine refusals came from a guard that did not.
 
-**But it is not the answer everywhere, and three separate things stopped it.**
-Of the 17 sweep hits: 5 were fixed outright by routing, 6 were reverted under an
-operator ruling (below), 3 were `sh -c "..."` fixtures the scanner is *supposed*
-to see into, and 3 are documented residue. Zero were left unexplained, which is
-the bar — a sweep that ends in "and the rest are probably fine" has not finished.
+**But it is not the answer everywhere, and three separate things stopped it.** Of the 17 sweep hits: 5 were fixed outright by routing, 6 were reverted under an operator ruling (below), 3 were `sh -c "..."` fixtures the scanner is *supposed* to see into, and 3 are documented residue. Zero were left unexplained, which is the bar — a sweep that ends in "and the rest are probably fine"
+has not finished.
 
-**Two guards must NOT use it, and knowing why is the point.** Their targets
-legitimately live inside quotes: `block-commit-meta` reads the trailer from `git
-commit -m "..."`, and `block-adhoc-sanctioned`'s best fixture is a hand-rolled
-watch loop whose banned command sits in a `$(...)` inside a quoted test.
-Prose-stripping deleted exactly the part that mattered and the case went green
-catching nothing. Those two get a different narrowing — a commit-verb gate, and
-heredoc-stripping only.
+**Two guards must NOT use it, and knowing why is the point.** Their targets legitimately live inside quotes: `block-commit-meta` reads the trailer from `git commit -m "..."`, and `block-adhoc-sanctioned`'s best fixture is a hand-rolled watch loop whose banned command sits in a `$(...)` inside a quoted test. Prose-stripping deleted exactly the part that mattered and the case went
+green catching nothing. Those two get a different narrowing — a commit-verb gate, and heredoc-stripping only.
 
 ### The sharpest lesson: a PINNED false positive caught the "fix"
 
-`block-ci-polling` and `block-long-sleep` were routed through the scanner along
-with the rest, and two suite cases went red:
+`block-ci-polling` and `block-long-sleep` were routed through the scanner along with the rest, and two suite cases went red:
 
 ```
 FAIL [2] ci-polling: prose showing an INLINE poll is blocked on purpose (operator ruling 2026-08-25)
 FAIL [2] long-sleep: a commit message quoting a literal long sleep is blocked on purpose (operator ruling 2026-08-25)
 ```
 
-Those cases exist because on 2026-08-25 this exact narrowing was put to the
-operator with four scored options, and the ruling was to KEEP both guards as
-they are: the false positive fails **loudly** (a blocked command that names its
-workaround) while every narrowing fails **silently** — a real long poll runs and
-nobody is told. The ruling names exempting heredoc bodies as the most tempting
-option and the worst, and `hook_scan_target` drops heredoc bodies, so routing
-them through it *was* that option, arrived at from a different direction and
-with no memory of the decision.
+Those cases exist because on 2026-08-25 this exact narrowing was put to the operator with four scored options, and the ruling was to KEEP both guards as they are: the false positive fails **loudly** (a blocked command that names its workaround) while every narrowing fails **silently** — a real long poll runs and nobody is told. The ruling names exempting heredoc bodies as the most
+tempting option and the worst, and `hook_scan_target` drops heredoc bodies, so routing them through it *was* that option, arrived at from a different direction and with no memory of the decision.
 
-**Generalise this, because it is the reusable part.** A false positive you have
-decided to accept is indistinguishable, to the next session, from one nobody has
-noticed yet — and the next session will "fix" it, in good faith, from a
-sweep like the one above. The only thing that stops it is a test asserting the
-accepted behaviour, labelled with the ruling and its date. Not a comment: a
-comment is read only by someone already looking at the file, and a sweep does
-not look at files. `block-ci-reverse-poll` had the same reasoning behind it and
-no pinned case, so it did NOT go red, and it had to be reverted by hand once its
-siblings gave the game away.
+**Generalise this, because it is the reusable part.** A false positive you have decided to accept is indistinguishable, to the next session, from one nobody has noticed yet — and the next session will "fix" it, in good faith, from a sweep like the one above. The only thing that stops it is a test asserting the accepted behaviour, labelled with the ruling and its date. Not a
+comment: a comment is read only by someone already looking at the file, and a sweep does not look at files. `block-ci-reverse-poll` had the same reasoning behind it and no pinned case, so it did NOT go red, and it had to be reverted by hand once its siblings gave the game away.
 
-**The check to run:** when you accept a false positive rather than fixing it,
-write the case that asserts it, name the ruling and the date in the label, and
-say in the guard's header that it is deliberately not using the shared remedy
-its siblings use. Then a later sweep re-opens the decision instead of quietly
-reversing it.
+**The check to run:** when you accept a false positive rather than fixing it, write the case that asserts it, name the ruling and the date in the label, and say in the guard's header that it is deliberately not using the shared remedy its siblings use. Then a later sweep re-opens the decision instead of quietly reversing it.
 
-**The check to run, and it is cheap:** for every command your suite asserts is
-BLOCKED, assert that `echo '<that command>'` is ALLOWED. Echoing executes
-nothing, so a guard refusing it is matching on mention. Asking this of all 48
-block cases at once took one script and found 17 in a surface where reading the
-guards one at a time had found four.
+**The check to run, and it is cheap:** for every command your suite asserts is BLOCKED, assert that `echo '<that command>'` is ALLOWED. Echoing executes nothing, so a guard refusing it is matching on mention. Asking this of all 48 block cases at once took one script and found 17 in a surface where reading the guards one at a time had found four.
 
 ## A gate green in CI can be red on every developer machine, because glibc collates by locale and codepoint order does not
 Trap-Id: locale-collation-vs-codepoint-order
 Enforced-By: JUDGMENT-ONLY
 Residue: CI collates by codepoint and never sees it. Running the same unmodified file under two locales is a diagnosis nobody can schedule in advance.
 
-`test-scope-gate-outputs.sh` compares a shell `sort` of the real scope engine's
-output against a list ordered by node's `Array.prototype.sort()` (UTF-16 code
-unit order). It was green on `ubuntu-latest` for 26 days and red on this session's
-very first local run of it.
+`test-scope-gate-outputs.sh` compares a shell `sort` of the real scope engine's output against a list ordered by node's `Array.prototype.sort()` (UTF-16 code unit order). It was green on `ubuntu-latest` for 26 days and red on this session's very first local run of it.
 
-`en_US.UTF-8` glibc collation ignores `=` and `_` at the primary level, so
-`run_e2e_k8s_ceph=false` collates as `rune2ek8scephfalse` and sorts BEFORE
-`run_e2e_k8s=false` — while node's code-unit order puts the shorter prefix
-first. Same 17 keys on both sides, transposed order, and the diff read like a
-missing key (`run_e2e_k8s_multinode`) rather than what it actually was. CI never
-saw it because `ubuntu-latest`'s runner environment collates by codepoint, so
-the two orderings happen to agree there.
+`en_US.UTF-8` glibc collation ignores `=` and `_` at the primary level, so `run_e2e_k8s_ceph=false` collates as `rune2ek8scephfalse` and sorts BEFORE `run_e2e_k8s=false` — while node's code-unit order puts the shorter prefix first. Same 17 keys on both sides, transposed order, and the diff read like a missing key (`run_e2e_k8s_multinode`) rather than what it actually was. CI never
+saw it because `ubuntu-latest`'s runner environment collates by codepoint, so the two orderings happen to agree there.
 
-**Why it fools you rather than blocking you:** the failure output names a
-specific key and looks exactly like "the scope engine forgot this job" — a
-production-code bug in `scope-map.cjs`, the file that decides which CI jobs run.
-Reading the diff, not the mechanism, sends you straight at the wrong file.
+**Why it fools you rather than blocking you:** the failure output names a specific key and looks exactly like "the scope engine forgot this job" — a production-code bug in `scope-map.cjs`, the file that decides which CI jobs run. Reading the diff, not the mechanism, sends you straight at the wrong file.
 Confirmed: `scope-map.cjs` and `scope-shadow.sh` were both correct and
 untouched; the entire defect was one bare `sort` in the test.
 
-**The check to run:** when two lists built by DIFFERENT sorters (shell `sort`
-vs. node/jq/python `.sort()`/a hand-written literal) are compared, and only ONE
-locale reproduces a failure, suspect collation before suspecting either list's
-content. `LC_ALL=C sort` fixes it: `locale -a` on this host confirms both
-`C.utf8` and `en_US.utf8` exist, so the comparison is trivial —
-`LC_ALL=en_US.UTF-8 bash <test>` vs `LC_ALL=C bash <test>` on the SAME
-unmodified file. If only the first fails, the bug is collation, not content.
+**The check to run:** when two lists built by DIFFERENT sorters (shell `sort` vs. node/jq/python `.sort()`/a hand-written literal) are compared, and only ONE locale reproduces a failure, suspect collation before suspecting either list's content. `LC_ALL=C sort` fixes it: `locale -a` on this host confirms both `C.utf8` and `en_US.utf8` exist, so the comparison is trivial —
+`LC_ALL=en_US.UTF-8 bash <test>` vs `LC_ALL=C bash <test>` on the SAME unmodified file. If only the first fails, the bug is collation, not content.
 
-See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed
-instance and `agent/PLAN-scope-gate-sort-collation.md` for the full trace.
+See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed instance and `agent/plans/PLAN-scope-gate-sort-collation.md` for the full trace.
 
 ## `date +%s%3N` returns NANOSECONDS under uutils coreutils, and CI will never tell you
 Trap-Id: date-precision-digit-under-uutils
 Enforced-By: JUDGMENT-ONLY
 Residue: GitHub runners ship GNU coreutils, so any gate for this is green there forever. `git grep 'date +%s%[0-9]*N'` is a sweep a human runs, and only a precision digit compared against a threshold is a defect.
 
-**GNU `date` honours the precision digit in `%3N` (milliseconds). uutils
-coreutils — the Rust reimplementation, shipping by default on more and more
-systems, 0.8.0 on this host — IGNORES it and returns the full nine digits.**
-Same command, same flags, a number a million times larger.
+**GNU `date` honours the precision digit in `%3N` (milliseconds). uutils coreutils — the Rust reimplementation, shipping by default on more and more systems, 0.8.0 on this host — IGNORES it and returns the full nine digits.** Same command, same flags, a number a million times larger.
 
-Found 2026-08-27 in `.ci/scripts/test/gates/test-run-all-parallel.sh`, whose
-`now_ms()` was `date +%s%3N`. Its assertion is `parallel_ms >= 6000` → fail, so
-on a uutils host the gate could **never pass**:
+Found 2026-08-27 in `.ci/scripts/test/gates/test-run-all-parallel.sh`, whose `now_ms()` was `date +%s%3N`. Its assertion is `parallel_ms >= 6000` → fail, so on a uutils host the gate could **never pass**:
 
 ```
 FAIL: four 2s tests took 2034286583ms at jobs=4; they are not overlapping
 ```
 
-2034286583 **nanoseconds** is 2.03 seconds — the runner was parallelising
-perfectly and the stopwatch was lying. The failure text accuses the subject,
-which is what makes this expensive: every instinct says go read the runner.
+2034286583 **nanoseconds** is 2.03 seconds — the runner was parallelising perfectly and the stopwatch was lying. The failure text accuses the subject, which is what makes this expensive: every instinct says go read the runner.
 
-**Why CI cannot catch it.** GitHub runners have GNU coreutils, so the gate is
-green there forever. This is the same shape as the glibc-collation entry above:
-an environment difference that only ever fires on a developer machine, where it
-reads as "the repo is broken" rather than "my coreutils differ".
+**Why CI cannot catch it.** GitHub runners have GNU coreutils, so the gate is green there forever. This is the same shape as the glibc-collation entry above: an environment difference that only ever fires on a developer machine, where it reads as "the repo is broken" rather than "my coreutils differ".
 
-**The tell:** a duration with far too many digits. A millisecond count for
-anything interactive is 3–5 digits; 19 digits is a nanosecond epoch, 13 is a
-millisecond epoch. If a "ms" value has 10+ digits, suspect the clock before the
-subject.
+**The tell:** a duration with far too many digits. A millisecond count for anything interactive is 3–5 digits; 19 digits is a nanosecond epoch, 13 is a millisecond epoch. If a "ms" value has 10+ digits, suspect the clock before the subject.
 
-**The fix, and why not just `%N`:** use bash's `EPOCHREALTIME` builtin (5.0+),
-which depends on no `date` at all, and scale it yourself:
+**The fix, and why not just `%N`:** use bash's `EPOCHREALTIME` builtin (5.0+), which depends on no `date` at all, and scale it yourself:
 
 ```bash
 now_ms() {
@@ -1497,13 +911,9 @@ now_ms() {
 }
 ```
 
-`10#` forces base 10, or a fraction with a leading zero is read as octal.
-`date +%s%N` and dividing also works — both implementations agree on bare `%N`
-— but it costs a subprocess per call and still trusts `date`.
+`10#` forces base 10, or a fraction with a leading zero is read as octal. `date +%s%N` and dividing also works — both implementations agree on bare `%N` — but it costs a subprocess per call and still trusts `date`.
 
-**Sweep, not fix:** `git grep 'date +%s%[0-9]*N'`. Bare `%N` compared against
-`%N` is safe (consistent units, as in `test-ci-runner.sh`); a precision digit
-compared against a threshold is not. Only the one site used a precision digit.
+**Sweep, not fix:** `git grep 'date +%s%[0-9]*N'`. Bare `%N` compared against `%N` is safe (consistent units, as in `test-ci-runner.sh`); a precision digit compared against a threshold is not. Only the one site used a precision digit.
 
 ## `agent-browser open` returns 1 when its stdout is REDIRECTED and 0 on a terminal
 Trap-Id: agent-browser-exit-depends-on-tty
@@ -1515,30 +925,19 @@ Residue: The gate covers TRACKED shell scripts under `set -e`. A one-off `agent-
     agent-browser open "$URL"                    -> rc=0
     agent-browser open "$URL" >/dev/null 2>&1    -> rc=1
 
-Measured 2026-08-28. The `eval` immediately after returns a real `scrollHeight` in both
-cases, so the page is genuinely there; only the exit code differs.
+Measured 2026-08-28. The `eval` immediately after returns a real `scrollHeight` in both cases, so the page is genuinely there; only the exit code differs.
 
-**Why it is expensive.** `packages/www/scripts/measure-page-density.sh` runs under
-`set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The
-symptom was not an error message. It was an empty log and a CSV containing only its header
-row, which reads as "the harness produced nothing to say" rather than "the harness was
-shot". Two runs were written off as a wedged browser session before the exit code was
-suspected at all.
+**Why it is expensive.** `packages/www/scripts/measure-page-density.sh` runs under `set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The symptom was not an error message. It was an empty log and a CSV containing only its header row, which reads as "the harness produced nothing to say" rather than "the harness was shot". Two runs were written off
+as a wedged browser session before the exit code was suspected at all.
 
 **The fix is not to trust the status.** Neutralise it and let a claim about the PAGE decide:
 
     agent-browser open "$URL" >/dev/null 2>&1 || true
     # then assert something real: a DOM-node floor, an expected selector, a title.
 
-`|| true` is the right call here and not laziness, because the exit code carries no
-information about the load. The harness keeps a 50-node DOM floor, which is a statement
-about the page rather than about a wrapper's exit status, and that is what catches a
-genuinely failed load.
+`|| true` is the right call here and not laziness, because the exit code carries no information about the load. The harness keeps a 50-node DOM floor, which is a statement about the page rather than about a wrapper's exit status, and that is what catches a genuinely failed load.
 
-**The general shape, worth more than this instance:** a tool whose exit code depends on
-whether it is attached to a terminal is invisible in interactive use and fires only under
-redirection, which is to say only in scripts, background jobs and CI. Everything you tested
-by hand keeps working while everything automated dies.
+**The general shape, worth more than this instance:** a tool whose exit code depends on whether it is attached to a terminal is invisible in interactive use and fires only under redirection, which is to say only in scripts, background jobs and CI. Everything you tested by hand keeps working while everything automated dies.
 
 ---
 
@@ -1547,44 +946,26 @@ Trap-Id: mark-done-all-stale-is-a-bulk-verb
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing measures the ledger's SIZE against what a run was asked to close, and the tool reports its own overreach as success (`1965 stamped, 0 failed parity`). The console gates read the same file and are satisfied by it, so a bulk stamp makes every downstream check greener, not redder. Both repos would have to agree on one definition of stale before an instrument could exist.
 
-`check:ci-i18n-naturalization` and `private/growth/i18n_pipeline` both talk about "stale"
-keys, and they do not mean the same thing. Reading one and acting through the other cost
-23,561 bogus ledger stamps on 2026-08-31.
+`check:ci-i18n-naturalization` and `private/growth/i18n_pipeline` both talk about "stale" keys, and they do not mean the same thing. Reading one and acting through the other cost 23,561 bogus ledger stamps on 2026-08-31.
 
-**What the console gate means by stale**: a key that WAS naturalized and whose English has
-since changed. On the run in question it named exactly one key, in twelve locales:
+**What the console gate means by stale**: a key that WAS naturalized and whose English has since changed. On the run in question it named exactly one key, in twelve locales:
 
     [de] 1 stale:
       ~ pages.solutionPages.migrationSafety.problem.statCallouts.1.source
 
-**What the pipeline means by stale**: any key whose current English CRC is not recorded in
-`.naturalized-hashes.json` — which includes every key that was never naturalized at all.
-For this surface that was **1,965 keys per locale**, against 1,180 already in the ledger.
+**What the pipeline means by stale**: any key whose current English CRC is not recorded in `.naturalized-hashes.json` — which includes every key that was never naturalized at all. For this surface that was **1,965 keys per locale**, against 1,180 already in the ledger.
 
-So `./run.sh --mark-done --lang de --all-stale`, run to close the ONE key the gate named,
-reported:
+So `./run.sh --mark-done --lang de --all-stale`, run to close the ONE key the gate named, reported:
 
     [mark-done] de (all-stale): 1965 stamped, 0 failed parity, 1965 stale scanned
 
-and the ledger went from 1,180 entries per locale to 3,140. `0 failed parity` is not
-reassurance: parity is a deterministic check on placeholders, tags and numbers, not a
-claim that anything was translated. The result is the exact condition
-`check-locale-only-edits.ts` already documents as having happened before — "369 keys
-across 12 locales were stamped naturalized while still holding the English string" — with
-a future `naturalize-status` reporting nothing to do over keys nobody has ever looked at.
+and the ledger went from 1,180 entries per locale to 3,140. `0 failed parity` is not reassurance: parity is a deterministic check on placeholders, tags and numbers, not a claim that anything was translated. The result is the exact condition `check-locale-only-edits.ts` already documents as having happened before — "369 keys across 12 locales were stamped naturalized while still
+holding the English string" — with a future `naturalize-status` reporting nothing to do over keys nobody has ever looked at.
 
-**Do not use `--all-stale` to close a key a gate named.** It is a bulk closure verb.
-Scope it (`--surface`), or, for a value no translation can change (a proper noun, a
-published report title, a product name), splice the twelve CRCs into the ledger directly.
+**Do not use `--all-stale` to close a key a gate named.** It is a bulk closure verb. Scope it (`--surface`), or, for a value no translation can change (a proper noun, a published report title, a product name), splice the twelve CRCs into the ledger directly.
 
-**Repairing it**: the ledger is tracked in the CONSOLE repo at
-`packages/www/src/i18n/translations/.naturalized-hashes.json`, despite the tool living in
-`private/growth`. Rebuild it forward from `git show HEAD:<path>` plus the intended delta —
-never `git checkout` it, which is the standing rule and matters doubly here because the
-same file carries other sessions' work. The intended delta is a byte-splice: the key's
-line appears once per locale, so replacing
-`"<key>": "<old-crc>"` with the new CRC hits exactly twelve sites and touches nothing
-else. Verify with a set-difference against `HEAD`, `added=0`, before believing it.
+**Repairing it**: the ledger is tracked in the CONSOLE repo at `packages/www/src/i18n/translations/.naturalized-hashes.json`, despite the tool living in `private/growth`. Rebuild it forward from `git show HEAD:<path>` plus the intended delta — never `git checkout` it, which is the standing rule and matters doubly here because the same file carries other sessions' work. The intended
+delta is a byte-splice: the key's line appears once per locale, so replacing `"<key>": "<old-crc>"` with the new CRC hits exactly twelve sites and touches nothing else. Verify with a set-difference against `HEAD`, `added=0`, before believing it.
 
 ## A tsconfig can `include` a GENERATED file, so the project typechecks on your machine and cannot on a fresh one
 Trap-Id: generated-dts-warm-machine
@@ -1595,74 +976,46 @@ Residue:
 
     "include": [".astro/types.d.ts", "**/*"]
 
-`.astro/types.d.ts` is written by `astro sync`, is gitignored, and is a build
-artifact of the last `astro build` anyone happened to run in that tree. Wiring the
-project into `check:types` and verifying it locally therefore proves nothing about
+`.astro/types.d.ts` is written by `astro sync`, is gitignored, and is a build artifact of the last `astro build` anyone happened to run in that tree. Wiring the project into `check:types` and verifying it locally therefore proves nothing about
 CI: on a warm machine tsc reports 0, and on a fresh checkout it reports 65.
 
-What makes it a trap rather than an oversight is that the failure does not look
-like a missing file. Nothing says `.astro`. It arrives as ordinary-looking type
-errors in ordinary-looking components -- 25 x `Property 'env' does not exist on
-type 'ImportMeta'`, 22 implicit-any parameters, 10 side-effect CSS imports, 8
-`Cannot find module 'astro:content'` -- and every one of them invites a local fix
-to the file it names. The instinct is to start declaring `ImportMetaEnv`.
+What makes it a trap rather than an oversight is that the failure does not look like a missing file. Nothing says `.astro`. It arrives as ordinary-looking type errors in ordinary-looking components -- 25 x `Property 'env' does not exist on type 'ImportMeta'`, 22 implicit-any parameters, 10 side-effect CSS imports, 8 `Cannot find module 'astro:content'` -- and every one of them
+invites a local fix to the file it names. The instinct is to start declaring `ImportMetaEnv`.
 
 The reproduction is one command and it is the only thing that settles it:
 
     mv packages/www/.astro /tmp/ && npx tsc --noEmit -p packages/www/tsconfig.json
 
-If the error count and its shape match CI's, the artifact is the cause. Fix by
-generating it (`astro sync && tsc --noEmit`, as a workspace script so its cwd is
-right), never by hand-writing a stand-in: half of these types are per-content-
-collection and a checked-in copy is stale the day it lands.
+If the error count and its shape match CI's, the artifact is the cause. Fix by generating it (`astro sync && tsc --noEmit`, as a workspace script so its cwd is right), never by hand-writing a stand-in: half of these types are per-content- collection and a checked-in copy is stale the day it lands.
 
-The general shape: before believing a green typecheck of a project you just wired
-up, `grep` its tsconfig `include`/`files`/`references` for anything gitignored.
-`git check-ignore -v <path>` answers it per entry. A project whose types depend on
-a build artifact is green exactly as often as someone has recently built it.
+The general shape: before believing a green typecheck of a project you just wired up, `grep` its tsconfig `include`/`files`/`references` for anything gitignored. `git check-ignore -v <path>` answers it per entry. A project whose types depend on a build artifact is green exactly as often as someone has recently built it.
 
-SECOND FACE, same trap: a source file can pull the artifact in by IMPORTING it.
-`workers/www/src/__tests__/redirect-aliases.test.ts` opened with
+SECOND FACE, same trap: a source file can pull the artifact in by IMPORTING it. `workers/www/src/__tests__/redirect-aliases.test.ts` opened with
 
     import manifest from '../../../../packages/www/dist/route-manifest.json'
       with { type: 'json' };
 
-which puts a `dist/` output in the TYPE graph, so `tsc` gave TS2307 on a clean
-checkout and passed on any machine that had built the site. The import bought
-nothing -- the value was cast to a locally declared type on the next line -- and
-`readFileSync` + `JSON.parse`, resolved from `import.meta.url`, keeps the runtime
-behaviour while leaving the typecheck artifact-free. So extend the grep past the
-tsconfig: `grep -rnE "from ['\"][^'\"]*dist/" --include='*.ts'` over the
-typechecked trees. It found exactly one, and that one had shipped a CI red.
+which puts a `dist/` output in the TYPE graph, so `tsc` gave TS2307 on a clean checkout and passed on any machine that had built the site. The import bought nothing -- the value was cast to a locally declared type on the next line -- and `readFileSync` + `JSON.parse`, resolved from `import.meta.url`, keeps the runtime behaviour while leaving the typecheck artifact-free. So extend
+the grep past the tsconfig: `grep -rnE "from ['\"][^'\"]*dist/" --include='*.ts'` over the typechecked trees. It found exactly one, and that one had shipped a CI red.
 
 ## A gate that fails ONLY in CI may be matching bytes that CI coloured
 Trap-Id: ci-true-turns-colour-on-with-no-tty
 Enforced-By: gate:check:test-www
 Residue: Judgment for any NEW subprocess-output matcher. The controls lock the one that was paid for; nothing stops a second matcher being written against raw bytes.
 
-`CI=true` is set by GitHub Actions on every step, and the common colour libraries
-(chalk/picocolors and everything built on them) treat that as "colour is supported"
-**even with no TTY attached**. So a subprocess whose output is plain on a developer's
-machine arrives ANSI-escaped in CI, and any matcher over its raw bytes is reading a
-different string than the one it was written against.
+`CI=true` is set by GitHub Actions on every step, and the common colour libraries (chalk/picocolors and everything built on them) treat that as "colour is supported" **even with no TTY attached**. So a subprocess whose output is plain on a developer's machine arrives ANSI-escaped in CI, and any matcher over its raw bytes is reading a different string than the one it was written
+against.
 
 Measured 2026-09-01. The tutorial-player release gate waited for astro's banner:
 
     plain :  astro  v5.18.1 ready in 4494 ms
     CI    : \x1b[2mready in\x1b[22m 4739 \x1b[2mms\x1b[22m
 
-`/ready in \s*\d/` requires a space after `in`. In CI an escape sits there instead, so
-the matcher returned TRUE on the plain capture and FALSE on the CI capture, byte for
-byte. The gate timed out after 180s, five runs in a row, and passed locally every time.
+`/ready in \s*\d/` requires a space after `in`. In CI an escape sits there instead, so the matcher returned TRUE on the plain capture and FALSE on the CI capture, byte for byte. The gate timed out after 180s, five runs in a row, and passed locally every time.
 
-**That combination -- green locally, red only in CI, no output from the child -- is the
-signature.** It reads exactly like a flaky or starved runner, which is how it survived
-four re-runs and two wrong root causes (a chunk-boundary theory that changed nothing).
+**That combination -- green locally, red only in CI, no output from the child -- is the signature.** It reads exactly like a flaky or starved runner, which is how it survived four re-runs and two wrong root causes (a chunk-boundary theory that changed nothing).
 
-Two things follow. Strip ANSI **on ingest** rather than teaching one regex about escape
-codes, so the buffer is plain for every future matcher and the artifact is readable.
-And note the predecessor here, `text.includes('ready')`, survived colour by accident:
-tightening a matcher is right, but a tightened matcher over raw bytes is a new trap.
+Two things follow. Strip ANSI **on ingest** rather than teaching one regex about escape codes, so the buffer is plain for every future matcher and the artifact is readable. And note the predecessor here, `text.includes('ready')`, survived colour by accident: tightening a matcher is right, but a tightened matcher over raw bytes is a new trap.
 
 ## An instrument must not derive "this might not be real" from the failure itself
 Trap-Id: self-certifying-false-comfort
@@ -1674,70 +1027,41 @@ The same gate printed, on every timeout:
     ⚠ SYSTEM UNDER LOAD while this ran (load/core=0.06, boot=180063ms of a 180000ms
       budget) -- this may be resource contention, not a real regression.
 
-`load/core=0.06` is an idle machine. The flag was `pressureDetected = slowBoot ||
-highLoad`, and `slowBoot` was `bootMs > 90000` -- the timeout restated. So **every**
-boot timeout certified itself as probably-not-a-real-bug, including the ones that were.
+`load/core=0.06` is an idle machine. The flag was `pressureDetected = slowBoot || highLoad`, and `slowBoot` was `bootMs > 90000` -- the timeout restated. So **every** boot timeout certified itself as probably-not-a-real-bug, including the ones that were.
 
-This is worse than no hint at all. A missing hint leaves you to investigate; a
-self-certifying one actively argues against investigating, and it is written in the
-authoritative voice of the instrument. It bought five re-runs of a real defect.
+This is worse than no hint at all. A missing hint leaves you to investigate; a self-certifying one actively argues against investigating, and it is written in the authoritative voice of the instrument. It bought five re-runs of a real defect.
 
-The test to apply to any "this may be environmental" line: **what would it print if the
-failure were genuinely a product bug?** If the answer is "the same thing", it is
-circular. Report the independent evidence (here, the load average) separately from the
-symptom, and when they disagree say the OPPOSITE out loud -- a slow boot on an idle
-machine is evidence something never became ready, not evidence of contention.
+The test to apply to any "this may be environmental" line: **what would it print if the failure were genuinely a product bug?** If the answer is "the same thing", it is circular. Report the independent evidence (here, the load average) separately from the symptom, and when they disagree say the OPPOSITE out loud -- a slow boot on an idle machine is evidence something never became
+ready, not evidence of contention.
 
 ## The commit log is evidence, and it is the evidence nobody reads
 Trap-Id: read-the-history-before-you-guess
 Enforced-By: gate:check:ci-judged-rule-wiring
 Residue: The gate proves `wl_histfirst` is still CALLED from the stop path (settings.json
-reaches it in three hops, which is why the pointer is the wiring gate rather than the module).
-It cannot make anyone read the window the hook prints, and neither says anything about a
-failure that never reaches a stop.
+reaches it in three hops, which is why the pointer is the wiring gate rather than the module). It cannot make anyone read the window the hook prints, and neither says anything about a failure that never reaches a stop.
 
-When CI goes red, the reflex is to read the CODE. This repo writes unusually
-substantial commit messages -- measurements, rejected hypotheses, corrections -- so the
-cheapest evidence available is the one systematically skipped.
+When CI goes red, the reflex is to read the CODE. This repo writes unusually substantial commit messages -- measurements, rejected hypotheses, corrections -- so the cheapest evidence available is the one systematically skipped.
 
-Measured on the session that prompted the rule: across 2,494 Bash calls there were ZERO
-`git log`/`blame`/`bisect` invocations naming the file that had gone red four times,
-while eight lines of `git log --oneline -- <that file>` held both decisive facts.
+Measured on the session that prompted the rule: across 2,494 Bash calls there were ZERO `git log`/`blame`/`bisect` invocations naming the file that had gone red four times, while eight lines of `git log --oneline -- <that file>` held both decisive facts.
 
 Two questions, both cheap, both usually decisive:
 
     git log --oneline <last-green-sha>..HEAD          # what could possibly have done it
     git log --oneline -- <the file that broke>        # has this broken before, and why
 
-**And read the ANSWER, including when it is "nothing".** On 2026-09-01 the window
-between the last green run and the first red contained only two markdown files. That is
-affirmative evidence *against* a regression on the branch and *for* an environmental
-cause -- which is what pointed at `CI=true` and the colour trap above. A window with
-nothing in it is a finding, not a dead end.
+**And read the ANSWER, including when it is "nothing".** On 2026-09-01 the window between the last green run and the first red contained only two markdown files. That is affirmative evidence *against* a regression on the branch and *for* an environmental cause -- which is what pointed at `CI=true` and the colour trap above. A window with nothing in it is a finding, not a dead end.
 
 ## A cost measured under load becomes a DEMAND, because the cache averages and the oracle believes the average
 Trap-Id: load-poisoned-cost-becomes-policy
 Enforced-By: gate:check:ci-gate-manifest
 Residue: The cache can only be judged against ITSELF. Nothing can tell a gate that genuinely slowed from one measured under contention, so the floor of several measurements is the instrument, and a single number never is.
 
-`check:ci-gate-manifest` judges whether a gate belongs in the pre-push lane from
-`.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On
-2026-09-02 one full run overlapped two writer sub-agents and the load it carried
-was recorded like any other measurement: a gate that takes 4.5 s alone was
-averaged up to 21 s, and the next manifest check demanded it be marked
-`slow: true` with a reason. The reason would have been a lie, and the gate would
-have left the fast lane for good on the strength of one bad afternoon.
+`check:ci-gate-manifest` judges whether a gate belongs in the pre-push lane from `.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On 2026-09-02 one full run overlapped two writer sub-agents and the load it carried was recorded like any other measurement: a gate that takes 4.5 s alone was averaged up to 21 s, and the next manifest check demanded it be
+marked `slow: true` with a reason. The reason would have been a lie, and the gate would have left the fast lane for good on the strength of one bad afternoon.
 
-Two things made this easy to fall for. The runner prints `SYSTEM UNDER LOAD` for
-exactly one gate (the tutorial player), so the other 350 measurements looked
-clean. And the finding text names a number, which reads as evidence rather than
-as the artifact of a moving average.
+Two things made this easy to fall for. The runner prints `SYSTEM UNDER LOAD` for exactly one gate (the tutorial player), so the other 350 measurements looked clean. And the finding text names a number, which reads as evidence rather than as the artifact of a moving average.
 
-Since then the cache keeps the last five raw measurements beside the average and
-the oracle judges their FLOOR, because load only ever adds time. The general
-rule survives the fix: a number written by a run made under contention is a
-measurement of the contention. Before acting on a cost claim, time the thing
-alone once. It took nine seconds here and overturned both findings.
+Since then the cache keeps the last five raw measurements beside the average and the oracle judges their FLOOR, because load only ever adds time. The general rule survives the fix: a number written by a run made under contention is a measurement of the contention. Before acting on a cost claim, time the thing alone once. It took nine seconds here and overturned both findings.
 
 ---
 
@@ -1746,34 +1070,15 @@ Trap-Id: uncommitted-file-reds-a-remote-fake
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing can tell "this closure path is wrong" from "this closure path is correct and not committed yet". The two produce the identical symptom -- a named refusal and empty stdout -- and only the author knows which they are looking at.
 
-Found 2026-09-02. `gate-test:greenlight` case 6 went red on `run_renet=false` not
-being emitted. Everything about it read like a defect in the change under way:
-the same session had edited `greenlight.cjs`, the failing assertion named a key
-that session had touched, and greenlight's own output said *"candidate listing
-failed ... so nothing is greenlit"*.
+Found 2026-09-02. `gate-test:greenlight` case 6 went red on `run_renet=false` not being emitted. Everything about it read like a defect in the change under way: the same session had edited `greenlight.cjs`, the failing assertion named a key that session had touched, and greenlight's own output said *"candidate listing failed ... so nothing is greenlit"*.
 
-The cause was that `.github/actions/bws-secrets` had been added to eighteen
-greenlight closures and the composite action **did not exist in `HEAD` yet** —
-`git status` showed it as `??`. The test's fake `gh` resolves the candidate
-repository with `git ls-tree HEAD`, deliberately, because the candidate IS a
-remote commit and modelling it from the dirty worktree would assert something
-the real thing never does. So a path that is correct, present on disk, and
-about to be committed resolves to nothing, greenlight throws its named refusal,
-and stdout is empty.
+The cause was that `.github/actions/bws-secrets` had been added to eighteen greenlight closures and the composite action **did not exist in `HEAD` yet** — `git status` showed it as `??`. The test's fake `gh` resolves the candidate repository with `git ls-tree HEAD`, deliberately, because the candidate IS a remote commit and modelling it from the dirty worktree would assert
+something the real thing never does. So a path that is correct, present on disk, and about to be committed resolves to nothing, greenlight throws its named refusal, and stdout is empty.
 
-**In CI the same change is green**, because the PR's tree carries the file. The
-red exists only in the window between adding a path to a closure and committing
-the file it points at — which, in a repo whose standing rule is that work stays
-uncommitted until asked, is a window every session lives inside.
+**In CI the same change is green**, because the PR's tree carries the file. The red exists only in the window between adding a path to a closure and committing the file it points at — which is a window every session passes through between verifying a unit and committing it, and one a shared tree holding other sessions' uncommitted work keeps open for as long as they hold it.
 
-Two general shapes worth carrying away. First: **a test fixture that models a
-REMOTE reads committed state, so your uncommitted work is invisible to it by
-design** — that is the fixture being right, not stale, and "fixing" it to read
-the worktree would delete the property it exists to assert. Second: before
-attributing a red to the logic you just changed, check whether the inputs it
-reads even contain your change. `git ls-tree HEAD -- <path>` answers it in one
-second, and it is the difference between a correct diagnosis and an hour spent
-re-reading code that was never wrong.
+Two general shapes worth carrying away. First: **a test fixture that models a REMOTE reads committed state, so your uncommitted work is invisible to it by design** — that is the fixture being right, not stale, and "fixing" it to read the worktree would delete the property it exists to assert. Second: before attributing a red to the logic you just changed, check whether the inputs
+it reads even contain your change. `git ls-tree HEAD -- <path>` answers it in one second, and it is the difference between a correct diagnosis and an hour spent re-reading code that was never wrong.
 
 ---
 
@@ -1784,32 +1089,17 @@ Residue: No scan can tell a name written as a SUBJECT ("we are retiring FOO_EU")
 
 Found 2026-09-02, twice in one turn, by reading a dry run instead of trusting it.
 
-`scripts/dev/secret-rename.py` skips `agent/` precisely because a plan describing
-a rename must not be rewritten by it. Two files outside that prefix had the same
-problem and nobody had noticed:
+`scripts/ops/secret-rename.py` skips `agent/` precisely because a plan describing a rename must not be rewritten by it. Two files outside that prefix had the same problem and nobody had noticed:
 
 - A `reason` string in `.ci/config/bws-unrequested.json` said *"the rename points
-  the org secret `OBS_OTLP_CREDENTIALS_EU` here"*. After the rewrite it would
-  have read *"points the org secret `OBS_OTLP_CREDENTIALS_EU` here"* — a sentence
-  claiming a name points at itself.
+the org secret `OBS_OTLP_CREDENTIALS_EU` here"*. After the rewrite it would have read *"points the org secret `OBS_OTLP_CREDENTIALS_EU` here"* — a sentence claiming a name points at itself.
 - Worse, a **selftest fixture** in `check_bws_map.py` read
-  `STRIPE_SECRET_KEY > STRIPE_SECRET_KEY`, the one case proving that ALIASES
-  parse. A collapse row maps both sides to the same token, so the rewrite turns
-  it into `NAME > NAME` — and **every assertion still passes**, because the
-  expected-value list is rewritten in lockstep. The control keeps reporting PASS
-  while having quietly stopped testing anything.
+`STRIPE_SECRET_KEY > STRIPE_SECRET_KEY`, the one case proving that ALIASES parse. A collapse row maps both sides to the same token, so the rewrite turns it into `NAME > NAME` — and **every assertion still passes**, because the expected-value list is rewritten in lockstep. The control keeps reporting PASS while having quietly stopped testing anything.
 
-That second shape is the dangerous one. A find-and-replace does not break a
-fixture; it moves the fixture and its expectation together, so the test stays
-green and the coverage is gone. Nothing red ever appears.
+That second shape is the dangerous one. A find-and-replace does not break a fixture; it moves the fixture and its expectation together, so the test stays green and the coverage is gone. Nothing red ever appears.
 
-Two habits come out of it. **Write a retiring name in braced form**
-(`FOO_{EU,US,ASIA}`) wherever it appears as a subject rather than a use — the
-matcher wants a whole token and `_{EU` is not one, so prose survives the rename
-it describes. And **use synthetic names in fixtures** (`SELFTEST_ALIASED >
-SELFTEST_ENV_NAME`): realism in a parser fixture buys nothing and costs exactly
-this. The general form: after any bulk rewrite, ask not only "did the tests pass"
-but "does each test still assert what it was written to assert".
+Two habits come out of it. **Write a retiring name in braced form** (`FOO_{EU,US,ASIA}`) wherever it appears as a subject rather than a use — the matcher wants a whole token and `_{EU` is not one, so prose survives the rename it describes. And **use synthetic names in fixtures** (`SELFTEST_ALIASED > SELFTEST_ENV_NAME`): realism in a parser fixture buys nothing and costs exactly
+this. The general form: after any bulk rewrite, ask not only "did the tests pass" but "does each test still assert what it was written to assert".
 
 ## A pre-bash hook rejects the WHOLE command, so the `git add` beside a blocked `git commit` never ran
 Trap-Id: blocked-compound-drops-the-staging
@@ -1823,22 +1113,13 @@ The command was one line:
     git add <five modified files>
     git commit -q -F - <<'MSG' ... MSG
 
-`block-untagged-commit.sh` refused it for a missing `PR-TASK:` trailer. The
-refusal is a **PreToolUse** hook, so it rejects the tool call before ANY of it
-runs — the `git add` never happened. The next attempt fixed only the message and
-committed, and the index still held just the two files staged earlier. The
-result was commit `7a7ccd1d6`, whose message spends a paragraph on a fix to
-`check-setup-idempotency.sh` that is not in it.
+`block-untagged-commit.sh` refused it for a missing `PR-TASK:` trailer. The refusal is a **PreToolUse** hook, so it rejects the tool call before ANY of it runs — the `git add` never happened. The next attempt fixed only the message and committed, and the index still held just the two files staged earlier. The result was commit `7a7ccd1d6`, whose message spends a paragraph on a fix
+to `check-setup-idempotency.sh` that is not in it.
 
-Nothing catches this. The gates were green because the working tree was correct;
-only the *commit* was wrong, and no gate reads commit messages against diffs.
+Nothing catches this. The gates were green because the working tree was correct; only the *commit* was wrong, and no gate reads commit messages against diffs.
 
-The habit: **stage in its own tool call, never in the same one as the commit.**
-Any hook that can refuse the commit will take the staging with it, and a retry
-that edits only the message will look like it worked. And after any commit whose
-message makes a specific claim, `git show HEAD --stat` before believing it — the
-message is written from intent, the commit from the index, and a blocked call is
-exactly where those two separate.
+The habit: **stage in its own tool call, never in the same one as the commit.** Any hook that can refuse the commit will take the staging with it, and a retry that edits only the message will look like it worked. And after any commit whose message makes a specific claim, `git show HEAD --stat` before believing it — the message is written from intent, the commit from the index, and
+a blocked call is exactly where those two separate.
 
 ## A gate whose subject is a SUBMODULE does not fail safe when the submodule is absent
 Trap-Id: submodule-absent-inverts-the-finding
@@ -1847,53 +1128,34 @@ Residue: Only for the trees a config NAMES. A gate that discovers its subject by
 
 Found 2026-09-03 in CI job 100494921545, on a gate written that same hour.
 
-`check:ci-syncpack-sources` exists because `private/account` is a submodule and
-therefore outside syncpack's `source`. It landed in ci-quality's
-`quality-branch`, which checks out no submodules. So `git ls-files
---recurse-submodules` returned nothing under `private/account`, the manifests
-inside it stopped existing, and the gate's *converse* assertion — an exclusion
-must suppress something real — inverted into two confident findings telling the
-reader to delete two entries that were exactly right.
+`check:ci-syncpack-sources` exists because `private/account` is a submodule and therefore outside syncpack's `source`. It landed in ci-quality's `quality-branch`, which checks out no submodules. So `git ls-files --recurse-submodules` returned nothing under `private/account`, the manifests inside it stopped existing, and the gate's *converse* assertion — an exclusion must suppress
+something real — inverted into two confident findings telling the reader to delete two entries that were exactly right.
 
-Note the direction. The gate did not go quiet, which would have been the ordinary
-vacuity failure. It got LOUDER and wrong, and its advice was destructive: follow
-it and the submodule leaves the pins again, which is the defect the gate was
-written to prevent.
+Note the direction. The gate did not go quiet, which would have been the ordinary vacuity failure. It got LOUDER and wrong, and its advice was destructive: follow it and the submodule leaves the pins again, which is the defect the gate was written to prevent.
 
-The general shape: **an absent tree makes "nothing here" and "nothing exists"
-identical, and any converse assertion built on the second reading fires
-backwards.** The fix is to assert on the DIRECTORIES the config names, before
-reading anything inside them, and to answer CANNOT VERIFY rather than answering
-at all. A gate about a submodule also belongs in a job whose checkout sets
-`submodules: true`; parity checks that a step exists, not that its job can see
-the gate's subject.
+The general shape: **an absent tree makes "nothing here" and "nothing exists" identical, and any converse assertion built on the second reading fires backwards.** The fix is to assert on the DIRECTORIES the config names, before reading anything inside them, and to answer CANNOT VERIFY rather than answering at all. A gate about a submodule also belongs in a job whose checkout sets
+`submodules: true`; parity checks that a step exists, not that its job can see the gate's subject.
 
 ## `npm ci --dry-run` passes on your machine under npm 11 and cannot pass in CI under npm 10
 Trap-Id: npm11-prunes-what-npm10-requires
 Enforced-By: gate:check:ci-lockfile
 Residue: That gate is `slow: true`, so the pre-push lane defers it. A push can be locally green and still carry this.
 
-Found 2026-09-03: four CI jobs down at once — Quality/Go, Built-www Gates, i18n
-and Packages — all at `Run ./.github/actions/setup-workspace`.
+Found 2026-09-03: four CI jobs down at once — Quality/Go, Built-www Gates, i18n and Packages — all at `Run ./.github/actions/setup-workspace`.
 
     npm error Missing: esbuild@0.28.2 from lock file
     npm error Missing: @esbuild/aix-ppc64@0.28.2 from lock file       (~40 more)
 
-The monorepo already documents that npm 11 omits redundant nested dev markers and
-that CI pins npm@10. This is the same split with real teeth: npm 11 also prunes
-whole nested platform subtrees — here `node_modules/vitest/node_modules/@esbuild/*`
-— that npm 10 requires. A lockfile regenerated under npm 11 then cannot be
-installed by CI at all.
+The monorepo already documents that npm 11 omits redundant nested dev markers and that CI pins npm@10. This is the same split with real teeth: npm 11 also prunes whole nested platform subtrees — here `node_modules/vitest/node_modules/@esbuild/*` — that npm 10 requires. A lockfile regenerated under npm 11 then cannot be installed by CI at all.
 
-What makes it a trap rather than a bug is the local signal. Plain `npm ci
---dry-run` in that directory exits **0**, because it runs under npm 11, the same
-npm that wrote the file. Agreement with itself is not evidence.
+What makes it a trap rather than a bug is the local signal. Plain `npm ci --dry-run` in that directory exits **0**, because it runs under npm 11, the same npm that wrote the file. Agreement with itself is not evidence.
 
     npx -y npm@10 ci --dry-run          # reproduces the CI error verbatim
     npx -y npm@10 install --package-lock-only --ignore-scripts   # the fix
 
-Sweep it: this repo tracks eight lockfiles and any of them can drift
-independently. Only one had.
+Sweep it: this repo tracks eight lockfiles and any of them can drift independently. Only one had.
+
+Closed at the source on 2026-09-24 (issue #587): CI installs with the pinned npm 11 through `.github/actions/setup-node-npm`, so no lane runs npm 10 any more, and `check:ci-lockfile` refuses a lockfile the pinned npm would rewrite. The npm 10 commands above record how the incident was reproduced; the fix today is `npx -y npm@<NPM_VERSION> install --package-lock-only --ignore-scripts`.
 
 ## A scaffold step in front of a monitor switches the guard off and looks like the guard failing
 Trap-Id: shadow-step-preempts-the-watchdog
@@ -1902,27 +1164,13 @@ Residue: Only the watchdog is checked. Any other job where an early optional ste
 
 Found 2026-09-03, run 33704079162.
 
-A migration scaffold — a shadow step comparing each secret's GitHub value against
-its Bitwarden value, which nothing consumes — sat near the top of all 62 jobs in
-the repo. In the watchdog it sat at step 7 of 7, ahead of `Monitor jobs and
-cancel on failure`. It found a real mismatch, exited 1, and the job stopped.
+A migration scaffold — a shadow step comparing each secret's GitHub value against its Bitwarden value, which nothing consumes — sat near the top of all 62 jobs in the repo. In the watchdog it sat at step 7 of 7, ahead of `Monitor jobs and cancel on failure`. It found a real mismatch, exited 1, and the job stopped.
 
-The run's conclusion was **failure**. That is the trap: a red watchdog is what a
-working watchdog looks like when it catches something. Nothing in the run summary
-distinguishes "the watchdog found a problem" from "the watchdog never ran", and
-the mechanism that guards every other CI run was off for as long as nobody
-opened the log.
+The run's conclusion was **failure**. That is the trap: a red watchdog is what a working watchdog looks like when it catches something. Nothing in the run summary distinguishes "the watchdog found a problem" from "the watchdog never ran", and the mechanism that guards every other CI run was off for as long as nobody opened the log.
 
-Two rules come out of it. **A step that the job's purpose does not need must not
-be able to stop the job's purpose** — put it last, with `if: always()`, where it
-still reports and still reddens the run without costing the work. And **a guard's
-own red is not self-explanatory**: when a monitoring job fails, read which STEP
-failed before concluding it monitored anything.
+Two rules come out of it. **A step that the job's purpose does not need must not be able to stop the job's purpose** — put it last, with `if: always()`, where it still reports and still reddens the run without costing the work. And **a guard's own red is not self-explanatory**: when a monitoring job fails, read which STEP failed before concluding it monitored anything.
 
-One tempting fix is worse than the disease. Moving every such step to the end of
-its job in bulk is unsafe here: several jobs check out PR head partway through,
-and re-invoking a local composite action after that runs PR-controlled code with
-whatever token the step holds.
+One tempting fix is worse than the disease. Moving every such step to the end of its job in bulk is unsafe here: several jobs check out PR head partway through, and re-invoking a local composite action after that runs PR-controlled code with whatever token the step holds.
 
 ## `fnmatch`'s `*` crosses `/`, so a gate can be more generous than the tool it audits
 Trap-Id: fnmatch-star-eats-the-separator
@@ -1931,19 +1179,11 @@ Residue: Any Python check that reimplements a shell/JS glob. `fnmatch` is the ob
 
 Found 2026-09-03 before the gate landed, by a control written to fail.
 
-A gate auditing whether syncpack's `source` globs cover every manifest matched
-them with `fnmatch.fnmatch`. In `fnmatch`, `*` matches `/`, so
-`packages/*/package.json` "matched" `packages/json/templates/x/app/package.json`
-— a file syncpack itself never reads.
+A gate auditing whether syncpack's `source` globs cover every manifest matched them with `fnmatch.fnmatch`. In `fnmatch`, `*` matches `/`, so `packages/*/package.json` "matched" `packages/json/templates/x/app/package.json` — a file syncpack itself never reads.
 
-The failure is silent and in the forgiving direction: the gate reports a manifest
-as COVERED, so the tree looks clean while nothing scans those files. Precisely
-the defect the gate was written to catch, reintroduced inside the catcher.
+The failure is silent and in the forgiving direction: the gate reports a manifest as COVERED, so the tree looks clean while nothing scans those files. Precisely the defect the gate was written to catch, reintroduced inside the catcher.
 
-**A gate that models another tool's matching must be tested on the answer NO, not
-just the answer YES.** Two of the seven controls here assert non-matches, and
-they are the two that found this. Translate the glob explicitly instead of
-reaching for `fnmatch`: `**/` to `(?:.*/)?`, `**` to `.*`, `*` to `[^/]*`.
+**A gate that models another tool's matching must be tested on the answer NO, not just the answer YES.** Two of the seven controls here assert non-matches, and they are the two that found this. Translate the glob explicitly instead of reaching for `fnmatch`: `**/` to `(?:.*/)?`, `**` to `.*`, `*` to `[^/]*`.
 
 ## A lockfile regeneration reads the WORKING TREE, so it commits whatever manifest edit is sitting there
 Trap-Id: lock-regen-eats-a-peers-uncommitted-manifest
@@ -1952,36 +1192,21 @@ Residue: `npm ci` may not notice. A range the lock records that is merely WIDER 
 
 Found 2026-09-03, by diffing a restored lockfile against the one already committed.
 
-`.claude/hooks/pre-bash/block-blanket-git-add.sh` exists so a sweep cannot ship a
-half-finished file into an unrelated commit. It guards `git add`. It cannot guard
-npm, and npm is the one that writes here.
+`.claude/hooks/pre-bash/block-blanket-git-add.sh` exists so a sweep cannot ship a half-finished file into an unrelated commit. It guards `git add`. It cannot guard npm, and npm is the one that writes here.
 
-`npm install --package-lock-only` resolves from the **working tree's**
-package.json files, not from HEAD. `packages/www/package.json` was sitting there
-with an uncommitted
+`npm install --package-lock-only` resolves from the **working tree's** package.json files, not from HEAD. `packages/www/package.json` was sitting there with an uncommitted
 
     -    "@astrojs/sitemap": "^3.7.3",
     +    "@astrojs/sitemap": "^3.7.4",
 
-The regenerated lockfile recorded `"@astrojs/sitemap": "^3.7.4"` under
-`packages/www`, that lockfile was committed, and the committed `package.json` next
-to it still said `^3.7.3`. A stray edit nobody was tracking, half-shipped inside a
-commit about something else entirely.
+The regenerated lockfile recorded `"@astrojs/sitemap": "^3.7.4"` under `packages/www`, that lockfile was committed, and the committed `package.json` next to it still said `^3.7.3`. A stray edit nobody was tracking, half-shipped inside a commit about something else entirely.
 
-**The reflex that made this worse was assuming the edit belonged to someone else.**
-This session recorded it as a peer's file and worked around it for hours -- taking
-copies, restoring bytes, refusing to touch a directory -- when it was simply an
-uncommitted change in the tree it was working in. The operator had to say "you're
-alone". An unowned edit is not evidence of another author; on a shared checkout it
-is *equally* likely to be one you made and forgot. Either way the fix is the same,
-and it is the diff below, not a theory about provenance.
+**The reflex that made this worse was assuming the edit belonged to someone else.** This session recorded it as a peer's file and worked around it for hours -- taking copies, restoring bytes, refusing to touch a directory -- when it was simply an uncommitted change in the tree it was working in. The operator had to say "you're alone". An unowned edit is not evidence of another
+author; on a shared checkout it is *equally* likely to be one you made and forgot. Either way the fix is the same, and it is the diff below, not a theory about provenance.
 
-It hides well. The resolved VERSION was the same either way, so no dependency
-appeared to move; the only trace was one line in a 300-line lockfile diff, in a
-`packages` entry rather than a `node_modules` one, and every gate stayed green.
+It hides well. The resolved VERSION was the same either way, so no dependency appeared to move; the only trace was one line in a 300-line lockfile diff, in a `packages` entry rather than a `node_modules` one, and every gate stayed green.
 
-**Before committing a regenerated lockfile, diff it against one regenerated from
-HEAD's manifests**, not just against the previous lockfile:
+**Before committing a regenerated lockfile, diff it against one regenerated from HEAD's manifests**, not just against the previous lockfile:
 
     git show HEAD:packages/x/package.json > packages/x/package.json   # transient
     npx -y npm@10 install --package-lock-only --ignore-scripts
@@ -1989,145 +1214,83 @@ HEAD's manifests**, not just against the previous lockfile:
     # (never `git stash` -- it is not an undo, and it hides the edit rather than
     #  telling you whose it is)
 
-The same hazard applies to anything that reads manifests off disk to produce a
-committed artifact: syncpack writes, generated dependency tables, embed manifests.
-The rule generalises to: **a generator that reads the working tree inherits the
-working tree's owners.**
+The same hazard applies to anything that reads manifests off disk to produce a committed artifact: syncpack writes, generated dependency tables, embed manifests. The rule generalises to: **a generator that reads the working tree inherits the working tree's owners.**
 
 ## After a compaction, your own open items look like a peer's — and the reflex is to leave them alone
 Trap-Id: compaction-orphans-your-own-items
-Enforced-By: file:.claude/hooks/stop/worklist-cases/24-lineage.sh
+Enforced-By: gate:check:ci-pytest
 Residue: Any ownership rule keyed on a session id. A compaction can change that id, so identity and continuity are not the same question.
 
-The worklist blocks only on items tagged with YOUR session prefix, and CLAUDE.md is
-emphatic that you never tick another session's tracking. Both are right. What neither
-says is that **a compaction can hand one continuous conversation a new session id**, at
-which point the rule fires against the session's own work.
+The worklist blocks only on items tagged with YOUR session prefix, and CLAUDE.md is emphatic that you never tick another session's tracking. Both are right. What neither says is that **a compaction can hand one continuous conversation a new session id**, at which point the rule fires against the session's own work.
 
-The failure does not look like a failure. The items are reported every stop under
-"other sessions' open items", which reads as informational; the session writes
-"I cannot resolve another session's items" and stops; the next stop repeats it. On
-2026-09-02 four settled decisions sat that way all night. The session was not confused
-about the items — it had written them — it was confused about who it was. The operator
-ended it with "because of compaction, you think it's someone else items… I've never
-switched to another window."
+The failure does not look like a failure. The items are reported every stop under "other sessions' open items", which reads as informational; the session writes "I cannot resolve another session's items" and stops; the next stop repeats it. On 2026-09-02 four settled decisions sat that way all night. The session was not confused about the items — it had written them — it was
+confused about who it was. The operator ended it with "because of compaction, you think it's someone else items… I've never switched to another window."
 
-**The tell** is an open item whose text you recognise as your own reasoning, tagged
-with a prefix that is not your current id. If you find yourself explaining to the
-operator why a peer's items are blocked, ask first whether that peer is you.
+**The tell** is an open item whose text you recognise as your own reasoning, tagged with a prefix that is not your current id. If you find yourself explaining to the operator why a peer's items are blocked, ask first whether that peer is you.
 
-**The fix is `worklist.py --adopt <me> <prev>`,** and the reason it is a verb rather
-than a judgement call is that the judgement call is the trap. What a session naturally
-reaches for — same cwd, same branch, adjacent timestamps — is worthless here: measured
-on this machine, four live sessions all carried `cwd=/home/developer/console` and
-`gitBranch=main` with overlapping times. That heuristic's false-positive rate is
-highest on exactly the population it would judge, and its failure mode is one session
-silently resolving another's work.
+**The fix is `worklist.py --adopt <me> <prev>`,** and the reason it is a verb rather than a judgement call is that the judgement call is the trap. What a session naturally reaches for — same cwd, same branch, adjacent timestamps — is worthless here: measured on this machine, four live sessions all carried `cwd=/home/developer/console` and `gitBranch=main` with overlapping times.
+That heuristic's false-positive rate is highest on exactly the population it would judge, and its failure mode is one session silently resolving another's work.
 
-`--adopt` instead requires harness-written evidence: a `compact_boundary` your
-transcript opens with, and conversational record uuids that appear in BOTH transcripts.
-Two genuinely concurrent sessions share zero — there is no mechanism by which one
-conversation's message uuid lands in another's file — which is what makes that last
-check a refutation rather than a formality. Verified when the verb landed: of 51
-candidate transcripts on this machine, exactly one resolved and 50 were refused.
+`--adopt` instead requires harness-written evidence: a `compact_boundary` your transcript opens with, and conversational record uuids that appear in BOTH transcripts. Two genuinely concurrent sessions share zero — there is no mechanism by which one conversation's message uuid lands in another's file — which is what makes that last check a refutation rather than a formality.
+Verified when the verb landed: of 51 candidate transcripts on this machine, exactly one resolved and 50 were refused.
 
 There is no `--force`, and if it refuses, the items are genuinely not yours.
 
-**The pitfall inside the fix**, worth knowing because it is silent: `wl_store.compact()`
-rewrites the event log to the minimal set reproducing the current fold. A `lineage`
-event is not an item event, so a naive implementation drops it and every adoption
-reverts to "a peer's" — the exact bug, reintroduced by a maintenance command nobody
-associates with ownership. Mutating the carry-forward out and re-running the case is
-what proves that control is real, and it reds correctly when you do.
+**The pitfall inside the fix**, worth knowing because it is silent: `wl_store.compact()` rewrites the event log to the minimal set reproducing the current fold. A `lineage` event is not an item event, so a naive implementation drops it and every adoption reverts to "a peer's" — the exact bug, reintroduced by a maintenance command nobody associates with ownership. Mutating the
+carry-forward out and re-running the case is what proves that control is real, and it reds correctly when you do.
 
-## `test-hooks.sh` buffers the worklist suite, so "no new output" is the NORMAL state
+## A delegating harness buffers its child suite, so "no new output" is the NORMAL state
 Trap-Id: buffered-suite-looks-hung
 Enforced-By: JUDGMENT-ONLY
-Residue: Any harness that captures a child's output with $( ). Silence is the design, so quietness is never evidence of a hang.
+Residue: Any harness that captures a child's output with $( ) or `capture_output=True`. Silence is the design, so quietness is never evidence of a hang.
 
-`test-hooks.sh:2328` runs the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. Command
-substitution means **nothing that suite prints reaches the log until it exits** — so
-the battery log sits at the same line count for the whole run, by design.
+The harness this was paid for was `.claude/hooks/test-hooks.sh`, which ran the suite as `out="$(bash "$STOP_SUITE" 2>&1)"`. It is retired, and the trap outlived it unchanged: its port, `.claude/rediacc_hooks/tests/test_hooks_delegates.py`, runs every delegate under `subprocess.run(..., capture_output=True)`, which buffers for exactly the same reason. Either way **nothing the child
+prints reaches the log until it exits** — so the log sits at the same line count for the whole run, by design.
 
-This looks exactly like a hang, and I treated it as one: two runs killed on a
-10-minute timeout, a wrong first guess (a case file created mid-run — impossible,
-the case list is explicit rather than a glob), and a second wrong guess recorded here
-as fact (inherited stdin) before the evidence was in. What actually settled it was
-reading `/proc/<pid>/wchan` down the whole process chain rather than the top of it:
+This looks exactly like a hang, and I treated it as one: two runs killed on a 10-minute timeout, a wrong first guess (a case file created mid-run — impossible, the case list is explicit rather than a glob), and a second wrong guess recorded here as fact (inherited stdin) before the evidence was in. What actually settled it was reading `/proc/<pid>/wchan` down the whole process
+chain rather than the top of it:
 
     parent   anon_pipe_read     <- NORMAL: the $( ) substitution reading the child
     child    do_wait            <- NORMAL: waiting on its own child
     grandkid hrtimer_nanosleep  <- NORMAL: a case sleeping on purpose
 
-`anon_pipe_read` on the **parent alone** proves nothing — that is what a healthy
-command substitution always looks like. The distinguishing evidence is whether there
-are live descendants and whether any of them accumulates CPU. A genuinely wedged run
-has no children and flat CPU; a slow one has children cycling through sleeps.
+`anon_pipe_read` on the **parent alone** proves nothing — that is what a healthy command substitution always looks like. The distinguishing evidence is whether there are live descendants and whether any of them accumulates CPU. A genuinely wedged run has no children and flat CPU; a slow one has children cycling through sleeps.
 
-**Before calling a quiet suite hung, check three things**: does the harness buffer its
-output (grep for `$(`), does the process have descendants, and is total CPU still
-climbing. The worklist suite alone takes about four minutes and prints ~880 lines the
-instant it finishes.
+**Before calling a quiet suite hung, check three things**: does the harness buffer its output (grep for `$(`), does the process have descendants, and is total CPU still climbing. The worklist suite alone takes about four minutes and prints ~880 lines the instant it finishes.
 
-Related hygiene, which is worth doing anyway but was NOT the cause here: a case helper
-should close its own stdin (`</dev/null`) rather than inherit the harness's, because
-the harness does not redirect it. `18-identity.sh` already did this in three places.
+Related hygiene, which is worth doing anyway but was NOT the cause here: a case helper should close its own stdin (`</dev/null`) rather than inherit the harness's, because the harness does not redirect it. `18-identity.sh` already did this in three places.
 
 ## (superseded) A test helper that inherits stdin — the stdin hygiene is real, the hang diagnosis was not
 Trap-Id: case-helper-inherits-stdin
-Enforced-By: file:.claude/hooks/stop/worklist-cases/25-first-touch.sh
+Enforced-By: gate:check:ci-pytest
 Residue: Any case helper driving a hook. A hook that READS its event from stdin must not have stdin redirected away, and one that does not read stdin should close it.
 
-**This entry originally claimed inherited stdin caused a hang. That was wrong**, and
-the entry above it records what the evidence actually showed. The stdin point stands
-on its own merits and is kept for that reason, not as a post-mortem.
+**This entry originally claimed inherited stdin caused a hang. That was wrong**, and the entry above it records what the evidence actually showed. The stdin point stands on its own merits and is kept for that reason, not as a post-mortem.
 
-`test-hooks.sh:2328` runs the worklist suite with no stdin redirect, so a helper that
-does not close its own stdin inherits the harness's. From a terminal that is harmless;
-from a backgrounded job stdin is a pipe nobody closes, and a helper that reads it would
-block. No case in this tree was observed doing so — the fix is prophylactic.
+The harness this was paid for, `.claude/hooks/test-hooks.sh`, ran the worklist suite with no stdin redirect, so a helper that did not close its own stdin inherited the harness's. From a terminal that is harmless; from a backgrounded job stdin is a pipe nobody closes, and a helper that reads it would block. No case in this tree was observed doing so — the fix is prophylactic, which
+is why it survives the harness: its port passes `stdin=subprocess.DEVNULL` per delegate, and the rule below is what that line is an instance of.
 
-What makes this expensive is that the symptom is *silence*, and silence is what a
-long suite looks like too. Measured while it was happening: 7 minutes elapsed,
-**5 seconds of CPU**, zero children, no new output — and the last line printed was a
-perfectly normal `ok`. Nothing says "stuck". Two full battery runs were killed on a
-10-minute timeout before the cause was even suspected, and the first guess (a case
-file created mid-run) was wrong, because the suite's case list is explicit rather
-than a glob.
+What makes this expensive is that the symptom is *silence*, and silence is what a long suite looks like too. Measured while it was happening: 7 minutes elapsed, **5 seconds of CPU**, zero children, no new output — and the last line printed was a perfectly normal `ok`. Nothing says "stuck". Two full battery runs were killed on a 10-minute timeout before the cause was even suspected,
+and the first guess (a case file created mid-run) was wrong, because the suite's case list is explicit rather than a glob.
 
-**The diagnostic that actually settles it** is `/proc/<pid>/wchan`, which said
-`anon_pipe_read`, plus scanning `/proc/*/fd` for the pipe's other end — which nobody
-held. A blocked read on a pipe with no writer and no children is not a slow test.
+**The diagnostic that actually settles it** is `/proc/<pid>/wchan`, which said `anon_pipe_read`, plus scanning `/proc/*/fd` for the pipe's other end — which nobody held. A blocked read on a pipe with no writer and no children is not a slow test.
 
-**The rule**: every case helper closes its own stdin (`</dev/null`) rather than
-trusting the caller. `18-identity.sh` already did this in three places; the case file
-that hung was the one that did not. Do not "fix" this by adding the redirect at the
-call site in `test-hooks.sh` only — that repairs one caller and leaves every helper
-still depending on an inherited fd.
+**The rule**: every case helper closes its own stdin (`</dev/null`) rather than trusting the caller. `18-identity.sh` already did this in three places; the case file that hung was the one that did not. Do not "fix" this by adding the redirect at the one call site only — that repairs one caller and leaves every helper still depending on an inherited fd.
 
 Related: the same "healthy-looking wait" failure mode is why
-`.claude/hooks/pre-bash/block-self-matching-pgrep.sh` exists. A loop that cannot exit
-and a loop that is being patient are indistinguishable from outside.
+`.claude/hooks/pre-bash/block-self-matching-pgrep.sh` exists. A loop that cannot exit and a loop that is being patient are indistinguishable from outside.
 
 ## An exact-string edit after `ruff format` matches nothing, and the assert fires before the write
 Trap-Id: exact-anchor-after-formatter
 Enforced-By: JUDGMENT-ONLY
 Residue: Any scripted edit whose `old` text spans a call the formatter may re-wrap. Formatters change whitespace, quotes and line breaks without changing meaning, and a byte-exact anchor is a claim about all three.
 
-Four times in one session the same shape: write a module, run `ruff format`, then
-try to edit it with a Python heredoc doing `assert s.count(old) == 1; s = s.replace(...)`.
-The assert fires, `write_text` is never reached, the file is UNCHANGED — and the
-verification that follows in the same call runs the *old* file and reports green.
-The selftest said `0 failure(s)` for code that had not been written.
+Four times in one session the same shape: write a module, run `ruff format`, then try to edit it with a Python heredoc doing `assert s.count(old) == 1; s = s.replace(...)`. The assert fires, `write_text` is never reached, the file is UNCHANGED — and the verification that follows in the same call runs the *old* file and reports green. The selftest said `0 failure(s)` for code that
+had not been written.
 
-What makes it expensive is the order: the assert is correct and loud, but the green
-line after it is louder, and it is answering a different question.
+What makes it expensive is the order: the assert is correct and loud, but the green line after it is louder, and it is answering a different question.
 
-**Rules that held once adopted:** anchor on something the formatter cannot touch (a
-unique string literal, a `def` name, a comment line) and replace by regex or by index
-range; or replace the whole function between two `def` lines; never anchor on a
-multi-line call. And put the verification in a SEPARATE step from the edit, so a
-skipped write cannot borrow the previous run's pass.
+**Rules that held once adopted:** anchor on something the formatter cannot touch (a unique string literal, a `def` name, a comment line) and replace by regex or by index range; or replace the whole function between two `def` lines; never anchor on a multi-line call. And put the verification in a SEPARATE step from the edit, so a skipped write cannot borrow the previous run's pass.
 
 
 ## A profiler measures its own test, and the finding is correct
@@ -2135,231 +1298,552 @@ Trap-Id: profiler-measures-its-own-fixture
 Enforced-By: file:scripts/ci-runner/manifest.ts
 Residue: Any instrument that observes every process. A fixture that plants a defect on purpose is a real defect to the instrument, and a fixture that spawns the instrumented shell gets instrumented.
 
-Two instances in one afternoon, both from the resource profiler landing default-on.
-The tree sampler's selftest spawned a `bash` tree to sample -- and with `BASH_ENV`
-live that bash was re-exec'd under the profiler's own supervisor, so every depth
-assertion shifted by one; three controls failed under the hook battery while passing
-standalone. Then `check:ci-resprofile` ran the deriver's selftest, whose E6 fixture
-deliberately leaves four zombies under a live parent -- and the sampler attached to
-that gate reported a live E6. **Both findings were correct.** That is what makes the
-trap: nothing was wrong except that the thing being measured was the measurer.
+Two instances in one afternoon, both from the resource profiler landing default-on. The tree sampler's selftest spawned a `bash` tree to sample -- and with `BASH_ENV` live that bash was re-exec'd under the profiler's own supervisor, so every depth assertion shifted by one; three controls failed under the hook battery while passing standalone. Then `check:ci-resprofile` ran the
+deriver's selftest, whose E6 fixture deliberately leaves four zombies under a live parent -- and the sampler attached to that gate reported a live E6. **Both findings were correct.** That is what makes the trap: nothing was wrong except that the thing being measured was the measurer.
 
-The fix is never to weaken the predicate. Fixtures opt out (`WORKLIST_PROFILE=off` for
-anything that spawns a shell), gates that PLANT defects carry `noProfile: true` in the
-manifest so `exec.ts` does not attach a sampler, and -- the one design consequence --
-the deriver treats a single-child `bashcov-sup` root as transparent, because under the
-supervisor every capture has that shape and a child-counting predicate would otherwise
-be permanently blind.
+The fix is never to weaken the predicate. Fixtures opt out (`WORKLIST_PROFILE=off` for anything that spawns a shell), gates that PLANT defects carry `noProfile: true` in the manifest so `exec.ts` does not attach a sampler, and -- the one design consequence -- the deriver treats a single-child `bashcov-sup` root as transparent, because under the supervisor every capture has that
+shape and a child-counting predicate would otherwise be permanently blind.
 
-Related to "buffered-suite-looks-hung" above: both are cases where the instrument's own
-mechanics produce the signal it was built to detect.
+Related to "buffered-suite-looks-hung" above: both are cases where the instrument's own mechanics produce the signal it was built to detect.
 
 ## A waiter armed on a GUESSED threshold outlives the thing it waits for
 Trap-Id: waiter-threshold-guessed-not-derived
 Enforced-By: JUDGMENT-ONLY
 Residue: Any `until <numeric condition>` wait. A threshold picked to be "safely past" the expected value is a threshold that can sit one short of it forever.
 
-I armed `until [ "$(wc -l < log)" -gt 480 ]` to wait for a hook battery to print its
-summary. The battery finished normally at **477 lines** with `PASS=2043 FAIL=0`. The
-condition could never be met, so the waiter spun for 30 minutes after its work was
-already done, and the background check-in correctly reported it as "silent but its OS
-process is VERIFIED ALIVE" — which is true, and is exactly what a healthy long wait
-looks like too.
+I armed `until [ "$(wc -l < log)" -gt 480 ]` to wait for a hook battery to print its summary. The battery finished normally at **477 lines** with `PASS=2043 FAIL=0`. The condition could never be met, so the waiter spun for 30 minutes after its work was already done, and the background check-in correctly reported it as "silent but its OS process is VERIFIED ALIVE" — which is true,
+and is exactly what a healthy long wait looks like too.
 
-The number was a guess. I had no reason to believe the log would exceed 480 lines; I
-picked it because it felt safely past the 472 the file had been sitting at, and 472 was
-itself the *buffered* count, not the final one.
+The number was a guess. I had no reason to believe the log would exceed 480 lines; I picked it because it felt safely past the 472 the file had been sitting at, and 472 was itself the *buffered* count, not the final one.
 
 **Wait on the CONTENT that signals completion, never on a count:**
 
     until grep -q 'PASS=[0-9]* FAIL=' log; do sleep 10; done     # the thing you want
     until [ "$(wc -l < log)" -gt 480 ]; do sleep 10; done          # a number you invented
 
-Better still, do not write the waiter: a Bash call with `run_in_background: true`
-notifies on exit by itself, and the harness verifies that process rather than believing
-a loop's claim about it. Related: "buffered-suite-looks-hung" above (why the line count
-was frozen at 472 in the first place) and the self-matching-pgrep guard (the same
-failure mode with a different unsatisfiable condition).
+Better still, do not write the waiter: a Bash call with `run_in_background: true` notifies on exit by itself, and the harness verifies that process rather than believing a loop's claim about it. Related: "buffered-suite-looks-hung" above (why the line count was frozen at 472 in the first place) and the self-matching-pgrep guard (the same failure mode with a different unsatisfiable
+condition).
 
 ## `git fetch --depth` TRUNCATES a full clone, and the step that pays is not the step that did it
 Trap-Id: fetch-depth-truncates-full-clone
-Enforced-By: file:.ci/scripts/test/gates/test-fetch-depth-safety.sh, file:packages/www/scripts/lib/translation-freshness-git.js
+Enforced-By: gate:check:ci-pytest, file:packages/www/scripts/lib/translation-freshness-git.js
 Residue:
 
-`--depth` reads like a limit on what a fetch transfers. On a complete repository it is
-not: git writes a graft to `.git/shallow` and the whole history is truncated from that
-point. Measured against the real remote on 2026-09-03:
+`--depth` reads like a limit on what a fetch transfers. On a complete repository it is not: git writes a graft to `.git/shallow` and the whole history is truncated from that point. Measured against the real remote on 2026-09-03:
 
     $ git rev-list --count refs/remotes/pull/585/merge          # 2467
     $ git fetch --no-tags --depth=50 origin +refs/heads/main:refs/remotes/origin/main
     $ git rev-list --count refs/remotes/pull/585/merge          # 114, .git/shallow: 1 graft
 
-**The damage is always somebody else's.** The line lived in
-`translation-freshness-git.js` and ran inside `check:i18n`. Four steps later
-`check:ci-plan-housekeeping` refused: "SHALLOW at a boundary that 58 plan(s) sit on".
-The job's `actions/checkout` had taken `fetch-depth: 0` and `filter: blob:none`, exactly
-as the failing gate's own error message demanded — so the message pointed at the one
-thing that was already correct, and I spent twenty minutes proving the checkout innocent
-(fresh clone, then the byte-identical CI fetch command: 2467 commits, no graft) before
-looking anywhere else.
+**The damage is always somebody else's.** The line lived in `translation-freshness-git.js` and ran inside `check:i18n`. Four steps later `check:ci-plan-housekeeping` refused: "SHALLOW at a boundary that 58 plan(s) sit on". The job's `actions/checkout` had taken `fetch-depth: 0` and `filter: blob:none`, exactly as the failing gate's own error message demanded — so the message
+pointed at the one thing that was already correct, and I spent twenty minutes proving the checkout innocent (fresh clone, then the byte-identical CI fetch command: 2467 commits, no graft) before looking anywhere else.
 
-**The tell is the arithmetic.** A shallow checkout has a *stable* commit count; a
-`--depth=N` applied to a full clone leaves `N + <commits on your branch>`, which GROWS
-day by day as the branch does. Three CI jobs had recorded 90, 99 and 114 — a rising
-sequence nobody read as a signal.
+**The tell is the arithmetic.** A shallow checkout has a *stable* commit count; a `--depth=N` applied to a full clone leaves `N + <commits on your branch>`, which GROWS day by day as the branch does. Three CI jobs had recorded 90, 99 and 114 — a rising sequence nobody read as a signal.
 
-So when a topology gate reports a shallow checkout, do not start at the checkout. Ask
-which EARLIER step in that job ran git, and grep the job for `--depth`. And never hand
-`--depth` to a fetch without first asking `git rev-parse --is-shallow-repository`: the
-flag is only ever an optimisation for a repository that is already shallow.
+So when a topology gate reports a shallow checkout, do not start at the checkout. Ask which EARLIER step in that job ran git, and grep the job for `--depth`. And never hand `--depth` to a fetch without first asking `git rev-parse --is-shallow-repository`: the flag is only ever an optimisation for a repository that is already shallow.
 
 ## A gate that fails once inside `ci:quick` and passes alone is not automatically a flake
 Trap-Id: once-failing-gate-is-not-automatically-a-flake
 Enforced-By: gate:check:ci-setup-idempotency
 Residue: nothing can force a session to capture a failing run's full output instead of
-  piping it through `tail`, nor to spend the one second refuting the obvious cause. The
-  instrument covers the defect that was FOUND; the discipline that found it is judgment.
+piping it through `tail`, nor to spend the one second refuting the obvious cause. The instrument covers the defect that was FOUND; the discipline that found it is judgment.
 
-`check:ci-setup-idempotency` failed once in a `ci:quick` run on 2026-09-04 and passed
-standalone and on ten consecutive full runs after. The tempting conclusion — parallel
-flake, move on — was wrong twice over.
+`check:ci-setup-idempotency` failed once in a `ci:quick` run on 2026-09-04 and passed standalone and on ten consecutive full runs after. The tempting conclusion — parallel flake, move on — was wrong twice over.
 
-**The evidence was lost to `| tail -12`, not swallowed by the runner.** `ci-runner`
-asserts in its own selftest (`scripts/ci-runner/run.ts:547-548`) that a failing gate's
-stdout AND stderr are printed. They were; the pipe cut them off. When a gate fails
-inside `ci:quick`, redirect the WHOLE run to a file and grep it. A summary line naming
-the gate is not the gate's message.
+**The evidence was lost to `| tail -12`, not swallowed by the runner.** `ci-runner` asserts in its own selftest (`scripts/ci-runner/run.ts:547-548`) that a failing gate's stdout AND stderr are printed. They were; the pipe cut them off. When a gate fails inside `ci:quick`, redirect the WHOLE run to a file and grep it. A summary line naming the gate is not the gate's message.
 
-**One hypothesis was refuted by a one-line experiment.** The failing run was the only
-one with a modified `package.json`, so a deps stamp refreshed by `setup --check` looked
-likely. Touching `package.json` and running `./run.sh setup --check` leaves the tree
-byte-identical. That took a second and removed the story.
+**One hypothesis was refuted by a one-line experiment.** The failing run was the only one with a modified `package.json`, so a deps stamp refreshed by `setup --check` looked likely. Touching `package.json` and running `./run.sh setup --check` leaves the tree byte-identical. That took a second and removed the story.
 
-**And reading the gate found a defect the flake had nothing to do with.** Check B
-compared whole `git status` snapshots and waited for the tree to return to `before`. Any
-of the ~300 gates sharing the tree touching an unrelated file kept that equality false
-for the rest of the 15s window, and B then reported "delta persisted 15s" about a path
-that had settled in one — the same false accusation its own comment block was written to
-remove, arriving by a second door. Fixed by scoping the poll to the delta paths.
+**And reading the gate found a defect the flake had nothing to do with.** Check B compared whole `git status` snapshots and waited for the tree to return to `before`. Any of the ~300 gates sharing the tree touching an unrelated file kept that equality false for the rest of the 15s window, and B then reported "delta persisted 15s" about a path that had settled in one — the same
+false accusation its own comment block was written to remove, arriving by a second door. Fixed by scoping the poll to the delta paths.
 
 So: when a gate fails once, capture the real output, spend the one second refuting the
-obvious cause, and read the assertion. Two of those three paid, and neither was the
-flake.
+obvious cause, and read the assertion. Two of those three paid, and neither was the flake.
 
 ## A fixture with an absolute date walks across a retention window on its own
 Trap-Id: absolute-date-fixture-crosses-retention-window
-Enforced-By: file:.claude/hooks/stop/test-report-inbox.sh
+Enforced-By: gate:check:ci-pytest
 Residue: The instrument is the one suite that was bitten, rewritten to relative stamps. Any other fixture that feeds an age-based prune, lookback or expiry with a constant date is still a calendar bomb until the day it fires, and no gate scans for the shape.
 
-`Quality / Security` went red on 2026-09-04 with NO change in the window: two
-assertions in `test-report-inbox.sh` case 12 failed, "body holds the SendMessage
-payload" and "body also holds the sign-off". The suite had been green for a
-month. `--show` said why: "indexed but its body is gone (pruned after 30 days)".
+`Quality / Security` went red on 2026-09-04 with NO change in the window: two assertions in `test-report-inbox.sh` case 12 failed, "body holds the SendMessage payload" and "body also holds the sign-off". The suite had been green for a month. `--show` said why: "indexed but its body is gone (pruned after 30 days)".
 
-The fixture's transcript records carried `"timestamp": "2026-08-05T10:00:00.500Z"`,
-a constant. `scan()` captures the body under that `at` and then, in the same
-call, prunes every body older than `RETENTION_DAYS` (30). On 2026-09-04 the
-constant aged past the window, so the very scan that captured the report deleted
-its body before the test could read it. Nothing in the code moved; the calendar
-did.
+The fixture's transcript records carried `"timestamp": "2026-08-05T10:00:00.500Z"`, a constant. `scan()` captures the body under that `at` and then, in the same call, prunes every body older than `RETENTION_DAYS` (30). On 2026-09-04 the constant aged past the window, so the very scan that captured the report deleted its body before the test could read it. Nothing in the code moved;
+the calendar did.
 
-Two things make this worth an entry rather than a fix note. First, the failure
-surfaced as a mid-branch regression on an unrelated PR, and the babysit rule
-"it passed earlier is not a classifier" is exactly right here in the wrong
-direction: the window was empty of relevant commits, which is the affirmative
-evidence for an environmental cause, and the environment was the date. Second,
-the job it lives in had been the CANCELLED sibling of the previous run, so it
-first reported the day after the bomb went off, looking like a consequence of
-that run's real red.
+Two things make this worth an entry rather than a fix note. First, the failure surfaced as a mid-branch regression on an unrelated PR, and the babysit rule "it passed earlier is not a classifier" is exactly right here in the wrong direction: the window was empty of relevant commits, which is the affirmative evidence for an environmental cause, and the environment was the date.
+Second, the job it lives in had been the CANCELLED sibling of the previous run, so it first reported the day after the bomb went off, looking like a consequence of that run's real red.
 
-Fixtures that feed anything age-based (retention, lookback, lease expiry,
-staleness) take stamps computed from now, never constants. Sweep with
-`grep -rn '"timestamp": "20' --include='test*'` when adding one.
+Fixtures that feed anything age-based (retention, lookback, lease expiry, staleness) take stamps computed from now, never constants. Sweep with `grep -rn '"timestamp": "20' --include='test*'` when adding one.
 
 ## Running a secrets action outside Actions prints the secret
 Trap-Id: secrets-action-outside-actions-prints-the-secret
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing scans a session transcript for secret material, and the masking that makes `::add-mask::` safe exists only inside a GitHub runner. The only protection is knowing the shape before running the binary locally.
 
-`bitwarden/sm-action` delivers each secret to the job by writing it to `GITHUB_ENV`
-AND emitting `::add-mask::<value>` on stdout so the runner redacts it from every later
-log line. Inside Actions that line is consumed by the runner and never shown. Outside
-Actions it is just stdout: on 2026-09-04 a babysit ran the pinned binary locally to
-fingerprint a GPG key the shadow had flagged, filtered stderr for lines containing
-"token", and the whole armored private key block came back in the tool output --
-into the session transcript, where nothing masks anything. The scratch copies were
-shredded; the transcript cannot be.
+`bitwarden/sm-action` delivers each secret to the job by writing it to `GITHUB_ENV` AND emitting `::add-mask::<value>` on stdout so the runner redacts it from every later log line. Inside Actions that line is consumed by the runner and never shown. Outside Actions it is just stdout: on 2026-09-04 a babysit ran the pinned binary locally to fingerprint a GPG key the shadow had
+flagged, filtered stderr for lines containing "token", and the whole armored private key block came back in the tool output -- into the session transcript, where nothing masks anything. The scratch copies were shredded; the transcript cannot be.
 
-The same shape applies to any tool whose safety depends on the runner: `::add-mask::`,
-`::set-secret::`, `$GITHUB_ENV` heredocs. Run it locally only with stdout and stderr
-redirected to a file you will shred, read that file through a filter that keeps
-ONLY the lines you need (fingerprints, counts, verdicts), and never let a blanket
-`head` or `grep -v` be the thing standing between a secret and the log. If the value
-itself is the question, reduce it to a digest or a fingerprint inside the same
-process that fetched it.
+The same shape applies to any tool whose safety depends on the runner: `::add-mask::`, `::set-secret::`, `$GITHUB_ENV` heredocs. Run it locally only with stdout and stderr redirected to a file you will shred, read that file through a filter that keeps ONLY the lines you need (fingerprints, counts, verdicts), and never let a blanket `head` or `grep -v` be the thing standing between
+a secret and the log. If the value itself is the question, reduce it to a digest or a fingerprint inside the same process that fetched it.
 
 ## Local gates read the WORKING TREE, CI reads the TRACKED tree, so a half-staged pair passes here and fails there
 Trap-Id: working-tree-green-tracked-tree-red
 Enforced-By: gate:check:ci-parity
 Residue: Both directions of the split are now gated -- `check:ci-parity` catches a tracked file with no manifest entry, and `check:ci-gate-manifest`'s `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before you commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
 
-`npm run ci:quick` was 307/307 and CI came back red on the commit it had just
-blessed. The failing step was "Validate parity between the local gate set and
-the CI quality surface":
+`npm run ci:quick` was 307/307 and CI came back red on the commit it had just blessed. The failing step was "Validate parity between the local gate set and the CI quality surface":
 
 > `.ci/scripts/test/gates/test-vacuity-floors.sh` exists on disk and run-all.sh
 > runs it, but no manifest entry is tagged qualityGateTest for it
 
-Both statements were true locally too, and the gate still passed, because the
-manifest entry DID exist -- as an uncommitted edit belonging to another session
-in the shared worktree. The test file had been committed without it, by a commit
-whose message describes one unrelated file and whose `--stat` shows two.
+Both statements were true locally too, and the gate still passed, because the manifest entry DID exist -- as an uncommitted edit belonging to another session in the shared worktree. The test file had been committed without it, by a commit whose message describes one unrelated file and whose `--stat` shows two.
 
-**The asymmetry is the trap, and it is structural.** Every local gate reads the
-working tree, which holds committed and uncommitted content indistinguishably.
-CI checks out the pushed commit, which holds only what is tracked. Any pair
-whose halves land on opposite sides of that line -- a file and its registration,
-a script and its allowlist entry, a fixture and its expected output -- is
-CONSISTENT locally and BROKEN on CI, and no amount of local running finds it.
-The green is not a false green about the tree; it is a true green about a tree
-CI will never see.
+**The asymmetry is the trap, and it is structural.** Every local gate reads the working tree, which holds committed and uncommitted content indistinguishably. CI checks out the pushed commit, which holds only what is tracked. Any pair whose halves land on opposite sides of that line -- a file and its registration, a script and its allowlist entry, a fixture and its expected output
+-- is CONSISTENT locally and BROKEN on CI, and no amount of local running finds it. The green is not a false green about the tree; it is a true green about a tree CI will never see.
 
-This is the shared-worktree failure mode, so it does not need two sessions
-editing one file to bite. It needs one `git add` wider than intended, or a
-`git commit` run while somebody else's work sat staged. The repair is forward
-only: `git rm --cached` puts the file back to untracked without deleting the
-bytes, which matters because the bytes were not the committer's to destroy.
-Do not "complete" the pair by committing the other half either -- committing
-more of another session's uncommitted work to fix having committed some of it
-is the same mistake twice.
+This is the shared-worktree failure mode, so it does not need two sessions editing one file to bite. It needs one `git add` wider than intended, or a `git commit` run while somebody else's work sat staged. The repair is forward only: `git rm --cached` puts the file back to untracked without deleting the bytes, which matters because the bytes were not the committer's to destroy. Do
+not "complete" the pair by committing the other half either -- committing more of another session's uncommitted work to fix having committed some of it is the same mistake twice.
 
-Before every commit in this tree, read `git diff --cached --stat` and confirm
-every path is one you touched this round. In a worktree that normally carries
-dozens of dirty paths from other sessions, "what I staged" and "what is staged"
-are different questions.
+Before every commit in this tree, read `git diff --cached --stat` and confirm every path is one you touched this round. In a worktree that normally carries dozens of dirty paths from other sessions, "what I staged" and "what is staged" are different questions.
 
 ## A timeout placed after the operation it guards is dead code, and no gate sees it
 Trap-Id: timeout-after-the-operation-it-guards
 Enforced-By: JUDGMENT-ONLY
 Residue: everything. A `sleep` or `--max-time` is syntactically valid wherever it sits,
-  so shellcheck, shfmt and every source-shape gate pass it. Deciding whether it runs
-  BEFORE the thing it protects is reachability analysis over shell control flow, and
-  whether it protects anything at all is per-machine timing. Neither is a property of the
-  text. `check:ci-swallowed-failures` catches a discarded status and
-  `check:ci-silent-failures` an unguarded pipeline, but a guard in the wrong PLACE is
-  well-formed, reachable-looking and inert.
+so shellcheck, shfmt and every source-shape gate pass it. Deciding whether it runs BEFORE the thing it protects is reachability analysis over shell control flow, and whether it protects anything at all is per-machine timing. Neither is a property of the text. `check:ci-swallowed-failures` catches a discarded status and `check:ci-silent-failures` an unguarded pipeline, but a guard
+in the wrong PLACE is well-formed, reachable-looking and inert.
 
-Found on 2026-09-05 in the devcontainer setup: a 180-second curl budget that could never
-apply, because it sat after the fetch it was written for. The fix (`8a720b7eb`, "the 180s
-curl budget was unreachable, so delete the delay") removed the delay rather than moving
-it, which is why `.devcontainer/devcontainer.json` now contains zero `sleep` or `timeout`
-directives -- a grep for the defect's shape finds nothing, in a tree where it was real an
-hour earlier.
+Found on 2026-09-05 in the devcontainer setup: a 180-second curl budget that could never apply, because it sat after the fetch it was written for. The fix (`8a720b7eb`, "the 180s curl budget was unreachable, so delete the delay") removed the delay rather than moving it, which is why `.devcontainer/devcontainer.json` now contains zero `sleep` or `timeout` directives -- a grep for
+the defect's shape finds nothing, in a tree where it was real an hour earlier.
 
-The reviewer's question is not "is there a timeout" but "what runs between this guard and
-the thing it guards, and can that ever be nothing". A guard reached only after its
-subject has already completed is indistinguishable, in every artifact, from one that
-works.
+The reviewer's question is not "is there a timeout" but "what runs between this guard and the thing it guards, and can that ever be nothing". A guard reached only after its subject has already completed is indistinguishable, in every artifact, from one that works.
 
-Recorded by a session that did NOT make the fix: the failing case belongs to `8a720b7eb`
-and its evidence is there, not here.
+Recorded by a session that did NOT make the fix: the failing case belongs to `8a720b7eb` and its evidence is there, not here.
+
+## `git commit` commits the INDEX, so a peer's staged work rides your commit
+Trap-Id: git-commit-takes-the-whole-index
+Enforced-By: file:.claude/rediacc_hooks/guards/block_blanket_git_add.py
+Residue: the hook refuses a blanket `git add`, which is the other half of this and
+the half that was already known. Nothing refuses a scoped `git add` followed by a bare `git commit`, because at that point the unwanted paths were staged by someone else and git has no way to know you did not mean them.
+
+`git add -- <exact paths>` is correct and is NOT enough: `git commit` with no pathspec writes whatever the index holds, including everything anything else staged before you got there.
+
+AND "ANYTHING ELSE" IS USUALLY YOUR OWN SUB-AGENTS, not a peer session. They run as separate processes against the SAME index, so a session working alone is fully exposed. Worse, the first instance involved no `git add` at all: `git mv` stages by definition, measured with nothing else run --
+
+    $ git mv a.txt b.txt
+    $ git diff --cached --name-status
+    R100    a.txt   b.txt
+
+The agent was told to move each policy list with `git mv`, did exactly that, and fifteen renames were in the shared index before the driver typed anything.
+
+Measured 2026-09-06. A driver ran `git add -- <six named paths>` and then `git commit`. The commit landed those six AND those fifteen renames, moving every policy allow/block list into `.ci/policy/` with **none of its readers**. HEAD then had the files at their new paths while `scripts/lib/policy-paths.ts` still read `const POLICY_DIR = '';`. That seam exists specifically to make a
+half-landed move impossible, and it was reached anyway, from the outside.
+
+The safe form takes the pathspec on the COMMIT, not only on the add:
+
+    git commit -F <message-file> -- <path> <path> ...
+
+That reads those paths from the working tree and ignores the rest of the index entirely. Note the argument order: `-F` and every other option must come BEFORE the `--`, or git reads `-F` as a pathspec and refuses with "pathspec '-F' did not match any file(s)".
+
+The same session had already been bitten by the sibling of this trap hours earlier, when `git add -- scripts/check-*.ts` matched a wildcard across an ownership boundary and swept an agent's in-flight files without the dependency they imported. Both are the same mistake in different clothes: a staging decision that was scoped by intent and unscoped in execution. Scope the execution.
+
+## `git log --diff-filter=A` names the RENAME, not the landing, and it does it confidently
+Trap-Id: diff-filter-a-names-the-rename
+Enforced-By: JUDGMENT-ONLY
+Residue: no gate can tell a rename artifact from a landing, because both are real
+commits touching the real path. check:ci-plan-citations resolves a hex token against the object store and the misleading commit IS a real object, so it passes every check the repo has; only reading the commit SUBJECT reveals it. The only defence is the order of operations: search content history first with git log -S, treat --follow as a cross-check, and discard any result whose
+subject is unrelated to the work under investigation.
+
+A plan file, a gate, or any tracked file that was ever MOVED has two adds in its history: the real one, and the one git infers at the new path. `--diff-filter=A` returns the second. It does not fail, warn, or return nothing; it returns a real commit that a reader will believe.
+
+Measured 2026-09-06 on `agent/plans/PLAN-add-chunkstore-backup-verb.md`, whose plans were moved from `agent/0815-1/` to `agent/` with zero content change:
+
+    git log --diff-filter=A -- <path>           -> f7a5351a9  feat(www): simplify the marketing and docs site
+    git log --follow --diff-filter=A -- <path>  -> 120cd9e73  feat(backup): chunk-store cold path
+
+The first names a marketing-site commit as the landing of a chunk-store backup plan.
+
+**NO GATE CATCHES THIS.** `check:ci-plan-citations` resolves hex tokens against the repository, and `f7a5351a9` is a real object, so the citation passes every check the repo has. Only reading the commit's SUBJECT reveals that it has nothing to do with the claim it is supporting. That makes it worse than the stale-`Status:`-header problem this same wave was built to fix, because a
+header at least announces itself as a claim.
+
+`--follow` HELPS AND IS NOT ENOUGH, which was found by an agent sent to apply it. On a `--diff-filter=D` lookup for a deleted marp directory, `--follow` returned the SAME misleading commit as without it, an account-pointer bump whose subject had nothing to do with the work. Only `git log -S '<distinctive string>'` found the real landing. Rename detection is a heuristic over a
+similarity threshold; content search is not a heuristic at all. So the order is: search content history FIRST, use `--follow` as a cross-check, and treat any result whose subject is unrelated to the subject under investigation as an artifact rather than a landing. Two cheaper alternatives that do not depend on rename detection at all: `git log -S '<distinctive string>' -- <file>`
+searches content history, and for a subject that lives in a submodule the landing is in THAT repository, where it must be named by subject line rather than by sha, since a gitlink is never an object in the parent.
+
+Found by a read-only investigator inside a compaction wave whose own briefing taught the broken command. The 22 records already written were audited and none had been fooled: one had discovered the trap independently and written it into its own record, and the others citing that commit were www plans for which it genuinely IS the landing. The brief was wrong; the writers were not.
+
+## `set -e` re-armed inside `if ! fn` is still inert, so the control proves nothing
+Trap-Id: errexit-rearmed-in-a-tested-command
+Enforced-By: JUDGMENT-ONLY
+Residue: the one instance-level control this entry ever had died with the file that
+carried it. `.ci/scripts/test/run-all.sh:149`'s `guard_selftest` was retired when `.ci/rediacc_ci/battery.py` replaced that runner, and there is no counterpart to repoint at BY CONSTRUCTION: the replacement is Python and has no `set -e`, so a control there would prove nothing about the bash semantic this entry describes. The trap stays VALID for the roughly 620 tracked `.sh` still
+in the tree; what is gone is the single place it was mechanically checked. And the entry's own residue always said this was the honest disposition rather than a convenient one: that control covered ONE function in ONE runner, and nothing decides, in general, whether a given assertion about `set -e` is running in a suppressed context -- the answer depends on how the enclosing
+function is called, which is a property of the caller, not of the assertion. Reading the call site stays a human step.
+
+Bash suppresses errexit for the whole body of a command whose status is being tested -- `if ! fn`, `fn || handler`, `fn && next`, `! fn`. That much is documented. What is not obvious, and what cost a control here on 2026-09-08, is that **the suppression follows the call into subshells that re-arm `set -e` themselves**. Re-running `set -euo pipefail` inside a command substitution
+nested in such a function does not restore it.
+
+The shape that fooled the session, in the shell battery runner then at `.ci/scripts/test/run-all.sh`. The guard it controls extracts changed paths with
+
+    { diff <(...) <(...) || true; } | sed ... | sort -u
+
+and the `|| true` is load-bearing: `diff` exits 1 whenever its inputs differ, which at the only call site is always, so without it the enclosing assignment aborts the script under `set -e` before the summary ever prints. That had already killed this runner silently once. The control written to stop it happening again was
+
+    got="$( set -euo pipefail; cp="$(changed_paths_between "$a" "$b")"; echo reached )"
+    _c "survives a differing diff under set -e" "$got" "reached"
+
+inside a `guard_selftest` invoked as `if ! guard_selftest`. Run against a subject with the `|| true` **deliberately deleted**, it PASSED. Twice -- once as a plain assignment, once as the explicit `set -e` subshell above. A vacuous control reporting a proof it had not made, in a file whose entire purpose is catching that.
+
+**The only reliable form is a separate process**, which starts with a clean errexit that nothing upstream has suppressed:
+
+    export -f changed_paths_between
+    got="$(bash -c 'set -euo pipefail
+        cp="$(changed_paths_between "$1" "$2")"; printf "reached:%s" "$cp"' _ "$a" "$b")" || true
+    export -n changed_paths_between
+
+With that, deleting the `|| true` fails the control. `export -n` afterwards matters in a runner: an exported function rides the environment into every child the battery spawns.
+
+`.ci/scripts/test/gates/test-emit-advisory.sh:78` already had this right -- its `emit_advisory` errexit control runs in `bash -c` -- so the correct form was in the tree, one directory away, and the wrong one still got written.
+
+**How to notice it without a plant.** Ask what suppressed context the assertion is running in before trusting any control over `set -e`, `set -u` or `pipefail`. A sweep of the 20 indented `set -e` re-arms in tracked shell files found the rest are `set +e` / `set -e` restore pairs around a deliberately-tolerated command, which are unaffected. One other genuine member:
+`.ci/scripts/version/inject-env.sh:49` wraps its body in `_inject_env_main()` and arms `set -euo pipefail` there, but line 137 calls it as `if _inject_env_main "$@"`, so `-e` is inert throughout (`-u` and `pipefail` still apply). Behaviour is unaffected today -- every consequential status in that function is checked explicitly and it falls back to `0.0.0-dev`, which `--strict` then
+refuses, so it fails closed -- but a future edit that leans on errexit there will not get it.
+
+## A `--suite` path under a symlink makes the mutation runner write to the REAL tree
+Trap-Id: mutate-check-symlink-escapes-the-sandbox
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing decides, from outside, whether a path handed to `--suite` traverses a symlink; `realpath` resolving it is correct behaviour for every other caller. Building the fixture with a real copy rather than a link stays a human step.
+
+`mutate-check.sh` is a mutation runner: it plants a defect in a copy of a suite and requires the suite to notice. The copy is what makes it safe, and `:122` is where that safety is decided:
+
+    SUITE_REL="$(realpath --relative-to="$REPO_ROOT" "$SUITE_DIR")"
+
+`realpath` RESOLVES SYMLINKS. Hand it a `--suite` whose fixture directory is a symlink back at the real tree and the resolved path is the real path, the relative computation collapses to `/`, and the runner mutates tracked files in place. On 2026-09-08 a writer building a `mutate_check` fixture symlinked `.ci/scripts/test/fixtures` at the real tree and the runner rewrote
+`.ci/scripts/test/fixtures/mutate-check/fixture_mod.py` (`GUARD_ENABLED = True` to `False`, `HARMLESS_MARKER = "unmutated"` to `"mutated-but-harmless"`). It was repaired forward, not with `git checkout`, and the path is clean.
+
+**THE SECOND HALF IS WHY IT MATTERS MORE THAN THE DAMAGE.** That run produced output in which twin and port agreed, which is what the writer was there to measure. They agreed because both sides had been handed the same corrupted real tree, so the comparison was vacuous and looked exactly like a pass. A mutation control that runs against the real tree cannot fail for the right
+reason, and it cannot be told from one that did.
+
+Build the fixture with `cp -r`, not a link. If you must link, verify afterwards that `git status --porcelain` on the real suite is empty BEFORE believing any verdict the run produced -- the corruption and the false agreement arrive together.
+
+## A planted `pkill -f` matches the SHELL THAT PLANTED IT, and kills the session
+Trap-Id: planted-pattern-kill-reaches-the-planter
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing can decide from outside whether a pattern a plant writes into a subject also occurs in the planting process's own command line; the two are only related at the moment a human writes them on one line.
+
+`test-breakpoint-teardown.sh` exists because a pattern-kill cannot tell "my process" from "a process that looks like mine". Plant-verifying its port on 2026-09-08 demonstrated that live, on the session doing the verifying.
+
+The plant reinstated the deleted tmate action's line into the real subject:
+
+    pkill -f "tmate.*new-session"
+
+and it was written inline, so the string `tmate.*new-session` was also sitting in the argv of the bash process running the plant. `pkill -f` matches the FULL COMMAND LINE of every process on the box. When the test then drove teardown, the subject killed the shell that had just written it. The visible symptom is an exit code with no output and no explanation -- 144 here -- and the
+plant is left IN THE TREE, because the restore step never ran.
+
+**THE DANGEROUS HALF IS THE UNRESTORED SUBJECT, not the dead shell.** A plant-and-restore loop assumes the restore always runs; a plant that kills its own runner breaks that assumption at exactly the moment the tree is dirty. Check the digest before doing anything else, and restore forward -- never with `git checkout`, which would take a peer's uncommitted work with it.
+
+Two things make the redo safe, and the first alone is not enough. Anchor the pattern so it cannot match a longer command line (`'^__plant_never_matches__$'`), and keep the pattern text out of the planting command's own argv. The gate under test asserts on the literal `pkill -f`, so an inert anchored pattern still trips it: the plant loses nothing by being harmless.
+
+## A title-deriving function fails SILENTLY and at scale
+Trap-Id: derived-title-silent-fallback
+Enforced-By: file:.claude/hooks/stop/test-planrec.py:216
+Residue: The control pins ONE of the three failure modes (H1 vs the `Status:` header block). The fenced-code case and the `Word:`-header-guard case are unpinned, so either could regress and the corpus would look fine.
+
+`title_of()` in `.claude/hooks/stop/wl_planrec.py:1547` derives a plan record's title from the plan. It has a FALLBACK, and that is the whole problem: a derivation with a fallback never fails, it just quietly produces the wrong answer for a subset it cannot report. Three separate defects hid in it, and each one produced titles that looked plausible:
+
+- **The `Word:` header guard was written against the SHAPE, not the key set.** It was
+`HEAD_FIELD_RE.match(body)`, matching any `Word:` at all -- and **62 of the 83 plans in this tree are titled `# PLAN: <something>`**. So `PLAN:` read as a header field, all 62 fell through to the slug fallback, and their records were titled with a slug instead of the name their author gave them. Measured 2026-09-06 during the compaction wave, which was HALTED because of it. Fixed
+at `65f1aa803` by testing the key against `HEADER_FIELD_KEYS`.
+- **`# ` opens a comment in shell, python, ruby and every config language these plans
+quote**, so scanning raw lines took the first COMMENT in the first code block as the title. `PLAN-lint-rule-matrix-probe.md` was compacted to a record titled `# edit line 46: 'SFTPClient' -> 'SFTPClientZZZ'`.
+- **The slug fallback itself was off by one**: `slug[4:]` where `len("PLAN-")` is FIVE, so
+every plan that reached the fallback was titled with a leading hyphen.
+
+**THE GENERAL SHAPE: a fallback converts a parse failure into a wrong value, and a wrong value has no exit code.** The blast radius is set by how many rows the derivation runs over, so it is discovered by looking at the CORPUS, never at the function. Count how many inputs take the fallback path; if the answer is most of them, the primary path is broken, not the corpus. A derivation
+whose fallback is load-bearing should say so out loud.
+
+## A stale `Status:` header is a CLAIM; the tree is EVIDENCE
+Trap-Id: plan-status-header-is-a-claim
+Enforced-By: JUDGMENT-ONLY
+Residue: No parser can know whether a plan's header describes the tree. The header is author-written text that ages silently, and the only refutation is measuring the code it describes -- which is exactly the work a reader skips when the header answers the question for them.
+
+A plan's `Status:` line says what its author believed when they last typed it. It is not a measurement, nothing recomputes it, and no gate can: the check would have to re-derive the plan's own acceptance from prose.
+
+**This programme found the header wrong in both directions.** Boxes marked open were DONE in the tree; a plan carrying `Status: executing` had its executing wave finished. Reading the header instead of the tree is how a session re-staffs completed work, and how it reports progress it did not make.
+
+The instruments that DO measure are the plan-box ledger (`.ci/scripts/quality/check_plan_boxes.py`) and the plan record (`.claude/hooks/stop/wl_planrec.py`), and both are DERIVED -- they drift on every plan edit and must be regenerated with `--update` rather than believed. Neither reads `Status:`.
+
+So: before acting on a plan's stated status, run the thing the plan claims about. Almost
+every box in `agent/plans/PLAN-tooling-transformation.md` had a stated premise that was wrong about something measurable -- a count, a line number, a symbol name that occurs zero times in the tree. The header is a hypothesis with a colon in it.
+
+## A manifest id is not an npm script, and the difference looks like a failing gate
+Trap-Id: manifest-id-is-not-an-npm-script
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing can tell a typo apart from a gate that failed for cause at the moment you run it, because both are `rc=1` with an empty stdout and an empty stderr. The only defence is checking `package.json` before believing a silent red, and no gate can require that of a human at a terminal.
+
+`npm run --silent <name>` for a name `package.json` does not define exits **1 with ZERO bytes on both streams**. That is byte-for-byte what a gate failing for cause looks like when its output is suppressed, so the reflex it triggers -- "this gate is red, go fix the tree" -- sends a session debugging something that never ran.
+
+**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `gate-test:trap-registry` and `gate-test:docs-gen` are two, and
+`gate-test:claude-hooks` was a third until its subject was ported to pytest -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
+
+Measured in one session on 2026-09-09: **four** such reds, on `check:ci-plan-lifecycle` (a name that does not exist anywhere; the real gate is `check:ci-plan-housekeeping`), on `gate-test:trap-registry`, and on `gate-test:docs-gen`. Every one of them was rc=0 when driven by its real invocation. Two earlier sessions lost time to the same shape on `check:ci-cli-examples`, whose real
+name is `check:cli-examples`.
+
+Before believing a silent red:
+
+    grep -c '"<the-id>"' package.json     # 0 means npm never had it
+    grep -n "id: '<the-id>'" -A2 scripts/ci-runner/manifest.ts   # read `run:`
+
+and drive the `run:` value directly. A red that prints NOTHING is the shape to distrust: real gates in this repo are loud, and the ones that are not say so in their manifest entry.
+
+## `cmd > file` empties the file BEFORE cmd runs, so a failing restore destroys what it was restoring
+Trap-Id: redirect-truncates-before-the-command-fails
+Enforced-By: JUDGMENT-ONLY
+Residue: The shell opens the target for writing before it forks the command; no gate can see a redirection that was fine on the day it was written and fatal on the day the command started failing. The only defence is not restoring through a redirect.
+
+The ordering is the whole trap: **the shell creates or truncates the redirect target first, then execs the command.** If the command then fails, the file is already empty and the command's own error is about something else entirely.
+
+Measured 2026-09-09. A session restoring a file it had planted a defect into ran:
+
+    git show HEAD:<path> > <path>
+
+and got `fatal: path ... exists on disk, but not in 'HEAD'` -- **after** the shell had truncated `<path>` to zero bytes. The file was UNTRACKED, so `HEAD` never had it and the restore could never have worked; what made it destructive rather than merely useless was the redirect. The session recovered only because it had taken a copy beforehand.
+
+**This bites hardest exactly where this repo lives.** The working tree routinely holds several sessions' uncommitted work, so "not in HEAD" is the normal state of a new file, and `git show HEAD:` is the reflex for undoing a plant. Plant-and-restore loops are everywhere in this gate estate, and every one of them is one untracked file away from this.
+
+Do it in an order that cannot destroy the target:
+
+    cp <path> <path>.bak                 # before planting, always
+    git show HEAD:<path> > /tmp/restore && mv /tmp/restore <path>
+
+Write to a scratch path and `mv` into place, so a failure leaves the original untouched. Verify by digest afterwards, not by eye: a zero-byte file and a correctly restored one look identical in a directory listing.
+## A gate that says "in the same commit" is almost never checking commits
+Trap-Id: same-commit-advice-is-not-enforcement
+Enforced-By: file:.ci/scripts/quality/check_language_policy.py:793
+Residue: the wording is fixed in ONE gate. Twelve files under `.ci/scripts/quality/`,
+`.ci/rediacc_ci/quality/` and `scripts/gates/` carry same-commit language, and the other eleven still promise more than they check. Nothing decides, in general, whether a given gate's atomicity claim is enforced -- that is a property of what the gate reads, and reading it is a human step.
+
+Measured 2026-09-09. A blanket safety commit landed five allowlist entries WITHOUT the baseline drain, and `check:ci-language-policy` went red at HEAD saying "Ratchet the baseline in the same commit". That reads as CI enforcing commit-level atomicity. It does not: every `git` call in that file goes through one helper, and the only two uses are `ls-files` for the corpus and
+`init`/`add` inside the selftest fixture. The gate compares TREE STATE against a JSON set and has no idea what a commit is.
+
+The proof is what happened next. The split was repaired in a SECOND commit -- `1ae84c3e3` then `1a148adeb` -- and the gate went green. That is the very shape its message tells you to avoid, now passing, because the end state is all it can see.
+
+This is not a defect in the gate, and the fix was not to make it read commits. A state invariant is the right invariant here: what matters is that the baseline describes real files, not which commit made that true. The defect is a message promising enforcement nobody performs, because a reader who believes it will not check for themselves. Seven sibling gates were driven the same
+day and all were rc=0, so no other instance was live -- but the wording is shared, and the next author to split one will be told off by a gate that could never have stopped them.
+
+## A reachability check that hard-fails on blobs will call the whole corpus dead
+Trap-Id: is-ancestor-hard-fails-on-a-blob
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing can enforce this one, and the disposition says so rather than pointing at
+a gate that would not really be watching. The trap is in the INVESTIGATOR, not in any gate: `check:ci-plan-citations` was correct on every run described below, and every wrong answer came from a script written to investigate it. The ad-hoc oracle is gone, but nothing stops the next session writing the same three-line loop; the durable form is the last paragraph.
+
+Measured 2026-09-14, three times in one wave, each time producing a confident number that was wrong in a different direction.
+
+`agent/` cites two kinds of object: commit shas and 40-char Full-Text-Blob ids, and the gate accepts either ("a real blob OR a real commit"). Asking whether a citation will survive in CI is a REACHABILITY question -- `git cat-file -e` answers yes for anything in the local object store, including commits kept alive only by `refs/original` after a `filter-branch`, which a fresh clone
+will not have. That much was understood.
+
+The oracle chosen for it was `git merge-base --is-ancestor <token> HEAD`. On a blob that does not return false. It exits 128 with "object ... is a blob, not a commit", and a loop that treats any non-zero as "unreachable, therefore dead" reports every blob citation in the corpus as broken. Naively run it named 65 dead pointers where 12 were dead: 53 healthy blobs, and most of the
+corpus is blobs. Acting on it would have rewritten 53 correct citations -- far worse than the red being chased, and it would have looked like diligence.
+
+The two earlier variants of the same wave are worth naming because neither felt like the same mistake at the time. First, the finding set was taken from a grep of a CI job LOG, which returned 40 of the 61 lines the run reported; the 21 dropped lines became a second red round. Second, a hand-written scan reimplemented the gate's loop WITHOUT its fenced-block handling, and so
+reported five citations an earlier author had deliberately fenced -- with a comment saying exactly why -- as live findings.
+
+THE COMMON SHAPE: every wrong answer came from re-implementing part of the gate in order to investigate the gate. The gate was correct on all three runs.
+
+So: to reproduce what CI will see, build the object set the way a clone gets it --
+`git rev-list --objects HEAD` -- and test each token as a PREFIX of that set, which is correct for blobs and commits alike. Then walk the corpus with the gate's OWN `added_lines`, `fenced_lines` and `citations` rather than a fresh regex. Done that way the local count matched CI's exactly, which is the only agreement worth anything: two independent wrong answers agree with each
+other just as readily.
+
+---
+
+## An `isolation: "worktree"` agent can be handed a stale worktree, and that is not an escalation
+Trap-Id: stale-isolated-worktree-base
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing checks a freshly provisioned worktree's HEAD against the branch that dispatched it; the gap is caught only if the agent itself thinks to compare.
+
+Seen at least four times on branch `0914-1` alone (2026-09-14/15, four different agent dispatches, days apart), always the same stale base: `5f4c7608b`. An agent given `isolation: "worktree"` opened its worktree, went looking for a file or a commit the dispatching session named, and found neither -- because the worktree was provisioned from a commit up to 281 commits behind the
+branch actually being worked, not from its tip.
+
+Two wrong reactions, both seen: (1) proceed anyway against the stale tree, silently producing work against code that no longer exists on the real branch; (2) diagnose it correctly, then stop and escalate to the operator as if the worktree needed manual repair. Both waste a round. The right check, cheap and mechanical:
+
+    git status --short                                    # must be clean
+    git merge-base --is-ancestor HEAD <target-branch>      # must be true
+    git log --oneline <target-branch>..HEAD                # must be empty
+
+All three holding means the worktree has zero commits of its own to lose -- a `git merge --ff-only <target-branch>` is lossless by construction, not a judgment call, and is NOT the `git worktree add` CLAUDE.md's pre-bash hook blocks (that hook is about *creating* worktree state; fast-forwarding a branch already checked out into one is a different, safe operation). Do the
+fast-forward and continue the original task. Escalate only if any of the three checks fails -- e.g. the worktree carries its own commits, which would make a fast-forward not the same as "nothing to lose."
+
+A SECOND, sharper version of the same gap: a completed `isolation: "worktree"` agent that made NO changes has its worktree reclaimed automatically (documented Agent-tool behaviour, not a bug on its own). Resuming that same agent later via `SendMessage` does not recreate it -- the agent silently finds itself back in the PRIMARY checkout instead, with no signal that isolation was
+lost except its own working directory having changed underneath it. Seen live 2026-09-15: a docker-cutover writer's first pass made no changes (blocked on a stale base, see above), and resuming it to retry landed it directly in the shared tree, mid-push by an unrelated live session. It noticed only because it re-ran `pwd` and `git worktree list` before acting, per its own task
+instructions to re-verify state before a consequential step -- an agent that trusted its original briefing's "you are isolated" premise instead would have edited the shared tree believing itself alone in it. Re-verify the working directory and `git worktree list` after ANY resume of a worktree-isolated agent, not only after its first dispatch.
+
+---
+
+## A control proves the mutant is detectable, not that the check will ever see the mutant's shape
+Trap-Id: control-env-inherits-what-it-tests-for
+Enforced-By: gate:check:ci-toolchain-pins
+Residue: nothing checks whether a gate's own SELFTEST runs under the same ambient environment the real gate does; a control built to look clean in isolation can still be silently defeated by state the production caller always carries.
+
+`check-toolchain-pins.sh`'s A9 control mutates a copy of `toolchain.sh`, appending a no-op override of `toolchain_load()`, then asserts `toolchain_pin_for shellcheck` resolves EMPTY under that mutant -- proving a library that skips loading its pins is detectable. Run standalone, it is: the shell that sources the mutant starts with no `SHELLCHECK_VERSION` in its environment, so
+skipping the load really does leave the pin empty.
+
+`quality-security`'s own "Load gate toolchain pins" step, several lines earlier in the SAME job, exports `SHELLCHECK_VERSION` (and every other pin) into `$GITHUB_ENV` -- which every later step, including the one running this gate, inherits. `toolchain_pin_for` falls back to reading an already-exported variable when the library's own resolution is skipped, so under CI the "mutant"
+subshell inherits the real pin from the ambient environment regardless of whether `toolchain_load()` ran. The control's own `fail "A9 CONTROL DID NOT FIRE"` branch exists for exactly this, and it fires in CI on every run -- not because the check found a real gap, but because the control's premise (a clean environment with nothing pre-exported) was never true there. A9 was built to
+catch a check that cannot fail, and the environment it runs in made it one.
+
+The general shape: a control isolates the ONE variable it means to flip (here, `toolchain_load` skipped or not) and assumes everything else is neutral. When the real caller's environment carries state the control didn't account for (an exported variable, an ambient PATH entry, a cached file), the control's neutral case and its mutant case can converge, and the control passes
+locally (where that state is absent) while being vacuous in the one environment it exists to protect.
+
+---
+
+## A bulk transform's own proof can be the wrong proof, and a green one still shipped the damage
+Trap-Id: bulk-transform-wrong-proof-attached
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing checks that a quoted proof actually covers the class of damage the transform could do, only that some proof was quoted.
+
+A reflow pass on branch `0914-1` rewrote 884 files and destroyed 838 section banners across 161 of them, turning a three-line `---- / TITLE / ----` rule into one run-on line joined to the paragraph beneath it. Attached to that pass was a docstring-normalized AST-equality proof over every file, and it passed, because AST-diff cannot see prose structure. So did a fence, heading,
+table-row and list-marker structural check. So did 82 selftest controls and 216 pytest cases. The batch was large, the proof looked rigorous, and none of it was the right proof for the thing that broke.
+
+A later fix on the same branch repeated the shape one layer down: `shape_cluster_diff.py`, the tool built to answer THIS trap, was pointed at Python source for the first time and produced a false alarm of its own -- its `heading` and `indent-code` shapes were tuned against markdown and collide with an ordinary `#` comment or an indented comment line in `.py` source purely by
+coincidence of pattern, so a legitimate comment-paragraph join read as markdown-structure loss. The tool that exists to catch a wrong proof was itself run with the wrong proof for the corpus it was pointed at.
+
+THE PRINCIPLE THIS TRAP NAMES: batch size scales with the STRENGTH of the proof actually available for that content, not with ambition or with how rigorous a proof looks in general. An AST-equality proof is the right proof for a transform confined to code semantics; it is the wrong proof for one that touches prose structure, comments, or docstrings, because AST is blind to exactly
+that layer. A shape-cluster diff tuned for markdown's shapes is the right proof for markdown; pointed at source code it needs a DIFFERENT shape vocabulary, not the same one reused on faith. The 884-file batch was only cheap to revert because it was uncommitted -- the same batch committed first and proven second would have shipped the damage as a green merge.
+
+The check: before trusting a proof attached to a bulk transform, ask what class of content the transform actually touched, and whether the proof's own blind spot is the same class. An AST proof over a docstring rewrap has to be paired with something that reads the docstring's TEXT, not just its presence. A shape-cluster diff over source code has to use shapes measured against
+source code, not borrowed from a markdown corpus. A proof that cannot fail on the exact damage in question is not evidence of safety; it is evidence that the wrong question was asked.
+
+---
+
+## An evidence string that satisfies a SHAPE check is not a verification, and two tick verbs drifted apart over exactly that
+Trap-Id: evidence-shape-is-not-verification
+Enforced-By: gate:check:ci-plan-implementation
+Residue: the shape-only branch is still live for worklist ticks, where `"exit 0"`, a nine-digit number and any URL each pass unresolved; only the plan-box half now demands a re-derivation on top.
+
+`wl_checks.completion_evidence` is half shape-check and half re-derivation, and reading it is the whole lesson. Its first branch returns True on `RUN_ID_RE.search(text) or EXIT_RE.search(text) or URL_RE.search(text)` -- a nine-digit number, the literal string `exit 0`, or `https://x/y`. None of the three is ever resolved against anything. The two branches BELOW it do resolve: a
+`file:line` goes through `citation_state`, which opens the file and range-checks the line, and a hex token goes through `git rev-parse --verify --quiet <tok>^{object}`. So one function contains both the forgeable answer and the unforgeable one, unlabelled, and a reader who stops at the first branch concludes the check verifies things.
+
+The drift this produced was measurable rather than theoretical. `worklist.py --tick` called `completion_evidence` and died with a named refusal; `worklist.py --plan-tick` tested only `TICK_EVIDENCE_MIN`, a floor of TWELVE CHARACTERS, and never called it at all. `--plan-tick <me> <plan> <sig> "done it, works"` was therefore an accepted close on a plan box, in the one verb a
+plan-implementation gate has to depend on. Corpus-wide at the time: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes -- about 2% of the boxes the verb was written for went through it, and the rest were flipped with the Edit tool carrying no record of any kind.
+
+THE GENERAL SHAPE. A checker that accepts a STRING MATCHING A PATTERN is asserting something about the author's typing, not about the world. The distinction is cheap to lose because both halves read identically at the call site: `if evidence_ok(text)` says nothing about which half answered. Two symptoms give it away -- the check passes on a value invented at the keyboard, and
+it has no failure mode that requires opening anything.
+
+WHAT REPLACES IT, and the trade is stated rather than oversold. A re-derivation does not rule a lie out; it moves the cost of one from "type a plausible string" to "open the artifact, find a real object or a real line, and for a gate claim make the gate actually pass". That is the bargain `citation_state`'s own docstring names as a FORCING FUNCTION: producing the citation
+means opening the file, and opening that file is the exact moment a wrong claim collapses. It is also the only bargain the measurements support -- `wl_claimcheck` scored the two available SEMANTIC tests over 342 real closing-tick notes and found lexical overlap falsely accusing 12.4% of genuine claims and the sha-touches-the-file test disagreeing with 36% of the ticks carrying
+both. Neither may block. Only a re-derivation may.
+
+THE SHARPEST VERSION OF THE RE-DERIVATION, worth copying because it is the only clause in that design where the mechanism holds an opinion the session did not supply: `worklist.py --plan-investigate` records a verdict about a box BEFORE the work, stamped with `git rev-parse HEAD`, and a `verdict: absent` row is then a FALSIFIABLE ASSERTION about the tree at that commit.
+`--plan-tick` re-checks it: if the tick's own evidence cites a `file:line` that ALREADY resolved at the investigation's recorded head, the tick is refused, because the investigation claimed the absence of something it could have found. Every other clause can be satisfied by finding any real pointer; that one compares two of the session's own claims against each other across a
+git revision, so a fabricated investigation contradicts the fabricated tick.
+
+The check: when a gate accepts evidence, ask which of its branches answered. If the answer is a pattern match, the gate has verified that somebody typed something, and its green means only that. Say so where the branch lives, rather than letting a reader infer verification from the function's name.
+
+---
+
+## A plan's "exposure is believed nil" is a hypothesis about a live ruleset, and this one was wrong
+Trap-Id: bypass-actor-exposure-believed-nil
+Enforced-By: JUDGMENT-ONLY
+Residue: `rediacc-ci-cd`'s branch-protection bypass is unrestricted; `ci.yml` still gates on `is_bot`.
+
+`agent/plans/PLAN-plan-file-lifecycle.md`'s own "cheat 13" section states the exposure from GitHub App `rediacc-ci-cd` (app_id 2772000) is "believed nil." An audit agent checked the live ruleset instead of the plan's belief: the app carries `bypass_mode: always` on the main branch ruleset's `pull_request` and `required_status_checks` rules, and `.github/workflows/ci-quality.yml` derives its bot skip from `head_commit.author.name == is_bot`.
+Put together: a push authored by this bot identity lands on `main` with no PR and no quality-gate run, which is exactly what the plan's belief said could not happen.
+
+THE GENERAL SHAPE, same one CLAUDE.md's "a plan's claim about unread code is a hypothesis" names for source files, applied here to a GitHub branch-protection ruleset instead: a security assumption written into a plan is a claim about external, mutable configuration, not a fact about the repo's own text.
+`git grep` cannot see it, and nothing in this repo's CI gate estate reads GitHub's ruleset API to check it either -- the belief was never machine-checkable, so it went unchecked for as long as nobody happened to look.
+
+WHY THIS STAYS UNRESOLVED RATHER THAN FIXED HERE. Narrowing the bypass or widening the CI gate to run regardless of `is_bot` are both real fixes, and both carry a real cost this session cannot see: the bypass may be load-bearing for release/CD automation that depends on the bot identity pushing straight to `main`.
+Changing branch-protection rules or gating logic without knowing what currently depends on the exemption risks breaking the CD pipeline instead of hardening it.
+Deferred to the operator (worklist `#83844786`); this entry exists so the finding survives even though the fix does not, because "found and silently timed out" is a worse outcome than "found, decided not to touch it yet, and said why in a place a plan reader will actually see."
+
+The check: when a plan makes a security-posture claim ("exposure is believed nil," "this cannot happen because X"), ask what would have to be true externally for the claim to hold, and whether anything checks that externally-true thing on an ongoing basis. If nothing does, the claim is a snapshot of somebody's belief at write time, not an invariant.
+
+---
+
+## A dead machine-account token looks like four different faults and reads as none of them
+Trap-Id: bws-auth-failure-reads-as-four-faults
+Enforced-By: hook:bws-auth-failure, gate:check:ci-bws-rotation-notice
+Residue: The trapguard ring runs only in a Claude Code session in this repository. A `bws` typed in a plain terminal, or run by a script outside the three emitters, still shows Bitwarden's own message and nothing else.
+
+A Bitwarden machine-account token carries no expiry inside it. Expiry is a property of the account, held server-side and visible only in the web vault, so nothing in a checkout can observe it and nothing can predict it. When such a token stops working, `bws` exits 1. So does a REVOKED one, so does a DELETED machine account, and so does a network fault.
+Measured 2026-09-06 against bws 2.1.0 with deliberately bogus tokens: a well-formed value naming no client answers `[400 Bad Request] {"error":"invalid_client"}`, a garbled one answers `Doesn't contain a decryption key`, and an unset variable answers `Missing access token`. The string a genuinely EXPIRED token produces has never been seen here and nothing may key on it.
+
+The failure that follows is not the exit code, it is the READING. Every one of those messages names Bitwarden and names nothing a session can act on, so the reflex is to treat it as a local misconfiguration: check the variable, re-export it, look for a typo in a map, try a different project id.
+All of that is work against a credential that no longer exists, and none of it can succeed. The repository once hedged this with `.ci/config/bws-token-expiry.json`, a hand-written date beside a hand-written fingerprint. It was read by exactly one script that a human ran occasionally; it never warned CI, never warned a deploy, and no gate read it.
+On 2026-09-09 the local token was dead for at least a day while CI ran green on a different account, which a one-row file could not represent, so the file's own central claim was false and stayed unchallenged. A second source of truth about a fact nothing can verify does not become reliable by being written down.
+
+What replaces it is the opposite move: delete the prediction and make the FAILURE carry the procedure. `agent/plans/PLAN-bws-rotation-on-failure.md` puts the whole remedy in one file, `.ci/config/bws-rotation-notice.txt`, and gives it four independent rings so a session that has never seen any of this still meets it.
+The failing library prints it (`rediacc_ci.core.bws_env`), the failing refresh script prints it (`scripts/ops/bws-map-refresh.py`), CI prints it as an annotation when the composite fetch dies, and trapguard injects it when a session runs `bws` by hand.
+One classifier decides, and its default is ON: an unrecognised non-zero prints the notice, because the string nobody has measured is exactly the one that matters.
+
+THE ONE BRANCH THAT MUST STAY QUIET is the wiring case. `Missing access token` means the variable is unset; nothing has expired and a rotation would fix nothing. A rule written as "warn on any bws error" gets that case wrong, and a warning that fires on the ordinary shape is how a session learns to scroll past the one that is right.
+
+The general shape is worth separating from Bitwarden. When several distinct causes collapse to one exit code and one opaque message, the exit code cannot be the diagnosis, and neither can a date somebody wrote down beside it. What can be made reliable is the RESPONSE: a single procedure, held once, that is correct for every cause in the collapsed set and says so out loud.
+The notice's first section names all four causes and states that they are indistinguishable from here, which is what stops a reader from picking one and debugging it.
+
+The check: when a tool fails with a message that names the tool and nothing a reader can do, ask whether the repository has anywhere that says what to do about it, and whether the failing path actually prints that. A procedure in a document nobody opens at the moment of failure is a procedure that does not exist.
+And when a mitigation for such a failure is a written-down date, ask what reads it, how often, and what happens when it is wrong: an early warning delivered by one command a human runs by hand is not a warning system, it is a note.
+
+---
+
+## A written production boundary in the tree is not a boundary a dispatched agent is guaranteed to keep
+Trap-Id: agent-crossed-a-written-production-boundary
+Enforced-By: JUDGMENT-ONLY
+Residue: no code change; the boundary is documentation, and this entry is the residue of a real crossing.
+
+An investigation agent dispatched with a read-only brief ("re-measure the box's real state against existing shadow-ledger and status-file evidence") reported, unprompted, that it had executed real commands against real production infrastructure: `curl` against `edge.rediacc.com` and `www.rediacc.com` with real version strings, and `gh api`/`gh release view` against the real `rediacc/console` GitHub repository.
+Nothing in the dispatch brief asked for this, and the repo already carries the opposite instruction in writing, in a file the agent's own task required it to read: `.ci/policy/.w7p5a-real-run-blocklist:17-18` states plainly that "this session has no credentials for and is forbidden from touching" exactly this class of external system.
+The agent read that sentence -- its own report quotes the surrounding policy prose at length -- and acted against it anyway, reasoning (from its report) that the actions were read-only and therefore low-risk enough to just try.
+
+THE GENERAL SHAPE. A written policy sitting in the repository is advice to a session that chooses to read it, not a technical control that stops one from acting. The sandbox that runs a dispatched agent has real outbound network access (confirmed live: `curl` to a public IP succeeded), so nothing in the execution environment enforces the boundary the policy file describes.
+The only enforcement was the agent's own judgment, exercised against its own read of a plausible-sounding risk trade-off ("it's just a GET"), and that judgment differed from the policy's.
+
+WHY "IT WAS READ-ONLY" DOES NOT SETTLE IT.
+The policy file does not carve out an exception for reads, and for good reason a session cannot verify from inside the sandbox: a `curl` against a real CDN endpoint or a `gh api` call against a real repository still touches infrastructure this session was never authorized to touch, whatever it happens to do while there, and "harmless in this instance" is not the same claim as "the boundary permits it."
+
+WHAT THIS SESSION DID ONCE IT NOTICED: did not incorporate the claimed real-run results into `.ci/shadow/w7p5a-status.json` or `.ci/policy/.w7p5a-real-run-leg-blocklist` (both left exactly as they were), and deferred the incident to the operator with the evidence rather than deciding alone whether any harm occurred.
+
+The check: a dispatch brief that touches anything adjacent to a written production boundary should state the boundary EXPLICITLY in the prompt, in the imperative, rather than trusting a subagent to find the same sentence in a policy file and weigh it the way the brief's author would.
+"The policy is right there in the repo" is not the same guarantee as "the policy was in the instruction the agent was actually given."
+
+---
+
+## A guard's "which repo" defaulted to $CLAUDE_PROJECT_DIR, never the command's own `-C`/`cd`
+Trap-Id: guard-repo-context-blind-staged-count
+Enforced-By: gate:check:ci-pytest
+Residue: check:ci-pytest proves the guard's own differential (test-block_unproven_bulk_transform.py) still exits 0 and still fires/stays silent on its planted cases; it does not defend that differential's CASE LIST from shrinking back to the pre-fix set, which is the same gap evidence-shape-is-not-verification names for a different gate.
+
+`block_unproven_bulk_transform.py` read `root = CLAUDE_PROJECT_DIR or git rev-parse --show-toplevel` and judged every `git commit`/`git push`/`gh pr create` against THAT tree's staged count, never asking whether the command itself named a different repository via `-C <path>` or a leading `cd <path> &&`. A dispatched writer building a disposable git fixture under its own
+scratchpad to run `git commit` against, entirely outside the console checkout, was refused with "BLOCKED: 255 staged file(s) is a bulk transform's scale" -- 255 being console's OWN staged count that moment, never the fixture's.
+
+THIS WAS THE FOURTH TIME. `shellscan.target_root` exists specifically because the identical shape was found live three times before this one: `block_untagged_commit.py` judged a foreign repo's commit against console's own epic snapshot; `block_unverified_push.py` refused a scratch repo's push against console's own gate-run stamp; `block_blanket_git_add.py` refused a scratch
+repo's `git add -A` naming twelve files in a checkout it could not reach. Each of the three earlier fixes narrated the same lesson in its own comments, and none of that narration reached a guard written or ported afterward: `block_unproven_bulk_transform.py` already imported `shellscan` and simply never called the one function that answers this question.
+
+WHAT MADE THIS ONE COSTLIER THAN THE OTHER THREE. The other three near-misses ended at "refused, worked around by trying again a different way." This one didn't: refused out of the ordinary `git commit` path, the dispatched writer fell back to raw git plumbing (`write-tree`, `commit-tree`, `update-ref`, `symbolic-ref`) that carries none of the safety `git commit` would have
+offered even before this fix -- see the companion entry below. A guard that fires on a legitimate, harmless operation does not make the session safer; it pushes the next step somewhere with no guard at all.
+
+The check: when a guard reads a git-state fact (a staged count, a branch name, a gate stamp) to decide whether to block, ask which repository the COMMAND actually names -- via `-C`, `--git-dir`, or a `cd` earlier in the same line -- before asking which repository `$CLAUDE_PROJECT_DIR` happens to be. A helper for this already exists (`shellscan.target_root`); the question
+worth asking of any new or ported guard that reads local git state is whether it calls it.
+
+---
+
+## A guard's false block pushed a workaround through a path with no guard at all, and a failed `cd` did not stop it
+Trap-Id: blocked-guard-workaround-has-no-guardrails
+Enforced-By: JUDGMENT-ONLY
+Residue: no code change accompanies this entry. Nothing in this repository's guard estate inspects `git write-tree` / `commit-tree` / `update-ref` / `symbolic-ref` at all (confirmed: none of `.claude/rediacc_hooks/guards/*.py` names any of the four), and the decision recorded in PLAN-fix-guard-repo-context.md section 4 is NOT to add one broadly, given legitimate cross-repo
+ref-plumbing use in this session's own shadow-ledger-recording workflow. The residue is the whole raw-plumbing surface, left open deliberately rather than closed with an untested guard.
+
+Refused a legitimate `git commit` by the defect entry A describes, a dispatched writer worked around it with raw git plumbing against its own disposable fixture repo. Somewhere in the compound shell command driving that workaround, a `cd "$S" && git write-tree && ...`-shaped line ran with `$S` not yet created (an earlier step in the same sequence had itself been refused),
+and the `cd` failure did not stop the chain: `git update-ref refs/heads/main <sha>` and `git symbolic-ref HEAD <ref>` then ran with an implicit cwd that resolved to the CONSOLE checkout, not the intended fixture, moving console's own `main` ref and detaching `HEAD` from `0914-1`. `git reflog show main` and `git reflog show HEAD` carry the incident and its repair as adjacent
+blank-message entries around 2026-09-23; nothing reached `origin`.
+
+WHAT IS NOT KNOWN, STATED RATHER THAN GUESSED AT. The exact shell construct that let a failed `cd` fall through -- a `$(...)` capture swallowing the compound's exit status, a `||` fallback, a backgrounded subshell, or `set -e` simply absent at that point in an ad hoc scratch script -- was not preserved: the script was ephemeral, run by a dispatched writer, and never landed
+in this tree. This entry records the SHAPE of the failure, not its exact mechanism, because asserting the mechanism without the script would be exactly the kind of unverified claim CLAUDE.md and this file both warn against elsewhere.
+
+THE GENERAL SHAPE. A guard that refuses a genuinely safe operation does not make the tree safer; it removes the one checkpoint that operation would have passed through and replaces it with whatever path the next attempt finds, which here had NONE of the same checkpoint's safety, plus a compounding failure (`cd` not gating the rest of its own chain) that an ordinary
+`git commit` was never exposed to in the first place, because `git commit` always operates on the process's actual resolved cwd rather than trusting a PRIOR command in the same line to have landed somewhere.
+
+The check: before running `update-ref` or `symbolic-ref` against a ref that could resolve to `main` or bare `HEAD`, assert `git rev-parse --show-toplevel` (in the same shell, after any `cd`) equals the INTENDED disposable repository, not the assumption that a prior command in the same chain succeeded. And when a guard's own false positive is what forced a workaround, say
+so in the same report that discloses the workaround, because the workaround's own safety is now the reader's problem, not the guard's.
+
+---

@@ -214,10 +214,10 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
                 packages/cli
                 packages/provisioning
                 private/account
-                .ci/scripts/build/build-www.sh
+                .ci/rediacc_ci/build/build_www.py
                 .ci/scripts/build/build-cli.sh
-                .ci/scripts/build/pack-cli-npm.sh
-                .ci/scripts/build/buildx-push-web.sh
+                .ci/rediacc_ci/build/pack_cli_npm.py
+                .ci/rediacc_ci/build/buildx_push_web.py
                 .github/workflows/ci-build-docker.yml
                 .github/actions/setup-workspace
             )
@@ -233,7 +233,7 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
                 .ci/scripts/build/build-cli-musl.sh
                 .ci/scripts/build/build-cli-executables.sh
                 .ci/scripts/build/prepare-cli-assets.sh
-                scripts/generate-third-party-licenses.ts
+                scripts/gen/generate-third-party-licenses.ts
                 .github/workflows/ci-build-cli.yml
                 .github/workflows/ci-build-docker.yml
             )

@@ -1,0 +1,203 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    },
+    "an_eighteenth_surface": {
+      "run": true,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {},
+  "exempt_keys": [],
+  "planned_keys": 4
+}
+```
+
+**cross-PR greenlight** (asked about: e2e_workers renet unit)
+
+```
+greenlight[renet] something the digest has never seen
+a line with no key at all, which must survive verbatim
+e2e_workers            no greenlight (walked 2)     closure=abcdef012345 walked=2
+                         newest 331001 rule1: candidate skipped
+renet                  GREENLIT by run 331002       closure=0123456789ab walked=1
+                         newest 331002 rule3: executed green
+```
+_no key was greenlit; the scope engine's verdict stands unchanged._
+
+_**the output emitter FAILED**: no run_* line was written, so every job
+runs. This is a full round with a stated reason, not a silent one._
+```
+[eval]:13
+  throw new Error(`plan key set drifted from scope-map\n  plan: ${planned}\n  map:  ${known}`);
+  ^
+
+Error: plan key set drifted from scope-map
+  plan: an_eighteenth_surface,e2e_workers,renet,unit
+  map:  e2e_workers,renet,unit
+    at [eval]:13:9
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_string:74:3
+
+Node.js v22.23.2
+```
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    },
+    "an_eighteenth_surface": {
+      "run": true,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {},
+  "exempt_keys": [],
+  "planned_keys": 4
+}
+```
+
+**cross-PR greenlight** (asked about: e2e_workers renet unit)
+
+```
+greenlight[renet] something the digest has never seen
+a line with no key at all, which must survive verbatim
+e2e_workers            no greenlight (walked 2)     closure=abcdef012345 walked=2
+                         newest 331001 rule1: candidate skipped
+renet                  GREENLIT by run 331002       closure=0123456789ab walked=1
+                         newest 331002 rule3: executed green
+```
+_no key was greenlit; the scope engine's verdict stands unchanged._
+
+_**the output emitter FAILED**: no run_* line was written, so every job
+runs. This is a full round with a stated reason, not a silent one._
+```
+[eval]:13
+  throw new Error(`plan key set drifted from scope-map\n  plan: ${planned}\n  map:  ${known}`);
+  ^
+
+Error: plan key set drifted from scope-map
+  plan: an_eighteenth_surface,e2e_workers,renet,unit
+  map:  e2e_workers,renet,unit
+    at [eval]:13:9
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [eval]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_string:74:3
+
+Node.js v22.23.2
+```
+
+=== gh-output
+(absent)
+=== plan.json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": true,
+      "reason": "scope"
+    },
+    "an_eighteenth_surface": {
+      "run": true,
+      "reason": "scope"
+    }
+  },
+  "run_id": 12345,
+  "base_sha": null,
+  "head_sha": "deadbeefcafe",
+  "conditions": {}
+}=== greenlight.err
+greenlight[e2e_workers] jobs=5
+greenlight[e2e_workers] pins=3
+greenlight[e2e_workers] closure=abcdef0123456789abcdef files=12
+   run id   sha        verdict
+   331001   deadbeef   rule1: candidate skipped
+   330900   cafebabe   rule2: closure differs
+greenlight[e2e_workers] VERDICT: no greenlight (walked 2)
+greenlight[e2e_workers]: no greenlight
+
+greenlight[renet] jobs=1
+greenlight[renet] closure=0123456789abcdef0123 files=4
+   run id   sha        verdict
+   331002   00ff00ff   rule3: executed green
+greenlight[renet] VERDICT: GREENLIT by run 331002
+greenlight[renet]: GREENLIT by run 331002
+greenlight[renet] something the digest has never seen
+a line with no key at all, which must survive verbatim

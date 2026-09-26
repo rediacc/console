@@ -1,6 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
-import { exitProcess } from '../services/core/request-context.js';
+import { exitProcess, writeStdout } from '../services/core/request-context.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
@@ -66,7 +66,9 @@ function outputJsonError(cliError: CliError): void {
     warnings: outputService.getWarnings(),
     metrics: { duration_ms: outputService.getDurationMs() },
   };
-  process.stdout.write(`${JSON.stringify(envelope, null, 2)}\n`);
+  // writeStdout, not process.stdout: inside an executor dispatch the envelope belongs to the
+  // request that failed, and the client reads it from there.
+  writeStdout(`${JSON.stringify(envelope, null, 2)}\n`);
 }
 
 /** Output error in text format */
@@ -116,8 +118,7 @@ export function handleError(error: unknown): never {
     // Ignore shutdown errors - we're exiting anyway
   });
 
-  // Exit synchronously. On a laptop this is process.exit() as it always was.
-  // Inside an executor dispatch it throws instead, because a command that fails
+  // Exit synchronously. On a laptop this is process.exit() as it always was. Inside an executor dispatch it throws instead, because a command that fails
   // for one tenant must not kill the process serving everyone else.
   exitProcess(cliError.exitCode);
 }
@@ -156,8 +157,7 @@ export class PreconditionValidationError extends ValidationError {
  */
 function normalizeError(error: unknown): CliError {
   // CliExitError already carries its code, exit code, and any next-action hint;
-  // pass them through unchanged so the P4 refusal classes (AMBIGUOUS,
-  // STATE_MISMATCH, ...) surface with the exit code they were thrown with.
+  // pass them through unchanged so the P4 refusal classes (AMBIGUOUS, STATE_MISMATCH, ...) surface with the exit code they were thrown with.
   if (error instanceof CliExitError) {
     return {
       code: error.code,
@@ -166,6 +166,7 @@ function normalizeError(error: unknown): CliError {
       ...(error.details?.length && { details: error.details }),
       ...(error.retryable !== undefined && { retryable: error.retryable }),
       ...(error.next && { next: error.next }),
+      ...(error.guidance && { guidance: error.guidance }),
     };
   }
 

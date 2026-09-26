@@ -4,8 +4,7 @@ import { parseVerifyVerdict } from '../backup-storage-parser.js';
 // REGRESSION, found on a live fleet 2026-08-15: `rdc backup verify` exited 0
 // with EMPTY stdout in BOTH text and json modes while the renet verb underneath
 // reported {"status":"verified","level":"full","checkedCells":31}. An operator
-// could not tell a verified anchor from a mismatched one -- the one distinction
-// the command exists to make.
+// could not tell a verified anchor from a mismatched one -- the one distinction the command exists to make.
 describe('parseVerifyVerdict', () => {
   it('recovers the verdict renet actually prints', () => {
     const v = parseVerifyVerdict('{"status":"verified","level":"full","checkedCells":31}');

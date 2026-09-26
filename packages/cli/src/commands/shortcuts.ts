@@ -82,10 +82,7 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     functionName,
     machineName,
     params,
-    // #74: `run` is the escape hatch, so it cannot know which verb it is calling —
-    // but if the caller named a repository, that repo's recorded placement is the
-    // same answer every real verb would give. A GUID or an unknown name yields
-    // undefined, which is the machine default this always used.
+    // #74: `run` is the escape hatch, so it cannot know which verb it is calling, but if the caller named a repository, that repo's recorded placement is the same answer every real verb would give. A GUID or an unknown name yields undefined, which is the machine default this always used.
     datastore:
       typeof params.repository === 'string'
         ? await recordedDatastoreMount(params.repository)
@@ -94,8 +91,7 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
     // `run` exists to show a Rediaccfile function's output; the default handler
-    // drops everything that is not a step event, so without this it printed
-    // nothing unless --debug was passed.
+    // drops everything that is not a step event, so without this it printed nothing unless --debug was passed.
     passthroughOutput: true,
   });
   handleExecutionResult(result);

@@ -1,0 +1,11 @@
+# twin .ci/legacy/run-legacy.sh blob a4731cdf5eecb8d53216b1027aaa2f01353dfabb
+exit: 7
+--- stdout ---
+[fake npm] run dev -w @rediacc/www
+--- stderr ---
+→ Starting www development server
+[fake npm] starting
+--- trace ---
+check_node_version
+ensure_deps
+npm cwd=<sandbox> argv=run dev -w @rediacc/www

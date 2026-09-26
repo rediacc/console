@@ -2,8 +2,7 @@ import { expect, test } from '@playwright/test';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import { CephTestHelper } from '../../src/utils/bridge/CephTestHelper';
 
-// Check if Ceph is configured - skip all tests if not
-// VM_CEPH_NODES can be empty or space-separated list of VM IDs (e.g., "21 22 23")
+// Check if Ceph is configured - skip all tests if not VM_CEPH_NODES can be empty or space-separated list of VM IDs (e.g., "21 22 23")
 const cephNodes = (process.env.VM_CEPH_NODES ?? '').trim();
 const hasCeph = cephNodes.length > 0;
 
@@ -371,12 +370,7 @@ test.describe
 
     // Teardown in EXACT order (CRITICAL)
     test('9. ceph_clone_unmount: unmount with exact teardown order', async () => {
-      // MUST follow order:
-      // 1. sync & umount filesystem
-      // 2. dmsetup remove cow device
-      // 3. losetup detach loop device
-      // 4. rbd unmap device
-      // 5. delete COW file
+      // MUST follow order: 1. sync & umount filesystem 2. dmsetup remove cow device 3. losetup detach loop device 4. rbd unmap device 5. delete COW file
       const result = await runner.cephCloneUnmount(clone, false, pool);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -496,8 +490,7 @@ test.describe('CephTestHelper Resource Management @bridge @ceph', () => {
 
   test('helper cleanup should clean all tracked resources', async () => {
     await helper.cleanup();
-    // In test mode, cleanup may report errors for non-existent resources
-    // Just verify cleanup completes without throwing
+    // In test mode, cleanup may report errors for non-existent resources Just verify cleanup completes without throwing
     expect(true).toBe(true);
   });
 });

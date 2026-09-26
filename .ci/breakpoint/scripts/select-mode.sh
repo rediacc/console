@@ -53,7 +53,7 @@ named_missing_what() {
     if [[ -z "${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN:-}" ]]; then
         echo "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN (secret)"
     elif [[ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
-        echo "CLOUDFLARE_ACCOUNT_ID (repo or org variable)"
+        echo "CLOUDFLARE_ACCOUNT_ID (Bitwarden secret, fetched by the session job)"
     else
         echo "BREAKPOINT_TUNNEL_ZONE (breakpoint.conf)"
     fi

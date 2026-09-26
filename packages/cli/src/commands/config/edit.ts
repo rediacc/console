@@ -1,5 +1,5 @@
 /**
- * `rdc config edit` — open the active config in $EDITOR for hand-edit.
+ * `rdc config edit`, open the active config in $EDITOR for hand-edit.
  *
  * Flow:
  *   1. Refuse for AI agents unless REDIACC_ALLOW_CONFIG_EDIT scope grants access.
@@ -10,7 +10,7 @@
  *      to current values).
  *   5. Validate via the v2 Zod schema; on failure, reopen with an error banner.
  *      Abort after 3 consecutive failures and preserve the user's draft as `.orig`.
- *   6. Apply via `configFileStorage.update` (atomic temp+rename + .bak).
+ *   6. Apply via `updateSyncedConfig` (atomic temp+rename + .bak; pushed for a remote config).
  *
  * Subcommand: `rdc config edit --dump [--redacted] [--apply <file>]`
  *   --dump            print the current config as JSONC to stdout
@@ -34,6 +34,7 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { isatty } from 'node:tty';
 import {
+  canonicalJson,
   getByPointer,
   parseConfig,
   type RdcConfig,
@@ -42,12 +43,13 @@ import {
   walkSensitive,
 } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { redactClone, shortFingerprint } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
+import { isRemoteConfigFile, updateSyncedConfig } from '../../services/config/synced-write.js';
 import { auditLog } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
+import { writeStdout } from '../../services/core/request-context.js';
 import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
 import { EditorError, openEditor } from '../../utils/editor-launcher.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
@@ -94,7 +96,7 @@ function renderJsonc(config: RdcConfig, options: RenderOptions): string {
  * Prompt the user to confirm a list of sensitive-field rotations.
  * Returns true only when the user types 'rotate' (case-insensitive).
  */
-async function promptRotationConfirmation(paths: string[]): Promise<boolean> {
+function promptRotationConfirmation(paths: string[]): Promise<boolean> {
   const lines = [
     '',
     t('commands.config.edit.rotatePromptHeader', { count: paths.length }),
@@ -102,7 +104,7 @@ async function promptRotationConfirmation(paths: string[]): Promise<boolean> {
     '',
     t('commands.config.edit.rotatePromptFooter'),
   ];
-  process.stdout.write(lines.join('\n'));
+  writeStdout(lines.join('\n'));
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question('', (answer) => {
@@ -114,7 +116,7 @@ async function promptRotationConfirmation(paths: string[]): Promise<boolean> {
 
 /**
  * Strip JSONC comment lines (lines starting with `//` after optional whitespace).
- * Block comments and inline `//` are NOT supported — the renderer only emits
+ * Block comments and inline `//` are NOT supported, the renderer only emits
  * line comments before the JSON body, so the stripper handles only that form.
  */
 function stripComments(jsonc: string): string {
@@ -132,8 +134,10 @@ function stripComments(jsonc: string): string {
  *   - Unchanged stub  (stub matches current digest)  → substitute real value back.
  *   - Stub replaced with a DIFFERENT stub             → hard failure (meaningless edit).
  *   - Stub replaced with real plaintext               → rotation intent.
- *     - If knowledge[pointer] supplied (via --current-secrets): silent accept.
+ *     - If knowledge[pointer] supplied (via --current-secrets) and it matches the
+ *       current value: accept the new value; a mismatch is a hard failure.
  *     - Otherwise: surface on `rotations` so the caller can prompt or reject.
+ *   - A sensitive value with no current value (newly added)  → accepted as is.
  *
  * Returning `rotations` (instead of immediately failing) lets interactive mode
  * show a single confirmation prompt for all rotations; non-interactive `--apply`
@@ -142,7 +146,9 @@ function stripComments(jsonc: string): string {
 type StubOutcome =
   | { kind: 'untouched'; currentValue: unknown }
   | { kind: 'bad-stub' }
+  | { kind: 'bad-knowledge' }
   | { kind: 'rotation' }
+  | { kind: 'accepted' }
   | { kind: 'public' };
 
 function classifyStub(
@@ -168,11 +174,14 @@ function classifyStub(
     return { kind: 'bad-stub' };
   }
 
-  if (currentValue !== undefined && knowledge?.[pointer] === undefined) {
-    return { kind: 'rotation' };
-  }
+  // A value that did not exist before rotates nothing: keep it.
+  if (currentValue === undefined || currentValue === null) return { kind: 'accepted' };
 
-  return { kind: 'untouched', currentValue };
+  const claim = knowledge?.[pointer];
+  if (claim === undefined) return { kind: 'rotation' };
+  return canonicalJson(claim) === canonicalJson(currentValue)
+    ? { kind: 'accepted' }
+    : { kind: 'bad-knowledge' };
 }
 
 function reconcileStubs(
@@ -186,13 +195,15 @@ function reconcileStubs(
 
   for (const { pointer, value: editedValue, meta } of walkSensitive(view as RdcConfig)) {
     const outcome = classifyStub(pointer, editedValue, currentConfig, meta, knowledge);
-    if (outcome.kind === 'public') continue;
+    if (outcome.kind === 'public' || outcome.kind === 'accepted') continue;
     if (outcome.kind === 'untouched') {
       assignAtPointer(view, pointer, outcome.currentValue);
     } else if (outcome.kind === 'bad-stub') {
       failures.push(
         `${pointer}: edited value still looks like a redaction stub but does not match the current digest`
       );
+    } else if (outcome.kind === 'bad-knowledge') {
+      failures.push(`${pointer}: the --current-secrets value does not match the current value`);
     } else {
       rotations.push(pointer);
     }
@@ -231,9 +242,12 @@ async function applyEdit(
   configIdForAudit: string,
   configVersionForAudit: number
 ): Promise<void> {
-  // Replace the entire config with the reconciled v2-validated value.
+  // Replace the entire config with the reconciled v2-validated value. A remote config's push replays onto the newer server copy after a version conflict, so there only the top-level sections this edit changed are carried over: another device's concurrent edit to a section left alone here survives.
   const validated = parseConfig(RdcConfigSchema, reconciled, 'rdc config edit');
-  await configFileStorage.update(configName, () => validated);
+  const remote = await isRemoteConfigFile(configName);
+  await updateSyncedConfig(configName, (base) =>
+    remote ? applyChangedSections(base, parsed, validated) : validated
+  );
   auditLog(configDir(), {
     command: 'config edit',
     paths: [],
@@ -241,7 +255,19 @@ async function applyEdit(
     configId: configIdForAudit,
     configVersion: configVersionForAudit,
   });
-  void parsed;
+}
+
+/** `base` with every top-level section that differs between `before` and `after` taken from `after`. */
+function applyChangedSections(base: RdcConfig, before: RdcConfig, after: RdcConfig): RdcConfig {
+  const out: Record<string, unknown> = { ...base };
+  const was = before as Record<string, unknown>;
+  const now = after as Record<string, unknown>;
+  for (const key of new Set([...Object.keys(was), ...Object.keys(now)])) {
+    if (canonicalJson(was[key] ?? null) === canonicalJson(now[key] ?? null)) continue;
+    if (now[key] === undefined) delete out[key];
+    else out[key] = now[key];
+  }
+  return out as RdcConfig;
 }
 
 /** Handle `--apply <file>` mode: parse, reconcile, and apply without interaction. */
@@ -488,7 +514,7 @@ async function handleInteractiveMode(
     if (done) return;
   }
 
-  // Out of retries — preserve draft and abort.
+  // Out of retries, preserve draft and abort.
   const orig = `${configDir()}/${configName}.edit-${Date.now()}.orig`;
   if (existsSync(tmpFile)) copyFileSync(tmpFile, orig);
   rmSync(tmp, { recursive: true, force: true });
@@ -564,8 +590,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
           const agent = isAgentEnvironment();
           const reveal = options.reveal === true;
 
-          // Agent gate: block interactive editor + --apply + --reveal.
-          // --dump without --reveal is read-only redacted output — safe for agents.
+          // Agent gate: block interactive editor + --apply + --reveal. --dump without --reveal is read-only redacted output, safe for agents.
           const interactive = !options.dump && !options.apply;
           const needsAgentGate = interactive || Boolean(options.apply) || reveal;
           checkEditGates(config, agent, needsAgentGate, reveal);
@@ -575,7 +600,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
             : undefined;
 
           if (options.dump) {
-            process.stdout.write(renderJsonc(config, { reveal }));
+            writeStdout(renderJsonc(config, { reveal }));
             return;
           }
 

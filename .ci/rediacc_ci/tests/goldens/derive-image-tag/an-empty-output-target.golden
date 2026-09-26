@@ -1,0 +1,9 @@
+# twin .ci/scripts/ci/derive-image-tag.sh blob 0a53801b98099cd3c88c9c952696f8368e17d2ed
+exit: 0
+--- stdout ---
+v1
+--- stderr ---
+✓ Using explicit version: v1
+⚠ GITHUB_OUTPUT not set, skipping --github-output
+--- files ---
+{}

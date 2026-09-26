@@ -1,97 +1,157 @@
 /**
- * TypeScript port of .ci/scripts/lib/blocker-validator.sh.
+ * The BLOCKER contract, for TypeScript gates. A CLIENT of the canonical
+ * implementation, not a second copy of it.
  *
- * Shared BLOCKER validator for every suppression-gated check implemented
- * in TypeScript (check-deps.ts, check-actions.ts, etc.). Keeps behaviour
- * identical to the bash version so CI and local runs enforce the same rules.
+ * WHAT CHANGED, 2026-09-09. This file used to be an independent PORT of
+ * `.ci/scripts/lib/blocker-validator.sh`: its own 54-phrase banned list, its own
+ * 7-phrase substring list, its own 30-character floor, its own four message
+ * bodies, and its own copy of the list grammar, under a comment asking the next
+ * author to "keep .ci/scripts/lib/blocker-validator.sh in sync". That comment was
+ * the only thing holding two implementations together, and nothing in the tree
+ * asserted that it had been obeyed. The rule now lives in exactly one place,
+ * `.ci/rediacc_ci/core/allowlist.py`, and this file reads it from there.
  *
- * When this file changes, keep .ci/scripts/lib/blocker-validator.sh in sync —
- * the banned-phrase list and the 30-char floor are the contract.
+ * THE SPLIT, and why it is not "shell out for everything":
+ *
+ *   parseBlockeredList   one subprocess PER FILE. `records` in the canonical
+ *                        returns the same projection this function always did
+ *                        (one row per entry LINE, with the line number), and a
+ *                        gate parses one to three lists, so the cost is a few
+ *                        tens of milliseconds.
+ *   validateBlockerQuality
+ *                        NO subprocess. It is called in a loop, once per entry,
+ *                        and a list with fifty entries would pay fifty
+ *                        interpreter starts. Instead the tables and the message
+ *                        TEMPLATES arrive once per process from `contract`, and
+ *                        the rendering happens here. There is still only one
+ *                        place the phrases and the words are written down.
+ *
+ * A MISSING python3 IS A LOUD FAILURE WITH THE FIX IN IT, never a fallback. A
+ * fallback would be a second implementation, which is the thing this change
+ * exists to delete, and a suppression validator that silently stops validating
+ * is indistinguishable from a tree with no bad suppressions in it.
+ *
+ * WHAT IS DELIBERATELY PRESERVED, because callers depend on it: a file that does
+ * not exist parses to `[]` rather than throwing. The canonical calls that
+ * `missing_ok=True` and makes it explicit at the call site; here the call site is
+ * this function, and the reason it stays permissive is that thirteen gates pass
+ * an optional allowlist path and treat absence as "no suppressions".
  */
 
+import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
-  // npm-audit ack-tier phrases
-  'no fix',
-  'no fix available',
-  'no fix yet',
-  'no upstream fix',
-  'no fix published',
-  'no patch',
-  'no patch yet',
-  'no patch available',
-  'none',
-  'n/a',
-  'na',
-  'empty',
-  '-',
-  // scheduling ack-tier
-  'tbd',
-  'wip',
-  'fixme',
-  'todo',
-  'later',
-  'fix later',
-  'will fix',
-  'pending',
-  'skip',
-  'skipping',
-  'skipped',
-  'ignore',
-  'ignoring',
-  'ignored',
-  'unknown',
-  'unknown reason',
-  'idk',
-  'dunno',
-  'whatever',
-  // review-gate-style ack phrases
-  'ok',
-  'okay',
-  'ack',
-  'acknowledged',
-  'noted',
-  'done',
-  'fixed',
-  'applied',
-  'addressed',
-  'updated',
-  'changed',
-  'understood',
-  // explicit escape-hatch attempts
-  'escape',
-  'escape hatch',
-  'suppressed',
-  'suppress',
-  'bypass',
-  'override',
-  'upstream issue',
-  'transitive',
-  'dev dep',
-  'dev only',
-];
+/**
+ * REDIACC_CI_ROOT is the package's single environment override
+ * (`.ci/rediacc_ci/paths.py`), honoured here for the reason
+ * `.ci/scripts/lib/age-check.sh` honours it: a planted-defect control has to be
+ * able to point this client at a scratch tree holding a DELIBERATELY BROKEN
+ * canonical, and prove that the verdicts move. Without it the only way to test
+ * that the delegation is live would be to edit the real module.
+ *
+ * The fallback resolves from THIS FILE, not from cwd, so a gate invoked from a
+ * subdirectory still finds the package.
+ */
+const ROOT =
+  process.env.REDIACC_CI_ROOT ??
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const CI_DIR = path.join(ROOT, '.ci');
+const MODULE = 'rediacc_ci.core.allowlist';
 
-// Substring-matched (not exact-match) phrases that signal can-kicking a routine,
-// installable bump rather than a genuine technical hold. The upgrade blocklist is
-// only for bumps that genuinely cannot be taken now (breaking major, pin conflict,
-// native rebuild, known regression). check-deps already auto-defers freshly-
-// published versions (until the next UTC day after the minimum-release-age window),
-// so "routine bump deferred to a dedicated dependency-bump PR" / "not needed by this change" is deferral-for-
-// convenience — take the bump. Legitimate major-migration holds read differently
-// (e.g. "dedicated lint-tooling PR", "dedicated PR that exercises the email flows")
-// and are NOT matched here.
-const LOW_EFFORT_BLOCKER_SUBSTRINGS: readonly string[] = [
-  'deferred to a dedicated dependency-bump pr',
-  'not needed by this change',
-  'not needed in this change',
-  'not needed for this change',
-  'to keep this merge focused',
-  'to keep this change focused',
-  'to keep this pr focused',
-];
+/**
+ * The shape `contract` returns. `version` is checked rather than assumed: a
+ * client that read a future shape and found `phrases` absent would treat every
+ * low-effort reason as acceptable, which is a green that means nothing.
+ */
+interface BlockerContract {
+  version: number;
+  minLength: number;
+  emdash: string;
+  phrases: readonly string[];
+  substrings: readonly string[];
+  templates: Record<string, readonly string[]>;
+}
 
-const BLOCKER_MIN_LENGTH = 30;
+const SUPPORTED_CONTRACT_VERSION = 1;
+
+function canonical(args: string[], input?: string): string {
+  try {
+    return execFileSync('python3', ['-m', MODULE, ...args], {
+      encoding: 'utf8',
+      input,
+      env: {
+        ...process.env,
+        PYTHONPATH: process.env.PYTHONPATH ? `${CI_DIR}:${process.env.PYTHONPATH}` : CI_DIR,
+      },
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  } catch (err) {
+    const e = err as { status?: number; stderr?: Buffer | string; code?: string };
+    const stderr = typeof e.stderr === 'string' ? e.stderr : (e.stderr?.toString() ?? '');
+    throw new Error(
+      [
+        `blocker-validator: the canonical BLOCKER validator could not be run.`,
+        `  Command: python3 -m ${MODULE} ${args.join(' ')}`,
+        `  PYTHONPATH: ${CI_DIR}`,
+        e.code === 'ENOENT'
+          ? `  python3 is not on PATH. Install it, or run the gate inside the devbox.`
+          : `  exit ${String(e.status)}`,
+        stderr.trim() ? `  stderr: ${stderr.trim()}` : '',
+        `  There is deliberately no TypeScript fallback: a fallback is a second`,
+        `  implementation of the rule, and this file exists to not be one.`,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+}
+
+let cachedContract: BlockerContract | null = null;
+
+/** The tables and the message text, fetched once per process. */
+export function blockerContract(): BlockerContract {
+  if (cachedContract) return cachedContract;
+  const parsed = JSON.parse(canonical(['contract'])) as BlockerContract;
+  if (parsed.version !== SUPPORTED_CONTRACT_VERSION) {
+    throw new Error(
+      `blocker-validator: ${MODULE} speaks contract version ${parsed.version}, ` +
+        `this client understands ${SUPPORTED_CONTRACT_VERSION}. Update scripts/lib/blocker-validator.ts.`
+    );
+  }
+  if (parsed.phrases.length === 0 || parsed.substrings.length === 0) {
+    throw new Error(
+      `blocker-validator: ${MODULE} returned an EMPTY banned-phrase table ` +
+        `(${parsed.phrases.length} phrase(s), ${parsed.substrings.length} substring(s)). ` +
+        `Every low-effort reason would pass, so this is refused rather than trusted.`
+    );
+  }
+  cachedContract = parsed;
+  return parsed;
+}
+
+/**
+ * Render one message from the canonical template. ONE PASS over the template,
+ * so a value containing `{entry}` is never rescanned; see the note in
+ * `.ci/rediacc_ci/core/allowlist.py` beside MESSAGE_TEMPLATES.
+ */
+function render(kind: string, fields: Record<string, string>): string {
+  const c = blockerContract();
+  const lines = c.templates[kind];
+  if (!lines) throw new Error(`blocker-validator: no template for kind '${kind}'`);
+  const values: Record<string, string> = { ...fields, emdash: c.emdash };
+  return lines
+    .map((line) =>
+      line.replace(/\{([a-z]+)\}/g, (_m, name: string) => {
+        if (!(name in values)) {
+          throw new Error(`blocker-validator: template '${kind}' wants {${name}}, unsupplied`);
+        }
+        return values[name] as string;
+      })
+    )
+    .join('\n');
+}
 
 function normalize(reason: string): string {
   return reason
@@ -117,48 +177,40 @@ export function validateBlockerQuality(
   reason: string,
   file: string
 ): BlockerValidationFailure | null {
+  const c = blockerContract();
   const normalized = normalize(reason);
 
-  for (const pattern of LOW_EFFORT_BLOCKER_PATTERNS) {
+  for (const pattern of c.phrases) {
     if (normalized === pattern) {
       return {
         kind: 'low-effort',
         normalized,
-        message: [
-          `Allowlist ${file}: BLOCKER for entry ${id} is a low-effort placeholder ("${reason}")`,
-          `  Rejected because: "${normalized}" matches the banned-phrase list — this adds no information beyond 'we suppressed it'`,
-          `  Action: write a specific reason. Good BLOCKERs cite the upstream pin, the package chain, OR why runtime isn't affected.`,
-          `  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; build-time only, requires major electron migration'`,
-        ].join('\n'),
+        message: render('low-effort', { file, entry: id, reason, normalized }),
       };
     }
   }
 
-  for (const pattern of LOW_EFFORT_BLOCKER_SUBSTRINGS) {
+  for (const pattern of c.substrings) {
     if (normalized.includes(pattern)) {
       return {
         kind: 'deferral',
         normalized,
-        message: [
-          `Allowlist ${file}: BLOCKER for entry ${id} defers a routine bump instead of justifying a hold ("${reason}")`,
-          `  Rejected because: it contains "${pattern}" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump.`,
-          `  Note: check-deps already auto-defers freshly-published versions (until the next UTC day after they age the minimum-release-age window), so there is no need to blocklist a fresh release.`,
-          `  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks).`,
-        ].join('\n'),
+        message: render('deferral', { file, entry: id, reason, pattern }),
       };
     }
   }
 
-  if (normalized.length < BLOCKER_MIN_LENGTH) {
+  if (normalized.length < c.minLength) {
     return {
       kind: 'too-short',
       normalized,
-      message: [
-        `Allowlist ${file}: BLOCKER for entry ${id} is too short (${normalized.length} chars, minimum ${BLOCKER_MIN_LENGTH})`,
-        `  Current: "${reason}"`,
-        `  Action: a BLOCKER must explain WHO pins what, WHY the fix cannot be taken now, and ideally WHEN to revisit.`,
-        `  Example: 'axios 1.15.0 pins follow-redirects <1.16.0; not runtime-exposed in CLI auth path; revisit when axios bumps'`,
-      ].join('\n'),
+      message: render('too-short', {
+        file,
+        entry: id,
+        reason,
+        length: String(normalized.length),
+        min: String(c.minLength),
+      }),
     };
   }
 
@@ -178,53 +230,32 @@ export interface BlockeredEntry {
  *
  * A blank line resets the tracked BLOCKER so a single comment can cover a
  * grouped list of related entries. Returns one record per entry.
+ *
+ * The grammar itself is `rediacc_ci.core.allowlist.parse_text`. The transport is
+ * `<line>\t<entry>\t<reason>`, which is unambiguous because the entry key is the
+ * first WHITESPACE-separated token and therefore cannot contain a TAB: only the
+ * reason can, and it is everything after the second one.
  */
 export function parseBlockeredList(filePath: string, commentChar = '#'): BlockeredEntry[] {
   if (!fs.existsSync(filePath)) return [];
 
+  const out = canonical(['records', filePath, commentChar]);
   const results: BlockeredEntry[] = [];
-  const blockerRegex = new RegExp(`^\\s*${commentChar}\\s*BLOCKER:\\s*(.+)$`);
-  const commentRegex = new RegExp(`^\\s*${commentChar}`);
-  const inlineBlockerRegex = new RegExp(`${commentChar}\\s*BLOCKER:\\s*(.+)$`);
-
-  const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
-  let currentBlocker = '';
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i] ?? '';
-    const stripped = raw.trim();
-
-    if (stripped === '') {
-      currentBlocker = '';
-      continue;
+  for (const row of out.split('\n')) {
+    if (row === '') continue;
+    const firstTab = row.indexOf('\t');
+    const secondTab = row.indexOf('\t', firstTab + 1);
+    if (firstTab < 0 || secondTab < 0) {
+      throw new Error(
+        `blocker-validator: ${MODULE} records emitted a row with fewer than two TABs: ${JSON.stringify(row)}`
+      );
     }
-    const blockerMatch = stripped.match(blockerRegex);
-    if (blockerMatch) {
-      currentBlocker = blockerMatch[1]!.trim();
-      continue;
-    }
-    if (commentRegex.test(stripped)) {
-      continue; // plain comment — preserve currentBlocker
-    }
-
-    // Entry line — take first whitespace-separated token before any inline comment
-    let entry = stripped.split(/\s/)[0] ?? '';
-    const commentIdx = entry.indexOf(commentChar);
-    if (commentIdx >= 0) entry = entry.slice(0, commentIdx);
-    entry = entry.trim();
-    if (!entry) continue;
-
-    // Inline-form precedence: "package  # BLOCKER: <reason>" captures the inline reason
-    let blocker = currentBlocker;
-    const inlineMatch = stripped.match(inlineBlockerRegex);
-    if (inlineMatch && !blocker) {
-      blocker = inlineMatch[1]!.trim();
-    } else if (inlineMatch) {
-      // Prefer block-level blocker when both present — matches bash behavior
-    }
-
-    results.push({ entry, blocker, line: i + 1 });
+    results.push({
+      line: Number(row.slice(0, firstTab)),
+      entry: row.slice(firstTab + 1, secondTab),
+      blocker: row.slice(secondTab + 1),
+    });
   }
-
   return results;
 }
 
@@ -237,12 +268,7 @@ export function verifyAllBlockers(entries: BlockeredEntry[], file: string): stri
   const failures: string[] = [];
   for (const { entry, blocker } of entries) {
     if (!blocker) {
-      failures.push(
-        [
-          `Allowlist ${file}: entry ${entry} is missing a '# BLOCKER: <reason>' comment above it`,
-          `  Action: add a line like '# BLOCKER: <who pins what / why we cannot take the fix>' immediately above ${entry} in ${file}`,
-        ].join('\n')
-      );
+      failures.push(render('missing', { file, entry }));
       continue;
     }
     const validation = validateBlockerQuality(entry, blocker, file);

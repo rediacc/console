@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: zh
-sourceHash: "c898204d1ff917f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### 身份验证
@@ -36,7 +36,7 @@ API令牌用于验证机器间操作（CLI许可证激活、状态检查）。
 - `subscription:read` -- 读取订阅详情
 
 **安全功能：**
-- IP绑定：首次请求将令牌锁定到该IP地址
+- IP绑定：令牌只在首次请求的IP地址上有效；换了新地址需要TOTP验证或重新登录（见下文）
 - 团队范围限定：令牌可限制为特定团队
 - 自动撤销：当创建者从组织中被移除时，令牌会被撤销
 
@@ -46,6 +46,18 @@ API令牌用于验证机器间操作（CLI许可证激活、状态检查）。
 # Token value is shown once -- save it securely
 ```
 
+#### IP地址变化时
+
+绑定到某个IP地址的令牌，从其他任何地址访问都会被拒绝，例如网络运营商分配了新地址时。迁移由CLI处理：
+
+- **交互式终端，已开启2FA**：CLI会询问身份验证器应用中的6位验证码，把令牌迁移到新地址，然后重新运行命令。迁移不接受备用码。
+- **脚本和CI（无终端）**：命令会失败，并给出两种解决方法：在交互式终端中运行一次任意 `rdc` 命令（例如 `rdc subscription status`）并输入验证码，或运行 `rdc subscription login`。
+- **未开启2FA**：令牌无法迁移。运行 `rdc subscription login` 获取新令牌；开启2FA后，下次迁移只需一个验证码。
+- **验证码错误**：15分钟内输错5次会锁定迁移，第一次锁定5分钟，之后每次加倍，最长1小时。被锁定4次后，该令牌的迁移将被禁用，直到下一次运行 `rdc subscription login`。
+- IP绑定为 `unbound` 或 `cloudflare` 的**executor令牌**不受影响。
+
+每次迁移都会记录在门户的活动日志中，包括旧地址和新地址。
+
 ### 设备码流程
 
 CLI可以使用设备码流程在无界面机器上进行身份验证：
@@ -53,7 +65,7 @@ CLI可以使用设备码流程在无界面机器上进行身份验证：
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```

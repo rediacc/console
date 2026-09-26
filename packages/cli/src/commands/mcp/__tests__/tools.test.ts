@@ -101,9 +101,7 @@ describe('MCP tool definitions', () => {
     it('repo_create builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_create')!;
       const argv = tool.command({ name: 'webapp', machine: 'prod', size: '10G' });
-      // `repo create <name>` takes the repo name POSITIONALLY (spec §5.4 placement
-      // union); the old `--name` flag is gone, and placement is --machine XOR
-      // --datastore.
+      // `repo create <name>` takes the repo name POSITIONALLY (spec §5.4 placement union); the old `--name` flag is gone, and placement is --machine XOR --datastore.
       expect(argv.slice(0, 3)).toEqual(['repo', 'create', 'webapp']);
       expect(argv).not.toContain('--name');
       expect(argv).toContain('--machine');
@@ -173,8 +171,7 @@ describe('MCP tool definitions', () => {
 
     it('repo_delete builds correct argv', () => {
       const tool = TOOLS.find((t) => t.name === 'repo_delete')!;
-      // repo delete <ref>: the repo is a positional; the machine is DERIVED, so
-      // there is no --machine flag to carry (spec §2.3).
+      // repo delete <ref>: the repo is a positional; the machine is DERIVED, so there is no --machine flag to carry (spec §2.3).
       const argv = tool.command({ ref: 'webapp' });
       expect(argv.slice(0, 3)).toEqual(['repo', 'delete', 'webapp']);
       expect(argv).not.toContain('--name');
@@ -182,9 +179,7 @@ describe('MCP tool definitions', () => {
 
     it('machine_deprovision appends --force', () => {
       const tool = TOOLS.find((t) => t.name === 'machine_deprovision')!;
-      // The reshape gave `machine deprovision` a positional <name>. The builder derives
-      // argv from the live Commander tree, so it followed on its own — this assertion is
-      // what had to catch up.
+      // The reshape gave `machine deprovision` a positional <name>. The builder derives argv from the live Commander tree, so it followed on its own, this assertion is what had to catch up.
       expect(tool.command({ name: 'old-server' })).toEqual([
         'machine',
         'deprovision',
@@ -202,9 +197,7 @@ describe('MCP tool definitions', () => {
         'repo_delete',
         'repo_push',
         'repo_pull',
-        // repo_exec replaced term_exec (w2b): the tool that used to build
-        // `term connect -m <machine> -c <cmd>` and whose argv silently went
-        // invalid when -m died. It is a real leaf now, so it is auto-derived.
+        // repo_exec replaced term_exec (w2b): the tool that used to build `term connect -m <machine> -c <cmd>` and whose argv silently went invalid when -m died. It is a real leaf now, so it is auto-derived.
         'repo_exec',
       ];
       for (const name of guarded) {
@@ -228,9 +221,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('the positional-converted repo tools bind their repo to the <ref> arg', () => {
-      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref>
-      // (spec §2.2); the guard's repo field is the positional name, not a dead
-      // --name flag.
+      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref> (spec §2.2); the guard's repo field is the positional name, not a dead --name flag.
       for (const name of [
         'repo_cat',
         'repo_status',
@@ -251,17 +242,14 @@ describe('MCP tool definitions', () => {
     });
 
     it('repo_checkout binds its repo to the <commit-or-branch-ref> positional', () => {
-      // Checkout clones a commit/branch (not a family) into a fresh fork, so its
-      // positional is role-named; the guard field is the positional name.
+      // Checkout clones a commit/branch (not a family) into a fresh fork, so its positional is role-named; the guard field is the positional name.
       expect(TOOLS.find((t) => t.name === 'repo_checkout')!.repoArgField).toBe(
         'commit-or-branch-ref'
       );
     });
 
     it('the backup tools bind their repo to the <ref> positional too', () => {
-      // Previously repoArg was 'repo', but no such field existed in the derived
-      // MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on
-      // repo_push / repo_pull. Binding to the real positional actually enables it.
+      // Previously repoArg was 'repo', but no such field existed in the derived MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on repo_push / repo_pull. Binding to the real positional actually enables it.
       expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('ref');
       expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('ref');
     });
@@ -284,8 +272,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('schemas with required fields reject missing values', () => {
-      // machine_status' name is now an OPTIONAL positional; machine_containers
-      // still requires the machine name, so it is the required-field example.
+      // machine_status' name is now an OPTIONAL positional; machine_containers still requires the machine name, so it is the required-field example.
       const tool = TOOLS.find((t) => t.name === 'machine_containers')!;
       const schema = z.object(tool.schema);
       const result = schema.safeParse({});
@@ -293,8 +280,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('schemas with optional fields accept missing values', () => {
-      // repo_up requires only its <ref> positional; no-start/skip-checkpoint/tls
-      // are optional and may be absent.
+      // repo_up requires only its <ref> positional; no-start/skip-checkpoint/tls are optional and may be absent.
       const tool = TOOLS.find((t) => t.name === 'repo_up')!;
       const schema = z.object(tool.schema);
       const result = schema.safeParse({ ref: 'app' });
@@ -303,13 +289,8 @@ describe('MCP tool definitions', () => {
   });
 
   describe('enum options (.choices())', () => {
-    // `config audit log` exposes `--actor` as `.choices(['human', 'agent'])` and
-    // carries an mcp block, so its derived schema must turn that closed set into a
-    // z.enum — accepting in-set values and rejecting anything else, rather than the
-    // permissive z.string() the auto-deriver produced before A5. The other
-    // value-taking options (`--since`, `--path`) are held constant so this asserts
-    // the enum constraint in isolation. (Value-taking options derive to REQUIRED
-    // fields in this deriver — see deriveSchema — so all three are supplied.)
+    // `config audit log` exposes `--actor` as `.choices(['human', 'agent'])` and carries an mcp block, so its derived schema must turn that closed set into a z.enum, accepting in-set values and rejecting anything else, rather than the permissive z.string() the auto-deriver produced before A5. The other value-taking options (`--since`, `--path`) are held constant so this asserts
+    // the enum constraint in isolation. (Value-taking options derive to REQUIRED fields in this deriver, see deriveSchema, so all three are supplied.)
     it('derives a z.enum for an option declared with .choices()', () => {
       const tool = TOOLS.find((t) => t.name === 'config_audit_log')!;
       const schema = z.object(tool.schema);
@@ -332,11 +313,7 @@ describe('MCP tool definitions', () => {
 
   describe('custom tools', () => {
     it('has exactly 3 custom tools', () => {
-      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf).
-      // 4 -> 3: machine_health retired — it ran `machine status --system`, not
-      // the health checker, so the tool named "health" never returned the
-      // aggregated issues. `machine health` is no longer experimental, so the
-      // contract-derived tool of that name now runs the real command.
+      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf). 4 -> 3: machine_health retired, it ran `machine status --system`, not the health checker, so the tool named "health" never returned the aggregated issues. `machine health` is no longer experimental, so the contract-derived tool of that name now runs the real command.
       expect(CUSTOM_TOOLS.length).toBe(3);
     });
 

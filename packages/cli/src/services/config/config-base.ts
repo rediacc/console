@@ -27,6 +27,11 @@ export class ConfigServiceBase {
   /** True when the current remote snapshot was served from the offline cache. */
   private _remoteOffline = false;
 
+  constructor() {
+    // State writes (`configFileStorage.updateState`) of a remote config are pushed through this service (T17).
+    configFileStorage.setRemoteStateWriter((name, updater) => this.pushStateEdit(name, updater));
+  }
+
   /**
    * Set a runtime config override (used by --config flag).
    * Takes precedence over default config name.
@@ -42,7 +47,7 @@ export class ConfigServiceBase {
   /**
    * Drop the memoized resource view (and any remote snapshot) so the next
    * read re-materializes from the config file. A short-lived CLI process
-   * never needs this — the memo dies with the process — but a LONG-LIVED
+   * never needs this, the memo dies with the process, but a LONG-LIVED
    * process serving many commands (the executor daemon) must call it per
    * request: the memo otherwise freezes the repository/machine view at
    * boot time while clients rewrite the config underneath (observed live:
@@ -79,9 +84,7 @@ export class ConfigServiceBase {
       return this._resourceState;
     }
 
-    // Encryption-at-rest is a storage-layer transform in v3: loadDecrypted
-    // resolves the master password (env / prompt) only when the config is
-    // encrypted and materializes every encrypted leaf into plaintext.
+    // Encryption-at-rest is a storage-layer transform in v3: loadDecrypted resolves the master password (env / prompt) only when the config is encrypted and materializes every encrypted leaf into plaintext.
     const decrypted = await configFileStorage.loadDecrypted(configName);
     const { LocalResourceState } = await import('./resource-state.js');
     this._resourceState = LocalResourceState.load(decrypted, configName);
@@ -91,7 +94,7 @@ export class ConfigServiceBase {
 
   /**
    * Set a whole family's placement (spec/04 §1.2.1) via the version-bumping
-   * resources persist — a migrate is a DECLARED change of home (unlike
+   * resources persist, a migrate is a DECLARED change of home (unlike
    * reconcile's observation-only state writes). getResourceState throws if no
    * config is active.
    *
@@ -129,7 +132,7 @@ export class ConfigServiceBase {
   /**
    * List all available config files.
    */
-  async list(): Promise<string[]> {
+  list(): Promise<string[]> {
     return configFileStorage.list();
   }
 
@@ -174,17 +177,20 @@ export class ConfigServiceBase {
 
   /**
    * Load config from the remote server, caching for the session.
-   * Preserves all local-only settings (remote pointer, account defaults, language).
+   * Returns exactly what the on-disk cache holds after the refresh: the pulled content with
+   * this host's sections (remote pointer, state, encryption, renetPath, …) overlaid.
    *
    * On success the on-disk offline cache is refreshed. On a network-class
    * failure (RemoteUnreachableError) the cached copy is served with a stderr
-   * warning; auth/semantic failures still throw — the cache must never mask a
+   * warning; auth/semantic failures still throw, the cache must never mask a
    * revoked enrollment.
    */
   private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {
     const adapter = await this.getRemoteAdapter(localConfig, configName);
     const { RemoteUnreachableError } = await import('../../adapters/remote-config-adapter.js');
-    const { formatStaleCacheWarning, writeRemoteCache } = await import('./remote-cache.js');
+    const { formatStaleCacheWarning, pullOrPurge, writeRemoteCache } = await import(
+      './remote-cache.js'
+    );
     const { outputService } = await import('../core/output.js');
     const { t } = await import('../../i18n/index.js');
 
@@ -192,7 +198,8 @@ export class ConfigServiceBase {
     let version: number;
     let sdkEpoch: number;
     try {
-      ({ config, version, sdkEpoch } = await adapter.pull());
+      // A team_forbidden refusal purges the offline copy before it propagates (E4); it is not RemoteUnreachableError, so the cache is never served for it either.
+      ({ config, version, sdkEpoch } = await pullOrPurge(adapter, configName));
     } catch (error) {
       if (!(error instanceof RemoteUnreachableError)) throw error;
 
@@ -221,24 +228,25 @@ export class ConfigServiceBase {
       return cached;
     }
 
-    // Local pointer fields take precedence over anything remote might send.
-    if (localConfig.remote) config.remote = localConfig.remote;
-    if (localConfig.account) {
-      config.account = { ...(config.account ?? {}), ...localConfig.account };
-    }
-    if (localConfig.defaults) {
-      config.defaults = { ...(config.defaults ?? {}), ...localConfig.defaults };
-    }
-
-    // Awaited on purpose: a fire-and-forget refresh that loses the write is
-    // silent staleness on the next offline read.
-    await writeRemoteCache(configName, config, version);
+    // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read. The in-memory config IS what the cache now holds (device-local pointers overlaid by the one overlayDeviceLocal), so RemoteResourceState.load sees `state` and a later push cannot rewrite state.repos without it (F3).
+    config = await writeRemoteCache(configName, config, version);
 
     this._remoteConfig = config;
     this._remoteVersion = version;
     this._remoteSdkEpoch = sdkEpoch;
     this._remoteOffline = false;
     return config;
+  }
+
+  /**
+   * The adapter every read and write of the active config goes through, for a command that talks
+   * to its store directly (`config remote versions`, `config remote restore`). Null when the
+   * active config is not a remote config.
+   */
+  async getActiveRemoteAdapter(): Promise<RemoteConfigAdapter | null> {
+    const configName = this.getEffectiveConfigName();
+    const local = await configFileStorage.load(configName);
+    return hasRemoteConfig(local) ? this.getRemoteAdapter(local, configName) : null;
   }
 
   /**
@@ -271,18 +279,8 @@ export class ConfigServiceBase {
   /**
    * Initialize a new config file.
    */
-  async init(name: string): Promise<RdcConfig> {
+  init(name: string): Promise<RdcConfig> {
     return configFileStorage.init(name);
-  }
-
-  /**
-   * Update the current config.
-   */
-  async update(name: string, updates: Partial<RdcConfig>): Promise<void> {
-    await configFileStorage.update(name, (config) => ({
-      ...config,
-      ...updates,
-    }));
   }
 
   /**
@@ -312,8 +310,22 @@ export class ConfigServiceBase {
   }
 
   async getUserEmail(): Promise<string | null> {
-    const config = await this.getCurrent();
+    const config = await this.readLocalFile();
     return config?.account?.userEmail ?? null;
+  }
+
+  /**
+   * The active config's LOCAL file, never a pull; undefined when it is missing or unreadable. For the
+   * account/preference reads the startup hook, telemetry context and `subscription login` make before
+   * any command runs: a pull there made a remote config whose token needed renewing fail every command,
+   * the login that renews it included (2026-09-26). The cache carries the last pulled values.
+   */
+  private async readLocalFile(): Promise<RdcConfig | undefined> {
+    try {
+      return await configFileStorage.load(this.getEffectiveConfigName());
+    } catch {
+      return undefined;
+    }
   }
 
   // ============================================================================
@@ -321,12 +333,12 @@ export class ConfigServiceBase {
   // ============================================================================
 
   async getTeam(): Promise<string | undefined> {
-    const config = await this.getCurrent();
+    const config = await this.readLocalFile();
     return config?.account?.team;
   }
 
   async getRegion(): Promise<string | undefined> {
-    const config = await this.getCurrent();
+    const config = await this.readLocalFile();
     return config?.account?.region;
   }
 
@@ -339,9 +351,8 @@ export class ConfigServiceBase {
     key: 'language' | 'datastoreSize' | 'pruneGraceDays',
     value: string
   ): Promise<void> {
-    const name = this.getEffectiveConfigName();
     const typed: string | number = key === 'pruneGraceDays' ? Number(value) : value;
-    await configFileStorage.update(name, (cfg) => ({
+    await this.updateSyncedSection((cfg) => ({
       ...cfg,
       defaults: { ...(cfg.defaults ?? {}), [key]: typed },
     }));
@@ -349,8 +360,7 @@ export class ConfigServiceBase {
 
   /** Clear one v3 `defaults` field. */
   async clearDefault(key: 'language' | 'datastoreSize' | 'pruneGraceDays'): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({
+    await this.updateSyncedSection((cfg) => ({
       ...cfg,
       defaults: cfg.defaults ? { ...cfg.defaults, [key]: undefined } : undefined,
     }));
@@ -358,22 +368,75 @@ export class ConfigServiceBase {
 
   /** Clear the whole v3 `defaults` bucket. */
   async clearDefaults(): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({ ...cfg, defaults: undefined }));
+    await this.updateSyncedSection((cfg) => ({ ...cfg, defaults: undefined }));
+  }
+
+  /**
+   * Apply an edit to a synced section (`defaults`, ...) of the current config: the one synced write
+   * path, `updateSyncedConfig` (synced-write.ts), which pushes a remote config's edit and edits any
+   * other config on disk. `defaults` follows the store with no local override (operator ruling D3).
+   */
+  private async updateSyncedSection(edit: (cfg: RdcConfig) => RdcConfig): Promise<void> {
+    const { updateSyncedConfig } = await import('./synced-write.js');
+    await updateSyncedConfig(this.getEffectiveConfigName(), edit, this);
+  }
+
+  /**
+   * Push a state edit of the active remote config: `state` syncs (T17), so a network-ID allocation or
+   * a runtime record written only to the cache would be erased by the next pull, and two devices
+   * allocating at once would hand out the same ID. `updateDocument` replays the edit on the fresh
+   * server copy after a version conflict, so the loser of a race allocates again.
+   */
+  private async pushStateEdit(
+    name: string,
+    updater: (cfg: RdcConfig) => RdcConfig
+  ): Promise<RdcConfig> {
+    if (name !== this.getEffectiveConfigName()) {
+      throw new Error(
+        `Config "${name}" is remote-enabled but is not the active config; select it with --config to write its state`
+      );
+    }
+    try {
+      const state = await this.getResourceState();
+      const { RemoteResourceState } = await import('./resource-state.js');
+      if (!(state instanceof RemoteResourceState)) {
+        throw new Error(`Config "${name}" is remote-enabled but its store is not loaded`);
+      }
+      const pushed = await state.updateDocument(updater);
+      // The resource view re-seated itself on the pushed document; the memoized snapshot follows it.
+      this._remoteConfig = pushed;
+      return pushed;
+    } catch (error) {
+      throw await this.asStateWriteError(name, error);
+    }
+  }
+
+  /**
+   * A state write that failed because the store is unreachable, at any step (the pull that loads
+   * the store, the push, the conflict re-pull), is the one fail-closed error naming the config and
+   * the server, so a best-effort state writer can report why the record was lost.
+   */
+  private async asStateWriteError(name: string, error: unknown): Promise<unknown> {
+    const { RemoteWriteFailedClosedError, findUnreachable } = await import(
+      '../../adapters/remote-config-adapter.js'
+    );
+    if (error instanceof RemoteWriteFailedClosedError) return error;
+    const unreachable = findUnreachable(error);
+    return unreachable ? new RemoteWriteFailedClosedError(name, unreachable.apiUrl, error) : error;
   }
 
   // --- Language Settings ---
 
   async getLanguage(): Promise<string> {
     if (process.env.REDIACC_LANG) return normalizeLanguage(process.env.REDIACC_LANG);
-    const config = await this.getCurrent();
-    if (config?.defaults?.language) return config.defaults.language;
+    // The local file, never a pull (see readLocalFile): the preAction hook calls this before every command.
+    const local = await this.readLocalFile();
+    if (local?.defaults?.language) return local.defaults.language;
     return detectSystemLanguage();
   }
 
   async setLanguage(language: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await configFileStorage.update(name, (cfg) => ({
+    await this.updateSyncedSection((cfg) => ({
       ...cfg,
       defaults: { ...(cfg.defaults ?? {}), language: normalizeLanguage(language) },
     }));

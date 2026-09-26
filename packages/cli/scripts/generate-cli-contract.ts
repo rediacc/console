@@ -82,8 +82,7 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
     'Uploads from the local filesystem with rsync/SFTP; a remote executor cannot see the source paths. Run it without --proxy.',
   'repo sync download':
     'Downloads to the local filesystem with rsync/SFTP; a remote executor would write the files onto its own disk. Run it without --proxy.',
-  // Registered as a dry-run download: it still shells out to a client-side
-  // rsync that diffs against the operator's local tree.
+  // Registered as a dry-run download: it still shells out to a client-side rsync that diffs against the operator's local tree.
   'repo sync status':
     'Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.',
 
@@ -123,10 +122,7 @@ const DETACH_EXCLUSIONS: Record<string, string> = {};
 const POSITIONAL_KIND_BY_NAME: Record<string, PositionalKind> = {
   ref: 'repo-ref',
   'repo-ref': 'repo-ref',
-  // Repo-ref aliases: some repo verbs name their positional by role for clarity
-  // (`repo fork <parent-ref>`, `repo promote <fork-ref>`, `repo checkout
-  // <commit-or-branch-ref>`, `repo merge --from <source-ref>`). They all name a
-  // repo, so they bind the console's repo picker exactly like `<ref>`.
+  // Repo-ref aliases: some repo verbs name their positional by role for clarity (`repo fork <parent-ref>`, `repo promote <fork-ref>`, `repo checkout <commit-or-branch-ref>`, `repo merge --from <source-ref>`). They all name a repo, so they bind the console's repo picker exactly like `<ref>`.
   'parent-ref': 'repo-ref',
   'fork-ref': 'repo-ref',
   'commit-or-branch-ref': 'repo-ref',
@@ -166,21 +162,10 @@ function classifyPositional(pathKey: string, domain: string, name: string): Posi
   // `rdc job status <job-id>` and `rdc job logs <job-id>` name the job; an `id`
   // argument on the `job` domain is the same thing under an older spelling.
   if (domain === 'job' && (name === 'id' || name === 'job-id')) return 'job-id';
-  // `machine provider remove <name>` names an EXISTING configured provider, so
-  // the console can bind its provider picker to it. Path-aware on purpose:
-  // `machine provider add <name>` and `machine provision <name>` name NEW
-  // resources, so there is nothing to pick and they stay plain.
+  // `machine provider remove <name>` names an EXISTING configured provider, so the console can bind its provider picker to it. Path-aware on purpose: `machine provider add <name>` and `machine provision <name>` name NEW resources, so there is nothing to pick and they stay plain.
   if (pathKey === 'machine provider remove' && name === 'name') return 'provider';
-  // A machine verb's `<name>` positional names an EXISTING configured machine
-  // (`machine status`, `health`, `deprovision`, `prune`, `remove`, `setup`,
-  // `scan-keys`), so the console can bind its machine picker to it and its
-  // container discovery / context / policy layers can resolve the machine from
-  // the ref. Same path-aware carve-out as `machine provider remove` above: the
-  // commands below name a machine (or provider) that does NOT exist yet, so
-  // there is nothing to pick and they stay plain:
-  //   `machine add`          registers a brand-new machine under this name,
-  //   `machine provision`    provisions a brand-new cloud machine under this name,
-  //   `machine provider add` names a new cloud PROVIDER, not a machine.
+  // A machine verb's `<name>` positional names an EXISTING configured machine (`machine status`, `health`, `deprovision`, `prune`, `remove`, `setup`, `scan-keys`), so the console can bind its machine picker to it and its container discovery / context / policy layers can resolve the machine from the ref. Same path-aware carve-out as `machine provider remove` above: the commands
+  // below name a machine (or provider) that does NOT exist yet, so there is nothing to pick and they stay plain: `machine add` registers a brand-new machine under this name, `machine provision` provisions a brand-new cloud machine under this name, `machine provider add` names a new cloud PROVIDER, not a machine.
   if (domain === 'machine' && name === 'name' && !MACHINE_NAME_CREATORS.has(pathKey)) {
     return 'machine';
   }
@@ -258,14 +243,10 @@ function toContractOption(
       ? null
       : String(opt.defaultValue);
 
-  // Commander stores a .choices([...]) declaration on argChoices. Its presence
-  // is what tells a consumer to render a Select instead of a text input.
+  // Commander stores a .choices([...]) declaration on argChoices. Its presence is what tells a consumer to render a Select instead of a text input.
   const choices = opt.argChoices;
 
-  // Classification (scripts/lib/option-classification.ts): kinds feed the
-  // console's pick-or-type combobox, format its input control, sensitive its
-  // masking/redaction, tier its progressive disclosure. All hints: none of
-  // them constrains what the CLI accepts.
+  // Classification (scripts/lib/option-classification.ts): kinds feed the console's pick-or-type combobox, format its input control, sensitive its masking/redaction, tier its progressive disclosure. All hints: none of them constrains what the CLI accepts.
   const long = stripDashes(opt.long);
   const valueTaking = opt.required || opt.optional;
   const mandatory = opt.mandatory;
@@ -483,8 +464,7 @@ const commands: ContractCommand[] = walked.map((w) => {
   const plane = getCommandPlane(w.pathKey);
   const interactive = isInteractiveCommand(w.pathKey);
 
-  // Re-extract options from the live command so the contract carries the rich
-  // shape (long/short/valueTaking/variadic) that argv serialisation needs.
+  // Re-extract options from the live command so the contract carries the rich shape (long/short/valueTaking/variadic) that argv serialisation needs.
   const liveCommand = w.path.reduce<import('commander').Command | undefined>(
     (cmd, segment) => cmd?.commands.find((c) => c.name() === segment),
     cli
@@ -513,8 +493,7 @@ const commands: ContractCommand[] = walked.map((w) => {
     ? undefined
     : proxyBlockedReason(w.pathKey, plane, interactive);
 
-  // Detach is the same predicate as proxy, minus jobs (they manage jobs, not
-  // machine work) and an escape-hatch table. The serve dispatch turns it on for
+  // Detach is the same predicate as proxy, minus jobs (they manage jobs, not machine work) and an escape-hatch table. The serve dispatch turns it on for
   // a proxied command; `--background` turns it on for a local one.
   const detachable = proxyCapable && domain !== 'job' && !(w.pathKey in DETACH_EXCLUSIONS);
 
@@ -584,6 +563,7 @@ const contract: CliContract = { version, languages, commands };
 
 // ---------- Emit ----------
 
+// tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
 fs.mkdirSync(path.join(outputDir, 'i18n'), { recursive: true });
 
 const generatedTs = `// AUTO-GENERATED by packages/cli/scripts/generate-cli-contract.ts - DO NOT EDIT
@@ -597,7 +577,9 @@ export const CLI_CONTRACT_VERSION = '${version}';
 export const CLI_CONTRACT: CliContract = ${JSON.stringify(contract, null, 2)};
 `;
 
+// tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
 fs.writeFileSync(path.join(outputDir, 'contract.generated.ts'), generatedTs, 'utf-8');
+// tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
 fs.writeFileSync(
   path.join(outputDir, 'contract.json'),
   JSON.stringify(contract, null, 2) + '\n',
@@ -608,6 +590,7 @@ for (const lang of languages) {
   const strings = Object.fromEntries(
     [...flattenHelpNamespaces(loadLocale(lang))].sort(([a], [b]) => a.localeCompare(b))
   );
+  // tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
   fs.writeFileSync(
     path.join(outputDir, 'i18n', `${lang}.json`),
     JSON.stringify(strings, null, 2) + '\n',

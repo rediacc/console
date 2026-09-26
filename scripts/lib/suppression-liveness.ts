@@ -19,7 +19,7 @@
  *
  * That is deliberate. This repo already engineered away upstream-cadence
  * flakiness (scripts/lib/release-age.ts defers releases younger than
- * .npmrc's minimum-release-age so a fresh publish cannot redden CI). A gate
+ * the window in .ci/config/release-age.json so a fresh publish cannot redden CI). A gate
  * whose verdict can flip overnight without a commit re-creates exactly that
  * problem, so no probe may consult a registry, a publish date, or a version
  * comparison. A verdict changes only when the repo changes, in the same commit
@@ -27,7 +27,7 @@
  */
 
 import { existsSync as fsExistsSync, readFileSync } from 'node:fs';
-import { DIM, GREEN, NC, RED, YELLOW } from '../utils/console.js';
+import { DIM, GREEN, NC, RED, YELLOW } from './console.js';
 
 const readFileUtf8 = (p: string): string => readFileSync(p, 'utf-8');
 
@@ -165,7 +165,7 @@ const MAX_FINDINGS_PER_PROBE = 10;
 /**
  * Output is deliberately SHARP, not comprehensive: one block per finding, one
  * file:line, one copy-pasteable fix, and a hard cap per probe followed by a
- * roll-up. The anti-pattern being avoided is scripts/check-actions.ts's old
+ * roll-up. The anti-pattern being avoided is scripts/gates/check-actions.ts's old
  * `Files: a:1, b:2, …` dump, which listed 137 paths for a single action and
  * buried the one line a reader actually needed.
  */
@@ -237,10 +237,7 @@ export function formatReport(result: RunResult, opts: { ci: boolean }): string {
  * uninitialized submodule, for instance); checking nothing at all is not.
  */
 export function isVacuous(result: RunResult, probeCount: number): boolean {
-  // Keyed on ENTRIES CHECKED, not probes run. A probe can execute and still
-  // assert nothing (its suppression file is absent), which is exactly what
-  // happens on the anti-vacuity harness's fixture now that it copies
-  // .ci/scripts in: one probe "ran" over zero entries and the gate reported
+  // Keyed on ENTRIES CHECKED, not probes run. A probe can execute and still assert nothing (its suppression file is absent), which is exactly what happens on the anti-vacuity harness's fixture now that it copies .ci/scripts in: one probe "ran" over zero entries and the gate reported
   // success. entriesChecked === 0 subsumes probesRun === 0 and closes that.
   return probeCount > 0 && result.entriesChecked === 0;
 }

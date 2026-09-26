@@ -1,21 +1,14 @@
 """Prepare a remote machine's VS Code Server environment.
 
-Executed on the REMOTE host over SSH by
-packages/cli/src/remote/vscode/bootstrap.ts, which embeds this file's text at
+Executed on the REMOTE host over SSH by packages/cli/src/remote/vscode/bootstrap.ts, which embeds this file's text at
 bundle time (esbuild `loader: {".py": "text"}`) and runs it as
 `python3 -c <this source> <config-json>`.
 
-WHY THIS IS A FILE AND NOT A TEMPLATE LITERAL. It used to be 130 lines of
-Python inside a TypeScript backtick string, where no linter, formatter or type
-checker could see it, and it stayed that way long enough to grow a
-code-injection hole: four of the six values interpolated into it went in
+WHY THIS IS A FILE AND NOT A TEMPLATE LITERAL. It used to be 130 lines of Python inside a TypeScript backtick string, where no linter, formatter or type checker could see it, and it stayed that way long enough to grow a code-injection hole: four of the six values interpolated into it went in
 unescaped, so a UNIVERSAL_USER of `\'; import os; os.system(\'id\'); x=\'`
-parsed cleanly and executed -- on a remote host, under `sudo -u` on the
-user-switch path.
+parsed cleanly and executed -- on a remote host, under `sudo -u` on the user-switch path.
 
-The fix is not better escaping. There is NO interpolation into this file at
-all: every value arrives as JSON in argv[1], so the only quoting left is
-shell-quoting a single opaque argument. A value can no longer become code.
+The fix is not better escaping. There is NO interpolation into this file at all: every value arrives as JSON in argv[1], so the only quoting left is shell-quoting a single opaque argument. A value can no longer become code.
 """
 
 import contextlib
@@ -126,15 +119,12 @@ def main():
     setup_content = f'source "{env_file}"'
     update_managed_content(setup_file, setup_content, 0o644, uid, gid)
 
-    # Write terminal init script (sourced via --rcfile so PS1 isn't overridden)
-    # --rcfile replaces ~/.bashrc, so we source it explicitly after our env setup
+    # Write terminal init script (sourced via --rcfile so PS1 isn't overridden) --rcfile replaces ~/.bashrc, so we source it explicitly after our env setup
     terminal_init = setup_dir / "terminal-init.sh"
     init_content = f'source /etc/bash.bashrc 2>/dev/null\nsource "{env_file}" 2>/dev/null\nsource ~/.bashrc 2>/dev/null\n'
     write_file_atomic(terminal_init, init_content, 0o644, uid, gid)
 
-    # Write Machine settings to force /bin/bash with our init as default shell
-    # --rcfile replaces the default ~/.bashrc sourcing, so we source /etc/bash.bashrc
-    # ourselves followed by rediacc-env.sh (which includes PS1 and helper functions)
+    # Write Machine settings to force /bin/bash with our init as default shell --rcfile replaces the default ~/.bashrc sourcing, so we source /etc/bash.bashrc ourselves followed by rediacc-env.sh (which includes PS1 and helper functions)
     data_dir = setup_dir / "data"
     machine_dir = data_dir / "Machine"
     ensure_dir(data_dir, 0o775, uid, gid)
@@ -143,9 +133,7 @@ def main():
     settings_file = machine_dir / "settings.json"
     machine_settings = {}
     if settings_file.exists():
-        # OSError: unreadable. ValueError: not JSON (UnicodeDecodeError is a
-        # subclass). Either way the file is replaced; anything else is a defect
-        # here and must not be swallowed.
+        # OSError: unreadable. ValueError: not JSON (UnicodeDecodeError is a subclass). Either way the file is replaced; anything else is a defect here and must not be swallowed.
         with contextlib.suppress(OSError, ValueError):
             machine_settings = json.loads(settings_file.read_text())
     machine_settings["terminal.integrated.defaultProfile.linux"] = "bash"

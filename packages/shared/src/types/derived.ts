@@ -9,9 +9,7 @@
 // UTILITY TYPES
 // =============================================================================
 
-// Note: WithOptionalVault is no longer needed - vaultContent and vaultVersion
-// are now optional with defaults in the generated API types (SQL defaults).
-// Use CreateXxxParams directly from api-schema.generated.ts.
+// Note: WithOptionalVault is no longer needed - vaultContent and vaultVersion are now optional with defaults in the generated API types (SQL defaults). Use CreateXxxParams directly from api-schema.generated.ts.
 
 // Note: Use Partial<T> directly instead of OptionalParams<T>
 
@@ -39,9 +37,7 @@ export interface PluginContainer {
 // FORM VALUE TYPES (for create operations with optional vault)
 // =============================================================================
 
-// Note: Use CreateXxxParams directly from api-schema.generated.ts.
-// vaultContent and vaultVersion are optional with SQL defaults.
-// Example: Use CreateStorageParams directly for forms.
+// Note: Use CreateXxxParams directly from api-schema.generated.ts. vaultContent and vaultVersion are optional with SQL defaults. Example: Use CreateStorageParams directly for forms.
 
 // =============================================================================
 // COMPUTED TYPES (not from stored procedures)

@@ -194,8 +194,7 @@ go test ./internal/provider/ -v -run 'Test.*Import'
 
 ## Layer 2: Acceptance Tests
 
-Acceptance tests run real `terraform apply/destroy` against live infrastructure.
-They use `rdc ops` VMs as the target.
+Acceptance tests run real `terraform apply/destroy` against live infrastructure. They use `rdc ops` VMs as the target.
 
 ### Test Framework
 
@@ -614,8 +613,7 @@ jobs:
 
 ## Test Sweepers
 
-Acceptance tests that fail mid-run leave orphaned resources (test repos,
-test machines in config). Implement test sweepers to clean up:
+Acceptance tests that fail mid-run leave orphaned resources (test repos, test machines in config). Implement test sweepers to clean up:
 
 - Sweeper runs before each test suite
 - Deletes any resources matching test prefixes (`acc-test-*`)

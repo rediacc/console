@@ -66,7 +66,7 @@ interface ConnectionEntry {
  *
  * OFF by default on purpose: an open SSH socket is a ref'd libuv handle, so a
  * lingering connection prevents a short-lived CLI process from exiting until
- * the linger elapses (observed live — `machine setup` hung for minutes after
+ * the linger elapses (observed live, `machine setup` hung for minutes after
  * completing; unref'ing the TIMER does not unref the SOCKET). Only a
  * long-lived process wants this, and exactly one exists: the executor daemon,
  * whose server sets REDIACC_SSH_LINGER_MS for its own process at startup so
@@ -186,10 +186,7 @@ class MachineConnectionManager {
       clearTimeout(entry.lingerTimer);
       entry.lingerTimer = null;
     }
-    // Reserve the lease BEFORE awaiting the shared connect: with two
-    // concurrent first acquires, the early waiter could otherwise acquire,
-    // release, and close the entry while the late waiter is still awaiting
-    // connectPromise, handing the late waiter a closed session.
+    // Reserve the lease BEFORE awaiting the shared connect: with two concurrent first acquires, the early waiter could otherwise acquire, release, and close the entry while the late waiter is still awaiting connectPromise, handing the late waiter a closed session.
     entry.refCount += 1;
     try {
       await this.ensureLive(entry);
@@ -268,8 +265,7 @@ class MachineConnectionManager {
     if (entry.refCount > 0) return;
     const linger = idleLingerMs();
     if (linger > 0 && this.entries.get(entry.key) === entry) {
-      // Keep the warm session for the idle window instead of closing at
-      // refcount zero. unref: never keeps a short-lived process alive.
+      // Keep the warm session for the idle window instead of closing at refcount zero. unref: never keeps a short-lived process alive.
       entry.lingerTimer = setTimeout(() => {
         entry.lingerTimer = null;
         if (entry.refCount === 0 && this.entries.get(entry.key) === entry) {
@@ -318,7 +314,7 @@ export async function withPooledSftp<T>(
  * connection held only for the duration of the call. Callers that already hold a
  * lease pass `lease.sftp` and keep owning its lifetime.
  */
-export async function withSharedOrPooledSftp<T>(
+export function withSharedOrPooledSftp<T>(
   sharedSftp: SFTPClient | undefined,
   config: SFTPClientConfig,
   fn: (sftp: SFTPClient) => Promise<T>

@@ -23,8 +23,10 @@ on:
         type: boolean
         default: true
 
-permissions:
-  contents: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 concurrency:
   group: housekeeping
@@ -39,6 +41,11 @@ jobs:
     # .ci/scripts/security/check-workflow-gates.sh.
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Checkout only. Every destructive call in this job (releases, tags, GHCR
+    # versions, deployments, environments, branches, runs, artifacts, caches)
+    # runs on the housekeeping-preset App token, not GITHUB_TOKEN.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -57,10 +64,12 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
       - uses: ./.github/actions/app-token
         id: app-token
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: housekeeping
           repositories: console,renet,elite,account
@@ -69,16 +78,16 @@ jobs:
       # (that is the measured case -- Cleanup PR Preview), so giving it the
       # night's own window to succeed is better than reaping around it.
       - name: Retry retryable failed runs
-        run: .ci/scripts/housekeeping/retry-failed-runs.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.retry_failed_runs ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
-        run: .ci/scripts/housekeeping/cleanup-versions.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_versions ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
@@ -104,7 +113,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
   stripe-cleanup:
     name: Stripe sandbox cleanup
@@ -114,6 +123,14 @@ jobs:
     # .ci/scripts/security/check-workflow-gates.sh.
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # pull-requests: read is for cleanup-orphans.ts, which is handed
+    # GH_TOKEN: github.token and shells out to `gh pr view --json state`.
+    # It requireEnv()s the token, so an unscoped one fails the step rather
+    # than degrading. The App token minted here is preset: readonly and
+    # carries no pull_requests scope, so it cannot serve that call.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -129,9 +146,9 @@ jobs:
             GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+      - uses: ./.github/actions/setup-node-npm
 
       - name: Install dependencies
         run: npm ci && npm run install:natives
@@ -142,7 +159,7 @@ jobs:
       - uses: ./.github/actions/app-token
         id: app-token-stripe
         with:
-          client-id: ${{ vars.APP_ID }}
+          client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
           preset: readonly
           repositories: console,account
@@ -160,7 +177,7 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           GH_TOKEN: ${{ github.token }}
 
       - name: Verify Stripe sandbox webhook endpoints (per-region)

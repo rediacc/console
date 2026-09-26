@@ -19,14 +19,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const subscriptionDir = path.join(__dirname, '../src/subscription');
 
-// Default is the tracked file, so a developer regenerating the schema by hand
-// keeps the behaviour the error messages tell them to expect.
+// Default is the tracked file, so a developer regenerating the schema by hand keeps the behaviour the error messages tell them to expect.
 //
-// SUBSCRIPTION_SCHEMA_OUT redirects the write, which exists for CI: the
-// up-to-date check only needs something to DIFF against, and regenerating in
-// place made a quality gate write a tracked file while the gate pool read the
-// same tree in parallel. Writing somewhere else is the fix that removes the
-// race rather than scheduling around it.
+// SUBSCRIPTION_SCHEMA_OUT redirects the write, which exists for CI: the up-to-date check only needs something to DIFF against, and regenerating in place made a quality gate write a tracked file while the gate pool read the same tree in parallel. Writing somewhere else is the fix that removes the race rather than scheduling around it.
 const outputPath = process.env.SUBSCRIPTION_SCHEMA_OUT
   ? path.resolve(process.env.SUBSCRIPTION_SCHEMA_OUT)
   : path.join(subscriptionDir, 'schema.generated.json');
@@ -195,6 +190,7 @@ function main(): void {
   delete (outputSchema as Record<string, unknown>).generatedAt;
 
   const json = JSON.stringify(outputSchema, null, 2);
+  // tree-write: safe outputPath is $SUBSCRIPTION_SCHEMA_OUT when set; subscription_schema.py always sets it to a TemporaryDirectory
   fs.writeFileSync(outputPath, json + '\n');
 
   console.log(`✓ Generated subscription schema: ${outputPath}`);

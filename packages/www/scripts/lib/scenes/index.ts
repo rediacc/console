@@ -45,7 +45,8 @@ export interface DebugCollector {
  * chapters for vtt-emit, events[].cardLabel for compileTitle sub-items) and
  * the precise shape is documented in tutorial-transcripts/<lang>/<tutorial>.json.
  */
-export type TranscriptDoc = Record<string, unknown>;
+type TranscriptDoc = Record<string, unknown>;
+export type { TranscriptDoc };
 
 export interface SceneContext {
   tmp: string;

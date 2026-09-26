@@ -86,9 +86,7 @@ test.describe('VM Lifecycle @bridge @ops @slow', () => {
 
     const result = await ops.startVMs({ basic: true, parallel: true });
 
-    // Note: The command may return non-zero if some orchestration steps fail
-    // (e.g., middleware auth), but VMs may still be created successfully.
-    // We verify actual VM readiness below.
+    // Note: The command may return non-zero if some orchestration steps fail (e.g., middleware auth), but VMs may still be created successfully. We verify actual VM readiness below.
 
     console.warn(`Start command returned code: ${result.success ? 0 : 1}`);
 
@@ -99,8 +97,7 @@ test.describe('VM Lifecycle @bridge @ops @slow', () => {
 
     console.warn('Bridge VM is ready');
 
-    // Re-deploy renet to VMs after fresh start
-    // This is needed because startVMs creates fresh VMs without renet
+    // Re-deploy renet to VMs after fresh start This is needed because startVMs creates fresh VMs without renet
     console.warn('Re-deploying renet to fresh VMs...');
     const infra = new InfrastructureManager();
     await infra.ensureRenetOnVMs();
@@ -192,8 +189,7 @@ test.describe('VM Reset @bridge @ops @slow', () => {
       expect(ready).toBe(true);
     }
 
-    // Re-deploy renet to VMs after reset
-    // This is needed because resetVMs recreates fresh VMs without renet
+    // Re-deploy renet to VMs after reset This is needed because resetVMs recreates fresh VMs without renet
     console.warn('Re-deploying renet to fresh VMs after reset...');
     const infra = new InfrastructureManager();
     await infra.ensureRenetOnVMs();

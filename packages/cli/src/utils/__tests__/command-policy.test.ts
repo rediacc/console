@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: vi.fn(),
+    // The grand-pointer fallback (command-policy-grand-ref.test.ts covers it against the real resolver).
+    getCurrent: vi.fn(() => Promise.resolve(null)),
   },
 }));
 

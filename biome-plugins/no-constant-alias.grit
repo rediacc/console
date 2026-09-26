@@ -1,0 +1,10 @@
+// Replaces the ESLint `no-restricted-syntax` entry at eslint.config/typescript.js:355-359 (selector: `VariableDeclarator[init.type='MemberExpression'][init.computed=false][init.object.name=/^[A-Z][A-Z_0-9]*$/]`). Bans local aliases of SCREAMING_SNAKE_CASE constants: use the original property access directly (e.g. `LAYOUT.HEADER_HEIGHT`, not `const X = LAYOUT.HEADER_HEIGHT`).
+language js
+
+`const $alias = $obj.$prop` where {
+    $obj <: r"^[A-Z][A-Z0-9_]*$",
+    register_diagnostic(
+        span = $alias,
+        message = "Do not create local aliases from constants. Use the original property access directly (e.g. LAYOUT.HEADER_HEIGHT instead of const X = LAYOUT.HEADER_HEIGHT)."
+    )
+}

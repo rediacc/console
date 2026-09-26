@@ -8,6 +8,7 @@
 import { type ExecFileOptions, execFile } from 'node:child_process';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 
 interface ExecOptions {
   debug?: boolean;
@@ -108,7 +109,7 @@ export class TofuExecutor {
         child.stdout.on('data', (data: Buffer) => {
           const text = data.toString();
           if (options?.debug) {
-            (options.onStdout ?? process.stdout.write.bind(process.stdout))(text);
+            (options.onStdout ?? writeStdout)(text);
           }
         });
       }
@@ -116,7 +117,7 @@ export class TofuExecutor {
       if (child.stderr) {
         child.stderr.on('data', (data: Buffer) => {
           const text = data.toString();
-          (options?.onStderr ?? process.stderr.write.bind(process.stderr))(text);
+          (options?.onStderr ?? writeStderr)(text);
         });
       }
     });

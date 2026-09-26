@@ -1,0 +1,7 @@
+# twin .ci/scripts/ci/profiler/panel.sh blob 7c1e340f56711c529ad241bbe2345d12083c81e7
+exit: 2
+--- stdout ---
+--- stderr ---
+panel.sh: PROFILER_SAMPLE_FILE must be set
+--- summary ---
+<absent>

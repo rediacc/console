@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ja
-sourceHash: "c898204d1ff917f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "cbfa1730b069f73c"
+sourceCommit: "c707ed4d0e178e7c4cec46e5ff989a1472a8eb82"
 ---
 
 ### 認証
@@ -36,7 +36,7 @@ APIトークンはマシン間の操作（CLIライセンスのアクティベ�
 - `subscription:read` -- サブスクリプション詳細の読み取り
 
 **セキュリティ機能：**
-- IPバインディング：最初のリクエストでトークンがそのIPアドレスに固定される
+- IPバインディング：トークンは最初のリクエストのIPアドレスでのみ有効。新しいアドレスではTOTPの確認か再ログインが必要（下記参照）
 - チームスコーピング：トークンを特定のチームに制限可能
 - 自動取り消し：作成者が組織から削除されるとトークンが取り消される
 
@@ -46,6 +46,18 @@ APIトークンはマシン間の操作（CLIライセンスのアクティベ�
 # Token value is shown once -- save it securely
 ```
 
+#### IPアドレスが変わったとき
+
+あるIPアドレスに紐づいたトークンは、ほかのアドレスからは拒否されます。たとえばプロバイダーが新しいアドレスを割り当てた場合です。移動はCLIが行います：
+
+- **対話型ターミナルで2FAが有効**：CLIが認証アプリの6桁のコードを尋ね、トークンを新しいアドレスへ移してからコマンドを再実行します。移動にはバックアップコードを使えません。
+- **スクリプトやCI（ターミナルなし）**：コマンドは失敗し、2つの解決方法を示します。対話型ターミナルで任意の `rdc` コマンド（例：`rdc subscription status`）を一度実行してコードを入力するか、`rdc subscription login` を実行します。
+- **2FAが無効**：トークンは移せません。`rdc subscription login` で新しいトークンを発行します。2FAを有効にしておけば、次回の移動はコードだけで済みます。
+- **間違ったコード**：15分以内に5回間違えると移動がロックされます。最初は5分で、その後は毎回2倍になり、最長1時間です。4回ロックされると、次に `rdc subscription login` を実行するまで、そのトークンの移動は無効になります。
+- IPバインディングが `unbound` または `cloudflare` の**executorトークン**は影響を受けません。
+
+移動のたびに、旧アドレスと新アドレスがポータルのアクティビティログに記録されます。
+
 ### デバイスコードフロー
 
 CLIはデバイスコードフローを使用してヘッドレスマシンで認証できます：
@@ -53,7 +65,7 @@ CLIはデバイスコードフローを使用してヘッドレスマシンで�
 ![Device Code Flow](/img/account-device-code-flow.svg)
 
 ```bash
-rdc config remote enable --headless
+rdc subscription login
 # Displays: Enter code XXXX-XXXX-XX at https://www.rediacc.com/account/authorize
 # After approval, CLI receives credentials automatically
 ```

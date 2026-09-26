@@ -1,8 +1,8 @@
 /**
  * `term connect <target>` / `vscode connect <target>` target resolution
  * (spec/03 §5.8, §5.9) and the §3.3 namespace-collision rule. One positional
- * addresses two namespaces (places and repos), so the resolution order — and
- * above all the refusal to guess — is the contract worth pinning.
+ * addresses two namespaces (places and repos), so the resolution order, and
+ * above all the refusal to guess, is the contract worth pinning.
  */
 
 import type { RepoFamily } from '@rediacc/shared/config-schema';
@@ -32,7 +32,7 @@ function family(placement: RepoFamily['placement'], tags = ['main']): RepoFamily
  * A config with: two plain machines, a cluster (`prod`) whose control node is
  * its first k8s-server member, a docker repo (`shop`) on `standalone`, a
  * cluster-placed repo (`web`) on the cluster's data datastore, and two
- * deliberate collisions — `mail` is both a repo and a machine, `prod` is both a
+ * deliberate collisions, `mail` is both a repo and a machine, `prod` is both a
  * repo and a cluster.
  */
 function buildConfig(): RdcConfig {

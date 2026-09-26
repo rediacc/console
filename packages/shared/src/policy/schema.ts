@@ -70,7 +70,8 @@ export const PolicyRuleSchema = z.object({
   /** Mutation classes permitted. Omitted means mutations are unrestricted. */
   mutationScopes: z.array(z.enum(MUTATION_SCOPES)).optional(),
 });
-export type PolicyRule = z.infer<typeof PolicyRuleSchema>;
+type PolicyRule = z.infer<typeof PolicyRuleSchema>;
+export type { PolicyRule };
 
 /**
  * The whole policy for one organization.
@@ -85,4 +86,5 @@ export const PolicyDocumentSchema = z.object({
   teams: z.record(z.string().min(1), PolicyRuleSchema).optional(),
   users: z.record(z.string().min(1), PolicyRuleSchema).optional(),
 });
-export type PolicyDocument = z.infer<typeof PolicyDocumentSchema>;
+type PolicyDocument = z.infer<typeof PolicyDocumentSchema>;
+export type { PolicyDocument };

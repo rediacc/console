@@ -57,8 +57,7 @@ describe('installCluster ceph dispatch (wave 6b)', () => {
     await installCluster('prod');
 
     const calls = exec.mock.calls.map((c) => c[0]);
-    // Ordered dispatch (excluding the ceph_health probe): prerequisites x3,
-    // bootstrap, cluster_create, pool_create.
+    // Ordered dispatch (excluding the ceph_health probe): prerequisites x3, bootstrap, cluster_create, pool_create.
     expect(calls.map((c) => c.functionName).filter((n) => n !== 'ceph_health')).toEqual([
       'ceph_install_prerequisites',
       'ceph_install_prerequisites',
@@ -87,8 +86,7 @@ describe('installCluster ceph dispatch (wave 6b)', () => {
       osd_device: '/dev/vdb',
     });
 
-    // pool_create: application pool name from cluster.ceph.pool, no pg_num.
-    // A 3-OSD topology is NOT small, so no size/min_size override (#9: never
+    // pool_create: application pool name from cluster.ceph.pool, no pg_num. A 3-OSD topology is NOT small, so no size/min_size override (#9: never
     // weaken the product default for >=3 OSDs).
     const poolCreate = calls.find((c) => c.functionName === 'ceph_pool_create');
     expect(poolCreate?.params).toMatchObject({ pool: 'k8s-pool', cluster: 'ceph' });

@@ -10,13 +10,10 @@ on:
         type: boolean
         default: false
 
-permissions:
-  # contents: WRITE, not read -- verify-stable now moves the `production`
-  # tag and flips the GitHub Release's `latest` badge, which is the only
-  # record of what is actually in production. Nothing else here writes.
-  contents: write
-  packages: write
-  pull-requests: read
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
 
 env:
   SOAK_DAYS: 7
@@ -25,6 +22,14 @@ jobs:
   promote:
     name: Release to Production
     runs-on: ubuntu-latest
+    # pull-requests: read for the `gh pr list --search label:rollback` guard,
+    # packages: write because the stable retag does `buildx imagetools create`
+    # (a push). This job only READS tags and releases, so contents stays read -
+    # the contents: write it used to inherit belongs to verify-stable alone.
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: read
     outputs:
       promoted: ${{ steps.result.outputs.promoted }}
       version: ${{ steps.edge.outputs.version }}
@@ -44,9 +49,10 @@ jobs:
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - name: Check edge manifest
         id: edge
-        run: .ci/scripts/release/check-edge-manifest.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_edge_manifest
 
       # BEFORE ANY PROMOTION WRITE, and the position is the whole point.
       # Today the R2 and Docker promotions succeed first and only then does the
@@ -65,14 +71,14 @@ jobs:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-        run: .ci/scripts/release/assert-edge-tag-exists.sh "${{ steps.edge.outputs.version }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists "${{ steps.edge.outputs.version }}"
 
       - name: Check stable manifest
         if: steps.edge.outputs.skip != 'true'
         id: stable
         env:
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
-        run: .ci/scripts/release/check-stable-manifest.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_stable_manifest
 
       # SOAK_DAYS comes from the workflow-level env: above.
       - name: Check soak period
@@ -81,7 +87,7 @@ jobs:
         env:
           EDGE_DATE: ${{ steps.edge.outputs.date }}
           FORCE: ${{ inputs.force }}
-        run: .ci/scripts/release/check-soak-period.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_soak_period
 
       - name: Check for rollback labels
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
@@ -110,9 +116,9 @@ jobs:
           AWS_DEFAULT_REGION: auto
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
-        run: .ci/scripts/deploy/promote-r2-to-stable.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable
 
       - name: Login to GHCR
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
@@ -160,6 +166,9 @@ jobs:
   # Deploy stable Workers from the exact tagged version
   deploy-marketing-stable:
     name: Deploy stable Marketing
+    # The callee needs only checkout.
+    permissions:
+      contents: read
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
     uses: ./.github/workflows/cd-deploy-worker.yml
@@ -172,6 +181,9 @@ jobs:
 
   deploy-account-stable:
     name: Deploy stable Account (all regions)
+    # The callee needs only checkout.
+    permissions:
+      contents: read
     needs: [promote]
     if: needs.promote.outputs.promoted == 'true'
     uses: ./.github/workflows/cd-deploy-account.yml
@@ -184,6 +196,14 @@ jobs:
   # Verify stable endpoints after deployment
   verify-stable:
     name: Verify stable
+    # contents: write is load-bearing and belongs to THIS job only:
+    # mark-production.sh moves the `production` tag ref (PATCH/POST on
+    # git/refs) and runs `gh release edit --latest`, both on github.token.
+    # It runs AFTER the endpoints verify, so losing this scope leaves stable
+    # deployed while the production tag and the latest badge still point at
+    # the previous version.
+    permissions:
+      contents: write
     needs: [promote, deploy-marketing-stable, deploy-account-stable]
     if: needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim
@@ -192,13 +212,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # .ci/scripts is needed too: the verification itself now lives there.
+          # .ci/rediacc_ci, because the step(s) below run `python3 -m rediacc_ci.*` and a cone that stops at .ci/scripts does not put that package on disk at all: the job dies with ModuleNotFoundError before judging anything, and a crash is not a verdict. Added 2026-09-21, sweeping the class the ci-complete cone was found in.
           sparse-checkout: |
             regions.json
             .ci/scripts
+            .ci/rediacc_ci
           sparse-checkout-cone-mode: false
 
       - name: Verify stable endpoints
-        run: .ci/scripts/deploy/verify-stable-endpoints.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.verify_stable_endpoints
 
       # AFTER verification, never before: the markers are a claim that this
       # version is live and serving, so they must not be written by a promotion
@@ -206,4 +228,4 @@ jobs:
       - name: Mark this version as production
         env:
           GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/release/mark-production.sh "${{ needs.promote.outputs.version }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.mark_production "${{ needs.promote.outputs.version }}"

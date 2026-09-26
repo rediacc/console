@@ -1,16 +1,9 @@
 """wl_agents: which specialist agent this session should have been told about.
 
-A deterministic matcher over the `description` frontmatter of the agent files
-in `.claude/agents/`. No model call, no network, no writes: this runs on EVERY
-stop, and `wl_judge.py:20-39` records what a second paid call costs (4.9-20.0s,
-and one live timeout that BLOCKED a stop).
+A deterministic matcher over the `description` frontmatter of the agent files in `.claude/agents/`. No model call, no network, no writes: this runs on EVERY stop, and `wl_judge.py:20-39` records what a second paid call costs (4.9-20.0s, and one live timeout that BLOCKED a stop).
 
-WHY IT EXISTS. On 2026-08-14 the operator had to hint twice by hand ("there is
-bench server deployment", "@.claude/agents/ may help for ops as well") because
-nothing surfaced the seven specialists that already existed. The word "bench"
-appeared ZERO times across all seven `description` fields and exactly once in
-the whole directory -- in a BODY. The knowledge existed; the matching surface
-did not.
+WHY IT EXISTS. On 2026-08-14 the operator had to hint twice by hand ("there is bench server deployment", "@.claude/agents/ may help for ops as well") because nothing surfaced the seven specialists that already existed. The word "bench" appeared ZERO times across all seven `description` fields and exactly once in the whole directory -- in a BODY. The knowledge existed; the matching
+surface did not.
 
 THREE DESIGN DECISIONS THAT ARE MEASUREMENTS, NOT PREFERENCES
 (the numbers are from PLAN-agent-hints-implementation.md sections 2, 3.2, 3.5):
@@ -28,9 +21,7 @@ THREE DESIGN DECISIONS THAT ARE MEASUREMENTS, NOT PREFERENCES
      is precisely what would let a DELETED agent keep being recommended. The
      corpus is re-read from disk on every call.
 
-Errors are RETURNED, never raised: this module is consulted on the path that
-ends every turn in every session, so an exception here is a session that cannot
-stop. A corpus that cannot be read degrades to silence plus a loud note.
+Errors are RETURNED, never raised: this module is consulted on the path that ends every turn in every session, so an exception here is a session that cannot stop. A corpus that cannot be read degrades to silence plus a loud note.
 """
 
 import os
@@ -39,9 +30,7 @@ import re
 
 import wl_core as C
 
-# ---- knobs (WORKLIST_* convention, wl_checks.py:36-63) -----------------------
-# Read at import: every stop is a fresh process, and the CI gate wants the same
-# defaults the hook runs with rather than a configuration nothing executes.
+# ---- knobs (WORKLIST_* convention, wl_checks.py:36-63) ----------------------- Read at import: every stop is a fresh process, and the CI gate wants the same defaults the hook runs with rather than a configuration nothing executes.
 ENABLED = os.environ.get("WORKLIST_AGENT_HINT", "on").strip().lower() not in (
     "off",
     "0",
@@ -49,68 +38,38 @@ ENABLED = os.environ.get("WORKLIST_AGENT_HINT", "on").strip().lower() not in (
     "no",
 )
 MIN_SCORE = float(os.environ.get("WORKLIST_AGENT_HINT_MIN_SCORE", "2"))
-# 1, not 2. Measured against five realistic composite haystacks (brief + open
-# items + last message + paths, ~500 chars, the shape the stop path actually
-# assembles): all four threshold settings gave IDENTICAL verdicts, because a
-# real match pulls far away (top 20.0 against next 1.0). The one-line specimens
-# in the CI gate are the sensitive case, which is why they are one-liners.
+# 1, not 2. Measured against five realistic composite haystacks (brief + open items + last message + paths, ~500 chars, the shape the stop path actually assembles): all four threshold settings gave IDENTICAL verdicts, because a real match pulls far away (top 20.0 against next 1.0). The one-line specimens in the CI gate are the sensitive case, which is why they are one-liners.
 MIN_MARGIN = float(os.environ.get("WORKLIST_AGENT_HINT_MIN_MARGIN", "1"))
-# Per-agent re-show window and the hard per-session cap. HYPOTHESIS, both:
-# plausible rather than derived, which is exactly why they are env-tunable.
+# Per-agent re-show window and the hard per-session cap. HYPOTHESIS, both: plausible rather than derived, which is exactly why they are env-tunable.
 REFRESH_MIN = int(os.environ.get("WORKLIST_AGENT_HINT_REFRESH_MIN", "720"))
 MAX_PER_SESSION = int(os.environ.get("WORKLIST_AGENT_HINT_MAX_PER_SESSION", "3"))
 
-# ---- tokenisation -----------------------------------------------------------
-# A path-ish token: anything carrying a `/` or a `.` inside it. These are the
-# high-value terms and they sit verbatim in the descriptions already
-# (`./run.sh`, `scripts/dev/deploy-bench.sh`, `bench.rediacc.com`).
+# ---- tokenisation ----------------------------------------------------------- A path-ish token: anything carrying a `/` or a `.` inside it. These are the high-value terms and they sit verbatim in the descriptions already (`./run.sh`, `scripts/dev/deploy-bench.sh`, `bench.rediacc.com`).
 PATH_RE = re.compile(r"[A-Za-z0-9_-]*(?:[./][A-Za-z0-9_-]+)+")
 # `{2,}` = three characters minimum, and it is deliberate and measured. A
-# four-character minimum silently discards `ops`, `rdc`, `k3s`, among the most
-# discriminative tokens this repo has; admitting three-character words took the
+# four-character minimum silently discards `ops`, `rdc`, `k3s`, among the most discriminative tokens this repo has; admitting three-character words took the
 # case table from 11/1/0 to 12/0/0, and the rescued case was `"rdc ops up
-# --basic"`, a phrase the operator actually types. The stopword list below
-# carries the cost of that admission.
+# --basic"`, a phrase the operator actually types. The stopword list below carries the cost of that admission.
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{2,}")
 
-# ---- morphology --------------------------------------------------------------
-# WHY THIS EXISTS, and it is a regression fix rather than a refinement. The
-# sentence that motivated this whole feature -- "there is bench server
-# DEPLOYMENT, why you don't utilize it?" -- did not fire. account-dev's
-# description carries `deploy`, `deploying` and `deploys`, hand-enumerated, and
-# not `deployment`, so the query lost that hit to morphology, landed on `bench`
-# alone at 1.0, and died against MIN_SCORE. Somebody wrote out three variants of
-# one verb by hand and still missed the fourth: that is the hand-maintained-list
-# staleness the design explicitly refused for a path->agent table, reappearing
-# inside term extraction. Adding "deployment" to a description fixes one query
-# and leaves the class open for "provisioning", "deployments", "redeploy".
+# ---- morphology -------------------------------------------------------------- WHY THIS EXISTS, and it is a regression fix rather than a refinement. The sentence that motivated this whole feature -- "there is bench server DEPLOYMENT, why you don't utilize it?" -- did not fire. account-dev's description carries `deploy`, `deploying` and `deploys`, hand-enumerated, and not
+# `deployment`, so the query lost that hit to morphology, landed on `bench` alone at 1.0, and died against MIN_SCORE. Somebody wrote out three variants of one verb by hand and still missed the fourth: that is the hand-maintained-list staleness the design explicitly refused for a path->agent table, reappearing inside term extraction. Adding "deployment" to a description fixes one
+# query and leaves the class open for "provisioning", "deployments", "redeploy".
 #
-# DUMB AND DETERMINISTIC ON PURPOSE: no stemmer library, no lexicon, no network.
-# One suffix, longest match first, and if that match would leave too short a stem
-# the word is left ALONE rather than falling through to a shorter suffix -- the
-# fall-through is what turns `fixes` into `fixe`.
+# DUMB AND DETERMINISTIC ON PURPOSE: no stemmer library, no lexicon, no network. One suffix, longest match first, and if that match would leave too short a stem the word is left ALONE rather than falling through to a shorter suffix -- the fall-through is what turns `fixes` into `fixe`.
 #
-# Applied inside tokenize(), so the corpus and the haystack fold through the
-# SAME code and cannot desynchronise. Word terms only: a path term matches
-# verbatim, and folding `deploy-bench.sh` would be nonsense.
+# Applied inside tokenize(), so the corpus and the haystack fold through the SAME code and cannot desynchronise. Word terms only: a path term matches verbatim, and folding `deploy-bench.sh` would be nonsense.
 _FOLD_SUFFIXES = ("ment", "ing", "ed", "s")
-# A stem shorter than this is not a word, it is a fragment: `ops` -> `op`,
-# `vms` -> `vm`, `k3s` -> `k3` are exactly the discriminative tokens section 3.2
-# went out of its way to admit, and stripping them would undo that.
+# A stem shorter than this is not a word, it is a fragment: `ops` -> `op`, `vms` -> `vm`, `k3s` -> `k3` are exactly the discriminative tokens section 3.2 went out of its way to admit, and stripping them would undo that.
 _FOLD_MIN_STEM = 4
-# `s` is the dangerous one: these endings are not plurals. Without this,
-# `status` -> `statu` and `class` -> `clas`, which is both wrong and unreadable
-# in the "Matched on:" line the hint prints.
+# `s` is the dangerous one: these endings are not plurals. Without this, `status` -> `statu` and `class` -> `clas`, which is both wrong and unreadable in the "Matched on:" line the hint prints.
 _FOLD_S_EXCEPT = ("ss", "us", "is", "os")
 
 
 def fold(word):
     """Strip ONE suffix: `deployment`/`deploying`/`deploys`/`deployed` -> `deploy`.
 
-    Deliberately NOT stripping a trailing `e`, which would fold `restoring` onto
-    `restore` and buy one more pairing at the cost of printing stems like
-    `restor` at the reader. The hint names its matched terms so that a wrong
-    hint is self-refuting in one second; a line full of fragments spends that.
+    Deliberately NOT stripping a trailing `e`, which would fold `restoring` onto `restore` and buy one more pairing at the cost of printing stems like `restor` at the reader. The hint names its matched terms so that a wrong hint is self-refuting in one second; a line full of fragments spends that.
     """
     for suf in _FOLD_SUFFIXES:
         if not word.endswith(suf):
@@ -125,15 +84,9 @@ def fold(word):
 def _stem(word):
     """fold() to a fixed point, or "" when any form along the way is a stopword.
 
-    TWO STEPS ARE REAL, not defensive padding: `deployments` strips its plural
-    to `deployment` and needs a second pass to reach `deploy`, and `deployments`
-    is one of the phrasings a future session will actually type.
+    TWO STEPS ARE REAL, not defensive padding: `deployments` strips its plural to `deployment` and needs a second pass to reach `deploy`, and `deployments` is one of the phrasings a future session will actually type.
 
-    THE STOPWORD CHECK RUNS ON EVERY INTERMEDIATE FORM, which is the whole
-    reason this is a loop rather than `fold(fold(w))`. `settings` folds to
-    `setting`, a stopword, and must die there; two blind passes would carry it
-    on to `sett` and admit a generic word as a discriminative term under an
-    unreadable name. Same for `runnings` -> `running`.
+    THE STOPWORD CHECK RUNS ON EVERY INTERMEDIATE FORM, which is the whole reason this is a loop rather than `fold(fold(w))`. `settings` folds to `setting`, a stopword, and must die there; two blind passes would carry it on to `sett` and admit a generic word as a discriminative term under an unreadable name. Same for `runnings` -> `running`.
     """
     seen = word
     for _ in range(3):
@@ -149,35 +102,18 @@ def _stem(word):
 PATH_WEIGHT = 3.0
 WORD_WEIGHT = 1.0
 NAME_WEIGHT = 3.0
-# A path term shorter than this is noise (`a.b`, `x/y`): the discriminative
-# filter would keep it and it would carry weight 3 for nothing.
+# A path term shorter than this is noise (`a.b`, `x/y`): the discriminative filter would keep it and it would carry weight 3 for nothing.
 PATH_MIN_LEN = 6
 
-# The usual closed class, plus the verbs every description and every task
-# sentence in this repo shares. Kept HERE, as one module constant, so the CI
-# gate scores against the same list the hook does -- a gate with its own copy
-# proves a configuration nothing runs.
+# The usual closed class, plus the verbs every description and every task sentence in this repo shares. Kept HERE, as one module constant, so the CI gate scores against the same list the hook does -- a gate with its own copy proves a configuration nothing runs.
 _STOPWORD_TEXT = (
     "the and for with from that this than then they them their there these those "
     "into onto over under about above after before between during without within "
-    # SUBORDINATING CONJUNCTIONS, the same closed class as `when`/`where`/`while`'s
-    # neighbours two lines up, which were listed and these were not. `while` is the
-    # one that fired: media-pipeline's description says "render finished pairs WHILE
-    # the GPU narrates", so an ordinary "fixed a bug while I was there" scored as a
-    # narration-domain claim -- the identical ordinary-English-unique-to-one-doc
-    # failure the `word words` note below already paid for. Half a closed class is
-    # not a closed class.
+    # SUBORDINATING CONJUNCTIONS, the same closed class as `when`/`where`/`while`'s neighbours two lines up, which were listed and these were not. `while` is the one that fired: media-pipeline's description says "render finished pairs WHILE the GPU narrates", so an ordinary "fixed a bug while I was there" scored as a narration-domain claim -- the identical
+    # ordinary-English-unique-to-one-doc failure the `word words` note below already paid for. Half a closed class is not a closed class.
     "while because though although whether unless "
-    # `total` is the same shape as `while` above, one class down: ordinary English
-    # that happens to appear in exactly one description, so `discriminative()` hands
-    # it to that description at full weight. licensing-ops says "the TOTAL tier map",
-    # and `total` is what every count in this repo reaches for -- "32 errors total",
-    # "total runtime", "total across 26 slugs". It fired live on a claim about
-    # TypeScript error counts in packages/www, routing a www dismissal to the
-    # licensing specialist on that single token. The pushback itself was right (the
-    # claim was unproven and pushing back found a real error in it); only the routing
-    # was nonsense, and a hint that names the wrong specialist spends the reader's
-    # trust in every later hint.
+    # `total` is the same shape as `while` above, one class down: ordinary English that happens to appear in exactly one description, so `discriminative()` hands it to that description at full weight. licensing-ops says "the TOTAL tier map", and `total` is what every count in this repo reaches for -- "32 errors total", "total runtime", "total across 26 slugs". It fired live on a
+    # claim about TypeScript error counts in packages/www, routing a www dismissal to the licensing specialist on that single token. The pushback itself was right (the claim was unproven and pushing back found a real error in it); only the routing was nonsense, and a hint that names the wrong specialist spends the reader's trust in every later hint.
     "total totals "
     "not but its are was were been being have has had having does did doing "
     "can could should would will shall may might must "
@@ -189,70 +125,34 @@ _STOPWORD_TEXT = (
     "use used uses using new old need needs needed "
     "get gets getting set sets setting put puts "
     "add adds adding fix fixes fixing "
-    # `word` is ordinary English that happens to be unique to ONE description
-    # ("per-word timings", media-pipeline), which is all `discriminative()` asks.
-    # Uniqueness in a 13-document corpus is a weak proxy for specificity, and
-    # this is where the two came apart: `wording` folds to `word`, so "there is
-    # no local way to check the changelog wording" was pushed back to the
-    # narration agent. Raising the -ing fold floor instead was tried and is
-    # WORSE -- the fold is load-bearing, `failing` -> `fail` -> stopword, and
-    # blocking it let `failing` through as a term for e2e-local.
+    # `word` is ordinary English that happens to be unique to ONE description ("per-word timings", media-pipeline), which is all `discriminative()` asks. Uniqueness in a 13-document corpus is a weak proxy for specificity, and this is where the two came apart: `wording` folds to `word`, so "there is no local way to check the changelog wording" was pushed back to the narration agent.
+    # Raising the -ing fold floor instead was tried and is WORSE -- the fold is load-bearing, `failing` -> `fail` -> stopword, and blocking it let `failing` through as a term for e2e-local.
     "word words "
-    # `touch` is in SEVEN of the twelve agent descriptions ("anything touching
-    # TTS...", "before touching any translation", ...), so it discriminates
-    # nothing -- and it fired a media-pipeline hint at a session whose message
-    # merely said a file was "not touched". Same class as run/work/use/fix above.
-    # TRAILING SPACE IS LOAD-BEARING. Adjacent Python literals concatenate with
-    # nothing between them, so a missing space here GLUES the last word of this
-    # line to the first word of the next and silently loses both tokens. That
-    # happened at this exact seam when 0826-2 and 0826-3 were rebased together:
-    # `touched` + `see` became `touchedsee`, and `see` stopped being a stopword
+    # `touch` is in SEVEN of the twelve agent descriptions ("anything touching TTS...", "before touching any translation", ...), so it discriminates nothing -- and it fired a media-pipeline hint at a session whose message merely said a file was "not touched". Same class as run/work/use/fix above. TRAILING SPACE IS LOAD-BEARING. Adjacent Python literals concatenate with nothing
+    # between them, so a missing space here GLUES the last word of this line to the first word of the next and silently loses both tokens. That happened at this exact seam when 0826-2 and 0826-3 were rebased together: `touched` + `see` became `touchedsee`, and `see` stopped being a stopword
     # while nothing failed.
     "touch touches touching touched "
-    # BOTH WAVES HIT THE SAME CLASS INDEPENDENTLY, which is itself the finding:
-    # 0826-2 added `touch` after a media-pipeline false positive, and 0826-3
-    # added the four below after four more. Neither wave knew about the other.
-    # THIRD instance of the `word words` class above, found the same way: the
-    # push-back fired on e2e-local for a claim about a BASH hook test suite,
-    # matching `miss`, `see`, `suite`. All three are ordinary English that this
-    # repo types constantly, and all three are "discriminative" only because
-    # e2e-local's description happens to be the one doc containing them:
-    # "MISSING bin/renet", "just push and SEE what CI says", "E2E SUITES".
-    # `missing` folds to `miss`, so both forms are listed -- _stem() kills a word
-    # when ANY intermediate form is a stopword, but only if the form is present.
-    # e2e-local keeps playwright/bridge/kvm/distro/run-e2e.sh as real terms, and
-    # check_agent_hint_liveness.py is the control that it stays reachable.
+    # BOTH WAVES HIT THE SAME CLASS INDEPENDENTLY, which is itself the finding: 0826-2 added `touch` after a media-pipeline false positive, and 0826-3 added the four below after four more. Neither wave knew about the other. THIRD instance of the `word words` class above, found the same way: the push-back fired on e2e-local for a claim about a BASH hook test suite, matching `miss`,
+    # `see`, `suite`. All three are ordinary English that this repo types constantly, and all three are "discriminative" only because e2e-local's description happens to be the one doc containing them: "MISSING bin/renet", "just push and SEE what CI says", "E2E SUITES". `missing` folds to `miss`, so both forms are listed -- _stem() kills a word when ANY intermediate form is a
+    # stopword, but only if the form is present. e2e-local keeps playwright/bridge/kvm/distro/run-e2e.sh as real terms, and check_agent_hint_liveness.py is the control that it stays reachable.
     "see seen miss missing suite suites "
-    # FOURTH instance, and the one that proves the pattern is structural rather
-    # than a run of bad luck: `step` and `stop` matched gate-author for a claim
-    # about a hook test, because its description says "three places" with a
+    # FOURTH instance, and the one that proves the pattern is structural rather than a run of bad luck: `step` and `stop` matched gate-author for a claim about a hook test, because its description says "three places" with a
     # `ci: {kind: 'step'}` and this repo says "stop hook" in every other
-    # sentence. Both are ordinary English AND repo jargon, which is exactly the
-    # combination `discriminative()` cannot tell from a domain term.
+    # sentence. Both are ordinary English AND repo jargon, which is exactly the combination `discriminative()` cannot tell from a domain term.
     "step steps stop stops "
-    # ONE SYSTEMATIC PASS instead of a fifth incident. Dumping the live term set
-    # showed the generic-English leak is not a few unlucky words: `already`,
-    # `exist`, `instead`, `says`, `once`, `several`, `number`, `true`, `paid`,
-    # `next`, `ways` were all carrying a full 1.0 as "discriminative".
+    # ONE SYSTEMATIC PASS instead of a fifth incident. Dumping the live term set showed the generic-English leak is not a few unlucky words: `already`, `exist`, `instead`, `says`, `once`, `several`, `number`, `true`, `paid`, `next`, `ways` were all carrying a full 1.0 as "discriminative".
     #
-    # RAISING PUSHBACK_MIN_SCORE WAS THE OTHER CANDIDATE AND IS WRONG: its floor
-    # is deliberately below the hint's so a THIN but true claim still gets
-    # challenged, and the case it was built for -- "neither local worker has
-    # /etc/ceph" -- scores exactly 1.0 on `ceph`. Lifting the floor to 2 would
-    # silence precisely the incident that motivated the check. So the fix has to
-    # come from the term set, leaving 1.0 to mean one REAL domain term.
+    # RAISING PUSHBACK_MIN_SCORE WAS THE OTHER CANDIDATE AND IS WRONG: its floor is deliberately below the hint's so a THIN but true claim still gets challenged, and the case it was built for -- "neither local worker has /etc/ceph" -- scores exactly 1.0 on `ceph`. Lifting the floor to 2 would silence precisely the incident that motivated the check. So the fix has to come from the
+    # term set, leaving 1.0 to mean one REAL domain term.
     #
-    # Deliberately NOT added: `locally`, `red`, `distro`, `cache`, `schema`.
-    # Ordinary-looking, but each is load-bearing vocabulary for the agent that
-    # owns it, and check_agent_hint_liveness.py is the control that says so.
-    # `instead` is NOT here, and the liveness gate is why. Removing it dropped
-    # e2e-local to 1 on its own specimen ("run the bridge suite locally ...
-    # INSTEAD of pushing to CI"), because stopwording `suite` had already taken
-    # one of its three terms. Measured: restoring `instead` alone puts the
-    # specimen back to 2.0 while the false positive stays silent; restoring
-    # `suite` instead brings the false positive back. So `instead` stays a term.
+    # Deliberately NOT added: `locally`, `red`, `distro`, `cache`, `schema`. Ordinary-looking, but each is load-bearing vocabulary for the agent that owns it, and check_agent_hint_liveness.py is the control that says so. `instead` is NOT here, and the liveness gate is why. Removing it dropped e2e-local to 1 on its own specimen ("run the bridge suite locally ... INSTEAD of pushing
+    # to CI"), because stopwording `suite` had already taken one of its three terms. Measured: restoring `instead` alone puts the specimen back to 2.0 while the false positive stays silent; restoring `suite` instead brings the false positive back. So `instead` stays a term.
     "already exist exists genuinely says said ways once several "
-    "number numbers true paid next produce comparable"
+    "number numbers true paid next produce comparable "
+    # `verb` is the third of the `while`/`total` shape, and the most repo-wide of the three. It sits in exactly ONE description -- backup-storage's "the rdc backup and rdc datastore CLI verbs" -- so `discriminative()` hands it to that agent at full weight, while the word itself is house vocabulary everywhere else: CLAUDE.md says "Use the VERBS, not the file", TRAPS.md and
+    # ci-gates.md use it, and worklist_messages.py prints it back at the session every stop. It fired live on 2026-09-08: "the verb that writes the compaction-recovery document therefore had no way to fail", a sentence about a stdin hang in this very file, was pushed back as a backup-storage claim -- `no way to` supplying the impossibility half and `verb` the whole of the domain
+    # half.
+    "verb verbs"
 )
 STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 
@@ -260,10 +160,7 @@ STOPWORDS = frozenset(_STOPWORD_TEXT.split())
 def tokenize(text):
     """The term set of a string: {(kind, text)}, kind in {"path", "word"}.
 
-    THE SAME function for descriptions and for haystacks, which is
-    load-bearing rather than tidy: sharing it is what makes scoring a set
-    intersection, and a set intersection is what makes the substring bug
-    (`read` matching inside `README`) impossible instead of merely unlikely.
+    THE SAME function for descriptions and for haystacks, which is load-bearing rather than tidy: sharing it is what makes scoring a set intersection, and a set intersection is what makes the substring bug (`read` matching inside `README`) impossible instead of merely unlikely.
     """
     terms = set()
     if not text:
@@ -275,11 +172,7 @@ def tokenize(text):
             terms.add(("path", tok))
     for m in WORD_RE.finditer(low):
         tok = m.group(0).strip("-_")
-        # STOPWORDS BEFORE THE FOLD AS WELL AS DURING IT, and neither is
-        # redundant. Before: the list enumerates surface forms (`running`,
-        # `fixes`), and folding those first would hand `runn` and `fixe`
-        # through as terms. During: `settings` is not in the list and folds to
-        # `setting`, which is (_stem returns "" for both cases).
+        # STOPWORDS BEFORE THE FOLD AS WELL AS DURING IT, and neither is redundant. Before: the list enumerates surface forms (`running`, `fixes`), and folding those first would hand `runn` and `fixe` through as terms. During: `settings` is not in the list and folds to `setting`, which is (_stem returns "" for both cases).
         if len(tok) < 3 or tok in STOPWORDS:
             continue
         tok = _stem(tok)
@@ -298,19 +191,14 @@ def _weight(term):
 def agents_dir():
     """Where the agent files live.
 
-    `hook_repo_root()`, never `project_root()`: `.claude/agents` is a sibling
-    of `.claude/hooks/stop`, and hook_repo_root is immune to cwd by
-    construction. WORKLIST_AGENTS_DIR is the seam the suite and the CI gate
-    point at fixtures, the same way WORKLIST_REPORTS_DIR is.
+    `hook_repo_root()`, never `project_root()`: `.claude/agents` is a sibling of `.claude/hooks/stop`, and hook_repo_root is immune to cwd by construction. WORKLIST_AGENTS_DIR is the seam the suite and the CI gate point at fixtures, the same way WORKLIST_REPORTS_DIR is.
     """
     env = os.environ.get("WORKLIST_AGENTS_DIR")
     if env:
         return pathlib.Path(env)
     root = C.hook_repo_root()
     if root is None:
-        # The hook file is somewhere unexpected (a copied fixture, a vendored
-        # tree). Answer a path rather than None so every caller keeps one
-        # shape; load_corpus reports the absent directory as an error.
+        # The hook file is somewhere unexpected (a copied fixture, a vendored tree). Answer a path rather than None so every caller keeps one shape; load_corpus reports the absent directory as an error.
         root = pathlib.Path(__file__).resolve().parents[3]
     return pathlib.Path(root) / ".claude" / "agents"
 
@@ -318,9 +206,7 @@ def agents_dir():
 def _frontmatter(path):
     """({key: value}, error) for one agent file, reading the HEAD only.
 
-    Stops at the closing `---`, so a 33 KB body is never read and a stray
-    `---` inside prose can never be mistaken for the fence. Continuation
-    lines fold into the previous key, so a wrapped `description:` survives.
+    Stops at the closing `---`, so a 33 KB body is never read and a stray `---` inside prose can never be mistaken for the fence. Continuation lines fold into the previous key, so a wrapped `description:` survives.
     """
     fields, key, opened = {}, None, False
     try:
@@ -350,10 +236,7 @@ def _frontmatter(path):
 def load_corpus(agents_dir_path):
     """({name: {"desc", "path", "terms"}}, [error]) for one directory.
 
-    Errors are RETURNED, never raised and never swallowed: a file with no
-    `name:` or no `description:` is an ERROR ENTRY, not a silent skip. A
-    silent skip is how an agent stops being reachable while everything still
-    looks healthy -- the exact failure this whole feature exists to end.
+    Errors are RETURNED, never raised and never swallowed: a file with no `name:` or no `description:` is an ERROR ENTRY, not a silent skip. A silent skip is how an agent stops being reachable while everything still looks healthy -- the exact failure this whole feature exists to end.
     """
     corpus, errors = {}, []
     d = pathlib.Path(agents_dir_path)
@@ -362,9 +245,7 @@ def load_corpus(agents_dir_path):
     except OSError as exc:
         return corpus, ["%s: cannot list agent directory (%s)" % (d, exc)]
     if not files:
-        # NOT an error. An empty directory is a repo with no specialists, and
-        # a note on every stop about that would be the wallpaper this design
-        # refuses to become. The CI gate is what refuses to be vacuous.
+        # NOT an error. An empty directory is a repo with no specialists, and a note on every stop about that would be the wallpaper this design refuses to become. The CI gate is what refuses to be vacuous.
         return corpus, errors
     for path in files:
         fields, err = _frontmatter(path)
@@ -390,13 +271,9 @@ def load_corpus(agents_dir_path):
 def discriminative(corpus):
     """{name: {term: weight}} keeping ONLY terms unique to one description.
 
-    With 7-8 documents this is a cheaper and sharper substitute for IDF, and
-    it is what stops `config`, `session`, `gate` and `repo` -- words every
-    description in this repo contains -- from ever triggering anything.
+    With 7-8 documents this is a cheaper and sharper substitute for IDF, and it is what stops `config`, `session`, `gate` and `repo` -- words every description in this repo contains -- from ever triggering anything.
 
-    The agent's OWN NAME is injected afterwards at weight 3 and is never
-    subject to the filter, so "ask the i18n-guardian" matches even when the
-    prose shares nothing else with that description.
+    The agent's OWN NAME is injected afterwards at weight 3 and is never subject to the filter, so "ask the i18n-guardian" matches even when the prose shares nothing else with that description.
     """
     seen = {}
     for entry in corpus.values():
@@ -416,9 +293,7 @@ def discriminative(corpus):
 def score(haystack, uniq):
     """[(score, name, hits)] for EVERY agent, best first.
 
-    Every agent is present, including the ones that scored zero, because the
-    runner-up is what the margin is measured against and an absent runner-up
-    would silently read as "no competition".
+    Every agent is present, including the ones that scored zero, because the runner-up is what the margin is measured against and an absent runner-up would silently read as "no competition".
     """
     hay = tokenize(haystack)
     ranked = []
@@ -434,16 +309,9 @@ def score(haystack, uniq):
 def best_hint(haystack, uniq, min_score=None, min_margin=None):
     """(name, score, hits), or None when the evidence does not distinguish one.
 
-    TIES ARE SILENCE BY CONSTRUCTION: a tie makes the margin 0, which is below
-    any positive threshold, so no tie-break rule exists to get wrong. Never
-    break a tie by name order, corpus order or mtime -- a tie means the
-    evidence does not distinguish two specialists, and inventing a winner is
-    how a matcher starts lying.
+    TIES ARE SILENCE BY CONSTRUCTION: a tie makes the margin 0, which is below any positive threshold, so no tie-break rule exists to get wrong. Never break a tie by name order, corpus order or mtime -- a tie means the evidence does not distinguish two specialists, and inventing a winner is how a matcher starts lying.
 
-    NEAR-MISSES ARE SILENCE TOO, and are deliberately not logged: "you almost
-    matched X" is a hint with extra words. When a domain repeatedly scores just
-    under threshold the fix is to sharpen that description, and the CI gate is
-    what surfaces it.
+    NEAR-MISSES ARE SILENCE TOO, and are deliberately not logged: "you almost matched X" is a hint with extra words. When a domain repeatedly scores just under threshold the fix is to sharpen that description, and the CI gate is what surfaces it.
     """
     if not uniq:
         return None
@@ -460,9 +328,7 @@ def best_hint(haystack, uniq, min_score=None, min_margin=None):
 def hint_for(haystack, agents_dir_path=None):
     """((name, score, hits) or None, [error]) -- the whole flow, one call.
 
-    The convenience the hook and the gate both use: load, discriminate, score,
-    threshold. Kept here rather than in wl_checks so the gate exercises the
-    same path the stop does instead of a re-implementation of it.
+    The convenience the hook and the gate both use: load, discriminate, score, threshold. Kept here rather than in wl_checks so the gate exercises the same path the stop does instead of a re-implementation of it.
     """
     corpus, errors = load_corpus(agents_dir() if agents_dir_path is None else agents_dir_path)
     if not corpus:
@@ -474,51 +340,25 @@ def hint_for(haystack, agents_dir_path=None):
 # THE PUSH-BACK: a session giving up on a domain a specialist already covers.
 # =============================================================================
 #
-# WHY THIS EXISTS, and it is one specific failure rather than a theory.
-# On 2026-08-16 a session wrote, about a red Ceph E2E job:
+# WHY THIS EXISTS, and it is one specific failure rather than a theory. On 2026-08-16 a session wrote, about a red Ceph E2E job:
 #
-#     "It doesn't reproduce: neither local worker has /etc/ceph or rbd."
+# "It doesn't reproduce: neither local worker has /etc/ceph or rbd."
 #
-# and moved on. The answer was in the file it had just been reading.
-# `ops-vms.md` says `VM_CEPH_NODES` is load-bearing, that a default `ops up`
-# leaves the Ceph trio as bare OS images, and that bare VMs are NOT healed
-# incrementally -- three lines below the passage the session quoted. An empty
-# /etc/ceph was not evidence that local testing is impossible; it was the
-# documented SYMPTOM of Ceph never having been provisioned, with the remedy
-# printed underneath. The operator had to push back by hand, and was right.
+# and moved on. The answer was in the file it had just been reading. `ops-vms.md` says `VM_CEPH_NODES` is load-bearing, that a default `ops up` leaves the Ceph trio as bare OS images, and that bare VMs are NOT healed incrementally -- three lines below the passage the session quoted. An empty /etc/ceph was not evidence that local testing is impossible; it was the documented SYMPTOM
+# of Ceph never having been provisioned, with the remedy printed underneath. The operator had to push back by hand, and was right.
 #
-# The existing hint (agent_hint_queue) could not have caught this: it is
-# advisory, priority 3, allow-path only, and it fires on TOPIC alone. This
-# session had already been shown the file. What it needed was not discovery,
-# it was a challenge at the moment of abandonment.
+# The existing hint (agent_hint_queue) could not have caught this: it is advisory, priority 3, allow-path only, and it fires on TOPIC alone. This session had already been shown the file. What it needed was not discovery, it was a challenge at the moment of abandonment.
 #
-# WHY THE CONJUNCTION IS THE WHOLE DESIGN. Firing on give-up language alone
-# would be unbearable: "cannot", "not reproducible" and "pre-existing" are
-# ordinary, frequently CORRECT things to write, and CLAUDE.md rule 3 does not
-# forbid concluding impossibility -- it forbids concluding it WITHOUT PROBING.
-# Firing on topic alone is the existing hint, which is already throttled to
-# near-silence for good reason. Only the pair is worth interrupting for: a
-# claim of impossibility about a domain where a written specialist names the
-# exact command that would test the claim.
+# WHY THE CONJUNCTION IS THE WHOLE DESIGN. Firing on give-up language alone would be unbearable: "cannot", "not reproducible" and "pre-existing" are ordinary, frequently CORRECT things to write, and CLAUDE.md rule 3 does not forbid concluding impossibility -- it forbids concluding it WITHOUT PROBING. Firing on topic alone is the existing hint, which is already throttled to
+# near-silence for good reason. Only the pair is worth interrupting for: a claim of impossibility about a domain where a written specialist names the exact command that would test the claim.
 #
-# GENERAL OVER THE DIRECTORY, never a hand-maintained list of domains. The
-# corpus is the same one load_corpus() reads from disk on every call, so an
-# agent added next month is covered the day its file lands, and a deleted one
-# stops being cited immediately. That is the same reason wl_agents refuses to
-# cache: a hand-kept table is exactly what goes stale without anyone noticing.
+# GENERAL OVER THE DIRECTORY, never a hand-maintained list of domains. The corpus is the same one load_corpus() reads from disk on every call, so an agent added next month is covered the day its file lands, and a deleted one stops being cited immediately. That is the same reason wl_agents refuses to cache: a hand-kept table is exactly what goes stale without anyone noticing.
 #
-# WHAT IT DOES NOT DO. It does not judge whether the give-up was CORRECT --
-# it cannot, and pretending otherwise would make it an oracle instead of a
-# prompt. It asks for the probe. A session that has already run the probe
-# answers in one line and moves on; that is the intended cost.
+# WHAT IT DOES NOT DO. It does not judge whether the give-up was CORRECT -- it cannot, and pretending otherwise would make it an oracle instead of a prompt. It asks for the probe. A session that has already run the probe answers in one line and moves on; that is the intended cost.
 
-# Give-up markers, as whole-phrase regexes over the session's own last message.
-# Grouped by the CLAIM each one makes, because the reply differs: an
-# impossibility claim wants a probe, a dismissal claim wants ownership proof.
+# Give-up markers, as whole-phrase regexes over the session's own last message. Grouped by the CLAIM each one makes, because the reply differs: an impossibility claim wants a probe, a dismissal claim wants ownership proof.
 #
-# Deliberately NOT included: "flaky", "timeout", "rate limit", "quota". Those
-# name an observed condition rather than a decision to stop, and every one of
-# them was a TRUE statement somewhere in the session that motivated this file.
+# Deliberately NOT included: "flaky", "timeout", "rate limit", "quota". Those name an observed condition rather than a decision to stop, and every one of them was a TRUE statement somewhere in the session that motivated this file.
 _RX_IMPOSSIBLE = (
     r"\b(?:can(?:'|no|)?t\s+be\s+(?:done|tested|run|reproduced|verified|checked)"
     r"|not\s+possible|impossible\s+to|no\s+way\s+to)\b"
@@ -540,8 +380,7 @@ _RX_DISMISSED = (
     r"|out\s+of\s+scope\s+(?:here|for\s+this))\b"
 )
 
-# label -> regex. The label is PRINTED back at the session, so it must read as
-# the thing being claimed rather than as a rule name.
+# label -> regex. The label is PRINTED back at the session, so it must read as the thing being claimed rather than as a rule name.
 _GIVEUP_PATTERNS = (
     ("impossible", _RX_IMPOSSIBLE),
     ("does-not-reproduce", _RX_NO_REPRO),
@@ -550,47 +389,24 @@ _GIVEUP_PATTERNS = (
 )
 _GIVEUP_RES = tuple((label, re.compile(rx, re.IGNORECASE)) for label, rx in _GIVEUP_PATTERNS)
 
-# The push-back is a ONE-SHOT PER AGENT PER SESSION. Not a nag: the operator's
-# own intervention was a single sentence, and a check that fires every stop
-# until satisfied would be answered by writing around its regex rather than by
-# running the probe. One challenge, then it is the session's call and the
-# record shows what it chose.
+# The push-back is a ONE-SHOT PER AGENT PER SESSION. Not a nag: the operator's own intervention was a single sentence, and a check that fires every stop until satisfied would be answered by writing around its regex rather than by running the probe. One challenge, then it is the session's call and the record shows what it chose.
 PUSHBACK_ENABLED = os.environ.get("WORKLIST_AGENT_PUSHBACK", "on").strip().lower() not in (
     "off",
     "0",
     "false",
     "no",
 )
-# Lower than the hint's floor ON PURPOSE. The hint competes with every other
-# advisory for one slot and must be near-certain to be worth a line; this one
-# only ever speaks when the session has ALSO just claimed something is
-# impossible, and that conjunction carries most of the precision. Requiring the
-# hint's full confidence on top would silence it in exactly the case that
-# motivated it -- "neither local worker has /etc/ceph" is a thin haystack.
-PUSHBACK_MIN_SCORE = float(os.environ.get("WORKLIST_AGENT_PUSHBACK_MIN_SCORE", "1"))
-PUSHBACK_MIN_MARGIN = float(os.environ.get("WORKLIST_AGENT_PUSHBACK_MIN_MARGIN", "0.5"))
+# PUSHBACK_MIN_SCORE/PUSHBACK_MIN_MARGIN (1/0.5, lower than the hint's own 2/1) were DELETED here (PLAN-stop-hook-overhaul.md section 1.1): the gap between the two floors is what let "verifi" and "yet" -- ordinary English words with no competitor -- name a specialist at a perfect but meaningless 1.0 score. `pushback_for` now reuses `MIN_SCORE`/`MIN_MARGIN` for the ROUTING
+# half and reports the CHALLENGE (the claim itself) unconditionally, which is what carries the precision this comment used to credit to the lower floor.
 
 
-# A MENTION IS NOT A CLAIM, and this is a live regression rather than a
-# precaution: the first message written after this check shipped was a summary
-# OF THE CHECK, quoting its own trigger phrases -- `"cannot"`, `"not
-# reproducible"`, and the ops-vms sentence verbatim -- and the check duly
-# accused its author of giving up on pr-babysitter. A session that writes ABOUT
-# surrender is not surrendering, exactly as a doc that explains a retired
-# command is not teaching it.
+# A MENTION IS NOT A CLAIM, and this is a live regression rather than a precaution: the first message written after this check shipped was a summary OF THE CHECK, quoting its own trigger phrases -- `"cannot"`, `"not reproducible"`, and the ops-vms sentence verbatim -- and the check duly accused its author of giving up on pr-babysitter. A session that writes ABOUT surrender is not
+# surrendering, exactly as a doc that explains a retired command is not teaching it.
 #
-# Same shape and same remedy as `loop_finished_declared` (wl_checks.py:667),
-# which strips quoted and backticked spans before reading a declaration. Fenced
-# blocks go too: quoting a transcript must never be readable as speech.
-# NEWLINES ALLOWED INSIDE A QUOTE, bounded rather than greedy: the message that
-# exposed this wrapped its quotations across lines, so a `[^"\n]*` rule saw no
-# quotation at all and the fix silently did nothing. The 400-char bound is what
-# keeps an UNBALANCED quote from blanking the rest of the document.
+# Same shape and same remedy as `loop_finished_declared` (wl_checks.py:667), which strips quoted and backticked spans before reading a declaration. Fenced blocks go too: quoting a transcript must never be readable as speech. NEWLINES ALLOWED INSIDE A QUOTE, bounded rather than greedy: the message that exposed this wrapped its quotations across lines, so a `[^"\n]*` rule saw no
+# quotation at all and the fix silently did nothing. The 400-char bound is what keeps an UNBALANCED quote from blanking the rest of the document.
 #
-# NO SINGLE-QUOTE RULE, deliberately. An apostrophe is not a quote mark, and
-# "doesn't ... don't" would pair across a real claim and blank it -- turning a
-# false positive into a false negative, which is strictly worse: this check is
-# only worth having if it still fires on the sentence that motivated it.
+# NO SINGLE-QUOTE RULE, deliberately. An apostrophe is not a quote mark, and "doesn't ... don't" would pair across a real claim and blank it -- turning a false positive into a false negative, which is strictly worse: this check is only worth having if it still fires on the sentence that motivated it.
 _QUOTED_RE = re.compile(
     r"```.*?```|`[^`]*`|\"[^\"]{0,400}\"|\u201c[^\u201d]{0,400}\u201d",
     re.DOTALL,
@@ -600,26 +416,19 @@ _QUOTED_RE = re.compile(
 def unquoted(text):
     """`text` with every quoted, backticked and fenced span blanked out.
 
-    Blanked to a SPACE rather than removed, so two words either side of a quote
-    cannot fuse into a third that matches something neither of them did.
+    Blanked to a SPACE rather than removed, so two words either side of a quote cannot fuse into a third that matches something neither of them did.
     """
     return _QUOTED_RE.sub(" ", text or "")
 
 
-# `.!?` only. A COLON IS NOT A BOUNDARY HERE and that is a live regression:
-# "It doesn't reproduce: neither local worker has /etc/ceph" splits at the
-# colon into a claim with no subject, and the check went silent on the exact
-# sentence it was built from. A colon introduces the EVIDENCE for a claim,
-# which is the half that names the domain.
+# `.!?` only. A COLON IS NOT A BOUNDARY HERE and that is a live regression: "It doesn't reproduce: neither local worker has /etc/ceph" splits at the colon into a claim with no subject, and the check went silent on the exact sentence it was built from. A colon introduces the EVIDENCE for a claim, which is the half that names the domain.
 _SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 
 
 def _claim_sentences(text):
     """Every sentence carrying a give-up claim, already unquoted by the caller.
 
-    Split on newlines too, not just terminators: the give-up line in a bulleted
-    status list frequently has no full stop at all, and treating the whole list
-    as one sentence would re-admit every unrelated bullet as evidence.
+    Split on newlines too, not just terminators: the give-up line in a bulleted status list frequently has no full stop at all, and treating the whole list as one sentence would re-admit every unrelated bullet as evidence.
     """
     return [
         sent
@@ -631,19 +440,12 @@ def _claim_sentences(text):
 def giveup_claims(text):
     """Labels of every give-up claim in `text`, in the order they are defined.
 
-    Returns [] for the overwhelmingly common case, so the caller can bail
-    before touching the corpus at all. Deduplicated: three phrasings of the
-    same surrender are one claim, and printing all three would read as three
-    separate accusations.
+    Returns [] for the overwhelmingly common case, so the caller can bail before touching the corpus at all. Deduplicated: three phrasings of the same surrender are one claim, and printing all three would read as three separate accusations.
     """
     if not text:
         return []
-    # BOTH this and pushback_for's own unquote() are load-bearing, and the
-    # redundancy is deliberate rather than an oversight. Mutation-tested: with
-    # either one removed the rule still holds and the gate stays green; only
-    # removing BOTH lets a quoted mention be read as a claim, at which point
-    # the gate goes red naming the sentence. Do not "simplify" one away on the
-    # grounds that the tests still pass -- that is exactly what they would do.
+    # BOTH this and pushback_for's own unquote() are load-bearing, and the redundancy is deliberate rather than an oversight. Mutation-tested: with either one removed the rule still holds and the gate stays green; only removing BOTH lets a quoted mention be read as a claim, at which point the gate goes red naming the sentence. Do not "simplify" one away on the grounds that the
+    # tests still pass -- that is exactly what they would do.
     text = unquoted(text)
     found = []
     for label, rx in _GIVEUP_RES:
@@ -653,58 +455,38 @@ def giveup_claims(text):
 
 
 def pushback_for(haystack, agents_dir_path=None):
-    """((agent, hits, claims) or None, [error]) -- the conjunction, one call.
+    """((claims, agent_or_None), [error]) -- the CHALLENGE and the ROUTING, decoupled.
 
-    ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful
-    of regexes over one message and answers "no" on nearly every stop, so it
-    runs BEFORE the corpus is loaded. On a normal stop this function does not
-    touch the disk.
+    `claims` is [] or the give-up labels found (the CHALLENGE: something was declared out of reach, and CLAUDE.md rule 3 says that needs probing regardless of whether a specialist can be named for it). `agent_or_None` is `(name, hits)` when a specialist can be named ABOVE THE ORDINARY HINT'S OWN FLOOR (`MIN_SCORE`/`MIN_MARGIN`, the same numbers `best_hint` uses everywhere
+    else in this module) and `None` otherwise -- there is no second, lower floor here any more. There used to be: a claim conjoined with the hint's own confidence still under-detects (`PUSHBACK_MIN_SCORE`/`PUSHBACK_MIN_MARGIN` were 1/0.5 against the hint's 2/1), and that gap between floors is exactly what let one ordinary English word ("verifi", "yet") route a stop to the wrong
+    specialist at a perfect but meaningless 1.0 score. Reusing the hint's own floor removes the second threshold instead of tuning it, which `.ci/scripts/quality/check_agent_hint_liveness.py:544` already found unfixable by tuning.
+
+    ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful of regexes over one message and answers "no" on nearly every stop, so it runs BEFORE the corpus is loaded. On a normal stop this function does not touch the disk.
     """
     if not PUSHBACK_ENABLED:
-        return None, []
+        return ([], None), []
     claims = giveup_claims(haystack)
     if not claims:
-        return None, []
+        return ([], None), []
     corpus, errors = load_corpus(agents_dir() if agents_dir_path is None else agents_dir_path)
     if not corpus:
-        return None, errors
+        return (claims, None), errors
     # SCORE THE SENTENCE THAT MAKES THE CLAIM, NOT THE WHOLE MESSAGE.
     #
-    # MEASURED, and it overturned the threshold I first reached for. Scoring the
-    # whole message gave a GENERIC report ("It doesn't reproduce and this is
-    # pre-existing. Remaining: the wave, console review, commit and check.")
-    # a score of 5.0 against pr-babysitter, while the real ceph sentence scored
-    # 4.0 against ops-vms. The false positive outranked the true one, so no
-    # threshold could separate them -- raising the floor silences the case this
-    # check exists for and leaves the noise. That is why there is no
-    # push-back-specific stopword list here either: `check`, `commit`, `console`
-    # and `review` are legitimately discriminative for pr-babysitter, and
-    # banning them would break the agent they legitimately name.
+    # MEASURED, and it overturned the threshold I first reached for. Scoring the whole message gave a GENERIC report ("It doesn't reproduce and this is pre-existing. Remaining: the wave, console review, commit and check.") a score of 5.0 against pr-babysitter, while the real ceph sentence scored 4.0 against ops-vms. The false positive outranked the true one, so no threshold could
+    # separate them -- raising the floor silences the case this check exists for and leaves the noise. That is why there is no push-back-specific stopword list here either: `check`, `commit`, `console` and `review` are legitimately discriminative for pr-babysitter, and banning them would break the agent they legitimately name.
     #
-    # A claim is ABOUT something, and that something is in the sentence with it.
-    # Restricting the haystack to the claim's own sentences encodes exactly that
-    # and needs no list to maintain.
+    # A claim is ABOUT something, and that something is in the sentence with it. Restricting the haystack to the claim's own sentences encodes exactly that and needs no list to maintain.
     claim_text = " ".join(_claim_sentences(unquoted(haystack)))
     if not claim_text.strip():
-        return None, errors
-    # SCORE THE SUBJECT, NOT THE SURRENDER. The give-up phrases are cut out of
-    # the haystack before the topic match, and this is a defect the gate's own
-    # negative control caught rather than a precaution: `cannot` is a
-    # discriminative term in at least one agent description, so
-    # "This cannot be done without a token" matched e2e-local ON THE WORD
-    # `cannot` alone. That would have made every honest impossibility claim an
-    # accusation, pointed at a random specialist -- the precise failure this
-    # check exists to avoid, shipped inside the check itself.
+        return (claims, None), errors
+    # SCORE THE SUBJECT, NOT THE SURRENDER. The give-up phrases are cut out of the haystack before the topic match, and this is a defect the gate's own negative control caught rather than a precaution: `cannot` is a discriminative term in at least one agent description, so "This cannot be done without a token" matched e2e-local ON THE WORD `cannot` alone. That would have made every
+    # honest impossibility claim an accusation, pointed at a random specialist -- the precise failure this check exists to avoid, shipped inside the check itself.
     subject = claim_text
     for _label, _rx in _GIVEUP_RES:
         subject = _rx.sub(" ", subject)
-    hit = best_hint(
-        subject,
-        discriminative(corpus),
-        min_score=PUSHBACK_MIN_SCORE,
-        min_margin=PUSHBACK_MIN_MARGIN,
-    )
+    hit = best_hint(subject, discriminative(corpus), min_score=MIN_SCORE, min_margin=MIN_MARGIN)
     if not hit:
-        return None, errors
+        return (claims, None), errors
     name, _score, hits = hit
-    return (name, hits, claims), errors
+    return (claims, (name, hits)), errors

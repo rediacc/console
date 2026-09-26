@@ -1,0 +1,5 @@
+# twin .ci/scripts/test/test-install-script.sh blob 9aaa7b9e101389382861e34099479c242570cc27 over packages/www/public/install.sh blob a71c28af695ab19fa0cf9db435003f31dd8db286
+exit: 1
+--- stdout ---
+--- stderr ---
+FAIL: detect_platform: expected linux, got linuxx

@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-go-deps.sh blob d8d7166e61dcc7e1d5f0d7f8e62908edc1c4c887
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Checking Go deps in fakemod...
+✓ All Go direct dependencies are up-to-date

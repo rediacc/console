@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 #
 # Leak test for rdc.sh's dev path. Two layers:
 #
@@ -9,12 +10,15 @@
 #     that env file cannot reach the CLI process.
 #
 #   Layer 2 (functional): run the real dev path against a fixture ROOT_DIR whose
-#     private/account/.env carries the two public values PLUS sentinel secret
-#     lines. node and curl are PATH-shimmed (node -e runs the real node for the
-#     seeder; the cli-bundle invocation dumps its environment instead of
-#     executing; curl's liveness probe always succeeds). We assert the dumped
-#     CLI environment contains REDIACC_CONFIG=dev, contains none of the sentinel
-#     secrets, and that the seeded dev.json got the right accountServer.
+#     .account-state records gateway_port=9 and whose private/account/.env
+#     carries ONLY sentinel secret lines, a temptation the dev path must not
+#     read. node and curl are PATH-shimmed (node -e runs the real node for the
+#     key extraction and the seeder; the cli-bundle invocation dumps its
+#     environment instead of executing; curl's liveness probe always succeeds
+#     and prints a server-info body carrying publicKeySpki stubpublickey). We
+#     assert the dumped CLI environment contains REDIACC_CONFIG=dev, contains
+#     none of the sentinel secrets, and that the seeded dev.json got
+#     accountServer http://localhost:9 and e2ePublicKey stubpublickey.
 #
 # Runs standalone: ./test-rdc-sh-env.sh
 
@@ -126,11 +130,14 @@ ensure_cli_built() { :; }
 ensure_renet_built() { :; }
 EOF
 
-# Fixture env file: the two PUBLIC values the dev config needs, plus sentinel
-# SECRET lines that must NEVER reach the CLI environment.
+# The running gateway's port, where `./run.sh account dev` records it.
+cat >"$FIX_ROOT/.account-state" <<'EOF'
+gateway_port=9
+EOF
+
+# Fixture env file: sentinel SECRET lines only. The dev path must read nothing
+# under private/account, so none of these may reach the CLI environment.
 cat >"$FIX_ROOT/private/account/.env" <<'EOF'
-REDIACC_ACCOUNT_SERVER=http://127.0.0.1:9
-ACCOUNT_X25519_PUBLIC_KEY=stubpublickey
 ACCOUNT_ED25519_PRIVATE_KEY=LEAKSENTINEL_ED25519
 ACCOUNT_X25519_PRIVATE_KEY=LEAKSENTINEL_X25519
 ACCOUNT_JWT_SECRET=LEAKSENTINEL_JWT
@@ -156,10 +163,12 @@ exit 0
 EOF
 chmod +x "$SHIM/node"
 
-# curl shim: the dev liveness probe always succeeds (the fixture gateway is
-# deliberately unreachable; we're testing the wrapper, not the network).
+# curl shim: the dev liveness probe always succeeds and prints a server-info
+# body (the fixture gateway is deliberately unreachable; we're testing the
+# wrapper, not the network).
 cat >"$SHIM/curl" <<'EOF'
 #!/usr/bin/env bash
+printf '%s\n' '{"e2e":{"keys":[{"keyId":"v1","publicKeySpki":"stubpublickey"}]},"apiVersion":1}'
 exit 0
 EOF
 chmod +x "$SHIM/curl"
@@ -192,17 +201,18 @@ else
     grep -q '^REDIACC_CONFIG=dev$' "$DUMP" && pass "CLI environment carries REDIACC_CONFIG=dev only"
 fi
 
-# The seeder must have written the dev config with the fixture's server URL.
+# The seeder must have written the dev config with the running gateway's URL
+# and public key.
 DEV_JSON="$FIX_HOME/.config/rediacc/dev.json"
 if [[ ! -f "$DEV_JSON" ]]; then
     fail "seeder did not create $DEV_JSON"
 else
     got_server="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['account']['accountServer'])" "$DEV_JSON" 2>/dev/null || echo PARSE_ERR)"
     got_key="$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['account'].get('e2ePublicKey',''))" "$DEV_JSON" 2>/dev/null || echo PARSE_ERR)"
-    [[ "$got_server" == "http://127.0.0.1:9" ]] || fail "dev.json accountServer=$got_server (expected http://127.0.0.1:9)"
+    [[ "$got_server" == "http://localhost:9" ]] || fail "dev.json accountServer=$got_server (expected http://localhost:9)"
     [[ "$got_key" == "stubpublickey" ]] || fail "dev.json e2ePublicKey=$got_key (expected stubpublickey)"
-    [[ "$got_server" == "http://127.0.0.1:9" && "$got_key" == "stubpublickey" ]] &&
-        pass "dev.json seeded with accountServer + e2ePublicKey from the env file"
+    [[ "$got_server" == "http://localhost:9" && "$got_key" == "stubpublickey" ]] &&
+        pass "dev.json seeded with accountServer + e2ePublicKey from the running gateway"
 fi
 
 echo ""

@@ -64,7 +64,7 @@ require_cmd aws
 # Scoped to the release channels: a pr-N channel has no tag contract.
 #
 # SKIP_RELEASE_GUARD_BEGIN (anchor for the gate test's planted defects --
-# .ci/scripts/test/gates/test-skip-release-channel-pointer.sh assembles its
+# .ci/rediacc_ci/tests/gates/test_gate_skip_release_channel_pointer.py assembles its
 # mutants by splitting this file on these two markers; do not remove them)
 skip_release_requested() {
     case "${SKIP_RELEASE:-}" in
@@ -115,7 +115,7 @@ for dir in apt rpm apk archlinux; do
     [[ -d "dist/repos/$dir" ]] || continue
     aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
         --cache-control "$CC_MUTABLE" \
-        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --only-show-errors
     # Purge every uploaded URL to evict entries cached under the
     # old immutable policy. Once every CI cycle has re-uploaded
     # with no-cache, CF won't cache anything and subsequent purges
@@ -147,7 +147,7 @@ for f in dist/pages/install.sh dist/pages/install.ps1; do
         "$f" >"$tmp"
     aws s3 cp "$tmp" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
         --cache-control "$CC_MUTABLE" \
-        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet
+        --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --only-show-errors
     rm -f "$tmp"
     PURGE_URLS+=("https://releases.rediacc.com/cli/${CHANNEL}/$(basename "$f")")
 done

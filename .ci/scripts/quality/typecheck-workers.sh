@@ -1,4 +1,11 @@
 #!/bin/bash
+# ---- gate ----
+# step: Unused exports (knip)
+# needs: node
+# id: lint:unused
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip --treat-config-hints-as-errors
+# ---- end gate ----
+
 # Typecheck every Cloudflare Worker under workers/, installing its deps first.
 #
 # WHY THIS EXISTS RATHER THAN MORE `tsc -p` CLAUSES IN package.json. Each worker is a
@@ -40,7 +47,7 @@ if [ "${#CONFIGS[@]}" -eq 0 ]; then
 fi
 
 # --list prints the set this script would typecheck, one path per line, and does nothing
-# else. scripts/check-typecheck-scope-coverage.ts calls it so the coverage gate reads the
+# else. scripts/gates/check-typecheck-scope-coverage.ts calls it so the coverage gate reads the
 # REAL set rather than re-implementing this discovery and drifting from it.
 if [ "${1:-}" = "--list" ]; then
     printf '%s\n' "${CONFIGS[@]}"

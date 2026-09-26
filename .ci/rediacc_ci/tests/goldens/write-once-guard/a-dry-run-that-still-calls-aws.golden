@@ -1,0 +1,8 @@
+# twin .ci/scripts/test/test-write-once-guard.sh blob 2676d8b3ce700128330bc648005b3bb09a5cfbd6 over .ci/scripts/deploy/upload-to-r2.sh blob 22c50e95172188e155dbbed4b9c79d27f60bbe23
+exit: 1
+--- stdout ---
+[0;32mPASS:[0m sealed + binaries → idempotent SKIP (rc=10)
+[0;32mPASS:[0m sealed + no binaries → FAIL loud (rc=1)
+[0;32mPASS:[0m no sentinel → PROCEED (rc=0), never scrubs
+--- stderr ---
+[0;31mFAIL:[0m DRY_RUN must not call aws at all

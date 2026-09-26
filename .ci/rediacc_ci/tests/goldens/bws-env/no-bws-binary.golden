@@ -1,0 +1,6 @@
+# twin .ci/lib/bws-env.sh blob 60766fb1b77e8bb7befab8a172c5a5ed6b58248c
+exit: 1
+--- stdout ---
+--- stderr ---
+bws-env: the bws CLI is not on PATH (set BWS_BIN to point at it).
+  The devcontainer installs it; see .devcontainer/Dockerfile.

@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# ---- gate ----
+# step: install.sh config tests
+# needs: none
+# run: PYTHONPATH=.ci python3 -m rediacc_ci.release.install_sh_config_check
+# id: check:ci-install-sh-config
+# selftest: true
+# ---- end gate ----
+
 #
 # Unit test for install.sh's write_install_config function.
 #

@@ -1,0 +1,7 @@
+# twin .ci/scripts/docker/cleanup-staging.sh blob 86b359d6b2224d0e347315083323debfd2b8d0da
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Tag must start with 'staging-' prefix for safety
+--- calls ---
+

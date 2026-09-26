@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# A miniature stand-in for test-worklist-v5.sh, used only to exercise
+# A miniature stand-in for a bash case suite, used only to exercise
 # mutate-check.sh. It prints the same `  PASS: <id> ...` / `  FAIL: <id> ...`
 # shape, indented exactly as the real suite does, because that indentation is
 # what the runner's `^ *FAIL` matching depends on and a fixture that printed

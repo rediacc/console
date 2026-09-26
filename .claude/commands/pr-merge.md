@@ -15,11 +15,14 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Open PRs on the current branch:
-  !`cb="$(git branch --show-current)"; for r in console renet account elite homebrew-tap; do p=$(gh pr list --repo rediacc/$r --head "$cb" --state open --json number,title,mergeStateStatus --jq '.[] | "  #\(.number) [\(.mergeStateStatus)] \(.title)"' 2>/dev/null); [ -n "$p" ] && echo "rediacc/$r:" && echo "$p"; done; true`
+!`cb="$(git branch --show-current)"; for r in console renet account elite homebrew-tap; do p=$(gh pr list --repo rediacc/$r --head "$cb" --state open --json number,title,mergeStateStatus --jq '.[] | " #\(.number) [\(.mergeStateStatus)] \(.title)"' 2>/dev/null); [ -n "$p" ] && echo "rediacc/$r:" && echo "$p"; done; true`
 
 ## Task: land the stacked PRs for branch `$ARGUMENTS`
 
-Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any submodule PRs on the **same branch name**) and end on a clean local `main`. If `$ARGUMENTS` is empty, use the current branch. **This is the release path: a merge to `console/main` auto-triggers the edge deploy (`cd-v2.yml`) UNLESS the PR carries the `bump-none` label, in which case the merge is deliberately release-free and steps 5 and 6 shrink to almost nothing. Only run when the user has asked to land the PRs.**
+Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any submodule PRs on the **same branch name**) and end on a clean local `main`. If `$ARGUMENTS` is empty, use the current branch. **This is the release path: a merge to `console/main` auto-triggers the edge deploy (`cd-v2.yml`) UNLESS the PR carries the `bump-none` label, in which case the merge is
+
+**A submodule PR's branch is named EXACTLY like the console branch.** The `Submodule Branches` gate and `/pr-merge` both match submodule PRs by that name, so a submodule change riding an older branch (a `0914-1` PR under a `0923-1` console branch) can never pass either. Open each submodule PR on the console branch name FROM THE START. If one already exists on a differently named branch, push the same head to a branch named like the console branch, open a NEW PR from it (linking the old one), and close the old PR with a pointer to the new one. Do NOT use GitHub's branch-rename API for this: it retargets PRs that use the branch as their BASE, and CLOSES the PR whose HEAD it is (measured 2026-09-24: renaming account and renet `0914-1` to `0923-1` closed #87 and #111, `head_ref_deleted`). Operator ruling 2026-09-24, after PR #590's gate refused account#87 and renet#111 on `0914-1`.
+deliberately release-free and steps 5 and 6 shrink to almost nothing. Only run when the user has asked to land the PRs.**
 
 Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `private/account` → `rediacc/account`, `private/elite` → `rediacc/elite`, `private/homebrew-tap` → `rediacc/homebrew-tap`.
 
@@ -27,12 +30,8 @@ Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `priv
 
 ### Console itself has TWO remotes, and only one of them is GitHub
 
-`origin` is GitHub; `gitlab` is `gitlab.rediacc.io/rediacc-org/github/console.git`. This is
-the same lesson as the sibling repos below, one level up: PR and merge tooling that assumes
-GitHub silently does the wrong thing elsewhere, so check `git remote -v` before reasoning
-about "the remote". Nothing pushes to `gitlab` automatically, which is why step 6b exists.
-The remote lives only in local `.git/config`, so a fresh clone does not have it and step 6b
-will report a skip until someone adds it back.
+`origin` is GitHub; `gitlab` is `gitlab.rediacc.io/rediacc-org/github/console.git`. This is the same lesson as the sibling repos below, one level up: PR and merge tooling that assumes GitHub silently does the wrong thing elsewhere, so check `git remote -v` before reasoning about "the remote". Nothing pushes to `gitlab` automatically, which is why step 6b exists. The remote lives
+only in local `.git/config`, so a fresh clone does not have it and step 6b will report a skip until someone adds it back.
 
 ### Sibling repos under `private/` that are NOT submodules
 
@@ -53,12 +52,12 @@ For each one found:
 - **Do** check it for uncommitted changes and unmerged branches, and report what you find. Do not commit, merge, or delete branches in it without an explicit request.
 - Its remote may not be GitHub. Check `git -C <dir> remote get-url origin` before reaching for `gh`; PR/merge tooling that assumes GitHub silently fails elsewhere.
 - Reading ahead/behind: `git rev-list --left-right --count origin/main...HEAD` prints `<on main only> <on branch only>`. The **second** number is the branch's own unmerged commits. Misreading it as "behind" turns weeks of unmerged work into "stale checkout, ignore it", and this has actually happened.
+- **Merge order when a console change and a change in such a repo belong together** (the U2 decision, taken by default on 2026-09-20 in favour of the documented clone-and-remote procedure over promoting `private/growth` to a submodule, which is hard to reverse): the sibling repo's own PR lands FIRST and only on the operator's explicit request, then the console PR,
+  because nothing in console pins the sibling by commit (there is no pointer to bump) and a console change that depends on the sibling would otherwise merge ahead of the thing it needs. Name the pair in the console PR body so a reviewer can find the other half.
 
 ### Stray worktrees from past sessions
 
-`git worktree list` can hold entries this session never created: a prior session's
-scratch worktree, abandoned mid-task. They are invisible to everything above: `git status`
-in the main checkout says nothing about them, and neither does the §0 sibling-repo check.
+`git worktree list` can hold entries this session never created: a prior session's scratch worktree, abandoned mid-task. They are invisible to everything above: `git status` in the main checkout says nothing about them, and neither does the §0 sibling-repo check.
 
 Discover them every run, before landing anything:
 
@@ -66,9 +65,7 @@ Discover them every run, before landing anything:
 git worktree list
 ```
 
-For each entry besides the one you are running in, check what it actually holds before
-touching it, the same "identify whose work it is first" rule the dirty-tree precondition
-below applies to the main checkout, just one directory over:
+For each entry besides the one you are running in, check what it actually holds before touching it, the same "identify whose work it is first" rule the dirty-tree precondition below applies to the main checkout, just one directory over:
 
 ```bash
 git -C <worktree-path> status --short
@@ -82,79 +79,46 @@ git worktree remove <worktree-path> --force
 git worktree prune
 ```
 
-A worktree with dirty content is **not** automatically debris, even if it looks stale.
-Verify, per file, whether the content is safe to discard before removing anything:
+A worktree with dirty content is **not** automatically debris, even if it looks stale. Verify, per file, whether the content is safe to discard before removing anything:
 - **Byte-identical to (or a strict subset of) what the current `main` already has**
-  (`diff <worktree-file> <main-checkout-equivalent>`) → safe, the work already landed by some
-  other path and this is a leftover draft. Removing the worktree loses nothing.
+(`diff <worktree-file> <main-checkout-equivalent>`) → safe, the work already landed by some other path and this is a leftover draft. Removing the worktree loses nothing.
 - **Not found in `main`, not matched by any open PR, genuinely orphaned** → do not delete
-  silently. Report what it is and ask, the same as an unclear dirty file in the main tree.
-  Worktree content has exactly the same loss risk as working-tree content, it is just easier
-  to forget it exists.
+silently. Report what it is and ask, the same as an unclear dirty file in the main tree. Worktree content has exactly the same loss risk as working-tree content, it is just easier to forget it exists.
 
-Observed live 2026-08-01: six stray worktrees had accumulated in one checkout. Two held real,
-substantial uncommitted work from other sessions (a ~270-line CLI+Go feature, six locale
-files' worth of in-progress translation). Both turned out to be fully superseded by `main`
-(verified byte-identical / a strict subset before deleting), but that was established by
-checking, not assumed from how old or untouched the worktree looked.
+Observed live 2026-08-01: six stray worktrees had accumulated in one checkout. Two held real, substantial uncommitted work from other sessions (a ~270-line CLI+Go feature, six locale files' worth of in-progress translation). Both turned out to be fully superseded by `main` (verified byte-identical / a strict subset before deleting), but that was established by checking, not assumed
+from how old or untouched the worktree looked.
 
-**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.**
-`.claude/hooks/pre-bash/block-worktree-add.sh` refuses `git worktree add` from the assistant's
-own Bash tool unconditionally. If this flow genuinely needs one (it normally does not; steps
-4-6 operate on the existing checkout), ask the operator to run the command themselves via the
-`!` prefix. This does not affect step 7's `git checkout -b <MMDD-N>` guidance, which creates a
-branch in the current checkout, not a new worktree, and is unaffected by the hook.
+**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.** `.claude/hooks/pre-bash/block-worktree-add.sh` refuses `git worktree add` from the assistant's own Bash tool unconditionally. If this flow genuinely needs one (it normally does not; steps 4-6 operate on the existing checkout), ask the operator to run the command themselves via the `!`
+prefix. This does not affect step 7's `git checkout -b <MMDD-N>` guidance, which creates a branch in the current checkout, not a new worktree, and is unaffected by the hook.
 
 - Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).
 - Working tree is clean except `.claude/settings.local.json` (leave that uncommitted; never `git add` it).
 
-  **If it is NOT clean, do not just stop. Identify whose work it is first.** This tree is
-  shared: a concurrent session may hold uncommitted work in it, and that work is *not* part of
-  this land. Steps 4 and 6 run `git checkout main` / `git merge --ff-only`, which carry
-  uncommitted changes across silently when they do not conflict and abort mid-way when they do.
-  Neither outcome is one you want to discover after a merge has already landed.
+**If it is NOT clean, do not just stop. Identify whose work it is first.** This tree is shared: a concurrent session may hold uncommitted work in it, and that work is *not* part of this land. Steps 4 and 6 run `git checkout main` / `git merge --ff-only`, which carry uncommitted changes across silently when they do not conflict and abort mid-way when they do. Neither outcome is one
+you want to discover after a merge has already landed.
 
   So: report what is dirty and who it belongs to, and **never** `git add`, `stash`, `restore`
-  or `checkout` those paths to make the precondition pass, because that destroys another session's
-  work and is banned by CLAUDE.md. Either the operator lands with the dirty tree acknowledged
-  (the changes ride along untouched, which is safe as long as they do not overlap what `main`
-  moved), or the other session commits first. Observed live: a session held 18 uncommitted
-  paths through a `/pr-merge`; nothing was lost, but only because `main`'s two new commits
-  happened to touch none of them.
+or `checkout` those paths to make the precondition pass, because that destroys another session's work and is banned by CLAUDE.md. Either the operator lands with the dirty tree acknowledged (the changes ride along untouched, which is safe as long as they do not overlap what `main` moved), or the other session commits first. Observed live: a session held 18 uncommitted paths through
+a `/pr-merge`; nothing was lost, but only because `main`'s two new commits happened to touch none of them.
 
-  If the dirty path **does** overlap what `main` moved, `git checkout main` aborts outright
-  (it will not silently clobber). If, on investigation, the diff is genuinely orphaned, with no
-  commit in the branch's own history ever referenced it, it sat untouched across many rounds,
-  and it is not part of anything currently in flight (check `git log --all -- <path>` and think
-  about whether the content is even still needed, e.g. a semver range bump the lockfile already
-  satisfies), the running session may commit it itself (never stash/discard) to unblock the
-  checkout, with a message stating plainly that it was found orphaned and why it's safe to land.
-  This is committing to preserve, not deciding the change was wanted; if genuinely unsure whose
-  work it is or why it exists, stop and ask instead.
+If the dirty path **does** overlap what `main` moved, `git checkout main` aborts outright (it will not silently clobber). If, on investigation, the diff is genuinely orphaned, with no commit in the branch's own history ever referenced it, it sat untouched across many rounds, and it is not part of anything currently in flight (check `git log --all -- <path>` and think about whether
+the content is even still needed, e.g. a semver range bump the lockfile already satisfies), the running session may commit it itself (never stash/discard) to unblock the checkout, with a message stating plainly that it was found orphaned and why it's safe to land. This is committing to preserve, not deciding the change was wanted; if genuinely unsure whose work it is or why it
+exists, stop and ask instead.
 - A `rediacc/console` PR exists for this branch. Note its number.
 - The console PR should arrive at the babysitter's finish line: **flipped ready, Claude-reviewed (a `<!-- claude-reviewed: <sha> -->` marker matching the current head), and zero unresolved review threads**, with the latest console CI run green (`gh run list --repo rediacc/console --branch <branch> --workflow "Console CI" --limit 1`, then confirm `conclusion=success`). If it is still a draft, flip it ready (`gh pr ready`; the `block-premature-ready` hook verifies `CI Complete` is green), wait for the Claude review to complete, and resolve its threads before proceeding. Never merge over red or over unresolved threads.
 - `/code-review ultra` is available as an optional deep pre-land review for a big wave (operator-invoked; it does not replace the automated Claude review).
+- **Switch focus mode on** once the preconditions hold: `.claude/hooks/stop/worklist.py --focus <me> merge --pr <console-pr>`. The Stop hook then parks plan, queue and hygiene pushes and keeps what protects the land (CI red, dead watches, unread reports, STATE.md near compaction, hook integrity); a new writer spawn is refused unless it declares `focus-fix:#<id>` for an open item carrying `pr:<console-pr>`. Focus is not a precondition to skip: without it the full battery pushes unrelated work into the middle of a merge.
 
 ### 1. Merge submodule PRs first (submodule-first, rebase)
-**All 5 repos (console + 4 submodules) are rebase-merge only, since 2026-07-30.**
-`--squash` is rejected outright: `gh pr merge <n> --squash` fails with `GraphQL: Squash merges
-are not allowed on this repository.` Do not try it first and fall back. Go straight to
-`--rebase`. `git branch --merged` lies about ancestry on these repos (a rebased PR's commits are
-never literally on the base branch under the old SHAs), so judge "is this landed" by PR **state**
-(`gh pr view --json state` → `MERGED`), never by `--merged`/`--contains`.
+**All 5 repos (console + 4 submodules) are rebase-merge only, since 2026-07-30.** `--squash` is rejected outright: `gh pr merge <n> --squash` fails with `GraphQL: Squash merges are not allowed on this repository.` Do not try it first and fall back. Go straight to `--rebase`. `git branch --merged` lies about ancestry on these repos (a rebased PR's commits are never literally on the
+base branch under the old SHAs), so judge "is this landed" by PR **state** (`gh pr view --json state` → `MERGED`), never by `--merged`/`--contains`.
 
 For each submodule that has an **open PR on this branch** (check the list above):
 - Confirm `mergeStateStatus` is `CLEAN` and there are **no unresolved bot review threads** (`gh api graphql` reviewThreads → all `isResolved:true`). If unresolved threads remain, resolve them first (substantive reply + `resolveReviewThread`), because they block the console `Submodule Branches` gate while the console PR is still open.
   - A **failing but non-required** check (e.g. a broken submodule Claude Review job) shows as `mergeStateStatus: UNSTABLE`, not `CLEAN`, and that alone does not mean stop. Confirm with GraphQL whether it's actually required before treating it as a blocker: `pullRequest.commits.nodes[].commit.statusCheckRollup.contexts.nodes[].isRequired(pullRequestNumber: <n>)`. `isRequired:false` on the only failing context means the PR is safely mergeable despite UNSTABLE.
 - Rebase-merge: `gh pr merge <n> --repo rediacc/<r> --rebase`. **GitHub deletes the head
-  branch for you** -- `delete_branch_on_merge` is `true` on all five repos, so this is not a
-  choice you make. Ask rather than assume:
-  `gh api repos/rediacc/<r> --jq '.delete_branch_on_merge, .allow_squash_merge, .allow_rebase_merge'`.
-  This line used to claim the setting was FALSE on submodules and that keeping the branch
-  preserved a gate fallback. Both were invented, and the cost was real: believing merged
-  branch names stay visible is what let `0826-1` be picked twice on 2026-08-26, hours after
-  PR #576 merged it. The gate does not need the ref -- `check-submodule-branches.sh` finds
-  merged work with `gh pr list --head <branch> --state merged`, which never touches it.
+branch for you** -- `delete_branch_on_merge` is `true` on all five repos, so this is not a choice you make. Ask rather than assume: `gh api repos/rediacc/<r> --jq '.delete_branch_on_merge, .allow_squash_merge, .allow_rebase_merge'`. This line used to claim the setting was FALSE on submodules and that keeping the branch preserved a gate fallback. Both were invented, and the cost was
+real: believing merged branch names stay visible is what let `0826-1` be picked twice on 2026-08-26, hours after PR #576 merged it. The gate does not need the ref -- `check-submodule-branches.sh` finds merged work with `gh pr list --head <branch> --state merged`, which never touches it.
 - Capture the new submodule `main` HEAD: `gh api repos/rediacc/<r>/commits/main --jq .sha`. This is the **rebased tip commit**, a new SHA even for a single-commit PR (rebase always creates new commit objects), tree-identical to the branch tip but not the same object.
 
 ### 2. Update console submodule pointers to the merged commits
@@ -168,24 +132,29 @@ Then in the console repo: `git add private/renet private/account …` (only the 
 Refresh the console PR body before pushing (staleness gate reads `updatedAt`; the body must actually change): summarize the merges + pointer bump.
 
 ### 3. Wait for the fast-path run, then auto-merge the console PR
-The pointer bump changed only submodule SHAs (trees verified identical in step 2), so the push is a **pointer-bump fast path**: `.ci/scripts/ci/detect-pointer-bump.sh` sets `pointer_bump_only=true` in the `initialize` job and `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `migration-test`, `stripe-sandbox`, `package-tests`, and `ops-tests`. Only `quality`, `review-gate`, and `ci-complete` run, so the run goes green in **minutes**, and `assert-ci-complete.sh` accepts the skipped builds under this flag. The pointer-only diff deliberately triggers **no** Claude re-review.
+The pointer bump changed only submodule SHAs (trees verified identical in step 2), so the push is a **pointer-bump fast path**: `.ci/scripts/ci/detect-pointer-bump.sh` sets `pointer_bump_only=true` in the `initialize` job and `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `migration-test`, `stripe-sandbox`,
+`package-tests`, and `ops-tests`. Only `quality`, `review-gate`, and `ci-complete` run, so the run goes green in **minutes**, and `assert-ci-complete.sh` accepts the skipped builds under this flag. The pointer-only diff deliberately triggers **no** Claude re-review.
 - Trace it with `.ci/scripts/ci/ci-trace.py --wait` (run_in_background: true). Do NOT hand-roll a loop: ad-hoc watch commands are refused by `block-adhoc-sanctioned.sh`, and a hand-rolled watch left running blocks the Stop hook. The script keys on the PR HEAD, so a watchdog rerun and a superseded run are both handled structurally. Exit 0 green, 1 red, 2 no verdict, 3 head moved. **One wait per command**. Never chain "then wait for the review marker" onto the same watch, because the notification fires on process exit and a red run posts no review, so the CI verdict would never wake you (observed 2026-08-24, ninety minutes lost).
 - When `CI Complete` is green: `gh pr merge <console-pr> --repo rediacc/console --rebase --auto` (console is rebase-only too, same policy as the submodules since 2026-07-30; `--squash` is rejected here as well. `--rebase --auto` is the sanctioned merge, which GitHub lands the moment required checks are green. `--admin` is banned by the `block-admin-merge` hook; there is no place for it here).
 - **`gh pr merge --rebase` can fail outright on a very large PR with `GraphQL: This branch can't be rebased`, even when every check is green and `mergeable_state` reads `clean`.** Confirmed live 2026-08-31 on a 134-commit / 53,747-line PR: `gh api repos/<owner>/<repo>/pulls/<n> --jq '{mergeable, mergeable_state, rebaseable}'` showed `mergeable:true, mergeable_state:"clean", rebaseable:false` -- GitHub computes `rebaseable` separately from `mergeable` and appears to give up on it past some size threshold, distinct from and not documented alongside `mergeable_state`. This is NOT a real merge conflict (`git merge --merged`/branch-protection checks are unaffected) and is NOT the "unresolved thread" or "stale head" case the rest of this section covers.
 
-  **Check first whether the branch is a pure fast-forward** (this is the common case for a PR built the way this whole workflow builds one -- rebased onto `main` throughout, never merged from `main`):
+**Check first whether the branch is a pure fast-forward** (this is the common case for a PR built the way this whole workflow builds one -- rebased onto `main` throughout, never merged from `main`):
   ```
   git merge-base --is-ancestor origin/main origin/<branch> && echo "pure fast-forward"
   ```
-  If that prints `pure fast-forward`, the sanctioned recovery is a **direct fast-forward push of the branch tip onto `main`** -- not `--merge` (adds a merge commit, breaking this repo's linear-history convention for the first time) and not `--squash` (rejected outright on this repo, same as everywhere else in this document, and it would collapse every commit besides):
+If that prints `pure fast-forward`, the sanctioned recovery is a **direct fast-forward push of the branch tip onto `main`** -- not `--merge` (adds a merge commit, breaking this repo's linear-history convention for the first time) and not `--squash` (rejected outright on this repo, same as everywhere else in this document, and it would collapse every commit besides):
   ```
   git push origin origin/<branch>:main
   ```
-  This is git-level identical to what a rebase-merge would have produced (nothing to replay: `main` is already an ancestor, so this is a plain fast-forward, not a force-push -- `block-git-force-push.sh` does not apply and this needs no mediation). GitHub auto-detects the PR's commits landing in `main` and flips it to `MERGED` on its own; verify with `gh pr view <console-pr> --json state,mergedAt` same as the normal path. The head branch is still auto-deleted (`delete_branch_on_merge` is a repo setting, not something the merge mechanism controls).
+This is git-level identical to what a rebase-merge would have produced (nothing to replay: `main` is already an ancestor, so this is a plain fast-forward, not a force-push -- `block-git-force-push.sh` does not apply). Since 2026-09-22 `block_push_to_protected_branch.py` refuses EVERY direct push to `main` from this tool's own Bash access, this one included: the operator runs this
+line directly with the `!` prefix, which bypasses the hook, rather than it being typed here. The git-level `pre-push` hook (`.claude/rediacc_hooks/git/`, installed by `./run.sh setup`) refuses a push to `main` from every source, so the operator's line carries the override: `! COMMIT_POLICY_OK=1 git push origin origin/<branch>:main`. GitHub auto-detects the PR's commits landing in `main` and flips it to `MERGED` on its own; verify with `gh pr view <console-pr> --json state,mergedAt` same as the normal path. The head branch is still auto-deleted (`delete_branch_on_merge` is a repo setting, not something the merge
+mechanism controls).
 
-  If the ancestry check does NOT print "pure fast-forward" (main has moved ahead of this branch), this fallback does not apply -- rebase the branch onto `origin/main` for real first (a normal, non-empty rebase), or fall back to the operator: this is genuinely a case the size-limited `--rebase` API and the fast-forward shortcut both fail to cover, and picking `--merge`/`--squash` unilaterally changes `main`'s permanent history against documented policy.
+If the ancestry check does NOT print "pure fast-forward" (main has moved ahead of this branch), this fallback does not apply -- rebase the branch onto `origin/main` for real first (a normal, non-empty rebase), or fall back to the operator: this is genuinely a case the size-limited `--rebase` API and the fast-forward shortcut both fail to cover, and picking `--merge`/`--squash`
+unilaterally changes `main`'s permanent history against documented policy.
 - If `Review Complete` hasn't posted for the pointer-bump head yet (Claude Review deliberately does not re-run for a pointer-only diff, so nothing auto-triggers review-status.yml for this new SHA either): nudge it with a throwaway PR comment (`gh pr comment <console-pr> --body "..."`, fires the `issue_comment` trigger). The currency check recognizes a gitlink-only diff as reviewed-equivalent, so this posts clean without spending review budget.
 - Verify: `gh pr view <console-pr> --repo rediacc/console --json state` → `MERGED`, and capture `console/main` HEAD.
+- **The merge ends focus by itself.** The Stop hook reads the PR as merged, records the end, and prints one `FOCUS ENDED` line naming what it parked; steps 4-6 run under the full battery, which is where the release-path checks belong.
 
 ### 4. Check out main (first pass, since it will go stale again in step 5, see step 6)
 - `git fetch origin --prune`
@@ -201,12 +170,8 @@ The pointer bump changed only submodule SHAs (trees verified identical in step 2
 gh pr view <console-pr> --repo rediacc/console --json labels -q '[.labels[].name] | join(", ")'
 ```
 
-If the label set contains `bump-none`, the automated review has declared this merge earns no
-release: no git tag, no GitHub Release, no R2 upload, **no edge deploy**. Its commits ship with
-the next release-worthy merge. Console CI still runs on `main` and still does the real Docker
-build and push, so it must still go green, but `dispatch-release.sh` will deliberately skip and
-**no Release run will ever appear**. Confirm the decision from the run rather than inferring it
-from an absence:
+If the label set contains `bump-none`, the automated review has declared this merge earns no release: no git tag, no GitHub Release, no R2 upload, **no edge deploy**. Its commits ship with the next release-worthy merge. Console CI still runs on `main` and still does the real Docker build and push, so it must still go green, but `dispatch-release.sh` will deliberately skip and **no
+Release run will ever appear**. Confirm the decision from the run rather than inferring it from an absence:
 
 ```bash
 gh run view <main-ci-run> --repo rediacc/console --json jobs \
@@ -215,25 +180,21 @@ gh run view <main-ci-run> --repo rediacc/console --json jobs \
 #   release SKIPPED: #567 carries 'bump-none'
 ```
 
-**Why this is called out.** Observed live on 2026-08-10: a session merged a `bump-none` PR,
-watched Console CI on `main` go green, then went looking for the Release run and found only
-runs from the previous day. Nothing was wrong. But "the release run is missing" and "the
-release was correctly skipped" look identical from a run list, and the first reading invites
-re-dispatching a release nobody wanted, which ships artifacts. Read the label first, then the
-sentinel job's own words.
+**Why this is called out.** Observed live on 2026-08-10: a session merged a `bump-none` PR, watched Console CI on `main` go green, then went looking for the Release run and found only runs from the previous day. Nothing was wrong. But "the release run is missing" and "the release was correctly skipped" look identical from a run list, and the first reading invites re-dispatching a
+release nobody wanted, which ships artifacts. Read the label first, then the sentinel job's own words.
 
-When `bump-none` applies, the rest of step 5 does not: there is no Release run to watch, no
-tag to report, and nothing deployed to edge. **Step 6 also shrinks** -- CD pushes its two
-`[skip ci]` commits back to `main` only when a release actually happens, so a `bump-none` merge
-leaves the local checkout exactly one fast-forward behind and no submodule pointer moves.
+When `bump-none` applies, the rest of step 5 does not: there is no Release run to watch, no tag to report, and nothing deployed to edge. **Step 6 also shrinks** -- CD pushes its two `[skip ci]` commits back to `main` only when a release actually happens, so a `bump-none` merge leaves the local checkout exactly one fast-forward behind and no submodule pointer moves.
 
 For a release-worthy merge, everything below applies as written.
 
-The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the **real** Docker build+push, not the PR dry-run). When Console CI goes green, its finalize step **dispatches the Release workflow** (`cd-v2.yml`): git tag → GitHub Release → R2 upload → **deploy edge**. Both do main-only work that PR CI only dry-ran, so they can fail where every PR check was green. The land is not done until this is green.
+The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the **real** Docker build+push, not the PR dry-run). When Console CI goes green, its finalize step **dispatches the Release workflow** (`cd-v2.yml`): git tag → GitHub Release → R2 upload → **deploy edge**. Both do main-only work that PR CI only dry-ran, so they can fail where every PR check was green. The
+land is not done until this is green.
 - Find the **Console CI** run for the merged commit: `gh run list --repo rediacc/console --branch main --workflow "Console CI" --limit 3` (event `push`, matching the merged SHA), then trace it with `.ci/scripts/ci/ci-trace.py --wait` (run_in_background: true). On `main` the watchdog auto-retries transient failures; the script reads the head's check rollup, so a rerun replaces the old attempt rather than fooling it.
 - Console CI on `main` is green **before** the Release run exists. Once it is, find the **Release to Edge** run (`gh run list --repo rediacc/console --workflow "Release to Edge" --limit 3`, event `workflow_dispatch`, matching the merged SHA) and watch it **by id**: `.ci/scripts/ci/ci-trace.py --run <id> --wait` (run_in_background: true). That is the run that actually tags and deploys edge.
 
-  **NOT "the same way" as the branch watch above, and this cost a false green.** A branch's GraphQL `statusCheckRollup` does NOT contain a `workflow_dispatch` run's check runs. Measured 2026-08-26 on Release run 32968110599 (head `1c006e53`): the REST check-runs API for that exact commit showed `in_progress  Tag & Release`, while the rollup for `refs/heads/main` returned 81 contexts, state SUCCESS, **none in flight**. So `--wait --ref main` printed `GREEN ... every context succeeded or was skipped` and exited 0 while the release was mid-flight. That happened twice, including with `--until-final`. Following this step as it was previously written would certify a release that had not run. `--run` reads per-JOB conclusions instead (in-flight → exit 2, completed-success → 0, unreadable → 2).
+**NOT "the same way" as the branch watch above, and this cost a false green.** A branch's GraphQL `statusCheckRollup` does NOT contain a `workflow_dispatch` run's check runs. Measured 2026-08-26 on Release run 32968110599 (head `1c006e53`): the REST check-runs API for that exact commit showed `in_progress Tag & Release`, while the rollup for `refs/heads/main` returned 81 contexts,
+state SUCCESS, **none in flight**. So `--wait --ref main` printed `GREEN ... every context succeeded or was skipped` and exited 0 while the release was mid-flight. That happened twice, including with `--until-final`. Following this step as it was previously written would certify a release that had not run. `--run` reads per-JOB conclusions instead (in-flight → exit 2,
+completed-success → 0, unreadable → 2).
 - **Read before classifying.** If a CD step fails, surface the exact failed step loudly and read its COMPLETE log first. The edge may be left partially deployed.
 - **Prefer doing nothing.** The watchdog's AI classifier auto-retries transient failures on `main` by itself (observed: a wrangler `Network connection lost.` during `d1 export` was classified `transient (0.8)` and re-dispatched without intervention). Check whether a retry is already in flight before acting; a second actor racing the watchdog is how a half-deployed edge gets worse.
 - **First, classify: transient, or main-only?** The PR was green, so a failure appearing now is one of exactly two things, and they need opposite responses. The test is one command: **did this job run and pass on the PR run?**
@@ -246,17 +207,23 @@ The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the 
   - **It ran and passed on the PR → transient.** Same code, same job, different outcome. Do NOT fix it. The watchdog auto-retries these itself. (Real case: `Migration Test` passed on PR run 29844923209, then died on `main` with wrangler `Network connection lost.` mid `d1 export`, was classified `transient (0.8)` and cleared on the auto-retry. A "fix" would have been a change to working code.)
   - **It never ran on the PR, or runs differently there → main-only.** Then it is genuinely untestable by a PR, and that is what licenses the next bullet.
 
-- **A main-only code fix goes DIRECTLY ON `main`, not through a new branch or PR.** The rule is inverted here for a reason that is about INSTRUMENTS, not urgency: **a PR cannot exercise the thing that broke.** It would go green while proving nothing, because the failing path is one PR CI structurally never runs. The verification loop for these fixes is the next `main` run, not a PR check.
+- **A main-only code fix is a `[hotfix]` commit DIRECTLY ON `main`, not a new branch or PR.** The rule is inverted here for a reason that is about INSTRUMENTS, not urgency: **a PR cannot exercise the thing that broke.** It would go green while proving nothing, because the failing path is one PR CI structurally never runs. The verification loop for these fixes is the next `main` run, not a PR check.
 
-  Main-only surfaces in this repo: `finalize-release-sentinel`, `pipeline-sentinel`, `check-release-state`, `build-devcontainer-manifest` (all gated `github.event_name == 'push'` / `refs/heads/main`), the entire Release workflow (`cd-v2.yml`, dispatch-only), and Docker, which PR CI only DRY-RUNS while `main` does the real build+push.
+Main-only surfaces in this repo: `finalize-release-sentinel`, `pipeline-sentinel`, `check-release-state`, `build-devcontainer-manifest` (all gated `github.event_name == 'push'` / `refs/heads/main`), the entire Release workflow (`cd-v2.yml`, dispatch-only), and Docker, which PR CI only DRY-RUNS while `main` does the real build+push.
 
-  So: commit on `main` and push. Keep it surgical (name the paths, `git add -A` is still banned) and state plainly in the report that you pushed to `main` and why.
-  - This is the ONLY situation in which pushing `main` is allowed without a fresh per-task request. It applies **after** a merge performed by this command, to a failure in that merge's own release path. Everything else still goes through `/pr-babysit`.
+  So: commit on `main` as a hotfix, and hand the push to the operator. The commit shape is what `block_commit_on_main` admits (docs/agent-reference/ci-gates.md *Commit policy*):
+  - the subject ends in `[hotfix]` (`fix(ci): <what> [hotfix]`), and the message carries a `Hotfix-Evidence: <red main run id or actions/runs URL>` trailer;
+  - at most 5 files, named by pathspec: `git commit -F <msg> -- <paths>` (`git add -A` is still banned); no `PR-TASK:` trailer, since `main` has no epic;
+  - never `[no-review]`: a hotfix gets no PR, so the per-commit review is the only one it has.
+
+  The push is the operator's: `block_push_to_protected_branch` refuses every push to `main` from this tool, and the git-level `pre-push` hook refuses it for everyone else, so the report names the commit and the exact line for the operator to run, `! COMMIT_POLICY_OK=1 git push origin main`. State plainly in the report which commit went on `main` and why.
+  - This is the ONLY situation in which committing on `main` is allowed without the operator calling it a hotfix in the task. It applies **after** a merge performed by this command, to a failure in that merge's own release path. Everything else goes on the one feature branch.
   - It does **not** extend to re-cutting a release. Re-dispatching stays the operator's call (`gh workflow run "Release to Edge" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`), because that ships artifacts rather than fixing code.
 
 ### 6. Re-sync main AFTER the release run, because CD pushes to main during step 5
 
-**This step is not optional for a release-worthy merge, and step 4 does not cover it.** (For a `bump-none` merge there is no release run, so none of the two commits below are written and the checkout is at most one fast-forward behind. Re-sync anyway, it is cheap, but do not go hunting for a homebrew-tap pointer move that never happened.) The release run does not only tag and deploy; it pushes **two commits back to `main`** after your merge, every single time:
+**This step is not optional for a release-worthy merge, and step 4 does not cover it.** (For a `bump-none` merge there is no release run, so none of the two commits below are written and the checkout is at most one fast-forward behind. Re-sync anyway, it is cheap, but do not go hunting for a homebrew-tap pointer move that never happened.) The release run does not only tag and
+deploy; it pushes **two commits back to `main`** after your merge, every single time:
 
 ```
 chore(release): update homebrew-tap submodule pointer [skip ci]
@@ -286,17 +253,10 @@ Worktree **behind** the record ⇒ the checkout is stale ⇒ `git submodule upda
 
 ### 6b. Mirror `main` to the GitLab remote, so it cannot go stale again
 
-This repo has a **second remote**, `gitlab`
-(`gitlab.rediacc.io/rediacc-org/github/console.git`). It is not a live mirror and nothing
-pushes to it automatically, which is exactly how it drifted: on 2026-08-23 its `main` was
-found sitting at `09b0b7716` while GitHub's was at `b75c44d58`, an ancestor and months
-behind. This step exists so that gap never reopens.
+This repo has a **second remote**, `gitlab` (`gitlab.rediacc.io/rediacc-org/github/console.git`). It is not a live mirror and nothing pushes to it automatically, which is exactly how it drifted: on 2026-08-23 its `main` was found sitting at `09b0b7716` while GitHub's was at `b75c44d58`, an ancestor and months behind. This step exists so that gap never reopens.
 
-It goes **here**, after step 6 and before step 7, and the position is load-bearing in both
-directions. Earlier than step 6 and you mirror a `main` that is two commits stale, because CD
-pushes the release commits back after the merge, which is the very drift this prevents. Later
-than step 7 and it dilutes step 7's hard boundary, whose whole subject is that the session is
-parked on `main` and must stop touching things.
+It goes **here**, after step 6 and before step 7, and the position is load-bearing in both directions. Earlier than step 6 and you mirror a `main` that is two commits stale, because CD pushes the release commits back after the merge, which is the very drift this prevents. Later than step 7 and it dilutes step 7's hard boundary, whose whole subject is that the session is parked on
+`main` and must stop touching things.
 
 ```bash
 if git remote get-url gitlab >/dev/null 2>&1; then
@@ -307,62 +267,47 @@ else
 fi
 ```
 
+**This push is the operator's.** `block_push_to_protected_branch` refuses a push to `main` whatever the remote, and the git-level `pre-push` hook refuses it too, so the report hands the block above to the operator, who runs the push line with `!` and `COMMIT_POLICY_OK=1` in front of `git push`. The session probes the remote and reports; it does not retry the push another way.
+
 Four things this must respect, in order of how likely they are to bite:
 
 - **The remote may not exist.** `gitlab` lives only in local `.git/config`; it is not tracked,
-  so a fresh clone does not have it. Probe with `git remote get-url gitlab` and, if it is
-  absent, **report and continue**. A missing mirror must never fail a merge that already
-  landed.
+so a fresh clone does not have it. Probe with `git remote get-url gitlab` and, if it is absent, **report and continue**. A missing mirror must never fail a merge that already landed.
 - **Credentials may be absent or expired.** GitLab is self-hosted and answers a redirect to a
-  sign-in page. `GIT_TERMINAL_PROMPT=0` plus a timeout is what stops a non-interactive session
-  hanging on a credential prompt. A skip you report beats a hang you do not.
+sign-in page. `GIT_TERMINAL_PROMPT=0` plus a timeout is what stops a non-interactive session hanging on a credential prompt. A skip you report beats a hang you do not.
 - **Push the refspec explicitly. Never `--mirror` from a working checkout.** In a working tree
-  `--mirror` also pushes `refs/remotes/*` and deletes anything on GitLab not present locally.
-  The mirror form is correct only from a bare mirror clone during a deliberate history
-  rewrite, which is an operator-run one-off, not this step.
+`--mirror` also pushes `refs/remotes/*` and deletes anything on GitLab not present locally. The mirror form is correct only from a bare mirror clone during a deliberate history rewrite, which is an operator-run one-off, not this step.
 - **Never force.** Once both remotes share history this is always a fast-forward. If it is
-  ever rejected as non-fast-forward, GitLab has diverged again: **report and stop**, do not
-  reach for a force flag. A forced push from a stale local `main` would silently overwrite the
-  mirror, and `.claude/hooks/pre-bash/block-git-force-push.sh` will refuse it anyway.
+ever rejected as non-fast-forward, GitLab has diverged again: **report and stop**, do not reach for a force flag. A forced push from a stale local `main` would silently overwrite the mirror, and `.claude/hooks/pre-bash/block-git-force-push.sh` will refuse it anyway.
 
-Report the outcome in step 8 either way, including a skip. A mirror that quietly stops being
-written is indistinguishable from one that is up to date, which is how the first drift went
-unnoticed for months.
+Report the outcome in step 8 either way, including a skip. A mirror that quietly stops being written is indistinguishable from one that is up to date, which is how the first drift went unnoticed for months.
 
 ### 7. Hand the tree back safely: you are now sitting on `main`
 
-Steps 4 and 6 leave the checkout on `main`, which is correct for verifying the release but is a
-**loaded gun for whatever happens next**: `main` is the one branch this repo forbids pushing,
-and a tree parked there invites the next piece of work to be written straight onto it.
+Steps 4 and 6 leave the checkout on `main`, which is correct for verifying the release but is a **loaded gun for whatever happens next**: `main` is the one branch this repo forbids pushing, and a tree parked there invites the next piece of work to be written straight onto it.
 
-That is not hypothetical. A session finished a `/pr-merge`, stayed on `main`, and built an
-entire feature there, 26 new files across 18 paths, before anything noticed. It reached a
-branch only because `/pr-babysit` happened to be invoked afterwards and created one. Nothing
-was lost, but the recovery was luck, not design: had the operator not run `/pr-babysit`, the
-work would still be uncommitted on `main`, one careless `git commit` away from a forbidden push.
+That is not hypothetical. A session finished a `/pr-merge`, stayed on `main`, and built an entire feature there, 26 new files across 18 paths, before anything noticed. It reached a branch only because `/pr-babysit` happened to be invoked afterwards and created one. Nothing was lost, but the recovery was luck, not design: had the operator not run `/pr-babysit`, the work would still
+be uncommitted on `main`. `block_commit_on_main` now refuses any commit there that is not a `[hotfix]`, so the same session today would be stopped at its first commit, but the refusal is a late place to find out.
 
 So finish by making the state explicit rather than leaving it implied:
 
+- **Delete the merged local branch in every repository**, console and each submodule that carried
+it, once `gh pr view <n> --repo rediacc/<r> --json state` reads `MERGED`: `git branch -D <merged>` (and `git -C private/<sm> branch -D <merged>`). A merged branch is no longer live, but leaving it behind makes the next cut harder to read; with it gone the checkout holds no feature branch, which is the one state in which `block_second_branch` admits a new one.
 - Confirm and **state in the report** that the checkout is on `main` and that `main` is
-  read-only here: the next task must start with a fresh `MMDD-N` branch (`/pr-babysit` does
-  this, or `git checkout -b <MMDD-N>` by hand) **before** any tracked file is edited.
+read-only here: the next task must start with a fresh `MMDD-N` branch (`/pr-babysit` does this, or `git switch -c <MMDD-N>` by hand) **before** any tracked file is edited. `block_second_branch` admits only today's next name, and its refusal prints the computed one.
 - If the tree already carries uncommitted work (the §0 shared-tree case), say so again here:
-  that work is now sitting on `main` and needs a branch before it can be committed at all.
+that work is now sitting on `main` and needs a branch before it can be committed at all.
 - Do **not** pre-create the next branch yourself. The branch name encodes the next wave's date
-  and number, and guessing it produces stray `MMDD-N` refs that the next `/pr-babysit` then has
-  to skip past.
+and number, and guessing it produces stray `MMDD-N` refs that the next `/pr-babysit` then has to skip past.
 - **The name this command just merged is now CONSUMED, and its branch is gone.** A rebase-merge
-  deletes the head branch, so `git branch -r` no longer shows it and the next session can pick
-  it again. Seen live on 2026-08-26: `0826-1` merged as PR #576 at 11:01, and a session working
-  from the remote branch list took `0826-1` a second time. Compute the next N from PR HEADS:
+deletes the head branch, so `git branch -r` no longer shows it and the next session can pick it again. Seen live on 2026-08-26: `0826-1` merged as PR #576 at 11:01, and a session working from the remote branch list took `0826-1` a second time. Compute the next N from PR HEADS:
 
       d=$(date +%m%d)
       gh pr list --state all --limit 100 --json headRefName --jq '.[].headRefName' \
         | grep "^${d}-" | sed "s/^${d}-//" | sort -n | tail -1
 
-  Then add one. `MMDD-N` takes **no suffix**; `block-nonstandard-branch-name.sh` refuses one,
-  because /pr-merge matches a submodule's coordinated PR on the console branch name EXACTLY and
-  a suffixed name silently matches nothing.
+Then add one. `MMDD-N` takes **no suffix**; `block-nonstandard-branch-name.sh` refuses one, because /pr-merge matches a submodule's coordinated PR on the console branch name EXACTLY and a suffixed name silently matches nothing.
 
 ### 8. Report
-State each merged commit (renet / account / console → their rebased-tip SHAs on main), confirm local `main` is in sync, **state the step-6b GitLab mirror outcome explicitly, including a skip and its reason**, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.
+State each merged commit (renet / account / console → their rebased-tip SHAs on main), confirm local `main` is in sync, **state the step-6b GitLab mirror outcome explicitly, including a skip and its reason**, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix committed
+as a `[hotfix]` on `main`, state that explicitly with its SHA, the failure it repaired, and whether the operator has pushed it yet. Close with the step-7 hand-back note (on `main`, branch before editing), and end focus: `.claude/hooks/stop/worklist.py --focus <me> off` (it prints `focus is not on` when the merge already ended it). **Do not** merge anything else or re-cut a release.

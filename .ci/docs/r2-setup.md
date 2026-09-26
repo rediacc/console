@@ -47,7 +47,8 @@ gh secret set CLOUDFLARE_R2_ENDPOINT --org rediacc --body "https://fa51e4a18d553
 
 ## 5. Cloudflare Cache Rule (critical)
 
-The `rediacc.com` zone has `cache_level: aggressive` and `browser_cache_ttl: 14400` (4 h), which causes CF to OVERRIDE origin `Cache-Control: no-cache` with `max-age=14400` on GET responses for binary content served from this R2 custom domain. That is fine for `www.rediacc.com` (HTML served by Workers), but on `releases.rediacc.com` it broke package-manager signature checks: apt / apk / pacman fetched a fresh APKINDEX / InRelease referencing one sha256, then got the previous release's cached body with a different sha256, and aborted with `BAD signature` / `File has unexpected size`.
+The `rediacc.com` zone has `cache_level: aggressive` and `browser_cache_ttl: 14400` (4 h), which causes CF to OVERRIDE origin `Cache-Control: no-cache` with `max-age=14400` on GET responses for binary content served from this R2 custom domain. That is fine for `www.rediacc.com` (HTML served by Workers), but on `releases.rediacc.com` it broke package-manager signature checks: apt /
+apk / pacman fetched a fresh APKINDEX / InRelease referencing one sha256, then got the previous release's cached body with a different sha256, and aborted with `BAD signature` / `File has unexpected size`.
 
 A zone-level Cache Rule forces BYPASS for every request to `releases.rediacc.com`, so origin `Cache-Control` passes through unmodified and CF never caches the body. R2 is colocated with CF POPs, so bypassing the edge cache has negligible latency impact.
 
@@ -89,13 +90,13 @@ done
 
 If the rule is ever removed or disabled, `Validate Install Methods` on CI will fail with `BAD signature` on apk and `Maximum file size exceeded` on pacman within ~1 release cycle.
 
-## 6. GitHub Org Variable for the Zone ID
+## 6. Bitwarden Secret for the Zone ID
+
+The zone id is the `CLOUDFLARE_ZONE_ID` secret in the Bitwarden `ci-shared` project (it left GitHub Actions variables on 2026-09-24), and every consuming job fetches it through `./.github/actions/bws-secrets`. To change it:
 
 ```bash
-gh variable set CLOUDFLARE_ZONE_ID \
-  --org rediacc \
-  --body "9e802649c143c9cefd811d8fd671d31c" \
-  --visibility selected --repos console
+bws secret edit <CLOUDFLARE_ZONE_ID uuid from .ci/config/bws-secret-map.json> \
+  --value "9e802649c143c9cefd811d8fd671d31c"
 ```
 
 Used by `.ci/scripts/deploy/cf-purge-urls.sh` (belt-and-suspenders cache purge after every upload in cd-stage / cd-v2 / promote-stable / ci.yml Validate Promotion). With the Cache Rule active the purge is a no-op, but kept so that if someone disables the Cache Rule we still evict stale entries.

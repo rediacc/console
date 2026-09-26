@@ -70,7 +70,7 @@ export interface ExecuteOptions {
    * datastore had no way to say so, and every dispatch silently used the machine's
    * default docker datastore instead of the datastore the repo was created on.
    *
-   * This is that channel. It does not change the default — a machine with no named
+   * This is that channel. It does not change the default, a machine with no named
    * datastore still falls back exactly as before; it lets a caller that KNOWS the
    * placement stop staying silent about it.
    */

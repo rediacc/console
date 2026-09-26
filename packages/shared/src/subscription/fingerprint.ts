@@ -29,9 +29,7 @@ function extractRawKey(publicKeyBase64: string): Uint8Array<ArrayBuffer> {
       `invalid Ed25519 public key: expected at least 32 bytes, got ${decoded.length}`
     );
   }
-  // Raw key is always the final 32 bytes (Ed25519 SPKI is a fixed 12-byte
-  // prefix; a bare 32-byte key is its own final 32 bytes). Copy into a fresh
-  // ArrayBuffer-backed view so the digest input is a plain BufferSource.
+  // Raw key is always the final 32 bytes (Ed25519 SPKI is a fixed 12-byte prefix; a bare 32-byte key is its own final 32 bytes). Copy into a fresh ArrayBuffer-backed view so the digest input is a plain BufferSource.
   const raw = new Uint8Array(new ArrayBuffer(32));
   raw.set(decoded.subarray(decoded.length - 32));
   return raw;

@@ -6,8 +6,8 @@
  * recovers the right CEK. This test keeps the crypto REAL: it stands up a genuine
  * password key-slot with the shared module (generateCek → newPasswordSlotParams →
  * derivePasswordSlotSecret → wrapCekForSlot), seals a real config blob under that
- * exact CEK, then drives the CLI's OWN unwrap path — `RemoteConfigAdapter.pull()`,
- * whose private `deriveCek` runs `deriveWrappingKey` + `cekUnwrap` — and asserts:
+ * exact CEK, then drives the CLI's OWN unwrap path, `RemoteConfigAdapter.pull()`,
+ * whose private `deriveCek` runs `deriveWrappingKey` + `cekUnwrap`, and asserts:
  *
  *   1. positive round-trip: the CEK the CLI unwraps is byte-identical to the CEK
  *      the slot was wrapped with (captured via a real-implementation spy on
@@ -42,7 +42,7 @@ vi.mock('../../services/config/config-server-client.js', () => ({
   },
 }));
 
-// Real crypto — do NOT mock @rediacc/shared/*.
+// Real crypto, do NOT mock @rediacc/shared/*.
 import * as configCrypto from '@rediacc/shared/config-crypto';
 import {
   derivePasswordSlotSecret,
@@ -83,14 +83,33 @@ const REMOTE: RemoteConfig = {
   storageKeyId: STORAGE_KEY_ID,
 };
 
-// ─── In-memory storage stubs (no module mock — passed to the constructor) ─
+// ─── In-memory storage stubs (no module mock, passed to the constructor) ─
 
 function createTokenStorage(entry: { token: string; wrappedCek: string } | null) {
+  let current: { token: string; wrappedCek: string; sync?: unknown } | null = entry;
   return {
     get: vi.fn().mockResolvedValue(entry),
     set: vi.fn().mockResolvedValue(undefined),
     updateToken: vi.fn().mockResolvedValue(undefined),
     delete: vi.fn().mockResolvedValue(undefined),
+    withLease: <T>(_name: string, fn: (lease: unknown) => Promise<T>) =>
+      fn({
+        data: entry,
+        get token() {
+          return current?.token;
+        },
+        get sync() {
+          return current?.sync;
+        },
+        update: (token: string) => {
+          current = current ? { ...current, token } : current;
+          return Promise.resolve();
+        },
+        recordSync: (sync: unknown) => {
+          current = current ? { ...current, sync } : current;
+          return Promise.resolve();
+        },
+      }),
   };
 }
 
@@ -119,8 +138,7 @@ async function provision(
   const serverSecret = generateServerSecret();
   const cek = await generateCek();
 
-  // The wrappedCek may deliberately be wrapped under a DIFFERENT server secret or
-  // CEK to model a rotation the device never re-wrapped for (stale slot).
+  // The wrappedCek may deliberately be wrapped under a DIFFERENT server secret or CEK to model a rotation the device never re-wrapped for (stale slot).
   const wrappedCek = await wrapCekForSlot(
     opts.wrapCek ?? cek,
     slotSecret,
@@ -138,6 +156,7 @@ async function provision(
   } as unknown as RdcConfig;
 
   const payload = await buildConfigPushPayload(configInput, {
+    storeId: STORE_ID,
     version: 1,
     sdkEpoch: SDK_EPOCH,
     sdkDerived,
@@ -155,15 +174,21 @@ async function provision(
       sdkEpoch: SDK_EPOCH,
     },
     config: {
+      // The pull carries the session material too (configs.ts pull route), so the CLI pulls in one request.
+      server_secret: toBase64(serverSecret),
       configData: payload.encryptedBlob,
       envelope: {
+        envelopeVersion: payload.envelope.envelopeVersion,
         configId: CONFIG_ID,
         version: 1,
         teamId,
         lastModified: '2026-01-01T00:00:00Z',
+        sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
       },
       hmac: payload.hmac,
+      // The server's pull always returns the key of the epoch the blob was pushed in (configs.ts pull route).
+      sdk_derived: toBase64(rawSdk),
     },
   };
 }
@@ -186,8 +211,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     const f = await provision(PASSWORD);
     wireConfigApi(f.session, f.config);
 
-    // Spy on the shared cekUnwrap but keep the REAL implementation, so we can
-    // read back exactly which CEK the CLI's deriveCek produced.
+    // Spy on the shared cekUnwrap but keep the REAL implementation, so we can read back exactly which CEK the CLI's deriveCek produced.
     const unwrapSpy = vi.spyOn(configCrypto, 'cekUnwrap');
 
     const adapter = new RemoteConfigAdapter(
@@ -239,10 +263,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
   });
 
   it('rejects with RemoteStaleSlotError on a rotated/stale wrappedCek (generation mismatch)', async () => {
-    // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a
-    // different server secret — i.e. the CEK was rotated and this device kept its
-    // old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll
-    // error rather than a raw OperationError.
+    // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a different server secret, i.e. the CEK was rotated and this device kept its old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll error rather than a raw OperationError.
     const rotatedServerSecret = generateServerSecret();
     const f = await provision(PASSWORD, TEAM_ID, { wrapServerSecret: rotatedServerSecret });
     wireConfigApi(f.session, f.config);
@@ -268,16 +289,11 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
 
   // ─── F5: the blob refuses AFTER a successful CEK unwrap ────────────────
   //
-  // Enrolling a fresh device against a store that already holds a DIFFERENT
-  // config for the org used to die with a raw WebCrypto
-  // "OperationError: The operation failed for an operation-specific reason",
-  // because the only crypto catch in pull() wraps cekUnwrap, and here the
-  // unwrap SUCCEEDS. The failure is one layer later, in selectiveDecrypt.
+  // Enrolling a fresh device against a store that already holds a DIFFERENT config for the org used to die with a raw WebCrypto "OperationError: The operation failed for an operation-specific reason", because the only crypto catch in pull() wraps cekUnwrap, and here the unwrap SUCCEEDS. The failure is one layer later, in selectiveDecrypt.
 
   it('names the store/config mismatch when the blob was sealed under another CEK', async () => {
     // The slot wraps CEK-B; the stored blob was sealed under CEK-A. The device
-    // unwraps CEK-B cleanly and then meets a config it cannot read: exactly the
-    // "store already holds a different config for this org" case.
+    // unwraps CEK-B cleanly and then meets a config it cannot read: exactly the "store already holds a different config for this org" case.
     const otherCek = await generateCek();
     const f = await provision(PASSWORD, TEAM_ID, { wrapCek: otherCek });
     wireConfigApi(f.session, f.config);
@@ -316,10 +332,10 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
 
   it('separates a session-layer failure from the store mismatch', async () => {
     // Same CEK on both sides, so the HMAC and the CEK layer both pass; only the
-    // server-derived SDK layer is wrong. That is a retryable session problem,
-    // not a store-identity problem, and it must not claim the latter.
+    // server-derived SDK layer is wrong. That is a retryable session problem, not a store-identity problem, and it must not claim the latter.
     const f = await provision(PASSWORD);
-    wireConfigApi({ ...f.session, sdk_derived: toBase64(randomBytes(32)) }, f.config);
+    // The pull response carries the session-layer key (the push epoch's), so that is where the wrong key goes.
+    wireConfigApi(f.session, { ...f.config, sdk_derived: toBase64(randomBytes(32)) });
 
     const adapter = new RemoteConfigAdapter(
       REMOTE,

@@ -132,7 +132,7 @@ function segmentCommandWords(segment: string): string[] {
  * Detects `docker compose` / `docker-compose` *invocation* in repository
  * context, which must be blocked because `renet compose` is a preprocessor that
  * injects per-repo loopback IPs, host network mode, CRIU capabilities, and
- * compose validation — bypassing it silently corrupts the deployment.
+ * compose validation, bypassing it silently corrupts the deployment.
  *
  * Matches the command being run, NOT substrings in arguments/filenames: each
  * shell segment (split on `;`, `&&`, `||`, `|`, `&`, newline) is inspected at
@@ -142,7 +142,7 @@ function segmentCommandWords(segment: string): string[] {
  * `FOO=bar docker compose up` are still blocked (rediacc/console#490).
  *
  * Known limitation: docker-compose nested inside an opaque `bash -c "..."`
- * string is not matched — the server-side sandbox and per-repo DOCKER_HOST are
+ * string is not matched, the server-side sandbox and per-repo DOCKER_HOST are
  * the real enforcement; this guard is an ergonomic guardrail.
  */
 export function detectDockerComposeCommand(command: string): boolean {
@@ -214,18 +214,16 @@ export interface FileWriteMatch {
  * machine. When detected inside `rdc term connect -c`, we suggest
  * `rdc repo sync upload` instead (rsync, delta transfer, proper permissions).
  *
- * Conservative by design — false positives are worse than missed cases:
+ * Conservative by design, false positives are worse than missed cases:
  *   - `tee somefile` matches, `tee --help` and `tee /dev/null` don't
  *   - `cat > file` matches, `cat /etc/hostname` (read) doesn't
  *   - `echo "x" > f` matches, `echo hello | grep x` doesn't
  *   - `2>/dev/null` and `2>&1` are excluded via negative lookahead
  */
 export const FILE_WRITE_PATTERNS: FileWriteMatch[] = [
-  // `tee somefile` — but not `tee -a`, `tee --help`, `tee /dev/null`
+  // `tee somefile`, but not `tee -a`, `tee --help`, `tee /dev/null`
   { label: 'tee', pattern: /\btee\s+(?!-)(?!\/dev\/null\b)\S/ },
-  // `cat > file`, `echo "x" > out`, `printf '%s' > f`, `base64 -d > /tmp/x`
-  // The [^|;&]* stops at pipe/semicolon so `echo hi | grep x` doesn't match.
-  // (?!\/dev\/null) and (?!&) exclude `>/dev/null` and `>&` (fd redirects).
+  // `cat > file`, `echo "x" > out`, `printf '%s' > f`, `base64 -d > /tmp/x` The [^|;&]* stops at pipe/semicolon so `echo hi | grep x` doesn't match. (?!\/dev\/null) and (?!&) exclude `>/dev/null` and `>&` (fd redirects).
   {
     label: 'redirect',
     pattern: /\b(cat|echo|printf|base64)\b[^|;&]*>>?\s*(?!\/dev\/null\b)(?!&)\S/,
@@ -235,7 +233,7 @@ export const FILE_WRITE_PATTERNS: FileWriteMatch[] = [
 /**
  * Detects file-write patterns in a shell command string.
  *
- * Skipped entirely when `REDIACC_SKIP_FILE_WRITE_GUARD=1` is set — used by
+ * Skipped entirely when `REDIACC_SKIP_FILE_WRITE_GUARD=1` is set, used by
  * the rotation tool (`rotate.ts:runOnObservability`) which legitimately
  * writes `.env` files via `base64 -d > file` through `rdc term connect`.
  */

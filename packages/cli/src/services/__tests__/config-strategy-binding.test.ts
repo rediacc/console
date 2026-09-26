@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock configFileStorage — required by the module graph, unused by these tests.
+// Mock configFileStorage, required by the module graph, unused by these tests.
 let mockConfig: Record<string, unknown> = {};
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
@@ -28,9 +28,7 @@ vi.mock('../config/config-base.js', () => ({
     getEffectiveConfigName() {
       return 'test';
     }
-    // ConfigService overrides requireSelfHosted() and resolves it through
-    // getCurrent(), so the strategies have to be reachable from HERE — mocking
-    // requireSelfHosted on the base class would never be consulted.
+    // ConfigService overrides requireSelfHosted() and resolves it through getCurrent(), so the strategies have to be reachable from HERE, mocking requireSelfHosted on the base class would never be consulted.
     getCurrent() {
       return Promise.resolve({ version: 1, resources: { backupStrategies: mockStrategies } });
     }
@@ -46,8 +44,7 @@ vi.mock('../config/config-base.js', () => ({
   },
 }));
 
-// See config-resources-guid-map.test.ts: the per-test dynamic import cold-loads
-// the full config module graph, which can exceed the 5s default on CI.
+// See config-resources-guid-map.test.ts: the per-test dynamic import cold-loads the full config module graph, which can exceed the 5s default on CI.
 describe('backup strategy binding', { timeout: 30000 }, () => {
   beforeEach(() => {
     mockConfig = {};
@@ -63,8 +60,7 @@ describe('backup strategy binding', { timeout: 30000 }, () => {
     expect(mockMachines.hostinger.backupStrategies).toEqual(['weekly-cold']);
   });
 
-  // Re-binding must not duplicate: backup schedule iterates this list to build
-  // systemd units, so a duplicate entry would deploy the same unit twice.
+  // Re-binding must not duplicate: backup schedule iterates this list to build systemd units, so a duplicate entry would deploy the same unit twice.
   it('is idempotent and reports that the binding already existed', async () => {
     const svc = await load();
     await svc.bindBackupStrategy('hostinger', 'weekly-cold');
@@ -91,9 +87,7 @@ describe('backup strategy binding', { timeout: 30000 }, () => {
     expect(mockMachines.hostinger.backupStrategies).toEqual(['twiceweekly-hot']);
   });
 
-  // config-refs-prune writes `undefined`, not `[]`, when it drops the last
-  // dangling ref. Diverging here would give the same logical state two on-disk
-  // spellings depending on which code path emptied the list.
+  // config-refs-prune writes `undefined`, not `[]`, when it drops the last dangling ref. Diverging here would give the same logical state two on-disk spellings depending on which code path emptied the list.
   it('collapses an emptied binding list to undefined, matching prune', async () => {
     mockMachines.hostinger.backupStrategies = ['weekly-cold'];
     const svc = await load();

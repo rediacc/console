@@ -71,6 +71,9 @@ cleanup() {
         log_info "Removing E2E database..."
         rm -f "$ACCOUNT_DIR/e2e-account.db" "$ACCOUNT_DIR/e2e-account.db-wal" "$ACCOUNT_DIR/e2e-account.db-shm" 2>/dev/null || true
     fi
+    if [[ -n "${E2E_TMP:-}" ]]; then
+        rm -rf "$E2E_TMP"
+    fi
     log_info "Cleanup complete"
 }
 trap cleanup EXIT
@@ -103,7 +106,9 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
         cd "$REPO_ROOT"
 
         log_step "Starting stripe listen for real Stripe webhook forwarding..."
-        STRIPE_LISTEN_LOG=$(mktemp)
+        # Inside a pid-stamped directory (runtmp.SHELL_MKTEMP) that cleanup() removes: this log carries the webhook signing secret, and a bare `mktemp` left it in /tmp after every run.
+        E2E_TMP="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-account-e2e-XXXXXXXX")"
+        STRIPE_LISTEN_LOG="$E2E_TMP/stripe-listen.log"
         stripe listen \
             --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
             --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
@@ -238,4 +243,56 @@ if VITE_API_URL="http://localhost:${ACCOUNT_API_PORT}" \
 else
     log_error "Account Portal E2E tests failed"
     exit 1
+fi
+
+# Phase 5: prove the WebAuthn virtual-authenticator tests RAN. They skip on any
+# browser but Chromium, so a green run is no evidence on its own: a renamed
+# tag, a lost Chromium project or a blanket skip would still pass above. The
+# floor is the count of @webauthn tests (the 14-case PRF provider matrix in
+# 20-11 plus 20-03, 20-08, 20-10 and 27-02); raise it when adding one.
+MIN_WEBAUTHN_TESTS=20
+if [[ " ${PROJECT_ARR[*]} " == *" chromium "* ]] && { [[ -z "$GREP" ]] || [[ "$GREP" == *webauthn* ]]; }; then
+    RESULTS_JSON="$E2E_DIR/reports/e2e/results.json"
+    log_step "Checking @webauthn coverage in $RESULTS_JSON (floor: $MIN_WEBAUTHN_TESTS)"
+    if ! node - "$RESULTS_JSON" "$MIN_WEBAUTHN_TESTS" <<'NODE'; then
+const fs = require('node:fs');
+const [file, floorArg] = process.argv.slice(2);
+const floor = Number(floorArg);
+if (!fs.existsSync(file)) {
+  console.error(`no Playwright JSON report at ${file}`);
+  process.exit(1);
+}
+const report = JSON.parse(fs.readFileSync(file, 'utf8'));
+const counts = { expected: 0, skipped: 0, other: 0 };
+const bad = [];
+function walk(suite, path) {
+  const here = suite.title ? [...path, suite.title] : path;
+  for (const spec of suite.specs ?? []) {
+    const title = [...here, spec.title].join(' > ');
+    const tagged = title.includes('@webauthn') || (spec.tags ?? []).some((t) => t.replace(/^@/, '') === 'webauthn');
+    if (!tagged) continue;
+    for (const t of spec.tests ?? []) {
+      if (t.projectName !== 'chromium') continue;
+      if (t.status === 'expected') counts.expected += 1;
+      else {
+        if (t.status === 'skipped') counts.skipped += 1;
+        else counts.other += 1;
+        bad.push(`${t.status}: ${title}`);
+      }
+    }
+  }
+  for (const child of suite.suites ?? []) walk(child, here);
+}
+for (const suite of report.suites ?? []) walk(suite, []);
+console.log(`@webauthn chromium tests: ${counts.expected} expected, ${counts.skipped} skipped, ${counts.other} other`);
+for (const line of bad) console.error(`  ${line}`);
+if (counts.skipped > 0 || counts.other > 0 || counts.expected < floor) {
+  console.error(`need >= ${floor} expected and none skipped or failed`);
+  process.exit(1);
+}
+NODE
+        log_error "WebAuthn virtual-authenticator coverage check failed"
+        exit 1
+    fi
+    log_info "WebAuthn virtual-authenticator tests ran"
 fi

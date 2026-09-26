@@ -56,9 +56,7 @@ async function mountPlayers(els: HTMLElement[]) {
   const containers = els;
   if (containers.length === 0) return;
 
-  // Both in one tick: the stylesheet is a quarter of the component chunk's size, so it
-  // never lengthens the critical path, and awaiting it means the first frame of player
-  // DOM is already styled rather than merely usually styled.
+  // Both in one tick: the stylesheet is a quarter of the component chunk's size, so it never lengthens the critical path, and awaiting it means the first frame of player DOM is already styled rather than merely usually styled.
   const [, { default: TutorialVideoPlayer }] = await Promise.all([
     ensurePlayerStyles(),
     import('../components/TutorialVideoPlayer'),
@@ -74,15 +72,12 @@ async function mountPlayers(els: HTMLElement[]) {
     const subtitlesSrc = el.dataset.subtitlesSrc ?? '';
     const chaptersSrc = el.dataset.chaptersSrc ?? '';
     const wordsSrc = el.dataset.wordsSrc ?? '';
-    // The portrait cut, which only the solution videos ship. Empty means "no portrait
-    // cut", and the player then uses the landscape one at every width.
+    // The portrait cut, which only the solution videos ship. Empty means "no portrait cut", and the player then uses the landscape one at every width.
     const verticalSrc = el.dataset.verticalSrc ?? '';
     const title = el.dataset.title ?? '';
     const lang = (el.dataset.lang ?? document.documentElement.lang) || 'en';
     // One JSON attribute holding <locale> -> {mp4, poster, vtt, chapters, words}, written
-    // by remark-tutorial-embed.ts at build time. A malformed or absent attribute leaves
-    // `sources` undefined, and the player then renders without a language picker on the
-    // five URLs above -- exactly the behaviour it had before the picker existed.
+    // by remark-tutorial-embed.ts at build time. A malformed or absent attribute leaves `sources` undefined, and the player then renders without a language picker on the five URLs above -- exactly the behaviour it had before the picker existed.
     let sources: Record<string, SourceSet> | undefined;
     if (el.dataset.sources) {
       try {
@@ -134,16 +129,10 @@ function scheduleHydration() {
 
   // CLICK-TO-LOAD for any mount that carries a server-rendered poster.
   //
-  // An IntersectionObserver cannot help these: measured across all 44 English
-  // mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so the
-  // observer fires on load and defers nothing. The visitor is looking at the poster
+  // An IntersectionObserver cannot help these: measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so the observer fires on load and defers nothing. The visitor is looking at the poster
   // already; the 122 KB player only has to exist once they ask for it.
   //
-  // The poster markup is server-rendered by SPSolutionVideo.astro, so the frame paints
-  // immediately -- sooner than before, when it waited for the player chunk to arrive and
-  // paint it. Mounts WITHOUT a poster (the docs `.tutorial-video-container`, emitted by
-  // remark-tutorial-embed.ts as a bare div) keep the observer path below, because there
-  // is nothing for a visitor to click.
+  // The poster markup is server-rendered by SPSolutionVideo.astro, so the frame paints immediately -- sooner than before, when it waited for the player chunk to arrive and paint it. Mounts WITHOUT a poster (the docs `.tutorial-video-container`, emitted by remark-tutorial-embed.ts as a bare div) keep the observer path below, because there is nothing for a visitor to click.
   const clickToLoad = containers.filter((el) => el.dataset.clickToLoad !== undefined);
   const observed = containers.filter((el) => el.dataset.clickToLoad === undefined);
 
@@ -154,23 +143,13 @@ function scheduleHydration() {
       void mountPlayers([el])
         .then(() => whenVideoAppears(el))
         .then((video) => {
-          // START IT. Without this the poster is a TWO-CLICK play: the first click builds
-          // the player and hands back a paused one, so the visitor presses play, watches
-          // nothing happen, and presses play again. Caught in agent-browser on
-          // /en/solutions/backup-verification/ -- the click hydrated correctly and the
-          // video sat at 00:00, which every automated check here would have called a pass.
+          // START IT. Without this the poster is a TWO-CLICK play: the first click builds the player and hands back a paused one, so the visitor presses play, watches nothing happen, and presses play again. Caught in agent-browser on /en/solutions/backup-verification/ -- the click hydrated correctly and the video sat at 00:00, which every automated check here would have called a
+          // pass.
           //
-          // The rejection path is not an error and is deliberately silent: the chunk fetch
-          // can outlast the browser's user-gesture window, and a blocked play() leaves
-          // exactly the paused, fully-built player the visitor would have had anyway.
+          // The rejection path is not an error and is deliberately silent: the chunk fetch can outlast the browser's user-gesture window, and a blocked play() leaves exactly the paused, fully-built player the visitor would have had anyway.
           //
-          // What it is NOT is the element being missing -- see whenVideoAppears. The first
-          // draft wrote `el.querySelector('video')?.play()` directly here and did nothing at
-          // all, because mountPlayers resolves when the component chunk has LOADED, several
-          // frames before React has rendered a <video>. The `?.` then made a real bug look
-          // like a no-op with no console output, no rejection, and a player that just sat at
-          // 00:00. Measured, not guessed: readyState was 4 and the same play() call
-          // succeeded from the console a second later.
+          // What it is NOT is the element being missing -- see whenVideoAppears. The first draft wrote `el.querySelector('video')?.play()` directly here and did nothing at all, because mountPlayers resolves when the component chunk has LOADED, several frames before React has rendered a <video>. The `?.` then made a real bug look like a no-op with no console output, no rejection,
+          // and a player that just sat at 00:00. Measured, not guessed: readyState was 4 and the same play() call succeeded from the console a second later.
           video?.play().catch(() => {});
         });
     };

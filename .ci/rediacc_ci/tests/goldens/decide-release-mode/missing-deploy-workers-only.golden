@@ -1,0 +1,6 @@
+# twin .ci/scripts/release/decide-release-mode.sh blob 3b39416df228abc1d54ce71430939b096fbe9b1f
+exit: 1
+--- stdout ---
+--- stderr ---
+.ci/scripts/release/decide-release-mode.sh: line 41: DEPLOY_WORKERS_ONLY: decide-release-mode.sh: DEPLOY_WORKERS_ONLY must be set
+--- github-output ---

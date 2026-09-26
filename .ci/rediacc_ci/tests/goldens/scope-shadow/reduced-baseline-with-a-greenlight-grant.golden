@@ -1,0 +1,171 @@
+# twin .ci/scripts/ci/scope-shadow.sh blob 50ed7f024fb1321afc340a379bfeb08163142dec
+exit: 0
+--- stdout ---
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": false,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {
+    "full_suite": true
+  },
+  "exempt_keys": [],
+  "planned_keys": 3
+}
+```
+
+**cross-PR greenlight** (asked about: e2e_workers renet)
+
+```
+greenlight[renet] something the digest has never seen
+a line with no key at all, which must survive verbatim
+e2e_workers            no greenlight (walked 2)     closure=abcdef012345 walked=2
+                         newest 331001 rule1: candidate skipped
+renet                  GREENLIT by run 331002       closure=0123456789ab walked=1
+                         newest 331002 rule3: executed green
+```
+**greenlit, and the plan now says so**: `renet=331002`
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+run_renet=false
+run_unit=false
+scope_mode=reduced
+```
+
+--- stderr ---
+--- artifacts ---
+=== summary
+### Scope engine (LIVE: this decides which jobs run)
+
+shallow: `unknown`, grafts: `0` (grafts must be 0, or nothing below is meaningful)
+base: `unknown`  head: `deadbeefcafe`
+
+_skipped --classify: no base/head pair resolved_
+
+**--resolve-baseline** (THIS is the plan that gates jobs)
+
+```json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": true,
+      "reason": "scope"
+    },
+    "unit": {
+      "run": false,
+      "reason": "scope"
+    }
+  }
+}
+```
+**pre-existing skip conditions recorded in the plan**
+
+```json
+{
+  "conditions": {
+    "full_suite": true
+  },
+  "exempt_keys": [],
+  "planned_keys": 3
+}
+```
+
+**cross-PR greenlight** (asked about: e2e_workers renet)
+
+```
+greenlight[renet] something the digest has never seen
+a line with no key at all, which must survive verbatim
+e2e_workers            no greenlight (walked 2)     closure=abcdef012345 walked=2
+                         newest 331001 rule1: candidate skipped
+renet                  GREENLIT by run 331002       closure=0123456789ab walked=1
+                         newest 331002 rule3: executed green
+```
+**greenlit, and the plan now says so**: `renet=331002`
+
+**outputs written to $GITHUB_OUTPUT**
+
+```
+run_renet=false
+run_unit=false
+scope_mode=reduced
+```
+
+=== gh-output
+run_renet=false
+run_unit=false
+scope_mode=reduced
+=== plan.json
+{
+  "mode": "reduced",
+  "jobs": {
+    "e2e_workers": {
+      "run": true,
+      "reason": "scope"
+    },
+    "renet": {
+      "run": false,
+      "reason": "greenlight:331002"
+    },
+    "unit": {
+      "run": false,
+      "reason": "scope"
+    }
+  },
+  "run_id": 12345,
+  "base_sha": null,
+  "head_sha": "deadbeefcafe",
+  "conditions": {
+    "full_suite": true
+  }
+}=== greenlight.err
+greenlight[e2e_workers] jobs=5
+greenlight[e2e_workers] pins=3
+greenlight[e2e_workers] closure=abcdef0123456789abcdef files=12
+   run id   sha        verdict
+   331001   deadbeef   rule1: candidate skipped
+   330900   cafebabe   rule2: closure differs
+greenlight[e2e_workers] VERDICT: no greenlight (walked 2)
+greenlight[e2e_workers]: no greenlight
+
+greenlight[renet] jobs=1
+greenlight[renet] closure=0123456789abcdef0123 files=4
+   run id   sha        verdict
+   331002   00ff00ff   rule3: executed green
+greenlight[renet] VERDICT: GREENLIT by run 331002
+greenlight[renet]: GREENLIT by run 331002
+greenlight[renet] something the digest has never seen
+a line with no key at all, which must survive verbatim

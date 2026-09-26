@@ -1,0 +1,9 @@
+# twin .ci/docker/run-in-render.sh blob 1be170a744cfe03f2e4b1fc252561141ac1da556
+exit: 0
+--- stdout ---
+[fake docker] run --rm --ipc=host -u : -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v <root>:<root> -w <root> rediacc/render:local npm run build
+--- stderr ---
+<stderr names id 2 time(s)>
+--- trace ---
+docker cwd=<root> argv=image inspect rediacc/render:local
+docker cwd=<root> argv=run --rm --ipc=host -u : -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v <root>:<root> -w <root> rediacc/render:local npm run build

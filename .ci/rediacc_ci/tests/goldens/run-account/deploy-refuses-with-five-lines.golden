@@ -1,0 +1,15 @@
+# twin .ci/scripts/private/run-account.sh blob 3eeb89c8fed218f5937e2cb90e2210e72e218c47
+exit: 1
+--- stdout ---
+npm ci stdout
+--- stderr ---
+npm ci stderr
+✗ This stage cannot deploy the account server.
+✗ Production and edge are the seven configs under workers/account/:
+✗   wrangler.{eu,us,asia}.toml, wrangler.edge-{eu,us,asia}.toml, wrangler.bench.toml
+✗ Deploy through the script that resolves them:
+✗   .ci/scripts/deploy/deploy-account.sh --region <eu|us|asia> [--target edge]
+--- calls ---
+[
+  "npm\t<root>/private/account\tci"
+]

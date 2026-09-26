@@ -3,11 +3,12 @@ import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import { setExitCode, writeStdout } from '../../services/core/request-context.js';
 import { createQuietStderrPump } from '../../services/executor/output-lines.js';
 import { machineConnections } from '../../services/machine/machine-connection.js';
 import { guardMachineRemoval } from '../../services/machine/machine-remove-guard.js';
 import { pushInfraConfig } from '../../services/provision/infra-provision.js';
-import { provisionRenetToRemote, readSSHKey } from '../../services/renet/renet-execution.js';
+import { acquireRemoteRenet, readSSHKey } from '../../services/renet/renet-execution.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
 import type { MachineConfig, OutputFormat } from '../../types/index.js';
 import { assertResourceName, MachineConfigSchema, parseConfig } from '../../utils/config-schema.js';
@@ -92,8 +93,7 @@ async function scanAllMachines(): Promise<void> {
       const keyscan = scanHostKeys(m.config.ip, m.config.port ?? DEFAULTS.SSH.PORT);
       if (keyscan) {
         await configService.updateMachine(m.name, { knownHosts: keyscan });
-        // Stay one line per machine in the bulk case unless a pin was actually
-        // replaced, which is worth interrupting the summary for.
+        // Stay one line per machine in the bulk case unless a pin was actually replaced, which is worth interrupting the summary for.
         if (classifyKeyChange(previous, keyscan).some((c) => c.kind === 'replaced')) {
           reportKeyChanges(m.name, previous, keyscan);
         } else {
@@ -110,7 +110,7 @@ async function scanAllMachines(): Promise<void> {
   );
 }
 
-/** `machine add <name>` — register an existing SSH-reachable machine. */
+/** `machine add <name>`, register an existing SSH-reachable machine. */
 function registerAdd(machine: Command): void {
   machine
     .command('add')
@@ -157,7 +157,7 @@ function registerAdd(machine: Command): void {
     });
 }
 
-/** `machine remove <name>` — deregister a machine from the config. */
+/** `machine remove <name>`, deregister a machine from the config. */
 function registerRemove(machine: Command): void {
   machine
     .command('remove')
@@ -167,8 +167,7 @@ function registerRemove(machine: Command): void {
     .option('--force', t('commands.machine.remove.forceOption'))
     .action(async (name: string, options: { yes?: boolean; force?: boolean }) => {
       try {
-        // Refuse (exit 12) if repositories are still placed on this machine,
-        // unless --force. Runs before the confirm so we fail fast and teaching.
+        // Refuse (exit 12) if repositories are still placed on this machine, unless --force. Runs before the confirm so we fail fast and teaching.
         await guardMachineRemoval(name, options.force);
         if (!options.yes) {
           const { askConfirm } = await import('../../utils/prompt.js');
@@ -186,7 +185,7 @@ function registerRemove(machine: Command): void {
     });
 }
 
-/** `machine list` — list registered machines. */
+/** `machine list`, list registered machines. */
 function registerList(machine: Command, program: Command): void {
   machine
     .command('list')
@@ -241,7 +240,7 @@ function registerList(machine: Command, program: Command): void {
     });
 }
 
-/** `machine scan-keys [name]` — pin SSH host keys for one or all machines. */
+/** `machine scan-keys [name]`, pin SSH host keys for one or all machines. */
 function registerScanKeys(machine: Command): void {
   machine
     .command('scan-keys')
@@ -260,7 +259,7 @@ function registerScanKeys(machine: Command): void {
     });
 }
 
-/** `machine setup <name>` — install renet and prepare the machine. */
+/** `machine setup <name>`, install renet and prepare the machine. */
 function registerSetup(machine: Command): void {
   machine
     .command('setup')
@@ -279,7 +278,8 @@ function registerSetup(machine: Command): void {
 
         outputService.info(t('commands.machine.setup.starting', { machine: name }));
 
-        const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+        const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+          'provision',
           localConfig,
           machineObj,
           sshPrivateKey,
@@ -299,11 +299,10 @@ function registerSetup(machine: Command): void {
             outputService.info(`[setup] Running: ${cmd}`);
           }
 
-          // Same treatment as machine-bootstrap: renet narrates setup at info
-          // level in 121+ column lines. Withhold, replay only on failure.
+          // Same treatment as machine-bootstrap: renet narrates setup at info level in 121+ column lines. Withhold, replay only on failure.
           const stderrPump = createQuietStderrPump({ echoAll: options.debug });
           const exitCode = await lease.sftp.execStreaming(cmd, {
-            onStdout: (data) => process.stdout.write(data),
+            onStdout: (data) => writeStdout(data),
             onStderr: (data) => stderrPump.write(String(data)),
           });
           stderrPump.flush(exitCode !== 0);
@@ -315,7 +314,7 @@ function registerSetup(machine: Command): void {
             outputService.error(
               t('commands.machine.setup.failed', { machine: name, error: `exit code ${exitCode}` })
             );
-            process.exitCode = exitCode;
+            setExitCode(exitCode);
           }
         } finally {
           lease.release();

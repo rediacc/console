@@ -4,7 +4,7 @@
  * `@place` has exactly three legitimate referent classes (06 §6.4b): backup
  * artifacts, `term connect` targets, and redundant confirmation on live refs.
  * Destination flags (`--to`/`--from`/`--on`) take a BARE place name and are NOT
- * modelled here — they are flags, not refs.
+ * modelled here, they are flags, not refs.
  *
  * This module is the data (`placeAcceptance`) plus the two teaching-error
  * builders every verb shares (`placeConflictError` §3.2, `termConnectCollision
@@ -19,14 +19,14 @@ import { ambiguous, CliExitError, stateMismatch } from '../../utils/cli-exit-err
 /**
  * How a verb class treats an `@place` on its positional ref (spec/03 §3.1).
  *
- * - `required-referent`  — `@place` is mandatory and names the artifact's home
+ * - `required-referent` , `@place` is mandatory and names the artifact's home
  *                          (`backup restore shop:nightly@backup-1`).
- * - `optional-filter`    — `@place` narrows a listing to one place.
- * - `target-select`      — `@place` selects the repo shell vs the machine shell
+ * - `optional-filter`   , `@place` narrows a listing to one place.
+ * - `target-select`     , `@place` selects the repo shell vs the machine shell
  *                          (`term connect`).
- * - `accepted-verified`  — a live ref: a matching `@place` is redundant and
+ * - `accepted-verified` , a live ref: a matching `@place` is redundant and
  *                          accepted, a contradiction is exit 12 (§3.2).
- * - `rejected-at-parse`  — the noun has no `@place` semantics; exit 2.
+ * - `rejected-at-parse` , the noun has no `@place` semantics; exit 2.
  */
 export type PlaceAcceptance =
   | 'required-referent'
@@ -74,7 +74,7 @@ export const REPO_VERBS_ACCEPTING_PLACE: ReadonlySet<string> = new Set([
  * (`["repo", "up"]`, `["backup", "restore"]`, `["term", "connect"]`).
  *
  * The default is `rejected-at-parse`: a verb accepts `@place` only if it is in
- * the §3.1 table. That keeps the surface honest — nouns with no place semantics
+ * the §3.1 table. That keeps the surface honest, nouns with no place semantics
  * (machine, datastore, cluster, storage, config, backup strategy) refuse it, and
  * so do repo verbs that do not address a live ref.
  */
@@ -93,7 +93,7 @@ export function placeAcceptance(path: readonly string[]): PlaceAcceptance {
 
 /**
  * Parse-time gate: refuse `@place` on a noun that has no place semantics
- * (spec/03 §3.1 last row), exit 2. A no-op for every other class — those either
+ * (spec/03 §3.1 last row), exit 2. A no-op for every other class, those either
  * require `@place`, filter on it, select with it, or verify it later (§3.2). The
  * `required-referent` class's missing-place check is the verb's own concern, not
  * a parse-time universal, so it is not enforced here.

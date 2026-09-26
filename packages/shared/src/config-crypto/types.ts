@@ -7,7 +7,12 @@ import type { FieldCommitments } from './commitments.js';
 /**
  * Plaintext envelope — server can read these fields without decryption.
  *
- * Envelope v2 adds per-field commitment HMACs so the server can enforce the
+ * Every client WRITES v3 and READS v2 for one release (operator ruling D2). v3 binds the blob to
+ * `(storeId, configId, teamId, version, sdkEpoch, commitments)` through the AES-GCM AAD
+ * (selective.ts `envelopeAad`), retires the blob HMAC, and keys the commitments by blinded pointers
+ * (commitments.ts). The server refuses a v2 push.
+ *
+ * Envelope v2 added per-field commitment HMACs so the server can enforce the
  * "knowledge-gates-capability" precondition on sensitive-field mutations
  * without ever seeing plaintext. The HMAC key (FCK) is derived client-side
  * from CEK via HKDF; the server cannot derive it.
@@ -18,7 +23,7 @@ import type { FieldCommitments } from './commitments.js';
  * previously-stored envelope's `commitments.fields`.
  */
 export interface ConfigEnvelope {
-  envelopeVersion: 2;
+  envelopeVersion: 2 | 3;
   id: string;
   version: number;
   teamId?: string;
@@ -26,58 +31,69 @@ export interface ConfigEnvelope {
   lastModified?: string;
   sdkEpoch: number;
   /**
-   * Per-field commitment HMACs. Always present in v2 envelopes. The server
-   * rejects v1 envelopes with HTTP 400 UnsupportedEnvelopeVersion.
+   * Per-field commitment HMACs. Always present (v2 and v3). The server rejects any
+   * push that is not v3 with HTTP 400 `unsupported_envelope_version`.
    */
   commitments: FieldCommitments;
 }
 
-/** The sensitive config data that gets encrypted */
+/**
+ * What a reader expects a pulled blob to be sealed for, taken from its OWN pointer (the CLI's
+ * `remote`, the portal's store and config choice, the executor's grant), never from the pull
+ * response: the envelope v3 AAD is rebuilt from it, so a blob the server serves for another store,
+ * config or team does not open.
+ */
+export interface ConfigBinding {
+  storeId: string;
+  configId: string;
+  /** The config's team, or null/absent for the org-level config. */
+  teamId?: string | null;
+}
+
+/**
+ * The encrypted half of a config: the whole synced document (every key except the device-local
+ * pointers, `DEVICE_LOCAL_POINTERS` in config-schema/sensitivity.ts) in the v2 wire encoding, where
+ * `resources.*` and `credentials.*` ride one level up. The named fields are the ones callers read
+ * today; the index signature is the rest (`state`, keys a newer CLI added), all carried.
+ *
+ * Committed leaves (account.userEmail, defaults.universalUser, infra.*, the org secrets, archived
+ * repo credentials) must travel: a committed-but-not-carried field is dropped by the first pull,
+ * and the re-push then commits fewer pointers than the server stored, which anti-downgrade rejects.
+ */
 export interface ConfigSensitiveData {
-  /**
-   * Top-level document sections with COMMITTED pointers (account.userEmail,
-   * defaults.universalUser, infra.certEmail/cfDnsZoneId). Committed means they
-   * must travel: a committed-but-not-carried field is dropped by the first
-   * pull, and the re-push then commits fewer pointers than the server stored —
-   * anti-downgrade rejects it as a conflict.
-   */
+  [section: string]: unknown;
   account?: Record<string, unknown>;
   defaults?: Record<string, unknown>;
   infra?: Record<string, unknown>;
   machines?: Record<string, unknown>;
   repositories?: Record<string, unknown>;
   storages?: Record<string, unknown>;
-  /** v3 resource families. Public topology, but they must TRAVEL or sync drops them. */
   datastores?: Record<string, unknown>;
   clusters?: Record<string, unknown>;
   backupStrategies?: Record<string, unknown>;
-  /**
-   * Archived repositories (an ARRAY, unlike the record families). Their
-   * credential/sshPrivateKey pointers are committed by the sensitivity
-   * registry, so this list must ride in the blob — a committed-but-not-carried
-   * field bricks push after the first round trip.
-   */
+  /** Archived repositories (an ARRAY, unlike the record families). */
   deletedRepositories?: unknown[];
   ssh?: Record<string, unknown>;
-  /** Cloud provider credentials (apiToken, sshUser). Committed, so must travel. */
   cloudProviders?: Record<string, unknown>;
-  /** Cloudflare DNS API token — an org secret, committed, so must travel. */
   cfDnsApiToken?: unknown;
   /**
-   * The authorization rules the executor enforces.
-   *
-   * Typed `unknown` on purpose: config-crypto is a generic crypto library and
-   * must not learn the shape of a Rediacc policy document. The config-schema
-   * layer owns that shape and validates it on both sides of the wire.
+   * The authorization rules the executor enforces. Typed `unknown` on purpose: config-crypto is a
+   * generic crypto library and must not learn the shape of a Rediacc policy document.
    */
   policy?: unknown;
+  /** Runtime state: repo network IDs, heads, the network-ID counter (T17: synced). */
+  state?: Record<string, unknown>;
 }
 
 /** Result of selective encryption: plaintext envelope + encrypted blob */
 export interface EncryptedConfigPayload {
   envelope: ConfigEnvelope;
   encryptedBlob: string; // base64(clientEnc_CEK(serverKeyEnc_SDK(sensitiveData)))
-  hmac: string; // HMAC-SHA256 over encryptedBlob, keyed with CEK
+  /**
+   * Envelope v2 only: HMAC-SHA256 over encryptedBlob, keyed with the CEK. A v3 payload carries none
+   * (the GCM tag under the AAD authenticates the blob AND its binding, which the HMAC never did).
+   */
+  hmac?: string | null;
 }
 
 /** Full config (envelope + sensitive data merged) */

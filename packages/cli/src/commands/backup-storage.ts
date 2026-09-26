@@ -1,10 +1,10 @@
 /**
- * `rdc backup usage | manifests | verify` — the read side of the content-addressed
+ * `rdc backup usage | manifests | verify`, the read side of the content-addressed
  * chunk-store backup (spec/02). `usage` and `manifests` are control-plane READS
  * through the account tunnel (`accountServerFetch`, so the request is
  * E2E-sealed); they need the `backup:read` scope
  * on the presented token. `verify` is executor-side: it runs the renet
- * `backup_verify` verb on the machine that holds the repo — the machine, not the
+ * `backup_verify` verb on the machine that holds the repo, the machine, not the
  * server, owns the anchor and the cell data.
  */
 
@@ -15,13 +15,14 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
 import { parseBrowseResult, parseVerifyVerdict } from './backup-storage-parser.js';
 
-/** GET /backups/usage — subscription aggregate + per-lineage breakdown. */
+/** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
   subscriptionId: string;
   storedBytes: number;
@@ -42,7 +43,7 @@ interface BackupUsageResponse {
   }[];
 }
 
-/** GET /backups/manifests — the server-side snapshot index. */
+/** GET /backups/manifests, the server-side snapshot index. */
 interface BackupManifestEntry {
   snapshotId: string;
   lineageGuid: string;
@@ -64,7 +65,7 @@ export interface BackupManifestsResponse {
   manifests: BackupManifestEntry[];
 }
 
-/** `backup usage` — quota vs stored bytes, plus per-repo (lineage) usage. */
+/** `backup usage`, quota vs stored bytes, plus per-repo (lineage) usage. */
 function registerBackupUsage(backup: Command): void {
   backup
     .command('usage')
@@ -136,7 +137,7 @@ async function resolveLineage(repoRef: string): Promise<string> {
   return repo.grandGuid ?? repo.repositoryGuid;
 }
 
-/** `backup manifests [repo-ref]` — the server snapshot index, optionally scoped. */
+/** `backup manifests [repo-ref]`, the server snapshot index, optionally scoped. */
 function registerBackupManifests(backup: Command): void {
   backup
     .command('manifests')
@@ -144,8 +145,7 @@ function registerBackupManifests(backup: Command): void {
     .description(t('commands.backup.manifests.description'))
     .action(async (repoRef: string | undefined) => {
       try {
-        // Scope to one lineage (grand GUID) when a repo is named. Config-local
-        // resolution only — the index lives on the server, not on a machine.
+        // Scope to one lineage (grand GUID) when a repo is named. Config-local resolution only, the index lives on the server, not on a machine.
         const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
 
         outputService.info(t('commands.backup.manifests.fetching'));
@@ -210,8 +210,7 @@ function registerBackupBrowse(backup: Command): void {
     .command('browse')
     .argument('<repo-ref>', t('options.repoRef'))
     // .summary is the one-liner `--help` lists; .description is the long form a
-    // reader sees on the command's own page. The long one carries the keyfile
-    // precondition and the chunk-store limit, which is too much for a list.
+    // reader sees on the command's own page. The long one carries the keyfile precondition and the chunk-store limit, which is too much for a list.
     .summary(t('commands.backup.browse.descriptionShort'))
     .description(t('commands.backup.browse.description'))
     .option('--path <subdir>', t('commands.backup.browse.optionPath'))
@@ -234,9 +233,7 @@ function registerBackupBrowse(backup: Command): void {
               depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
               limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
             },
-            // captureOutput for the same reason as backup verify: the listing
-            // IS the answer, and without it the step detector drops the verb's
-            // JSON and browse exits 0 with EMPTY stdout.
+            // captureOutput for the same reason as backup verify: the listing IS the answer, and without it the step detector drops the verb's JSON and browse exits 0 with EMPTY stdout.
             { debug: options.debug, captureOutput: true },
             {
               starting: t('commands.backup.browse.starting', { name: repoKey }),
@@ -261,9 +258,7 @@ function registerBackupBrowse(backup: Command): void {
             size: e.type === 'file' ? formatSizeBytes(e.size) : '-',
             modified: e.modTime.replace('T', ' ').replace(/\..*$/, ''),
           }));
-          // Columns are name/type/size/modified, byte-for-byte what the retired
-          // `storage browse` produced, so an operator who lost that verb gets
-          // the same shape back rather than a new one to learn.
+          // Columns are name/type/size/modified, byte-for-byte what the retired `storage browse` produced, so an operator who lost that verb gets the same shape back rather than a new one to learn.
           outputService.print(
             outputService.format(rows, getOutputFormat(), [
               { key: 'name', header: 'Name' },
@@ -272,8 +267,7 @@ function registerBackupBrowse(backup: Command): void {
               { key: 'modified', header: 'Modified' },
             ])
           );
-          // A truncated listing that does not say so is how somebody concludes
-          // a file is absent from a backup when it is present.
+          // A truncated listing that does not say so is how somebody concludes a file is absent from a backup when it is present.
           if (listing.truncated) {
             outputService.warn(
               t('commands.backup.browse.truncated', {
@@ -288,7 +282,7 @@ function registerBackupBrowse(backup: Command): void {
     );
 }
 
-/** `backup verify <repo> [--deep]` — executor-side anchor verification. */
+/** `backup verify <repo> [--deep]`, executor-side anchor verification. */
 function registerBackupVerify(backup: Command): void {
   backup
     .command('verify')
@@ -305,10 +299,7 @@ function registerBackupVerify(backup: Command): void {
           repoKey,
           machineName,
           { level },
-          // captureOutput: the verdict IS the answer here. Without it the step
-          // detector drops the verb's JSON and `backup verify` exits 0 with
-          // EMPTY stdout whether the anchor verified or mismatched, which is
-          // the one thing an operator must be able to tell apart.
+          // captureOutput: the verdict IS the answer here. Without it the step detector drops the verb's JSON and `backup verify` exits 0 with EMPTY stdout whether the anchor verified or mismatched, which is the one thing an operator must be able to tell apart.
           { debug: options.debug, captureOutput: true },
           {
             starting: t('commands.backup.verify.starting', { name: repoKey, level }),
@@ -316,10 +307,7 @@ function registerBackupVerify(backup: Command): void {
             failed: t('commands.backup.verify.failed', { name: repoKey }),
           }
         );
-        // The verdict is structured data, so it is printed as structured data
-        // in every mode -- including `table`, where the alternative would be a
-        // hand-written English sentence (a new i18n key across 13 locales) that
-        // says strictly less than the record itself.
+        // The verdict is structured data, so it is printed as structured data in every mode -- including `table`, where the alternative would be a hand-written English sentence (a new i18n key across 13 locales) that says strictly less than the record itself.
         const verdict = parseVerifyVerdict(result.stdout) ?? {
           status: result.success ? 'verified' : 'mismatch',
           level,
@@ -332,7 +320,7 @@ function registerBackupVerify(backup: Command): void {
         });
         // The renet verb exits non-zero on mismatch/failure; carry that out so a
         // script or CI step sees a failed verification as a failure.
-        if (!result.success) process.exitCode = 1;
+        if (!result.success) setExitCode(1);
       } catch (error) {
         handleError(error);
       }
@@ -349,7 +337,7 @@ function registerBackupVerify(backup: Command): void {
 const RENET_QUOTA_REFUSED_EXIT = 16;
 
 /**
- * `backup snapshot <repo> [--reseed] [--dry-run]` — upload a chunk-store
+ * `backup snapshot <repo> [--reseed] [--dry-run]`, upload a chunk-store
  * snapshot. This is the write side of the chunk path: the first run uploads the
  * full non-zero inventory, every run after it uploads only changed cells.
  */
@@ -376,10 +364,7 @@ function registerBackupSnapshot(backup: Command): void {
             {
               reseed: options.reseed ?? false,
               dry_run: options.dryRun ?? false,
-              // Without this the cold path was reachable only from a scheduled
-              // unit or by SSH-ing to the machine: the generator emits --cold,
-              // but an operator wanting one application-consistent snapshot
-              // before a risky change had no supported route to it.
+              // Without this the cold path was reachable only from a scheduled unit or by SSH-ing to the machine: the generator emits --cold, but an operator wanting one application-consistent snapshot before a risky change had no supported route to it.
               cold: options.cold ?? false,
             },
             { debug: options.debug },
@@ -389,18 +374,11 @@ function registerBackupSnapshot(backup: Command): void {
               failed: t('commands.backup.snapshot.failed', { name: repoKey }),
             }
           );
-          // A dry run moved nothing, so it must not be recorded as a stored
-          // backup: a run history that counts plans as backups would make the
-          // next operator believe a snapshot exists that never happened.
-          // Exit 16 is the renet verb's quota refusal and it is NOT a plain
-          // failure: the operator action is prune or upgrade, never debug.
-          // Flattening it to 1 (as this did) threw away a distinction the verb
-          // deliberately encodes, and left the quotaRefused message with no
-          // call site at all.
+          // A dry run moved nothing, so it must not be recorded as a stored backup: a run history that counts plans as backups would make the next operator believe a snapshot exists that never happened. Exit 16 is the renet verb's quota refusal and it is NOT a plain failure: the operator action is prune or upgrade, never debug. Flattening it to 1 (as this did) threw away a
+          // distinction the verb deliberately encodes, and left the quotaRefused message with no call site at all.
           const quotaRefused = result.exitCode === RENET_QUOTA_REFUSED_EXIT;
           if (!options.dryRun) {
-            // Three outcomes, kept distinct on purpose (see the note above):
-            // a quota refusal is not a generic failure.
+            // Three outcomes, kept distinct on purpose (see the note above): a quota refusal is not a generic failure.
             let runStatus = 'failed';
             if (result.success) {
               runStatus = 'stored';
@@ -411,9 +389,9 @@ function registerBackupSnapshot(backup: Command): void {
           }
           if (quotaRefused) {
             outputService.warn(t('commands.backup.snapshot.quotaRefused', { name: repoKey }));
-            process.exitCode = RENET_QUOTA_REFUSED_EXIT;
+            setExitCode(RENET_QUOTA_REFUSED_EXIT);
           } else if (!result.success) {
-            process.exitCode = 1;
+            setExitCode(1);
           }
         } catch (error) {
           handleError(error);
@@ -449,7 +427,7 @@ const RETENTION_KNOBS = [
 ] as const;
 
 /**
- * `backup retention [repo-ref]` — show the policy the SERVER is enforcing.
+ * `backup retention [repo-ref]`, show the policy the SERVER is enforcing.
  *
  * Read back from the server rather than printed from the local config on
  * purpose: what is displayed is then always what is enforced. A policy shown
@@ -529,9 +507,7 @@ function registerBackupRetention(backup: Command): void {
           body[field] = n;
           declared++;
         }
-        // EVERY knob is replaced, never merged — the server says so at
-        // routes/backups.ts:167. So an empty set would silently clear the
-        // policy while reading like a no-op. Refuse instead.
+        // EVERY knob is replaced, never merged, the server says so at routes/backups.ts:167. So an empty set would silently clear the policy while reading like a no-op. Refuse instead.
         if (declared === 0) {
           throw new ValidationError(t('commands.backup.retention.noKnobs'));
         }
@@ -560,9 +536,7 @@ function registerBackupRetention(backup: Command): void {
           `/account/api/v1/backups/retention?lineage=${encodeURIComponent(lineage)}`,
           { method: 'DELETE' }
         );
-        // Clearing is NOT "keep nothing": with no row the sweep never looks at
-        // this lineage again, so every snapshot is kept. Say so, because the
-        // opposite reading would be a data-loss expectation.
+        // Clearing is NOT "keep nothing": with no row the sweep never looks at this lineage again, so every snapshot is kept. Say so, because the opposite reading would be a data-loss expectation.
         outputService.success(t('commands.backup.retention.cleared', { name: repoRef }));
       } catch (error) {
         handleError(error);

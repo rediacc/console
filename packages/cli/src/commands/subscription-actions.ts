@@ -24,7 +24,11 @@ import {
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
+import {
+  acquireRemoteRenet,
+  type RenetAccess,
+  readSSHKey,
+} from '../services/renet/renet-execution.js';
 import { ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -71,16 +75,20 @@ async function assertSubscriptionScopeMatchesConfig(tokenState: {
  * on the machine, so it must still render when the account server is
  * unreachable or nobody is signed in.
  */
-async function resolveMachineContext(machineName: string): Promise<SubscriptionCommandContext> {
+async function resolveMachineContext(
+  machineName: string,
+  access: RenetAccess
+): Promise<SubscriptionCommandContext> {
   const localConfig = await configService.getLocalConfig();
   const machine = await configService.getLocalMachine(machineName);
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+  const { remotePath: remoteRenetPath } = await acquireRemoteRenet(
+    access,
     localConfig,
     machine,
     sshPrivateKey,
-    { skipRouterRestart: true }
+    { skipRouterRestart: true, machineName }
   );
   return { machine, sshPrivateKey, remoteRenetPath };
 }
@@ -95,7 +103,8 @@ async function resolveSubscriptionCommandContext(
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
-  return resolveMachineContext(machineName);
+  // Refresh writes licenses on the machine, so it may bring renet up to date first.
+  return resolveMachineContext(machineName, 'provision');
 }
 
 /** `subscription status` with no `-m`: the account view. */
@@ -107,8 +116,7 @@ export async function executeSubscriptionStatus(): Promise<void> {
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
 
-  // No local-only view exists: outputRemoteStatus IS this verb's entire output,
-  // so a failed report must surface the server's reason, not exit 0 in silence.
+  // No local-only view exists: outputRemoteStatus IS this verb's entire output, so a failed report must surface the server's reason, not exit 0 in silence.
   const status = await fetchSubscriptionLicenseReportOrThrow();
   if (!status) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
@@ -170,10 +178,7 @@ function outputRemoteStatus(
     );
   }
 
-  // Soft-claim (design decision 2): a renewal never fails for being over the
-  // cap, it just flags the row. Nothing else would tell the operator that the
-  // fleet has outgrown its plan until the next NEW repository is refused, so
-  // the count is called out rather than left to be spotted row by row.
+  // Soft-claim (design decision 2): a renewal never fails for being over the cap, it just flags the row. Nothing else would tell the operator that the fleet has outgrown its plan until the next NEW repository is refused, so the count is called out rather than left to be spotted row by row.
   const overLimitCount = status.machineSlots.machines.filter((m) => m.overLimit).length;
   if (overLimitCount > 0) {
     outputService.warn(
@@ -329,14 +334,12 @@ async function renderActivationSection(
  * table. One renet provisioning serves both sections.
  */
 export async function executeMachineStatus(machineName: string): Promise<void> {
-  const context = await resolveMachineContext(machineName);
+  const context = await resolveMachineContext(machineName, 'read-only');
   await renderActivationSection(machineName, context);
   await renderRepoLicenseTable(machineName, context);
 }
 
-async function runRepoBatchRefresh(
-  context: SubscriptionCommandContext
-): Promise<RepoBatchRefreshResult> {
+function runRepoBatchRefresh(context: SubscriptionCommandContext): Promise<RepoBatchRefreshResult> {
   return withSpinner(
     t('commands.subscription.refresh.repos.refreshing'),
     () => refreshRepoLicensesBatch(context.machine, context.sshPrivateKey, context.remoteRenetPath),
@@ -393,10 +396,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
       const sshPrivateKey =
         localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-      // #74: declare the datastore the repo is RECORDED on. This is the only
-      // caller that passes no requestedSizeGb, so it is the one that reaches
-      // the size probe — and without this it measured the machine's default
-      // datastore for a repo that lives on a named one, found nothing, and
+      // #74: declare the datastore the repo is RECORDED on. This is the only caller that passes no requestedSizeGb, so it is the one that reaches the size probe, and without this it measured the machine's default datastore for a repo that lives on a named one, found nothing, and
       // reissued at the 1 GB floor. Undefined for a {machine} placement, which
       // correctly leaves the machine's own default in place.
       const datastoreMount = await recordedDatastoreMount(repoKey);

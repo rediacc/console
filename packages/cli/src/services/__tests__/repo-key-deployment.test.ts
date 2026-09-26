@@ -46,9 +46,7 @@ describe('buildKeyDeploymentScript', () => {
   it('produces the exact legacy deployment script (byte-identical snapshot)', () => {
     const script = buildKeyDeploymentScript('myrepo', PUB_KEY, 'guid-123');
 
-    // This literal mirrors the script previously built inline in deployRepoKey
-    // (pre-shared-connection). It must never drift: the remote authorized_keys
-    // surgery is load-bearing for sandbox-gateway isolation.
+    // This literal mirrors the script previously built inline in deployRepoKey (pre-shared-connection). It must never drift: the remote authorized_keys surgery is load-bearing for sandbox-gateway isolation.
     const expected = [
       'set -e',
       'SSH_DIR="$HOME/.ssh"',
@@ -127,7 +125,7 @@ describe('deployRepoKeyIfNeeded', () => {
   it('releases the lease and warns instead of throwing when exec fails', async () => {
     mockConfigService.getRepository.mockResolvedValue({ sshPublicKey: PUB_KEY });
     mockExec.mockRejectedValueOnce(new Error('boom'));
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     await expect(deployRepoKeyIfNeeded('myrepo', 'm1')).resolves.toBeUndefined();
 

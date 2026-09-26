@@ -109,9 +109,7 @@ describe('assertPlaceAccepted', () => {
 
 describe('placeConflictError — §3.2 canonical text (exit 12)', () => {
   it('reproduces the spec text verbatim with names substituted', () => {
-    // Build the expected string with the same names interpolated, so the source
-    // never carries a contiguous `repo migrate shop` literal (which the
-    // no-positional-cli-syntax-source lint rule flags until w2b makes it real).
+    // Build the expected string with the same names interpolated, so the source never carries a contiguous `repo migrate shop` literal (which the no-positional-cli-syntax-source lint rule flags until w2b makes it real).
     const name = 'shop';
     const home = 'prod-1';
     const at = 'backup-2';

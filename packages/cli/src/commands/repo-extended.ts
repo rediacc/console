@@ -79,7 +79,7 @@ interface AutostartListOptions {
   skipRouterRestart?: boolean;
 }
 
-/** `repo autostart list` — fetch the renet payload and render it. */
+/** `repo autostart list`, fetch the renet payload and render it. */
 async function handleAutostartList(options: AutostartListOptions): Promise<void> {
   await assertMachineExists(options.machine);
   outputService.info(
@@ -103,8 +103,7 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
     return;
   }
 
-  // renet relays a single JSON object with `[repository_autostart_list]`
-  // line prefixes — same shape the prune parser extracts.
+  // renet relays a single JSON object with `[repository_autostart_list]` line prefixes, same shape the prune parser extracts.
   const payload = parseDatastorePruneOutput(result.stdout ?? '') as AutostartListPayload;
   const format = getOutputFormat();
   if (format !== 'table') {
@@ -138,12 +137,10 @@ async function handleAutostartList(options: AutostartListOptions): Promise<void>
  * autostart, ownership, and template.
  */
 export function registerExtendedRepoCommands(repo: Command, admin: Command): void {
-  // `repo fork <parent-ref>` is registered by registerRepoForkCommand (repo-fork.ts),
-  // wired in repo.ts alongside the other register* calls after the §2.3 reshape.
+  // `repo fork <parent-ref>` is registered by registerRepoForkCommand (repo-fork.ts), wired in repo.ts alongside the other register* calls after the §2.3 reshape.
   registerRepoPromoteCommand(repo);
 
-  // repo resize <ref> — offline grow/shrink. Stays on the DAILY surface (§5.4):
-  // it is a volume-geometry verb an operator reaches for, not admin plumbing.
+  // repo resize <ref>, offline grow/shrink. Stays on the DAILY surface (§5.4): it is a volume-geometry verb an operator reaches for, not admin plumbing.
   repo
     .command('resize')
     .summary(t('commands.repo.resize.descriptionShort'))
@@ -186,7 +183,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       }
     );
 
-  // repo expand <ref> — online grow-only (the deliberate counterpart to resize).
+  // repo expand <ref>, online grow-only (the deliberate counterpart to resize).
   repo
     .command('expand')
     .summary(t('commands.repo.expand.descriptionShort'))
@@ -235,8 +232,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
   // repo policy set|get [ref] (no ref = machine-wide default, on -m)
   registerRepoPolicyCommand(repo);
 
-  // ── repo admin subtree (§5.4): the niche plumbing verbs move OFF the daily
-  // surface. Same behavior, addressed by ref, one level down.
+  // ── repo admin subtree (§5.4): the niche plumbing verbs move OFF the daily surface. Same behavior, addressed by ref, one level down.
 
   // repo admin validate <ref>
   admin
@@ -283,12 +279,8 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
     .command('autostart')
     .description(t('commands.repo.admin.autostart.description'));
 
-  // repo autostart enable [--name <name>] — per-repo if name given, all repos if omitted
-  // A ref targets ONE repo; -m with no ref targets every repo on the machine.
-  // Autostart is docker-only by nature (it installs a systemd unit that mounts the
-  // repo and runs its compose on boot); a kubernetes repo's workload is the
-  // cluster's job, not systemd's, so a cluster-placed ref is refused with the
-  // reason rather than silently doing nothing.
+  // repo autostart enable [--name <name>], per-repo if name given, all repos if omitted A ref targets ONE repo; -m with no ref targets every repo on the machine. Autostart is docker-only by nature (it installs a systemd unit that mounts the repo and runs its compose on boot); a kubernetes repo's workload is the cluster's job, not systemd's, so a cluster-placed ref is refused with
+  // the reason rather than silently doing nothing.
   autostart
     .command('enable')
     .description(t('commands.repo.admin.autostart.enable.description'))
@@ -483,10 +475,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       }
     });
 
-  // repo admin template apply <ref> --template <name>. The old `-r/--repository`
-  // collapses into the positional ref, and the old `--name` (which meant the
-  // TEMPLATE, not the repo, on a tree where --name means the repo everywhere else)
-  // becomes the honest `--template`.
+  // repo admin template apply <ref> --template <name>. The old `-r/--repository` collapses into the positional ref, and the old `--name` (which meant the TEMPLATE, not the repo, on a tree where --name means the repo everywhere else) becomes the honest `--template`.
   template
     .command('apply')
     .summary(t('commands.repo.admin.template.apply.descriptionShort'))

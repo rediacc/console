@@ -1,0 +1,9 @@
+# twin .ci/scripts/quality/announce-gate-skips.sh blob ce63a3e3be32ed0e25ed71a569e9e4fcbac9ceab
+exit: 0
+--- stdout ---
+::warning::label 'no-media-quality' removed 2 gate(s) from this job: check:ci-tutorial-casts check:ci-tutorial-parity
+gate-skips: 2 gate(s) NOT run in this job because the PR carries 'no-media-quality': check:ci-tutorial-casts check:ci-tutorial-parity
+gate-skips: this is a temporary hold. Remove the label to restore them.
+--- stderr ---
+--- summary ---
+(absent)

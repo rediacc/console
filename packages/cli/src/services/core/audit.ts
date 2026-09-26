@@ -10,7 +10,7 @@
  *
  * Event types are validated against the shared discriminated-union
  * schema at packages/shared/src/audit/event-schema.ts. Unrecognized
- * function names are silently dropped — they would fail server-side
+ * function names are silently dropped, they would fail server-side
  * validation anyway, and dropping locally keeps the queue clean.
  */
 
@@ -115,7 +115,7 @@ class AuditService {
    *
    * A failed attempt is retried exactly once. Every event carries an idempotency
    * key the server dedups on, so a retry can only ever store what the first
-   * attempt missed — it can never double-count. The retry is bounded to one
+   * attempt missed, it can never double-count. The retry is bounded to one
    * extra attempt because this runs at process exit: a losing network must not
    * hold the command open indefinitely.
    */
@@ -146,11 +146,12 @@ class AuditService {
             ...(e.onBehalfOfTokenId ? { onBehalfOfTokenId: e.onBehalfOfTokenId } : {}),
           })),
         },
+        // A background flush never prompts for an authenticator code; a refused token just drops the batch.
+        ipRebind: false,
       });
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS);
-        // unref: a pending flush timeout must never hold the event loop open
-        // after the command has finished (it added ~5s to every wall time).
+        // unref: a pending flush timeout must never hold the event loop open after the command has finished (it added ~5s to every wall time).
         timer.unref();
       });
       await Promise.race([request, timeout]);

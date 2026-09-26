@@ -3,13 +3,11 @@ import { STEP_CARD_DURATION_SEC } from './scenes/cast.ts';
 import type { CastNarratedDebug } from './scenes/index.ts';
 import type { Scene, Storyboard } from './storyboard.ts';
 
-// Single source of truth for the cast-narrated scene's pre-audio dwell:
-// imported from scenes/cast.ts so emitter and renderer can never drift.
+// Single source of truth for the cast-narrated scene's pre-audio dwell: imported from scenes/cast.ts so emitter and renderer can never drift.
 const START_HOLD_DEFAULT_SEC = 0.6;
 const MAX_WORDS_PER_CUE = 10;
 const MAX_CUE_DURATION_SEC = 2.5;
-// Includes the fullwidth CJK forms so ja/zh narrations break cues at
-// sentence/clause boundaries just like Latin text does.
+// Includes the fullwidth CJK forms so ja/zh narrations break cues at sentence/clause boundaries just like Latin text does.
 const PUNCT_BREAK = new Set([
   '.',
   ',',
@@ -26,16 +24,8 @@ const PUNCT_BREAK = new Set([
   '？',
 ]);
 
-// CJK-aware tokenization. ja/zh narration text has no whitespace word
-// boundaries: /\S+/g sees a whole clause as one "word", which collapses the
-// estimate fallback to a single cue-spanning token (no per-word highlight)
-// and breaks the density gate (expectedWords ~1 makes any sparse alignment
-// look like full coverage). For CJK-dominant text, segment with
-// Intl.Segmenter (word granularity, dictionary-based for ja/zh) instead.
-// Cross-reference: check-tutorial-caption-sync.ts uses the same approach to
-// count expected tokens when validating published words.json files.
-// Hiragana, katakana (+ phonetic extensions, halfwidth), CJK ideographs
-// (unified + ext A + compatibility).
+// CJK-aware tokenization. ja/zh narration text has no whitespace word boundaries: /\S+/g sees a whole clause as one "word", which collapses the estimate fallback to a single cue-spanning token (no per-word highlight) and breaks the density gate (expectedWords ~1 makes any sparse alignment look like full coverage). For CJK-dominant text, segment with Intl.Segmenter (word
+// granularity, dictionary-based for ja/zh) instead. Cross-reference: check-tutorial-caption-sync.ts uses the same approach to count expected tokens when validating published words.json files. Hiragana, katakana (+ phonetic extensions, halfwidth), CJK ideographs (unified + ext A + compatibility).
 const CJK_CHAR_RE =
   /[\u3040-\u30ff\u31f0-\u31ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/;
 const KANA_RE = /[\u3040-\u30ff\u31f0-\u31ff\uff66-\uff9f]/;
@@ -180,9 +170,7 @@ function buildCueGroupsFromWordTimings(
   if (wordTimings.length === 0) return [];
   const groups: CueGroup[] = [];
   let groupStart = 0;
-  // Tracks where the previous cue ended in narrationText. The next cue
-  // starts there so leading characters are never dropped — Qwen3-ASR
-  // occasionally returns a startChar inside a word (e.g., maps "Alright"
+  // Tracks where the previous cue ended in narrationText. The next cue starts there so leading characters are never dropped — Qwen3-ASR occasionally returns a startChar inside a word (e.g., maps "Alright"
   // back as "lright" → startChar=2), and any inter-cue whitespace or
   // punctuation that lives between mapped words still needs to appear.
   let cueTextCursor = 0;
@@ -350,11 +338,7 @@ function collectCueGroups(args: CollectArgs): CueGroup[] {
       // The cast-narrated scene is concat(prePauseMp4, mainCore). Audio plays
       // from t=0 of mainCore — the `tpad start_duration=startHold` filter in
       // muxNarratedSegment delays only the VIDEO (held first frame); the
-      // audio stream is muxed in without any leading offset. So the narration
-      // starts at sceneStart + prePause, NOT sceneStart + prePause + startHold.
-      // (Confirmed by ffmpeg volumedetect probe: audio rises from −91 dB to
-      // −15 dB at exactly sceneStart + prePause + 0.08, matching the first
-      // wordTiming.startSec for "First".)
+      // audio stream is muxed in without any leading offset. So the narration starts at sceneStart + prePause, NOT sceneStart + prePause + startHold. (Confirmed by ffmpeg volumedetect probe: audio rises from −91 dB to −15 dB at exactly sceneStart + prePause + 0.08, matching the first wordTiming.startSec for "First".)
       const mainAudioStart = timing.start + stepPrePause;
       groups.push(
         ...cuesFromNarration(

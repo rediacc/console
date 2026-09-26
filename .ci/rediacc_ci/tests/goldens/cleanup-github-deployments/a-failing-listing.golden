@@ -1,0 +1,8 @@
+# twin .ci/scripts/housekeeping/cleanup-github-deployments.sh blob 4fe0c7d288b2d57f52ec5ddf231ffabaf2c92ae1
+exit: 7
+--- stdout ---
+--- stderr ---
+→ Cleaning up GitHub deployments for environment: pr-42 (acme/widget)
+gh: fake listing failure (HTTP 403)
+--- calls ---
+api	repos/acme/widget/deployments?environment=pr-42&per_page=100	--paginate	--jq	.[].id

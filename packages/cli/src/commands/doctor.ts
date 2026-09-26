@@ -140,7 +140,7 @@ function checkRenetBinary(checks: CheckResult[], renetPath: string | null): void
       status: isSEA() ? 'warn' : 'fail',
       hint: isSEA()
         ? 'Renet is optional on workstations (only needed for local VM ops). It is auto-provisioned to remote machines.'
-        : 'Build renet with: ./run.sh build renet',
+        : 'Build renet with: cd private/renet && ./build.sh dev',
     });
     return;
   }
@@ -180,7 +180,7 @@ function checkDevEmbedAssets(checks: CheckResult[]): void {
     checks,
     hasEmbedAssets ? 'yes (dev embed assets found)' : 'no (dev embed assets missing)',
     hasEmbedAssets ? 'ok' : 'warn',
-    hasEmbedAssets ? undefined : 'Build renet embed assets with: ./run.sh build renet'
+    hasEmbedAssets ? undefined : 'Build renet embed assets with: cd private/renet && ./build.sh dev'
   );
 }
 
@@ -188,9 +188,7 @@ function checkRenetEmbeddedAssets(checks: CheckResult[]): void {
   if (isSEA() && isSEAEmbedded()) {
     try {
       const archs = Object.keys(getEmbeddedMetadata().binaries).join(', ');
-      // Read the host's embedded renet binary back out and verify its sha256
-      // against the build-time metadata: proves the SEA asset lookup returns the
-      // exact injected bytes, not just that the metadata asset parses.
+      // Read the host's embedded renet binary back out and verify its sha256 against the build-time metadata: proves the SEA asset lookup returns the exact injected bytes, not just that the metadata asset parses.
       const integrity = verifyEmbeddedRenetIntegrity();
       if (integrity.ok) {
         pushEmbedAssetChecks(checks, `yes (${archs})`, 'ok');
@@ -243,8 +241,7 @@ async function checkMachineCount(checks: CheckResult[]): Promise<void> {
 }
 
 function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
-  // Keys live inline in the config (credentials.ssh.privateKey) — written by
-  // `config init --ssh-key` / `config ssh set`. There is no path to stat.
+  // Keys live inline in the config (credentials.ssh.privateKey), written by `config init --ssh-key` / `config ssh set`. There is no path to stat.
   if (hasInlineKey) {
     checks.push({ name: t('commands.doctor.checks.sshKey'), value: '(inline)', status: 'ok' });
     return;
@@ -460,11 +457,7 @@ const MIN_VALUE_WIDTH = 12;
 function formatSection(section: CheckSection): string {
   const width = terminalWidth();
   const nameWidth = Math.max(16, ...section.checks.map((c) => c.name.length + 2));
-  // The value column takes whatever is left after the 4-space indent, the name
-  // column and the status label. Sizing it from the VALUE instead is what put a
-  // 232-column line on screen: `curl --version` answers with a full banner
-  // ("curl 8.5.0 (x86_64-pc-linux-gnu) libcurl/8.5.0 OpenSSL/3.0.13 ..."), and
-  // padEnd(value.length + 2) simply grew the row to fit it.
+  // The value column takes whatever is left after the 4-space indent, the name column and the status label. Sizing it from the VALUE instead is what put a 232-column line on screen: `curl --version` answers with a full banner ("curl 8.5.0 (x86_64-pc-linux-gnu) libcurl/8.5.0 OpenSSL/3.0.13 ..."), and padEnd(value.length + 2) simply grew the row to fit it.
   const valueWidth = Math.max(MIN_VALUE_WIDTH, width - 4 - nameWidth - STATUS_LABEL_WIDTH);
   const lines = [`  ${chalk.bold(section.title)}`];
   for (const check of section.checks) {

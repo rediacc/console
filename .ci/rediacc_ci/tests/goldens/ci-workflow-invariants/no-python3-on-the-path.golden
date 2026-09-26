@@ -1,0 +1,5 @@
+# twin .ci/scripts/security/check-ci-workflow-invariants.sh blob 23c86d2113491f7e0d9ac4adaada5b9d885f21d8
+exit: 2
+--- stdout ---
+--- stderr ---
+✗ python3 is required to parse <work>/wf.yml

@@ -54,13 +54,15 @@ docker run --rm --network host \
 
 echo "==> account dev gateway on :$GATEWAY_PORT (ACCOUNT_BACKUP_S3_* -> $PROBE_BUCKET)"
 cd "$ACCOUNT_DIR"
-# `set -a` + source: the gateway needs the .env crypto keys. ACCOUNT_BACKUP_S3_* are
-# absent from .env, so exporting them here reaches the process untouched --
-# .env can only clobber keys it actually declares.
-set -a
-# shellcheck disable=SC1091
-source "$ACCOUNT_DIR/.env"
-set +a
+# The gateway needs the DEV crypto keys, which come from Bitwarden through the
+# `backup-plane` profile (.ci/config/secret-supply.json `consumers`), and the
+# committed non-secret constants from private/account/dev.defaults.env. Both
+# follow the shell-wins rule, so the knobs at the top of this file (GATEWAY_PORT,
+# RUSTFS_PORT, BRIDGE_HOST, RUSTFS_KEY, RUSTFS_SECRET) mean what they say. The
+# profile deliberately binds no ACCOUNT_BACKUP_S3_* name: those are exported
+# below and point the gateway at the local RustFS bucket.
+source "$ROOT_DIR/scripts/lib/env-file.sh"
+env_file_load "$ACCOUNT_DIR/dev.defaults.env"
 
 export GATEWAY_PORT
 export ACCOUNT_BACKUP_S3_ENDPOINT="http://${BRIDGE_HOST}:${RUSTFS_PORT}"
@@ -73,4 +75,5 @@ export CONFIG_R2_ACCESS_KEY_ID="$RUSTFS_KEY"
 export CONFIG_R2_SECRET_ACCESS_KEY="$RUSTFS_SECRET"
 export TEST_MODE=true
 
-exec npx tsx src/entry/dev-gateway.ts
+PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.bws_env \
+    exec --profile backup-plane -- npx tsx src/entry/dev-gateway.ts

@@ -42,6 +42,7 @@ type RepoNameResolver = (
   serverRepoName?: string
 ) => { name: string; source: RepoNameSource };
 
+import { setExitCode, writeStderr, writeStdout } from '../../services/core/request-context.js';
 import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */
@@ -188,11 +189,7 @@ function getSections(
       getData: (r) => buildStorageHealthRows(r.storage_health, repoName),
     },
     {
-      // How long ago each repo was actually uploaded, read from the state the
-      // backup job merges across runs. A backup can report success while
-      // covering less than it used to — a repo loses its licence, or a transfer
-      // window closes before the largest images are reached — and the exit
-      // status says nothing. The growing age here is what reveals it.
+      // How long ago each repo was actually uploaded, read from the state the backup job merges across runs. A backup can report success while covering less than it used to, a repo loses its licence, or a transfer window closes before the largest images are reached, and the exit status says nothing. The growing age here is what reveals it.
       title: 'Backup Coverage',
       getData: (r) =>
         (r.backup_coverage?.repos ?? []).map((b) => ({
@@ -206,9 +203,7 @@ function getSections(
         })),
     },
     {
-      // Rendered by default, not only under --strict. The watchdog maintains
-      // this registry precisely to catch the slow silent failure — a container
-      // whose healthcheck has been failing for days — and it is worth nothing
+      // Rendered by default, not only under --strict. The watchdog maintains this registry precisely to catch the slow silent failure, a container whose healthcheck has been failing for days, and it is worth nothing
       // if seeing it requires already suspecting it and passing a flag. The
       // table is empty when nothing is drifting, so a healthy machine stays
       // quiet; --strict still controls the CI exit code.
@@ -299,9 +294,7 @@ function getSections(
             expires: l.hardExpiresAt ? relativeTime(l.hardExpiresAt) : '-',
             machine_match: getMachineMatch(currentMachineId, l.machineId),
             datastore: extra?.datastoreId?.slice(0, 8) ?? '-',
-            // The whole reason this column exists: a blocked-backup marker
-            // means unattended backups have been failing on licensing since
-            // that timestamp, and nothing else in this output says so.
+            // The whole reason this column exists: a blocked-backup marker means unattended backups have been failing on licensing since that timestamp, and nothing else in this output says so.
             backups: extra?.blockedBackup ? `BLOCKED ${extra.blockedBackup.reason}` : 'ok',
             renewed: formatRenewalOutcome(extra?.lastRenewal),
           };
@@ -448,7 +441,7 @@ interface StorageSummary {
 /**
  * Single source of truth for the derived storage summary. Returns null when the
  * system section is absent (e.g. renet error or older renet) so callers never
- * emit a fabricated "0.0G" — the storage summary must reflect real data or none.
+ * emit a fabricated "0.0G", the storage summary must reflect real data or none.
  */
 export function deriveStorageSummary(sys: SystemInfo | undefined): StorageSummary | null {
   if (!sys?.disk.available || !sys.datastore.available) return null;
@@ -515,17 +508,17 @@ function renderTableMode(
 
   if (machineConfig) {
     outputService.info(`\n${t('commands.machine.status.connection')}`);
-    process.stdout.write(`${outputService.formatTable([flattenConnection(machineConfig)])}\n`);
+    writeStdout(`${outputService.formatTable([flattenConnection(machineConfig)])}\n`);
   }
   if (infra) {
     outputService.info(`\n${t('commands.machine.status.infrastructure')}`);
-    process.stdout.write(`${outputService.formatTable([flattenInfra(infra)])}\n`);
+    writeStdout(`${outputService.formatTable([flattenInfra(infra)])}\n`);
   }
   for (const section of tableSections) {
     const data = section.getData(listResult);
     if (data.length === 0) continue;
     outputService.info(`\n${section.title}`);
-    process.stdout.write(`${outputService.formatTable(data)}\n`);
+    writeStdout(`${outputService.formatTable(data)}\n`);
   }
 
   const repoServerSourced = getRepositories(listResult).some(
@@ -589,8 +582,7 @@ function buildEnrichedJson(
     infra: infra ?? null,
     storage: deriveStorageSummary(listResult.system),
     // Scripted consumers get the marker and the datastore scope too; a
-    // `machine status -o json | jq` health check should not have to shell out
-    // to renet separately to learn that backups are blocked.
+    // `machine status -o json | jq` health check should not have to shell out to renet separately to learn that backups are blocked.
     license_statuses: getLicenseStatuses(listResult).map((l) => ({
       ...l,
       ...(licenseDetail.get(l.repositoryGuid) ?? {}),
@@ -603,10 +595,7 @@ export function collectSections(options: QueryOptions): string[] {
   for (const { flag, section } of SECTION_FLAGS) {
     if (options[flag]) sections.push(section);
   }
-  // The storage summary is derived from the system section, so ensure it is
-  // always collected when a section subset is requested. Cheap renet-side
-  // (~sub-10ms, no shell-outs). An empty list means a full query, which
-  // already includes system.
+  // The storage summary is derived from the system section, so ensure it is always collected when a section subset is requested. Cheap renet-side (~sub-10ms, no shell-outs). An empty list means a full query, which already includes system.
   if (sections.length > 0 && !sections.includes('system')) sections.push('system');
   return sections;
 }
@@ -756,20 +745,16 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
         if (!options.storageHealth) {
-          process.stderr.write(`\n${t('commands.machine.status.storageHealthHint')}\n`);
+          writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
         }
 
-        // --strict: exit non-zero when any container has crossed the
-        // health-drift threshold. Lets CI scripts gate deploys on
-        // post-deploy convergence without hand-parsing the JSON.
+        // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
         // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
         // 1 = warn, 2 = error).
         if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
           const count = listResult.health_drift?.entries.length ?? 0;
-          process.stderr.write(
-            `\n${t('commands.machine.status.strictDriftDetected', { count })}\n`
-          );
-          process.exitCode = 2;
+          writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
+          setExitCode(2);
         }
 
         if (options.syncCerts) {
@@ -781,9 +766,7 @@ export function registerStatusCommand(machine: Command, program: Command): void 
     });
 }
 
-// Opt-in cert-cache sync after `rdc machine query --sync-certs`. Opt-in
-// because this is a read-only query command today and a network-touching
-// side effect would surprise operators who don't expect it.
+// Opt-in cert-cache sync after `rdc machine query --sync-certs`. Opt-in because this is a read-only query command today and a network-touching side effect would surprise operators who don't expect it.
 async function runOptInCertSync(machineName: string): Promise<void> {
   try {
     const { downloadCertCache } = await import('../../services/account/cert-cache.js');

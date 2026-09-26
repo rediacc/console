@@ -2,7 +2,7 @@
  * Seed-on-enable (`finalizeEnable` / `applyHandoff`).
  *
  * The five contract cases: fresh store seeds at version 0→1 with a
- * state/remote-free doc; a missing handoff configId is minted from the local
+ * whole local doc (the push projection leaves the device-local pointers home); a missing handoff configId is minted from the local
  * config's id; a differing existing store aborts without --force on a non-TTY
  * (credentials cleaned up); --force replaces local content with the server
  * copy; any non-404 pull error aborts with the local file untouched.
@@ -35,6 +35,7 @@ const {
   }
   return {
     mockConfigFileStorage: {
+      list: vi.fn(() => Promise.resolve([] as string[])),
       load: vi.fn(),
       loadDecrypted: vi.fn(),
       save: vi.fn(),
@@ -55,8 +56,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 }));
 
 vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
-  // Keep the real error classes (finalizeEnable/instanceof checks) but stub
-  // the adapter itself.
+  // Keep the real error classes (finalizeEnable/instanceof checks) but stub the adapter itself.
   const original = await importOriginal<typeof import('../../adapters/remote-config-adapter.js')>();
   return { ...original, RemoteConfigAdapter: MockRemoteConfigAdapter };
 });
@@ -142,6 +142,7 @@ function handoffPayload(configId?: string): HandoffPayload {
     wrappedCek: 'wrapped',
     storeId: STORE_ID,
     apiUrl: 'https://account.example.com',
+    handoffNonce: 'nonce-1',
     ...(configId ? { configId } : {}),
   };
 }
@@ -158,7 +159,7 @@ describe('finalizeEnable (seed-on-enable)', () => {
     mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
   });
 
-  it('seeds a fresh store: 404 → push v0 (no state/remote) → pull-back proof → cache written', async () => {
+  it('seeds a fresh store: 404 → push v0 (state included) → pull-back proof → cache written', async () => {
     mockAdapterInstance.pull
       .mockRejectedValueOnce(new ConfigServerError('Config not found', 404))
       .mockResolvedValueOnce({ config: structuredClone(serverConfig), version: 1, sdkEpoch: 1 });
@@ -166,12 +167,11 @@ describe('finalizeEnable (seed-on-enable)', () => {
 
     await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME);
 
-    // Seed push: currentVersion=0, doc carries neither state nor remote.
+    // Seed push: currentVersion=0, the local document with its state (T17: state syncs, so the store starts with this device's network IDs). The projection drops the device-local pointers.
     expect(mockAdapterInstance.push).toHaveBeenCalledTimes(1);
     const [seedDoc, currentVersion] = mockAdapterInstance.push.mock.calls[0] as [RdcConfig, number];
     expect(currentVersion).toBe(0);
-    expect(seedDoc.state).toBeUndefined();
-    expect(seedDoc.remote).toBeUndefined();
+    expect(seedDoc.state).toEqual(localConfig.state);
     expect(seedDoc.resources?.machines).toHaveProperty('m1');
 
     // Round-trip proof: a second pull ran.
@@ -246,5 +246,68 @@ describe('finalizeEnable (seed-on-enable)', () => {
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
     expect(secureMem.size).toBe(0);
     expect(tokenMem.size).toBe(0);
+  });
+
+  it('keeps a slot secret that existed before the failed enable (F17: another local config uses it)', async () => {
+    secureMem.set('rdc:pk:handoff-key', 'c2VjcmV0');
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Forbidden', 403));
+
+    await expect(applyHandoff(handoffPayload(CONFIG_ID), CONFIG_NAME, {})).rejects.toThrow(
+      'Forbidden'
+    );
+
+    expect(secureMem.get('rdc:pk:handoff-key')).toBe('c2VjcmV0');
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('keeps a slot secret another local config names, even when this enable wrote it', async () => {
+    mockConfigFileStorage.list.mockResolvedValueOnce(['other', CONFIG_NAME]);
+    mockConfigFileStorage.load.mockResolvedValueOnce({
+      remote: { storageKeyId: 'rdc:pk:handoff-key' },
+    });
+    mockAdapterInstance.pull.mockRejectedValue(new ConfigServerError('Forbidden', 403));
+
+    await expect(applyHandoff(handoffPayload(CONFIG_ID), CONFIG_NAME, {})).rejects.toThrow(
+      'Forbidden'
+    );
+
+    expect(secureMem.has('rdc:pk:handoff-key')).toBe(true);
+  });
+
+  it('asks before replacing local content outside resources (F17b: ssh credentials and policy)', async () => {
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue({
+      schemaVersion: 3,
+      id: LOCAL_ID,
+      version: 4,
+      encryption: { mode: 'plaintext' },
+      credentials: { ssh: { privateKey: 'LOCAL-KEY' } },
+      policy: { version: 1 },
+    });
+    mockAdapterInstance.pull.mockResolvedValue({
+      config: structuredClone(serverConfig),
+      version: 3,
+      sdkEpoch: 1,
+    });
+
+    await expect(finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME)).rejects.toThrow(/--force/);
+    expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+
+  it('does not ask when the local content already equals the store copy, whatever the key order', async () => {
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue({
+      schemaVersion: 3,
+      id: LOCAL_ID,
+      version: 4,
+      encryption: { mode: 'plaintext' },
+      resources: { machines: { srv: { user: 'deploy', ip: '10.0.0.9' } } },
+    });
+    mockAdapterInstance.pull.mockResolvedValue({
+      config: structuredClone(serverConfig),
+      version: 3,
+      sdkEpoch: 1,
+    });
+
+    await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME);
+    expect(mockConfigFileStorage.save).toHaveBeenCalledTimes(1);
   });
 });

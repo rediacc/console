@@ -21,16 +21,9 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 export const SUPPORTED_LANGUAGES = NON_ENGLISH_LOCALES;
 const COLLECTIONS = ['docs', 'blog'];
 const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.mdx?$/;
-// The cli/ directory is auto-generated from CLI --help output and cannot be
-// translated line-by-line, so it stays excluded. NO other entries belong
-// here: every other English doc must have full translations in all
-// supported languages, enforced by the freshness check below. Adding new
-// entries here is an i18n debt sink and will be rejected in review.
+// The cli/ directory is auto-generated from CLI --help output and cannot be translated line-by-line, so it stays excluded. NO other entries belong here: every other English doc must have full translations in all supported languages, enforced by the freshness check below. Adding new entries here is an i18n debt sink and will be rejected in review.
 //
-// The one temporary exception is siem-integration.md — this branch
-// (feat/audit-events-siem) ships the English source first and the
-// translations land in a follow-up via the normal localization pipeline.
-// Remove this entry as soon as the 12 translations are in place.
+// The one temporary exception is siem-integration.md — this branch (feat/audit-events-siem) ships the English source first and the translations land in a follow-up via the normal localization pipeline. Remove this entry as soon as the 12 translations are in place.
 const EXCLUDED_EN_PATHS = {
   docs: ['packages/www/src/content/docs/en/siem-integration.md'],
   blog: [
@@ -535,10 +528,7 @@ function parseArgs(argv) {
   return args;
 }
 
-// `process.argv[1]` is undefined when this module is imported rather than run (a test
-// harness, `node -e "await import(...)"`), and `pathToFileURL(undefined)` throws
-// ERR_INVALID_ARG_TYPE before the guard can ever be false. The presence check is what
-// makes the module importable at all.
+// `process.argv[1]` is undefined when this module is imported rather than run (a test harness, `node -e "await import(...)"`), and `pathToFileURL(undefined)` throws ERR_INVALID_ARG_TYPE before the guard can ever be false. The presence check is what makes the module importable at all.
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const args = parseArgs(process.argv.slice(2));
   const result = validateTranslationFreshness({

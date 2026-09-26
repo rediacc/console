@@ -22,9 +22,7 @@ describe('compareVersions()', () => {
     expect(compareVersions('0.4', '0.4.0')).toBe(0);
   });
 
-  // THE CONTROL for the silent-equal defect. Every one of these returned 0
-  // before the fix, and 0 means "same version" to the CLI updater, the
-  // background updater, and the account server's minimum-version gate.
+  // THE CONTROL for the silent-equal defect. Every one of these returned 0 before the fix, and 0 means "same version" to the CLI updater, the background updater, and the account server's minimum-version gate.
   it.each([
     ['1.2.16', '1.2.x'],
     ['x.y.z', '1.2.16'],

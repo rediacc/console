@@ -89,33 +89,20 @@ function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) 
   const minSliceDur = 1.0;
   const trim = scene.afterTrimSec ?? DEFAULT_AFTER_TRIM_SEC;
 
-  // The recording prints a fresh empty prompt after each command finishes (see
-  // tutorial-helpers.sh::run_cmd). That prompt is the "command done" cue.
+  // The recording prints a fresh empty prompt after each command finishes (see tutorial-helpers.sh::run_cmd). That prompt is the "command done" cue.
   //
-  // For natural pacing, the main narration must play while the cast types +
-  // executes + outputs (no empty prompt visible yet), and the after-narration
-  // must play over a freeze that DOES show the empty prompt. So we split the
-  // cast slice at the empty-prompt point.
+  // For natural pacing, the main narration must play while the cast types + executes + outputs (no empty prompt visible yet), and the after-narration must play over a freeze that DOES show the empty prompt. So we split the cast slice at the empty-prompt point.
   const promptTime = findLastPromptTime(ctx.cast, startSec + 0.2, rawEndSec);
 
-  // mainEndSec: where the main cast playback stops. Just before the prompt
-  // prints (so empty prompt isn't visible during main narration).
-  // frameEndSec: where we extract the after-narration freeze frame. After the
-  // prompt prints, so the freeze shows "output + empty prompt".
+  // mainEndSec: where the main cast playback stops. Just before the prompt prints (so empty prompt isn't visible during main narration). frameEndSec: where we extract the after-narration freeze frame. After the prompt prints, so the freeze shows "output + empty prompt".
   let mainEndSec =
     promptTime !== null
       ? Math.max(startSec + minSliceDur, promptTime - 0.15)
       : Math.max(startSec + minSliceDur, rawEndSec - trim);
-  // The output dump and the empty "command done" prompt print within ms of each
-  // other, so `promptTime - 0.15` can cut off BEFORE an instant dump (e.g. `cat`
-  // of a file), leaving the typed command over an empty screen for the whole
-  // main narration. Extend the cutoff to include the last output before the
-  // prompt so the command's output is actually visible during the narration.
+  // The output dump and the empty "command done" prompt print within ms of each other, so `promptTime - 0.15` can cut off BEFORE an instant dump (e.g. `cat` of a file), leaving the typed command over an empty screen for the whole main narration. Extend the cutoff to include the last output before the prompt so the command's output is actually visible during the narration.
   if (promptTime !== null) {
     const lastOut = lastOutputTime(ctx.cast, startSec, promptTime);
-    // +0.4s margin so the dump frame fully renders (the dump often lands on the
-    // exact cutoff and frame-rounding would otherwise drop it) and is then held
-    // under the rest of the narration.
+    // +0.4s margin so the dump frame fully renders (the dump often lands on the exact cutoff and frame-rounding would otherwise drop it) and is then held under the rest of the narration.
     if (lastOut !== null && lastOut + 0.4 > mainEndSec) {
       mainEndSec = Math.min(rawEndSec, Math.max(mainEndSec, lastOut + 0.4));
     }
@@ -134,24 +121,14 @@ function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) 
   const hold = scene.holdSec ?? DEFAULT_HOLD_SEC;
   const tailExtra = Math.max(0, audioDur - (hold + mainAnimDur));
 
-  // Tall-output detection. If the command output is taller than the recorded
-  // terminal it scrolled off the top, so a static freeze shows only the tail.
-  // We re-render the slice in a TALL terminal (nothing scrolls in-terminal) and
-  // pan a recorded-height window down it. Computed up front because WHEN we pan
-  // depends on it.
+  // Tall-output detection. If the command output is taller than the recorded terminal it scrolled off the top, so a static freeze shows only the tail. We re-render the slice in a TALL terminal (nothing scrolls in-terminal) and pan a recorded-height window down it. Computed up front because WHEN we pan depends on it.
   const termRows = ctx.cast.header.height;
-  // Wrapped display rows (a long unbroken line, like an inline key in a printed
-  // config, still consumes multiple rows) decide whether output scrolled off.
+  // Wrapped display rows (a long unbroken line, like an inline key in a printed config, still consumes multiple rows) decide whether output scrolled off.
   const displayRows = countDisplayRows(ctx.cast, startSec, frameEndSec, ctx.cast.header.width);
   const needRows = displayRows + 1;
   const isTall = needRows > termRows;
-  // The main narration usually runs far longer than the typing+output animation,
-  // leaving `tailExtra` seconds of dead freeze on the scrolled-off tail. When
-  // that window is substantial we reveal the output by panning slowly across it
-  // during the main narration, instead of freezing the tail and cramming the
-  // whole reveal into the short after-narration (jarring: ~16s static then a
-  // rushed scroll). Below the threshold (e.g. the animation already outruns the
-  // main narration) we fall back to the after-narration scroll.
+  // The main narration usually runs far longer than the typing+output animation, leaving `tailExtra` seconds of dead freeze on the scrolled-off tail. When that window is substantial we reveal the output by panning slowly across it during the main narration, instead of freezing the tail and cramming the whole reveal into the short after-narration (jarring: ~16s static then a rushed
+  // scroll). Below the threshold (e.g. the animation already outruns the main narration) we fall back to the after-narration scroll.
   const MAIN_PAN_MIN_FREEZE_SEC = 2.5;
   const useMainPan = isTall && tailExtra >= MAIN_PAN_MIN_FREEZE_SEC;
   const useBurstStream = isTall && !useMainPan;
@@ -161,22 +138,13 @@ function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) 
 
   let readPauseSec = 0;
   if (!useMainPan && !isTall && afterAudio) {
-    // Output fits: hold a reading pause then freeze the full frame under the
-    // after-narration. ~250ms per output line, clamped to [0.8s, 3.0s]. Only
-    // relevant (and only computed here) in the "fits" branch that actually
-    // uses it -- mirrors the real render's branch selection exactly.
+    // Output fits: hold a reading pause then freeze the full frame under the after-narration. ~250ms per output line, clamped to [0.8s, 3.0s]. Only relevant (and only computed here) in the "fits" branch that actually uses it -- mirrors the real render's branch selection exactly.
     const outputLines = countOutputLines(ctx.cast, startSec, mainEndSec);
     readPauseSec = Math.min(3.0, Math.max(0.8, outputLines * 0.25));
   }
 
-  // mainCore's REAL duration after muxNarratedSegment (tpad start/end hold +
-  // `-shortest`) is NOT simply audioDur -- it's whichever is longer, the
-  // audio or the (possibly hold-padded) visual. Getting this wrong is
-  // exactly the kind of drift extracting this function once is meant to
-  // prevent: vtt-emit.ts's afterAudioStartSec already relies on the correct
-  // formula for the "fits" branch (`Math.max(audioDurSec, startHoldSec +
-  // mainAnimDur)`, vtt-emit.ts:233) -- mirror it here for every branch so
-  // there is exactly one place any of this math lives.
+  // mainCore's REAL duration after muxNarratedSegment (tpad start/end hold + `-shortest`) is NOT simply audioDur -- it's whichever is longer, the audio or the (possibly hold-padded) visual. Getting this wrong is exactly the kind of drift extracting this function once is meant to prevent: vtt-emit.ts's afterAudioStartSec already relies on the correct formula for the "fits" branch
+  // (`Math.max(audioDurSec, startHoldSec + mainAnimDur)`, vtt-emit.ts:233) -- mirror it here for every branch so there is exactly one place any of this math lives.
   let mainCoreDuration: number;
   let subCastPaths: string[] | null = null;
   let streamDur = 0;
@@ -185,11 +153,7 @@ function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) 
     // panVisualDur (= mainAnimDur + tailExtra = audioDur - hold) + hold = audioDur.
     mainCoreDuration = audioDur;
   } else if (useBurstStream) {
-    // The restreamed cast (re-timed to a readable per-line cadence) is a
-    // pure text-based transform of the already-written cast slice -- cheap,
-    // no ffmpeg -- so it's safe to compute here too, not just in the real
-    // render, keeping this the single source of truth for burst-stream
-    // duration as well.
+    // The restreamed cast (re-timed to a readable per-line cadence) is a pure text-based transform of the already-written cast slice -- cheap, no ffmpeg -- so it's safe to compute here too, not just in the real render, keeping this the single source of truth for burst-stream duration as well.
     subCastPaths = writeSegments(ctx.cast, [{ startSec, endSec: frameEndSec }], ctx.tmp, scene.id);
     const restreamed = path.join(ctx.tmp, `${scene.id}.restream.cast`);
     streamDur = writeRestreamedSegment(subCastPaths[0], restreamed, {
@@ -264,8 +228,7 @@ export function computeCastNarratedDurationDry(
     readPauseSec: t.readPauseSec,
     mainAudioDurSec: t.audioDur,
     afterAudioDurSec: t.afterAudio ? t.afterAudio.audioDurationSec : null,
-    // Not extracted in dry mode (no frames rendered) -- only used for
-    // --debug's frame-copy step, which --captions-only does not support.
+    // Not extracted in dry mode (no frames rendered) -- only used for --debug's frame-copy step, which --captions-only does not support.
     lastFramePngSrc: '',
   };
   return { durationSec, debug };
@@ -304,12 +267,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   );
   const gif = path.join(ctx.tmp, `${scene.id}.gif`);
   const animSilentFull = path.join(ctx.tmp, `${scene.id}.silent-full.mp4`);
-  // Hold the last frame for 1s past the final cast event. extractLastFrame
-  // uses `-sseof -0.1` which can otherwise land BEFORE the final output +
-  // empty-prompt events render — they often cluster within ~50ms of slice
-  // end. The held-frame window gives the seek a safe target. animSilentMain
-  // is trimmed to mainAnimDur regardless, so the hold doesn't leak into the
-  // narrated animation.
+  // Hold the last frame for 1s past the final cast event. extractLastFrame uses `-sseof -0.1` which can otherwise land BEFORE the final output + empty-prompt events render — they often cluster within ~50ms of slice end. The held-frame window gives the seek a safe target. animSilentMain is trimmed to mainAnimDur regardless, so the hold doesn't leak into the narrated animation.
   renderCastToGif(subCastPaths[0], gif, ctx.cast.header.width, ctx.cast.header.height, 1.0);
   encodeAnimMp4(gif, animSilentFull);
 
@@ -318,8 +276,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   const animSilentMain = path.join(ctx.tmp, `${scene.id}.silent-main.mp4`);
   trimMp4Duration(animSilentFull, animSilentMain, mainAnimDur);
 
-  // Tall-frame assets, built once and reused by the main pan and/or the
-  // after-narration scroll. `winH` is the recorded-terminal-height window we
+  // Tall-frame assets, built once and reused by the main pan and/or the after-narration scroll. `winH` is the recorded-terminal-height window we
   // crop and pan; `maxY` is its lowest position (bottom of the output).
   let tallW = 0;
   let winH = 0;
@@ -344,10 +301,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
     console.log(
       `[video] scroll-reveal ${scene.id}: ${displayRows} rows > ${termRows} → panning during main narration (${tailExtra.toFixed(1)}s window)`
     );
-    // Silent visual on the tall canvas: hold the top through typing + output +
-    // a short read beat, then pan to the bottom, holding the bottom for a beat
-    // before the main narration ends. muxNarratedSegment then lays the main
-    // audio over it with the same startHold and total length as the static path
+    // Silent visual on the tall canvas: hold the top through typing + output + a short read beat, then pan to the bottom, holding the bottom for a beat before the main narration ends. muxNarratedSegment then lays the main audio over it with the same startHold and total length as the static path
     // (= audioDur), so scene duration and subtitle timing are unchanged.
     const panVisual = path.join(ctx.tmp, `${scene.id}.main-pan.mp4`);
     const panVisualDur = mainAnimDur + tailExtra; // = audioDur - hold
@@ -358,13 +312,9 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
     makeScrollPanSilent(tallRaw, tallW, winH, maxY, panVisualDur, panStart, panDur, panVisual);
     muxNarratedSegment(panVisual, audioPath, mainCore, { startHoldSec: hold, endHoldSec: 0 });
   } else if (useBurstStream) {
-    // Re-time the slice so the log streams at a steady cadence, render it at the
-    // recorded terminal height (the terminal auto-scrolls as lines arrive, so
-    // the viewer reads each new line at the bottom), then lay the main narration
-    // over it. If the stream is shorter than the narration, hold its tail to
+    // Re-time the slice so the log streams at a steady cadence, render it at the recorded terminal height (the terminal auto-scrolls as lines arrive, so the viewer reads each new line at the bottom), then lay the main narration over it. If the stream is shorter than the narration, hold its tail to
     // fill (endHold); if longer, it keeps streaming silently and the tail is
-    // held by the after-narration. The final frame is identical to the static
-    // render, so the after-narration hold-tail path needs no change.
+    // held by the after-narration. The final frame is identical to the static render, so the after-narration hold-tail path needs no change.
     const restreamed = path.join(ctx.tmp, `${scene.id}.restream.cast`);
     const lineCadenceSec = 0.1;
     const streamDur = writeRestreamedSegment(subCastPaths[0], restreamed, {
@@ -390,10 +340,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
     });
   }
 
-  // Prepend a "you are here" step card: a silent variant of the title card
-  // that lists every cast-narrated step with this scene's row at full opacity
-  // and the others dimmed. Re-asserts navigation context at every step.
-  // Replaces the previous 0.5s held-terminal-first-frame prePause.
+  // Prepend a "you are here" step card: a silent variant of the title card that lists every cast-narrated step with this scene's row at full opacity and the others dimmed. Re-asserts navigation context at every step. Replaces the previous 0.5s held-terminal-first-frame prePause.
   const castNarratedScenes = ctx.storyboard.scenes.filter((s) => s.type === 'cast-narrated');
   const activeIndex = castNarratedScenes.indexOf(scene) + 1;
   const stepCardMp4 = renderStepCard(
@@ -405,10 +352,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   const out = path.join(ctx.tmp, `${scene.id}.mp4`);
   concatMp4([stepCardMp4, mainCore], out, path.join(ctx.tmp, `${scene.id}.pre.concat.txt`));
 
-  // Append post-command narration if authored: extract the empty-prompt frame
-  // (last frame of full render, where the empty prompt is visible), freeze
-  // it, and play the after-narration over it. Empty prompt appears exactly
-  // when after-narration begins — matches "command done, ready for next."
+  // Append post-command narration if authored: extract the empty-prompt frame (last frame of full render, where the empty prompt is visible), freeze it, and play the after-narration over it. Empty prompt appears exactly when after-narration begins — matches "command done, ready for next."
   if (!afterAudio) {
     if (ctx.debug) {
       const lastFrameNoAfter = path.join(ctx.tmp, `${scene.id}.after.png`);
@@ -440,32 +384,21 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
 
   if (useMainPan) {
     // The full output was already revealed by the main-narration pan; the
-    // after-narration holds the bottom of the tall frame (where the pan ended),
-    // so there is no jump between the main and after segments.
+    // after-narration holds the bottom of the tall frame (where the pan ended), so there is no jump between the main and after segments.
     const bottomPng = path.join(ctx.tmp, `${scene.id}.tall-bottom.png`);
     cropFramePng(tallPng, tallW, winH, maxY, bottomPng);
     makeFreezeMp4(bottomPng, afterAudioPath, afterAudioDur, afterMp4);
     concatMp4([out, afterMp4], finalMp4, path.join(ctx.tmp, `${scene.id}.after.concat.txt`));
   } else if (isTall) {
-    // Tall output with no substantial main freeze window: the typing+output
-    // animation is roughly as long as (or longer than) the main narration, so
-    // the output already streamed in line-by-line (terminal auto-scroll) during
-    // playback. There is no calm window to re-scroll it — a top-to-bottom pan
-    // crammed into the short after-narration is fast and jarring, and for the
-    // logs this case typically holds (e.g. a deploy log) the meaningful endpoint
-    // is the final success tail, which the after-narration is wrapping up. So we
-    // hold the frame the animation ended on (the tail) instead of re-scrolling:
-    // continuous (no jump) and calm.
+    // Tall output with no substantial main freeze window: the typing+output animation is roughly as long as (or longer than) the main narration, so the output already streamed in line-by-line (terminal auto-scroll) during playback. There is no calm window to re-scroll it — a top-to-bottom pan crammed into the short after-narration is fast and jarring, and for the logs this case
+    // typically holds (e.g. a deploy log) the meaningful endpoint is the final success tail, which the after-narration is wrapping up. So we hold the frame the animation ended on (the tail) instead of re-scrolling: continuous (no jump) and calm.
     console.log(
       `[video] tall ${scene.id}: ${displayRows} display rows > ${termRows}, no freeze window → holding tail under after-narration`
     );
     makeFreezeMp4(lastFrame, afterAudioPath, afterAudioDur, afterMp4);
     concatMp4([out, afterMp4], finalMp4, path.join(ctx.tmp, `${scene.id}.after.concat.txt`));
   } else {
-    // Output fits: hold a reading pause then freeze the full frame under the
-    // after-narration. readPauseSec is already computed above (the "fits"
-    // branch of computeCastNarratedTiming) -- reuse it rather than
-    // recomputing, so there is exactly one place this math lives.
+    // Output fits: hold a reading pause then freeze the full frame under the after-narration. readPauseSec is already computed above (the "fits" branch of computeCastNarratedTiming) -- reuse it rather than recomputing, so there is exactly one place this math lives.
     const pauseMp4 = path.join(ctx.tmp, `${scene.id}.pause.mp4`);
     makeSilentFreezeMp4(lastFrame, readPauseSec, pauseMp4);
     makeFreezeMp4(lastFrame, afterAudioPath, afterAudioDur, afterMp4);

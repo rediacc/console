@@ -1,8 +1,8 @@
 /**
  * CLI-facing wrapper over the shared ref grammar (`@rediacc/shared/ref`).
  *
- * The grammar itself — the RFC-1123 label rules, the `repo[:tag][@place]` split,
- * the reserved `base` tag, and the exact teaching-error texts — lives in the
+ * The grammar itself, the RFC-1123 label rules, the `repo[:tag][@place]` split,
+ * the reserved `base` tag, and the exact teaching-error texts, lives in the
  * shared module so the console can parse refs identically. This wrapper adds the
  * only CLI-specific behavior: a {@link RefGrammarError} becomes an exit-2
  * `CliExitError` (VALIDATION_ERROR), so a malformed ref exits the process with a

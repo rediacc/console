@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Entry point for the ported Go dependency-freshness gate. Logic is in the package.
+
+Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.go_deps`, which pytest and the port's own `--selftest` import directly.
+
+CUT OVER FROM BASH 2026-09-08 (W7 P4 batch 7). See DRIVEN, below.
+
+WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port cannot be run by path (nothing puts `.ci` on `sys.path`, hence the insert below), and `python3 -m rediacc_ci.quality.go_deps` works but is the wrong registration because `check:ci-parity`'s tokenizer cannot read `-m` and resolves the leaves to `[python3]`.
+
+THE HEADER BELOW IS THE TWIN'S, FIELD FOR FIELD, extracted from `.ci/scripts/quality/check-go-deps.sh` by an awk range over its `---- gate ----` block, de-commented, and diffed as an ordered list of whole lines against the block in this docstring. The twin carried exactly FOUR fields in this order: `step`, `needs`, `selftest`, `lane`. No `emit:`, no `blocker:`, no `id:`, no `run:`,
+no `kind:`, no `why:`.
+
+`lane: quality-go` IS PRESENT AND `needs: none` IS ALSO PRESENT, and that combination looks wrong until it is measured. This is a Go gate in a Go lane, so the obvious reading is that the header lost a `needs: go`. It did not. `inferredNeeds` adds `go` only for `go build`, `go vet` or `go test` (`gate-header.ts:329`), and this gate shells out to `go list -u -m -json all`, which
+matches none of those. Measured on this tree, `inferredNeeds` returns `[]`
+for the TWIN as well, so the twin resolves the empty set too and the two sides
+agree. The declared `needs: none` is carried exactly as found rather than "corrected" upward, because widening a need here would be a new claim about the lane and not a moved one, and the twin has run in `quality-go` on that resolution all along.
+
+NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename to `check:ci-go-deps`, which is the manifest id.
+
+`selftest: true` is inert for a `.py` gate (`gate-bind.ts:598`) and is carried because the twin declared it and because `go_deps.main(["--selftest"])` exits 0.
+
+PINNED BY PATH, and this WAS the one row in this batch that a harness named. `.ci/rediacc_ci/tests/gates/test_gate_swallowed_failures.py`, which carries the retired bash harness's cases, used to set `GO_DEPS="$REPO_ROOT/.ci/scripts/quality/check-go-deps.sh"` and count `__PROBE_FAILED__` markers in it, asserting that the 2026-07-28 fix this gate's probe received was still
+present. That row did NOT run the file: it grepped it. W7P5-c deleted `check-go-deps.sh` outright rather than repointing the grep at this shim (a needle this three-line entry point never carried), exactly as this paragraph anticipated: the row is now a `REPAIRS` entry naming the MODULE, `.ci/rediacc_ci/quality/go_deps.py`, whose `PROBE_SENTINEL` occurrences are the surviving
+needle. A second row used to be the other arm: `.ci/scripts/test/gates/test-go-deps-probe-failure.sh:47` copied the twin into a fixture and RAN the copy. W7 P5 census batch A8 retired that twin, and `.ci/rediacc_ci/tests/gates/test_gate_go_deps_probe_failure.py` carried its cases forward -- first against a live copy of this entry point's twin, then, once W7P5-c deleted that twin
+too, against goldens recorded from its last run (`.ci/rediacc_ci/tests/goldens/w7p5-go-deps-probe-failure/`).
+
+DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
+
+    .ci/scripts/quality/check-go-deps.sh   -> exit 0
+    .ci/scripts/quality/check_go_deps.py   -> exit 0
+    stdout: BYTE-IDENTICAL, 404 bytes, sha256 13d96cbe6000b0fd...
+    stderr: BYTE-IDENTICAL, 145 bytes, sha256 9fa3750b1d440e52...
+
+BOTH STREAMS CARRY CONTENT ON THIS PAIR, and both were captured separately. No normalisation was applied and none was needed; the twin was first run TWICE against an unchanged tree and is byte-stable against itself on both streams.
+
+DRIVEN RED AS WELL. The plant appends `github.com/gate/probe` to `.ci/policy/.go-deps-upgrade-blocklist` with no `# BLOCKER:` reason, which is the suppression-without-a-reason shape the BLOCKER convention exists to refuse and which this gate enforces through `verify_all_blockers`.
+
+THE CONTROL WAS PROVED BEFORE EITHER SIDE RAN: the entry is present in the file and carries no BLOCKER annotation, checked by reading the appended bytes back rather than by trusting the append.
+
+    both sides -> exit 1, stdout BYTE-IDENTICAL (351 bytes), stderr
+    BYTE-IDENTICAL (98 bytes, sha256 4a75e32ddce015ce...):
+
+    Go deps blocklist entries must include quality '# BLOCKER: <reason>'
+
+The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
+with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
+capture with no difference.
+
+INVARIANT 5 HELD THROUGH W7P5-c: `.ci/scripts/quality/check-go-deps.sh` stayed on disk as the differential twin for as long as the ledger above needed it to exist, and was deleted only once the K=5 shadow-gate ledger (`.ci/shadow/w7p2-go-deps.observations.jsonl`) and this docstring's own DRIVEN evidence licensed the retirement. `.ci/scripts/lib/release-age.sh` and
+`.ci/scripts/lib/age-check.sh`, the twin's two sourced libraries, went in the same change: this twin was the last real sourcer of each.
+
+---- gate ----
+step: Check Go dependency freshness
+needs: none
+selftest: true
+lane: quality-go
+`.ci/scripts/quality/check-go-deps.sh` by an awk range over its `env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+---- end gate ----
+"""
+
+import sys
+
+import _cipath  # noqa: F401
+from rediacc_ci.quality import go_deps
+
+if __name__ == "__main__":
+    raise SystemExit(go_deps.main(sys.argv[1:]))

@@ -1,0 +1,17 @@
+# twin .ci/scripts/version/bump.sh blob e4eed15537be0392ec9ccbdf416afc83ca4a74ce
+exit: 1
+--- stdout ---
+--- stderr ---
+✗ Unknown option: --nope
+--- tree ---
+{
+  "out.txt": null,
+  "package.json": [
+    "{\n  \"name\": \"console\",\n  \"version\": \"0.4.29\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"tsc\"\n  },\n  \"engines\": {\n    \"node\": \">=22.13.0\"\n  }\n}\n",
+    "0o644"
+  ],
+  "packages/cli/package.json": [
+    "{\n  \"name\": \"@rediacc/cli\",\n  \"version\": \"0.4.29\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"tsc\"\n  },\n  \"engines\": {\n    \"node\": \">=22.13.0\"\n  }\n}\n",
+    "0o644"
+  ]
+}

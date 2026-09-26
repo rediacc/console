@@ -44,8 +44,7 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
   const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
   await assertCommandPolicy(CMD.REPO_UP, repoKey);
 
-  // `--no-start` folds the retired `repo mount`: LUKS open / PV generation
-  // without running the Rediaccfile up() steps.
+  // `--no-start` folds the retired `repo mount`: LUKS open / PV generation without running the Rediaccfile up() steps.
   const noStart = options.start === false;
 
   const params: Record<string, unknown> = {};
@@ -53,11 +52,7 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
   if (options.tls) params.tls = true;
   if (options.wait === false) params.detach = true;
 
-  // #39: tell renet the runtime explicitly for a cluster-placed repo. renet
-  // honors `runtime` as an assertion (values kube|docker): if the caller says
-  // kube but the on-datastore descriptor resolves docker, it errors instead of
-  // silently falling to the docker arm (the empty-manifests bug B1 caught). The
-  // runtime is derived from placement, so a k8s repo can never guess wrong.
+  // #39: tell renet the runtime explicitly for a cluster-placed repo. renet honors `runtime` as an assertion (values kube|docker): if the caller says kube but the on-datastore descriptor resolves docker, it errors instead of silently falling to the docker arm (the empty-manifests bug B1 caught). The runtime is derived from placement, so a k8s repo can never guess wrong.
   if (kubeCluster) params.runtime = 'kube';
 
   // Pass grandGuid so renet can mark forks after mount
@@ -97,10 +92,7 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
         failed: t('commands.repo.up.failed'),
       };
 
-  // deployRepoKeyIfNeeded + postRepoUpTasks (per-repo SSH key + DNS) are
-  // docker up() concepts: skip them for a mount-only (--no-start) run and for
-  // cluster repos (which route DNS via the cluster wildcard and inject
-  // KUBECONFIG through the renet dual-runtime path).
+  // deployRepoKeyIfNeeded + postRepoUpTasks (per-repo SSH key + DNS) are docker up() concepts: skip them for a mount-only (--no-start) run and for cluster repos (which route DNS via the cluster wildcard and inject KUBECONFIG through the renet dual-runtime path).
   const dockerUp = !kubeCluster && !noStart;
   if (dockerUp) {
     await deployRepoKeyIfNeeded(repoKey, machineName);
@@ -137,7 +129,7 @@ export function registerRepoCommands(program: Command): void {
 
   registerRepoCreateDeleteCommands(repo);
 
-  // repo up [ref]  — positional ref (single), or --all --machine <m> (batch).
+  // repo up [ref], positional ref (single), or --all --machine <m> (batch).
   repo
     .command('up')
     .summary(t('commands.repo.up.descriptionShort'))
@@ -189,7 +181,7 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo down [ref]  — positional ref (single), or --all --machine <m> (batch).
+  // repo down [ref], positional ref (single), or --all --machine <m> (batch).
   repo
     .command('down')
     .summary(t('commands.repo.down.descriptionShort'))
@@ -313,8 +305,7 @@ export function registerRepoCommands(program: Command): void {
               failed: t('commands.repo.status.failed'),
             }
           );
-          // Managed replica sets are CRUD-from-birth state (R2-F17): surface
-          // any set built on this repo alongside its status.
+          // Managed replica sets are CRUD-from-birth state (R2-F17): surface any set built on this repo alongside its status.
           const replicaSets = Object.entries(await listReplicaSets()).filter(
             ([, set]) => set.repo === name
           );
@@ -342,9 +333,7 @@ export function registerRepoCommands(program: Command): void {
       }
     );
 
-  // repo list — the whole config's repos, narrowed by where they LIVE. A datastore
-  // is the honest unit now (a repo lives in a datastore; the machine is wherever
-  // that datastore happens to be attached today), so --datastore joins --machine.
+  // repo list, the whole config's repos, narrowed by where they LIVE. A datastore is the honest unit now (a repo lives in a datastore; the machine is wherever that datastore happens to be attached today), so --datastore joins --machine.
   repo
     .command('list')
     .description(t('commands.repo.list.description'))
@@ -357,8 +346,7 @@ export function registerRepoCommands(program: Command): void {
   registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);
   registerRepoBranchingCommands(repo);
-  // The `repo admin` parent is created ONCE and handed to every registrar that
-  // hangs a leaf off it (§5.4's plumbing subtree spans two files).
+  // The `repo admin` parent is created ONCE and handed to every registrar that hangs a leaf off it (§5.4's plumbing subtree spans two files).
   const admin = createRepoAdminCommand(repo, program);
   registerRepoMaintenanceCommands(repo, admin);
   registerExtendedRepoCommands(repo, admin);

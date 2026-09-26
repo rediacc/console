@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// outputService is what the error renderer writes to. We capture every call
-// so the assertions can read what the user/agent would have seen.
+// outputService is what the error renderer writes to. We capture every call so the assertions can read what the user/agent would have seen.
 const stdoutChunks: string[] = [];
 const stderrChunks: string[] = [];
 
@@ -43,8 +42,7 @@ const sampleNext: NextAction = {
   ],
 };
 
-// process.exit is called inside handleError. Stub it to throw so tests can
-// observe the renderer's output without aborting the test runner.
+// process.exit is called inside handleError. Stub it to throw so tests can observe the renderer's output without aborting the test runner.
 const exitMock = vi.spyOn(process, 'exit').mockImplementation(() => {
   throw new Error('process.exit called');
 });

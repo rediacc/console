@@ -177,7 +177,7 @@ export async function generateKeyPair(): Promise<{
  * Create a complete signed subscription from subscription data.
  * This is a convenience function for the account server.
  */
-export async function createSignedSubscription(
+export function createSignedSubscription(
   data: SubscriptionData,
   privateKey: CryptoKey,
   publicKeyId: string

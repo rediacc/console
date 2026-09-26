@@ -85,11 +85,7 @@ describe('resolveRepoRef — default step-5 verifier (R6)', () => {
   });
 });
 
-// #92 (found live by the B1 window — the datastore arm's first-ever execution):
-// probeRepoPresent rides repository_list, which is docker-world-only, so probing
-// the DATASTORE arm false-refused every mutating verb on a cluster repo with
-// exit 12. The arm now passes verification through to dispatch. Mutation
-// control: re-point the datastore arm at the probe and the first test goes red
+// #92 (found live by the B1 window, the datastore arm's first-ever execution): probeRepoPresent rides repository_list, which is docker-world-only, so probing the DATASTORE arm false-refused every mutating verb on a cluster repo with exit 12. The arm now passes verification through to dispatch. Mutation control: re-point the datastore arm at the probe and the first test goes red
 // (h.present=false would refuse).
 describe('resolveRepoRef — datastore arm skips the docker probe (#92)', () => {
   it('never consults the probe for a datastore-placed ref, even when it would refuse', async () => {

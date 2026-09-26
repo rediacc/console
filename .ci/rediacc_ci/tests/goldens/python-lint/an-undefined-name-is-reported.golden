@@ -1,0 +1,18 @@
+# twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702
+exit: 1
+--- stdout ---
+info: linting 13 Python file(s) with ruff 0.16.1
+F821 Undefined name `undefined_on_purpose`
+ --> probe_bad.py:2:12
+  |
+1 | def planted():
+2 |     return undefined_on_purpose
+  |            ^^^^^^^^^^^^^^^^^^^^
+
+Found 1 error.
+--- stderr ---
+
+[0;31m✗[0m ruff reported findings in Python this gate scans (tracked and untracked).
+  Fix them. Do NOT add a per-line noqa to get past this gate: if a rule
+  is genuinely wrong for this repo it is disabled in pyproject.toml with a
+  stated reason, where it is reviewable.

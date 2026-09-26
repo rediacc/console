@@ -16,8 +16,7 @@ function normalizePathForSSH(path: string): string {
     return path.replaceAll('\\', '/');
   }
   if (isWSL()) {
-    // Convert WSL path (/mnt/c/Users/...) to Windows path (C:/Users/...)
-    // so Windows SSH can resolve IdentityFile and UserKnownHostsFile
+    // Convert WSL path (/mnt/c/Users/...) to Windows path (C:/Users/...) so Windows SSH can resolve IdentityFile and UserKnownHostsFile
     return wslPathToWindows(path).replaceAll('\\', '/');
   }
   return path;

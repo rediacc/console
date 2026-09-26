@@ -9,6 +9,7 @@ import {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from '../remote/sync/index.js';
+import { writeStdout } from '../services/core/request-context.js';
 
 export interface SyncUploadOptions {
   team?: string;
@@ -65,9 +66,7 @@ export function buildSyncRemotePaths(
   remoteSubPath: string | undefined,
   isFile: boolean
 ): SyncRemotePaths {
-  // Strip leading + trailing slashes from the user-provided sub-path so
-  // we never produce `path//` or `//path` even if the caller passes a
-  // pre-slashed value. In single-file mode the result has no trailing
+  // Strip leading + trailing slashes from the user-provided sub-path so we never produce `path//` or `//path` even if the caller passes a pre-slashed value. In single-file mode the result has no trailing
   // slash; in directory mode we add exactly one.
   const sub = (remoteSubPath ?? '').replaceAll(/^\/+|\/+$/g, '');
   if (isFile) {
@@ -165,7 +164,7 @@ function hasNoChanges(changes: RsyncChanges): boolean {
 
 async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> {
   const readline = await import('node:readline');
-  process.stdout.write(`${formatChangesSummary(changes)}\n`);
+  writeStdout(`${formatChangesSummary(changes)}\n`);
 
   const rl = readline.createInterface({
     input: process.stdin,
@@ -196,7 +195,7 @@ async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> 
         break;
       case 'd':
       case 'details':
-        process.stdout.write(
+        writeStdout(
           `${formatDetailedChanges(changes, {
             colorNew: chalk.green,
             colorModified: chalk.yellow,
@@ -204,10 +203,10 @@ async function interactiveConfirmation(changes: RsyncChanges): Promise<boolean> 
             colorDim: chalk.dim,
           })}\n`
         );
-        process.stdout.write(`\n${formatChangesSummary(changes)}\n`);
+        writeStdout(`\n${formatChangesSummary(changes)}\n`);
         break;
       default:
-        process.stdout.write(`${t('prompts.syncConfirmHelp')}\n`);
+        writeStdout(`${t('prompts.syncConfirmHelp')}\n`);
     }
   }
 
@@ -221,18 +220,18 @@ export async function handleConfirmMode(
 ): Promise<boolean> {
   if (!options.confirm || options.dryRun) return true;
 
-  process.stdout.write(`${t('commands.sync.previewingChanges')}\n`);
+  writeStdout(`${t('commands.sync.previewingChanges')}\n`);
 
   const changes = await getRsyncPreview(rsyncOptions);
 
   if (hasNoChanges(changes)) {
-    process.stdout.write(`${t('commands.sync.noChanges')}\n`);
+    writeStdout(`${t('commands.sync.noChanges')}\n`);
     return false;
   }
 
   const proceed = await interactiveConfirmation(changes);
   if (!proceed) {
-    process.stdout.write(`${t('commands.sync.cancelled')}\n`);
+    writeStdout(`${t('commands.sync.cancelled')}\n`);
     return false;
   }
 
@@ -240,7 +239,7 @@ export async function handleConfirmMode(
 }
 
 export async function handleDryRun(rsyncOptions: RsyncExecutorOptions): Promise<void> {
-  process.stdout.write(`${t('commands.sync.dryRunHeader')}\n`);
+  writeStdout(`${t('commands.sync.dryRunHeader')}\n`);
   const changes = await getRsyncPreview(rsyncOptions);
-  process.stdout.write(`${formatChangesSummary(changes)}\n`);
+  writeStdout(`${formatChangesSummary(changes)}\n`);
 }

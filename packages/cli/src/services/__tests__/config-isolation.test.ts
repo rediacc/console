@@ -7,8 +7,7 @@ vi.mock('../core/output.js', () => ({
   outputService: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
 }));
 
-// Point the config dir at a scratch XDG_CONFIG_HOME *before* importing anything
-// that captures getConfigDir() (config-file-storage does so at module load).
+// Point the config dir at a scratch XDG_CONFIG_HOME *before* importing anything that captures getConfigDir() (config-file-storage does so at module load).
 const configHome = mkdtempSync(join(tmpdir(), 'rdc-isolation-'));
 process.env.XDG_CONFIG_HOME = configHome;
 const configDir = join(configHome, 'rediacc');

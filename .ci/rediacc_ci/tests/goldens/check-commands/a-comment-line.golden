@@ -1,0 +1,6 @@
+# twin .ci/scripts/security/check-commands.sh blob 89f759b8611b181b8d52d089060ce9ed590aee96
+exit: 0
+--- stdout ---
+info: Checking shell scripts for CI-incompatible commands...
+[0;32msuccess: All commands are CI-compatible[0m
+--- stderr ---

@@ -1,0 +1,7 @@
+# twin .ci/scripts/env/create-e2e-env.sh blob 0eec9b497b14624aa6cbdcd006042badbd2198a1
+exit: 2
+--- stdout ---
+--- stderr ---
+<root>/.ci/scripts/env/../lib/common.sh: line 334: printf: `ARG_A.B': not a valid identifier
+--- file ---
+null

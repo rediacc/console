@@ -1,34 +1,25 @@
 #!/usr/bin/env python3
 """check:ci-actions-allowlist -- every third-party action must be one this repo may run.
 
-THE GAP THIS CLOSES, from a measurement rather than from theory. rediacc/console
-restricts which actions may run (`allowed_actions: selected`). That constraint lives in
-repository SETTINGS, so no gate could see it, and the Bitwarden composite's pinned
-sm-action was simply not on the list. CI run 33690518859 failed at the first job with
+THE GAP THIS CLOSES, from a measurement rather than from theory. rediacc/console restricts which actions may run (`allowed_actions: selected`). That constraint lives in repository SETTINGS, so no gate could see it, and the Bitwarden composite's pinned sm-action was simply not on the list. CI run 33690518859 failed at the first job with
 
     The action bitwarden/sm-action@1238aae8... is not allowed in rediacc/console
 
-before any secret was fetched -- an action-resolution error that names no secret, on a
-PR whose entire subject is secrets. The cost was a full CI round to learn a fact that is
-a pure text comparison once the allowlist is written down.
+before any secret was fetched -- an action-resolution error that names no secret, on a PR whose entire subject is secrets. The cost was a full CI round to learn a fact that is a pure text comparison once the allowlist is written down.
 
-So `.ci/config/actions-allowlist.json` is a committed copy of the settings, refreshed by
-`--refresh` (the ONLY place a token is used), and this gate compares it offline against
-every `uses:` in the workflow and composite-action corpus. A gate that needed a token
-would degrade to "passed" wherever the token is absent, which is the shape
-check_secret_reachability records at its own top and the reason the split exists.
+So `.ci/config/actions-allowlist.json` is a committed copy of the settings, refreshed by `--refresh` (the ONLY place a token is used), and this gate compares it offline against every `uses:` in the workflow and composite-action corpus. A gate that needed a token would degrade to "passed" wherever the token is absent, which is the shape check_secret_reachability records at its own
+top and the reason the split exists.
 
-WHAT IT DELIBERATELY DOES NOT CLAIM. `verified_allowed` permits any Marketplace-VERIFIED
-creator, and verification status is not knowable offline. An action permitted ONLY by
-that route must therefore be listed in `verified_exceptions` with the run that proves it
-ran. The list is empty today, and that is the strongest state: every third-party action
-here is permitted by a pattern or by being GitHub-owned. If it ever fills up, each entry
-is a place where this gate is trusting a record instead of deriving an answer.
+WHAT IT DELIBERATELY DOES NOT CLAIM. `verified_allowed` permits any Marketplace-VERIFIED creator, and verification status is not knowable offline. An action permitted ONLY by that route must therefore be listed in `verified_exceptions` with the run that proves it ran. The list is empty today, and that is the strongest state: every third-party action here is permitted by a pattern
+or by being GitHub-owned. If it ever fills up, each entry is a place where this gate is trusting a record instead of deriving an answer.
 
-PATTERN SEMANTICS, matching GitHub's own: `owner/*`, `owner/repo`, and `owner/repo@ref`.
-An `@ref` pattern is EXACT on the ref, which is why allowing
-`bitwarden/sm-action@<sha>` rather than `bitwarden/*` makes a pin bump a two-place
-change -- deliberate, and stated in the composite's header beside the pin.
+PATTERN SEMANTICS, matching GitHub's own: `owner/*`, `owner/repo`, and `owner/repo@ref`. An `@ref` pattern is EXACT on the ref, which is why allowing `bitwarden/sm-action@<sha>` rather than `bitwarden/*` makes a pin bump a two-place change -- deliberate, and stated in the composite's header beside the pin.
+
+---- gate ----
+step: Actions allowlist
+needs: none
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -41,17 +32,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _cipath  # noqa: F401
+from rediacc_ci import controls
+
 ROOT = Path(os.environ.get("ACTIONS_ALLOWLIST_ROOT") or Path(__file__).resolve().parents[3])
 RECORD = ROOT / ".ci" / "config" / "actions-allowlist.json"
 
-# `uses: owner/repo[/path]@ref`. A leading `./` is a local action and never checked --
-# it ships in this repo, so the allowlist has nothing to say about it. `docker://` is
-# a container reference, also out of scope.
+# `uses: owner/repo[/path]@ref`. A leading `./` is a local action and never checked -- it ships in this repo, so the allowlist has nothing to say about it. `docker://` is a container reference, also out of scope.
 USES_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*['\"]?([^'\"\s#]+)", re.MULTILINE)
 # GitHub-owned owners, per the error message's "created by GitHub".
 GITHUB_OWNED = frozenset({"actions", "github"})
-# Floor: a corpus this small cannot be the whole repo. Measured 2026-09-03: 17 distinct
-# third-party actions across 28 workflow files and the composites.
+# Floor: a corpus this small cannot be the whole repo. Measured 2026-09-03: 17 distinct third-party actions across 28 workflow files and the composites.
 MIN_ACTIONS = int(os.environ.get("ACTIONS_ALLOWLIST_MIN", "8"))
 
 
@@ -170,12 +161,8 @@ def main(argv: list[str]) -> int:
         print(f"VACUOUS INPUT: {RECORD.name} does not parse ({exc})", file=sys.stderr)
         return 1
 
-    print("actions allowlist: controls first, then the verdict")
-    if selftest():
-        print(
-            "✗ instrument control failed; every verdict below would be meaningless", file=sys.stderr
-        )
-        return 2
+    if refusal := controls.controls_first("actions allowlist", selftest):
+        return refusal
 
     files = corpus()
     used = used_actions(files)

@@ -215,6 +215,27 @@ if [[ "$TARGET" == "stable" ]]; then
     _require_nonempty STRIPE_WEBHOOK_SECRET "$stripe_webhook"
 fi
 
+# ─── Shape guard for the one value the Worker JSON.parses ────────────────────
+# OBS_OTLP_CREDENTIALS is the only key below the Worker parses rather than
+# reads: private/account/src/routes/telemetry.ts JSON.parses it and answers
+# {otlp: null} for anything but {"user": string, "pass": string}. A non-empty
+# value of the wrong shape passes every guard above and turns telemetry off
+# as silently as an empty one; the store held base64 `user:pass` for all
+# three regions until 2026-09-24, and every region served {otlp: null}.
+# stderr is discarded because jq's parse error quotes the input, which is a
+# secret. The message names the shape expected, never the value seen.
+# `${otlp_creds}` is braced on purpose: the differential's key-list alarm
+# reads every `--arg <var> "$name"` in this file as a document key, and this
+# probe is not one.
+if ! jq -e -n --arg v "${otlp_creds}" \
+    '$v | fromjson | type == "object" and (.user | type) == "string" and (.pass | type) == "string"' \
+    >/dev/null 2>&1; then
+    echo "set-account-worker-secrets.sh: OBS_OTLP_CREDENTIALS is not a JSON {\"user\",\"pass\"} object for WORKER_NAME=$WORKER_NAME TARGET=$TARGET SUFFIX=$SUFFIX." >&2
+    echo "  The Worker JSON.parses it and serves {otlp: null} for any other shape, so telemetry" >&2
+    echo "  goes dark silently. Re-mint it with ./run.sh rotation rotate otlp-<region>." >&2
+    exit 1
+fi
+
 jq -n \
     --arg ed25519_priv "${ACCOUNT_ED25519_PRIVATE_KEY:-}" \
     --arg ed25519_pub "${ACCOUNT_ED25519_PUBLIC_KEY:-}" \

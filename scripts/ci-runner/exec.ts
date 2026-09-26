@@ -8,7 +8,7 @@
  * SEPARATELY") exists because of it. `--merge-output` is the deliberate opt-in
  * for a gate whose interleaving genuinely matters.
  *
- * See agent/PLAN-npm-ci-parallel-parity.md section 4.4.
+ * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
@@ -45,7 +45,7 @@ export interface ExecOptions {
 
 /**
  * A PASS: line, optionally wrapped in the green escape that log_pass() emits.
- * Mirrors PASS_RE in .ci/scripts/test/run-all.sh:64, including the real ESC
+ * Mirrors PASS_RE in .ci/rediacc_ci/battery.py, including the real ESC
  * byte: an earlier version of that pattern spelled the byte '\x1b', which
  * POSIX ERE reads as the literal text "x1b", so the summary matched nothing at
  * all and every colour-emitting gate test contributed zero visible evidence.
@@ -54,7 +54,7 @@ export interface ExecOptions {
 const PASS_LINE = new RegExp(`^(?:${String.fromCharCode(27)}\\[0;32m)?PASS:`, 'm');
 
 /**
- * run-all.sh:74-81 counts a gate test that exits 0 without emitting a single
+ * The battery counts a gate test that exits 0 without emitting a single
  * PASS: line as a FAILURE, because it asserted nothing. Flattening the battery
  * into the pool would silently drop that rule and leave those 57 tests weaker
  * locally than they are in CI, so the runner carries it instead.
@@ -71,18 +71,13 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
     const out: string[] = [];
     const err: string[] = [];
 
-    // bash, not sh: several gate bodies use bashisms, and npm runs scripts
-    // through a shell anyway. stdin is closed so a gate that waits on input
-    // fails instead of hanging the whole pool.
+    // bash, not sh: several gate bodies use bashisms, and npm runs scripts through a shell anyway. stdin is closed so a gate that waits on input fails instead of hanging the whole pool.
     const child = spawn('bash', ['-c', spec.run], {
       cwd: opts.cwd,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    // RECORDS MUST LAND OUTSIDE THE REPO. A relative or in-tree profileDir writes
-    // capture files into the working tree -- the ci-runner's own selftest did exactly
-    // that and left selftest_pass.jsonl / selftest_fail.jsonl at the repo root. An
-    // unusable directory means no profile, never a file in the tree.
+    // RECORDS MUST LAND OUTSIDE THE REPO. A relative or in-tree profileDir writes capture files into the working tree -- the ci-runner's own selftest did exactly that and left selftest_pass.jsonl / selftest_fail.jsonl at the repo root. An unusable directory means no profile, never a file in the tree.
     const profileDir =
       opts.profileDir !== undefined &&
       path.isAbsolute(opts.profileDir) &&
@@ -90,9 +85,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         ? opts.profileDir
         : undefined;
     if (profileDir !== undefined && child.pid !== undefined && spec.noProfile !== true) {
-      // Detached and unreferenced: the runner must not wait on the sampler, and the
-      // sampler must not keep the runner alive. `--t0` is the absolute clock E4 needs
-      // to decide whether two gates' lifetimes overlapped.
+      // Detached and unreferenced: the runner must not wait on the sampler, and the sampler must not keep the runner alive. `--t0` is the absolute clock E4 needs to decide whether two gates' lifetimes overlapped.
       try {
         const sampler = spawn(
           'python3',
@@ -103,10 +96,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
             '--out',
             path.join(profileDir, `${spec.id.replace(/[^A-Za-z0-9_.-]/g, '_')}.jsonl`),
             '--interval-ms',
-            // 500, not 2000: measured on the first profiled run, p50 gate wall was 4.0 s and
-            // 224 of 293 gates finished under 6 s, so a 2 s tick left 221 captures with one
-            // or two samples -- unjudgeable by the sampler's own anti-vacuity rule. Every
-            // tick is forkless /proc reads, so the finer cadence costs nothing that matters.
+            // 500, not 2000: measured on the first profiled run, p50 gate wall was 4.0 s and 224 of 293 gates finished under 6 s, so a 2 s tick left 221 captures with one or two samples -- unjudgeable by the sampler's own anti-vacuity rule. Every tick is forkless /proc reads, so the finer cadence costs nothing that matters.
             '500',
             '--run',
             opts.profileRunId ?? String(started),

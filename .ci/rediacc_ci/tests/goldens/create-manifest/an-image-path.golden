@@ -1,0 +1,20 @@
+# twin .ci/scripts/docker/create-manifest.sh blob b18c560bcfc37ac057d50b987187addf6573a51a
+exit: 0
+--- stdout ---
+Name:      <redacted>
+Platform:  linux/amd64
+Platform:  linux/arm64
+
+--- stderr ---
+→ Creating multi-arch manifest for ghcr.io/acme/server:0.5.0
+✓   Manifest: ghcr.io/acme/server:0.5.0
+✓   Sources:  ghcr.io/acme/server:0.5.0-amd64 ghcr.io/acme/server:0.5.0-arm64
+→ Creating manifest: ghcr.io/acme/server:0.5.0
+✓ Created manifest: ghcr.io/acme/server:0.5.0
+→ Verifying manifest...
+✓ Manifest verified: ghcr.io/acme/server:0.5.0
+✓ Manifest creation complete
+--- calls ---
+docker	buildx	imagetools	create	-t	ghcr.io/acme/server:0.5.0	ghcr.io/acme/server:0.5.0-amd64	ghcr.io/acme/server:0.5.0-arm64
+docker	buildx	imagetools	inspect	ghcr.io/acme/server:0.5.0
+docker	buildx	imagetools	inspect	ghcr.io/acme/server:0.5.0

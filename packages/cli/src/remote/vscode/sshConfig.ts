@@ -65,8 +65,7 @@ function formatConfigEntry(entry: SSHConfigEntry): string {
     lines.push(`  RequestTTY ${entry.requestTTY}`);
   }
 
-  // SetEnv directives for environment variables
-  // Quote values containing spaces (matching Python CLI behavior)
+  // SetEnv directives for environment variables Quote values containing spaces (matching Python CLI behavior)
   if (entry.setEnv) {
     for (const [key, rawValue] of Object.entries(entry.setEnv)) {
       const value = String(rawValue);
@@ -325,9 +324,7 @@ export function buildVSCodeSSHConfigEntry(options: BuildSSHConfigOptions): SSHCo
     });
   }
 
-  // Sandbox is enforced server-side via ForceCommand in authorized_keys.
-  // No client-side RemoteCommand needed for sandbox — the gateway reads
-  // REDIACC_REPOSITORY from SetEnv to determine which repo to sandbox.
+  // Sandbox is enforced server-side via ForceCommand in authorized_keys. No client-side RemoteCommand needed for sandbox, the gateway reads REDIACC_REPOSITORY from SetEnv to determine which repo to sandbox.
 
   const entry: SSHConfigEntry = {
     host: connectionHost,

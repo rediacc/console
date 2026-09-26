@@ -7,7 +7,7 @@
  * so a refresh is attempted at most once per cooldown per machine.
  *
  * The cooldown is the whole rate-limiting mechanism. It is deliberately NOT a
- * check of "is any licence due" — answering that requires the same remote scan
+ * check of "is any licence due", answering that requires the same remote scan
  * a refresh performs, so probing first would cost what it saves. The server
  * already decides per repo whether to issue, refresh, or leave alone
  * (`/account/api/v1/licenses/activate-repo-batch`), so calling it on a slow
@@ -23,7 +23,7 @@
  * describes.
  *
  * Written through `updateState`, so cooldown churn never bumps the config's
- * version counter (R2-F2) — the same treatment `state.networkIds` gets.
+ * version counter (R2-F2), the same treatment `state.networkIds` gets.
  */
 
 import { configFileStorage } from '../../adapters/config-file-storage.js';
@@ -44,8 +44,7 @@ export async function isRefreshDue(machineName: string, now = Date.now()): Promi
   const last = config?.state?.licenseRefresh?.[machineName];
 
   if (typeof last !== 'number' || Number.isNaN(last)) return true;
-  // A timestamp in the future means a clock change, not a recent refresh.
-  // Treating it as recent would suppress refreshes until the clock caught up.
+  // A timestamp in the future means a clock change, not a recent refresh. Treating it as recent would suppress refreshes until the clock caught up.
   if (last > now) return true;
   return now - last >= LICENSE_REFRESH_COOLDOWN_MS;
 }

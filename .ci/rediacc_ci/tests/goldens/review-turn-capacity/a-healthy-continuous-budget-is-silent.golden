@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-review-turn-capacity.sh blob c29a748594eee4b8e0d02d89cb8582f3568dc6de
+exit: 0
+--- stdout ---
+[0;32m✓[0m review turn budget: 17 sizes monotonic and total; 22+ turns/KLOC wherever that is achievable, and the full ceiling beyond
+  control fired on the pre-incident tiering (6 finding(s)), so this green means the checks can fail
+--- stderr ---

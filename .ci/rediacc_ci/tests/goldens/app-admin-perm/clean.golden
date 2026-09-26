@@ -1,0 +1,6 @@
+# twin .ci/scripts/quality/check-no-app-admin-perm.sh blob 1d226cfd22ff76dd1b4b4f75cc7bc3220495d12b
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Checking for permission-administration in workflows/actions...
+✓ OK: no permission-administration requests found.

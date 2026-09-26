@@ -1,0 +1,13 @@
+# twin .ci/scripts/setup/install-cli-global.sh blob 73cc24bed9bb46c7b520dd3f3d10eaeec3212a5a
+exit: 2
+--- stdout ---
+call: npm pack
+--- stderr ---
+→ Installing CLI globally from packages/cli...
+→ Creating npm package tarball...
+--- calls ---
+[
+  "npm\tpack"
+]
+--- tree ---
+[]

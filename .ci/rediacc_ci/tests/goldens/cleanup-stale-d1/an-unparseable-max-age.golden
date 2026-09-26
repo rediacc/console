@@ -1,0 +1,9 @@
+# twin .ci/scripts/housekeeping/cleanup-stale-d1.sh blob a068b60df3b7ecb2cc6bc3becc3ca089a52445ee
+exit: 1
+--- stdout ---
+--- stderr ---
+→ Listing D1 databases...
+✓ Found 1 total D1 databases
+date: invalid date 'not-a-number minutes ago'
+--- calls ---
+npx	wrangler	d1	list	--json

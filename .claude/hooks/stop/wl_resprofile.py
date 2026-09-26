@@ -1,12 +1,7 @@
 """wl_resprofile: one resource record per python3 exit, and a per-shape rollup.
 
-WHY THIS EXISTS. The Stop hook can only surface an optimisation it can see. Today
-nothing records what a hook invocation cost, so "sequential work that could
-parallelise" and "a wait that could be event-driven" are invisible by
-construction. This module is the CHEAP half of the profiling layer: at interpreter
-exit it writes ONE JSON line with what the kernel already accounted for. The tree
-SAMPLER (per-child lifetimes at a cadence, the thing E1/E2/E3 need) is a separate
-component; conflating the two is how a profiler ends up sampling itself.
+WHY THIS EXISTS. The Stop hook can only surface an optimisation it can see. Today nothing records what a hook invocation cost, so "sequential work that could parallelise" and "a wait that could be event-driven" are invisible by construction. This module is the CHEAP half of the profiling layer: at interpreter exit it writes ONE JSON line with what the kernel already accounted for.
+The tree SAMPLER (per-child lifetimes at a cadence, the thing E1/E2/E3 need) is a separate component; conflating the two is how a profiler ends up sampling itself.
 
 WHAT IS RECORDED, and what is deliberately NOT.
   * `cpu` user+sys for SELF and CHILDREN via getrusage -- the only place a
@@ -32,22 +27,13 @@ WHAT IS RECORDED, and what is deliberately NOT.
     strings that already exist in the public tree. The selftest plants a
     secret-shaped token in argv and asserts it is absent from the record.
 
-SAFETY. This runs at the exit of every python3 that imports wl_core -- the
-~880 invocations the case suite makes, every Stop hook, every CLI verb. It must
-never change an exit code, never write to stdout/stderr, never raise. Every path
+SAFETY. This runs at the exit of every python3 that imports wl_core -- the ~880 invocations the case suite makes, every Stop hook, every CLI verb. It must never change an exit code, never write to stdout/stderr, never raise. Every path
 is wrapped; the off switch is WORKLIST_PROFILE=off (the WORKLIST_* prefix is what
-the suite's ambient scrub already unsets). Scope is by cwd: a python3 run outside
-the repo root records nothing.
+the suite's ambient scrub already unsets). Scope is by cwd: a python3 run outside the repo root records nothing.
 
-STORAGE. Tier 0 is an append-only JSONL beside the worklist store,
-<worklist>.resprofile.jsonl, written with O_APPEND so concurrent exits never need
-a lock (a line under PIPE_BUF is atomic). Tier 1, <worklist>.resprofile.json, is
-the per-shape rollup with the SAME record shape as .ci/cache/gate-durations.json
+STORAGE. Tier 0 is an append-only JSONL beside the worklist store, <worklist>.resprofile.jsonl, written with O_APPEND so concurrent exits never need a lock (a line under PIPE_BUF is atomic). Tier 1, <worklist>.resprofile.json, is the per-shape rollup with the SAME record shape as .ci/cache/gate-durations.json
 ({ewma, recent[5]}), because that shape already paid for one lesson: a single
-overlapping run pushed a 4.5 s gate's ewma to 21 s, and the FLOOR of five recent
-measurements is what stayed honest. `fold()` folds tier 0 into tier 1 and
-truncates tier 0. One battery run of tier-0 lines is larger than the whole
-worklist event log took three days to become, so tier 0 must not persist.
+overlapping run pushed a 4.5 s gate's ewma to 21 s, and the FLOOR of five recent measurements is what stayed honest. `fold()` folds tier 0 into tier 1 and truncates tier 0. One battery run of tier-0 lines is larger than the whole worklist event log took three days to become, so tier 0 must not persist.
 """
 
 from __future__ import annotations
@@ -63,8 +49,7 @@ import time
 from pathlib import Path
 
 RECENT_KEEP = 5
-# Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a
-# regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
+# Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
 RAW_RETENTION_DAYS = 14
 EWMA_ALPHA = 0.3
 _T0 = time.monotonic()
@@ -105,9 +90,7 @@ def _sysctl_on(name: str) -> bool:
 def _run_delay_ns() -> int | None:
     """Cumulative nanoseconds this task spent RUNNABLE-but-not-running, or None.
 
-    Field 2 of /proc/self/schedstat. None means the field is absent or unparseable
-    -- the only honest reading of "unavailable". A value of 0 is a MEASUREMENT (the
-    task never waited), not an absence.
+    Field 2 of /proc/self/schedstat. None means the field is absent or unparseable -- the only honest reading of "unavailable". A value of 0 is a MEASUREMENT (the task never waited), not an absence.
     """
     try:
         f = _read("/proc/self/schedstat").split()
@@ -158,11 +141,8 @@ def shape_key(argv: list[str] | None = None, root: Path | None = None) -> str:
 def stats_root() -> Path | None:
     """~/.claude/resprofile/<repo-slug>/ -- durable, outside the tree, per repo.
 
-    THE OPERATOR'S RULING (2026-09-03): keep the statistics in a folder, TIME-BASED,
-    so what to optimise can be decided from results ranked high to low impact. That
-    supersedes the earlier "tier 0 never persists": the raw stream is kept, one folder
-    per day, because ranking needs the history and no record carries command text.
-    RESPROFILE_ROOT overrides it (the suite points it at a fixture).
+    THE OPERATOR'S RULING (2026-09-03): keep the statistics in a folder, TIME-BASED, so what to optimise can be decided from results ranked high to low impact. That supersedes the earlier "tier 0 never persists": the raw stream is kept, one folder per day, because ranking needs the history and no record carries command text. RESPROFILE_ROOT overrides it (the suite points it at a
+    fixture).
     """
     override = os.environ.get("RESPROFILE_ROOT")
     if override:
@@ -230,18 +210,11 @@ def record(argv: list[str] | None = None) -> dict | None:
         "scope": _scope(),
         "run_delay_ns": _run_delay_ns(),
         "avail": {
-            # PROBED, not read from the sysctl, and that correction is measured.
-            # kernel.sched_schedstats is 0 on this kernel and field 2 of
-            # /proc/<pid>/schedstat is live anyway: two burners pinned to one core
+            # PROBED, not read from the sysctl, and that correction is measured. kernel.sched_schedstats is 0 on this kernel and field 2 of /proc/<pid>/schedstat is live anyway: two burners pinned to one core
             # read run_delay=752ms while a third alone on its own core read 0. The
-            # old line reported a working instrument as dead, which is the mirror
-            # image of trusting a flag over a measurement -- and run-delay is the
-            # counter-signal that stops a "parallelise this" verdict on a box that
-            # is already oversubscribed, so throwing it away was expensive.
+            # old line reported a working instrument as dead, which is the mirror image of trusting a flag over a measurement -- and run-delay is the counter-signal that stops a "parallelise this" verdict on a box that is already oversubscribed, so throwing it away was expensive.
             #
-            # Read it on an IDLE process and it is 0, which looks exactly like the
-            # sysctl being right. The probe asks whether the FIELD PARSES, never
-            # whether this particular process happened to wait.
+            # Read it on an IDLE process and it is 0, which looks exactly like the sysctl being right. The probe asks whether the FIELD PARSES, never whether this particular process happened to wait.
             "run_delay": _run_delay_ns() is not None,
             "delayacct": _sysctl_on("task_delayacct"),
         },
@@ -272,8 +245,7 @@ def append(rec: dict, paths: tuple[Path, Path] | None = None) -> bool:
 def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
     """Fold tier 0 into the per-shape tier-1 rollup, then truncate tier 0.
 
-    Only `cpu_ms` and `rss_kb` are rolled up -- the two numbers this repo has
-    actually been burned by (shellcheck at 2714 MB peak OOM-killing the shell gate).
+    Only `cpu_ms` and `rss_kb` are rolled up -- the two numbers this repo has actually been burned by (shellcheck at 2714 MB peak OOM-killing the shell gate).
     Same {ewma, recent[5]} shape as gate-durations.json, and the FLOOR of `recent`
     is the oracle a consumer should judge, never the ewma alone.
     """
@@ -322,8 +294,7 @@ def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(roll, fh, indent=1, sort_keys=True)
         os.replace(tmp, t1)
-        # NOT truncated any more: the day folder IS the corpus (operator ruling, see
-        # stats_root). The rollup remembers how far it has folded via `cursor`.
+        # NOT truncated any more: the day folder IS the corpus (operator ruling, see stats_root). The rollup remembers how far it has folded via `cursor`.
     except OSError:
         return None
     return roll
@@ -332,10 +303,7 @@ def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
 def prune(root: Path | None = None, keep_days: int = RAW_RETENTION_DAYS) -> list[str]:
     """Delete raw day folders older than keep_days; return the names removed.
 
-    The rollup and RANK.md live at the ROOT, not inside a day folder, so pruning raw
-    captures never costs a ranked number -- fold() has already extracted them. Measured
-    2026-09-03: one day of real use is 32 MB / 2,363 files, so an unbounded corpus is
-    ~1 GB a month of data whose only consumer already read it.
+    The rollup and RANK.md live at the ROOT, not inside a day folder, so pruning raw captures never costs a ranked number -- fold() has already extracted them. Measured 2026-09-03: one day of real use is 32 MB / 2,363 files, so an unbounded corpus is ~1 GB a month of data whose only consumer already read it.
     """
     import re  # noqa: PLC0415
     import shutil  # noqa: PLC0415
@@ -368,11 +336,7 @@ def install() -> None:
     try:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
-        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a
-        # minimal recorder in EVERY python3 at interpreter startup; this module is
-        # the richer one and runs only where wl_core is imported. The marker tells
-        # the minimal handler to stand down at exit, so a hook process writes one
-        # record, not two.
+        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a minimal recorder in EVERY python3 at interpreter startup; this module is the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two.
         os.environ["_WL_SITEPROFILE"] = "super"
         for name in ("cpu", "io"):
             v = _psi_some_total(name)
@@ -387,20 +351,9 @@ def selftest() -> int:
     """Control-first, on a scratch store. Returns the failure count."""
     import shutil  # noqa: PLC0415
 
-    bad = 0
+    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
 
-    def check(name: str, ok: bool, detail: str = "") -> None:
-        nonlocal bad
-        print(
-            "  %s  %s%s"
-            % (
-                "PASS" if ok else "FAIL",
-                name,
-                ("\n        " + detail) if (detail and not ok) else "",
-            )
-        )
-        if not ok:
-            bad += 1
+    check = wl_common.Checker("indent")
 
     d = Path(tempfile.mkdtemp(prefix="resprofile-"))
     paths = (d / "wl.resprofile.jsonl", d / "wl.resprofile.json")
@@ -490,7 +443,7 @@ def selftest() -> int:
         check("CONTROL: an unknown rollup format is refused by name", fold(paths) is None)
     finally:
         shutil.rmtree(d, ignore_errors=True)
-    return bad
+    return check.failures
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 /**
- * `rdc datastore attach <ref> --to <other machine>` — the single-mounter relocation.
+ * `rdc datastore attach <ref> --to <other machine>`, the single-mounter relocation.
  *
  * renet's datastore registry is PER-MACHINE, and the record is the only place a
  * datastore's ceph pool and image are written down. The relocation branch used to
@@ -126,11 +126,7 @@ beforeEach(() => {
 });
 
 describe('datastore attach — cross-machine relocation', () => {
-  // The adopt comes before the DETACH, not merely before the attach. It writes one
-  // registry row, does no disk work, and is idempotent, so putting it first means
-  // nothing destructive has happened yet when a malformed record or an unreachable
-  // target fails the move — renet's own Adopt doc states this ordering rule for
-  // exactly this case (private/renet/pkg/datastore/adopt.go:22-28).
+  // The adopt comes before the DETACH, not merely before the attach. It writes one registry row, does no disk work, and is idempotent, so putting it first means nothing destructive has happened yet when a malformed record or an unreachable target fails the move, renet's own Adopt doc states this ordering rule for exactly this case (private/renet/pkg/datastore/adopt.go:22-28).
   it('adopts the record on the target before detaching the source', async () => {
     await runAttach('tier1', 'machine-b');
 
@@ -182,8 +178,7 @@ describe('datastore attach — cross-machine relocation', () => {
 
     await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/cannot reach them/);
 
-    // The whole point: a refusal that arrives after the detach would have taken the
-    // datastore offline to tell the operator it could not be moved.
+    // The whole point: a refusal that arrives after the detach would have taken the datastore offline to tell the operator it could not be moved.
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
   });
 
@@ -196,11 +191,8 @@ describe('datastore attach — cross-machine relocation', () => {
   });
 });
 
-// The DETACHED arm. A datastore that is attached nowhere still has its registry
-// row on exactly one machine — the one that last held it — so attaching it
-// somewhere else needs the same ferry, minus the detach there is nothing to do.
-// Without `lastHolder` the CLI has no idea which registry to read, and the attach
-// fails "not registered on this machine" exactly as the attached case used to.
+// The DETACHED arm. A datastore that is attached nowhere still has its registry row on exactly one machine, the one that last held it, so attaching it somewhere else needs the same ferry, minus the detach there is nothing to do. Without `lastHolder` the CLI has no idea which registry to read, and the attach fails "not registered on this machine" exactly as the attached case used
+// to.
 describe('datastore attach — relocation from a DETACHED state', () => {
   beforeEach(() => {
     mockListDatastoreState.mockResolvedValue({ tier1: { lastHolder: 'machine-a' } });
@@ -242,11 +234,7 @@ describe('datastore attach — relocation from a DETACHED state', () => {
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
   });
 
-  // The mirror of the attached arm's control. There is no detach to protect here,
-  // so what must not happen is the ATTACH: a target whose registry never took the
-  // record would otherwise be asked to mount a name it still does not know, and
-  // renet's "not registered on this machine" would be blamed on the attach rather
-  // than on the adopt that actually failed.
+  // The mirror of the attached arm's control. There is no detach to protect here, so what must not happen is the ATTACH: a target whose registry never took the record would otherwise be asked to mount a name it still does not know, and renet's "not registered on this machine" would be blamed on the attach rather than on the adopt that actually failed.
   it('never attaches when the target refuses the ferried record', async () => {
     mockExecute.mockImplementation(({ functionName }: { functionName: string }) =>
       functionName === 'datastore_adopt'
@@ -265,9 +253,7 @@ describe('datastore attach — relocation from a DETACHED state', () => {
   });
 });
 
-// The other half of the detached arm: nothing can ferry from a machine nobody
-// wrote down. Detach used to erase the state entry outright, which is why a
-// detached datastore could never be attached anywhere else.
+// The other half of the detached arm: nothing can ferry from a machine nobody wrote down. Detach used to erase the state entry outright, which is why a detached datastore could never be attached anywhere else.
 describe('datastore detach records the last holder', () => {
   it('replaces the attachment state with the machine that held it', async () => {
     await runDetach('tier1');
@@ -278,9 +264,7 @@ describe('datastore detach records the last holder', () => {
   it('forgets the datastore entirely on --discard', async () => {
     await runDetach('tier1', ['--discard', '-y']);
 
-    // forgetDatastore clears the resource record AND the state entry, so the
-    // lastHolder written a moment earlier goes with it — correct, because there
-    // is no longer a datastore to relocate.
+    // forgetDatastore clears the resource record AND the state entry, so the lastHolder written a moment earlier goes with it, correct, because there is no longer a datastore to relocate.
     expect(mockForgetDatastore).toHaveBeenCalledWith('tier1');
   });
 });

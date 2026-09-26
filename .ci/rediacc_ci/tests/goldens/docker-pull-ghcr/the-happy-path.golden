@@ -1,0 +1,12 @@
+# twin .ci/scripts/infra/docker-pull-ghcr.sh blob 81bac6ffea1601bfa1e3d2c65cd4adda0fb391d4
+exit: 0
+--- stdout ---
+--- stderr ---
+→ Authenticating with ghcr.io...
+→ Pulling registry.invalid/rediacc/renet:fixture...
+→ Cleaning up GHCR credentials...
+✓ Successfully pulled registry.invalid/rediacc/renet:fixture
+--- docker calls ---
+docker	login	ghcr.io	-u	fixture-actor	--password-stdin	stdin='fixture-token\n'
+docker	pull	registry.invalid/rediacc/renet:fixture
+docker	logout	ghcr.io
