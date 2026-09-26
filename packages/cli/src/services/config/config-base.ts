@@ -321,8 +321,12 @@ export class ConfigServiceBase {
    * the login that renews it included (2026-09-26). The cache carries the last pulled values.
    */
   private async readLocalFile(): Promise<RdcConfig | undefined> {
+    const name = this.getEffectiveConfigName();
     try {
-      return await configFileStorage.load(this.getEffectiveConfigName());
+      // The DEFAULT config is created on first use, as getCurrent() creates it (locally, never a pull): the startup hook's read was what created it on a cold config directory, and reading with load() alone left `config current` reporting fileExists false (drill universe 03, 2026-09-27).
+      return name === 'rediacc'
+        ? await configFileStorage.getOrCreateDefault()
+        : await configFileStorage.load(name);
     } catch {
       return undefined;
     }
