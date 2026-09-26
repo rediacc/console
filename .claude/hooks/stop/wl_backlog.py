@@ -1,11 +1,14 @@
-"""wl_backlog: the ONE next plan this session should implement, newest-first, validated against other sessions.
+"""wl_backlog: the ONE next plan this session should implement, highest-ranked then newest-first, validated against other sessions.
 
 WHY THIS EXISTS. The operator's own words: "The stop hook should help you to pick next plan for implementation! What happens is this, we plan but don't implement. Let's fix that and implementation could be in DESC order of course with validation since other sessions may access/continue to implementations."  # style-ok
 Measured against this tree the day this was written: 24 plan files were non-finished and carried at least one open box, 278 open boxes total, four written by the SAME session that reported the list to the operator and asked which to implement -- nothing in the Stop battery had asked. Four existing mechanisms sit close to this question and each answers a different one:
 `plan_drift_rows` asks whether a plan fell BEHIND work already done (a fresh draft is by definition not behind); `plans_block` is a SessionStart/PostCompact census, once per session, gating nothing; `wl_planfile.plan_rows` asks whether a plan's boxes are TRACKED, not whether they are IMPLEMENTED; `wl_store.plan_candidates` is the exact mirror image ("what has a DEAD PEER left
 undone", for `--migrate`) and excludes everything THIS session owns by one line (`if owner in mine: continue`). This module is that line inverted, plus the validation the operator asked for. Full design: agent/plans/PLAN-stop-hook-plan-backlog-nudge.md.
 
-MECHANICAL, not judged: ordering by recency, ownership and claim state is arithmetic over file metadata and the worklist event stream, with nothing to calibrate and nothing a control could pin better than a plant.
+MECHANICAL, not judged: ordering by rank, recency, ownership and claim state is arithmetic over plan headers, file metadata and the worklist event stream, with nothing to calibrate and nothing a control could pin better than a plant.
+
+RANK FIRST, THEN MTIME (operator, 2026-09-25, section X: "Rank the work, not just order it"; agent/plans/PLAN-plan-priority-concurrency.md section 2). Eligible plans are ordered by `wl_planorder.plan_key` -- a plan with an open dependency last, then operator Priority, then AI Priority -- and the mtime DESC rule above breaks ties. The sort is stable over `recs`' own newest-first order, so
+without any `Priority:` line in the corpus the nomination is exactly what it was.
 
 ADVISORY, never a `vadd`: see NEVER-GOALS below. A blocking tier over a standing backlog nobody here created would wall every session behind work it did not cause, the same shape `wl_planfile`'s design note 1 already refuses at 24x smaller scale.
 
@@ -28,6 +31,7 @@ from typing import Any
 import wl_core as C
 import wl_planfile as F
 import wl_planindex as PI
+import wl_planorder as PO
 import wl_store as S
 
 # The per-session cap on how many nominations this module will push in one session, before it goes quiet rather than repeating itself at a declining session. Counts ADDS, never absorbed calls -- see agent_hint_queue's own reasoning, which this mirrors: counting an outq_add call that outq_add itself absorbed (unchanged content, still inside its refresh window) would spend the
@@ -188,7 +192,16 @@ def _dead_peer(root, recs, boxes, plan_owner, session_id, worklist, projects_dir
 
 
 def next_plan(
-    root, recs, fold, session_id, plan_owner, worklist, state_doc, projects_dir=None, events=None
+    root,
+    recs,
+    fold,
+    session_id,
+    plan_owner,
+    worklist,
+    state_doc,
+    projects_dir=None,
+    events=None,
+    order_ctx=None,
 ):
     """(candidate, reason, stats).
 
@@ -222,6 +235,10 @@ def next_plan(
             ("all-finished" if scanned else "no-plans"),
             {"scanned": scanned, "eligible": 0},
         )
+    # RANK FIRST (section 2 of the priority plan): stable, so equal ranks keep the newest-first order `recs` arrives in.
+    if order_ctx is None:
+        order_ctx = PO.context(root)[0]
+    eligible.sort(key=lambda row: PO.plan_key(order_ctx, row[0]))
 
     cap = state_doc.get("backlog_nominated")
     if isinstance(cap, dict) and len(cap) >= WORKLIST_BACKLOG_MAX_PER_SESSION:
@@ -244,7 +261,7 @@ def next_plan(
             t_status, _t_n = recs_by_rel.get(target, (None, None))
             t_open = boxes.get(target, (0, None))[0]
             why = [
-                "NEWEST first (DESC by file mtime), which is the ordering rule.",
+                PO.plan_why(order_ctx, rel),
                 "Owned by this session.",
                 "NOT started: no worklist item names this file.",
                 "Blocked by `Depends-On:` on `%s`, which lands first." % rel,
@@ -264,7 +281,7 @@ def next_plan(
                 {"scanned": scanned, "eligible": len(eligible)},
             )
         why = [
-            "NEWEST first (file mtime), which is the DESC rule.",
+            PO.plan_why(order_ctx, rel),
             "Owned by this session.",
             "NOT started: no worklist item in any open state names this file.",
             "No `Depends-On:` header, so nothing has to land before it."

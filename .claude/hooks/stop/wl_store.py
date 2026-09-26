@@ -1347,12 +1347,20 @@ def deferral_justification(rec):
 # ---- classification ---------------------------------------------------------
 
 
-def classify_items(fold, session_id, live_worker_ids=None):
+def classify_items(fold, session_id, live_worker_ids=None, order_key=None):
     """(open_items, others, deferred, in_flight) as display strings / recs, the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh [>] is allowed-and-reported, an expired or invalid lease fails closed into an open item.
 
     v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while its watcher is demonstrably alive is supervision, not abandonment; the moment the
-    worker disappears the item fails closed exactly as before."""
+    worker disappears the item fails closed exactly as before.
+
+    `order_key(rec)` ranks the OPEN list (agent/plans/PLAN-plan-priority-concurrency.md section 2: `wl_planorder.item_key`, dependencies, then operator priority, then AI priority, then age), so open-items and idle-stall name the most urgent work first. Without it the open list keeps fold order. `others` and `deferred` always keep fold order: the oldest-first deferral checks rely on it."""
     open_items, others, deferred, in_flight = [], {}, [], []
+    # (rank, display) pairs for this session's open list, sorted once at the end.
+    ranked: list[tuple[Any, str]] = []
+
+    def add_open(rec, disp):
+        ranked.append((order_key(rec) if order_key is not None else 0, disp))
+
     by_id = {r["id"]: r for r in fold.items}
     for rec in fold.items:
         state, owner, line = rec["state"], rec["owner"], rec["line"]
@@ -1365,7 +1373,7 @@ def classify_items(fold, session_id, live_worker_ids=None):
             if mine and rec["waiting_on"]:
                 continue
             if mine:
-                open_items.append(disp)
+                add_open(rec, disp)
             else:
                 others.setdefault(owner, []).append(disp)
         elif state == "?" and mine:
@@ -1381,9 +1389,10 @@ def classify_items(fold, session_id, live_worker_ids=None):
                     rec["lease_tolerated"] = ls == "expired"
                     in_flight.append(rec)
                 else:
-                    open_items.append(
+                    add_open(
+                        rec,
                         "%s   <- [>] worker:lead with nothing of this session running to wake it; "
-                        "do it now, or start the background task it waits on" % disp
+                        "do it now, or start the background task it waits on" % disp,
                     )
                 continue
             if ls == "fresh":
@@ -1403,9 +1412,11 @@ def classify_items(fold, session_id, live_worker_ids=None):
                 # worklist_messages is imported HERE, not at module top: worklist.py survives a broken messages module for its query modes (see its FAILURE MODE note), and wl_store sits under every one of them.
                 import worklist_messages as M  # noqa: PLC0415
 
-                open_items.append(
-                    M.N_LEASE_FAILED_CLOSED % (disp, ls, str(session_id or "")[:8], rec["id"])
+                add_open(
+                    rec, M.N_LEASE_FAILED_CLOSED % (disp, ls, str(session_id or "")[:8], rec["id"])
                 )
+    ranked.sort(key=lambda pair: pair[0])
+    open_items = [disp for _rank, disp in ranked]
     return open_items, others, deferred, in_flight
 
 

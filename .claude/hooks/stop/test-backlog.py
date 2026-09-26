@@ -72,12 +72,14 @@ PEER = "cafe1234"
 PAD = "\n\nContext paragraph padding this fixture past MIN_PLAN_CHARS. " * 6
 
 
-def plan_body(status="ready", owner=None, open_tasks=(), depends_on=None, extra=""):
+def plan_body(status="ready", owner=None, open_tasks=(), depends_on=None, extra="", priority=None):
     head = "Status: %s\n" % status
     if owner:
         head += "Owner: %s\n" % owner
     if depends_on:
         head += "Depends-On: %s\n" % depends_on
+    if priority:
+        head += "Priority: %s\n" % priority
     body = head + "\n# PLAN: a fixture\n\n## Tasks\n\n"
     body += "".join("- [ ] %s\n" % t for t in open_tasks)
     body += extra
@@ -533,7 +535,94 @@ finally:
     td.cleanup()
 
 
-if Tally.count < 30:
+# --------------------------------------------------------------------------- 9. PRIORITY (agent/plans/PLAN-plan-priority-concurrency.md section 2, T7). Rank first -- an open dependency last, then operator Priority, then AI Priority -- and mtime DESC only breaks ties; the WHY line names the rank that won. ---------------------------------------------------------------------------
+td, root, recs = make_tree(
+    ("PLAN-new.md", plan_body(owner=OWNER, open_tasks=["implement the newest"])),
+    (
+        "PLAN-old.md",
+        plan_body(
+            owner=OWNER,
+            open_tasks=["implement the ruled one"],
+            priority="P1 (operator) -- the ruling",
+        ),
+    ),
+)
+try:
+    cand, _reason, _stats = run(root, recs, FakeFold([]))
+    control(
+        "PRIORITY: an operator P1 beats a newer unranked plan",
+        cand["rel"] if cand else None,
+        "agent/plans/PLAN-old.md",
+    )
+    control(
+        "  its WHY names the rank, then the mtime rule",
+        (cand or {}).get("why", [""])[0],
+        "Priority P1 (operator) -- the ruling; then NEWEST first (DESC by file mtime).",
+    )
+finally:
+    td.cleanup()
+
+# PAIR: the same two plans with the Priority line removed nominate the newest again, and say why.
+td, root, recs = make_tree(
+    ("PLAN-new.md", plan_body(owner=OWNER, open_tasks=["implement the newest"])),
+    ("PLAN-old.md", plan_body(owner=OWNER, open_tasks=["implement the ruled one"])),
+)
+try:
+    cand, _reason, _stats = run(root, recs, FakeFold([]))
+    control(
+        "PAIR: without a Priority the newest wins",
+        cand["rel"] if cand else None,
+        "agent/plans/PLAN-new.md",
+    )
+    truthy(
+        "  its WHY says it is unranked", "No `Priority:` yet" in (cand or {}).get("why", [""])[0]
+    )
+finally:
+    td.cleanup()
+
+# D1, the literal reading: an operator P3 beats an AI P0.
+td, root, recs = make_tree(
+    ("PLAN-ai.md", plan_body(owner=OWNER, open_tasks=["implement ai"], priority="P0")),
+    ("PLAN-op.md", plan_body(owner=OWNER, open_tasks=["implement op"], priority="P3 (operator)")),
+)
+try:
+    cand, _reason, _stats = run(root, recs, FakeFold([]))
+    control(
+        "D1: an operator P3 beats an AI P0", cand["rel"] if cand else None, "agent/plans/PLAN-op.md"
+    )
+finally:
+    td.cleanup()
+
+# D6: the dependency of an operator P0 inherits its rank and is nominated ahead of an unrelated AI P1.
+td, root, recs = make_tree(
+    ("PLAN-other.md", plan_body(owner=OWNER, open_tasks=["implement other"], priority="P1")),
+    (
+        "PLAN-top.md",
+        plan_body(
+            owner=OWNER,
+            open_tasks=["implement top"],
+            priority="P0 (operator)",
+            depends_on="PLAN-base.md",
+        ),
+    ),
+    ("PLAN-base.md", plan_body(owner=OWNER, open_tasks=["implement base"], priority="P3")),
+)
+try:
+    cand, _reason, _stats = run(root, recs, FakeFold([]))
+    control(
+        "D6: the blocker inherits its dependent's rank",
+        cand["rel"] if cand else None,
+        "agent/plans/PLAN-base.md",
+    )
+    truthy(
+        "  its WHY says the rank is inherited",
+        "inherited from a plan that depends on it" in (cand or {}).get("why", [""])[0],
+    )
+finally:
+    td.cleanup()
+
+
+if Tally.count < 46:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,

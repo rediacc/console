@@ -67,10 +67,12 @@ def mk_sub(
     edits: bool = False,
     running: bool = True,
     send_min: float | None = None,
+    prompt: str = "brief",
 ) -> None:
     """One subagent in today's harness shape: meta, transcript, and (when `running`) an event row.
 
-    `last` is the transcript's final record: "tool_use" (mid-turn, in a tool call), "text" (a streaming partial, mid-turn with nothing in flight) or "end_turn" (finished). `age_min` backdates both the transcript and the meta, so it is the spawn age and the quiet time at once. `edits` plants an Edit tool call earlier in the transcript. `send_min` plants a SendMessage that many minutes ago.
+    `last` is the transcript's final record: "tool_use" (mid-turn, in a tool call), "text" (a streaming partial, mid-turn with nothing in flight) or "end_turn" (finished). `age_min` backdates both the transcript and the meta, so it is the spawn age and the quiet time at once. `edits` plants an Edit tool call earlier in the transcript. `send_min` plants a SendMessage that many minutes ago. `prompt` is the first user record, which
+    auto-lease and the plan-concurrency rules read (`Plan: PLAN-x.md`, `#<id>`).
     """
     folder = subagents_dir(fix)
     folder.mkdir(parents=True, exist_ok=True)
@@ -79,7 +81,7 @@ def mk_sub(
         meta["parentAgentId"] = parent
         meta["spawnDepth"] = 2
     (folder / ("agent-%s.meta.json" % aid)).write_text(json.dumps(meta), encoding="utf-8")
-    records = [{"type": "user", "message": {"content": "brief"}}]
+    records = [{"type": "user", "message": {"content": prompt}}]
     if edits:
         records.append(
             {
@@ -143,10 +145,17 @@ def mk_sub(
         fix.bg = json.dumps(rows)
 
 
-def plant_lease(fix, item_id: str, worker: str, lease_age_min: float = 5, owner: str = wlfix.ME):
+def plant_lease(
+    fix,
+    item_id: str,
+    worker: str,
+    lease_age_min: float = 5,
+    owner: str = wlfix.ME,
+    text: str | None = None,
+):
     """An item and its lease, written straight into the store with the lease BACKDATED.
 
-    Through the CLI the lease would be stamped now, and "a status 21 minutes old" could only be reached by sleeping. The store is append-only JSONL, so a backdated event is exactly what an old lease looks like.
+    Through the CLI the lease would be stamped now, and "a status 21 minutes old" could only be reached by sleeping. The store is append-only JSONL, so a backdated event is exactly what an old lease looks like. `text` replaces the item's default text, e.g. to link it to a plan with `PLAN-x.md [<8hex>]`.
     """
     with fix.events.open("a", encoding="utf-8") as fh:
         fh.write(
@@ -158,7 +167,7 @@ def plant_lease(fix, item_id: str, worker: str, lease_age_min: float = 5, owner:
                     "by": owner,
                     "s": " ",
                     "o": owner,
-                    "t": "(%s) roster fixture item %s" % (owner, item_id),
+                    "t": text or "(%s) roster fixture item %s" % (owner, item_id),
                 }
             )
             + "\n"
@@ -174,6 +183,73 @@ def plant_lease(fix, item_id: str, worker: str, lease_age_min: float = 5, owner:
                     "worker": worker,
                     "note": "",
                     "worker_verified": True,
+                }
+            )
+            + "\n"
+        )
+
+
+# ---- plans with the priority and concurrency header (agent/plans/PLAN-plan-priority-concurrency.md) ----
+
+PLAN_TEXT = """# PLAN: %(name)s fixture
+
+Status: %(status)s
+Owner: %(owner)s
+Depends-On: %(dep)s
+%(x)s
+## Tasks
+
+- [ ] T1 a fixture box for %(name)s
+"""
+
+
+def write_plan(
+    fix,
+    name: str,
+    status: str = "in-progress",
+    priority: str | None = None,
+    conc: str | None = "parallel",
+    owns: str | None = None,
+    dep: str = "no-dep -- a fixture plan that stands alone",
+    owner: str = wlfix.ME,
+) -> str:
+    """`agent/plans/PLAN-<name>.md` under the fixture project, returning its basename. `owns` defaults to `src/<name>/**`, so fixture plans are disjoint unless a case says otherwise; None for any X field leaves the line out."""
+    x = []
+    if priority is not None:
+        x.append("Priority: %s\n" % priority)
+    if conc is not None:
+        x.append("Concurrency: %s\n" % conc)
+    owns = "src/%s/**" % name if owns is None else owns
+    if owns:
+        x.append("Owns: %s\n" % owns)
+    folder = fix.proj / "agent" / "plans"
+    folder.mkdir(parents=True, exist_ok=True)
+    base = "PLAN-%s.md" % name
+    (folder / base).write_text(
+        PLAN_TEXT % {"name": name, "status": status, "owner": owner, "dep": dep, "x": "".join(x)},
+        encoding="utf-8",
+    )
+    return base
+
+
+def linked(plan: str, what: str = "work", owner: str = wlfix.ME) -> str:
+    """An item text linked to `plan` by the `PLAN-x.md [<8hex>]` convention (wl_plandeps.linked_plan)."""
+    return "(%s) %s %s [1a2b3c4d]" % (owner, what, plan)
+
+
+def plant_item(fix, item_id: str, text: str, age_min: float = 5, owner: str = wlfix.ME) -> None:
+    """One plain open item, its `first` stamp backdated by `age_min`."""
+    with fix.events.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "ev": "add",
+                    "id": item_id,
+                    "at": stamp(age_min),
+                    "by": owner,
+                    "s": " ",
+                    "o": owner,
+                    "t": text,
                 }
             )
             + "\n"
@@ -207,10 +283,11 @@ def plant_status(fix, worker: str, age_min: float, silent: bool = False, size: i
         )
 
 
-def verdict(fix, extra_env: dict | None = None) -> dict:
+def verdict(fix, extra_env: dict | None = None, stop_dir=None) -> dict:
+    """One roster verdict as the Stop hook computes it; `stop_dir` points it at a mutated private copy."""
     env = fix.stop_env(extra_env)
     proc = subprocess.run(
-        [sys.executable, "-c", VERDICT_SNIPPET, str(wlfix.STOP_DIR)],
+        [sys.executable, "-c", VERDICT_SNIPPET, str(stop_dir or wlfix.STOP_DIR)],
         input=fix.event(),
         capture_output=True,
         text=True,
@@ -1333,3 +1410,180 @@ def test_r25_2_the_lease_history_survives_an_unlease_and_a_compaction():
     assert folded == ["aA", "aB"], folded
     assert compacted == ["aA", "aB"], compacted
     assert state == "x", state
+
+
+# ---- plan concurrency: the queue's hold and the roster-concurrency backstop (agent/plans/PLAN-plan-priority-concurrency.md section 5c) ----
+
+
+def private_stop(fix, filename: str, old: str, new: str):
+    """A private copy of the stop directory with ONE line of `filename` replaced; the line must occur exactly once."""
+    dest = fix.base / "hooks" / "stop"
+    if not dest.exists():
+        shutil.copytree(wlfix.STOP_DIR, dest, ignore=shutil.ignore_patterns("__pycache__"))
+    path = dest / filename
+    src = path.read_text(encoding="utf-8")
+    assert src.count(old) == 1, "MUTATION FIXTURE BROKEN: %r occurs %d times in %s" % (
+        old,
+        src.count(old),
+        filename,
+    )
+    path.write_text(src.replace(old, new), encoding="utf-8")
+    return dest
+
+
+def mutex_world(fix, holder_running: bool = True) -> tuple[str, str]:
+    """W1 is a live writer of EXCLUSIVE plan E (its prompt says `Plan: PLAN-e.md`, and it holds a lease on an E item). Two queue leases: the OLDER one serves plan F, which the mutex holds; the newer serves E itself, which it does not."""
+    fix.brief_now()
+    fix.hand_now()
+    e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
+    f = write_plan(fix, "f")
+    if holder_running:
+        mk_sub(fix, W1, "general-purpose", 1, prompt="Plan: %s\nregenerate the goldens" % e)
+    else:
+        mk_sub(
+            fix, W1, "general-purpose", 30, last="end_turn", running=False, prompt="Plan: %s" % e
+        )
+    plant_lease(fix, "e1000001", W1, text=linked(e, "regenerate goldens"))
+    plant_lease(fix, "f1000001", "queue", lease_age_min=40, text=linked(f, "Q_HELD"))
+    plant_lease(fix, "e1000002", "queue", lease_age_min=10, text=linked(e, "Q_FREE"))
+    return e, f
+
+
+def test_q1_a_queued_item_of_a_held_plan_is_skipped_and_the_next_unheld_one_is_named(wl):  # noqa: F811
+    e, _f = mutex_world(wl)
+    v = verdict(wl)
+    assert v["queue_start"] == ["e1000002"], v["queue_start"]
+    held = dict(v["queue_conc_held"])
+    assert list(held) == ["f1000001"], v["queue_conc_held"]
+    assert (
+        "%s is exclusive -- regenerates every golden file and live (writer %s" % (e, W1)
+        in held["f1000001"]
+    ), held
+    assert v["plan_error"] == "", v["plan_error"]
+
+
+def test_q1c_control_once_the_holder_finishes_the_held_item_is_named(wl):  # noqa: F811
+    mutex_world(wl, holder_running=False)
+    v = verdict(wl)
+    assert "f1000001" in v["queue_start"], v["queue_start"]
+    assert v["queue_conc_held"] == [], v["queue_conc_held"]
+
+
+def test_q1b_an_overlapping_owns_holds_and_a_disjoint_one_does_not(wl):  # noqa: F811
+    wl.brief_now()
+    wl.hand_now()
+    p = write_plan(wl, "p", owns="src/shared/**")
+    q = write_plan(wl, "q", owns="src/shared/x.py, docs/q/**")
+    r = write_plan(wl, "r", owns="src/r/**")
+    mk_sub(wl, W1, "general-purpose", 1, prompt="Plan: %s" % p)
+    plant_lease(wl, "a1000001", W1, text=linked(p, "shared work"))
+    plant_lease(wl, "a1000002", "queue", lease_age_min=40, text=linked(q, "Q_OVERLAP"))
+    plant_lease(wl, "a1000003", "queue", lease_age_min=10, text=linked(r, "Q_DISJOINT"))
+    v = verdict(wl)
+    assert v["queue_start"] == ["a1000003"], v["queue_start"]
+    held = dict(v["queue_conc_held"])
+    assert "both claim `src/shared/x.py`" in held.get("a1000002", ""), v["queue_conc_held"]
+
+
+def test_q1m_without_the_held_skip_q1_names_the_held_item(wl):  # noqa: F811
+    mutex_world(wl)
+    stop = private_stop(
+        wl,
+        "wl_roster.py",
+        "        skips=(*QUEUE_SKIPS, queue_held_skip(plan_holders, xinfo, conc_held)),\n",
+        "        skips=QUEUE_SKIPS,\n",
+    )
+    v = verdict(wl, stop_dir=stop)
+    assert "f1000001" in v["queue_start"], (
+        "q1m: q1 does not depend on the concurrency skip: %s" % v["queue_start"]
+    )
+
+
+def test_q1s_queue_slot_names_the_held_item_on_a_held_back_line(wl):  # noqa: F811
+    mutex_world(wl)
+    wl.say("working\n\n## Remaining\n- the queue")
+    got = wl.run()
+    assert "QUEUED WORK AND A FREE WRITER SLOT" in got.out, got.out[:1500]
+    assert "start #e1000002." in got.out, got.out[:1500]
+    assert "held back: #f1000001 [P-] -- PLAN-e.md is exclusive" in got.out, got.out[:2000]
+
+
+def conflict_world(fix, second: str) -> None:
+    fix.brief_now()
+    fix.hand_now()
+    write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
+    write_plan(fix, "p", owns="src/a/**")
+    write_plan(fix, "f", owns="src/f/**")
+    write_plan(fix, "q", owns="src/a/b.py")
+    first = "e" if second == "f" else "p"
+    mk_sub(fix, W1, "general-purpose", 1, prompt="Plan: PLAN-%s.md" % first)
+    mk_sub(fix, W2, "general-purpose", 1, prompt="Plan: PLAN-%s.md" % second)
+    plant_lease(fix, "c1000001", W1, text=linked("PLAN-%s.md" % first, "one"))
+    plant_lease(fix, "c1000002", W2, text=linked("PLAN-%s.md" % second, "two"))
+
+
+def test_q3_two_live_writers_breaking_a_mutex_are_a_roster_concurrency_block(wl):  # noqa: F811
+    conflict_world(wl, "f")
+    v = verdict(wl)
+    assert {aid for aid, _plans, _lines in v["plan_conflicts"]} == {W1, W2}, v["plan_conflicts"]
+    assert v["state"] == "DISHONEST", v["state"]
+    wl.say("working\n\n## Remaining\n- two writers")
+    got = wl.run()
+    assert "PLAN CONCURRENCY BROKEN: 2 live writer(s)" in got.out, got.out[:2000]
+    assert "writer %s serving PLAN-e.md" % W1 in got.out, got.out[:2000]
+
+
+def test_q3b_two_live_writers_whose_owns_overlap_are_a_block_too(wl):  # noqa: F811
+    conflict_world(wl, "q")
+    v = verdict(wl)
+    assert v["plan_conflicts"], v
+    assert any(
+        "both claim `src/a/b.py`" in " ".join(lines) for _a, _p, lines in v["plan_conflicts"]
+    )
+
+
+def test_q3c_control_two_live_writers_on_disjoint_parallel_plans_are_not(wl):  # noqa: F811
+    wl.brief_now()
+    wl.hand_now()
+    write_plan(wl, "p", owns="src/a/**")
+    write_plan(wl, "r", owns="src/r/**")
+    mk_sub(wl, W1, "general-purpose", 1, prompt="Plan: PLAN-p.md")
+    mk_sub(wl, W2, "general-purpose", 1, prompt="Plan: PLAN-r.md")
+    plant_lease(wl, "c1000001", W1, text=linked("PLAN-p.md", "one"))
+    plant_lease(wl, "c1000002", W2, text=linked("PLAN-r.md", "two"))
+    v = verdict(wl)
+    assert v["plan_conflicts"] == [], v["plan_conflicts"]
+    wl.say("working\n\n## Remaining\n- two writers")
+    assert "PLAN CONCURRENCY BROKEN" not in wl.run().out
+
+
+def test_q3d_a_peers_lease_is_never_a_roster_concurrency_conflict(wl):  # noqa: F811
+    """A clash with ANOTHER session's lease is the spawn guard's and the queue's question; a stale peer lease must never make this session stop a writer."""
+    wl.brief_now()
+    wl.hand_now()
+    write_plan(wl, "e", conc="exclusive -- regenerates every golden file")
+    write_plan(wl, "f")
+    mk_sub(wl, W1, "general-purpose", 1, prompt="Plan: PLAN-f.md")
+    plant_lease(wl, "c1000001", W1, text=linked("PLAN-f.md", "one"))
+    plant_lease(
+        wl,
+        "c1000009",
+        "a5555555555555555",
+        owner="cafe1234",
+        text=linked("PLAN-e.md", "peer", "cafe1234"),
+    )
+    v = verdict(wl)
+    assert v["plan_conflicts"] == [], v["plan_conflicts"]
+    assert "PLAN-e.md" in (v["plan_holders"] or {}), v["plan_holders"]
+
+
+def test_q3m_without_the_conflict_append_q3_goes_silent(wl):  # noqa: F811
+    conflict_world(wl, "f")
+    stop = private_stop(
+        wl,
+        "wl_planorder.py",
+        "        if not got.allow and got.kind in HOLD_KINDS:\n            out.append((aid, got))\n",
+        "        pass\n",
+    )
+    v = verdict(wl, stop_dir=stop)
+    assert v["plan_conflicts"] == [], "q3m: q3 does not depend on the conflict rule: %s" % v

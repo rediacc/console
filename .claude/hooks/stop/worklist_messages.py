@@ -997,6 +997,17 @@ GUIDE_TRUNCATED = (
     "for the full slice)"
 )
 
+# agent/plans/PLAN-plan-priority-concurrency.md section 2: rows inside one obligation band are ordered by plan rank (dependencies, operator priority, AI priority, age). When the plans cannot be read the rows fall back to age order, and the guide SAYS so rather than presenting a blind order as a ranked one. Substitution: the read problem.
+N_GUIDE_ORDER_BLIND = "  (plan priority order unavailable, rows are in age order: %s)"
+# Section 5c's residual: an item whose plan a live exclusive plan or a live plan's Owns holds still shows, with the hold and its exit. Substitutions: the hold reason, the session prefix, the item id.
+N_GUIDE_HELD = (
+    "\n        held: %s\n        a writer spawn is refused until the holder finishes; queue it: "
+    "--lease %s %s +120 worker:queue"
+)
+
+# The same fact on a queued row: nothing to do, queue-slot names the item once the holder finishes. Substitution: the hold reason.
+N_GUIDE_HELD_QUEUED = "\n        held: %s\n        queue-slot names it once the holder finishes"
+
 # ---- v12: deferral justification, the audit, and the CI-waiting force -------
 
 V_UNJUSTIFIED = (
@@ -2521,6 +2532,20 @@ V_QUEUE_SLOT = (
     "  Waiting on another item? A queued item whose BLOCKED_BY blocker is still open is skipped "
     "here and never fails closed:\n"
     "    .claude/hooks/stop/worklist.py --update %(me)s <id> 'BLOCKED_BY:#<blocker>'"
+    "%(held)s"
+)
+# agent/plans/PLAN-plan-priority-concurrency.md section 5c: a queued item whose plan is held by a live exclusive plan or a live plan owning the same files is skipped by queue-slot, and V_QUEUE_SLOT names it on one of these lines (at most QUEUE_HELD_SHOWN, the rest counted). Substitutions: the item id, its rank tag, the hold reason.
+N_QUEUE_HELD = "\n  held back: #%s %s -- %s"
+N_QUEUE_HELD_MORE = "\n  held back: %d more queued item(s), same reason class"
+
+# THE STOP-SIDE BACKSTOP OF THE PLAN-CONCURRENCY SPAWN GUARD (agent/plans/PLAN-plan-priority-concurrency.md section 5c, `roster-concurrency`): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one of them started. Substitutions: the count, the rendered rows, the session prefix.
+V_ROSTER_CONCURRENCY = (
+    "PLAN CONCURRENCY BROKEN: %d live writer(s) of this session serve plans that a live exclusive "
+    "plan forbids, or that claim the same files as another live writer's plan. The spawn guard "
+    "(block_plan_concurrency) was bypassed or blind when one of them started:\n"
+    "%s\n"
+    "  Stop one (TaskStop <agent-id>) and queue its work until the other finishes:\n"
+    "    .claude/hooks/stop/worklist.py --lease %s <id> +120 worker:queue"
 )
 
 # An expired or malformed lease fails closed into an open item (wl_store.classify_items). The last clause is the remedy for an item that is really waiting on another (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.5): a BLOCKED_BY token makes it `waiting` instead of open. Substitutions: the item's display line, the lease state, the session prefix, the item id.
@@ -2533,6 +2558,12 @@ N_LEASE_FAILED_CLOSED = (
 N_CAP_WAIT = (
     "CAP-SATURATED WAIT: %d/%d writer slots live (%s); %d item(s) queued behind the cap; "
     "%d work-order check(s) stood down until a slot frees. Next status due %s."
+)
+# The concurrency-saturated variant (agent/plans/PLAN-plan-priority-concurrency.md section 5c): a writer slot is free, but every queued item is held by a live plan. Live writers / cap, their short ids, the queued count, the holder plans, the stood-down count, the next status due.
+N_CAP_WAIT_CONC = (
+    "CONCURRENCY-SATURATED WAIT: %d/%d writer slots live (%s); all %d queued item(s) are held by "
+    "a live plan (%s); %d work-order check(s) stood down until the holder finishes. Next status "
+    "due %s."
 )
 # Appended to a STATE.md demand the cap-saturated wait KEPT because compaction is imminent.
 N_CAP_WAIT_COMPACTION = (

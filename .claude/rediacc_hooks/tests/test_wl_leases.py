@@ -9,7 +9,18 @@ import json
 import re
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.test_wl_roster import W1, mk_sub, plant_lease, plant_queued, subagents_dir
+from rediacc_hooks.tests.test_wl_roster import (
+    W1,
+    linked,
+    mk_sub,
+    plant_lease,
+    plant_queued,
+    private_stop,
+    stamp,
+    subagents_dir,
+    until,
+    write_plan,
+)
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
@@ -277,3 +288,65 @@ def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):  # noqa: F
     assert "QUEUED WORK AND A FREE WRITER SLOT" in out, out[:1200]
     assert "start #q0000new" in out, out[:1200]
     assert "--update deadbeef <id> 'BLOCKED_BY:#<blocker>'" in out, out[:1600]
+
+
+# ---- agent/plans/PLAN-plan-priority-concurrency.md section 5b (T9): a queue lease beside a free slot, for an item a live plan holds ----
+
+
+def held_world(fix) -> tuple[str, str]:
+    """A PEER's fresh lease on an item of EXCLUSIVE plan E (the cross-session holder), and two open items of this session: one on plan F, which E's mutex holds, and one on E itself, which it does not. No writer of this session is live, so every slot is free."""
+    ready(fix)
+    e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
+    f = write_plan(fix, "f")
+    plant_lease(
+        fix, "e3000009", "a5555555555555555", owner="cafe1234", text=linked(e, "peer", "cafe1234")
+    )
+    return add(fix, linked(f, "held work")), add(fix, linked(e, "free work"))
+
+
+def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):  # noqa: F811
+    held, _free = held_world(wl)
+    got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue", "waiting on E")
+    assert got.rc == 0, got.err[:600]
+    assert "queued beside a free writer slot: PLAN-e.md is exclusive" in got.err, got.err[:600]
+    notes = [
+        json.loads(line).get("note", "")
+        for line in wl.wl_events().splitlines()
+        if line.strip()
+        and json.loads(line).get("ev") == "lease"
+        and json.loads(line).get("id") == held
+    ]
+    assert notes, "no lease event for #%s" % held
+    assert notes[-1] == "waiting on E HELD_BY:PLAN-e.md", notes
+
+
+def test_l8b_inverse_an_unheld_item_is_still_refused_with_a_free_slot(wl):  # noqa: F811
+    _held, free = held_world(wl)
+    got = wl.cli("--lease", wlfix.ME, free, "+60", "worker:queue")
+    assert got.rc != 0, got.out[:300]
+    assert "worker:queue is only for writer work the cap forbids starting" in got.err, got.err[:600]
+
+
+def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):  # noqa: F811
+    """v2's control: only a FRESH lease makes a plan live."""
+    ready(wl)
+    e = write_plan(wl, "e", conc="exclusive -- regenerates every golden file")
+    f = write_plan(wl, "f")
+    with wl.events.open("a", encoding="utf-8") as fh:
+        for ev in (
+            {"ev": "add", "id": "e3000009", "at": stamp(300), "by": "cafe1234", "s": " ", "o": "cafe1234", "t": linked(e, "peer", "cafe1234")},
+            {"ev": "lease", "id": "e3000009", "at": stamp(290), "by": "cafe1234", "until": until(-200), "worker": "a5555555555555555", "note": ""},
+        ):  # fmt: skip
+            fh.write(json.dumps(ev) + "\n")
+    held = add(wl, linked(f, "held work"))
+    got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue")
+    assert got.rc != 0, got.out[:300]
+    assert "worker:queue is only for writer work" in got.err, got.err[:600]
+
+
+def test_l8m_without_the_held_branch_l8_is_refused_again(wl):  # noqa: F811
+    held, _free = held_world(wl)
+    stop = private_stop(wl, "worklist.py", "                and not _held_by\n", "")
+    wl.hook = stop / "worklist.py"
+    got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue")
+    assert got.rc != 0, "l8m: l8 does not depend on the held branch: %s" % got.err[:400]

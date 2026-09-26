@@ -98,7 +98,16 @@ ARITY = {
     "V_ROSTER_SILENT": (1, 20, "rows", "m"),
     "V_ROSTER_UNLEASED": (1, "rows", "m"),
     "V_ROSTER_DEAD": (1, "rows", "m", "m"),
-    "V_QUEUE_SLOT": {"free": 1, "queued": 12, "ids": "#a", "me": "m"},
+    "V_QUEUE_SLOT": {"free": 1, "queued": 12, "ids": "#a", "me": "m", "held": ""},
+    # agent/plans/PLAN-plan-priority-concurrency.md section 5c. N_QUEUE_HELD: item id, rank tag, hold reason; N_QUEUE_HELD_MORE: the counted rest; V_ROSTER_CONCURRENCY: count, rows, session prefix; N_CAP_WAIT_CONC: live writers, cap, their ids, queued, holder plans, stood-down count, next status due.
+    "N_QUEUE_HELD": ("a", "[P1 op]", "why"),
+    "N_QUEUE_HELD_MORE": (2,),
+    "V_ROSTER_CONCURRENCY": (1, "rows", "m"),
+    "N_CAP_WAIT_CONC": (1, 4, "a1b2c3d4", 2, "PLAN-e.md", 7, "12:00Z"),
+    # Section 2 and 5c's guide lines: the blind-order problem; the hold reason, session prefix and item id; the hold reason alone on a queued row.
+    "N_GUIDE_ORDER_BLIND": ("OSError: x",),
+    "N_GUIDE_HELD": ("why", "m", "a"),
+    "N_GUIDE_HELD_QUEUED": ("why",),
     "N_ROSTER_HONEST": (3, 4, 1, "12:00Z", "rows"),
     "N_CAP_WAIT": (4, 4, "a1b2c3d4, e5f6a7b8", 3, 7, "12:00Z"),
     "N_CAP_WAIT_COMPACTION": (),

@@ -49,23 +49,36 @@ READ_ONLY_AGENT_TYPES = frozenset({"Plan", "Explore"})
 # The pushes an HONEST roster answers. The ladder keys are deliberately ABSENT, and that is a narrowing of the plan's list rather than an omission: `wl_liveness.ladder` skips every subject whose worker is a known subagent, so a ladder key that reaches the filter is BY CONSTRUCTION about a shell lease, a teammate or a harness task, which the plan says must keep firing. `agent-state`
 # is dropped only for its `stale` verdict; the caller enforces that.
 ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind", "agent-state"})
-# The four defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status").
-ROSTER_KEYS = ("roster-cap", "roster-silent", "roster-unleased", "roster-dead", "queue-slot")
+# The defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status"). `roster-concurrency` is the Stop-side backstop of the plan-concurrency spawn guard (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers whose plans already break a mutex or share files.
+ROSTER_KEYS = (
+    "roster-cap",
+    "roster-silent",
+    "roster-unleased",
+    "roster-dead",
+    "queue-slot",
+    "roster-concurrency",
+)
 
 # THE CAP-SATURATED WAIT (operator 2026-09-24; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). Its keep-list lives in wl_standdown.CAP_WAIT beside the focus profile that generalises it; the predicate stays here because it needs WRITER_CAP.
 
 
 def cap_saturated_wait(verdict, open_items, actionable_tasks):
-    """True when every writer slot is verified live and this session has nothing it could start.
+    """True when every writer slot is verified live, or every queued item is held by a live plan, and this session has nothing it could start.
 
     `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see wl_standdown.CAP_WAIT), so an exception arrives as one focused block rather than the whole battery.
     """
+    if not verdict or verdict.get("blind") or open_items or actionable_tasks:
+        return False
+    return len(verdict.get("writers") or ()) >= WRITER_CAP or concurrency_saturated(verdict)
+
+
+def concurrency_saturated(verdict):
+    """True when a slot is free but EVERY queued item is held by a live plan's mutex or Owns (agent/plans/PLAN-plan-priority-concurrency.md section 5c): the concurrency-saturated wait. A queued item that is waiting on a blocker, or reserved by HOLD_FOR, is not held, so one of those keeps the ordinary battery."""
+    held = verdict.get("queue_conc_held") or ()
     return (
-        bool(verdict)
-        and not verdict.get("blind")
-        and len(verdict.get("writers") or ()) >= WRITER_CAP
-        and not open_items
-        and not actionable_tasks
+        bool(held)
+        and not verdict.get("queue_start")
+        and len(held) == int(verdict.get("queued") or 0)
     )
 
 
@@ -104,7 +117,7 @@ def hold_valid(target, by_id, session_id):
 
 
 def queue_order(rec):
-    """The default order queued items are started in: oldest queue lease first, then id. A picker's `order_key` replaces it (agent/plans/PLAN-plan-priority-concurrency.md section 2 puts its `(blocked, op_rank, ai_rank, age)` here, with `lease_at` as the age term)."""
+    """The queue's AGE term: oldest queue lease first, then id. `roster` ranks by `wl_planorder.item_key` with this as its age (agent/plans/PLAN-plan-priority-concurrency.md section 2: dependencies, operator priority, AI priority, then this), and falls back to it alone when the plans cannot be read."""
     return (_epoch(rec.get("lease_at")) or 0, rec["id"])
 
 
@@ -114,8 +127,32 @@ def queue_waiting(rec, by_id, _session_id):
     return "waiting on %s" % ", ".join("#" + b for b in blockers) if blockers else ""
 
 
-# The reasons a queued item is NOT startable although a slot is free, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path.
+# The reasons a queued item is NOT startable although a slot is free, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path: `roster` appends `queue_held_skip(...)`, which needs this stop's live plans.
 QUEUE_SKIPS = (queue_waiting,)
+
+
+def queue_holder_plans(verdict):
+    """The plans holding this stop's queue, in first-seen order, parsed from the recorded hold reasons (for the concurrency-saturated wait's allow line)."""
+    out: list[str] = []
+    for _rid, why in verdict.get("queue_conc_held") or ():
+        for plan in re.findall(r"(PLAN-[A-Za-z0-9._-]+\.md) is (?:exclusive|parallel)\b", why):
+            if plan not in out:
+                out.append(plan)
+    return out
+
+
+def queue_held_skip(live, xinfo, held):
+    """The concurrency skip for one stop: a queued item whose writer the plan-concurrency spawn guard would refuse right now (a live exclusive plan, or a live plan owning the same files). Each hold is recorded in `held` ({id: reason}) for queue-slot's "held back" lines and the concurrency-saturated wait. `live` None (the plans could not be read) holds nothing."""
+    import wl_planorder as PO  # noqa: PLC0415 -- read only when a queue exists
+
+    def skip(rec, _by_id, _session_id):
+        got = PO.hold(rec, live, xinfo) if live is not None else None
+        if got is None:
+            return ""
+        held[rec["id"]] = PO.reason(got)
+        return "held: " + held[rec["id"]]
+
+    return skip
 
 
 def queue_pick(queued, free, by_id, session_id, order_key=None, skips=QUEUE_SKIPS):
@@ -634,11 +671,53 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 return d
         return ""
 
+    # PLAN ORDER AND PLAN CONCURRENCY (agent/plans/PLAN-plan-priority-concurrency.md sections 2 and 5c), judged against the writers the harness's own event proves live plus every session's fresh leases. A plan read that fails leaves the queue in age order with nothing held, and says why in `plan_error`: never a crashed roster.
+    plan_holders: dict[str, list[str]] | None = None
+    plan_serving: dict[str, set[str]] = {}
+    plan_error = ""
+    xinfo = None
+    order_key = queue_order
+    try:
+        import wl_planconc as X  # noqa: PLC0415
+        import wl_planorder as PO  # noqa: PLC0415
+
+        order_ctx, plan_error = PO.context(root)
+        order_key = PO.item_key(order_ctx, age=queue_order)
+        texts = []
+        for aid in writers:
+            row = live[aid]
+            prompt = LH.first_prompt(row["jsonl"]) if row["jsonl"] is not None else ""
+            texts.append((aid, row["type"], "%s\n%s" % (row["desc"], prompt)))
+        plan_holders = PO.holders(texts, fold, session_id)
+        xinfo = PO.xinfo_for(root)
+        for aid, _kind, text in texts:
+            served = set(X.spawn_plans(text, by_id))
+            for w in [aid, *ancestors(aid, metas)]:
+                served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
+            plan_serving[aid] = served
+    except Exception as exc:  # noqa: BLE001 -- the roster must never crash on a plan read
+        plan_holders = None
+        plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
+    conc_held: dict[str, str] = {}
+    plan_conflicts: list[tuple[str, list[str], list[str]]] = []
+    if plan_holders is not None:
+        plan_conflicts = [
+            (aid, sorted(plan_serving[aid]), list(v.lines))
+            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo)
+        ]
+
     covered: list[Any] = []
     leased_dead: list[Any] = []
     unknown: list[Any] = []
     queued = list(leases.get(QUEUE_WORKER, ()))
-    pick = queue_pick(queued, WRITER_CAP - len(writers), by_id, session_id)
+    pick = queue_pick(
+        queued,
+        WRITER_CAP - len(writers),
+        by_id,
+        session_id,
+        order_key=order_key,
+        skips=(*QUEUE_SKIPS, queue_held_skip(plan_holders, xinfo, conc_held)),
+    )
     queue_start = pick["start"]
     slots = pick["free"]
     hold = pick["hold"]
@@ -759,7 +838,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     }
     verified = sorted((({c for _i, _w, c in covered if c} | leased_live) - owing) | fresh_readers)
 
-    defects = bool(unleased or leased_dead or over_cap or status_due or silent or queue_start)
+    defects = bool(
+        unleased or leased_dead or over_cap or status_due or silent or queue_start or plan_conflicts
+    )
     if defects:
         state = "DISHONEST"
     elif blind or open_ids or unknown or not covered:
@@ -796,6 +877,10 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "queue_free": slots,
         "queue_held": hold["id"] if hold is not None else "",
         "queue_skipped": pick["skipped"],
+        "queue_conc_held": [(i, conc_held[i]) for i, _why in pick["skipped"] if i in conc_held],
+        "plan_holders": plan_holders,
+        "plan_conflicts": plan_conflicts,
+        "plan_error": plan_error,
         "queued": len(queued),
         "over_cap": over_cap,
         "status_due": status_due,

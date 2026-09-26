@@ -41,6 +41,7 @@ import pathlib
 import wl_backlog as BL
 import wl_core as C
 import wl_planfile as F
+import wl_planorder as PO
 import wl_planrec as R
 import wl_store as S
 
@@ -280,7 +281,10 @@ def render(root, verdict, owned, idle_peer, live_peer, session_id, named=None, b
     if named:
         rel, sig, body = named
         lines.append("")
-        lines.append("  ONE BOX, the first open one in the newest plan this session can reach:")
+        lines.append(
+            "  ONE BOX, the first open one in the highest-ranked plan this session can reach "
+            "(dependencies, then Priority, then newest):"
+        )
         lines.append("    %s  %s" % (sig, body[:96]))
         lines.append("")
         lines.append("  FIVE DOORS, and every one of them ends this block:")
@@ -421,6 +425,9 @@ def evaluate(
         idle_peer = sorted(idle_peer, key=lambda r: r["rel"] != dp["rel"])
     detail["dead_peer"] = dp
 
+    # RANK FIRST (agent/plans/PLAN-plan-priority-concurrency.md section 2, T7): the named box comes from the highest-ranked owned plan -- an open dependency last, then operator Priority, then AI Priority -- and the stable sort keeps newest-first among equals, which is the order `scope_rows` returns.
+    order_ctx = PO.context(root)[0]
+    owned = sorted(owned, key=lambda row: PO.plan_key(order_ctx, row["rel"]))
     named = None
     for row in owned:
         got = first_box(root, row["rel"], row.get("reader"))

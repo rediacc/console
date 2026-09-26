@@ -747,6 +747,70 @@ def wiring_controls():
     )
 
 
+def rank_controls():
+    """The named box comes from the HIGHEST-RANKED owned plan (agent/plans/PLAN-plan-priority-concurrency.md section 2, T7), and newest-first only breaks ties."""
+    print("7. the named box follows the plan rank")
+
+    def named(priority_old, priority_new):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / ".ci" / "config").mkdir(parents=True)
+            (root / E.CONFIG_REL).write_text(
+                json.dumps(
+                    {
+                        "baseline_open": 0,
+                        "baseline_at": "2026-01-01",
+                        "drain_per_day": 0,
+                        "warn_slack": 0,
+                        "floor_open": 0,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            plans = root / "agent" / "plans"
+            plans.mkdir(parents=True)
+            for name, pr in (("PLAN-old.md", priority_old), ("PLAN-new.md", priority_new)):
+                head = "# PLAN: %s\n\nStatus: draft\nOwner: %s\n" % (name, ME)
+                if pr:
+                    head += "Priority: %s\n" % pr
+                (plans / name).write_text(
+                    head + "\n## Tasks\n\n- [ ] T1 build the %s part of it\n" % name,
+                    encoding="utf-8",
+                )
+            recs = [
+                ("agent/plans/PLAN-new.md", "draft", 1),
+                ("agent/plans/PLAN-old.md", "draft", 1),
+            ]
+            boxes = {rel: (1, None) for rel, _s, _n in recs}
+            state, text, _detail = E.evaluate(
+                root,
+                recs,
+                ME,
+                lambda _root, _rel: ME,
+                root / "wl.md",
+                boxes=boxes,
+                liveness=lambda _owner: ("live", ""),
+            )
+            m = re.search(r"--plan-investigate %s (\S+) " % ME, text)
+            return state, m.group(1) if m else None
+
+    control(
+        "R1: an operator P1 written earlier is named before a newer unranked plan",
+        named("P1 (operator)", None),
+        (E.BLOCK, "agent/plans/PLAN-old.md"),
+    )
+    control(
+        "R1 CONTROL: with no Priority anywhere the newest is named, as before",
+        named(None, None),
+        (E.BLOCK, "agent/plans/PLAN-new.md"),
+    )
+    control(
+        "R2: an operator P3 is named before an AI P0 (ruling D1)",
+        named("P3 (operator)", "P0"),
+        (E.BLOCK, "agent/plans/PLAN-old.md"),
+    )
+
+
 def main():
     print("plan implementation enforcement: controls first, then any verdict")
     clock_controls()
@@ -757,6 +821,7 @@ def main():
     clause_controls()
     neighbour_controls()
     wiring_controls()
+    rank_controls()
     print("\n%d control(s) ran, %d failed" % (Tally.count, Tally.fails))
     return 1 if Tally.fails else 0
 

@@ -20,11 +20,13 @@ from rediacc_hooks.tests.test_wl_roster import (
     W2,
     W3,
     W4,
+    linked,
     mk_sub,
     plant_lease,
     stamp,
     until,
     verdict,
+    write_plan,
 )
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
@@ -350,7 +352,12 @@ def test_m3_without_the_late_band_read_the_compaction_case_stands_down(wl):  # n
 def test_m4_without_the_open_items_term_an_open_item_stands_down(wl):  # noqa: F811
     saturated(wl)
     wl.add_item("- [ ] (deadbeef) a plain open item the lead could do now")
-    mutated_hook(wl, "wl_roster.py", "        and not open_items\n", "")
+    mutated_hook(
+        wl,
+        "wl_roster.py",
+        '    if not verdict or verdict.get("blind") or open_items or actionable_tasks:\n',
+        '    if not verdict or verdict.get("blind") or actionable_tasks:\n',
+    )
     got = stop(wl)
     assert got.decision == "allow", (
         "m4: the c2 case does not depend on the open-items term: %s" % got.out[:400]
@@ -363,11 +370,103 @@ def test_m5_with_an_unreachable_cap_the_saturated_case_is_judged_again(wl):  # n
     mutated_hook(
         wl,
         "wl_roster.py",
-        '        and len(verdict.get("writers") or ()) >= WRITER_CAP\n',
-        '        and len(verdict.get("writers") or ()) >= 99\n',
+        '    return len(verdict.get("writers") or ()) >= WRITER_CAP or concurrency_saturated(verdict)\n',
+        '    return len(verdict.get("writers") or ()) >= 99 or concurrency_saturated(verdict)\n',
     )
     got = stop(wl)
     assert "CAP-SATURATED WAIT" not in got.out, "m5: the allow did not depend on the cap term"
     assert (wl.base / "prompt.txt").exists(), (
         "m5: with the wait off, the judge should have been consulted"
     )
+
+
+# ---- the concurrency-saturated wait (agent/plans/PLAN-plan-priority-concurrency.md section 5c) ----
+
+
+def held_queue(fix, unheld: bool = False) -> None:
+    """One live writer of EXCLUSIVE plan E and two queue leases on plan F, which E's mutex holds: three slots free and nothing startable. `unheld` adds a queue lease on E itself, which the mutex does not hold."""
+    fix.brief_now()
+    fix.hand_now()
+    e = write_plan(fix, "e", conc="exclusive -- regenerates every golden file")
+    f = write_plan(fix, "f")
+    mk_sub(fix, W1, "general-purpose", 0, prompt="Plan: %s" % e)
+    plant_lease(fix, "e2000001", W1, text=linked(e, "regenerate goldens"))
+    for i in range(2):
+        plant_lease(fix, "f200000%d" % i, "queue", lease_age_min=30, text=linked(f, "held %d" % i))
+    if unheld:
+        plant_lease(fix, "e2000002", "queue", lease_age_min=20, text=linked(e, "startable"))
+
+
+def test_c11_every_queued_item_held_is_a_concurrency_saturated_wait(wl):  # noqa: F811
+    held_queue(wl)
+    capturing_judge(wl, CONTINUE)
+    got = stop(wl)
+    assert got.decision == "allow", wl.why("c11", "allow", got, "CONCURRENCY-SATURATED WAIT")
+    assert "CONCURRENCY-SATURATED WAIT: 1/4 writer slots live" in got.out, got.out[:900]
+    assert "all 2 queued item(s) are held by a live plan (PLAN-e.md)" in got.out, got.out[:900]
+    assert "QUEUED WORK AND A FREE WRITER SLOT" not in got.out, got.out[:900]
+    assert not (wl.base / "prompt.txt").exists(), "c11: the judge was consulted in the wait"
+
+
+def test_c11_control_one_unheld_queued_item_blocks_on_the_free_slot(wl):  # noqa: F811
+    held_queue(wl, unheld=True)
+    capturing_judge(wl, CONTINUE)
+    got = stop(wl)
+    assert got.decision == "block", wl.why("c11-control", "block", got, "free slot")
+    assert "QUEUED WORK AND A FREE WRITER SLOT" in got.out, got.out[:900]
+    assert "start #e2000002." in got.out, got.out[:900]
+    assert "held back: #f2000000" in got.out, got.out[:1500]
+    assert "CONCURRENCY-SATURATED WAIT" not in got.out, got.out[:900]
+
+
+def test_c11_the_verdict_says_every_queued_item_is_held(wl):  # noqa: F811
+    held_queue(wl)
+    v = verdict(wl)
+    assert [i for i, _why in v["queue_conc_held"]] == ["f2000000", "f2000001"], v
+    assert v["queue_start"] == [], v
+    assert v["queued"] == 2, v
+
+
+def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):  # noqa: F811
+    held_queue(wl)
+    capturing_judge(wl, CONTINUE)
+    mutated_hook(
+        wl,
+        "wl_roster.py",
+        '    return len(verdict.get("writers") or ()) >= WRITER_CAP or concurrency_saturated(verdict)\n',
+        '    return len(verdict.get("writers") or ()) >= WRITER_CAP\n',
+    )
+    got = stop(wl)
+    assert "CONCURRENCY-SATURATED WAIT" not in got.out, "m6: c11 does not depend on the term"
+    assert (wl.base / "prompt.txt").exists(), "m6: with the wait off, the judge should be consulted"
+
+
+def test_c12_a_held_queue_lease_renews_beside_a_free_slot(wl):  # noqa: F811
+    """It waits on the holder, not on the lead: letting it expire into an open item would demand a start the spawn guard refuses."""
+    held_queue(wl)
+    near = until(10)
+    with wl.events.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "ev": "lease",
+                    "id": "f2000000",
+                    "at": stamp(1),
+                    "by": wlfix.ME,
+                    "until": near,
+                    "worker": "queue",
+                    "note": "",
+                }
+            )
+            + "\n"
+        )
+    stop(wl)
+    renewals = [
+        e
+        for e in all_events(wl)
+        if e.get("ev") == "lease"
+        and e.get("id") == "f2000000"
+        and e.get("until") != near
+        and "held by a live plan" in str(e.get("note") or "")
+    ]
+    assert renewals, "c12: the held queue lease was not renewed"

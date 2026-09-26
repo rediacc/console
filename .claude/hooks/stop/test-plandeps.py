@@ -66,6 +66,13 @@ def hdep(header):
     return got
 
 
+def some[V](value: V | None) -> V:
+    """The parsed value, or a loud stop: a None here is a parser regression, not a control result (the shape of `dep` above, typed so the checker sees the narrowing)."""
+    if value is None:
+        raise SystemExit("expected a parsed value, got None")
+    return value
+
+
 def fget(header, name):
     """(lineno, parsed) of a header field, or None when absent."""
     f = header.get(name)
@@ -433,7 +440,7 @@ def px(value):
     return D.parse_priority(value)
 
 
-check("x: P0-P3 parse", [px("P%d" % n)[0].level for n in range(4)], [0, 1, 2, 3])
+check("x: P0-P3 parse", [some(px("P%d" % n)[0]).level for n in range(4)], [0, 1, 2, 3])
 check("x: the operator marker", px("P1 (operator)")[0], D.Priority(1, True, ""))
 check(
     "x: marker and reason",
@@ -441,7 +448,7 @@ check(
     D.Priority(1, True, "ruled 2026-09-25"),
 )
 check("x: an AI reason", px("P2 -- proposed by AI")[0], D.Priority(2, False, "proposed by AI"))
-check("x: an em-dash reason", px("P2 \u2014 proposed by AI")[0].reason, "proposed by AI")
+check("x: an em-dash reason", some(px("P2 \u2014 proposed by AI")[0]).reason, "proposed by AI")
 check("x: P4 is refused", bool(px("P4")[1]), True)
 check("x: a period separator is refused", bool(px("P0. an operator ruling")[1]), True)
 check("x: another marker is refused", bool(px("P1 (lead)")[1]), True)
@@ -450,7 +457,7 @@ check("x: str round-trips", str(px("P1 (operator) -- why")[0]), "P1 (operator) -
 check("x: parallel", D.parse_concurrency("parallel")[0], D.Concurrency("parallel", ""))
 check(
     "x: parallel with a reason",
-    D.parse_concurrency("parallel -- four writers")[0].reason,
+    some(D.parse_concurrency("parallel -- four writers")[0]).reason,
     "four writers",
 )
 check("x: exclusive needs a reason", bool(D.parse_concurrency("exclusive")[1]), True)
@@ -466,23 +473,25 @@ check(
 )
 check(
     "x: exclusive with a reason",
-    D.parse_concurrency("exclusive -- regenerates every golden")[0].exclusive,
+    some(D.parse_concurrency("exclusive -- regenerates every golden")[0]).exclusive,
     True,
 )
 check("x: an unknown mode is refused", bool(D.parse_concurrency("serial")[1]), True)
-check("x: owns list", D.parse_owns("a/**, b/*.py")[0].globs, ("a/**", "b/*.py"))
-check("x: owns keeps braces whole", D.parse_owns("a/{b,c}.py, d")[0].globs, ("a/{b,c}.py", "d"))
+check("x: owns list", some(D.parse_owns("a/**, b/*.py")[0]).globs, ("a/**", "b/*.py"))
+check(
+    "x: owns keeps braces whole", some(D.parse_owns("a/{b,c}.py, d")[0]).globs, ("a/{b,c}.py", "d")
+)
 check(
     "x: owns strips a note",
     (
-        D.parse_owns("x.ts (one mount line, only), y")[0].globs,
-        D.parse_owns("x.ts (one mount line, only)")[0].notes,
+        some(D.parse_owns("x.ts (one mount line, only), y")[0]).globs,
+        some(D.parse_owns("x.ts (one mount line, only)")[0]).notes,
     ),
     (("x.ts", "y"), (("x.ts", "one mount line, only"),)),
 )
 check(
     "x: owns none with a reason",
-    D.parse_owns("none -- an operator-action plan")[0].none,
+    some(D.parse_owns("none -- an operator-action plan")[0]).none,
     "an operator-action plan",
 )
 check("x: owns none without a reason is refused", bool(D.parse_owns("none")[1]), True)
@@ -501,10 +510,10 @@ xh = D.parse_header(
 )
 check(
     "x: header carries the triple",
-    (xh.priority.level, xh.concurrency.mode, xh.owns.globs),
+    (some(xh.priority).level, some(xh.concurrency).mode, some(xh.owns).globs),
     (1, "parallel", ("a/**",)),
 )
-check("x: the triple sits at 6-8", [xh.get(n).lineno for n in D.X_FIELDS], [6, 7, 8])
+check("x: the triple sits at 6-8", [some(xh.get(n)).lineno for n in D.X_FIELDS], [6, 7, 8])
 at12 = "Status: draft\n" + "".join("N%d: x\n" % i for i in range(10)) + "Priority: P1\n"
 check("x: line 12 is inside the X window", fget(D.parse_header(at12), D.PRIORITY)[0], 12)
 at13 = "Status: draft\n" + "".join("N%d: x\n" % i for i in range(11)) + "Priority: P1\n"
@@ -547,7 +556,7 @@ rout = D.set_x(
 check("set_x: a record's spine stays at lines 1-8", rout.splitlines()[:8], record.splitlines()[:8])
 check(
     "set_x: its fields land at 9-11",
-    [D.parse_header(rout).get(n).lineno for n in D.X_FIELDS],
+    [some(D.parse_header(rout).get(n)).lineno for n in D.X_FIELDS],
     [9, 10, 11],
 )
 long_head = "Status: d\n" + "".join("N%d: x\n" % i for i in range(10)) + "\nbody\n"
@@ -631,7 +640,11 @@ TRI = {
     "text": "a finding",
     "triage": {"v": "plan-subagent", "plan": "agent/plans/PLAN-t.md"},
 }
-BY_ID = {"abcd1234": ITEM, "beef5678": TRI, "00001111": {"id": "00001111", "text": "unlinked"}}
+BY_ID: dict[str, dict] = {
+    "abcd1234": ITEM,
+    "beef5678": TRI,
+    "00001111": {"id": "00001111", "text": "unlinked"},
+}
 check("item_plan: the link", X.item_plan(ITEM), "PLAN-e.md")
 check("item_plan: the triage plan", X.item_plan(TRI), "PLAN-t.md")
 check(

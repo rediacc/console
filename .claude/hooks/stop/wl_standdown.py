@@ -53,6 +53,8 @@ CORE = frozenset(
         "roster-silent",
         "roster-unleased",
         "roster-dead",
+        # Two live writers already breaking a plan mutex or sharing files (agent/plans/PLAN-plan-priority-concurrency.md section 5c): waiting does not resolve it.
+        "roster-concurrency",
         "ladder-gone",
         "ladder-idle",
     }

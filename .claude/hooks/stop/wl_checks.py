@@ -38,6 +38,7 @@ import wl_planenforce
 import wl_planfid
 import wl_planfile
 import wl_planindex as PI
+import wl_planorder
 import wl_popup
 import wl_reggate
 import wl_report
@@ -1488,7 +1489,26 @@ def agent_hint_queue(worklist, session_id, state_doc, haystack):
     return name
 
 
-def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False):
+# How many queue items V_QUEUE_SLOT names as held back before counting the rest.
+QUEUE_HELD_SHOWN = 3
+
+
+def queue_held_lines(verdict, fold, root):
+    """V_QUEUE_SLOT's "held back" lines (agent/plans/PLAN-plan-priority-concurrency.md section 5c): at most QUEUE_HELD_SHOWN, each with its rank tag and the hold, the rest counted. "" when nothing is held."""
+    held = list(verdict.get("queue_conc_held") or ())
+    if not held:
+        return ""
+    ctx = wl_planorder.context(root)[0]
+    out = []
+    for rid, why in held[:QUEUE_HELD_SHOWN]:
+        rec = fold.by_id.get(rid) or {}
+        out.append(M.N_QUEUE_HELD % (rid, wl_planorder.item_tag(rec, ctx) or "[unlinked]", why))
+    if len(held) > QUEUE_HELD_SHOWN:
+        out.append(M.N_QUEUE_HELD_MORE % (len(held) - QUEUE_HELD_SHOWN))
+    return "".join(out)
+
+
+def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False, live_plans=None):
     """The bounded, guided, store-derived instruction block.
 
     One line per actionable item: state, #id, age from the store's own stamps, the capped text, and the EXACT verb that moves it -- an open item gets --tick, a live lease gets --update, an undefaulted [?] gets --defer, an expired-window [?] gets its default-execution order. Sorted by priority (obligations first) so truncation drops the least urgent. `verdicts` (from
@@ -1499,11 +1519,21 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
 
     `full=True` LIFTS the GUIDE_MAX cap. The cap exists to bound the Stop
     hook's payload, so the hook keeps it; the CLI does not, and until now it silently inherited it -- which made GUIDE_TRUNCATED's own advice a loop, since it points at `--list --open` "for the full slice" and that command re-rendered the same 12 rows. A human asking for the slice by hand gets every row and no truncation footer.
+
+    PLAN RANK INSIDE A BAND (agent/plans/PLAN-plan-priority-concurrency.md section 2, T7). Bands are obligations and stay first: a dead lease outranks any plan. Inside a band rows are ordered by `wl_planorder.item_key` (dependencies, operator priority, AI priority, then age), and a plan-linked row carries its rank tag, `#id [P1 op]`. `live_plans` (the roster's
+    `plan_holders`, or `wl_planconc.live_plans` from the CLI) annotates an open or queued item whose writer the plan-concurrency spawn guard would refuse right now; None leaves the rows unannotated.
     """
+    import wl_planorder as PO  # noqa: PLC0415 -- the plan rank, shared with every other picker
+
     me_arg = (me or "<me>")[:8] if me else "<me>"
     verdicts = verdicts or {}
-    rows = []  # (priority, line)
+    rows = []  # (band, plan rank, line)
     by_id = {r["id"]: r for r in fold.items}
+    if root is None:
+        root = C.project_root(C.project_start())
+    order_ctx, order_problem = PO.context(root)
+    rank = PO.item_key(order_ctx)
+    xinfo = PO.xinfo_for(root) if live_plans is not None else None
     for rec in fold.items:
         if session_id and not C.owned_by_me(rec["owner"], session_id):
             continue
@@ -1514,18 +1544,21 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
         upd = C.stamp_age_min(rec.get("upd", ""))
         age = "?" if upd is None else "%dm" % upd
         rid = rec["id"]
+        key = rank(rec)
+        tag = PO.item_tag(rec, order_ctx)
+        # The DISPLAY id carries the rank tag; every printed verb keeps the bare id, so a copied command still resolves.
+        rid_t = "%s %s" % (rid, tag) if tag else rid
         tri = rec.get("triage") or {}
         plan = tri.get("plan", "") if tri.get("v") == "plan-subagent" else ""
         if plan and st in (" ", ">"):
-            if root is None:
-                # No event in scope here -- guided_slice takes none. Passing one was a NameError that failed SOFT: the caller wraps this in a bare except and replaces the whole guide with "WORKLIST GUIDE unavailable", so the operator's entire worklist surface would have degraded silently on any triaged-BIG item.
-                root = C.project_root(C.project_start())
+            # `root` is derived above when the caller passed none. Passing an event here once was a NameError that failed SOFT: the caller wraps this in a bare except and replaces the whole guide with "WORKLIST GUIDE unavailable", so the operator's entire worklist surface would have degraded silently on any triaged-BIG item.
             if not os.path.exists(os.path.join(root, plan)):
                 rows.append(
                     (
                         0,
+                        key,
                         "  - [%s] #%s (upd %s) %s\n        TRIAGED BIG, plan file missing: %s\n        NEXT: write the plan (Plan agent) or re-triage: --triage %s --id %s <finding>"
-                        % (st, rid, age, txt, plan, me_arg, rid),
+                        % (st, rid_t, age, txt, plan, me_arg, rid),
                     )
                 )
                 continue
@@ -1543,16 +1576,26 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
             rows.append(
                 (
                     3,
+                    key,
                     "  - [%s] #%s waiting (%s) %s\n        NEXT: nothing until they close; it reopens by itself"
-                    % (st, rid, ", ".join("#" + w for w in waiting), txt),
+                    % (st, rid_t, ", ".join("#" + w for w in waiting), txt),
                 )
             )
         elif st == " ":
+            held = PO.hold(rec, live_plans, xinfo) if live_plans is not None else None
             rows.append(
                 (
                     0,
-                    "  - [ ] #%s (upd %s) %s\n        NEXT: do it, then --tick %s %s '<evidence>'"
-                    % (rid, age, txt, me_arg, rid),
+                    key,
+                    "  - [ ] #%s (upd %s) %s\n        NEXT: do it, then --tick %s %s '<evidence>'%s"
+                    % (
+                        rid_t,
+                        age,
+                        txt,
+                        me_arg,
+                        rid,
+                        M.N_GUIDE_HELD % (PO.reason(held), me_arg, rid) if held else "",
+                    ),
                 )
             )
         elif st == ">":
@@ -1566,19 +1609,34 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                 # THE DEADLINE IS RENDERED RELATIVE AS WELL AS ABSOLUTE, because the absolute form alone is misread the moment the reader's LOCAL date has rolled over while UTC has not. Measured 2026-09-08T22:37Z: local was already 2026-09-09 00:37 CEST, the item carried `until:2026-09-08T23:36Z`, and the stop-gate judge read that as "in the past" and refused a legitimate stop.
                 # `lease_state` had it right all along -- it compares in UTC -- so nothing was wrong except what the line SHOWED.
                 wtag += C.lease_remaining_tag(rec["line"])
+                held = (
+                    PO.hold(rec, live_plans, xinfo)
+                    if live_plans is not None and wid == wl_leasehelp.QUEUE_WORKER
+                    else None
+                )
                 rows.append(
                     (
                         3,
-                        "  - [>] #%s (quiet %s, %s) %s\n        NEXT: --update %s %s '<one line of what moved>'"
-                        % (rid, age, wtag, txt, me_arg, rid),
+                        key,
+                        "  - [>] #%s (quiet %s, %s) %s\n        NEXT: --update %s %s '<one line of what moved>'%s"
+                        % (
+                            rid_t,
+                            age,
+                            wtag,
+                            txt,
+                            me_arg,
+                            rid,
+                            M.N_GUIDE_HELD_QUEUED % PO.reason(held) if held else "",
+                        ),
                     )
                 )
             else:
                 rows.append(
                     (
                         0,
+                        key,
                         "  - [>] #%s LEASE DEAD (quiet %s) %s\n        NEXT: finish it and --tick %s %s '<evidence>', or re-lease: --lease %s %s +60 worker:<bg-id>"
-                        % (rid, age, txt, me_arg, rid, me_arg, rid),
+                        % (rid_t, age, txt, me_arg, rid, me_arg, rid),
                     )
                 )
         elif st == "?":
@@ -1586,16 +1644,18 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                 rows.append(
                     (
                         2,
+                        key,
                         "  - [?] #%s (age %s, NO DEFAULT) %s\n        NEXT: --defer %s %s '<question> DEFAULT: <action> WHY: <reason> HOW: <resolution>'"
-                        % (rid, age, txt, me_arg, rid),
+                        % (rid_t, age, txt, me_arg, rid),
                     )
                 )
             elif upd is not None and upd >= S.DEFER_WINDOW_MIN:
                 rows.append(
                     (
                         1,
+                        key,
                         "  - [?] #%s WINDOW CLOSED (waited %s) %s\n        NEXT: execute its DEFAULT now, then --tick %s %s '<evidence>'"
-                        % (rid, age, txt, me_arg, rid),
+                        % (rid_t, age, txt, me_arg, rid),
                     )
                 )
             else:
@@ -1603,19 +1663,23 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
                 rows.append(
                     (
                         4,
+                        key,
                         "  - [?] #%s (age %s) %s\n        operator may answer; its DEFAULT executes in %s"
-                        % (rid, age, txt, left),
+                        % (rid_t, age, txt, left),
                     )
                 )
         # The design EXISTS: advertise where it lives, so the guide points at the plan instead of leaving the next session to find it.
         if plan and len(rows) > before:
-            prio, line = rows[-1]
-            rows[-1] = (prio, line + "\n        plan: %s" % plan)
+            band, rkey, line = rows[-1]
+            rows[-1] = (band, rkey, line + "\n        plan: %s" % plan)
     if not rows:
         return M.GUIDE_EMPTY
-    rows.sort(key=lambda r: r[0])
+    rows.sort(key=lambda r: (r[0], r[1]))
     shown = rows if full else rows[:GUIDE_MAX]
-    out = [M.GUIDE_HEADER] + [line for _p, line in shown]
+    out = [M.GUIDE_HEADER]
+    if order_ctx is None:
+        out.append(M.N_GUIDE_ORDER_BLIND % (order_problem or "unknown"))
+    out += [line for _b, _k, line in shown]
     if len(rows) > len(shown):
         out.append(M.GUIDE_TRUNCATED % (len(rows) - len(shown), GUIDE_MAX))
     return "\n".join(out)
@@ -2497,8 +2561,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                     worker_verified=True,
                 )
             fold = S.load(worklist, sync=False)
+    # THE PLAN RANK (agent/plans/PLAN-plan-priority-concurrency.md section 2), built once per stop and shared by every picker below: the open list, the guide, queue-slot, the backlog nomination and the plan-unimplemented named box. A plan read that fails leaves age order, and the guide prints why.
+    _order_key = None
+    with contextlib.suppress(Exception):
+        _order_key = wl_planorder.item_key(wl_planorder.context(root)[0])
     open_items, _others, deferred_recs, in_flight_recs = S.classify_items(
-        fold, session_id, live_worker_ids=_live_worker_ids
+        fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
     )
     # THE HOOK RENEWS A COVERED LEAD LEASE (P2.1), so an item the lead drives inline across several background tasks needs no manual renewal; with nothing live it has already failed closed above.
     with contextlib.suppress(Exception):
@@ -2541,17 +2609,22 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     # QUEUE LEASES RENEW WHILE THE CAP IS FULL (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 2). A queue lease is bounded by its own expiry, and an expired one fails closed into an OPEN item; with every writer slot live, that turned a queue the lead could not start into a stream of "open items" every two hours. Renewed only while saturated, only when under
     # LEAD_RENEW_BELOW_MIN is left (or already expired), and never a HOLD_FOR reservation, whose expiry bounds the slot it reserves (R.5). A roster that could not be computed renews nothing.
+    # A QUEUE LEASE HELD BY A LIVE PLAN renews on the same terms while the slot is free (agent/plans/PLAN-plan-priority-concurrency.md section 5c): it is waiting on the holder, not on the lead, so letting it expire into an open item would demand a start the spawn guard refuses.
     with contextlib.suppress(Exception):
+        _conc_held_ids = {i for i, _why in (_roster or {}).get("queue_conc_held") or ()}
         if (
             _roster
             and not _roster.get("blind")
-            and len(_roster.get("writers") or ()) >= wl_roster.WRITER_CAP
+            and (len(_roster.get("writers") or ()) >= wl_roster.WRITER_CAP or _conc_held_ids)
         ):
+            _cap_full = len(_roster.get("writers") or ()) >= wl_roster.WRITER_CAP
             _renewed = 0
             for _r in fold.items:
                 if _r.get("state") != ">" or not C.owned_by_me(_r.get("owner"), session_id):
                     continue
                 if _r.get("worker") != wl_roster.QUEUE_WORKER or wl_roster.hold_target(_r):
+                    continue
+                if not _cap_full and _r["id"] not in _conc_held_ids:
                     continue
                 _age = C.stamp_age_min(_r.get("until") or "")
                 if _age is None or -_age < wl_leasehelp.LEAD_RENEW_BELOW_MIN:
@@ -2561,14 +2634,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                         _r["id"],
                         C.stamp_ahead(C.MAX_LEASE_MIN)[:16] + "Z",
                         wl_roster.QUEUE_WORKER,
-                        "auto-renew: writer cap full",
+                        "auto-renew: writer cap full"
+                        if _cap_full
+                        else "auto-renew: held by a live plan",
                         worker_verified=False,
                     )
                     _renewed += 1
             if _renewed:
                 fold = S.load(worklist, sync=False)
                 open_items, _others, deferred_recs, in_flight_recs = S.classify_items(
-                    fold, session_id, live_worker_ids=_live_worker_ids
+                    fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
                 )
                 _roster = wl_roster.roster(
                     event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
@@ -2953,7 +3028,14 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
     try:
-        guide = guided_slice(fold, session_id, worker_verdicts, me8, root)
+        guide = guided_slice(
+            fold,
+            session_id,
+            worker_verdicts,
+            me8,
+            root,
+            live_plans=(_roster or {}).get("plan_holders"),
+        )
     except Exception as exc:  # noqa: BLE001
         guide = (
             "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s"
@@ -3058,7 +3140,24 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "queued": _roster["queued"],
                     "ids": ", ".join("#" + i for i in _roster["queue_start"]),
                     "me": me8,
+                    "held": queue_held_lines(_roster, fold, root),
                 },
+            )
+        # THE STOP-SIDE BACKSTOP OF block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers whose plans break a mutex or share files, counted from the authoritative event. The two-layer shape of block_agent_cap / roster-cap.
+        if _roster.get("plan_conflicts"):
+            vadd(
+                "roster-concurrency",
+                True,
+                M.V_ROSTER_CONCURRENCY
+                % (
+                    len(_roster["plan_conflicts"]),
+                    "\n".join(
+                        "    writer %s serving %s: %s"
+                        % (aid, ", ".join(plans) or "(no plan)", "; ".join(lines))
+                        for aid, plans, lines in _roster["plan_conflicts"]
+                    ),
+                    me8,
+                ),
             )
 
     if bgwait_due:
@@ -4347,14 +4446,26 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _rv = (
                     _roster or {}
                 )  # never empty here: cap_saturated_wait is False without a roster
-                _note = M.N_CAP_WAIT % (
-                    len(_rv.get("writers") or ()),
-                    wl_roster.WRITER_CAP,
-                    ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
-                    int(_rv.get("queued") or 0),
-                    len(_dropped),
-                    wl_roster.next_status_due(_rv),
-                )
+                if len(_rv.get("writers") or ()) >= wl_roster.WRITER_CAP:
+                    _note = M.N_CAP_WAIT % (
+                        len(_rv.get("writers") or ()),
+                        wl_roster.WRITER_CAP,
+                        ", ".join(str(w)[:8] for w in _rv.get("writers") or ()),
+                        int(_rv.get("queued") or 0),
+                        len(_dropped),
+                        wl_roster.next_status_due(_rv),
+                    )
+                else:
+                    # THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-plan-priority-concurrency.md section 5c): a slot is free, but every queued item is held by a live plan, so there is nothing to start.
+                    _note = M.N_CAP_WAIT_CONC % (
+                        len(_rv.get("writers") or ()),
+                        wl_roster.WRITER_CAP,
+                        ", ".join(str(w)[:8] for w in _rv.get("writers") or ()) or "none",
+                        int(_rv.get("queued") or 0),
+                        ", ".join(wl_roster.queue_holder_plans(_rv)) or "?",
+                        len(_dropped),
+                        wl_roster.next_status_due(_rv),
+                    )
                 _base = "" if _guide_empty_pre_roster else _guide_pre_roster
                 guide = _note + ("\n\n" + _base if _base else "")
                 guide_empty = False
