@@ -24,13 +24,16 @@ Owns: .claude/commands/pr-babysit.md, .claude/commands/pr-merge.md, .claude/agen
 One writer does T1-T4 and T6, in order: T1-T3 share `wl_checks.py`, `wl_store.py` and `worklist_messages.py`, and T4 imports T1's and T2's API. The lead does T0, T5 and T7.
 
 - [x] T0 Lead: tick PLAN-stop-hook-cap-saturated-wait.md T1 with evidence (the passing `test_wl_cap_wait.py` run and its commit), and set its `Status:` to done, so this plan's `Depends-On:` edge resolves.
+    (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] T1 [A] Create `.claude/hooks/stop/wl_standdown.py`, holding the stand-down profiles (section 2). Move `CAP_WAIT_KEEPS`, `CAP_WAIT_KEEP_PREFIXES`, `CAP_WAIT_COMPACTION_KEYS` and `cap_wait_keeps` out of `.claude/hooks/stop/wl_roster.py:53-111`. Keep `cap_saturated_wait` in `wl_roster.py`, because it needs `WRITER_CAP`. Make `.claude/hooks/stop/wl_checks.py:4096-4142` use `wl_standdown.keeps(profile, ...)`. Re-target `test_wl_cap_wait.py` c9/m1/m2 to the new file. Add `wl_standdown.py` to `sealed_modules` in `.ci/policy/worklist-env-registry.json`. This is a pure refactor plus the `pr-finish` always-tier fix, and the cap-wait suite must pass before T2 starts.
+    (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] T2 [A] The focus state in the store (section 1):
   - a `focus` event kind and `S.focus_event`;
   - a `focus` out-parameter on `_fold_events`, carried on `Fold`;
   - `snapshot_events` re-emits the active focus;
   - the verb `worklist.py --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]`, plus a status form;
   - queue leases are accepted with a free slot while focus is on (`.claude/hooks/stop/worklist.py:1136-1145`).
+    (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] T3 [A] The Stop-hook integration (sections 3-6):
   - resolve focus early and end it on merge or expiry;
   - the FOCUS profile filter and the `focus-pr-items` key;
@@ -39,9 +42,12 @@ One writer does T1-T4 and T6, in order: T1-T3 share `wl_checks.py`, `wl_store.py
   - skip the `plan-tasks`, `plan-backlog` and `plan-clock` producers;
   - advisory batching, hint suppression and the one-line parked summary;
   - the messages, and their `ARITY` rows in `test_wl_message_catalogue.py`.
+    (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] T4 [A] Add the guard `.claude/rediacc_hooks/guards/block_focus_spawn.py` (`CHAIN = "pre-agent"`, `ORDER = 4`, `OWN_SUITE = True`, with `DEFECT` and `EDGE_CASES`) and its suite `.claude/rediacc_hooks/guards/test-block_focus_spawn.py`. Register it in `scripts/data/hook-inventory-baseline.json` and in `sealed_modules` (section 7).
+    (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [ ] T5 Lead: edit the skills and docs (section 8): `.claude/commands/pr-babysit.md`, `.claude/commands/pr-merge.md`, `.claude/agents/pr-babysitter.md` and `CLAUDE.md:99-102`.
 - [x] T6 [A] Add `.claude/rediacc_hooks/tests/test_wl_focus.py` with the cases and mutation controls in section 9. Update `.claude/hooks/stop/test-always-tier.py` for the new ladder key.
+    (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [ ] T7 Lead: run `.ci/cache/toolchain/uv-tools/pytest/bin/python -m pytest .claude/rediacc_hooks/tests/test_wl_focus.py .claude/rediacc_hooks/tests/test_wl_cap_wait.py .claude/rediacc_hooks/tests/test_wl_message_catalogue.py .claude/rediacc_hooks/tests/test_wl_event_store.py .claude/rediacc_hooks/tests/test_guards_differential.py .claude/rediacc_hooks/tests/test_dispatch.py`, then `python3 .claude/hooks/stop/test-always-tier.py`, then `python3 .ci/scripts/quality/check_plan_boxes.py --update` for this plan's ledger row.
 
 ## 1. Where focus state lives: a `focus` event in the worklist JSONL store, per session

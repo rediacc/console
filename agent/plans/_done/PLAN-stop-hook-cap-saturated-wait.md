@@ -10,6 +10,7 @@ Worklist: #064a3fd1
 
 - [x] T1 Implement sections 1-7 below in one pass (lead inline or one writer), with tests/test_wl_cap_wait.py and the mutation controls.
   Done: commit d393a4e8c; test_wl_cap_wait.py 16 passed (2026-09-25 re-run), 5 mutation controls.
+    (ticked) 2026-09-26T16:32:02Z by d778be9d: retroactive record: closed by b5a4e3a13 (2026-09-25) docs(plans): land the _done copy of the cap-saturated-wait plan and it -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 
 # Plan: a cap-saturated wait state for the Stop hook (read-only design)
 
