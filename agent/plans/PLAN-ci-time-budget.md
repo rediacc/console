@@ -136,29 +136,34 @@ Every other job (about 60 more) has a median under 6.5 and a max under 11 in eve
 
 ### P1: measure, and the watchdog in report-only mode (no behaviour change)
 
-- [ ] T1.1 [A] **`.ci/rediacc_ci/ci/budget_report.py`**, wired as `npm run ci:budget-report`. It is read-only against the Actions API.
+- [x] T1.1 [A] **`.ci/rediacc_ci/ci/budget_report.py`**, wired as `npm run ci:budget-report`. It is read-only against the Actions API.
   - Selection: the last N green runs per class (pr-full, main-push, schedule). Attempt-1 jobs only for offsets; all attempts for durations.
   - Output: per-job median, p90 and max; queue p90; runner-minutes; peak concurrency.
   - Critical path: walks the `needs:` graph of ci.yml plus each reusable callee, mapping display names `caller / callee` the same way `check_job_timeout_headroom.py` refresh does its aliasing.
   - Emits the markdown tables in section 1 and JSON. It regenerates this plan's before-table; acceptance is within ±10% of section 1.
-- [ ] T1.2 [A] **Budget detection in `.ci/scripts/ci/watchdog-monitor.cjs`.**
+    (ticked) 2026-09-26T21:27:54Z by d778be9d: budget_report.py wired as npm run ci:budget-report, read-only, live-checked (commit 0eab7c5b0, .ci/rediacc_ci/ci/budget_report.py:1)
+- [x] T1.2 [A] **Budget detection in `.ci/scripts/ci/watchdog-monitor.cjs`.**
   - A pure `evaluateBudget({jobs, run, nowMs, jobBudgetMin, runBudgetMin, excludePatterns})`, in the `evaluate*` style of `evaluateCancelExemption` (`:83`).
   - It is called every poll right after the job fetch (the loop at `:1054`, the fetch at about `:1068`).
   - Job clock: `now - started_at` for in-progress jobs, and `completed_at - started_at` for jobs that finished over budget between polls.
   - Run clock: `now - run.run_started_at` for the current attempt, so a rerun starts a fresh clock and queue time counts.
   - Excluded: `WATCHDOG_EXCLUDE_PATTERNS` (`.github/workflows/watchdog-monitor.yml:148`: Watchdog, CI Complete, Review Complete).
-- [ ] T1.3 [A] **Report-only output.**
+    (ticked) 2026-09-26T21:27:54Z by d778be9d: evaluateBudget in watchdog-monitor.cjs, called each poll (commit 0eab7c5b0, .ci/scripts/ci/watchdog-monitor.cjs:1)
+- [x] T1.3 [A] **Report-only output.**
   - For each violation: `core.warning("CI BUDGET VIOLATION (report-only): '<job>' at <m>m, budget 15m")`, one annotation per job per generation.
   - A `$GITHUB_STEP_SUMMARY` table, and `budget-violations.json` uploaded as `ci-budget-<run>-gen<g>` from the existing upload step (`.github/workflows/watchdog-monitor.yml:225` pattern).
   - New env in the monitor step (`.github/workflows/watchdog-monitor.yml:128-175`): `WATCHDOG_BUDGET_MODE: report`, `WATCHDOG_JOB_BUDGET_MIN: '15'`, `WATCHDOG_RUN_BUDGET_MIN: '20'`.
   - In `report` mode the function **never** reaches `forceCancel` (`:888`).
-- [ ] T1.4 [A] **Tests** in `.ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py`, next to the existing `test_gate_watchdog_*` suites, with a mocked `github`:
+    (ticked) 2026-09-26T21:27:55Z by d778be9d: report-only: warning per offender, step summary, ci-budget JSON; WATCHDOG_BUDGET_MODE=report (commit 0eab7c5b0, .github/workflows/watchdog-monitor.yml:1)
+- [x] T1.4 [A] **Tests** in `.ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py`, next to the existing `test_gate_watchdog_*` suites, with a mocked `github`:
   - a job at 14:59 does not fire, and at 15:01 does;
   - an excluded `CI Watchdog` never fires;
   - the run clock fires at 20:01;
   - in report mode `force-cancel` is never requested (**control:** the same fixture in enforce mode requests it exactly once);
   - a rerun attempt resets the run clock.
-- [ ] T1.5 [A] `report-nightly-status.cjs` lists the night's budget violations under their own heading, so the schedule run (cancel-exempt, `:54`) still surfaces them.
+    (ticked) 2026-09-26T21:27:55Z by d778be9d: 11 tests, boundaries, exclusions, report vs enforce, rerun resets (commit 0eab7c5b0, .ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py:1)
+- [x] T1.5 [A] `report-nightly-status.cjs` lists the night's budget violations under their own heading, so the schedule run (cancel-exempt, `:54`) still surfaces them.
+    (ticked) 2026-09-26T21:27:56Z by d778be9d: nightly report lists budget violations under their own heading (commit 0eab7c5b0, .ci/scripts/ci/report-nightly-status.cjs:1)
 - [ ] T1.6 [B] **Unit-duration artifacts from every lane that will be sharded.** No sharding yet.
   - Playwright `--reporter=json` beside the existing reporters in `run-e2e.sh` and `.ci/scripts/test/run-account-e2e.sh:220-224`.
   - `gotestsum --jsonfile` in renet.
@@ -186,10 +191,11 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
     (ticked) 2026-09-26T20:35:55Z by d778be9d: did not reproduce: run 36040274865's E2E Ceph and K8s Multinode logs show the shared/provisioning build once, via setup-workspace; nothing to remove (commit 4b5a52d9f, .github/actions/setup-workspace/action.yml:1)
 - [x] T2.5 [D] **`simulate_promotion.py`.** It runs one `aws s3api copy-object` subprocess per key (`:210`) with `max_concurrent_requests 3` (`:120`). Move the copies onto the already-imported `concurrent.futures` pool (`:91`) with 16 workers and adaptive retry kept. Projected: Validate Promotion goes from 15.0 to about 5.
     (ticked) 2026-09-26T20:35:56Z by d778be9d: copies already on concurrent.futures; COPY_PARALLELISM 8 -> 16 (commit 6e713d7cc, .ci/rediacc_ci/deploy/simulate_promotion.py:1)
-- [ ] T2.6 [C] **Release chain.**
+- [x] T2.6 [C] **Release chain.**
   - Narrow `stage-artifacts` needs (`.github/workflows/ci.yml:962`) to what it ships. Split `ci-build-docker.yml` so the Devcontainer legs (end 15.8-16.6) are not upstream of staging.
   - Split `Renet (cached)` "Extract Linux binaries + cross-compile Darwin/Windows" (4.2 min) into two legs.
   - Verify whether stage needs docker at all.
+    (ticked) 2026-09-26T21:27:56Z by d778be9d: Devcontainer off the release chain (4b5a52d9f) and Renet (cached) split into linux and cross legs (commit b631f7204, .github/workflows/ci-build-renet.yml:1)
 
 **P2b. One shard mechanism, reused from quality-code (T-SCHED B2)**
 
@@ -197,7 +203,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - `laneCapabilities` today parses one workflow, and `LANE_ORDER` (`scripts/ci-runner/lanes.ts:25`) lists `quality-*` only. Key capabilities by `ci.workflow`, and add the test lanes: `test-e2e-workers`, `test-account-e2e`, `test-renet-go`, `test-renet-integration`, `quality-pytest`, `quality-gate-tests`, `ops-tutorials`.
   - Add one gates.lock entry per lane (`ci.kind: 'step'`, the workflow and job of that lane). The lane is then visible to `npm run ci`, `gate-bind` and the gates, as the spec asks.
     (ticked) 2026-09-26T20:35:56Z by d778be9d: TEST_LANE_WORKFLOWS and mergeLaneCapabilities, kept out of LANE_ORDER (commit 3825b36cc, scripts/ci-runner/lanes.ts:1)
-- [ ] T2.8 [B] **Unit enumerators.** A test lane's units are not lock entries: adding hundreds of files to gates.lock would distort `npm run ci`. Each lane instead declares an enumerator (`unitsFrom`) that prints `{id, mutex?, needs?}` per unit:
+- [x] T2.8 [B] **Unit enumerators.** A test lane's units are not lock entries: adding hundreds of files to gates.lock would distort `npm run ci`. Each lane instead declares an enumerator (`unitsFrom`) that prints `{id, mutex?, needs?}` per unit:
   - Playwright: `--list --reporter=json`, file units, plus `file::describe` units where declared.
   - Go: `go list ./pkg/... ./cmd/...`, 83 packages.
   - pytest: `--collect-only -q` files, with `rediacc_ci.xdist_groups` groups as mutex units.
@@ -205,6 +211,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - vitest: its `include` globs.
   - Tutorials: slugs in sequence order, with `needs` chaining within a segment.
   - `shardPlan` (`scripts/ci-runner/lanes.ts:480`) takes these units unchanged. Its refusals (empty shard, a unit in two shards, lost units) stay the correctness backbone.
+    (ticked) 2026-09-26T21:27:57Z by d778be9d: seven lane enumerators (3825b36cc), reachable through run.ts --list-units (commit c3c2c9368, scripts/ci-runner/unit-enumerators.ts:1)
 - [x] T2.9 [B] **Balance by measured duration, not slots.** Today LPT sorts on `weight`, which is scheduler slots (`scripts/ci-runner/lanes.ts:651-662`). Add `estimateMs` from `.ci/config/lane-durations.json`; the p90 of unit durations falls back to `weight` when absent, as today. `quality-code`'s plan must come out byte-identical, and a selftest control asserts it.
     (ticked) 2026-09-26T20:35:57Z by d778be9d: shardPlan takes per-unit durations with slot-weight fallback; selftest proves byte-identical without them (commit 3825b36cc, scripts/ci-runner/lanes.ts:1)
 - [x] T2.10 [B] **Shard manifest plus local reproduction.**
@@ -212,13 +219,14 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - Each leg runs `<runner> --shard-manifest .ci/config/shards/<lane>.json --shard ${{ matrix.shard }}`.
   - `npm run ci -- --lane <lane> --shard i/N` (`scripts/ci-runner/run.ts`) replays one CI leg locally through the same pool.
     (ticked) 2026-09-26T20:35:57Z by d778be9d: shard manifest written by gate-bind --write; run.ts --lane --shard i/N (commit 3825b36cc, scripts/ci-runner/shard-manifest.ts:1)
-- [ ] T2.11 [B] **Merge by receipt.** Generalise `scripts/ci/write-shard-receipt.cjs` (`RECEIPT_WRITER`, `scripts/gate-bind.ts:605`) and `check:ci-quality-complete` (`.github/workflows/ci-quality.yml:2672-2706`) from lock ids to unit ids.
+- [x] T2.11 [B] **Merge by receipt.** Generalise `scripts/ci/write-shard-receipt.cjs` (`RECEIPT_WRITER`, `scripts/gate-bind.ts:605`) and `check:ci-quality-complete` (`.github/workflows/ci-quality.yml:2672-2706`) from lock ids to unit ids.
   - Each leg writes `{lane, index, of, units:[{id, outcome, ms}]}`, derived from the runner's own report (Playwright JSON, gotestsum JSON, junit), not from the plan.
   - One slim `<Lane> / Shard receipts` job per lane downloads `<lane>-shard-*`. It asserts every unit ran exactly once with a non-skipped outcome, then merges artifacts:
     - `npx playwright merge-reports` for blob reports;
     - concatenated JUnit;
     - Go coverprofiles concatenated with the repeated `mode:` lines dropped.
   - The same receipts feed T1.6 durations.
+    (ticked) 2026-09-26T21:27:57Z by d778be9d: writer UNITS_JSON mode (3825b36cc) and the reader judging unit-keyed receipts (commit c3c2c9368, scripts/gates/check-quality-complete.ts:1)
 
 **P2c. Per-job shard designs**
 
@@ -251,7 +259,8 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - Cache key: renet version, ceph image pin, VM image month.
   - Target: restore in 3 min or less.
   - Hypothesis until measured. Without it, E2E Workers needs 11 legs per distro, and the four Ceph/K8s jobs stay at 19-29 min.
-- [ ] T2.18 [C] Apply D-W3 to the K8s Multinode (10.9 min) and K8s repo (7.3 min) tests.
+- [x] T2.18 [C] Apply D-W3 to the K8s Multinode (10.9 min) and K8s repo (7.3 min) tests.
+    (ticked) 2026-09-26T21:27:58Z by d778be9d: dropped by the operator's 2026-09-25 ruling D-W3: K8s Multinode and K8s repo stay whole as named exemptions (commit 2d8d0534b, agent/plans/PLAN-ci-time-budget.md:354)
 
 **Exit P2:** `budget_report` over 10 green full runs shows every job's p90 at 12 or under and its max at 15 or under. Pipeline p90 meets the D-W1 target.
 

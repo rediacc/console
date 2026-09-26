@@ -486,7 +486,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | held | 147 | 11 | 0 | 30845 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-gate-write-taint-scanners.md` | active | 338 | 0 | 19 | 51100 |
-| `agent/plans/PLAN-ci-time-budget.md` | draft | 356 | 23 | 9 | 39030 |
+| `agent/plans/PLAN-ci-time-budget.md` | draft | 365 | 14 | 18 | 40723 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | held | 214 | 6 | 0 | 19704 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
@@ -497,7 +497,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-handoff-relay-only.md` | held | 410 | 11 | 0 | 38703 |
 | `agent/plans/PLAN-config-networkid-sync.md` | held | 278 | 8 | 0 | 30683 |
-| `agent/plans/PLAN-config-passkey-optional.md` | held | 124 | 4 | 0 | 13115 |
+| `agent/plans/PLAN-config-passkey-optional.md` | held | 125 | 4 | 0 | 13116 |
 | `agent/plans/PLAN-config-sync-hardening.md` | held | 457 | 19 | 0 | 54737 |
 | `agent/plans/PLAN-config-team-scoping.md` | held | 234 | 11 | 0 | 29142 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
