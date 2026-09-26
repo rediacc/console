@@ -153,6 +153,48 @@ export class PreconditionValidationError extends ValidationError {
 }
 
 /**
+ * The remote-config adapter's errors (adapters/remote-config-errors.ts), matched by name so this module does not
+ * import the adapter. Before 2026-09-26 every one reached the envelope as GENERAL_ERROR, so an agent could not tell
+ * "re-enroll this device" from a crash; the eu live test showed it on RemoteStaleSlotError after a CEK rotation.
+ */
+const REMOTE_CONFIG_ERRORS: Record<
+  string,
+  {
+    code: 'AUTH_REQUIRED' | 'NETWORK_ERROR' | 'PERMISSION_DENIED' | 'NOT_FOUND' | 'STATE_MISMATCH';
+    retryable: boolean;
+  }
+> = {
+  RemoteAuthError: { code: 'AUTH_REQUIRED', retryable: false },
+  RemoteTokenExpiredError: { code: 'AUTH_REQUIRED', retryable: false },
+  RemoteTokenIpMismatchError: { code: 'AUTH_REQUIRED', retryable: false },
+  RemoteStaleSlotError: { code: 'AUTH_REQUIRED', retryable: false },
+  RemotePasskeySecretMissingError: { code: 'AUTH_REQUIRED', retryable: false },
+  RemoteUnreachableError: { code: 'NETWORK_ERROR', retryable: true },
+  RemoteWriteFailedClosedError: { code: 'NETWORK_ERROR', retryable: true },
+  RemoteTeamForbiddenError: { code: 'PERMISSION_DENIED', retryable: false },
+  RemoteTeamNotFoundError: { code: 'NOT_FOUND', retryable: false },
+  RemoteVersionConflictError: { code: 'STATE_MISMATCH', retryable: true },
+  RemotePreconditionError: { code: 'STATE_MISMATCH', retryable: false },
+  RemoteRollbackError: { code: 'STATE_MISMATCH', retryable: false },
+  RemoteConfigUndecryptableError: { code: 'STATE_MISMATCH', retryable: false },
+};
+
+/** The CliError for a remote-config adapter error, or undefined for any other error. */
+function remoteConfigError(error: unknown): CliError | undefined {
+  const remote = error instanceof Error ? REMOTE_CONFIG_ERRORS[error.name] : undefined;
+  if (!remote) return undefined;
+  const message = (error as Error).message;
+  return {
+    code: ERROR_CODES[remote.code],
+    message,
+    exitCode: EXIT_CODES[remote.code],
+    retryable: remote.retryable,
+    // The message already names the remedy (`rdc config remote enable`, `rdc subscription login`, ...); the exit code's generic guidance would contradict it.
+    guidance: message,
+  };
+}
+
+/**
  * Normalize various error types into a consistent CliError structure.
  */
 function normalizeError(error: unknown): CliError {
@@ -195,6 +237,9 @@ function normalizeError(error: unknown): CliError {
       exitCode: EXIT_CODES.INVALID_ARGUMENTS,
     };
   }
+
+  const remote = remoteConfigError(error);
+  if (remote) return remote;
 
   // Unknown error
   return {
