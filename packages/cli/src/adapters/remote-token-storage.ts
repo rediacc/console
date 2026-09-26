@@ -221,7 +221,8 @@ export class RemoteTokenStorage {
 }
 
 function withoutGeneration(sync: SyncRecord): SyncRecord {
-  const { cekGeneration: _replaced, ...rest } = sync;
+  const rest = { ...sync };
+  delete rest.cekGeneration;
   return rest;
 }
 

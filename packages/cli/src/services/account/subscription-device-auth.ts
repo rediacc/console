@@ -1,4 +1,5 @@
 import { t } from '../../i18n/index.js';
+import { authorizationExpired, CliExitError } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
 import { outputService } from '../core/output.js';
 import { accountServerFetch } from './account-client.js';
@@ -99,10 +100,13 @@ async function attemptDeviceCodePoll(
     );
     if (result.status === 'complete' && result.token) return result.token;
     if (result.status === 'expired') {
-      throw new ValidationError(t('commands.subscription.login.expired'));
+      throw authorizationExpired(
+        t('commands.subscription.login.expired'),
+        'rdc subscription login'
+      );
     }
   } catch (error) {
-    if (error instanceof ValidationError) throw error;
+    if (error instanceof ValidationError || error instanceof CliExitError) throw error;
     // Non-OK responses during polling are expected (pending state)
   }
   return null;
@@ -123,7 +127,7 @@ async function pollForDeviceCodeToken(
     if (token) return token;
   }
 
-  throw new ValidationError(t('commands.subscription.login.expired'));
+  throw authorizationExpired(t('commands.subscription.login.expired'), 'rdc subscription login');
 }
 
 function fetchLicenseStatus(serverUrl: string, token: string): Promise<LicenseStatusResponse> {

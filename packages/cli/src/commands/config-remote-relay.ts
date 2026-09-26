@@ -27,6 +27,7 @@ import {
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { outputService } from '../services/core/output.js';
+import { authorizationExpired, CliExitError } from '../utils/cli-exit-error.js';
 import { ValidationError } from '../utils/errors.js';
 import { stopSpinner, withSpinner } from '../utils/spinner.js';
 import {
@@ -198,10 +199,13 @@ type ClaimStep = { done: CekHandoffBlob } | { waitMs: number; failed: boolean };
  * backs off exponentially.
  */
 function classifyClaimError(error: unknown, relay: RelayHandoff, failures: number): ClaimStep {
-  if (error instanceof ValidationError) throw error;
+  if (error instanceof ValidationError || error instanceof CliExitError) throw error;
   const { status, retryAfter, message } = error as FetchError;
   if (status === 404 || status === 410) {
-    throw new ValidationError(t('commands.config.remote.enable.expired'));
+    throw authorizationExpired(
+      t('commands.config.remote.enable.expired'),
+      'rdc config remote enable'
+    );
   }
   if (status === 429) {
     const waitMs = typeof retryAfter === 'number' ? retryAfter * 1000 : MAX_BACKOFF_MS;
@@ -231,7 +235,10 @@ async function claimOnce(
     return classifyClaimError(error, relay, failures);
   }
   if (res.status === 'expired') {
-    throw new ValidationError(t('commands.config.remote.enable.expired'));
+    throw authorizationExpired(
+      t('commands.config.remote.enable.expired'),
+      'rdc config remote enable'
+    );
   }
   if (res.status === 'complete' && res.configHandoff) {
     return { done: parseHandoff(res.configHandoff) };
@@ -245,7 +252,11 @@ async function claimUntilDeadline(apiUrl: string, relay: RelayHandoff): Promise<
   let failures = 0;
   for (;;) {
     const remaining = relay.expiresAt - Date.now();
-    if (remaining <= 0) throw new ValidationError(t('commands.config.remote.enable.expired'));
+    if (remaining <= 0)
+      throw authorizationExpired(
+        t('commands.config.remote.enable.expired'),
+        'rdc config remote enable'
+      );
     await sleep(Math.min(waitMs, remaining));
     const step = await claimOnce(apiUrl, relay, failures);
     if ('done' in step) return step.done;

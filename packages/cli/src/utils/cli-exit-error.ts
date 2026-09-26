@@ -20,6 +20,8 @@ export interface CliExitErrorOptions {
   next?: NextAction;
   /** Override the retryable flag; defaults to the code's class (§1 table). */
   retryable?: boolean;
+  /** Override the exit code's default guidance line, when that line names the wrong remedy. */
+  guidance?: string;
   /**
    * Override the derived exit code. Almost never needed, the whole point is
    * that the code determines the exit code, but a couple of §1 deviations
@@ -34,6 +36,7 @@ export class CliExitError extends Error {
   readonly details?: string[];
   readonly next?: NextAction;
   readonly retryable?: boolean;
+  readonly guidance?: string;
 
   constructor(code: string, message: string, options: CliExitErrorOptions = {}) {
     super(message);
@@ -43,6 +46,7 @@ export class CliExitError extends Error {
     this.details = options.details;
     this.next = options.next;
     this.retryable = options.retryable;
+    this.guidance = options.guidance;
   }
 }
 
@@ -71,4 +75,16 @@ export function busy(message: string, options?: CliExitErrorOptions): CliExitErr
 /** `NOT_FOUND` (exit 5): a named resource does not exist in config or on the machine. */
 export function notFound(message: string, options?: CliExitErrorOptions): CliExitError {
   return new CliExitError(ERROR_CODES.NOT_FOUND, message, options);
+}
+
+/**
+ * `AUTH_REQUIRED`, retryable: a browser authorization (device code or config handoff) expired before it was
+ * approved. Nothing is wrong with the command, so the default "check usage with --help" guidance is replaced by the
+ * command to run again.
+ */
+export function authorizationExpired(message: string, rerun: string): CliExitError {
+  return new CliExitError(ERROR_CODES.AUTH_REQUIRED, message, {
+    retryable: true,
+    guidance: `Run "${rerun}" again and approve it in the browser`,
+  });
 }

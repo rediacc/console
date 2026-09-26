@@ -16,6 +16,7 @@ import {
 } from '@rediacc/shared/config-crypto';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
 import { generateX25519KeyPair, type HandoffPayload } from '../config-remote-handoff.js';
 
@@ -407,9 +408,7 @@ describe('claim loop', () => {
     });
     const handle = await started();
 
-    await expect(drive(relay.waitForRelayHandoff(API, handle), 500)).rejects.toThrow(
-      ValidationError
-    );
+    await expect(drive(relay.waitForRelayHandoff(API, handle), 500)).rejects.toThrow(CliExitError);
     expect(times[1] - times[0]).toBeGreaterThanOrEqual(relay.MAX_BACKOFF_MS);
   });
 
@@ -442,29 +441,33 @@ describe('claim loop', () => {
     });
     const handle = await started();
 
-    await expect(drive(relay.waitForRelayHandoff(API, handle), 500)).rejects.toThrow(
-      ValidationError
-    );
+    await expect(drive(relay.waitForRelayHandoff(API, handle), 500)).rejects.toThrow(CliExitError);
     const gaps = times.slice(1).map((t, i) => t - times[i]);
     expect(gaps[0]).toBeGreaterThanOrEqual(10_000);
     expect(gaps[1]).toBeGreaterThanOrEqual(20_000);
     for (const gap of gaps) expect(gap).toBeLessThanOrEqual(relay.MAX_BACKOFF_MS + 500);
   });
 
-  it('expired (404) raises a ValidationError', async () => {
+  it('expired (404) raises a retryable AUTH_REQUIRED that names the command to rerun', async () => {
     server(() => Promise.reject(httpError(404, { message: 'expired' })));
     const handle = await started();
 
     await expect(drive(relay.waitForRelayHandoff(API, handle))).rejects.toThrow(/expired/i);
   });
 
-  it('an {status:"expired"} body raises a ValidationError', async () => {
+  it('an {status:"expired"} body raises a retryable AUTH_REQUIRED, not a usage error', async () => {
     server(() => Promise.resolve({ status: 'expired' }));
     const handle = await started();
 
-    await expect(drive(relay.waitForRelayHandoff(API, handle))).rejects.toBeInstanceOf(
-      ValidationError
-    );
+    // An expired handoff is nobody's typo: before 2026-09-26 it surfaced as VALIDATION_ERROR, not retryable,
+    // with the "Check command usage with --help" guidance.
+    const error = await drive(relay.waitForRelayHandoff(API, handle)).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(CliExitError);
+    expect(error).toMatchObject({
+      code: 'AUTH_REQUIRED',
+      retryable: true,
+      guidance: expect.stringContaining('rdc config remote enable'),
+    });
   });
 
   it('any other 4xx raises at once with the status', async () => {

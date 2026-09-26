@@ -166,6 +166,7 @@ function normalizeError(error: unknown): CliError {
       ...(error.details?.length && { details: error.details }),
       ...(error.retryable !== undefined && { retryable: error.retryable }),
       ...(error.next && { next: error.next }),
+      ...(error.guidance && { guidance: error.guidance }),
     };
   }
 
