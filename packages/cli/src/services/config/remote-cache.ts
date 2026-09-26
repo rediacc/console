@@ -171,7 +171,9 @@ function deviceLocalOnly(local: RdcConfig): RdcConfig {
   const localDoc = local as Record<string, unknown>;
   for (const pointer of DEVICE_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
   if (local.remote) {
-    const { cachedVersion: _version, cachedAt: _at, ...pointer } = local.remote;
+    const pointer = { ...local.remote };
+    delete pointer.cachedVersion;
+    delete pointer.cachedAt;
     out.remote = pointer;
   }
   return out as RdcConfig;

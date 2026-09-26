@@ -143,9 +143,6 @@ const MAX_LINES_EXEMPT = [
   // packages.js:22-52 -- the account package's general rules (this one included) are off in eslint; Biome is account's linter for everything but the three i18n rules eslint still carries there.
   'private/account/**/*.ts',
   'private/account/**/*.tsx',
-  // Rule map, max-lines row: the two files whose own first line silences eslint's max-lines specifically for that file (license.ts:1, local-executor.ts:1). Left exactly as they are -- removing a per-file silencing comment is a later, differently-owned Phase 1 box, not this one.
-  'packages/cli/src/services/account/license.ts',
-  'packages/cli/src/services/executor/local-executor.ts',
   // tooling.js:46-51 -- a dedicated BLOCKER block turns `max-lines` off for this one file: it is the host-side scope analyzer standing in for `@typescript-eslint/no-unused-vars` during the Biome cutover, and it is deleted at the same cutover that deletes eslint.config itself, so its size is not worth enforcing against. Found live on this HEAD (587 code lines): `npx eslint eslint-rules/no-unused-underscore-var.js --max-warnings 0` exits 0 with `max-lines` resolving to `off` there (`calculateConfigForFile`), while this gate initially had no matching entry and turned red on it -- a real scope-parity gap, not a hypothetical one.
   'eslint-rules/no-unused-underscore-var.js',
 ];
@@ -327,15 +324,12 @@ function selftest(): boolean {
   ).join('\n');
   check('the cap applies identically to .tsx sources', countText(tsx, 'x.tsx') === MAX_LINES + 1);
 
-  // Scope: the two live per-file silenced files, and one of the generated files, must be exempt end to end, not merely present in the static pattern list -- this walks the real repo tree.
+  // Scope: the split files are in scope, and one of the generated files must be exempt end to end, not merely present in the static pattern list -- this walks the real repo tree.
   const scope = new Set(scanScope());
   check(
-    'license.ts (its own max-lines silencing comment) is exempt from the scan',
-    !scope.has('packages/cli/src/services/account/license.ts')
-  );
-  check(
-    'local-executor.ts (its own max-lines silencing comment) is exempt from the scan',
-    !scope.has('packages/cli/src/services/executor/local-executor.ts')
+    'license.ts and local-executor.ts are scanned like any other source (both were split under the cap on 2026-09-26, and their exemption went with the silencing comments)',
+    scope.has('packages/cli/src/services/account/license.ts') &&
+      scope.has('packages/cli/src/services/executor/local-executor.ts')
   );
   check(
     'a generated renet-contract file is exempt from the scan',

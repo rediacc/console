@@ -37,8 +37,8 @@ vi.mock('../../services/config/config-server-client.js', () => ({
 
 vi.mock('@rediacc/shared/config-crypto', () => ({
   ENVELOPE_VERSION: 3,
-  derivePointerBlindingKey: vi.fn(async () => ({})),
-  blindPointer: vi.fn(async (_key: unknown, pointer: string) => `blind:${pointer}`),
+  derivePointerBlindingKey: vi.fn(() => Promise.resolve({})),
+  blindPointer: vi.fn((_key: unknown, pointer: string) => Promise.resolve(`blind:${pointer}`)),
   selectiveDecrypt: mockSelectiveDecrypt,
   selectiveEncrypt: mockSelectiveEncrypt,
   deriveWrappingKey: mockDeriveWrappingKey,
@@ -199,9 +199,9 @@ describe('RemoteConfigAdapter', () => {
     it('decrypts with the key the PULL returns (the push epoch), not the session key of the current epoch', async () => {
       // 2026-09-25: after the first remote enable every later pull failed with "the server session layer would not open it": the blob is sealed under the epoch it was pushed in, and the pull response carries that epoch's sdk_derived, which the CLI ignored.
       mockFromBase64.mockImplementation((b64: string) => new TextEncoder().encode(String(b64)));
-      mockImportAesKey.mockImplementation(async (bytes: Uint8Array) => ({
-        marker: new TextDecoder().decode(bytes),
-      }));
+      mockImportAesKey.mockImplementation((bytes: Uint8Array) =>
+        Promise.resolve({ marker: new TextDecoder().decode(bytes) })
+      );
       mockConfigServerFetch.mockResolvedValueOnce({
         data: {
           server_secret: 'c2Vy',
@@ -683,12 +683,12 @@ describe('RemoteConfigAdapter', () => {
       ];
       mockConfigServerFetch.mockRejectedValueOnce(refusal);
 
-      const base = {
+      const base: RdcConfig = {
         schemaVersion: 3,
         id: 'cfg-id',
         version: 1,
         resources: { machines: { m1: { ip: '10.0.0.1', user: 'root' } } },
-      } as RdcConfig;
+      };
       const err = await adapter
         .push({ schemaVersion: 3, id: 'cfg-id', version: 1 }, 1, { base })
         .then(

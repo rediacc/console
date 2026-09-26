@@ -70,7 +70,7 @@ describe('a local config writes offline without touching a server', () => {
 
     const state = onDisk().state;
     expect(state?.networkIds?.next).toBe(2900);
-    expect(state?.backupRuns?.mail?.status).toBe('stored');
+    expect(state?.backupRuns?.mail.status).toBe('stored');
     expect(state?.licenseRefresh?.m1).toBe(1_700_000_000_000);
     expect(state?.renetProvision?.['10.0.0.1:22']?.hash).toBe('h');
     expect(warn).not.toHaveBeenCalled();

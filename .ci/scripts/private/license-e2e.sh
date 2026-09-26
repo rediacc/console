@@ -314,7 +314,7 @@ record_fail() {
 }
 
 # run_renet <cmd...> — drives the binary DIRECTLY, never through rdc: the CLI's
-# exit-10 recovery framework (packages/cli/src/services/executor/local-executor.ts)
+# exit-10 recovery framework (packages/cli/src/services/executor/license-recovery.ts)
 # retries and rewrites the failure, which would hide the raw exit code this
 # battery exists to assert on. stdout and stderr are captured separately.
 run_renet() {

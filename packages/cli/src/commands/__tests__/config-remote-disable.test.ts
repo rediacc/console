@@ -9,13 +9,17 @@ import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RdcConfig } from '../../types/index.js';
 
-const { mockPull, fileState, secureDelete, tokenDelete, otherConfigs } = vi.hoisted(() => ({
-  otherConfigs: {} as Record<string, unknown>,
-  mockPull: vi.fn(),
-  fileState: { current: undefined as unknown },
-  secureDelete: vi.fn(() => Promise.resolve()),
-  tokenDelete: vi.fn(() => Promise.resolve()),
-}));
+const { mockPull, fileState, secureDelete, tokenDelete, otherConfigs } = vi.hoisted(() => {
+  const otherConfigs: Record<string, unknown> = {};
+  const fileState: { current: unknown } = { current: undefined };
+  return {
+    otherConfigs,
+    mockPull: vi.fn(),
+    fileState,
+    secureDelete: vi.fn(() => Promise.resolve()),
+    tokenDelete: vi.fn(() => Promise.resolve()),
+  };
+});
 
 vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: {

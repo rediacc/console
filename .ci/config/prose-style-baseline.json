@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2903,
- "files": 717,
+ "count": 2898,
+ "files": 716,
  "by_rule": {
-  "R1": 1584,
+  "R1": 1583,
   "R11": 150,
   "R14": 1,
   "R18": 13,
   "R19": 62,
-  "R2": 612,
-  "R7": 481
+  "R2": 611,
+  "R7": 478
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -4366,11 +4366,6 @@
     "66745f5f8ddcb747"
    ]
   },
-  "packages/cli/src/services/account/license.ts": {
-   "R7": [
-    "7370d5043deecc1e"
-   ]
-  },
   "packages/cli/src/services/backup/backup-schedule-reconcile.ts": {
    "R7": [
     "54898adab488243f"
@@ -4455,15 +4450,7 @@
    ]
   },
   "packages/cli/src/services/executor/local-executor.ts": {
-   "R1": [
-    "c34140d39932bab7"
-   ],
-   "R2": [
-    "c1c79ecf40261934"
-   ],
    "R7": [
-    "03c66343696e4d9e",
-    "7e6fe8ea63d8f815",
     "86ca5056c25276e0"
    ]
   },

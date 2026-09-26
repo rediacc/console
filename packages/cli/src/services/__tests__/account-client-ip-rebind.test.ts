@@ -32,19 +32,21 @@ const mockWriteStderr = vi.hoisted(() => vi.fn());
 vi.mock('@rediacc/shared/e2e', () => ({
   CURRENT_SERVER_E2E_KEY: { keyId: 'test', publicKeySpki: 'spki' },
   E2E_CONTENT_TYPE: 'application/x-test-e2e',
-  importX25519PublicKey: vi.fn(async () => ({})),
+  importX25519PublicKey: vi.fn(() => Promise.resolve({})),
   // Pass-through: the "envelope" is the inner request itself, readable by the fetch stub.
   sealRequest: vi.fn(
-    async (
+    (
       _key: unknown,
       _keyId: string,
       method: string,
       path: string,
       headers: Record<string, string>,
       body: unknown
-    ) => ({ envelope: { method, path, headers, body }, aesKey: 'aes' })
+    ) => Promise.resolve({ envelope: { method, path, headers, body }, aesKey: 'aes' })
   ),
-  openResponse: vi.fn(async (_aes: unknown, env: { status: number; body: string }) => env),
+  openResponse: vi.fn((_aes: unknown, env: { status: number; body: string }) =>
+    Promise.resolve(env)
+  ),
 }));
 
 vi.mock('../account/subscription-auth.js', () => ({
@@ -148,7 +150,7 @@ describe('accountServerFetch TOKEN_IP_MISMATCH rebind', () => {
         status: 200,
         json: () => Promise.resolve({ status: next.status, body: JSON.stringify(next.body) }),
       } as unknown as Response);
-    }) as typeof fetch;
+    });
   });
 
   afterEach(() => {

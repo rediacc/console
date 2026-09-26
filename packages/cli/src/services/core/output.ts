@@ -152,7 +152,7 @@ class OutputService {
   private writeOut(text: string): void {
     const context = currentRequestContext();
     if (context) context.stdout.push(text);
-    else console.log(text);
+    else process.stdout.write(`${text}\n`);
   }
 
   /** Human output: the terminal's stderr, or this request's stderr buffer. */

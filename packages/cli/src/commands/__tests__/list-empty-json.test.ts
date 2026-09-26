@@ -128,7 +128,7 @@ describe('the envelope an empty list actually produces', () => {
       '../../services/core/output.js'
     );
 
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const log = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
     try {
       outputService.print([], 'json');
       expect(log).toHaveBeenCalledTimes(1);

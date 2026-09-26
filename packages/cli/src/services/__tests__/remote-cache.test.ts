@@ -81,20 +81,20 @@ describe('mergeRemoteIntoCache', () => {
   });
 
   it("keeps this device's login over the pulled copy's, absence included", () => {
-    const withLogin = {
+    const withLogin: RdcConfig = {
       ...pulled,
       account: {
         userEmail: 'ops@example.com',
         accountServer: 'https://us.other',
         e2ePublicKey: 'K',
       },
-    } as RdcConfig;
+    };
     expect(mergeRemoteIntoCache(local, withLogin, 5).account).toEqual({
       userEmail: 'ops@example.com',
       accountServer: 'https://eu.rediacc.com',
     });
     // A device that logged out keeps no login, whatever the pull carries.
-    const loggedOut = { ...local, account: { userEmail: 'me@example.com' } } as RdcConfig;
+    const loggedOut: RdcConfig = { ...local, account: { userEmail: 'me@example.com' } };
     expect(mergeRemoteIntoCache(loggedOut, withLogin, 5).account).toEqual({
       userEmail: 'ops@example.com',
     });
@@ -103,7 +103,7 @@ describe('mergeRemoteIntoCache', () => {
   it('keeps the host-local renetPath, which the server copy never carries', () => {
     // 2026-09-25: the first remote enable dropped a dev machine's renetPath, silently
     // switching it back to the default renet binary.
-    const withPath = { ...local, renetPath: '/opt/dev/renet' } as RdcConfig;
+    const withPath: RdcConfig = { ...local, renetPath: '/opt/dev/renet' };
     expect(mergeRemoteIntoCache(withPath, pulled, 5).renetPath).toBe('/opt/dev/renet');
     // Control: no local override leaves the field absent, not blank.
     expect(mergeRemoteIntoCache(local, pulled, 5)).not.toHaveProperty('renetPath');

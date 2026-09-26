@@ -36,7 +36,7 @@ interface Banned {
 
 const BANNED: Banned[] = [
   // REMOTE plane literal survives only in the executor's renet env builder.
-  { token: 'REDIACC_ENVIRONMENT', allow: ['services/executor/local-executor.ts'] },
+  { token: 'REDIACC_ENVIRONMENT', allow: ['services/executor/renet-command.ts'] },
   { token: 'REDIACC_SUBSCRIPTION_TOKEN_FILE' },
   { token: 'REDIACC_SUBSCRIPTION_TOKEN' },
   { token: 'REDIACC_API_TOKEN' },

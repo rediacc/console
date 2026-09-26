@@ -14,6 +14,7 @@
  */
 
 import { createHash } from 'node:crypto';
+import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import {
   API_TOKEN_IP_REBIND_ERROR_CODES,
   type ApiTokenIpRebindResponse,
@@ -99,7 +100,7 @@ function describeRebindFailure(error: unknown): string | null {
   switch (e.code) {
     case API_TOKEN_IP_REBIND_ERROR_CODES.TOTP_INVALID:
       return t('errors.subscription.ipRebind.wrongCode', {
-        remaining: String(details.attemptsRemaining ?? '?'),
+        remaining: String(details.attemptsRemaining ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER),
       });
     case API_TOKEN_IP_REBIND_ERROR_CODES.TOTP_REPLAYED:
       return t('errors.subscription.ipRebind.replayed');

@@ -30,6 +30,7 @@ import {
 } from '../remote/vscode/index.js';
 import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import {
   type ConnectionDetails,
   getSSHConnectionDetails,
@@ -436,17 +437,17 @@ async function connectVSCode(target: string, options: VSCodeConnectOptions): Pro
   const vscodeUri = generateRemoteUri(connectionName, remotePath);
 
   if (options.urlOnly) {
-    console.log(vscodeUri);
+    outputService.print(vscodeUri);
     return;
   }
 
-  console.log(
+  outputService.print(
     t('commands.vscode.connect.opening', { connection: connectionName, path: remotePath })
   );
 
   await launchVSCode(vscodeInfo, vscodeUri, { newWindow: options.newWindow });
 
-  console.log(t('commands.vscode.connect.success'));
+  outputService.print(t('commands.vscode.connect.success'));
 }
 
 /**
@@ -457,22 +458,22 @@ function listVSCodeConnections(): void {
   const keys = listPersistedKeys();
 
   if (entries.length === 0) {
-    console.log(t('commands.vscode.list.noConnections'));
-    console.log(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
+    outputService.print(t('commands.vscode.list.noConnections'));
+    outputService.print(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
     return;
   }
 
-  console.log(t('commands.vscode.list.header'));
+  outputService.print(t('commands.vscode.list.header'));
 
   for (const entry of entries) {
     // Check if key exists for this entry
     const hasKey = keys.some((k: string) => entry.includes(k.replaceAll('_', '-')));
     const keyIndicator = hasKey ? t('commands.vscode.list.keyPersisted') : '';
-    console.log(`  ${entry}${keyIndicator}`);
+    outputService.print(`  ${entry}${keyIndicator}`);
   }
 
-  console.log(t('commands.vscode.list.total', { count: entries.length }));
-  console.log(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
+  outputService.print(t('commands.vscode.list.total', { count: entries.length }));
+  outputService.print(t('commands.vscode.list.configFile', { path: getSSHConfigPath() }));
 }
 
 /**
@@ -488,8 +489,8 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
     }
     cleanupAllPersistedKeys();
 
-    console.log(t('commands.vscode.cleanup.cleanedAll', { count }));
-    console.log(t('commands.vscode.cleanup.removedKeys'));
+    outputService.print(t('commands.vscode.cleanup.cleanedAll', { count }));
+    outputService.print(t('commands.vscode.cleanup.removedKeys'));
   } else if (options.connection) {
     const connectionName = options.connection;
 
@@ -504,7 +505,7 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
       removePersistedKeys(team, machine, repository);
     }
 
-    console.log(t('commands.vscode.cleanup.cleaned', { connection: connectionName }));
+    outputService.print(t('commands.vscode.cleanup.cleaned', { connection: connectionName }));
   } else {
     throw new Error(t('errors.vscode.cleanupRequired'));
   }
@@ -514,7 +515,7 @@ function cleanupVSCodeConnections(options: VSCodeCleanupOptions): void {
  * Checks VS Code installation and configuration
  */
 async function checkVSCodeSetup(isInsiders = false): Promise<void> {
-  console.log(t('commands.vscode.check.title'));
+  outputService.print(t('commands.vscode.check.title'));
 
   const vscode = await findVSCode();
   displayVSCodeInstallation(vscode);
@@ -523,14 +524,14 @@ async function checkVSCodeSetup(isInsiders = false): Promise<void> {
   const extensionStatus = hasExtension
     ? t('commands.vscode.check.installed')
     : t('commands.vscode.check.notDetected');
-  console.log(t('commands.vscode.check.remoteSSH', { status: extensionStatus }));
+  outputService.print(t('commands.vscode.check.remoteSSH', { status: extensionStatus }));
 
-  console.log(t('commands.vscode.check.configuration'));
+  outputService.print(t('commands.vscode.check.configuration'));
   const configCheck = checkVSCodeConfiguration(isInsiders);
   displayConfigurationStatus(configCheck);
 
   const configPath = getSSHConfigPath();
-  console.log(t('commands.vscode.check.sshConfig', { path: configPath }));
+  outputService.print(t('commands.vscode.check.sshConfig', { path: configPath }));
 
   const connections = listSSHConfigEntries();
   displayActiveConnections(connections);

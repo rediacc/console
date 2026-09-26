@@ -35,17 +35,20 @@ const {
   mockStore,
   mockConfirm,
   loaded,
-} = vi.hoisted(() => ({
-  mockFetch: vi.fn(),
-  lines: [] as string[],
-  warnings: [] as string[],
-  errors: [] as unknown[],
-  mockExecFile: vi.fn(),
-  mockApply: vi.fn(),
-  mockStore: vi.fn(),
-  mockConfirm: vi.fn(),
-  loaded: { remote: undefined as unknown },
-}));
+} = vi.hoisted(() => {
+  const loaded: { remote: unknown } = { remote: undefined };
+  return {
+    mockFetch: vi.fn(),
+    lines: [] as string[],
+    warnings: [] as string[],
+    errors: [] as unknown[],
+    mockExecFile: vi.fn(),
+    mockApply: vi.fn(),
+    mockStore: vi.fn(),
+    mockConfirm: vi.fn(),
+    loaded,
+  };
+});
 
 vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: mockFetch }));
 
@@ -194,12 +197,12 @@ const realTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
  * on the order of events only, never on how fast the machine is.
  */
 async function drive<T>(p: Promise<T>, stepMs = 1000): Promise<T> {
-  let done = false;
+  const state = { done: false };
   const tracked = p.finally(() => {
-    done = true;
+    state.done = true;
   });
   tracked.catch(() => {});
-  while (!done) {
+  while (!state.done) {
     if (vi.getTimerCount() > 0) await vi.advanceTimersByTimeAsync(stepMs);
     else await realTurn();
   }
@@ -492,7 +495,7 @@ describe('claim loop', () => {
  * too few on a loaded machine: "expected [] to have a length of 1"). A listener that never comes is the
  * test's own timeout.
  */
-async function ctrlC(before: Function[]) {
+async function ctrlC(before: NodeJS.SignalsListener[]) {
   const added = () => process.listeners('SIGINT').filter((l) => !before.includes(l));
   while (added().length === 0) await realTurn();
   expect(added()).toHaveLength(1);
