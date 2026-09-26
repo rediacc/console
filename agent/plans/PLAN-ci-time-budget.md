@@ -174,13 +174,18 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 **P2a. Critical path and fixed-cost cuts (no shards)**
 
-- [ ] T2.1 [C] Verify finding 3, then drop `build-docker-fast` from `tests.needs` (`.github/workflows/ci.yml:999`) and from the `if:` beside it.
+- [x] T2.1 [C] Verify finding 3, then drop `build-docker-fast` from `tests.needs` (`.github/workflows/ci.yml:999`) and from the `if:` beside it.
   - Verification: grep every ct-tests leg for image pulls of `*_tag`, and run one trial dispatch.
   - Projected: PR tests start at about 2.5 instead of 13.0.
-- [ ] T2.2 [C] Apply D-W6 (`.github/workflows/ci.yml:1043` ops-tests needs; the stripe-sandbox needs at `:676`).
-- [ ] T2.3 [C] **Free Disk Space.** ct-tests.yml has 9 copies (`:335`, `:386`, `:510`, ...), 1.1-5.8 minutes each. Replace them with one composite action that deletes only what the VM legs need, in the background (`rm -rf ... &`, joined before the KVM step), and drops the second prune in the Workers leg.
-- [ ] T2.4 [C] Remove the duplicate `npm run build -w @rediacc/shared && npm run build -w @rediacc/provisioning` (about 2 min, visible in the E2E Ceph and K8s Multinode logs just before "Running E2E tests") where `setup-workspace build-packages: 'true'` already built them.
-- [ ] T2.5 [D] **`simulate_promotion.py`.** It runs one `aws s3api copy-object` subprocess per key (`:210`) with `max_concurrent_requests 3` (`:120`). Move the copies onto the already-imported `concurrent.futures` pool (`:91`) with 16 workers and adaptive retry kept. Projected: Validate Promotion goes from 15.0 to about 5.
+    (ticked) 2026-09-26T20:35:54Z by d778be9d: finding 3 verified read-only; build-docker-fast dropped from tests.needs and its if (commit 4b5a52d9f, .github/workflows/ci.yml:1030)
+- [x] T2.2 [C] Apply D-W6 (`.github/workflows/ci.yml:1043` ops-tests needs; the stripe-sandbox needs at `:676`).
+    (ticked) 2026-09-26T20:35:54Z by d778be9d: D-W6 applied: stripe-sandbox no longer needs quality; ops-tests no longer needs quality or review-gate (commit 4b5a52d9f, .github/workflows/ci.yml:1081)
+- [x] T2.3 [C] **Free Disk Space.** ct-tests.yml has 9 copies (`:335`, `:386`, `:510`, ...), 1.1-5.8 minutes each. Replace them with one composite action that deletes only what the VM legs need, in the background (`rm -rf ... &`, joined before the KVM step), and drops the second prune in the Workers leg.
+    (ticked) 2026-09-26T20:35:55Z by d778be9d: one free-disk-space composite (start/wait) replaces the 9 inline copies in ct-tests.yml (commit 4b5a52d9f, .github/actions/free-disk-space/action.yml:1)
+- [x] T2.4 [C] Remove the duplicate `npm run build -w @rediacc/shared && npm run build -w @rediacc/provisioning` (about 2 min, visible in the E2E Ceph and K8s Multinode logs just before "Running E2E tests") where `setup-workspace build-packages: 'true'` already built them.
+    (ticked) 2026-09-26T20:35:55Z by d778be9d: did not reproduce: run 36040274865's E2E Ceph and K8s Multinode logs show the shared/provisioning build once, via setup-workspace; nothing to remove (commit 4b5a52d9f, .github/actions/setup-workspace/action.yml:1)
+- [x] T2.5 [D] **`simulate_promotion.py`.** It runs one `aws s3api copy-object` subprocess per key (`:210`) with `max_concurrent_requests 3` (`:120`). Move the copies onto the already-imported `concurrent.futures` pool (`:91`) with 16 workers and adaptive retry kept. Projected: Validate Promotion goes from 15.0 to about 5.
+    (ticked) 2026-09-26T20:35:56Z by d778be9d: copies already on concurrent.futures; COPY_PARALLELISM 8 -> 16 (commit 6e713d7cc, .ci/rediacc_ci/deploy/simulate_promotion.py:1)
 - [ ] T2.6 [C] **Release chain.**
   - Narrow `stage-artifacts` needs (`.github/workflows/ci.yml:962`) to what it ships. Split `ci-build-docker.yml` so the Devcontainer legs (end 15.8-16.6) are not upstream of staging.
   - Split `Renet (cached)` "Extract Linux binaries + cross-compile Darwin/Windows" (4.2 min) into two legs.
@@ -188,9 +193,10 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 **P2b. One shard mechanism, reused from quality-code (T-SCHED B2)**
 
-- [ ] T2.7 [B] **Lanes beyond ci-quality.yml.**
+- [x] T2.7 [B] **Lanes beyond ci-quality.yml.**
   - `laneCapabilities` today parses one workflow, and `LANE_ORDER` (`scripts/ci-runner/lanes.ts:25`) lists `quality-*` only. Key capabilities by `ci.workflow`, and add the test lanes: `test-e2e-workers`, `test-account-e2e`, `test-renet-go`, `test-renet-integration`, `quality-pytest`, `quality-gate-tests`, `ops-tutorials`.
   - Add one gates.lock entry per lane (`ci.kind: 'step'`, the workflow and job of that lane). The lane is then visible to `npm run ci`, `gate-bind` and the gates, as the spec asks.
+    (ticked) 2026-09-26T20:35:56Z by d778be9d: TEST_LANE_WORKFLOWS and mergeLaneCapabilities, kept out of LANE_ORDER (commit 3825b36cc, scripts/ci-runner/lanes.ts:1)
 - [ ] T2.8 [B] **Unit enumerators.** A test lane's units are not lock entries: adding hundreds of files to gates.lock would distort `npm run ci`. Each lane instead declares an enumerator (`unitsFrom`) that prints `{id, mutex?, needs?}` per unit:
   - Playwright: `--list --reporter=json`, file units, plus `file::describe` units where declared.
   - Go: `go list ./pkg/... ./cmd/...`, 83 packages.
@@ -199,11 +205,13 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - vitest: its `include` globs.
   - Tutorials: slugs in sequence order, with `needs` chaining within a segment.
   - `shardPlan` (`scripts/ci-runner/lanes.ts:480`) takes these units unchanged. Its refusals (empty shard, a unit in two shards, lost units) stay the correctness backbone.
-- [ ] T2.9 [B] **Balance by measured duration, not slots.** Today LPT sorts on `weight`, which is scheduler slots (`scripts/ci-runner/lanes.ts:651-662`). Add `estimateMs` from `.ci/config/lane-durations.json`; the p90 of unit durations falls back to `weight` when absent, as today. `quality-code`'s plan must come out byte-identical, and a selftest control asserts it.
-- [ ] T2.10 [B] **Shard manifest plus local reproduction.**
+- [x] T2.9 [B] **Balance by measured duration, not slots.** Today LPT sorts on `weight`, which is scheduler slots (`scripts/ci-runner/lanes.ts:651-662`). Add `estimateMs` from `.ci/config/lane-durations.json`; the p90 of unit durations falls back to `weight` when absent, as today. `quality-code`'s plan must come out byte-identical, and a selftest control asserts it.
+    (ticked) 2026-09-26T20:35:57Z by d778be9d: shardPlan takes per-unit durations with slot-weight fallback; selftest proves byte-identical without them (commit 3825b36cc, scripts/ci-runner/lanes.ts:1)
+- [x] T2.10 [B] **Shard manifest plus local reproduction.**
   - `gate-bind --write` emits the `strategy.matrix.shard` region (the existing `# >>> shard-strategy` form, `.github/workflows/ci-quality.yml:740-745`) for each test lane, plus `.ci/config/shards/<lane>.json`: leg to unit ids.
   - Each leg runs `<runner> --shard-manifest .ci/config/shards/<lane>.json --shard ${{ matrix.shard }}`.
   - `npm run ci -- --lane <lane> --shard i/N` (`scripts/ci-runner/run.ts`) replays one CI leg locally through the same pool.
+    (ticked) 2026-09-26T20:35:57Z by d778be9d: shard manifest written by gate-bind --write; run.ts --lane --shard i/N (commit 3825b36cc, scripts/ci-runner/shard-manifest.ts:1)
 - [ ] T2.11 [B] **Merge by receipt.** Generalise `scripts/ci/write-shard-receipt.cjs` (`RECEIPT_WRITER`, `scripts/gate-bind.ts:605`) and `check:ci-quality-complete` (`.github/workflows/ci-quality.yml:2672-2706`) from lock ids to unit ids.
   - Each leg writes `{lane, index, of, units:[{id, outcome, ms}]}`, derived from the runner's own report (Playwright JSON, gotestsum JSON, junit), not from the plan.
   - One slim `<Lane> / Shard receipts` job per lane downloads `<lane>-shard-*`. It asserts every unit ran exactly once with a non-skipped outcome, then merges artifacts:
@@ -231,7 +239,8 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 - [ ] T2.12 [C] E2E Workers shard wiring, as in the table. It is preceded by a **dependency probe**: run each file alone on fresh VMs (`--project test-NN`) and encode every file that fails without a predecessor as a `needs` edge. The config comment "Order maintained by workers:1 + fullyParallel:false" (`packages/e2e-tests/playwright.config.ts:53-55`) means some order dependence may be real.
 - [ ] T2.13 [D] Account E2E and vitest `--shard` passthrough, as in the table. Test code stays in `private/account`. Cache the three `npm ci` trees and `~/.cache/ms-playwright` so the fixed cost per leg stays under 3 min.
 - [ ] T2.14 [D] Renet split: the renet PR for the `RENET_TEST_PKGS` / file-list hooks first, then the console `run_renet.py` and ct-tests.yml changes. Record the honest note that go test (2.5-3.2) is not the long pole; integration (12.9) is.
-- [ ] T2.15 [B] Quality / Security split into three jobs (`quality-pytest`, `quality-gate-tests`, Security core). Lower `timeout-minutes: 45` (`:2118`) after the split.
+- [x] T2.15 [B] Quality / Security split into three jobs (`quality-pytest`, `quality-gate-tests`, Security core). Lower `timeout-minutes: 45` (`:2118`) after the split.
+    (ticked) 2026-09-26T20:35:58Z by d778be9d: quality-security split into Security core, quality-pytest and quality-gate-tests (commit 6e713d7cc, .github/workflows/ci-quality.yml:1)
 - [ ] T2.16 [C] OPS tutorial segments, per D-W4.
 
 **P2d. Fixed-cost reduction by snapshot (renet feature, cross-repo)**
