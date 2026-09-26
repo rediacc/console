@@ -17,7 +17,7 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
 
 1. **The portal hard-codes passkey as the first method.**
    - The first method is fixed at private/account/web/src/pages/ConfigSetup.tsx:85 and :522 (`setupPasskeyAlways`).
-   - The PRF check is copied three times, and each copy throws into the error screen: private/account/web/src/pages/ConfigSetup.tsx:223-231, private/account/web/src/pages/DeviceConfigSetup.tsx:138-145 and private/account/web/src/pages/ConfigMemberAccept.tsx:110-118.
+   - The PRF check is copied three times, and each copy throws into the error screen: private/account/web/src/pages/ConfigSetup.tsx:223-231, private/account/web/src/pages/ConfigRemote.tsx:331-333 and private/account/web/src/pages/ConfigMemberAccept.tsx:110-118.
    - E2E private/account/e2e/tests/20-config-storage/20-03-passkey-setup.test.ts:104-135 asserts that dead end as the expected result.
    - `webauthnConfigured` and `webauthnSupported` block setup even when no passkey will be used.
 2. **Only passkey registration creates the member identity.**
@@ -70,7 +70,7 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
 
 **Rejected.**
 - A synthetic "password credential" in `passkeyCredentialId`.
-- Making `x25519PublicKey` nullable: rotation seals to every identity key (packages/shared/src/config-crypto/rotation.ts:242-252).
+- Making `x25519PublicKey` nullable: rotation seals to every identity key (packages/shared/src/config-crypto/rotation.ts:130-152).
 - Deriving X25519 from the password.
 - Dropping the PRF gate.
 - Keeping the two-step setup-then-verify, which risks a second store on retry.

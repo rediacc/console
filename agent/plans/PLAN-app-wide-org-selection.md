@@ -139,7 +139,7 @@ The org list is not included in the 409; the client already has `/portal/org/lis
 - Reuse `activeOrgHeaders()` in the three copies that exist now: `private/account/web/src/api/config.ts:48-55`, `private/account/web/src/api/console.ts:68-77` (raw fetch for `/console/exec`), and `private/account/web/src/api/executor-session.ts:77-81`.
 - Raw fetches that need no change:
   - `configPush` (`private/account/web/src/api/config.ts:373`) authenticates with the config token.
-  - The `device-codes/:code/config-handoff` fetches (`private/account/web/src/pages/DeviceConfigSetup.tsx:215`, `private/account/web/src/pages/ConfigRemote.tsx:190`) have no auth by design (`private/account/src/routes/device-codes.ts:34`).
+  - The `device-codes/:code/config-handoff` fetch (`private/account/web/src/pages/ConfigRemote.tsx:190`) has no auth by design (`private/account/src/routes/device-codes.ts:34`).
 
 ### 3.4 Handling a 409 everywhere
 

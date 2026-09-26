@@ -31,13 +31,13 @@ The renet submodule PR (R) merges first. The account submodule PR (C) comes next
   - (d) Add `renet network used --json` and the `network_used` function, then regenerate `functions.generated.ts`.
   - (e) Add i18n keys.
 - [ ] T3 [B] Discovery before allocation:
-  - (a) `probeRepoPresent` (`repo-mount-check.ts:99`) returns `{present, networkId}` from the `repository_list` output it already fetches, so discovery costs no extra SSH round trip.
+  - (a) `probeRepoPresent` (`packages/cli/src/services/repo/repo-mount-check.ts:99`) returns `{present, networkId}` from the `repository_list` output it already fetches, so discovery costs no extra SSH round trip.
   - (b) Add the new module `network-id-discovery.ts` with `discoverNetworkId({repoGuid, machine, datastore})` and `machineUsedNetworkIds(machine)`.
   - (c) `ensureRepositoryNetworkId(repoRef, target)` takes the resolved machine and datastore. When the local ID is missing it asks the machine first, records the answer with `updateState`, and allocates only when the machine positively reports that it does not have the repo. If the machine is unreachable, it fails closed per D6.
   - (d) `allocateNetworkIdInStore(configName, {floor})`: `next = max(local next, max(machine used) + 64)`, keeping the forward-only counter. `registerNewRepo`, `registerFork`, backup restore and the cluster-kube allocators pass the target machine's used set.
   - (e) On `network_id_in_use` from create, fork or restore, advance past the holder and retry once. On `up`/`mount` of an existing repo, never re-allocate: surface the error, which names the holder and points to `rdc config reconcile`.
-- [ ] T4 [B] Remove the `docker-undefined.sock` path in `state.ts:206-207`. When the local ID is missing, the connection vault resolves the ID through `ensureRepositoryNetworkId` (discovery) or throws a typed error. It never interpolates `undefined`.
-- [ ] T5 [B] `config reconcile` rebuilds `state.repos[*][*].networkId` from `renet list all --json` by GUID match (spec 04 §4.2), and handles divergence per D4. Delete the stale comment at `config-reconcile.ts:241`, because the renet field has landed (`private/renet/pkg/list/types.go:212-216`). Correct the claim at `cluster-kube.ts:274` ("no id is ever handed out twice"), which is false across devices. Update spec 04 §1.3 and §4.2 to describe the machine-authoritative rule.
+- [ ] T4 [B] Remove the `docker-undefined.sock` path in `packages/cli/src/services/state.ts:206-207`. When the local ID is missing, the connection vault resolves the ID through `ensureRepositoryNetworkId` (discovery) or throws a typed error. It never interpolates `undefined`.
+- [ ] T5 [B] `config reconcile` rebuilds `state.repos[*][*].networkId` from `renet list all --json` by GUID match (spec 04 §4.2), and handles divergence per D4. Delete the stale comment at `packages/cli/src/services/config/config-reconcile.ts:241`, because the renet field has landed (`private/renet/pkg/list/types.go:212-216`). Correct the claim at `packages/cli/src/services/cluster/cluster-kube.ts:274` ("no id is ever handed out twice"), which is false across devices. Update spec 04 §1.3 and §4.2 to describe the machine-authoritative rule.
 - [ ] T6 [B] i18n: add the new CLI errors (`networkIdInUse`, `networkIdUndiscoverable`, `networkIdDiverged`) to all `packages/cli/src/i18n/locales/*/cli.json`, after the hardening plan's i18n commits.
 - [ ] T7 [lead] Closure:
   - Run the mutation controls in section 4.4 by hand; each must turn its test red.
@@ -53,50 +53,50 @@ The renet submodule PR (R) merges first. The account submodule PR (C) comes next
   - When the counter is missing, `pickInitialNetworkId` (`:46-53`) seeds it from the IDs in the local `state.repos`, or from `MIN_NETWORK_ID` (2816, `packages/shared/src/renet-contract/utils/validation.ts:236`) when there are none.
   - The step is 64 (`:239`).
 - **Callers:**
-  - `registerNewRepo` (`commands/repo-create-delete.ts:121`)
-  - `registerFork` (`commands/repo-fork.ts:175`)
-  - backup restore (`commands/backup.ts:147`)
-  - cluster fork (`services/cluster/cluster-fork.ts:227`)
-  - the k3s server and agents (`services/cluster/cluster-kube.ts:277`, `:314`)
-  - the lazy path `ensureRepositoryNetworkId` (`services/config/config-resources.ts:649-664`), which allocates whenever the local record has no ID.
-- **Where the ID lives.** It is a runtime key (`services/config/resource-state.ts:54-55`), so it sits in `state.repos[name][tag]`. `stripStateForPush` (`adapters/config-field-crypto.ts:156-167`) removes the whole `state` before every push, and `HOST_LOCAL_POINTERS` (`packages/shared/src/config-schema/sensitivity.ts:369-377`) keeps the local `state` over every pull. A second device therefore receives the repo's birth record (GUID, credential, placement) but never its network ID.
-- **Uses on the machine.** The ID reaches renet as `network_id` in the vault (`services/renet/renet-execution.ts:413-415`, `:433-434`), and then as `--network-id` (`private/renet/pkg/functions/commands/repository.go`, the `AddNetworkID` calls). The ID names:
+  - `registerNewRepo` (`packages/cli/src/commands/repo-create-delete.ts:121`)
+  - `registerFork` (`packages/cli/src/commands/repo-fork.ts:175`)
+  - backup restore (`packages/cli/src/commands/backup.ts:147`)
+  - cluster fork (`packages/cli/src/services/cluster/cluster-fork.ts:227`)
+  - the k3s server and agents (`packages/cli/src/services/cluster/cluster-kube.ts:277`, `:314`)
+  - the lazy path `ensureRepositoryNetworkId` (`packages/cli/src/services/config/config-resources.ts:644-659`), which allocates whenever the local record has no ID.
+- **Where the ID lives.** It is a runtime key (`packages/cli/src/services/config/resource-state.ts:54-55`), so it sits in `state.repos[name][tag]`. `stripStateForPush` removes the whole `state` before every push, and `HOST_LOCAL_POINTERS` (`packages/shared/src/config-schema/sensitivity.ts:369-377`) keeps the local `state` over every pull. A second device therefore receives the repo's birth record (GUID, credential, placement) but never its network ID.
+- **Uses on the machine.** The ID reaches renet as `network_id` in the vault (`packages/cli/src/services/renet/renet-execution.ts:413-415`, `:433-434`), and then as `--network-id` (`private/renet/pkg/functions/commands/repository.go`, the `AddNetworkID` calls). The ID names:
   - the per-repo dockerd socket, `/var/run/rediacc/docker-<id>.sock` (`private/renet/pkg/repository/repository.go:103-104`);
   - the loopback block `127.x.y.z/26` (`private/renet/pkg/config/iputil.go:23-44`);
   - the tmpfs secrets directory `/var/run/rediacc/secrets/<id>/`;
   - the registry unit, `rediacc-registry-<id>.service`;
-  - the k3s unit and node interface for cluster members (`cluster-kube.ts:270-277`).
+  - the k3s unit and node interface for cluster members (`packages/cli/src/services/cluster/cluster-kube.ts:270-277`).
 
 ### 1.2 Can the machine recover the ID? Yes, for docker repos
 
 - **Where renet records it.** `Repository.SaveState` writes the in-volume `.rediacc.json` and mirrors it, `network_id` included, to `<datastore>/.interim/state/<guid>/` (`private/renet/pkg/repository/state.go:231-237`). Every mount saves state.
-- **Readable while unmounted.** `renet list repositories --json` and `renet list all --json` fill `RepositoryInfo.NetworkID` from that mirror (`private/renet/pkg/list/repositories.go:295`, field at `pkg/list/types.go:212-216`). The mirror can be read without unlocking the volume.
+- **Readable while unmounted.** `renet list repositories --json` and `renet list all --json` fill `RepositoryInfo.NetworkID` from that mirror (`private/renet/pkg/list/repositories.go:295`, field at `private/renet/pkg/list/types.go:212-216`). The mirror can be read without unlocking the volume.
 - **The CLI can already see it.** The TypeScript contract carries the field (`packages/shared/src/renet-contract/data/list-types.generated.ts`, `network_id?: number` on `RepositoryInfo`).
-- **The CLI already asks for it.** The default verifier (`utils/repo-target.ts:35-49`) already runs `repository_list` against the placement machine for every mutating repo verb (`services/repo/repo-mount-check.ts:99-124`), then throws `network_id` away.
+- **The CLI already asks for it.** The default verifier (`packages/cli/src/utils/repo-target.ts:35-49`) already runs `repository_list` against the placement machine for every mutating repo verb (`packages/cli/src/services/repo/repo-mount-check.ts:99-124`), then throws `network_id` away.
 - **Not recoverable this way:**
-  - Kube-arm repos: `repository_list` cannot see `<ds>/repos/<guid>` (`repo-target.ts:40`, #92).
+  - Kube-arm repos: `repository_list` cannot see `<ds>/repos/<guid>` (`packages/cli/src/utils/repo-target.ts:40`, #92).
   - k3s member IDs: these are not repos. The machine still knows them through their units and loopback aliases, which `network used` in T2 covers.
   - Repos whose mirror was never written, meaning never mounted since renet #67. The in-volume `.rediacc.json` has the ID once they are mounted.
-- **Nothing uses it yet.** Spec 04 §1.3 already classes `repos.*.networkId` as rebuildable from the machine and asked for this renet field, which has now landed. The CLI half, reconcile rebuilding the ID, was never built (`services/config/config-reconcile.ts:241`).
+- **Nothing uses it yet.** Spec 04 §1.3 already classes `repos.*.networkId` as rebuildable from the machine and asked for this renet field, which has now landed. The CLI half, reconcile rebuilding the ID, was never built (`packages/cli/src/services/config/config-reconcile.ts:241`).
 
 ### 1.3 What breaks when device B runs a command on a repo A created (proof chain)
 
 Setup: device A creates repos `x` (2816) and `y` (2880) on machine `m`. Device B pulls; it has both records and no `state.repos`.
 
-1. **B gets x's ID for y.** B runs `rdc repo up y`. `repo.ts:99` calls `executeRepoFunction`, then `repo-executor.ts:84` calls `ensureRepositoryNetworkId('y')`. There, `config-resources.ts:658` finds no ID, and `:660` allocates. B's `usedIds` is empty, so `config-network-id.ts:30` returns `MIN_NETWORK_ID` = **2816, which is x's ID**. `:661-662` records it in B's state.
-2. **renet renumbers y.** `renet-execution.ts:413` sends `network_id: 2816`. `repository_up.go:104` accepts it and `:117` builds the orchestrator for y on 2816. Mounting y sees the persisted 2880 and rewrites the repo to 2816, keeping 2880 as an alias (`pkg/repository/state.go:474-487`, `pkg/config/config.go:102-112`). This is the fork mechanism from #440, applied here by accident.
-3. **x's containers are removed.** In `SafeStartup`, x's daemon on `docker-2816.sock` is responding, so `RemoveForeignProjectContainers(2816, <y project>)` (`pkg/orchestration/workflows.go:133`, body at `pkg/daemon/discovery.go:146-186`) runs `docker rm -f` on **every x container**.
-4. **x's daemon now serves y.** `setupAndStartDocker` (`workflows.go:156`, `:864-884`) rewrites the `docker-2816` unit to y's data root and restarts it. x is down. y now owns x's socket, loopback /26 and secrets directory.
+1. **B gets x's ID for y.** B runs `rdc repo up y`. `packages/cli/src/commands/repo.ts:100` calls `executeRepoFunction`, then `packages/cli/src/utils/repo-executor.ts:84` calls `ensureRepositoryNetworkId('y')`. There, `packages/cli/src/services/config/config-resources.ts:653` finds no ID, and `:655` allocates. B's `usedIds` is empty, so `packages/cli/src/services/config/config-network-id.ts:50` returns `MIN_NETWORK_ID` = **2816, which is x's ID**. `:656-657` records it in B's state.
+2. **renet renumbers y.** `packages/cli/src/services/renet/renet-execution.ts:413` sends `network_id: 2816`. `private/renet/cmd/renet/repository_up.go:104` accepts it and `:117` builds the orchestrator for y on 2816. Mounting y sees the persisted 2880 and rewrites the repo to 2816, keeping 2880 as an alias (`private/renet/pkg/repository/state.go:474-487`, `private/renet/pkg/config/config.go:102-112`). This is the fork mechanism from #440, applied here by accident.
+3. **x's containers are removed.** In `SafeStartup`, x's daemon on `docker-2816.sock` is responding, so `RemoveForeignProjectContainers(2816, <y project>)` (`private/renet/pkg/orchestration/workflows.go:133`, body at `private/renet/pkg/daemon/discovery.go:146-186`) runs `docker rm -f` on **every x container**.
+4. **x's daemon now serves y.** `setupAndStartDocker` (`private/renet/pkg/orchestration/workflows.go:156`, `:864-884`) rewrites the `docker-2816` unit to y's data root and restarts it. x is down. y now owns x's socket, loopback /26 and secrets directory.
 5. **The damage repeats.** A's next `rdc repo up y` sends 2880, and renet renumbers y back. If x is running again by then, the same removal hits whichever repo holds the ID.
-6. **B's shells get a bad socket.** On B, `rdc term y` / `vscode` builds `DOCKER_HOST=unix:///var/run/rediacc/docker-undefined.sock` (`services/state.ts:206-207`), because the vault path reads `repoConfig.networkId` without calling ensure.
-7. **B's own new repos collide.** A new repo created on B (`repo-create-delete.ts:121`) gets 2816 (or the next ID in B's sequence). On a machine that hosts repos from both devices, this collides on the first pair. renet's create path validates only the ID's format (`pkg/repository/lifecycle.go:395-407`), never whether another repo holds it.
+6. **B's shells get a bad socket.** On B, `rdc term y` / `vscode` builds `DOCKER_HOST=unix:///var/run/rediacc/docker-undefined.sock` (`packages/cli/src/services/state.ts:206-207`), because the vault path reads `repoConfig.networkId` without calling ensure.
+7. **B's own new repos collide.** A new repo created on B (`packages/cli/src/commands/repo-create-delete.ts:121`) gets 2816 (or the next ID in B's sequence). On a machine that hosts repos from both devices, this collides on the first pair. renet's create path validates only the ID's format (`private/renet/pkg/repository/lifecycle.go:395-407`), never whether another repo holds it.
 
 ### 1.4 Collision risk
 
 - **Certain, not random.** Every device starts at 2816 and steps by 64. B's k-th allocation equals A's k-th allocation. The size of the ID space (about 261,944 slots) does not help.
 - **Where it applies:**
   - on any machine that hosts repos from two devices;
-  - when a repo created on one device is moved by the other (`repo push`/`migrate` carry the ID, `renet-execution.ts:433`);
+  - when a repo created on one device is moved by the other (`repo push`/`migrate` carry the ID, `packages/cli/src/services/renet/renet-execution.ts:433`);
   - for k3s agents, which draw from the same per-device counter.
 - **Not only within one config.** Two different configs (a local and a remote config, or two teams' configs) that point at one machine collide the same way. Only the machine sees every claimant.
 
@@ -132,25 +132,25 @@ Setup: device A creates repos `x` (2816) and `y` (2880) on machine `m`. Device B
 - a loopback alias block owned by a non-repo holder (k3s).
 
 What is not a claimant:
-- A fork mirror carrying only `AliasNetworkID` (`cmd/renet/repository_fork.go:416-433` writes `NetworkID` as 0).
+- A fork mirror carrying only `AliasNetworkID` (`private/renet/cmd/renet/repository_fork.go:416-433` writes `NetworkID` as 0).
 - The repo itself, including its own persisted ID when it differs from the requested one. Those are handled below as an explicit renumber decision.
 
 **Enforcement.**
 - `repository_create.go` after line 129, `repository_up.go` after line 104 (before `CreateOrchestrator` at 117), and fork start all call the guard.
-- On a hit, the verb returns `network_id_in_use`. It must never reach `workflows.go:133`.
+- On a hit, the verb returns `network_id_in_use`. It must never reach `private/renet/pkg/orchestration/workflows.go:133`.
 - An `up` whose requested ID differs from the repo's own persisted ID, outside a first fork mount, is refused with `network_id_mismatch`, which carries the persisted ID. This stops the silent renumber in step 2 of section 1.3. The CLI (T3) treats the persisted ID as the answer.
 
 **`network used --json`.** Lists every claimant with its kind, for the allocation floor.
 
 ### 3.2 CLI (T3, T4, T5)
 
-**One discovery path.** `ensureRepositoryNetworkId` gets the target from `resolveRepoRef` (`utils/repo-target.ts:99`). It then decides in this order:
+**One discovery path.** `ensureRepositoryNetworkId` gets the target from `resolveRepoRef` (`packages/cli/src/utils/repo-target.ts:99`). It then decides in this order:
 1. The local ID, if present.
 2. The probe's `networkId`, if the machine has the repo. The value is written to state.
 3. A fresh allocation, if the machine reports that it definitely does not have the repo.
 4. Otherwise, a fail-closed error (D6).
 
-Every caller that runs before a target is resolved (`repo-cat.ts:89`, `repo-diff.ts:260`, `repo-migrate.ts:108,132`, `repo-fork.ts:584`, `repo-create-delete.ts:388`) gets the target passed in.
+Every caller that runs before a target is resolved (`packages/cli/src/commands/repo-cat.ts:89`, `packages/cli/src/commands/repo-diff.ts:260`, `packages/cli/src/commands/repo-migrate.ts:108,132`, `packages/cli/src/commands/repo-fork.ts:584`, `packages/cli/src/commands/repo-create-delete.ts:388`) gets the target passed in.
 
 **Allocation floor.**
 - `machineUsedNetworkIds(machine)` rides `network_used`. `allocateNetworkIdInStore` takes `{floor}` and keeps the forward-only semantics.
@@ -171,10 +171,10 @@ The fake models renet's behavior today, with a switch for the guard:
 - **`execute({functionName})` handling:**
   - `repository_list`: returns `name` plus `network_id` from the mirror.
   - `network_used`: returns every claimant.
-  - `repository_create` / `repository_up`: a docker-arm model. The passed ID overwrites the persisted one, as `state.go:487` does. If another repo's daemon owns the ID, that repo's containers are removed and the daemon is reassigned, as `workflows.go:133` and `:156` do.
+  - `repository_create` / `repository_up`: a docker-arm model. The passed ID overwrites the persisted one, as `private/renet/pkg/repository/state.go:487` does. If another repo's daemon owns the ID, that repo's containers are removed and the daemon is reassigned, as `private/renet/pkg/orchestration/workflows.go:133` and `:156` do.
 - **Guard switch.** `guard: 'renet-today' | 'renet-guarded'` selects the pre-T2 or post-T2 model.
 - **How it is injected.** `device.process({machine})` mocks `packages/cli/src/services/executor/executor-factory.js` with `vi.doMock` before the fresh module graph is imported, so two devices share one machine.
-- **Link to real renet.** The fake stays honest through the Go tests in 4.3, which pin the real behavior it models. T7 checks by hand that the fake's `renet-today` model matches `workflows.go:124-158`.
+- **Link to real renet.** The fake stays honest through the Go tests in 4.3, which pin the real behavior it models. T7 checks by hand that the fake's `renet-today` model matches `private/renet/pkg/orchestration/workflows.go:124-158`.
 
 ### 4.2 Two-device scenarios (`network-id.test.ts`)
 

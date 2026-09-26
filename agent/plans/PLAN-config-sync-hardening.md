@@ -64,10 +64,10 @@ The submodule PR (A and C) merges first. The console PR (B, plus the pointer bum
 
 | Layer | Key | Where it lives | What it stops | What it does NOT stop |
 |---|---|---|---|---|
-| 1, SDK | `sdk_derived = HKDF(sdkMaster, epoch)` (`packages/shared/src/config-crypto/sdk.ts:36-39`) | `sdkMaster` is plain base64 in D1 (`config.service.ts:411`) | A holder of CEK plus ciphertext who has no valid config token | The server. Anyone with a token: pull hands out the pushed epoch's key forever (`configs.ts:1021`), and push accepts any client epoch (F13). The "time window" is not enforced. |
-| 2, CEK | Random AES-256, wrapped with `HKDF(slotSecret‖serverSecret)` (`cek.ts:31-43`) | The slot secret stays on the device: the OS keyring for the CLI, RAM in the portal. `serverSecret` is plain base64 in D1 (`config.service.ts:1034-1036`, "For now it's stored as base64") | A D1/R2 dump, a passive or curious operator, and org members who are not in the store | An active server: it serves the portal JS that unwraps the CEK, it can roll back or swap blobs (F1), and it can read metadata (F14) |
-| 3, Org | `orgPassphrase` used directly as an AES key (`layers.ts:65-81`) | Server-recoverable (`serverRecoverableOrgPassphrase`, `config.service.ts:406`), and decryptable from every presented token (`:945-952`) | An R2-only leak without D1 and the server key | The server, which can decrypt it at will |
-| Tunnel | Per-request X25519/AES (`config-server-client.ts:70-97`) | - | Network MITM, spoofed client IPs (`app.ts:621-638`) | The server |
+| 1, SDK | `sdk_derived = HKDF(sdkMaster, epoch)` (`packages/shared/src/config-crypto/sdk.ts:36-39`) | `sdkMaster` is plain base64 in D1 (`private/account/src/services/config.service.ts:455`) | A holder of CEK plus ciphertext who has no valid config token | The server. Anyone with a token: pull hands out the pushed epoch's key forever (`private/account/src/routes/configs.ts:1183`), and push accepts any client epoch (F13). The "time window" is not enforced. |
+| 2, CEK | Random AES-256, wrapped with `HKDF(slotSecret‖serverSecret)` (`packages/shared/src/config-crypto/cek.ts:39-51`) | The slot secret stays on the device: the OS keyring for the CLI, RAM in the portal. `serverSecret` is plain base64 in D1 (`private/account/src/services/config.service.ts:1448-1449`, "For now it's stored as base64") | A D1/R2 dump, a passive or curious operator, and org members who are not in the store | An active server: it serves the portal JS that unwraps the CEK, it can roll back or swap blobs (F1), and it can read metadata (F14) |
+| 3, Org | `orgPassphrase` used directly as an AES key (`packages/shared/src/config-crypto/layers.ts:78-93`) | Server-recoverable (`serverRecoverableOrgPassphrase`, `private/account/src/services/config.service.ts:449`), and decryptable from every presented token (`:945-952`) | An R2-only leak without D1 and the server key | The server, which can decrypt it at will |
+| Tunnel | Per-request X25519/AES (`packages/cli/src/services/config/config-server-client.ts:83-110`) | - | Network MITM, spoofed client IPs (`private/account/src/app.ts:632-638`) | The server |
 
 **The zero-knowledge claim, stated honestly:** confidentiality rests only on the CEK. It holds against storage compromise and a passive operator. It does not hold against an operator who serves malicious portal code. Integrity against the server is currently absent (F1). This rewrite is D9 and T14.
 
@@ -78,121 +78,121 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 ### Confirmed defects
 
 **F1: A server can roll back a config or swap in another config's blob, and the CLI accepts it. [H14]**
-- The only integrity check is an HMAC over `encryptedBlob` alone (`selective.ts:86-90`, verified at `:111-116`).
-- The AES-GCM layers use no AAD (`layers.ts:24-34`, `aes.ts:130-134`).
-- `id`, `version`, `teamId` and `sdkEpoch` are not in the plaintext: only `SENSITIVE_FIELDS` is encrypted (`selective.ts:78-86`).
+- The only integrity check is an HMAC over `encryptedBlob` alone (`packages/shared/src/config-crypto/selective.ts:239-247`, verified at `:111-116`).
+- The AES-GCM layers use no AAD (`packages/shared/src/config-crypto/layers.ts:26-37`, `packages/shared/src/config-crypto/aes.ts:59-78`).
+- `id`, `version`, `teamId` and `sdkEpoch` are not in the plaintext: only `SENSITIVE_FIELDS` is encrypted (`packages/shared/src/config-crypto/selective.ts:169-181`).
 - `selectiveDecrypt` returns `{...payload.envelope, ...sensitive}` (`:121-124`), so identity and version come from the unauthenticated envelope.
-- The CLI builds that envelope from the pull response (`remote-config-adapter.ts:263-279`). The server builds it from the D1 row (`config.service.ts:744-757`) and keeps 50 archived blobs (`:337`, `:604-625`).
+- The CLI builds that envelope from the pull response (`packages/cli/src/adapters/remote-config-adapter.ts:306-318`). The server builds it from the D1 row (`private/account/src/services/config.service.ts:857-872`) and keeps 50 archived blobs (`:337`, `:604-625`).
 - The CLI never compares the pulled version with `remote.cachedVersion`.
 - Consequences:
-  - Pointing `current` at an old version is accepted, for example a revoked SSH key or an older `policy`. The next push from the CLI then makes the rollback permanent (`resource-state.ts:434`).
+  - Pointing `current` at an old version is accepted, for example a revoked SSH key or an older `policy`. The next push from the CLI then makes the rollback permanent (`packages/cli/src/services/config/resource-state.ts:522`).
   - Configs in one store share one CEK, so serving config X's blob for config Y is accepted too.
 - Envelope tampering, field by field:
-  - `sdkEpoch`: detected, but only as a GCM failure, and misreported as a "session layer" error (`adapter.ts:433-435`).
+  - `sdkEpoch`: detected, but only as a GCM failure, and misreported as a "session layer" error (`packages/cli/src/adapters/remote-config-adapter.ts:569-571`).
   - `version`, `id`/`configId`, `teamId`, `lastModified`: not detected.
-  - `commitments`: not verified on pull. The CLI invents empty ones when they are missing (`adapter.ts:271-275`).
-  - `envelopeVersion`: checked (`selective.ts:105-109`).
+  - `commitments`: not verified on pull. The CLI invents empty ones when they are missing (`packages/cli/src/adapters/remote-config-adapter.ts:306-318`).
+  - `envelopeVersion`: checked (`packages/shared/src/config-crypto/selective.ts:237-253`).
 
 **F2: Deleting a machine, repo, storage or credential from a remote config is impossible. [H13]**
-- `pathsToCommit` commits one pointer for every non-public leaf, including `/resources/machines/<name>/ip` (`walker.ts:199-205`, `sensitivity.ts:102-106`).
-- The server's anti-downgrade rule refuses any stored pointer that is missing from the new envelope (`config.service.ts:590-599`). The test that pins this is `config-envelope-v2.test.ts:142-164`.
+- `pathsToCommit` commits one pointer for every non-public leaf, including `/resources/machines/<name>/ip` (`packages/shared/src/config-schema/walker.ts:199-204`, `packages/shared/src/config-schema/sensitivity.ts:103-107`).
+- The server's anti-downgrade rule refuses any stored pointer that is missing from the new envelope (`private/account/src/services/config.service.ts:670-695`). The test that pins this is `private/account/tests/integration/config-envelope-v3.test.ts:161-179`.
 - Removing a resource removes its pointers, so the push is refused with 409 `precondition_failed`.
-- The CLI turns every 409 into `RemoteVersionConflictError` (`adapter.ts:477`). `RemoteResourceState` then re-pulls and re-pushes the same deletion three times (`resource-state.ts:409-421`) and reports "conflict retry exhausted".
+- The CLI turns every 409 into `RemoteVersionConflictError` (`packages/cli/src/adapters/remote-config-errors.ts:306-317`). `RemoteResourceState` then re-pulls and re-pushes the same deletion three times (`packages/cli/src/services/config/resource-state.ts:493-508`) and reports "conflict retry exhausted".
 - The same happens when clearing a committed scalar such as `defaults.universalUser` or `infra.certEmail`.
 
 **F3: Every remote write wipes `state.repos`, including every repo's `networkId`. [H12]**
-- `loadRemote` overlays only `remote`, `renetPath`, `account` and `defaults` (`config-base.ts:222`, `:402-409`), so the in-memory config has no `state`.
-- `getResourceState` passes that config to `RemoteResourceState.load` (`config-base.ts:70-77`, `resource-state.ts:348-356`).
-- `loadLocalState` flattens repositories without runtime state (`resource-state.ts:194-201`, `:82-100`).
+- `loadRemote` overlays only `remote`, `renetPath`, `account` and `defaults` (`packages/cli/src/services/config/config-base.ts:232`, `:402-409`), so the in-memory config has no `state`.
+- `getResourceState` passes that config to `RemoteResourceState.load` (`packages/cli/src/services/config/config-base.ts:75-84`, `packages/cli/src/services/config/resource-state.ts:403-411`).
+- `loadLocalState` flattens repositories without runtime state (`packages/cli/src/services/config/resource-state.ts:194-202`, `:82-100`).
 - On every persist, `persistPatch` rewrites `state.repos` from that runtime-less view (`:228-231`). `nonEmpty({})` gives undefined.
-- `pushOnce` then writes it back through `mergeRemoteIntoCache(merged, …)`, where `state: local.state` is the wiped `merged.state` (`resource-state.ts:431-438`, `remote-cache.ts:40`).
-- Network IDs (`state-schema.ts:173-190`) are what `allocateNetworkIdInStore` scans (`config-network-id.ts:9-17`). Losing them lets a new repo be given an ID that is already in use on the machine.
-- Root cause: two hand-kept lists of host-local fields (`remote-cache.ts:32-47` and `config-base.ts:402-409`). This is the same class as today's renetPath bug.
+- `pushOnce` then writes it back through `mergeRemoteIntoCache(merged, …)`, where `state: local.state` is the wiped `merged.state` (`packages/cli/src/services/config/resource-state.ts:524-528`, `packages/cli/src/services/config/remote-cache.ts:126-140`).
+- Network IDs (`packages/shared/src/config-schema/state-schema.ts:173-194`) are what `allocateNetworkIdInStore` scans (`packages/cli/src/services/config/config-network-id.ts:8-17`). Losing them lets a new repo be given an ID that is already in use on the machine.
+- Root cause: two hand-kept lists of host-local fields (`packages/cli/src/services/config/remote-cache.ts:108-119` and `packages/cli/src/services/config/config-base.ts:232`). This is the same class as today's renetPath bug.
 
 **F4: A remote config in master-password mode loses `credentials.masterPasswordVerifier` on the first pull.**
-- The field is host-local by definition (`sensitivity.ts:86-100`, `commit:false`, "must never enter the remote config envelope").
-- `mergeRemoteIntoCache` starts from `...pulled` and never restores it (`remote-cache.ts:32-47`). It keeps `encryption` (master-password mode, fields encrypted) but drops the verifier.
-- `requireMasterPassword` then throws "No master password configured" (`master-password.ts:27-50`, via `config-base.ts:289-292`) unless `REDIACC_MASTER_PASSWORD` is set.
+- The field is host-local by definition (`packages/shared/src/config-schema/sensitivity.ts:94-99`, `commit:false`, "must never enter the remote config envelope").
+- `mergeRemoteIntoCache` starts from `...pulled` and never restores it (`packages/cli/src/services/config/remote-cache.ts:108-119`). It keeps `encryption` (master-password mode, fields encrypted) but drops the verifier.
+- `requireMasterPassword` then throws "No master password configured" (`packages/cli/src/services/core/master-password.ts:15-47`, via `packages/cli/src/services/config/config-base.ts:297-300`) unless `REDIACC_MASTER_PASSWORD` is set.
 - The result: the offline cache and every write are locked out in a TTY. Same root cause as F3.
 
 **F5: Remote changes to `account` and `defaults` never reach a device that already has them cached, and that device's next push reverts them. [H16]**
-- The cache merge writes `account = {...pulled.account, ...local.account}` (`remote-cache.ts:46-47`). From then on the local copy holds every pulled key.
-- The next pull layers those stale local values over the server's (`config-base.ts:405-408` in memory, `remote-cache.ts:46-47` on disk).
-- `projectTopLevelSections` pushes them back to the server (`payload.ts:53-59`), silently reverting another device's change.
+- The cache merge writes `account = {...pulled.account, ...local.account}` (`packages/cli/src/services/config/remote-cache.ts:108-119`). From then on the local copy holds every pulled key.
+- The next pull layers those stale local values over the server's (`packages/cli/src/services/config/config-base.ts:428-433` in memory, `packages/cli/src/services/config/remote-cache.ts:108-119` on disk).
+- `projectTopLevelSections` pushes them back to the server (`packages/shared/src/config-schema/payload.ts:110-117`), silently reverting another device's change.
 
 **F6: A retried push reverts concurrent edits to every family outside `LocalState`, including `policy`. [H15]**
-- `pushOnce` builds the push from `configFileStorage.loadDecrypted` (the disk cache) plus `this.state` (`resource-state.ts:429-433`).
+- `pushOnce` builds the push from `configFileStorage.loadDecrypted` (the disk cache) plus `this.state` (`packages/cli/src/services/config/resource-state.ts:517-519`).
 - After a 409, `rebaseOnFreshPull` refreshes only the five `LocalState` buckets and the version (`:451-460`). The disk cache is not updated.
 - So `policy`, `infra`, `clusters`, `datastores`, `backupStrategies`, `cloudProviders`, `cfDnsApiToken`, `account` and `defaults` are pushed from the stale base.
 - Commitments do not stop this, because the writer holds the CEK. The policy rollback is security-relevant: see the comment at `schemas.ts` `policy`.
 
 **F7: The server loses updates when two pushes race. [H9]**
-- The version check (`config.service.ts:551-555`) and the update (`:631-642`, `WHERE id = existing.id` only) are separate statements. Both writers pass the check and both get `success`.
+- The version check (`private/account/src/services/config.service.ts:633-637`) and the update (`:631-642`, `WHERE id = existing.id` only) are separate statements. Both writers pass the check and both get `success`.
 - Worse, both write the same R2 key `current.enc` (`:601`, `:628`) before D1 changes. The blob that ends up stored can belong to the loser while D1 records the winner's hmac and version: the config is bricked for everyone (HMAC failure).
 - Rotation has the same shape: check in pass 1 (`:1969`), then pass 2 writes `current.enc` and updates without a version predicate (`:1999-2021`).
 
 **F8: Concurrent use of one config token fails with `token_exhausted`. [H7]**
-- `pull()` and `push()` send the same token twice: `/session` and then the pull or PUT both use `token` (`adapter.ts:229-250`, `:305-319`). They persist two children, the second overwriting the first (`:454-457`).
-- With `TOKEN_MAX_USAGE = 3` (`config.service.ts:312`), two processes sharing a token dir (an interactive `rdc` plus `rdc serve`, or a script) spend 4 uses of one token, and the fourth gets 401.
-- `updateToken` reads outside the lock and then writes (`remote-token-storage.ts:98-104`). That is a lost-update race, and an older token can overwrite a newer one.
+- `pull()` and `push()` send the same token twice: `/session` and then the pull or PUT both use `token` (`packages/cli/src/adapters/remote-config-adapter.ts:342-350`, `:305-319`). They persist two children, the second overwriting the first (`:454-457`).
+- With `TOKEN_MAX_USAGE = 3` (`private/account/src/services/config.service.ts:349`), two processes sharing a token dir (an interactive `rdc` plus `rdc serve`, or a script) spend 4 uses of one token, and the fourth gets 401.
+- `updateToken` reads outside the lock and then writes (`packages/cli/src/adapters/remote-token-storage.ts:204-206`). That is a lost-update race, and an older token can overwrite a newer one.
 - On the server, the usage check (`:936`) and increment (`:975-981`) are not atomic.
-- Pull does not need `/session` at all: the pull response already carries `server_secret` (`configs.ts:1033`).
+- Pull does not need `/session` at all: the pull response already carries `server_secret` (`private/account/src/routes/configs.ts:1197`).
 
 **F9: The rotated token is thrown away on every error response.**
-- `configServerFetch` throws on inner status ≥ 400 without returning `parsed.newServerToken` (`config-server-client.ts:107-110`), although the server puts it in 409 and 400 bodies (`configs.ts:1104-1125`).
-- 404 and other `HTTPException` paths carry no token at all (`configs.ts:1040-1042`).
+- `configServerFetch` throws on inner status ≥ 400 without returning `parsed.newServerToken` (`packages/cli/src/services/config/config-server-client.ts:136`), although the server puts it in 409 and 400 bodies (`private/account/src/routes/configs.ts:1272-1296`).
+- 404 and other `HTTPException` paths carry no token at all (`private/account/src/routes/configs.ts:1205-1207`).
 - Each such error spends one grace use of the stored token.
 - The portal's `configFetch` has the same gap for everything except push (`web/src/api/config.ts`, `configPush` handles it by hand).
 
 **F10: Config tokens break on network moves and after 24 hours idle, and then every command fails, reads included, until the user re-enables through the portal (TOTP plus elevated session).**
-- Every rotated token is bound to the IP of the request that minted it (`config.service.ts:968`). The "binds on first use" comment in `mintDeviceToken` (`:891-898`) applies only to the first link in the chain.
-- An address change fails with `ip_mismatch` (`:941-943`). The client IP comes from `config-token.ts:19-22`.
+- Every rotated token is bound to the IP of the request that minted it (`private/account/src/services/config.service.ts:1319`). The "binds on first use" comment in `mintDeviceToken` (`:891-898`) applies only to the first link in the chain.
+- An address change fails with `ip_mismatch` (`:941-943`). The client IP comes from `private/account/src/middleware/config-token.ts:20-23`.
 - Tokens expire 24 hours after the last use (`:311`, `:930-933`).
-- `loadRemote` serves the offline cache only for `RemoteUnreachableError` (`config-base.ts:195`).
+- `loadRemote` serves the offline cache only for `RemoteUnreachableError` (`packages/cli/src/services/config/config-base.ts:204`).
 - The error messages name `rdc config remote enable` as the only remedy (en `cli.json`: `tokenExpired`, `tokenIpMismatch`, `tokenExhausted`).
 - Cases that hit this: laptops moving between networks, ISP address changes, IPv6 privacy-address rotation, and dual-stack hosts where undici's `autoSelectFamily` connects over v4 on one run and v6 on another. The v4/v6 split is already named in the `mintDeviceToken` comment.
 
 **F11: After a CEK rotation, the other devices get the wrong diagnosis.**
-- Rotation deletes server-side slots and bumps `cekGeneration` (`config.service.ts:2031-2062`). It changes neither `serverSecret` nor the device's local `wrappedCek` (`remote-token-storage.ts:18-23`).
-- So `deriveCek` still unwraps the OLD CEK successfully (`adapter.ts:386-405`). `RemoteStaleSlotError` is never raised.
-- The HMAC then fails, and `classifyDecryptFailure` reports `undecryptableIdentity`, meaning "a different enrollment's config" (`adapter.ts:424-431`). That is the wrong cause and the wrong fix.
+- Rotation deletes server-side slots and bumps `cekGeneration` (`private/account/src/services/config.service.ts:2553-2582`). It changes neither `serverSecret` nor the device's local `wrappedCek` (`packages/cli/src/adapters/remote-token-storage.ts:39-46`).
+- So `deriveCek` still unwraps the OLD CEK successfully (`packages/cli/src/adapters/remote-config-adapter.ts:522-542`). `RemoteStaleSlotError` is never raised.
+- The HMAC then fails, and `classifyDecryptFailure` reports `undecryptableIdentity`, meaning "a different enrollment's config" (`packages/cli/src/adapters/remote-config-adapter.ts:560-571`). That is the wrong cause and the wrong fix.
 - The `rotateCek` doc comment, "the rotation deliberately revokes this device's wrapped CEK" (`commands/config-remote.ts`), is false for other devices.
 
 **F13 (the claim part): The "time-windowed" SDK key is not time-windowed.**
-- `pushConfig` validates neither `sdkEpoch` recency nor `envelope.sdkEpoch === body.sdkEpoch` (`config.service.ts:531` checks only id and version).
+- `pushConfig` validates neither `sdkEpoch` recency nor `envelope.sdkEpoch === body.sdkEpoch` (`private/account/src/services/config.service.ts:598` checks only id and version).
 - Pull serves the pushed epoch's key indefinitely.
-- The portal pushes with the epoch from session open for the whole session (`config-session.ts:61-66`, `:127-138`). It works only because of this gap, so it is a latent break if enforcement is ever added.
+- The portal pushes with the epoch from session open for the whole session (`private/account/web/src/api/config-session.ts:219-226`, `:127-138`). It works only because of this gap, so it is a latent break if enforcement is ever added.
 
 **F14: Metadata leaks to the server.**
-- The commitment keys are plaintext JSON pointers (`commitments.ts:113-122`), stored in `envelopeJson` (`config.service.ts:602`, `:640`).
+- The commitment keys are plaintext JSON pointers (`packages/shared/src/config-crypto/commitments.ts:171-183`), stored in `envelopeJson` (`private/account/src/services/config.service.ts:705`, `:640`).
 - So the server reads every machine, repo, storage, cluster and cloud-provider name, and which sensitive fields are set (`kind`).
-- This contradicts "it never sees the encrypted blob's plaintext" (`selective.ts:8-12`).
+- This contradicts "it never sees the encrypted blob's plaintext" (`packages/shared/src/config-crypto/selective.ts:7-10`).
 
 **F16: `GET /configs/:id/versions` is not scoped to the store.**
-- The route passes the URL id straight to `listVersions(configEntryId)`, which filters only on `configEntryId` (`configs.ts:1153-1168`, `config.service.ts:810-821`).
+- The route passes the URL id straight to `listVersions(configEntryId)`, which filters only on `configEntryId` (`private/account/src/routes/configs.ts:1334-1351`, `private/account/src/services/config.service.ts:948-966`).
 - Any config-token holder can read version metadata (`createdByUserId`, timestamps) of any entry UUID. Low severity: the UUIDs are unguessable.
 
-**F18: Unknown top-level keys are dropped by the cache merge** (`remote-cache.ts:32-42` starts from `...pulled`). This contradicts the `.loose()` contract in `schemas.ts` ("a newer CLI's additions round-trip through an older CLI"). Low severity.
+**F18: Unknown top-level keys are dropped by the cache merge** (`packages/cli/src/services/config/remote-cache.ts:108-119` starts from `...pulled`). This contradicts the `.loose()` contract in `schemas.ts` ("a newer CLI's additions round-trip through an older CLI"). Low severity.
 
 ### Plausible risks
 
 **F12: The server accepts a push sealed under a pre-rotation CEK.**
-- `pushConfig` has no `cekGeneration` check (`config.service.ts:500-713`).
+- `pushConfig` has no `cekGeneration` check (`private/account/src/services/config.service.ts:603-606`).
 - Rotation revokes no config tokens (it only deletes slots and handoffs, `:2031-2069`), while member removal does (`:1246-1247`).
-- So a member who is still enrolled but has not re-accepted, or a device being rotated away because it was compromised, can read the current version from `GET /configs` (`configs.ts:1135-1151`) and push v+1 sealed under the old CEK.
+- So a member who is still enrolled but has not re-accepted, or a device being rotated away because it was compromised, can read the current version from `GET /configs` (`private/account/src/routes/configs.ts:1304-1329`) and push v+1 sealed under the old CEK.
 - Everyone on the new CEK is then locked out, and the old-key holder can read again.
 - Honest CLIs are stopped only by the version check, and only by accident.
 
-**F15: The raw CEK is used as both the AES-GCM key and the HMAC key** (`hmac.ts:17-26`). No known practical attack. The HMAC is redundant with the GCM tag, and its only job today is to label errors.
+**F15: The raw CEK is used as both the AES-GCM key and the HMAC key** (`packages/shared/src/config-crypto/hmac.ts:23-32`). No known practical attack. The HMAC is redundant with the GCM tag, and its only job today is to label errors.
 
-**F17: A failed enable deletes a secret that another local config may be using.** `cleanupHandoffCredentials` deletes `storageKeyId` unconditionally (`config-remote-enable.ts:156-163`). `storageKeyId` belongs to the (store, user) identity (`config.service.ts:424`, `:1602`), so a failed enable of a second local config for the same store deletes the first config's slot secret.
+**F17: A failed enable deletes a secret that another local config may be using.** `cleanupHandoffCredentials` deletes `storageKeyId` unconditionally (`packages/cli/src/commands/config-remote-enable.ts:184-199`). `storageKeyId` belongs to the (store, user) identity (`private/account/src/services/config.service.ts:2016-2019`, `:1602`), so a failed enable of a second local config for the same store deletes the first config's slot secret.
 
-**F17b: Enable replaces local content without asking in some cases.** The overwrite prompt only compares `resources` (`config-remote-enable.ts:177-180`, `:260-267`). Local `credentials.ssh`, `policy` and `infra` are replaced by the store's without a prompt; the only copy left is the single-generation `.bak`.
+**F17b: Enable replaces local content without asking in some cases.** The overwrite prompt only compares `resources` (`packages/cli/src/commands/config-remote-enable.ts:262-266`, `:260-267`). Local `credentials.ssh`, `policy` and `infra` are replaced by the store's without a prompt; the only copy left is the single-generation `.bak`.
 
-**F19: Team scoping is not enforced.** A pull filters on store, config and the caller-chosen `teamId` query (`configs.ts:1007-1011`) behind org membership only. The CEK is store-wide, so team separation is not cryptographic either. This needs an operator decision (D8).
+**F19: Team scoping is not enforced.** A pull filters on store, config and the caller-chosen `teamId` query (`private/account/src/routes/configs.ts:1162-1172`) behind org membership only. The CEK is store-wide, so team separation is not cryptographic either. This needs an operator decision (D8).
 
 **F20: Runtime state that devices should share is kept per device.**
-- `state.networkIds.next` and `state.repos[*].networkId` are host-local and never synced (`config-network-id.ts:25-43`, `payload.ts:47-51`).
+- `state.networkIds.next` and `state.repos[*].networkId` are host-local and never synced (`packages/cli/src/services/config/config-network-id.ts:19-46`, `packages/shared/src/config-schema/payload.ts:104-117`).
 - Two devices on one remote config allocate network IDs independently, starting from `MIN_NETWORK_ID`.
 - Device B does not know the network IDs of repos that A created.
 - Severity depends on whether renet can recover the ID from the machine (D8).
@@ -200,21 +200,21 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 ### Verified safe
 
 - **S1: Epoch on every pull path.**
-  - The CLI decrypts with the pull response's key (`adapter.ts:257-258`, after `bd0278084`).
-  - The portal editor uses `res.sdk_derived` (`config-session.ts:110`).
-  - The executor uses `pull.sdk_derived` (`services/serve/container-config.ts:129`).
-  - The rotation wizard uses the pull key for decrypt and the session key for re-encrypt (`RotateCekWizard.tsx:169`, `:192`).
+  - The CLI decrypts with the pull response's key (`packages/cli/src/adapters/remote-config-adapter.ts:304`, after `bd0278084`).
+  - The portal editor uses `res.sdk_derived` (`private/account/web/src/api/config-session.ts:191`).
+  - The executor uses `pull.sdk_derived` (`packages/cli/src/services/serve/container-config.ts:129`).
+  - The rotation wizard uses the pull key for decrypt and the session key for re-encrypt (`private/account/web/src/pages/RotateCekWizard.tsx:170-202`, `:192`).
   - The offline cache involves no epoch.
-- **S2: The window rolling between `/session` and PUT is harmless.** The client seals with, and sends, one epoch (`adapter.ts:310-326`). The server stores the body's epoch (`config.service.ts:638`, `:686`), and pull derives its key from it (`configs.ts:1021`).
-- **S3: No IV reuse.** Every AES-GCM call draws a fresh random 96-bit IV (`aes.ts:130-134`). The long-lived keys (CEK, org key) are used far fewer than 2^32 times.
-- **S4: The client IP cannot be spoofed through the tunnel.** Forwarding headers are removed from the inner request and rewritten from the outer one (`app.ts:621-638`).
-- **S5: The CLI and the portal never race on a token.** The device token starts a separate chain (`configs.ts:980-996`, `config.service.ts:899-914`). Content races go through the version check, subject to F7.
-- **S6: The portal's single-flight queue works.** Calls are chained (`config-session.ts:68-73`) and the token is threaded back on a push 409 (`config.ts` `configPush`). The remaining error-path gap is F9.
-- **S7: The offline cache never hides auth failures, and writes fail closed.** `config-base.ts:194-220`, `resource-state.ts:462-474`.
-- **S8: Member removal revokes that member's config tokens** (`config.service.ts:1246-1247`).
+- **S2: The window rolling between `/session` and PUT is harmless.** The client seals with, and sends, one epoch (`packages/cli/src/adapters/remote-config-adapter.ts:353-361`). The server stores the body's epoch (`private/account/src/services/config.service.ts:722`, `:686`), and pull derives its key from it (`private/account/src/routes/configs.ts:1183`).
+- **S3: No IV reuse.** Every AES-GCM call draws a fresh random 96-bit IV (`packages/shared/src/config-crypto/aes.ts:64`). The long-lived keys (CEK, org key) are used far fewer than 2^32 times.
+- **S4: The client IP cannot be spoofed through the tunnel.** Forwarding headers are removed from the inner request and rewritten from the outer one (`private/account/src/app.ts:632-638`).
+- **S5: The CLI and the portal never race on a token.** The device token starts a separate chain (`private/account/src/routes/configs.ts:1064-1081`, `private/account/src/services/config.service.ts:1167-1189`). Content races go through the version check, subject to F7.
+- **S6: The portal's single-flight queue works.** Calls are chained (`private/account/web/src/api/config-session.ts:149-154`) and the token is threaded back on a push 409 (`config.ts` `configPush`). The remaining error-path gap is F9.
+- **S7: The offline cache never hides auth failures, and writes fail closed.** `packages/cli/src/services/config/config-base.ts:200-229`, `packages/cli/src/services/config/resource-state.ts:555-560`.
+- **S8: Member removal revokes that member's config tokens** (`private/account/src/services/config.service.ts:1658-1660`).
 - **S9: A crash between the server rotating a token and the CLI saving it is survivable.** The old token keeps its unused grace uses. Today the margin is one use (F8); after T6 it is two.
-- **S10: The relay handoff is sealed to the CLI's ephemeral X25519 key, with a nonce echo** (`config-remote-relay.ts:5-12`, `config-remote-handoff.ts:46-60`). It is safe against a passive server. An active server can serve portal JS: see the section 0 caveat.
-- **S11: Rotation pass 1 rejects configs pushed during the rotation** (`config.service.ts:1969-1990`, idempotent through the fckSalt match at `:1951-1967`). The remaining gap is the pass-1-to-pass-2 time-of-check/time-of-use window (F7).
+- **S10: The relay handoff is sealed to the CLI's ephemeral X25519 key, with a nonce echo** (`packages/cli/src/commands/config-remote-relay.ts:5-13`, `packages/cli/src/commands/config-remote-handoff.ts:46-64`). It is safe against a passive server. An active server can serve portal JS: see the section 0 caveat.
+- **S11: Rotation pass 1 rejects configs pushed during the rotation** (`private/account/src/services/config.service.ts:2406-2433`, idempotent through the fckSalt match at `:1951-1967`). The remaining gap is the pass-1-to-pass-2 time-of-check/time-of-use window (F7).
 
 ## 2. Root causes behind the sibling defects
 
@@ -227,7 +227,7 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 
 ### 3.1 Envelope v3 (T8; F1, F13, F14, F15)
 
-- **AAD.** Add `aad` to `aesEncryptToString`/`aesDecryptFromString` (`aes.ts:159-173`). Use it on the CEK layer:
+- **AAD.** Add `aad` to `aesEncryptToString`/`aesDecryptFromString` (`packages/shared/src/config-crypto/aes.ts:93-115`). Use it on the CEK layer:
   `AAD = canonical({v:3, storeId, configId, teamId|null, version, sdkEpoch, cekGeneration, commitmentsDigest})`.
   `commitmentsDigest` is SHA-256 over the canonical commitments. The same AAD goes on the SDK layer, so epoch tampering reads as an integrity failure.
 - **Retire the blob HMAC.** GCM plus AAD covers it. Keep the `hmac` column, written as `null` for v3.
@@ -277,7 +277,7 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 
 ### 3.6 Deletion by tombstone (T9; F2, per D1)
 
-- The v3 envelope gains `commitments.removed: Record<blindedPointer, {hmac, kind}>`. The HMAC is computed with the **stored** `fckSalt`, which the client reads from the pulled envelope's commitments instead of inventing empty ones at `adapter.ts:271-275`.
+- The v3 envelope gains `commitments.removed: Record<blindedPointer, {hmac, kind}>`. The HMAC is computed with the **stored** `fckSalt`, which the client reads from the pulled envelope's commitments instead of inventing empty ones at `packages/cli/src/adapters/remote-config-adapter.ts:306-318`.
 - The server allows a stored pointer to disappear only when `removed[p]` matches the stored `{hmac, kind}`: to delete a value, the writer must know it. Otherwise it keeps today's anti-downgrade refusal.
 - The CLI computes `removed` by diffing `pathsToCommit(pulledDoc)` against `pathsToCommit(newDoc)`.
 - The CLI maps a 409 with `code === 'precondition_failed'` to a new `RemotePreconditionError`, naming the paths, with no replay loop.
@@ -303,14 +303,14 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 
 - **account/defaults (per D3, recommended split).**
   - Device keys become host-local through the 3.2 registry: `account.accountServer`, `e2ePublicKey`, `updateChannel`, `releasesUrl`, `defaults.language`.
-  - Synced keys (`userEmail`, `universalUser`, `datastoreSize`, `pruneGraceDays`) come from the server with no local override. Delete the spread overlays at `remote-cache.ts:46-47` and `config-base.ts:405-408`.
+  - Synced keys (`userEmail`, `universalUser`, `datastoreSize`, `pruneGraceDays`) come from the server with no local override. Delete the spread overlays at `packages/cli/src/services/config/remote-cache.ts:108-119` and `packages/cli/src/services/config/config-base.ts:428-433`.
 - **Enable cleanup.** Delete the secure-storage secret only if this enable wrote it (it was absent before) and no other local config's `remote.storageKeyId` names it.
 - **Enable prompt.** `resourcesDiffer` becomes "synced projection differs", so it compares the `toFullConfig` projections and not only `resources`.
 
 ### 3.10 SDK epoch window (T13; F13, per D5)
 
 - **Recommended.** The server requires `|body.sdkEpoch - currentEpoch| <= 1` on push.
-- The portal `ConfigSession` adopts `sdk_derived`/`sdkEpoch` from each push response (`configs.ts:1092-1100` already returns them), and calls `/session` again when it has been idle for more than one window.
+- The portal `ConfigSession` adopts `sdk_derived`/`sdkEpoch` from each push response (`private/account/src/routes/configs.ts:1260-1270` already returns them), and calls `/session` again when it has been idle for more than one window.
 - The layer-1 documentation says what the layer actually protects (section 0).
 
 ## 4. The round-trip harness (T1, T2)
@@ -318,8 +318,8 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
 ### 4.1 Design
 
 - **Location.** `private/account/tests/integration/config-sync/` (D7). It is picked up by the existing `tests/integration/**/*.test.ts` include (`private/account/vitest.config.ts`) and runs in the account integration lane (`.github/workflows/ci-quality.yml:2604`, `rediacc_ci.private.run_account test`). That lane checks out the console tree with `build-packages: 'true'`, so relative imports of `packages/cli/src` resolve there, exactly as `@rediacc/shared` already does (`private/account/package.json:45`).
-- **Server.** `createApp(() => getTestEnv(), () => db, () => blob)` with `createConfigTestDb()` and `MemoryBlobStorageService`, the same as `config-remote.test.ts:57-67`. The store, identity, slot, CEK and device tokens are set up through `ConfigService` (`setupStore`, `mintDeviceToken`), using `helpers/config-helpers.ts`.
-- **Network (`harness/net.ts`).** A `fetch` implementation that routes `http://account.test/**` to `app.fetch` and sets `cf-connecting-ip` to the calling device's IP. The tunnel then moves it into `x-forwarded-for` (`app.ts:634-636`), so the IP path under test is the real one.
+- **Server.** `createApp(() => getTestEnv(), () => db, () => blob)` with `createConfigTestDb()` and `MemoryBlobStorageService`, the same as `private/account/tests/integration/config-remote.test.ts:57-63`. The store, identity, slot, CEK and device tokens are set up through `ConfigService` (`setupStore`, `mintDeviceToken`), using `helpers/config-helpers.ts`.
+- **Network (`harness/net.ts`).** A `fetch` implementation that routes `http://account.test/**` to `app.fetch` and sets `cf-connecting-ip` to the calling device's IP. The tunnel then moves it into `x-forwarded-for` (`private/account/src/app.ts:636-638`), so the IP path under test is the real one.
 - **Fault hooks**, keyed by inner path, which the router can read by decrypting nothing (the outer path is always `/tunnel`, so the hook counts calls):
   - `dropResponseAfterServer(n)`
   - `advanceClockBetween('/session', 'PUT')`
@@ -330,9 +330,9 @@ Each finding is marked **confirmed defect**, **plausible risk** or **verified sa
   - This is needed rather than stubbing the global fetch: two devices running at the same time need different IPs.
   - `serverKey` comes from the test env's X25519 public key (`helpers/test-keys.ts`).
 - **Devices (`harness/device.ts`).** Each device has:
-  - a temp `XDG_CONFIG_HOME` (read by `shared/src/paths/dirs.ts:78`);
-  - its own `RemoteTokenStorage(tmpTokensDir)` (`remote-token-storage.ts:34`);
-  - an in-memory `SecureStorage` (interface at `utils/secure-storage.ts:36-41`);
+  - a temp `XDG_CONFIG_HOME` (read by `packages/shared/src/paths/dirs.ts:78`);
+  - its own `RemoteTokenStorage(tmpTokensDir)` (`packages/cli/src/adapters/remote-token-storage.ts:77-79`);
+  - an in-memory `SecureStorage` (interface at `packages/cli/src/utils/secure-storage.ts:36-41`);
   - an IP.
 
   Adapter-level scenarios construct adapters directly. Service-level scenarios (`loadRemote`, `RemoteResourceState`, the cache) load a fresh module graph per device (`vi.resetModules()`, set `XDG_CONFIG_HOME`, then `await import(...)`), because `configFileStorage` and `TOKENS_DIR` are module singletons. "Two processes on one machine" means two module graphs pointed at the same temp dir, so proper-lockfile contention is real.
@@ -391,7 +391,7 @@ Run 2026-09-26 against 3c99a41d0 (account e1d426b), one revert at a time, each f
 - D3: (b) **all synced**, with no local override. This drops the `...local.account` / `...local.defaults` layering; T12 becomes "remove the overlay" (F5, H16).
 - D4: (a) auto-refresh, **with a 7-day config token lifetime instead of 24 h**.
 - D5: (a) enforce a ±1 epoch window. D6: (a) blind pointer names in v3. D7: (a) the harness in `private/account/tests/integration/config-sync/` (default taken; T1 built it there). D8: (a) separate plans for F19 and F20. D9: (a) the precise claim.
-- D1's versioning, investigated: no other plan covers deletion (only T9 here). Version HISTORY is built: every push archives the previous blob to `versions/{version}.enc` with a `config_versions` row (`config.service.ts:604-625`), pruned to `CONFIG_VERSION_HISTORY_LIMIT = 50` (`:337`), listed by `GET /:id/versions` (`routes/configs.ts:1154`). RESTORE is designed (`docs/DESIGN-CONFIG-STORAGE.md:731`, audit event `config.version.restore` at `:751`) and was never built: no route, no service method, no CLI command. It becomes T16.
+- D1's versioning, investigated: no other plan covers deletion (only T9 here). Version HISTORY is built: every push archives the previous blob to `versions/{version}.enc` with a `config_versions` row (`private/account/src/services/config.service.ts:1042-1067`), pruned to `CONFIG_VERSION_HISTORY_LIMIT = 50` (`:337`), listed by `GET /:id/versions` (`private/account/src/routes/configs.ts:1334-1351`). RESTORE is designed (`docs/DESIGN-CONFIG-STORAGE.md:731`, audit event `config.version.restore` at `:751`) and was never built: no route, no service method, no CLI command. It becomes T16.
 
 - **D1, deletion:**
   - (a) tombstone-with-knowledge (section 3.6), **recommended**;
@@ -434,7 +434,7 @@ Run 2026-09-26 against 3c99a41d0 (account e1d426b), one revert at a time, each f
 - **Phase 3**: T11, after PLAN-token-ip-rebind lands.
 - **Risks.**
   - The envelope v3 rollout must reach the CLI, the portal, the executor (`container-config.ts`) and the rotation wizard in one release train. The server must accept v3 before any client emits it.
-  - Tombstones need the pulled commitments, which the CLI and portal now discard (`adapter.ts:271-275`, `config-session.ts:101`). Both must start carrying them.
+  - Tombstones need the pulled commitments, which the CLI and portal now discard (`packages/cli/src/adapters/remote-config-adapter.ts:306-318`, `private/account/web/src/api/config-session.ts:200-207`). Both must start carrying them.
   - Faking only `Date` in the harness keeps proper-lockfile's staleness check (mtime against `Date.now`) consistent, because no lock is held across a clock jump. Assert that in H7.
 
 ### Critical Files for Implementation

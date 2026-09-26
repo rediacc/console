@@ -64,23 +64,23 @@ The brief's context holds, with these additions and corrections:
    - `enableBrowser` (:114-152);
    - `rotateCek` step 2 (:436-490).
 
-   The other `createServer` hits are not handoffs: `services/executor/daemon/server.ts:92`, `services/repo/repo-ssh-tunnel.ts:40,74` and the templates in `embedded.generated.ts`. The E2E suite has its own copy: `private/account/e2e/src/utils/config-store-helpers.ts:764-820` (`startCallbackServer`), used by 20-11 (f) (:349-412).
-3. **A likely extra cause of "Failed to fetch".** The loopback binds `127.0.0.1` (config-remote.ts:95) but advertises `http://localhost:<port>` (:126). If the browser resolves `localhost` to `::1`, nothing is listening there. From Windows to WSL2 it also depends on WSL's localhost forwarding. None of this matters once the loopback is gone.
-4. **Anyone can seal a payload to the CLI.** The public key is in the URL, and ECIES has no sender authentication. Today any signed-in account that learns the device code and key can POST `config-handoff` (device-codes.ts:34-42; the only check is `sessionAuth`) with a handoff for **its own** store. On a fresh store, `applyHandoff` then **seeds that store with the victim's local config** (config-remote-enable.ts header :5-14: a 404 means "push the local config"). The attacker holds the CEK, so the victim's SSH keys and machine inventory are exfiltrated.
+   The other `createServer` hits are not handoffs: `packages/cli/src/services/executor/daemon/server.ts:92`, `packages/cli/src/services/repo/repo-ssh-tunnel.ts:40,74` and the templates in `embedded.generated.ts`. The E2E suite has its own copy: `private/account/e2e/src/utils/config-store-helpers.ts:764-820` (`startCallbackServer`), used by 20-11 (f) (:349-412).
+3. **A likely extra cause of "Failed to fetch".** The loopback bound `127.0.0.1` but advertised `http://localhost:<port>`. If the browser resolved `localhost` to `::1`, nothing is listening there. From Windows to WSL2 it also depends on WSL's localhost forwarding. None of this matters once the loopback is gone.
+4. **Anyone can seal a payload to the CLI.** The public key is in the URL, and ECIES has no sender authentication. Today any signed-in account that learns the device code and key can POST `config-handoff` (`private/account/src/routes/device-codes.ts:114-132`; the only check is `sessionAuth`) with a handoff for **its own** store. On a fresh store, `applyHandoff` then **seeds that store with the victim's local config** (config-remote-enable.ts header :5-14: a 404 means "push the local config"). The attacker holds the CEK, so the victim's SSH keys and machine inventory are exfiltrated.
 
    The device code and key travel in the query string, so they show up in server logs, browser history and Referer. This is the weightiest risk. Sections 2 and 3 close it with user binding plus a secret nonce in the URL fragment, returned inside the sealed plaintext.
 5. **Login and handoff device codes are not separated.**
-   - `approve` (device-code.service.ts:113+) mints an API token on any pending code.
+   - `approve` (`private/account/src/services/device-code.service.ts:306`) mints an API token on any pending code.
    - `storeConfigHandoff` (:88-111) accepts any pending code.
    - GET poll (:56-86) returns either one.
-   - Both flows share `device_codes` (schema.ts:547-562).
+   - Both flows share `device_codes` (`private/account/src/db/schema.ts:558-591`).
 6. **Consumption is one-shot but not atomic.**
    - `poll` runs select, then delete, then return (:65-83). Two concurrent polls can both read the blob.
    - `storeConfigHandoff` runs select, check, then update (:88-111).
-7. **The CLI hides every polling error.** `pollOnce` (config-remote.ts:183-186) treats any non-ValidationError as "pending": network down, 404 on an unknown route, 429 or 5xx. The operator waits the full 10 minutes (`DEVICE_CODE_TTL_MS`, constants.ts:45) with no signal.
-8. **The login redirect drops the URL hash.** `ProtectedRoute.tsx:27` stores `from: location.pathname + location.search`. The fragment design in section 4 needs `+ location.hash`.
-9. **A factual error in PLAN-app-wide-org-selection.md:139.** It says the `config-handoff` fetches "have no auth by design (device-codes.ts:34)". Line 34 uses `auth` (`sessionAuth`), so they do require auth. That plan's `ORG_SCOPED_PREFIXES` will add `X-Org-Id` to the new `/device-codes/*` calls, which is harmless. Tell that plan's owner.
-10. **The prerequisite check stays.** `checkEnablePrerequisites` (config-remote-enable.ts:57-96, route `/configs/enable-requirements` at configs.ts:405-421) is kept. Its no-token branch (:88-95) becomes a refusal (decision D1).
+7. **The CLI hides every polling error.** `pollOnce` treats any non-ValidationError as "pending": network down, 404 on an unknown route, 429 or 5xx. The operator waits the full 10 minutes (`DEVICE_CODE_TTL_MS`, `private/account/src/constants.ts:53`) with no signal.
+8. **The login redirect drops the URL hash.** `private/account/web/src/auth/ProtectedRoute.tsx:31` stores `from: location.pathname + location.search`. The fragment design in section 4 needs `+ location.hash`.
+9. **A factual error in `agent/plans/PLAN-app-wide-org-selection.md:142`.** It says the `config-handoff` fetches "have no auth by design (`private/account/src/routes/device-codes.ts:34`)". Line 34 uses `auth` (`sessionAuth`), so they do require auth. That plan's `ORG_SCOPED_PREFIXES` will add `X-Org-Id` to the new `/device-codes/*` calls, which is harmless. Tell that plan's owner.
+10. **The prerequisite check stays.** `checkEnablePrerequisites` (`packages/cli/src/commands/config-remote-enable.ts:85-122`, route `/configs/enable-requirements` at `private/account/src/routes/configs.ts:438-458`) is kept. Its no-token branch (:88-95) becomes a refusal (decision D1).
 
 ## 1. Target flow (one transport)
 
@@ -121,7 +121,7 @@ Ctrl+C: DELETE /device-codes/D {S}
 
 **Pairing code strength.** P is the first 60 bits of SHA-256(SPKI), written as 12 characters over the 32-symbol alphabet `ABCDEFGHJKLMNPQRSTUVWXYZ23456789` (exactly 5 bits per symbol, so no modulo bias) and formatted `XXXX-XXXX-XXXX`.
 
-40 bits (8 characters) is too few. A GPU attacker who has the link can derive public keys incrementally and hash them at better than 1e9 per second, which reaches 2^39 within the TTL. 60 bits is out of reach. Typing 12 characters matches the existing 10-character user code (device-code.service.ts:10-20).
+40 bits (8 characters) is too few. A GPU attacker who has the link can derive public keys incrementally and hash them at better than 1e9 per second, which reaches 2^39 within the TTL. 60 bits is out of reach. Typing 12 characters matches the existing 10-character user code (`private/account/src/services/device-code.service.ts:20-30`).
 
 Words are rejected: the wordlist would have to be stable across 13 locales, and comparing words invites partial matching.
 
@@ -129,21 +129,21 @@ Words are rejected: the wordlist would have to be stable across 13 locales, and 
 
 ### 3.1 Schema and migration
 
-`src/db/schema.ts:547-562`, in `device_codes`, add:
+`private/account/src/db/schema.ts:558-591`, in `device_codes`, add:
 - `purpose text NOT NULL DEFAULT 'login'`, one of `'login'` or `'config-handoff'`;
 - `bound_user_id text`;
 - `handoff_key_hash text` (base64url SHA-256 of the SPKI bytes);
 - `poll_verifier text` (base64url SHA-256 of S).
 
-Add the migration `drizzle/0053_device_code_handoff.sql` (after `0052_api_token_ip_binding.sql`) and update the meta journal. Check `src/db/scope-registry.ts:114`, which lists `deviceCodes`, for any column rules.
+Add the migration `drizzle/0053_device_code_handoff.sql` (after `0052_api_token_ip_binding.sql`) and update the meta journal. Check `private/account/src/db/scope-registry.ts:114`, which lists `deviceCodes`, for any column rules.
 
-Constants (`src/constants.ts:45`): `config-handoff` codes use the existing `DEVICE_CODE_TTL_MS` (10 minutes, operator ruling D3); add only `MAX_PENDING_HANDOFFS_PER_USER = 5`.
+Constants (`private/account/src/constants.ts:53`): `config-handoff` codes use the existing `DEVICE_CODE_TTL_MS` (10 minutes, operator ruling D3); add only `MAX_PENDING_HANDOFFS_PER_USER = 5`.
 
 ### 3.2 Routes (`src/routes/device-codes.ts`) and service (`src/services/device-code.service.ts`)
 
 - **`POST /device-codes`** (currently :17-23):
   - An empty body keeps today's login behaviour.
-  - A body with `{purpose:'config-handoff', keyHash, pollVerifier}` requires `apiTokenAuth('subscription:read')` and sets `bound_user_id = apiTokenCreatedByUserId`. It returns 403 when the token has no user, mirroring configs.ts:410-412.
+  - A body with `{purpose:'config-handoff', keyHash, pollVerifier}` requires `apiTokenAuth('subscription:read')` and sets `bound_user_id = apiTokenCreatedByUserId`. It returns 403 when the token has no user, mirroring `private/account/src/routes/configs.ts:446-449`.
   - Validate both hashes as 43-character base64url.
   - Refuse with 429 past `MAX_PENDING_HANDOFFS_PER_USER`.
   - Purge expired rows opportunistically: `DELETE WHERE expires_at < now`.
@@ -193,7 +193,7 @@ Everything sits in the **fragment**. Browsers never send it to the server or in 
 
 **`config-remote-handoff.ts`:** `HandoffPayload` (:22-31) gains `handoffNonce: string`. `decryptHandoff` stays. The relay module checks the nonce with a constant-time compare. On a mismatch or a missing nonce it throws a new `handoffNotForThisRun` error and writes nothing. Rewrite the comment at :51, which names the callback. The mirror fixture rule at :7-9 still binds: update the portal fixture textually as well.
 
-**`config-remote-enable.ts:88-95`:** with no login token for `apiUrl`, refuse with `loginRequired` ("run `rdc subscription login` first"). This is decision D1. Also fix the header comment at :2-3.
+**`packages/cli/src/commands/config-remote-enable.ts:42-53`:** with no login token for `apiUrl`, refuse with `loginRequired` ("run `rdc subscription login` first"). This is decision D1. Also fix the header comment at :2-3.
 
 **What the CLI prints** (non-TTY prints the same lines without a spinner):
 ```
@@ -233,13 +233,13 @@ Waiting for the browser... expires 14:32. Press Ctrl+C to cancel.
 **`pages/ConfigSetup.tsx`:** runs in two modes.
 - With no fragment it is a portal-only setup.
 - With a fragment it runs the same verify-then-pairing steps up front, then after `setupStore` seals and calls `deliverHandoff`. That replaces `callbackUrl` at :151, :265-277, :303-334, :482-487 and :592, and the step `callback` becomes `relay`.
-- It absorbs the relay path from `DeviceConfigSetup.tsx:196-222`.
+- It absorbs the relay path DeviceConfigSetup.tsx used to hold.
 
-**Delete** `pages/DeviceConfigSetup.tsx` and its route (router.tsx:431).
+**Delete** `pages/DeviceConfigSetup.tsx` and its route.
 
-**`router.tsx:135-185`:** `ConfigSetupRoute` and `ConfigRemoteRoute` lose the `searchParams.get('callback')` chrome branch and always render `<ProtectedRoute><Layout>`. Keep or trim the comment at :416 so it still points at `config-remote.ts`.
+**`private/account/web/src/router.tsx:139-157`:** `ConfigSetupRoute` and `ConfigRemoteRoute` lose the `searchParams.get('callback')` chrome branch and always render `<ProtectedRoute><Layout>`. Keep or trim the comment at :416 so it still points at `config-remote.ts`.
 
-**`auth/ProtectedRoute.tsx:27`:** `from: location.pathname + location.search + location.hash`. Check that `Login.tsx:25-44` `navigate(nextPath)` keeps the hash (react-router parses a string path, so it should), and that the sessionStorage `postLoginPath` copy (:44) carries it.
+**`private/account/web/src/auth/ProtectedRoute.tsx:31`:** `from: location.pathname + location.search + location.hash`. Check that `private/account/web/src/pages/Login.tsx:25-44` `navigate(nextPath)` keeps the hash (react-router parses a string path, so it should), and that the sessionStorage `postLoginPath` copy (:44) carries it.
 
 ## 5. Shared (`packages/shared/src/config-crypto/handoff.ts`)
 
@@ -260,7 +260,7 @@ Export both from the package index. The CLI, the portal and the E2E helpers all 
   - config-handoff: 10 per minute (existing `approveLimit`);
   - pending codes per user: at most 5.
 
-  The limiter is in-memory per isolate (`src/middleware/rate-limit.ts:12-14`), so the real controls are S (256 bits), the binding and N. The limits are hygiene.
+  The limiter is in-memory per isolate (`private/account/src/middleware/rate-limit.ts:11-14`), so the real controls are S (256 bits), the binding and N. The limits are hygiene.
 - **Polling:** use the interval the server returns (5 s). On a 429, wait for `Retry-After`. On network errors or 5xx, back off exponentially up to 30 s and warn once after 3 consecutive failures (`serverUnreachableRetrying`). A 404 or `expired` raises `expired`. Any other 4xx raises at once with the status.
 - **Cancellation:** on SIGINT during the wait, send a best-effort `DELETE /device-codes/D` with a 2 s timeout, then exit 130. The page then shows "request cancelled; run the command again". The same rule applies to `rotate-cek`.
 
@@ -289,7 +289,7 @@ Export both from the package index. The CLI, the portal and the E2E helpers all 
 
 ### 7.2 Account integration (`private/account/tests/integration/`)
 
-Rewrite `config-remote.test.ts:379-432` ("Device code config-handoff relay") for the new flow. Add `device-code-handoff.test.ts`, covering:
+Rewrite `private/account/tests/integration/config-remote.test.ts:379-432` ("Device code config-handoff relay") for the new flow. Add `device-code-handoff.test.ts`, covering:
 - create with the handoff purpose and no token: 401; with a token: the row stores the bound user, hash and verifier;
 - `handoff-request`: `boundToYou` true for the same user and false for another; 404 once cancelled or expired;
 - `config-handoff`: 403 from another user; 409 on a keyHash mismatch; 409 when the code is not pending; 404 on a login-purpose code; 403 without 2FA; a blob over the size cap is refused;
@@ -331,7 +331,7 @@ Rewrite `config-remote.test.ts:379-432` ("Device code config-handoff relay") for
   - a wrong pairing code keeps unlock disabled;
   - a second user's session on a code bound to the first user is refused.
 
-**`20-03-passkey-setup.test.ts:174,197`:** repoint the `/account/device-config` visits to `/account/config-setup#code=TEST&key=...`. The missing-parameter screen now belongs to ConfigSetup.
+**`private/account/e2e/tests/20-config-storage/20-03-passkey-setup.test.ts:177,200`:** repoint the `/account/device-config` visits to `/account/config-setup#code=TEST&key=...`. The missing-parameter screen now belongs to ConfigSetup.
 
 **Control first:** before the fix, (h) must fail on today's code, because today's page posts with a swapped key.
 
@@ -344,7 +344,7 @@ Rewrite `config-remote.test.ts:379-432` ("Device code config-handoff relay") for
 - **Rotate:** `rotateCek.waiting`/`received` (:469-470) reuse the relay wording.
 - **Reword** `handoffUndecryptable` (:285) without "posted to the wrong session" wording tied to the callback.
 
-Regenerate `packages/shared/src/cli-contract/data/{contract.json,contract.generated.ts,i18n/*.json}` with `npm run generate:cli-contract -w packages/cli`. `--headless` disappears at contract.json:3334. Gates: `check:ci-cli-contract`, `scripts/gates/check-cli-i18n-key-usage.ts` and `check-i18n-placeholders`.
+Regenerate `packages/shared/src/cli-contract/data/{contract.json,contract.generated.ts,i18n/*.json}` with `npm run generate:cli-contract -w packages/cli`. `--headless` disappears from the generated contract. Gates: `check:ci-cli-contract`, `scripts/gates/check-cli-i18n-key-usage.ts` and `check-i18n-placeholders`.
 
 ### 8.2 Portal: 13 `web/src/i18n/locales/*/configStorage.json`
 

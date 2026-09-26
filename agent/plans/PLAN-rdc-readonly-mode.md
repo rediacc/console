@@ -25,7 +25,7 @@ Read paths already tolerate a different renet version:
 - `isListResult` only needs one known top-level key (`packages/shared/src/renet-contract/data/list-types.generated.ts:349-363`).
 - `fetchRepoLicenseDetail` is documented as best-effort against older renet and returns `[]` on any error (`packages/cli/src/services/machine/machine-status.ts:145-147, 170-172`).
 - `backup status` only runs `systemctl is-active` (`packages/cli/src/commands/backup-ops.ts:256`). It never uses the renet path it provisions (`packages/cli/src/commands/backup-ops.ts:316`).
-- The executor already warns on version skew and carries on (`packages/cli/src/services/executor/local-executor.ts:2007-2009`, `versionSkewWarning`).
+- The executor already warned on version skew and carried on rather than failing (a `versionSkewWarning`, since superseded by this plan's own drift warning in `acquireRemoteRenet`).
 
 ## Design
 
@@ -51,7 +51,7 @@ Read paths already tolerate a different renet version:
 
 4. **The executor decides per function, from one exhaustive table.** Add `RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess>` (new file `services/executor/renet-function-access.ts`).
    - Because it is a `Record` over the generated union, a new renet function breaks tsc until someone classifies it.
-   - `provisionAndVerify` (`packages/cli/src/services/executor/local-executor.ts:2031`) calls `acquireRemoteRenet(renetAccessFor(options.functionName), ...)`.
+   - `provisionAndVerify` (`packages/cli/src/services/executor/local-executor.ts:314`) calls `acquireRemoteRenet(renetAccessFor(options.functionName), ...)`.
    - Names outside the contract map to `'read-only'`. The safe default is to never swap the binary for something unclassified.
    - No new field on `ExecuteOptions`, so the daemon wire protocol (`packages/cli/src/services/executor/daemon/protocol.ts:30`) is untouched.
    - Read-only functions: `backup_browse, backup_list, backup_verify, ceph_clone_list, ceph_image_info, ceph_image_list, ceph_snapshot_list, container_inspect, container_list, container_logs, container_stats, kube_health, kube_kubeconfig, machine_ping, machine_ssh_test, machine_version, repository_autostart_list, repository_cat, repository_diff, repository_health, repository_info, repository_list, repository_log, repository_logs, repository_policy_get, repository_status, repository_validate`.
@@ -105,7 +105,7 @@ Line numbers are verified against the current tree. "Fwd" means the wrapper forw
 | 13 | `packages/cli/src/commands/backup-ops.ts:146` | `runBackupNow` (:109) | `backup run` | MUTATING | `'provision'` |
 | 14 | `packages/cli/src/commands/backup-ops.ts:316` | `showBackupStatus` (:300) | `backup status` | READ-ONLY | **delete the call** (result unused) |
 | 15 | `packages/cli/src/services/backup/backup-schedule.ts:115` | `preDeployProvisioning` (:102; dry-run already returns early :108-113) | `backup schedule` push | MUTATING | `'provision'` |
-| 16 | `packages/cli/src/services/executor/local-executor.ts:2031` | `provisionAndVerify` (:2021) | every bridge-function dispatch (`repo up/down/...`, `repo list`, `storage` :42/:102, `repo logs`, etc.) | MIXED (dispatcher) | `renetAccessFor(options.functionName)` from `RENET_FUNCTION_ACCESS` |
+| 16 | `packages/cli/src/services/executor/local-executor.ts:314` | `provisionAndVerify` (:303) | every bridge-function dispatch (`repo up/down/...`, `repo list`, `storage` :42/:102, `repo logs`, etc.) | MIXED (dispatcher) | `renetAccessFor(options.functionName)` from `RENET_FUNCTION_ACCESS` |
 
 Decision point for the operator: rows 2, 4, 5 and 7 are access sessions. They deploy a per-repo key but by intent change nothing else, and they are classed read-only (the lead confirmed it). Flipping any of them is a one-token change, and the ledger test will demand that the change be deliberate.
 
@@ -119,7 +119,7 @@ Decision point for the operator: rows 2, 4, 5 and 7 are access sessions. They de
     (ticked) 2026-09-24T07:55:17Z by d778be9d: RenetAccess + acquireRemoteRenet exported, old name gone (grep empty); renet-access.test 7/7; mutation 4 red (packages/cli/src/services/renet/renet-execution.ts:177)
 - [x] 4. `renet-execution.ts`: implement `assertRenetSourceClean` using `execFileSync('git', ...)`, as described in Design point 5 and honouring `REDIACC_ALLOW_DIRTY_RENET`. The error lists up to 10 porcelain paths and the target machine IP.
     (ticked) 2026-09-24T07:55:17Z by d778be9d: dirty-tree guard lists up to 10 paths plus machine IP; dirty and clean tests green; mutation 7b red (packages/cli/src/services/renet/renet-execution.ts:107)
-- [x] 5. New `services/executor/renet-function-access.ts`: `RENET_FUNCTION_ACCESS` (`Record<RenetFunctionName, RenetAccess>`) and `renetAccessFor(name: string): RenetAccess` (unknown names → `'read-only'`). Wire it into `packages/cli/src/services/executor/local-executor.ts:2031`. Rename the `options` argument there so that `skipRouterRestart`/`debug` still pass through.
+- [x] 5. New `services/executor/renet-function-access.ts`: `RENET_FUNCTION_ACCESS` (`Record<RenetFunctionName, RenetAccess>`) and `renetAccessFor(name: string): RenetAccess` (unknown names → `'read-only'`). Wire it into `packages/cli/src/services/executor/local-executor.ts:314`. Rename the `options` argument there so that `skipRouterRestart`/`debug` still pass through.
     (ticked) 2026-09-24T07:55:17Z by d778be9d: 27 read-only functions, rest provision; renet-function-access.test 4/4; mutation 3 red then restored (packages/cli/src/services/executor/renet-function-access.ts:17)
 - [x] 6. Sites 6, 9, 12, 13, 15: pass `'provision'`.
     (ticked) 2026-09-24T07:55:18Z by d778be9d: all 5 mutating sites pass 'provision', pinned in renet-access-ledger.test (packages/cli/src/services/provision/infra-provision.ts:369)

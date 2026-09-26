@@ -108,7 +108,7 @@ Every other job (about 60 more) has a median under 6.5 and a max under 11 in eve
 3. **About 10.5 minutes of the PR critical path is a `needs:` edge, not work.**
    - `tests` needs `build-docker-fast` (`.github/workflows/ci.yml:999`).
    - Hypothesis, to verify in T2.1: no ct-tests.yml leg consumes a docker-fast image. There is no `ghcr.io/rediacc` reference and no `*_tag` input in ct-tests.yml, and each leg builds renet and the CLI itself.
-   - Similarly, `ops-tests` waits for quality and review-gate (`ci.yml:1043`), and `stage-artifacts` waits for all of build-docker, including the Devcontainer legs (`ci.yml:962`).
+   - Similarly, `ops-tests` waits for quality and review-gate (`.github/workflows/ci.yml:1043`), and `stage-artifacts` waits for all of build-docker, including the Devcontainer legs (`.github/workflows/ci.yml:962`).
 4. **Some measured long poles are single indivisible units.**
    - `kube/17-multinode-cluster.test.ts` has one 10.9-minute test.
    - `13-postgres-fork-isolation.test.ts` runs 8.1 minutes (59 tests, 11 describes).
@@ -124,13 +124,13 @@ Every other job (about 60 more) has a median under 6.5 and a max under 11 in eve
   - (c) Keep Free and narrow PR scope. PRs run the two full-integration E2E Workers distros (ubuntu, fedora); all five distros run nightly and pre-merge. That cuts about 115 runner-minutes.
   - (d) Keep Free and accept a pipeline target of about 35 minutes.
   - The P3 gate reads the ceiling from `.ci/config/lane-durations.json` (`concurrency`), so this ruling is one number.
-- **D-W2. The hard lane ceiling versus the existing headroom gate.** `check_job_timeout_headroom.py:42` requires `timeout >= 1.5 x observed max`. With `timeout-minutes: 15`, that means observed max <= 10, which contradicts a 12-minute lane ceiling. *Recommend:* for budgeted jobs, the lane gate (p90 <= 12, timeout <= 15) supersedes the headroom rule. Fold `job-timeout-baseline.json` (refreshed 2026-08-21 from one run) into `lane-durations.json`, so there is one duration source.
+- **D-W2. The hard lane ceiling versus the existing headroom gate.** `.ci/scripts/quality/check_job_timeout_headroom.py:42` requires `timeout >= 1.5 x observed max`. With `timeout-minutes: 15`, that means observed max <= 10, which contradicts a 12-minute lane ceiling. *Recommend:* for budgeted jobs, the lane gate (p90 <= 12, timeout <= 15) supersedes the headroom rule. Fold `job-timeout-baseline.json` (refreshed 2026-08-21 from one run) into `lane-durations.json`, so there is one duration source.
 - **D-W3. Indivisible long tests.**
   - For K8s Multinode and K8s repo, *recommend* splitting each long test at a checkpoint into two tests that restore a cluster snapshot. Test code stays in `packages/e2e-tests`.
   - The alternative is a declared, gate-visible budget exemption list, which the operator must approve item by item.
 - **D-W4. Tutorial sequence.** *Recommend:* PRs run 4 contiguous segments via `TUTORIAL_ONLY` (`.ci/tutorials/run-sequence.sh:23,73`), each on fresh VMs. The nightly also runs the 4 segments, plus a rotating "boundary pair" (the last tutorial of segment k followed by the first of k+1) to keep some cross-boundary state coverage. The full unbroken sequence can no longer fit 15 minutes. This trade has to be explicit, because renet#60 is exactly what the unbroken sequence caught.
 - **D-W5. Enforcing on main push.** Cancelling a main push means no release that time (`CI Complete` fails, so finalize does not dispatch cd-v2). *Recommend:* enforce on PRs first, and flip main only after 5 consecutive main pushes under 20 in report mode.
-- **D-W6. Early start for VM jobs.** Drop `quality`/`review-gate` from `ops-tests` needs (`ci.yml:1043`), and `quality` from `stripe-sandbox`. Those gates exist to avoid burning runners when Quality is red. The watchdog already force-cancels the run on a Quality failure, after the no-retry drain, so the saving is small and costs about 10 minutes of critical path. *Recommend:* drop them, and keep review-gate on stage-artifacts (release).
+- **D-W6. Early start for VM jobs.** Drop `quality`/`review-gate` from `ops-tests` needs (`.github/workflows/ci.yml:1043`), and `quality` from `stripe-sandbox`. Those gates exist to avoid burning runners when Quality is red. The watchdog already force-cancels the run on a Quality failure, after the no-retry drain, so the saving is small and costs about 10 minutes of critical path. *Recommend:* drop them, and keep review-gate on stage-artifacts (release).
 
 ## 4. Phases
 
@@ -146,11 +146,11 @@ Every other job (about 60 more) has a median under 6.5 and a max under 11 in eve
   - It is called every poll right after the job fetch (the loop at `:1054`, the fetch at about `:1068`).
   - Job clock: `now - started_at` for in-progress jobs, and `completed_at - started_at` for jobs that finished over budget between polls.
   - Run clock: `now - run.run_started_at` for the current attempt, so a rerun starts a fresh clock and queue time counts.
-  - Excluded: `WATCHDOG_EXCLUDE_PATTERNS` (`watchdog-monitor.yml:148`: Watchdog, CI Complete, Review Complete).
+  - Excluded: `WATCHDOG_EXCLUDE_PATTERNS` (`.github/workflows/watchdog-monitor.yml:148`: Watchdog, CI Complete, Review Complete).
 - [ ] T1.3 [A] **Report-only output.**
   - For each violation: `core.warning("CI BUDGET VIOLATION (report-only): '<job>' at <m>m, budget 15m")`, one annotation per job per generation.
-  - A `$GITHUB_STEP_SUMMARY` table, and `budget-violations.json` uploaded as `ci-budget-<run>-gen<g>` from the existing upload step (`watchdog-monitor.yml:225` pattern).
-  - New env in the monitor step (`watchdog-monitor.yml:128-175`): `WATCHDOG_BUDGET_MODE: report`, `WATCHDOG_JOB_BUDGET_MIN: '15'`, `WATCHDOG_RUN_BUDGET_MIN: '20'`.
+  - A `$GITHUB_STEP_SUMMARY` table, and `budget-violations.json` uploaded as `ci-budget-<run>-gen<g>` from the existing upload step (`.github/workflows/watchdog-monitor.yml:225` pattern).
+  - New env in the monitor step (`.github/workflows/watchdog-monitor.yml:128-175`): `WATCHDOG_BUDGET_MODE: report`, `WATCHDOG_JOB_BUDGET_MIN: '15'`, `WATCHDOG_RUN_BUDGET_MIN: '20'`.
   - In `report` mode the function **never** reaches `forceCancel` (`:888`).
 - [ ] T1.4 [A] **Tests** in `.ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py`, next to the existing `test_gate_watchdog_*` suites, with a mocked `github`:
   - a job at 14:59 does not fire, and at 15:01 does;
@@ -160,7 +160,7 @@ Every other job (about 60 more) has a median under 6.5 and a max under 11 in eve
   - a rerun attempt resets the run clock.
 - [ ] T1.5 [A] `report-nightly-status.cjs` lists the night's budget violations under their own heading, so the schedule run (cancel-exempt, `:54`) still surfaces them.
 - [ ] T1.6 [B] **Unit-duration artifacts from every lane that will be sharded.** No sharding yet.
-  - Playwright `--reporter=json` beside the existing reporters in `run-e2e.sh` and `run-account-e2e.sh:220-224`.
+  - Playwright `--reporter=json` beside the existing reporters in `run-e2e.sh` and `.ci/scripts/test/run-account-e2e.sh:220-224`.
   - `gotestsum --jsonfile` in renet.
   - `pytest --junitxml` durations in `check_pytest.py`.
   - The battery's own per-test timings.
@@ -174,15 +174,15 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 **P2a. Critical path and fixed-cost cuts (no shards)**
 
-- [ ] T2.1 [C] Verify finding 3, then drop `build-docker-fast` from `tests.needs` (`ci.yml:999`) and from the `if:` beside it.
+- [ ] T2.1 [C] Verify finding 3, then drop `build-docker-fast` from `tests.needs` (`.github/workflows/ci.yml:999`) and from the `if:` beside it.
   - Verification: grep every ct-tests leg for image pulls of `*_tag`, and run one trial dispatch.
   - Projected: PR tests start at about 2.5 instead of 13.0.
-- [ ] T2.2 [C] Apply D-W6 (`ci.yml:1043` ops-tests needs; the stripe-sandbox needs at `:676`).
+- [ ] T2.2 [C] Apply D-W6 (`.github/workflows/ci.yml:1043` ops-tests needs; the stripe-sandbox needs at `:676`).
 - [ ] T2.3 [C] **Free Disk Space.** ct-tests.yml has 9 copies (`:335`, `:386`, `:510`, ...), 1.1-5.8 minutes each. Replace them with one composite action that deletes only what the VM legs need, in the background (`rm -rf ... &`, joined before the KVM step), and drops the second prune in the Workers leg.
 - [ ] T2.4 [C] Remove the duplicate `npm run build -w @rediacc/shared && npm run build -w @rediacc/provisioning` (about 2 min, visible in the E2E Ceph and K8s Multinode logs just before "Running E2E tests") where `setup-workspace build-packages: 'true'` already built them.
 - [ ] T2.5 [D] **`simulate_promotion.py`.** It runs one `aws s3api copy-object` subprocess per key (`:210`) with `max_concurrent_requests 3` (`:120`). Move the copies onto the already-imported `concurrent.futures` pool (`:91`) with 16 workers and adaptive retry kept. Projected: Validate Promotion goes from 15.0 to about 5.
 - [ ] T2.6 [C] **Release chain.**
-  - Narrow `stage-artifacts` needs (`ci.yml:962`) to what it ships. Split `ci-build-docker.yml` so the Devcontainer legs (end 15.8-16.6) are not upstream of staging.
+  - Narrow `stage-artifacts` needs (`.github/workflows/ci.yml:962`) to what it ships. Split `ci-build-docker.yml` so the Devcontainer legs (end 15.8-16.6) are not upstream of staging.
   - Split `Renet (cached)` "Extract Linux binaries + cross-compile Darwin/Windows" (4.2 min) into two legs.
   - Verify whether stage needs docker at all.
 
@@ -198,13 +198,13 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - The battery's own test list, with its writer/scanner sets as mutex units.
   - vitest: its `include` globs.
   - Tutorials: slugs in sequence order, with `needs` chaining within a segment.
-  - `shardPlan` (`lanes.ts:480`) takes these units unchanged. Its refusals (empty shard, a unit in two shards, lost units) stay the correctness backbone.
-- [ ] T2.9 [B] **Balance by measured duration, not slots.** Today LPT sorts on `weight`, which is scheduler slots (`lanes.ts:651-662`). Add `estimateMs` from `.ci/config/lane-durations.json`; the p90 of unit durations falls back to `weight` when absent, as today. `quality-code`'s plan must come out byte-identical, and a selftest control asserts it.
+  - `shardPlan` (`scripts/ci-runner/lanes.ts:480`) takes these units unchanged. Its refusals (empty shard, a unit in two shards, lost units) stay the correctness backbone.
+- [ ] T2.9 [B] **Balance by measured duration, not slots.** Today LPT sorts on `weight`, which is scheduler slots (`scripts/ci-runner/lanes.ts:651-662`). Add `estimateMs` from `.ci/config/lane-durations.json`; the p90 of unit durations falls back to `weight` when absent, as today. `quality-code`'s plan must come out byte-identical, and a selftest control asserts it.
 - [ ] T2.10 [B] **Shard manifest plus local reproduction.**
-  - `gate-bind --write` emits the `strategy.matrix.shard` region (the existing `# >>> shard-strategy` form, `ci-quality.yml:733-738`) for each test lane, plus `.ci/config/shards/<lane>.json`: leg to unit ids.
+  - `gate-bind --write` emits the `strategy.matrix.shard` region (the existing `# >>> shard-strategy` form, `.github/workflows/ci-quality.yml:740-745`) for each test lane, plus `.ci/config/shards/<lane>.json`: leg to unit ids.
   - Each leg runs `<runner> --shard-manifest .ci/config/shards/<lane>.json --shard ${{ matrix.shard }}`.
   - `npm run ci -- --lane <lane> --shard i/N` (`scripts/ci-runner/run.ts`) replays one CI leg locally through the same pool.
-- [ ] T2.11 [B] **Merge by receipt.** Generalise `scripts/ci/write-shard-receipt.cjs` (`RECEIPT_WRITER`, `scripts/gate-bind.ts:605`) and `check:ci-quality-complete` (`ci-quality.yml:2672-2706`) from lock ids to unit ids.
+- [ ] T2.11 [B] **Merge by receipt.** Generalise `scripts/ci/write-shard-receipt.cjs` (`RECEIPT_WRITER`, `scripts/gate-bind.ts:605`) and `check:ci-quality-complete` (`.github/workflows/ci-quality.yml:2672-2706`) from lock ids to unit ids.
   - Each leg writes `{lane, index, of, units:[{id, outcome, ms}]}`, derived from the runner's own report (Playwright JSON, gotestsum JSON, junit), not from the plan.
   - One slim `<Lane> / Shard receipts` job per lane downloads `<lane>-shard-*`. It asserts every unit ran exactly once with a non-skipped outcome, then merges artifacts:
     - `npx playwright merge-reports` for blob reports;
@@ -216,19 +216,19 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 | Lane (job) | Unit | Legs (projected) | How units are assigned | Leg name (API) | Merge |
 |---|---|---|---|---|---|
-| E2E Workers (`ct-tests.yml:231`, one per distro) | file (Playwright project per file, `packages/e2e-tests/playwright.config.ts:61-103`); `13-postgres-fork-isolation` as 3 describe units | 5 per distro after P2d; 11 per distro without P2d (fixed 9.7) | LPT by per-file p90 (36040274865: 13-postgres 8.1, 10-backup 2.5, 07 2.1, 17 2.1, rest under 2); leg runs `--project test-NN ...` and `--grep` for describe units; FULL_INTEGRATION legs get 12a/b/d+13b | `E2E Workers (ubuntu-24.04, 3/5)` | receipts, blob merge, `create_complete --name e2e-workers-<os>-s<i>` (`:421`) |
-| Account E2E (`ct-tests.yml:1865`) | spec file (99 under `private/account/e2e/tests`) | 4 | LPT; `10-stripe/**` is ONE mutex unit, and only the leg holding it starts `stripe listen`: two listeners on one sandbox both receive every webhook | `Account E2E (2/4)` | receipts, blob merge |
-| Account vitest integration (Quality / Go step, `ci-quality.yml:2597-2599`) | vitest file (102) | 1 today (Go job 4.5/8.2); the gate watches it | `run_account.py test --shard i/N` -> `vitest run --shard=i/N`; lane in SHARD_COUNTS only when the estimate crosses 12 | unchanged | vitest junit |
-| Renet go (`ct-tests.yml:1659`, split) | package | 2 | LPT by gotestsum per-package time; `run-tests.sh:57-59` gains `RENET_TEST_PKGS` (renet PR, submodule-first); the subscription/root/btrfs phases (`:78-99`), eBPF, root-tagged and CSI steps pinned to leg 1 | `Renet (go, 1/2)` | coverprofile concat, junit |
+| E2E Workers (`.github/workflows/ct-tests.yml:231`, one per distro) | file (Playwright project per file, `packages/e2e-tests/playwright.config.ts:61-103`); `13-postgres-fork-isolation` as 3 describe units | 5 per distro after P2d; 11 per distro without P2d (fixed 9.7) | LPT by per-file p90 (36040274865: 13-postgres 8.1, 10-backup 2.5, 07 2.1, 17 2.1, rest under 2); leg runs `--project test-NN ...` and `--grep` for describe units; FULL_INTEGRATION legs get 12a/b/d+13b | `E2E Workers (ubuntu-24.04, 3/5)` | receipts, blob merge, `create_complete --name e2e-workers-<os>-s<i>` (`:421`) |
+| Account E2E (`.github/workflows/ct-tests.yml:1865`) | spec file (99 under `private/account/e2e/tests`) | 4 | LPT; `10-stripe/**` is ONE mutex unit, and only the leg holding it starts `stripe listen`: two listeners on one sandbox both receive every webhook | `Account E2E (2/4)` | receipts, blob merge |
+| Account vitest integration (Quality / Go step, `.github/workflows/ci-quality.yml:2608-2610`) | vitest file (102) | 1 today (Go job 4.5/8.2); the gate watches it | `run_account.py test --shard i/N` -> `vitest run --shard=i/N`; lane in SHARD_COUNTS only when the estimate crosses 12 | unchanged | vitest junit |
+| Renet go (`.github/workflows/ct-tests.yml:1659`, split) | package | 2 | LPT by gotestsum per-package time; `private/renet/.ci/scripts/test/run-tests.sh:57-59` gains `RENET_TEST_PKGS` (renet PR, submodule-first); the subscription/root/btrfs phases (`:78-99`), eBPF, root-tagged and CSI steps pinned to leg 1 | `Renet (go, 1/2)` | coverprofile concat, junit |
 | Renet integration (same job, split) | pytest file (14 in `private/renet/tests/integration`) | 3 | LPT; `ci-test.sh` accepts a file list via env; daemon setup per leg | `Renet (integration, 2/3)` | junit |
-| Quality / Security (`ci-quality.yml:2083`), split into 3 jobs | -- | Security core 1 + pytest 3 + gate tests 2 | "Python package tests" (`:2359`, check:ci-pytest) -> `quality-pytest` lane, file units with xdist groups as mutex; "Quality-gate unit tests" (`:2377`, battery.py) -> `quality-gate-tests` lane, its W/S isolation as mutex; the 13 region steps stay in Security | `Pytest (1/3)`, `Gate tests (1/2)` | receipts; `check_pytest.py:94` kill timer scaled per leg |
-| OPS Provision linux-amd64 (`ci-ops-test.yml:297-313`) | tutorial (18) | 4 contiguous segments (D-W4) | sequence order kept inside a segment (`needs` chain = co-location) | `OPS Provision (linux-amd64, 2/4)` | tutorial logs artifact per leg |
+| Quality / Security (`.github/workflows/ci-quality.yml:2095`), split into 3 jobs | -- | Security core 1 + pytest 3 + gate tests 2 | "Python package tests" (`:2371`, check:ci-pytest) -> `quality-pytest` lane, file units with xdist groups as mutex; "Quality-gate unit tests" (`:2389`, battery.py) -> `quality-gate-tests` lane, its W/S isolation as mutex; the 13 region steps stay in Security | `Pytest (1/3)`, `Gate tests (1/2)` | receipts; `.ci/rediacc_ci/check_pytest.py:94` kill timer scaled per leg |
+| OPS Provision linux-amd64 (`.github/workflows/ci-ops-test.yml:297-313`) | tutorial (18) | 4 contiguous segments (D-W4) | sequence order kept inside a segment (`needs` chain = co-location) | `OPS Provision (linux-amd64, 2/4)` | tutorial logs artifact per leg |
 | E2E Ceph / Ceph Workers / K8s Ceph / K8s Multinode | none (fixed-cost bound) | 1 each (Multinode 2 via D-W3) | P2d snapshot restore | unchanged | -- |
 | E2E K8s, E2E Migrate, Fork Isolation | none | 1 | P2a plus P2d | unchanged | -- |
 | Validate Promotion | none | 1 | T2.5 | unchanged | -- |
 | Quality / Packages | none | 1 | verify T1.1 shows at most 12 after the pytest port (4.6 in 36040274865) | unchanged | -- |
 
-- [ ] T2.12 [C] E2E Workers shard wiring, as in the table. It is preceded by a **dependency probe**: run each file alone on fresh VMs (`--project test-NN`) and encode every file that fails without a predecessor as a `needs` edge. The config comment "Order maintained by workers:1 + fullyParallel:false" (`playwright.config.ts:53-55`) means some order dependence may be real.
+- [ ] T2.12 [C] E2E Workers shard wiring, as in the table. It is preceded by a **dependency probe**: run each file alone on fresh VMs (`--project test-NN`) and encode every file that fails without a predecessor as a `needs` edge. The config comment "Order maintained by workers:1 + fullyParallel:false" (`packages/e2e-tests/playwright.config.ts:53-55`) means some order dependence may be real.
 - [ ] T2.13 [D] Account E2E and vitest `--shard` passthrough, as in the table. Test code stays in `private/account`. Cache the three `npm ci` trees and `~/.cache/ms-playwright` so the fixed cost per leg stays under 3 min.
 - [ ] T2.14 [D] Renet split: the renet PR for the `RENET_TEST_PKGS` / file-list hooks first, then the console `run_renet.py` and ct-tests.yml changes. Record the honest note that go test (2.5-3.2) is not the long pole; integration (12.9) is.
 - [ ] T2.15 [B] Quality / Security split into three jobs (`quality-pytest`, `quality-gate-tests`, Security core). Lower `timeout-minutes: 45` (`:2118`) after the split.
@@ -248,12 +248,12 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 ### P3: the lane-duration gate
 
-- [ ] T3.1 [B] **`scripts/gates/check-lane-budget.ts`** (`check:ci-lane-budget`, quality-code lane). In TypeScript because it re-runs `shardPlan`. For every lane (quality-* plus the test lanes) and every job in ci.yml and its callees:
+- [ ] T3.1 [B] **`scripts/gates/check-lane-budget.ts`** (registered as `ci-lane-budget`, quality-code lane, once T3.1 lands). In TypeScript because it re-runs `shardPlan`. For every lane (quality-* plus the test lanes) and every job in ci.yml and its callees:
   1. **Per-leg estimate:** the job's fixed cost p90 plus the sum of the leg's unit p90s, with the LPT plan recomputed from the committed manifest. Red if over **12 min**, naming lane, leg and top 3 units.
   2. **Unsharded job:** its job-level p90 at 12 or under.
   3. **Single unit:** a unit whose p90 plus the fixed cost exceeds 12 is red and marked "indivisible: split the unit, or record an approved exemption". The exemption list is empty, and each entry is operator-approved (D-W3).
   4. **Unknown units:** an enumerated unit with no estimate is red unless the lane declares `defaultUnitMs`. A new test file cannot enter unmeasured.
-  5. **Freshness:** red if `lane-durations.json` `refreshed_at` is older than **14 days**. This mirrors `MAX_BASELINE_AGE_DAYS` (`check_job_timeout_headroom.py:45`), made stricter.
+  5. **Freshness:** red if `lane-durations.json` `refreshed_at` is older than **14 days**. This mirrors `MAX_BASELINE_AGE_DAYS` (`.ci/scripts/quality/check_job_timeout_headroom.py:45`), made stricter.
   6. **Pipeline:** critical-path estimate plus `max(0, runnerMinutes / concurrency - critical path)` at 20 or under. Advisory until D-W1 is decided, then red.
   7. **After P4:** every job declares `timeout-minutes` of 15 or less.
   - Selftest controls: 12.1 fails and 11.9 passes; stale fails and fresh passes; a planted unestimated file fails, and the same file with `defaultUnitMs` passes; quality-code's plan is unchanged. Offline and deterministic, like the headroom gate.
@@ -268,7 +268,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 Entry: P2 exit met, plus 5 consecutive full green runs with zero report-only violations.
 
-- [ ] T4.1 [C] Set `timeout-minutes: 15` or less on every job, in ci.yml and in each callee (a `uses:` caller cannot carry one). Today it reaches 90 and 100 (`ct-tests.yml:241`, `:1091`, `:1667`). **This is the only per-job kill that exists**: the Actions API can cancel a whole run, not one job.
+- [ ] T4.1 [C] Set `timeout-minutes: 15` or less on every job, in ci.yml and in each callee (a `uses:` caller cannot carry one). Today it reaches 90 and 100 (`.github/workflows/ct-tests.yml:241`, `:1091`, `:1667`). **This is the only per-job kill that exists**: the Actions API can cancel a whole run, not one job.
 - [ ] T4.2 [A] Flip `WATCHDOG_BUDGET_MODE: enforce`.
   - A job crossing 15 or a run crossing 20 goes through `forceCancel` (`:888`, the single chokepoint), with `CI BUDGET VIOLATION: '<job>' ran <m>m (budget 15m)` in the roster annotation and `budget-violations.json`.
   - `CANCEL_EXEMPT_EVENTS` (`:54`, schedule and workflow_dispatch) stays report-only for the run-level cancel, so a nightly is never laundered to `cancelled`. `timeout-minutes` still kills its legs.
@@ -279,10 +279,10 @@ Entry: P2 exit met, plus 5 consecutive full green runs with zero report-only vio
 
 ## 5. Required-check names and branch protection
 
-- **Ruleset.** Ruleset 12344707 ("Branch Protection", the only ruleset) requires exactly **`CI Complete`** and **`Review Complete`** (integration 15368). The branch-protection endpoint returns 404: there is no classic protection. No shard rename in this plan changes what gates a merge, because `CI Complete` aggregates `needs.tests.result` and friends at the reusable-workflow level (`ci.yml:1740`). **W must not rename `CI Complete`.** `Review Complete` belongs to spec Z.
+- **Ruleset.** Ruleset 12344707 ("Branch Protection", the only ruleset) requires exactly **`CI Complete`** and **`Review Complete`** (integration 15368). The branch-protection endpoint returns 404: there is no classic protection. No shard rename in this plan changes what gates a merge, because `CI Complete` aggregates `needs.tests.result` and friends at the reusable-workflow level (`.github/workflows/ci.yml:1740`). **W must not rename `CI Complete`.** `Review Complete` belongs to spec Z.
 - **Consumers that DO key on display names**, all updated in the same commit as each rename:
   - `.ci/scripts/ci/skip-plan-reconcile.cjs:36` matches `name == base` or `startsWith(base + ' (')`. Every leg name therefore keeps the form `<Base> (<suffix>)`, for example `E2E Workers (ubuntu-24.04, 3/5)` and `Renet (go, 1/2)`. Renet's base stays `Renet`, and `Quality / Security` keeps its name, with the new jobs added to the reconcile table.
-  - Watchdog patterns (`watchdog-monitor.yml:148-170`) are substring matches (`E2E`, `OPS`, `Quality`), so legs still match. The `test_gate_watchdog_*` fixtures get leg-shaped names.
+  - Watchdog patterns (`.github/workflows/watchdog-monitor.yml:148-170`) are substring matches (`E2E`, `OPS`, `Quality`), so legs still match. The `test_gate_watchdog_*` fixtures get leg-shaped names.
   - `job-timeout-baseline.json` keys (T3.4).
   - Artifact names must be unique per leg: upload-artifact v7 refuses duplicates. Examples: `test-renet-coverage-${sha}` (`ct-tests.yml` near `:1733`) and `test-e2e-workers-<os>-<sha>` (`:426`).
   - `create_complete --name` values.
@@ -328,7 +328,7 @@ Every "after" number is a projection built from the measured components named in
 - **Snapshot restore times (P2d)** are targets. They need a renet feature, so a renet PR lands first.
 - **Stripe:** concurrent Account E2E legs share one sandbox. Only the stripe-unit leg runs `stripe listen`, but the other legs' fixtures must not assume an exclusive sandbox. Audit `10-stripe` and `03-subscription`.
 - **Free-plan capacity** is inferred from a documented limit plus a measured peak of 19. It is shared with the org's other 38 repos, so real queueing can be worse than section 1c.
-- **Watchdog detection latency:** 30 s polls, plus a 20-60 s gap between generations (`WATCHDOG_DEADLINE_SECONDS: '480'`, `watchdog-monitor.yml:139`). `timeout-minutes` is the exact per-job cutoff; the watchdog is the named report and the run-level cutoff.
+- **Watchdog detection latency:** 30 s polls, plus a 20-60 s gap between generations (`WATCHDOG_DEADLINE_SECONDS: '480'`, `.github/workflows/watchdog-monitor.yml:139`). `timeout-minutes` is the exact per-job cutoff; the watchdog is the named report and the run-level cutoff.
 - **Main has not been green since 2026-09-07.** Sample A predates the rediacc_ci port. T1.1 must re-measure main once it is green again, before D-W5 flips.
 
 ### Critical Files for Implementation

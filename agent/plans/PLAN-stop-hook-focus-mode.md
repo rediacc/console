@@ -24,13 +24,13 @@ Owns: .claude/commands/pr-babysit.md, .claude/commands/pr-merge.md, .claude/agen
 One writer does T1-T4 and T6, in order: T1-T3 share `wl_checks.py`, `wl_store.py` and `worklist_messages.py`, and T4 imports T1's and T2's API. The lead does T0, T5 and T7.
 
 - [x] T0 Lead: tick PLAN-stop-hook-cap-saturated-wait.md T1 with evidence (the passing `test_wl_cap_wait.py` run and its commit), and set its `Status:` to done, so this plan's `Depends-On:` edge resolves.
-- [x] T1 [A] Create `.claude/hooks/stop/wl_standdown.py`, holding the stand-down profiles (section 2). Move `CAP_WAIT_KEEPS`, `CAP_WAIT_KEEP_PREFIXES`, `CAP_WAIT_COMPACTION_KEYS` and `cap_wait_keeps` out of `wl_roster.py:53-111`. Keep `cap_saturated_wait` in `wl_roster.py`, because it needs `WRITER_CAP`. Make `wl_checks.py:4096-4142` use `wl_standdown.keeps(profile, ...)`. Re-target `test_wl_cap_wait.py` c9/m1/m2 to the new file. Add `wl_standdown.py` to `sealed_modules` in `.ci/policy/worklist-env-registry.json`. This is a pure refactor plus the `pr-finish` always-tier fix, and the cap-wait suite must pass before T2 starts.
+- [x] T1 [A] Create `.claude/hooks/stop/wl_standdown.py`, holding the stand-down profiles (section 2). Move `CAP_WAIT_KEEPS`, `CAP_WAIT_KEEP_PREFIXES`, `CAP_WAIT_COMPACTION_KEYS` and `cap_wait_keeps` out of `.claude/hooks/stop/wl_roster.py:53-111`. Keep `cap_saturated_wait` in `wl_roster.py`, because it needs `WRITER_CAP`. Make `.claude/hooks/stop/wl_checks.py:4096-4142` use `wl_standdown.keeps(profile, ...)`. Re-target `test_wl_cap_wait.py` c9/m1/m2 to the new file. Add `wl_standdown.py` to `sealed_modules` in `.ci/policy/worklist-env-registry.json`. This is a pure refactor plus the `pr-finish` always-tier fix, and the cap-wait suite must pass before T2 starts.
 - [x] T2 [A] The focus state in the store (section 1):
   - a `focus` event kind and `S.focus_event`;
   - a `focus` out-parameter on `_fold_events`, carried on `Fold`;
   - `snapshot_events` re-emits the active focus;
   - the verb `worklist.py --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]`, plus a status form;
-  - queue leases are accepted with a free slot while focus is on (`worklist.py:1136-1145`).
+  - queue leases are accepted with a free slot while focus is on (`.claude/hooks/stop/worklist.py:1136-1145`).
 - [x] T3 [A] The Stop-hook integration (sections 3-6):
   - resolve focus early and end it on merge or expiry;
   - the FOCUS profile filter and the `focus-pr-items` key;
@@ -46,27 +46,27 @@ One writer does T1-T4 and T6, in order: T1-T3 share `wl_checks.py`, `wl_store.py
 
 ## 1. Where focus state lives: a `focus` event in the worklist JSONL store, per session
 
-**Event shape.** It is written by `S.focus_event`, placed next to `status_event` (`wl_store.py:1233`), through `append_events`, so it lands in the session's own `agent/worklist/<slug>.jsonl`:
+**Event shape.** It is written by `S.focus_event`, placed next to `status_event` (`.claude/hooks/stop/wl_store.py:1233`), through `append_events`, so it lands in the session's own `agent/worklist/<slug>.jsonl`:
 
 ```json
 {"ev":"focus","at":"<stamp>","by":"<me8>","o":"<me8>","mode":"babysit|merge|off",
  "branch":"<PR head ref>","pr":612|null,"why":"operator|merged|closed|expired|pr-resolved"}
 ```
 
-- **Use `branch`, not `br`.** `append_events` sets `br` to the checkout branch at write time (`wl_store.py:732-735`). Writing `off` from `main` after `/pr-merge` must not rewrite which PR the focus was on.
-- **`o` must be non-empty.** `C.owned_by_me(None, …)` is True (`wl_core.py:168-175`), so an untagged focus event would apply to every session. Both the verb and the fold reject an empty owner.
+- **Use `branch`, not `br`.** `append_events` sets `br` to the checkout branch at write time (`.claude/hooks/stop/wl_store.py:732-735`). Writing `off` from `main` after `/pr-merge` must not rewrite which PR the focus was on.
+- **`o` must be non-empty.** `C.owned_by_me(None, …)` is True (`.claude/hooks/stop/wl_core.py:168-175`), so an untagged focus event would apply to every session. Both the verb and the fold reject an empty owner.
 
 **Fold.**
-- Add `focus=None` as an out-parameter to `_fold_events` (`wl_store.py:859`), handled like `statuses`: `elif kind == "focus": if focus is not None and ev.get("o"): focus[ev["o"][:8]] = dict(ev); continue`. It goes beside the `status` branch at `:914-923`.
+- Add `focus=None` as an out-parameter to `_fold_events` (`.claude/hooks/stop/wl_store.py:859`), handled like `statuses`: `elif kind == "focus": if focus is not None and ev.get("o"): focus[ev["o"][:8]] = dict(ev); continue`. It goes beside the `status` branch at `:914-923`.
 - Pass a `focus_box` through `build()` (`:1065-1069`).
 - Add `self.focus` to `Fold.__init__` (`:1017-1022`) and to the construction at `:1147`.
 - The latest event wins because the fold is chronological, with the `ns` tiebreak from `:736`.
 
 **Resolution.** `wl_standdown.active_focus(fold.focus, owned)` returns the newest event over every owner key where `owned(key)` holds, and returns None when its `mode == "off"`. The caller passes `lambda o: C.owned_by_me(o, session_id)`, so a proven lineage edge carries focus across compaction.
 
-**Compaction survives.** `snapshot_events` (`wl_store.py:1412-1440`) appends, for each owner, the latest focus event only when its mode is not `off`. An ended focus is history, and dropping it is correct.
+**Compaction survives.** `snapshot_events` (`.claude/hooks/stop/wl_store.py:1412-1440`) appends, for each owner, the latest focus event only when its mode is not `off`. An ended focus is history, and dropping it is correct.
 
-**The verb.** It lives in `worklist.py` beside `--intent` (`:2096-2141`) and sits before the unknown-verb catch (`:2300`), with `M.CLI_FOCUS_USAGE` next to `CLI_INTENT_USAGE` (`worklist_messages.py:644`) and a line in `M.USAGE`.
+**The verb.** It lives in `worklist.py` beside `--intent` (`:2096-2141`) and sits before the unknown-verb catch (`:2300`), with `M.CLI_FOCUS_USAGE` next to `CLI_INTENT_USAGE` (`.claude/hooks/stop/worklist_messages.py:644`) and a line in `M.USAGE`.
 - `--focus <me> babysit|merge [--pr <n>] [--branch <b>]`:
   - `_identity_or_die(me, _die2)`;
   - the branch defaults to `C.git_branch`, and the verb refuses `main` or a detached HEAD;
@@ -74,7 +74,7 @@ One writer does T1-T4 and T6, in order: T1-T3 share `wl_checks.py`, `wl_store.py
 - `--focus <me> off`: writes `mode: off, why: operator`. If focus was not on, it prints that and exits 0.
 - `--focus <me>`: prints mode, since, branch, PR and the parked count so far, read from `S.load_state(...)["standdown"]`. This is the post-compaction recovery read.
 
-**Queue leases while focused.** `worklist.py:1136-1145` refuses `worker:queue` whenever a writer slot is free ("start the work instead"). In focus, starting the work is exactly what is forbidden, so the refusal is skipped when `active_focus` holds. Without this, work refused at spawn cannot be parked as the guard's own message instructs.
+**Queue leases while focused.** `.claude/hooks/stop/worklist.py:1136-1145` refuses `worker:queue` whenever a writer slot is free ("start the work instead"). In focus, starting the work is exactly what is forbidden, so the refusal is skipped when `active_focus` holds. Without this, work refused at spawn cannot be parked as the guard's own message instructs.
 
 ## 2. The stand-down profile (generalising the cap-wait keep-list)
 
@@ -108,7 +108,7 @@ def keeps(profile, key, always, compaction_due) -> bool
   - `bg-report`;
   - `focus-pr-items`.
 
-**Each key literal appears exactly once in the file.** This keeps every mutation control unambiguous (`mutated_hook` asserts `count(old) == 1`, `test_wl_cap_wait.py:269-273`), and it keeps the c9 producer scan meaningful.
+**Each key literal appears exactly once in the file.** This keeps every mutation control unambiguous (`mutated_hook` asserts `count(old) == 1`, `.claude/rediacc_hooks/tests/test_wl_cap_wait.py:269-273`), and it keeps the c9 producer scan meaningful.
 
 **Precedence.** When both states hold, FOCUS governs. Focus is the operator's explicit declaration, and its judge skip already covers the cap wait's. `_profile = FOCUS if _focus else CAP_WAIT if _in_cap_wait else None`.
 
@@ -125,7 +125,7 @@ def keeps(profile, key, always, compaction_due) -> bool
 
 ## 3. How focus starts and ends on each stop, and how the hook learns the PR merged
 
-**Where it runs.** In `run_stop`, right after `state_doc` loads (`wl_checks.py:2268`) and before `classify_items` (`:2342`):
+**Where it runs.** In `run_stop`, right after `state_doc` loads (`.claude/hooks/stop/wl_checks.py:2268`) and before `classify_items` (`:2342`):
 
 1. `_focus = wl_standdown.active_focus(fold.focus, owned)`.
 2. If `_focus` is set, check two end conditions in order:
@@ -134,7 +134,7 @@ def keeps(profile, key, always, compaction_due) -> bool
 3. On an end reason, write `S.focus_event(..., "off", why=reason)` and set `_focus = None`. This stop then runs the full battery.
 4. If focus was on at the last stop and is now off (`state_doc["standdown"]["focus_at"]` is set and differs from the active on-event), queue the parked summary (section 6) and drop `state_doc["standdown"]`. This covers ending by the verb, by merge, and a flip from off back to on.
 
-**The cheap merge check (`wl_ci.focus_pr_end`, new, next to `ci_trouble` at `wl_ci.py:710`):**
+**The cheap merge check (`wl_ci.focus_pr_end`, new, next to `ci_trouble` at `.claude/hooks/stop/wl_ci.py:710`):**
 - It makes one GraphQL call through `_gh_json`: `repository{pullRequests(headRefName:"<branch>",states:[MERGED,CLOSED],first:5,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{number state mergedAt closedAt}}}`.
 - It picks the node whose `number == focus.pr`, or when the PR number is unknown, the newest node closed after `focus.at`, so a reused branch name cannot end it.
 - It is cached in a `.focuspr-<me8>` sidecar for `FOCUS_PR_TTL_S`.
@@ -145,11 +145,11 @@ def keeps(profile, key, always, compaction_due) -> bool
 **Filling in the PR number.** When `_focus.pr` is null and the CI read below returns `info["pr"]`, append a focus event with the same mode and `why: pr-resolved`. The guard needs the `pr:<n>` token in the store.
 
 **Arming the CI read from the focus.**
-- `wl_ci.ci_trouble` (`wl_ci.py:710-738`) gains `ref=None, owned=False`: `ref = ref or os.environ.get("WORKLIST_PUBLISH_REF","")`, and the `sole_live_session` early return (`:736-738`) is skipped when `owned`.
-- `pr_body_freshness` (`wl_ci.py:52-60`) gains `ref=None` the same way.
-- The call sites at `wl_checks.py:3373` and `:3409-3415` pass `ref=_focus["branch"], owned=True` when focused.
+- `wl_ci.ci_trouble` (`.claude/hooks/stop/wl_ci.py:710-738`) gains `ref=None, owned=False`: `ref = ref or os.environ.get("WORKLIST_PUBLISH_REF","")`, and the `sole_live_session` early return (`:736-738`) is skipped when `owned`.
+- `pr_body_freshness` (`.claude/hooks/stop/wl_ci.py:52-60`) gains `ref=None` the same way.
+- The call sites at `.claude/hooks/stop/wl_checks.py:3373` and `:3409-3415` pass `ref=_focus["branch"], owned=True` when focused.
 - The focus verb is the session declaring the PR its own, which is the one fact the multi-session gate could not know.
-- The ceiling and acknowledgement exits (`wl_ci.py:773-789`) are unchanged.
+- The ceiling and acknowledgement exits (`.claude/hooks/stop/wl_ci.py:773-789`) are unchanged.
 
 ## 4. The checks kept and silenced (the FOCUS profile), with their keys as they exist in code
 
@@ -157,7 +157,7 @@ def keeps(profile, key, always, compaction_due) -> bool
 
 | Operator's category | Key(s) | Producer |
 |---|---|---|
-| CI red / the PR itself | `ci-red`, `review-red` | `wl_checks.py:3430`, `:3486` |
+| CI red / the PR itself | `ci-red`, `review-red` | `.claude/hooks/stop/wl_checks.py:3430`, `:3486` |
 | | `ci-unreadable`, `review-unreadable`, `pr-unreadable` (blind reads of the PR) | `:3419`, `:3484`, `:3382` |
 | | `pr-finish` (the babysit finish line; always-tier hook-bug branch too) | `:3558`, `:3577` |
 | | `pr-stale` (body older than the push, which reds `Quality / Static` next round) | `:3380` |
@@ -179,7 +179,7 @@ def keeps(profile, key, always, compaction_due) -> bool
 | Operator's category | Key(s) | Producer |
 |---|---|---|
 | Open plan boxes | `plan-unimplemented`, `plan-drift` | `:3319`, `:3211` |
-| | `cl-producing`, `cl-flip`, `cl-waves`, `cl-foreign`, `cl-foreign-waves`, `cl-shape:<slug>` | via `:3792` (`wl_checklist.py:340-441`) |
+| | `cl-producing`, `cl-flip`, `cl-waves`, `cl-foreign`, `cl-foreign-waves`, `cl-shape:<slug>` | via `:3792` (`.claude/hooks/stop/wl_checklist.py:340-441`) |
 | | advisories `plan-tasks`, `plan-clock` (producers skipped in focus) | `:3270`, `:3321` |
 | | `plan-fidelity` (a paid call, never computed; its guard at `:4002` extends) | `:2188` |
 | Plan adoption tracking | `plan-adopted` | `:3243` |
@@ -199,9 +199,9 @@ def keeps(profile, key, always, compaction_due) -> bool
 - The 24-hour cap applies.
 - The guide is suppressed on a focused allow (section 6).
 
-**`focus-pr-items`.** At `wl_checks.py:2997`, when focused: `_pr_open = [i for i in open_items if wl_standdown.pr_linked(i, _focus)]`; if any, `vadd("focus-pr-items", False, M.V_OPEN_ITEMS % (...))`. `open-items` is still produced unconditionally and dropped by the profile, so it is counted as parked. Add `"focus-pr-items"` to `PRIORITY_LADDER` T_MISSION (`wl_checks.py:2012-2034`). Without this, the babysit loop's own fix items would park along with everything else.
+**`focus-pr-items`.** At `.claude/hooks/stop/wl_checks.py:2997`, when focused: `_pr_open = [i for i in open_items if wl_standdown.pr_linked(i, _focus)]`; if any, `vadd("focus-pr-items", False, M.V_OPEN_ITEMS % (...))`. `open-items` is still produced unconditionally and dropped by the profile, so it is counted as parked. Add `"focus-pr-items"` to `PRIORITY_LADDER` T_MISSION (`.claude/hooks/stop/wl_checks.py:2012-2034`). Without this, the babysit loop's own fix items would park along with everything else.
 
-**The filter.** Replace the cap-only block at `wl_checks.py:4096-4142` with one block over `_profile`:
+**The filter.** Replace the cap-only block at `.claude/hooks/stop/wl_checks.py:4096-4142` with one block over `_profile`:
 - compute `_compaction_due` as now;
 - `_dropped` / `violations` go through `wl_standdown.keeps(_profile, k, a, _compaction_due)`;
 - the compaction note is `N_CAP_WAIT_COMPACTION` or the new `N_FOCUS_COMPACTION`;
@@ -213,17 +213,17 @@ def keeps(profile, key, always, compaction_due) -> bool
 
 ## 5. The spawn guard and the fix-work exception
 
-The new guard `.claude/rediacc_hooks/guards/block_focus_spawn.py` copies `block_agent_cap.py`'s shape: `CHAIN = "pre-agent"`, `ORDER = 4` (contiguous after the cap guard's 3; `test_dispatch.py:117` checks contiguity), `OWN_SUITE = True`, a `DEFECT` tuple and `EDGE_CASES`. It reads no environment. Its decision, for an `Agent`/`Task` call:
+The new guard `.claude/rediacc_hooks/guards/block_focus_spawn.py` copies `block_agent_cap.py`'s shape: `CHAIN = "pre-agent"`, `ORDER = 4` (contiguous after the cap guard's 3; `.claude/rediacc_hooks/tests/test_dispatch.py:117` checks contiguity), `OWN_SUITE = True`, a `DEFECT` tuple and `EDGE_CASES`. It reads no environment. Its decision, for an `Agent`/`Task` call:
 
 1. **No active focus → ALLOW.** It locates the store the way the cap guard does (`C.project_root(C.project_start({"cwd": cwd}))`), `S.load(worklist, sync=False)`, then `wl_standdown.active_focus`.
-2. **A read-only type → ALLOW.** It reuses `wl_roster.read_only_types`, as in `block_agent_cap.py:96-98`.
+2. **A read-only type → ALLOW.** It reuses `wl_roster.read_only_types`, as in `.claude/rediacc_hooks/guards/block_agent_cap.py:96-98`.
 3. **`mode == "babysit"` and `subagent_type == "pr-babysitter"` → ALLOW.** This is the `/pr-babysit bg` loop itself.
 4. **Babysit/merge fix work → ALLOW.** The spawn declares it with `focus-fix:#<item-id>` in `description` or `prompt`. The id must name a store item that:
    - is owned by this session (`C.owned_by_me` with a non-empty owner);
    - is in state `[ ]` or `[>]`;
    - carries the focus PR's `pr:<n>` token in its text.
 
-   A bare label is not enough. The item is a store fact the Stop guide shows, and the P2.2 auto-lease (`wl_checks.py:2314-2341`) leases it to the new worker because `#<id>` appears in its first prompt.
+   A bare label is not enough. The item is a store fact the Stop guide shows, and the P2.2 auto-lease (`.claude/hooks/stop/wl_checks.py:2314-2341`) leases it to the new worker because `#<id>` appears in its first prompt.
 5. **Anything else → DENY**, with `REFUSED_FOCUS`. It names the focus (mode, PR, since) and prints three exits:
    - declare fix work (`--add <me> "... pr:<n>/fix"`, then put `focus-fix:#<id>` in the spawn prompt);
    - park it (`--add`, then `--lease <me> <id> +120 worker:queue`, which section 1 makes legal);
@@ -231,14 +231,14 @@ The new guard `.claude/rediacc_hooks/guards/block_focus_spawn.py` copies `block_
 
    It appends `{"at","kind","desc"}` to `worklist.with_suffix(".focusrefused-<me8>.jsonl")` for the parked summary, the way the ask-refusals ledger is kept.
 
-It fails open when it cannot read the store, with a stderr note, the same contract as `UNCOUNTABLE` (`block_agent_cap.py:75-79`). The writer cap still applies to allowed spawns, because the cap guard at ORDER 3 runs first.
+It fails open when it cannot read the store, with a stderr note, the same contract as `UNCOUNTABLE` (`.claude/rediacc_hooks/guards/block_agent_cap.py:75-79`). The writer cap still applies to allowed spawns, because the cap guard at ORDER 3 runs first.
 
 **`DEFECT`:** `("if not wl_standdown.pr_linked(", "if False and not wl_standdown.pr_linked(")`, which accepts any owned item as fix work.
 
 ## 6. Advisory batching, token cuts, and the one-line parked summary
 
 **Filtering the queue.**
-- `outq_drain` (`wl_checks.py:1313`) and `outq_digest` (`:1384`) gain `only=None`, a key predicate that restricts the candidates. Entries outside it stay queued untouched.
+- `outq_drain` (`.claude/hooks/stop/wl_checks.py:1313`) and `outq_digest` (`:1384`) gain `only=None`, a key predicate that restricts the candidates. Entries outside it stay queued untouched.
 - On a focused **block**, the digest at `:4246` passes `only=lambda k: k in FOCUS_ADVISORY_KEYS` unless `batch_due`.
 - On a focused **allow**, the drain at `:5041` passes the same predicate, so kept keys release in full every stop. When `batch_due`, `outq_digest` also delivers everything else as one line per entry, and multi-line bodies stay queued until focus ends.
 - `batch_at` restamps on every release. `adv_held` counts what is held.
@@ -252,18 +252,18 @@ It fails open when it cannot read the store, with a stderr note, the same contra
 
 **`N_FOCUS_ENDED` (the parked summary; one line, capped at 300 characters, top 6 keys then "+N more"):** `FOCUS ENDED (%s): parked for %s: %s; %d advisory(ies) held, draining from this stop; %d writer spawn(s) refused. The full battery applies from this stop.`
 - It is queued with `outq_add(..., "focus-ended", text, 0, sticky=True)` on the stop that detects the end.
-- A one-line priority-0 sticky entry is delivered by the block digest and by the allow drain alike, so it survives every exit path. The same queue-at-compute-time argument is at `wl_checks.py:1180-1182`.
+- A one-line priority-0 sticky entry is delivered by the block digest and by the allow drain alike, so it survives every exit path. The same queue-at-compute-time argument is at `.claude/hooks/stop/wl_checks.py:1180-1182`.
 - The refused count comes from the `.focusrefused-<me8>.jsonl` rows since `focus_at`.
 
-Register `N_FOCUS`, `N_FOCUS_ENDED`, `N_FOCUS_COMPACTION`, `REFUSED_FOCUS` (guard-local) and `CLI_FOCUS_USAGE` in `ARITY` (`test_wl_message_catalogue.py:103-104` pattern).
+Register `N_FOCUS`, `N_FOCUS_ENDED`, `N_FOCUS_COMPACTION`, `REFUSED_FOCUS` (guard-local) and `CLI_FOCUS_USAGE` in `ARITY` (`.claude/rediacc_hooks/tests/test_wl_message_catalogue.py:103-104` pattern).
 
 ## 7. Wiring
 
 - **Sealed modules.** Add `.ci/policy/worklist-env-registry.json` `sealed_modules` entries for `.claude/hooks/stop/wl_standdown.py` (literals `FOCUS_BATCH_MIN: 30`, `FOCUS_MAX_HOURS: 24`) and `.claude/rediacc_hooks/guards/block_focus_spawn.py`.
 - **Hook inventory.** Add the guard to `scripts/data/hook-inventory-baseline.json`, beside `:11`.
-- **No new `_MODS` entry.** `wl_checks` imports `wl_standdown` directly, as it does `wl_roster` (`wl_checks.py:44`). LKG snapshots every `wl_*.py` (`wl_lkg.py:46`).
-- **Dead-code test.** It scans guards as consumers (`test_wl_event_store.py:610-613`), so defs used only by the guard are not flagged.
-- **PostCompact.** Add one line naming an active focus to the `--post-compact` output (`worklist.py:2070`). A compacted babysitter must know that spawns are refused.
+- **No new `_MODS` entry.** `wl_checks` imports `wl_standdown` directly, as it does `wl_roster` (`.claude/hooks/stop/wl_checks.py:44`). LKG snapshots every `wl_*.py` (`.claude/hooks/stop/wl_lkg.py:46`).
+- **Dead-code test.** It scans guards as consumers (`.claude/rediacc_hooks/tests/test_wl_event_store.py:610-613`), so defs used only by the guard are not flagged.
+- **PostCompact.** Add one line naming an active focus to the `--post-compact` output (`.claude/hooks/stop/worklist.py:2070`). A compacted babysitter must know that spawns are refused.
 
 ## 8. Skill and doc edits (lead)
 
@@ -283,9 +283,9 @@ Register `N_FOCUS`, `N_FOCUS_ENDED`, `N_FOCUS_COMPACTION`, `REFUSED_FOCUS` (guar
 ## 9. Tests: `.claude/rediacc_hooks/tests/test_wl_focus.py`
 
 **Fixture sources:**
-- import `ci_setup`, `ci_rollup`, `ci_job` and `ci_run` from `test_wl_ci_status.py:59-150`;
+- import `ci_setup`, `ci_rollup`, `ci_job` and `ci_run` from `.claude/rediacc_hooks/tests/test_wl_ci_status.py:59-150`;
 - import `capturing_judge` and the `mutated_hook`, `band_env` and `stop` helpers from `test_wl_cap_wait.py` (the same cross-test import that file makes from `test_wl_roster.py`);
-- the plan-box push fixture is a plan file `proj/agent/plans/PLAN-fx.md` with `Status: ready`, `Owner: deadbeef (adopted from cafe1234 2026-09-20)` (`wl_planfile.py:335-347`), `Depends-On: no-dep` and two `- [ ]` boxes. Its needle is "WAS ADOPTED BY THIS SESSION" (`worklist_messages.py:876`);
+- the plan-box push fixture is a plan file (`PLAN-fx.md`, under the fixture project's own `agent/plans/`) with `Status: ready`, `Owner: deadbeef (adopted from cafe1234 2026-09-20)` (`.claude/hooks/stop/wl_planfile.py:335-347`), `Depends-On: no-dep` and two `- [ ]` boxes. Its needle is "WAS ADOPTED BY THIS SESSION" (`.claude/hooks/stop/worklist_messages.py:876`);
 - the focus is turned on with `wl.cli("--focus", ME, "babysit", "--branch", "pub", "--pr", "543")`;
 - the gh shim gains a `*states:[MERGED*` arm serving `ci-merged.json`, ahead of `query=*`;
 - the spawn is driven through `dispatch.py block_focus_spawn` with `fix.env`, so the guard reads the same `WORKLIST_STORE_DIR`.
@@ -320,7 +320,7 @@ Register `N_FOCUS`, `N_FOCUS_ENDED`, `N_FOCUS_COMPACTION`, `REFUSED_FOCUS` (guar
 - **m7:** `"focus-pr-items",` removed → f8 allows.
 
 **Existing tests touched:**
-- `test_wl_cap_wait.py:228-243` (c9 iterates the profiles) and `:279-313` (m1/m2 target `wl_standdown.py`);
+- `.claude/rediacc_hooks/tests/test_wl_cap_wait.py:228-243` (c9 iterates the profiles) and `:279-313` (m1/m2 target `wl_standdown.py`);
 - `test_wl_message_catalogue.py` `ARITY`;
 - `.claude/hooks/stop/test-always-tier.py` (`focus-pr-items` laddered);
 - `test_dispatch.py` passes unchanged once `ORDER = 4` is contiguous.
@@ -329,7 +329,7 @@ Register `N_FOCUS`, `N_FOCUS_ENDED`, `N_FOCUS_COMPACTION`, `REFUSED_FOCUS` (guar
 
 - **Guard latency.** It pays for one full `S.load` per Agent call while focused. If a measurement shows more than 200 ms, prefilter the store lines for `"ev":"focus"` and `"ev":"lineage"` before `json.loads`.
 - **Unverified: the session id on a subagent's own spawns.** The plan assumes a `/pr-babysit bg` babysitter's Agent calls carry the lead's `session_id`. If they carry another id, the guard finds no focus and allows (fail-open, in the lax direction). Check one real payload.
-- **Arming `ci_trouble` from the focus** makes `ci-red` fire where it never did before, but only for sessions that declared focus. The existing acknowledgement and `CI_MAX_BLOCKS` exits bound it (`wl_ci.py:773-789`).
+- **Arming `ci_trouble` from the focus** makes `ci-red` fire where it never did before, but only for sessions that declared focus. The existing acknowledgement and `CI_MAX_BLOCKS` exits bound it (`.claude/hooks/stop/wl_ci.py:773-789`).
 - **`focus-pr-items`** depends on fix items carrying `pr:<n>`. The skill edits make that the convention, and an untagged fix item is parked, not lost; it is named in the exit line.
 
 ### Critical Files for Implementation

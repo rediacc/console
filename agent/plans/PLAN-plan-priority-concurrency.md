@@ -66,7 +66,7 @@ B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, 
   - agent/README.md plan layout;
   - docs/agent-reference/plan-records.md header table;
   - pr-babysitter.md :147;
-  - `npm run gen:docs`; the full hook suite; `check:ci-plan-*`.
+  - `npm run gen:docs`; the full hook suite; the `ci-plan-*` family of gates.
 
 ## 0. Facts established
 
@@ -77,7 +77,7 @@ B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, 
 - **Plans carrying the field: 4 of 36 live ones.** They are cap-saturated-wait, plan-dependencies, config-passkey-optional and app-wide-org-selection.
 - **No gate, no guard, and no worklist verb reads it.** A grep of `.ci`, `scripts`, `.claude/hooks` and `.claude/rediacc_hooks` finds only `wl_backlog.py` and `test-backlog.py`.
 - **The mandatory form is designed but not built:** PLAN-plan-dependencies.md T1-T3 (`wl_plandeps.py`, `check_plan_deps.py` with D1-D9, and guard `block_plan_without_depends.py` at pre-edit ORDER 13).
-- **An update to that plan's T3:** the `TWIN = None` it names is now spelled `OWN_SUITE = True`. The bash oracles were retired by A3 (`.claude/rediacc_hooks/tests/test_guards_differential.py:418-430`, `block_agent_cap.py:24`).
+- **An update to that plan's T3:** the `TWIN = None` it names is now spelled `OWN_SUITE = True`. The bash oracles were retired by A3 (`.claude/rediacc_hooks/tests/test_guards_differential.py:418-430`, `.claude/rediacc_hooks/guards/block_agent_cap.py:23`).
 
 ### The "next item" pickers, and why the oldest item wins
 
@@ -89,7 +89,7 @@ B starts once A has frozen the T1/T2 API (`parse_x`, `order_key`, `live_plans`, 
 | backlog nomination | `wl_backlog.next_plan`, `.claude/hooks/stop/wl_backlog.py:190` | plan mtime descending (the operator's earlier "DESC" rule) |
 | plan-unimplemented named box | `wl_planenforce.evaluate`, `.claude/hooks/stop/wl_planenforce.py:425-429`, over `scope_rows` (:127) | newest first |
 
-The "free-slot" push in the spec is the queue-slot vadd ("QUEUED WORK AND A FREE WRITER SLOT", `worklist_messages.py:2506`). There is no separate one. Item age is `rec["first"]` (`.claude/hooks/stop/wl_store.py:936`).
+The "free-slot" push in the spec is the queue-slot vadd ("QUEUED WORK AND A FREE WRITER SLOT", `.claude/hooks/stop/worklist_messages.py:2527`). There is no separate one. Item age is `rec["first"]` (`.claude/hooks/stop/wl_store.py:936`).
 
 ### How an item links to a plan, and a writer to an item
 
@@ -276,7 +276,7 @@ Owns: none -- <reason, 12+ chars>
 
   When every queued item is held, queue_start is empty and there is no vadd.
 - **`roster-concurrency`**, a new key in `ROSTER_KEYS` (:51) and in the cap-wait keep list (`cap_wait_keeps`, :104). From the authoritative event, if two live writers serve plans that violate the mutex or overlap, it blocks with "stop one; the spawn guard was bypassed or blind". This is the two-layer pattern from `block_agent_cap.py`'s docstring.
-- **`cap_saturated_wait`** (:90) also holds when `writers < WRITER_CAP` but `queued > 0`, `queue_start` is empty and every queued item is in `queue_held`. That is a concurrency-saturated wait. Its allow line gets a variant of `N_CAP_WAIT` (`worklist_messages.py:2514`) that names the holder plan.
+- **`cap_saturated_wait`** (:90) also holds when `writers < WRITER_CAP` but `queued > 0`, `queue_start` is empty and every queued item is in `queue_held`. That is a concurrency-saturated wait. Its allow line gets a variant of `N_CAP_WAIT` (`.claude/hooks/stop/worklist_messages.py:2558`) that names the holder plan.
 
 **Residual, named here.** The lead's own inline edits are not governed by the mutex. The pre-agent guard only sees spawns. An open item of a held plan still shows in the guide, annotated `held: PLAN-y.md exclusive, live`, and its exit is the queue lease in (b). A pre-edit mutex for the lead is a possible follow-up, not in this plan.
 

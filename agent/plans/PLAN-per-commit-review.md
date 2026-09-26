@@ -33,8 +33,8 @@ At most three writers, each owning its own files: A owns the reviewer core, B th
 
 - **H1. `Review Complete` is a REQUIRED check on main.** Measured today with `gh api repos/rediacc/console/rules/branches/main`, the required checks are `CI Complete` and `Review Complete`. `review-status.yml` posts that check (`.github/workflows/review-status.yml:1-32`). Deleting the workflow while the ruleset still requires the check makes every PR permanently unmergeable, the same shape as PR #553 (`docs/ci-overhaul/06-progress.md:1293`). The teardown PR itself cannot merge until the check stops being required. So the operator has to remove it (T10) before T11 merges.
 - **H2. PR labeling lives inside the review job, and half its input is model output.** The "Apply PR labels" step is at `.github/workflows/claude-review-reusable.yml:583-592`. `run_apply_labels` (`.ci/rediacc_ci/review/claude_review_gate.py:1135-1300`) merges two inputs: a mechanical floor built from the file list, and the model's `json:pr-labels` verdict (bump plus kind). Deleting the job deletes labeling. So labeling moves (section 8), and the per-commit reviewer takes over producing the verdict.
-- **H3. A detached child would still block the commit.** `lifecycle.run_pattern` runs each post-bash member with `subprocess.run(..., capture_output=True)` (`.claude/rediacc_hooks/lifecycle.py:375`). A background reviewer that inherits those pipes keeps `communicate()` waiting until the review finishes, so the Bash tool call would hang for the whole review. The spawn must use `stdin=DEVNULL`, send stdout/stderr to a log file, set `start_new_session=True` and `close_fds=True`. This is the same grandchild-pipe trap `wl_proc.py:3-8` documents.
-- **H4. `claude -p` runs the repo's own hooks.** The Stop hook's recursion guard is `STOPHOOK_CHILD`, checked in the first statement of `main()` (`.claude/hooks/stop/worklist.py:1683`). `wl_judge.py:784-785` sets it. If the reviewer ran with the repo as its cwd, it would also fire SessionStart and PostToolUse and show up as a phantom session in the worklist. So the reviewer does what the judge does: neutral cwd, `STOPHOOK_CHILD=1`, `--tools ""` (`.claude/hooks/stop/wl_judge.py:786-806`). It also sets `COMMIT_REVIEW_CHILD=1`, and the new hook refuses to run when that is set.
+- **H3. A detached child would still block the commit.** `lifecycle.run_pattern` runs each post-bash member with `subprocess.run(..., capture_output=True)` (`.claude/rediacc_hooks/lifecycle.py:375`). A background reviewer that inherits those pipes keeps `communicate()` waiting until the review finishes, so the Bash tool call would hang for the whole review. The spawn must use `stdin=DEVNULL`, send stdout/stderr to a log file, set `start_new_session=True` and `close_fds=True`. This is the same grandchild-pipe trap `.claude/hooks/stop/wl_proc.py:3-8` documents.
+- **H4. `claude -p` runs the repo's own hooks.** The Stop hook's recursion guard is `STOPHOOK_CHILD`, checked in the first statement of `main()` (`.claude/hooks/stop/worklist.py:1683`). `.claude/hooks/stop/wl_judge.py:784-785` sets it. If the reviewer ran with the repo as its cwd, it would also fire SessionStart and PostToolUse and show up as a phantom session in the worklist. So the reviewer does what the judge does: neutral cwd, `STOPHOOK_CHILD=1`, `--tools ""` (`.claude/hooks/stop/wl_judge.py:786-806`). It also sets `COMMIT_REVIEW_CHILD=1`, and the new hook refuses to run when that is set.
 - **H5. `agent/reviews` collides with session detection.** Every directory under agent/ that is not in `AGENT_RESERVED_DIRS` (`.claude/hooks/stop/wl_store.py:175-177`) is treated as a peer session. Without a change, the hook reports a peer session called "reviews" to every session, and `check:ci-tree-shape` goes red on T4/T5 (`.ci/rediacc_ci/quality/tree_shape.py:157-195`, `.ci/policy/tree-shape.json:110-111`).
 - **H6. prose-style lints model-written text.** `.ci/config/prose-style-rules.json` `globals.include` covers every `*.md` outside `exclude_dirs`, and agent/ is not excluded. A haiku claim could turn CI red over prose nobody in the repo wrote.
 - **H7. Two other repos call the reusable at `@main`.** `private/account/.github/workflows/claude-review.yml:47` and `private/renet/.github/workflows/claude-review.yml:45` call it, and `.github/external-callers.yml:22-41` declares both. Deleting it in console first breaks their runs at startup. Their callers must be removed first, in submodule PRs. The reusable's header also names `elite`; T11 checks rediacc/elite's live workflows with `gh api` before deleting anything.
@@ -48,8 +48,8 @@ Other findings (below high, but still load-bearing):
 - **M4.** Parts of the stop hook assume the GitHub review and retire with it:
   - the `review-red` path (`.claude/hooks/stop/wl_checks.py:3471-3510`, `.claude/hooks/stop/wl_ci.py:147,383-500`);
   - the pr-finish "Claude-reviewed" box (`.claude/hooks/stop/wl_checks.py:3554`);
-  - `test-always-tier.py:29,42`;
-  - the ladder entries at `wl_checks.py:2030-2033,2067`.
+  - `.claude/hooks/stop/test-always-tier.py:29,42`;
+  - the ladder entries at `.claude/hooks/stop/wl_checks.py:2125,2159`.
 
 ## 1. Flow in one paragraph
 
@@ -108,9 +108,9 @@ Resolution: open
 - **Exit status.** Always 0, like its siblings.
 - **Early exits:**
   - `STOPHOOK_CHILD` or `COMMIT_REVIEW_CHILD` is set;
-  - the command does not invoke `git` with the subcommand `commit|rebase|cherry-pick|merge|revert|pull` in command position. Detection goes through `shellscan.lifted_commands` plus a command-position regex, the same anchoring `block_git_amend.py:26-28` uses, so prose and `echo` never match.
+  - the command does not invoke `git` with the subcommand `commit|rebase|cherry-pick|merge|revert|pull` in command position. Detection goes through `shellscan.lifted_commands` plus a command-position regex, the same anchoring `.claude/rediacc_hooks/guards/block_git_amend.py:26-28` uses, so prose and `echo` never match.
 - **Target repo.** `shellscan.target_root(scan, root, verb=...)` (`.claude/rediacc_hooks/shellscan.py:441-463`), so `git -C private/account commit` resolves to the submodule.
-- **What counts as success.** The hook does not parse `tool_response`, which has no exit code (trapguard `dispatch.py:73`). Instead it recomputes `wl_review.uncovered(root, branch)`: commits in `merge-base(origin/main)..HEAD`, newest first, capped at 20. It drops merge commits, commits touching only `agent/reviews/`, and commits older than `review_epoch` (a config value set to the landing date, so older branch history is not back-reviewed). A commit counts as covered when a review file with its sha or its patch-id exists, or a live lock exists. A failed commit creates no new sha, so the "never fire on failure" property is structural rather than parsed.
+- **What counts as success.** The hook does not parse `tool_response`, which has no exit code (trapguard `.claude/hooks/trapguard/dispatch.py:73`). Instead it recomputes `wl_review.uncovered(root, branch)`: commits in `merge-base(origin/main)..HEAD`, newest first, capped at 20. It drops merge commits, commits touching only `agent/reviews/`, and commits older than `review_epoch` (a config value set to the landing date, so older branch history is not back-reviewed). A commit counts as covered when a review file with its sha or its patch-id exists, or a live lock exists. A failed commit creates no new sha, so the "never fire on failure" property is structural rather than parsed.
 - **Branch.** Resolved at trigger time. A detached HEAD during a rebase reads `rebase-merge/head-name`; any other detached HEAD is logged and skipped, and the coverage advisory picks it up later. The branch is passed to the child, so a later checkout cannot misfile the review.
 - **Spawn.** At most `max_spawn_per_trigger` (5) uncovered commits:
   ```python
@@ -187,7 +187,7 @@ Review files exist only because a commit happened, and a commit happens only whe
    - picks exactly the finished, untracked or modified files in the current branch's directory (never files with a live lock);
    - runs `git add -- <files>` and then `git commit -F <msg> -- <files>`, which commits only those paths;
    - uses the message `chore(reviews): record reviews for <sha8 list>` plus a `PR-TASK:` trailer copied from the newest reviewed commit;
-   - calls `block_untagged_commit`'s id check in-process, because a git subprocess is invisible to the pre-bash guards, the same caveat `--git` records at worklist.py:1987-1992. It also applies the commit-identity rule and never adds a Co-Authored-By line.
+   - calls `block_untagged_commit`'s id check in-process, because a git subprocess is invisible to the pre-bash guards, the same caveat `--git` records at `.claude/hooks/stop/worklist.py:2133-2139`. It also applies the commit-identity rule and never adds a Co-Authored-By line.
 3. `block_push_with_unrecorded_reviews.py` (pre-bash, `git push` of this branch) refuses the push while a finished review file is untracked or modified, and prints the `--review-commit` command. Reviews still in flight never block the push; they ride the next one.
 4. The pr-finish box and pr-merge preconditions require no reviewer in flight and every review committed (section 7).
 5. **Rejected alternatives:**
@@ -214,7 +214,7 @@ Review files exist only because a commit happened, and a commit happens only whe
 
 - **Compute once.** `wl_review.branch_state(root, C.git_branch(root), fold)`, called in `run_stop` right after the pr-finish block (`.claude/hooks/stop/wl_checks.py:3526-3590`).
 - **Blocking keys** (both `always=True`):
-  - `commit-review` (T_MISSION, placed where `review-red` sits now, wl_checks.py:2033). Fires on any finding with severity at or above `block_at` (`high`) and `Resolution: open`, or a `deferred` whose item no longer exists. The message lists at most 5 findings (id, severity, file:line, the first 160 characters of the claim) and the three exact `--review-mark` commands.
+  - `commit-review` (T_MISSION, placed where `review-red` sits now, `.claude/hooks/stop/wl_checks.py:2125`). Fires on any finding with severity at or above `block_at` (`high`) and `Resolution: open`, or a `deferred` whose item no longer exists. The message lists at most 5 findings (id, severity, file:line, the first 160 characters of the claim) and the three exact `--review-mark` commands.
   - `commit-review-malformed` (T_INTEGRITY). Fires on a parse error, a bad Resolution grammar or a Body-Sig mismatch, and names the file and the failing line.
 - **Advisories, never blocking** (`outq_add` with `refresh_min=60`):
   - open medium and low findings, count plus ids;
@@ -222,20 +222,20 @@ Review files exist only because a commit happened, and a commit happens only whe
   - `Verdict: failed` files, with the `--review-run` command;
   - uncovered commits, with the `--review-run` commands;
   - finished review files that are not yet committed, with the `--review-commit` command.
-- **pr-finish box.** "Claude-reviewed" (wl_checks.py:3554) becomes: "per-commit reviews clean: every branch commit covered and not failed, no reviewer in flight, no open `high` finding, reviews committed". It is computed from `branch_state` and no longer needs a store-backed `pr:<n>/reviewed` tick. The threads box stays for human review threads.
+- **pr-finish box.** "Claude-reviewed" (`.claude/hooks/stop/wl_checks.py:3849`) becomes: "per-commit reviews clean: every branch commit covered and not failed, no reviewer in flight, no open `high` finding, reviews committed". It is computed from `branch_state` and no longer needs a store-backed `pr:<n>/reviewed` tick. The threads box stays for human review threads.
 - **Keep-lists.** Add both blocking keys to `wl_roster.CAP_WAIT_KEEPS` (`.claude/hooks/stop/wl_roster.py:55-80`) and to Y's focus keep-list (they protect the PR). Also add them to `test-always-tier.py`'s list.
 - **Retire.**
-  - `review-red` and `review-unreadable` in the ladder (wl_checks.py:2033,2067) and at :3471-3510.
-  - `wl_ci.review_gate_row`, `review_gate_detail`, `review_red`, `reviewmark_path`, `REVIEW_MAX_BLOCKS` and `CI_NONBLOCKING_CONTEXTS` (wl_ci.py:147,383-500) along with their selftest cases (:987-1090).
-  - `M.V_REVIEW_RED`, `M.REVIEW_NOTE_DOWNGRADED` and `M.V_REVIEW_UNREADABLE` (worklist_messages.py:220-275).
-  - `test-always-tier.py:29,42`.
-  - The marker text in `wl_git.py:850`.
+  - `review-red` and `review-unreadable` in the ladder (`.claude/hooks/stop/wl_checks.py:2125,2159`) and at :3471-3510.
+  - `wl_ci.review_gate_row`, `review_gate_detail`, `review_red`, `reviewmark_path`, `REVIEW_MAX_BLOCKS` and `CI_NONBLOCKING_CONTEXTS` (`.claude/hooks/stop/wl_ci.py:148,384-500`) along with their selftest cases (:987-1090).
+  - `M.V_REVIEW_RED`, `M.REVIEW_NOTE_DOWNGRADED` and `M.V_REVIEW_UNREADABLE` (`.claude/hooks/stop/worklist_messages.py:220-275`).
+  - `.claude/hooks/stop/test-always-tier.py:29,42`.
+  - The marker text in `.claude/hooks/stop/wl_git.py:850`.
 - **Threshold.** Only `high` blocks at launch, per the operator. It can be raised to `medium` by editing one config line, with no code change.
 
 ## 8. Keeping the PR labeling
 
 - **Port.** `run_apply_labels` moves to `.ci/rediacc_ci/review/pr_labels.py` together with `MANAGED_LABELS`, `DOCS_ONLY_RE`/`CI_ONLY_RE`, the ledger reconciliation (`LEDGER_PREFIX`, `APPLIED_RE`) and the "bump-major is never applied automatically" rule.
-- **Verdict source.** The `Labels:` lines of `agent/reviews/<head-branch>/*.md` at the PR head. It no longer reads `EXECUTION_FILE` or the comment fence (the claude_review_gate.py:1190-1226 arms are deleted).
+- **Verdict source.** The `Labels:` lines of `agent/reviews/<head-branch>/*.md` at the PR head. It no longer reads `EXECUTION_FILE` or the comment fence (the `.ci/rediacc_ci/review/claude_review_gate.py:1190-1226` arms are deleted).
 - **Aggregation:**
   - bump is the highest of `patch` and `minor` over all commits;
   - `bump-none` only when every reviewed commit says `none`, which keeps its "removed on release-worthy pushes" semantics (.github/labels.yml:81-83);
@@ -251,7 +251,7 @@ Review files exist only because a commit happened, and a commit happens only whe
 
 ## 9. Collisions with existing gates
 
-- **Reserved dirs.** Add `"reviews"` to `wl_store.AGENT_RESERVED_DIRS`, with a comment in the style of the reggate paragraph at wl_store.py:170-174. Add a `reviews` class to `.ci/policy/tree-shape.json` `agent_dirs.classes`, because T5 requires the two to be equal in both directions.
+- **Reserved dirs.** Add `"reviews"` to `wl_store.AGENT_RESERVED_DIRS`, with a comment in the style of the reggate paragraph at `.claude/hooks/stop/wl_store.py:170-174`. Add a `reviews` class to `.ci/policy/tree-shape.json` `agent_dirs.classes`, because T5 requires the two to be equal in both directions.
 - **prose-style.** Add an `exempt_paths` entry `{"glob": "agent/reviews/**", "reason": "BLOCKER: machine-written review records; claims are model output quoted verbatim, not repository prose"}`. It is exempt, not excluded, so it is counted on every run. The renderer still normalises em dashes and newlines.
 - **plan-folders.** Not affected: `is_plan_path` only matches `agent/plans/**` and `agent/PLAN-*.md`.
 - **doc-registry.** Not affected: the providers do not enumerate agent/ directories. The teardown does remove rows, so each removed row goes under `retired.<provider>` in `scripts/data/doc-registry-preport.json` with its reason (`scripts/gen/gen-docs.ts:404-440`), then `npx tsx scripts/gen/gen-docs.ts --write`.
@@ -269,7 +269,7 @@ Review files exist only because a commit happened, and a commit happens only whe
 - **Anti-vacuity.**
   - No token in CI raises `CannotRunError` (exit 2).
   - Locally without `gh`, only S2 is skipped, loudly, following the module's existing shallow-refusal pattern.
-- **CI wiring.** quality-branch gets `permissions: pull-requests: read`. The "Agent session archival" step gets `env: GH_TOKEN: ${{ github.token }}` (ci-quality.yml:618-620). `check-workflow-gates` is re-run.
+- **CI wiring.** quality-branch gets `permissions: pull-requests: read`. The "Agent session archival" step gets `env: GH_TOKEN: ${{ github.token }}` (`.github/workflows/ci-quality.yml:625-627`). `check-workflow-gates` is re-run.
 - **`--prune-reviews [--write]`.**
   - Implemented once as `ASA.prune_reviews(root, write)`, exposed as a gate-script verb and as `worklist.py --prune-reviews <me> [--write]` (a thin arm).
   - Without `--write` it is a report and exits 0, like `--sweep`.
@@ -291,16 +291,16 @@ Review files exist only because a commit happened, and a commit happens only whe
      - gates `check:ci-review-turn-capacity`, `check:ci-review-cap-coherence`, `check:ci-review-prompt-render`, from package.json, `scripts/ci-runner/manifest.ts`, ci-quality.yml steps, then `npm run gen:gates-lock`/`gate:bind`;
      - Review Gate's "Check unreplied review reports" step (ci.yml, near :653) and `review_report_replies.py`. Its only subject is the Claude report comment. Untangle `review_comments.py`'s import of it.
      - their tests and goldens; `.ci/shadow/w7p*-review*` ledgers and their twin-parity rows; entries in `python-env-registry.json`, `python-types-baseline.json`, `prose-style-baseline.json`, `secret-reachability.json` and `actions_vars`;
-     - `Review Complete` in `watchdog-monitor.yml:148`;
+     - `Review Complete` in `.github/workflows/watchdog-monitor.yml:148`;
      - `discover_epics` in `check_pr_head_ref_completeness.py`.
    - **Console keeps:** the Review Gate job with resolved threads and review comments (bot-agnostic, human threads), `block_premature_ready`, and PR-TASK trailers and epics (they feed the PR body block). Update `block_untagged_commit.py`'s WHY text to say so.
    - **Out of scope, decision [?]:** `claude-mention.yml` (the @claude responder, not the review job). DEFAULT: keep.
    - **Docs:**
-     - `.claude/commands/pr-babysit.md:57`, `pr-merge.md:108,117,154`, `branch-rebase.md:251`;
+     - `.claude/commands/pr-babysit.md:57`, `.claude/commands/pr-merge.md:108,117,154`, `.claude/commands/branch-rebase.md:251`;
      - `.claude/agents/pr-babysitter.md:110`;
      - `.claude/skills/pr-epics/review.md`;
      - `docs/agent-reference/TRAPS.md:139,160`, `ci-gates.md`;
-     - the comments in ci.yml:566-568 and ci-quality.yml:638.
+     - the comments in `.github/workflows/ci.yml:566-568` and `.github/workflows/ci-quality.yml:645`.
      The new finish line is: "green, ready, per-commit reviews clean (section 7), human threads resolved".
 5. **Exit criterion.** This must return only archive, plan and progress-history hits:
    ```

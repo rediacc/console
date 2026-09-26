@@ -16,26 +16,26 @@ Worklist: the lead adds this with `worklist.py --add`.
 ## 0. Checking the brief: where this plan agrees and where it does not
 
 1. **Replace rule 1: agreed.** One change: the lead commits, not the writer (section 3.3).
-2. **"`git checkout -b` / `switch -c` / `branch <name>` is already hook-blocked": false.** Only `git worktree add` is blocked outright (`block_worktree_add.py`, ORDER 28). `block_nonstandard_branch_name.py:141-143` only checks the branch *name*. It allows `main` and any `^[0-9]{4}-[0-9]+$`. So `git checkout -b 0925-1` from `0923-1` goes through today.
+2. **"`git checkout -b` / `switch -c` / `branch <name>` is already hook-blocked": false.** Only `git worktree add` is blocked outright (`block_worktree_add.py`, ORDER 28). `.claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:79-81` only checks the branch *name*. It allows `main` and any `^[0-9]{4}-[0-9]+$`. So `git checkout -b 0925-1` from `0923-1` goes through today.
    - `git push origin HEAD:0925-1` is not checked either. It creates a new remote branch, and `block_push_to_protected_branch.py` only looks at pushes to `main`.
    - No guard counts branches anywhere. That is the gap this plan fills.
 3. **"`[no-review]` for hotfixes": disagreed.** A hotfix on `main` never goes through a PR, so the per-commit review is the only review it gets.
    - Z's reviewer runs after the commit, asynchronously, so reviewing a hotfix adds no delay.
    - `[no-review]` is kept only for commits that are purely writing (section 4.2).
-   - One more problem: Z's `uncovered()` walks `merge-base(origin/main)..HEAD` (PLAN-per-commit-review.md:111). On `main` that range is empty, so as Z is written, hotfixes would never be reviewed at all. T7 fixes this.
+   - One more problem: Z's `uncovered()` walks `merge-base(origin/main)..HEAD` (agent/plans/PLAN-per-commit-review.md:113). On `main` that range is empty, so as Z is written, hotfixes would never be reviewed at all. T7 fixes this.
 4. **`[no-ci]`: rejected** (section 4.3). Instead, a new guard refuses GitHub's own skip tokens in commits the agent writes.
 5. **"Genuine hotfix on main, then commit": agreed for the commit only.** The push to `main` stays the operator's own `!` command.
    - `block_push_to_protected_branch.py` is unconditional, and its header explains why: the ruleset's admin bypass lets any push through.
-   - `pr-merge.md:196-213` still says "commit on `main` and push", which contradicts the guard. T9 corrects that doc.
+   - `.claude/commands/pr-merge.md:210-217` still says "commit on `main` and push", which contradicts the guard. T9 corrects that doc.
 
 ### Findings found while exploring (all fixed in this plan)
 
 - **F1, a false positive seen live this session.** `block_nonstandard_branch_name` refused a read-only `grep -n -e "checkout -b" -e "git branch [a-z0-9]" ...` because it read the quoted pattern as a branch name.
-  - Cause: the guard strips heredocs but deliberately not quoted strings (`block_nonstandard_branch_name.py:88-91`).
+  - Cause: the guard strips heredocs but deliberately not quoted strings (`.claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:14`).
   - Fix (T2): both this guard and the new `block_second_branch` detect branch creation with one shared, lexer-based parser in `commit_policy.branch_creations()`.
 - **F2.** Nothing counts branches, and nothing checks pushes to new remote branch names (point 2 above). Closed by T2.
 - **F3.** Nothing refuses `--no-verify`, `git commit -n` or `-c core.hooksPath=...` (a grep of the guards finds none). This only matters once git-level hooks exist. Closed by T8.
-- **F4.** `pr-merge.md:196-213` ("commit on main and push") contradicts `block_push_to_protected_branch`. Fixed in T9.
+- **F4.** `.claude/commands/pr-merge.md:210-217` ("commit on main and push") contradicts `block_push_to_protected_branch`. Fixed in T9.
 - **F5.** `block_untagged_commit` demands a `PR-TASK:` trailer even on `main`, where there is no `agent/pr/main.md`. The check at `:316` then falls back to shape only, so a hotfix has to invent an epic id. Closed by T3.
 - **F6.** Z never reviews commits made on `main` (point 3). Closed by T7.
 - **F7.** No guard stops an agent's commit from carrying `[skip ci]` or its siblings. On a PR head, GitHub then skips the workflow, and the required `CI Complete` check sits at "Expected" forever. Closed by T4.
@@ -76,7 +76,7 @@ Order:
 - [ ] T11 [lead] Add every new guard to `scripts/data/hook-inventory-baseline.json`, then run `check-hook-integrity`, `test_dispatch.py` (ORDER contiguity) and `test_guards_differential.py`.
 - [ ] D0-D10 [lead] The one-time drain (section 8).
 
-## 1. The new rule 1 (replaces CLAUDE.md:15-27 and standing-orders.md:11-15)
+## 1. The new rule 1 (replaces CLAUDE.md:15-27 and .claude/output-styles/standing-orders.md:11-15)
 
 **Title: "1. Verified work is committed as it lands, on the one branch."**
 
@@ -89,8 +89,8 @@ Verified work is committed right away, in small, reviewable commits on the singl
 - **Cadence.** The unit is committed as soon as it is verified, and before the next unit starts.
   - Worklist items: commit first, then tick with `commit:<sha>`.
   - Writers: the lead commits each writer's spot-checked output as that writer's report is accepted.
-  - Size: a unit above 20 files needs a proof line anyway (`block_unproven_bulk_transform.py:45`), and that is the signal to split it.
-- **Commit form.** `git add -- <new paths>`, then `git commit -F <msg> -- <paths>`. The pathspec guard already enforces the `--` form (`block_pathspecless_git_commit.py:70,111`).
+  - Size: a unit above 20 files needs a proof line anyway (`.claude/rediacc_hooks/guards/block_unproven_bulk_transform.py:45`), and that is the signal to split it.
+- **Commit form.** `git add -- <new paths>`, then `git commit -F <msg> -- <paths>`. The pathspec guard already enforces the `--` form (`.claude/rediacc_hooks/guards/block_pathspecless_git_commit.py:70,111`).
   - Subject: Conventional Commits.
   - Body: the verification commands with their exit codes.
   - Trailer: `PR-TASK: <id>`.
@@ -101,7 +101,7 @@ Verified work is committed right away, in small, reviewable commits on the singl
   - at least every 2 hours of committed work;
   - before a stop that leaves unpushed commits.
 
-  Each push still needs a `ci:quick` receipt (`block_unverified_push.py`). With a shared tree, use `--receipt-out` from a clean clone (ci-gates.md:67).
+  Each push still needs a `ci:quick` receipt (`block_unverified_push.py`). With a shared tree, use `--receipt-out` from a clean clone (docs/agent-reference/ci-gates.md:67).
 - **Unchanged.** Never `checkout`/`restore`/`stash`/`clean` to undo a mistake of the session's own making. Other sessions' uncommitted paths are theirs, so never commit them by inference.
 - **One branch, one PR** (section 2). There is no "ask" path for a second one; the operator runs it with `!` if they want it.
 - Rewrite standing-orders.md rule 5 ("There is no safety net") to say the net is now the commit, and keep the ban on restore/stash.
@@ -124,13 +124,13 @@ A creation is allowed only when all of these hold:
 1. the checkout is on `main`;
 2. no live branch exists;
 3. the name is today's `MMDD-(MAX+1)`, with MAX taken from consumed PR heads, the same computation as `block_nonstandard_branch_name`'s message;
-4. in a submodule, the name must equal the console's current branch (the coordinated rule, pr-merge.md:24).
+4. in a submodule, the name must equal the console's current branch (the coordinated rule, .claude/commands/pr-merge.md:24).
 
 These are always allowed:
 - a rename `branch -m <live> <new>`, because the count stays at 1 and `block_stale_pr_branch_date`'s advice depends on it;
 - the read and delete forms;
 - `/tmp` fixture repos;
-- repos outside this checkout, using the same `target_root` exemption as `block_nonstandard_branch_name.py:94-98`.
+- repos outside this checkout, using the same `target_root` exemption as `.claude/rediacc_hooks/guards/block_nonstandard_branch_name.py:68`.
 
 If `gh` fails while a creation is being judged, the guard refuses. Its message says so, and names the operator's `!` route.
 
@@ -140,7 +140,7 @@ If `gh` fails while a creation is being judged, the guard refuses. Its message s
 
 After `/pr-merge`, step 7 now deletes the merged local branch in console and in each submodule (`git branch -D <merged>`, only after `gh pr view --json state` shows MERGED). That keeps the next cut simple.
 
-### `block_second_open_pr.py:156-196`
+### `.claude/rediacc_hooks/guards/block_second_open_pr.py:156-196`
 
 The logic stays: `--author @me`, per target repo, fails closed. Only the message changes (`ALREADY_OPEN`, `:57-72`): the "ask the operator" paragraph is replaced with "there is no agent path; the operator runs `! gh pr create` if they want a second PR". CLAUDE.md:19-20 changes to match.
 
@@ -152,7 +152,7 @@ These guards apply to every Bash call, the lead's and the sub-agents'. That reli
 
 ### 3.1 Why the lead commits
 
-Writers never commit. That is already the worker contract at `pr-babysitter.md:146`. Three reasons:
+Writers never commit. That is already the worker contract at `.claude/agents/pr-babysitter.md:146`. Three reasons:
 1. Standing Order 4 says an unchecked report is not trusted. A writer committing its own work would commit exactly that unchecked work, and the no-amend rule means undoing it takes a second commit.
 2. Four writers committing at once race on `index.lock` and on the HEAD ref. An agent that hits a stale-lock error tends to delete the lock file.
 3. `git commit -- <paths>` builds a temporary index from HEAD plus only the named paths. The lead's one commit therefore stays correct even while writers' `git mv` entries sit in the shared index. This is the property `block_pathspecless_git_commit` is there to protect.
@@ -167,8 +167,8 @@ Writer report arrives → lead spot-checks it → lead commits by path with the 
 
 ### 3.4 Tick evidence (T6)
 
-`worklist.py --tick` (`worklist.py:1063-1066`) gains a rule next to the door gate. The evidence must contain one of:
-- `commit:<hex>`, which must resolve through `wl_checks.completion_evidence`'s object check (`wl_checks.py:370-400`) and pass `merge-base --is-ancestor <sha> HEAD` in root or a submodule;
+`worklist.py --tick` (`.claude/hooks/stop/worklist.py:1093-1101`) gains a rule next to the door gate. The evidence must contain one of:
+- `commit:<hex>`, which must resolve through `wl_checks.completion_evidence`'s object check (`.claude/hooks/stop/wl_checks.py:371-408`) and pass `merge-base --is-ancestor <sha> HEAD` in root or a submodule;
 - `nocommit:<no-tracked-change|research|operator-deferred>`.
 
 This is a shape check only. Whether the claim is true is left to the judge. New refusal key: `no-commit-ref`.
@@ -176,8 +176,8 @@ This is a shape check only. Whether the claim is true is left to the judge. New 
 ## 4. Commit-message tags (the minimal set)
 
 Today:
-- The only tag in use is GitHub's native `[skip ci]`, and only in bot release commits: `update_homebrew_tap.py:183-187` and `advance_contract_floor.py:210`.
-- `ci.yml:110` also tests it on push. `ci-quality.yml:63-69` explains why it is load-bearing there.
+- The only tag in use is GitHub's native `[skip ci]`, and only in bot release commits: `.ci/rediacc_ci/release/update_homebrew_tap.py:183-187` and `.ci/rediacc_ci/release/advance_contract_floor.py:210`.
+- `.github/workflows/ci.yml:110` also tests it on push. `.github/workflows/ci-quality.yml:63-69` explains why it is load-bearing there.
 - `scope-engine.cjs`, `skip-plan-reconcile.cjs` and `initialize.sh` read no tags from commit messages.
 - `claude-review.yml` has no skip tag. It never reviews draft PRs, and #590 is a draft.
 
@@ -185,9 +185,9 @@ Today:
 
 - **Where it goes:** at the end of the commit subject.
 - **What counts as a hotfix:** either
-  - (a) the main-only failure class of pr-merge step 5 (pr-merge.md:196-213): a job that failed on `main` never ran, or ran differently, on the PR's own run; or
+  - (a) the main-only failure class of pr-merge step 5 (.claude/commands/pr-merge.md:210-217): a job that failed on `main` never ran, or ran differently, on the PR's own run; or
   - (b) the operator called it a hotfix in this task.
-- **Required with it:** a trailer `Hotfix-Evidence:` carrying either the red main run id or URL (case a) or `ASKED:<ISO minute>` (case b). The second form reuses `completion_evidence`'s transcript check (`wl_checks.py:373`).
+- **Required with it:** a trailer `Hotfix-Evidence:` carrying either the red main run id or URL (case a) or `ASKED:<ISO minute>` (case b). The second form reuses `completion_evidence`'s transcript check (`.claude/hooks/stop/wl_checks.py:338-352`).
 - **Size limit:** at most 5 files. This is decision 4.
 - **No `PR-TASK:` needed** (T3).
 - **Off `main`, `[hotfix]` is refused** so the audit stays clean.
@@ -210,7 +210,7 @@ Today:
 
 Reasons:
 1. On a `pull_request` or `push` event, GitHub checks the head commit for `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]` and a `skip-checks: true` trailer. A skipped workflow leaves its required checks pending, and ruleset 12344707 requires `CI Complete` and `Review Complete`. The PR would be stuck at "Expected" until something else is pushed. On `main`, skipping also skips the release, which is exactly why the bot commits use it.
-2. A custom `[no-ci]` would need new wiring in `initialize` to still post `CI Complete` while skipping jobs. That would be a second skip path parallel to the attested scope-engine skip-plan and the pointer-bump fast path (ci-gates.md:336-338), which already make cheap commits cheap in CI.
+2. A custom `[no-ci]` would need new wiring in `initialize` to still post `CI Complete` while skipping jobs. That would be a second skip path parallel to the attested scope-engine skip-plan and the pointer-bump fast path (docs/agent-reference/ci-gates.md:403), which already make cheap commits cheap in CI.
 3. CI runs per push, not per commit, and supersede-cancellation runs only the head. Committing more often costs nothing in CI once pushes are batched (section 1).
 4. The local `ci:quick` receipt must be green before any push anyway.
 
@@ -238,7 +238,7 @@ Keys: `no_review_eligible`, `no_review_denied`, `hotfix_max_files` (5), `skip_to
 
 ### 5.3 Git-level hooks (T8, decision 2)
 
-- **What exists today:** no `core.hooksPath` (`git config --get-regexp '^core\.'` shows none), no `.githooks`, no husky, no lefthook. `.git/hooks` holds only samples. `scripts/pre-commit-check.sh` is a manual script (PLAN-biome-only-lint.md:46).
+- **What exists today:** no `core.hooksPath` (`git config --get-regexp '^core\.'` shows none), no `.githooks`, no husky, no lefthook. `.git/hooks` holds only samples. `scripts/pre-commit-check.sh` is a manual script (agent/plans/PLAN-biome-only-lint.md:50).
 - **Proposal:** Python shims in `.claude/rediacc_hooks/git/`:
   - `commit-msg`: tags, skip tokens, `main` needs `[hotfix]`;
   - `reference-transaction`: in the `prepared` state, abort when a `refs/heads/*` creation (old = zero oid) breaks the single-branch rule, using the local check only, no `gh`;
@@ -254,7 +254,7 @@ Keys: `no_review_eligible`, `no_review_denied`, `hotfix_max_files` (5), `skip_to
 ## 6. Tests (T10), in the style of the repo's guard suites
 
 - Every new guard declares `OWN_SUITE = True`, `EDGE_CASES` and a single `DEFECT` tuple. Each gets a `test-<stem>.py` beside it that drives `dispatch.py`, with fixture repos under a `rediacc_ci.runtmp` run directory. `test-block_push_to_protected_branch.py` is the model.
-- Each suite includes a DEFECT control: plant `DEFECT` in a copy of the guard and assert that at least one fire case flips to allowed (the pattern at `test_wl_focus.py:683-695`).
+- Each suite includes a DEFECT control: plant `DEFECT` in a copy of the guard and assert that at least one fire case flips to allowed (the pattern at `.claude/rediacc_hooks/tests/test_wl_focus.py:683-695`).
 - ORDER values 45-49 are appended so the order stays contiguous (the current pre-bash maximum is 44, `block_unsatisfiable_pid_wait`). `test_dispatch.effective_order` checks this.
 
 | Guard | Fire | Inverse | DEFECT planted |
@@ -328,7 +328,7 @@ Changes to existing guards and code, each with its golden regenerated through `t
   - Build an attribution map from each dirty path to its epic, using plan `Owns:` headers, worklist item file lists and round-log "files touched" lists.
   - Paths nobody can attribute go to the operator through `/ask` (decision 7). They are never committed by inference.
 - **D1: agent records** (`agent/worklist/*.jsonl`, `agent/reggate/0923-1.jsonl`, `agent/INDEX.md`, `agent/d778be9d`, `agent/ledgers`), under `e87fa3ce`. Verify with `check:ci-plan-folders` and the tree-shape gate.
-- **D2: `agent/plans/*.md`** (23 files, two batches). Verify with the `check:ci-plan-*` gates and the prose-style gate.
+- **D2: `agent/plans/*.md`** (23 files, two batches). Verify with the `check:ci-plan-boxes`, `check:ci-plan-record`, `check:ci-plan-citations` and `check:ci-plan-folders` gates and the prose-style gate.
 - **D3: the bash-oracle retirement.** This covers the 54 `.claude/oracles` deletions, the goldens, the guards and the `rediacc_hooks/tests` changes (27), plus `hook-inventory-baseline.json`. It is split by chain into pre-bash, pre-edit, stop and post-bash, each carrying the "sampled and read" proof. Verify with `pytest .claude/rediacc_hooks/tests` (dispatch, wiring, differential, golden drift), every `test-block_*.py`, and `check-hook-integrity`.
 - **D4: the stop hook and its context and post-bash hooks** (21 files), under `01c7d773` and the retro work. Verify with `test_wl_cap_wait.py`, `test_wl_focus.py` and the full `test_wl_*.py` suite.
 - **D5: CI and gates.** This covers `.ci/rediacc_ci` (31), `.ci/{scripts,config,policy}`, `scripts/{gates,lib,data,ci-runner}`, `package.json`, `package-lock.json` and `biome.json`, under `e87fa3ce` and `55627c58`. Verify with `pytest .ci/rediacc_ci/tests`, `check:ci-lockfile`, and a whole `npm run ci:quick` run in a clean clone at this HEAD.

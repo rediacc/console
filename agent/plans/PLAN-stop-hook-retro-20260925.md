@@ -83,7 +83,7 @@ Other rows in the window:
 
 ## 2. Discharge misses two answered demands (R20260924.18 gaps)
 
-**What happened.** The markers on disk still owe two answered demands (`/tmp/claude-worklist/.judge/classsweep-0a598f50c372.json`, `proofcheck-0a598f50c372.json`).
+**What happened.** The markers on disk still owe two answered demands (`/tmp/claude-worklist/.judge/classsweep-0a598f50c372.json`, `/tmp/claude-worklist/.judge/proofcheck-0a598f50c372.json`).
 
 - **Baseline sweep.**
   - Demanded: `find .ci/config .ci/rediacc_ci -name '*-baseline.json' -type f`.
@@ -97,8 +97,8 @@ Other rows in the window:
 - **For contrast, a demand that did discharge.** The CLI-handoff sweep, answered at 19:44:02, now passes `near_literal` (True in the replay). That part of R.18 holds.
 
 **Root cause.**
-- `near_literal` (`wl_classsweep.py:427`) requires one of the demand's own pattern alternatives as a substring. A broader `find -name` glob never contains the narrower one.
-- `PROOF_TOOL_RE` (`wl_proofcheck.py:147`) names one tool, and that tool has no JSON shapes.
+- `near_literal` (`.claude/hooks/stop/wl_classsweep.py:428`) requires one of the demand's own pattern alternatives as a substring. A broader `find -name` glob never contains the narrower one.
+- `PROOF_TOOL_RE` (`.claude/hooks/stop/wl_proofcheck.py:147`) names one tool, and that tool has no JSON shapes.
 
 **Fix.**
 - **Glob cover.** A `find` demand is discharged when the lead's `find -name|-iname` glob matches a sample of the demand's glob (each `*` or `?` replaced by `x`, then `fnmatch`) and the two share a path operand (`shares_path`, `:404`).
@@ -113,7 +113,7 @@ Other rows in the window:
 - **The third naming is covered.** #11fbc2a2 at 19:52:22 was overridden for priority, which the existing HOLD_FOR handles.
 
 **Root cause.**
-- `queue_start` (`wl_roster.py:612`) takes the K oldest `worker:queue` items with no waiting check. BLOCKED_BY is honoured only for state `' '` (`wl_roster.py:567`, `wl_store.py:1287`).
+- `queue_start` (`.claude/hooks/stop/wl_roster.py:158`, `queue_pick`) takes the K oldest `worker:queue` items with no waiting check. BLOCKED_BY is honoured only for state `' '` (`.claude/hooks/stop/wl_roster.py:125`, `.claude/hooks/stop/wl_store.py:1371`).
 - An expired `[>]` queue lease fails closed into an open item (`wl_store.classify_items`, about line 1318) even when its blockers are open.
 - Neither block message names `BLOCKED_BY:#<id>` as the remedy.
 
@@ -145,7 +145,7 @@ Other rows in the window:
 - The babysitter a149262d8b6a1601f was TaskStop-ped at about 19:1xZ.
 - Spawns were refused at 19:40:09 (236839404), 19:44:30 (236934739) and 19:52:58 (237385878), each listing it as a live writer.
 - In the same window the Stop hook said "1 slot(s) free" at 19:39:31 and 19:52:22.
-- The lead filed #b9d4dcb2 and the 19:44:47 hint. It then fixed the guard: `wl_roster.py:892-895` makes `transcript_waiting` count only when the agent's transcript moved after the event. The fix has a test at `test_wl_roster.py:941` and was ticked at 19:57:14 (237575152).
+- The lead filed #b9d4dcb2 and the 19:44:47 hint. It then fixed the guard: `.claude/hooks/stop/wl_roster.py:1259-1261` makes `transcript_waiting` count only when the agent's transcript moved after the event. The fix has a test at `.claude/rediacc_hooks/tests/test_wl_roster.py:1337` and was ticked at 19:57:14 (237575152).
 
 **What survives.** The fix is uncommitted: `git diff --stat` shows `wl_roster.py` +11 and `test_wl_roster.py` +34. The Stop roster (`roster()`, `:488`) and the spawn guard (`live_estimate`) are still two estimators, and nothing checks that they agree.
 
@@ -210,17 +210,17 @@ Other rows in the window:
   Paths are cd-joined, and a directory operand covers its subtree. Replay A3's commands at 18:16:01, 18:40:48, 18:41:43 and 18:43:26 as fixtures: all four are subtracted, and a lead-only file in the same directory still draws the questions. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
 - [ ] **R20260925.2** A writer's paths stay subtracted while any item leased to it is un-ticked. A tick-based unit's fix-set is its lease workers' paths intersected with the dirty tree (provenance `item-writers`, text in `M.FIXSET_PROVENANCE`). Rewrite `test_r1_inverse_*` per Decision 1. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
 - [x] **R20260925.3** Sweep discharge accepts a covering `find` glob with a shared path operand. The fixture is the 19:50:04 marker against the 19:50:12 command. The inverse is a narrower glob, or a glob with no shared path, which stays owed. Test: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
-  Done 2026-09-25: wl_classsweep.py:460 glob_covers, wired at :543; test_wl_judge_fixset_scope.py 29 passed (worklist #8e860847).
+  Done 2026-09-25: .claude/hooks/stop/wl_classsweep.py:460 glob_covers, wired at :543; test_wl_judge_fixset_scope.py 29 passed (worklist #8e860847).
 - [x] **R20260925.4** `shape_cluster_diff` gets a JSON key-path mode for `.json` files, with added, removed and type-changed keys per file, and exit 1 when a key is removed. A `shape_cluster_diff` run on `packages/cli/src/i18n/locales` discharges the locale proof demand. Test: .ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py and .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py.
-  Done 2026-09-25: shape_cluster_diff.py:125 json_key_diff; test_quality_shape_cluster_diff.py 11 passed, --selftest 21 controls (worklist #1c96c876).
+  Done 2026-09-25: .ci/scripts/quality/shape_cluster_diff.py:125 json_key_diff; test_quality_shape_cluster_diff.py 11 passed, --selftest 21 controls (worklist #1c96c876).
 - [ ] **R20260925.5** `queue_start` skips queued items with open `BLOCKED_BY` blockers. An expired queue lease on such an item reads as `waiting`. `V_QUEUE_SLOT` and the expired-lease line name `BLOCKED_BY:#<id>`. Test: .claude/rediacc_hooks/tests/test_wl_roster.py and .claude/rediacc_hooks/tests/test_wl_leases.py.
 - [ ] **R20260925.6** `wl_planfile.match_item` matches on the box id first, including the `+` and `-` shorthand. The fixture is the 4 grouped items of 19:51:08 against R20260924.16 to .23, where 0 of 8 may come out untracked. Test: .claude/hooks/stop/test-planfile.py.
 - [ ] **R20260925.7** The `worker:queue` refusal names "#<id> stays OPEN (not leased)", and `--add` warns "similar open item: #<id>" on an owned near-duplicate. The fixture is the #91224636 and #48bc48b4 texts. Test: .claude/rediacc_hooks/tests/test_wl_leases.py.
-- [ ] **R20260925.8** Commit #b9d4dcb2 (`wl_roster.py:890-898`, `test_wl_roster.py:941`). Add a parity test showing that `roster()` writers equal the `live_writers_estimate` ids for the killed-agent, waiter and fresh-spawn fixtures. Test: .claude/rediacc_hooks/tests/test_wl_roster.py.
+- [ ] **R20260925.8** Commit #b9d4dcb2 (`.claude/hooks/stop/wl_roster.py:1252-1261`, `.claude/rediacc_hooks/tests/test_wl_roster.py:1337`). Add a parity test showing that `roster()` writers equal the `live_writers_estimate` ids for the killed-agent, waiter and fresh-spawn fixtures. Test: .claude/rediacc_hooks/tests/test_wl_roster.py.
 - [x] **R20260925.9** With no code change, discharge the on-disk markers through the existing path:
   - run verbatim `find .ci/config .ci/rediacc_ci -name '*-baseline.json' -type f`;
   - run `.ci/scripts/quality/shape_cluster_diff.py --rev <A3 base sha> .ci/config .claude/rediacc_hooks .ci/rediacc_ci/core` for A3's commit before it lands;
-  - confirm that `classsweep-0a598f50c372.json` and `proofcheck-0a598f50c372.json` no longer carry the baseline sweep or the 177-file proof.
+  - confirm that `/tmp/claude-worklist/.judge/classsweep-0a598f50c372.json` and `/tmp/claude-worklist/.judge/proofcheck-0a598f50c372.json` no longer carry the baseline sweep or the 177-file proof.
 
   The locale proof clears with R20260925.4. Test: the marker files' contents, quoted in the tick.
   Done 2026-09-25: the sweep marker holds owed:null and a different demand; the proof demand expired past its 120-minute TTL (load_outstanding() is None); every owed command ran verbatim (worklist #fb1747dc).

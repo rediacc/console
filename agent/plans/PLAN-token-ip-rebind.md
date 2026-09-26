@@ -69,7 +69,7 @@ The submodule PR (A) merges first. The console PR (B, plus the pointer bump) fol
    - **`rebind: "relogin"`.** It never prompts. It says that 2FA is off, so the only remedy is `rdc subscription login`, and that enabling 2FA allows the move in future.
 3. **The server checks** the token (without the IP check), its mode, its creator, the creator's TOTP, the lockout and replay. It then moves `bound_ip` in one conditional UPDATE and writes an audit row.
 
-The retry is safe even for POSTs. The 403 comes from the auth middleware before any handler runs, and the mismatch branch writes nothing: no `bindIp` and no `updateLastUsed` (`api-token.ts:58-59`). A test in section 6.1 pins this down.
+The retry is safe even for POSTs. The 403 comes from the auth middleware before any handler runs, and the mismatch branch writes nothing: no `bindIp` and no `updateLastUsed` (`private/account/src/middleware/api-token.ts:58-59`). A test in section 6.1 pins this down.
 
 ## 2. Threat model
 
@@ -88,7 +88,7 @@ The retry is safe even for POSTs. The 403 comes from the auth middleware before 
 - **Replay.** The server stores the matched time step (`rebind_last_totp_step`) and accepts a code only if its step is strictly greater (RFC 6238 §5.2). Enforcement is in the UPDATE's WHERE clause, so two concurrent requests carrying the same code cannot both win. A replayed code gets 409 `TOTP_REPLAYED`, counts as a failure, and is audited.
   - Scope is per token, as ruled. D5 covers per-user scope.
   - `/auth/reauth/totp` has the same missing replay guard. That is noted in section 9 and out of scope.
-- **Backup codes are refused**, following `verifyReauthTotp`'s reasoning (`auth.service.ts:461-464`): recovery codes should not be spent on routine moves. See D2.
+- **Backup codes are refused**, following `verifyReauthTotp`'s reasoning (`private/account/src/services/auth.service.ts:461-464`): recovery codes should not be spent on routine moves. See D2.
 - **Modes left untouched:**
   - `unbound` and `cloudflare` never reach the mismatch branch.
   - The rebind route refuses them with 409 `IP_REBIND_UNAVAILABLE {reason: "not_first_use"}`, which stops it being used to pin an executor token to one IP.
@@ -123,7 +123,7 @@ Refusal codes, added to `ErrorCode` in `private/account/src/errors.ts`:
 
 ### 3.2 Migration `0054_api_token_ip_rebind.sql` (T1)
 
-Four columns on `api_tokens`, following the `loginAttempts` shape (`schema.ts:76-82`):
+Four columns on `api_tokens`, following the `loginAttempts` shape (`private/account/src/db/schema.ts:76-82`):
 - `rebind_failed_attempts integer NOT NULL DEFAULT 0`
 - `rebind_last_failed_at text`
 - `rebind_locked_until text`
@@ -173,7 +173,7 @@ Mounted at `app.route('/api-token-ip', apiTokenIpRoute())` in `private/account/s
 6. `rebind_lock_count >= DISABLE_AFTER_LOCKS`: 403 `IP_REBIND_DISABLED`, audited.
 7. `rebind_locked_until > now`: 429 `IP_REBIND_LOCKED` with `retryAfter`, audited. The counter does not increase.
 8. Parse the body with `z.object({ code: z.string().regex(/^\d{6}$/) })`. A malformed body gets 400 from the ZodError path and does not count (it cannot be a real guess).
-9. `step = verifyCodeStep(user.totpSecret, code)`. If it is null, call `apiTokenService.recordRebindFailure(id)`, which is one atomic UPDATE … RETURNING in the same shape as `user.service.ts:314-373`. The answer is 400 `TOTP_INVALID {attemptsRemaining}`, or 429 when this failure triggers the lock. Audited.
+9. `step = verifyCodeStep(user.totpSecret, code)`. If it is null, call `apiTokenService.recordRebindFailure(id)`, which is one atomic UPDATE … RETURNING in the same shape as `private/account/src/services/user.service.ts:314-373`. The answer is 400 `TOTP_INVALID {attemptsRemaining}`, or 429 when this failure triggers the lock. Audited.
 10. `apiTokenService.rebindIp(id, clientIp, step)`. It runs as one UPDATE:
 
     `SET bound_ip=?, rebind_last_totp_step=?, rebind_failed_attempts=0, rebind_lock_count=0, rebind_locked_until=NULL, last_used_at=now WHERE id=? AND revoked_at IS NULL AND ip_binding='first-use' AND (rebind_last_totp_step IS NULL OR rebind_last_totp_step < ?)`
@@ -196,7 +196,7 @@ Two event types:
 - `api_token.ip_rebound` with data `{ tokenId, name, fromIp, toIp }`;
 - `api_token.ip_rebind_failed` with data `{ tokenId, name, reason: 'totp_invalid'|'totp_replayed'|'locked'|'disabled'|'no_totp'|'no_creator'|'not_first_use', boundIp, attemptedIp, attemptsRemaining? }`.
 
-The `api_token.` prefix already files both under "security" (`private/account/src/routes/portal.ts:803`, `private/account/src/routes/root.ts:671`). Add titles and descriptions next to `api_token.revoked` in `portal.ts:882-883/899-904` and `root.ts:794-797/820-823`:
+The `api_token.` prefix already files both under "security" (`private/account/src/routes/portal.ts:803`, `private/account/src/routes/root.ts:671`). Add titles and descriptions next to `api_token.revoked` in `private/account/src/routes/portal.ts:882-883/899-904` and `private/account/src/routes/root.ts:794-797/820-823`:
 - "API token moved to a new IP"
 - "API token IP move refused"
 
@@ -254,7 +254,7 @@ Both already treat a failure as non-fatal.
 - In `packages/cli/src/commands/config-remote-password.ts`, delete the `bound to a different IP` branch (`:45-47`).
 - Add a first line to `describeEnrollForbidden`: `if (code === TOKEN_IP_MISMATCH) return message;`. The central path has already produced the localized text.
 - Rewrite the comment at `:26-36`: the IP case now has a code and is handled in `accountServerFetch`, and the remaining text matches cover the other bare `HTTPException`s.
-- Delete `commands.config.remote.enable.passwordIpBound` from all 13 `cli.json` files, then run `generate:cli-contract` so the `commands.*` bundle in `packages/shared/src/cli-contract/data/i18n/*.json:335` drops it. `check:ci-dead-translation-keys` would flag it otherwise.
+- Delete `commands.config.remote.enable.passwordIpBound` from all 13 `cli.json` files, then run `generate:cli-contract` so the `commands.*` bundle in `packages/shared/src/cli-contract/data/i18n/*.json` drops it. `check:ci-dead-translation-keys` would flag it otherwise.
 
 ## 5. What does not change
 
@@ -267,7 +267,7 @@ Both already treat a failure as non-fatal.
 
 ### 6.1 Account integration (new `private/account/tests/integration/api-token-ip-rebind.test.ts`)
 
-**Setup.** Build it the same way as `api-token-ip-binding.test.ts:30-115`. Enable 2FA the way `auth.test.ts:1000` does, and mint codes with `generateCode`.
+**Setup.** Build it the same way as `private/account/tests/integration/api-token-ip-binding.test.ts:30-115`. Enable 2FA the way `private/account/tests/integration/auth.test.ts:1000` does, and mint codes with `generateCode`.
 - The "next step" is `generateCode(secret, Date.now() + 30_000)`.
 - `vi.setSystemTime` moves the clock.
 - The token binds from `x-forwarded-for: IP_A`, and then the move uses `IP_B`.
@@ -275,7 +275,7 @@ Both already treat a failure as non-fatal.
 **Cases:**
 1. **Code on the refusal.** A request from `IP_B` gets 403 with `code === 'TOKEN_IP_MISMATCH'`, `rebind === 'totp'` and the message unchanged. `lastUsedAt` is unchanged, so the refusal writes nothing.
 2. **Happy path.** A rebind from `IP_B` with a valid code returns 200 `{rebound: true, boundIp: IP_B}`, and the response passes the DTO airlock (`helpers/dto-assert.ts`). Afterwards `/proxy/introspect`, or any `apiTokenAuth` route, works from `IP_B` and gets 403 `TOKEN_IP_MISMATCH` from `IP_A`.
-3. **Through the tunnel.** The rebind binds to the outer `x-forwarded-for`, and an inner spoofed `x-forwarded-for` is ignored (the precedent is `tunnel.test.ts:214-222`).
+3. **Through the tunnel.** The rebind binds to the outer `x-forwarded-for`, and an inner spoofed `x-forwarded-for` is ignored (the precedent is `private/account/tests/integration/tunnel.test.ts:214-222`).
 4. **A stolen token alone.** Wrong code → 400 `TOTP_INVALID` with `attemptsRemaining: 4`. `bound_ip` is still `IP_A`.
 5. **Reused code.** The same code a second time after a success gets 409 `TOTP_REPLAYED`, and so does an older step. Two concurrent rebinds with one code (`Promise.all`) produce exactly one 200.
 6. **Lockout.** Five wrong codes give 429 `IP_REBIND_LOCKED` with `Retry-After`. A *correct* code inside the lock window is still refused. After the lock expires, a correct code succeeds and the counters reset. Four locks in a row give 403 `IP_REBIND_DISABLED`.
@@ -299,7 +299,7 @@ Both already treat a failure as non-fatal.
 
 **New `packages/cli/src/services/__tests__/account-client-ip-rebind.test.ts`.**
 - Mock `@rediacc/shared/e2e` `sealRequest`/`openResponse` so they pass values through, stub `globalThis.fetch` with a scripted queue of inner responses, and mock `utils/prompt.js`.
-- Set `isTTY` through `Object.defineProperty` (the precedent is `utils/__tests__/prompt.test.ts:18`).
+- Set `isTTY` through `Object.defineProperty` (the precedent is `packages/cli/src/utils/__tests__/prompt.test.ts:18`).
 
 Cases:
 - **TTY:** 403 mismatch → one prompt → a POST to the rebind path carrying the same `Authorization` and `{code}` → the original request is replayed → the result is returned. There are exactly 3 fetches.
@@ -358,7 +358,7 @@ Not added. The account integration suite drives the real stack, including the tu
 ## 9. Operator decisions still open (recommended option first)
 
 - **D1. Route path.**
-  - Recommended: `POST /account/api/v1/api-token-ip/rebind`, its own prefix, following the `/proxy` precedent (`routes/index.ts:109-113`).
+  - Recommended: `POST /account/api/v1/api-token-ip/rebind`, its own prefix, following the `/proxy` precedent (`private/account/src/routes/index.ts:109-113`).
   - Alternative: `/api-tokens/rebind-ip`, which means moving `sessionAuth` from `use('*')` to each route in `api-tokens.ts`.
 - **D2. Backup codes.**
   - Recommended: refuse them, as `verifyReauthTotp` does.
@@ -379,7 +379,7 @@ Not added. The account integration suite drives the real stack, including the tu
   - Recommended: include it. The rebind route reveals the same fact, and it saves a prompt that can never work.
   - Alternative: omit it, and let the CLI find out from `IP_REBIND_UNAVAILABLE` after prompting.
 - **D8. Code name.**
-  - Recommended: `TOKEN_IP_MISMATCH`, following the `ErrorCode` UPPER_SNAKE convention (`errors.ts:1-80`), plus a separate `rebind` field. The code names the refusal, and the hint names the remedy.
+  - Recommended: `TOKEN_IP_MISMATCH`, following the `ErrorCode` UPPER_SNAKE convention (`private/account/src/errors.ts:1-80`), plus a separate `rebind` field. The code names the refusal, and the hint names the remedy.
   - Alternative: `ip_rebind_available`, which would be wrong for users without TOTP.
 - **D9. A dedicated command** (`rdc subscription rebind-ip [--code]`).
   - Recommended: not now. Any interactive command is the remedy, and a new command touches the contract, the docs and the tutorial gates.
