@@ -1,6 +1,6 @@
 ---
 title: Konfigurationsspeicher
-description: Zero-Knowledge-verschlüsselte Konfigurationssynchronisierung mit Passkey, Master-Passwort und Wiederherstellungscode-Entsperrung
+description: Clientseitig verschlüsselte Konfigurationssynchronisierung mit Passkey-, Master-Passwort- und Wiederherstellungscode-Entsperrung
 category: Guides
 tags:
   - account
@@ -8,13 +8,13 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "5530b0697303f1ea"
-sourceCommit: "be639ddfad898be528e9fca6a458b8d9e174e206"
+sourceHash: "ccced160d151eeeb"
+sourceCommit: "6cfcb0017e6db164abaf81c7e0a10d0d8086370b"
 ---
 
 # Konfigurationsspeicher
 
-Der Konfigurationsspeicher bietet Zero-Knowledge-verschlüsselte Synchronisierung Ihrer CLI-Konfiguration über Geräte hinweg. Ihre Konfigurationen werden clientseitig mit einem Content Encryption Key (CEK) verschlüsselt, der Server sieht niemals Klartextdaten.
+Der Konfigurationsspeicher synchronisiert eine CLI-Konfiguration über Geräte hinweg. Konfigurationen werden auf dem Gerät mit einem Content Encryption Key (CEK) verschlüsselt, den der Server nie besitzt. Der Abschnitt [Sicherheit](#security) beschreibt genau, wovor das schützt und wovor nicht.
 
 ## Entsperrmethoden (Key-Slots)
 
@@ -26,7 +26,7 @@ Es gibt eine CEK pro Speicher, die für jede Entsperrmethode unabhängig verpack
 | **Master-Passwort** | Ein selbst gewähltes Passwort, gestreckt mit PBKDF2-SHA256 (600.000 Iterationen) | Funktioniert ohne PRF-fähige Hardware; ermöglicht außerdem die headless CLI-Einbindung |
 | **Wiederherstellungscode** | Ein generierter Code der Form `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Wird bei der Erstellung nur einmal angezeigt; sicher aufbewahren |
 
-Jede Methode speist dieselbe Verarbeitungskette: Der Slot liefert ein Geheimnis, das sich mit einem serverseitigen Geheimnis kombiniert, um die CEK zu entschlüsseln. Keine der beiden Hälften reicht allein aus, sodass die Zero-Knowledge-Eigenschaft für alle drei Methoden gilt - das Slot-Geheimnis erreicht den Server nie.
+Jede Methode speist dieselbe Verarbeitungskette: Der Slot liefert ein Geheimnis, das sich mit einem serverseitigen Geheimnis kombiniert, um die CEK zu entschlüsseln. Keine der beiden Hälften reicht allein aus, und das Slot-Geheimnis erreicht den Server nie. Ein Master-Passwort-Slot ist der schwächste der drei: Der Server verfügt über alles, was nötig ist, um Passwortversuche offline zu testen, weshalb das Passwort stark sein muss. Passkey- und Wiederherstellungscode-Slots haben diese Schwäche nicht.
 
 Slots werden im Portal auf der Seite Konfigurationsspeicher verwaltet. Organisationen, die eine reine Hardware-Entsperrung wünschen, können die Richtlinie **Passkey erforderlich** aktivieren, die Nicht-Passkey-Slots für den gesamten Speicher ablehnt und widerruft.
 
@@ -87,7 +87,23 @@ Nach der Aktivierung führt die Konfiguration einen vollständigen **Lese-Cache*
 
 - **Lesevorgänge funktionieren offline.** Der zwischengespeicherte Inhalt wird mit einer Veraltungswarnung auf stderr ausgeliefert, versehen mit der zwischengespeicherten Version und dem Zeitstempel (`cachedVersion` / `cachedAt`).
 - **Schreibvorgänge erfordern den Server und schlagen sicher fehl.** Es gibt keine Offline-Schreibwarteschlange: Ein Schreibvorgang, der den Server nicht erreicht, bricht mit einer Fehlermeldung ab, die den Server benennt. Ist ein Schreibbefehl erfolgreich, ist die Änderung auf dem Server.
-- **Gleichzeitige Änderungen von zwei Geräten** werden per Pull-Replay-Repush auf Ebene des Ressourcen-Buckets aufgelöst, sodass eine zeitgleiche Änderung an anderer Stelle Ihre nicht überschreibt.
+- **Gleichzeitige Änderungen von zwei Geräten** werden per Pull-Replay-Repush aufgelöst: Der Server akzeptiert einen Push nur auf der Version, die er ersetzt, und der unterlegene Push wird auf die aktuelle Kopie repliziert, sodass eine zeitgleiche Änderung an anderer Stelle nicht überschrieben wird.
+- **Eine lokale Konfiguration** (ohne `remote`-Block) ist davon nicht betroffen und funktioniert vollständig offline.
+
+## Was synchronisiert wird
+
+Alles in einer Konfiguration wird synchronisiert, einschließlich der Netzwerk-ID jedes Repositorys, außer diesen geräteabhängigen Feldern: `schemaVersion`, `version`, `remote`, `encryption`, `renetPath`, `credentials.masterPasswordVerifier` sowie den Login-Feldern `account.accountServer` und `account.e2ePublicKey`. An- und Abmelden erfolgen pro Gerät.
+
+## Versionen und Wiederherstellung
+
+Der Server behält die letzten 50 Versionen jeder Konfiguration.
+
+```bash
+rdc config remote versions
+rdc config remote restore <version>
+```
+
+Eine Wiederherstellung veröffentlicht den alten Inhalt als neue Version auf der aktuellen; die Versionsnummer geht dabei nie zurück. Jedes Gerät erhält den wiederhergestellten Inhalt beim nächsten Pull, und die Wiederherstellung wird im Audit-Log erfasst.
 
 ## Schlüsselrotation
 
@@ -96,6 +112,7 @@ Beim Rotieren der CEK des Speichers wird diese unter einer neuen Generation neu 
 - **Wiederherstellungscodes werden bei jeder Rotation ungültig** - erzeugen und sichern Sie danach einen neuen
 - Ein **Master-Passwort-Slot** übersteht die Rotation nur, wenn das Passwort im Rotationsassistenten erneut eingegeben wird
 - Ein Slot, der bei einer älteren Generation zurückbleibt, wird als veraltet gemeldet, statt mit einem kryptischen Entschlüsselungsfehler zu scheitern
+- Die Konfigurations-Token der anderen Mitglieder werden widerrufen, und ein Gerät, das noch den alten Schlüssel besitzt, wird aufgefordert, sich mit `rdc config remote enable` erneut zu aktivieren
 
 ## Mitgliederverwaltung
 
@@ -111,11 +128,23 @@ Konfigurationen im Speicher sind zusätzlich pro Team begrenzt, aber diese Begre
 
 ## Sicherheit
 
-- **Zero-Knowledge**: Der Server speichert dreifach verschlüsselte Daten, die er nicht entschlüsseln kann
-- **Split-Key**: Die Entschlüsselung erfordert sowohl Ihr Slot-Geheimnis (Client) als auch das Server-Geheimnis (Server)
-- **Rotierende Token**: Jeder API-Aufruf verwendet ein neues Token; alte Token zerstören sich selbst
-- **IP-Bindung**: Token werden bei der ersten Verwendung an Ihre IP gebunden
-- **Sofortiger Widerruf**: Entfernte Mitglieder verlieren den Zugriff innerhalb von 30 Sekunden
+**Was geschützt ist.** Gespeicherte Konfigurationen sind vertraulich gegenüber einer Kompromittierung des Server-Speichers und gegenüber einem passiven Betreiber. Jeder Blob ist an seinen Speicher, seine Konfiguration, sein Team und seine Version gebunden, sodass der Server den Blob einer Konfiguration nicht gegen den einer anderen austauschen oder unbemerkt verändern kann.
+
+**Was nicht geschützt ist.** Ein Betreiber, der bösartigen Portal-Code ausliefert, kann den Schlüssel im Browser auslesen. Ein Betreiber kann einem Gerät, das eine neuere Version noch nie gesehen hat, auch diese neueste Version vorenthalten.
+
+| Der Server kann | Der Server kann nicht |
+|---|---|
+| Konfigurations-IDs, Teams, Versionsnummern, Zeitstempel, Blob-Größen, die Anzahl der in einer Konfiguration festgeschriebenen Felder samt deren Typ sowie Client-IP-Adressen sehen | Maschinen-, Repository- oder Speichernamen (sie sind geblindet) oder irgendeinen Konfigurationswert sehen |
+| Konfigurationen und ihren Verlauf ablehnen, verzögern oder löschen | Den Inhalt einer Konfiguration als den einer anderen ausgeben oder ihn verändern, ohne dass das Gerät es bemerkt |
+| Einem Gerät, das eine neuere Version nie gesehen hat, eine alte Version ausliefern | Der CLI eine Version ausliefern, die älter ist als eine bereits gesehene: Die CLI lehnt sie ab |
+| Master-Passwort-Vermutungen offline testen | Einen Passkey- oder Wiederherstellungscode-Slot öffnen |
+
+Weitere Schutzmaßnahmen:
+
+- **Geteilter Schlüssel**: Die Entschlüsselung erfordert sowohl das Slot-Geheimnis (auf dem Gerät) als auch das Server-Geheimnis
+- **Löschen erfordert Kenntnis**: Das Entfernen eines festgeschriebenen Werts aus einer Konfiguration erfordert den Nachweis, dass der Wert bekannt war, sodass ein Akteur mit nur teilweisem Zugriff Felder nicht stillschweigend entfernen kann
+- **Rotierende Token**: Jede Anfrage rotiert das Konfigurations-Token; ein Token ist an die IP-Adresse seiner ersten Verwendung gebunden und läuft nach 7 Tagen ab
+- **Widerruf**: Das Entfernen eines Mitglieds löscht dessen Key-Slots und Token sofort; bereits abgerufene Inhalte bleiben auf dessen Gerät, und eine CEK-Rotation verhindert, dass ein zurückbehaltener Schlüssel spätere Versionen öffnen kann
 
 ## Fehlerbehebung
 
@@ -125,7 +154,8 @@ Konfigurationen im Speicher sind zusätzlich pro Team begrenzt, aber diese Begre
 | X25519 not supported | Browser-Version zu alt | Aktualisieren Sie auf Chrome 133+, Edge 133+, Firefox 130+ oder Safari 17+ |
 | Already configured | Speicher existiert bereits für Ihre Organisation | Besuchen Sie /account/config-storage zur Verwaltung |
 | Config storage not configured | Server fehlt Blob-Speicher | Kontaktieren Sie Ihren Administrator zur Konfiguration von R2/RustFS |
-| Token expired | Keine Aktivität seit 24 Stunden | Führen Sie einen beliebigen Konfigurationsspeicher-Befehl zum Aktualisieren aus |
+| Token expired | Keine Aktivität seit 7 Tagen, oder die Maschine hat das Netzwerk gewechselt | Wird automatisch bei der Anmeldung erneuert; ist keine Anmeldung gespeichert, `rdc subscription login` oder `rdc config remote enable` ausführen |
+| Config came back at an older version | Der Server hat eine ältere Kopie zurückgegeben, als dieses Gerät bereits gesehen hat | Lokal wurde nichts geändert; erneut versuchen und melden, falls es anhält |
 | Cannot remove last member | Würde den Speicher dauerhaft sperren | Fügen Sie zuerst ein weiteres Mitglied hinzu |
 | Stale slot | Slot stammt aus der Zeit vor der letzten Schlüsselrotation | Fügen Sie den Slot erneut hinzu (Wiederherstellungscodes müssen nach jeder Rotation neu erzeugt werden) |
 
