@@ -65,6 +65,13 @@ function vacuityCheck(spec: GateSpec, code: number | null, output: string): stri
   return 'exited 0 without a single PASS: line (asserted nothing)';
 }
 
+/**
+ * The part of a gate's declared env that means something outside Actions. A value holding a `${{ ... }}` expression (a ref name, a secret) is evaluated only by the workflow; injected verbatim it became a literal string, and three gates that read a branch or a token failed locally on it (2026-09-26).
+ */
+export function localEnv(env: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(env).filter(([, value]) => !value.includes('${{')));
+}
+
 export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome> {
   return new Promise((resolve) => {
     const started = Date.now();
@@ -75,7 +82,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
     // The gate's declared `env` (the same values its CI step sets) goes into the child. Without it the local run was not the CI run: tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL was declared here and never applied, so the gate failed in every clean clone and passed in CI (2026-09-26).
     const child = spawn('bash', ['-c', spec.run], {
       cwd: opts.cwd,
-      env: spec.env ? { ...process.env, ...spec.env } : process.env,
+      env: spec.env ? { ...process.env, ...localEnv(spec.env) } : process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 

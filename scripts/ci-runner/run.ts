@@ -594,6 +594,15 @@ async function selftest(): Promise<number> {
     }
   );
   require_(bare.code !== 0, 'CONTROL: without a declared env the variable must be absent');
+  // A GitHub expression is the workflow's to evaluate, never a literal to inject.
+  const exprRun = await execGate(
+    {
+      ...syntheticSpec('selftest:env-expr', '[ -z "$CI_RUNNER_SELFTEST_EXPR" ]'),
+      env: { CI_RUNNER_SELFTEST_EXPR: '${{ github.ref_name }}' },
+    },
+    { cwd: REPO_ROOT, mergeOutput: false }
+  );
+  require_(exprRun.code === 0, 'a ${{ }} env value was injected locally as a literal');
 
   // GLOB SEMANTICS, both directions. These three were all FALSE before the `**\/` fix, and the first one is a live defect: manifest.ts declares `paths: ['**\/*.sh']` for check:ci-shell-size under a comment saying "deliberately not path-narrowed", while the gate itself enumerates with the git pathspec `*.sh`, which DOES match at the root.
   require_(globToRegExp('**/*.sh').test('run.sh'), '**/*.sh must match a root-level run.sh');
