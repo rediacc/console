@@ -24,7 +24,7 @@ This is no longer a target. It is a transcript of the shipped tree, generated fr
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
                 field {get set unset rotate list}    audit {log tail verify}
-                remote {enable disable status refresh}    ssh {set show remove}
+                remote {enable disable status refresh versions restore}    ssh {set show remove}
 rdc machine:    add remove list status setup scan-keys health prune
                 provision deprovision
                 provider {add remove list}
@@ -66,6 +66,7 @@ Nine differences. The first six are deliberate and each is traceable to a ruling
 | `backup strategy {set remove list show}` | `backup strategy {set remove list show bind unbind}` | `bind`/`unbind` landed with the backup-strategy binding work in #524 and this transcript was not updated with them. Caught only when `check:ci-design-tree` was run locally: that gate is in `npm run ci` but no workflow invokes it, so main merged the drift green. |
 | `backup` with no chunk-store verbs | `backup {snapshot verify manifests usage browse}` + `backup retention {set clear}` | The backup-storage program replaced the rclone/OneDrive push with a content-addressed chunk store, and seven leaves came with it: `snapshot` writes, `verify` checks a stored snapshot end to end, `manifests` and `usage` read the store, `browse` lists what a repository actually contains, and `retention {set clear}` is the policy the pruner reads. `restore` was already drawn, but it now materializes a chunk-store snapshot rather than a pushed image. Not drift in the §1.1 sense: the program is documented at `docs/backup-storage/`, and this transcript simply postdates it. |
 | `storage browse` as the only file listing | `backup browse` (local, read-only) | `storage browse` remains, and browses a live rclone remote. `backup browse` answers a different question — what is inside a REPOSITORY — and it answers it without a server, a network, or credentials, which is what makes it usable in a disaster. It cannot be served from the chunk store: the manifest maps grid cells to the SHA-256 of their CIPHERTEXT and carries no filesystem data at all, so a listing has to come from opening the image. The reasoning and the staged plan are at `agent/plans/PLAN-chunk-store-browse-DECISION.md`. |
+| `config remote {enable disable status refresh}` | `config remote {enable disable status refresh versions restore}` | PLAN-config-sync-hardening T16 (operator ruling 2026-09-25, "plus versioning"): the server kept every pushed version but no client could reach one. `versions` lists them; `restore <version>` publishes an old version as the NEWEST one through the normal compare-and-swap push, so the rollback defences stay intact. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

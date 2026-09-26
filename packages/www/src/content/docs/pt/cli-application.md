@@ -7,7 +7,7 @@ order: 2
 language: pt
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/pt/cli.json
-sourceHash: "8f8cc3e1bc5fd33b"
+sourceHash: "45817ef518e3ef75"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -248,6 +248,29 @@ rdc config remote status
 ```bash
 rdc config remote refresh
 ```
+
+<a id="cli-local-config-remote-versions"></a>
+#### versions
+
+{{t:cli.commands.config.remote.versions.description}}
+
+```bash
+rdc config remote versions
+```
+
+<a id="cli-local-config-remote-restore"></a>
+#### restore
+
+{{t:cli.commands.config.remote.restore.description}}
+
+```bash
+rdc config remote restore <version> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-field"></a>
 ### 1.12 field
