@@ -42,14 +42,12 @@ SHELLED OUT, all of them the twin's contract with the machine:
   * `ls -la` (`:205`, `:242`) and `sha256sum` (`:239`). Their stdout IS the
     script's output, so they are run rather than reimplemented.
 
-NOT SHELLED OUT: `grep -oE` / `grep -xE` / `sed` / `sort -u` inside the version check, which are `re` and `sorted(set(...))`; `mkdir -p`, `rm -f`, the glob expansions and the `-f` tests. The grep divergence is real and named: on a machine with no `grep` the twin's pipeline collapses to an empty result and the check degrades to a warning (see DEFECT 1, which reaches the same end by
-a different door), while this port still answers. The scratch PATH the differential runs on carries a real `grep`, so both sides agree there.
+NOT SHELLED OUT: `grep -oE` / `grep -xE` / `sed` / `sort -u` inside the version check, which are `re` and `sorted(set(...))`; `mkdir -p`, `rm -f`, the glob expansions and the `-f` tests. The grep divergence is real and named: on a machine with no `grep` the twin's pipeline collapses to an empty result and the check degrades to a warning (see DEFECT 1, which reaches the same end by a different door), while this port still answers. The scratch PATH the differential runs on carries a real `grep`, so both sides agree there.
 
 -----------------------------------------------------------------------------
 DEFECTS CARRIED, NOT FIXED
 -----------------------------------------------------------------------------
-DEFECT 1, THE VERSION CHECK IS DISARMED BY A MISSING `strings`, SILENTLY. `:94-95` require `jq` and `zstd`. Nothing requires `strings`, and `:135-136` redirect its stderr to `/dev/null`, which also swallows bash's own `strings: command not found`. With `strings` absent the collected set is empty, `:147-150` reports `no version string found; cannot verify` as a WARNING and returns
-0, and the run completes. Driven, with a container whose criu really is the stale 3.17.1 the lockfile forbids:
+DEFECT 1, THE VERSION CHECK IS DISARMED BY A MISSING `strings`, SILENTLY. `:94-95` require `jq` and `zstd`. Nothing requires `strings`, and `:135-136` redirect its stderr to `/dev/null`, which also swallows bash's own `strings: command not found`. With `strings` absent the collected set is empty, `:147-150` reports `no version string found; cannot verify` as a WARNING and returns 0, and the run completes. Driven, with a container whose criu really is the stale 3.17.1 the lockfile forbids:
 
     (strings present)  x criu-linux-amd64 declares version(s) [3.17.1] but the
                          lockfile requires 4.2.1                        rc=1
@@ -281,7 +279,40 @@ def verify_extracted_version(
     )
 
 
+def _split_only_flag(argv: list[str]) -> tuple[list[str], str, int | None, str]:
+    """Strips a port-only `--only {linux,cross,all}` out of `argv` before it
+    reaches `parse_args`.
+
+    The twin has no such flag, so this lives entirely outside the twin-mirroring parser above: `parse_args`'s return shape is a fixed 5-tuple the differential drives directly (`test_parse_args_is_exercised_directly_in_both_directions`), and folding a 6th field into it would break that regardless of value. `--only` exists so the two-leg CI split (T2.6, PLAN-ci-time-budget) can ask this script for just the Linux binaries or just the Darwin/Windows cross-compile without a second script. Returns `(remaining_argv, only, exit_code, message)`; `only` defaults to `"all"`, the twin's one and only behaviour.
+    """
+    remaining: list[str] = []
+    only = "all"
+    i = 0
+    while i < len(argv):
+        if argv[i] == "--only":
+            if i + 1 >= len(argv):
+                return remaining, only, 1, "--only requires a value (linux, cross, or all)"
+            only = argv[i + 1]
+            if only not in ("linux", "cross", "all"):
+                return (
+                    remaining,
+                    only,
+                    1,
+                    "--only must be one of: linux, cross, all (got %r)" % only,
+                )
+            i += 2
+        else:
+            remaining.append(argv[i])
+            i += 1
+    return remaining, only, None, ""
+
+
 def main(argv: list[str]) -> int:
+    argv, only, code, message = _split_only_flag(argv)
+    if code is not None:
+        print(message, file=sys.stderr, flush=True)
+        return code
+
     tag, output_dir, registry, code, message = parse_args(argv)
     if code is not None:
         if message.startswith("Unknown option: "):
@@ -315,23 +346,30 @@ def main(argv: list[str]) -> int:
 
     # `:59-64`. `trap cleanup EXIT`, which fires on every exit below.
     try:
-        return _extract(root, output, container_id)
+        return _extract(root, output, container_id, only)
     finally:
         with open(os.devnull, "wb") as sink:
             _run(["docker", "rm", container_id], stdout=sink, stderr=sink)
 
 
-def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int:
-    """Everything the twin does between `trap cleanup EXIT` (`:64`) and the end, split out only so the trap's `try/finally` reads as one statement."""
+def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str, only: str = "all") -> int:
+    """Everything the twin does between `trap cleanup EXIT` (`:64`) and the end, split out only so the trap's `try/finally` reads as one statement.
+
+    `only` is the port-only extension from `_split_only_flag`: `"linux"` runs just the block below (the two pre-built Linux binaries, no container source needed) and `"cross"` runs just the asset-staging / cross-compile block after it (the twin's `:91-235`), each producing only its own slice under `output` so `bash_glob("renet-*", output)` at the checksums step below naturally scopes to whichever slice ran. `"all"`, the default, is byte-for-byte the twin's one and only path.
+    """
     # `:66-71`.
-    for name in RENET_LINUX_BINARIES:
-        log.info("Extracting %s..." % name)
-        code = _run(["docker", "cp", "%s:/opt/renet/%s" % (container_id, name), "%s/" % output])
-        if code != 0:
-            return code
+    if only in ("all", "linux"):
+        for name in RENET_LINUX_BINARIES:
+            log.info("Extracting %s..." % name)
+            code = _run(["docker", "cp", "%s:/opt/renet/%s" % (container_id, name), "%s/" % output])
+            if code != 0:
+                return code
 
     # `:74`. `cd "$OUTPUT_DIR" && pwd` is bash's LOGICAL pwd, which normalises without resolving symlinks; `os.path.abspath` is the same operation.
     output = pathlib.Path(os.path.abspath(output))
+
+    if only not in ("all", "cross"):
+        return _finish(output)
 
     # `:91-95`.
     log.step("Staging embedded assets (per-arch, per-class) from container...")
@@ -451,6 +489,11 @@ def _extract(root: pathlib.Path, output: pathlib.Path, container_id: str) -> int
             if code != 0:
                 return code
 
+    return _finish(output)
+
+
+def _finish(output: pathlib.Path) -> int:
+    """`:237-243`, shared by every `only` path: checksums plus the final listing, over whatever this run actually produced under `output`."""
     # `:237-239`. `cd "$OUTPUT_DIR"` for the rest, so every path is a basename.
     log.step("Generating checksums...")
     with open(output / "checksums.sha256", "wb") as dest:

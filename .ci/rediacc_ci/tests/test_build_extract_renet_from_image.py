@@ -719,3 +719,95 @@ def test_a_planted_defect_is_caught_only_by_the_staged_tree(tmp_path) -> None:
     assert old_t[2] != new_t[2], "the tree MUST diverge, or this suite proves nothing"
     assert "private/renet/pkg/embed/assets/amd64/base/criu-linux-amd64.zst" in old_t[2]
     assert "private/renet/pkg/embed/assets/criu-linux-amd64.zst" in new_t[2]
+
+
+# --------------------------------------------------------------------------- `--only` (port-only, no twin arm) ---------------------------------------------------------------------------
+#
+# The twin has no `--only` flag (T2.6, PLAN-ci-time-budget: the two-leg CI split needs one script that can run just the Linux extraction or just the Darwin/Windows cross-compile). These cases therefore drive the port directly with `_run(..., "new", ...)` rather than through `run_both`/`_agree`, which assume both sides understand every flag.
+
+
+def test_only_linux_extracts_just_the_linux_binaries(tmp_path) -> None:
+    root = fixture(tmp_path)
+    _reset(root)
+    proc, calls = _run(root, "new", args=("--tag", "abc1234", "--only", "linux"))
+    assert proc.returncode == 0, proc.stderr
+    files = _artifacts(root)
+    assert files["private/bin/renet-linux-amd64"] == "PAYLOAD renet-linux-amd64\n"
+    assert files["private/bin/renet-linux-arm64"] == "PAYLOAD renet-linux-arm64\n"
+    # No asset staging and no cross-compile: neither `docker cp` of an asset, `zstd`, `go`, nor `build.sh` ran, and only the two linux binaries are checksummed.
+    assert not any(k.endswith(".zst") for k in files)
+    assert "FAKEBIN zstd" not in calls
+    assert "FAKEBIN go" not in calls
+    assert "FAKEBIN build.sh" not in calls
+    checksum_names = sorted(
+        line.split()[-1] for line in files["private/bin/checksums.sha256"].splitlines()
+    )
+    assert checksum_names == ["renet-linux-amd64", "renet-linux-arm64"]
+
+
+def test_only_cross_stages_assets_and_cross_compiles_without_linux_binaries(tmp_path) -> None:
+    root = fixture(tmp_path)
+    _reset(root)
+    proc, calls = _run(root, "new", args=("--tag", "abc1234", "--only", "cross"))
+    assert proc.returncode == 0, proc.stderr
+    files = _artifacts(root)
+    assert "private/bin/renet-linux-amd64" not in files
+    assert "private/bin/renet-linux-arm64" not in files
+    for name in (
+        "renet-darwin-amd64",
+        "renet-darwin-arm64",
+        "renet-windows-amd64.exe",
+        "renet-windows-arm64.exe",
+    ):
+        assert "private/bin/%s" % name in files
+    # Asset staging and the proxy compose still ran: the cross-compiled binaries embed the base-class assets via `//go:embed`.
+    staged = sorted(k for k in files if k.endswith(".zst"))
+    assert staged == [
+        "private/renet/pkg/embed/assets/amd64/base/criu-linux-amd64.zst",
+        "private/renet/pkg/embed/assets/amd64/base/rsync-linux-amd64.zst",
+        "private/renet/pkg/embed/assets/amd64/cluster/zot-linux-amd64.zst",
+        "private/renet/pkg/embed/assets/arm64/base/criu-linux-arm64.zst",
+        "private/renet/pkg/embed/assets/arm64/base/rsync-linux-arm64.zst",
+        "private/renet/pkg/embed/assets/arm64/cluster/zot-linux-arm64.zst",
+    ]
+    assert "FAKEBIN build.sh" in calls
+    checksum_names = sorted(
+        line.split()[-1] for line in files["private/bin/checksums.sha256"].splitlines()
+    )
+    assert checksum_names == [
+        "renet-darwin-amd64",
+        "renet-darwin-arm64",
+        "renet-windows-amd64.exe",
+        "renet-windows-arm64.exe",
+    ]
+
+
+def test_only_flag_rejects_an_unknown_value(tmp_path) -> None:
+    root = fixture(tmp_path)
+    _reset(root)
+    proc, calls = _run(root, "new", args=("--tag", "abc1234", "--only", "bogus"))
+    assert proc.returncode == 1
+    assert "--only must be one of: linux, cross, all" in proc.stderr
+    assert calls == "", "nothing should have been executed"
+
+
+def test_only_flag_with_no_value_refuses(tmp_path) -> None:
+    root = fixture(tmp_path)
+    _reset(root)
+    proc, calls = _run(root, "new", args=("--tag", "abc1234", "--only"))
+    assert proc.returncode == 1
+    assert "--only requires a value" in proc.stderr
+    assert calls == "", "nothing should have been executed"
+
+
+def test_only_all_is_byte_identical_to_the_twins_one_path(tmp_path) -> None:
+    """`--only all` is spelled out explicitly and must produce the exact same artifacts, streams and call log as passing no `--only` at all."""
+    root = fixture(tmp_path)
+    _reset(root)
+    default, _ = _run(root, "new")
+    default_files = _artifacts(root)
+    _reset(root)
+    explicit, _ = _run(root, "new", args=("--tag", "abc1234", "--only", "all"))
+    explicit_files = _artifacts(root)
+    assert default.returncode == explicit.returncode == 0
+    assert default_files == explicit_files

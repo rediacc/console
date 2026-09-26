@@ -9,10 +9,22 @@
 # tutorial changes this run automatically; a doc without a script or a script
 # without a doc is DRIFT and fails the run before anything executes.
 #
-# Cross-tutorial machine state is deliberate: nothing is reset between
-# tutorials (renet#60 escaped because every command passed alone and only the
-# sequence broke). Each script owns its repo-level setup/cleanup; the machine,
-# daemons, and eBPF state persist across the whole sequence.
+# Cross-tutorial machine state is deliberate WITHIN one invocation: nothing is
+# reset between tutorials (renet#60 escaped because every command passed alone
+# and only the sequence broke). Each script owns its repo-level setup/cleanup;
+# the machine, daemons, and eBPF state persist across whatever slice of the
+# sequence one invocation runs.
+#
+# T2.16 (PLAN-ci-time-budget, D-W4): CI no longer runs one invocation over all
+# 18 -- it runs `TUTORIAL_SHARD` shards in parallel, each its own freshly
+# provisioned machine, so state stops carrying across a shard boundary. That
+# is the operator's decision, not a proven property of the scripts: nothing
+# here has verified that no tutorial-<slug>.sh still reads state only a
+# specific PRECEDING tutorial leaves behind. Two tutorials the same shard's
+# contiguous slice keeps adjacent still run back-to-back on one machine
+# exactly as before, so an undiscovered dependency between neighbours is
+# unaffected either way; one crossing a shard boundary is what a live sharded
+# run is what actually proves.
 #
 # Environment (all optional; defaults in lib/tutorial-helpers.sh and the
 # scripts themselves):
@@ -21,8 +33,14 @@
 #   TUTORIAL_BACKUP_HOST/_USER        second worker (ssh-keys, delta, migration)
 #   TUTORIAL_LOG_DIR      per-tutorial logs (default: mktemp -d)
 #   TUTORIAL_ONLY         space-separated slugs: run just these, sequence order
+#   TUTORIAL_SHARD        "i/N" (1-based): run only the i-th of N contiguous
+#                          slices of the full sequence, in order. Mutually
+#                          exclusive with TUTORIAL_ONLY. Balances by COUNT,
+#                          not measured duration (T2.9's approach), since this
+#                          lane has no recorded per-tutorial durations yet.
 #
-# Exit codes: 0 all green; 1 at least one tutorial failed; 2 drift/precheck.
+# Exit codes: 0 all green; 1 at least one tutorial failed; 2 drift/precheck/
+# bad TUTORIAL_SHARD.
 
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -68,6 +86,39 @@ for script in "$SCRIPT_DIR"/tutorial-*.sh; do
     fi
 done
 [[ $drift -ne 0 ]] && exit 2
+
+# ── Optional shard (contiguous slice of the full sequence) ──────────────────
+if [[ -n "${TUTORIAL_SHARD:-}" ]]; then
+    if [[ -n "${TUTORIAL_ONLY:-}" ]]; then
+        echo "TUTORIAL_SHARD and TUTORIAL_ONLY are mutually exclusive" >&2
+        exit 2
+    fi
+    if [[ ! "$TUTORIAL_SHARD" =~ ^[0-9]+/[0-9]+$ ]]; then
+        echo "TUTORIAL_SHARD must be 'i/N' (1-based), got '$TUTORIAL_SHARD'" >&2
+        exit 2
+    fi
+    shard_index="${TUTORIAL_SHARD%%/*}"
+    shard_of="${TUTORIAL_SHARD##*/}"
+    total=${#sequence[@]}
+    if [[ "$shard_of" -lt 1 || "$shard_index" -lt 1 || "$shard_index" -gt "$shard_of" ]]; then
+        echo "TUTORIAL_SHARD '$TUTORIAL_SHARD': index must be between 1 and $shard_of" >&2
+        exit 2
+    fi
+    # Contiguous chunks, ceil(total/N): D-W4 treats every tutorial as an
+    # independent unit (scripts/ci-runner/unit-enumerators.ts opsTutorialUnits
+    # emits none of them with a `needs`), so balancing by COUNT is enough
+    # until this lane has recorded per-tutorial durations for T2.9's
+    # measured-duration balancing to use.
+    chunk=$(((total + shard_of - 1) / shard_of))
+    start=$(((shard_index - 1) * chunk))
+    if [[ "$start" -ge "$total" ]]; then
+        echo "TUTORIAL_SHARD $TUTORIAL_SHARD: shard $shard_index has no tutorials ($total total, chunk size $chunk)" >&2
+        exit 2
+    fi
+    end=$((start + chunk))
+    [[ "$end" -gt "$total" ]] && end=$total
+    sequence=("${sequence[@]:$start:$((end - start))}")
+fi
 
 # ── Optional subset (sequence order preserved) ──────────────────────────────
 if [[ -n "${TUTORIAL_ONLY:-}" ]]; then
