@@ -72,8 +72,10 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
     const err: string[] = [];
 
     // bash, not sh: several gate bodies use bashisms, and npm runs scripts through a shell anyway. stdin is closed so a gate that waits on input fails instead of hanging the whole pool.
+    // The gate's declared `env` (the same values its CI step sets) goes into the child. Without it the local run was not the CI run: tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL was declared here and never applied, so the gate failed in every clean clone and passed in CI (2026-09-26).
     const child = spawn('bash', ['-c', spec.run], {
       cwd: opts.cwd,
+      env: spec.env ? { ...process.env, ...spec.env } : process.env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 

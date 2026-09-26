@@ -579,6 +579,22 @@ async function selftest(): Promise<number> {
   );
   require_(!text.includes('selftest-pass'), "a passing gate's output must stay quiet");
 
+  // A GATE'S DECLARED ENV REACHES ITS PROCESS, as its CI step's `env:` does. execGate spawned without it, so tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL never applied locally and the gate failed in every clean clone while passing in CI (2026-09-26). The control spec fails unless the variable arrives.
+  const envSpec = {
+    ...syntheticSpec('selftest:env', '[ "$CI_RUNNER_SELFTEST_ENV" = arrived ]'),
+    env: { CI_RUNNER_SELFTEST_ENV: 'arrived' },
+  };
+  const envRun = await execGate(envSpec, { cwd: REPO_ROOT, mergeOutput: false });
+  require_(envRun.code === 0, "a gate's declared env did not reach its process");
+  const bare = await execGate(
+    syntheticSpec('selftest:env-control', '[ "$CI_RUNNER_SELFTEST_ENV" = arrived ]'),
+    {
+      cwd: REPO_ROOT,
+      mergeOutput: false,
+    }
+  );
+  require_(bare.code !== 0, 'CONTROL: without a declared env the variable must be absent');
+
   // GLOB SEMANTICS, both directions. These three were all FALSE before the `**\/` fix, and the first one is a live defect: manifest.ts declares `paths: ['**\/*.sh']` for check:ci-shell-size under a comment saying "deliberately not path-narrowed", while the gate itself enumerates with the git pathspec `*.sh`, which DOES match at the root.
   require_(globToRegExp('**/*.sh').test('run.sh'), '**/*.sh must match a root-level run.sh');
   require_(
