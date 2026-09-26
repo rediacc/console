@@ -19,3 +19,5 @@ Updated 2026-09-25 ~21:30Z. PAUSED by operator ("do not start new sub-agents. I'
 - Offline state writes on remote configs fail closed; local configs must keep working offline (verified: config-file-storage.ts:382 and synced-write.ts:42 route only configs with `remote`); name the cause in each caller's error and add a local-config test (new item).
 - First thing tomorrow: re-time the 4 slow gates on the idle machine, push console + account + renet, THEN finish config sync.
 - Final live check: two local config dirs on this machine acting as two devices, against eu, on a throwaway test repo; never the operator's real repos.
+
+- Push 2026-09-26: bd0278084 proof recorded in a follow-up commit (block_unproven_bulk_transform).
