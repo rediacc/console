@@ -36,10 +36,7 @@
 
 import path from 'node:path';
 
-import type {
-  DocumentNode,
-  Node as MomoaNode,
-} from '@humanwhocodes/momoa';
+import type { DocumentNode, Node as MomoaNode } from '@humanwhocodes/momoa';
 import { parse as momoaParse } from '@humanwhocodes/momoa';
 import { parseSync, visitorKeys as jsVisitorKeys } from 'oxc-parser';
 
@@ -450,4 +447,18 @@ function toFinding(
     nodeType: descriptor.node.type,
     fixes,
   };
+}
+
+/** Apply every reported fix, in one non-iterative pass, sorted by range start. Sufficient for this repo's rules: at most one fix is ever reported per run today (`sorted-keys` stops at the first violation; `prefer-const-arrays` reports independent, non-overlapping arrays). */
+export function applyFixes(code: string, findings: Finding[]): string {
+  const fixes = findings.flatMap((f) => f.fixes).sort((a, b) => a.range[0] - b.range[0]);
+  let out = '';
+  let cursor = 0;
+  for (const fix of fixes) {
+    if (fix.range[0] < cursor) continue; // overlapping fix, skip rather than corrupt output
+    out += code.slice(cursor, fix.range[0]) + fix.text;
+    cursor = fix.range[1];
+  }
+  out += code.slice(cursor);
+  return out;
 }
