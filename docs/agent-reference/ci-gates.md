@@ -39,6 +39,7 @@ the schedule.
 | `npm run ci:list` | Every gate id and the exact command it runs |
 | `npm run ci -- --only 'check:ci-embed-*'` | Run a subset. Glob or comma-separated ids |
 | `npm run ci -- --lane quality-code --shard 2/4` | Run exactly one CI shard leg locally, from the committed `.ci/config/shards/<lane>.json` manifest (PLAN-ci-time-budget T2.10) |
+| `npm run ci -- --list-units test-account-e2e` | Print a test lane's units, one JSON object per line: the input to its shard manifest and its per-unit durations (T2.8) |
 | `npm run ci -- --skip check:ci-renet` | Run everything except a subset |
 | `npm run ci -- --fail-fast` | Stop at the first failure. Off by default, see below |
 | `npm run ci -- --json` | Machine-readable document on stdout, human stream on stderr |

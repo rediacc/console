@@ -41,6 +41,7 @@ import { buildGraph, type GateResult, runPool } from './pool';
 import { createReporter } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
+import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Per-gate process-tree profiling (agent/plans/PLAN-shell-resource-profiling.md). ON by default: captures land in .ci/cache/profiles (untracked), and the previous run's set is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
@@ -1130,7 +1131,22 @@ function resolveLaneShard(
   return known;
 }
 
+async function listUnits(lane: string | undefined): Promise<number> {
+  try {
+    for (const unit of await unitsFrom(lane ?? '', REPO_ROOT)) {
+      process.stdout.write(`${JSON.stringify(unit)}\n`);
+    }
+    return 0;
+  } catch (error) {
+    process.stderr.write(`ci-runner: ${(error as Error).message}\n`);
+    return 2;
+  }
+}
+
 async function main(): Promise<number> {
+  // `--list-units <lane>` prints the lane's test units, one JSON object per line (PLAN-ci-time-budget T2.8): the input to a shard manifest and to the per-unit durations T1.6/T3.2 measure. Handled before parseArgs, which knows only gate flags.
+  const listUnitsAt = process.argv.indexOf('--list-units');
+  if (listUnitsAt >= 0) return listUnits(process.argv[listUnitsAt + 1]);
   const opts = parseArgs(process.argv.slice(2));
   if (opts.selftest) return selftest();
 

@@ -4775,6 +4775,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // T3.1 (PLAN-ci-time-budget, spec W). No leg should cost more than 12 minutes and the pipeline should not exceed 20; this asserts the committed duration estimates (.ci/config/lane-durations.json, .ci/config/shards/*.json) against both ceilings before either is measured on a real runner. Registered in quality-code per the box; the workflow step and gates.lock entry come from the lead's `gate-bind --write` regeneration.
+    id: 'check:ci-lane-budget',
+    run: 'npm run check:ci-lane-budget',
+    gate: false,
+    leaves: ['scripts/gates/check-lane-budget.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: .ci/config/lane-durations.json holds no measurements yet: PLAN-ci-time-budget T3.2 (budget_report.py --refresh) and T1.6 (unit-duration artifacts) supply them, and until then checks 4 and 5 red on missing data, not on a real overrun. It moves to the quality-code lane ("Lane budget" step) when both land (2026-09-26).',
+    },
+  },
+  {
     // NO `env:`. The PR_HEAD_REF this carried was empty on push, schedule and the nightly dispatch, and nothing under `.ci/rediacc_ci/` reads it from the ambient environment -- the battery's tests scrub it or pin their own.
     id: 'check:ci-quality-gates',
     run: 'npm run check:ci-quality-gates',

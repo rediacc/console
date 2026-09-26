@@ -5099,6 +5099,18 @@
     }
   },
   {
+    "id": "check:ci-lane-budget",
+    "run": "npm run check:ci-lane-budget",
+    "gate": false,
+    "leaves": [
+      "scripts/gates/check-lane-budget.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: .ci/config/lane-durations.json holds no measurements yet: PLAN-ci-time-budget T3.2 (budget_report.py --refresh) and T1.6 (unit-duration artifacts) supply them, and until then checks 4 and 5 red on missing data, not on a real overrun. It moves to the quality-code lane (\"Lane budget\" step) when both land (2026-09-26)."
+    }
+  },
+  {
     "id": "check:ci-quality-gates",
     "run": "npm run check:ci-quality-gates",
     "gate": false,

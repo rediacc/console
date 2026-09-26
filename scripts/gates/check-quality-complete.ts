@@ -95,7 +95,8 @@
  * ---- end gate ----
  */
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -122,18 +123,43 @@ export const MIN_LOCK_ENTRIES = 100;
 
 // --------------------------------------------------------------------------- Receipts ---------------------------------------------------------------------------
 
-/** What one shard writes about itself when it finishes. */
+/**
+ * One unit's own outcome inside a UNIT-currency receipt (T2.11: a test lane's own
+ * Playwright file, Go package, pytest file, ... rather than a quality-* lock id).
+ */
+export interface ShardUnit {
+  id: string;
+  outcome: string;
+  ms: number;
+}
+
+/**
+ * What one shard writes about itself when it finishes.
+ *
+ * TWO CURRENCIES, ONE SHAPE. `write-shard-receipt.cjs`'s `UNITS_JSON` mode (T2.11) writes
+ * `units` for a test lane, which has no `steps.<id>.outcome` to count; its original
+ * `GATE_STEP_LOCK_MAP` mode writes `gates` for a quality-* lane, unchanged since B3.
+ * Exactly one of the two is present on any real receipt -- `receiptCount` and the
+ * validation in `readReceipts` below are what the rest of this file reads instead of
+ * either field directly, so a caller judging composition (clause below) or reporting a
+ * count does not need to know which currency a given lane uses.
+ */
 export interface ShardReceipt {
   lane: string;
   index: number;
   of: number;
   /** The leg's own conclusion. Only `success` is acceptable. */
   result: string;
-  /** How many gates the leg actually ran, so a re-planned shard cannot hide. */
-  gates: number;
+  /** LOCK-ID currency: how many gates the leg actually ran. */
+  gates?: number;
+  /** UNIT currency (T2.11): the leg's own units and their outcomes. */
+  units?: ShardUnit[];
   /** Where it was read from, for the message. */
   source: string;
 }
+
+/** How many things a receipt counted itself as having run, whichever currency it used. */
+export const receiptCount = (r: ShardReceipt): number => r.gates ?? r.units?.length ?? 0;
 
 export const shardKey = (lane: string, index: number, of: number): string =>
   `${lane}#${index}/${of}`;
@@ -174,13 +200,35 @@ export function readReceipts(dir: string): { receipts: ShardReceipt[]; problems:
       typeof r.lane !== 'string' ||
       typeof r.index !== 'number' ||
       typeof r.of !== 'number' ||
-      typeof r.result !== 'string' ||
-      typeof r.gates !== 'number'
+      typeof r.result !== 'string'
     ) {
       problems.push(
-        `${file}: a receipt needs lane, index, of, result and gates; got ${JSON.stringify(parsed)}`
+        `${file}: a receipt needs lane, index, of and result; got ${JSON.stringify(parsed)}`
       );
       continue;
+    }
+    // T2.11: exactly one currency, never both and never neither -- a receipt with both would let a caller pick whichever number is convenient, and one with neither has nothing this file's composition clause could ever compare against a plan.
+    const hasGates = typeof r.gates === 'number';
+    const hasUnits = Array.isArray(r.units);
+    if (hasGates === hasUnits) {
+      problems.push(
+        `${file}: a receipt needs EXACTLY ONE of a numeric \`gates\` (lock-id currency) or ` +
+          `a \`units\` array (unit currency, T2.11); got ${JSON.stringify(parsed)}`
+      );
+      continue;
+    }
+    if (hasUnits) {
+      const bad = (r.units as unknown[]).find(
+        (u) =>
+          typeof u !== 'object' ||
+          u === null ||
+          typeof (u as Partial<ShardUnit>).id !== 'string' ||
+          typeof (u as Partial<ShardUnit>).outcome !== 'string'
+      );
+      if (bad !== undefined) {
+        problems.push(`${file}: a unit entry needs id and outcome; got ${JSON.stringify(bad)}`);
+        continue;
+      }
     }
     receipts.push({ ...(r as ShardReceipt), source: file });
   }
@@ -248,14 +296,39 @@ export function judgeReceipts(
     }
   }
 
-  // THE COMPOSITION CLAUSE. Totals that agree over different contents is the failure shape this programme keeps paying for.
+  // THE COMPOSITION CLAUSE. Totals that agree over different contents is the failure shape this programme keeps paying for. Works over EITHER currency via `receiptCount`: a lock-id lane's `gates` and a test lane's `units.length` are compared against the same declared `ids.length`.
   for (const r of received) {
     const declaredShard = want.get(shardKey(r.lane, r.index, r.of));
-    if (declaredShard && declaredShard.ids.length !== r.gates) {
+    if (declaredShard && declaredShard.ids.length !== receiptCount(r)) {
+      const label = r.units !== undefined ? 'unit' : 'gate';
       findings.push(
-        `shard ${shardKey(r.lane, r.index, r.of)} ran ${r.gates} gate(s) but the plan gives it ` +
-          `${declaredShard.ids.length}. The leg and the aggregator read different plans.`
+        `shard ${shardKey(r.lane, r.index, r.of)} ran ${receiptCount(r)} ${label}(s) but the plan ` +
+          `gives it ${declaredShard.ids.length}. The leg and the aggregator read different plans.`
       );
+    }
+  }
+
+  // T2.11, UNIT CURRENCY ONLY: a leg's own units must each have actually run, not have
+  // been counted twice and not have come back `skipped` -- the exact "ran exactly once
+  // with a non-skipped outcome" acceptance the file header promises for a test lane's
+  // merge job. A gate-currency receipt carries no `units` and never reaches this loop.
+  for (const r of received) {
+    if (r.units === undefined) continue;
+    const seen = new Set<string>();
+    for (const u of r.units) {
+      if (seen.has(u.id)) {
+        findings.push(
+          `shard ${shardKey(r.lane, r.index, r.of)} reports unit ${u.id} more than once (${r.source})`
+        );
+      }
+      seen.add(u.id);
+      if (u.outcome === 'skipped' || u.outcome.trim() === '') {
+        findings.push(
+          `shard ${shardKey(r.lane, r.index, r.of)} reports unit ${u.id} with outcome ` +
+            `"${u.outcome}" (${r.source}); a unit that did not run is the same vacuity as a ` +
+            'leg that never reported'
+        );
+      }
     }
   }
   return findings;
@@ -752,6 +825,15 @@ const receipt = (
   result = 'success'
 ): ShardReceipt => ({ lane, index, of, result, gates, source: `${lane}-${index}.json` });
 
+/** T2.11: the unit-currency sibling of `receipt`, for a test lane's `UNITS_JSON` shape. */
+const unitReceipt = (
+  lane: string,
+  index: number,
+  of: number,
+  units: ShardUnit[],
+  result = 'success'
+): ShardReceipt => ({ lane, index, of, result, units, source: `${lane}-${index}.json` });
+
 const WF_SHARDED = [
   'jobs:',
   '  quality-security:',
@@ -903,6 +985,55 @@ function selftest(): number {
         bothReported[0] as ShardReceipt,
         receipt('quality-security', 2, 2, 41),
       ]).some((f) => f.includes('ran 41 gate(s) but the plan gives it 42')),
+    },
+    // --- T2.11: the unit currency, alongside the lock-id one -----------------
+    {
+      name: 'MATCH: a unit-currency receipt whose unit count matches the plan is no finding',
+      ok:
+        judgeReceipts(
+          [shard('test-x', 1, 1, 2)],
+          [
+            unitReceipt('test-x', 1, 1, [
+              { id: 'g0', outcome: 'success', ms: 10 },
+              { id: 'g1', outcome: 'success', ms: 20 },
+            ]),
+          ]
+        ).length === 0,
+    },
+    {
+      name: 'FIRES: a unit-currency receipt whose unit count disagrees with the plan (composition clause, unit label)',
+      ok: judgeReceipts(
+        [shard('test-x', 1, 1, 3)],
+        [unitReceipt('test-x', 1, 1, [{ id: 'g0', outcome: 'success', ms: 10 }])]
+      ).some((f) => f.includes('ran 1 unit(s) but the plan gives it 3')),
+    },
+    {
+      name: 'FIRES: the same unit reported twice inside one receipt',
+      ok: judgeReceipts(
+        [shard('test-x', 1, 1, 2)],
+        [
+          unitReceipt('test-x', 1, 1, [
+            { id: 'g0', outcome: 'success', ms: 10 },
+            { id: 'g0', outcome: 'success', ms: 10 },
+          ]),
+        ]
+      ).some((f) => f.includes('reports unit g0 more than once')),
+    },
+    {
+      name: 'FIRES: a unit reported with a skipped outcome is the same vacuity as a leg that never ran',
+      ok: judgeReceipts(
+        [shard('test-x', 1, 1, 2)],
+        [
+          unitReceipt('test-x', 1, 1, [
+            { id: 'g0', outcome: 'success', ms: 10 },
+            { id: 'g1', outcome: 'skipped', ms: 0 },
+          ]),
+        ]
+      ).some((f) => f.includes('reports unit g1 with outcome "skipped"')),
+    },
+    {
+      name: 'a gate-currency receipt carries no `units` and never reaches the unit-outcome loop',
+      ok: judgeReceipts(two, bothReported).length === 0, // re-asserts the MATCH case above still holds with the new loop present
     },
     // --- the needs parser ----------------------------------------------------
     {
@@ -1199,6 +1330,60 @@ function selftest(): number {
       ok: (() => {
         const dir = path.join(ROOT, 'node_modules', '.cache', 'quality-complete-selftest');
         return readReceipts(path.join(dir, 'does-not-exist')).problems.length === 1;
+      })(),
+    },
+    // --- T2.11: readReceipts on-disk, both currencies -------------------------
+    {
+      name: 'readReceipts: a real units-currency file on disk parses with no problem',
+      ok: (() => {
+        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        writeFileSync(
+          path.join(dir, 'a.json'),
+          JSON.stringify({
+            lane: 'test-x',
+            index: 1,
+            of: 1,
+            result: 'success',
+            units: [{ id: 'g0', outcome: 'success', ms: 10 }],
+          })
+        );
+        const { receipts, problems } = readReceipts(dir);
+        return problems.length === 0 && receipts.length === 1 && receipts[0]?.units?.length === 1;
+      })(),
+    },
+    {
+      name: 'readReceipts: a receipt with BOTH gates and units is a problem, not a silent pick',
+      ok: (() => {
+        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        writeFileSync(
+          path.join(dir, 'a.json'),
+          JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success', gates: 1, units: [] })
+        );
+        return readReceipts(dir).problems.some((p) => p.includes('EXACTLY ONE'));
+      })(),
+    },
+    {
+      name: 'readReceipts: a receipt with NEITHER gates nor units is a problem',
+      ok: (() => {
+        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        writeFileSync(
+          path.join(dir, 'a.json'),
+          JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success' })
+        );
+        return readReceipts(dir).problems.some((p) => p.includes('EXACTLY ONE'));
+      })(),
+    },
+    {
+      name: 'readReceipts: a unit entry missing outcome is a problem',
+      ok: (() => {
+        const dir = mkdtempSync(path.join(tmpdir(), 'qc-selftest-'));
+        writeFileSync(
+          path.join(dir, 'a.json'),
+          JSON.stringify({ lane: 'x', index: 1, of: 1, result: 'success', units: [{ id: 'g0' }] })
+        );
+        return readReceipts(dir).problems.some((p) =>
+          p.includes('a unit entry needs id and outcome')
+        );
       })(),
     },
   ];
