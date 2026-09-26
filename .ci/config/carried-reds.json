@@ -24,14 +24,6 @@
     {
       "gate": "check:ci-plan-citations",
       "reason": "141 dead file:line / gate citations ADDED by plan files written this branch by other sessions: PLAN-ci-time-budget.md (30 shown, e.g. :251 cites a gate check:ci-lane-budget that does not exist yet and :256 cites check_job_timeout_headroom.py by bare basename), PLAN-commit-as-you-go.md (bare-basename cites such as block_nonstandard_branch_name.py:141-143, pr-merge.md:196-213), PLAN-cloudflare-proxy.md (:9 and :240 cite a gitignored .ci/cache runbook) and PLAN-app-wide-org-selection.md. Each needs its author to re-read the target and write a resolvable path, which is not a mechanical rewrite. Transitional while those plans are in draft."
-    },
-    {
-      "gate": "check:ci-gate-bind",
-      "reason": "BLOCKER: one binding finding remains, an inferred-need false positive: gate-bind reads `git ls-files --recurse-submodules` in .ci/scripts/quality/check_plan_deps.py and infers that the gate needs submodules, which its quality-branch lane does not check out; only the hand-run --overlaps and --migrate-x verbs call that listing, never the CI check path. gate-bind has no way to declare an inferred need as not applying to the CI path; tracked to add one (or move the migration verbs out of the gate file). The earlier cause, the unwired Biome gates check:ci-max-lines and check:ci-source-rules, was fixed on 2026-09-26 (max-lines wired, source-rules registered local-only with emit: false)."
-    },
-    {
-      "gate": "check:ci-enumeration-vacuity",
-      "reason": "scripts/gates/check-source-rules.ts, the same unwired Biome-migration gate that check:ci-gate-bind names, enumerates a corpus with no MIN_* floor or explicit VACUOUS refusal. The baseline scripts/data/enumeration-vacuity-baseline.json is shrink-only, so parking it there is not allowed; the floor belongs in that gate, which the migration owner (agent/plans/PLAN-biome-only-lint.md) is still editing. Transitional until the gate is wired with its floor."
     }
   ]
 }

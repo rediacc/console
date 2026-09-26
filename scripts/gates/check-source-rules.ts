@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+import { execFileSync } from 'node:child_process';
 /**
  * The host gate for `eslint-rules/`: runs the SAME rule modules `scripts/data/source-rules.ts` describes, over the real tree, without ESLint.
  *
@@ -19,17 +20,15 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-
-import { runSourceRule, runJsonRule, type RuleModule, type Finding } from '../lib/rule-host.ts';
 import {
-  RULE_INSTANCES,
-  RULE_IDS,
   isGloballyIgnored,
   matchesEslintGlob,
+  RULE_IDS,
+  RULE_INSTANCES,
   type RuleInstance,
 } from '../data/source-rules.ts';
+import { type Finding, type RuleModule, runJsonRule, runSourceRule } from '../lib/rule-host.ts';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -58,6 +57,12 @@ function trackedFiles(root: string): string[] {
     .map((rel) => (isSubmodule ? path.posix.join(root, rel) : rel));
 }
 
+/**
+ * The fewest files a real scan can reach: 2,923 on 2026-09-26. A checkout missing its submodules, or a LINT_ROOTS
+ * edit that points nowhere, lists far fewer, and "0 findings" over that is not a clean tree.
+ */
+const MIN_CORPUS_FILES = 2000;
+
 /** Every tracked, lintable, non-globally-ignored path, POSIX-separated and sorted. */
 export function corpus(): string[] {
   const seen = new Set<string>();
@@ -68,6 +73,12 @@ export function corpus(): string[] {
       if (isGloballyIgnored(posix)) continue;
       seen.add(posix);
     }
+  }
+  if (seen.size < MIN_CORPUS_FILES) {
+    throw new Error(
+      `VACUOUS: check-source-rules reached ${seen.size} file(s), below the floor of ${MIN_CORPUS_FILES}; ` +
+        'a scan this small would report a clean tree it never read (submodules not checked out?)'
+    );
   }
   return [...seen].sort();
 }

@@ -75,6 +75,12 @@ step: Plan dependencies
 needs: none
 selftest: true
 lane: quality-branch
+needs-not: submodules
+blocker: BLOCKER: the gate's CI path (no flags) never lists submodule files. Only
+     the hand-run `--overlaps` and `--migrate-x` modes call `_repo_files`, whose
+     `git ls-files --recurse-submodules` is what `inferredNeeds` reads. Measured
+     2026-09-26: without this line the binder refuses with "lane 'quality-branch'
+     does not provide all of [submodules]", and CI's Gate binding step goes red.
 why: a plan must not start before the plans it needs are finished, and a plan
      that never says what it needs cannot be ordered at all. The field is
      mandatory (a list of plans, or `no-dep -- <reason>`), and this gate is the
