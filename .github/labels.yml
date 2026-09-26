@@ -30,6 +30,10 @@
   color: "FEF2C0"
   description: "Prevents watchdog from auto-retrying failed jobs"
 
+- name: no-auto-cancel
+  color: "FEF2C0"
+  description: "Watchdog leaves a failing run uncancelled so every job reports"
+
 - name: no-external-quality
   color: "FEF2C0"
   description: "Skips externally-dependent quality checks (npm deps, security audit, Go deps)"

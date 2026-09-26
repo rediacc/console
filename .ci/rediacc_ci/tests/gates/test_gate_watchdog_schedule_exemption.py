@@ -211,3 +211,28 @@ def test_single_chokepoint(gate):
         "exactly one fallback cancel API call, inside the same guarded function",
     )
     gate.log_pass("cancellation has a single chokepoint that the exemption governs")
+
+
+LABEL_JS = """
+const w = require(process.argv[1]);
+const v = w.evaluateCancelExemption({ runEvent: "pull_request", labels: JSON.parse(process.argv[2]) });
+process.stdout.write(v.exempt ? "exempt" : "cancel");
+"""
+
+
+def test_no_auto_cancel_label_exempts_a_pr_run(gate):
+    # The sharded jobs of PLAN-ci-time-budget could not report while any early failure cancelled the run.
+    gate.log_test(
+        "a pull_request run whose PR carries no-auto-cancel runs every job to its conclusion"
+    )
+    gate.assert_eq(
+        node_eval(gate, LABEL_JS, '["no-auto-cancel"]'),
+        "exempt",
+        "the no-auto-cancel label must exempt a pull_request run",
+    )
+    gate.assert_eq(
+        node_eval(gate, LABEL_JS, '["no-auto-retry"]'),
+        "cancel",
+        "CONTROL: another label must not exempt it",
+    )
+    gate.log_pass("no-auto-cancel exempts a PR run; other labels do not")

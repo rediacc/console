@@ -80,15 +80,21 @@ const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
  * cancels exactly as it does today. The exemption only ever fires on a positive
  * match, which keeps the PR path byte-identical.
  */
-function evaluateCancelExemption({ runEvent }) {
+/** The PR label that leaves a failing run uncancelled, so every job reports (PLAN-ci-time-budget: sharded jobs could not report while any early failure cancelled the run). A debugging aid: remove it once the branch is green. */
+const NO_AUTO_CANCEL_LABEL = 'no-auto-cancel';
+
+function evaluateCancelExemption({ runEvent, labels = [] }) {
   const event = String(runEvent || '');
-  const exempt = CANCEL_EXEMPT_EVENTS.includes(event);
+  const byEvent = CANCEL_EXEMPT_EVENTS.includes(event);
+  const byLabel = !byEvent && labels.includes(NO_AUTO_CANCEL_LABEL);
   return {
-    exempt,
+    exempt: byEvent || byLabel,
     event,
-    reason: exempt
+    reason: byEvent
       ? `run event "${event}" is cancel-exempt: cancelling would rewrite this run's conclusion from "failure" to "cancelled", which is what hid twelve consecutive red nightlies`
-      : '',
+      : byLabel
+        ? `the PR carries the "${NO_AUTO_CANCEL_LABEL}" label: every job runs to its own conclusion`
+        : '',
   };
 }
 
@@ -1077,7 +1083,7 @@ const monitor = async ({ github, context, core }) => {
 
     // The cancel-exemption check sits AFTER the roster build (an exempt run still gets the full "here is everything that failed" banner) and BEFORE the critical-job drain (there is nothing to drain for if nothing is being cancelled). This is the single chokepoint: all five call sites route through forceCancel, including the no-drain Review Gate path, so the exemption cannot be
     // bypassed by adding a sixth.
-    const exemption = evaluateCancelExemption({ runEvent: targetRunEvent });
+    const exemption = evaluateCancelExemption({ runEvent: targetRunEvent, labels: prLabels });
     if (exemption.exempt) {
       console.log('');
       console.log('#'.repeat(70));
@@ -1167,6 +1173,7 @@ const monitor = async ({ github, context, core }) => {
 
   // Check for the skip-auto-retry label. Labels are fetched LIVE from the API: the event payload's label list is frozen at the event that created the run, so a label added afterwards (e.g. no-auto-retry added right before rerunning failed jobs) would be invisible in context.payload and silently ignored.
   let skipAutoRetry = false;
+  let prLabels = [];
   if (prNumber) {
     let labels = context.payload.pull_request?.labels.map((l) => l.name) || [];
     try {
@@ -1181,6 +1188,7 @@ const monitor = async ({ github, context, core }) => {
         `Could not fetch live PR labels (${e.message}) - falling back to event payload labels`
       );
     }
+    prLabels = labels;
     skipAutoRetry = labels.includes('no-auto-retry');
     if (skipAutoRetry) {
       console.log('Label "no-auto-retry" detected - will not auto-retry on failures');
