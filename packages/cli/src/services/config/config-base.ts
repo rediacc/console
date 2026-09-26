@@ -310,8 +310,22 @@ export class ConfigServiceBase {
   }
 
   async getUserEmail(): Promise<string | null> {
-    const config = await this.getCurrent();
+    const config = await this.readLocalFile();
     return config?.account?.userEmail ?? null;
+  }
+
+  /**
+   * The active config's LOCAL file, never a pull; undefined when it is missing or unreadable. For the
+   * account/preference reads the startup hook, telemetry context and `subscription login` make before
+   * any command runs: a pull there made a remote config whose token needed renewing fail every command,
+   * the login that renews it included (2026-09-26). The cache carries the last pulled values.
+   */
+  private async readLocalFile(): Promise<RdcConfig | undefined> {
+    try {
+      return await configFileStorage.load(this.getEffectiveConfigName());
+    } catch {
+      return undefined;
+    }
   }
 
   // ============================================================================
@@ -319,12 +333,12 @@ export class ConfigServiceBase {
   // ============================================================================
 
   async getTeam(): Promise<string | undefined> {
-    const config = await this.getCurrent();
+    const config = await this.readLocalFile();
     return config?.account?.team;
   }
 
   async getRegion(): Promise<string | undefined> {
-    const config = await this.getCurrent();
+    const config = await this.readLocalFile();
     return config?.account?.region;
   }
 
@@ -415,8 +429,9 @@ export class ConfigServiceBase {
 
   async getLanguage(): Promise<string> {
     if (process.env.REDIACC_LANG) return normalizeLanguage(process.env.REDIACC_LANG);
-    const config = await this.getCurrent();
-    if (config?.defaults?.language) return config.defaults.language;
+    // The local file, never a pull (see readLocalFile): the preAction hook calls this before every command.
+    const local = await this.readLocalFile();
+    if (local?.defaults?.language) return local.defaults.language;
     return detectSystemLanguage();
   }
 

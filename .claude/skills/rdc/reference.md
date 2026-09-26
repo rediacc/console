@@ -1676,6 +1676,18 @@ Disconnect from remote storage and save config locally
 
 Show remote connection status
 
+### rdc config remote versions
+
+List the earlier versions of this config kept on the server
+
+### rdc config remote restore <version>
+
+Publish an earlier version of this config as its newest version
+
+**Options:**
+
+- `-y, --yes`: Skip confirmation prompt
+
 ### rdc config remote refresh
 
 Force re-fetch config from remote storage

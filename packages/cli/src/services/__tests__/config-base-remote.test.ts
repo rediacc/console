@@ -142,6 +142,39 @@ describe('ConfigServiceBase remote integration', () => {
     );
   });
 
+  // ─── startup and login reads ──────────────────────────────────────
+
+  describe('account and preference reads', () => {
+    // The preAction hook, the telemetry context and `subscription login` read these before any command runs. A pull
+    // there made a remote config whose token could not be renewed fail every command, the login that renews it
+    // included (2026-09-26), so they read the local file and never reach the adapter.
+    it('serve the cached file and never pull, even when the pull would fail', async () => {
+      mockConfigFileStorage.load.mockResolvedValue({
+        ...localConfigWithRemote,
+        defaults: { language: 'de' },
+        account: { team: 'ops', userEmail: 'a@example.com', region: 'eu' },
+      });
+      mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(localConfigWithRemote);
+      mockAdapterInstance.pull.mockRejectedValue(new Error('cannot renew config tokens'));
+      delete process.env.REDIACC_LANG;
+
+      expect(await service.getTeam()).toBe('ops');
+      expect(await service.getUserEmail()).toBe('a@example.com');
+      expect(await service.getRegion()).toBe('eu');
+      expect(await service.getLanguage()).toBe('de');
+      expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
+    });
+
+    it('answer empty when the file is missing', async () => {
+      mockConfigFileStorage.load.mockRejectedValue(new Error('ENOENT'));
+
+      expect(await service.getTeam()).toBeUndefined();
+      expect(await service.getUserEmail()).toBeNull();
+      expect(await service.getRegion()).toBeUndefined();
+      expect(mockAdapterInstance.pull).not.toHaveBeenCalled();
+    });
+  });
+
   // ─── getCurrent() ─────────────────────────────────────────────────
 
   describe('getCurrent', () => {
