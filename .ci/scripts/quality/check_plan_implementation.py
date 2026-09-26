@@ -54,14 +54,6 @@ GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 
-def _today():
-    """Today's date in UTC.
-
-    `dt.date.today()` reads the machine's local timezone, so a runner an hour either side of midnight would compare the same committed baseline against a different ceiling. The clock is a claim about a DATE and both halves compute it the same way.
-    """
-    return dt.datetime.now(dt.UTC).date()
-
-
 def die(msg: str) -> None:
     print(f"{RED}x{NC} {msg}", file=sys.stderr)
     raise SystemExit(1)
@@ -124,7 +116,27 @@ def load_modules():
 # --------------------------------------------------------------------------- P-A1, the clock. Pure arithmetic over three numbers, so the control can assert it at three points rather than at the one that happens to hold today.
 
 
-def in_scope(ledger_plans, finished_states):
+#: OPERATOR RULING 2026-09-26, TEMPORARY: "Let's define parked status until we make CI green as a temporary status for all other plans since we focus on time budgeting and CI fixes. So, plan-implementation check should give as a warning for now and that status will be removed after we complete all the plans." A plan whose Status is `held` (the ruling's "parked": `parked` already names a compacted record, wl_planrec.STATUS_PARKED, which stays on the clock) leaves the clock and is reported as a warning. P-A7 fails the gate once no plan is parked, so this exemption cannot outlive the ruling: that red is the order to delete PARKED_EXEMPT, parked_scope, P-A7 and the exempt parameter of in_scope.
+PARKED_EXEMPT = frozenset({"held"})
+
+
+def parked_scope(ledger_plans):
+    """(n_plans, n_open) of the plans the temporary parked exemption keeps off the clock."""
+    n_plans = n_open = 0
+    for _rel, row in sorted((ledger_plans or {}).items()):
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("status") or "").strip().lower() not in PARKED_EXEMPT:
+            continue
+        open_n = int(row.get("open") or 0)
+        if open_n <= 0:
+            continue
+        n_plans += 1
+        n_open += open_n
+    return n_plans, n_open
+
+
+def in_scope(ledger_plans, finished_states, exempt=frozenset()):
     """(n_plans, n_open) for the ledger rows that are IN SCOPE.
 
     `finished_states` is IMPORTED from `wl_planfile` by the caller rather than restated, exactly as check_plan_boxes.py's G-A3 does it: the Stop hook's scope and this gate's scope are one frozenset read twice, so the two halves cannot drift into disagreeing about which plans count.
@@ -135,7 +147,8 @@ def in_scope(ledger_plans, finished_states):
     for _rel, row in sorted((ledger_plans or {}).items()):
         if not isinstance(row, dict):
             continue
-        if str(row.get("status") or "").strip().lower() in finished_states:
+        status = str(row.get("status") or "").strip().lower()
+        if status in finished_states or status in exempt:
             continue
         open_n = int(row.get("open") or 0)
         if open_n <= 0:
@@ -145,30 +158,84 @@ def in_scope(ledger_plans, finished_states):
     return n_plans, n_open
 
 
-def clock_findings(ceiling_fn, clock, n_open, today):
-    """P-A1. [] when the count is at or under today's ceiling.
+def clock_findings(offenders):
+    """P-A1. [] when no plan outside the held set has an open box; one finding naming every plan that has.
 
-    The message names the count, the ceiling, the date and how many ticks close the gap, because "over budget" without the number is a verdict a reader cannot act on.
+    OPERATOR RULING 2026-09-26: "each new plan should be implemented, there should be no threshold to tolerate. Remove that threshold number at plan-implementation check." The descending ceiling (a baseline minus a daily drain) is gone: a plan that is not held and not finished is either fully implemented or red. `offenders` is [(rel, open)].
     """
-    ceil, days = ceiling_fn(clock, today)
-    if n_open <= ceil:
+    if not offenders:
         return []
+    listed = ", ".join("%s (%d)" % (rel, n) for rel, n in offenders)
     return [
-        "P-A1 THE CLOCK: %d in-scope open box(es) against a ceiling of %d on %s (day %d of the "
-        "clock, draining %s/day from a baseline of %d written at %s). %d tick(s) close the gap. "
-        "The ceiling descends every day and does not stop; there is no allowlist for this gate "
-        "and no per-plan exemption, because an exemption here would be an exemption from "
-        "implementing the plan."
-        % (
-            n_open,
-            ceil,
-            today.isoformat(),
-            days,
-            clock.get("drain_per_day"),
-            clock.get("baseline_open"),
-            clock.get("baseline_at"),
-            n_open - ceil,
-        )
+        "P-A1 OPEN BOXES: %d plan(s) that are neither finished nor held carry open boxes: %s. There is no "
+        "threshold (operator ruling 2026-09-26): implement and tick every box, or finish the plan."
+        % (len(offenders), listed)
+    ]
+
+
+def open_offenders(ledger_plans, finished_states, exempt):
+    """[(rel, open)] for every plan that is not finished, not exempt, and has an open box."""
+    out = []
+    for rel, row in sorted((ledger_plans or {}).items()):
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("status") or "").strip().lower()
+        if status in finished_states or status in exempt:
+            continue
+        open_n = int(row.get("open") or 0)
+        if open_n > 0:
+            out.append((rel, open_n))
+    return out
+
+
+#: The held set is FROZEN at the ruling (operator, 2026-09-26: "we should never allow NEW parked plans"). A plan may leave it (finish it, or restore its old status); none may join. P-A8 reds on a held plan not listed here.
+HELD_PLANS = frozenset(
+    {
+        "agent/plans/PLAN-account-env-to-bws.md",
+        "agent/plans/PLAN-agent-tree-lifecycle.md",
+        "agent/plans/PLAN-app-wide-org-selection.md",
+        "agent/plans/PLAN-biome-only-lint.md",
+        "agent/plans/PLAN-chunk-store-browse-toc-and-remote.md",
+        "agent/plans/PLAN-ci-watch-enforcement.md",
+        "agent/plans/PLAN-commit-as-you-go.md",
+        "agent/plans/PLAN-config-handoff-relay-only.md",
+        "agent/plans/PLAN-config-networkid-sync.md",
+        "agent/plans/PLAN-config-passkey-optional.md",
+        "agent/plans/PLAN-config-sync-hardening.md",
+        "agent/plans/PLAN-config-team-scoping.md",
+        "agent/plans/PLAN-env-to-bitwarden-v2.md",
+        "agent/plans/PLAN-haiku-model-routing.md",
+        "agent/plans/PLAN-per-commit-review.md",
+        "agent/plans/PLAN-plan-dependencies.md",
+        "agent/plans/PLAN-plan-priority-concurrency.md",
+        "agent/plans/PLAN-rdc-readonly-mode.md",
+        "agent/plans/PLAN-repair-prose-style-findings.md",
+        "agent/plans/PLAN-retire-bash-oracles.md",
+        "agent/plans/PLAN-secret-namespace-migration.md",
+        "agent/plans/PLAN-stop-hook-focus-mode.md",
+        "agent/plans/PLAN-stop-hook-refactor-enforcement.md",
+        "agent/plans/PLAN-stop-hook-retro-20260924.md",
+        "agent/plans/PLAN-stop-hook-retro-20260925.md",
+        "agent/plans/PLAN-stop-hook-rulings-campaign.md",
+        "agent/plans/PLAN-submodule-branch-coordination-guard.md",
+        "agent/plans/PLAN-token-ip-rebind.md",
+        "agent/plans/PLAN-tooling-transformation.md",
+        "agent/plans/PLAN-trap-enforcement.md",
+        "agent/plans/PLAN-uncommitted-work-exposure-check.md",
+        "agent/plans/PLAN-w7p5a-real-run-dispatch.md",
+    }
+)
+
+
+def new_held_findings(ledger_plans):
+    """P-A8: a plan with Status `held` that the frozen ruling did not hold."""
+    return [
+        "P-A8 A NEW HELD PLAN: %s is `held` but was not held at the 2026-09-26 ruling, which froze the set; "
+        "implement it instead of holding it." % rel
+        for rel, row in sorted((ledger_plans or {}).items())
+        if isinstance(row, dict)
+        and str(row.get("status") or "").strip().lower() in PARKED_EXEMPT
+        and rel not in HELD_PLANS
     ]
 
 
@@ -339,11 +406,9 @@ def controls_fired(enforce, planfile, planrec=None):
             missed.append(label)
 
     # CONTROL 0 -- HEALTHY. Every judge must be silent on clean input, or every red below means nothing.
-    clock = _clock(base=100, at="2026-01-01", rate=7)
-    day0 = dt.date(2026, 1, 1)
-    if clock_findings(enforce.ceiling, clock, 100, day0):
+    if clock_findings([]):
         die(
-            "CONTROL 0 FAILED: the clock reported a finding at the baseline on day 0, so every planted result below is meaningless"
+            "CONTROL 0 FAILED: P-A1 reported a finding with no open box anywhere, so every planted result below is meaningless"
         )
     healthy_base = {"p.md": {"status": "draft", "open_sigs": ["aaaaaaaa"], "done_sigs": []}}
     healthy_head = {"p.md": {"status": "draft", "open_sigs": [], "done_sigs": ["aaaaaaaa"]}}
@@ -369,23 +434,26 @@ def controls_fired(enforce, planfile, planrec=None):
     if vacuity_findings(120, 810, 120):
         die("CONTROL 0 FAILED: a healthy corpus tripped an anti-vacuity floor")
 
-    # C8 -- THE CEILING AT THREE POINTS. A clock asserted at one point is a constant.
+    # C8 -- NO THRESHOLD (operator ruling 2026-09-26). One open box in a plan that is neither finished nor held is red; a held or finished plan's boxes are not.
+    rows = {
+        "a.md": {"status": "draft", "open": 1},
+        "b.md": {"status": "done", "open": 5},
+        "c.md": {"status": "held", "open": 9},
+    }
+    offenders = open_offenders(rows, planfile.FINISHED_STATES, PARKED_EXEMPT)
+    caught("C8a: ONE open box in a live plan was not reported", bool(clock_findings(offenders)))
+    caught("C8b: a finished or held plan's boxes were counted", offenders == [("a.md", 1)])
     caught(
-        "C8a: a corpus AT the baseline on day 0 was reported over the ceiling",
-        not (clock_findings(enforce.ceiling, clock, 100, dt.date(2026, 1, 1))),
+        "C8c: the finding does not name the plan and its count",
+        "a.md (1)" in " ".join(clock_findings(offenders)),
     )
     caught(
-        "C8b: a corpus with ZERO boxes closed on day 1 was NOT reported over the ceiling",
-        clock_findings(enforce.ceiling, clock, 100, dt.date(2026, 1, 2)),
+        "C8d: a held plan outside the frozen set was not reported (P-A8)",
+        bool(new_held_findings({"agent/plans/PLAN-zz-new.md": {"status": "held", "open": 1}})),
     )
     caught(
-        "C8c: a corpus that closed exactly drain_per_day boxes by day 1 was reported over the ceiling",
-        not (clock_findings(enforce.ceiling, clock, 93, dt.date(2026, 1, 2))),
-    )
-    msg = " ".join(clock_findings(enforce.ceiling, clock, 100, dt.date(2026, 1, 2)))
-    caught(
-        "C8d: the over-ceiling message does not name the count, the ceiling, the date and the gap",
-        ("100" in msg and "93" in msg and "7 tick" in msg and "2026-01-02" in msg),
+        "C8e: CONTROL: a plan held at the ruling was reported as new",
+        not new_held_findings({min(HELD_PLANS): {"status": "held", "open": 1}}),
     )
 
     # C1 -- THE INVESTIGATION-LESS TICK, the CI third of it. A box that moved open -> done carrying evidence but NO row must red on P-A2.
@@ -570,6 +638,22 @@ def controls_fired(enforce, planfile, planrec=None):
         },
         planfile.FINISHED_STATES,
     )
+    parked_rows = {
+        "live.md": {"status": "draft", "open": 4},
+        "held.md": {"status": "held", "open": 7},
+    }
+    caught(
+        "in_scope: a parked plan is still on the clock when exempted",
+        in_scope(parked_rows, planfile.FINISHED_STATES, PARKED_EXEMPT) == (1, 4),
+    )
+    caught(
+        "CONTROL: without the exemption a parked plan must stay on the clock",
+        in_scope(parked_rows, planfile.FINISHED_STATES) == (2, 11),
+    )
+    caught(
+        "parked_scope did not count the parked plan (wanted (1, 7))",
+        parked_scope(parked_rows) == (1, 7),
+    )
     caught(
         "in_scope: the FINISHED/zero-box filter returned %r, wanted (1, 4)" % (scoped,),
         scoped == (1, 4),
@@ -716,8 +800,18 @@ def main(argv=None) -> int:
     )
     findings.extend(vacuity_findings(raw_rows, total_boxes, raw_rows))
 
-    n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES)
-    findings.extend(clock_findings(enforce.ceiling, clock, n_open, _today()))
+    n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT)
+    findings.extend(
+        clock_findings(open_offenders(head_plans, planfile.FINISHED_STATES, PARKED_EXEMPT))
+    )
+    findings.extend(new_held_findings(head_plans))
+    parked_plans, parked_open = parked_scope(head_plans)
+    if parked_plans == 0:
+        findings.append(
+            "P-A7 THE PARKED EXEMPTION HAS OUTLIVED ITS RULING: no plan is held any more. The operator's "
+            "2026-09-26 ruling made `parked` a temporary warning-only status until the focus plans closed; "
+            "remove PARKED_EXEMPT, parked_scope, P-A7 and in_scope's `exempt` parameter from this gate now."
+        )
 
     # ---- P-A2/P-A3/P-A4: the forward-only proof over what this branch actually closed.
     base = boxes_gate.base_ref() or ""
@@ -757,15 +851,20 @@ def main(argv=None) -> int:
                 )
             )
 
+    if parked_plans:
+        print(
+            f"  WARNING: {parked_open} open box(es) in {parked_plans} held plan(s) are off the clock "
+            "(operator ruling 2026-09-26, temporary; P-A7 fails once none is held).",
+            file=sys.stderr,
+        )
     if findings:
         print(f"{RED}x{NC} plan implementation:", file=sys.stderr)
         for finding in findings:
             print(f"  {finding}", file=sys.stderr)
         return 1
 
-    ceil, days = enforce.ceiling(clock, _today())
     print(
-        f"{GREEN}v{NC} plan implementation: {n_open} in-scope open box(es) across {n_plans} plan(s), ceiling {ceil} on day {days}"
+        f"{GREEN}v{NC} plan implementation: {n_open} in-scope open box(es) across {n_plans} plan(s), no threshold"
     )
     print(
         f"  {raw_rows} plan(s) and {total_boxes} checkbox(es) in {LEDGER_REL}, "

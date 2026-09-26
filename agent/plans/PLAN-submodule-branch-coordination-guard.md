@@ -1,6 +1,6 @@
 # PLAN: submodule branch-name divergence -- diagnosis, immediate action, and a pre-commit guard
 
-Status: proposed
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `proposed`
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-23

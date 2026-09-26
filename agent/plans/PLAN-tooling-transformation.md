@@ -1,5 +1,5 @@
 # PLAN: Tooling Transformation
-Status: ready
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `ready`
 Depends-On: no-dep -- umbrella; its only live citation, PLAN-secret-namespace-migration.md, is a ticked redaction box
 First-Seen: 2026-09-21
 Owner: d778be9d (adopted from 8f55d4f0 2026-09-20)

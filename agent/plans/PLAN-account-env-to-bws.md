@@ -1,5 +1,5 @@
 # PLAN: private/account/.env to Bitwarden -- the store is the only source of truth
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Depends-On: no-dep -- split out of PLAN-env-to-bitwarden-v2.md, which keeps only the orthogonal v1:20-25 rotation boxes
 Owner: d778be9d
 First-Seen: 2026-09-24

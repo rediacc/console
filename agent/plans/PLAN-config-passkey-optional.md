@@ -1,6 +1,6 @@
 # PLAN: config storage without a PRF passkey, and a virtual-authenticator E2E matrix
 
-Status: approved
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `approved`
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: no-dep -- touches only private/account server, portal and e2e plus run-account-e2e.sh; no open plan edits those files

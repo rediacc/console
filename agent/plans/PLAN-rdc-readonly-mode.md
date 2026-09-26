@@ -1,5 +1,5 @@
 # PLAN: read-only rdc verbs never provision renet
-Status: executing
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `executing`
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24

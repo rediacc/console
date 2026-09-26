@@ -1,6 +1,6 @@
 # PLAN: repair the 171 committed prose-style findings that hold check:ci-prose-style red
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Depends-On: no-dep -- related, not ordered: PLAN-secret-namespace-migration.md and PLAN-ci-watch-enforcement.md are files holding findings it repairs
 Owner: d778be9d
 Updated: 2026-09-23

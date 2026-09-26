@@ -1,6 +1,6 @@
 # PLAN: app-wide org selection -- refuse ambiguity instead of the first membership
 
-Status: approved
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `approved`
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: PLAN-config-passkey-optional.md -- builds on its uncommitted org-scoping work (configs.ts resolveConfigOrg, web/src/api/config.ts), which must land first

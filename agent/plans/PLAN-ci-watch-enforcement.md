@@ -1,5 +1,5 @@
 # PLAN: CI-watch enforcement, from "the session remembered" to a ledger join
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: unowned (drafted by 9d92d9b6, 2026-08-28)

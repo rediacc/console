@@ -1,6 +1,6 @@
 # PLAN: per-commit reviews replace the GitHub review
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-stop-hook-focus-mode.md, PLAN-plan-priority-concurrency.md, PLAN-ci-time-budget.md, PLAN-commit-as-you-go.md#T6, PLAN-commit-as-you-go.md#T7 -- operator order Z last; reuses Y's focus keep-list and X's Owns: header, overlaps W on ci.yml and ci-quality.yml; commit-as-you-go T6/T7 edit this plan and land before its T2

@@ -1,6 +1,6 @@
 # PLAN: enforce config team scoping on the server, and decide on per-team cryptographic isolation
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-config-sync-hardening.md -- this plan is finding F19 of that plan, split out by operator ruling D8(a). Four links. (1) The new 403 on config-token routes must carry `newServerToken`, which that plan's T7 adds to every config-token error body. Without it, a refused request burns the caller's rotated token. (2) This plan's cross-team scenarios run in the harness that plan's T1 built (`private/account/tests/integration/config-sync/`). (3) Its T5 re-scopes `GET /:id/versions` to the store; this plan adds the team check to that same route. (4) Its T8 puts `teamId` into the v3 AAD, and section 4 here relies on that binding. Both plans edit `routes/configs.ts` and `config.service.ts`, so the commits here rebase onto writer A's T5 and T7.

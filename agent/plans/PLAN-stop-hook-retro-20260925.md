@@ -1,6 +1,6 @@
 # PLAN: Stop-hook retro, 2026-09-25 (band late, lead session d778be9d)
 
-Status: ready
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `ready`
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-25
 Owner: d778be9d (adopted from retro ae06fedae89115ef2 20260925)

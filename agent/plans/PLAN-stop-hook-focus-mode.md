@@ -1,6 +1,6 @@
 # PLAN: stop-hook focus mode, a wind-down stand-down for /pr-babysit and /pr-merge
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-stop-hook-cap-saturated-wait.md
@@ -46,7 +46,7 @@ One writer does T1-T4 and T6, in order: T1-T3 share `wl_checks.py`, `wl_store.py
 - [x] T4 [A] Add the guard `.claude/rediacc_hooks/guards/block_focus_spawn.py` (`CHAIN = "pre-agent"`, `ORDER = 4`, `OWN_SUITE = True`, with `DEFECT` and `EDGE_CASES`) and its suite `.claude/rediacc_hooks/guards/test-block_focus_spawn.py`. Register it in `scripts/data/hook-inventory-baseline.json` and in `sealed_modules` (section 7).
     (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [x] T5 Lead: edit the skills and docs (section 8): `.claude/commands/pr-babysit.md`, `.claude/commands/pr-merge.md`, `.claude/agents/pr-babysitter.md` and `CLAUDE.md:99-102`.
-    (ticked) 2026-09-26T19:18:25Z by d778be9d: section 8 edits verified in place 2026-09-26: pr-babysit.md:59, pr-merge.md:110, pr-babysitter.md:146, CLAUDE.md:107 (landed in e0e297b30)
+    (ticked) 2026-09-26T19:18:25Z by d778be9d: section 8 edits verified in place 2026-09-26: .claude/commands/pr-babysit.md:59, .claude/commands/pr-merge.md:110, .claude/agents/pr-babysitter.md:146, CLAUDE.md:107 (landed in e0e297b30)
 - [x] T6 [A] Add `.claude/rediacc_hooks/tests/test_wl_focus.py` with the cases and mutation controls in section 9. Update `.claude/hooks/stop/test-always-tier.py` for the new ladder key.
     (ticked) 2026-09-26T16:31:59Z by d778be9d: retroactive record: closed by c8f92eaa0 (2026-09-25) feat(gates): wire check:ci-gate-tree-writes, and the gate fixes of 202 -- trail backfilled under PLAN-fix-plan-implementation-check-regression, which explains why this line post-dates the commit it cites
 - [ ] T7 Lead: run `.ci/cache/toolchain/uv-tools/pytest/bin/python -m pytest .claude/rediacc_hooks/tests/test_wl_focus.py .claude/rediacc_hooks/tests/test_wl_cap_wait.py .claude/rediacc_hooks/tests/test_wl_message_catalogue.py .claude/rediacc_hooks/tests/test_wl_event_store.py .claude/rediacc_hooks/tests/test_guards_differential.py .claude/rediacc_hooks/tests/test_dispatch.py`, then `python3 .claude/hooks/stop/test-always-tier.py`, then `python3 .ci/scripts/quality/check_plan_boxes.py --update` for this plan's ledger row.

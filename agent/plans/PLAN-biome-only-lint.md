@@ -1,6 +1,6 @@
 # PLAN: biome-only linting and TypeScript 7
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24

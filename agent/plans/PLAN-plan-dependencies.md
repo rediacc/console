@@ -1,6 +1,6 @@
 # PLAN: plan dependencies. A plan does not start before the plans it needs are finished
 
-Status: approved
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `approved`
 Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: PLAN-stop-hook-continuity.md

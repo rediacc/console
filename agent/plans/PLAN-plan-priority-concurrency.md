@@ -1,6 +1,6 @@
 # PLAN: plan priority and plan concurrency. Rank ready plans, and let file ownership decide which writers may run side by side
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-plan-dependencies.md, PLAN-stop-hook-retro-20260925.md#R20260925.5

@@ -1,6 +1,6 @@
 # PLAN: the server relay is the only way config keys reach the CLI (`rdc config remote enable`, `rdc config rotate-cek`)
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-app-wide-org-selection.md -- its uncommitted working-tree edits touch the same files: `private/account/src/routes/device-codes.ts` (the approve route's org id), `private/account/web/src/auth/ProtectedRoute.tsx`, `private/account/e2e/src/utils/config-store-helpers.ts` and `private/account/e2e/tests/20-config-storage/20-11-prf-provider-matrix.test.ts` (`git -C private/account status`, 2026-09-25). Also PLAN-config-passkey-optional.md, which is `approved` with T1-T4 open, yet its code looks landed (`02cb4bf`, `a11c397`, `af08d91`). The lead should confirm and close it before T5 deletes `DeviceConfigSetup.tsx`, which that plan edits.

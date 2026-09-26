@@ -1,4 +1,4 @@
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Depends-On: no-dep -- related, not ordered: PLAN-account-env-to-bws.md took over its boxes; PLAN-secret-namespace-migration.md is cited as history
 First-Seen: 2026-09-17
 Owner: d778be9d (adopted from 74de73ca 2026-09-22)

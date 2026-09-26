@@ -1,6 +1,6 @@
 # PLAN: route the cheap-tier work to Haiku, by task shape
 
-Status: phase 0-1 done and standing as historical record; phase 2 and the flip it gated are SUPERSEDED 2026-09-23 by `D-M1` -- see section 9
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `phase 0-1 done and standing as historical record; phase 2 and the flip it gated are SUPERSEDED 2026-09-23 by `D-M1` -- see section 9`
 Depends-On: no-dep -- cites only finished plans: PLAN-remove-autopilot.md
 Owner: d778be9d
 First-Seen: 2026-09-22

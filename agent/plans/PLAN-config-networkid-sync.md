@@ -1,6 +1,6 @@
 # PLAN: F20, share repo network IDs across devices by treating the machine as the authority and guarding each ID in renet
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-config-sync-hardening.md -- this plan builds on two parts of it. T3 (HOST_LOCAL_POINTERS plus the single `overlayHostLocal`) keeps a device's discovered `state.repos[*][*].networkId` alive across pulls. Without T3, every pull would wipe the IDs this plan discovers. T1/T2 (the config-sync harness in `private/account/tests/integration/config-sync/`) hosts the two-device scenarios. If the operator picks D1(b) instead of the recommendation, the plan also waits on that plan's T4 (rebase on the server copy) and T5 (compare-and-swap push). Both plans edit `packages/cli/src/i18n/locales/*/cli.json`, so T6 here lands after the hardening plan's i18n commits.

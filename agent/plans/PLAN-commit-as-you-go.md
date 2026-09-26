@@ -1,6 +1,6 @@
 # PLAN: commit as you go, one branch, one PR
 
-Status: draft
+Status: held -- operator ruling 2026-09-26 (the operator's "parked"; `parked` already names a compacted record): every plan but PLAN-ci-time-budget is held until CI is green; it was `draft`
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: no-dep -- none for T0-T3 or the drain D0-D10; T9 serialises with PLAN-stop-hook-focus-mode.md on .claude/commands/pr-*.md (see Concurrency); PLAN-per-commit-review.md waits on T6/T7
