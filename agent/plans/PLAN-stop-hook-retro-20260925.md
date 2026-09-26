@@ -23,7 +23,7 @@ Other rows in the window:
 
 **Held, and not re-proposed:**
 - **R20260924.16 held.** The 19:39:31 open item was the phantom post-compact retro, closed at 19:39:50 (offset 236825328). Writer A's fix was ticked at 20:14:53 (238015915).
-- **R20260924.7 held.** Retro writer B's interim "waiting on my background test run" at 20:40:04 (238187654) did not block.
+- **R20260924.7 held.** Retro writer B's interim `waiting on my background test run` at 20:40:04 (238187654) did not block.
 - **The cap-saturated stand-down held.** Nine stops passed without a block while 4 of 4 slots were live.
 - **R20260924.5 held.** Each queue-slot block named exactly 1 item for 1 free slot.
 - **R20260924.21 held.** The #4f167b47 refusal cost 1 retry (237293810), and the retry with `:556` was accepted.

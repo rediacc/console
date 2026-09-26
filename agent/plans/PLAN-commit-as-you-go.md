@@ -9,7 +9,7 @@ Concurrency: parallel. There is one exception: T9 edits `.claude/commands/pr-*.m
 Owns: .claude/rediacc_hooks/commit_policy.py, .ci/config/commit-policy.json, .claude/rediacc_hooks/guards/block_commit_on_main.py, .claude/rediacc_hooks/guards/block_second_branch.py, .claude/rediacc_hooks/guards/block_ci_skip_token.py, .claude/rediacc_hooks/guards/block_no_review_ineligible.py, .claude/rediacc_hooks/guards/block_git_hook_bypass.py, .claude/rediacc_hooks/guards/test-block_{commit_on_main,second_branch,ci_skip_token,no_review_ineligible,git_hook_bypass}.py, .claude/rediacc_hooks/git/** (T8 only), CLAUDE.md (Session Defaults rule 1 and the "Never push to main" section), .claude/output-styles/standing-orders.md
 Worklist: the lead adds this with `worklist.py --add`.
 
-**Operator ruling, 2026-09-25 (verbatim):** "Let's change that rule because massive amount of changes becomes mountains which is bad for reviews. So, if we really need to fix some bugs on main then okay but otherwise we must follow the branch naming rules to open new branches if we're working on main. So, maybe git commit hook can help? [no-review] could be used for hotfixes or existing tags/writint maybe [no-ci?]? not sure check and decide. But we should only allow single branch and single PR only. AI agents sometimes decides to open new branches. I don't allow them."
+**Operator ruling, 2026-09-25 (verbatim):** `Let's change that rule because massive amount of changes becomes mountains which is bad for reviews. So, if we really need to fix some bugs on main then okay but otherwise we must follow the branch naming rules to open new branches if we're working on main. So, maybe git commit hook can help? [no-review] could be used for hotfixes or existing tags/writint maybe [no-ci?]? not sure check and decide. But we should only allow single branch and single PR only. AI agents sometimes decides to open new branches. I don't allow them.`
 
 **Line numbers** refer to the working tree on `0923-1` on 2026-09-25. If they drift, re-anchor on the named function or constant.
 
@@ -102,7 +102,7 @@ Verified work is committed right away, in small, reviewable commits on the singl
   - before a stop that leaves unpushed commits.
 
   Each push still needs a `ci:quick` receipt (`block_unverified_push.py`). With a shared tree, use `--receipt-out` from a clean clone (ci-gates.md:67).
-- **Unchanged.** Never `checkout`/`restore`/`stash`/`clean` to undo your own mistake. Other sessions' uncommitted paths are theirs, so never commit them by inference.
+- **Unchanged.** Never `checkout`/`restore`/`stash`/`clean` to undo a mistake of the session's own making. Other sessions' uncommitted paths are theirs, so never commit them by inference.
 - **One branch, one PR** (section 2). There is no "ask" path for a second one; the operator runs it with `!` if they want it.
 - Rewrite standing-orders.md rule 5 ("There is no safety net") to say the net is now the commit, and keep the ban on restore/stash.
 
@@ -366,6 +366,6 @@ Changes to existing guards and code, each with its golden regenerated through `t
 - **Decision 2 (git-level hooks): everyone, with the `COMMIT_POLICY_OK=1` override.** T8 is required, not optional; agents are refused `--no-verify` / `-c core.hooksPath=` (`block_git_hook_bypass`).
 - **Decision 5 (push cadence): epic milestones, at least every 2 hours of committed work, and before a stop with unpushed commits.**
 - **Decision 1 (hotfix review): always reviewed.** `[no-review]` is refused on `[hotfix]`.
-- **Decision 7 (unattributable drain residue): the lead analyses and commits it now, pr-babysit style, without showing the list to the operator.** Operator: "I know there are failures right now. We're in transition, acceptable." The drain (D0-D10) therefore runs immediately, before the guards exist.
+- **Decision 7 (unattributable drain residue): the lead analyses and commits it now, pr-babysit style, without showing the list to the operator.** Operator: `I know there are failures right now. We're in transition, acceptable.` The drain (D0-D10) therefore runs immediately, before the guards exist.
 - Decisions 3, 4, 6 and 8 take the plan's recommendation: writing-only `[no-review]` set; hotfix limit 5 files; the operator pushes `main` with `!`; the drain runs before Z's T2.
 

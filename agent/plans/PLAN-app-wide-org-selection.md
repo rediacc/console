@@ -48,7 +48,7 @@ All of these call `resolveUserOrg(userId, getOrgIdFromRequest(c))`, so today the
 | `private/account/src/routes/test.ts:68, 813` | Test-only routes `/test/org-customer-id` and the config-store seeding. The code relies on auto-creating an org for users with none (comment at `:811`). |
 
 **Related "first" picks that are not about orgs (out of scope):**
-- `resolveUserTeam` defaults to `teamsForUser[0]` (`private/account/src/services/org.service.ts:442`), and `/portal/org/teams` uses `teams[0]` (`private/account/src/routes/organization.ts:291`). Both stay inside one org. I recommend a separate follow-up.
+- `resolveUserTeam` defaults to `teamsForUser[0]` (`private/account/src/services/org.service.ts:442`), and `/portal/org/teams` uses `teams[0]` (`private/account/src/routes/organization.ts:291`). Both stay inside one org. The recommendation is a separate follow-up.
 - On the client, `RequirePartner` switches to `partnerOrgs[0]` (`private/account/web/src/auth/ProtectedRoute.tsx:84`), and `enterPartnerMode` uses the first partner org (`private/account/web/src/auth/AuthContext.tsx:307`). That is a guess when the user has more than one partner org; see 3.2.
 
 **Routes that already get the org another way, so no change is needed:**
@@ -78,7 +78,7 @@ async resolveUserOrg(userId, orgId?): Promise<Organization> {
   - Callers that also call `getMemberRole` straight after (`private/account/src/routes/portal.ts:51`, `private/account/src/services/billing.service.ts:96`, `private/account/src/routes/api-tokens.ts:65, 128, 155`) can move to `selectUserOrg` to save a query. This is optional.
 - **Configs:** `resolveConfigOrg` (`private/account/src/routes/configs.ts:177-205`) becomes a one-line wrapper around `selectUserOrg`. Its zero-org case (`null`) stays as it is.
 - **Middleware** (`private/account/src/middleware/partner.ts:27-32`, `private/account/src/middleware/org-role.ts:27-38`): let an `AppError` pass through (409, 403 `not_org_member`, 404). Keep 403 `NO_ACTIVE_ORG` only for anything else.
-- **Malformed org ids:** `getOrgIdFromRequest` (`private/account/src/utils/request.ts:32-36`) silently drops a non-UUID `X-Org-Id`/`?orgId`. With the new rule, a single-org user would then quietly get their only org even though the request named something. I recommend answering 400 `invalid_org_id` when a value is present but malformed, via a new `readRequestedOrgId(c)` that the resolver path uses.
+- **Malformed org ids:** `getOrgIdFromRequest` (`private/account/src/utils/request.ts:32-36`) silently drops a non-UUID `X-Org-Id`/`?orgId`. With the new rule, a single-org user would then quietly get their only org even though the request named something. The recommendation is to answer 400 `invalid_org_id` when a value is present but malformed, via a new `readRequestedOrgId(c)` that the resolver path uses.
 - **`private/account/src/routes/test.ts:68, 813`:** accept an optional `orgId` in the body and pass it through. The seeded users have one org, so nothing else changes.
 
 ### 2.2 Routes that stay org-agnostic

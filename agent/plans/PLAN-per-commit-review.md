@@ -9,7 +9,7 @@ Concurrency: parallel
 Owns: .claude/hooks/stop/wl_review.py, .claude/hooks/post-bash/review_commit.py, .claude/hooks/stop/test-commit-review.py, .claude/rediacc_hooks/guards/block_review_file_edit.py, .claude/rediacc_hooks/guards/block_push_with_unrecorded_reviews.py, .ci/config/commit-review.json, .ci/rediacc_ci/review/**, .ci/scripts/review/**, .github/workflows/claude-review*.yml, .github/workflows/review-status.yml, .ci/rediacc_ci/quality/agent_session_archival.py, agent/reviews/**
 Worklist: (lead adds this with `worklist.py --add`)
 
-**Operator order, 2026-09-25 (section Z):** "Replace the GitHub-side PR review with per-commit reviews ... Keep the GitHub PR labeling. Remove the GitHub review job and its workflow wiring ... I'd start with only high-severity findings blocking."
+**Operator order, 2026-09-25 (section Z):** `Replace the GitHub-side PR review with per-commit reviews ... Keep the GitHub PR labeling. Remove the GitHub review job and its workflow wiring ... I'd start with only high-severity findings blocking.`
 
 ## Tasks
 

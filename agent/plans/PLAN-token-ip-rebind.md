@@ -64,7 +64,7 @@ The submodule PR (A) merges first. The console PR (B, plus the pointer bump) fol
 
 1. **The CLI call.** It goes through the tunnel. The middleware sees `boundIp !== clientIp` on a first-use token and answers 403 `{ error: "Token is bound to a different IP address", code: "TOKEN_IP_MISMATCH", rebind: "totp" | "relogin" }`. The message text stays exactly as it is, so older CLIs keep their current behaviour.
 2. **`accountServerFetch` sees the code** and one of three things happens:
-   - **TTY and `rebind: "totp"`.** It suspends the spinner and prompts "Your IP address changed. Enter the 6-digit code from your authenticator app to move this login here". It then calls `POST /account/api/v1/api-token-ip/rebind {code}` with the same bearer token and retries the original request **once**.
+   - **TTY and `rebind: "totp"`.** It suspends the spinner and prompts `Your IP address changed. Enter the 6-digit code from your authenticator app to move this login here`. It then calls `POST /account/api/v1/api-token-ip/rebind {code}` with the same bearer token and retries the original request **once**.
    - **Non-TTY.** It throws a localized error that names both remedies. The error keeps `status: 403` and the code.
    - **`rebind: "relogin"`.** It never prompts. It says that 2FA is off, so the only remedy is `rdc subscription login`, and that enabling 2FA allows the move in future.
 3. **The server checks** the token (without the IP check), its mode, its creator, the creator's TOTP, the lockout and replay. It then moves `bound_ip` in one conditional UPDATE and writes an audit row.
@@ -340,7 +340,7 @@ Not added. The account integration suite drives the real stack, including the tu
   - `check:ci-em-dash-surfaces` (no em dashes in the new strings).
 - **Docs, `packages/www/src/content/docs/*/account-security.md` (13).**
   - Replace the bullet at en:37 ("IP binding: first request locks the token to that IP address").
-  - Add a short "When your IP address changes" subsection:
+  - Add a short `When your IP address changes` subsection:
     - an interactive CLI asks for your authenticator code and moves the token;
     - automation must run one interactive command or `rdc subscription login`;
     - without 2FA, re-login is the only remedy;

@@ -26,7 +26,7 @@ Only the friction that survives the current code is below.
 | 1 | #1: the judge demands a sweep or proof for work that has not landed, or is not the lead's | 6 of the 10 judge blocks (12:24, 12:26, 14:07, 14:57, 15:04, 15:06). All 10 carried a sweep or proof demand. | 144 of 177 judge blocks carried a sweep or proof demand | about 6, each with investigation tool calls and a writer message | No |
 | 2 | #3: a `no-remaining` block on a short progress reply | 6. The replies were 255 to 1,473 characters. | 45 | 6 full restatements | No. P1.2 re-keyed STATE.md only. |
 | 3 | #2: queue leases reported as "a slot is free now: start it", plus a stale cap estimate | 6 blocks carried queue lines (5 as the headline). 1 of 5 spawn refusals counted a finished writer. | 10 | 6, plus 1 slot the lead was holding and was forced to fill (13:34) | No. The `live_estimate` waiter fix covers the opposite direction. |
-| 4 | #4: interim [SILENT] "waiting on my background task" reports | 3 (15:02, 15:14, 15:17) | 5 blocks with only [SILENT] reports, 4 of them interim waits | 3 | No. P1.5 excludes [SILENT] reports on purpose. |
+| 4 | #4: interim [SILENT] `waiting on my background task` reports | 3 (15:02, 15:14, 15:17) | 5 blocks with only [SILENT] reports, 4 of them interim waits | 3 | No. P1.5 excludes [SILENT] reports on purpose. |
 | 5 | #7: the judge's next-action grep does not match the real change | 3 of the 10 (09:45 DROPPED; 14:07 and 14:57 on `post-tool`) | 7 DROPPED | overlaps #1 | No |
 | 6 | #5: `--tick` evidence refusals | 22 refused calls (24 ids) out of 94 tick calls | not measured | 0 stops, about 22 retry tool calls | No |
 | 7 | #6: liveness-ladder advisories starve the digest | 9 of the 9 digests since 13:59 were 6 identical `ladder` lines. 0 of 52 one-line advisories delivered. The queue grew from 40 to 87. | not measured | 0 turns, but total information loss | P0.2 built the outlet, and ladder entries block it |
@@ -37,14 +37,14 @@ Only the friction that survives the current code is below.
 
 **Frequency.** 6 of today's 10 judge blocks:
 - 12:24 and 12:26: the temp-dir writer's 175 files, uncommitted and in flight. At 12:26 the lead said "still in progress and uncommitted".
-- 14:07 and 14:57: the "hook timeout values" class. At 14:07 the lead said "I made no such change". The 135 to 75 edit sat in the shared tree, and the babysitter committed it later.
+- 14:07 and 14:57: the "hook timeout values" class. At 14:07 the lead said `I made no such change`. The 135 to 75 edit sat in the shared tree, and the babysitter committed it later.
 - 15:04 and 15:06: the 47-alias conversion, which writer a023840 still had in flight. This is hint-proposal (a).
 
 **Root cause.**
 - `wl_reggate.fixset_files`, `.claude/hooks/stop/wl_reggate.py:316-332`. A tick-based fix-set has no commit, so it falls back to `git status --porcelain` of the whole shared worktree (`:329-331`), and that includes every live writer's uncommitted edits.
 - `wl_judge.run_judge`, `.claude/hooks/stop/wl_judge.py:751-760`, injects that list as FIXSET_GROUND_TRUTH. The model then reads the lead's message, which describes the writer's dispatch, together with the writer's files, and infers a "landed bulk transform".
 - `wl_reggate.fix_signals`, `:376-388`, also takes every `fix(` commit in marker..HEAD. On a branch where the babysitter commits everyone's work, that has no author scope.
-- Misfires compound. A fired demand is carried forward as STILL OWED (`wl_classsweep.enforce`, `:389-393`), and a FOLLOWUP only accepts evidence in the last message (`prompt_section`, `:216-228`; `message[-6000:]` at `wl_judge.py`, JUDGE_PROMPT). At 14:57 the lead re-ran a sweep it had already run two turns earlier: "I ran it two turns ago, but the evidence has to be here".
+- Misfires compound. A fired demand is carried forward as STILL OWED (`wl_classsweep.enforce`, `:389-393`), and a FOLLOWUP only accepts evidence in the last message (`prompt_section`, `:216-228`; `message[-6000:]` at `wl_judge.py`, JUDGE_PROMPT). At 14:57 the lead re-ran a sweep it had already run two turns earlier: `I ran it two turns ago, but the evidence has to be here`.
 
 **Already fixed?** No. Today's diff to `wl_classsweep`, `wl_proofcheck` and `wl_reggate` only factors out `_clean` and `run_quiet`.
 
@@ -81,7 +81,7 @@ Only the friction that survives the current code is below.
 
 **Frequency.**
 - 6 blocks carried queue lines: 09:50, 09:53, 11:05, 13:34, 14:45 and 15:08. At 15:08:58 there were 15 lines, all of them "start it", while only 1 slot was free.
-- At 13:34 the lead wrote: "I was holding the last slot for the babysitter's plan-evidence writer, but the stop hook requires a free slot to be used."
+- At 13:34 the lead wrote: `I was holding the last slot for the babysitter's plan-evidence writer, but the stop hook requires a free slot to be used.`
 - There were 5 spawn refusals today. The one at 15:08:28 listed `a9130421dc7d46527`. That writer's transcript ended at 15:06:19: its last record is idle and it has no armed shells. The lead wrote: "The cap check still counts the stop-hook writer, which has finished."
 
 **Root cause.**
@@ -89,7 +89,7 @@ Only the friction that survives the current code is below.
 - `defect_rows`, `:945`, renders those items under V_ROSTER_DEAD (`.claude/hooks/stop/worklist_messages.py:2429-2436`, key `roster-dead`). A queue is not a finished worker.
 - The cap estimate. `live_estimate` (`:705`) trusts the previous Stop event (`lastevent`, `:716-725`).
 - `shell_waiters` (`:342-365`) turns an agent into a live "waiter" whenever the event lists as running a shell whose `backgroundTaskId` appears in that agent's transcript. Unlike `transcript_waiting` (`:389-401`), it never checks `armed_shells`, meaning whether the agent's own transcript already received that shell's `<task-id>`.
-- a9130421 launched `b97piyqux` and `by0qlir2f`. The event I could have used to confirm this has since been overwritten, so this cause is the most likely one, not a proven one.
+- a9130421 launched `b97piyqux` and `by0qlir2f`. The event that could have confirmed this has since been overwritten, so this cause is the most likely one, not a proven one.
 
 **Already fixed?** Partly, in the other direction only. Today's `transcript_waiting` change stops the estimate from under-counting an agent that is waiting on its shell. Nothing stops it over-counting a finished one.
 
@@ -110,7 +110,7 @@ Only the friction that survives the current code is below.
 **Frequency.** 3 today, all interim waits:
 - 15:02: "Waiting on the suite result."
 - 15:14: "Waiting for the background test run (`b5qnfbl1g`...)"
-- 15:17: "I'll wait for this notification now."
+- 15:17: `I'll wait for this notification now.`
 
 Across the 9 days, 4 of the 5 blocks carrying only [SILENT] reports were interim waits. Since P1.5, these are the only unread-report blocks left.
 
@@ -127,7 +127,7 @@ Across the 9 days, 4 of the 5 blocks carrying only [SILENT] reports were interim
 - If the agent finishes without a later capture, the entry comes back as unread. It fails closed.
 
 **Test.** New file `.claude/rediacc_hooks/tests/test_wl_interim_reports.py`.
-- The control: capture "I'll wait for this notification now." with a transcript whose last record is idle and holds an armed `backgroundTaskId`. `unread()` returns it before the change and is empty after it.
+- The control: capture `I'll wait for this notification now.` with a transcript whose last record is idle and holds an armed `backgroundTaskId`. `unread()` returns it before the change and is empty after it.
 - The first inverse: append the `<task-id>` notification plus a final idle record, with no later capture. It is returned again.
 - The second inverse: a later capture `-2` marks the interim entry superseded.
 
@@ -212,7 +212,7 @@ The result is permanent head-of-line blocking.
 **Trigger.**
 - In `band-notice.py`, when a band is crossed (`:230`), also set `st["retro_due"] = {band, at, usage}`. Do not order anything yet.
 - The order is emitted on the first later PostToolUse where STATE.md's mtime moved after `retro_due.at`. That is the existing mtime tracking at `:221`, and it is what "AFTER the STATE.md write" means here.
-- In `wl_checks.handle_post_compact` (`:1441`), append the order after the briefing, the facts and the plans. On the missing-STATE arm, it says "after you write STATE.md".
+- In `wl_checks.handle_post_compact` (`:1441`), append the order after the briefing, the facts and the plans. On the missing-STATE arm, it says `after you write STATE.md`.
 
 **Once per session per band, never for a subagent.**
 - The dedupe key is `(session8, band)`, with band in `{early, late, post-compact}`. The ledger is the source of truth, because the band state file is reset on every epoch (`band-notice.py`, usage-drop reset).

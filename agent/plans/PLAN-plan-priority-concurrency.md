@@ -342,7 +342,7 @@ This is the plan-deps T3 guard. It already applies the Edit to the on-disk text 
 
    Then one AskUserQuestion:
    - "Approve all as shown" (recommended);
-   - "Approve, with the changes I type";
+   - `Approve, with the changes I type`;
    - "Show the overlapping rows first";
    - "Hold the migration".
 

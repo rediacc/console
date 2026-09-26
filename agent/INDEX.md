@@ -471,7 +471,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 71 | 1 | 6 | 10989 |
-| `agent/plans/PLAN-app-wide-org-selection.md` | approved | 252 | 3 | 0 | 23396 |
+| `agent/plans/PLAN-app-wide-org-selection.md` | approved | 252 | 3 | 0 | 23416 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-b2-emit-matrix.md` | partially | 302 | 0 | 13 | 33994 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
@@ -493,9 +493,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | proposed | 314 | 0 | 0 | 34404 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
-| `agent/plans/PLAN-commit-as-you-go.md` | draft | 371 | 13 | 0 | 32476 |
+| `agent/plans/PLAN-commit-as-you-go.md` | draft | 371 | 13 | 0 | 32497 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
-| `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 397 | 11 | 0 | 35708 |
+| `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 397 | 11 | 0 | 35724 |
 | `agent/plans/PLAN-config-networkid-sync.md` | draft | 272 | 8 | 0 | 29402 |
 | `agent/plans/PLAN-config-passkey-optional.md` | approved | 116 | 4 | 0 | 12469 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 442 | 19 | 0 | 48962 |
@@ -543,7 +543,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
-| `agent/plans/PLAN-retire-bash-oracles.A0.md` | UNKNOWN | 256 | 0 | 0 | 28311 |
+| `agent/plans/PLAN-retire-bash-oracles.A0.md` | UNKNOWN | 256 | 0 | 0 | 28309 |
 | `agent/plans/PLAN-retire-bash-oracles.md` | approved | 300 | 15 | 0 | 32250 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
@@ -560,10 +560,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
 | `agent/plans/PLAN-stop-hook-continuity.md` | executing | 435 | 0 | 22 | 49019 |
-| `agent/plans/PLAN-stop-hook-focus-mode.md` | draft | 339 | 2 | 6 | 32290 |
+| `agent/plans/PLAN-stop-hook-focus-mode.md` | draft | 341 | 2 | 6 | 32291 |
 | `agent/plans/PLAN-stop-hook-overhaul.md` | ready | 113 | 0 | 9 | 11928 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 367 | 1 | 16 | 48783 |
-| `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 598 | 1 | 22 | 63293 |
+| `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 598 | 1 | 22 | 63290 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | ready | 231 | 7 | 3 | 20842 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | draft | 100 | 16 | 1 | 9315 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
@@ -626,7 +626,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-rotation-gh-removal.md` | done | 68 | 0 | 0 | 6832 |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | done | 204 | 0 | 10 | 20644 |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | done | 321 | 0 | 20 | 41672 |
-| `agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md` | done | 228 | 0 | 1 | 22521 |
+| `agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md` | done | 228 | 0 | 1 | 22519 |
 | `agent/plans/_done/PLAN-stop-hook-plan-agent-check-declined.md` | superseded | 29 | 5 | 0 | 2281 |
 | `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` | done | 329 | 0 | 20 | 46013 |
 | `agent/plans/_done/PLAN-stop-hook-task-verification.md` | done | 273 | 0 | 15 | 37694 |

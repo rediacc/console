@@ -2,13 +2,12 @@
 
 Tests for `scripts/dev/bws-rotate.py`, which takes a live credential from a terminal and writes it to five places. Its refusals ARE the feature, and a refusal nobody exercises is indistinguishable from a function that always returns true.
 
-NO REAL CREDENTIAL IS USED, READ OR WRITTEN, ANYWHERE IN THIS FILE. `bws` and `gh` are both faked on PATH; the fixture token is the literal string `0.fixture-client.fixture-secret:fixture-key`, which exists in no store.
-Every case runs inside a fresh tmp_path and the subject is pointed at it with the five seams the module declares (BWS_BIN, GH_BIN, BWS_ROTATE_TARGET_FILE, BWS_ROTATE_GITMODULES, BWS_ROTATE_SECRET_MAP).
+NO REAL CREDENTIAL IS USED, READ OR WRITTEN, ANYWHERE IN THIS FILE. `bws` and `gh` are both faked on PATH; the fixture token is the literal string `0.fixture-client.fixture-secret:fixture-key`, which exists in no store. Every case runs inside a fresh tmp_path and the subject is pointed at it with the five seams the module declares (BWS_BIN, GH_BIN, BWS_ROTATE_TARGET_FILE, BWS_ROTATE_GITMODULES, BWS_ROTATE_SECRET_MAP).
 
-WHY A PTY, and it is not an affectation. The module's first refusal is `sys.stdin.isatty()`, which exists to make an AI session physically unable to feed it a credential.
-That refusal is tested as a REAL process with stdin from a pipe (`run_lib_process`), and everything downstream of the prompt is tested through a real stdin pty (`run_full`), which `getpass.getpass` needs to turn echo off and actually read the pasted value. Without one, the whole write path would be unreachable and this file would only ever prove that the door is shut.
+WHY A PTY, and it is not an affectation. The module's first refusal is `sys.stdin.isatty()`, which exists to make an AI session physically unable to feed it a credential. That refusal is tested as a REAL process with stdin from a pipe (`run_lib_process`), and everything downstream of the prompt is tested through a real stdin pty (`run_full`), which `getpass.getpass` needs to turn echo off and actually read the pasted value. Without one, the whole write path would be unreachable and this file would only ever prove that the door is shut.
 
-THE INPUT WAITS FOR ECHO-OFF, not a fixed sleep. A value written to the pty before `getpass` has turned echo off can be echoed back by the terminal driver and appear in the captured output (the "nothing is printed" assertion would then fire on the harness rather than on the subject); worse, `getpass` turns echo off with `termios.TCSAFLUSH`, which discards unread input at the moment it runs, so a write that lands a hair too early is silently dropped rather than merely echoed -- the exact shape of the pty hang `_bounded_stdout` guards against. `_wait_for_echo_off` polls the pty's ECHO bit through the master fd (which mirrors the slave's termios state, see pty(7)) until `getpass`'s own `tcsetattr` has run, which is deterministic where a fixed sleep before it was a bet against machine load. This assumes `getpass` turns echo off on THIS pty rather than on some other terminal: verified for this harness, `getpass.getpass` tries `/dev/tty` first and only falls back to `sys.stdin` when that open fails, and neither pytest nor a child spawned the way `run_full` spawns one has a controlling terminal at all here (`os.open('/dev/tty', ...)` raises ENXIO for both), so the `sys.stdin` fallback -- this test's own pty -- is the path that always runs.
+THE INPUT WAITS FOR ECHO-OFF, not a fixed sleep. A value written to the pty before `getpass` has turned echo off can be echoed back by the terminal driver and appear in the captured output (the "nothing is printed" assertion would then fire on the harness rather than on the subject); worse, `getpass` turns echo off with `termios.TCSAFLUSH`, which discards unread input at the moment it runs, so a write that lands a hair too early is silently dropped rather than merely echoed -- the exact shape of the pty hang `_bounded_stdout` guards against.
+`_wait_for_echo_off` polls the pty's ECHO bit through the master fd (which mirrors the slave's termios state, see pty(7)) until `getpass`'s own `tcsetattr` has run, which is deterministic where a fixed sleep before it was a bet against machine load. This assumes `getpass` turns echo off on THIS pty rather than on some other terminal: verified for this harness, `getpass.getpass` tries `/dev/tty` first and only falls back to `sys.stdin` when that open fails, and neither pytest nor a child spawned the way `run_full` spawns one has a controlling terminal at all here (`os.open('/dev/tty', ...)` raises ENXIO for both), so the `sys.stdin` fallback -- this test's own pty -- is the path that always runs.
 
 EVERY REFUSAL HAS A MIRROR. A rail that cannot be crossed on purpose is indistinguishable from a verb that never writes anything, which is the exact failure mode a script guarding five credentials must not have.
 
@@ -218,9 +217,7 @@ def _bounded_stdout(proc: subprocess.Popen, timeout: float) -> bytes:
     return out or b""
 
 
-# Bound for _wait_for_echo_off, not an expected wait: getpass reaches its tcsetattr well
-# under a second even on the loaded box this was written for (control passes in 1.44s per
-# _bounded_stdout's own docstring). This only needs to be longer than that.
+# Bound for _wait_for_echo_off, not an expected wait: getpass reaches its tcsetattr well under a second even on the loaded box this was written for (control passes in 1.44s per _bounded_stdout's own docstring). This only needs to be longer than that.
 _ECHO_WAIT_TIMEOUT = 10.0
 
 
@@ -402,8 +399,7 @@ def test_the_same_credential_pasted_back_is_refused(tmp_path):
 
 
 def test_an_unreachable_fingerprint_tool_refuses_instead_of_blaming_the_candidate(tmp_path):
-    """THIS CASE EXISTS BECAUSE A PLANT FOUND THE BUG in the bash original. `fingerprint_of` answers "" both for a token with no client id and for a module that could not be imported, and check 3 read the second as the first: a copy of the script run from outside the repository refused a good token with "the candidate has no client id".
-    A missing tool must never wear a verdict's clothes.
+    """THIS CASE EXISTS BECAUSE A PLANT FOUND THE BUG in the bash original. `fingerprint_of` answers "" both for a token with no client id and for a module that could not be imported, and check 3 read the second as the first: a copy of the script run from outside the repository refused a good token with "the candidate has no client id". A missing tool must never wear a verdict's clothes.
 
     The copy sits under the fixture root, so its own `parents[2]` puts ROOT somewhere with no `.ci/` in it. That is the real shape of the bug rather than a simulation of it.
     """

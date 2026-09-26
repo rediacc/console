@@ -217,7 +217,7 @@ New file: `/home/developer/console/.claude/rediacc_hooks/tests/test_wl_cap_wait.
 
 ## Still unverified (hypotheses)
 
-- I did not run `teammate_state("queue")` to confirm it returns "unverifiable"; this is inferred from `_teammate_meta` finding no meta.
+- `teammate_state("queue")` was not run to confirm it returns "unverifiable"; this is inferred from `_teammate_meta` finding no meta.
 - The keep/drop split for `pending-ask`, `ci-red` and `pr-finish` is a judgment call, not required by the operator's text.
 
 ### Critical Files for Implementation

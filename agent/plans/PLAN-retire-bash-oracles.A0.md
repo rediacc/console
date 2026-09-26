@@ -3,11 +3,11 @@
 # A0 design: `test_bash_semantics.py`, the kept real-bash facts, and the live bugs they expose
 Depends-On: no-dep -- appendix of PLAN-retire-bash-oracles.md; carries no work of its own
 
-I checked every probe below against `/usr/bin/bash` 5.3.9 in this session, except where a row says otherwise. Nothing in the tree was modified.
+Every probe below was checked against `/usr/bin/bash` 5.3.9 in this session, except where a row says otherwise. Nothing in the tree was modified.
 
 ## 1. Live bugs: things the Python assumes that bash does not do (listed first)
 
-I ran each shape through both the Python scanner and the oracle `command-scan.sh`, and on the 19 shapes I tried the two gave the same answer every time. So these bugs were copied from bash, not introduced by the port. A differential against the oracle could never have found them. They belong in A4 as category-(i) Rule T fixes.
+Each shape ran through both the Python scanner and the oracle `command-scan.sh`, and on the 19 shapes tried the two gave the same answer every time. So these bugs were copied from bash, not introduced by the port. A differential against the oracle could never have found them. They belong in A4 as category-(i) Rule T fixes.
 
 **Fail-open (the guard lets the command through):**
 
