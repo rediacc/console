@@ -86,7 +86,7 @@ ALLOWED: dict[str, Allowed] = {
         " dispatch they belong in the executor log, not in a tenant's response",
     ),
     "commands/vscode.ts": Allowed(
-        18,
+        2,
         "BLOCKER: vscode connect, list, cleanup and check edit the local SSH config and launch a"
         " local VS Code; the contract marks all four proxyCapable false, so none runs in a dispatch",
     ),
