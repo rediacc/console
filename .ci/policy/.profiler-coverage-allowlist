@@ -62,6 +62,8 @@ ci-build-docker.yml:build-server-docker-skip
 ci-build-renet.yml:build-renet
 ci-build-renet.yml:cross-compile-smoke
 ci-build-renet.yml:extract-renet
+ci-build-renet.yml:extract-renet-cross
+ci-build-renet.yml:extract-renet-linux
 #
 # ci-quality.yml
 ci-quality.yml:quality-branch

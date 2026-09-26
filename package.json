@@ -379,7 +379,6 @@
     "ci:quick": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts --quick",
     "ci:list": "tsx scripts/ci-runner/run.ts --list",
     "ci:serial": "tsx scripts/ci-runner/run.ts --jobs 1",
-    "ci:budget-report": "PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report",
     "quality": "npm run ci",
     "test:quality-gates": ".ci/rediacc_ci/battery.py",
     "test:e2e": "npm test -w @rediacc/e2e-tests",

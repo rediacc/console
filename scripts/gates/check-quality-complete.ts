@@ -103,7 +103,7 @@ import process from 'node:process';
 import { laneCapabilities, SHARD_COUNTS, type Shard, shardPlan } from '../ci-runner/lanes.js';
 import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
 import { GREEN, NC, RED } from '../lib/console.js';
-import { runControls } from '../lib/controls.js';
+import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
 
 const ROOT = envRoot('QUALITY_COMPLETE_ROOT');
@@ -1388,13 +1388,7 @@ function selftest(): number {
     },
   ];
 
-  const failed = runControls(cases);
-  console.log(
-    failed === 0
-      ? `${GREEN}✓${NC} ${cases.length} controls passed`
-      : `${RED}✗${NC} ${failed}/${cases.length} controls failed`
-  );
-  return failed === 0 ? 0 : 1;
+  return summarizeControls(cases);
 }
 
 process.exit(process.argv.includes('--selftest') ? selftest() : main(process.argv.slice(2)));

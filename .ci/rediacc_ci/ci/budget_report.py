@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """CI time budget report (operator spec W, `agent/plans/PLAN-ci-time-budget.md` T1.1): "every CI job finishes in 15 minutes or less, and the whole pipeline in 20 minutes or less."
 
-Read-only against the Actions API, wired as `npm run ci:budget-report`. No twin: this is P1's measurement instrument, not a port of an existing script, so there is nothing to be differential against.
+Read-only against the Actions API, run as `PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report` (a package.json key would grow check:ci-package-key-budget's shrink-only set). No twin: this is P1's measurement instrument, not a port of an existing script, so there is nothing to be differential against.
 
 WHAT IT PRODUCES, per run class (`pr-full`, `main-push`, `schedule`):
   - per-job median / p90 / max wall time (successful jobs only, matching how

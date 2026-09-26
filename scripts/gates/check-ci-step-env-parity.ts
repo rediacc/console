@@ -63,7 +63,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { GREEN, NC, RED } from '../lib/console.js';
-import { runControls } from '../lib/controls.js';
+import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
 
 const ROOT = envRoot('CI_STEP_ENV_PARITY_ROOT');
@@ -674,13 +674,7 @@ function selftest(): number {
     },
   ];
 
-  const failed = runControls(cases);
-  console.log(
-    failed === 0
-      ? `${GREEN}✓${NC} ${cases.length} controls passed`
-      : `${RED}✗${NC} ${failed}/${cases.length} controls failed`
-  );
-  return failed === 0 ? 0 : 1;
+  return summarizeControls(cases);
 }
 
 process.exit(process.argv.includes('--selftest') ? selftest() : main());

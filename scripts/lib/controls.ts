@@ -96,6 +96,20 @@ export function runControls(cases: ControlCase[], opts: RunControlsOptions = {})
 }
 
 /**
+ * Run the cases, print the one-line verdict (`✓ N controls passed` or `✗ F/N controls failed`), and return the exit code. Three gates carried this tail verbatim until check:ci-shape-duplication counted the third copy (2026-09-26).
+ */
+export function summarizeControls(cases: ControlCase[], opts: RunControlsOptions = {}): number {
+  const failed = runControls(cases, opts);
+  const log = opts.log ?? ((l: string) => console.log(l));
+  log(
+    failed === 0
+      ? `${GREEN}✓${NC} ${cases.length} controls passed`
+      : `${RED}✗${NC} ${failed}/${cases.length} controls failed`
+  );
+  return failed === 0 ? 0 : 1;
+}
+
+/**
  * Refuse: print a diagnostic to stderr and exit 1, never returning.
  *
  * WHY THIS EXISTS. `check:ci-shape-duplication` found the same ~5-line span in three

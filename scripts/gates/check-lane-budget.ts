@@ -64,6 +64,8 @@
  * lane: quality-code
  * needs: node
  * selftest: true
+ * emit: false
+ * blocker: .ci/config/lane-durations.json holds no measurements until PLAN-ci-time-budget T3.2 (budget_report.py --refresh) and T1.6 (unit-duration artifacts) land, and checks 4 and 5 red on missing data rather than a real overrun; it runs by hand until then (2026-09-26).
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
  *   whole misses its 20-minute target; this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner
@@ -89,7 +91,7 @@ import {
   shardManifestPath,
 } from '../ci-runner/shard-manifest.js';
 import { GREEN, NC, RED } from '../lib/console.js';
-import { runControls } from '../lib/controls.js';
+import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
 
 // imported for readers following the manifest module; this gate reads `legs` directly to report every leg, not one at a time.
@@ -631,13 +633,7 @@ function selftest(): number {
     },
   ];
 
-  const failed = runControls(cases);
-  console.log(
-    failed === 0
-      ? `${GREEN}✓${NC} ${cases.length} controls passed`
-      : `${RED}✗${NC} ${failed}/${cases.length} controls failed`
-  );
-  return failed === 0 ? 0 : 1;
+  return summarizeControls(cases);
 }
 
 process.exit(process.argv.includes('--selftest') ? selftest() : main());
