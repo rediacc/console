@@ -315,6 +315,37 @@ case(
     True,
 )
 
+
+# ANY PREFIX of 7+ characters names the commit, not only the 10-character one: git's own `--short` form here is 9, and a follow-up spelling that form stayed refused (2026-09-26). The inverse keeps a hex word that is NOT a prefix of the bulk SHA from clearing it.
+def followup_naming(prefix, token_of):
+    repo = scratch_repo()
+    remote = scratch_dir()
+    git(remote, "init", "-q", "--bare")
+    git(repo, "remote", "add", "origin", remote)
+    git(repo, "push", "-q", "-u", "origin", "main")
+    stage_files(repo, BULK, prefix=prefix)
+    git(repo, "commit", "-qm", "style: bulk rewrite with no proof")
+    full = git(repo, "rev-parse", "HEAD").stdout.strip()
+    with open(os.path.join(repo, "tiny.txt"), "w", encoding="utf-8") as fh:
+        fh.write("x\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "docs: sampled and read %s by hand" % token_of(full))
+    return repo
+
+
+case(
+    "a follow-up naming the SHA by a 7-character prefix clears it",
+    "git push",
+    followup_naming("t", lambda full: full[:7]),
+    False,
+)
+case(
+    "a follow-up naming a hex word that is not a prefix of the SHA does NOT clear it",
+    "git push",
+    followup_naming("u", lambda full: ("0" if full[0] != "0" else "1") + full[1:9]),
+    True,
+)
+
 # A SHA listed in the repo's own bulk-transform-proof-baseline.json is grandfathered -- pre-existing debt at the moment the baseline landed, the same shrink-only shape every other baseline in this repo uses.
 baseline_repo = scratch_repo()
 remote_b = scratch_dir()

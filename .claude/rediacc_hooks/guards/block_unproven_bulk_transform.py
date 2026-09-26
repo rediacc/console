@@ -275,8 +275,19 @@ def _proven_by_a_later_commit(sha, newer_messages):
 
     `sha[:10]` matches how this guard already abbreviates a SHA everywhere else it prints one (`BLOCK_RANGE`), so a follow-up commit only has to spell the same short form.
     """
-    short = sha[:10]
-    return any(short in msg and _proof_shown(msg) for msg in newer_messages)
+    return any(_names_sha(msg, sha) and _proof_shown(msg) for msg in newer_messages)
+
+
+# A hex word of at least 7 characters, git's minimum abbreviation.
+_HEX_WORD = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+def _names_sha(msg, sha):
+    """Whether `msg` names `sha` by ANY prefix of 7 or more characters.
+
+    Matching only `sha[:10]` refused a follow-up proof written with git's own short form: this repo abbreviates to 9 (`git rev-parse --short`), so a message naming `bd0278084` never matched `bd02780841` and the push stayed blocked on a proof that was there (2026-09-26).
+    """
+    return any(sha.startswith(word) for word in _HEX_WORD.findall(msg))
 
 
 def _first_unproven(shas, cwd):
