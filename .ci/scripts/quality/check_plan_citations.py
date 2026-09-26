@@ -595,7 +595,7 @@ def is_gitignored(root, rel):
     return rel not in _tracked_paths(str(root)) and not _is_tracked_dir(str(root), rel)
 
 
-_TRACKED = {}
+_TRACKED: dict[str, frozenset[str] | None] = {}
 
 
 def _tracked_paths(root):
