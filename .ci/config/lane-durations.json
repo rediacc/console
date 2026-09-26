@@ -1,0 +1,23 @@
+{
+  "$comment": [
+    "T2.9/T3.2 (PLAN-ci-time-budget, operator spec W). Measured cost per lane, read by",
+    "scripts/ci-runner/lanes.ts's shardPlan (its optional 4th argument) so a sharded lane",
+    "balances legs by real duration once one exists, instead of by scheduler `weight`.",
+    "'jobs' is each job's fixed cost (p90 minutes, setup through the first runner step);",
+    "'units' is each shard-plan unit id's own p90 in MILLISECONDS, keyed exactly as the",
+    "id appears in gates.lock.json (a quality-code check id) or in a test lane's own",
+    "enumerator (scripts/ci-runner/unit-enumerators.ts), for example 'pytest:tests/....py'.",
+    "SEEDED 2026-09-26 with 'concurrency' only (operator ruling D-W1: stay on GitHub Free,",
+    "20 concurrent jobs) -- 'jobs' and 'units' are empty until T3.2's",
+    "'budget_report.py --refresh' runs against real green CI data. An empty 'units' means",
+    "every shardPlan caller falls back to `weight` for every unit, so quality-code's plan",
+    "is unaffected until this file actually names one of its ids (see the selftest control",
+    "'shardPlan(durations: {}) is byte-identical to shardPlan() with no durations argument'",
+    "in scripts/gate-bind.ts).",
+    "T3.1's freshness check (not yet built) reds when 'refreshed_at' is older than 14 days."
+  ],
+  "refreshed_at": null,
+  "concurrency": 20,
+  "jobs": {},
+  "units": {}
+}

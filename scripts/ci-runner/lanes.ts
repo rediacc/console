@@ -182,6 +182,76 @@ export function placeGate(
   return { error: `no lane provides all of: ${needs.join(', ')}` };
 }
 
+/**
+ * Test lanes beyond ci-quality.yml (spec W, T2.7).
+ *
+ * DELIBERATELY SEPARATE FROM `LANE_ORDER`. `LANE_ORDER` and `placeGate` answer "which
+ * QUALITY lane should this check gate run in", and cost-order placement there means any
+ * lane whose capabilities are a superset of a gate's needs is a valid home for it.
+ * `test-e2e-workers` checks out every submodule and has node -- a superset of nearly
+ * every gate's needs -- so adding it to `LANE_ORDER` would let an ordinary `check:*` gate
+ * satisfy-and-land inside a 40-minute VM job instead of a quality lane, which is a
+ * mis-placement this file's own placeGate docstring exists to prevent. Test lanes are not
+ * placement candidates: they are fixed homes for an entire pre-existing job's test suite,
+ * looked up by name, never chosen by capability match.
+ *
+ * This registry exists only so `shardPlan` and its callers (the T3.1 lane-budget gate,
+ * `npm run ci -- --lane`) can find the ONE workflow file that defines a given lane, now
+ * that lanes live in more than `ci-quality.yml`. A lane absent from the workflow it names
+ * here is not an error at THIS layer -- `laneCapabilities` simply returns no entry for it,
+ * and `shardPlan`'s own "lane is not a job in the workflow" refusal catches it exactly as
+ * it does today for `quality-*`. That is deliberate: `test-renet-go`, `test-renet-integration`,
+ * `quality-pytest`, `quality-gate-tests` and `ops-tutorials` do not exist as separate jobs
+ * yet (T2.14/T2.15/T2.16 split them out of `test-renet` and `quality-security`), so this
+ * table names where they WILL live and stays inert -- same shape as a `SHARD_COUNTS` entry
+ * for a lane the workflow does not yet define.
+ */
+export const TEST_LANE_WORKFLOWS: Readonly<Record<string, string>> = {
+  'test-e2e-workers': '.github/workflows/ct-tests.yml',
+  'test-account-e2e': '.github/workflows/ct-tests.yml',
+  'test-renet-go': '.github/workflows/ct-tests.yml',
+  'test-renet-integration': '.github/workflows/ct-tests.yml',
+  'quality-pytest': '.github/workflows/ci-quality.yml',
+  'quality-gate-tests': '.github/workflows/ci-quality.yml',
+  'ops-tutorials': '.github/workflows/ci-ops-test.yml',
+};
+
+/**
+ * `laneCapabilities()` over every workflow a test/quality lane can live in, merged into
+ * one map keyed by job name -- the same key `shardPlan` and `placeGate` already index on.
+ *
+ * REFUSES A JOB-NAME COLLISION ACROSS FILES rather than letting the later file silently
+ * win. Every workflow in this repo names its jobs distinctly today (measured: no job id
+ * repeats between `ci.yml`, `ci-quality.yml`, `ct-tests.yml` and `ci-ops-test.yml`), so a
+ * collision means two files were merged that were never meant to be, or a job was renamed
+ * in one without the other -- either way a silent overwrite would let one job's runner and
+ * timeout stand in for the other's.
+ *
+ * `workflows` is `{path: text}` rather than a `TEST_LANE_WORKFLOWS`-shaped map, so a caller
+ * building it decides once which files to read (and reads each exactly once, even when
+ * several lanes share one file) instead of this function re-deriving that from the
+ * registry above.
+ */
+export function mergeLaneCapabilities(
+  workflows: Readonly<Record<string, string>>
+): Map<string, LaneCapabilities> {
+  const out = new Map<string, LaneCapabilities>();
+  for (const [path, text] of Object.entries(workflows)) {
+    for (const [job, cap] of laneCapabilities(text)) {
+      const already = out.get(job);
+      if (already !== undefined) {
+        throw new Error(
+          `mergeLaneCapabilities: job "${job}" is defined in more than one of the given ` +
+            `workflows (at least one is "${path}"). Lane lookup by job name is ambiguous ` +
+            'while that holds, and every caller here indexes lanes by job name alone.'
+        );
+      }
+      out.set(job, cap);
+    }
+  }
+  return out;
+}
+
 /* -------------------------------------------------------------------------
  * SHARDING (T-SCHED B1). Pure: reads the lock and the derived lane table, and
  * writes nothing.
@@ -477,10 +547,41 @@ export const SHARD_REPLICATED_MAX: Readonly<Record<string, number>> = { 'quality
  * `needs` edge is therefore a co-location constraint here, exactly like a
  * mutex group.
  */
+/**
+ * T2.9. Measured cost per id (milliseconds, p90), read from `.ci/config/lane-durations.json`.
+ * OPTIONAL and additive: `shardPlan`'s fourth argument, defaulting to none, so every
+ * existing call site (today, all of them) keeps balancing on `weight` exactly as before.
+ *
+ * A UNIT'S COST FALLS BACK TO `weight` UNLESS EVERY ONE OF ITS MEMBER IDS HAS A MEASURED
+ * DURATION. A unit is one indivisible thing after `shardPlan`'s own mutex/step/needs
+ * merge, so packing it by a PARTIAL sum (three of five merged ids measured, two not) would
+ * understate its real cost by exactly the unmeasured share -- worse than the honest
+ * `weight` fallback, which at least does not pretend precision it does not have. `quality-
+ * code` has zero entries in `lane-durations.json` today (T3.2, not yet run), so every one
+ * of its units falls back to `weight` and its plan is BYTE-IDENTICAL to a call with no
+ * `durations` argument at all -- the selftest control below asserts exactly that.
+ */
+function unitCost(unit: Unit, durations: Readonly<Record<string, number>> | undefined): number {
+  if (durations !== undefined) {
+    let sum = 0;
+    for (const id of unit.ids) {
+      const ms = durations[id];
+      if (ms === undefined) {
+        sum = -1;
+        break;
+      }
+      sum += ms;
+    }
+    if (sum >= 0) return sum;
+  }
+  return unit.weight;
+}
+
 export function shardPlan(
   lock: readonly ShardInput[],
   caps: ReadonlyMap<string, LaneCapabilities>,
-  shards: Readonly<Record<string, number>>
+  shards: Readonly<Record<string, number>>,
+  durations?: Readonly<Record<string, number>>
 ): ShardPlan | { error: string } {
   const laneNames = Object.keys(shards).sort();
   if (laneNames.length === 0) {
@@ -648,25 +749,30 @@ export function shardPlan(
       };
     }
 
-    // BALANCE. Longest-processing-time first: the achievable floor is the heaviest single unit, so it has to be placed while every shard is still empty. `slow` breaks a weight tie because a slow gate is the one whose real cost the weight is least likely to describe.
+    // BALANCE. Longest-processing-time first: the achievable floor is the heaviest single unit, so it has to be placed while every shard is still empty. `slow` breaks a cost tie because a slow gate is the one whose real cost `weight` (the fallback currency) is least likely to describe.
+    //
+    // T2.9: the currency is `unitCost` (measured p90 milliseconds when every member id of the unit has one, else `weight`), not `weight` directly. For every lane measured so far (`durations` absent, or present with no entries matching this lane's ids -- true of `quality-code` until T3.2 runs) `unitCost` returns exactly `unit.weight` for every unit, so this ordering and the packing below stay unchanged.
     const ordered = [...unitList].sort((a, b) => {
-      if (b.weight !== a.weight) return b.weight - a.weight;
+      const costB = unitCost(b, durations);
+      const costA = unitCost(a, durations);
+      if (costB !== costA) return costB - costA;
       if (b.slow !== a.slow) return b.slow - a.slow;
       if (b.ids.length !== a.ids.length) return b.ids.length - a.ids.length;
       return (rank.get(a.ids[0] as string) ?? 0) - (rank.get(b.ids[0] as string) ?? 0);
     });
 
     const bins: Unit[][] = Array.from({ length: want }, () => []);
-    const binWeight = new Array<number>(want).fill(0);
+    const binCost = new Array<number>(want).fill(0);
     const binHeavy = new Array<number>(want).fill(0);
     for (const unit of ordered) {
       // PEAK, NOT RAW COUNT. A mutex- or step-merged unit's `heavy` field is a sum over ids that never run at once (one mutex group, one `run:` block), so packing and the shard's own receipt must use `concurrentHeavy(unit)` here, the same peak the refusal above is computed against -- using the raw sum would both refuse a bin for a unit that only ever holds one heavy process and
       // report a shard's `heavy` count higher than what can ever be resident.
       const peak = concurrentHeavy(unit);
+      const cost = unitCost(unit, durations);
       let pick = -1;
       for (let i = 0; i < want; i += 1) {
         if (peak > 0 && binHeavy[i] > 0) continue;
-        if (pick === -1 || (binWeight[i] as number) < (binWeight[pick] as number)) pick = i;
+        if (pick === -1 || (binCost[i] as number) < (binCost[pick] as number)) pick = i;
       }
       if (pick === -1) {
         return {
@@ -677,7 +783,7 @@ export function shardPlan(
         };
       }
       (bins[pick] as Unit[]).push(unit);
-      binWeight[pick] = (binWeight[pick] as number) + unit.weight;
+      binCost[pick] = (binCost[pick] as number) + cost;
       binHeavy[pick] = (binHeavy[pick] as number) + peak;
     }
 
@@ -699,7 +805,8 @@ export function shardPlan(
         runsOn: cap.runsOn,
         timeoutMinutes: cap.timeoutMinutes,
         ids,
-        weight: binWeight[i] as number,
+        // `binCost`, not a raw weight sum: identical to `weight` for every lane with no matching `durations` entries (every lane today), and the real packing currency once T3.2 populates `.ci/config/lane-durations.json` for a lane.
+        weight: binCost[i] as number,
         slow: held.reduce((n, u) => n + u.slow, 0),
         heavy: binHeavy[i] as number,
       });

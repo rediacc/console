@@ -22,6 +22,12 @@ import { createHash } from 'node:crypto';
  *                                [--only <glob,...>] [--skip <glob,...>]
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
+ *                                [--lane <lane> --shard i/N]
+ *
+ * `--lane <lane> --shard i/N` (PLAN-ci-time-budget T2.10) replays one committed CI leg of
+ * a sharded lane locally, from `.ci/config/shards/<lane>.json`. Today this only resolves
+ * for a gate-backed lane (`quality-code`); a test lane's manifest names test-runner units,
+ * which this pool does not execute (see `resolveLaneShard`'s own refusal).
  *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.
  */
@@ -34,6 +40,7 @@ import { GATES, type GateSpec } from './manifest';
 import { buildGraph, type GateResult, runPool } from './pool';
 import { createReporter } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
+import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Per-gate process-tree profiling (agent/plans/PLAN-shell-resource-profiling.md). ON by default: captures land in .ci/cache/profiles (untracked), and the previous run's set is rotated to profiles.prev at start so check:ci-resprofile judges COMPLETE captures,
@@ -86,6 +93,9 @@ interface Options {
   only?: string[];
   skip?: string[];
   manifest?: string;
+  /** T2.10 `--lane <lane> --shard i/N`: replay exactly one committed shard's ids, in place of `--only`. Both or neither. */
+  lane?: string;
+  shard?: { index: number; of: number };
   /** `--receipt-out`: where to write the push receipt instead of this checkout's own `.ci/cache/`. */
   receiptOut?: string;
 }
@@ -154,6 +164,25 @@ function parseArgs(argv: readonly string[]): Options {
         opts.manifest = value(i, arg);
         i += 1;
         break;
+      case '--lane':
+        opts.lane = value(i, arg);
+        i += 1;
+        break;
+      case '--shard': {
+        const raw = value(i, arg);
+        const m = /^(\d+)\/(\d+)$/.exec(raw);
+        if (m === null) {
+          throw new Error(`ci-runner: --shard needs "i/N" (1-based), got '${raw}'`);
+        }
+        const index = Number(m[1]);
+        const of = Number(m[2]);
+        if (index < 1 || index > of) {
+          throw new Error(`ci-runner: --shard ${raw}: index must be between 1 and ${of}`);
+        }
+        opts.shard = { index, of };
+        i += 1;
+        break;
+      }
       case '--fail-fast':
         opts.failFast = true;
         break;
@@ -194,6 +223,9 @@ function parseArgs(argv: readonly string[]): Options {
   }
   if (opts.jobs === undefined && process.env.CI_JOBS !== undefined) {
     opts.jobs = number(process.env.CI_JOBS, 'CI_JOBS');
+  }
+  if ((opts.lane === undefined) !== (opts.shard === undefined)) {
+    throw new Error('ci-runner: --lane and --shard are both required together, or neither.');
   }
   return opts;
 }
@@ -776,6 +808,124 @@ async function selftest(): Promise<number> {
     '--receipt-out must not narrow the lane: it changes where the verdict is written, not which gates run'
   );
 
+  // T2.10: --lane/--shard PARSING. Both required together, or neither -- a lone --lane silently running the WHOLE manifest (because opts.only stayed undefined) would look exactly like a successful, narrower replay.
+  const laneShardParseCases: [string[], boolean][] = [
+    [['--lane', 'quality-code'], true],
+    [['--shard', '1/4'], true],
+    [['--lane', 'quality-code', '--shard', '1/4'], false],
+    [[], false],
+    [['--shard', 'abc'], true],
+    [['--shard', '0/4'], true],
+    [['--shard', '5/4'], true],
+  ];
+  for (const [argv, wantThrow] of laneShardParseCases) {
+    let threw = false;
+    try {
+      parseArgs(argv);
+    } catch {
+      threw = true;
+    }
+    require_(
+      threw === wantThrow,
+      `parseArgs(${JSON.stringify(argv)}) should ${wantThrow ? '' : 'NOT '}throw`
+    );
+  }
+
+  // T2.10: resolveLaneShard, against a synthetic manifest so this control never depends on what any real lane happens to hold today.
+  const laneDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lane-'));
+  const shardsDir = path.join(laneDir, '.ci', 'config', 'shards');
+  fs.mkdirSync(shardsDir, { recursive: true });
+  const gateSpecs: GateSpec[] = [
+    syntheticSpec('selftest:lane-a', 'true'),
+    syntheticSpec('selftest:lane-b', 'true'),
+  ];
+  fs.writeFileSync(
+    path.join(shardsDir, 'fixture-lane.json'),
+    JSON.stringify({
+      lane: 'fixture-lane',
+      of: 2,
+      generatedAt: '2026-09-26T00:00:00.000Z',
+      legs: [
+        { index: 1, ids: ['selftest:lane-a'] },
+        { index: 2, ids: ['selftest:lane-b'] },
+      ],
+    })
+  );
+  fs.writeFileSync(
+    path.join(shardsDir, 'fixture-test-lane.json'),
+    JSON.stringify({
+      lane: 'fixture-test-lane',
+      of: 1,
+      generatedAt: '2026-09-26T00:00:00.000Z',
+      legs: [{ index: 1, ids: ['playwright:some-spec.test.ts'] }],
+    })
+  );
+  fs.writeFileSync(
+    path.join(shardsDir, 'fixture-mixed.json'),
+    JSON.stringify({
+      lane: 'fixture-mixed',
+      of: 1,
+      generatedAt: '2026-09-26T00:00:00.000Z',
+      legs: [{ index: 1, ids: ['selftest:lane-a', 'playwright:some-spec.test.ts'] }],
+    })
+  );
+  require_(
+    resolveLaneShard('fixture-lane', { index: 1, of: 2 }, gateSpecs, laneDir).join(',') ===
+      'selftest:lane-a',
+    'resolveLaneShard must return exactly leg 1 of a gate-backed lane'
+  );
+  let missingRefused = false;
+  try {
+    resolveLaneShard('no-such-lane', { index: 1, of: 1 }, gateSpecs, laneDir);
+  } catch {
+    missingRefused = true;
+  }
+  require_(missingRefused, 'resolveLaneShard must refuse a lane with no committed manifest');
+  let testLaneRefused = false;
+  try {
+    resolveLaneShard('fixture-test-lane', { index: 1, of: 1 }, gateSpecs, laneDir);
+  } catch (err) {
+    testLaneRefused = /are check gates/.test((err as Error).message);
+  }
+  require_(
+    testLaneRefused,
+    'resolveLaneShard must refuse (by name) a leg whose units are not check gates'
+  );
+  let mixedRefused = false;
+  try {
+    resolveLaneShard('fixture-mixed', { index: 1, of: 1 }, gateSpecs, laneDir);
+  } catch (err) {
+    mixedRefused = /mixed leg cannot be replayed/.test((err as Error).message);
+  }
+  require_(mixedRefused, 'resolveLaneShard must refuse a leg mixing gate and non-gate units');
+  fs.rmSync(laneDir, { recursive: true, force: true });
+
+  // T2.10 END TO END, against the REAL committed manifest, through main() itself -- the same `listGateLines` harness the --list/--only control above uses. Skips only while no lane has ever been sharded to disk yet, which this box's own acceptance requires this session to have already fixed by the time selftest runs.
+  const realManifest = path.join(REPO_ROOT, '.ci', 'config', 'shards', 'quality-code.json');
+  if (fs.existsSync(realManifest)) {
+    const file = parseShardManifest(fs.readFileSync(realManifest, 'utf-8'), 'quality-code');
+    const leg1 = legIds(file, 1, file.of);
+    // Some of leg 1's ids are `gate: false` prerequisite steps (`check:lint` is the shared step several `check:lint:*` gates ride, per shardPlan's own step-sharing merge), and `select()` never selects those on their own -- they run only through a real gate's `needs` closure. `--list` therefore prints one "gate " line per real gate in the leg, not one per id in the manifest.
+    const gateFlagById = new Map(GATES.map((g) => [g.id, g.gate]));
+    const wantGateLines = leg1.filter((id) => gateFlagById.get(id) === true).length;
+    const printed = await listGateLines([
+      '--list',
+      '--lane',
+      'quality-code',
+      '--shard',
+      `1/${file.of}`,
+    ]);
+    require_(
+      printed === wantGateLines,
+      `--lane quality-code --shard 1/${file.of} must print exactly leg 1's ${wantGateLines} gate(s) (of ${leg1.length} unit id(s)), printed ${printed}`
+    );
+  } else {
+    require_(
+      false,
+      'CONTROL: .ci/config/shards/quality-code.json must exist for the end-to-end check to mean anything'
+    );
+  }
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -783,7 +933,7 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4} assertions)\n`);
+  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4 + 12} assertions)\n`);
   return 0;
 }
 
@@ -931,6 +1081,55 @@ function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => vo
   }
 }
 
+/**
+ * T2.10 local reproduction: `npm run ci -- --lane <lane> --shard i/N` replays exactly one
+ * committed leg, read from `.ci/config/shards/<lane>.json` -- the SAME file a CI leg's
+ * `--shard-manifest` would read, never a live `shardPlan` re-run, so a local replay can
+ * never disagree with what was reviewed and committed.
+ *
+ * ONLY WORKS TODAY FOR A GATE-BACKED LANE (`quality-code`): its shard ids are gate ids
+ * already in `specs`, so translating them into `--only` reuses the whole pool unchanged.
+ * A TEST lane's shard holds test-runner unit ids (a spec file, a Go package, ...), which
+ * this pool does not know how to execute -- refusing by name here is the honest answer,
+ * not a silent zero-gate run.
+ */
+function resolveLaneShard(
+  lane: string,
+  shard: { index: number; of: number },
+  specs: readonly GateSpec[],
+  root: string = REPO_ROOT
+): string[] {
+  const rel = shardManifestPath(lane);
+  const abs = path.join(root, rel);
+  if (!fs.existsSync(abs)) {
+    throw new Error(
+      `ci-runner: --lane ${lane}: no shard manifest at ${rel}. It is generated alongside ` +
+        "the workflow's shard-strategy region; run gate-bind's writer, or ask the lane's owner."
+    );
+  }
+  const file = parseShardManifest(fs.readFileSync(abs, 'utf-8'), lane);
+  const ids = legIds(file, shard.index, shard.of);
+  const specIds = new Set(specs.map((s) => s.id));
+  const known = ids.filter((id) => specIds.has(id));
+  if (known.length === 0) {
+    throw new Error(
+      `ci-runner: --lane ${lane}: none of this leg's ${ids.length} unit(s) are check gates ` +
+        '(this is a test lane, not a quality lane). Local replay for a test lane is not ' +
+        "implemented here yet; run the lane's own test command with this leg's manifest " +
+        `directly: ${rel}.`
+    );
+  }
+  if (known.length !== ids.length) {
+    const missing = ids.filter((id) => !specIds.has(id));
+    throw new Error(
+      `ci-runner: --lane ${lane}: ${missing.length} of this leg's ${ids.length} unit(s) are ` +
+        `not check gates (${missing.slice(0, 3).join(', ')}${missing.length > 3 ? ', ...' : ''}). ` +
+        'A mixed leg cannot be replayed through this pool.'
+    );
+  }
+  return known;
+}
+
 async function main(): Promise<number> {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.selftest) return selftest();
@@ -939,6 +1138,15 @@ async function main(): Promise<number> {
   if (specs.length === 0) {
     process.stderr.write('ci-runner: Refusing to run: the manifest declares zero gates.\n');
     return 1;
+  }
+
+  if (opts.lane !== undefined && opts.shard !== undefined) {
+    try {
+      opts.only = [...(opts.only ?? []), ...resolveLaneShard(opts.lane, opts.shard, specs)];
+    } catch (err) {
+      process.stderr.write(`${(err as Error).message}\n`);
+      return 1;
+    }
   }
 
   const humanOut = opts.json

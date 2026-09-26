@@ -32,13 +32,20 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SHARD_COUNTS,
-  SHARD_REPLICATED_MAX,
+  type LaneCapabilities,
   laneCapabilities,
   placeGate,
+  SHARD_COUNTS,
+  SHARD_REPLICATED_MAX,
+  type ShardInput,
   satisfies,
   shardPlan,
 } from './ci-runner/lanes.js';
+import {
+  buildShardManifest,
+  legsFromAssignment,
+  shardManifestPath,
+} from './ci-runner/shard-manifest.js';
 import type { GateKind } from './lib/gate-header.js';
 import {
   derivedId,
@@ -2074,30 +2081,132 @@ function selftest(): number {
     })()
   );
 
+  // T2.9: shardPlan's `durations` argument must leave a lane's plan BYTE-IDENTICAL when no unit's ids appear in it -- the exact state `quality-code` is in today, since `.ci/config/lane-durations.json` ships with an empty `units` map until T3.2 runs. A small self-contained fixture stands in for the real lock/workflow, so this control does not depend on either changing underneath it.
+  {
+    const fixtureCaps = new Map<string, LaneCapabilities>([
+      [
+        'quality-code',
+        {
+          job: 'quality-code',
+          runsOn: 'ubuntu-latest',
+          timeoutMinutes: 15,
+          submodules: [],
+          node: true,
+          tools: [],
+        },
+      ],
+    ]);
+    const fixtureLock: ShardInput[] = [
+      { id: 'check:a', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'a' } },
+      { id: 'check:b', weight: 2, ci: { kind: 'step', job: 'quality-code', step: 'b' } },
+      { id: 'check:c', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'c' } },
+      { id: 'check:d', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'd' } },
+    ];
+    const fixtureCounts = { 'quality-code': 2 };
+    const withoutDurations = shardPlan(fixtureLock, fixtureCaps, fixtureCounts);
+    const withEmptyDurations = shardPlan(fixtureLock, fixtureCaps, fixtureCounts, {});
+    const withUnrelatedDurations = shardPlan(fixtureLock, fixtureCaps, fixtureCounts, {
+      'check:this-id-does-not-exist': 999_999,
+    });
+    ck(
+      'CONTROL: shardPlan(durations: {}) is byte-identical to shardPlan() with no durations argument',
+      JSON.stringify(withoutDurations) === JSON.stringify(withEmptyDurations)
+    );
+    ck(
+      'CONTROL: a durations entry for an id absent from the lane changes nothing',
+      JSON.stringify(withoutDurations) === JSON.stringify(withUnrelatedDurations)
+    );
+  }
+  // T2.9: a durations map that DOES cover a lane's ids must actually change the packing, or the two controls above would be proving nothing.
+  {
+    const durCaps = new Map<string, LaneCapabilities>([
+      [
+        'quality-code',
+        {
+          job: 'quality-code',
+          runsOn: 'ubuntu-latest',
+          timeoutMinutes: 15,
+          submodules: [],
+          node: true,
+          tools: [],
+        },
+      ],
+    ]);
+    const durLock: ShardInput[] = [
+      { id: 'dur:a', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'a' } },
+      { id: 'dur:b', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'b' } },
+      { id: 'dur:c', weight: 1, ci: { kind: 'step', job: 'quality-code', step: 'c' } },
+    ];
+    // A lane with FEWER shards than units, so a duration-driven reorder is visible: durations put `dur:c` (cost 10) alone in its own shard, while `weight` would have tied all three at 1 and packed by lock rank instead.
+    const byDurationTwoShards = shardPlan(
+      durLock,
+      durCaps,
+      { 'quality-code': 2 },
+      {
+        'dur:a': 1,
+        'dur:b': 1,
+        'dur:c': 10,
+      }
+    );
+    ck(
+      'a unit whose measured duration dominates is placed in its own shard even though every weight ties at 1',
+      'lanes' in byDurationTwoShards &&
+        (byDurationTwoShards as { lanes: { shards: { ids: string[] }[] }[] }).lanes[0]?.shards.some(
+          (s) => s.ids.length === 1 && s.ids[0] === 'dur:c'
+        ) === true
+    );
+  }
+
+  // T2.10: buildShardManifest / legsFromAssignment, the pure functions gate-bind's --write path calls to keep `.ci/config/shards/<lane>.json` in lockstep with the emitted matrix region.
+  {
+    const legs = legsFromAssignment(
+      new Map([
+        ['check:c', 1],
+        ['check:a', 2],
+        ['check:b', 1],
+      ]),
+      2
+    );
+    ck(
+      'legsFromAssignment groups by leg index and preserves encounter order within a leg',
+      JSON.stringify(legs) ===
+        JSON.stringify([
+          { index: 1, of: 2, ids: ['check:c', 'check:b'] },
+          { index: 2, of: 2, ids: ['check:a'] },
+        ])
+    );
+    const manifest = buildShardManifest('quality-code', legs, '2026-09-26T00:00:00.000Z');
+    ck(
+      'buildShardManifest carries the lane name, the leg count and every leg untouched',
+      manifest.lane === 'quality-code' &&
+        manifest.of === 2 &&
+        manifest.legs.length === 2 &&
+        manifest.legs[0]?.ids.join(',') === 'check:c,check:b'
+    );
+    let emptyRefused = false;
+    try {
+      buildShardManifest('quality-code', []);
+    } catch {
+      emptyRefused = true;
+    }
+    ck('CONTROL: buildShardManifest refuses a lane with zero shards', emptyRefused);
+  }
+
   return bad;
 }
 
 function main(argv: string[]): void {
   // `--dry-run` REPORTS what `--write` would do and writes nothing.
   //
-  // Added after writing the workflow twice by accident. There was no way to ask this
-  // binder what it would emit without emitting it, so "let me see the hold-out set"
-  // rewrote three regions and left 124 duplicate steps behind, twice. A destructive
-  // generator whose only inspection mode is running it teaches you to run it.
+  // Added after the workflow was written twice by accident. There was no way to ask this binder what it would emit without emitting it, so a look at the hold-out set rewrote three regions and left 124 duplicate steps behind, twice. A destructive generator whose only inspection mode is running it teaches its users to run it.
   const dryRun = argv.includes('--dry-run');
   const write = argv.includes('--write') || dryRun;
   // `--lane <job>` STAGES THE CUTOVER ONE LANE AT A TIME, and without it the cutover
   // cannot be staged at all.
   //
-  // `--write` rewrites EVERY region from the full declared set. Today 167 declared gates
-  // would be emitted while their hand-written copies still exist, so a write meant to
-  // convert one lane silently duplicates 46 steps in three others. That is not a
-  // hypothetical: it happened twice while this tool was being built, and both times the
-  // region bodies had to be restored from `git show HEAD:`.
+  // `--write` rewrites EVERY region from the full declared set. Today 167 declared gates would be emitted while their hand-written copies still exist, so a write meant to convert one lane silently duplicates 46 steps in three others. That is not a hypothetical: it happened twice while this tool was being built, and both times the region bodies had to be restored from `git show HEAD:`.
   //
-  // The emitted order inside a region is ALPHABETICAL, and a region must sit after its
-  // lane's PREREQUISITE steps rather than merely after `- id: setup` -- quality-www-build
-  // builds www first and check-landmarks.ts:89 refuses without dist/. Both of those are per-lane judgements, which is the second reason one lane at a time is the only safe shape: they cannot be made once for eight lanes.
+  // The emitted order inside a region is ALPHABETICAL, and a region must sit after its lane's PREREQUISITE steps rather than merely after `- id: setup` -- quality-www-build builds www first and check-landmarks.ts:89 refuses without dist/. Both of those are per-lane judgements, which is the second reason one lane at a time is the only safe shape: they cannot be made once for eight lanes.
   const laneIdx = argv.indexOf('--lane');
   const onlyLane = laneIdx >= 0 ? argv[laneIdx + 1] : undefined;
   // `--allow-drop <step>` IS THE ONE TYPED ESCAPE from the strip guard below, repeatable. Typed, because the whole point is that removing a step from CI should cost a deliberate keystroke naming the step, not a silent line in a summary.
@@ -2343,6 +2452,21 @@ function main(argv: string[]): void {
         for (const id of assigned.replicated) console.log(`    ${id}`);
       }
       shardMap.set(job, assigned.legs);
+      // T2.10. THE COMMITTED MANIFEST A CI LEG AND `npm run ci -- --lane/--shard` BOTH READ, written from the SAME `assigned.legs` the `matrix.shard` conjunct above comes from, so the two can never name different plans. `--dry-run` reports what would change without writing, same as the workflow rewrite below.
+      const manifestFile = buildShardManifest(
+        job,
+        legsFromAssignment(assigned.legs, SHARD_COUNTS[job] as number)
+      );
+      const manifestPath = path.join(ROOT, shardManifestPath(job));
+      const manifestText = `${JSON.stringify(manifestFile, null, 2)}\n`;
+      if (dryRun) {
+        console.log(
+          `gate-bind --dry-run: WOULD write ${shardManifestPath(job)} (${manifestFile.legs.length} leg(s))`
+        );
+      } else {
+        fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+        fs.writeFileSync(manifestPath, manifestText);
+      }
       // THE RECEIPT'S CURRENCY, built from the lock rather than from the emitted gates. A manifest-registered entry can ride a step a HEADER-declared gate emits (`check:lint:cli` and three siblings ride `check:lint`'s `Lint` step), and crediting only the emitter undercounts the leg against the very plan the aggregator re-derives. See `jobLockIdMap`.
       const peers = new Map<string, string[]>();
       for (const e of lockEntries) {
