@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2898,
+ "count": 2894,
  "files": 716,
  "by_rule": {
-  "R1": 1583,
+  "R1": 1579,
   "R11": 150,
   "R14": 1,
   "R18": 13,
@@ -5247,15 +5247,11 @@
     "23b227d945e0b77a",
     "26fff267b1bf6ac7",
     "5081be969e9d6a37",
-    "559a058f3b728432",
     "5c4068915cdec45b",
-    "9a53a5e1013d4b64",
     "a1b19ea7afa081a2",
-    "a1c347b2f3addfd8",
     "b86aedb09aaf7aac",
     "dd7790abda1a922a",
-    "f9b5a3f77ef9d716",
-    "fa2efaf114cc74a9"
+    "f9b5a3f77ef9d716"
    ]
   },
   "packages/www/src/content/docs/en/cross-backup.md": {

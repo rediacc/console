@@ -145,9 +145,7 @@ describe('ConfigServiceBase remote integration', () => {
   // ─── startup and login reads ──────────────────────────────────────
 
   describe('account and preference reads', () => {
-    // The preAction hook, the telemetry context and `subscription login` read these before any command runs. A pull
-    // there made a remote config whose token could not be renewed fail every command, the login that renews it
-    // included (2026-09-26), so they read the local file and never reach the adapter.
+    // The preAction hook, the telemetry context and `subscription login` read these before any command runs. A pull there made a remote config whose token could not be renewed fail every command, the login that renews it included (2026-09-26), so they read the local file and never reach the adapter.
     it('serve the cached file and never pull, even when the pull would fail', async () => {
       mockConfigFileStorage.load.mockResolvedValue({
         ...localConfigWithRemote,
