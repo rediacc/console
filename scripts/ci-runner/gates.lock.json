@@ -1908,6 +1908,7 @@
   {
     "id": "check:ci-worklist-env-registry",
     "run": "npm run check:ci-worklist-env-registry",
+    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_worklist_env_registry.py"

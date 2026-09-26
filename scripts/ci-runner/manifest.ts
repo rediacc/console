@@ -1837,6 +1837,7 @@ export const GATES: readonly GateSpec[] = [
     // D2. 133 WORKLIST_* names read at 181 sites with no registry and no schema. A typo'd name reads as UNSET, and for the four flags defaulting to `on` that is fail-open. Set equality both ways. Derived from the AST rather than grep, which is why it is 133 and not the grep answer of 134: WORKLIST_EMAIL is prose-only history, read nowhere.
     id: 'check:ci-worklist-env-registry',
     run: 'npm run check:ci-worklist-env-registry',
+    slow: true, // ~21s measured in a clean clone (2026-09-26): scans every worklist env read across the tree
     gate: true,
     leaves: ['.ci/scripts/quality/check_worklist_env_registry.py'],
     ci: {
