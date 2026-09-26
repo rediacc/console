@@ -10,7 +10,7 @@ Owns: .ci/cache/w7p5a-realrun/out/lead/1m-real-bash.stdout, .ci/cache/w7p5a-real
 
 ## 0. Verdict
 
-The first production deploy (2026-09-24) created the Worker, the custom domain `proxy.eu.rediacc.com`, and the container application `rediacc-proxy-eu-executorcontainer` (evidence: `.ci/cache/w7p5a-realrun/out/lead/1m-real-bash.stdout`, "Deployed rediacc-proxy-eu triggers ... proxy.eu.rediacc.com (custom domain)", Version 7c7a3192). The image was built from the `v1312` tree (`.ci/cache/w7p5a-realrun/LEAD-RUNBOOK.md:35`), not from HEAD.
+The first production deploy (2026-09-24) created the Worker, the custom domain `proxy.eu.rediacc.com`, and the container application `rediacc-proxy-eu-executorcontainer` (evidence: `.ci/cache/w7p5a-realrun/out/lead/1m-real-bash.stdout`, "Deployed rediacc-proxy-eu triggers ... proxy.eu.rediacc.com (custom domain)", Version 7c7a3192). The image was built from the `v1312` tree (per the W7P5-a lead runbook, a local file under the gitignored `.ci/cache/w7p5a-realrun/`), not from HEAD.
 
 **It cannot run a command against a machine today, and setting EXECUTOR_TOKEN alone will not fix that.** There are five blockers (B1-B5, section 1.3). Three of them (B1-B3) also block the web console tier. The unit tests do not catch them because each test mocks the exact seam that is broken (section 2).
 
@@ -241,7 +241,7 @@ Do this when development, testing and improvement are finished, or right away if
 
 1. `npx wrangler containers list`: record the id of `rediacc-proxy-eu-executorcontainer`.
 2. `npx wrangler containers images list`: record the `rediacc-proxy-eu-executorcontainer:<tag>` entries.
-3. `npx wrangler delete --name rediacc-proxy-eu` (the runbook's rollback form adds `--force`, `.ci/cache/w7p5a-realrun/LEAD-RUNBOOK.md:35`). This removes the script, its versions, its secrets (EXECUTOR_TOKEN), the `proxy.eu.rediacc.com` custom domain, and the DO namespace it owns.
+3. `npx wrangler delete --name rediacc-proxy-eu` (the runbook's rollback form adds `--force`, per the W7P5-a lead runbook in the gitignored `.ci/cache/w7p5a-realrun/`). This removes the script, its versions, its secrets (EXECUTOR_TOKEN), the `proxy.eu.rediacc.com` custom domain, and the DO namespace it owns.
 4. `npx wrangler containers delete <id>` if step 1's app is still listed.
 5. `npx wrangler containers images delete rediacc-proxy-eu-executorcontainer:<tag>` for every tag from step 2.
 6. Revoke the `proxy:exec` portal token(s) created for EXECUTOR_TOKEN and for the caller.

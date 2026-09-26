@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1814,
-    "sourceCommit": "81f5b96f46c8fc78e35c802e1fa451bfb368bc36"
+    "keyCount": 1816,
+    "sourceCommit": "86f932d9adf96a88e9aa09386a51a627b6ab1ff1"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -383,6 +383,7 @@
     "commands.config.remote.restore.invalidVersion": "dfa247fd",
     "commands.config.remote.restore.success": "63213f80",
     "commands.config.remote.rollback": "fac476c6",
+    "commands.config.remote.serverFailed": "0478b836",
     "commands.config.remote.staleSlot": "62bc3327",
     "commands.config.remote.status.description": "68f70d9c",
     "commands.config.remote.teamForbidden": "eb15ad95",
@@ -407,6 +408,7 @@
     "commands.config.remote.versions.description": "65f41d46",
     "commands.config.remote.versions.empty": "58598c25",
     "commands.config.remote.writeFailedClosed": "33c2ad58",
+    "commands.config.remote.writeFailedServerError": "03cd66a0",
     "commands.config.rotateCek.cancelled": "50092125",
     "commands.config.rotateCek.confirm": "dc837b4a",
     "commands.config.rotateCek.confirmDone": "bd844235",
