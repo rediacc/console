@@ -35,6 +35,7 @@ NAME_RE = re.compile(r"[A-Z][A-Z0-9_]*")
 FASTPATH_SKIPS = {
     "POINTER_BUMP_ONLY": "true",
     "RESULT_BUILD_DOCKER": "skipped",
+    "RESULT_BUILD_DEVCONTAINER": "skipped",
     "RESULT_BUILD_DOCKER_FAST": "skipped",
     "RESULT_BUILD_CLI": "skipped",
     "RESULT_STAGE_ARTIFACTS": "skipped",
@@ -59,6 +60,7 @@ TWIN_BASELINE_NAMES = frozenset(
     {
         "INITIALIZE",
         "BUILD_DOCKER",
+        "BUILD_DEVCONTAINER",
         "BUILD_DOCKER_FAST",
         "BUILD_CLI",
         "RUN_SH_TESTS",

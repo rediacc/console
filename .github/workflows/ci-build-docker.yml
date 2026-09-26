@@ -28,6 +28,21 @@ on:
         type: boolean
         required: false
         default: false
+      # T2.6 (PLAN-ci-time-budget): the Devcontainer image shares nothing with
+      # the release images (no job below reads its output, and cd-stage.yml
+      # never references it), so it no longer needs to sit on the same
+      # reusable-workflow call that stage-artifacts waits on. skip_devcontainer
+      # lets the release-path call (ci.yml's `build-docker`) finish without the
+      # Devcontainer legs; devcontainer_only lets a separate, parallel call
+      # (ci.yml's `build-devcontainer`) build just them.
+      skip_devcontainer:
+        type: boolean
+        required: false
+        default: false
+      devcontainer_only:
+        type: boolean
+        required: false
+        default: false
     secrets:
       BWS_ACCESS_TOKEN:
         required: true
@@ -47,6 +62,9 @@ jobs:
     # github.token only so the Astro latest-release fetch is not anonymous.
     permissions:
       contents: read
+    # T2.6: skipped on the devcontainer_only call (its own job builds
+    # nothing this call needs).
+    if: "!inputs.devcontainer_only"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # RELEASE GATE. next_version is `required: false` and every consumer below
@@ -107,6 +125,8 @@ jobs:
     # github.token only so the Astro latest-release fetch is not anonymous.
     permissions:
       contents: read
+    # T2.6: skipped on the devcontainer_only call.
+    if: "!inputs.devcontainer_only"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Same release gate as build-cli: the www footer stamps this version into
@@ -153,7 +173,7 @@ jobs:
     # github.token only so the Astro latest-release fetch is not anonymous.
     permissions:
       contents: read
-    if: "!inputs.test_images_only"
+    if: "!inputs.test_images_only && !inputs.devcontainer_only"
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -442,7 +462,7 @@ jobs:
     runs-on: ubuntu-latest
     # A single echo. No checkout, no registry, no API: it needs nothing at all.
     permissions: {}
-    if: inputs.web_exists == 'true'
+    if: inputs.web_exists == 'true' && !inputs.devcontainer_only
     steps:
       - run: echo "::notice::Skipping Docker build - server image at tag ${{ inputs.web_tag }} already exists in registry"
 
@@ -461,7 +481,7 @@ jobs:
     # No job-level needs: the musl SEA binaries come from ci-build-cli.yml, which
     # ci.yml orders BEFORE this workflow (build-docker needs build-cli), so the
     # artifacts are already uploaded by the time this job downloads them.
-    if: "!inputs.test_images_only && inputs.rdc_exists != 'true'"
+    if: "!inputs.test_images_only && inputs.rdc_exists != 'true' && !inputs.devcontainer_only"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -515,7 +535,7 @@ jobs:
     runs-on: ubuntu-latest
     # A single echo. No checkout, no registry, no API: it needs nothing at all.
     permissions: {}
-    if: "!inputs.test_images_only && inputs.rdc_exists == 'true'"
+    if: "!inputs.test_images_only && inputs.rdc_exists == 'true' && !inputs.devcontainer_only"
     steps:
       - run: echo "::notice::Skipping Docker build - rdc:${{ inputs.rdc_tag }} already exists in registry"
 
@@ -536,7 +556,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    if: inputs.renet_exists != 'true'
+    if: inputs.renet_exists != 'true' && !inputs.devcontainer_only
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Fetch secrets from Bitwarden
@@ -611,7 +631,7 @@ jobs:
     runs-on: ubuntu-latest
     # A single echo. No checkout, no registry, no API: it needs nothing at all.
     permissions: {}
-    if: inputs.renet_exists == 'true'
+    if: inputs.renet_exists == 'true' && !inputs.devcontainer_only
     steps:
       - run: echo "::notice::Skipping Docker build - renet:${{ inputs.renet_tag }} already exists in registry"
 
@@ -629,7 +649,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    if: "!inputs.test_images_only"
+    if: "!inputs.test_images_only && !inputs.skip_devcontainer"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -668,7 +688,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    if: "!inputs.test_images_only"
+    if: "!inputs.test_images_only && !inputs.skip_devcontainer"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -706,7 +726,7 @@ jobs:
       contents: read
       packages: write
     needs: [build-devcontainer-amd64, build-devcontainer-arm64]
-    if: "!inputs.test_images_only && github.event_name == 'push'"
+    if: "!inputs.test_images_only && !inputs.skip_devcontainer && github.event_name == 'push'"
     steps:
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 

@@ -21,7 +21,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
-HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI RUN_SH_TESTS)
+HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DEVCONTAINER BUILD_DOCKER_FAST BUILD_CLI RUN_SH_TESTS)
 # RUN_SH_TESTS is HARD, not soft. It is hermetic -- a bare checkout, no node, no
 # submodules, no docker, no network -- so it has no legitimate reason to skip or
 # flake on any event, and its subject is the entry point every other command
@@ -55,7 +55,7 @@ SOFT_REQUIRED=(
 # forgives "skipped", never "failure").
 if [[ "${POINTER_BUMP_ONLY:-}" == "true" ]]; then
     HARD_REQUIRED=(INITIALIZE)
-    SOFT_REQUIRED+=(BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI)
+    SOFT_REQUIRED+=(BUILD_DOCKER BUILD_DEVCONTAINER BUILD_DOCKER_FAST BUILD_CLI)
 fi
 
 failed=false

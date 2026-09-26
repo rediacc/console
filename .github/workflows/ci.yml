@@ -673,7 +673,11 @@ jobs:
     # the readonly-preset App token.
     permissions:
       contents: read
-    needs: [initialize, quality, review-gate]
+    # T2.2 (PLAN-ci-time-budget, D-W6): quality dropped from needs so this
+    # starts as soon as review-gate clears, instead of waiting on the whole
+    # Quality lane. The watchdog already force-cancels the run on a Quality
+    # failure, so the exposure is a burned runner, not a bad deploy.
+    needs: [initialize, review-gate]
     runs-on: ubuntu-latest  # Needs Docker for account server
     timeout-minutes: 30
     if: >-
@@ -681,7 +685,6 @@ jobs:
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.initialize.outputs.pointer_bump_only != 'true' &&
-      needs.quality.result == 'success' &&
       needs.review-gate.result == 'success'
     outputs:
       account_server_url: ${{ steps.deploy.outputs.account_server_url }}
@@ -815,6 +818,28 @@ jobs:
       web_exists: ${{ needs.initialize.outputs.web_exists }}
       rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
       rdc_exists: ${{ needs.initialize.outputs.rdc_exists }}
+      # T2.6 (PLAN-ci-time-budget): stage-artifacts needs this job, and
+      # cd-stage.yml never reads a Devcontainer output (it only retags renet,
+      # rdc and the server image), so the Devcontainer legs no longer sit on
+      # the release path. build-devcontainer below builds them in parallel.
+      skip_devcontainer: true
+    secrets:
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+
+  build-devcontainer:
+    name: Build (Devcontainer)
+    # T2.6: split out of `build-docker` so the Devcontainer legs (15.8-16.6
+    # min, per PLAN-ci-time-budget section 1b) are not upstream of
+    # stage-artifacts. Needs nothing build-docker produces: the Devcontainer
+    # image builds from .devcontainer/ alone.
+    needs: [initialize]
+    permissions:
+      contents: read
+      packages: write   # GHCR push
+    if: always() && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true'
+    uses: ./.github/workflows/ci-build-docker.yml
+    with:
+      devcontainer_only: true
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 
@@ -996,12 +1021,20 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [initialize, build-docker-fast]
+    # T2.1 (PLAN-ci-time-budget, finding 3): no ct-tests.yml leg consumes a
+    # build-docker-fast image (no ghcr.io/rediacc reference or *_tag input in
+    # that file; each leg builds renet and the CLI itself). The only ghcr
+    # pull inside ct-tests.yml legs is renet's own runtime fetch of the
+    # already-published elite/bridge:latest image, unrelated to this PR's
+    # docker build, verified against run 36040274865's E2E Workers log. The
+    # needs edge was pure critical-path cost (about 10.5 min), not a real
+    # dependency.
+    needs: [initialize]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
     # CALLED on push-to-main: its migration-test job has to run there (it
     # validates the D1 migrations that push is about to deploy), while every
     # test job inside stays gated on full_suite exactly as before.
-    if: always() && needs.initialize.result == 'success' && needs.build-docker-fast.result == 'success'
+    if: always() && needs.initialize.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
     with:
       full_suite: ${{ needs.initialize.outputs.full_suite }}
@@ -1040,7 +1073,12 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [initialize, quality, review-gate, build-renet]
+    # T2.2 (PLAN-ci-time-budget, D-W6): quality and review-gate dropped from
+    # needs so this starts right after build-renet instead of waiting on the
+    # whole Quality lane and review-gate (about 10 min of critical path). The
+    # watchdog already force-cancels the run on a Quality failure, so the
+    # exposure is a burned runner, not a bad deploy.
+    needs: [initialize, build-renet]
     # The explicit pointer_bump_only clause is load-bearing: this if never
     # references its build-renet need, so under always() the job would RUN on
     # a fast-path push and die fetching the missing renet artifact.
@@ -1049,8 +1087,6 @@ jobs:
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
       needs.initialize.outputs.pointer_bump_only != 'true' &&
-      (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') &&
       needs.initialize.outputs.run_ops != 'false'
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
@@ -1737,7 +1773,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
+    needs: [initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -1772,6 +1808,7 @@ jobs:
           RESULT_LABEL_GUIDE: ${{ needs.label-guide.result }}
           RESULT_RUN_SH_TESTS: ${{ needs.run-sh-tests.result }}
           RESULT_BUILD_DOCKER: ${{ needs.build-docker.result }}
+          RESULT_BUILD_DEVCONTAINER: ${{ needs.build-devcontainer.result }}
           RESULT_BUILD_DOCKER_FAST: ${{ needs.build-docker-fast.result }}
           RESULT_BUILD_CLI: ${{ needs.build-cli.result }}
           RESULT_QUALITY: ${{ needs.quality.result }}

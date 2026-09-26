@@ -40,7 +40,15 @@ from rediacc_ci import log
 # The literal the twin substitutes for a missing conclusion. It is printed, not just compared, so a renamed job breaks loudly in the log.
 UNSET = "<unset>"
 
-HARD_REQUIRED = ("INITIALIZE", "BUILD_DOCKER", "BUILD_DOCKER_FAST", "BUILD_CLI", "RUN_SH_TESTS")
+HARD_REQUIRED = (
+    "INITIALIZE",
+    "BUILD_DOCKER",
+    # PLAN-ci-time-budget T2.6 split the Devcontainer legs out of build-docker; its failure must fail CI Complete as it did while nested.
+    "BUILD_DEVCONTAINER",
+    "BUILD_DOCKER_FAST",
+    "BUILD_CLI",
+    "RUN_SH_TESTS",
+)
 
 SOFT_REQUIRED = (
     "QUALITY",
@@ -63,7 +71,7 @@ SOFT_REQUIRED = (
 
 # The pointer-bump fast path (see `.ci/scripts/ci/detect-pointer-bump.sh`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is deliberately absent from this list because it is absent from the twin's -- see the hole documented above.
 POINTER_BUMP_HARD = ("INITIALIZE",)
-POINTER_BUMP_EXTRA_SOFT = ("BUILD_DOCKER", "BUILD_DOCKER_FAST", "BUILD_CLI")
+POINTER_BUMP_EXTRA_SOFT = ("BUILD_DOCKER", "BUILD_DEVCONTAINER", "BUILD_DOCKER_FAST", "BUILD_CLI")
 
 
 def conclusion(job: str) -> str:

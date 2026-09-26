@@ -1,0 +1,48 @@
+name: Free Disk Space
+description: >
+  Deletes the handful of preinstalled toolchains the VM/E2E legs never use
+  (.NET, Android SDK, GHC, PowerShell, Swift) and prunes the Docker image
+  cache, in the background, so the deletion overlaps setup work already
+  scheduled in the job instead of blocking it.
+
+  T2.3 (PLAN-ci-time-budget): this replaced 9 copies of an inline,
+  foreground `sudo rm -rf ... && docker system prune -af` step (1.1-5.8 min
+  each). Call once with mode 'start' where the old step used to sit, then
+  once with mode 'wait' immediately before the step that actually needs the
+  freed disk space (Setup KVM Host in every caller today). A caller that
+  only ever calls 'start' leaves the cleanup running past the job's end,
+  which is harmless: the runner is destroyed either way.
+
+inputs:
+  mode:
+    description: "'start' launches the cleanup in the background; 'wait' blocks until the background cleanup from a prior 'start' call finishes."
+    required: false
+    default: start
+
+runs:
+  using: composite
+  steps:
+    - name: Free Disk Space (start)
+      if: inputs.mode == 'start'
+      shell: bash
+      run: |
+        echo "=== Disk usage before cleanup ==="
+        df -h / || true
+        (
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+        ) &
+        echo $! > "${RUNNER_TEMP}/free-disk-space.pid"
+
+    - name: Free Disk Space (wait)
+      if: inputs.mode == 'wait'
+      shell: bash
+      run: |
+        pidfile="${RUNNER_TEMP}/free-disk-space.pid"
+        if [ -f "$pidfile" ]; then
+          pid="$(cat "$pidfile")"
+          while kill -0 "$pid" 2>/dev/null; do sleep 1; done
+          rm -f "$pidfile"
+        fi
+        echo "=== Disk usage after cleanup ==="
+        df -h / || true
