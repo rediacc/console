@@ -20,10 +20,6 @@
     {
       "gate": "check:ci-plan-implementation",
       "reason": "28 P-A2 findings, all bookkeeping on plan boxes ticked by other sessions' commits c8f92eaa0 and b5a4e3a13: boxes in PLAN-stop-hook-focus-mode.md (12), PLAN-stop-hook-retro-20260925.md (6), PLAN-ci-gate-write-taint-scanners.md (5), PLAN-biome-only-lint.md (2), _done/PLAN-stop-hook-cap-saturated-wait.md (2) and PLAN-stop-hook-retro-20260924.md (1) flipped to done with the Edit tool, so they have no `(ticked)` evidence line and no agent/ledgers/plan-investigation.jsonl row. The remedy is `worklist.py --plan-investigate` per box, which records what the box's owner LOOKED AT; a push-prep pass that did not do that work cannot honestly write those rows. Transitional until the owning sessions record them."
-    },
-    {
-      "gate": "check:ci-plan-citations",
-      "reason": "141 dead file:line / gate citations ADDED by plan files written this branch by other sessions: PLAN-ci-time-budget.md (30 shown, e.g. :251 cites a gate check:ci-lane-budget that does not exist yet and :256 cites check_job_timeout_headroom.py by bare basename), PLAN-commit-as-you-go.md (bare-basename cites such as block_nonstandard_branch_name.py:141-143, pr-merge.md:196-213), PLAN-cloudflare-proxy.md (:9 and :240 cite a gitignored .ci/cache runbook) and PLAN-app-wide-org-selection.md. Each needs its author to re-read the target and write a resolvable path, which is not a mechanical rewrite. Transitional while those plans are in draft."
     }
   ]
 }
