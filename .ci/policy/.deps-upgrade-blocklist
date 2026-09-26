@@ -40,3 +40,7 @@ eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors tha
 
 # typescript v7 — the lint stack does not accept it yet (console and private/account alike)
 typescript  # BLOCKER: typescript-eslint 8.70.1, @typescript-eslint/parser 8.70.1 and @typescript-eslint/eslint-plugin 8.70.1 declare peer typescript ">=4.8.4 <6.1.0" and no release accepts 7 (newest tags 8.70.2-alpha.*); console and account both stay on ^6.0.3 so check:version agrees. Lift when typescript-eslint ships a TS 7 peer range (measured 2026-09-24).
+# private/account/web portal build majors (held 2026-09-26; surfaced when check:deps began judging sub-manifest majors)
+private/account/web:vite  # BLOCKER: vite 6 -> 8 is two majors for the account portal build (config API, plugin and Rolldown bundler changes); take it as a dedicated portal-build migration together with @vitejs/plugin-react, verified by the portal's vitest and E2E suites, not as a dependency bump
+private/account/web:@vitejs/plugin-react  # BLOCKER: 4 -> 6 requires vite 7+; it moves only with the held vite migration of the account portal, in the same change
+private/account/web:lucide-react  # BLOCKER: 0.575 -> 1.x renames and removes icon exports used across the account portal; adopt it in a portal change that updates every import and checks the rendered pages, not as a bump

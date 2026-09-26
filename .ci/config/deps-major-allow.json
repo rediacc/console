@@ -1,0 +1,10 @@
+{
+  "$comment": [
+    "Breaking upgrades scripts/gates/check-deps.ts is ALLOWED to apply with --upgrade. Everything not named here is held: --upgrade never installs a version outside the current caret range (a new major, or a new minor on a 0.x line), in the console root or in any private/ manifest the gate scans.",
+    "Key: '<package>@<line>' applies to every scanned manifest; '<dir>:<package>@<line>' only to that manifest, where <dir> is its path from the repository root, e.g. 'private/account/web:vite@8'. <line> is the major ('8'), or '0.<minor>' for a 0.x package.",
+    "Value: why the breaking change is being taken now, at least 30 characters, checked by the same quality rules as a blocklist reason (scripts/lib/blocker-validator.ts).",
+    "Liveness is enforced in the gate: an entry that authorises no upgrade in the current run fails check:deps and must be deleted. The normal life of an entry is one commit: add it, run npm run check:deps -- --upgrade, then remove it once the major has landed.",
+    "The opposite decision, to keep an outdated package where it is, belongs in .ci/policy/.deps-upgrade-blocklist."
+  ],
+  "allow": {}
+}
