@@ -2214,6 +2214,7 @@
   {
     "id": "check:ci-doc-region-parity",
     "run": "npm run check:ci-doc-region-parity",
+    "slow": true,
     "gate": true,
     "leaves": [
       "scripts/gates/check-doc-region-parity.ts"
@@ -4954,6 +4955,7 @@
   {
     "id": "check:ci-max-lines",
     "run": "npm run check:ci-max-lines",
+    "slow": true,
     "gate": true,
     "leaves": [
       "scripts/gates/check-max-lines.ts"

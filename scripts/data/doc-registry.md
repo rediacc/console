@@ -92,7 +92,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-devcontainer-pins | quality-go / Check devcontainer pin upstream freshness | yes | no | no |
 | check:ci-devcontainer-scripts | quality-code / Devcontainer script stderr visibility | yes | no | no |
 | check:ci-dkim-notify | quality-content / DKIM notify DNS | yes | no | no |
-| check:ci-doc-region-parity | quality-code / Doc region parity | yes | no | no |
+| check:ci-doc-region-parity | quality-code / Doc region parity | yes | yes | no |
 | check:ci-docker-image-freshness | quality-content / Docker image freshness | yes | no | no |
 | check:ci-docker-npm-pins | quality-code / Dockerfile npm pins | yes | no | no |
 | check:ci-dockerfile-mirror-resilience | quality-static / Dockerfile mirror resilience | yes | no | no |
@@ -197,7 +197,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-locale-sources | quality-i18n / Locale sources | yes | no | no |
 | check:ci-locale-tutorial-assets | quality-content / Validate per-locale tutorial video assets exist | yes | no | no |
 | check:ci-lockfile | quality-code / Lockfile | yes | yes | no |
-| check:ci-max-lines | quality-code / No source file exceeds the line-count budget | yes | no | no |
+| check:ci-max-lines | quality-code / No source file exceeds the line-count budget | yes | yes | no |
 | check:ci-merge-method-prose | quality-code / Instruction files do not prescribe a rejected merge method | yes | no | no |
 | check:ci-mutate-check | quality-static / Mutation runner self-test | yes | no | no |
 | check:ci-native-rebuild | quality-code / Native modules rebuilt after every root install | yes | no | no |

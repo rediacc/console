@@ -2137,6 +2137,7 @@ export const GATES: readonly GateSpec[] = [
     // No `paths:` DELIBERATELY. Its providers read the gates lock, the hook wiring, every tracked file carrying BLOCKER: and the whole .ci tree, so any list short of "the repository" is wrong, and a half-populated one makes --changed drop the gate silently.
     id: 'check:ci-doc-region-parity',
     run: 'npm run check:ci-doc-region-parity',
+    slow: true, // 23.7s measured: regenerates every doc region in memory to compare
     gate: true,
     leaves: ['scripts/gates/check-doc-region-parity.ts'],
     ci: {
@@ -4634,6 +4635,7 @@ export const GATES: readonly GateSpec[] = [
     // The line budget eslint's `max-lines` enforced until the Biome-only lint cut (PLAN-biome-only-lint); its own gate header binds it to this step. Wired 2026-09-26 after gate-bind --write emitted the step while no script or entry existed, so CI ran `npm run check:ci-max-lines` against a missing script.
     id: 'check:ci-max-lines',
     run: 'npm run check:ci-max-lines',
+    slow: true, // 24.1s measured: counts lines across every tracked source file
     gate: true,
     leaves: ['scripts/gates/check-max-lines.ts'],
     ci: {
