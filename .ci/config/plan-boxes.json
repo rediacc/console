@@ -1534,13 +1534,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 6,
+      "open": 1,
+      "done": 7,
       "open_sigs": [
-        "2a3fb45f",
         "b24ba0ec"
       ],
       "done_sigs": [
+        "2a3fb45f",
         "52231803",
         "5e1f6063",
         "9963ca72",
