@@ -93,6 +93,16 @@ fi
 # @webauthn coverage floor (Phase 5) -- true when unsharded (whole suite), and
 # derived from the actual selected files when sharded, so the 10-stripe mutex
 # unit and the @webauthn bundle only do their thing on the leg that holds them.
+#
+# Also fires on any `@stripe-e2e`-tagged file outside 10-stripe/ (today,
+# 12-stripe-e2e/**): those specs hit the real Stripe sandbox too and cannot
+# observe a webhook-driven state change without a forwarder of their own. The
+# shard manifest (.ci/config/shards/test-account-e2e.json) is meant to keep
+# every such spec in the one leg that also holds 10-stripe/**, but this is a
+# belt-and-suspenders fallback for a leg that ends up with one anyway --
+# better a redundant listener (harmless: an unrelated leg's webhooks arrive
+# for subscription ids this backend has never heard of and are dropped) than
+# a real-Stripe test with no delivery path at all.
 HAS_STRIPE_FILES=true
 HAS_WEBAUTHN_FILES=true
 if [[ ${#SHARD_TEST_FILES[@]} -gt 0 ]]; then
@@ -100,6 +110,7 @@ if [[ ${#SHARD_TEST_FILES[@]} -gt 0 ]]; then
     HAS_WEBAUTHN_FILES=false
     for f in "${SHARD_TEST_FILES[@]}"; do
         [[ "$f" == 10-stripe/* ]] && HAS_STRIPE_FILES=true
+        grep -q '@stripe-e2e' "$E2E_DIR/tests/$f" 2>/dev/null && HAS_STRIPE_FILES=true
         grep -q '@webauthn' "$E2E_DIR/tests/$f" 2>/dev/null && HAS_WEBAUTHN_FILES=true
     done
 fi

@@ -1,10 +1,8 @@
 """Port of `.ci/scripts/test/gates/test-stage-artifacts-channel.sh`, retired in W7 P5.
 
-Unit test for the channel gating of the APT/RPM metadata assertions in `.ci/scripts/release/validate-stage-artifacts.sh`.
+Unit test for the channel gating of the APT/RPM metadata assertions, now in `rediacc_ci.release.validate_stage_artifacts` (the bash twin, `.ci/scripts/release/validate-stage-artifacts.sh`, was deleted in 0bb1a4c15; `.ci/rediacc_ci/tests/test_release_validate_stage_artifacts.py` covers the port's byte-for-byte parity with the twin's own recordings on other cases -- this file owns the channel-gating behaviour specifically).
 
-WHAT BROKE. The script asserted APT and RPM repository metadata unconditionally. That metadata is CHANNEL-SCOPED and is built by cd-stage.yml's "Build package
-repositories" step, which self-gates on `inputs.channel != ''`. The channel is
-empty for any event that is not push or pull_request -- i.e. for the nightly, deliberately, so a scheduled run cannot orphan ~5 GB of R2 bytes. So on every nightly the metadata was correctly absent and the validator failed the stage anyway:
+WHAT BROKE. The script asserted APT and RPM repository metadata unconditionally. That metadata is CHANNEL-SCOPED and is built by cd-stage.yml's "Build package repositories" step, which self-gates on `inputs.channel != ''`. The channel is empty for any event that is not push or pull_request -- i.e. for the nightly, deliberately, so a scheduled run cannot orphan ~5 GB of R2 bytes. So on every nightly the metadata was correctly absent and the validator failed the stage anyway:
 
   run 30237524399 (2026-07-27), Stage Artifacts:
     ##[error]No APT metadata files found
@@ -25,24 +23,21 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-VALIDATOR_SRC = paths.from_root(".ci", "scripts", "release", "validate-stage-artifacts.sh")
-COMMON_SRC = paths.from_root(".ci", "scripts", "lib", "common.sh")
+# The real `.ci` tree (never the fixture's), so the subprocess can `import rediacc_ci`.
+CI_DIR = paths.from_root(".ci")
 
 
 class Stage:
-    """A fixture repo root holding the validator, its lib, and a staged dist/.
+    """A fixture repo root holding only a staged `dist/`.
 
-    `get_repo_root()` resolves from the SCRIPT's own path (.ci/scripts/lib -> up 3), not from cwd, so the fixture has to mirror the tree layout rather than just being a directory with a dist/ in it.
+    The subject under test is now `rediacc_ci.release.validate_stage_artifacts`, which resolves its root from `$REDIACC_CI_ROOT` (see `rediacc_ci.paths.repo_root`) rather than by climbing from its own file location, so the fixture no longer needs to mirror the `.ci/scripts/...` tree the bash twin's `get_repo_root()` depended on.
     """
 
     def __init__(self, root: pathlib.Path) -> None:
         self.root = root
-        (root / ".ci" / "scripts" / "release").mkdir(parents=True)
-        (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
-        shutil.copy(VALIDATOR_SRC, root / ".ci" / "scripts" / "release" / VALIDATOR_SRC.name)
-        shutil.copy(COMMON_SRC, root / ".ci" / "scripts" / "lib" / COMMON_SRC.name)
-        self.validator = root / ".ci" / "scripts" / "release" / VALIDATOR_SRC.name
+        root.mkdir(parents=True)
         self.summary = root / "summary.md"
+        self.output = root / "output.txt"
         self.last_output = ""
 
     def seed_dist(self) -> None:
@@ -64,16 +59,19 @@ class Stage:
         shutil.rmtree(self.root / "dist" / "repos", ignore_errors=True)
 
     def validate(self, event: str, channel: str) -> str:
-        """-> "PASS" or "FAIL". The validator's own output lands in `last_output`."""
+        """-> "PASS" or "FAIL". The port's own output lands in `last_output`."""
         self.summary.write_text("", encoding="utf-8")
         result = harness.run(
-            ["bash", str(self.validator)],
+            ["python3", "-m", "rediacc_ci.release.validate_stage_artifacts"],
+            cwd=self.root,
             env={
                 "EVENT_NAME": event,
                 "CHANNEL": channel,
                 "NEXT_VERSION": "1.2.3",
                 "GITHUB_STEP_SUMMARY": str(self.summary),
-                "GITHUB_OUTPUT": str(self.root / "output.txt"),
+                "GITHUB_OUTPUT": str(self.output),
+                "REDIACC_CI_ROOT": str(self.root),
+                "PYTHONPATH": str(CI_DIR),
             },
         )
         self.last_output = result.combined

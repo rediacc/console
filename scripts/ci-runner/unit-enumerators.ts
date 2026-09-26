@@ -155,7 +155,11 @@ export async function accountE2eUnits(repoRoot: string): Promise<Unit[]> {
   files.sort();
   return files.map((f) => ({
     id: `account-e2e:${f}`,
-    mutex: f.startsWith('10-stripe/') ? 'account-e2e-stripe-sandbox' : undefined,
+    // 10-stripe and 12-stripe-e2e both drive the one real Stripe sandbox, so they share a leg (CI run 36277725732 scattered 12-stripe-e2e with no webhook forwarder).
+    mutex:
+      f.startsWith('10-stripe/') || f.startsWith('12-stripe-e2e/')
+        ? 'account-e2e-stripe-sandbox'
+        : undefined,
   }));
 }
 
