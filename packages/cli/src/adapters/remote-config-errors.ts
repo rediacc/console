@@ -234,15 +234,16 @@ export class RemotePasskeySecretMissingError extends Error {
 }
 
 /**
- * The stored slot secret no longer unwraps the CEK. The most common cause is a
- * CEK rotation that bumped the store's generation while this device kept its old
- * wrapping, the AES-GCM auth tag then fails. Surfaced instead of the raw
- * OperationError so the user gets an action (re-enroll) rather than a crypto
- * stack trace. Applies to every enrollment method (passkey and password).
+ * This device's key belongs to a CEK generation the store rotated away from. Raised when the slot
+ * secret no longer unwraps the stored CEK; when a blob will not open and the store's generation
+ * (the pull response's, or `/session`'s) is newer than the one this device recorded; when the
+ * server refuses a push `stale_cek_generation` (T10, F11/F12); and when a revoked token's renewal
+ * is refused for the same reason. The remedy is the same for all: enable the config on this device
+ * again. `cause` keeps the refusal or decrypt failure it was diagnosed from.
  */
 export class RemoteStaleSlotError extends Error {
-  constructor() {
-    super(t('commands.config.remote.staleSlot'));
+  constructor(options?: { cause?: unknown }) {
+    super(t('commands.config.remote.staleSlot'), options);
     this.name = 'RemoteStaleSlotError';
   }
 }
@@ -270,6 +271,7 @@ export class RemoteConfigUndecryptableError extends Error {
  * Map a transport/server failure onto the adapter's typed taxonomy: 401 → the
  * RemoteAuthError for the server's stated reason, 403 `team_forbidden` → not a member of the
  * config's team, 404 `team_not_found` → the pointer names no team of the organization, 409
+ * `stale_cek_generation` → this device's key was rotated away (RemoteStaleSlotError), 409
  * `precondition_failed` → a deletion without a matching tombstone, any other 409 → version
  * conflict (server message verbatim), and network-class failures (fetch TypeError, ECONN*,
  * 5xx, including the getServerKeyMaterial fetch inside configServerFetch) → unreachable, so read
@@ -301,9 +303,19 @@ function classifyServerAnswer(
   if (error.status === 404 && error.code === 'team_not_found') {
     return new RemoteTeamNotFoundError(configName, remote.teamId);
   }
-  if (error.status === 409 && error.code === 'precondition_failed') {
-    return new RemotePreconditionError(configName, error.mismatchedPaths ?? []);
-  }
-  if (error.status === 409) return new RemoteVersionConflictError(error.message);
+  if (error.status === 409) return classifyConflict(error, configName);
   return undefined;
+}
+
+/** A 409, by its code. */
+function classifyConflict(error: ConfigServerError, configName: string): Error {
+  switch (error.code) {
+    // The refusal names the store's generation, newer than the one this push was sealed under.
+    case 'stale_cek_generation':
+      return new RemoteStaleSlotError({ cause: error });
+    case 'precondition_failed':
+      return new RemotePreconditionError(configName, error.mismatchedPaths ?? []);
+    default:
+      return new RemoteVersionConflictError(error.message);
+  }
 }

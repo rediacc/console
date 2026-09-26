@@ -28,6 +28,12 @@ export interface SyncRecord {
   envelopeVersion: 2 | 3;
   /** That envelope's `commitments.fckSalt`: the key of this device's tombstone proofs. */
   fckSalt: string;
+  /**
+   * The store's CEK generation this device's wrapped CEK belongs to (T10): recorded when a blob
+   * opened under it, sent with every push, and held against the store's to tell a rotated-away key
+   * from an unreadable config. Absent until the first pull or push that learns it.
+   */
+  cekGeneration?: number;
 }
 
 export interface TokenData {
@@ -115,6 +121,8 @@ export class RemoteTokenStorage {
    * Uses file locking + temp+rename for crash safety. A sync record the file already holds is kept
    * unless `data` carries one: re-enrolling a device (a CEK rotation's re-handoff) must not forget
    * the versions it saw. The record names its config, so a file re-pointed elsewhere ignores it.
+   * Its `cekGeneration` is dropped: it described the wrapped CEK being replaced, and the new one's
+   * is learned again on the next pull.
    */
   async set(configName: string, data: TokenData): Promise<void> {
     await this.ensureDirectory();
@@ -130,7 +138,8 @@ export class RemoteTokenStorage {
     const release = await lockfile.lock(path, LOCK_OPTIONS);
     try {
       const existing = data.sync ? null : await this.get(configName).catch(() => null);
-      await this.writeUnlocked(path, existing?.sync ? { ...data, sync: existing.sync } : data);
+      const kept = existing?.sync ? withoutGeneration(existing.sync) : undefined;
+      await this.writeUnlocked(path, kept ? { ...data, sync: kept } : data);
     } finally {
       await release();
     }
@@ -209,6 +218,11 @@ export class RemoteTokenStorage {
       }
     }
   }
+}
+
+function withoutGeneration(sync: SyncRecord): SyncRecord {
+  const { cekGeneration: _replaced, ...rest } = sync;
+  return rest;
 }
 
 function missingTokenFile(configName: string): Error {

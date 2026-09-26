@@ -126,6 +126,8 @@ interface PulledEnvelope {
   hmac: string | null;
   server_secret: string;
   sdk_derived: string;
+  /** The store's current CEK generation (T10); recorded once the blob opens. */
+  cekGeneration?: number;
 }
 
 /** Session crypto material from the server */
@@ -133,6 +135,15 @@ interface SessionMaterial {
   serverSecret: Uint8Array;
   sdkDerived: Awaited<ReturnType<typeof importAesKey>>;
   sdkEpoch: number;
+  /** The store's current CEK generation (T10). */
+  cekGeneration: number | undefined;
+}
+
+/** `fields` without its undefined entries, for spreading into a request body or record. */
+function optionalFields<T extends Record<string, number | undefined>>(fields: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
 }
 
 // ─── Adapter ────────────────────────────────────────────────────────────
@@ -194,11 +205,14 @@ export class RemoteConfigAdapter {
         t('commands.config.remote.envelopeDowngrade', { configId: this.remote.configId })
       );
     }
+    // The blob opened under this device's CEK, so the store's generation is the one that CEK belongs to.
+    const cekGeneration = pulled.data.cekGeneration ?? seen?.cekGeneration;
     await lease.recordSync({
       binding: this.bindingKey(),
       highWater: Math.max(seen?.highWater ?? 0, envelope.version),
       envelopeVersion: envelope.envelopeVersion,
       fckSalt: envelope.commitments.fckSalt,
+      ...(cekGeneration === undefined ? {} : { cekGeneration }),
     });
     if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
       outputService.warn(
@@ -307,7 +321,8 @@ export class RemoteConfigAdapter {
     try {
       decrypted = await selectiveDecrypt(payload, cek, sdkDerived, this.binding());
     } catch (error) {
-      throw this.classifyDecryptFailure(error, this.remote.configId);
+      const failure = this.classifyDecryptFailure(error, this.remote.configId);
+      throw await this.staleOr(lease, failure, data.cekGeneration);
     }
 
     // Rebuild the RdcConfig from the decrypted blob through the ONE shared reconstruction. This used to be a hand-written copy that had to "mirror" fullConfigToRdcConfig exactly; keeping two copies in sync is precisely how the explicit-undefined trap (and later the dropped-secret bug) reached production, so there is now a single implementation and both the CLI pull and the CEK rotation go through it.
@@ -330,6 +345,9 @@ export class RemoteConfigAdapter {
       const session = await this.fetchSession(lease);
       const cek = await this.deriveCek(session.serverSecret, lease);
       const prior = this.pushPrior(lease, currentVersion, options.base);
+      // The generation this device's CEK belongs to: the server refuses the push when the store has
+      // rotated past it (409 `stale_cek_generation`, raised as RemoteStaleSlotError).
+      const sealedGeneration = this.syncRecord(lease)?.cekGeneration;
 
       // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
       const encrypted = await buildConfigPushPayload(config, {
@@ -349,11 +367,12 @@ export class RemoteConfigAdapter {
         encryptedBlob: encrypted.encryptedBlob,
         sdkEpoch: session.sdkEpoch,
         envelope: encrypted.envelope,
-        ...(options.restoredFromVersion === undefined
-          ? {}
-          : { restoredFromVersion: options.restoredFromVersion }),
+        ...optionalFields({
+          restoredFromVersion: options.restoredFromVersion,
+          cekGeneration: sealedGeneration,
+        }),
       };
-      const pushed = await this.fetch<{ version: number }>(
+      const pushed = await this.fetch<{ version: number; cekGeneration?: number }>(
         lease,
         `/account/api/v1/configs/${this.remote.configId}`,
         { method: 'PUT', body }
@@ -362,11 +381,13 @@ export class RemoteConfigAdapter {
         throw await this.namePaths(error, cek, [config, options.base]);
       });
 
+      // A push that named no generation (the first one to a fresh store) learns it from the answer.
       await lease.recordSync({
         binding: this.bindingKey(),
         highWater: pushed.data.version,
         envelopeVersion: ENVELOPE_VERSION,
         fckSalt: encrypted.envelope.commitments.fckSalt,
+        ...optionalFields({ cekGeneration: sealedGeneration ?? pushed.data.cekGeneration }),
       });
       return { version: pushed.data.version };
     });
@@ -460,13 +481,41 @@ export class RemoteConfigAdapter {
       server_secret: string;
       sdk_derived: string;
       sdkEpoch: number;
+      cekGeneration?: number;
     }>(lease, '/account/api/v1/configs/session', { method: 'POST' });
 
     return {
       serverSecret: fromBase64(resp.data.server_secret),
       sdkDerived: await importAesKey(fromBase64(resp.data.sdk_derived)),
       sdkEpoch: resp.data.sdkEpoch,
+      cekGeneration: resp.data.cekGeneration,
     };
+  }
+
+  /**
+   * A blob that will not open, diagnosed against the CEK generations (T10, F11): when the store's
+   * generation (the response's own, else `/session`'s) is newer than the one this device recorded,
+   * its key was rotated away and the error is RemoteStaleSlotError, the decrypt failure kept as its
+   * cause. Otherwise, or when either generation is unknown, `failure` stands as it was classified.
+   */
+  private async staleOr(
+    lease: TokenLease,
+    failure: Error,
+    storeGeneration: number | undefined
+  ): Promise<Error> {
+    const recorded = this.syncRecord(lease)?.cekGeneration;
+    if (recorded === undefined || failure instanceof RemoteStaleSlotError) return failure;
+    let current = storeGeneration;
+    if (current === undefined) {
+      try {
+        current = (await this.fetchSession(lease)).cekGeneration;
+      } catch {
+        return failure;
+      }
+    }
+    return current !== undefined && current > recorded
+      ? new RemoteStaleSlotError({ cause: failure })
+      : failure;
   }
 
   /** Derive CEK from passkey_secret + server_secret */
@@ -609,6 +658,10 @@ export class RemoteConfigAdapter {
 
   /** The error a failed renewal raises; see refreshDeviceToken for what it passes through. */
   private renewalFailure(error: unknown, refusal: RemoteAuthError): unknown {
+    // A rotation revoked this device's token and left it no slot at the new generation (T10, F11).
+    if (error instanceof RemoteTokenRefreshError && error.code === 'stale_cek_generation') {
+      return new RemoteStaleSlotError({ cause: error });
+    }
     if (error instanceof RemoteTokenRefreshError) return error;
     const e = error as { status?: unknown; code?: unknown } | null;
     if (e?.status === 403 && e.code === 'team_forbidden') {
