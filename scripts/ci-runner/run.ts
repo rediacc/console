@@ -281,20 +281,34 @@ function firstGitlink(): string | undefined {
   return undefined;
 }
 
+/**
+ * Every gitlink (submodule) path in HEAD, from ONE `git ls-tree`. Asking per changed file spawned one git process per path: a
+ * 60-commit branch paid about 12 s in process start-up alone, and check:ci-changed-selection's all-files change set about 50 s
+ * (2026-09-26, profiled: 11.6 s of 12.6 s inside spawnSync). An unreadable tree answers "no gitlinks", the same answer the
+ * per-file probe gave on failure.
+ */
+function headGitlinks(): Set<string> {
+  try {
+    const out = execFileSync('git', ['ls-tree', '-r', '--format=%(objectmode) %(path)', 'HEAD'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    const links = new Set<string>();
+    for (const line of out.split('\n')) {
+      if (line.startsWith('160000 ')) links.add(line.slice('160000 '.length));
+    }
+    return links;
+  } catch {
+    return new Set();
+  }
+}
+
 function expandGitlinks(named: readonly string[], warn: (text: string) => void): string[] {
   const out = new Set<string>(named);
+  const gitlinks = headGitlinks();
   for (const entry of named) {
-    let isGitlink = false;
-    try {
-      isGitlink =
-        execFileSync('git', ['ls-tree', '--format=%(objectmode)', 'HEAD', '--', entry], {
-          cwd: REPO_ROOT,
-          encoding: 'utf-8',
-        }).trim() === '160000';
-    } catch {
-      isGitlink = false;
-    }
-    if (!isGitlink) continue;
+    if (!gitlinks.has(entry)) continue;
     // The wildcard goes in FIRST, so a submodule we cannot read still selects every gate scoped beneath it rather than none.
     out.add(`${entry}/**`);
     try {

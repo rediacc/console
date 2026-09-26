@@ -1535,6 +1535,9 @@
       "PLAN_CITATIONS_OBJECT_MIN",
       "PLAN_CITATIONS_ROOT"
     ],
+    ".ci/scripts/quality/check_plan_deps.py": [
+      "GITHUB_BASE_REF"
+    ],
     ".ci/scripts/quality/check_plan_record.py": [
       "PLAN_RECORD_CENSUS_DAYS",
       "PLAN_RECORD_CENSUS_EVERY_RUN",

@@ -158,17 +158,31 @@ function readLock(): LockEntry[] {
  * MATCHING control went red saying the selector had stopped scoping. It had not;
  * the fixture had. A control that does not fire is a claim about the control first.
  */
-function fakeGit(dir: string, sha: string, diffLines: string[]): string {
+function fakeGit(
+  dir: string,
+  sha: string,
+  diffLines: string[],
+  gitlink?: { path: string; inner: string[] }
+): string {
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin, { recursive: true });
   const data = path.join(dir, 'changed.txt');
   fs.writeFileSync(data, diffLines.map((l) => `${l}\n`).join(''));
+  // An optional gitlink: `ls-tree -r` names it as mode 160000, and `-C <it> diff --name-only` lists its inner change set.
+  const inner = path.join(dir, 'inner.txt');
+  fs.writeFileSync(inner, (gitlink?.inner ?? []).map((l) => `${l}\n`).join(''));
   const body = [
     '#!/usr/bin/env bash',
     '# Fixture only. Written to a temp dir at runtime; nothing here is tracked.',
     'case "$1 $2" in',
     `  "merge-base HEAD"*) echo "${sha}" ;;`,
     `  "diff --name-only"*) cat ${JSON.stringify(data)} ;;`,
+    ...(gitlink
+      ? [
+          `  "ls-tree -r"*) echo "160000 ${gitlink.path}" ;;`,
+          `  "-C ${gitlink.path}"*) cat ${JSON.stringify(inner)} ;;`,
+        ]
+      : []),
     '  *) exit 0 ;;',
     'esac',
     '',
@@ -431,6 +445,29 @@ function main(): number {
       'CONTROL: the SAME shim returning ONE changed file runs green over the real manifest, ' +
         'so the two refusals above are the change set and not the fixture',
       `rc=${oneReal.rc} selected=${selectedIds(oneReal.out).size} err=${oneReal.err.slice(0, 200)}`
+    );
+
+    // --- 4b. A SUBMODULE'S INNER CHANGES REACH THE SELECTION, both directions ---- A changed gitlink is expanded into the files that changed inside it, so a gate scoped to one of those inner files fires while one scoped elsewhere does not. The gitlink set is read ONCE from `ls-tree -r` (run.ts headGitlinks); without that expansion the inner-scoped gate is dropped.
+    const glManifest = path.join(tmp, 'gl.json');
+    fs.writeFileSync(
+      glManifest,
+      JSON.stringify([
+        { id: 'probe:inner', run: 'true', gate: true, paths: ['private/sub/inner.txt'] },
+        { id: 'probe:outer', run: 'true', gate: true, paths: ['no/such/dir/**'] },
+      ])
+    );
+    const glBin = fakeGit(path.join(tmp, 'gl'), sha, ['private/sub'], {
+      path: 'private/sub',
+      inner: ['inner.txt'],
+    });
+    const gl = selectedIds(
+      runRunner(['--list', '--changed', '--manifest', glManifest], { CI_RUNNER_BASE: 'HEAD' }, glBin)
+        .out
+    );
+    check(
+      gl.has('probe:inner') && !gl.has('probe:outer'),
+      'MUST FIRE / MUST NOT: a changed gitlink selects the gate scoped to a file changed INSIDE it, and not one scoped elsewhere',
+      `selected=${[...gl].join(',')}`
     );
 
     // --- 5. THE AMBIENT PATH, asserted as a disjunction true in every state ----- The real differ against the real base. On a PR it answers with files; on push-to-main the merge base is HEAD and it correctly refuses; on a shallow clone it cannot resolve. All three are legitimate, and ANYTHING ELSE is not: a green whose selection has lost an unscoped gate, or a red carrying
