@@ -1988,6 +1988,9 @@ inbox and is synced in, but the verbs are the first-class interface):
                                 mark in-flight on a NAMED background worker;
                                 worker:lead = driven inline, covered while a
                                 background task of yours runs (at most 3)
+  --lease <me> <id> release [note]
+                                put an in-flight item back to open work
+                                (its worker finished, the item is not done)
   --relay <me> <old-worker> <new-worker>
                                 move every lease on one worker to another
   (item text) BLOCKED_BY:#id[,#id]
