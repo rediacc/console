@@ -94,11 +94,47 @@ const CLOSURES = {
   // ct-tests.yml:195 `test-e2e-workers`. FIVE matrix legs, one per distro (:203-207), each of them a 90-minute ceiling: the single most expensive key in the table, hence first.
   e2e_workers: {
     jobNames: [
-      'E2E Workers (ubuntu-24.04)',
-      'E2E Workers (debian-13)',
-      'E2E Workers (fedora-43)',
-      'E2E Workers (opensuse-16.0)',
-      'E2E Workers (oracle-10)',
+      // PLAN-ci-time-budget T2.12 shards each distro leg eight ways (ct-tests.yml `E2E Workers (<os>, <i>/8)`).
+      'E2E Workers (ubuntu-24.04, 1/8)',
+      'E2E Workers (ubuntu-24.04, 2/8)',
+      'E2E Workers (ubuntu-24.04, 3/8)',
+      'E2E Workers (ubuntu-24.04, 4/8)',
+      'E2E Workers (ubuntu-24.04, 5/8)',
+      'E2E Workers (ubuntu-24.04, 6/8)',
+      'E2E Workers (ubuntu-24.04, 7/8)',
+      'E2E Workers (ubuntu-24.04, 8/8)',
+      'E2E Workers (debian-13, 1/8)',
+      'E2E Workers (debian-13, 2/8)',
+      'E2E Workers (debian-13, 3/8)',
+      'E2E Workers (debian-13, 4/8)',
+      'E2E Workers (debian-13, 5/8)',
+      'E2E Workers (debian-13, 6/8)',
+      'E2E Workers (debian-13, 7/8)',
+      'E2E Workers (debian-13, 8/8)',
+      'E2E Workers (fedora-43, 1/8)',
+      'E2E Workers (fedora-43, 2/8)',
+      'E2E Workers (fedora-43, 3/8)',
+      'E2E Workers (fedora-43, 4/8)',
+      'E2E Workers (fedora-43, 5/8)',
+      'E2E Workers (fedora-43, 6/8)',
+      'E2E Workers (fedora-43, 7/8)',
+      'E2E Workers (fedora-43, 8/8)',
+      'E2E Workers (opensuse-16.0, 1/8)',
+      'E2E Workers (opensuse-16.0, 2/8)',
+      'E2E Workers (opensuse-16.0, 3/8)',
+      'E2E Workers (opensuse-16.0, 4/8)',
+      'E2E Workers (opensuse-16.0, 5/8)',
+      'E2E Workers (opensuse-16.0, 6/8)',
+      'E2E Workers (opensuse-16.0, 7/8)',
+      'E2E Workers (opensuse-16.0, 8/8)',
+      'E2E Workers (oracle-10, 1/8)',
+      'E2E Workers (oracle-10, 2/8)',
+      'E2E Workers (oracle-10, 3/8)',
+      'E2E Workers (oracle-10, 4/8)',
+      'E2E Workers (oracle-10, 5/8)',
+      'E2E Workers (oracle-10, 6/8)',
+      'E2E Workers (oracle-10, 7/8)',
+      'E2E Workers (oracle-10, 8/8)',
     ],
     submodules: VM_E2E_SUBMODULES,
     paths: VM_E2E_PATHS,
@@ -174,7 +210,11 @@ const CLOSURES = {
   // ci-ops-test.yml, called from ci.yml:864. FIVE leaf jobs across three job blocks and two matrices; the rendered names are disjoint, verified against ci-ops-test.yml:16 + :31-34, :329 + :344-347, :467 + :482-493.
   ops: {
     jobNames: [
-      'OPS Provision (linux-amd64)',
+      // PLAN-ci-time-budget T2.16 shards the linux leg four ways; each shard is its own check name.
+      'OPS Provision (linux-amd64, 1/4)',
+      'OPS Provision (linux-amd64, 2/4)',
+      'OPS Provision (linux-amd64, 3/4)',
+      'OPS Provision (linux-amd64, 4/4)',
       'OPS Provision (macos-intel)',
       'OPS Check (linux-arm64)',
       'OPS Check (macos-arm64)',
@@ -254,7 +294,8 @@ const CLOSURES = {
   // ct-tests.yml:1636 `test-account-e2e`, gate at :1638.
   account_e2e: {
     // Live run shows "Tests + Infra / Account E2E".
-    jobNames: ['Account E2E'],
+    // PLAN-ci-time-budget T2.13 shards Account E2E four ways (ct-tests.yml `Account E2E (<i>/4)`).
+    jobNames: ['Account E2E (1/4)', 'Account E2E (2/4)', 'Account E2E (3/4)', 'Account E2E (4/4)'],
     submodules: ['private/account'],
     // Steps at ct-tests.yml:1653 (setup-workspace with account: 'true'), :1656 (`npm run build:packages`) and :1666 (run-account-e2e.sh).
     //
@@ -464,7 +505,7 @@ const CLOSURES = {
 
 // The leaf of a reusable-workflow job name. See CLOSURES.renet.jobNames.
 function jobLeafName(name) {
-  const parts = String(name == null ? '' : name).split(' / ');
+  const parts = String(name ?? '').split(' / ');
   return parts[parts.length - 1].trim();
 }
 
@@ -533,7 +574,7 @@ function evaluateCandidate(candidate, { jobNames, wantGitlinks, wantClosureHash 
       return { usable: false, reason: `job-not-run${tag(jobName)}` };
     }
     if (conclusion !== 'success') {
-      const c = conclusion == null ? 'null' : conclusion;
+      const c = conclusion ?? 'null';
       return { usable: false, reason: `job-failed:${c}${tag(jobName)}` };
     }
   }

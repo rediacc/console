@@ -229,7 +229,7 @@ jobs:
       - run: .ci/scripts/test/run-unit.sh --coverage
 
   test-e2e-workers:
-    name: E2E Workers (${{ matrix.os-image }})
+    name: E2E Workers (${{ matrix.os-image }}, ${{ matrix.shard }}/8)
     # Logs into ghcr with github.token and PULLS only (the credential is then
     # copied to the root docker config so the test`s root-run rdc/renet pull
     # through it). Never pushes, so read rather than write.
@@ -242,6 +242,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # T2.12 (PLAN-ci-time-budget): 8 legs per distro, from the committed
+        # .ci/config/shards/test-e2e-workers.json (LPT by measured/estimated
+        # per-file duration; the file's own `#part1/2/3` describe-group split
+        # keeps 13-postgres-fork-isolation, the single heaviest file at 8.1m,
+        # from forcing its leg over budget alone). `include:` below has no
+        # `shard` key, so GitHub Actions merges `full-integration`/`cli-suite`
+        # onto every shard of the two distros it names, exactly as before
+        # sharding existed.
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
         os-image:
           - ubuntu-24.04
           - debian-13
@@ -408,15 +417,26 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Workers)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip
+        # T2.12: shard 6 also carries the FULL_INTEGRATION-only composition
+        # suites (12a/12b/12d/13b) on the two distros that set full-integration
+        # -- they stay off the sharded plan (their own cost is unmeasured) and
+        # ride whichever leg has the most headroom instead of a leg of their own.
+        run: |
+          ALSO=()
+          if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '6' ]]; then
+            ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts")
+          fi
+          .ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip \
+            --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "${{ matrix.shard }}/8" \
+            "${ALSO[@]}"
 
       - if: always()
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-${{ matrix.os-image }}" --status ${{ job.status }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}" --status ${{ job.status }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
-          name: test-e2e-workers-${{ matrix.os-image }}-${{ github.sha }}
+          name: test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
             packages/e2e-tests/reports/bridge/
@@ -1870,7 +1890,7 @@ jobs:
   # Spins up account server + RustFS via Docker, runs Playwright tests
   # ============================================================================
   test-account-e2e:
-    name: Account E2E
+    name: Account E2E (${{ matrix.shard }}/4)
     # Checkout, with the private submodules on the readonly-preset App token.
     # No registry, no GitHub API.
     permissions:
@@ -1878,6 +1898,16 @@ jobs:
     if: inputs.full_suite == 'true' && inputs.run_account_e2e != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # T2.13 (PLAN-ci-time-budget): 4 legs from the committed
+        # .ci/config/shards/test-account-e2e.json. Leg 1 carries the 10-stripe
+        # mutex unit (only that leg starts `stripe listen`) and leg 2 carries
+        # the @webauthn coverage-floor bundle; run-account-e2e.sh derives both
+        # from the leg's actual file list rather than trusting these numbers,
+        # so this comment is documentation, not a contract the script relies on.
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -1914,7 +1944,11 @@ jobs:
           account: 'true'
       - run: npm run build:packages
       - name: Install Stripe CLI
-        if: env.STRIPE_SANDBOX_SECRET_KEY != ''
+        # Leg 1 holds the 10-stripe mutex unit (test-account-e2e.json); the
+        # other three never call `stripe`, so skipping the install there is a
+        # pure time saving -- run-account-e2e.sh's own file-derived check is
+        # what actually keeps a second `stripe listen` off the sandbox.
+        if: env.STRIPE_SANDBOX_SECRET_KEY != '' && matrix.shard == 1
         run: |
           # -f, and retries: `-s` alone makes an HTTP error SILENT and pipes the
           # error page into gpg, and a single attempt makes one network blip a
@@ -1928,7 +1962,7 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
       - name: Run Account Portal E2E tests
-        run: .ci/scripts/test/run-account-e2e.sh
+        run: .ci/scripts/test/run-account-e2e.sh --shard-manifest .ci/config/shards/test-account-e2e.json --shard "${{ matrix.shard }}/4"
         env:
           ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
@@ -1941,7 +1975,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: failure()
         with:
-          name: account-e2e-report-${{ github.sha }}
+          name: account-e2e-report-s${{ matrix.shard }}-${{ github.sha }}
           path: |
             private/account/e2e/reports/e2e/
             private/account/e2e/test-results/

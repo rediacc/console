@@ -7,16 +7,27 @@
 # Usage: run-account-e2e.sh [options]
 #
 # Options:
-#   --projects    Space-separated browser projects (default: "chromium")
-#   --grep        Filter tests by tag (e.g., "@auth", "@admin", "@portal")
-#   --skip-setup  Skip infrastructure startup (use when already running)
-#   --workers     Playwright worker count (default: 1)
+#   --projects        Space-separated browser projects (default: "chromium")
+#   --grep            Filter tests by tag (e.g., "@auth", "@admin", "@portal")
+#   --skip-setup      Skip infrastructure startup (use when already running)
+#   --workers         Playwright worker count (default: 1)
+#   --shard-manifest  T2.13 (PLAN-ci-time-budget). Run only this leg's spec
+#                     files, read from a committed `.ci/config/shards/<lane>.json`
+#                     (scripts/ci-runner/shard-manifest.ts's ShardManifestFile
+#                     shape). Required together with --shard. Whether `stripe
+#                     listen` starts (Phase 2.5) and whether the @webauthn
+#                     coverage floor runs (Phase 5) are both derived from the
+#                     leg's actual file list, not hardcoded to a shard number,
+#                     so only the leg holding `10-stripe/**` or the @webauthn
+#                     specs does either.
+#   --shard           "<index>/<of>", 1-based, the leg to run from --shard-manifest.
 #
 # Examples:
 #   .ci/scripts/test/run-account-e2e.sh
 #   .ci/scripts/test/run-account-e2e.sh --projects "chromium firefox"
 #   .ci/scripts/test/run-account-e2e.sh --grep @auth
 #   .ci/scripts/test/run-account-e2e.sh --skip-setup
+#   .ci/scripts/test/run-account-e2e.sh --shard-manifest .ci/config/shards/test-account-e2e.json --shard 1/4
 #
 # Environment variables:
 #   ACCOUNT_API_PORT   Backend API port (default: 3001)
@@ -33,12 +44,65 @@ PROJECTS="${ARG_PROJECTS:-chromium}"
 GREP="${ARG_GREP:-}"
 SKIP_SETUP="${ARG_SKIP_SETUP:-false}"
 WORKERS="${ARG_WORKERS:-1}"
+SHARD_MANIFEST="${ARG_SHARD_MANIFEST:-}"
+SHARD_SPEC="${ARG_SHARD:-}"
 ACCOUNT_API_PORT="${ACCOUNT_API_PORT:-3001}"
 E2E_PORT="${E2E_PORT:-5173}"
+
+if [[ (-n "$SHARD_MANIFEST" && -z "$SHARD_SPEC") || (-z "$SHARD_MANIFEST" && -n "$SHARD_SPEC") ]]; then
+    log_error "--shard-manifest and --shard must both be given, or neither"
+    exit 1
+fi
 
 REPO_ROOT="$(get_repo_root)"
 ACCOUNT_DIR="$REPO_ROOT/private/account"
 E2E_DIR="$ACCOUNT_DIR/e2e"
+
+# T2.13: this leg's spec files, resolved from the committed manifest. Empty
+# when unsharded, which every check below treats as "run/consider everything",
+# matching pre-sharding behaviour exactly.
+SHARD_TEST_FILES=()
+if [[ -n "$SHARD_MANIFEST" ]]; then
+    LEG_IDS_RAW="$(node -e '
+        const fs = require("fs");
+        const [manifestPath, spec] = process.argv.slice(1);
+        const [wantIndex, wantOf] = spec.split("/").map(Number);
+        const data = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+        if (data.of !== wantOf) {
+            console.error(`shard manifest ${manifestPath} has ${data.of} leg(s); asked for ${wantIndex}/${wantOf}`);
+            process.exit(1);
+        }
+        const leg = data.legs.find((l) => l.index === wantIndex);
+        if (!leg || leg.ids.length === 0) {
+            console.error(`shard manifest ${manifestPath} has no non-empty leg ${wantIndex}`);
+            process.exit(1);
+        }
+        for (const id of leg.ids) console.log(id);
+    ' "$SHARD_MANIFEST" "$SHARD_SPEC")" || exit 1
+    while IFS= read -r id; do
+        file="${id#account-e2e:}"
+        if [[ "$file" == "$id" ]]; then
+            log_error "shard manifest id '$id' is not an account-e2e unit"
+            exit 1
+        fi
+        SHARD_TEST_FILES+=("$file")
+    done <<<"$LEG_IDS_RAW"
+fi
+
+# Whether THIS leg's file set needs stripe listen (Phase 2.5) or clears the
+# @webauthn coverage floor (Phase 5) -- true when unsharded (whole suite), and
+# derived from the actual selected files when sharded, so the 10-stripe mutex
+# unit and the @webauthn bundle only do their thing on the leg that holds them.
+HAS_STRIPE_FILES=true
+HAS_WEBAUTHN_FILES=true
+if [[ ${#SHARD_TEST_FILES[@]} -gt 0 ]]; then
+    HAS_STRIPE_FILES=false
+    HAS_WEBAUTHN_FILES=false
+    for f in "${SHARD_TEST_FILES[@]}"; do
+        [[ "$f" == 10-stripe/* ]] && HAS_STRIPE_FILES=true
+        grep -q '@webauthn' "$E2E_DIR/tests/$f" 2>/dev/null && HAS_WEBAUTHN_FILES=true
+    done
+fi
 
 # Check if account submodule is available
 if [[ ! -f "$ACCOUNT_DIR/package.json" ]]; then
@@ -99,7 +163,7 @@ fi
 if [[ "$SKIP_SETUP" != "true" ]]; then
     # Phase 2.5: Start stripe listen for real Stripe e2e tests (optional)
     STRIPE_LISTEN_WEBHOOK_SECRET=""
-    if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null; then
+    if [[ -n "${STRIPE_SANDBOX_SECRET_KEY:-}" ]] && command -v stripe &>/dev/null && [[ "$HAS_STRIPE_FILES" == "true" ]]; then
         log_step "Syncing Stripe products/prices to sandbox..."
         cd "$ACCOUNT_DIR"
         STRIPE_SECRET_KEY="$STRIPE_SANDBOX_SECRET_KEY" npx tsx scripts/stripe-sync.ts 2>&1 || true
@@ -225,6 +289,9 @@ CMD+=("--workers=$WORKERS" "--timeout=60000")
 if [[ -n "$GREP" ]]; then
     CMD+=("--grep" "$GREP")
 fi
+if [[ ${#SHARD_TEST_FILES[@]} -gt 0 ]]; then
+    CMD+=("${SHARD_TEST_FILES[@]}")
+fi
 
 # THE SIGNER USES THE FIXTURE, not a stored credential, and the distinction is the
 # whole point. These tests SIGN a simulated webhook and the server VERIFIES it, so both
@@ -251,7 +318,7 @@ fi
 # floor is the count of @webauthn tests (the 14-case PRF provider matrix in
 # 20-11 plus 20-03, 20-08, 20-10 and 27-02); raise it when adding one.
 MIN_WEBAUTHN_TESTS=20
-if [[ " ${PROJECT_ARR[*]} " == *" chromium "* ]] && { [[ -z "$GREP" ]] || [[ "$GREP" == *webauthn* ]]; }; then
+if [[ " ${PROJECT_ARR[*]} " == *" chromium "* ]] && { [[ -z "$GREP" ]] || [[ "$GREP" == *webauthn* ]]; } && [[ "$HAS_WEBAUTHN_FILES" == "true" ]]; then
     RESULTS_JSON="$E2E_DIR/reports/e2e/results.json"
     log_step "Checking @webauthn coverage in $RESULTS_JSON (floor: $MIN_WEBAUTHN_TESTS)"
     if ! node - "$RESULTS_JSON" "$MIN_WEBAUTHN_TESTS" <<'NODE'; then

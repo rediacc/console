@@ -1,0 +1,67 @@
+{
+  "lane": "test-e2e-workers",
+  "of": 8,
+  "generatedAt": "2026-09-26T00:00:00.000Z",
+  "legs": [
+    {
+      "index": 1,
+      "ids": [
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
+        "e2e-workers:01-system-checks.test.ts"
+      ]
+    },
+    {
+      "index": 2,
+      "ids": [
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part2",
+        "e2e-workers:02-machine-setup.test.ts"
+      ]
+    },
+    {
+      "index": 3,
+      "ids": [
+        "e2e-workers:10-backup-checkpoint.test.ts",
+        "e2e-workers:03-datastore-lifecycle.test.ts"
+      ]
+    },
+    {
+      "index": 4,
+      "ids": [
+        "e2e-workers:07-container-operations.test.ts",
+        "e2e-workers:04-repository-lifecycle.test.ts",
+        "e2e-workers:05-rediaccfiles-updown.test.ts"
+      ]
+    },
+    {
+      "index": 5,
+      "ids": [
+        "e2e-workers:17-repo-branching.test.ts",
+        "e2e-workers:06-daemon-operations.test.ts",
+        "e2e-workers:11-multi-machine.test.ts"
+      ]
+    },
+    {
+      "index": 6,
+      "ids": [
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part3",
+        "e2e-workers:14-vault-builder.test.ts"
+      ]
+    },
+    {
+      "index": 7,
+      "ids": [
+        "e2e-workers:15-storage-backup.test.ts",
+        "e2e-workers:16-setup-installation-params.test.ts",
+        "e2e-workers:22-setup-command.test.ts"
+      ]
+    },
+    {
+      "index": 8,
+      "ids": [
+        "e2e-workers:18-ops-workflow.test.ts",
+        "e2e-workers:19-rustfs-operations.test.ts",
+        "e2e-workers:21-local-executor.test.ts"
+      ]
+    }
+  ]
+}
