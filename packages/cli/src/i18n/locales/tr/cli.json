@@ -459,6 +459,7 @@
       },
       "remote": {
         "conflictRetryExhausted": "\"{{config}}\" yapılandırması 3 denemeden sonra hâlâ başka bir cihazla çakışıyor. Komutu yeniden çalıştırın.",
+        "preconditionFailed": "\"{{config}}\" yapılandırması: sunucu {{paths}} öğesini kaldıran bir değişikliği reddetti, çünkü bu cihaz kayıtlı değerleri gördüğünü kanıtlayamadı. \"rdc config remote refresh\" ile yenileyip komutu tekrar çalıştırın.",
         "description": "Uzak yapılandırma depolama bağlantısını yönet",
         "disable": {
           "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
@@ -527,8 +528,11 @@
         "tokenExhausted": "Bu cihazın yapılandırma jetonu başka bir istek tarafından zaten kullanıldı (her kullanımda yenilenir). Yeniden kimlik doğrulayın: rdc config remote enable",
         "tokenInvalid": "Yapılandırma sunucusu bu cihazın yapılandırma jetonunu tanımıyor. Yeniden kimlik doğrulayın: rdc config remote enable",
         "tokenRejected": "Yapılandırma sunucusu bu cihazın yapılandırma jetonunu reddetti ({{reason}}). Yeniden kimlik doğrulayın: rdc config remote enable",
-        "undecryptableIdentity": "{{storeId}} deposundaki {{configId}} yapılandırması, sizin yuvanızın taşıdığından farklı bir anahtarla şifrelenmiş, bu nedenle bu cihaz onu okuyamıyor. Bu, depo zaten başka bir kayıttan gelen bir yapılandırma taşıdığında olur. O yapılandırmayı zaten kayıtlı bir cihazda çekip hangi yapılandırmayı kastettiğinizi kontrol edin veya bir yöneticiden depo anahtarını portaldan (Config Storage > key slots) bu cihazla yeniden paylaşmasını isteyin.",
+        "integrityFailed": "{{storeId}} deposundaki {{configId}} yapılandırması bütünlük denetiminden geçemedi: sunucunun döndürdüğü kopya bu yapılandırma, ekip ve sürüm için mühürlenmemiş ya da slotunuzdaki anahtardan farklı bir anahtarla şifrelenmiş. Bu cihazda hiçbir şey değiştirilmedi. Anahtar farklıysa bir yöneticiden depo anahtarını portal üzerinden bu cihazla yeniden paylaşmasını isteyin (Yapılandırma Depolama > anahtar slotları).",
         "undecryptableSession": "{{configId}} yapılandırmasının kilidi anahtarınızla açıldı ancak sunucu oturum katmanı onu açmayı reddetti ({{detail}}). Komutu tekrar deneyin; hata sürerse şu komutla yeniden kaydolun: rdc config remote enable",
+        "rollback": "{{configId}} yapılandırması {{version}} sürümüyle geldi; bu, cihazın daha önce gördüğü {{highWater}} sürümünden eski. Sunucu eski bir kopya döndürdüğü için reddedildi ve bu cihazda hiçbir şey değiştirilmedi.",
+        "envelopeDowngrade": "{{configId}} yapılandırması, bu cihaz yeni zarf biçimini zaten görmüşken eski biçimde geldi. Sunucu eski bir kopya döndürdüğü için reddedildi ve bu cihazda hiçbir şey değiştirilmedi.",
+        "legacyEnvelope": "{{configId}} yapılandırması hâlâ eski zarf biçiminde saklanıyor. Bu cihazdan gönderilecek bir sonraki değişiklik onu yükseltir.",
         "unreachable": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor",
         "writeFailedClosed": "Kaydedilemiyor: \"{{config}}\" yapılandırması, ulaşılamayan {{server}} üzerinde saklanıyor. Değişiklik KAYDEDİLMEDİ.",
         "teamForbidden": "\"{{config}}\" yapılandırması bu hesabın üyesi olmadığı bir takıma ait olduğundan yapılandırma sunucusu isteği reddetti. Kuruluşun sahibinden veya bir yöneticisinden bu hesabı o takıma eklemesini isteyin.",

@@ -34,6 +34,16 @@ import {
   RdcConfigSchema,
 } from '../index.js';
 
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
+
 /** The authoritative family list, straight from the schema. */
 function resourceFamilyKeys(): string[] {
   const resources = RdcConfigSchema.shape.resources as z.ZodOptional<z.ZodObject<z.ZodRawShape>>;
@@ -170,13 +180,18 @@ async function pushPullRoundTrip(config: RdcConfig): Promise<RdcConfig> {
   const cek = await generateCek();
   const sdkDerived = await generateAesKey();
   const payload = await buildConfigPushPayload(config, {
+    storeId: STORE_ID,
     version: config.version + 1,
     sdkEpoch: 42,
     sdkDerived,
     cek,
   });
   // Real crypto both ways — the wire shape is exactly what a pull hands back.
-  const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+  const decrypted = await decryptConfigPullPayload(payload, {
+    cek,
+    sdkDerived,
+    binding: readerBinding(payload),
+  });
   return fullConfigToRdcConfig(decrypted);
 }
 

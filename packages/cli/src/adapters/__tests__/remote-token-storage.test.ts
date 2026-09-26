@@ -116,6 +116,35 @@ describe('RemoteTokenStorage', () => {
     });
   });
 
+  describe('sync record (T8 high-water mark)', () => {
+    const record = {
+      binding: 'store/config/',
+      highWater: 7,
+      envelopeVersion: 3 as const,
+      fckSalt: 'salt',
+    };
+
+    it('a lease persists the record and sees it back', async () => {
+      await storage.set('myconfig', { token: 'tok', wrappedCek: 'cek' });
+      await storage.withLease('myconfig', async (lease) => {
+        expect(lease.sync).toBeUndefined();
+        await lease.recordSync(record);
+        expect(lease.sync).toEqual(record);
+      });
+      expect((await storage.get('myconfig'))?.sync).toEqual(record);
+    });
+
+    it('re-enrolling (set without a record) keeps the versions the device saw', async () => {
+      await storage.set('myconfig', { token: 'tok', wrappedCek: 'cek', sync: record });
+      await storage.set('myconfig', { token: 'tok_new', wrappedCek: 'cek_new' });
+      expect(await storage.get('myconfig')).toEqual({
+        token: 'tok_new',
+        wrappedCek: 'cek_new',
+        sync: record,
+      });
+    });
+  });
+
   describe('delete', () => {
     it('should remove the file', async () => {
       await storage.set('myconfig', { token: 'tok_1', wrappedCek: 'cek_1' });

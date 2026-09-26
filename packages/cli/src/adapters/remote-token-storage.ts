@@ -15,11 +15,28 @@ import lockfile from 'proper-lockfile';
 
 const TOKENS_DIR = join(getConfigDir(), '.tokens');
 
+/**
+ * What this device last saw of the config its token file serves (PLAN-config-sync-hardening T8/T9).
+ * Kept in the token file rather than the config file so a wiped or replaced cache cannot reset it.
+ */
+export interface SyncRecord {
+  /** `<storeId>/<configId>/<teamId or empty>`: a record for another config is ignored. */
+  binding: string;
+  /** The newest version this device pulled or pushed; a pull older than it is a rollback. */
+  highWater: number;
+  /** The envelope version the server held at `highWater` (a v3 seen means v2 is never accepted again). */
+  envelopeVersion: 2 | 3;
+  /** That envelope's `commitments.fckSalt`: the key of this device's tombstone proofs. */
+  fckSalt: string;
+}
+
 export interface TokenData {
   /** Current rotating config token */
   token: string;
   /** Wrapped CEK (base64) for this config */
   wrappedCek: string;
+  /** What this device last saw of the config; absent until its first pull or push. */
+  sync?: SyncRecord;
 }
 
 /** Lock retry options matching config-file-storage.ts */
@@ -40,8 +57,12 @@ export interface TokenLease {
   readonly data: TokenData | null;
   /** The token the next request of this operation sends. */
   readonly token: string | undefined;
+  /** The sync record as it stands now (the lease's own `recordSync` writes included). */
+  readonly sync: SyncRecord | undefined;
   /** Persist a rotated token and send it on the next request. */
   update(token: string): Promise<void>;
+  /** Persist what this device now knows of the config (after a pull or a push). */
+  recordSync(record: SyncRecord): Promise<void>;
 }
 
 export class RemoteTokenStorage {
@@ -91,7 +112,9 @@ export class RemoteTokenStorage {
 
   /**
    * Atomically save a token and wrappedCek.
-   * Uses file locking + temp+rename for crash safety.
+   * Uses file locking + temp+rename for crash safety. A sync record the file already holds is kept
+   * unless `data` carries one: re-enrolling a device (a CEK rotation's re-handoff) must not forget
+   * the versions it saw. The record names its config, so a file re-pointed elsewhere ignores it.
    */
   async set(configName: string, data: TokenData): Promise<void> {
     await this.ensureDirectory();
@@ -106,7 +129,8 @@ export class RemoteTokenStorage {
 
     const release = await lockfile.lock(path, LOCK_OPTIONS);
     try {
-      await this.writeUnlocked(path, data);
+      const existing = data.sync ? null : await this.get(configName).catch(() => null);
+      await this.writeUnlocked(path, existing?.sync ? { ...data, sync: existing.sync } : data);
     } finally {
       await release();
     }
@@ -131,7 +155,9 @@ export class RemoteTokenStorage {
       return fn({
         data: null,
         token: undefined,
+        sync: undefined,
         update: () => Promise.reject(missingTokenFile(configName)),
+        recordSync: () => Promise.reject(missingTokenFile(configName)),
       });
     }
     try {
@@ -142,9 +168,17 @@ export class RemoteTokenStorage {
         get token() {
           return current?.token;
         },
+        get sync() {
+          return current?.sync;
+        },
         update: async (token: string) => {
           if (!current) throw missingTokenFile(configName);
           current = { ...current, token };
+          await this.writeUnlocked(path, current);
+        },
+        recordSync: async (sync: SyncRecord) => {
+          if (!current) throw missingTokenFile(configName);
+          current = { ...current, sync };
           await this.writeUnlocked(path, current);
         },
       };

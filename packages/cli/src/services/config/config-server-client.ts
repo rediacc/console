@@ -50,11 +50,25 @@ export class ConfigServerError extends Error {
      * old token, so the caller must persist this one (F9); absent when the server rotated nothing
      * (a tunnel-level failure, or a rejection before the token was accepted).
      */
-    public readonly newServerToken?: string
+    public readonly newServerToken?: string,
+    /** A 409 `precondition_failed`: the commitment keys the server refused (blinded in envelope v3). */
+    public readonly mismatchedPaths?: string[]
   ) {
     super(message);
     this.name = 'ConfigServerError';
   }
+}
+
+/** The ConfigServerError for an inner status of 400 or more, carrying what the error body names. */
+function serverErrorFrom(
+  status: number,
+  parsed: { error?: string; code?: string; newServerToken?: string; mismatchedPaths?: unknown }
+): ConfigServerError {
+  const msg = parsed.error ?? `Config server returned HTTP ${status}`;
+  const paths = Array.isArray(parsed.mismatchedPaths)
+    ? parsed.mismatchedPaths.filter((p): p is string => typeof p === 'string')
+    : undefined;
+  return new ConfigServerError(msg, status, parsed.code, parsed.newServerToken, paths);
 }
 
 /** Default HTTP method for config server requests. */
@@ -115,13 +129,11 @@ export async function configServerFetch<T = unknown>(
     error?: string;
     code?: string;
     newServerToken?: string;
+    mismatchedPaths?: unknown;
   };
 
   // Check the inner HTTP status
-  if (status >= 400) {
-    const msg = parsed.error ?? `Config server returned HTTP ${status}`;
-    throw new ConfigServerError(msg, status, parsed.code, parsed.newServerToken);
-  }
+  if (status >= 400) throw serverErrorFrom(status, parsed);
 
   return {
     data: parsed,

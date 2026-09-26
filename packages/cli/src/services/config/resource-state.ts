@@ -518,7 +518,8 @@ export class RemoteResourceState implements ResourceState {
     const base = await configFileStorage.loadDecrypted(this.configName);
     const merged = build(base);
     try {
-      const result = await this.adapter.push(merged, this.version);
+      // The cache is the server copy at `this.version`: a committed path it holds that `merged` drops is a deletion, proven by a tombstone (T9).
+      const result = await this.adapter.push(merged, this.version, { base });
       this.version = result.version;
       let cached: RdcConfig = merged;
       await configFileStorage.updateCache(this.configName, () => {

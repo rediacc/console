@@ -459,6 +459,7 @@
       },
       "remote": {
         "conflictRetryExhausted": "La configuration \"{{config}}\" est toujours en conflit avec un autre appareil après 3 tentatives. Relancez la commande.",
+        "preconditionFailed": "Configuration « {{config}} » : le serveur a refusé une modification qui supprime {{paths}}, car cet appareil n'a pas pu prouver qu'il avait vu les valeurs enregistrées. Actualisez avec « rdc config remote refresh » puis relancez la commande.",
         "description": "Gérer la connexion au stockage distant de configuration",
         "disable": {
           "description": "Déconnecter du stockage distant et sauvegarder la configuration localement",
@@ -527,8 +528,11 @@
         "tokenExhausted": "Le jeton de configuration de cet appareil a déjà été consommé par une autre requête (il change à chaque utilisation). Réauthentifiez-vous avec : rdc config remote enable",
         "tokenInvalid": "Le serveur de configuration ne reconnaît pas le jeton de configuration de cet appareil. Réauthentifiez-vous avec : rdc config remote enable",
         "tokenRejected": "Le serveur de configuration a refusé le jeton de configuration de cet appareil ({{reason}}). Réauthentifiez-vous avec : rdc config remote enable",
-        "undecryptableIdentity": "La configuration {{configId}} dans le store {{storeId}} a été chiffrée avec une clé différente de celle que détient votre slot, donc cet appareil ne peut pas la lire. Cela arrive quand le store contient déjà une configuration issue d'une autre inscription. Récupérez cette configuration depuis un appareil déjà inscrit et vérifiez de quelle configuration il s'agissait, ou demandez à un administrateur de repartager la clé du store avec cet appareil depuis le portail (Config Storage > key slots).",
+        "integrityFailed": "La configuration {{configId}} du magasin {{storeId}} a échoué au contrôle d'intégrité : la copie renvoyée par le serveur n'a pas été scellée pour cette configuration, cette équipe et cette version, ou elle a été chiffrée avec une autre clé que celle de votre emplacement. Rien n'a été modifié sur cet appareil. Si la clé diffère, demandez à un administrateur de repartager la clé du magasin avec cet appareil depuis le portail (Stockage de configuration > emplacements de clé).",
         "undecryptableSession": "La configuration {{configId}} a été déverrouillée avec votre clé, mais la couche de session du serveur a refusé de l'ouvrir ({{detail}}). Relancez la commande ; si l'échec persiste, réinscrivez-vous avec : rdc config remote enable",
+        "rollback": "La configuration {{configId}} est revenue en version {{version}}, plus ancienne que la version {{highWater}} déjà vue par cet appareil. Le serveur a renvoyé une ancienne copie : elle a été refusée et rien n'a été modifié sur cet appareil.",
+        "envelopeDowngrade": "La configuration {{configId}} est revenue dans l'ancien format d'enveloppe alors que cet appareil avait déjà vu le nouveau. Le serveur a renvoyé une ancienne copie : elle a été refusée et rien n'a été modifié sur cet appareil.",
+        "legacyEnvelope": "La configuration {{configId}} est encore stockée dans l'ancien format d'enveloppe. La prochaine modification envoyée depuis cet appareil la mettra à niveau.",
         "unreachable": "Le serveur de configuration {{server}} est injoignable",
         "writeFailedClosed": "Impossible d'enregistrer : la configuration \"{{config}}\" est stockée sur {{server}}, qui est injoignable. La modification n'a PAS été enregistrée.",
         "teamForbidden": "La configuration \"{{config}}\" appartient à une équipe dont ce compte n'est pas membre : le serveur de configuration l'a donc refusée. Demandez au propriétaire ou à un administrateur de l'organisation d'ajouter ce compte à cette équipe.",

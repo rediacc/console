@@ -84,9 +84,17 @@ vi.mock('../../adapters/remote-token-storage.js', () => ({
         get token() {
           return tokenMem.get(name)?.token;
         },
+        get sync() {
+          return (tokenMem.get(name) as { sync?: unknown } | undefined)?.sync;
+        },
         update: (token: string) => {
           const cur = tokenMem.get(name);
           if (cur) tokenMem.set(name, { ...cur, token });
+          return Promise.resolve();
+        },
+        recordSync: (sync: unknown) => {
+          const cur = tokenMem.get(name);
+          if (cur) tokenMem.set(name, { ...cur, sync } as typeof cur);
           return Promise.resolve();
         },
       });
@@ -149,6 +157,7 @@ async function provision(password: string, teamId: string | null = TEAM_ID) {
   } as unknown as RdcConfig;
 
   const payload = await buildConfigPushPayload(configInput, {
+    storeId: STORE_ID,
     version: 1,
     sdkEpoch: SDK_EPOCH,
     sdkDerived,
@@ -175,6 +184,7 @@ async function provision(password: string, teamId: string | null = TEAM_ID) {
       server_secret: toBase64(serverSecret),
       configData: payload.encryptedBlob,
       envelope: {
+        envelopeVersion: payload.envelope.envelopeVersion,
         configId: CONFIG_ID,
         version: 1,
         teamId,

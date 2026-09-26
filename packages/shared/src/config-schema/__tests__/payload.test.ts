@@ -9,7 +9,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { generateCek, generateSdkMaster, sdkDerive } from '../../config-crypto/index.js';
+import {
+  blindPointer,
+  derivePointerBlindingKey,
+  generateCek,
+  generateSdkMaster,
+  sdkDerive,
+} from '../../config-crypto/index.js';
 import {
   buildCommitEntries,
   buildConfigPushPayload,
@@ -17,6 +23,16 @@ import {
   toFullConfig,
 } from '../payload.js';
 import type { RdcConfig } from '../schemas.js';
+
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
 
 function sampleConfig(): RdcConfig {
   return {
@@ -61,7 +77,7 @@ describe('config push payload', () => {
 
   it('toFullConfig writes the incremented version, not the pulled one', () => {
     const full = toFullConfig(sampleConfig(), { version: 5, sdkEpoch: 7 });
-    expect(full.envelopeVersion).toBe(2);
+    expect(full.envelopeVersion).toBe(3);
     expect(full.version).toBe(5);
     expect(full.sdkEpoch).toBe(7);
     expect(full.machines).toEqual({ 'web-1': { ip: '10.0.0.1', user: 'deploy', port: 22 } });
@@ -73,21 +89,31 @@ describe('config push payload', () => {
     const config = sampleConfig();
 
     const payload = await buildConfigPushPayload(config, {
+      storeId: STORE_ID,
       version: config.version + 1,
       sdkEpoch: 3,
       sdkDerived,
       cek,
     });
 
-    expect(payload.envelope.envelopeVersion).toBe(2);
+    expect(payload.envelope.envelopeVersion).toBe(3);
     expect(payload.envelope.version).toBe(5);
     expect(payload.envelope.commitments.alg).toBe('HMAC-SHA256');
     expect(payload.envelope.commitments.fckSalt).not.toBe('');
+    // Keyed by the blinded pointer (envelope v3): the server never reads the name.
+    const blinding = await derivePointerBlindingKey(cek, config.id);
     expect(Object.keys(payload.envelope.commitments.fields)).toContain(
+      await blindPointer(blinding, '/credentials/ssh/privateKey')
+    );
+    expect(Object.keys(payload.envelope.commitments.fields)).not.toContain(
       '/credentials/ssh/privateKey'
     );
 
-    const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+    const decrypted = await decryptConfigPullPayload(payload, {
+      cek,
+      sdkDerived,
+      binding: readerBinding(payload),
+    });
     expect(decrypted.machines).toEqual(config.resources?.machines);
     expect(decrypted.ssh).toEqual(config.credentials?.ssh);
     expect(decrypted.version).toBe(5);
@@ -97,6 +123,7 @@ describe('config push payload', () => {
     const { cek, sdkDerived } = await keys();
     const config = sampleConfig();
     const payload = await buildConfigPushPayload(config, {
+      storeId: STORE_ID,
       version: 5,
       sdkEpoch: 3,
       sdkDerived,
@@ -104,9 +131,9 @@ describe('config push payload', () => {
     });
 
     const tampered = { ...payload, encryptedBlob: `${payload.encryptedBlob.slice(0, -4)}AAAA` };
-    await expect(decryptConfigPullPayload(tampered, { cek, sdkDerived })).rejects.toThrow(
-      /integrity check failed/i
-    );
+    await expect(
+      decryptConfigPullPayload(tampered, { cek, sdkDerived, binding: readerBinding(tampered) })
+    ).rejects.toThrow(/integrity check failed/i);
   });
 
   it('carries every account and defaults key but the login through a push and pull (D3; logout is per device)', async () => {
@@ -127,12 +154,17 @@ describe('config push payload', () => {
     const { cek, sdkDerived } = await keys();
 
     const payload = await buildConfigPushPayload(config, {
+      storeId: STORE_ID,
       version: 5,
       sdkEpoch: 1,
       sdkDerived,
       cek,
     });
-    const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+    const decrypted = await decryptConfigPullPayload(payload, {
+      cek,
+      sdkDerived,
+      binding: readerBinding(payload),
+    });
 
     // The login (server and its key) is per device (ruling 2026-09-25): it stays home.
     const { accountServer: _server, e2ePublicKey: _key, ...synced } = account;

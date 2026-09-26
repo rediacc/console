@@ -459,6 +459,7 @@
       },
       "remote": {
         "conflictRetryExhausted": "配置 \"{{config}}\" 在 3 次尝试后仍与另一台设备冲突。请重新运行该命令。",
+        "preconditionFailed": "配置“{{config}}”：服务器拒绝了删除 {{paths}} 的更改，因为此设备无法证明它见过已存储的值。请用“rdc config remote refresh”刷新后重新运行该命令。",
         "description": "管理远程配置存储连接",
         "disable": {
           "description": "断开远程存储连接并将配置保存到本地",
@@ -527,8 +528,11 @@
         "tokenExhausted": "此设备的配置令牌已被另一个请求用掉（每次使用都会轮换）。请重新认证: rdc config remote enable",
         "tokenInvalid": "配置服务器无法识别此设备的配置令牌。请重新认证: rdc config remote enable",
         "tokenRejected": "配置服务器拒绝了此设备的配置令牌（{{reason}}）。请重新认证: rdc config remote enable",
-        "undecryptableIdentity": "存储 {{storeId}} 中的配置 {{configId}} 使用了与你的槽位所持密钥不同的密钥加密，因此此设备无法读取它。当存储中已经保存了来自另一次注册的配置时会发生这种情况。请在已注册的设备上拉取该配置并确认你指的是哪个配置，或者请管理员从门户（Config Storage > key slots）重新向此设备共享存储密钥。",
+        "integrityFailed": "存储 {{storeId}} 中的配置 {{configId}} 未通过完整性校验：服务器返回的副本不是为此配置、团队和版本封装的，或者使用了与你的槽位所持密钥不同的密钥加密。此设备上未做任何更改。如果密钥不同，请让管理员在门户中（配置存储 > 密钥槽）将存储密钥重新共享给此设备。",
         "undecryptableSession": "配置 {{configId}} 已用你的密钥解锁，但服务器会话层拒绝打开它（{{detail}}）。请重试该命令；如果持续失败，请使用以下命令重新注册：rdc config remote enable",
+        "rollback": "配置 {{configId}} 返回的是版本 {{version}}，比此设备已见过的版本 {{highWater}} 更旧。服务器返回了旧副本，因此已被拒绝，此设备上未做任何更改。",
+        "envelopeDowngrade": "此设备已见过新的信封格式，但配置 {{configId}} 仍以旧格式返回。服务器返回了旧副本，因此已被拒绝，此设备上未做任何更改。",
+        "legacyEnvelope": "配置 {{configId}} 仍以旧的信封格式存储。此设备下一次推送更改时会将其升级。",
         "unreachable": "配置服务器 {{server}} 不可达",
         "writeFailedClosed": "无法保存：配置 \"{{config}}\" 存储在不可达的 {{server}} 上。更改未保存。",
         "teamForbidden": "配置 \"{{config}}\" 属于此账户不在其中的团队，因此配置服务器拒绝了请求。请让组织的所有者或管理员将此账户加入该团队。",

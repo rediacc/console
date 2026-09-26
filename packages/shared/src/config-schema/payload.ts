@@ -2,9 +2,9 @@
  * Config push/pull payload composition.
  *
  * The bridge between the config DOCUMENT (this package) and the config CRYPTO
- * (packages/shared/src/config-crypto): it turns an `RdcConfig` into the v2
- * envelope the account server accepts, and turns a decrypted envelope back into
- * an `RdcConfig`.
+ * (packages/shared/src/config-crypto): it turns an `RdcConfig` into the v3
+ * envelope the account server accepts, and turns a decrypted envelope (v3, or v2
+ * for one release) back into an `RdcConfig`.
  *
  * It lives here, not in config-crypto, to keep the layering one-directional:
  * config-crypto stays a generic crypto library that knows nothing about the
@@ -16,8 +16,13 @@
  * reason this composition is factored out instead of written three times.
  */
 
-import type { EncryptedConfigPayload, FullConfig } from '../config-crypto/index.js';
-import { selectiveDecrypt, selectiveEncrypt } from '../config-crypto/index.js';
+import type {
+  ConfigBinding,
+  EncryptedConfigPayload,
+  FullConfig,
+  PriorEnvelope,
+} from '../config-crypto/index.js';
+import { ENVELOPE_VERSION, selectiveDecrypt, selectiveEncrypt } from '../config-crypto/index.js';
 import { type RdcConfig, RdcConfigSchema } from './schemas.js';
 import { DEVICE_LOCAL_POINTERS } from './sensitivity.js';
 import { getByPointer, pathsToCommit } from './walker.js';
@@ -145,7 +150,7 @@ export function toFullConfig(
   params: { version: number; sdkEpoch: number; teamId?: string }
 ): FullConfig {
   return {
-    envelopeVersion: 2,
+    envelopeVersion: ENVELOPE_VERSION,
     id: config.id,
     version: params.version,
     sdkEpoch: params.sdkEpoch,
@@ -187,6 +192,33 @@ export function fromFullConfig(decrypted: FullConfig): RdcConfig {
 }
 
 /**
+ * The committed paths `base` holds that `next` no longer does, each with the value `base` holds:
+ * the deletions a push must prove with tombstones (commitments.ts). Both documents are compared in
+ * their JSON form, the form the commitments are computed over.
+ */
+export function removedCommitEntries(base: RdcConfig, next: RdcConfig): CommitEntry[] {
+  const baseDoc = JSON.parse(JSON.stringify(base)) as RdcConfig;
+  const kept = new Set(pathsToCommit(JSON.parse(JSON.stringify(next))));
+  return pathsToCommit(baseDoc)
+    .filter((pointer) => !kept.has(pointer))
+    .map((pointer) => ({ pointer, value: getByPointer(baseDoc, pointer) }));
+}
+
+/**
+ * The envelope the server stores for the config being pushed, as the pushing device last pulled it,
+ * plus the document it pulled. A push built from it proves every deletion (a tombstone per committed
+ * path `base` held and the pushed document drops), and upgrades a v2 store's keys. Without it a
+ * push can only add and change values: the server refuses a push that drops a committed path.
+ */
+export interface PushPrior {
+  envelopeVersion: PriorEnvelope['envelopeVersion'];
+  /** The stored envelope's `commitments.fckSalt`. */
+  fckSalt: string;
+  /** The document as pulled at the version this push replaces; omit when nothing is deleted. */
+  base?: RdcConfig;
+}
+
+/**
  * Compose the encrypted payload for a config push: commitments from the schema
  * walker, envelope from the document, ciphertext from the crypto layer.
  */
@@ -198,9 +230,14 @@ export function buildConfigPushPayload(
     sdkEpoch: number;
     sdkDerived: CryptoKey;
     cek: CryptoKey;
+    /** The store the config lives in (bound into the AAD). */
+    storeId: string;
+    /** The config's team; absent for the org-level config. Bound into the AAD. */
     teamId?: string;
     /** Reuse a prior field-commitment salt, or omit for a fresh one. */
     fckSalt?: string;
+    /** What the server holds now (see PushPrior); omit for a first push. */
+    prior?: PushPrior;
   }
 ): Promise<EncryptedConfigPayload> {
   // The blob is JSON, so the commitments are computed over the JSON form too: an explicit-undefined key anywhere (a `knownHosts: undefined` in a rebuilt ssh pair) would otherwise commit a pointer the blob cannot carry, and the next push built from a pulled copy would drop it (anti-downgrade).
@@ -211,22 +248,34 @@ export function buildConfigPushPayload(
     teamId: params.teamId,
   });
 
+  const prior = params.prior;
   return selectiveEncrypt(fullConfig, params.sdkDerived, params.cek, {
     sdkEpoch: params.sdkEpoch,
+    storeId: params.storeId,
     fckSalt: params.fckSalt,
     commitEntries: buildCommitEntries(doc),
+    ...(prior
+      ? {
+          prior: {
+            envelopeVersion: prior.envelopeVersion,
+            fckSalt: prior.fckSalt,
+            removed: prior.base ? removedCommitEntries(prior.base, doc) : [],
+          },
+        }
+      : {}),
   });
 }
 
 /**
  * Inverse of `buildConfigPushPayload`: decrypt a pulled envelope. `fromFullConfig` turns the result
  * back into a document; the device-local pointers (DEVICE_LOCAL_POINTERS) are absent, because they
- * never left the pushing device. Verifies the HMAC and rejects non-v2 envelopes, both inside
- * `selectiveDecrypt`.
+ * never left the pushing device. `binding` is what the READER expects (its own pointer, never the
+ * pull response): a v3 blob opens only under it. Refuses any envelope version but 3 and 2, the
+ * latter read for one release.
  */
 export function decryptConfigPullPayload(
   payload: EncryptedConfigPayload,
-  keys: { cek: CryptoKey; sdkDerived: CryptoKey }
+  keys: { cek: CryptoKey; sdkDerived: CryptoKey; binding: ConfigBinding }
 ): Promise<FullConfig> {
-  return selectiveDecrypt(payload, keys.cek, keys.sdkDerived);
+  return selectiveDecrypt(payload, keys.cek, keys.sdkDerived, keys.binding);
 }

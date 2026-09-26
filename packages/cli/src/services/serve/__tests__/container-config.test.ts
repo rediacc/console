@@ -214,6 +214,7 @@ describe('container-tier config loading', () => {
     const sdkEpoch = 12345;
     const sdkDerived = await sdkDerive(generateSdkMaster(), sdkEpoch);
     const payload = await buildConfigPushPayload(config, {
+      storeId: 'store-1',
       version: 4,
       sdkEpoch,
       sdkDerived,

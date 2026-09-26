@@ -459,6 +459,7 @@
       },
       "remote": {
         "conflictRetryExhausted": "Konfiguratsioon \"{{config}}\" on 3 katse järel endiselt konfliktis teise seadmega. Käivita käsk uuesti.",
+        "preconditionFailed": "Konfiguratsioon „{{config}}“: server lükkas tagasi muudatuse, mis eemaldab {{paths}}, sest see seade ei suutnud tõestada, et nägi salvestatud väärtusi. Värskendage käsuga „rdc config remote refresh“ ja käivitage käsk uuesti.",
         "description": "Halda kaugsalvestuse konfiguratsiooniühendust",
         "disable": {
           "description": "Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult",
@@ -527,8 +528,11 @@
         "tokenExhausted": "Selle seadme konfiguratsioonitõend on juba teise päringu poolt ära kasutatud (see vahetub iga kasutusega). Autentimine uuesti: rdc config remote enable",
         "tokenInvalid": "Konfiguratsiooniserver ei tunne selle seadme konfiguratsioonitõendit ära. Autentimine uuesti: rdc config remote enable",
         "tokenRejected": "Konfiguratsiooniserver lükkas selle seadme konfiguratsioonitõendi tagasi ({{reason}}). Autentimine uuesti: rdc config remote enable",
-        "undecryptableIdentity": "Konfiguratsioon {{configId}} hoidlas {{storeId}} on krüptitud teise võtmega, kui sinu pesa omab, seega see seade ei saa seda lugeda. See juhtub, kui hoidla sisaldab juba teisest registreerimisest pärit konfiguratsiooni. Tõmba see konfiguratsioon juba registreeritud seadmelt ja kontrolli, millist konfiguratsiooni silmas pidasid, või palu administraatoril jagada hoidla võti selle seadmega uuesti portaalist (Config Storage > key slots).",
+        "integrityFailed": "Hoidla {{storeId}} konfiguratsioon {{configId}} ei läbinud terviklikkuse kontrolli: serveri tagastatud koopia ei ole pitseeritud selle konfiguratsiooni, meeskonna ja versiooni jaoks või on see krüptitud teise võtmega kui see, mis on teie pesas. Selles seadmes ei muudetud midagi. Kui võti erineb, paluge administraatoril jagada hoidla võti selle seadmega portaalis uuesti (Konfiguratsioonide hoidla > võtmepesad).",
         "undecryptableSession": "Konfiguratsioon {{configId}} avanes sinu võtmega, kuid serveri seansikiht ei tahtnud seda avada ({{detail}}). Proovi käsku uuesti; kui see ikka ebaõnnestub, registreeru uuesti käsuga: rdc config remote enable",
+        "rollback": "Konfiguratsioon {{configId}} tuli tagasi versioonina {{version}}, mis on vanem kui versioon {{highWater}}, mida see seade on juba näinud. Server tagastas vana koopia, seega lükati see tagasi ja selles seadmes ei muudetud midagi.",
+        "envelopeDowngrade": "Konfiguratsioon {{configId}} tuli tagasi vanas ümbrikuvormingus, kuigi see seade on uut vormingut juba näinud. Server tagastas vana koopia, seega lükati see tagasi ja selles seadmes ei muudetud midagi.",
+        "legacyEnvelope": "Konfiguratsioon {{configId}} on endiselt salvestatud vanas ümbrikuvormingus. Järgmine sellest seadmest saadetud muudatus uuendab selle.",
         "unreachable": "Konfiguratsiooniserver {{server}} pole kättesaadav",
         "writeFailedClosed": "Salvestamine ebaõnnestus: konfiguratsioon \"{{config}}\" asub serveris {{server}}, mis pole kättesaadav. Muudatust EI salvestatud.",
         "teamForbidden": "Konfiguratsioon \"{{config}}\" kuulub meeskonnale, mille liige see konto ei ole, seega lükkas konfiguratsiooniserver selle tagasi. Palu organisatsiooni omanikul või administraatoril lisada see konto sellesse meeskonda.",

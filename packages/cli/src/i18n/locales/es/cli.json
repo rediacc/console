@@ -459,6 +459,7 @@
       },
       "remote": {
         "conflictRetryExhausted": "La configuración \"{{config}}\" sigue en conflicto con otro dispositivo tras 3 intentos. Vuelve a ejecutar el comando.",
+        "preconditionFailed": "Configuración \"{{config}}\": el servidor rechazó un cambio que elimina {{paths}}, porque este dispositivo no pudo demostrar que había visto los valores guardados. Actualiza con \"rdc config remote refresh\" y vuelve a ejecutar el comando.",
         "description": "Gestionar conexión de almacenamiento remoto de configuración",
         "disable": {
           "description": "Desconectar del almacenamiento remoto y guardar configuración localmente",
@@ -527,8 +528,11 @@
         "tokenExhausted": "El token de configuración de este dispositivo ya lo consumió otra solicitud (cambia con cada uso). Vuelve a autenticarte con: rdc config remote enable",
         "tokenInvalid": "El servidor de configuración no reconoce el token de configuración de este dispositivo. Vuelve a autenticarte con: rdc config remote enable",
         "tokenRejected": "El servidor de configuración rechazó el token de configuración de este dispositivo ({{reason}}). Vuelve a autenticarte con: rdc config remote enable",
-        "undecryptableIdentity": "La configuración {{configId}} en el almacén {{storeId}} fue cifrada con una clave distinta a la que posee tu slot, por lo que este dispositivo no puede leerla. Esto ocurre cuando el almacén ya contiene una configuración de otra inscripción. Extrae esa configuración en un dispositivo ya inscrito y comprueba a cuál te referías, o pide a un administrador que vuelva a compartir la clave del almacén con este dispositivo desde el portal (Config Storage > key slots).",
+        "integrityFailed": "La configuración {{configId}} del almacén {{storeId}} no superó la comprobación de integridad: la copia que devolvió el servidor no se selló para esta configuración, equipo y versión, o se cifró con una clave distinta de la de tu ranura. No se cambió nada en este dispositivo. Si la clave es distinta, pide a un administrador que vuelva a compartir la clave del almacén con este dispositivo desde el portal (Almacenamiento de configuración > ranuras de clave).",
         "undecryptableSession": "La configuración {{configId}} se desbloqueó con tu clave, pero la capa de sesión del servidor no quiso abrirla ({{detail}}). Vuelve a intentar el comando; si sigue fallando, vuelve a inscribirte con: rdc config remote enable",
+        "rollback": "La configuración {{configId}} llegó en la versión {{version}}, anterior a la versión {{highWater}} que este dispositivo ya había visto. El servidor devolvió una copia antigua, así que se rechazó y no se cambió nada en este dispositivo.",
+        "envelopeDowngrade": "La configuración {{configId}} llegó en el formato de sobre antiguo cuando este dispositivo ya había visto el nuevo. El servidor devolvió una copia antigua, así que se rechazó y no se cambió nada en este dispositivo.",
+        "legacyEnvelope": "La configuración {{configId}} sigue guardada en el formato de sobre antiguo. El próximo cambio que envíe este dispositivo la actualizará.",
         "unreachable": "Servidor de configuración {{server}} no está disponible",
         "writeFailedClosed": "No se puede guardar: la configuración \"{{config}}\" está almacenada en {{server}}, que no está disponible. El cambio NO se guardó.",
         "teamForbidden": "La configuración \"{{config}}\" pertenece a un equipo del que esta cuenta no es miembro, así que el servidor de configuración la rechazó. Pide al propietario o a un administrador de la organización que añada esta cuenta a ese equipo.",

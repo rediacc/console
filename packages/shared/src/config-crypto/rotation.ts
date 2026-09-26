@@ -80,10 +80,11 @@ export function fullConfigToRdcConfig(decrypted: FullConfig): RdcConfig {
 /**
  * Re-encrypt one pulled config under a new CEK.
  *
- * The field-commitment key is derived from the CEK, so every commitment in the
- * envelope changes with the key. A fresh FCK salt is generated (by omitting
- * `fckSalt`) rather than reused: the commitments have to be recomputed anyway,
- * and a new salt makes it obvious that the old envelope's HMACs are dead.
+ * The field-commitment key and the pointer-blinding key are derived from the CEK, so every
+ * commitment and every commitment key in the envelope changes with the key. A fresh FCK salt is
+ * generated (by omitting `fckSalt`) rather than reused: the commitments have to be recomputed anyway,
+ * and a new salt makes it obvious that the old envelope's HMACs are dead. The server applies no
+ * anti-downgrade check to a rotation (the keys cannot match across CEKs), so no prior is sent.
  */
 export async function reencryptConfig(params: {
   /** The pulled payload, as assembled from the pull response. */
@@ -97,11 +98,15 @@ export async function reencryptConfig(params: {
   sdkEpoch: number;
   /** Version to write: the snapshot version plus one. */
   version: number;
+  /** The store and config being rotated: the AAD binding of both the pulled and the new blob. */
+  storeId: string;
+  configId: string;
   teamId?: string;
 }): Promise<EncryptedConfigPayload> {
   const decrypted = await decryptConfigPullPayload(params.pulled, {
     cek: params.oldCek,
     sdkDerived: params.sdkDerivedForPull,
+    binding: { storeId: params.storeId, configId: params.configId, teamId: params.teamId ?? null },
   });
 
   return buildConfigPushPayload(fullConfigToRdcConfig(decrypted), {
@@ -109,6 +114,7 @@ export async function reencryptConfig(params: {
     sdkEpoch: params.sdkEpoch,
     sdkDerived: params.sdkDerivedForPush,
     cek: params.newCek,
+    storeId: params.storeId,
     teamId: params.teamId,
   });
 }

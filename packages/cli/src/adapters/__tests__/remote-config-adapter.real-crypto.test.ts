@@ -86,7 +86,7 @@ const REMOTE: RemoteConfig = {
 // ─── In-memory storage stubs (no module mock, passed to the constructor) ─
 
 function createTokenStorage(entry: { token: string; wrappedCek: string } | null) {
-  let current = entry;
+  let current: { token: string; wrappedCek: string; sync?: unknown } | null = entry;
   return {
     get: vi.fn().mockResolvedValue(entry),
     set: vi.fn().mockResolvedValue(undefined),
@@ -98,8 +98,15 @@ function createTokenStorage(entry: { token: string; wrappedCek: string } | null)
         get token() {
           return current?.token;
         },
+        get sync() {
+          return current?.sync;
+        },
         update: (token: string) => {
           current = current ? { ...current, token } : current;
+          return Promise.resolve();
+        },
+        recordSync: (sync: unknown) => {
+          current = current ? { ...current, sync } : current;
           return Promise.resolve();
         },
       }),
@@ -149,6 +156,7 @@ async function provision(
   } as unknown as RdcConfig;
 
   const payload = await buildConfigPushPayload(configInput, {
+    storeId: STORE_ID,
     version: 1,
     sdkEpoch: SDK_EPOCH,
     sdkDerived,
@@ -170,6 +178,7 @@ async function provision(
       server_secret: toBase64(serverSecret),
       configData: payload.encryptedBlob,
       envelope: {
+        envelopeVersion: payload.envelope.envelopeVersion,
         configId: CONFIG_ID,
         version: 1,
         teamId,

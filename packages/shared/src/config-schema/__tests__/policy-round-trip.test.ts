@@ -28,6 +28,16 @@ import { buildConfigPushPayload, decryptConfigPullPayload } from '../payload.js'
 import type { RdcConfig } from '../schemas.js';
 import { pathsToCommit } from '../walker.js';
 
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
+
 /** Rules with teeth: an explicit deny, a team grant, and a user override. */
 const POLICY: PolicyDocument = {
   version: 1,
@@ -60,12 +70,17 @@ async function keys() {
 async function roundTrip(config: RdcConfig): Promise<RdcConfig> {
   const { cek, sdkDerived } = await keys();
   const payload = await buildConfigPushPayload(config, {
+    storeId: STORE_ID,
     version: config.version + 1,
     sdkEpoch: 9,
     sdkDerived,
     cek,
   });
-  const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+  const decrypted = await decryptConfigPullPayload(payload, {
+    cek,
+    sdkDerived,
+    binding: readerBinding(payload),
+  });
   return fullConfigToRdcConfig(decrypted);
 }
 
@@ -85,6 +100,7 @@ describe('policy survives the encrypted round trip', () => {
   it('is actually carried INSIDE the ciphertext, not the plaintext envelope', async () => {
     const { cek, sdkDerived } = await keys();
     const payload = await buildConfigPushPayload(configWith(POLICY), {
+      storeId: STORE_ID,
       version: 4,
       sdkEpoch: 9,
       sdkDerived,
@@ -97,7 +113,11 @@ describe('policy survives the encrypted round trip', () => {
     expect(envelopeJson).not.toContain('dev@example.com');
 
     // But the ciphertext must yield them back.
-    const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
+    const decrypted = await decryptConfigPullPayload(payload, {
+      cek,
+      sdkDerived,
+      binding: readerBinding(payload),
+    });
     expect((decrypted as { policy?: PolicyDocument }).policy).toEqual(POLICY);
   });
 

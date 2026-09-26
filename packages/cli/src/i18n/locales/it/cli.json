@@ -459,6 +459,7 @@
       },
       "remote": {
         "conflictRetryExhausted": "La configurazione \"{{config}}\" è ancora in conflitto con un altro dispositivo dopo 3 tentativi. Esegui di nuovo il comando.",
+        "preconditionFailed": "Configurazione \"{{config}}\": il server ha rifiutato una modifica che rimuove {{paths}}, perché questo dispositivo non ha potuto dimostrare di aver visto i valori salvati. Aggiorna con \"rdc config remote refresh\" ed esegui di nuovo il comando.",
         "description": "Gestisci la connessione allo storage di configurazione remoto",
         "disable": {
           "description": "Disconnetti dallo storage remoto e salva la configurazione in locale",
@@ -527,8 +528,11 @@
         "tokenExhausted": "Il token di configurazione di questo dispositivo è già stato consumato da un'altra richiesta (cambia a ogni utilizzo). Autenticati di nuovo con: rdc config remote enable",
         "tokenInvalid": "Il server di configurazione non riconosce il token di configurazione di questo dispositivo. Autenticati di nuovo con: rdc config remote enable",
         "tokenRejected": "Il server di configurazione ha rifiutato il token di configurazione di questo dispositivo ({{reason}}). Autenticati di nuovo con: rdc config remote enable",
-        "undecryptableIdentity": "La config {{configId}} nello store {{storeId}} è stata cifrata con una chiave diversa da quella nel tuo slot, quindi questo dispositivo non può leggerla. Succede quando lo store contiene già una config da un'altra iscrizione. Recupera quella config da un dispositivo già iscritto e verifica a quale config ti riferivi, oppure chiedi a un amministratore di condividere di nuovo la chiave dello store con questo dispositivo dal portale (Config Storage > key slots).",
+        "integrityFailed": "La configurazione {{configId}} nell'archivio {{storeId}} non ha superato il controllo di integrità: la copia restituita dal server non è stata sigillata per questa configurazione, questo team e questa versione, oppure è stata cifrata con una chiave diversa da quella del tuo slot. Su questo dispositivo non è stato modificato nulla. Se la chiave è diversa, chiedi a un amministratore di condividere di nuovo la chiave dell'archivio con questo dispositivo dal portale (Archivio configurazioni > slot delle chiavi).",
         "undecryptableSession": "La config {{configId}} si è sbloccata con la tua chiave, ma il livello di sessione del server si è rifiutato di aprirla ({{detail}}). Riprova il comando; se continua a fallire, reiscriviti con: rdc config remote enable",
+        "rollback": "La configurazione {{configId}} è tornata alla versione {{version}}, più vecchia della versione {{highWater}} che questo dispositivo aveva già visto. Il server ha restituito una copia vecchia: è stata rifiutata e su questo dispositivo non è stato modificato nulla.",
+        "envelopeDowngrade": "La configurazione {{configId}} è tornata nel vecchio formato di busta, mentre questo dispositivo aveva già visto quello nuovo. Il server ha restituito una copia vecchia: è stata rifiutata e su questo dispositivo non è stato modificato nulla.",
+        "legacyEnvelope": "La configurazione {{configId}} è ancora salvata nel vecchio formato di busta. La prossima modifica inviata da questo dispositivo la aggiornerà.",
         "unreachable": "Il server di configurazione {{server}} non è raggiungibile",
         "writeFailedClosed": "Impossibile salvare: la configurazione \"{{config}}\" è memorizzata su {{server}}, che non è raggiungibile. La modifica NON è stata salvata.",
         "teamForbidden": "La configurazione \"{{config}}\" appartiene a un team di cui questo account non fa parte, quindi il server di configurazione l'ha rifiutata. Chiedi al proprietario o a un amministratore dell'organizzazione di aggiungere questo account a quel team.",

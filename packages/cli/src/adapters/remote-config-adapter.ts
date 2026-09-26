@@ -9,8 +9,12 @@
  */
 
 import {
+  blindPointer,
+  type ConfigBinding,
   cekUnwrap,
+  derivePointerBlindingKey,
   deriveWrappingKey,
+  ENVELOPE_VERSION,
   type EncryptedConfigPayload,
   type FieldCommitments,
   fromBase64,
@@ -18,16 +22,21 @@ import {
   selectiveDecrypt,
 } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
-import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
+import {
+  buildConfigPushPayload,
+  type PushPrior,
+  pathsToCommit,
+} from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
 import {
   ConfigServerError,
   type ConfigServerFetchOptions,
   configServerFetch,
 } from '../services/config/config-server-client.js';
+import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
-import type { RemoteTokenStorage, TokenLease } from './remote-token-storage.js';
+import type { RemoteTokenStorage, SyncRecord, TokenLease } from './remote-token-storage.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -43,6 +52,35 @@ export interface PullResult {
 export interface PushResult {
   /** New version number after push */
   version: number;
+}
+
+export interface PushOptions {
+  /**
+   * The document this edit was made from, as pulled at `currentVersion` (a remote config's cache
+   * file). A committed path it holds that the pushed document drops is deleted with a tombstone
+   * proving this device saw its value (T9); without a base, a push can only add and change.
+   */
+  base?: RdcConfig;
+  /** A restore (T16): the version whose content this push re-publishes, for the audit trail. */
+  restoredFromVersion?: number;
+}
+
+/** A pull (or version read) response: the blob with the org layer removed, and its envelope. */
+interface PulledEnvelope {
+  configData: string;
+  envelope: {
+    envelopeVersion: 2 | 3;
+    configId: string;
+    version: number;
+    teamId: string | null;
+    lastModified: string;
+    commitments: FieldCommitments;
+    /** The epoch the blob was pushed in; the server's envelope always carries it. */
+    sdkEpoch: number;
+  };
+  hmac: string | null;
+  server_secret: string;
+  sdk_derived: string;
 }
 
 /** Session crypto material from the server */
@@ -121,6 +159,39 @@ export class RemoteVersionConflictError extends Error {
   constructor(serverMessage: string) {
     super(serverMessage);
     this.name = 'RemoteVersionConflictError';
+  }
+}
+
+/**
+ * The server refused a push that drops committed paths without a matching tombstone (HTTP 409
+ * `precondition_failed`, T9): the push was built from a copy older than the server's, or deletes
+ * a value this device never saw. Not a version conflict: replaying the same push cannot succeed,
+ * so it is raised as is, naming the paths.
+ */
+export class RemotePreconditionError extends Error {
+  constructor(
+    public readonly configName: string,
+    public readonly paths: string[]
+  ) {
+    super(
+      t('commands.config.remote.preconditionFailed', {
+        config: configName,
+        paths: paths.length > 0 ? paths.join(', ') : '-',
+      })
+    );
+    this.name = 'RemotePreconditionError';
+  }
+}
+
+/**
+ * The server answered with a config older than one this device already saw (F1): a version below
+ * the device's high-water mark, or the pre-v3 envelope after the device saw v3. Nothing is changed
+ * locally; the offline cache is not served in its place.
+ */
+export class RemoteRollbackError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RemoteRollbackError';
   }
 }
 
@@ -298,77 +369,143 @@ export class RemoteConfigAdapter {
   private async pullLeased(lease: TokenLease): Promise<PullResult> {
     this.requireToken(lease);
 
-    // Fetch encrypted config blob
-    const pullPath = `/account/api/v1/configs/${this.remote.configId}${
+    const pulled = await this.fetch<PulledEnvelope>(lease, this.configPath());
+    const result = await this.open(lease, pulled.data);
+    const { envelope } = pulled.data;
+
+    // The version is authentic (the AAD binds it), so it can be held against what this device saw.
+    const seen = this.syncRecord(lease);
+    if (seen && envelope.version < seen.highWater) {
+      throw new RemoteRollbackError(
+        t('commands.config.remote.rollback', {
+          configId: this.remote.configId,
+          version: String(envelope.version),
+          highWater: String(seen.highWater),
+        })
+      );
+    }
+    if (
+      seen?.envelopeVersion === ENVELOPE_VERSION &&
+      envelope.envelopeVersion !== ENVELOPE_VERSION
+    ) {
+      throw new RemoteRollbackError(
+        t('commands.config.remote.envelopeDowngrade', { configId: this.remote.configId })
+      );
+    }
+    await lease.recordSync({
+      binding: this.bindingKey(),
+      highWater: Math.max(seen?.highWater ?? 0, envelope.version),
+      envelopeVersion: envelope.envelopeVersion,
+      fckSalt: envelope.commitments.fckSalt,
+    });
+    if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
+      outputService.warn(
+        t('commands.config.remote.legacyEnvelope', { configId: this.remote.configId })
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Read one archived version of the config (T16: `GET /configs/:id/versions/:v`), decrypted under
+   * the same binding as a pull. An archive is old by definition, so the high-water mark neither
+   * refuses it nor moves; a restore republishes it as a NEW version through `push`.
+   */
+  pullVersion(version: number): Promise<PullResult> {
+    return this.tokenStorage.withLease(this.configName, async (lease) => {
+      this.requireToken(lease);
+      const path = `/account/api/v1/configs/${this.remote.configId}/versions/${version}${
+        this.remote.teamId ? `?teamId=${this.remote.teamId}` : ''
+      }`;
+      const pulled = await this.fetch<PulledEnvelope>(lease, path);
+      const result = await this.open(lease, pulled.data);
+      if (result.version !== version) {
+        throw new RemoteRollbackError(
+          t('commands.config.remote.rollback', {
+            configId: this.remote.configId,
+            version: String(result.version),
+            highWater: String(version),
+          })
+        );
+      }
+      return result;
+    });
+  }
+
+  /** The pull path of this config (its team in the query when it has one). */
+  private configPath(): string {
+    return `/account/api/v1/configs/${this.remote.configId}${
       this.remote.teamId ? `?teamId=${this.remote.teamId}` : ''
     }`;
-    const pullResp = await this.fetch<{
-      configData: string;
-      envelope: {
-        configId: string;
-        version: number;
-        teamId: string | null;
-        lastModified: string;
-        envelopeVersion?: 2;
-        commitments?: FieldCommitments;
-        /** The epoch the blob was pushed in; the server's envelope always carries it. */
-        sdkEpoch: number;
-      };
-      hmac: string | null;
-      server_secret: string;
-      sdk_derived: string;
-    }>(lease, pullPath);
-    const cek = await this.deriveCek(fromBase64(pullResp.data.server_secret), lease);
+  }
+
+  /** What this device expects every blob of its config to be sealed for: its own pointer. */
+  private binding(): ConfigBinding {
+    return {
+      storeId: this.remote.storeId,
+      configId: this.remote.configId,
+      teamId: this.remote.teamId ?? null,
+    };
+  }
+
+  private bindingKey(): string {
+    return `${this.remote.storeId}/${this.remote.configId}/${this.remote.teamId ?? ''}`;
+  }
+
+  /** The lease's sync record when it is about this config (a re-pointed token file's is not). */
+  private syncRecord(lease: TokenLease): SyncRecord | undefined {
+    const record = lease.sync;
+    return record?.binding === this.bindingKey() ? record : undefined;
+  }
+
+  /** Decrypt a pull-shaped response under this device's binding. */
+  private async open(lease: TokenLease, data: PulledEnvelope): Promise<PullResult> {
+    const cek = await this.deriveCek(fromBase64(data.server_secret), lease);
 
     // The session layer was sealed under the epoch the config was PUSHED in, and the pull response carries that epoch's key (configs.ts derives it from the stored sdkEpoch). The CURRENT epoch's key opened the blob only until the epoch window rolled over, then every pull failed as "the server session layer would not open it" (2026-09-25, right after the first remote enable).
-    const pulledSdkDerived = await importAesKey(fromBase64(pullResp.data.sdk_derived));
-    const pulledSdkEpoch = pullResp.data.envelope.sdkEpoch;
-
-    // Decrypt: Layer 2 (CEK) + Layer 1 (SDK) Server-stored envelope is v2 (see Step 5). Until the server supports that, fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt still verifies HMAC + decrypts the blob successfully.
+    const sdkDerived = await importAesKey(fromBase64(data.sdk_derived));
+    const { envelope } = data;
     const payload: EncryptedConfigPayload = {
       envelope: {
-        envelopeVersion: 2,
-        id: pullResp.data.envelope.configId,
-        version: pullResp.data.envelope.version,
-        sdkEpoch: pulledSdkEpoch,
-        teamId: pullResp.data.envelope.teamId ?? undefined,
-        lastModified: pullResp.data.envelope.lastModified,
-        commitments: pullResp.data.envelope.commitments ?? {
-          alg: 'HMAC-SHA256',
-          fckSalt: '',
-          fields: {},
-        },
+        envelopeVersion: envelope.envelopeVersion,
+        id: envelope.configId,
+        version: envelope.version,
+        sdkEpoch: envelope.sdkEpoch,
+        teamId: envelope.teamId ?? undefined,
+        lastModified: envelope.lastModified,
+        commitments: envelope.commitments,
       },
-      encryptedBlob: pullResp.data.configData,
-      hmac: pullResp.data.hmac ?? '',
+      encryptedBlob: data.configData,
+      hmac: data.hmac,
     };
 
     let decrypted: Awaited<ReturnType<typeof selectiveDecrypt>>;
     try {
-      decrypted = await selectiveDecrypt(payload, cek, pulledSdkDerived);
+      decrypted = await selectiveDecrypt(payload, cek, sdkDerived, this.binding());
     } catch (error) {
-      throw this.classifyDecryptFailure(error, pullResp.data.envelope.configId);
+      throw this.classifyDecryptFailure(error, this.remote.configId);
     }
 
     // Rebuild the RdcConfig from the decrypted blob through the ONE shared reconstruction. This used to be a hand-written copy that had to "mirror" fullConfigToRdcConfig exactly; keeping two copies in sync is precisely how the explicit-undefined trap (and later the dropped-secret bug) reached production, so there is now a single implementation and both the CLI pull and the CEK rotation go through it.
-    const config = fullConfigToRdcConfig(decrypted);
-
     return {
-      config,
-      version: pullResp.data.envelope.version,
-      sdkEpoch: pulledSdkEpoch,
+      config: fullConfigToRdcConfig(decrypted),
+      version: envelope.version,
+      sdkEpoch: envelope.sdkEpoch,
     };
   }
 
   /**
    * Push an updated config to the remote server: `/session` then PUT, under one token lease, the
-   * PUT sending the token `/session` rotated to.
+   * PUT sending the token `/session` rotated to. The envelope is v3 (AAD-bound to this device's
+   * pointer). What this device last saw of the server copy (the token file's sync record) supplies
+   * the stored salt for tombstones and, on a v2 store, the upgrade; see PushOptions.
    */
-  push(config: RdcConfig, currentVersion: number): Promise<PushResult> {
+  push(config: RdcConfig, currentVersion: number, options: PushOptions = {}): Promise<PushResult> {
     return this.tokenStorage.withLease(this.configName, async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);
       const cek = await this.deriveCek(session.serverSecret, lease);
+      const prior = this.pushPrior(lease, currentVersion, options.base);
 
       // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
       const encrypted = await buildConfigPushPayload(config, {
@@ -376,24 +513,83 @@ export class RemoteConfigAdapter {
         sdkEpoch: session.sdkEpoch,
         sdkDerived: session.sdkDerived,
         cek,
+        storeId: this.remote.storeId,
+        ...(this.remote.teamId ? { teamId: this.remote.teamId } : {}),
+        ...(prior ? { prior } : {}),
       });
 
       // Push to server (server adds Layer 3)
-      const pushPath = `/account/api/v1/configs/${this.remote.configId}`;
-      const pushResp = await this.fetch<{ version: number }>(lease, pushPath, {
-        method: 'PUT',
-        body: {
-          teamId: this.remote.teamId,
-          version: currentVersion + 1,
-          encryptedBlob: encrypted.encryptedBlob,
-          sdkEpoch: session.sdkEpoch,
-          hmac: encrypted.hmac,
-          envelope: encrypted.envelope,
-        },
+      const body = {
+        teamId: this.remote.teamId,
+        version: currentVersion + 1,
+        encryptedBlob: encrypted.encryptedBlob,
+        sdkEpoch: session.sdkEpoch,
+        envelope: encrypted.envelope,
+        ...(options.restoredFromVersion === undefined
+          ? {}
+          : { restoredFromVersion: options.restoredFromVersion }),
+      };
+      const pushed = await this.fetch<{ version: number }>(
+        lease,
+        `/account/api/v1/configs/${this.remote.configId}`,
+        { method: 'PUT', body }
+      ).catch(async (error: unknown) => {
+        if (!(error instanceof RemotePreconditionError)) throw error;
+        throw await this.namePaths(error, cek, [config, options.base]);
       });
 
-      return { version: pushResp.data.version };
+      await lease.recordSync({
+        binding: this.bindingKey(),
+        highWater: pushed.data.version,
+        envelopeVersion: ENVELOPE_VERSION,
+        fckSalt: encrypted.envelope.commitments.fckSalt,
+      });
+      return { version: pushed.data.version };
     });
+  }
+
+  /**
+   * What the server holds, as this device last saw it, when that is the version being replaced:
+   * the stored envelope version and salt, plus the document the edit came from. Any other version
+   * means this device has not seen the copy it overwrites; the push then goes without one (and a
+   * version conflict or a precondition refusal follows).
+   */
+  private pushPrior(
+    lease: TokenLease,
+    currentVersion: number,
+    base: RdcConfig | undefined
+  ): PushPrior | undefined {
+    const seen = this.syncRecord(lease);
+    if (seen?.highWater !== currentVersion) return undefined;
+    return {
+      envelopeVersion: seen.envelopeVersion,
+      fckSalt: seen.fckSalt,
+      ...(base ? { base } : {}),
+    };
+  }
+
+  /**
+   * The server names refused paths by their envelope key, which in v3 is a blinded pointer. Map
+   * each back to the pointer it blinds, among the paths this push and its base commit; a key that
+   * matches none (a value another device added) stays as the server sent it.
+   */
+  private async namePaths(
+    error: RemotePreconditionError,
+    cek: CryptoKey,
+    docs: (RdcConfig | undefined)[]
+  ): Promise<RemotePreconditionError> {
+    const blinding = await derivePointerBlindingKey(cek, this.remote.configId);
+    const names = new Map<string, string>();
+    for (const doc of docs) {
+      if (!doc) continue;
+      for (const pointer of pathsToCommit(JSON.parse(JSON.stringify(doc)))) {
+        names.set(await blindPointer(blinding, pointer), pointer);
+      }
+    }
+    return new RemotePreconditionError(
+      error.configName,
+      error.paths.map((key) => names.get(key) ?? key)
+    );
   }
 
   /**
@@ -476,11 +672,11 @@ export class RemoteConfigAdapter {
    * Turn a selectiveDecrypt failure into something the user can act on.
    *
    * The two failure modes carry different meanings and different recoveries, and
-   * the protocol does distinguish them: the HMAC is keyed by the CEK, so a verify
-   * failure proves the blob was sealed under a different CEK than the slot handed
-   * this device (a store holding another enrollment's config), while a failure
-   * PAST the HMAC means the CEK layer opened and the server-derived session layer
-   * did not.
+   * the protocol does distinguish them: the CEK layer's tag (under the envelope
+   * v3 AAD, or the v2 blob HMAC) fails when the blob is not the one sealed for
+   * this config, version and team, or was sealed under a different CEK than the
+   * slot handed this device, while a failure PAST it means the CEK layer opened
+   * and the server-derived session layer did not.
    */
   private classifyDecryptFailure(error: unknown, configId: string): Error {
     const detail = error instanceof Error ? error.message : String(error);
@@ -488,9 +684,9 @@ export class RemoteConfigAdapter {
     // The envelope-version guard already names its own problem.
     if (detail.includes('envelope version')) return error as Error;
 
-    if (detail.includes('integrity check failed')) {
+    if (error instanceof Error && error.name === 'ConfigIntegrityError') {
       return new RemoteConfigUndecryptableError(
-        t('commands.config.remote.undecryptableIdentity', {
+        t('commands.config.remote.integrityFailed', {
           configId,
           storeId: this.remote.storeId,
         })
@@ -535,8 +731,9 @@ export class RemoteConfigAdapter {
 /**
  * Map a transport/server failure onto the adapter's typed taxonomy: 401 → the
  * RemoteAuthError for the server's stated reason, 403 `team_forbidden` → not a member of the
- * config's team, 404 `team_not_found` → the pointer names no team of the organization, 409 →
- * version conflict (server message verbatim), and network-class failures (fetch TypeError, ECONN*,
+ * config's team, 404 `team_not_found` → the pointer names no team of the organization, 409
+ * `precondition_failed` → a deletion without a matching tombstone, any other 409 → version
+ * conflict (server message verbatim), and network-class failures (fetch TypeError, ECONN*,
  * 5xx, including the getServerKeyMaterial fetch inside configServerFetch) → unreachable, so read
  * paths can cache-serve and write paths fail closed. Everything else passes through unchanged.
  */
@@ -561,6 +758,9 @@ function classifyServerAnswer(
   }
   if (error.status === 404 && error.code === 'team_not_found') {
     return new RemoteTeamNotFoundError(configName, remote.teamId);
+  }
+  if (error.status === 409 && error.code === 'precondition_failed') {
+    return new RemotePreconditionError(configName, error.mismatchedPaths ?? []);
   }
   if (error.status === 409) return new RemoteVersionConflictError(error.message);
   return undefined;

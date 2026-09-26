@@ -10,6 +10,8 @@ export const HKDF_INFO = {
   SDK_DERIVE: 'rediacc-config-sdk-v1',
   WRAPPING_KEY: 'rediacc-config-wrapping-key-v1',
   FIELD_COMMITMENT: 'rediacc-config-fck-v1',
+  /** Envelope v3: the key that blinds commitment pointers (commitments.ts `derivePointerBlindingKey`). */
+  POINTER_BLIND: 'rediacc-config-ptr-v1',
   RECOVERY_SLOT: 'rediacc-recovery-slot-v1',
 } as const;
 
@@ -28,6 +30,20 @@ export const PRF_EVAL_SALT_VALUE = 'rediacc-prf-eval-v2';
 export function prfEvalSalt(): Uint8Array {
   return new TextEncoder().encode(PRF_EVAL_SALT_VALUE);
 }
+
+/**
+ * The envelope version every client writes. v3 binds the ciphertext to its config (AES-GCM AAD,
+ * selective.ts `envelopeAad`) and blinds the commitment pointers; the server refuses any other
+ * version on push.
+ */
+export const ENVELOPE_VERSION = 3;
+
+/**
+ * The previous envelope version, READ for one release (operator ruling D2): a store still holding a
+ * v2 envelope opens with its blob HMAC and upgrades to v3 on its next push. Delete the v2 read path
+ * (selective.ts) the release after.
+ */
+export const LEGACY_ENVELOPE_VERSION = 2;
 
 /** HMAC info */
 export const HMAC_ALGORITHM = 'SHA-256';

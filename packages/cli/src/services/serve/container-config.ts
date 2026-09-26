@@ -120,13 +120,14 @@ export function createContainerConfigLoader(
     const payload: EncryptedConfigPayload = {
       envelope: pull.envelope,
       encryptedBlob: pull.configData,
-      hmac: pull.hmac ?? '',
+      hmac: pull.hmac,
     };
 
-    // The key is the SESSION's, never the executor's, it has none of its own.
+    // The key is the SESSION's, never the executor's, it has none of its own. The binding is the config the executor asked for: a blob the server serves for another store, config or team does not open (envelope v3 AAD).
     const decrypted = await decryptConfigPullPayload(payload, {
       cek,
       sdkDerived: await importAesKey(fromBase64(pull.sdk_derived)),
+      binding: { storeId: grant.storeId, configId: target.configId, teamId: target.teamId },
     });
 
     const config = fullConfigToRdcConfig(decrypted);

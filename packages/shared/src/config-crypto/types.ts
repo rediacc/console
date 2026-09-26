@@ -7,7 +7,12 @@ import type { FieldCommitments } from './commitments.js';
 /**
  * Plaintext envelope — server can read these fields without decryption.
  *
- * Envelope v2 adds per-field commitment HMACs so the server can enforce the
+ * Every client WRITES v3 and READS v2 for one release (operator ruling D2). v3 binds the blob to
+ * `(storeId, configId, teamId, version, sdkEpoch, commitments)` through the AES-GCM AAD
+ * (selective.ts `envelopeAad`), retires the blob HMAC, and keys the commitments by blinded pointers
+ * (commitments.ts). The server refuses a v2 push.
+ *
+ * Envelope v2 added per-field commitment HMACs so the server can enforce the
  * "knowledge-gates-capability" precondition on sensitive-field mutations
  * without ever seeing plaintext. The HMAC key (FCK) is derived client-side
  * from CEK via HKDF; the server cannot derive it.
@@ -18,7 +23,7 @@ import type { FieldCommitments } from './commitments.js';
  * previously-stored envelope's `commitments.fields`.
  */
 export interface ConfigEnvelope {
-  envelopeVersion: 2;
+  envelopeVersion: 2 | 3;
   id: string;
   version: number;
   teamId?: string;
@@ -26,10 +31,23 @@ export interface ConfigEnvelope {
   lastModified?: string;
   sdkEpoch: number;
   /**
-   * Per-field commitment HMACs. Always present in v2 envelopes. The server
-   * rejects v1 envelopes with HTTP 400 UnsupportedEnvelopeVersion.
+   * Per-field commitment HMACs. Always present (v2 and v3). The server rejects any
+   * push that is not v3 with HTTP 400 `unsupported_envelope_version`.
    */
   commitments: FieldCommitments;
+}
+
+/**
+ * What a reader expects a pulled blob to be sealed for, taken from its OWN pointer (the CLI's
+ * `remote`, the portal's store and config choice, the executor's grant), never from the pull
+ * response: the envelope v3 AAD is rebuilt from it, so a blob the server serves for another store,
+ * config or team does not open.
+ */
+export interface ConfigBinding {
+  storeId: string;
+  configId: string;
+  /** The config's team, or null/absent for the org-level config. */
+  teamId?: string | null;
 }
 
 /**
@@ -71,7 +89,11 @@ export interface ConfigSensitiveData {
 export interface EncryptedConfigPayload {
   envelope: ConfigEnvelope;
   encryptedBlob: string; // base64(clientEnc_CEK(serverKeyEnc_SDK(sensitiveData)))
-  hmac: string; // HMAC-SHA256 over encryptedBlob, keyed with CEK
+  /**
+   * Envelope v2 only: HMAC-SHA256 over encryptedBlob, keyed with the CEK. A v3 payload carries none
+   * (the GCM tag under the AAD authenticates the blob AND its binding, which the HMAC never did).
+   */
+  hmac?: string | null;
 }
 
 /** Full config (envelope + sensitive data merged) */

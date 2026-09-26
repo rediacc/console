@@ -31,21 +31,28 @@ export { cekUnwrap, cekWrap, deriveWrappingKey, generateCek, generateServerSecre
 export type { FieldCommitment, FieldCommitments } from './commitments.js';
 // Field commitments (server-side precondition enforcement)
 export {
+  blindPointer,
   commitField,
+  commitmentsDigest,
   computeCommitments,
   deriveFieldCommitmentKey,
+  derivePointerBlindingKey,
   generateFckSalt,
   verifyCommitment,
 } from './commitments.js';
 // Constants
 export {
   ENVELOPE_FIELDS,
+  ENVELOPE_VERSION,
   HKDF_INFO,
   HMAC_ALGORITHM,
+  LEGACY_ENVELOPE_VERSION,
   PRF_EVAL_SALT_VALUE,
   prfEvalSalt,
   SDK_WINDOW_SECONDS,
 } from './constants.js';
+// Typed failures of opening a pulled config
+export { ConfigIntegrityError } from './errors.js';
 // X25519 CEK handoff
 export {
   cekHandoffDecrypt,
@@ -63,7 +70,8 @@ export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.j
 // SDK time-windowed derivation
 export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
 // Selective encryption
-export { selectiveDecrypt, selectiveEncrypt } from './selective.js';
+export type { PriorEnvelope } from './selective.js';
+export { envelopeAad, selectiveDecrypt, selectiveEncrypt } from './selective.js';
 // CEK key slots (passkey / password / recovery-code)
 export type { SlotKdfParams, SlotMethod } from './slots.js';
 export {
@@ -82,6 +90,7 @@ export {
 export type {
   AesEncryptResult,
   CekHandoffBlob,
+  ConfigBinding,
   ConfigEnvelope,
   ConfigSensitiveData,
   EncryptedConfigPayload,

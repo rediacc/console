@@ -34,6 +34,16 @@ import {
 } from '../index.js';
 import type { CekHandoffBlob } from '../types.js';
 
+/** Every payload of this file lives in one store; a reader binds to the config it asked for. */
+const STORE_ID = 'store-1';
+function readerBinding(payload: { envelope: { id: string; teamId?: string } }) {
+  return {
+    storeId: STORE_ID,
+    configId: payload.envelope.id,
+    teamId: payload.envelope.teamId ?? null,
+  };
+}
+
 const TEST_CONFIG: RdcConfig = {
   schemaVersion: 3,
   id: '550e8400-e29b-41d4-a716-446655440000',
@@ -82,6 +92,7 @@ describe('CEK rotation', () => {
 
     // The config as it sits on the server: pushed under the OLD CEK.
     const pulled = await buildConfigPushPayload(TEST_CONFIG, {
+      storeId: STORE_ID,
       version: 1,
       sdkEpoch: pullEpoch,
       sdkDerived: sdkForPull,
@@ -99,6 +110,8 @@ describe('CEK rotation', () => {
       sdkDerivedForPush: sdkForPush,
       sdkEpoch: pushEpoch,
       version: 2,
+      storeId: STORE_ID,
+      configId: TEST_CONFIG.id,
       teamId: 'team-1',
     });
 
@@ -109,7 +122,11 @@ describe('CEK rotation', () => {
 
     // The old CEK is dead against the new blob.
     await expect(
-      decryptConfigPullPayload(reencrypted, { cek: oldCek, sdkDerived: sdkForPush })
+      decryptConfigPullPayload(reencrypted, {
+        cek: oldCek,
+        sdkDerived: sdkForPush,
+        binding: readerBinding(reencrypted),
+      })
     ).rejects.toThrow();
 
     // ── Distribution: initiator self-wrap + member handoff ──
@@ -140,6 +157,7 @@ describe('CEK rotation', () => {
     const initiatorView = await decryptConfigPullPayload(reencrypted, {
       cek: initiatorCek,
       sdkDerived: sdkForPush,
+      binding: readerBinding(reencrypted),
     });
     expect(initiatorView.machines).toEqual({ prod: { ip: '10.0.0.1', user: 'rediacc' } });
 
@@ -152,6 +170,7 @@ describe('CEK rotation', () => {
     const memberView = await decryptConfigPullPayload(reencrypted, {
       cek: memberCek,
       sdkDerived: sdkForPush,
+      binding: readerBinding(reencrypted),
     });
     expect(memberView.ssh).toEqual({
       privateKey: '-----BEGIN OPENSSH PRIVATE KEY-----\nrotation-test\n',

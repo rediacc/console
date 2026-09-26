@@ -45,20 +45,35 @@ export async function exportAesKey(key: CryptoKey): Promise<Uint8Array> {
   return new Uint8Array(raw);
 }
 
-/** Encrypt plaintext with AES-256-GCM. Returns IV + ciphertext (ct includes auth tag). */
-export async function aesEncrypt(key: CryptoKey, plaintext: Uint8Array): Promise<AesEncryptResult> {
+/** AES-GCM parameters: the IV, plus the additional authenticated data when there is any. */
+function gcmParams(iv: Uint8Array, aad?: Uint8Array): AesGcmParams {
+  return aad
+    ? { name: 'AES-GCM', iv: buf(iv), additionalData: buf(aad) }
+    : { name: 'AES-GCM', iv: buf(iv) };
+}
+
+/**
+ * Encrypt plaintext with AES-256-GCM. Returns IV + ciphertext (ct includes auth tag). `aad` is
+ * authenticated, not encrypted: decryption fails unless the same bytes are presented again.
+ */
+export async function aesEncrypt(
+  key: CryptoKey,
+  plaintext: Uint8Array,
+  aad?: Uint8Array
+): Promise<AesEncryptResult> {
   const iv = crypto.getRandomValues(new Uint8Array(ENCRYPTION_CONFIG.IV_LENGTH));
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: buf(iv) }, key, buf(plaintext));
+  const ct = await crypto.subtle.encrypt(gcmParams(iv, aad), key, buf(plaintext));
   return { iv, ct: new Uint8Array(ct) };
 }
 
-/** Decrypt ciphertext with AES-256-GCM. The ct must include the auth tag. */
+/** Decrypt ciphertext with AES-256-GCM. The ct must include the auth tag; `aad` must match encryption's. */
 export async function aesDecrypt(
   key: CryptoKey,
   iv: Uint8Array,
-  ct: Uint8Array
+  ct: Uint8Array,
+  aad?: Uint8Array
 ): Promise<Uint8Array> {
-  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: buf(iv) }, key, buf(ct));
+  const plaintext = await crypto.subtle.decrypt(gcmParams(iv, aad), key, buf(ct));
   return new Uint8Array(plaintext);
 }
 
@@ -75,8 +90,12 @@ export function fromBase64(b64: string): Uint8Array {
 }
 
 /** Encrypt and serialize to base64 string: base64(iv + ct). */
-export async function aesEncryptToString(key: CryptoKey, plaintext: Uint8Array): Promise<string> {
-  const { iv, ct } = await aesEncrypt(key, plaintext);
+export async function aesEncryptToString(
+  key: CryptoKey,
+  plaintext: Uint8Array,
+  aad?: Uint8Array
+): Promise<string> {
+  const { iv, ct } = await aesEncrypt(key, plaintext, aad);
   const combined = new Uint8Array(iv.byteLength + ct.byteLength);
   combined.set(iv, 0);
   combined.set(ct, iv.byteLength);
@@ -84,11 +103,15 @@ export async function aesEncryptToString(key: CryptoKey, plaintext: Uint8Array):
 }
 
 /** Decrypt from base64 string: base64(iv + ct) → plaintext. */
-export function aesDecryptFromString(key: CryptoKey, encrypted: string): Promise<Uint8Array> {
+export function aesDecryptFromString(
+  key: CryptoKey,
+  encrypted: string,
+  aad?: Uint8Array
+): Promise<Uint8Array> {
   const combined = fromBase64(encrypted);
   const iv = combined.slice(0, ENCRYPTION_CONFIG.IV_LENGTH);
   const ct = combined.slice(ENCRYPTION_CONFIG.IV_LENGTH);
-  return aesDecrypt(key, iv, ct);
+  return aesDecrypt(key, iv, ct, aad);
 }
 
 /** Generate random bytes. */
