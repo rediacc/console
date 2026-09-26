@@ -273,7 +273,7 @@
       "remote": {
         "description": "Manage remote config storage connection",
         "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable",
-        "tokenIpMismatch": "This device's config token is tied to a different network address. Run rdc config remote enable again to get a token for this device.",
+        "tokenIpMismatch": "This device's config token is tied to a different network address. Run \"rdc config remote enable\" again to get a token for this device.",
         "tokenExhausted": "This device's config token was already spent by another request (it rotates on every use). Re-authenticate with: rdc config remote enable",
         "tokenInvalid": "The config server does not recognize this device's config token. Re-authenticate with: rdc config remote enable",
         "tokenRejected": "The config server rejected this device's config token ({{reason}}). Re-authenticate with: rdc config remote enable",
@@ -281,6 +281,9 @@
         "offlineCacheWarning": "Config server {{server}} is unreachable; serving config \"{{config}}\" from the offline cache (server version {{version}}, cached {{age}} ago). Changes cannot be saved until the server is reachable.",
         "offlineNoCache": "Config server {{server}} is unreachable and config \"{{config}}\" has no offline cache yet. Run \"rdc config remote refresh\" once the server is reachable to seed the cache.",
         "writeFailedClosed": "Cannot save: config \"{{config}}\" is stored on {{server}}, which is unreachable. The change was NOT saved.",
+        "teamForbidden": "Config \"{{config}}\" belongs to a team this account is not a member of, so the config server refused it. Ask an owner or admin of the organization to add this account to that team.",
+        "teamForbiddenCachePurged": "The offline copy of config \"{{config}}\" was removed from this device. Copies made before the removal are not recalled.",
+        "teamNotFound": "Config \"{{config}}\" names team {{team}}, which is not a team of this organization. Run \"rdc config remote enable\" again to pick a team of the organization.",
         "conflictRetryExhausted": "Config \"{{config}}\" is still conflicting with another device after 3 attempts. Re-run the command.",
         "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
         "staleSlot": "Your key slot is outdated (the config encryption key was rotated). Re-enroll with: rdc config remote enable",

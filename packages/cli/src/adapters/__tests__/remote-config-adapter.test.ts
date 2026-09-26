@@ -159,9 +159,7 @@ describe('RemoteConfigAdapter', () => {
 
   describe('pull', () => {
     it('decrypts with the key the PULL returns (the push epoch), not the session key of the current epoch', async () => {
-      // 2026-09-25: after the first remote enable every later pull failed with "the server
-      // session layer would not open it": the blob is sealed under the epoch it was pushed in,
-      // and the pull response carries that epoch's sdk_derived, which the CLI ignored.
+      // 2026-09-25: after the first remote enable every later pull failed with "the server session layer would not open it": the blob is sealed under the epoch it was pushed in, and the pull response carries that epoch's sdk_derived, which the CLI ignored.
       mockFromBase64.mockImplementation((b64: string) => new TextEncoder().encode(String(b64)));
       mockImportAesKey.mockImplementation(async (bytes: Uint8Array) => ({
         marker: new TextDecoder().decode(bytes),
@@ -296,8 +294,7 @@ describe('RemoteConfigAdapter', () => {
       await expect(adapter.pull()).rejects.toThrow(RemoteTokenExpiredError);
     });
 
-    // A 401 keeps the server's reason: ip_mismatch is NOT an expired token, and
-    // reading it as one sent the user in a loop (the relay handoff bug).
+    // A 401 keeps the server's reason: ip_mismatch is NOT an expired token, and reading it as one sent the user in a loop (the relay handoff bug).
     it('should throw RemoteTokenIpMismatchError on 401 ip_mismatch, not an expiry', async () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
       mockConfigServerFetch.mockRejectedValueOnce(

@@ -17,8 +17,13 @@
 
 import { DEVICE_LOCAL_POINTERS, RdcConfigSchema } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
+import {
+  type RemoteConfigAdapter,
+  RemoteTeamForbiddenError,
+} from '../../adapters/remote-config-adapter.js';
 import { t } from '../../i18n/index.js';
 import type { RdcConfig, RemoteConfig } from '../../types/index.js';
+import { outputService } from '../core/output.js';
 
 /** Top-level keys the schema declares; anything else in a document is an unknown (newer-CLI) key. */
 const KNOWN_TOP_LEVEL_KEYS: ReadonlySet<string> = new Set(Object.keys(RdcConfigSchema.shape));
@@ -154,6 +159,60 @@ export async function writeRemoteCache(
   });
   if (!merged) throw new Error(`Config "${configName}" cache write did not run its merge`);
   return merged;
+}
+
+/**
+ * What a purged cache keeps: this device's own pointers (DEVICE_LOCAL_POINTERS) and the config id,
+ * with the `remote` pointer's cache stamp removed. Nothing of the store's copy survives, `state` and
+ * unknown keys included, so no read can serve it and the next pull starts from the bare pointer.
+ */
+function deviceLocalOnly(local: RdcConfig): RdcConfig {
+  const out: Record<string, unknown> = { id: local.id };
+  const localDoc = local as Record<string, unknown>;
+  for (const pointer of DEVICE_LOCAL_POINTERS) overlayPointer(out, localDoc, pointer);
+  if (local.remote) {
+    const { cachedVersion: _version, cachedAt: _at, ...pointer } = local.remote;
+    out.remote = pointer;
+  }
+  return out as RdcConfig;
+}
+
+/**
+ * Remove the offline copy of `configName` from this device: the file keeps only its device-local
+ * pointers, and the `.bak` of the previous content goes too. Used when the server says this
+ * account may no longer read the config (team_forbidden, PLAN-config-team-scoping E4). Hygiene
+ * only: plaintext copied out earlier is not recalled, and the warning says so.
+ */
+async function purgeRemoteCache(configName: string): Promise<void> {
+  await configFileStorage.updateCache(configName, deviceLocalOnly);
+  await configFileStorage.removeBackup(configName);
+}
+
+/**
+ * `adapter.pull()` for a read path: when the server refuses the config because this account is no
+ * longer in its team, the offline cache is purged before the refusal propagates, so no later
+ * offline read can serve content the account lost access to.
+ */
+export async function pullOrPurge(
+  adapter: RemoteConfigAdapter,
+  configName: string
+): ReturnType<RemoteConfigAdapter['pull']> {
+  try {
+    return await adapter.pull();
+  } catch (error) {
+    if (error instanceof RemoteTeamForbiddenError) {
+      try {
+        await purgeRemoteCache(configName);
+        outputService.warn(
+          t('commands.config.remote.teamForbiddenCachePurged', { config: configName })
+        );
+      } catch {
+        // The refusal below is what the caller must see; a purge that could not run leaves the
+        // cache stamped, and the next read tries again.
+      }
+    }
+    throw error;
+  }
 }
 
 /** A remote pointer that has been cache-stamped by a successful pull/push. */

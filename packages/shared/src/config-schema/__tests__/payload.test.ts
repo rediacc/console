@@ -109,7 +109,7 @@ describe('config push payload', () => {
     );
   });
 
-  it('carries EVERY account and defaults key through a push and pull (operator ruling D3: all synced)', async () => {
+  it('carries every account and defaults key but the login through a push and pull (D3; logout is per device)', async () => {
     const account = {
       userEmail: 'op@example.com',
       accountServer: 'https://eu.example.com',
@@ -134,7 +134,9 @@ describe('config push payload', () => {
     });
     const decrypted = await decryptConfigPullPayload(payload, { cek, sdkDerived });
 
-    expect(decrypted.account).toEqual(account);
+    // The login (server and its key) is per device (ruling 2026-09-25): it stays home.
+    const { accountServer: _server, e2ePublicKey: _key, ...synced } = account;
+    expect(decrypted.account).toEqual(synced);
     expect(decrypted.defaults).toEqual(defaults);
   });
 });

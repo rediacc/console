@@ -179,14 +179,30 @@ function server(
 const httpError = (status: number, extra: Record<string, unknown> = {}) =>
   Object.assign(new Error(`HTTP ${status}`), { status, ...extra });
 
-/** Advance fake time in steps until `p` settles (the claim loop sleeps between attempts). */
-async function drive<T>(p: Promise<T>, stepMs = 1000, maxSteps = 2000): Promise<T> {
+/** One real event-loop turn (setImmediate is not faked). */
+const realTurn = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+/**
+ * Settle `p`, moving the fake clock only while the code under test waits on a fake timer.
+ *
+ * Key generation, sealing and opening a handoff are real WebCrypto work on the libuv threadpool,
+ * outside the fake clock. The old loop advanced the clock by a fixed step on every iteration, so
+ * under CPU contention the clock ran past the code's `expiresAt` (or the step budget ran out) while
+ * that work was still in flight: "Device code expired" and 30 s timeouts, 14 of 30 runs red on a
+ * loaded machine. Now a pending timer means the code is idle, and the clock moves by `stepMs`; no
+ * pending timer means real work is in flight, and a real turn passes instead. The outcome depends
+ * on the order of events only, never on how fast the machine is.
+ */
+async function drive<T>(p: Promise<T>, stepMs = 1000): Promise<T> {
   let done = false;
   const tracked = p.finally(() => {
     done = true;
   });
   tracked.catch(() => {});
-  for (let i = 0; i < maxSteps && !done; i++) await vi.advanceTimersByTimeAsync(stepMs);
+  while (!done) {
+    if (vi.getTimerCount() > 0) await vi.advanceTimersByTimeAsync(stepMs);
+    else await realTurn();
+  }
   return tracked;
 }
 
@@ -471,13 +487,14 @@ describe('claim loop', () => {
 
 /**
  * Fire only the listeners added since `before`: vitest's worker has its own SIGINT handler, which kills the run.
- * Waits on real event-loop turns first, since key generation settles outside the fake clock.
+ * The relay registers its listener after key generation, which settles on real event-loop turns outside the
+ * fake clock, so this waits for the listener itself rather than for a fixed number of turns (1000 turns were
+ * too few on a loaded machine: "expected [] to have a length of 1"). A listener that never comes is the
+ * test's own timeout.
  */
 async function ctrlC(before: Function[]) {
   const added = () => process.listeners('SIGINT').filter((l) => !before.includes(l));
-  for (let i = 0; i < 1000 && added().length === 0; i++) {
-    await new Promise((resolve) => setImmediate(resolve));
-  }
+  while (added().length === 0) await realTurn();
   expect(added()).toHaveLength(1);
   for (const listener of added()) (listener as () => void)();
 }

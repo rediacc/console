@@ -22,6 +22,7 @@ import {
   type RemoteConfigAdapter,
   RemoteUnreachableError,
   RemoteVersionConflictError,
+  RemoteWriteFailedClosedError,
 } from '../../adapters/remote-config-adapter.js';
 import { t } from '../../i18n/index.js';
 import type {
@@ -553,13 +554,7 @@ export class RemoteResourceState implements ResourceState {
   /** Convert an unreachable-server error into the fail-closed user error. */
   private toWriteError(error: unknown): unknown {
     if (error instanceof RemoteUnreachableError) {
-      return new Error(
-        t('commands.config.remote.writeFailedClosed', {
-          config: this.configName,
-          server: error.apiUrl,
-        }),
-        { cause: error }
-      );
+      return new RemoteWriteFailedClosedError(this.configName, error.apiUrl, error);
     }
     return error;
   }

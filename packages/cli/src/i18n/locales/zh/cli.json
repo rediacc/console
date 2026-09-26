@@ -523,14 +523,17 @@
           "description": "显示远程连接状态"
         },
         "tokenExpired": "远程配置令牌已过期。请重新认证: rdc config remote enable",
-        "tokenIpMismatch": "此设备的配置令牌绑定到了另一个网络地址。请再次运行 rdc config remote enable 为此设备获取令牌。",
+        "tokenIpMismatch": "此设备的配置令牌绑定到了另一个网络地址。请再次运行 \"rdc config remote enable\" 为此设备获取令牌。",
         "tokenExhausted": "此设备的配置令牌已被另一个请求用掉（每次使用都会轮换）。请重新认证: rdc config remote enable",
         "tokenInvalid": "配置服务器无法识别此设备的配置令牌。请重新认证: rdc config remote enable",
         "tokenRejected": "配置服务器拒绝了此设备的配置令牌（{{reason}}）。请重新认证: rdc config remote enable",
         "undecryptableIdentity": "存储 {{storeId}} 中的配置 {{configId}} 使用了与你的槽位所持密钥不同的密钥加密，因此此设备无法读取它。当存储中已经保存了来自另一次注册的配置时会发生这种情况。请在已注册的设备上拉取该配置并确认你指的是哪个配置，或者请管理员从门户（Config Storage > key slots）重新向此设备共享存储密钥。",
         "undecryptableSession": "配置 {{configId}} 已用你的密钥解锁，但服务器会话层拒绝打开它（{{detail}}）。请重试该命令；如果持续失败，请使用以下命令重新注册：rdc config remote enable",
         "unreachable": "配置服务器 {{server}} 不可达",
-        "writeFailedClosed": "无法保存：配置 \"{{config}}\" 存储在不可达的 {{server}} 上。更改未保存。"
+        "writeFailedClosed": "无法保存：配置 \"{{config}}\" 存储在不可达的 {{server}} 上。更改未保存。",
+        "teamForbidden": "配置 \"{{config}}\" 属于此账户不在其中的团队，因此配置服务器拒绝了请求。请让组织的所有者或管理员将此账户加入该团队。",
+        "teamForbiddenCachePurged": "已从此设备删除配置 \"{{config}}\" 的离线副本。此前已复制出去的副本无法收回。",
+        "teamNotFound": "配置 \"{{config}}\" 指向的团队 {{team}} 不属于此组织。请再次运行 \"rdc config remote enable\" 以选择本组织的团队。"
       },
       "rotateCek": {
         "cancelled": "轮换已取消。未做任何更改。",

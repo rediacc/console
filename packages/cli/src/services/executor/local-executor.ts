@@ -41,6 +41,7 @@ import {
 } from '../account/license-preflight.js';
 import { clusterKubeconfigRemotePath, namedDatastoreMount } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
+import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
@@ -1368,8 +1369,10 @@ class LocalExecutorService {
           );
         }
       }
-    } catch {
-      // Non-blocking: license check failure should not prevent command execution
+    } catch (error) {
+      // Non-blocking: license check failure should not prevent command execution. The one failure
+      // reported is a remote config refusing the cooldown write while its store is unreachable.
+      reportStateWriteRefused(error);
     }
   }
 

@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1790,
+    "keyCount": 1793,
     "sourceCommit": "c6f213cdf9f3068c15b8628ab993fa483b467976"
   },
   "hashes": {
@@ -374,10 +374,13 @@
     "commands.config.remote.refresh.success": "45362f63",
     "commands.config.remote.staleSlot": "62bc3327",
     "commands.config.remote.status.description": "68f70d9c",
+    "commands.config.remote.teamForbidden": "eb15ad95",
+    "commands.config.remote.teamForbiddenCachePurged": "858ccf08",
+    "commands.config.remote.teamNotFound": "c96c731e",
     "commands.config.remote.tokenExhausted": "efbf24fc",
     "commands.config.remote.tokenExpired": "b1825d78",
     "commands.config.remote.tokenInvalid": "bada417e",
-    "commands.config.remote.tokenIpMismatch": "2d2a8fae",
+    "commands.config.remote.tokenIpMismatch": "352cdf0e",
     "commands.config.remote.tokenRejected": "e825f97b",
     "commands.config.remote.undecryptableIdentity": "79b11d86",
     "commands.config.remote.undecryptableSession": "acbf38db",

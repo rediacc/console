@@ -14,7 +14,7 @@ import {
 import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
 import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { configService } from '../services/config/config-resources.js';
-import { updateSyncedConfig } from '../services/config/synced-write.js';
+import { updateConfigAtPointer } from '../services/config/synced-write.js';
 import { outputService } from '../services/core/output.js';
 import { discoverRegions } from '../services/provision/region-discovery.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
@@ -38,24 +38,34 @@ function handleServerChange(currentServer: string | undefined, newServer: string
   }
 }
 
-/** Merge account fields into the active config, best-effort (config may not exist yet). */
-async function patchActiveAccount(fields: {
-  accountServer?: string;
-  e2ePublicKey?: string;
-  updateChannel?: string;
-}): Promise<void> {
-  const defined: typeof fields = {};
-  if (fields.accountServer !== undefined) defined.accountServer = fields.accountServer;
-  if (fields.e2ePublicKey !== undefined) defined.e2ePublicKey = fields.e2ePublicKey;
-  if (fields.updateChannel !== undefined) defined.updateChannel = fields.updateChannel;
-  if (Object.keys(defined).length === 0) return;
-  try {
-    await updateSyncedConfig(getEffectiveConfigName(), (cfg) => ({
-      ...cfg,
-      account: { ...(cfg.account ?? {}), ...defined },
-    }));
-  } catch {
-    /* config might not exist yet */
+type AccountField = 'accountServer' | 'e2ePublicKey' | 'updateChannel';
+
+/**
+ * The login fields: per device (operator ruling 2026-09-25, "Logout is per device"), so they are
+ * DEVICE_LOCAL_POINTERS and `updateConfigAtPointer` writes them to this device's file only, never
+ * to a remote config's store.
+ */
+const LOGIN_FIELDS = ['accountServer', 'e2ePublicKey'] as const;
+
+/**
+ * Write account fields into the active config, best-effort (config may not exist yet). Each field
+ * is routed by its pointer: the login fields stay on this device, `updateChannel` syncs, and is
+ * written only when it changes, so a login does not push an unchanged channel.
+ */
+async function patchActiveAccount(fields: Partial<Record<AccountField, string>>): Promise<void> {
+  const configName = getEffectiveConfigName();
+  for (const [field, value] of Object.entries(fields) as [AccountField, string | undefined][]) {
+    if (value === undefined) continue;
+    if (field === 'updateChannel' && readAccountPointer(configName).updateChannel === value)
+      continue;
+    try {
+      await updateConfigAtPointer(configName, `/account/${field}`, (cfg) => ({
+        ...cfg,
+        account: { ...(cfg.account ?? {}), [field]: value },
+      }));
+    } catch {
+      /* config might not exist yet */
+    }
   }
 }
 
@@ -262,19 +272,19 @@ export function registerSubscriptionCommands(program: Command): void {
     .action(async () => {
       try {
         deleteStoredSubscriptionToken();
-        // Also clear the active config's server identity so the next `login` shows the region picker again. Scoped per config: only the active
-        // config's accountServer/e2ePublicKey are cleared; updateChannel and
-        // releasesUrl (update preferences, not server identity) survive.
-        try {
-          await updateSyncedConfig(getEffectiveConfigName(), (cfg) => {
-            if (!cfg.account) return cfg;
-            const account = { ...cfg.account };
-            account.accountServer = undefined;
-            account.e2ePublicKey = undefined;
-            return { ...cfg, account };
-          });
-        } catch {
-          /* config might not exist */
+        // Also clear the active config's server identity, on THIS device only (the login fields are device-local), so the next `login` asks again: for a region on a local config, while a remote config falls back to its store's server (readAccountPointer). updateChannel and releasesUrl (update preferences, not server identity) survive.
+        const configName = getEffectiveConfigName();
+        for (const field of LOGIN_FIELDS) {
+          try {
+            await updateConfigAtPointer(configName, `/account/${field}`, (cfg) => {
+              if (!cfg.account) return cfg;
+              const account = { ...cfg.account };
+              delete account[field];
+              return { ...cfg, account };
+            });
+          } catch {
+            /* config might not exist */
+          }
         }
         outputService.success(t('commands.subscription.logout.success'));
       } catch (error) {

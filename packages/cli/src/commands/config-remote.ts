@@ -161,13 +161,13 @@ async function refreshRemote(configName: string): Promise<void> {
     getSecureStorage()
   );
 
+  const { pullOrPurge, writeRemoteCache } = await import('../services/config/remote-cache.js');
   const { config: pulledConfig, version } = await withSpinner(
     t('commands.config.remote.refresh.pulling'),
-    () => adapter.pull(),
+    () => pullOrPurge(adapter, configName),
     t('commands.config.remote.refresh.pulled')
   );
 
-  const { writeRemoteCache } = await import('../services/config/remote-cache.js');
   await writeRemoteCache(configName, pulledConfig, version);
 
   outputService.success(t('commands.config.remote.refresh.success', { version: String(version) }));

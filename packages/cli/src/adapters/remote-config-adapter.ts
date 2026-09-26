@@ -92,7 +92,7 @@ export class RemoteTokenIpMismatchError extends RemoteAuthError {
 const AUTH_REASON_RE = /Config auth failed: ([a-z_]+)/;
 
 /** Map a 401 onto the error for the server's stated reason. */
-export function remoteAuthErrorFor(serverMessage: string): RemoteAuthError {
+function remoteAuthErrorFor(serverMessage: string): RemoteAuthError {
   const reason = AUTH_REASON_RE.exec(serverMessage)?.[1];
   switch (reason) {
     case 'token_expired':
@@ -137,6 +137,65 @@ export class RemoteUnreachableError extends Error {
     super(t('commands.config.remote.unreachable', { server: apiUrl }), { cause });
     this.name = 'RemoteUnreachableError';
   }
+}
+
+/**
+ * The server refused this config because this account is not a member of the team the config
+ * belongs to (HTTP 403 `team_forbidden`, PLAN-config-team-scoping section 2.4). Membership is
+ * checked on every request, so this is also what a device sees after its user left the team; the
+ * read path then removes the offline copy (ruling E4). The rotated token in the refusal's body is
+ * persisted before this is raised, so the device's token chain survives.
+ */
+export class RemoteTeamForbiddenError extends Error {
+  constructor(public readonly configName: string) {
+    super(t('commands.config.remote.teamForbidden', { config: configName }));
+    this.name = 'RemoteTeamForbiddenError';
+  }
+}
+
+/**
+ * The team this config's pointer names is not a team of the store's organization (HTTP 404
+ * `team_not_found`): a team id from another organization, or a team that no longer exists.
+ */
+class RemoteTeamNotFoundError extends Error {
+  constructor(
+    public readonly configName: string,
+    public readonly teamId: string | undefined
+  ) {
+    super(t('commands.config.remote.teamNotFound', { config: configName, team: teamId ?? '-' }));
+    this.name = 'RemoteTeamNotFoundError';
+  }
+}
+
+/**
+ * A write to a remote config was refused because its server is unreachable: the edit, a state
+ * record included, is NOT saved anywhere (operator ruling 2026-09-25: offline writes to a remote
+ * config fail closed; a local config never contacts a server). Names the config and the server so
+ * a caller that treats the write as best-effort can still say why it was lost.
+ */
+export class RemoteWriteFailedClosedError extends Error {
+  constructor(
+    public readonly configName: string,
+    public readonly apiUrl: string,
+    cause: unknown
+  ) {
+    super(t('commands.config.remote.writeFailedClosed', { config: configName, server: apiUrl }), {
+      cause,
+    });
+    this.name = 'RemoteWriteFailedClosedError';
+  }
+}
+
+/** The RemoteUnreachableError anywhere in `error`'s cause chain, or undefined. */
+export function findUnreachable(error: unknown): RemoteUnreachableError | undefined {
+  let current: unknown = error;
+  const seen = new Set<unknown>();
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+    if (current instanceof RemoteUnreachableError) return current;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return undefined;
 }
 
 /** Error codes (Node net/undici) that mean the server was never reached. */
@@ -261,17 +320,11 @@ export class RemoteConfigAdapter {
     }>(lease, pullPath);
     const cek = await this.deriveCek(fromBase64(pullResp.data.server_secret), lease);
 
-    // The session layer was sealed under the epoch the config was PUSHED in, and the pull
-    // response carries that epoch's key (configs.ts derives it from the stored sdkEpoch).
-    // The CURRENT epoch's key opened the blob only until the epoch window rolled over, then every
-    // pull failed as "the server session layer would not open it" (2026-09-25, right after the
-    // first remote enable).
+    // The session layer was sealed under the epoch the config was PUSHED in, and the pull response carries that epoch's key (configs.ts derives it from the stored sdkEpoch). The CURRENT epoch's key opened the blob only until the epoch window rolled over, then every pull failed as "the server session layer would not open it" (2026-09-25, right after the first remote enable).
     const pulledSdkDerived = await importAesKey(fromBase64(pullResp.data.sdk_derived));
     const pulledSdkEpoch = pullResp.data.envelope.sdkEpoch;
 
-    // Decrypt: Layer 2 (CEK) + Layer 1 (SDK) Server-stored envelope is v2 (see Step 5). Until the server supports that,
-    // fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt
-    // still verifies HMAC + decrypts the blob successfully.
+    // Decrypt: Layer 2 (CEK) + Layer 1 (SDK) Server-stored envelope is v2 (see Step 5). Until the server supports that, fabricate empty commitments so the v2 shape is well-formed; selectiveDecrypt still verifies HMAC + decrypts the blob successfully.
     const payload: EncryptedConfigPayload = {
       envelope: {
         envelopeVersion: 2,
@@ -297,9 +350,7 @@ export class RemoteConfigAdapter {
       throw this.classifyDecryptFailure(error, pullResp.data.envelope.configId);
     }
 
-    // Rebuild the RdcConfig from the decrypted blob through the ONE shared reconstruction. This used to be a hand-written copy that had to "mirror"
-    // fullConfigToRdcConfig exactly; keeping two copies in sync is precisely how
-    // the explicit-undefined trap (and later the dropped-secret bug) reached production, so there is now a single implementation and both the CLI pull and the CEK rotation go through it.
+    // Rebuild the RdcConfig from the decrypted blob through the ONE shared reconstruction. This used to be a hand-written copy that had to "mirror" fullConfigToRdcConfig exactly; keeping two copies in sync is precisely how the explicit-undefined trap (and later the dropped-secret bug) reached production, so there is now a single implementation and both the CLI pull and the CEK rotation go through it.
     const config = fullConfigToRdcConfig(decrypted);
 
     return {
@@ -474,7 +525,7 @@ export class RemoteConfigAdapter {
       if (error instanceof ConfigServerError && error.newServerToken) {
         await lease.update(error.newServerToken);
       }
-      throw classifyFetchError(error, this.remote.apiUrl);
+      throw classifyFetchError(error, this.remote, this.configName);
     }
     if (resp.newServerToken) await lease.update(resp.newServerToken);
     return { data: resp.data };
@@ -483,17 +534,34 @@ export class RemoteConfigAdapter {
 
 /**
  * Map a transport/server failure onto the adapter's typed taxonomy: 401 → the
- * RemoteAuthError for the server's stated reason, 409 → version conflict
- * (server message verbatim), and network-class failures (fetch TypeError, ECONN*, 5xx, including the
- * getServerKeyMaterial fetch inside configServerFetch) → unreachable, so read
- * paths can cache-serve and write paths fail closed. Everything else passes
- * through unchanged.
+ * RemoteAuthError for the server's stated reason, 403 `team_forbidden` → not a member of the
+ * config's team, 404 `team_not_found` → the pointer names no team of the organization, 409 →
+ * version conflict (server message verbatim), and network-class failures (fetch TypeError, ECONN*,
+ * 5xx, including the getServerKeyMaterial fetch inside configServerFetch) → unreachable, so read
+ * paths can cache-serve and write paths fail closed. Everything else passes through unchanged.
  */
-function classifyFetchError(error: unknown, apiUrl: string): unknown {
+function classifyFetchError(error: unknown, remote: RemoteConfig, configName: string): unknown {
   if (error instanceof ConfigServerError) {
-    if (error.status === 401) return remoteAuthErrorFor(error.message);
-    if (error.status === 409) return new RemoteVersionConflictError(error.message);
+    const answered = classifyServerAnswer(error, remote, configName);
+    if (answered) return answered;
   }
-  if (isNetworkError(error)) return new RemoteUnreachableError(apiUrl, error);
+  if (isNetworkError(error)) return new RemoteUnreachableError(remote.apiUrl, error);
   return error;
+}
+
+/** The typed error for a refusal the server answered with, or undefined to fall through. */
+function classifyServerAnswer(
+  error: ConfigServerError,
+  remote: RemoteConfig,
+  configName: string
+): Error | undefined {
+  if (error.status === 401) return remoteAuthErrorFor(error.message);
+  if (error.status === 403 && error.code === 'team_forbidden') {
+    return new RemoteTeamForbiddenError(configName);
+  }
+  if (error.status === 404 && error.code === 'team_not_found') {
+    return new RemoteTeamNotFoundError(configName, remote.teamId);
+  }
+  if (error.status === 409) return new RemoteVersionConflictError(error.message);
+  return undefined;
 }

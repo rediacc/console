@@ -188,7 +188,9 @@ export class ConfigServiceBase {
   private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {
     const adapter = await this.getRemoteAdapter(localConfig, configName);
     const { RemoteUnreachableError } = await import('../../adapters/remote-config-adapter.js');
-    const { formatStaleCacheWarning, writeRemoteCache } = await import('./remote-cache.js');
+    const { formatStaleCacheWarning, pullOrPurge, writeRemoteCache } = await import(
+      './remote-cache.js'
+    );
     const { outputService } = await import('../core/output.js');
     const { t } = await import('../../i18n/index.js');
 
@@ -196,7 +198,8 @@ export class ConfigServiceBase {
     let version: number;
     let sdkEpoch: number;
     try {
-      ({ config, version, sdkEpoch } = await adapter.pull());
+      // A team_forbidden refusal purges the offline copy before it propagates (E4); it is not RemoteUnreachableError, so the cache is never served for it either.
+      ({ config, version, sdkEpoch } = await pullOrPurge(adapter, configName));
     } catch (error) {
       if (!(error instanceof RemoteUnreachableError)) throw error;
 
@@ -225,9 +228,7 @@ export class ConfigServiceBase {
       return cached;
     }
 
-    // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read.
-    // The in-memory config IS what the cache now holds (device-local pointers overlaid by the one overlayDeviceLocal),
-    // so RemoteResourceState.load sees `state` and a later push cannot rewrite state.repos without it (F3).
+    // Awaited on purpose: a fire-and-forget refresh that loses the write is silent staleness on the next offline read. The in-memory config IS what the cache now holds (device-local pointers overlaid by the one overlayDeviceLocal), so RemoteResourceState.load sees `state` and a later push cannot rewrite state.repos without it (F3).
     config = await writeRemoteCache(configName, config, version);
 
     this._remoteConfig = config;
@@ -269,16 +270,6 @@ export class ConfigServiceBase {
    */
   init(name: string): Promise<RdcConfig> {
     return configFileStorage.init(name);
-  }
-
-  /**
-   * Update the current config.
-   */
-  async update(name: string, updates: Partial<RdcConfig>): Promise<void> {
-    await configFileStorage.update(name, (config) => ({
-      ...config,
-      ...updates,
-    }));
   }
 
   /**
@@ -356,27 +347,13 @@ export class ConfigServiceBase {
   }
 
   /**
-   * Apply an edit to a synced section (`defaults`, ...) of the current config. For a remote config
-   * the edit is pushed to the server: `account` and `defaults` follow the store with no local
-   * override (operator ruling D3), so an edit that only reached the local file would be overwritten
-   * by the next pull. Any other config is edited on disk as before.
+   * Apply an edit to a synced section (`defaults`, ...) of the current config: the one synced write
+   * path, `updateSyncedConfig` (synced-write.ts), which pushes a remote config's edit and edits any
+   * other config on disk. `defaults` follows the store with no local override (operator ruling D3).
    */
   private async updateSyncedSection(edit: (cfg: RdcConfig) => RdcConfig): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const local = (await configFileStorage.exists(name))
-      ? await configFileStorage.load(name)
-      : null;
-    if (local && hasRemoteConfig(local)) {
-      const state = await this.getResourceState();
-      const { RemoteResourceState } = await import('./resource-state.js');
-      if (state instanceof RemoteResourceState) {
-        await state.updateDocument(edit);
-        // The memoized snapshot predates the push; the next read pulls again.
-        this._remoteConfig = null;
-        return;
-      }
-    }
-    await configFileStorage.update(name, edit);
+    const { updateSyncedConfig } = await import('./synced-write.js');
+    await updateSyncedConfig(this.getEffectiveConfigName(), edit, this);
   }
 
   /**
@@ -394,15 +371,33 @@ export class ConfigServiceBase {
         `Config "${name}" is remote-enabled but is not the active config; select it with --config to write its state`
       );
     }
-    const state = await this.getResourceState();
-    const { RemoteResourceState } = await import('./resource-state.js');
-    if (!(state instanceof RemoteResourceState)) {
-      throw new Error(`Config "${name}" is remote-enabled but its store is not loaded`);
+    try {
+      const state = await this.getResourceState();
+      const { RemoteResourceState } = await import('./resource-state.js');
+      if (!(state instanceof RemoteResourceState)) {
+        throw new Error(`Config "${name}" is remote-enabled but its store is not loaded`);
+      }
+      const pushed = await state.updateDocument(updater);
+      // The resource view re-seated itself on the pushed document; the memoized snapshot follows it.
+      this._remoteConfig = pushed;
+      return pushed;
+    } catch (error) {
+      throw await this.asStateWriteError(name, error);
     }
-    const pushed = await state.updateDocument(updater);
-    // The resource view re-seated itself on the pushed document; the memoized snapshot follows it.
-    this._remoteConfig = pushed;
-    return pushed;
+  }
+
+  /**
+   * A state write that failed because the store is unreachable, at any step (the pull that loads
+   * the store, the push, the conflict re-pull), is the one fail-closed error naming the config and
+   * the server, so a best-effort state writer can report why the record was lost.
+   */
+  private async asStateWriteError(name: string, error: unknown): Promise<unknown> {
+    const { RemoteWriteFailedClosedError, findUnreachable } = await import(
+      '../../adapters/remote-config-adapter.js'
+    );
+    if (error instanceof RemoteWriteFailedClosedError) return error;
+    const unreachable = findUnreachable(error);
+    return unreachable ? new RemoteWriteFailedClosedError(name, unreachable.apiUrl, error) : error;
   }
 
   // --- Language Settings ---

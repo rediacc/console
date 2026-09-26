@@ -8,6 +8,8 @@ export default defineConfig({
     // start). 30s only delays genuinely-hung tests; it never slows green ones.
     testTimeout: 30_000,
     include: ['src/**/__tests__/**/*.test.ts'],
+    // An empty config home per test file, never the developer's real ~/.config/rediacc.
+    setupFiles: ['src/__tests__/isolate-config-home.ts'],
     exclude: [
       'node_modules',
       'dist',

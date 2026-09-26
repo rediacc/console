@@ -26,7 +26,7 @@ import { ValidationError } from '../../utils/errors.js';
 import { getInstallMethod, getNpmUpdateCommand } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
-import { isRemoteConfigFile, updateSyncedConfig } from '../config/synced-write.js';
+import { updateConfigAtPointer } from '../config/synced-write.js';
 import { writeStderr } from '../core/request-context.js';
 import { resolveChannel } from '../update/updater.js';
 import { readAccountPointer } from './account-pointer.js';
@@ -92,17 +92,14 @@ async function discoverServerKey(): Promise<{
     if (!key?.publicKeySpki) return null;
 
     // Cache in the active config for next startup, but only when the pointer had none. Guarded: the config file may not exist yet on a fresh machine (discovery still returns the key regardless).
-    // Not for a remote config: its file is a cache of the server copy, and pushing from here would re-enter this very key lookup through the pull the push starts with.
-    // A remote config gets the key from the store, where `subscription login --server` puts it.
+    // The key is device-local (DEVICE_LOCAL_POINTERS), so this is a write to this device's file for a remote config too: no push, and so no pull re-entering this lookup.
     const configName = getEffectiveConfigName();
-    if (!readAccountPointer().e2ePublicKey) {
+    if (!readAccountPointer(configName).e2ePublicKey) {
       try {
-        if (!(await isRemoteConfigFile(configName))) {
-          await updateSyncedConfig(configName, (cfg) => ({
-            ...cfg,
-            account: { ...(cfg.account ?? {}), e2ePublicKey: key.publicKeySpki },
-          }));
-        }
+        await updateConfigAtPointer(configName, '/account/e2ePublicKey', (cfg) => ({
+          ...cfg,
+          account: { ...(cfg.account ?? {}), e2ePublicKey: key.publicKeySpki },
+        }));
       } catch {
         // Config may not exist yet; discovery result still stands.
       }

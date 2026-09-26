@@ -154,7 +154,7 @@ export async function startRelayHandoff(apiUrl: string, loginToken: string): Pro
 }
 
 /** Best-effort DELETE of the pending code, bounded to two seconds; never throws. */
-export async function cancelRelayHandoff(
+async function cancelRelayHandoff(
   apiUrl: string,
   deviceCode: string,
   pollSecret: string

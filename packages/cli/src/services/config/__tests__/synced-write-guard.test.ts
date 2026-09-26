@@ -32,13 +32,14 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
     reason: 'LocalResourceState.persist (local configs) and the cache write after a push',
   },
   'services/config/remote-cache.ts': {
-    count: 1,
-    reason: 'writeRemoteCache: stores a pulled server copy in the cache',
+    count: 2,
+    reason:
+      'writeRemoteCache (stores a pulled server copy) and purgeRemoteCache (drops a config the account lost access to)',
   },
   'services/config/config-base.ts': {
-    count: 3,
+    count: 1,
     reason:
-      'update() (generic, no callers), setMasterPassword (device-local verifier), and the local branch of updateSyncedSection',
+      'setMasterPassword (the device-local verifier); updateSyncedSection delegates to updateSyncedConfig',
   },
   'commands/config-remote.ts': {
     count: 1,

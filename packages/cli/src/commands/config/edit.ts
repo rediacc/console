@@ -242,10 +242,7 @@ async function applyEdit(
   configIdForAudit: string,
   configVersionForAudit: number
 ): Promise<void> {
-  // Replace the entire config with the reconciled v2-validated value. A remote config's push
-  // replays onto the newer server copy after a version conflict, so there only the top-level
-  // sections this edit changed are carried over: another device's concurrent edit to a section
-  // left alone here survives.
+  // Replace the entire config with the reconciled v2-validated value. A remote config's push replays onto the newer server copy after a version conflict, so there only the top-level sections this edit changed are carried over: another device's concurrent edit to a section left alone here survives.
   const validated = parseConfig(RdcConfigSchema, reconciled, 'rdc config edit');
   const remote = await isRemoteConfigFile(configName);
   await updateSyncedConfig(configName, (base) =>

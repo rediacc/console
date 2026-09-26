@@ -60,7 +60,8 @@ function withDefaults(meta: SensitivityMeta): Required<SensitivityMeta> {
 const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Account ──────────────────────────────────────────────────────────────
   '/account/userEmail': { kind: 'pii' },
-  '/account/accountServer': { kind: 'identifier' },
+  // Login fields: device-local (DEVICE_LOCAL_POINTERS below), so never carried and never committed.
+  '/account/accountServer': { kind: 'identifier', commit: false },
   '/account/e2ePublicKey': { kind: 'public' }, // public half of server keypair by construction
   '/account/updateChannel': { kind: 'public' },
   '/account/releasesUrl': { kind: 'identifier' }, // on-prem endpoint, mirror accountServer
@@ -365,6 +366,11 @@ export const SENSITIVITY_REGISTRY: Map<PointerTemplate, Required<SensitivityMeta
  *   decrypted values instead.
  * - `/renetPath`: a filesystem override for this device's renet binary.
  * - `/credentials/masterPasswordVerifier`: meaningful only to this file's at-rest mode (F4).
+ * - `/account/accountServer`, `/account/e2ePublicKey`: the login of this device (operator ruling
+ *   2026-09-25, "Logout is per device"). `rdc subscription login` writes both and `logout` clears
+ *   both; the login token itself already lives beside the config file. `updateChannel` is written by
+ *   login too but survives logout and is an update preference, so it syncs (ruling D3), as does
+ *   `userEmail`, which login never writes.
  *
  * Pointers are one or two segments deep. No pointer here may carry a committed template: a
  * committed-but-not-carried pointer bricks the re-push (anti-downgrade).
@@ -376,6 +382,8 @@ export const DEVICE_LOCAL_POINTERS = [
   '/encryption',
   '/renetPath',
   '/credentials/masterPasswordVerifier',
+  '/account/accountServer',
+  '/account/e2ePublicKey',
 ] as const satisfies readonly PointerTemplate[];
 
 /**

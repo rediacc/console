@@ -10,11 +10,13 @@
  * Lives in the config's `state` bucket (not a sidecar file) for the same reasons
  * as `state.licenseRefresh`: config state is mocked, versioned, inspectable, and
  * travels with the config it describes. Written through `updateState`, so it
- * never bumps the version counter and is stripped from any push (R2-F2).
+ * never bumps the version counter; like all of `state` it syncs (T17), so on a remote config the
+ * write is a push, refused while the store is unreachable.
  */
 
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { configService } from '../config/config-resources.js';
+import { reportStateWriteRefused } from '../config/state-write-failure.js';
 
 /**
  * 'snapshot' is the chunk-store write path. 'backup' is the retired rclone
@@ -60,7 +62,9 @@ export async function recordBackupRun(
         },
       },
     }));
-  } catch {
-    // swallow: the run already happened; losing the local note is harmless.
+  } catch (error) {
+    // The run already happened; losing the note is harmless, but a remote config's fail-closed
+    // refusal is said out loud (the store is unreachable), not swallowed.
+    reportStateWriteRefused(error);
   }
 }

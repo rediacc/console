@@ -301,8 +301,7 @@ export class ConfigFileStorage {
     const versioned: RdcConfig = bumpVersion ? { ...config, version: config.version + 1 } : config;
     const encrypted = await this.encryptConfig(versioned);
 
-    // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME name that land in the same millisecond compute the identical tempPath. Whichever renames second then hits ENOENT, because the first already moved that path away (observed live: run 30512465488, storage.test.ts's "should not corrupt file under concurrent writes", a lock-window race under CI-runner load
-    // that did not reproduce under local stress testing). The random suffix makes every tempPath unique regardless of timing.
+    // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME name that land in the same millisecond compute the identical tempPath. Whichever renames second then hits ENOENT, because the first already moved that path away (observed live: run 30512465488, storage.test.ts's "should not corrupt file under concurrent writes", a lock-window race under CI-runner load that did not reproduce under local stress testing). The random suffix makes every tempPath unique regardless of timing.
     const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}.${randomUUID()}`;
     const content = stringifyConfig(encrypted);
 
@@ -367,18 +366,13 @@ export class ConfigFileStorage {
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
     if (scoped) return writeScoped(scoped, updater, false);
-    // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles
-    // `rm` it between runs; `config prune` removes it), a background writer ,
-    // the executor daemon's post-request provision bookkeeping above all, must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a
-    // rejected promise they already tolerate.
+    // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles `rm` it between runs; `config prune` removes it), a background writer , the executor daemon's post-request provision bookkeeping above all, must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a rejected promise they already tolerate.
     try {
       await fs.access(this.getPath(name));
     } catch {
       throw new Error(`Config "${name}" does not exist; refusing to create it for a state write`);
     }
-    // `state` syncs (T17): on a remote config the file is a cache the next pull overwrites, so the
-    // write is pushed, settled by the server's compare-and-swap (two devices allocating a network ID
-    // at once end with distinct IDs). It fails closed when the server is unreachable, like any write.
+    // `state` syncs (T17): on a remote config the file is a cache the next pull overwrites, so the write is pushed, settled by the server's compare-and-swap (two devices allocating a network ID at once end with distinct IDs). It fails closed when the server is unreachable, like any write.
     if (this.remoteStateWriter && hasRemoteConfig(await this.load(name))) {
       return this.remoteStateWriter(name, updater);
     }
@@ -392,6 +386,14 @@ export class ConfigFileStorage {
    */
   setRemoteStateWriter(writer: RemoteStateWriter | null): void {
     this.remoteStateWriter = writer;
+  }
+
+  /**
+   * Delete the `.bak` copy every save leaves beside a config. A purge (the offline cache of a
+   * config this account lost access to) must not leave the purged content one rename away.
+   */
+  async removeBackup(name: string): Promise<void> {
+    await fs.rm(this.getBackupPath(name), { force: true });
   }
 
   /**

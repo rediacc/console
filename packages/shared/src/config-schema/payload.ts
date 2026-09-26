@@ -203,9 +203,7 @@ export function buildConfigPushPayload(
     fckSalt?: string;
   }
 ): Promise<EncryptedConfigPayload> {
-  // The blob is JSON, so the commitments are computed over the JSON form too: an explicit-undefined
-  // key anywhere (a `knownHosts: undefined` in a rebuilt ssh pair) would otherwise commit a pointer
-  // the blob cannot carry, and the next push built from a pulled copy would drop it (anti-downgrade).
+  // The blob is JSON, so the commitments are computed over the JSON form too: an explicit-undefined key anywhere (a `knownHosts: undefined` in a rebuilt ssh pair) would otherwise commit a pointer the blob cannot carry, and the next push built from a pulled copy would drop it (anti-downgrade).
   const doc = JSON.parse(JSON.stringify(config)) as RdcConfig;
   const fullConfig = toFullConfig(doc, {
     version: params.version,

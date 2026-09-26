@@ -523,14 +523,17 @@
           "description": "Mostra lo stato della connessione remota"
         },
         "tokenExpired": "Token della configurazione remota scaduto. Autenticati di nuovo con: rdc config remote enable",
-        "tokenIpMismatch": "Il token di configurazione di questo dispositivo è legato a un altro indirizzo di rete. Esegui di nuovo rdc config remote enable per ottenere un token per questo dispositivo.",
+        "tokenIpMismatch": "Il token di configurazione di questo dispositivo è legato a un altro indirizzo di rete. Esegui di nuovo \"rdc config remote enable\" per ottenere un token per questo dispositivo.",
         "tokenExhausted": "Il token di configurazione di questo dispositivo è già stato consumato da un'altra richiesta (cambia a ogni utilizzo). Autenticati di nuovo con: rdc config remote enable",
         "tokenInvalid": "Il server di configurazione non riconosce il token di configurazione di questo dispositivo. Autenticati di nuovo con: rdc config remote enable",
         "tokenRejected": "Il server di configurazione ha rifiutato il token di configurazione di questo dispositivo ({{reason}}). Autenticati di nuovo con: rdc config remote enable",
         "undecryptableIdentity": "La config {{configId}} nello store {{storeId}} è stata cifrata con una chiave diversa da quella nel tuo slot, quindi questo dispositivo non può leggerla. Succede quando lo store contiene già una config da un'altra iscrizione. Recupera quella config da un dispositivo già iscritto e verifica a quale config ti riferivi, oppure chiedi a un amministratore di condividere di nuovo la chiave dello store con questo dispositivo dal portale (Config Storage > key slots).",
         "undecryptableSession": "La config {{configId}} si è sbloccata con la tua chiave, ma il livello di sessione del server si è rifiutato di aprirla ({{detail}}). Riprova il comando; se continua a fallire, reiscriviti con: rdc config remote enable",
         "unreachable": "Il server di configurazione {{server}} non è raggiungibile",
-        "writeFailedClosed": "Impossibile salvare: la configurazione \"{{config}}\" è memorizzata su {{server}}, che non è raggiungibile. La modifica NON è stata salvata."
+        "writeFailedClosed": "Impossibile salvare: la configurazione \"{{config}}\" è memorizzata su {{server}}, che non è raggiungibile. La modifica NON è stata salvata.",
+        "teamForbidden": "La configurazione \"{{config}}\" appartiene a un team di cui questo account non fa parte, quindi il server di configurazione l'ha rifiutata. Chiedi al proprietario o a un amministratore dell'organizzazione di aggiungere questo account a quel team.",
+        "teamForbiddenCachePurged": "La copia offline della configurazione \"{{config}}\" è stata rimossa da questo dispositivo. Le copie fatte in precedenza non vengono recuperate.",
+        "teamNotFound": "La configurazione \"{{config}}\" indica il team {{team}}, che non appartiene a questa organizzazione. Esegui di nuovo \"rdc config remote enable\" per scegliere un team dell'organizzazione."
       },
       "rotateCek": {
         "cancelled": "Rotazione annullata. Nessuna modifica effettuata.",

@@ -19,6 +19,16 @@ import { DEVICE_LOCAL_POINTERS, SENSITIVITY_REGISTRY } from '../sensitivity.js';
 
 const EXCLUDED: readonly string[] = DEVICE_LOCAL_POINTERS;
 const HOISTED = ['resources', 'credentials'] as const;
+/**
+ * Roots populated child by child: the hoisted roots, plus every root an exclusion reaches into
+ * (`account`), so a device-local child is checked apart from its synced siblings.
+ */
+const EXPANDED: readonly string[] = [
+  ...new Set([
+    ...HOISTED,
+    ...EXCLUDED.map((p) => p.split('/').slice(1)).flatMap((s) => (s.length > 1 ? [s[0]] : [])),
+  ]),
+];
 
 function segments(pointer: string): string[] {
   return pointer.split('/').slice(1);
@@ -45,7 +55,7 @@ function everyKeyPopulated(): Record<string, unknown> {
   doc.schemaVersion = 3;
   doc.id = '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f';
   doc.version = 5;
-  for (const root of HOISTED) {
+  for (const root of EXPANDED) {
     doc[root] = Object.fromEntries(
       (childKeys(root) ?? []).map((child) => [child, { marker: `/${root}/${child}` }])
     );
@@ -63,10 +73,10 @@ function roundTrip(doc: Record<string, unknown>): Record<string, unknown> {
   >;
 }
 
-/** Every pointer of the populated document, one level into the hoisted roots. */
+/** Every pointer of the populated document, one level into the expanded roots. */
 function populatedPointers(doc: Record<string, unknown>): string[] {
   return Object.keys(doc).flatMap((key) =>
-    (HOISTED as readonly string[]).includes(key)
+    EXPANDED.includes(key)
       ? Object.keys(doc[key] as object).map((child) => `/${key}/${child}`)
       : [`/${key}`]
   );
@@ -88,7 +98,7 @@ describe('device-local registry: every config key syncs unless listed', () => {
   it('the fixture populates every top-level key and every hoisted child (control)', () => {
     const pointers = populatedPointers(doc);
     const expected = Object.keys(RdcConfigSchema.shape).flatMap((key) =>
-      (HOISTED as readonly string[]).includes(key)
+      EXPANDED.includes(key)
         ? (childKeys(key) ?? []).map((child) => `/${key}/${child}`)
         : [`/${key}`]
     );
@@ -116,6 +126,16 @@ describe('device-local registry: every config key syncs unless listed', () => {
     expect(rebuilt.renetPath).toBeUndefined();
     expect((rebuilt.credentials as Record<string, unknown>).masterPasswordVerifier).toBeUndefined();
     expect(rebuilt.encryption).toEqual({ mode: 'plaintext' });
+  });
+
+  it('the login fields stay on the device: logout is per device (ruling 2026-09-25)', () => {
+    const login = ['/account/accountServer', '/account/e2ePublicKey'];
+    expect(EXCLUDED).toEqual(expect.arrayContaining(login));
+    const account = rebuilt.account as Record<string, unknown>;
+    for (const pointer of login) expect(account[segments(pointer)[1]], pointer).toBeUndefined();
+    // Its synced siblings still travel: only the login is per device.
+    expect(account.userEmail).toEqual({ marker: '/account/userEmail' });
+    expect(account.updateChannel).toEqual({ marker: '/account/updateChannel' });
   });
 
   it('names only real schema nodes (no stale exclusion)', () => {

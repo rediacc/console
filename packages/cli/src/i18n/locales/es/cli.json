@@ -523,14 +523,17 @@
           "description": "Mostrar estado de conexión remota"
         },
         "tokenExpired": "Token de configuración remota expirado. Vuelve a autenticarte con: rdc config remote enable",
-        "tokenIpMismatch": "El token de configuración de este dispositivo está vinculado a otra dirección de red. Vuelve a ejecutar rdc config remote enable para obtener un token para este dispositivo.",
+        "tokenIpMismatch": "El token de configuración de este dispositivo está vinculado a otra dirección de red. Vuelve a ejecutar \"rdc config remote enable\" para obtener un token para este dispositivo.",
         "tokenExhausted": "El token de configuración de este dispositivo ya lo consumió otra solicitud (cambia con cada uso). Vuelve a autenticarte con: rdc config remote enable",
         "tokenInvalid": "El servidor de configuración no reconoce el token de configuración de este dispositivo. Vuelve a autenticarte con: rdc config remote enable",
         "tokenRejected": "El servidor de configuración rechazó el token de configuración de este dispositivo ({{reason}}). Vuelve a autenticarte con: rdc config remote enable",
         "undecryptableIdentity": "La configuración {{configId}} en el almacén {{storeId}} fue cifrada con una clave distinta a la que posee tu slot, por lo que este dispositivo no puede leerla. Esto ocurre cuando el almacén ya contiene una configuración de otra inscripción. Extrae esa configuración en un dispositivo ya inscrito y comprueba a cuál te referías, o pide a un administrador que vuelva a compartir la clave del almacén con este dispositivo desde el portal (Config Storage > key slots).",
         "undecryptableSession": "La configuración {{configId}} se desbloqueó con tu clave, pero la capa de sesión del servidor no quiso abrirla ({{detail}}). Vuelve a intentar el comando; si sigue fallando, vuelve a inscribirte con: rdc config remote enable",
         "unreachable": "Servidor de configuración {{server}} no está disponible",
-        "writeFailedClosed": "No se puede guardar: la configuración \"{{config}}\" está almacenada en {{server}}, que no está disponible. El cambio NO se guardó."
+        "writeFailedClosed": "No se puede guardar: la configuración \"{{config}}\" está almacenada en {{server}}, que no está disponible. El cambio NO se guardó.",
+        "teamForbidden": "La configuración \"{{config}}\" pertenece a un equipo del que esta cuenta no es miembro, así que el servidor de configuración la rechazó. Pide al propietario o a un administrador de la organización que añada esta cuenta a ese equipo.",
+        "teamForbiddenCachePurged": "Se eliminó de este dispositivo la copia sin conexión de la configuración \"{{config}}\". Las copias hechas antes no se recuperan.",
+        "teamNotFound": "La configuración \"{{config}}\" apunta al equipo {{team}}, que no es un equipo de esta organización. Vuelve a ejecutar \"rdc config remote enable\" para elegir un equipo de la organización."
       },
       "rotateCek": {
         "cancelled": "Rotación cancelada. No se cambió nada.",

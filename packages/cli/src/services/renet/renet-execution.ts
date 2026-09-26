@@ -12,12 +12,13 @@ import type { RenetFunctionName } from '@rediacc/shared/renet-contract/data/func
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/renet-contract/data/functions.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
+import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
-import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
 export { readOptionalSSHKey, readSSHKey } from '../machine/ssh-key.js';
@@ -303,7 +304,7 @@ export async function verifyMachineSetup(
 
       setupCache.set(cacheKey, Date.now());
       // Best-effort cross-process memo (annotates the provision entry only).
-      await recordSetupVerified(cacheKey).catch(() => undefined);
+      await recordSetupVerified(cacheKey).catch(reportStateWriteRefused);
       if (options.debug) {
         outputService.info(`Setup verified on ${machine.ip}`);
       }

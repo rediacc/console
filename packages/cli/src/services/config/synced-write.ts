@@ -20,6 +20,13 @@ import { currentRequestConfig } from '../core/request-context.js';
 
 type ConfigEdit = (cfg: RdcConfig) => RdcConfig;
 
+/** The config service a remote edit is pushed through (the process-wide `configService` by default). */
+interface SyncedWriteService {
+  getEffectiveConfigName(): string;
+  getResourceState(): Promise<unknown>;
+  resetResourceView(): void;
+}
+
 /** True when `configName` exists on disk and carries a `remote` pointer. */
 export async function isRemoteConfigFile(configName: string): Promise<boolean> {
   // A request-scoped dispatch edits the session's config in memory, never a remote store.
@@ -29,7 +36,7 @@ export async function isRemoteConfigFile(configName: string): Promise<boolean> {
 }
 
 /** True when `pointer` is (or sits under) a pointer that never leaves this host. */
-export function isDeviceLocalPointer(pointer: string): boolean {
+function isDeviceLocalPointer(pointer: string): boolean {
   return DEVICE_LOCAL_POINTERS.some((p) => pointer === p || pointer.startsWith(`${p}/`));
 }
 
@@ -37,10 +44,16 @@ export function isDeviceLocalPointer(pointer: string): boolean {
  * Apply `edit` to config `configName`. For a remote config the edit is pushed, and on a version
  * conflict applied again to the fresh server copy, so `edit` must derive its result from the
  * document it is given (never from a copy read earlier). Any other config is edited on disk.
+ * `service` is the config service whose store view the push goes through; a ConfigServiceBase
+ * passes itself, every other caller the process-wide one.
  */
-export async function updateSyncedConfig(configName: string, edit: ConfigEdit): Promise<void> {
+export async function updateSyncedConfig(
+  configName: string,
+  edit: ConfigEdit,
+  service?: SyncedWriteService
+): Promise<void> {
   if (await isRemoteConfigFile(configName)) {
-    await pushEdit(configName, edit);
+    await pushEdit(configName, edit, service);
     return;
   }
   await configFileStorage.update(configName, edit);
@@ -62,9 +75,14 @@ export async function updateConfigAtPointer(
   await updateSyncedConfig(configName, edit);
 }
 
-async function pushEdit(configName: string, edit: ConfigEdit): Promise<void> {
+async function pushEdit(
+  configName: string,
+  edit: ConfigEdit,
+  service?: SyncedWriteService
+): Promise<void> {
   // Imported lazily: config-resources imports the cluster and datastore writers that import this module.
-  const { configService } = await import('./config-resources.js');
+  const configService: SyncedWriteService =
+    service ?? (await import('./config-resources.js')).configService;
   if (configName !== configService.getEffectiveConfigName()) {
     throw new Error(
       `Config "${configName}" is remote-enabled but is not the active config; select it with --config to edit it`

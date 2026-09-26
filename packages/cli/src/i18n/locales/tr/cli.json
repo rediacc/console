@@ -523,14 +523,17 @@
           "description": "Uzak bağlantı durumunu göster"
         },
         "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable",
-        "tokenIpMismatch": "Bu cihazın yapılandırma jetonu farklı bir ağ adresine bağlı. Bu cihaz için jeton almak üzere rdc config remote enable komutunu yeniden çalıştırın.",
+        "tokenIpMismatch": "Bu cihazın yapılandırma jetonu farklı bir ağ adresine bağlı. Bu cihaz için jeton almak üzere \"rdc config remote enable\" komutunu yeniden çalıştırın.",
         "tokenExhausted": "Bu cihazın yapılandırma jetonu başka bir istek tarafından zaten kullanıldı (her kullanımda yenilenir). Yeniden kimlik doğrulayın: rdc config remote enable",
         "tokenInvalid": "Yapılandırma sunucusu bu cihazın yapılandırma jetonunu tanımıyor. Yeniden kimlik doğrulayın: rdc config remote enable",
         "tokenRejected": "Yapılandırma sunucusu bu cihazın yapılandırma jetonunu reddetti ({{reason}}). Yeniden kimlik doğrulayın: rdc config remote enable",
         "undecryptableIdentity": "{{storeId}} deposundaki {{configId}} yapılandırması, sizin yuvanızın taşıdığından farklı bir anahtarla şifrelenmiş, bu nedenle bu cihaz onu okuyamıyor. Bu, depo zaten başka bir kayıttan gelen bir yapılandırma taşıdığında olur. O yapılandırmayı zaten kayıtlı bir cihazda çekip hangi yapılandırmayı kastettiğinizi kontrol edin veya bir yöneticiden depo anahtarını portaldan (Config Storage > key slots) bu cihazla yeniden paylaşmasını isteyin.",
         "undecryptableSession": "{{configId}} yapılandırmasının kilidi anahtarınızla açıldı ancak sunucu oturum katmanı onu açmayı reddetti ({{detail}}). Komutu tekrar deneyin; hata sürerse şu komutla yeniden kaydolun: rdc config remote enable",
         "unreachable": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor",
-        "writeFailedClosed": "Kaydedilemiyor: \"{{config}}\" yapılandırması, ulaşılamayan {{server}} üzerinde saklanıyor. Değişiklik KAYDEDİLMEDİ."
+        "writeFailedClosed": "Kaydedilemiyor: \"{{config}}\" yapılandırması, ulaşılamayan {{server}} üzerinde saklanıyor. Değişiklik KAYDEDİLMEDİ.",
+        "teamForbidden": "\"{{config}}\" yapılandırması bu hesabın üyesi olmadığı bir takıma ait olduğundan yapılandırma sunucusu isteği reddetti. Kuruluşun sahibinden veya bir yöneticisinden bu hesabı o takıma eklemesini isteyin.",
+        "teamForbiddenCachePurged": "\"{{config}}\" yapılandırmasının çevrimdışı kopyası bu cihazdan silindi. Daha önce alınmış kopyalar geri çağrılmaz.",
+        "teamNotFound": "\"{{config}}\" yapılandırmasının gösterdiği {{team}} takımı bu kuruluşa ait değil. Kuruluşun bir takımını seçmek için \"rdc config remote enable\" komutunu yeniden çalıştırın."
       },
       "rotateCek": {
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",

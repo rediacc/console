@@ -12,31 +12,32 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
+import { busy } from '../../utils/cli-exit-error.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { VERSION } from '../../version.js';
+import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import {
   computeSha256,
   getEmbeddedRenetBinary,
   isSEA,
   type RenetArch,
 } from '../core/embedded-assets.js';
+import { outputService } from '../core/output.js';
+import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import { compareVersions } from '../update/updater.js';
 import {
   dropProvisionEntry,
   getFreshProvisionEntry,
   recordProvisionVerified,
 } from './provision-state.js';
-import { busy } from '../../utils/cli-exit-error.js';
-import { shellQuote } from '../../utils/shell-quote.js';
-import { outputService } from '../core/output.js';
-import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
-import { compareVersions } from '../update/updater.js';
 import { stageRenetBinary } from './renet-binary-transfer.js';
-import { withLocalProvisionLock } from './renet-provision-lock.js';
 import {
   classifyInspect,
   matchedInspect,
   probeRemoteSlots,
   type RenetInspectResult,
 } from './renet-inspect.js';
+import { withLocalProvisionLock } from './renet-provision-lock.js';
 
 /** Root directory for versioned renet installs on remote machines */
 const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
@@ -254,7 +255,7 @@ class RenetProvisionerService {
   ): Promise<void> {
     this.cache.set(cacheKey, { hash, arch, provisionedAt: Date.now() });
     await recordProvisionVerified(cacheKey, { hash, arch, sourcePath: sourcePath ?? null }).catch(
-      () => undefined
+      reportStateWriteRefused
     );
   }
 

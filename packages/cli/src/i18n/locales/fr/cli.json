@@ -523,14 +523,17 @@
           "description": "Afficher l'état de la connexion distante"
         },
         "tokenExpired": "Jeton de configuration distante expiré. Réauthentifiez-vous avec : rdc config remote enable",
-        "tokenIpMismatch": "Le jeton de configuration de cet appareil est lié à une autre adresse réseau. Relancez rdc config remote enable pour obtenir un jeton propre à cet appareil.",
+        "tokenIpMismatch": "Le jeton de configuration de cet appareil est lié à une autre adresse réseau. Relancez \"rdc config remote enable\" pour obtenir un jeton propre à cet appareil.",
         "tokenExhausted": "Le jeton de configuration de cet appareil a déjà été consommé par une autre requête (il change à chaque utilisation). Réauthentifiez-vous avec : rdc config remote enable",
         "tokenInvalid": "Le serveur de configuration ne reconnaît pas le jeton de configuration de cet appareil. Réauthentifiez-vous avec : rdc config remote enable",
         "tokenRejected": "Le serveur de configuration a refusé le jeton de configuration de cet appareil ({{reason}}). Réauthentifiez-vous avec : rdc config remote enable",
         "undecryptableIdentity": "La configuration {{configId}} dans le store {{storeId}} a été chiffrée avec une clé différente de celle que détient votre slot, donc cet appareil ne peut pas la lire. Cela arrive quand le store contient déjà une configuration issue d'une autre inscription. Récupérez cette configuration depuis un appareil déjà inscrit et vérifiez de quelle configuration il s'agissait, ou demandez à un administrateur de repartager la clé du store avec cet appareil depuis le portail (Config Storage > key slots).",
         "undecryptableSession": "La configuration {{configId}} a été déverrouillée avec votre clé, mais la couche de session du serveur a refusé de l'ouvrir ({{detail}}). Relancez la commande ; si l'échec persiste, réinscrivez-vous avec : rdc config remote enable",
         "unreachable": "Le serveur de configuration {{server}} est injoignable",
-        "writeFailedClosed": "Impossible d'enregistrer : la configuration \"{{config}}\" est stockée sur {{server}}, qui est injoignable. La modification n'a PAS été enregistrée."
+        "writeFailedClosed": "Impossible d'enregistrer : la configuration \"{{config}}\" est stockée sur {{server}}, qui est injoignable. La modification n'a PAS été enregistrée.",
+        "teamForbidden": "La configuration \"{{config}}\" appartient à une équipe dont ce compte n'est pas membre : le serveur de configuration l'a donc refusée. Demandez au propriétaire ou à un administrateur de l'organisation d'ajouter ce compte à cette équipe.",
+        "teamForbiddenCachePurged": "La copie hors ligne de la configuration \"{{config}}\" a été supprimée de cet appareil. Les copies faites auparavant ne sont pas récupérées.",
+        "teamNotFound": "La configuration \"{{config}}\" désigne l'équipe {{team}}, qui n'appartient pas à cette organisation. Relancez \"rdc config remote enable\" pour choisir une équipe de l'organisation."
       },
       "rotateCek": {
         "cancelled": "Rotation annulée. Rien n'a changé.",

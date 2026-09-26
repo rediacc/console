@@ -227,8 +227,7 @@ export type ApiTokenScope =
   | 'subscription:read'
   | 'audit:write'
   | 'delegation:renew'
-  // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is
-  // privileged (owner/admin only); `proxy:exec` is creatable by any member.
+  // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
   | 'proxy:admin'
   // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --password). Creatable by any member — not privileged.
@@ -322,11 +321,7 @@ export interface SubscriptionValidationResult {
   inGracePeriod?: boolean;
 }
 
-// ─── API token IP rebind (PLAN-token-ip-rebind.md) ─────────────────────
-// A first-use API token is bound to the IP of its first caller. When the
-// caller's address changes, the account server refuses with the body below,
-// and a current TOTP code from the token creator's authenticator moves the
-// binding (POST API_TOKEN_IP_REBIND_PATH with the same bearer token).
+// ─── API token IP rebind (PLAN-token-ip-rebind.md) ───────────────────── A first-use API token is bound to the IP of its first caller. When the caller's address changes, the account server refuses with the body below, and a current TOTP code from the token creator's authenticator moves the binding (POST API_TOKEN_IP_REBIND_PATH with the same bearer token).
 
 /** `code` on the 403 a first-use token gets from an address other than its bound one. */
 export const TOKEN_IP_MISMATCH = 'TOKEN_IP_MISMATCH' as const;

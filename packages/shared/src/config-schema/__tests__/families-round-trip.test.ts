@@ -225,7 +225,10 @@ describe('resource families round trip', () => {
     const original = allFamiliesConfig();
     const rebuilt = await pushPullRoundTrip(original);
 
-    expect(rebuilt.account).toEqual(original.account);
+    // Everything in `account` but the device's login (DEVICE_LOCAL_POINTERS).
+    const { accountServer: _server, e2ePublicKey: _key, ...syncedAccount } = original.account ?? {};
+    expect(rebuilt.account).toEqual(syncedAccount);
+    expect(rebuilt.account?.accountServer).toBeUndefined();
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
     expect(rebuilt.policy).toEqual(original.policy);

@@ -75,8 +75,29 @@ describe('mergeRemoteIntoCache', () => {
     // A local override kept every device's first-pulled value forever, and its next push reverted
     // another device's change.
     expect(merged.defaults).toEqual({ language: 'en', datastoreSize: '90%' });
-    // The pulled copy carries no account section, so none survives locally.
-    expect(merged.account).toBeUndefined();
+    // The pulled copy carries no account section, so no synced account key survives locally; the
+    // device's own login does (logout is per device, ruling 2026-09-25).
+    expect(merged.account).toEqual({ accountServer: 'https://eu.rediacc.com' });
+  });
+
+  it("keeps this device's login over the pulled copy's, absence included", () => {
+    const withLogin = {
+      ...pulled,
+      account: {
+        userEmail: 'ops@example.com',
+        accountServer: 'https://us.other',
+        e2ePublicKey: 'K',
+      },
+    } as RdcConfig;
+    expect(mergeRemoteIntoCache(local, withLogin, 5).account).toEqual({
+      userEmail: 'ops@example.com',
+      accountServer: 'https://eu.rediacc.com',
+    });
+    // A device that logged out keeps no login, whatever the pull carries.
+    const loggedOut = { ...local, account: { userEmail: 'me@example.com' } } as RdcConfig;
+    expect(mergeRemoteIntoCache(loggedOut, withLogin, 5).account).toEqual({
+      userEmail: 'ops@example.com',
+    });
   });
 
   it('keeps the host-local renetPath, which the server copy never carries', () => {

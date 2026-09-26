@@ -142,6 +142,7 @@ function handoffPayload(configId?: string): HandoffPayload {
     wrappedCek: 'wrapped',
     storeId: STORE_ID,
     apiUrl: 'https://account.example.com',
+    handoffNonce: 'nonce-1',
     ...(configId ? { configId } : {}),
   };
 }

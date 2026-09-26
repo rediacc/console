@@ -523,14 +523,17 @@
           "description": "リモート接続状態を表示"
         },
         "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable",
-        "tokenIpMismatch": "このデバイスの設定トークンは別のネットワークアドレスに紐付いています。このデバイス用のトークンを取得するには、rdc config remote enable をもう一度実行してください。",
+        "tokenIpMismatch": "このデバイスの設定トークンは別のネットワークアドレスに紐付いています。このデバイス用のトークンを取得するには、\"rdc config remote enable\" をもう一度実行してください。",
         "tokenExhausted": "このデバイスの設定トークンは別のリクエストで既に使用済みです（使用のたびに更新されます）。再認証してください: rdc config remote enable",
         "tokenInvalid": "設定サーバーがこのデバイスの設定トークンを認識できません。再認証してください: rdc config remote enable",
         "tokenRejected": "設定サーバーがこのデバイスの設定トークンを拒否しました（{{reason}}）。再認証してください: rdc config remote enable",
         "undecryptableIdentity": "ストア {{storeId}} 内の設定 {{configId}} はあなたのスロットが持つキーとは異なるキーで暗号化されているため、このデバイスでは読み取れません。これはストアが別の登録による設定を既に保持している場合に発生します。既に登録済みのデバイスでその設定を取得し、意図した設定を確認するか、管理者にポータル（Config Storage > key slots）からこのデバイスにストアのキーを再共有してもらってください。",
         "undecryptableSession": "設定 {{configId}} はあなたのキーで復号されましたが、サーバーのセッション層が開けませんでした（{{detail}}）。コマンドを再試行してください。失敗が続く場合は次のコマンドで再登録してください: rdc config remote enable",
         "unreachable": "設定サーバー {{server}} に到達できません",
-        "writeFailedClosed": "保存できません: 設定 \"{{config}}\" は到達できない {{server}} に保存されています。変更は保存されませんでした。"
+        "writeFailedClosed": "保存できません: 設定 \"{{config}}\" は到達できない {{server}} に保存されています。変更は保存されませんでした。",
+        "teamForbidden": "設定 \"{{config}}\" は、このアカウントが所属していないチームのものであるため、設定サーバーに拒否されました。組織のオーナーまたは管理者に、このアカウントをそのチームへ追加するよう依頼してください。",
+        "teamForbiddenCachePurged": "このデバイスから設定 \"{{config}}\" のオフラインコピーを削除しました。これより前に作成されたコピーは回収されません。",
+        "teamNotFound": "設定 \"{{config}}\" が指すチーム {{team}} は、この組織のチームではありません。組織のチームを選び直すには、\"rdc config remote enable\" をもう一度実行してください。"
       },
       "rotateCek": {
         "cancelled": "ローテーションをキャンセルしました。何も変更されていません",

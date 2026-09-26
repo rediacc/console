@@ -523,14 +523,17 @@
           "description": "Kuva kaugühenduse olek"
         },
         "tokenExpired": "Kaugsalvestuse konfiguratsioonitõend on aegunud. Autentimine uuesti: rdc config remote enable",
-        "tokenIpMismatch": "Selle seadme konfiguratsioonitõend on seotud teise võrguaadressiga. Selle seadme jaoks tõendi saamiseks käivita uuesti rdc config remote enable.",
+        "tokenIpMismatch": "Selle seadme konfiguratsioonitõend on seotud teise võrguaadressiga. Selle seadme jaoks tõendi saamiseks käivita uuesti \"rdc config remote enable\".",
         "tokenExhausted": "Selle seadme konfiguratsioonitõend on juba teise päringu poolt ära kasutatud (see vahetub iga kasutusega). Autentimine uuesti: rdc config remote enable",
         "tokenInvalid": "Konfiguratsiooniserver ei tunne selle seadme konfiguratsioonitõendit ära. Autentimine uuesti: rdc config remote enable",
         "tokenRejected": "Konfiguratsiooniserver lükkas selle seadme konfiguratsioonitõendi tagasi ({{reason}}). Autentimine uuesti: rdc config remote enable",
         "undecryptableIdentity": "Konfiguratsioon {{configId}} hoidlas {{storeId}} on krüptitud teise võtmega, kui sinu pesa omab, seega see seade ei saa seda lugeda. See juhtub, kui hoidla sisaldab juba teisest registreerimisest pärit konfiguratsiooni. Tõmba see konfiguratsioon juba registreeritud seadmelt ja kontrolli, millist konfiguratsiooni silmas pidasid, või palu administraatoril jagada hoidla võti selle seadmega uuesti portaalist (Config Storage > key slots).",
         "undecryptableSession": "Konfiguratsioon {{configId}} avanes sinu võtmega, kuid serveri seansikiht ei tahtnud seda avada ({{detail}}). Proovi käsku uuesti; kui see ikka ebaõnnestub, registreeru uuesti käsuga: rdc config remote enable",
         "unreachable": "Konfiguratsiooniserver {{server}} pole kättesaadav",
-        "writeFailedClosed": "Salvestamine ebaõnnestus: konfiguratsioon \"{{config}}\" asub serveris {{server}}, mis pole kättesaadav. Muudatust EI salvestatud."
+        "writeFailedClosed": "Salvestamine ebaõnnestus: konfiguratsioon \"{{config}}\" asub serveris {{server}}, mis pole kättesaadav. Muudatust EI salvestatud.",
+        "teamForbidden": "Konfiguratsioon \"{{config}}\" kuulub meeskonnale, mille liige see konto ei ole, seega lükkas konfiguratsiooniserver selle tagasi. Palu organisatsiooni omanikul või administraatoril lisada see konto sellesse meeskonda.",
+        "teamForbiddenCachePurged": "Konfiguratsiooni \"{{config}}\" võrguühenduseta koopia eemaldati sellest seadmest. Varem tehtud koopiaid see tagasi ei too.",
+        "teamNotFound": "Konfiguratsioon \"{{config}}\" viitab meeskonnale {{team}}, mis ei kuulu sellesse organisatsiooni. Organisatsiooni meeskonna valimiseks käivita uuesti \"rdc config remote enable\"."
       },
       "rotateCek": {
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",

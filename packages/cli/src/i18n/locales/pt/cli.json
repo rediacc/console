@@ -523,14 +523,17 @@
           "description": "Mostrar o estado da ligação remota"
         },
         "tokenExpired": "O token de configuração remota expirou. Autentique-se novamente com: rdc config remote enable",
-        "tokenIpMismatch": "O token de configuração deste dispositivo está vinculado a outro endereço de rede. Execute rdc config remote enable novamente para obter um token para este dispositivo.",
+        "tokenIpMismatch": "O token de configuração deste dispositivo está vinculado a outro endereço de rede. Execute \"rdc config remote enable\" novamente para obter um token para este dispositivo.",
         "tokenExhausted": "O token de configuração deste dispositivo já foi consumido por outra requisição (ele muda a cada uso). Autentique-se novamente com: rdc config remote enable",
         "tokenInvalid": "O servidor de configuração não reconhece o token de configuração deste dispositivo. Autentique-se novamente com: rdc config remote enable",
         "tokenRejected": "O servidor de configuração recusou o token de configuração deste dispositivo ({{reason}}). Autentique-se novamente com: rdc config remote enable",
         "undecryptableIdentity": "A config {{configId}} no armazenamento {{storeId}} foi encriptada com uma chave diferente da que o seu slot possui, por isso este dispositivo não a consegue ler. Isto acontece quando o armazenamento já contém uma config de outra inscrição. Obtenha essa config num dispositivo já inscrito e verifique a que config se referia, ou peça a um administrador para voltar a partilhar a chave do armazenamento com este dispositivo a partir do portal (Config Storage > key slots).",
         "undecryptableSession": "A config {{configId}} foi desbloqueada com a sua chave, mas a camada de sessão do servidor recusou-se a abri-la ({{detail}}). Repita o comando; se continuar a falhar, volte a inscrever-se com: rdc config remote enable",
         "unreachable": "O servidor de configuração {{server}} está inacessível",
-        "writeFailedClosed": "Não é possível guardar: a configuração \"{{config}}\" está armazenada em {{server}}, que está inacessível. A alteração NÃO foi guardada."
+        "writeFailedClosed": "Não é possível guardar: a configuração \"{{config}}\" está armazenada em {{server}}, que está inacessível. A alteração NÃO foi guardada.",
+        "teamForbidden": "A configuração \"{{config}}\" pertence a uma equipa da qual esta conta não é membro, por isso o servidor de configuração recusou-a. Peça ao proprietário ou a um administrador da organização que adicione esta conta a essa equipa.",
+        "teamForbiddenCachePurged": "A cópia offline da configuração \"{{config}}\" foi removida deste dispositivo. As cópias feitas antes não são recuperadas.",
+        "teamNotFound": "A configuração \"{{config}}\" aponta para a equipa {{team}}, que não pertence a esta organização. Execute \"rdc config remote enable\" novamente para escolher uma equipa da organização."
       },
       "rotateCek": {
         "cancelled": "Rotação cancelada. Nada foi alterado.",
