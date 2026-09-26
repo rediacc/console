@@ -557,6 +557,12 @@ def unresolved(root, kind, token):
             "so a reader knows where to look; (c) a typo"
         )
     ok, why = R.resolve(root, kind, token)
+    if ok and kind == "fileline" and is_gitignored(root, token.split(":", 1)[0]):
+        return True, (
+            "is gitignored, so it resolves in this checkout and in no clean clone or CI run. "
+            "A plan outlives the cache it was written beside; cite a tracked file, or describe "
+            "the local one in prose"
+        )
     if ok:
         return False, why
     if kind == "fileline":
@@ -571,6 +577,39 @@ def unresolved(root, kind, token):
                     "follow it" % (sub, head)
                 )
     return True, why
+
+
+def is_gitignored(root, rel):
+    """True when `rel` is ignored by git, in the console or inside the submodule that holds it.
+
+    A citation into `.ci/cache/` resolved on the machine that wrote it and failed in every clean clone: this
+    gate tested existence on disk, which an ignored file has only where it was made (PLAN-cloudflare-proxy.md,
+    2026-09-26). `git check-ignore` exits 0 for ignored, 1 for not ignored, and 128 for a path inside a
+    submodule, which is then asked of that submodule.
+    """
+    r = subprocess.run(
+        ["git", "-C", str(root), "check-ignore", "-q", "--", rel], capture_output=True, check=False
+    )
+    if r.returncode != 128:
+        return r.returncode == 0
+    for sub in submodule_paths(root):
+        prefix = sub.rstrip("/") + "/"
+        if rel.startswith(prefix):
+            r = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(pathlib.Path(root) / sub),
+                    "check-ignore",
+                    "-q",
+                    "--",
+                    rel[len(prefix) :],
+                ],
+                capture_output=True,
+                check=False,
+            )
+            return r.returncode == 0
+    return False
 
 
 def absent_submodules(root):
@@ -719,6 +758,14 @@ def selftest(root):
         )
     else:
         ck("the ancestry control could build an orphan to test with", False)
+
+    # A GITIGNORED PATH resolves only where it was made. `git check-ignore` needs no file on disk, so the control
+    # plants nothing in the tree (2026-09-26: PLAN-cloudflare-proxy.md cited `.ci/cache/...` and passed only locally).
+    ck(
+        "a citation into a gitignored path is reported (it exists in no clean clone)",
+        is_gitignored(root, ".ci/cache/plan-citations-control-zzz.md"),
+    )
+    ck("CONTROL: a tracked path is not gitignored", not is_gitignored(root, "package.json"))
 
     blob = _git("rev-parse", "HEAD:package.json").strip()
     ck(
