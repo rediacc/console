@@ -250,6 +250,18 @@ def _twin_source() -> str:
     return TWIN.read_text(encoding="utf-8")
 
 
+def _twin_line(needle: str) -> int:
+    """The 1-based line of the twin's only line starting with `needle`, as bash's own diagnostics number it.
+
+    READ FROM THE TWIN, NOT HARD-CODED: c8f92eaa0 added `require_cmd curl` above both lines and a literal `line 36` / `line 48` went red on an unchanged behaviour.
+    """
+    hits = [
+        n for n, line in enumerate(_twin_source().splitlines(), start=1) if line.startswith(needle)
+    ]
+    assert len(hits) == 1, (needle, hits)
+    return hits[0]
+
+
 def test_the_copied_twin_is_the_real_twin(tmp_path: pathlib.Path) -> None:
     """THE COPY IS THE SUBJECT, so a stale copy would silently pass everything."""
     root = _fixture_root(tmp_path)
@@ -380,7 +392,7 @@ def test_a_missing_token_refuses_before_the_build(tmp_path: pathlib.Path) -> Non
     assert old.returncode == 1
     assert new.returncode == 1
     assert old.stderr.endswith(port.MISSING_TOKEN + "\n")
-    assert ": line 36: " in old.stderr
+    assert ": line %d: " % _twin_line(': "${CLOUDFLARE_API_TOKEN:?') in old.stderr
     assert new.stderr == port.MISSING_TOKEN + "\n"
     assert old.stdout == new.stdout == ""
     assert old_calls == new_calls == "", "nothing may be built before the token is checked"
@@ -409,7 +421,7 @@ def test_the_account_id_is_documented_and_never_checked(tmp_path: pathlib.Path) 
 
 
 def test_the_build_runs_before_the_directory_is_checked(tmp_path: pathlib.Path) -> None:
-    """DEFECT, REPRODUCED NOT FIXED. There is no guard on `workers/proxy` (:48), unlike the `-f` checks both siblings do FIRST, so a missing worker directory costs a full CLI build before bash's own `cd` diagnostic ends the run.
+    """DEFECT, REPRODUCED NOT FIXED. There is no guard on `workers/proxy` (the twin's `cd "$WORKER_DIR"`), unlike the `-f` checks both siblings do FIRST, so a missing worker directory costs a full CLI build before bash's own `cd` diagnostic ends the run.
 
     The divergence in that diagnostic is the usual one: bash prefixes it with the script path and a line number."""
     root = _fixture_root(tmp_path, worker="absent")
@@ -420,7 +432,7 @@ def test_the_build_runs_before_the_directory_is_checked(tmp_path: pathlib.Path) 
     assert new_calls == old_calls
     tail = port.cd_failed(root / "workers" / "proxy", "No such file or directory")
     assert old.stderr.endswith(tail + "\n")
-    assert ": line 48: " in old.stderr
+    assert ": line %d: " % _twin_line('cd "$WORKER_DIR"') in old.stderr
     assert new.stderr.endswith(tail + "\n")
     assert port.THE_BUILD_RUNS_BEFORE_THE_DIRECTORY_IS_CHECKED
 

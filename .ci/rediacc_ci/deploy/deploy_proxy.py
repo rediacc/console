@@ -7,9 +7,9 @@ in the loop until it has run in front of real traffic. CI drives the `--dry-run`
 IT IS THE ODD ONE OUT OF THE THREE DEPLOY SCRIPTS, in four ways that all matter to a caller:
 
   * IT BUILDS FIRST, AND THE BUILD IS TWO `npm run build --workspace` RUNS FROM
-    THE REPO ROOT (:44-46), before it has looked at the worker directory at all.
+    THE REPO ROOT (:46-48), before it has looked at the worker directory at all.
   * IT NEVER CHECKS THAT `workers/proxy` EXISTS. There is no `-f`/`-d` guard
-    like the other two have; `cd "$WORKER_DIR"` (:48) simply fails, AFTER the
+    like the other two have; `cd "$WORKER_DIR"` (:50) simply fails, AFTER the
     full CLI build has run. See `THE_BUILD_RUNS_BEFORE_THE_DIRECTORY_IS_CHECKED`.
   * IT DEMANDS ONLY THE TOKEN. `CLOUDFLARE_ACCOUNT_ID` is named as required in
     the twin's own header (:22) and is never checked anywhere in the file. See
@@ -22,7 +22,7 @@ NOTHING HERE REACHES CLOUDFLARE, AND NOTHING BUILDS, IN A TEST. `npm` and `npx` 
 
 TWO DIVERGENCES IN TEXT NOBODY PARSES, both bash's own diagnostics:
 
-  1. `: "${CLOUDFLARE_API_TOKEN:?...}"` (:36) prints the SCRIPT PATH AS INVOKED
+  1. `: "${CLOUDFLARE_API_TOKEN:?...}"` (:38) prints the SCRIPT PATH AS INVOKED
      and a bash LINE NUMBER before the message:
 
          .ci/scripts/deploy/deploy-proxy.sh: line 29: CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN is required (use a scoped token, never the global API key)
@@ -30,7 +30,7 @@ TWO DIVERGENCES IN TEXT NOBODY PARSES, both bash's own diagnostics:
      Note the doubled name, exactly as in `set-www-worker-secrets.sh`: the
      twin's own message begins with the variable name, so bash says it twice.
      `MISSING_TOKEN` carries the `VAR: message` half, same stream, same exit 1.
-  2. A failed `cd` (:48) is bash's message with the same path-and-line prefix.
+  2. A failed `cd` (:50) is bash's message with the same path-and-line prefix.
      `CD_FAILED` carries the `cd: <dir>: No such file or directory` half, same
      stream, same exit 1.
 
@@ -67,26 +67,26 @@ MISSING_TOKEN = (
     "(use a scoped token, never the global API key)"
 )
 
-# `$REPO_ROOT/workers/proxy` (:32).
+# `$REPO_ROOT/workers/proxy` (:34).
 WORKER_SUBDIR = ("workers", "proxy")
 
-# `REGION="${ARG_REGION:-eu}"` (:33). READ AND PRINTED, NEVER PASSED ON: it
-# appears in exactly one log line (:62) and in no argv, because the region for the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A caller passing `--region us` therefore gets a message saying `us` and a deploy of whatever the config names. Reproduced; the differential pins it by comparing the recorded `npx` argv across regions.
+# `REGION="${ARG_REGION:-eu}"` (:35). READ AND PRINTED, NEVER PASSED ON: it
+# appears in exactly one log line (:64) and in no argv, because the region for the proxy lives in `workers/proxy/wrangler.toml` rather than in a flag. A caller passing `--region us` therefore gets a message saying `us` and a deploy of whatever the config names. Reproduced; the differential pins it by comparing the recorded `npx` argv across regions.
 DEFAULT_REGION = "eu"
 
-# `DRY_RUN="${ARG_DRY_RUN:-false}"` (:34) and the one value that branches (:50).
+# `DRY_RUN="${ARG_DRY_RUN:-false}"` (:36) and the one value that branches (:52).
 # The comparison is against the literal `true`, which is also what a bare `--dry-run` with no value produces through `parse_args`. Anything else -- `1`, `yes`, `True` -- IS A REAL DEPLOY.
 TRUE = "true"
 DEFAULT_DRY_RUN = "false"
 
-# `--outdir /tmp/rediacc-proxy-dry-run` (:52). A FIXED path in /tmp, not a mktemp: two concurrent dry runs write the same directory, and so does anything
+# `--outdir /tmp/rediacc-proxy-dry-run` (:54). A FIXED path in /tmp, not a mktemp: two concurrent dry runs write the same directory, and so does anything
 # else that picks the name. Reproduced as the literal it is.
 DRY_RUN_OUTDIR = "/tmp/rediacc-proxy-dry-run"
 
-# The two workspace builds (:45-46), in order.
+# The two workspace builds (:47-48), in order.
 WORKSPACES = ("@rediacc/shared", "@rediacc/cli")
 
-# The three closing lines (:79-81), byte for byte including the two-space indent on the middle one. They go through `log_info`, so each gets the green check glyph -- including the one that is a command to copy, which is why they are quoted here whole rather than assembled.
+# The three closing lines (:81-83), byte for byte including the two-space indent on the middle one. They go through `log_info`, so each gets the green check glyph -- including the one that is a command to copy, which is why they are quoted here whole rather than assembled.
 CLOSING_LINES = (
     "Deployed. The executor still needs its own account token:",
     "  npx wrangler secret put EXECUTOR_TOKEN --config workers/proxy/wrangler.toml",
@@ -120,17 +120,17 @@ THE_ACCOUNT_ID_IS_DOCUMENTED_AND_UNCHECKED = True
 
 
 def build_argv(workspace: str) -> list[str]:
-    """`npm run build --workspace <name>` (:45-46)."""
+    """`npm run build --workspace <name>` (:47-48)."""
     return ["npm", "run", "build", "--workspace", workspace]
 
 
 def dry_run_argv() -> list[str]:
-    """`npx wrangler deploy --dry-run --outdir /tmp/rediacc-proxy-dry-run` (:52)."""
+    """`npx wrangler deploy --dry-run --outdir /tmp/rediacc-proxy-dry-run` (:54)."""
     return ["npx", "wrangler", "deploy", "--dry-run", "--outdir", DRY_RUN_OUTDIR]
 
 
 def deploy_argv() -> list[str]:
-    """`npx wrangler deploy` (:63). NO `--config`, unlike both siblings."""
+    """`npx wrangler deploy` (:65). NO `--config`, unlike both siblings."""
     return ["npx", "wrangler", "deploy"]
 
 
@@ -207,7 +207,7 @@ def build_and_stage_renet(repo_root: pathlib.Path, worker_dir: pathlib.Path) -> 
 
 
 def cd_failed(worker_dir: pathlib.Path, reason: str) -> str:
-    """Bash's own `cd` diagnostic (:48), minus its path-and-line prefix.
+    """Bash's own `cd` diagnostic (:50), minus its path-and-line prefix.
 
     The REASON comes from the operating system rather than from a literal, because bash's does too: a `workers/proxy` that is a regular file reads "Not a directory", one without `+x` on a parent reads "Permission denied", and only an absent one reads "No such file or directory". `os.strerror` produces the same three strings from the same three errnos.
     """

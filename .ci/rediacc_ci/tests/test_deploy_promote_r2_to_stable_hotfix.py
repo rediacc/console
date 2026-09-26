@@ -873,6 +873,80 @@ def test_mutation_control_a_cp_recursive_download_refetches_everything(tmp_path)
     assert set(gets.values()) == {2}, gets
 
 
+# --------------------------------------------------------------------------- The transfer plan is the twin's ---------------------------------------------------------------------------
+
+# PRODUCTION'S SHAPE, which the default fixture lacks: every `<dir>/stable/` already holds the release history (on 2026-09-25 about 67 GB across the five trees, a ~400 MB package per old version). A download prefix wider than `<dir>/edge/` would fetch that history too, and the default fixture has nothing outside `edge/` for it to find.
+HISTORY_KEYS = tuple("%s/stable/history-0.0.1.pkg" % d for d in port.CHANNEL_DIRS)
+HISTORY_BUCKET = {**DEFAULT_BUCKET, **dict.fromkeys(HISTORY_KEYS, "old release bytes\n")}
+
+# The only non-edge objects the twin fetches: the four channel pointers its rewrite loops download back out of `stable/`.
+POINTER_KEYS = tuple(
+    "%s/%s" % (port.BUCKET, key) for key in (*port.CONFIG_FILES, *port.INSTALL_FILES)
+)
+
+
+def _transfer_plan(tmp_path, *, widen: bool = False):
+    """Both sides against the history bucket, returning (old, new, old_gets, new_gets, old_puts, new_puts).
+
+    `widen` plants the regression this pins: the stage download reading `<dir>/` instead of `<dir>/edge/`.
+    """
+    root = fixture(tmp_path, HISTORY_BUCKET)
+    if widen:
+        target = root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name
+        source = target.read_text(encoding="utf-8")
+        plant = source.replace(
+            '"s3://%s/%s/edge/" % (BUCKET, dir_name)', '"s3://%s/%s/" % (BUCKET, dir_name)', 1
+        )
+        assert plant != source, "the plant did not apply; the control is broken, not the test"
+        target.write_text(plant, encoding="utf-8")
+    old_log, new_log = root / "old-gets.log", root / "new-gets.log"
+    old, old_calls = _run(root, "old", FAKE_GET_LOG=str(old_log))
+    new, new_calls = _run(root, "new", PROMOTE_RETRY_DELAY_S="0", FAKE_GET_LOG=str(new_log))
+    bucket = port.BUCKET + "/"
+    return (
+        old,
+        new,
+        _gets(old_log, bucket),
+        _gets(new_log, bucket),
+        sorted(key for key, _ in _uploads(old_calls)),
+        sorted(key for key, _ in _uploads(new_calls)),
+    )
+
+
+def _per_tree(gets: dict[str, int]) -> dict[str, dict[str, int]]:
+    """The fetch counts grouped by channel directory, so a failure names the tree that moved more."""
+    trees: dict[str, dict[str, int]] = {d: {} for d in port.CHANNEL_DIRS}
+    for key, count in gets.items():
+        trees[key.split("/")[1]][key] = count
+    return trees
+
+
+def test_the_port_fetches_and_uploads_exactly_what_the_twin_does(tmp_path) -> None:
+    """THE 2026-09-25 QUESTION: does the port move more than the bash twin? Per tree, the same objects, each fetched once, and the same uploads.
+
+    Both sides stage `<dir>/edge/` and nothing else, plus the four pointers the rewrite loops read back. The live runs took hours on BOTH sides (the twin 4h12m on 2026-09-24) because that tree is the whole release history, not because the port reads more of it.
+    """
+    old, new, old_gets, new_gets, old_puts, new_puts = _transfer_plan(tmp_path)
+    assert old.returncode == 0, old.stderr
+    assert new.returncode == 0, new.stderr
+    assert _per_tree(new_gets) == _per_tree(old_gets)
+    edge = {"%s/%s" % (port.BUCKET, key) for key in DEFAULT_BUCKET if "/edge/" in key}
+    assert set(old_gets) == edge | set(POINTER_KEYS), sorted(
+        set(old_gets) ^ (edge | set(POINTER_KEYS))
+    )
+    assert set(old_gets.values()) == {1}, old_gets
+    assert not any(key.endswith(HISTORY_KEYS) for key in new_gets), new_gets
+    assert new_puts == old_puts
+
+
+def test_mutation_control_a_widened_download_prefix_is_caught(tmp_path) -> None:
+    """PROVE THE TEST ABOVE CAN FAIL: a stage download of `<dir>/` fetches `<dir>/stable/` history the twin never reads."""
+    _old, _new, old_gets, new_gets, _old_puts, _new_puts = _transfer_plan(tmp_path, widen=True)
+    assert _per_tree(new_gets) != _per_tree(old_gets)
+    assert "%s/cli/stable/history-0.0.1.pkg" % port.BUCKET in new_gets, new_gets
+    assert not any(key.endswith(HISTORY_KEYS) for key in old_gets), old_gets
+
+
 # --------------------------------------------------------------------------- The planted defect ---------------------------------------------------------------------------
 
 
