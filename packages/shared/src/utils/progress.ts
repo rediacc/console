@@ -62,10 +62,13 @@ export function extractMostRecentProgress(output: string): number | null {
   return Math.min(100, Math.max(0, lastPercentage));
 }
 
+// ESC is built rather than written into the literal: no-control-regex refuses a control character in a regex.
+const ANSI_SGR = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;]*m`, 'g');
+
 /** Clean message by removing ANSI codes and emojis */
 function cleanProgressMessage(message: string): string {
   return message
-    .replaceAll(/\x1b\[[0-9;]*m/g, '')
+    .replaceAll(ANSI_SGR, '')
     .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
     .trim();
 }

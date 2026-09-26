@@ -36,7 +36,7 @@
 
 import path from 'node:path';
 
-import type { DocumentNode, Node as MomoaNode } from '@humanwhocodes/momoa';
+import type { DocumentNode } from '@humanwhocodes/momoa';
 import { parse as momoaParse } from '@humanwhocodes/momoa';
 import { parseSync, visitorKeys as jsVisitorKeys } from 'oxc-parser';
 

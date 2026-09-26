@@ -154,7 +154,7 @@ async function spkiDigest(spki: Uint8Array): Promise<Uint8Array> {
 }
 
 function toBase64Url(bytes: Uint8Array): string {
-  return toBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return toBase64(bytes).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 }
 
 /** base64url (no padding) of SHA-256(spki): always 43 characters. */

@@ -150,7 +150,7 @@ describe('config push payload', () => {
       datastoreSize: '90%',
       pruneGraceDays: 7,
     };
-    const config = { ...sampleConfig(), account, defaults } as RdcConfig;
+    const config: RdcConfig = { ...sampleConfig(), account, defaults };
     const { cek, sdkDerived } = await keys();
 
     const payload = await buildConfigPushPayload(config, {

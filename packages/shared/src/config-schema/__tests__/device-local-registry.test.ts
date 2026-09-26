@@ -67,10 +67,7 @@ function everyKeyPopulated(): Record<string, unknown> {
 function roundTrip(doc: Record<string, unknown>): Record<string, unknown> {
   const full = toFullConfig(doc as unknown as RdcConfig, { version: 6, sdkEpoch: 1 });
   // The blob is JSON: whatever cannot survive serialization does not sync.
-  return fullConfigToRdcConfig(JSON.parse(JSON.stringify(full))) as unknown as Record<
-    string,
-    unknown
-  >;
+  return fullConfigToRdcConfig(JSON.parse(JSON.stringify(full)));
 }
 
 /** Every pointer of the populated document, one level into the expanded roots. */

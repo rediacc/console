@@ -89,11 +89,13 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /** Remove the value at a one- or two-segment pointer, cloning the parent it edits. */
 function omitPointer(doc: Record<string, unknown>, pointer: string): void {
-  const [root, child] = pointer.split('/').slice(1);
-  if (child === undefined) {
+  const segments = pointer.split('/').slice(1);
+  const root = segments[0];
+  if (segments.length === 1) {
     delete doc[root];
     return;
   }
+  const child = segments[1];
   const parent = doc[root];
   if (!isPlainObject(parent) || !(child in parent)) return;
   const rest = { ...parent };

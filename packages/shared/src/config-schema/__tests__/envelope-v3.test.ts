@@ -43,7 +43,7 @@ function doc(machines: Record<string, { ip: string; user: string }>): RdcConfig 
     version: 1,
     resources: { machines, repositories: {}, storages: {} },
     credentials: { ssh: { privateKey: 'PRIVATE-KEY-BYTES', publicKey: 'ssh-ed25519 AAA' } },
-  } as RdcConfig;
+  };
 }
 
 const BOTH = {
@@ -156,7 +156,7 @@ describe('envelope v3: the AAD binding (F1)', () => {
   ])('refuses an envelope whose %s the server edited', async (_label, edit) => {
     const k = await keys();
     const payload = await push(doc(BOTH), k);
-    const tampered = { ...payload, envelope: edit(payload) } as EncryptedConfigPayload;
+    const tampered: EncryptedConfigPayload = { ...payload, envelope: edit(payload) };
     await expect(open(tampered, k)).rejects.toBeInstanceOf(ConfigIntegrityError);
   });
 
