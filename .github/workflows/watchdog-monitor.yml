@@ -168,6 +168,16 @@ jobs:
           # job once triggered.
           WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation,Migration Test'
           WATCHDOG_WAIT_PATTERNS: 'Migration Test'
+          # CI time budget (operator spec W, P1: measurement and report-only, no
+          # behaviour change). MODE STAYS 'report' here: nothing calls
+          # force-cancel over a budget violation yet, only evaluateBudget's
+          # 'enforce' branch exists for a later phase to opt into deliberately
+          # (D-W5). Violations are warned, written to the step summary and
+          # uploaded as JSON by the step below.
+          WATCHDOG_BUDGET_MODE: 'report'
+          WATCHDOG_JOB_BUDGET_MIN: '15'
+          WATCHDOG_RUN_BUDGET_MIN: '20'
+          WATCHDOG_BUDGET_DIR: ${{ runner.temp }}/watchdog-budget
           # Where the monitor writes failed jobs' COMPLETE logs before anything
           # reruns them. A rerun makes attempt 1's logs unreachable, so without
           # this the evidence for "real break or flake?" is destroyed by the
@@ -224,6 +234,20 @@ jobs:
         with:
           name: watchdog-logs-${{ inputs.target_run_id }}-gen${{ inputs.generation }}
           path: ${{ runner.temp }}/watchdog-logs/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # Same shape as the log-capture step above: most generations see no
+      # violation and write nothing, which is not an error, and this must
+      # survive a red monitor step too. T1.1's budget_report reads these
+      # across runs; a human reads the step summary the monitor step already
+      # wrote for THIS run.
+      - name: Preserve CI budget report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: ci-budget-${{ inputs.target_run_id }}-gen${{ inputs.generation }}
+          path: ${{ runner.temp }}/watchdog-budget/
           if-no-files-found: ignore
           retention-days: 14
 

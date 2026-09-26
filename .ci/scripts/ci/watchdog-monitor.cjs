@@ -295,6 +295,87 @@ function evaluateRetryEligibility({
 }
 
 /**
+ * Job-level and run-level CI TIME BUDGET violations (operator spec W: every
+ * CI job finishes in 15 minutes or less, the whole pipeline in 20 minutes or
+ * less). Meant to be called every poll, right after the job fetch, exactly
+ * like the other `evaluate*` functions in this file.
+ *
+ * REPORT-ONLY BY CONSTRUCTION, NOT BY CALLER DISCIPLINE. `forceCancelRequested`
+ * is the one output a caller could act on, and it can only be true when
+ * `mode: 'enforce'` is passed explicitly -- the default, and the only mode
+ * the workflow sets today (`WATCHDOG_BUDGET_MODE: report`, T1.3), does not
+ * produce it. That mirrors evaluateCancelExemption's own shape: the
+ * destructive action requires a positive, explicit signal, and everything
+ * else fails toward not acting.
+ *
+ * JOB CLOCK. `now - started_at` for a job still running, so a slow leg is
+ * caught while it is still slow. `completed_at - started_at` for one that
+ * has already finished BETWEEN POLLS -- the poll that would have caught it
+ * live can land after it completes, and a job that blew its budget and then
+ * finished must still be reported, not missed because nobody was watching
+ * at the right instant.
+ *
+ * RUN CLOCK. `now - run.run_started_at`. GitHub resets `run_started_at` to
+ * the CURRENT ATTEMPT's own start on every rerun, so a rerun gets a fresh
+ * clock for free -- no attempt-tracking of this function's own is needed,
+ * the same "a rerun starts a fresh clock" shape the chain header already
+ * documents for the watchdog as a whole.
+ *
+ * EXCLUDED jobs (WATCHDOG_EXCLUDE_PATTERNS: Watchdog, CI Complete, Review
+ * Complete) never violate: they are aggregators and observers, not budgeted
+ * work, and without this the watchdog's own chain generations would budget-
+ * flag themselves.
+ *
+ * Pure, like every other `evaluate*` here: nothing is fetched, warned or
+ * cancelled. The call site does all three.
+ */
+function evaluateBudget({
+  jobs,
+  run,
+  nowMs,
+  jobBudgetMin,
+  runBudgetMin,
+  excludePatterns = [],
+  mode = 'report',
+}) {
+  const minutesElapsed = (job) => {
+    if (!job.started_at) return null;
+    const startMs = new Date(job.started_at).getTime();
+    const endMs =
+      job.status === 'completed' && job.completed_at ? new Date(job.completed_at).getTime() : nowMs;
+    return (endMs - startMs) / 60000;
+  };
+
+  const jobViolations = [];
+  const hasJobBudget = jobBudgetMin !== null && jobBudgetMin !== undefined;
+  if (hasJobBudget) {
+    for (const job of jobs || []) {
+      if (matchesPatterns(job.name, excludePatterns)) continue;
+      const minutes = minutesElapsed(job);
+      if (minutes !== null && minutes > jobBudgetMin) {
+        jobViolations.push({ name: job.name, minutes, budgetMin: jobBudgetMin });
+      }
+    }
+  }
+
+  let runViolation = null;
+  if (run && run.run_started_at && runBudgetMin !== null && runBudgetMin !== undefined) {
+    const minutes = (nowMs - new Date(run.run_started_at).getTime()) / 60000;
+    if (minutes > runBudgetMin) {
+      runViolation = { minutes, budgetMin: runBudgetMin };
+    }
+  }
+
+  const hasViolation = jobViolations.length > 0 || runViolation !== null;
+  return {
+    jobViolations,
+    runViolation,
+    hasViolation,
+    forceCancelRequested: mode === 'enforce' && hasViolation,
+  };
+}
+
+/**
  * Which no-retry jobs are still in flight?
  *
  * WHY THIS EXISTS. A failed `Quality / *` job used to force-cancel the run the
@@ -495,6 +576,86 @@ const monitor = async ({ github, context, core }) => {
   const retryAllowlistPatterns = process.env.WATCHDOG_RETRY_ALLOWLIST_PATTERNS.split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+
+  // CI time budget (operator spec W, T1.2/T1.3, see evaluateBudget). Every knob is optional so an un-migrated caller (the gate tests' own ad-hoc invocations, or a stripped-down env) sees no budget behaviour at all -- absent minutes disable that half of the check rather than defaulting to a number nobody chose here. BUDGET MODE STAYS 'report': nothing in this generation calls forceCancel over a budget violation; only evaluateBudget itself knows about 'enforce', for a later phase to opt into deliberately.
+  const budgetMode = process.env.WATCHDOG_BUDGET_MODE === 'enforce' ? 'enforce' : 'report';
+  const jobBudgetMin = process.env.WATCHDOG_JOB_BUDGET_MIN
+    ? Number(process.env.WATCHDOG_JOB_BUDGET_MIN)
+    : null;
+  const runBudgetMin = process.env.WATCHDOG_RUN_BUDGET_MIN
+    ? Number(process.env.WATCHDOG_RUN_BUDGET_MIN)
+    : null;
+  // Where the JSON violation report is written for the workflow to upload, same best-effort shape as WATCHDOG_LOG_CAPTURE_DIR: unset means no file, which is what ad-hoc/local invocations and the gate tests get.
+  const BUDGET_REPORT_DIR = process.env.WATCHDOG_BUDGET_DIR || '';
+  // Dedupe within this ONE generation: a fresh process (a later generation) re-warns, which is fine -- the annotation is meant to be visible on whichever generation happens to be open when someone looks.
+  const warnedBudgetJobs = new Set();
+  let warnedBudgetRun = false;
+  const budgetViolationLog = [];
+
+  function writeBudgetArtifact() {
+    if (!BUDGET_REPORT_DIR || budgetViolationLog.length === 0) return;
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      fs.mkdirSync(BUDGET_REPORT_DIR, { recursive: true });
+      fs.writeFileSync(
+        path.join(BUDGET_REPORT_DIR, 'budget-violations.json'),
+        JSON.stringify(
+          { mode: budgetMode, jobBudgetMin, runBudgetMin, violations: budgetViolationLog },
+          null,
+          2
+        )
+      );
+    } catch (e) {
+      console.log(`[budget] could not write the budget artifact: ${e.message}`);
+    }
+  }
+
+  // Record and surface newly-seen violations from one evaluateBudget() call. `core.warning` is per-job/per-run so a human scanning the run's annotations sees each offender once; the step summary and the uploaded JSON both accumulate the full log seen so far this generation.
+  function reportBudget(budget) {
+    let sawNew = false;
+    for (const v of budget.jobViolations) {
+      if (warnedBudgetJobs.has(v.name)) continue;
+      warnedBudgetJobs.add(v.name);
+      sawNew = true;
+      budgetViolationLog.push({
+        kind: 'job',
+        name: v.name,
+        minutes: Number(v.minutes.toFixed(1)),
+        budgetMin: v.budgetMin,
+      });
+      core.warning(
+        `CI BUDGET VIOLATION (report-only): '${v.name}' at ${v.minutes.toFixed(1)}m, budget ${v.budgetMin}m`
+      );
+    }
+    if (budget.runViolation && !warnedBudgetRun) {
+      warnedBudgetRun = true;
+      sawNew = true;
+      budgetViolationLog.push({
+        kind: 'run',
+        name: 'whole pipeline',
+        minutes: Number(budget.runViolation.minutes.toFixed(1)),
+        budgetMin: budget.runViolation.budgetMin,
+      });
+      core.warning(
+        `CI BUDGET VIOLATION (report-only): 'whole pipeline' at ${budget.runViolation.minutes.toFixed(1)}m, budget ${budget.runViolation.budgetMin}m`
+      );
+    }
+    if (!sawNew) return;
+    try {
+      const rows = budgetViolationLog
+        .map((v) => `| ${v.name} | ${v.minutes}m | ${v.budgetMin}m |`)
+        .join('\n');
+      core.summary
+        .addRaw(
+          `### CI time budget violations (report-only)\n\n| Job | Elapsed | Budget |\n| --- | --- | --- |\n${rows}\n`
+        )
+        .write();
+    } catch (e) {
+      console.log(`[budget] could not write the step summary (${e.message}).`);
+    }
+    writeBudgetArtifact();
+  }
 
   // Track jobs already handled to avoid re-logging the same failure every poll
   const handledJobs = new Set();
@@ -1042,7 +1203,7 @@ const monitor = async ({ github, context, core }) => {
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
   // Loop-invariant: parse env var once. Cancelled jobs with elapsed runtime at or above this threshold are treated as "stuck" (likely hit their declared timeout-minutes) and bypass the AI / retry path -- a hung job will hang again on retry.
-  const STUCK_THRESHOLD_MIN = parseInt(process.env.STUCK_THRESHOLD_MIN || '60', 10);
+  const STUCK_THRESHOLD_MIN = Number.parseInt(process.env.STUCK_THRESHOLD_MIN || '60', 10);
   const jobElapsedMin = (j) => {
     if (!j.started_at || !j.completed_at) return 0;
     return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
@@ -1097,6 +1258,21 @@ const monitor = async ({ github, context, core }) => {
       console.log(`[${elapsedMin}m] API error (will retry next poll): ${e.message}`);
       await new Promise((resolve) => setTimeout(resolve, pollInterval));
       continue;
+    }
+
+    // Budget check, right after the job fetch and before anything else reads `allJobs` -- evaluateBudget already excludes WATCHDOG_EXCLUDE_PATTERNS itself, so this runs on the unfiltered list. A no-op (both minutes null) when the workflow has not set either budget env var.
+    if (jobBudgetMin !== null || runBudgetMin !== null) {
+      reportBudget(
+        evaluateBudget({
+          jobs: allJobs,
+          run,
+          nowMs: Date.now(),
+          jobBudgetMin,
+          runBudgetMin,
+          excludePatterns,
+          mode: budgetMode,
+        })
+      );
     }
 
     // Filter out excluded jobs
@@ -1334,13 +1510,7 @@ const monitor = async ({ github, context, core }) => {
           );
         }
 
-        if (!eligibility.retry) {
-          console.log(
-            `[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`
-          );
-          console.log(`No retry: ${eligibility.reason}`);
-          if (await forceCancel(failureMsg)) return;
-        } else {
+        if (eligibility.retry) {
           console.log(
             `[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`
           );
@@ -1369,6 +1539,12 @@ const monitor = async ({ github, context, core }) => {
             targetRunId
           );
           // DON'T return -- keep monitoring until completion, then rerun below.
+        } else {
+          console.log(
+            `[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`
+          );
+          console.log(`No retry: ${eligibility.reason}`);
+          if (await forceCancel(failureMsg)) return;
         }
       }
     }
@@ -1440,3 +1616,4 @@ module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
 module.exports.evaluateSupersession = evaluateSupersession;
+module.exports.evaluateBudget = evaluateBudget;

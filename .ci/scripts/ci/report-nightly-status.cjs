@@ -80,6 +80,7 @@ const report = async ({ github, context, core }) => {
 
   // Red. Name the jobs, because "the nightly failed" is not actionable and the run link alone means opening a 90-job run to find the two that matter.
   let failedList = '_(could not read the job list)_';
+  let budgetSection = '';
   try {
     const page = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
       owner,
@@ -99,6 +100,44 @@ const report = async ({ github, context, core }) => {
         : [];
 
     const usable = jobs.filter((j) => j && typeof j.conclusion !== 'undefined');
+
+    // CI time budget violations (T1.5). The watchdog's own budget mode is REPORT-ONLY and the nightly is CANCEL-EXEMPT by construction (evaluateCancelExemption, CANCEL_EXEMPT_EVENTS at watchdog-monitor.cjs:54) -- nothing else surfaces an over-budget scheduled run, which is exactly the class of silence report-nightly-status.cjs already exists to close for a red conclusion. Reuses the job list already fetched above rather than a second API call. `context.payload.workflow_run.run_started_at` is the real webhook payload's field, absent from ad-hoc/local invocations and from this suite's own test harness, so an absent value simply skips the section rather than failing the whole report.
+    try {
+      const runStartedAt = context.payload?.workflow_run?.run_started_at;
+      if (runStartedAt) {
+        const { evaluateBudget } = require('./watchdog-monitor.cjs');
+        const updatedAt = context.payload?.workflow_run?.updated_at;
+        const budget = evaluateBudget({
+          jobs: usable,
+          run: { run_started_at: runStartedAt },
+          nowMs: updatedAt ? new Date(updatedAt).getTime() : Date.now(),
+          jobBudgetMin: Number(process.env.NIGHTLY_JOB_BUDGET_MIN || '15'),
+          runBudgetMin: Number(process.env.NIGHTLY_RUN_BUDGET_MIN || '20'),
+          excludePatterns: (
+            process.env.NIGHTLY_BUDGET_EXCLUDE_PATTERNS || 'Watchdog,CI Complete,Review Complete'
+          )
+            .split(',')
+            .map((s) => s.trim()),
+          mode: 'report',
+        });
+        if (budget.hasViolation) {
+          const lines = budget.jobViolations.map(
+            (v) => `- **${v.name}** -- ${v.minutes.toFixed(1)}m (budget ${v.budgetMin}m)`
+          );
+          if (budget.runViolation) {
+            lines.push(
+              `- **whole pipeline** -- ${budget.runViolation.minutes.toFixed(1)}m (budget ${budget.runViolation.budgetMin}m)`
+            );
+          }
+          budgetSection = ['', '### CI time budget violations (report-only)', '', ...lines].join(
+            '\n'
+          );
+        }
+      }
+    } catch (e) {
+      console.log(`Could not evaluate the CI time budget for run ${runId}: ${e.message}`);
+    }
+
     const bad = usable.filter(
       (j) => j.conclusion && j.conclusion !== 'success' && j.conclusion !== 'skipped'
     );
@@ -129,6 +168,7 @@ const report = async ({ github, context, core }) => {
     `### ${today} -- nightly [run ${runId}](${url}) concluded \`${conclusion}\``,
     '',
     failedList,
+    budgetSection,
     '',
     '<sub>Posted automatically. This issue closes itself on the next green nightly.',
     'The nightly is the only suite that validates `main`: push-to-main sets',
