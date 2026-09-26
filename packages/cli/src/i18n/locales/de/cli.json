@@ -567,7 +567,9 @@
       "rotateCek": {
         "cancelled": "Rotation abgebrochen. Nichts wurde geändert.",
         "confirm": "Konfigurations-Verschlüsselungsschlüssel jetzt rotieren?",
-        "confirmDone": "Hat der Browser die Rotation als abgeschlossen gemeldet?",
+        "waiting": "Warten, bis die Rotation im Browser abgeschlossen ist (Strg+C zum Abbrechen)...",
+        "detected": "Rotation erkannt",
+        "timedOut": "Die Rotation wurde nicht innerhalb von 30 Minuten abgeschlossen. Auf diesem Gerät hat sich nichts geändert; führen Sie \"rdc config rotate-cek\" erneut aus, wenn Sie bereit sind.",
         "description": "Den Konfigurations-Verschlüsselungsschlüssel der Organisation rotieren",
         "notEnabled": "Remote-Konfiguration ist für \"{{name}}\" nicht aktiviert.",
         "openWizard": "Schließen Sie die Rotation in Ihrem Browser ab:",

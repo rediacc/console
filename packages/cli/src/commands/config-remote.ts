@@ -245,6 +245,29 @@ async function restoreVersion(
  *      Without step 2 the local config still holds the OLD key and every
  *      subsequent pull would fail to decrypt.
  */
+/** How long `rotate-cek` waits for the browser wizard, and how often it asks the server. */
+const ROTATION_WAIT_MS = 30 * 60 * 1000;
+const ROTATION_POLL_MS = 5000;
+
+/**
+ * Poll the store's CEK generation until it passes `before`: true once the rotation is done, false when the wait
+ * runs out with nothing rotated. Exported for its test.
+ */
+export async function waitForGeneration(
+  read: () => Promise<number | undefined>,
+  before: number,
+  options: { timeoutMs?: number; intervalMs?: number; sleep?: (ms: number) => Promise<void> } = {}
+): Promise<boolean> {
+  const timeoutMs = options.timeoutMs ?? ROTATION_WAIT_MS;
+  const intervalMs = options.intervalMs ?? ROTATION_POLL_MS;
+  const sleep = options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  for (let waited = 0; waited < timeoutMs; waited += intervalMs) {
+    await sleep(intervalMs);
+    if (((await read()) ?? 0) > before) return true;
+  }
+  return false;
+}
+
 export async function rotateCek(configName: string, apiUrl: string): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const config = await configFileStorage.load(configName);
@@ -262,16 +285,31 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
     return;
   }
 
+  // THE SERVER SAYS WHEN THE ROTATION IS DONE, not the user. This used to ask "Did the browser report the rotation as complete?", and both wrong answers lied: a yes before the rotation re-linked the old key and printed "now encrypted under the new key"; a no after it printed "nothing changed" to a device whose key was already stale (operator, 2026-09-26).
+  const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
+  const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+  const { getSecureStorage } = await import('../utils/secure-storage.js');
+  const current = new RemoteConfigAdapter(
+    config.remote,
+    configName,
+    remoteTokenStorage,
+    getSecureStorage()
+  );
+  const before = (await current.storeGeneration()) ?? 0;
+
   const wizardUrl = `${apiUrl}/account/config-storage/rotate-key`;
   outputService.info(t('commands.config.rotateCek.openWizard'));
   outputService.info(`  ${wizardUrl}`);
   outputService.info('');
   await tryOpenBrowser(wizardUrl);
 
-  const proceed = await askConfirm(t('commands.config.rotateCek.confirmDone'), false);
-  if (!proceed) {
-    outputService.info(t('commands.config.rotateCek.cancelled'));
-    return;
+  const rotated = await withSpinner(
+    t('commands.config.rotateCek.waiting'),
+    () => waitForGeneration(() => current.storeGeneration(), before),
+    t('commands.config.rotateCek.detected')
+  );
+  if (!rotated) {
+    throw new ValidationError(t('commands.config.rotateCek.timedOut'));
   }
 
   // The rotation revoked this device's key. Re-acquire it over the same relay `config remote enable` uses; the pointer file is already correct, so only the stored token + wrapped CEK are replaced.
@@ -285,9 +323,6 @@ export async function rotateCek(configName: string, apiUrl: string): Promise<voi
   };
 
   // Prove the new key actually decrypts the freshly rotated blob before declaring success, a silent stale key is the whole failure mode here.
-  const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
-  const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-  const { getSecureStorage } = await import('../utils/secure-storage.js');
   const adapter = new RemoteConfigAdapter(
     remote,
     configName,

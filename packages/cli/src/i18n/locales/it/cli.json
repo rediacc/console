@@ -567,7 +567,9 @@
       "rotateCek": {
         "cancelled": "Rotazione annullata. Nessuna modifica effettuata.",
         "confirm": "Ruotare ora la chiave di cifratura della configurazione?",
-        "confirmDone": "Il browser ha segnalato la rotazione come completata?",
+        "waiting": "In attesa che la rotazione termini nel browser (premi Ctrl+C per interrompere)...",
+        "detected": "Rotazione rilevata",
+        "timedOut": "La rotazione non è terminata entro 30 minuti. Su questo dispositivo non è cambiato nulla; esegui di nuovo \"rdc config rotate-cek\" quando sei pronto.",
         "description": "Ruota la chiave di cifratura della configurazione dell'organizzazione",
         "notEnabled": "La configurazione remota non è abilitata per \"{{name}}\".",
         "openWizard": "Completa la rotazione nel tuo browser:",

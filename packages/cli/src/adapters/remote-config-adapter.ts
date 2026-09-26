@@ -452,6 +452,17 @@ export class RemoteConfigAdapter {
     }
   }
 
+  /**
+   * The store's current CEK generation, from `/session` (T10). `rdc config rotate-cek` reads it before opening
+   * the wizard and polls it afterwards, so the CLI learns the rotation finished from the server instead of asking.
+   */
+  storeGeneration(): Promise<number | undefined> {
+    return this.tokenStorage.withLease(this.configName, async (lease) => {
+      this.requireToken(lease);
+      return (await this.fetchSession(lease)).cekGeneration;
+    });
+  }
+
   // ─── Private Helpers ──────────────────────────────────────────────────
 
   /**

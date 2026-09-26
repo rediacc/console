@@ -567,7 +567,9 @@
       "rotateCek": {
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",
         "confirm": "Rotatsioon konfiguratsiooni krüpteerimisvõtme jaoks nüüd?",
-        "confirmDone": "Kas brauser teatas rotatsiooni lõpetatuks?",
+        "waiting": "Ootan, kuni rotatsioon brauseris lõpeb (peatamiseks vajutage Ctrl+C)...",
+        "detected": "Rotatsioon tuvastatud",
+        "timedOut": "Rotatsioon ei lõppenud 30 minuti jooksul. Selles seadmes ei muutunud midagi; käivitage \"rdc config rotate-cek\" uuesti, kui olete valmis.",
         "description": "Rotatsioon organisatsiooni konfiguratsiooni krüpteerimisvõtme jaoks",
         "notEnabled": "Kaugkonfiguratsioon ei ole \"{{name}}\" jaoks lubatud.",
         "openWizard": "Lõpeta rotatsioon oma brauseris:",

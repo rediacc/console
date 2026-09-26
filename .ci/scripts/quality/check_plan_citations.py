@@ -582,10 +582,7 @@ def unresolved(root, kind, token):
 def is_gitignored(root, rel):
     """True when `rel` is ignored by git, in the console or inside the submodule that holds it.
 
-    A citation into `.ci/cache/` resolved on the machine that wrote it and failed in every clean clone: this
-    gate tested existence on disk, which an ignored file has only where it was made (PLAN-cloudflare-proxy.md,
-    2026-09-26). `git check-ignore` exits 0 for ignored, 1 for not ignored, and 128 for a path inside a
-    submodule, which is then asked of that submodule.
+    A citation into `.ci/cache/` resolved on the machine that wrote it and failed in every clean clone: this gate tested existence on disk, which an ignored file has only where it was made (PLAN-cloudflare-proxy.md, 2026-09-26). `git check-ignore` exits 0 for ignored, 1 for not ignored, and 128 for a path inside a submodule, which is then asked of that submodule.
     """
     r = subprocess.run(
         ["git", "-C", str(root), "check-ignore", "-q", "--", rel], capture_output=True, check=False

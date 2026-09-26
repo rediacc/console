@@ -567,7 +567,9 @@
       "rotateCek": {
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",
         "confirm": "Yapılandırma şifreleme anahtarı şimdi döndürülsün mü?",
-        "confirmDone": "Tarayıcı döndürmeyi tamamlandı olarak bildirdi mi?",
+        "waiting": "Döndürmenin tarayıcıda tamamlanması bekleniyor (durdurmak için Ctrl+C)...",
+        "detected": "Döndürme algılandı",
+        "timedOut": "Döndürme 30 dakika içinde tamamlanmadı. Bu cihazda hiçbir şey değişmedi; hazır olduğunuzda \"rdc config rotate-cek\" komutunu yeniden çalıştırın.",
         "description": "Kuruluşun yapılandırma şifreleme anahtarını döndür",
         "notEnabled": "\"{{name}}\" için uzak yapılandırma etkin değil.",
         "openWizard": "Döndürmeyi tarayıcınızda tamamlayın:",

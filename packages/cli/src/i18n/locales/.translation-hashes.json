@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1816,
+    "keyCount": 1818,
     "sourceCommit": "86f932d9adf96a88e9aa09386a51a627b6ab1ff1"
   },
   "hashes": {
@@ -411,15 +411,17 @@
     "commands.config.remote.writeFailedServerError": "03cd66a0",
     "commands.config.rotateCek.cancelled": "50092125",
     "commands.config.rotateCek.confirm": "dc837b4a",
-    "commands.config.rotateCek.confirmDone": "bd844235",
     "commands.config.rotateCek.description": "5def6c15",
+    "commands.config.rotateCek.detected": "58a8eae0",
     "commands.config.rotateCek.notEnabled": "8a7b7d40",
     "commands.config.rotateCek.openWizard": "672bd19f",
     "commands.config.rotateCek.optionApiUrl": "a3435115",
     "commands.config.rotateCek.resync": "156615e2",
     "commands.config.rotateCek.success": "0ddf371a",
+    "commands.config.rotateCek.timedOut": "cbd4d3dc",
     "commands.config.rotateCek.verified": "35ab1ce1",
     "commands.config.rotateCek.verifying": "58f4a8d0",
+    "commands.config.rotateCek.waiting": "376a45cd",
     "commands.config.rotateCek.warning": "0cf256f5",
     "commands.config.set.description": "183defc5",
     "commands.config.set.success": "1f4e059c",

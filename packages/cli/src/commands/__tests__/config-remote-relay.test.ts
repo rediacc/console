@@ -16,6 +16,7 @@ import {
 } from '@rediacc/shared/config-crypto';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { ValidationError } from '../../utils/errors.js';
 import { generateX25519KeyPair, type HandoffPayload } from '../config-remote-handoff.js';
@@ -570,6 +571,10 @@ describe('config rotate-cek', () => {
   it('re-links over the relay helpers, not a loopback server', async () => {
     loaded.remote = { apiUrl: API, storeId: 's', configId: 'c', storageKeyId: 'k' };
     mockConfirm.mockResolvedValue(true);
+    // The store reports generation 1 before the wizard and 2 once the browser finished the rotation.
+    vi.spyOn(RemoteConfigAdapter.prototype, 'storeGeneration')
+      .mockResolvedValueOnce(1)
+      .mockResolvedValue(2);
     server(async () => ({
       status: 'complete',
       configHandoff: await sealFor({

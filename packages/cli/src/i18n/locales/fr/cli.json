@@ -567,7 +567,9 @@
       "rotateCek": {
         "cancelled": "Rotation annulée. Rien n'a changé.",
         "confirm": "Faire tourner la clé de chiffrement de la configuration maintenant ?",
-        "confirmDone": "Le navigateur a-t-il signalé la rotation comme terminée ?",
+        "waiting": "En attente de la fin de la rotation dans le navigateur (Ctrl+C pour arrêter)...",
+        "detected": "Rotation détectée",
+        "timedOut": "La rotation ne s'est pas terminée en 30 minutes. Rien n'a changé sur cet appareil ; relancez \"rdc config rotate-cek\" quand vous serez prêt.",
         "description": "Faire tourner la clé de chiffrement de la configuration de l'organisation",
         "notEnabled": "La configuration distante n'est pas activée pour \"{{name}}\".",
         "openWizard": "Terminez la rotation dans votre navigateur :",

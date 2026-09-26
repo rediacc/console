@@ -567,7 +567,9 @@
       "rotateCek": {
         "cancelled": "轮换已取消。未做任何更改。",
         "confirm": "现在轮换配置加密密钥吗？",
-        "confirmDone": "浏览器是否报告轮换已完成？",
+        "waiting": "正在等待浏览器中的轮换完成（按 Ctrl+C 停止）...",
+        "detected": "已检测到轮换",
+        "timedOut": "轮换未在 30 分钟内完成。此设备上没有任何更改；准备好后请重新运行 \"rdc config rotate-cek\"。",
         "description": "轮换组织的配置加密密钥",
         "notEnabled": "\"{{name}}\" 未启用远程配置。",
         "openWizard": "请在浏览器中完成轮换：",
