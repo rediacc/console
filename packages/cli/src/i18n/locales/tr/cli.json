@@ -537,7 +537,30 @@
         "writeFailedClosed": "Kaydedilemiyor: \"{{config}}\" yapılandırması, ulaşılamayan {{server}} üzerinde saklanıyor. Değişiklik KAYDEDİLMEDİ.",
         "teamForbidden": "\"{{config}}\" yapılandırması bu hesabın üyesi olmadığı bir takıma ait olduğundan yapılandırma sunucusu isteği reddetti. Kuruluşun sahibinden veya bir yöneticisinden bu hesabı o takıma eklemesini isteyin.",
         "teamForbiddenCachePurged": "\"{{config}}\" yapılandırmasının çevrimdışı kopyası bu cihazdan silindi. Daha önce alınmış kopyalar geri çağrılmaz.",
-        "teamNotFound": "\"{{config}}\" yapılandırmasının gösterdiği {{team}} takımı bu kuruluşa ait değil. Kuruluşun bir takımını seçmek için \"rdc config remote enable\" komutunu yeniden çalıştırın."
+        "teamNotFound": "\"{{config}}\" yapılandırmasının gösterdiği {{team}} takımı bu kuruluşa ait değil. Kuruluşun bir takımını seçmek için \"rdc config remote enable\" komutunu yeniden çalıştırın.",
+        "tokenRefresh": {
+          "noLogin": "Bu cihazda {{apiUrl}} için kayıtlı bir oturum yok, bu yüzden yapılandırma belirteci otomatik olarak yenilenemedi. \"rdc subscription login\" komutunu çalıştırıp tekrar deneyin ya da \"rdc config remote enable\" komutunu yeniden çalıştırın.",
+          "loginInvalid": "Hesap sunucusu, yapılandırma belirteci yenilenirken bu cihazın oturumunu reddetti. \"rdc subscription login\" komutunu çalıştırıp tekrar deneyin.",
+          "loginScope": "Bu cihazın oturumu yapılandırma belirteçlerini yenileyemiyor: bu özellikten önce açılmış ya da ekibi artık yok. \"rdc subscription login\" komutunu yeniden çalıştırın, ardından tekrar deneyin.",
+          "loginIpMismatch": "Bu cihazın oturumu başka bir ağ adresine bağlı olduğu için yapılandırma belirteci yenilenemedi. {{error}} Ya da bu cihaz için yeni bir yapılandırma belirteci almak üzere \"rdc config remote enable\" komutunu yeniden çalıştırın.",
+          "notStoreMember": "Bu cihazdaki oturumun hesabı {{storeId}} yapılandırma deposunun üyesi değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmayı etkinleştiren hesapla oturum açın (\"rdc subscription login\") ya da \"rdc config remote enable\" komutunu yeniden çalıştırın.",
+          "storeMismatch": "{{storeId}} yapılandırma deposu bu cihazdaki oturumun kuruluşuna ait değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmanın sahibi olan kuruluşta oturum açın (\"rdc subscription login\") ya da \"rdc config remote enable\" komutunu yeniden çalıştırın.",
+          "staleGeneration": "Yapılandırma şifreleme anahtarı döndürüldü ve bu hesabın hiçbir anahtar yuvası yenisini açamıyor, bu yüzden yapılandırma belirteci yenilenmedi. Cihazı yeniden kaydedin: rdc config remote enable",
+          "rateLimited": "Hesap sunucusu yapılandırma belirteci yenilemelerini sınırlıyor ({{error}}). Bir dakika bekleyip komutu yeniden çalıştırın.",
+          "refused": "Hesap sunucusu bu cihazın yapılandırma belirtecini yenilemedi ({{error}}). \"rdc config remote enable\" komutunu yeniden çalıştırın."
+        },
+        "versions": {
+          "description": "Sunucuda saklanan bu yapılandırmanın önceki sürümlerini listeler",
+          "empty": "Sunucu \"{{config}}\" yapılandırmasının önceki sürümlerinden hiçbirini saklamıyor."
+        },
+        "restore": {
+          "description": "Bu yapılandırmanın önceki bir sürümünü en yeni sürümü olarak yayımlar",
+          "argVersion": "Geri yüklenecek sürüm (bkz. rdc config remote versions)",
+          "confirm": "\"{{config}}\" yapılandırmasının {{version}} sürümünün içeriği, {{current}} sürümünün üzerine yeni bir sürüm olarak yayımlansın mı? Her cihaz bunu bir sonraki çekişinde alır.",
+          "invalidVersion": "Sürüm pozitif bir tam sayı olmalı, girilen: \"{{version}}\".",
+          "alreadyCurrent": "{{version}} sürümü zaten \"{{config}}\" yapılandırmasının güncel sürümü; geri yüklenecek bir şey yok.",
+          "success": "\"{{config}}\" yapılandırmasının {{restored}} sürümü, {{version}} sürümü olarak geri yüklendi."
+        }
       },
       "rotateCek": {
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",

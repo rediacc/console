@@ -537,7 +537,30 @@
         "writeFailedClosed": "Não é possível guardar: a configuração \"{{config}}\" está armazenada em {{server}}, que está inacessível. A alteração NÃO foi guardada.",
         "teamForbidden": "A configuração \"{{config}}\" pertence a uma equipa da qual esta conta não é membro, por isso o servidor de configuração recusou-a. Peça ao proprietário ou a um administrador da organização que adicione esta conta a essa equipa.",
         "teamForbiddenCachePurged": "A cópia offline da configuração \"{{config}}\" foi removida deste dispositivo. As cópias feitas antes não são recuperadas.",
-        "teamNotFound": "A configuração \"{{config}}\" aponta para a equipa {{team}}, que não pertence a esta organização. Execute \"rdc config remote enable\" novamente para escolher uma equipa da organização."
+        "teamNotFound": "A configuração \"{{config}}\" aponta para a equipa {{team}}, que não pertence a esta organização. Execute \"rdc config remote enable\" novamente para escolher uma equipa da organização.",
+        "tokenRefresh": {
+          "noLogin": "Nenhum início de sessão para {{apiUrl}} está guardado neste dispositivo, por isso o token de configuração não pôde ser renovado automaticamente. Execute \"rdc subscription login\" e tente novamente, ou execute \"rdc config remote enable\" de novo.",
+          "loginInvalid": "O servidor de contas recusou o início de sessão deste dispositivo ao renovar o token de configuração. Execute \"rdc subscription login\" e tente novamente.",
+          "loginScope": "O início de sessão deste dispositivo não pode renovar tokens de configuração: é anterior a essa função, ou a sua equipa já não existe. Execute \"rdc subscription login\" de novo e tente novamente.",
+          "loginIpMismatch": "O token de configuração não pôde ser renovado porque o início de sessão deste dispositivo está associado a outro endereço de rede. {{error}} Em alternativa, execute \"rdc config remote enable\" de novo para obter um novo token de configuração para este dispositivo.",
+          "notStoreMember": "A conta do início de sessão deste dispositivo não é membro do armazenamento de configuração {{storeId}}, por isso o token de configuração não foi renovado. Inicie sessão com a conta que ativou esta configuração (\"rdc subscription login\"), ou execute \"rdc config remote enable\" de novo.",
+          "storeMismatch": "O armazenamento de configuração {{storeId}} não pertence à organização do início de sessão deste dispositivo, por isso o token de configuração não foi renovado. Inicie sessão na organização dona desta configuração (\"rdc subscription login\"), ou execute \"rdc config remote enable\" de novo.",
+          "staleGeneration": "A chave de encriptação da configuração foi rodada e nenhum slot de chave desta conta abre a nova, por isso o token de configuração não foi renovado. Volte a registar o dispositivo com: rdc config remote enable",
+          "rateLimited": "O servidor de contas está a limitar as renovações de tokens de configuração ({{error}}). Aguarde um minuto e execute o comando de novo.",
+          "refused": "O servidor de contas não renovou o token de configuração deste dispositivo ({{error}}). Execute \"rdc config remote enable\" de novo."
+        },
+        "versions": {
+          "description": "Listar as versões anteriores desta configuração guardadas no servidor",
+          "empty": "O servidor não guarda versões anteriores da configuração \"{{config}}\"."
+        },
+        "restore": {
+          "description": "Publicar uma versão anterior desta configuração como a sua versão mais recente",
+          "argVersion": "Versão a restaurar (ver rdc config remote versions)",
+          "confirm": "Publicar o conteúdo da versão {{version}} da configuração \"{{config}}\" como nova versão sobre a versão {{current}}? Cada dispositivo recebe-o na próxima transferência.",
+          "invalidVersion": "A versão tem de ser um número inteiro positivo; foi recebido \"{{version}}\".",
+          "alreadyCurrent": "A versão {{version}} já é a versão atual da configuração \"{{config}}\"; não há nada a restaurar.",
+          "success": "Versão {{restored}} da configuração \"{{config}}\" restaurada como versão {{version}}."
+        }
       },
       "rotateCek": {
         "cancelled": "Rotação cancelada. Nada foi alterado.",

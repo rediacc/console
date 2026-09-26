@@ -3404,6 +3404,52 @@
       "path": [
         "config",
         "remote",
+        "restore"
+      ],
+      "pathKey": "config remote restore",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.config.remote.restore.description",
+      "label": "Publish an earlier version of this config as its newest version",
+      "options": [
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "version",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.remote.restore.argVersion",
+          "label": "Version to restore (see rdc config remote versions)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "remote",
         "status"
       ],
       "pathKey": "config remote status",
@@ -3412,6 +3458,30 @@
       "plane": "other",
       "descriptionKey": "commands.config.remote.status.description",
       "label": "Show remote connection status",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
+        "remote",
+        "versions"
+      ],
+      "pathKey": "config remote versions",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.config.remote.versions.description",
+      "label": "List the earlier versions of this config kept on the server",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,

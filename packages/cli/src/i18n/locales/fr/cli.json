@@ -537,7 +537,30 @@
         "writeFailedClosed": "Impossible d'enregistrer : la configuration \"{{config}}\" est stockée sur {{server}}, qui est injoignable. La modification n'a PAS été enregistrée.",
         "teamForbidden": "La configuration \"{{config}}\" appartient à une équipe dont ce compte n'est pas membre : le serveur de configuration l'a donc refusée. Demandez au propriétaire ou à un administrateur de l'organisation d'ajouter ce compte à cette équipe.",
         "teamForbiddenCachePurged": "La copie hors ligne de la configuration \"{{config}}\" a été supprimée de cet appareil. Les copies faites auparavant ne sont pas récupérées.",
-        "teamNotFound": "La configuration \"{{config}}\" désigne l'équipe {{team}}, qui n'appartient pas à cette organisation. Relancez \"rdc config remote enable\" pour choisir une équipe de l'organisation."
+        "teamNotFound": "La configuration \"{{config}}\" désigne l'équipe {{team}}, qui n'appartient pas à cette organisation. Relancez \"rdc config remote enable\" pour choisir une équipe de l'organisation.",
+        "tokenRefresh": {
+          "noLogin": "Aucune connexion à {{apiUrl}} n'est enregistrée sur cet appareil, le jeton de configuration n'a donc pas pu être renouvelé automatiquement. Exécutez \"rdc subscription login\" puis réessayez, ou exécutez à nouveau \"rdc config remote enable\".",
+          "loginInvalid": "Le serveur de comptes a refusé la connexion de cet appareil pendant le renouvellement du jeton de configuration. Exécutez \"rdc subscription login\" puis réessayez.",
+          "loginScope": "La connexion de cet appareil ne peut pas renouveler les jetons de configuration : elle date d'avant cette fonction, ou son équipe n'existe plus. Exécutez à nouveau \"rdc subscription login\", puis réessayez.",
+          "loginIpMismatch": "Le jeton de configuration n'a pas pu être renouvelé, car la connexion de cet appareil est liée à une autre adresse réseau. {{error}} Vous pouvez aussi exécuter à nouveau \"rdc config remote enable\" pour obtenir un nouveau jeton de configuration pour cet appareil.",
+          "notStoreMember": "Le compte de la connexion de cet appareil n'est pas membre du stockage de configuration {{storeId}}, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous avec le compte qui a activé cette configuration (\"rdc subscription login\"), ou exécutez à nouveau \"rdc config remote enable\".",
+          "storeMismatch": "Le stockage de configuration {{storeId}} n'appartient pas à l'organisation de la connexion de cet appareil, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous à l'organisation propriétaire de cette configuration (\"rdc subscription login\"), ou exécutez à nouveau \"rdc config remote enable\".",
+          "staleGeneration": "La clé de chiffrement de la configuration a été renouvelée et aucun emplacement de clé de ce compte n'ouvre la nouvelle, le jeton de configuration n'a donc pas été renouvelé. Réinscrivez l'appareil avec : rdc config remote enable",
+          "rateLimited": "Le serveur de comptes limite les renouvellements de jetons de configuration ({{error}}). Attendez une minute puis relancez la commande.",
+          "refused": "Le serveur de comptes n'a pas renouvelé le jeton de configuration de cet appareil ({{error}}). Exécutez à nouveau \"rdc config remote enable\"."
+        },
+        "versions": {
+          "description": "Lister les versions antérieures de cette configuration conservées sur le serveur",
+          "empty": "Le serveur ne conserve aucune version antérieure de la configuration \"{{config}}\"."
+        },
+        "restore": {
+          "description": "Publier une version antérieure de cette configuration comme sa version la plus récente",
+          "argVersion": "Version à restaurer (voir rdc config remote versions)",
+          "confirm": "Publier le contenu de la version {{version}} de la configuration \"{{config}}\" comme nouvelle version par-dessus la version {{current}} ? Chaque appareil la recevra à sa prochaine récupération.",
+          "invalidVersion": "La version doit être un nombre entier positif, reçu \"{{version}}\".",
+          "alreadyCurrent": "La version {{version}} est déjà la version actuelle de la configuration \"{{config}}\" ; il n'y a rien à restaurer.",
+          "success": "Version {{restored}} de la configuration \"{{config}}\" restaurée en tant que version {{version}}."
+        }
       },
       "rotateCek": {
         "cancelled": "Rotation annulée. Rien n'a changé.",

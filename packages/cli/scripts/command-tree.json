@@ -4104,6 +4104,34 @@
               "subcommands": []
             },
             {
+              "name": "versions",
+              "descriptionKey": "commands.config.remote.versions.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "restore",
+              "descriptionKey": "commands.config.remote.restore.description",
+              "options": [
+                {
+                  "flags": "-y, --yes",
+                  "descriptionKey": "options.yes",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "version",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
               "name": "refresh",
               "descriptionKey": "commands.config.remote.refresh.description",
               "options": [],

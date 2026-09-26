@@ -537,7 +537,30 @@
         "writeFailedClosed": "Speichern nicht möglich: Konfiguration \"{{config}}\" liegt auf {{server}}, der nicht erreichbar ist. Die Änderung wurde NICHT gespeichert.",
         "teamForbidden": "Die Konfiguration \"{{config}}\" gehört zu einem Team, in dem dieses Konto kein Mitglied ist, deshalb hat der Konfigurationsserver sie abgelehnt. Bitte den Inhaber oder einen Administrator der Organisation, dieses Konto dem Team hinzuzufügen.",
         "teamForbiddenCachePurged": "Die Offline-Kopie der Konfiguration \"{{config}}\" wurde von diesem Gerät entfernt. Früher angefertigte Kopien werden dadurch nicht zurückgeholt.",
-        "teamNotFound": "Die Konfiguration \"{{config}}\" verweist auf das Team {{team}}, das nicht zu dieser Organisation gehört. Führe \"rdc config remote enable\" erneut aus, um ein Team der Organisation zu wählen."
+        "teamNotFound": "Die Konfiguration \"{{config}}\" verweist auf das Team {{team}}, das nicht zu dieser Organisation gehört. Führe \"rdc config remote enable\" erneut aus, um ein Team der Organisation zu wählen.",
+        "tokenRefresh": {
+          "noLogin": "Auf diesem Gerät ist keine Anmeldung für {{apiUrl}} gespeichert, daher ließ sich das Konfigurations-Token nicht automatisch erneuern. Führe \"rdc subscription login\" aus und versuche es noch einmal, oder führe \"rdc config remote enable\" erneut aus.",
+          "loginInvalid": "Der Kontoserver hat die Anmeldung dieses Geräts beim Erneuern des Konfigurations-Tokens abgelehnt. Führe \"rdc subscription login\" aus und versuche es noch einmal.",
+          "loginScope": "Die Anmeldung dieses Geräts darf keine Konfigurations-Tokens erneuern: Sie stammt aus der Zeit vor dieser Funktion, oder ihr Team existiert nicht mehr. Führe \"rdc subscription login\" erneut aus und versuche es dann noch einmal.",
+          "loginIpMismatch": "Das Konfigurations-Token ließ sich nicht erneuern, weil die Anmeldung dieses Geräts an eine andere Netzwerkadresse gebunden ist. {{error}} Alternativ führe \"rdc config remote enable\" erneut aus, um ein neues Konfigurations-Token für dieses Gerät zu erhalten.",
+          "notStoreMember": "Das Konto der Anmeldung dieses Geräts ist kein Mitglied des Konfigurationsspeichers {{storeId}}, daher wurde das Konfigurations-Token nicht erneuert. Melde dich mit dem Konto an, das diese Konfiguration aktiviert hat (\"rdc subscription login\"), oder führe \"rdc config remote enable\" erneut aus.",
+          "storeMismatch": "Der Konfigurationsspeicher {{storeId}} gehört nicht zur Organisation der Anmeldung dieses Geräts, daher wurde das Konfigurations-Token nicht erneuert. Melde dich bei der Organisation an, der diese Konfiguration gehört (\"rdc subscription login\"), oder führe \"rdc config remote enable\" erneut aus.",
+          "staleGeneration": "Der Verschlüsselungsschlüssel der Konfiguration wurde rotiert, und keiner der Schlüssel-Slots dieses Kontos öffnet den neuen, daher wurde das Konfigurations-Token nicht erneuert. Registriere das Gerät neu mit: rdc config remote enable",
+          "rateLimited": "Der Kontoserver begrenzt gerade das Erneuern von Konfigurations-Tokens ({{error}}). Warte eine Minute und führe den Befehl erneut aus.",
+          "refused": "Der Kontoserver hat das Konfigurations-Token dieses Geräts nicht erneuert ({{error}}). Führe \"rdc config remote enable\" erneut aus."
+        },
+        "versions": {
+          "description": "Frühere Versionen dieser Konfiguration auflisten, die der Server aufbewahrt",
+          "empty": "Der Server bewahrt keine früheren Versionen der Konfiguration \"{{config}}\" auf."
+        },
+        "restore": {
+          "description": "Eine frühere Version dieser Konfiguration als neueste Version veröffentlichen",
+          "argVersion": "Wiederherzustellende Version (siehe rdc config remote versions)",
+          "confirm": "Den Inhalt von Version {{version}} der Konfiguration \"{{config}}\" als neue Version auf Version {{current}} veröffentlichen? Jedes Gerät erhält ihn beim nächsten Abruf.",
+          "invalidVersion": "Die Version muss eine positive ganze Zahl sein, angegeben wurde \"{{version}}\".",
+          "alreadyCurrent": "Version {{version}} ist bereits die aktuelle Version der Konfiguration \"{{config}}\"; es gibt nichts wiederherzustellen.",
+          "success": "Version {{restored}} der Konfiguration \"{{config}}\" wurde als Version {{version}} wiederhergestellt."
+        }
       },
       "rotateCek": {
         "cancelled": "Rotation abgebrochen. Nichts wurde geändert.",

@@ -537,7 +537,30 @@
         "writeFailedClosed": "Salvestamine ebaõnnestus: konfiguratsioon \"{{config}}\" asub serveris {{server}}, mis pole kättesaadav. Muudatust EI salvestatud.",
         "teamForbidden": "Konfiguratsioon \"{{config}}\" kuulub meeskonnale, mille liige see konto ei ole, seega lükkas konfiguratsiooniserver selle tagasi. Palu organisatsiooni omanikul või administraatoril lisada see konto sellesse meeskonda.",
         "teamForbiddenCachePurged": "Konfiguratsiooni \"{{config}}\" võrguühenduseta koopia eemaldati sellest seadmest. Varem tehtud koopiaid see tagasi ei too.",
-        "teamNotFound": "Konfiguratsioon \"{{config}}\" viitab meeskonnale {{team}}, mis ei kuulu sellesse organisatsiooni. Organisatsiooni meeskonna valimiseks käivita uuesti \"rdc config remote enable\"."
+        "teamNotFound": "Konfiguratsioon \"{{config}}\" viitab meeskonnale {{team}}, mis ei kuulu sellesse organisatsiooni. Organisatsiooni meeskonna valimiseks käivita uuesti \"rdc config remote enable\".",
+        "tokenRefresh": {
+          "noLogin": "Selles seadmes pole salvestatud sisselogimist aadressile {{apiUrl}}, seega ei saanud konfiguratsioonitõendit automaatselt uuendada. Käivita \"rdc subscription login\" ja proovi uuesti või käivita uuesti \"rdc config remote enable\".",
+          "loginInvalid": "Kontoserver lükkas konfiguratsioonitõendi uuendamisel selle seadme sisselogimise tagasi. Käivita \"rdc subscription login\" ja proovi uuesti.",
+          "loginScope": "Selle seadme sisselogimine ei saa konfiguratsioonitõendeid uuendada: see on tehtud enne selle funktsiooni tulekut või selle meeskonda enam pole. Käivita uuesti \"rdc subscription login\" ja proovi siis uuesti.",
+          "loginIpMismatch": "Konfiguratsioonitõendit ei saanud uuendada, sest selle seadme sisselogimine on seotud teise võrguaadressiga. {{error}} Või käivita uuesti \"rdc config remote enable\", et saada sellele seadmele uus konfiguratsioonitõend.",
+          "notStoreMember": "Selle seadme sisselogimise konto ei kuulu konfiguratsioonihoidlasse {{storeId}}, seega konfiguratsioonitõendit ei uuendatud. Logi sisse kontoga, mis selle konfiguratsiooni lubas (\"rdc subscription login\"), või käivita uuesti \"rdc config remote enable\".",
+          "storeMismatch": "Konfiguratsioonihoidla {{storeId}} ei kuulu selle seadme sisselogimise organisatsioonile, seega konfiguratsioonitõendit ei uuendatud. Logi sisse organisatsiooni, kellele see konfiguratsioon kuulub (\"rdc subscription login\"), või käivita uuesti \"rdc config remote enable\".",
+          "staleGeneration": "Konfiguratsiooni krüpteerimisvõti vahetati ja ükski selle konto võtmepesa ei ava uut võtit, seega konfiguratsioonitõendit ei uuendatud. Registreeri seade uuesti käsuga: rdc config remote enable",
+          "rateLimited": "Kontoserver piirab praegu konfiguratsioonitõendite uuendamist ({{error}}). Oota minut ja käivita käsk uuesti.",
+          "refused": "Kontoserver ei uuendanud selle seadme konfiguratsioonitõendit ({{error}}). Käivita uuesti \"rdc config remote enable\"."
+        },
+        "versions": {
+          "description": "Loetle serveris hoitavad selle konfiguratsiooni varasemad versioonid",
+          "empty": "Server ei hoia konfiguratsiooni \"{{config}}\" varasemaid versioone."
+        },
+        "restore": {
+          "description": "Avalda selle konfiguratsiooni varasem versioon selle uusima versioonina",
+          "argVersion": "Taastatav versioon (vaata rdc config remote versions)",
+          "confirm": "Kas avaldada konfiguratsiooni \"{{config}}\" versiooni {{version}} sisu uue versioonina versiooni {{current}} peale? Iga seade saab selle järgmisel allalaadimisel.",
+          "invalidVersion": "Versioon peab olema positiivne täisarv, saadi \"{{version}}\".",
+          "alreadyCurrent": "Versioon {{version}} on juba konfiguratsiooni \"{{config}}\" praegune versioon; taastada pole midagi.",
+          "success": "Konfiguratsiooni \"{{config}}\" versioon {{restored}} taastati versioonina {{version}}."
+        }
       },
       "rotateCek": {
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",

@@ -350,6 +350,29 @@
           "pulled": "Config pulled",
           "success": "Config refreshed from remote (version {{version}}).",
           "notEnabled": "Remote config is not enabled."
+        },
+        "tokenRefresh": {
+          "noLogin": "No login for {{apiUrl}} is stored on this device, so the config token could not be renewed automatically. Run \"rdc subscription login\" and retry, or run \"rdc config remote enable\" again.",
+          "loginInvalid": "The account server rejected this device's login while renewing the config token. Run \"rdc subscription login\" and retry.",
+          "loginScope": "This device's login cannot renew config tokens: it was made before config token renewal existed, or its team is gone. Run \"rdc subscription login\" again, then retry.",
+          "loginIpMismatch": "The config token could not be renewed because this device's login is tied to another network address. {{error}} Or run \"rdc config remote enable\" again to get a new config token for this device.",
+          "notStoreMember": "The account of this device's login is not a member of config store {{storeId}}, so the config token was not renewed. Log in with the account that enabled this config (\"rdc subscription login\"), or run \"rdc config remote enable\" again.",
+          "storeMismatch": "Config store {{storeId}} does not belong to the organization of this device's login, so the config token was not renewed. Log in to the organization that owns this config (\"rdc subscription login\"), or run \"rdc config remote enable\" again.",
+          "staleGeneration": "The config encryption key was rotated and none of this account's key slots opens the new one, so the config token was not renewed. Re-enroll with: rdc config remote enable",
+          "rateLimited": "The account server is limiting config token renewals ({{error}}). Wait a minute and run the command again.",
+          "refused": "The account server did not renew this device's config token ({{error}}). Run \"rdc config remote enable\" again."
+        },
+        "versions": {
+          "description": "List the earlier versions of this config kept on the server",
+          "empty": "The server keeps no earlier versions of config \"{{config}}\"."
+        },
+        "restore": {
+          "description": "Publish an earlier version of this config as its newest version",
+          "argVersion": "Version to restore (see rdc config remote versions)",
+          "confirm": "Publish the content of version {{version}} of config \"{{config}}\" as a new version on top of version {{current}}? Every device gets it on its next pull.",
+          "invalidVersion": "Version must be a positive whole number, got \"{{version}}\".",
+          "alreadyCurrent": "Version {{version}} is already the current version of config \"{{config}}\"; there is nothing to restore.",
+          "success": "Restored version {{restored}} of config \"{{config}}\" as version {{version}}."
         }
       },
       "field": {

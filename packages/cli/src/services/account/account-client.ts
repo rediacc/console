@@ -131,6 +131,14 @@ export interface AccountFetchOptions {
    * prompt during a timed-out send or an exit flush would be wrong.
    */
   ipRebind?: boolean;
+  /**
+   * Test seam: the fetch that carries the tunnel request (the rebind and the retry included).
+   * Production passes nothing and the global fetch is used; the config-sync harness routes each
+   * device through its own client address.
+   */
+  fetchImpl?: typeof fetch;
+  /** Test seam: the server's E2E key. Production passes nothing and getServerKeyMaterial() resolves it. */
+  serverKey?: { key: CryptoKey; keyId: string };
 }
 
 export interface AccountFetchError extends Error {
@@ -241,7 +249,12 @@ async function reboundRetry<T>(
     rebind: (code) =>
       accountServerFetchOnce<ApiTokenIpRebindResponse>(
         API_TOKEN_IP_REBIND_PATH,
-        { method: 'POST', body: { code } satisfies ApiTokenIpRebindRequest },
+        {
+          method: 'POST',
+          body: { code } satisfies ApiTokenIpRebindRequest,
+          fetchImpl: options.fetchImpl,
+          serverKey: options.serverKey,
+        },
         token,
         serverUrl
       ),
@@ -285,7 +298,7 @@ async function accountServerFetchOnce<T>(
   const headers = innerHeaders(token, options.body !== undefined);
 
   // Encrypt the request
-  const { key: serverKey, keyId } = await getServerKeyMaterial();
+  const { serverKey, keyId, send } = await tunnelTransport(options);
   const { envelope, aesKey } = await sealRequest(
     serverKey,
     keyId,
@@ -297,7 +310,7 @@ async function accountServerFetchOnce<T>(
 
   // Send through the tunnel
   const tunnelUrl = `${serverUrl}/account/api/v1/tunnel`;
-  const resp = await fetch(tunnelUrl, {
+  const resp = await send(tunnelUrl, {
     method: 'POST',
     headers: { 'Content-Type': E2E_CONTENT_TYPE },
     body: JSON.stringify(envelope),
@@ -335,6 +348,12 @@ async function accountServerFetchOnce<T>(
   }
 
   return parsed;
+}
+
+/** The server key and the fetch a tunnel request uses: the test seams when given, else production's. */
+async function tunnelTransport(options: AccountFetchOptions) {
+  const { key: serverKey, keyId } = options.serverKey ?? (await getServerKeyMaterial());
+  return { serverKey, keyId, send: options.fetchImpl ?? fetch };
 }
 
 function resolveServerUrl(): string {

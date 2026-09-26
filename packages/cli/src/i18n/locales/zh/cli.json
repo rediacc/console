@@ -537,7 +537,30 @@
         "writeFailedClosed": "无法保存：配置 \"{{config}}\" 存储在不可达的 {{server}} 上。更改未保存。",
         "teamForbidden": "配置 \"{{config}}\" 属于此账户不在其中的团队，因此配置服务器拒绝了请求。请让组织的所有者或管理员将此账户加入该团队。",
         "teamForbiddenCachePurged": "已从此设备删除配置 \"{{config}}\" 的离线副本。此前已复制出去的副本无法收回。",
-        "teamNotFound": "配置 \"{{config}}\" 指向的团队 {{team}} 不属于此组织。请再次运行 \"rdc config remote enable\" 以选择本组织的团队。"
+        "teamNotFound": "配置 \"{{config}}\" 指向的团队 {{team}} 不属于此组织。请再次运行 \"rdc config remote enable\" 以选择本组织的团队。",
+        "tokenRefresh": {
+          "noLogin": "此设备没有保存 {{apiUrl}} 的登录信息，因此无法自动续期配置令牌。请运行 \"rdc subscription login\" 后重试，或重新运行 \"rdc config remote enable\"。",
+          "loginInvalid": "续期配置令牌时，账户服务器拒绝了此设备的登录。请运行 \"rdc subscription login\" 后重试。",
+          "loginScope": "此设备的登录无法续期配置令牌：该登录早于此功能，或其团队已不存在。请重新运行 \"rdc subscription login\"，然后重试。",
+          "loginIpMismatch": "此设备的登录绑定在另一个网络地址上，因此无法续期配置令牌。{{error}} 或者重新运行 \"rdc config remote enable\"，为此设备获取新的配置令牌。",
+          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"rdc subscription login\"），或重新运行 \"rdc config remote enable\"。",
+          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"rdc subscription login\"），或重新运行 \"rdc config remote enable\"。",
+          "staleGeneration": "配置加密密钥已轮换，而此账户的所有密钥槽都无法打开新密钥，因此未续期配置令牌。请重新注册：rdc config remote enable",
+          "rateLimited": "账户服务器正在限制配置令牌续期（{{error}}）。请等待一分钟后重新运行命令。",
+          "refused": "账户服务器未续期此设备的配置令牌（{{error}}）。请重新运行 \"rdc config remote enable\"。"
+        },
+        "versions": {
+          "description": "列出服务器保存的此配置的早期版本",
+          "empty": "服务器未保存配置 \"{{config}}\" 的任何早期版本。"
+        },
+        "restore": {
+          "description": "将此配置的某个早期版本发布为最新版本",
+          "argVersion": "要恢复的版本（参见 rdc config remote versions）",
+          "confirm": "要将配置 \"{{config}}\" 版本 {{version}} 的内容作为新版本发布在版本 {{current}} 之上吗？每台设备都会在下次拉取时获得它。",
+          "invalidVersion": "版本必须是正整数，收到的是 \"{{version}}\"。",
+          "alreadyCurrent": "版本 {{version}} 已是配置 \"{{config}}\" 的当前版本，无需恢复。",
+          "success": "已将配置 \"{{config}}\" 的版本 {{restored}} 恢复为版本 {{version}}。"
+        }
       },
       "rotateCek": {
         "cancelled": "轮换已取消。未做任何更改。",

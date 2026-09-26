@@ -112,8 +112,9 @@ describe('command plane coverage', () => {
     // its `set`/`clear` children, the CLI half of retention enforcement, without which the policy was enforceable server-side but UNDECLARABLE. They are `other`
     // for the same reason `usage` and `manifests` are: accountServerFetch
     // against the control plane, never a machine. Inheriting the backup domain's machine default would have made them proxyCapable, offering the command that decides what gets DELETED for remote execution.
-    expect(COMMANDS.length).toBe(175);
-    expect(counts).toEqual({ config: 54, machine: 96, other: 25 });
+    // 175 -> 177, other 25 -> 27: `config remote versions` and `config remote restore` (PLAN-config-sync-hardening T16) inherit `config remote`'s `other` plane: both talk to the config store on the account server, never a machine.
+    expect(COMMANDS.length).toBe(177);
+    expect(counts).toEqual({ config: 54, machine: 96, other: 27 });
   });
 
   it('records the interactive commands', () => {

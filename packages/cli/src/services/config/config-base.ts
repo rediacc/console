@@ -239,6 +239,17 @@ export class ConfigServiceBase {
   }
 
   /**
+   * The adapter every read and write of the active config goes through, for a command that talks
+   * to its store directly (`config remote versions`, `config remote restore`). Null when the
+   * active config is not a remote config.
+   */
+  async getActiveRemoteAdapter(): Promise<RemoteConfigAdapter | null> {
+    const configName = this.getEffectiveConfigName();
+    const local = await configFileStorage.load(configName);
+    return hasRemoteConfig(local) ? this.getRemoteAdapter(local, configName) : null;
+  }
+
+  /**
    * Get or create a RemoteConfigAdapter for the current config.
    */
   private async getRemoteAdapter(

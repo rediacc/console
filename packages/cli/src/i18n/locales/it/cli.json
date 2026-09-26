@@ -537,7 +537,30 @@
         "writeFailedClosed": "Impossibile salvare: la configurazione \"{{config}}\" è memorizzata su {{server}}, che non è raggiungibile. La modifica NON è stata salvata.",
         "teamForbidden": "La configurazione \"{{config}}\" appartiene a un team di cui questo account non fa parte, quindi il server di configurazione l'ha rifiutata. Chiedi al proprietario o a un amministratore dell'organizzazione di aggiungere questo account a quel team.",
         "teamForbiddenCachePurged": "La copia offline della configurazione \"{{config}}\" è stata rimossa da questo dispositivo. Le copie fatte in precedenza non vengono recuperate.",
-        "teamNotFound": "La configurazione \"{{config}}\" indica il team {{team}}, che non appartiene a questa organizzazione. Esegui di nuovo \"rdc config remote enable\" per scegliere un team dell'organizzazione."
+        "teamNotFound": "La configurazione \"{{config}}\" indica il team {{team}}, che non appartiene a questa organizzazione. Esegui di nuovo \"rdc config remote enable\" per scegliere un team dell'organizzazione.",
+        "tokenRefresh": {
+          "noLogin": "Su questo dispositivo non è salvato alcun accesso per {{apiUrl}}, quindi il token di configurazione non è stato rinnovato automaticamente. Esegui \"rdc subscription login\" e riprova, oppure esegui di nuovo \"rdc config remote enable\".",
+          "loginInvalid": "Il server degli account ha rifiutato l'accesso di questo dispositivo durante il rinnovo del token di configurazione. Esegui \"rdc subscription login\" e riprova.",
+          "loginScope": "L'accesso di questo dispositivo non può rinnovare i token di configurazione: risale a prima di questa funzione, oppure il suo team non esiste più. Esegui di nuovo \"rdc subscription login\", poi riprova.",
+          "loginIpMismatch": "Il token di configurazione non è stato rinnovato perché l'accesso di questo dispositivo è legato a un altro indirizzo di rete. {{error}} In alternativa esegui di nuovo \"rdc config remote enable\" per ottenere un nuovo token di configurazione per questo dispositivo.",
+          "notStoreMember": "L'account dell'accesso di questo dispositivo non è membro dell'archivio di configurazione {{storeId}}, quindi il token di configurazione non è stato rinnovato. Accedi con l'account che ha attivato questa configurazione (\"rdc subscription login\"), oppure esegui di nuovo \"rdc config remote enable\".",
+          "storeMismatch": "L'archivio di configurazione {{storeId}} non appartiene all'organizzazione dell'accesso di questo dispositivo, quindi il token di configurazione non è stato rinnovato. Accedi all'organizzazione proprietaria di questa configurazione (\"rdc subscription login\"), oppure esegui di nuovo \"rdc config remote enable\".",
+          "staleGeneration": "La chiave di cifratura della configurazione è stata ruotata e nessuno slot di chiave di questo account apre quella nuova, quindi il token di configurazione non è stato rinnovato. Registra di nuovo il dispositivo con: rdc config remote enable",
+          "rateLimited": "Il server degli account sta limitando i rinnovi dei token di configurazione ({{error}}). Attendi un minuto ed esegui di nuovo il comando.",
+          "refused": "Il server degli account non ha rinnovato il token di configurazione di questo dispositivo ({{error}}). Esegui di nuovo \"rdc config remote enable\"."
+        },
+        "versions": {
+          "description": "Elenca le versioni precedenti di questa configurazione conservate sul server",
+          "empty": "Il server non conserva versioni precedenti della configurazione \"{{config}}\"."
+        },
+        "restore": {
+          "description": "Pubblica una versione precedente di questa configurazione come versione più recente",
+          "argVersion": "Versione da ripristinare (vedi rdc config remote versions)",
+          "confirm": "Pubblicare il contenuto della versione {{version}} della configurazione \"{{config}}\" come nuova versione sopra la versione {{current}}? Ogni dispositivo lo riceverà al prossimo download.",
+          "invalidVersion": "La versione deve essere un numero intero positivo, ricevuto \"{{version}}\".",
+          "alreadyCurrent": "La versione {{version}} è già la versione corrente della configurazione \"{{config}}\"; non c'è nulla da ripristinare.",
+          "success": "Versione {{restored}} della configurazione \"{{config}}\" ripristinata come versione {{version}}."
+        }
       },
       "rotateCek": {
         "cancelled": "Rotazione annullata. Nessuna modifica effettuata.",

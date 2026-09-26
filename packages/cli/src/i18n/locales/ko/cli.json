@@ -537,7 +537,30 @@
         "writeFailedClosed": "저장할 수 없습니다: 설정 \"{{config}}\"은(는) 연결할 수 없는 {{server}}에 저장되어 있습니다. 변경 사항이 저장되지 않았습니다.",
         "teamForbidden": "설정 \"{{config}}\"은(는) 이 계정이 속하지 않은 팀의 것이므로 설정 서버가 거부했습니다. 조직의 소유자나 관리자에게 이 계정을 해당 팀에 추가해 달라고 요청하십시오.",
         "teamForbiddenCachePurged": "이 기기에서 설정 \"{{config}}\"의 오프라인 사본을 삭제했습니다. 그 전에 만들어진 사본은 회수되지 않습니다.",
-        "teamNotFound": "설정 \"{{config}}\"이(가) 가리키는 팀 {{team}}은(는) 이 조직의 팀이 아닙니다. 조직의 팀을 다시 선택하려면 \"rdc config remote enable\"을 다시 실행하십시오."
+        "teamNotFound": "설정 \"{{config}}\"이(가) 가리키는 팀 {{team}}은(는) 이 조직의 팀이 아닙니다. 조직의 팀을 다시 선택하려면 \"rdc config remote enable\"을 다시 실행하십시오.",
+        "tokenRefresh": {
+          "noLogin": "이 기기에는 {{apiUrl}}에 대한 로그인이 저장되어 있지 않아 구성 토큰을 자동으로 갱신하지 못했습니다. \"rdc subscription login\"을(를) 실행한 뒤 다시 시도하거나 \"rdc config remote enable\"을(를) 다시 실행하세요.",
+          "loginInvalid": "구성 토큰을 갱신하는 중에 계정 서버가 이 기기의 로그인을 거부했습니다. \"rdc subscription login\"을(를) 실행한 뒤 다시 시도하세요.",
+          "loginScope": "이 기기의 로그인으로는 구성 토큰을 갱신할 수 없습니다. 이 기능이 생기기 전에 한 로그인이거나 해당 팀이 더 이상 없습니다. \"rdc subscription login\"을(를) 다시 실행한 뒤 다시 시도하세요.",
+          "loginIpMismatch": "이 기기의 로그인이 다른 네트워크 주소에 묶여 있어 구성 토큰을 갱신하지 못했습니다. {{error}} 또는 \"rdc config remote enable\"을(를) 다시 실행해 이 기기용 새 구성 토큰을 받으세요.",
+          "notStoreMember": "이 기기에 로그인한 계정이 구성 저장소 {{storeId}}의 구성원이 아니어서 구성 토큰을 갱신하지 않았습니다. 이 구성을 활성화한 계정으로 로그인하거나(\"rdc subscription login\") \"rdc config remote enable\"을(를) 다시 실행하세요.",
+          "storeMismatch": "구성 저장소 {{storeId}}은(는) 이 기기에 로그인한 조직의 것이 아니어서 구성 토큰을 갱신하지 않았습니다. 이 구성을 소유한 조직으로 로그인하거나(\"rdc subscription login\") \"rdc config remote enable\"을(를) 다시 실행하세요.",
+          "staleGeneration": "구성 암호화 키가 교체되었고 이 계정의 어떤 키 슬롯도 새 키를 열지 못해 구성 토큰을 갱신하지 않았습니다. 다음 명령으로 다시 등록하세요: rdc config remote enable",
+          "rateLimited": "계정 서버가 구성 토큰 갱신을 제한하고 있습니다({{error}}). 1분 정도 기다린 뒤 명령을 다시 실행하세요.",
+          "refused": "계정 서버가 이 기기의 구성 토큰을 갱신하지 않았습니다({{error}}). \"rdc config remote enable\"을(를) 다시 실행하세요."
+        },
+        "versions": {
+          "description": "서버에 보관된 이 구성의 이전 버전 목록 표시",
+          "empty": "서버에 보관된 구성 \"{{config}}\"의 이전 버전이 없습니다."
+        },
+        "restore": {
+          "description": "이 구성의 이전 버전을 최신 버전으로 게시",
+          "argVersion": "복원할 버전(rdc config remote versions 참고)",
+          "confirm": "구성 \"{{config}}\"의 버전 {{version}} 내용을 버전 {{current}} 위에 새 버전으로 게시할까요? 모든 기기가 다음 가져오기 때 이를 받습니다.",
+          "invalidVersion": "버전은 양의 정수여야 합니다. 입력한 값: \"{{version}}\"",
+          "alreadyCurrent": "버전 {{version}}은(는) 이미 구성 \"{{config}}\"의 현재 버전이므로 복원할 것이 없습니다.",
+          "success": "구성 \"{{config}}\"의 버전 {{restored}}을(를) 버전 {{version}}(으)로 복원했습니다."
+        }
       },
       "rotateCek": {
         "cancelled": "교체가 취소되었습니다. 변경된 사항이 없습니다",

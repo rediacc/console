@@ -173,6 +173,60 @@ async function refreshRemote(configName: string): Promise<void> {
   outputService.success(t('commands.config.remote.refresh.success', { version: String(version) }));
 }
 
+// ─── Versions and Restore (T16) ─────────────────────────────────────────
+
+/** The active config's remote adapter; refuses a config that is not remote. */
+async function activeRemoteAdapter() {
+  const adapter = await configService.getActiveRemoteAdapter();
+  if (!adapter) throw new ValidationError(t('commands.config.remote.refresh.notEnabled'));
+  return adapter;
+}
+
+async function showVersions(configName: string, format: OutputFormat): Promise<void> {
+  const adapter = await activeRemoteAdapter();
+  const { listRemoteVersions } = await import('../services/config/remote-restore.js');
+  const versions = await listRemoteVersions(adapter);
+  if (versions.length === 0 && format === DEFAULT_OUTPUT_FORMAT) {
+    outputService.info(t('commands.config.remote.versions.empty', { config: configName }));
+    return;
+  }
+  outputService.print(versions, format);
+}
+
+async function restoreVersion(
+  configName: string,
+  rawVersion: string,
+  opts: { yes?: boolean }
+): Promise<void> {
+  const { parseVersionArgument, restoreRemoteVersion } = await import(
+    '../services/config/remote-restore.js'
+  );
+  const version = parseVersionArgument(rawVersion);
+  const adapter = await activeRemoteAdapter();
+  const confirm = async (current: number) =>
+    opts.yes === true ||
+    askConfirm(
+      t('commands.config.remote.restore.confirm', {
+        version: String(version),
+        config: configName,
+        current: String(current),
+      }),
+      false
+    );
+  const result = await restoreRemoteVersion(adapter, configName, version, confirm);
+  if (!result) {
+    outputService.info(t('prompts.cancelled'));
+    return;
+  }
+  outputService.success(
+    t('commands.config.remote.restore.success', {
+      restored: String(result.restoredFrom),
+      config: configName,
+      version: String(result.version),
+    })
+  );
+}
+
 // ─── CEK Rotation ────────────────────────────────────────────────────────
 
 /**
@@ -318,6 +372,36 @@ export function registerRemoteCommands(configCommand: Command): void {
         const program = configCommand.parent;
         const format = (program?.opts().output ?? DEFAULT_OUTPUT_FORMAT) as OutputFormat;
         await showStatus(configName, format);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // remote versions
+  remote
+    .command('versions')
+    .description(t('commands.config.remote.versions.description'))
+    .action(async () => {
+      try {
+        const configName = configService.getEffectiveConfigName();
+        const program = configCommand.parent;
+        const format = (program?.opts().output ?? DEFAULT_OUTPUT_FORMAT) as OutputFormat;
+        await showVersions(configName, format);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // remote restore
+  remote
+    .command('restore')
+    .description(t('commands.config.remote.restore.description'))
+    .argument('<version>', t('commands.config.remote.restore.argVersion'))
+    .option('-y, --yes', t('options.yes'))
+    .action(async (version: string, options: { yes?: boolean }) => {
+      try {
+        const configName = configService.getEffectiveConfigName();
+        await restoreVersion(configName, version, options);
       } catch (error) {
         handleError(error);
       }

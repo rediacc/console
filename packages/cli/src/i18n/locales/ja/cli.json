@@ -537,7 +537,30 @@
         "writeFailedClosed": "保存できません: 設定 \"{{config}}\" は到達できない {{server}} に保存されています。変更は保存されませんでした。",
         "teamForbidden": "設定 \"{{config}}\" は、このアカウントが所属していないチームのものであるため、設定サーバーに拒否されました。組織のオーナーまたは管理者に、このアカウントをそのチームへ追加するよう依頼してください。",
         "teamForbiddenCachePurged": "このデバイスから設定 \"{{config}}\" のオフラインコピーを削除しました。これより前に作成されたコピーは回収されません。",
-        "teamNotFound": "設定 \"{{config}}\" が指すチーム {{team}} は、この組織のチームではありません。組織のチームを選び直すには、\"rdc config remote enable\" をもう一度実行してください。"
+        "teamNotFound": "設定 \"{{config}}\" が指すチーム {{team}} は、この組織のチームではありません。組織のチームを選び直すには、\"rdc config remote enable\" をもう一度実行してください。",
+        "tokenRefresh": {
+          "noLogin": "このデバイスには {{apiUrl}} へのログインが保存されていないため、設定トークンを自動で更新できませんでした。\"rdc subscription login\" を実行してから再試行するか、\"rdc config remote enable\" をもう一度実行してください。",
+          "loginInvalid": "設定トークンの更新中に、アカウントサーバーがこのデバイスのログインを拒否しました。\"rdc subscription login\" を実行してから再試行してください。",
+          "loginScope": "このデバイスのログインでは設定トークンを更新できません。この機能より前に作成されたログインか、そのチームがすでに存在しません。\"rdc subscription login\" をもう一度実行してから再試行してください。",
+          "loginIpMismatch": "このデバイスのログインが別のネットワークアドレスに紐付いているため、設定トークンを更新できませんでした。{{error}} または \"rdc config remote enable\" をもう一度実行して、このデバイス用の新しい設定トークンを取得してください。",
+          "notStoreMember": "このデバイスでログインしているアカウントは設定ストア {{storeId}} のメンバーではないため、設定トークンは更新されませんでした。この設定を有効にしたアカウントでログインするか (\"rdc subscription login\")、\"rdc config remote enable\" をもう一度実行してください。",
+          "storeMismatch": "設定ストア {{storeId}} はこのデバイスでログインしている組織のものではないため、設定トークンは更新されませんでした。この設定を所有する組織にログインするか (\"rdc subscription login\")、\"rdc config remote enable\" をもう一度実行してください。",
+          "staleGeneration": "設定の暗号化キーがローテーションされ、このアカウントのどのキースロットでも新しいキーを開けないため、設定トークンは更新されませんでした。次のコマンドで再登録してください: rdc config remote enable",
+          "rateLimited": "アカウントサーバーが設定トークンの更新を制限しています ({{error}})。1 分ほど待ってからコマンドをもう一度実行してください。",
+          "refused": "アカウントサーバーはこのデバイスの設定トークンを更新しませんでした ({{error}})。\"rdc config remote enable\" をもう一度実行してください。"
+        },
+        "versions": {
+          "description": "サーバーに保存されているこの設定の過去のバージョンを一覧表示",
+          "empty": "サーバーには設定 \"{{config}}\" の過去のバージョンが保存されていません。"
+        },
+        "restore": {
+          "description": "この設定の過去のバージョンを最新バージョンとして公開",
+          "argVersion": "復元するバージョン (rdc config remote versions を参照)",
+          "confirm": "設定 \"{{config}}\" のバージョン {{version}} の内容を、バージョン {{current}} の上に新しいバージョンとして公開しますか? すべてのデバイスが次回の取得時にこれを受け取ります。",
+          "invalidVersion": "バージョンは正の整数で指定してください。指定された値: \"{{version}}\"",
+          "alreadyCurrent": "バージョン {{version}} はすでに設定 \"{{config}}\" の現在のバージョンです。復元するものはありません。",
+          "success": "設定 \"{{config}}\" のバージョン {{restored}} をバージョン {{version}} として復元しました。"
+        }
       },
       "rotateCek": {
         "cancelled": "ローテーションをキャンセルしました。何も変更されていません",
