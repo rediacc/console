@@ -1994,6 +1994,7 @@ export const GATES: readonly GateSpec[] = [
       GITHUB_BASE_REF: '${{ github.base_ref }}',
     },
     run: 'npm run check:ci-plan-citations',
+    slow: true, // ~30s: resolves every citation added across ~34,000 plan lines
     gate: true,
     paths: ['agent/plans/**', 'agent/INDEX.md', '.ci/scripts/quality/check_plan_citations.py'],
     pathsOrigin: 'declared',

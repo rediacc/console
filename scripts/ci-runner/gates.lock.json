@@ -2066,6 +2066,7 @@
       "GITHUB_BASE_REF": "${{ github.base_ref }}"
     },
     "run": "npm run check:ci-plan-citations",
+    "slow": true,
     "gate": true,
     "paths": [
       "agent/plans/**",

@@ -217,7 +217,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-peer-deps | quality-code / Verify no peer dependency conflicts | yes | no | no |
 | check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | yes | no |
 | check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | no | no |
-| check:ci-plan-citations | quality-branch / Plan citations | yes | no | no |
+| check:ci-plan-citations | quality-branch / Plan citations | yes | yes | no |
 | check:ci-plan-deps | quality-branch / Plan dependencies | yes | no | no |
 | check:ci-plan-folders | quality-branch / Plan folders and retention | yes | no | no |
 | check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | no | no |

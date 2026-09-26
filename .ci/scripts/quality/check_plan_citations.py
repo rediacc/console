@@ -63,6 +63,13 @@ Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 step: Plan citations
 needs: none
 lane: quality-branch
+needs-not: submodules
+blocker: BLOCKER: the gate runs without submodule checkouts by design (absent_submodules
+     below skips citations into an unfetched submodule). Its one `git ls-files
+     --recurse-submodules` (is_gitignored) runs only for a path that already resolved
+     on disk, so an absent submodule changes nothing it decides. Measured 2026-09-26:
+     without this line the binder refuses with "lane 'quality-branch' does not
+     provide all of [submodules]".
 ---- end gate ----
 """
 
@@ -557,7 +564,8 @@ def unresolved(root, kind, token):
             "so a reader knows where to look; (c) a typo"
         )
     ok, why = R.resolve(root, kind, token)
-    if ok and kind == "fileline" and is_gitignored(root, token.split(":", 1)[0]):
+    # `why` names the path the resolver actually found (`path:line`), which may differ from the token: a legacy flat `agent/PLAN-x.md` resolves to its current folder.
+    if ok and kind == "fileline" and is_gitignored(root, why.rsplit(":", 1)[0]):
         return True, (
             "is gitignored, so it resolves in this checkout and in no clean clone or CI run. "
             "A plan outlives the cache it was written beside; cite a tracked file, or describe "
@@ -580,33 +588,36 @@ def unresolved(root, kind, token):
 
 
 def is_gitignored(root, rel):
-    """True when `rel` is ignored by git, in the console or inside the submodule that holds it.
+    """True when `rel` exists here but git does not track it, in the console or in any submodule.
 
-    A citation into `.ci/cache/` resolved on the machine that wrote it and failed in every clean clone: this gate tested existence on disk, which an ignored file has only where it was made (PLAN-cloudflare-proxy.md, 2026-09-26). `git check-ignore` exits 0 for ignored, 1 for not ignored, and 128 for a path inside a submodule, which is then asked of that submodule.
+    A citation into `.ci/cache/` resolved on the machine that wrote it and failed in every clean clone: this gate tested existence on disk, which an ignored file has only where it was made (PLAN-cloudflare-proxy.md, 2026-09-26). The tracked set comes from ONE `git ls-files --recurse-submodules` per run: the first version spawned `git check-ignore` per citation, and on 34,000 added lines that took the gate from about 25 s to 66 s.
     """
-    r = subprocess.run(
-        ["git", "-C", str(root), "check-ignore", "-q", "--", rel], capture_output=True, check=False
-    )
-    if r.returncode != 128:
-        return r.returncode == 0
-    for sub in submodule_paths(root):
-        prefix = sub.rstrip("/") + "/"
-        if rel.startswith(prefix):
-            r = subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(pathlib.Path(root) / sub),
-                    "check-ignore",
-                    "-q",
-                    "--",
-                    rel[len(prefix) :],
-                ],
-                capture_output=True,
-                check=False,
-            )
-            return r.returncode == 0
-    return False
+    return rel not in _tracked_paths(str(root)) and not _is_tracked_dir(str(root), rel)
+
+
+_TRACKED = {}
+
+
+def _tracked_paths(root):
+    """Every path git tracks under `root`, submodules included; computed once per root."""
+    if root not in _TRACKED:
+        r = subprocess.run(
+            ["git", "-C", root, "ls-files", "--recurse-submodules"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        _TRACKED[root] = frozenset(r.stdout.splitlines()) if r.returncode == 0 else None
+    return _TRACKED[root] or frozenset()
+
+
+def _is_tracked_dir(root, rel):
+    """A cited directory is tracked when any tracked file lives beneath it; an unreadable listing counts as tracked."""
+    paths = _tracked_paths(root)
+    if _TRACKED.get(root) is None:
+        return True
+    prefix = rel.rstrip("/") + "/"
+    return any(p.startswith(prefix) for p in paths)
 
 
 def absent_submodules(root):
