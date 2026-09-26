@@ -2089,45 +2089,39 @@ jobs:
         run: npm ci --prefix workers/www && npm ci --prefix workers/proxy && npm run check:test-workers
 
   # ============================================================================
-  # L9 SECURITY -- alone. 291s of meta-gate unit tests makes this the phase's
-  # wall-clock pole; grouping anything with it only makes that worse.
+  # L9 SECURITY -- split three ways (PLAN-ci-time-budget.md T2.15, 2026-09-26).
+  # The two heavy suites this job used to carry sequentially, `Python package
+  # tests` (20.9-22.5 min, check:ci-pytest) and `Quality-gate unit tests`
+  # (10.1-12.9 min, the battery), each get their own job below (`quality-pytest`,
+  # `quality-gate-tests`) with their own checkout and setup, so a slow suite no
+  # longer blocks the other's start or borrows its timeout headroom. What is left
+  # here -- the gate-bind region's meta-gate checks, Audit and Suppression
+  # liveness -- measures about 4 minutes on its own.
+  #
+  # Splitting the general shard mechanism (lanes.ts capabilities, unit
+  # enumerators, the LPT balancer, the gate-bind shard-strategy region and
+  # receipt merge -- PLAN-ci-time-budget.md T2.7-T2.11) across quality-pytest and
+  # quality-gate-tests is NOT done here: those files are outside this change's
+  # scope. Each of the two new jobs below is therefore a single unsharded leg,
+  # so quality-pytest still runs at its full 20.9-22.5 min and does not yet meet
+  # the 15-minute per-job target; quality-gate-tests already does, at 10.1-12.9.
   # ============================================================================
   quality-security:
     name: Security
     # ubuntu-latest, not ubuntu-slim: this job's runtime grew past the slim
-    # runner's hard ~15-minute cap during the 0722-1 wave (8 -> 12 -> 18 min;
-    # the cap kills the job as "cancelled" with no failed step, poisoning
-    # CI Complete). Two such kills in three runs. The growth itself (gate
-    # tests + submodule checkout + upstream freshness queries) is a separate
-    # follow-up; the capped runner just makes it a coin flip.
+    # runner's hard ~15-minute cap during the 0722-1 wave, back when this job
+    # still carried the two heavy suites split out above. Left as is rather than
+    # narrowed to ubuntu-slim: that runner choice is a separate change T2.15
+    # did not ask for, now that the remaining steps measure about 4 minutes.
     runs-on: ubuntu-latest
-    # 20 -> 45 on 2026-09-15, and the number is a MEASUREMENT BUDGET rather than
-    # a claim that the job is healthy. Its `Python package tests` step is
-    # `check:ci-pytest`, whose own kill timer must sit below this ceiling
-    # (`check:ci-inner-timeout-reachable`), and the suite has walked into it:
-    #
-    #     2026-09-07   810.16s   what RUN_TIMEOUT_S=1080 was sized against
-    #     2026-09-15   1039.93s  run 34970782616 -- 96% of the timer, still passing
-    #     2026-09-15   >1080s    run 35000491823 -- KILLED at 92% of the corpus
-    #
-    # The last step up is partly this wave's own doing and is the RIGHT kind of
-    # slowdown: shfmt acquisition used to fail fast with exit 77 (CANNOT_RUN) in
-    # this lane, so eight differentials returned instantly without running shfmt
-    # at all. They now acquire it and do the work they always should have, and
-    # the "Install ruff" step added above will do the same for seven more.
-    #
-    # TWO THINGS ARE STILL UNMEASURED, which is why the headroom is wide rather
-    # than tight. The suite's true wall time is unknown -- 1080s only proves it
-    # is MORE than that -- and the `Quality-gate unit tests` step after it has
-    # been cancelled on every run of this wave, so it has never reported a
-    # duration at all. A tight ceiling here would only move the opaque cancel one
-    # step to the right. Tighten both once they have numbers.
-    #
-    # `check:ci-timeout-headroom` is unaffected: its baseline
-    # (.ci/scripts/quality/job-timeout-baseline.json) tracks only
-    # `Validate Promotion` and `Stage Artifacts`, and enforces a MINIMUM headroom
-    # of 1.5x with no upper bound.
-    timeout-minutes: 45
+    # 45 -> 15 on 2026-09-26 (T2.15): the two steps this ceiling used to cover
+    # for, `Python package tests` and `Quality-gate unit tests`, moved to their
+    # own jobs below with their own ceilings. What is left is the gate-bind
+    # region plus Audit and Suppression liveness, measured at about 4 minutes,
+    # so 15 keeps the 1.5x-plus headroom `check:ci-timeout-headroom` would ask
+    # for even though that gate does not watch this job (its baseline names only
+    # `Validate Promotion` and `Stage Artifacts`).
+    timeout-minutes: 15
     # Checkout plus local gates; the private submodules come in on the
     # readonly-preset App token. The github.token uses left in this job are
     # public or global endpoints (release freshness, /advisories, external
@@ -2179,32 +2173,10 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
       - id: setup
         uses: ./.github/actions/setup-workspace
-        # BOTH INPUTS ARE LOAD-BEARING, and their absence produced two of the 56
-        # pytest failures in run 34970782616 -- the first run in this wave that
-        # let this lane finish. This job runs the whole pytest suite, which
-        # drives the real tree, and a bare setup gave it neither.
-        #
-        # account: the dependency-inventory differential analyses all four real
-        # packages. Without it the twin dies with
-        # `✗ @rediacc/account: .../private/account/node_modules missing`, so
-        # test_the_real_repository_agrees_in_table_format and its json twin fail
-        # on the inventory never being built rather than on any disagreement.
-        #
-        # build-packages: runs .ci/scripts/setup/build-packages.sh, whose line 20
-        # is `npm run build:packages` = `npm run build -w @rediacc/shared &&
-        # npm run build -w @rediacc/provisioning`. test_proxies_unit_tests drives
-        # `npm run test:unit -w @rediacc/e2e-tests`, which imports
-        # `@rediacc/provisioning/renet`; unbuilt, vitest reports
-        # `Error: Cannot find package '@rediacc/provisioning/renet'` and two
-        # suites fail to load. That is a gate CRASHING rather than failing -- it
-        # reports no finding because it never got far enough to have one -- and
-        # it is invisible on any developer machine, where dist/ is always warm.
-        #
-        # Not a new pattern: quality-packages, quality-i18n and quality-www-build
-        # already pass exactly these two (lines 1462, 1697, 1845).
-        with:
-          account: 'true'
-          build-packages: 'true'
+        # DEFAULTS ONLY (no account, no build-packages): those two inputs were
+        # for the pytest suite alone (see quality-pytest below, split out by
+        # T2.15) and nothing left in this job needs the account submodule's own
+        # npm trees or the built shared/provisioning packages.
 
       - name: Load gate toolchain pins
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -2218,70 +2190,6 @@ jobs:
         run: |
           .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
           .ci/scripts/lib/toolchain.sh --report
-
-      - name: Packaging toolchain for the linux-packages differential
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # SIXTEEN OF THIS SUITE'S EIGHTEEN SKIPS, and skips are not free here:
-        # `check:ci-pytest` refuses `passed != collected` outright, so a skipped
-        # test keeps this lane red exactly as a failing one does.
-        #
-        # `test_proxies_linux_packages.py` skips every case with "packaging
-        # toolchain absent (createrepo_c); both sides would report 77, proving
-        # nothing" -- an honest skip, and a real hole: the rpm-repository half of
-        # that differential has never been exercised in CI.
-        #
-        # `apt-get update` first, for the reason the clang/libbpf step below
-        # gives: a runner image ships stale apt metadata and a bare install can
-        # 404 against a rotated pool.
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
-
-      - name: CLI bundle for the rdc-update differential
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # ONE MORE SKIP, and it costs about five seconds to retire.
-        # `proxy-rdc-update.sh` falls back to `packages/cli/dist/cli-bundle.cjs`
-        # when no RDC_BINARY is exported, and without it the proxy reports
-        # CANNOT RUN (1 of 5 requirement(s) missing) and the differential skips.
-        #
-        # This is the BUNDLE, not the SEA executable: `node bundle.mjs` is an
-        # esbuild step measured at under a second here, on top of the ~4s `tsc`.
-        # The real `Build (CLI)` job takes ~58s because it also does SEA
-        # packaging and embeds the renet binaries, none of which this proxy's
-        # fallback path needs.
-        run: |
-          npm run build:cli
-          cd packages/cli && node bundle.mjs
-
-      - name: Install ruff
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # THE SAME OMISSION AS THE STEP ABOVE, one tool later, and it hid for the
-        # same reason: this job had never once been allowed to finish, so nothing
-        # ever reported it. Measured 2026-09-15 in run 34970782616 -- the first run
-        # in which quality-security reached the end -- this lane's own toolchain
-        # report said `ruff 0.16.1 absent MISMATCH` and seven cases in
-        # test_quality_python_lint.py failed with "ruff is not available and
-        # neither is uvx".
-        #
-        # The gate cannot acquire it on its own, by design. `resolve_ruff()` in
-        # .ci/scripts/quality/check-python-lint.sh is exactly three branches --
-        # $RUFF_BIN, a PATH binary AT THE PIN, then uvx -- and its comment names
-        # this step as where CI gets it, deliberately, "so the network is not on
-        # the critical path there". The same file at :190 says what happens
-        # otherwise: "Under CI the toolchain is present, so 77 never fires there;
-        # if it ever did, the workflow sees a plain non-zero and the lane is
-        # broken, which is correct." It fired. The lane was broken.
-        #
-        # NOT a skip-if-absent guard: check_pytest.py's verdict() refuses
-        # `passed != collected` with no skip allowance at all, so skipping the
-        # seven would turn them into a red gate anyway while hiding the gap.
-        #
-        # Verbatim from quality-static, pins included, and VERIFIED after install
-        # for the reason that step gives: an installer that exits 0 without
-        # producing a binary turns into a bare "ruff is not available" in a later
-        # step, which the watchdog cannot classify as a network fault.
-        run: |
-          python3 -m pip install --user --disable-pip-version-check "ruff==${RUFF_VERSION}"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/ruff" --version
 
       # >>> gate-bind (generated by scripts/gate-bind.ts --write; do not edit inside)
       # Steps here are EMITTED from each gate's own `---- gate ----` header. Edit the
@@ -2368,11 +2276,211 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-suppression-liveness
 
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: quality-security-${{ github.sha }}
+          path: audit-report.json
+          retention-days: 3
+
+  # ============================================================================
+  # L9b PYTEST -- split out of quality-security (PLAN-ci-time-budget.md T2.15,
+  # 2026-09-26). One unsharded leg, `check:ci-pytest`'s own suite, measured at
+  # 20.9-22.5 min. Its own checkout and setup so it no longer shares a timeout
+  # ceiling, or a start time, with the gate-bind checks that used to sit ahead
+  # of it in the same job.
+  #
+  # `check:ci-inner-timeout-reachable` ties `timeout-minutes` here to
+  # `check_pytest.py`'s own RUN_TIMEOUT_S=1800s kill timer: this job's ceiling
+  # must stay strictly above 30 minutes or that gate reds and the timer becomes
+  # unreachable (CI cancels the job before it can fire).
+  # ============================================================================
+  quality-pytest:
+    name: Pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The suite's own dependency-inventory and twin-parity differentials
+          # read commit topology (test_twin_parity.py, rediacc_ci.core.age), the
+          # same reason quality-security takes a deep checkout.
+          fetch-depth: 0
+          filter: blob:none
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        # BOTH INPUTS ARE LOAD-BEARING, and their absence produced two of the 56
+        # pytest failures in run 34970782616 -- the first run in this wave that
+        # let this lane finish. This job runs the whole pytest suite, which
+        # drives the real tree, and a bare setup gave it neither.
+        #
+        # account: the dependency-inventory differential analyses all four real
+        # packages. Without it the twin dies with
+        # `✗ @rediacc/account: .../private/account/node_modules missing`, so
+        # test_the_real_repository_agrees_in_table_format and its json twin fail
+        # on the inventory never being built rather than on any disagreement.
+        #
+        # build-packages: runs .ci/scripts/setup/build-packages.sh, whose line 20
+        # is `npm run build:packages` = `npm run build -w @rediacc/shared &&
+        # npm run build -w @rediacc/provisioning`. test_proxies_unit_tests drives
+        # `npm run test:unit -w @rediacc/e2e-tests`, which imports
+        # `@rediacc/provisioning/renet`; unbuilt, vitest reports
+        # `Error: Cannot find package '@rediacc/provisioning/renet'` and two
+        # suites fail to load. That is a gate CRASHING rather than failing -- it
+        # reports no finding because it never got far enough to have one -- and
+        # it is invisible on any developer machine, where dist/ is always warm.
+        #
+        # Not a new pattern: quality-packages, quality-i18n and quality-www-build
+        # already pass exactly these two.
+        with:
+          account: 'true'
+          build-packages: 'true'
+
+      - name: Load gate toolchain pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # RUFF_VERSION for the "Install ruff" step below.
+        run: |
+          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
+          .ci/scripts/lib/toolchain.sh --report
+
+      - name: Packaging toolchain for the linux-packages differential
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # SIXTEEN OF THIS SUITE'S EIGHTEEN SKIPS, and skips are not free here:
+        # `check:ci-pytest` refuses `passed != collected` outright, so a skipped
+        # test keeps this lane red exactly as a failing one does.
+        #
+        # `test_proxies_linux_packages.py` skips every case with "packaging
+        # toolchain absent (createrepo_c); both sides would report 77, proving
+        # nothing" -- an honest skip, and a real hole: the rpm-repository half of
+        # that differential has never been exercised in CI.
+        #
+        # `apt-get update` first, for the reason the clang/libbpf step below
+        # gives: a runner image ships stale apt metadata and a bare install can
+        # 404 against a rotated pool.
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq createrepo-c
+
+      - name: CLI bundle for the rdc-update differential
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # ONE MORE SKIP, and it costs about five seconds to retire.
+        # `proxy-rdc-update.sh` falls back to `packages/cli/dist/cli-bundle.cjs`
+        # when no RDC_BINARY is exported, and without it the proxy reports
+        # CANNOT RUN (1 of 5 requirement(s) missing) and the differential skips.
+        #
+        # This is the BUNDLE, not the SEA executable: `node bundle.mjs` is an
+        # esbuild step measured at under a second here, on top of the ~4s `tsc`.
+        # The real `Build (CLI)` job takes ~58s because it also does SEA
+        # packaging and embeds the renet binaries, none of which this proxy's
+        # fallback path needs.
+        run: |
+          npm run build:cli
+          cd packages/cli && node bundle.mjs
+
+      - name: Install ruff
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # `resolve_ruff()` in .ci/scripts/quality/check-python-lint.sh is exactly
+        # three branches -- $RUFF_BIN, a PATH binary AT THE PIN, then uvx -- and
+        # its comment names this step as where CI gets it, deliberately, "so the
+        # network is not on the critical path there".
+        #
+        # NOT a skip-if-absent guard: check_pytest.py's verdict() refuses
+        # `passed != collected` with no skip allowance at all, so skipping this
+        # would turn the seven ruff-dependent cases into a red gate anyway while
+        # hiding the gap.
+        #
+        # Verbatim from quality-static, pins included, and VERIFIED after install
+        # for the reason that step gives: an installer that exits 0 without
+        # producing a binary turns into a bare "ruff is not available" in a later
+        # step, which the watchdog cannot classify as a network fault.
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "ruff==${RUFF_VERSION}"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/ruff" --version
+
       - name: Python package tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           bash .ci/bootstrap.sh
           npm run check:ci-pytest
+
+  # ============================================================================
+  # L9c GATE TESTS -- split out of quality-security (PLAN-ci-time-budget.md
+  # T2.15, 2026-09-26). One unsharded leg, the quality-gate battery
+  # (`.ci/rediacc_ci/battery.py`, 149 bash twins under
+  # `.ci/scripts/test/gates/`), measured at 10.1-12.9 min -- already under the
+  # 15-minute per-job target without sharding.
+  # ============================================================================
+  quality-gate-tests:
+    name: Gate tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # DEEP, for the same reason quality-security takes one: some of the
+          # battery's own tests (e.g. gate-test:toolchain's siblings) walk commit
+          # topology on the real tree.
+          fetch-depth: 0
+          filter: blob:none
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        # DEFAULTS ONLY: the battery's 149 bash twins run `npm run <gate>` and
+        # `tsx` against the root workspace the bare setup already restores; none
+        # of them touches the account submodule's own npm trees or the built
+        # shared/provisioning packages (those are the pytest suite's, above).
+
+      - name: Load gate toolchain pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # gate-test:toolchain (one of the battery's 149) asserts its resolver
+        # against the REAL pinned versions (e.g. `fake shfmt "v${SHFMT_VERSION}"`
+        # ), so this step has to run even though nothing here installs a real
+        # toolchain from it.
+        run: |
+          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
+          .ci/scripts/lib/toolchain.sh --report
 
       # NO `env:` HERE, AND THE ABSENCE IS DELIBERATE. This step carried
       # `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}`, empty on push,
@@ -2389,13 +2497,6 @@ jobs:
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: quality-security-${{ github.sha }}
-          path: audit-report.json
-          retention-days: 3
 
   # ============================================================================
   # L10 GO -- everything needing a Go toolchain and the renet/account submodules.

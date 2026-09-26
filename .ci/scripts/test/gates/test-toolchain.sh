@@ -3,7 +3,7 @@
 # kind: battery
 # step: Quality-gate unit tests
 # needs: none
-# lane: quality-security
+# lane: quality-gate-tests
 # blocker: BLOCKER: rides the hand-written "Quality-gate unit tests" step, which all 148 gate-tests share and none owns, so no gate-bind region may emit it
 # why: Controls for .ci/scripts/lib/toolchain.sh
 # ---- end gate ----

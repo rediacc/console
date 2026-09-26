@@ -4782,7 +4782,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
+      job: 'quality-gate-tests',
       step: 'Quality-gate unit tests',
     },
   },
@@ -4835,7 +4835,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
+      job: 'quality-gate-tests',
       step: 'Quality-gate unit tests',
     },
   },
@@ -4878,7 +4878,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
+      job: 'quality-gate-tests',
       step: 'Quality-gate unit tests',
     },
   },
@@ -4923,13 +4923,13 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      // quality-security, NOT quality-static, and this was a live defect rather than a preference. Measured 2026-09-07: 23 of the 64 ported gate tests shell out to node tooling (npx, tsx, npm run, node_modules), and quality-static is one of only three lanes that runs NO setup-workspace, so it has neither node nor the workspace deps. Driven with node hidden from PATH, exactly as
+      // quality-pytest, NOT quality-static, and this was a live defect rather than a preference. Measured 2026-09-07: 23 of the 64 ported gate tests shell out to node tooling (npx, tsx, npm run, node_modules), and quality-static is one of only three lanes that runs NO setup-workspace, so it has neither node nor the workspace deps. Driven with node hidden from PATH, exactly as
       // that runner sees it, three of those ported modules gave 24 failed / 1 passed. They do not skip; they fail.
       //
       // CI has not caught it because every port is still UNTRACKED, so the checkout CI runs has never contained one. The red would have arrived on the commit that landed them, which is the worst moment to discover a lane cannot run its own gate.
       //
-      // quality-security is the coherent home rather than merely a working one: it has node, a 20 minute timeout against 18 steps, and it ALREADY hosts the "Quality-gate unit tests" battery that runs all 149 bash twins. The gate driving the ported versions of those same tests belongs beside them.
-      job: 'quality-security',
+      // SPLIT OUT OF quality-security (PLAN-ci-time-budget.md T2.15, 2026-09-26): this step alone ran 20.9-22.5 minutes inside the old 45-minute job, so it now has its own job and its own toolchain setup (checkout, setup-workspace, ruff, createrepo-c, the CLI bundle) rather than sharing quality-security's. `check:ci-quality-gates`, the battery this gate's "Quality-gate unit tests" name used to sit beside, moved out too, into the sibling `quality-gate-tests` job below.
+      job: 'quality-pytest',
       step: 'Python package tests',
     },
   },
@@ -4975,7 +4975,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
+      job: 'quality-gate-tests',
       step: 'Quality-gate unit tests',
     },
   },
@@ -4988,7 +4988,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
+      job: 'quality-gate-tests',
       step: 'Quality-gate unit tests',
     },
   },
@@ -5002,7 +5002,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-security',
+      job: 'quality-gate-tests',
       step: 'Quality-gate unit tests',
     },
   },

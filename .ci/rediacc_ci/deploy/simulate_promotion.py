@@ -27,7 +27,9 @@ hidden.
 THE COPIES ARE PARALLEL, SO THEIR ORDER IS NOT DETERMINISTIC ON EITHER SIDE
 -----------------------------------------------------------------------------
 `xargs -P 8 -I{} bash -c 'copy_one_object "$@"' _ {}` dispatches up to eight
-independent server-side copies at once, so two runs of the SAME implementation can log them in different orders. The port uses a `ThreadPoolExecutor` with the same width and reproduces xargs' failure contract:
+independent server-side copies at once, so two runs of the SAME implementation can log them in different orders. The port uses a `ThreadPoolExecutor` and reproduces xargs' failure contract:
+
+WIDTH IS A DELIBERATE DIVERGENCE (PR-TASK W, `agent/plans/PLAN-ci-time-budget.md` T2.5): the port dispatches `COPY_PARALLELISM` (16) at once, not the twin's 8. Nothing above compares width: the differential's own multiset rule means concurrency degree is not part of what "agreement with the live twin" asserts, only the final set of copy calls and the failure contract are. `test_the_twin_still_says_what_this_port_says_it_says` keeps quoting the twin's literal `-P 8`, which is unaffected because the twin itself is unchanged.
 
   * a command exiting 1..125 does NOT stop the run, every remaining item is
     still attempted, and xargs exits 123 at the end;
@@ -126,8 +128,8 @@ AWS_CONFIGURE: tuple[tuple[str, str], ...] = (
 # (twin :187), verbatim. Fields 1..3 of `aws s3 ls --recursive` are date, time and size; everything after is the key.
 KEY_AWK = '{ for (i = 4; i <= NF; i++) printf "%s%s", $i, (i < NF ? OFS : ORS) }'
 
-# `xargs -P 8` (twin :198) and the two retry loops (twin :80, :160).
-COPY_PARALLELISM = 8
+# Twin :198 uses `xargs -P 8`; this port runs wider (T2.5, PLAN-ci-time-budget.md) because the copy-object calls are small server-side R2 requests, not bandwidth-bound transfers through the runner, and the differential does not assert on width (module docstring). The two retry loops (twin :80, :160) are unchanged.
+COPY_PARALLELISM = 16
 COPY_ATTEMPTS = 3
 COPY_BACKOFF_SECONDS = 5
 CP_ATTEMPTS = 5
@@ -423,7 +425,7 @@ def _copy_directory(
         log.error("no objects found under %s; refusing to promote an empty channel" % src_prefix)
         raise BashExitError(1)
 
-    # `xargs -P 8`. See the module docstring for the failure contract.
+    # `xargs -P 8` on the twin, `COPY_PARALLELISM` here. See the module docstring for the failure contract and the width divergence.
     _flush()
     with concurrent.futures.ThreadPoolExecutor(max_workers=COPY_PARALLELISM) as pool:
         statuses = list(

@@ -244,14 +244,14 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-proxy-linux-packages | local-only | yes | no | no |
 | check:ci-proxy-ops-host-check | local-only | yes | no | no |
 | check:ci-proxy-rdc-update | local-only | yes | no | no |
-| check:ci-pytest | quality-security / Python package tests | yes | yes | no |
+| check:ci-pytest | quality-pytest / Python package tests | yes | yes | no |
 | check:ci-python-control-plants | quality-static / Python control plants | yes | no | no |
 | check:ci-python-env-registry | quality-static / Python env registry | yes | yes | no |
 | check:ci-python-gate-deps | quality-static / Python gate deps | yes | no | no |
 | check:ci-python-lint | quality-static / Python lint + format (ruff) | yes | no | no |
 | check:ci-python-types | quality-static / Python types (mypy) | yes | yes | no |
 | check:ci-quality-complete | quality-wiring / Quality shard aggregation | yes | no | no |
-| check:ci-quality-gates | quality-security / Quality-gate unit tests | no | no | no |
+| check:ci-quality-gates | quality-gate-tests / Quality-gate unit tests | no | no | no |
 | check:ci-rdc-native | quality-static / rdc.sh wrapper budget and --native arms | yes | no | no |
 | check:ci-rdc-sh-env | quality-static / rdc.sh env tests | yes | no | no |
 | check:ci-recovery-context | quality-go / Check recovery functions get an uncancellable context | yes | no | no |
@@ -373,11 +373,11 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes | no |
 | check:types | quality-code / TypeScript | yes | yes | no |
 | check:version | quality-code / Versions | yes | no | no |
-| gate-test:blocker-golden-corpus | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-r2 | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:run-sh | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:runner-advice | quality-security / Quality-gate unit tests | yes | no | yes |
-| gate-test:toolchain | quality-security / Quality-gate unit tests | yes | no | yes |
+| gate-test:blocker-golden-corpus | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
+| gate-test:media-r2 | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
+| gate-test:run-sh | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
+| gate-test:runner-advice | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
+| gate-test:toolchain | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
 | gen:docs | local-only | no | no | no |
 | gen:gates-lock | local-only | no | no | no |
 | lint:unused | quality-code / Unused exports (knip) | yes | yes | no |
@@ -937,9 +937,9 @@ Scans: every `.github/workflows/*.yml` that calls a reusable workflow, folded to
 | `cd-v2.yml` | 5 | `tag-and-release` | - |
 | `cd-v2.yml` | 6 | `deploy-account-stable`, `deploy-marketing-stable` | `cd-deploy-account.yml`, `cd-deploy-worker.yml` |
 | `ci.yml` | 0 | `initialize` | - |
-| `ci.yml` | 1 | `breakpoint-lifecycle`, `build-renet`, `cancel-watchdog`, `check-release-state`, `label-guide`, `quality`, `run-sh-tests` | `ci-build-renet.yml`, `ci-quality.yml` |
-| `ci.yml` | 2 | `build-cli`, `build-docker-fast`, `package-tests`, `review-gate` | `ci-build-cli.yml`, `ci-build-docker.yml` |
-| `ci.yml` | 3 | `build-docker`, `elite-run-test`, `ops-tests`, `stripe-sandbox`, `tests`, `update-flow-test` | `ci-build-docker.yml`, `ci-ops-test.yml`, `ct-tests.yml`, `ct-update-flow.yml` |
+| `ci.yml` | 1 | `breakpoint-lifecycle`, `build-devcontainer`, `build-renet`, `cancel-watchdog`, `check-release-state`, `label-guide`, `quality`, `run-sh-tests`, `tests` | `ci-build-docker.yml`, `ci-build-renet.yml`, `ci-quality.yml`, `ct-tests.yml` |
+| `ci.yml` | 2 | `build-cli`, `build-docker-fast`, `ops-tests`, `package-tests`, `review-gate` | `ci-build-cli.yml`, `ci-build-docker.yml`, `ci-ops-test.yml` |
+| `ci.yml` | 3 | `build-docker`, `elite-run-test`, `stripe-sandbox`, `update-flow-test` | `ci-build-docker.yml`, `ct-update-flow.yml` |
 | `ci.yml` | 4 | `stage-artifacts` | `cd-stage.yml` |
 | `ci.yml` | 5 | `deploy-preview`, `validate-install`, `validate-promote` | `ct-install-methods.yml` |
 | `ci.yml` | 6 | `smoke-test-preview` | - |

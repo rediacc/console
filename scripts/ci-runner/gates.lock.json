@@ -5107,7 +5107,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-gate-tests",
       "step": "Quality-gate unit tests"
     }
   },
@@ -5122,7 +5122,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-gate-tests",
       "step": "Quality-gate unit tests"
     }
   },
@@ -5163,7 +5163,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-gate-tests",
       "step": "Quality-gate unit tests"
     }
   },
@@ -5194,7 +5194,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-pytest",
       "step": "Python package tests"
     }
   },
@@ -5244,7 +5244,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-gate-tests",
       "step": "Quality-gate unit tests"
     }
   },
@@ -5259,7 +5259,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-gate-tests",
       "step": "Quality-gate unit tests"
     }
   },
@@ -5277,7 +5277,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-security",
+      "job": "quality-gate-tests",
       "step": "Quality-gate unit tests"
     }
   },

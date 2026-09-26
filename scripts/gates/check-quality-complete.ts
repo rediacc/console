@@ -95,11 +95,11 @@
  * ---- end gate ----
  */
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { type Shard, SHARD_COUNTS, laneCapabilities, shardPlan } from '../ci-runner/lanes.js';
+import { laneCapabilities, SHARD_COUNTS, type Shard, shardPlan } from '../ci-runner/lanes.js';
 import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { runControls } from '../lib/controls.js';
@@ -392,6 +392,12 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
   [HOST_LANE]:
     'holds this gate, which polices the lane structure and therefore cannot run inside ' +
     'a lane an emitted region could conjunct onto one shard leg',
+  'quality-pytest':
+    'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
+    'Python package test step, which no gate-bind region emits; T2.8 unit sharding replaces it',
+  'quality-gate-tests':
+    'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
+    '"Quality-gate unit tests" battery step, which no gate-bind region emits by its own header',
   [AGGREGATOR_JOB]:
     'runs the receipts half of this same gate, downstream of every sharded lane; a ' +
     'region there would conjunct the judge onto one leg of the matrix it is judging, ' +
