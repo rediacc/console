@@ -365,20 +365,23 @@ Each scenario runs today's code before its fix. A scenario that reproduces a def
 
 ### 4.3 Mutation controls (run by hand in T15; each must turn its test red)
 
-| Revert | Red test |
-|---|---|
-| `adapter.ts` pull decrypts with `session.sdkDerived` | H1 |
-| Server stores the current epoch instead of `body.sdkEpoch` (`config.service.ts:638`) | H2 |
-| Remove the CAS predicate (T5) | H9 |
-| Remove the lease lock or token threading (T6) | H7 |
-| Remove the host-local overlay of `state` / `masterPasswordVerifier` (T3) | H12 |
-| Drop `'policy'` from `SENSITIVE_FIELDS` (`constants.ts:232`) | H12 |
-| Server ignores the tombstone hmac comparison (T9) | H13 |
-| Remove the AAD, or the high-water check (T8) | H14 |
-| `pushOnce` base from disk without the rebase cache write (T4) | H15 |
-| Remove the generation check on push (T10) | H10 |
-| `loadRemote` serves the cache on `RemoteAuthError` | H11 |
-| Restore the `...local.account` overlay | H16 |
+Run 2026-09-26 against 3c99a41d0 (account e1d426b), one revert at a time, each file restored byte-identical (`cmp`) and `packages/shared` rebuilt around the shared rows. Every row below went red.
+
+| Revert | Red test | Run 2026-09-26 |
+|---|---|---|
+| `adapter.ts` pull decrypts with `session.sdkDerived` | H1 | H1, H2 red |
+| Server stores the current epoch instead of `body.sdkEpoch` | H2 | H2 red |
+| Remove the CAS predicate (T5) | H9 | F7 H9 red |
+| Remove the lease lock or token threading (T6) | H7 | H7 red |
+| Remove the device-local overlay (`remote-cache.ts` pointer loop) | H12 | H12 (both modes) red, plus H11, H13-H16 |
+| Replace the `state` merge with the pulled `state` (T17) | S3, S5 (`state-sync.test.ts`) | S3, S5 red; H12 green, since `state` syncs now |
+| Drop `policy` from the synced blob and its commitments (`payload.ts syncedDocument`; `SENSITIVE_FIELDS` is gone since T17) | H12, H15 | first run: H15 only, H12 compared A with B but not with the seed; H12 now also compares with the seed and goes red |
+| Server ignores the tombstone hmac comparison (T9) | D1 forged-proof test (`envelope-v3.test.ts`) | D1 red; no H13 test sends a forged tombstone |
+| Remove the AAD, or the high-water check (T8) | H14 | F1 H14 red (both halves) |
+| `pushOnce` base from disk without the rebase cache write (T4) | H15 | H15 red |
+| Remove the generation check on push (T10) | H10 (F12) | F12 red (the push fails as RemotePreconditionError instead) |
+| `loadRemote` serves the cache on `RemoteAuthError` | H11 | H11 red |
+| Restore the `...local.account` overlay | H16 synced account field | first run: green (H16 covered only `defaults`); the new H16 account-field test is red |
 
 ## 5. Operator decisions (recommended option first)
 
