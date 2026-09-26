@@ -4,6 +4,9 @@ Status: DESIGN, not implemented — 2026-09-06
 Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner decision required. Raised by session d1589e0b under operator ruling "Build the step-scoped fetch shape now" (/ask, 2026-09-05).
+Priority: P3 -- seed: Status design, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .github/workflows/breakpoint.yml
 
 ## The problem, precisely
 

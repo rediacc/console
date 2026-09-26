@@ -5,6 +5,9 @@ Correction, 2026-09-24: this header used to say #373907ed PARKED sections 2 to 6
 First-Seen: 2026-09-17
 Owner: d778be9d (the session holding the #373907ed answer)
 Date: 2026-09-24
+Priority: P3 -- seed: Status draft, 16 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/*.py, agent/RULES.md, .ci/scripts/quality/check_operator_rulings.py, .claude/rediacc_hooks/tests/*.py
 
 Split out byte-identical on 2026-09-24 from `agent/plans/PLAN-stop-hook-overhaul.md`, which keeps section 1 (the noise fixes the decision said to execute) and its sections 7 to 9. The split exists because an adopted plan makes every open box a blocking mission, so these parked boxes demanded fresh trackers on every stop; five add-and-tick rounds had not ended that.
 

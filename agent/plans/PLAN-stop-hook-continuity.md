@@ -5,6 +5,9 @@ Depends-On: no-dep -- related, not ordered: closes F3 of PLAN-parallel-writer-ro
 Owner: d778be9d
 First-Seen: 2026-09-24
 Updated: 2026-09-24
+Priority: P1 -- seed: Status executing, 0 open box(es), a recent operator order
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/*.py, .claude/hooks/stop, agent/plans, docs/agent-reference, agent/ledgers/hint-proposals.jsonl, docs/agent-reference/HINTS.md, agent/ledgers, agent/programs/self-improvement/LOG.md, .claude/rediacc_hooks/tests/test_wl_roster.py, .claude/settings.json, .claude/rediacc_hooks/tests, .claude/rediacc_hooks/lifecycle.py, .claude/rediacc_hooks/hookio.py, .claude/rediacc_hooks/tests/hookcases.py, .claude/hooks/trapguard/dispatch.py, .ci/scripts/ci/ci-trace.py, .ci/rediacc_ci/review/standing_orders_brief.py, .ci/rediacc_ci/quality/hook_integrity.py, .ci/policy/worklist-env-registry.json, .claude/hooks/context/stop-hook-edit-check.py, scripts/data/hook-inventory-baseline.json, .claude/rediacc_hooks/tests/test_stop_hook_edit_check.py, agent/ledgers/stop-hook-retros.jsonl, .claude/hooks/context/band-notice.py
 
 **Line numbers.** They refer to the working tree on branch `0923-1` as it stands mid-way through the cross-session messaging removal. That removal is uncommitted and edits most of these files, so line numbers in `wl_checks.py` will shift. Every citation also names its function or constant, so a writer can re-anchor on the symbol.
 

@@ -4,6 +4,9 @@ Depends-On: no-dep -- carves out box B2 of PLAN-tooling-transformation.md; the u
 First-Seen: 2026-09-17
 against the live tree, NOT re-derived from this checklist (which still read "draft" and every task unchecked despite the commits below existing). D5's second clause was ATTEMPTED and REVERTED for cause the same day; see Tasks. Remaining: D5's second clause (properly traced), the two selftest controls, the stale-comment fix.
 Owner: d778be9d (adopted from f4da5c2e 2026-09-23)
+Priority: P1 -- seed: Status partially, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .github/workflows/ci-quality.yml, scripts/gate-bind.ts, scripts/ci-runner/lanes.ts, scripts/gates/check-quality-complete.ts, scripts/ci-runner/manifest.ts, .ci/rediacc_ci/security/workflow_gates.py
 
 ## Why
 

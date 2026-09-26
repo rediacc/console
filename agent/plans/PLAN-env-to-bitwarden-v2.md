@@ -7,6 +7,9 @@ Supersedes: the classification in `agent/archive/plans/PLAN-env-to-bitwarden.md`
 (archived byte-identical 2026-09-09; see `agent/plans/PLAN-completion-strategy.md` section 2). That plan's Parts 2-7 (consumer map, fetch helper, clone protocol, gate retargets, migration order) still stand except where Part 6 below amends them.
 Scope: design. The two-way mapping in Part 2 was RUN (read-only, names only). Nothing was
 written to Bitwarden, AWS, Cloudflare or GitHub. No value of any secret was read or printed.
+Priority: P3 -- seed: Status draft, 1 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: private/account/scripts/rotation, .ci/rediacc_ci/core/bws_env.py
 
 # `.env` → Bitwarden, v2: classify on SHAREABILITY, not on secrecy
 

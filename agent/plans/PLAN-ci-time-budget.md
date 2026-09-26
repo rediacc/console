@@ -5,7 +5,7 @@ Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-plan-priority-concurrency.md -- spec order Y, X, W, Z; P2 fans out 3-4 writers across .github/workflows/**, which needs X's Owns-overlap refusal
 Priority: P1 -- AI-proposed. It turns every later CI round into a 15-20 minute wait instead of 45-70 minutes, but it is not a correctness fix.
-Concurrency: parallel
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: .ci/scripts/ci/watchdog-monitor.cjs, .github/workflows/watchdog-monitor.yml, .github/workflows/ct-tests.yml, .github/workflows/ci-ops-test.yml, .github/workflows/ci-quality.yml (quality-security, quality-complete and new lanes only), .github/workflows/ci.yml (needs:, timeout-minutes and validate-promote only), scripts/ci-runner/lanes.ts, scripts/ci-runner/run.ts, scripts/gate-bind.ts, scripts/gates/check-lane-budget.ts, scripts/gates/check-quality-complete.ts, scripts/ci/write-shard-receipt.cjs, .ci/rediacc_ci/ci/budget_report.py, .ci/rediacc_ci/private/run_renet.py, .ci/rediacc_ci/private/run_account.py, .ci/rediacc_ci/check_pytest.py, .ci/rediacc_ci/battery.py, .ci/rediacc_ci/deploy/simulate_promotion.py, .ci/scripts/test/run-e2e.sh, .ci/scripts/test/run-account-e2e.sh, .ci/tutorials/run-sequence.sh, .ci/config/lane-durations.json
 Worklist: (to be assigned)
 

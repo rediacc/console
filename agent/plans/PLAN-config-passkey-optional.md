@@ -5,6 +5,9 @@ Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: no-dep -- touches only private/account server, portal and e2e plus run-account-e2e.sh; no open plan edits those files
 Worklist: #4bbdca38, #fa5c407e
+Priority: P1 -- seed: Status approved, 4 open box(es), a recent operator order
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: private/account, .ci/scripts/test/run-account-e2e.sh, private/account/src/routes/device-codes.ts
 
 **Operator order, 2026-09-24 (/ask).** "Passkey optional": config storage must be usable when the passkey provider returns no WebAuthn PRF output. Bitwarden creates the passkey but returns no PRF result (bitwarden discussion #13838, still open July 2026). "Virtual authenticator E2E": Playwright against Chrome's CDP virtual authenticator, with `hasPrf` true and false, over setup, unlock, member accept, CEK rotation and device setup. A provider without PRF must never reach a dead end.
 

@@ -3,6 +3,9 @@ Status: mostly-done -- 6 of 7 boxes verified done 2026-09-22 (commits 1ea0c7340,
 Depends-On: PLAN-tooling-transformation.md#W1P6 -- the one open box S6 waits on the umbrella's terminal box W1P6, as this plan's Status line states
 First-Seen: 2026-09-21
 Owner: d778be9d
+Priority: P1 -- seed: Status mostly-done, 1 open box(es), a recent operator order
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: agent/plans, agent/INDEX.md, agent/archive, .ci/scripts/quality/*.py, .ci/config/plan-boxes.json, .ci/config/plan-lifecycle.json, .ci/rediacc_ci/quality/*.py, .claude/hooks/stop/*.py, .ci/policy/tree-shape.json, .ci/rediacc_ci/policy_paths.py, scripts/lib/policy-paths.ts, .ci/config/tree-shape-baseline.json, .claude/hooks, .ci/rediacc_ci, .ci/rediacc_ci/review/standing_orders_brief.py, .ci/rediacc_ci/private/run_account.py, agent/census-plan-record.jsonl, agent/ledgers, agent/worklist, agent/reggate, .claude/hooks/stop/.events.jsonl, agent/README.md, .ci/rediacc_ci/tests/test_quality_plan_lifecycle.py, agent/ledgers/census-plan-record.jsonl, agent/archive/REPORT-licensing-bigbang-2026-08-04.md
 
 ## Why
 The tooling transformation wants a clean tree. Two defects showed that cleanliness held only by luck. Debris files (`aa.jsonl`, `zz.jsonl`, `.events.jsonl`, `.lastevent-*.json`, `.requests`, `.local/`, `claude/`) sat untracked at the repo root, written by the old bash worklist suites, and a second reggate ledger appeared under `.claude/hooks/stop/agent/` because

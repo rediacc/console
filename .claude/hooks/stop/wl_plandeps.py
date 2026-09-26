@@ -61,7 +61,7 @@ CONCURRENCY = "Concurrency"
 OWNS = "Owns"
 X_FIELDS = (PRIORITY, CONCURRENCY, OWNS)
 # See the module docstring. PLAN-plan-priority-concurrency.md T11 sets this to True in the migration commit.
-X_FIELDS_REQUIRED = False
+X_FIELDS_REQUIRED = True
 OPERATOR_MARK = "operator"
 PARALLEL = "parallel"
 EXCLUSIVE = "exclusive"

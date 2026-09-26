@@ -4,6 +4,9 @@ Status: proposed
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-23
+Priority: P3 -- seed: Status proposed, 8 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: private/renet, private/account, .claude/rediacc_hooks/guards/block_uncoordinated_submodule_pointer.py, .claude/rediacc_hooks/guards/block_prose_style_commit.py, .claude/rediacc_hooks/guards/test-block_uncoordinated_submodule_pointer.py, .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md
 
 ## Immediate recommendation (read this first -- distinct from the guard design below)
 

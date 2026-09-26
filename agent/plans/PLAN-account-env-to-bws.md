@@ -6,6 +6,9 @@ First-Seen: 2026-09-24
 Date: 2026-09-24
 Parent: agent/plans/PLAN-env-to-bitwarden-v2.md (subsumes its open boxes "Seed the 4 admin credentials" and "Everything in v1's task list from 'Write .ci/lib/bws-env.sh' onward", except v1's `__ROTATED_` clone-protocol boxes v1:20-25, which are orthogonal and stay with v2)
 Scope: design. Measured read-only 2026-09-24 against `private/account/.env` (47 assigned names) and live BWS `ci-shared` (78 secrets, one project). No value was printed; comparisons ran in-process and emitted MATCH/MISMATCH/ABSENT/EMPTY only.
+Priority: P2 -- seed: Status draft, 1 open box(es), a recent operator order
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .ci/lib/account.sh, .ci/rediacc_ci/core/account.py, private/account/src/entry/dev-gateway.ts, scripts/ops/secret-rename.py
 
 
 ## Tasks

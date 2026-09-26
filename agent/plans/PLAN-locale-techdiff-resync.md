@@ -6,6 +6,9 @@ First-Seen: 2026-09-17
 Owner: whichever session picks it up
 Origin: worklist `#d84b5b51`, session f88f9be7, 2026-08-31. Its 120-minute autonomy
 window closed unanswered, so its DEFAULT is the decision: **this does NOT ride #583; it is its own pass, after #583 merges.** This file is that pass, written so it needs no rediscovery.
+Priority: P2 -- seed: Status ready, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: private/growth/i18n_pipeline, ./run.sh
 
 ## The defect
 

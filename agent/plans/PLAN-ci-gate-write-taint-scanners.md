@@ -4,6 +4,9 @@ Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-24
 Owner: d778be9d
 Worklist: deb0b82d
+Priority: P1 -- seed: Status active, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: scripts/ci-runner/gates.lock.json, .ci/scripts/quality/lint-rule-liveness.mjs, private/account, private/account/src/services/email.service.ts, scripts/ci-runner/*.ts, .ci/scripts/quality/*.py, .github/workflows/ci-quality.yml, .ci/rediacc_ci/quality/*.py, .ci/scripts/test/gates, .ci/breakpoint/scripts/check-breakpoint-drift.sh, .ci/rediacc_ci/battery.py, packages/www, scripts/gen/gen-manifest.ts, packages/www/scripts/check-solution-video-engine.ts, packages/www/src/data/video-manifest.json, packages/cli/src/services/account/subscription-auth.ts, packages/cli/src/services/core/audit-log.ts, scripts/__tests__/check-docs-render-parity.control.ts, packages/cli/.config-migrations-check.tmp.ts, packages/cli, workers/proxy/renet/renet-linux-amd64, workers/proxy/renet/.gitignore, workers/proxy/renet, workers/proxy/Dockerfile, scripts/__tests__/check-translation-key-usage.control.ts, packages/www/src/components/__control_probe__.tsx, scripts/gates/check-translation-key-usage.ts, .ci/breakpoint/MANIFEST.sha256, scripts/gate-bind.ts, .ci/rediacc_ci/security/actionlint.py, scripts/lib/tree-write-sites.ts, scripts/gates/check-control-in-string.ts, scripts/lib/rule-host.ts, scripts/gates/check-ci-parity.ts, .ci/policy/tree-write-mutators.json, .ci/cache, .ci/rediacc_ci/paths.py, private/account/src/__x.ts, .ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py, .ci/rediacc_ci/tests/test_quality_gate_tree_writes.py, docs/agent-reference/ci-gates.md, docs/agent-reference/TRAPS.md, private/renet, agent/ledgers/census-plan-record.jsonl, agent/INDEX.md
 
 ## Why
 

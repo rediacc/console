@@ -5,6 +5,9 @@ Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
 First-Seen: 2026-09-24
+Priority: P2 -- seed: Status ready, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/*.py, agent/worklist/d778be9d.jsonl, .claude/agents/test-advisor.md, .ci/policy/worklist-env-registry.json, .claude/settings.json, .claude/rediacc_hooks/lifecycle.py, .claude/rediacc_hooks/tests/*.py, .ci/scripts/quality/check_hint_corpus.py, .claude/commands/handoff.md, docs/agent-reference/model-routing.md, .claude/rediacc_hooks/guards/agent_cap.py, .claude/rediacc_hooks/guards/block_agent_cap.py, .ci/rediacc_ci/quality/worklist_env_registry.py, .claude/rediacc_hooks/guards/test-block_agent_cap.py, docs/agent-reference/TRAPS.md, .ci/cache/toolchain/uv-tools/bin/pytest, .claude/rediacc_hooks/tests, .ci/scripts/quality/check_worklist_env_registry.py, .ci/scripts, .claude/hooks/stop
 
 ## Why
 

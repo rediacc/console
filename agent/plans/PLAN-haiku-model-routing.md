@@ -5,6 +5,9 @@ Depends-On: no-dep -- cites only finished plans: PLAN-remove-autopilot.md
 Owner: d778be9d
 First-Seen: 2026-09-22
 Operator ask: "we burn a lot of tokens with stop hook... investigate where we can use haiku model for sub-agents. Which task categories and which languages are better to leverage haiku... implement planned changes to encourage haiku model wherever possible. I suppose python and typescript could be the targets but not limited to them." <!-- style-ok -->
+Priority: P1 -- seed: Status phase, 1 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/wl_judge.py, docs/agent-reference/model-routing.md, docs/i18n/CONVENTIONS.md, .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, docs/agent-reference/X.md, scripts/gen/gen-docs.ts, scripts/data/doc-registry.md, .claude/agents/*.md, packages/www/src/i18n/translations/.naturalized-hashes.json, scripts/gates/check-naturalization-model-policy.ts, agent/programs/www-simplification/research/01-SYNTHESIS.md, agent/programs/www-simplification/research/RESEARCH-i18n-ci.md, docs/ci-overhaul/06-progress.md, .ci/scripts/quality/check_agent_hint_liveness.py, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, scripts/gen/gen-gates-lock.ts, .ci/scripts/test/gates/check-X.sh, .ci/rediacc_ci/tests/gates/test_gate_x.py, .claude/hooks/stop/calibrate-judge-rules.py, .ci/scripts/quality/check_agent_model_roster.py, .ci/scripts/quality/check_plan_boxes.py, .ci/config/plan-boxes.json, agent/DECISIONS.md
 
 Designed by a read-only Plan subagent. Every path/line below was opened and read.
 

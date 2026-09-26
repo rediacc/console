@@ -5,7 +5,7 @@ Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-plan-dependencies.md, PLAN-stop-hook-retro-20260925.md#R20260925.5
 Priority: P1 -- operator order 2026-09-25: second of Y/X/W/Z; it makes fanning out Z and W writers safe
-Concurrency: parallel
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: .claude/hooks/stop/wl_{plandeps,planconc,roster,checks,store,backlog,planenforce,planrec}.py, .claude/hooks/stop/{worklist,worklist_messages}.py, .claude/hooks/stop/test-{plandeps,backlog}.py, .claude/rediacc_hooks/guards/{block,test-block}_plan_{without_depends,concurrency}.py, .claude/rediacc_hooks/tests/test_wl_{roster,leases,guide_and_deferrals,cap_wait,plan_priority}.py, .ci/scripts/quality/check_plan_deps.py, .ci/rediacc_ci/tests/gates/test_gate_plan_deps.py, scripts/data/hook-inventory-baseline.json
 Worklist: #<add when tracked>
 

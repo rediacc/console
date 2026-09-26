@@ -3,6 +3,9 @@ Status: executing -- Commits 1-2 done (commits e31838a0f, 3128f9a2f). Commit 3: 
 Depends-On: no-dep -- cites only finished plans: PLAN-extension-shaped-matchers.md, PLAN-fix-stop-hook-completion-evidence-refire.md
 Owner: d778be9d
 Updated: 2026-09-24
+Priority: P1 -- seed: Status executing, 1 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .git/hooks, .claude/hooks/stop/*.py, .claude/rediacc_hooks/guards/*.py, scripts/gates/*.ts, scripts/data/hook-inventory-baseline.json, .ci/cache/shape-index/probe.mjs, .ci/config/rubric-calibration.json, .ci/scripts/quality/*.py, .ci/rediacc_ci/quality/rubric_calibration.py, .ci/rediacc_ci/tests/test_shapedup_corpus_sig.py, agent/reggate, scripts/data/shape-duplication-seed-advisory.json, scripts/lib/blocker-validator.ts, .ci/rediacc_ci/tests/test_shape_probe_agreement.py, .ci/cache/shape-index-advisory, .ci/rediacc_ci/tests/gates/*.py, .ci/cache/shape-index, .claude/hooks/stop, .ci/scripts/quality, .ci/rediacc_ci/tests/gates, .claude/rediacc_hooks/guards, .ci/rediacc_ci/controls.py, .ci/rediacc_ci/controls.Checker, .claude/rediacc_hooks/shellscan.py, .ci/rediacc_ci/proc.py
 
 ## Part 0 -- What was verified (and what the operator's memory got wrong)
 

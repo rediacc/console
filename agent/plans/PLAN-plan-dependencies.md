@@ -5,6 +5,9 @@ Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: PLAN-stop-hook-continuity.md
 Worklist: #9fb25f26
+Priority: P1 -- seed: Status approved, 12 open box(es), a recent operator order
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/*.py, .ci/scripts/quality/check_plan_deps.py, .ci/rediacc_ci/tests/gates/test_gate_plan_deps.py, .claude/rediacc_hooks/guards/block_plan_without_depends.py, .claude/rediacc_hooks/tests/test_guards_differential.py, scripts/data/hook-inventory-baseline.json, scripts/ci-runner/manifest.ts, .github/workflows/ci-quality.yml, agent/README.md, docs/agent-reference/plan-records.md, docs/agent-reference/suppressions.md
 
 **Operator order, 2026-09-24:** "we should not start implementing a plan before the required plan completes. It should be a mandatory field and should have at least explicit 'no-dep' if there is really no dependency. Maybe we can also align the stop hook system to benefit from it to push what's needed to go first."
 

@@ -5,7 +5,7 @@ Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: PLAN-stop-hook-focus-mode.md, PLAN-plan-priority-concurrency.md, PLAN-ci-time-budget.md, PLAN-commit-as-you-go.md#T6, PLAN-commit-as-you-go.md#T7 -- operator order Z last; reuses Y's focus keep-list and X's Owns: header, overlaps W on ci.yml and ci-quality.yml; commit-as-you-go T6/T7 edit this plan and land before its T2
 Priority: P1 -- proposed by AI (the operator: "per-commit reviews become the main quality signal")
-Concurrency: parallel
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: .claude/hooks/stop/wl_review.py, .claude/hooks/post-bash/review_commit.py, .claude/hooks/stop/test-commit-review.py, .claude/rediacc_hooks/guards/block_review_file_edit.py, .claude/rediacc_hooks/guards/block_push_with_unrecorded_reviews.py, .ci/config/commit-review.json, .ci/rediacc_ci/review/**, .ci/scripts/review/**, .github/workflows/claude-review*.yml, .github/workflows/review-status.yml, .ci/rediacc_ci/quality/agent_session_archival.py, agent/reviews/**
 Worklist: (lead adds this with `worklist.py --add`)
 

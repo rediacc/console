@@ -3,6 +3,9 @@
 Status: APPROVED 2026-09-24 by the operator (/ask): run as one big-bang; use sonnet for any sub-agent task it can handle; re-judge the three tree exemptions per file; reverse the 2026-09-21 ruling BUT keep the real-bash benefit for some cases (task A0). Worklist #52383b75.
 Depends-On: no-dep -- related, not ordered: its G1 closes box W1P6 of PLAN-tooling-transformation.md and supersedes that plan's 2026-09-21 oracle ruling
 Owner: d778be9d
+Priority: P2 -- seed: Status approved, 15 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .ci/config/language-policy-baseline.json
 
 ## Tasks
 

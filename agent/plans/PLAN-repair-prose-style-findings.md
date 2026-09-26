@@ -4,6 +4,9 @@ Status: draft
 Depends-On: no-dep -- related, not ordered: PLAN-secret-namespace-migration.md and PLAN-ci-watch-enforcement.md are files holding findings it repairs
 Owner: d778be9d
 Updated: 2026-09-23
+Priority: P3 -- seed: Status draft, 1 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: agent/plans, .ci/config/prose-style-baseline.json, .ci/rediacc_ci/quality/prose_style.py, private/renet
 
 ## The finding
 

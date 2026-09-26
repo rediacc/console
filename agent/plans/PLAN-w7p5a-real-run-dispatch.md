@@ -4,6 +4,9 @@ Status: in-progress -- Tier R (2026-09-23), Tier Q and the eight runnable Tier M
 Depends-On: no-dep -- cites only finished plans: PLAN-w7p5a-deploy-release-port.md
 Owner: d778be9d
 Updated: 2026-09-24
+Priority: P1 -- seed: Status in-progress, 2 open box(es), a recent operator order
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .ci/policy/.w7p5a-real-run-blocklist, .ci/shadow/w7p5a-status.json, .ci/rediacc_ci/tests/test_w7p5a_dry_run_ledgers.py, .ci/cache/toolchain/uv-tools/bin/pytest, .ci/policy/.w7p5a-real-run-leg-blocklist, .ci/scripts/deploy/*.sh, .ci/scripts/release/*.sh, private/renet, .ci/cache/w7p5a-realrun, ./run.sh, .ci/rediacc_ci/deploy/*.py, .ci/rediacc_ci/quality/w7p5a_real_run_blockers.py, .claude/rediacc_hooks/guards/block_worktree_add.py, .ci/scripts/lib/release-state-validator.sh, .ci/config/constants.sh, .github/workflows/cd-stage.yml, .ci/config/secret-supply.json, .claude/rediacc_hooks/guards/block_host_toolchain_run.py, scripts/ops/lib/cf-auth.sh, .ci/docs/r2-setup.md, scripts/lib/shadow-gate.ts, workers/www/wrangler-migration-test.toml, workers/www, private/account/drizzle, .github/workflows/ct-tests.yml, .ci/shadow, .ci/cache/w7p5a-realrun/cfkit.py, .ci/cache/w7p5a-realrun/v1312, private/account, .ci/rediacc_ci/release/update_homebrew_tap.py, .ci/scripts/ci/initialize.sh, private/homebrew-tap
 
 ## The ask
 

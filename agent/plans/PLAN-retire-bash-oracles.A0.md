@@ -2,6 +2,9 @@
 
 # A0 design: `test_bash_semantics.py`, the kept real-bash facts, and the live bugs they expose
 Depends-On: no-dep -- appendix of PLAN-retire-bash-oracles.md; carries no work of its own
+Priority: P3 -- seed: Status unknown, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/rediacc_hooks/shellscan.py, .claude/rediacc_hooks/guards/*.py, private/renet, .claude/rediacc_hooks/hookio.py, .ci/rediacc_ci/core/bash_dialect.py, .claude/rediacc_hooks/tests/test_bash_semantics.py, .claude/hooks/profile/bash_env.sh, .ci/rediacc_ci/check_pytest.py, .claude/rediacc_hooks/proc.py
 
 Every probe below was checked against `/usr/bin/bash` 5.3.9 in this session, except where a row says otherwise. Nothing in the tree was modified.
 

@@ -4,8 +4,8 @@ Status: draft
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: no-dep -- none for T0-T3 or the drain D0-D10; T9 serialises with PLAN-stop-hook-focus-mode.md on .claude/commands/pr-*.md (see Concurrency); PLAN-per-commit-review.md waits on T6/T7
-Priority: P0. This is an operator ruling, and the tree holds 342 uncommitted console paths plus 86 in private/account.
-Concurrency: parallel. There is one exception: T9 edits `.claude/commands/pr-*.md` and `.claude/agents/pr-babysitter.md`, which Y also owns, so T9 waits until Y's section 8 edits have landed.
+Priority: P0 -- This is an operator ruling, and the tree holds 342 uncommitted console paths plus 86 in private/account.
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: .claude/rediacc_hooks/commit_policy.py, .ci/config/commit-policy.json, .claude/rediacc_hooks/guards/block_commit_on_main.py, .claude/rediacc_hooks/guards/block_second_branch.py, .claude/rediacc_hooks/guards/block_ci_skip_token.py, .claude/rediacc_hooks/guards/block_no_review_ineligible.py, .claude/rediacc_hooks/guards/block_git_hook_bypass.py, .claude/rediacc_hooks/guards/test-block_{commit_on_main,second_branch,ci_skip_token,no_review_ineligible,git_hook_bypass}.py, .claude/rediacc_hooks/git/** (T8 only), CLAUDE.md (Session Defaults rule 1 and the "Never push to main" section), .claude/output-styles/standing-orders.md
 Worklist: the lead adds this with `worklist.py --add`.
 

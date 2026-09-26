@@ -1265,6 +1265,8 @@ def cited_paths(root: pathlib.Path, text: str) -> list[str]:
             or re.match(r"^agent/(?:[^/]+/)*PLAN-[^/]+\.md$", path)
             or "*" in path
             or "{" in path
+            # A relative climb (`../../`) cited in prose resolves outside the repo root and is never a file this plan edits; seeding it made D14 refuse the whole migration (2026-09-26, PLAN-ci-gate-write-taint-scanners).
+            or ".." in pathlib.PurePosixPath(path).parts
         ):
             continue
         p = root / path

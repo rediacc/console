@@ -5,6 +5,9 @@ Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Origin: session f88f9be7, 2026-09-01. Found by sweeping the class behind `6ba6a0c4c`,
 which wired `packages/cli`'s 185 test files into a typecheck project and fixed the 111 errors hiding there. These four are the siblings. All counts below were MEASURED on the tree at `6ba6a0c4c`, not estimated.
+Priority: P2 -- seed: Status ready, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: packages/cli, packages/shared, packages/provisioning, packages/e2e-tests, workers/www, packages/www, scripts/tsconfig.json, packages/www/tsconfig.json, workers/mta-sts, workers/proxy, workers/account, packages/cli/src/remote/sync/__tests__/sftp-fallback.test.ts
 
 ## The two shapes, which need different fixes
 

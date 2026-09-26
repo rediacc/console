@@ -5,6 +5,9 @@ Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-25
 Owner: d778be9d (adopted from retro ae06fedae89115ef2 20260925)
 Updated: 2026-09-25
+Priority: P2 -- seed: Status ready, 7 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py, .claude/rediacc_hooks/tests/test_wl_roster.py, .claude/rediacc_hooks/tests/test_wl_leases.py, .claude/hooks/stop/test-planfile.py, .claude/hooks/context/test-context-bands.py
 
 **Scope.** This retro covers lead transcript bytes 236722957 to 238604947. That runs from 2026-09-24T19:38:07Z to 2026-09-25T13:32:09Z. The session was active until 20:59Z, then waited for the operator's AskUserQuestion answer, which came at 13:30:52Z.
 

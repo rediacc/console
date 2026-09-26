@@ -4,6 +4,9 @@ Status: draft
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
+Priority: P3 -- seed: Status draft, 19 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: packages/shared/src/config-schema/schemas.ts, packages/cli, packages/shared, packages/www, packages/www/scripts/lib/scenes/browser-session.ts, workers/www/src/index.ts, packages/e2e-tests, packages/provisioning, packages/cli/src/remote/sftp/client.ts, packages/shared/src/config-crypto/slots.ts, packages/shared/src/e2e/crypto.ts, workers/www, packages/cli/src/services/executor/local-executor.ts, packages/cli/src, packages/shared/src, packages/www/scripts, scripts/gates/*.ts, private/account, packages/www/src, private/account/src/routes, packages/cli/package.json, packages/e2e-tests/package.json, scripts/ci-runner/manifest.ts, scripts/data/source-rules.ts, scripts/ci-runner/gates.lock.json, .github/workflows/ci-quality.yml, .ci/scripts/quality/check_lint_scope_coverage.py, .ci/scripts/quality/check_format_scope.py, scripts/eslint-heap.sh, eslint-rules/__tests__/config-resolution-differential.mjs, scripts/data/domains.json, .ci/scripts/ci/scope-map.cjs, .devcontainer/devcontainer.json, .devcontainer/download-extensions.sh, .github/pull_request_template.md, .ci/legacy/run-legacy.sh, scripts/pre-commit-check.sh, .ci/rediacc_ci/proc.py, .ci/rediacc_ci/tests/gates/*.py, packages/provisioning/package.json, packages/shared/package.json, workers/proxy/package.json, private/account/package.json, private/account/web/package.json, .ci/policy/.deps-upgrade-blocklist, private/account/web, workers/proxy, packages/cli/src/__tests__/renet-access-ledger.test.ts, scripts/lib/positional-cli-detector.ts
 
 ## Finding
 

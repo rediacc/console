@@ -4,6 +4,9 @@ Depends-On: no-dep -- cites no other plan
 First-Seen: 2026-09-17
 Owner: unowned (drafted by 9d92d9b6, 2026-08-28)
 Updated: 2026-08-28
+Priority: P3 -- seed: Status draft, 6 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .ci/scripts/ci/ci-trace.py, .claude/hooks/post-bash/record_push.py, .claude/rediacc_hooks/lifecycle.py, scripts/data/hook-inventory-baseline.json, .claude/rediacc_hooks/tests/test_hooks_record_push.py, .claude/rediacc_hooks/tests/test_wl_ci_status.py, .ci/rediacc_ci/quality/ci_watch_recipe.py, .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md, .claude/hooks/lib/sanctioned.py
 
 A session cannot stop while a head IT pushed has no terminal verdict on record and nothing running to produce one. The enforcement is a join between two local ledgers, costs no network, and cannot fire on a peer's push by construction.
 

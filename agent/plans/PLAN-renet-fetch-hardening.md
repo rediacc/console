@@ -6,6 +6,9 @@ Owner: housekeeping writer agent, branch main
 Full-Text: f7a5351a9 agent/PLAN-renet-fetch-hardening.md
 Full-Text-Blob: 0f714f0ac7271327eb51438deb66d7250cb4b174
 Record-Sig: 823c73dd
+Priority: P3 -- seed: Status parked, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: none -- seed: the plan cites no repo path to edit
 
 ## Why
 <FILL: why>

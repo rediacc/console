@@ -3,6 +3,9 @@ Status: executing
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
 Updated: 2026-09-24
+Priority: P1 -- seed: Status executing, 1 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: agent/pr/0923-1.md
 
 Lead's rulings: every recommendation accepted; sessions (rows 2, 4, 5, 7) are `'read-only'`; `REDIACC_ALLOW_DIRTY_RENET` is yes; box 23 (commit) belongs to the babysitter.
 

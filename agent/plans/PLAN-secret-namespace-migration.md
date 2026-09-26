@@ -7,6 +7,9 @@ The door:operator-only reasoning below (three disputed secret values) is now MOO
 The operator overrode the "delete nothing" default directly on 2026-09-05 (commit a0d3d880f, "Bitwarden wins... Get rid of them").
 Execution finished by 2026-09-15 (commit 7343ae9dc). `.ci/config/shadow-expected-mismatches.json` and `.ci/config/github-secret-preimage.json`, both cited below, no longer exist -- deleted along with the shadow machinery once the migration completed.
 No live session owns this file (its driving session, a276391d, was tombstoned 2026-09-05); do not force an Owner: onto it.
+Priority: P1 -- seed: Status mostly, 3 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: private/growth, private/generative, private/generative/src/tutorial_tts/config.py, private/growth/video_pipeline/steps/step4000_voiceover.py, private/generative/src/tutorial_tts/gpu_lock.py, private/growth/video_pipeline/steps/step6000_render.py
 
 The header said `done` until 2026-09-05, and that is why this file reds check:ci-plan-boxes rather than being exempted by it: a finished status switches the Stop hook's advisory off, so a plan claiming done while carrying open boxes hides them from the one mechanism that surfaces them. The boxes were always there; the header was the inaccurate half. What remains is not a step in
 it: three secrets whose two copies hold different VALUES, which only the operator can reconcile. That is recorded where it will be found without reading 2,600 lines — `.ci/config/shadow-expected-mismatches.json`, which carries each drift with the run that found it, its door, and a `$resolution` block naming the steps. Worklist `[?] #fbd35dba` was closed 2026-09-03 with

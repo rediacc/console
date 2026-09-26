@@ -5,6 +5,9 @@ Successors (2026-09-24): check-trap-registry.sh -> .ci/scripts/quality/check_tra
 First-Seen: 2026-09-17
 Owner: 99ccf057
 Updated: 2026-08-09
+Priority: P3 -- seed: Status w, 7 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/rediacc_hooks/guards/block_missing_npm_script.py, docs/agent-reference/TRAPS.md, .claude/rediacc_hooks/guards/test-block_missing_npm_script.py, packages/cli, .claude/hooks/trapguard/dispatch.py, .claude/hooks/stop/wl_checks.py, .claude/rediacc_hooks/tests/test_hooks_trapguard.py, .ci/rediacc_ci/quality/trap_registry.py, .claude/rediacc_hooks/lifecycle.py, .claude/settings.json, .ci/rediacc_ci/tests/test_quality_trap_registry.py, .claude/hooks/stop/wl_trapfires.py, .claude/rediacc_hooks/tests/test_wl_hints.py, .claude/hooks/stop/wl_judge.py, scripts/ci-runner/manifest.ts, .claude/rediacc_hooks/tests/test_wl_idle_and_evidence.py
 
 Replace "a session reads TRAPS.md" with instruments that fire whether or not anyone read anything. The corpus stops being the protection and becomes the ledger of which instrument protects what, with a gate that reds when a trap has neither an instrument nor a stated reason it cannot have one.
 

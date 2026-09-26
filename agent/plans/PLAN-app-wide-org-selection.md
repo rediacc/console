@@ -5,6 +5,9 @@ Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: PLAN-config-passkey-optional.md -- builds on its uncommitted org-scoping work (configs.ts resolveConfigOrg, web/src/api/config.ts), which must land first
 Worklist: #793f9237
+Priority: P2 -- seed: Status approved, 3 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: private/account/src/services/*.ts, private/account/src/routes/*.ts, private/account/src/middleware/error-handler.ts, private/account/e2e/src/setup/global-setup.ts, private/account/src/middleware/partner.ts, private/account/src/middleware/org-role.ts, private/account/web/src/auth/ProtectedRoute.tsx, private/account/web/src/auth/AuthContext.tsx, private/account/src/utils/request.ts, private/account/web/src/pages/*.tsx, private/account/web/src/components/AppSidebar.tsx, private/account/web/src/api/*.ts, packages/cli/src/services/account/account-client.ts, packages/cli/src/services/account/subscription-device-auth.ts, private/account, private/account/tests/integration/*.ts, private/account/e2e/tests/20-config-storage/20-11-prf-provider-matrix.test.ts, private/account/e2e/src/base/AuthenticatedTest.ts, private/account/e2e/tests/16-team/16-01-team.test.ts
 
 Finding from the org-scoping writer (2026-09-24): orgService.resolveUserOrg falls back to the FIRST membership app-wide. Fixed at the root per the fix-in-session rule; ships as ONE PR and ONE deploy (server-only would strand two-org users with organization:null and no switcher).
 

@@ -3,6 +3,9 @@ Depends-On: no-dep -- sections 2-6 split out byte-identical into PLAN-stop-hook-
 First-Seen: 2026-09-17
 Owner: d778be9d (adopted from f4da5c2e 2026-09-23)
 Date: 2026-09-09
+Priority: P2 -- seed: Status ready, 0 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/*.py, .ci/scripts/quality/check_agent_hint_liveness.py, .claude/rediacc_hooks/tests/test_wl_background_waits.py, .ci/config/plan-boxes.json, .claude/hooks/stop/test-worklist-v5.sh, .claude/hooks/context/epoch-reset.py, .claude/rediacc_hooks/tests/test_wl_advisories_rotation.py
 
 # Stop-hook overhaul: noise, rulings, idempotence, focus
 

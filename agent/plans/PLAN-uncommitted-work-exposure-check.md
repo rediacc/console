@@ -4,6 +4,9 @@ Status: proposed
 Depends-On: no-dep -- cites only finished plans: PLAN-bgsweep-orphan-shells.md
 Owner: d778be9d
 Updated: 2026-09-23
+Priority: P3 -- seed: Status proposed, 7 open box(es)
+Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
+Owns: .claude/hooks/stop/*.py, .claude/agents/pr-babysitter.md
 
 ## Finding
 
