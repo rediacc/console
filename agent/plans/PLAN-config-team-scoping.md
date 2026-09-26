@@ -9,6 +9,12 @@ Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone whil
 Owns: private/account/src/utils/config-team-access.ts (new), private/account/src/routes/configs.ts (team-check hunks only), private/account/src/services/config.service.ts (listConfigs filter, token scope, executor grant filter hunks only), private/account/src/middleware/config-token.ts (scopeTeamId only), private/account/src/container.ts (configScopeTeamId variable only), private/account/src/db/config-schema.ts (config_tokens.scope_team_id only), private/account/drizzle/0056_config_token_team_scope.sql, private/account/drizzle/meta/** (0056 snapshot only), private/account/tests/integration/config-team-scope.test.ts (new), private/account/tests/integration/config-sync/team-scope.test.ts (new), private/account/tests/integration/config-sync/harness/teams.ts (new), private/account/tests/integration/config-sync/harness/device.ts (`teamId` enroll option only), packages/cli/src/adapters/remote-config-adapter.ts (403 mapping only), packages/cli/src/i18n/locales/*/cli.json (teamForbidden keys only), CLAUDE.md (config storage line only)
 Worklist: (the lead adds this with worklist.py --add)
 
+## Status on 2026-09-26 (session d778be9d), before the plan was held
+
+- T1, T2, T6 landed. T4 (wire the team check into every config-token route): the T10 writer reported `authorizeConfigTeam` already called from the pull, push, list and delete routes (private/account/src/routes/configs.ts, src/utils/config-team-access.ts); verify each route named in T4 and tick.
+- Remaining boxes: verify, then tick or implement.
+
+
 **Line numbers** are from console `64438d30b` and account `8fe80c2` (committed HEAD), read 2026-09-25. The account working tree has uncommitted edits from writer A, so some `config.service.ts` lines have since moved by about 6. Citations below use HEAD.
 
 ## Tasks

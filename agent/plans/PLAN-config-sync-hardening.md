@@ -9,6 +9,18 @@ Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone whil
 Owns: private/account/src/services/config.service.ts, private/account/src/routes/configs.ts, private/account/src/middleware/config-token.ts, private/account/src/middleware/error-handler.ts (config-token newServerToken passthrough only), private/account/src/dto/config.dto.ts, private/account/src/db/config-schema.ts, private/account/drizzle/0055_*.sql, private/account/drizzle/meta/**, private/account/web/src/api/config-session.ts, private/account/web/src/api/config.ts, private/account/web/src/pages/RotateCekWizard.tsx, private/account/tests/integration/config-sync/** (new), private/account/tests/integration/config-envelope-v2.test.ts, packages/cli/src/adapters/remote-config-adapter.ts, packages/cli/src/adapters/remote-token-storage.ts, packages/cli/src/services/config/config-server-client.ts, packages/cli/src/services/config/remote-cache.ts, packages/cli/src/services/config/config-base.ts, packages/cli/src/services/config/resource-state.ts (RemoteResourceState only), packages/cli/src/commands/config-remote-enable.ts, packages/cli/src/adapters/__tests__/remote-*.test.ts, packages/cli/src/services/__tests__/remote-cache.test.ts, packages/cli/src/i18n/locales/*/cli.json, packages/shared/src/config-crypto/{selective,layers,hmac,types,commitments,constants}.ts, packages/shared/src/config-crypto/__tests__/**, packages/shared/src/config-schema/{payload,sensitivity,walker}.ts, packages/shared/src/config-crypto/rotation.ts, packages/shared/src/config-schema/__tests__/**, docs/DESIGN-CONFIG-STORAGE.md, packages/www/src/content/docs/*/config-storage.md
 Worklist: (the lead adds this with `worklist.py --add`)
 
+## Status on 2026-09-26 (session d778be9d), before the plan was held
+
+Landed, not yet ticked here (tick each with `worklist.py --plan-investigate` then `--plan-tick`):
+- T1, T2 harness and scenarios; T3 host-local overlay (64438d30b, bd0278084); T4 push rebase and T6 token lease (d47018557); T5 compare-and-swap and T7 newServerToken in error bodies (account side of 7f046e03f); T8 envelope v3 and T9 tombstones (81f5b96f4, account b67830f); T10 CEK-rotation generation check and revocation (4d57c11ac, account e1d426b); T11 token auto-refresh (4feb30718, account ac6be47); T14 docs, English and 12 locales (6cfcb0017, 1bbaa133e); T16 versions and restore (4feb30718, 3a5f3a188); T17 one exclusion list and T18 edit commands push (e2d1b04e5).
+- T15 closure: mutation controls run and recorded in section 4.3 (28d967541); two-config live test on eu passed 2026-09-26 (add, delete, CEK rotation, stale-slot refusal), with fixes 86f932d9a, 3db0b79e0, 9060abac6, 0556753b0 and account fb32a96.
+
+Still open:
+- T12 (account/defaults semantics, enable cleanup, unknown keys) and T13 (SDK epoch window, portal ConfigSession on push material): verify against the code, then tick or implement.
+- T15: the phone-hotspot step (token renewal after a network change) needs the operator; not run.
+- `rdc config rotate-cek` still prints "The rotation revoked this device" after a rotation, though the initiator's device only holds the old key; reword in 13 locales.
+
+
 **Operator question, 2026-09-25 (verbatim):** `do you think that pull, push, encrypt, decrypt loop/code is safe enough?`
 
 **Short answer.** No. The encryption primitives are sound: AES-256-GCM with random IVs, HKDF with domain separation, and CEK wrapping that needs the slot secret. The loop around them is not:

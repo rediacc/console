@@ -9,6 +9,12 @@ Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone whil
 Owns: private/renet/pkg/repository/netid_guard.go (new), private/renet/pkg/repository/netid_guard_test.go (new), private/renet/cmd/renet/repository_up.go, private/renet/cmd/renet/repository_create.go, private/renet/cmd/renet/repository_fork.go (startForkServices only), private/renet/cmd/renet/network_commands.go, private/renet/cmd/renet/network_commands_test.go, private/renet/pkg/functions/commands/network_used.go (new), private/renet/pkg/list/repositories_test.go, private/renet/pkg/i18n/locales/*.go (new keys only), packages/shared/src/renet-contract/data/functions.generated.ts (regenerated), packages/cli/src/services/config/config-network-id.ts, packages/cli/src/services/config/network-id-discovery.ts (new), packages/cli/src/services/config/config-resources.ts (the network ID section, lines ~641-665 only), packages/cli/src/services/repo/repo-mount-check.ts, packages/cli/src/utils/repo-executor.ts, packages/cli/src/services/state.ts (repository vault block only), packages/cli/src/services/config/config-reconcile.ts, packages/cli/src/commands/repo-create-delete.ts (registerNewRepo only), packages/cli/src/commands/repo-fork.ts (registerFork only), packages/cli/src/commands/backup.ts (restore allocation only), packages/cli/src/services/cluster/cluster-kube.ts (allocation comment and call only), packages/cli/src/services/__tests__/config-network-id.test.ts, packages/cli/src/services/config/__tests__/network-id-discovery.test.ts (new), packages/cli/src/services/__tests__/config-reconcile.test.ts, private/account/tests/integration/config-sync/network-id.test.ts (new), private/account/tests/integration/config-sync/harness/machine.ts (new), docs/design/spec/04-config-schema-v3.md (sections 1.3 and 4.2 only)
 Worklist: (the lead adds this with worklist.py --add)
 
+## Status on 2026-09-26 (session d778be9d), before the plan was held
+
+- T2 (renet side, `guardNetworkID` in private/renet/pkg/repository/netid_guard.go) landed.
+- Open: T1 (fake machine and scenarios N1-N7), T3 (discovery before allocation, partial), T5 (`config reconcile` rebuilds networkIds by GUID, partial), and F20 (the CLI network-ID discovery fallback).
+
+
 ## Tasks
 
 Writers:

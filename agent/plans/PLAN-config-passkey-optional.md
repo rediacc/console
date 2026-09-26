@@ -5,6 +5,11 @@ Owner: d778be9d
 First-Seen: 2026-09-24
 Depends-On: no-dep -- touches only private/account server, portal and e2e plus run-account-e2e.sh; no open plan edits those files
 Worklist: #4bbdca38, #fa5c407e
+
+## Status on 2026-09-26 (session d778be9d), before the plan was held
+
+- Not started: T1 server, T2 portal, T3 E2E/CI/docs, T4 the pre-deploy production query.
+
 Priority: P1 -- seed: Status approved, 4 open box(es), a recent operator order
 Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: private/account, .ci/scripts/test/run-account-e2e.sh, private/account/src/routes/device-codes.ts

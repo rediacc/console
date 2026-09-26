@@ -496,10 +496,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-commit-as-you-go.md` | held | 371 | 13 | 0 | 33202 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-handoff-relay-only.md` | held | 397 | 11 | 0 | 36519 |
-| `agent/plans/PLAN-config-networkid-sync.md` | held | 272 | 8 | 0 | 30319 |
-| `agent/plans/PLAN-config-passkey-optional.md` | held | 119 | 4 | 0 | 12954 |
-| `agent/plans/PLAN-config-sync-hardening.md` | held | 445 | 19 | 0 | 53284 |
-| `agent/plans/PLAN-config-team-scoping.md` | held | 228 | 11 | 0 | 28723 |
+| `agent/plans/PLAN-config-networkid-sync.md` | held | 278 | 8 | 0 | 30683 |
+| `agent/plans/PLAN-config-passkey-optional.md` | held | 124 | 4 | 0 | 13115 |
+| `agent/plans/PLAN-config-sync-hardening.md` | held | 457 | 19 | 0 | 54737 |
+| `agent/plans/PLAN-config-team-scoping.md` | held | 234 | 11 | 0 | 29142 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
