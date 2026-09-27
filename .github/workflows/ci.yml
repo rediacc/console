@@ -1023,12 +1023,12 @@ jobs:
       packages: read
     # T2.1 (PLAN-ci-time-budget, finding 3): no ct-tests.yml leg consumes a
     # build-docker-fast image (no ghcr.io/rediacc reference or *_tag input in
-    # that file; each leg builds renet and the CLI itself). The only ghcr
-    # pull inside ct-tests.yml legs is renet's own runtime fetch of the
-    # already-published elite/bridge:latest image, unrelated to this PR's
-    # docker build, verified against run 36040274865's E2E Workers log. The
-    # needs edge was pure critical-path cost (about 10.5 min), not a real
-    # dependency.
+    # that file; each leg builds renet and the CLI itself), verified against
+    # run 36040274865's E2E Workers log. `ops up` used to also pull
+    # elite/bridge:latest at runtime, a pull that failed "manifest unknown"
+    # on every distro and that nothing consumed; renet no longer does it.
+    # The needs edge was pure critical-path cost (about 10.5 min), not a
+    # real dependency.
     needs: [initialize]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
     # CALLED on push-to-main: its migration-test job has to run there (it
