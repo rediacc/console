@@ -265,23 +265,6 @@ def _xplan(pri="P2 -- a fixture plan", dep="no-dep -- a fixture plan with X line
     return _plan(dep=dep).replace("Priority: P2 -- a fixture plan\n", "Priority: %s\n" % pri)
 
 
-def test_x_fields_are_pending_not_red_before_the_migration(gate, tmp_path):
-    """While `X_FIELDS_REQUIRED` is False a tree without the X lines stays green, and says what is pending."""
-    if D.X_FIELDS_REQUIRED:
-        pytest.skip("the migration has landed; the strict half is the gate's --selftest")
-    malformed = _xplan(pri="P0. an operator ruling", dep="PLAN-y.md")
-    result = _gate(_seed(tmp_path, x=malformed))
-    gate.assert_exit(0, result, "missing and malformed X lines are reported, not failed")
-    gate.assert_contains(result.out, "X fields pending migration", "the pending block is printed")
-    gate.assert_contains(
-        result.out, "D11  agent/plans/PLAN-x.md", "a malformed line present is named"
-    )
-    gate.assert_contains(
-        result.out, "enforcement OFF until the T11 migration", "the green says it is lax"
-    )
-    gate.log_pass("X findings are visible and not enforced before the migration")
-
-
 def test_d17_an_operator_demotion_reds_the_tree(gate, tmp_path):
     root = _seed(tmp_path, x=_xplan(pri="P1", dep="PLAN-y.md"))
     base = tmp_path / "base"
