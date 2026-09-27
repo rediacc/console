@@ -341,6 +341,7 @@ account_stripe_auto() {
     stripe listen \
         --api-key "$stripe_key" \
         --forward-to "http://localhost:${GATEWAY_PORT}/account/api/v1/webhooks/stripe" \
+        --all-snapshot \
         >"$stripe_log" 2>&1 &
     local stripe_pid=$!
     set +m

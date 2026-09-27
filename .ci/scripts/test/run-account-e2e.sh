@@ -94,15 +94,7 @@ fi
 # derived from the actual selected files when sharded, so the 10-stripe mutex
 # unit and the @webauthn bundle only do their thing on the leg that holds them.
 #
-# Also fires on any `@stripe-e2e`-tagged file outside 10-stripe/ (today,
-# 12-stripe-e2e/**): those specs hit the real Stripe sandbox too and cannot
-# observe a webhook-driven state change without a forwarder of their own. The
-# shard manifest (.ci/config/shards/test-account-e2e.json) is meant to keep
-# every such spec in the one leg that also holds 10-stripe/**, but this is a
-# belt-and-suspenders fallback for a leg that ends up with one anyway --
-# better a redundant listener (harmless: an unrelated leg's webhooks arrive
-# for subscription ids this backend has never heard of and are dropped) than
-# a real-Stripe test with no delivery path at all.
+# Also fires on any `@stripe-e2e`-tagged file outside 10-stripe/ (today, 12-stripe-e2e/**): those specs hit the real Stripe sandbox too and cannot observe a webhook-driven state change without a forwarder of their own. The shard manifest (.ci/config/shards/test-account-e2e.json) is meant to keep every such spec in the one leg that also holds 10-stripe/**, but this is a belt-and-suspenders fallback for a leg that ends up with one anyway -- better a redundant listener (harmless: an unrelated leg's webhooks arrive for subscription ids this backend has never heard of and are dropped) than a real-Stripe test with no delivery path at all.
 HAS_STRIPE_FILES=true
 HAS_WEBAUTHN_FILES=true
 if [[ ${#SHARD_TEST_FILES[@]} -gt 0 ]]; then
@@ -185,57 +177,39 @@ if [[ "$SKIP_SETUP" != "true" ]]; then
         E2E_TMP="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-account-e2e-XXXXXXXX")"
         STRIPE_LISTEN_LOG="$E2E_TMP/stripe-listen.log"
 
-        # `stripe listen` opens a websocket to Stripe's servers before it prints
-        # the whsec_ secret, and a slow/flaky connection from a CI runner can
-        # blow well past a single 30s wait without the CLI ever erroring out
-        # (run 36280898318, job 108513080608: 30s elapsed with no output at
-        # all, not even an error -- the log was silently discarded, so there
-        # was nothing to diagnose from). Retry the spawn itself (a hung
-        # process from one attempt is killed, not just re-polled), for a
-        # 180s total budget -- this repo's own evidenced floor for "a
-        # container/process becoming ready on a contended host"
-        # (ci-start-elite.sh's wait_for_web, ci-start-account.sh's
-        # wait_for_account_server).
-        LISTEN_ATTEMPTS=2
+        # Stripe CLI 1.52 refuses to start without an event selector ("must
+        # specify events to forward using --events, --all-snapshot, or
+        # --all-thin", run 36288155344); --all-snapshot is what older CLIs
+        # forwarded by default. The earlier 30s poll discarded the log, so that
+        # refusal read as a timeout. A dead process ends the wait at once, and
+        # a missing secret fails the leg with the CLI's own words.
         LISTEN_TIMEOUT=90
-        for ((LISTEN_ATTEMPT = 1; LISTEN_ATTEMPT <= LISTEN_ATTEMPTS; LISTEN_ATTEMPT++)); do
-            : >"$STRIPE_LISTEN_LOG"
-            stripe listen \
-                --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
-                --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
-                >"$STRIPE_LISTEN_LOG" 2>&1 &
-            STRIPE_LISTEN_PID=$!
+        stripe listen \
+            --api-key "$STRIPE_SANDBOX_SECRET_KEY" \
+            --forward-to "http://localhost:${ACCOUNT_API_PORT}/account/api/v1/webhooks/stripe" \
+            --all-snapshot \
+            >"$STRIPE_LISTEN_LOG" 2>&1 &
+        STRIPE_LISTEN_PID=$!
 
-            LISTEN_ELAPSED=0
-            while [[ $LISTEN_ELAPSED -lt $LISTEN_TIMEOUT ]]; do
-                if STRIPE_LISTEN_WEBHOOK_SECRET=$(grep -oP 'whsec_\S+' "$STRIPE_LISTEN_LOG" 2>/dev/null); then
-                    break
-                fi
-                # The CLI itself can exit early (bad key, network refused, ...);
-                # no point burning the rest of the window polling a dead process.
-                if ! kill -0 "$STRIPE_LISTEN_PID" 2>/dev/null; then
-                    break
-                fi
-                sleep 1
-                LISTEN_ELAPSED=$((LISTEN_ELAPSED + 1))
-            done
-
-            if [[ -n "$STRIPE_LISTEN_WEBHOOK_SECRET" ]]; then
-                log_info "stripe listen ready (webhook secret captured, attempt $LISTEN_ATTEMPT/$LISTEN_ATTEMPTS)"
+        LISTEN_ELAPSED=0
+        while [[ $LISTEN_ELAPSED -lt $LISTEN_TIMEOUT ]]; do
+            if STRIPE_LISTEN_WEBHOOK_SECRET=$(grep -oP 'whsec_\S+' "$STRIPE_LISTEN_LOG" 2>/dev/null); then
                 break
             fi
-
-            log_warn "stripe listen attempt $LISTEN_ATTEMPT/$LISTEN_ATTEMPTS did not produce a webhook secret within ${LISTEN_TIMEOUT}s"
-            kill "$STRIPE_LISTEN_PID" 2>/dev/null || true
-            wait "$STRIPE_LISTEN_PID" 2>/dev/null || true
-            STRIPE_LISTEN_PID=""
+            if ! kill -0 "$STRIPE_LISTEN_PID" 2>/dev/null; then
+                break
+            fi
+            sleep 1
+            LISTEN_ELAPSED=$((LISTEN_ELAPSED + 1))
         done
 
-        if [[ -z "$STRIPE_LISTEN_WEBHOOK_SECRET" ]]; then
-            log_error "stripe listen never produced a webhook secret after $LISTEN_ATTEMPTS attempts ($((LISTEN_ATTEMPTS * LISTEN_TIMEOUT))s total); the real-Stripe e2e tests need it and would otherwise hang waiting for webhooks that never arrive instead of failing where the problem actually is."
-            log_error "load average (1m 5m 15m): $(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null || echo unavailable), cores: $(nproc 2>/dev/null || echo unknown)"
-            log_error "last attempt's stripe listen output:"
+        if [[ -n "$STRIPE_LISTEN_WEBHOOK_SECRET" ]]; then
+            log_info "stripe listen ready (webhook secret captured)"
+        else
+            log_error "stripe listen produced no webhook secret within ${LISTEN_TIMEOUT}s; the real-Stripe e2e tests need its forwarding. Its output:"
             cat "$STRIPE_LISTEN_LOG" >&2 || true
+            kill "$STRIPE_LISTEN_PID" 2>/dev/null || true
+            STRIPE_LISTEN_PID=""
             exit 1
         fi
     fi

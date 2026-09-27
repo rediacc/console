@@ -419,6 +419,8 @@ def stripe_auto() -> int:
             key,
             "--forward-to",
             "http://localhost:%s/account/api/v1/webhooks/stripe" % gateway_port,
+            # Stripe CLI 1.52 refuses to start without an event selector ("must specify events to forward using --events, --all-snapshot, or --all-thin"); --all-snapshot is the forwarding older CLIs did by default.
+            "--all-snapshot",
         ],
         log_path=stripe_log,
     )
