@@ -267,7 +267,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 - [x] T2.18 [C] Apply D-W3 to the K8s Multinode (10.9 min) and K8s repo (7.3 min) tests.
     (ticked) 2026-09-26T21:27:58Z by d778be9d: dropped by the operator's 2026-09-25 ruling D-W3: K8s Multinode and K8s repo stay whole as named exemptions (commit 2d8d0534b, agent/plans/PLAN-ci-time-budget.md:354)
 
-**Exit P2:** `budget_report` over 10 green full runs shows every job's p90 at 12 or under and its max at 15 or under. Pipeline p90 meets the D-W1 target.
+**Exit P2:** `budget_report` over 10 completed full PR runs, counting only the jobs that succeeded, shows every job's p90 at 12 or under and its max at 15 or under. Pipeline p90 meets the D-W1 target. (Operator default #32e66d3b, 2026-09-27: a run-level "green" filter admitted no run at all, because check:ci-plan-implementation reds every PR run until this plan's last box closes.)
 
 ### P3: the lane-duration gate
 
@@ -282,7 +282,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   - Selftest controls: 12.1 fails and 11.9 passes; stale fails and fresh passes; a planted unestimated file fails, and the same file with `defaultUnitMs` passes; quality-code's plan is unchanged. Offline and deterministic, like the headroom gate.
 - [x] T3.2 [A] **Where the estimates come from.** `budget_report.py --refresh` rewrites `.ci/config/lane-durations.json`:
   - per job: fixed cost p90, meaning setup steps up to the runner step, taken from the step API;
-  - per unit: p90 from the T1.6 unit-duration artifacts of the last 10 green full runs;
+  - per unit: p90 from the T1.6 unit-duration artifacts of the last 10 completed full PR runs (success-only jobs; #32e66d3b);
   - plus the `concurrency` value.
     (ticked) 2026-09-27T08:53:12Z by d778be9d: budget_report.py --refresh rewrites lane-durations.json from the last 10 green full runs (fixed-cost p90 from the steps API, unit p90 from unit-durations-<lane>-* artifacts, all members summed); 42 fixture tests; the first real refresh waits for 10 green runs (commit da1010257, .ci/rediacc_ci/ci/budget_report.py:839)
 - [x] T3.3 [A] **How they stay fresh.** `housekeeping.yml` (the daily 03:00 cron) runs `budget_report.py --check`. When any leg's *measured* p90 exceeds 12, or a committed estimate drifts more than 25% from measured, the job fails and posts to the nightly-status issue thread. That catches real regressions the estimate misses. The 14-day staleness in T3.1 forces a refresh commit at least twice a month.

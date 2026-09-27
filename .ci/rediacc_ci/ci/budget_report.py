@@ -105,7 +105,9 @@ DEFAULT_WORKFLOW = "ci.yml"
 DEFAULT_BRANCH = "main"
 DEFAULT_LIMIT = 15
 DEFAULT_STATUS = "success"
-# T3.2: how many green PR-full runs `--refresh`/`--check` sample. Separate from DEFAULT_LIMIT (15, the read-only report's own default) because the plan's box names 10 explicitly, and the two commands have different costs -- --refresh/--check also list and download artifacts per run, which --limit 15's report path never does.
+# THE PR SAMPLE FOR --refresh/--check IS COMPLETED RUNS, NOT SUCCESSFUL ONES (operator default #32e66d3b, 2026-09-27). check:ci-plan-implementation reds every PR run until spec W's last box closes (zero threshold, 2026-09-26 ruling) and main pushes skip the full suite, so a run-level `success` filter left NO qualifying run and W could never close its own budget boxes. Durations stay clean because every job sample below is success-only; a red Quality / Branch does not change how long a green test leg took. Unit artifacts are uploaded always(), so a failed leg's per-test times can enter the unit p90.
+REFRESH_PR_STATUS = "completed"
+# T3.2: how many completed PR-full runs `--refresh`/`--check` sample (see REFRESH_PR_STATUS). Separate from DEFAULT_LIMIT (15, the read-only report's own default) because the plan's box names 10 explicitly, and the two commands have different costs -- --refresh/--check also list and download artifacts per run, which --limit 15's report path never does.
 DEFAULT_REFRESH_LIMIT = 10
 LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 PER_LEG_BUDGET_MINUTES = 12.0
@@ -755,7 +757,7 @@ def compute_lane_durations(
     """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "missing_artifact_lanes"}`. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
-    pr_runs = fetch_runs(repo, workflow, "pull_request", None, DEFAULT_STATUS, limit)
+    pr_runs = fetch_runs(repo, workflow, "pull_request", None, REFRESH_PR_STATUS, limit)
     pr_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in pr_runs]
 
     patterns = lane_display_patterns(tree_root, workflow)
@@ -857,7 +859,7 @@ def refresh_lane_durations(
     dry_run: bool = False,
     compute: Callable[..., dict[str, Any]] = compute_lane_durations,
 ) -> int:
-    """T3.2: rewrite `path` from `limit` green PR-full runs. `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `job_max_seconds` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
+    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `job_max_seconds` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
     try:
         existing = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1131,7 +1133,7 @@ def main(argv: list[str]) -> int:
         "--refresh-limit",
         type=int,
         default=DEFAULT_REFRESH_LIMIT,
-        help="green PR-full runs sampled by --refresh/--check",
+        help="completed PR-full runs sampled by --refresh/--check (success-only jobs)",
     )
     parser.add_argument(
         "--lane-durations",

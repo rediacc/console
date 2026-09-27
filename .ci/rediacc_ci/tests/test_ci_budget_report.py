@@ -565,3 +565,34 @@ def test_check_lane_durations_never_writes_the_file(tmp_path):
     path.write_text(original)
     br.check_lane_durations(path, limit=10, compute=_fake_compute(jobs={"test-e2e-workers": 5.0}))
     assert path.read_text() == original
+
+
+def test_the_refresh_samples_completed_pr_runs_not_successful_ones(monkeypatch, tmp_path) -> None:
+    """CONTROL (#32e66d3b): a run-level `success` filter found no PR run at all while check:ci-plan-implementation reds every run until spec W closes, so W could never close its own budget boxes. The PR sample is COMPLETED runs; jobs stay success-only."""
+    seen: list[tuple[str, str]] = []
+
+    def fake_fetch_runs(*args):
+        # fetch_runs(repo, workflow, event, branch, status, limit)
+        seen.append((args[2], args[4]))
+        return []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "lane_display_patterns", lambda *_a: {})
+    monkeypatch.setattr(br, "collect_unit_durations", lambda *_a, **_k: ({}, []))
+    br.compute_lane_durations(
+        root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert ("pull_request", "completed") in seen
+
+
+def test_inverse_a_failed_job_in_a_completed_run_is_still_not_sampled() -> None:
+    assert (
+        br.job_wall_minutes(
+            {
+                "conclusion": "failure",
+                "started_at": "2026-09-27T00:00:00Z",
+                "completed_at": "2026-09-27T00:05:00Z",
+            }
+        )
+        is None
+    )
