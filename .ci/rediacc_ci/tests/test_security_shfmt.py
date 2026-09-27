@@ -616,10 +616,7 @@ def test_shell_files_agrees_with_the_ambient_find_as_a_set() -> None:
             cwd=str(ROOT),
             env=differential.env_for(),
         ).stdout.split()
-        assert found != sorted(found), (
-            "the ambient find IS sorted for %s, so this comparison proves nothing "
-            "about order; the attribution case above is the one that matters" % rel
-        )
+        # SET equality only. The "ambient find is not sorted" precondition lives in test_the_ports_order_is_byte_order over .ci alone: repeated here it failed whenever .claude's two .sh files happened to come back in sorted directory order (2026-09-27), which says nothing about the port.
         assert sorted(str(ROOT / f) for f in found) == port.shell_files(ROOT / rel), rel
 
 
