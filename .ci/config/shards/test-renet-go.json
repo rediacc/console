@@ -93,8 +93,7 @@
         "github.com/rediacc/renet/pkg/telemetry",
         "github.com/rediacc/renet/pkg/thinpool",
         "github.com/rediacc/renet/pkg/toolexec/ceph",
-        "github.com/rediacc/renet/pkg/trim",
-        "github.com/rediacc/renet/pkg/infra/vmsnapshot"
+        "github.com/rediacc/renet/pkg/trim"
       ]
     }
   ]
