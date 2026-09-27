@@ -1,18 +1,19 @@
-## SESSION d778be9d 2026-09-27T09:47:48Z
+## SESSION d778be9d 2026-09-27T17:15:46Z
 
-Branch 0923-1, PR #590 (label no-auto-cancel). PR-TASK e87fa3ce. Receipt: clean clone /home/developer/pushclone-0923 (fetch, submodule update, npm run build, ci:quick --receipt-out .ci/cache/prepush-receipt.json); only check:ci-plan-implementation may fail. Push renet first (git push origin <sha>:refs/heads/0923-1). Watch: ci-trace.py --wait --until-final --timeout 3h > .ci/cache/ci-<sha>.out.
+Branch 0923-1, PR #590 (label no-auto-cancel). PR-TASK e87fa3ce. Receipt: clean clone /home/developer/pushclone-0923 (fetch, submodule update, npm run build, ci:quick --receipt-out .ci/cache/prepush-receipt.json); only check:ci-plan-implementation may fail. Push renet first (git push origin HEAD:refs/heads/0923-1). Watch: ci-trace.py --wait --until-final --timeout 3h > .ci/cache/ci-<sha>.out.
 
-## Rulings
-Operator 2026-09-26: W + CI green first; other plans held, no new held plans; budget limited to Sunday 18:00, spend it on GitHub-side runs. eu deploy needs no ask. D-W4 revised: tutorials self-contained (done 31f102354).
+## Rulings (operator, 2026-09-26/27)
+W + CI green first; other plans held. Budget sampling = completed PR runs, success-only jobs (kept). VM snapshots DROPPED (public repo, private renet binary). golangci-lint 2.14.0 unification NOW. Proxy trial: after W closes.
 
-## W: 24/32 ticked
-Open: T1.6 (needs unit-durations-test-renet-integration-* on a green run); T2.12 (probe landed b861cf951; add label e2e-dependency-probe to PR #590, then apply proposed needs edges); T2.17 (landed off; [?] #1657f3f6); T3.1 (needs lane-durations refresh from 10 green runs); T4.1-T4.4 (after P2 exit).
+## W: 27/32. Open T3.1, T4.1-T4.4 (need 10 completed PR runs).
 
-## Tree
-Pushed 5654536fe. Unpushed: b861cf951, 53b54e9e3 (renet integration switches, renet d89abb3), 307853a3f (shard-manifest coverage gate). Receipt on 53b54e9e3 failed check:ci-language-policy: 3 new bash files under .ci; a port writer is turning them into Python.
+## In the tree, uncommitted (renet submodule)
+golangci 2.14.0 waves 1+2 done: renet .golangci.yml disables exhaustruct_v5; lint.sh pinned 2.14.0 via go install; ~160 files across cmd/renet and pkg/*; ops snapshot command + pkg/infra/vmsnapshot + 38 locale keys removed. run_renet quality: lint 0 issues, deadcode, security pass; i18n gate: 2 NEW raw fmt.Errorf strings (lines 69, 137 of some file; see scratchpad rq3.out) must be i18n-wrapped. go test: 5 FIEMAP failures are this WSL host's /tmp (operation not supported), environmental. Security fixes: sandbox_gateway.go path escape, sandbox_exec.go symlink TOCTOU.
+Console committed, unpushed: a8bbcd879 (snapshot removal), 98aecbef9 (T2.17 dropped), d15d2b3d9 (docs-gen XDIST_GROUP).
+Writer running: #f5dd5092 (tests stop writing the real tree; drop REAL_TREE_TWIN from 21 modules).
 
 ## Next action
-1. Spot-check the port writer's output, classify its env vars, commit, build the receipt, push, watch.
-2. Add label e2e-dependency-probe to PR #590 for that run; apply the probe's edges after.
-3. Tick T1.6 when renet-integration artifacts appear.
-4. Findings open: #8b1672f5 (#partN exact partition), #0c7d2263 (non-hermetic guard golden).
+1. Wrap the 2 new renet error strings in i18n (keys in 13 locales, regenerate hashes), rerun run_renet quality to rc=0.
+2. Commit renet in reviewable groups (cmd/renet, pkg/functions, pkg/*, snapshot removal, config+lint.sh, security fixes separately), bump the pointer, then receipt, push, watch.
+3. Rebuild the devbox image (docker build -t ghcr.io/rediacc/devcontainer:latest -f .devcontainer/Dockerfile .devcontainer; ./run.sh devbox remove && up) so it runs golangci 2.14.0.
+4. Spot-check and commit the #f5dd5092 writer's output.
