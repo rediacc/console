@@ -240,7 +240,7 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 | Renet integration (same job, split) | pytest file (14 in `private/renet/tests/integration`) | 3 | LPT; `ci-test.sh` accepts a file list via env; daemon setup per leg | `Renet (integration, 2/3)` | junit |
 | Quality / Security (`.github/workflows/ci-quality.yml:2095`), split into 3 jobs | -- | Security core 1 + pytest 3 + gate tests 2 | "Python package tests" (`:2371`, check:ci-pytest) -> `quality-pytest` lane, file units with xdist groups as mutex; "Quality-gate unit tests" (`:2389`, battery.py) -> `quality-gate-tests` lane, its W/S isolation as mutex; the 13 region steps stay in Security | `Pytest (1/3)`, `Gate tests (1/2)` | receipts; `.ci/rediacc_ci/check_pytest.py:94` kill timer scaled per leg |
 | OPS Provision linux-amd64 (`.github/workflows/ci-ops-test.yml:297-313`) | tutorial (18) | 4 contiguous segments (D-W4) | sequence order kept inside a segment (`needs` chain = co-location) | `OPS Provision (linux-amd64, 2/4)` | tutorial logs artifact per leg |
-| E2E Ceph / Ceph Workers / K8s Ceph / K8s Multinode | none (fixed-cost bound) | 1 each (Multinode 2 via D-W3) | P2d snapshot restore | unchanged | -- |
+| E2E Ceph / Ceph Workers / K8s Ceph / K8s Multinode | none (fixed-cost bound) | 1 each (Multinode 2 via D-W3) | none: P2d snapshots dropped (operator 2026-09-27); named 15-min exemptions | unchanged | -- |
 | E2E K8s, E2E Migrate, Fork Isolation | none | 1 | P2a plus P2d | unchanged | -- |
 | Validate Promotion | none | 1 | T2.5 | unchanged | -- |
 | Quality / Packages | none | 1 | verify T1.1 shows at most 12 after the pytest port (4.6 in 36040274865) | unchanged | -- |
@@ -258,12 +258,13 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 **P2d. Fixed-cost reduction by snapshot (renet feature, cross-repo)**
 
-- [ ] T2.17 [D] `renet ops` snapshot/restore of prepared VM disks. Two snapshots:
+- [x] T2.17 [D] `renet ops` snapshot/restore of prepared VM disks. Two snapshots:
   1. Workers: the state after Steps 1-8 of bridge globalSetup ("VM soft reset", renet setup on all VMs, RustFS, datastores, CRIU; 6.3-7.0 min).
   2. Ceph: the state after "Ceph cluster provisioning completed successfully" (11-15 min).
   - Cache key: renet version, ceph image pin, VM image month.
   - Target: restore in 3 min or less.
   - Hypothesis until measured. Without it, E2E Workers needs 11 legs per distro, and the four Ceph/K8s jobs stay at 19-29 min.
+    (ticked) 2026-09-27T16:48:26Z by d778be9d: Dropped by the operator 2026-09-27 (ASKED:2026-09-27T16:40Z) after web research on public-repo cache exposure; console side removed in a8bbcd879, renet side follows; the four Ceph/K8s E2E jobs are named 15-min exemptions (plan rulings section) (commit a8bbcd879)
 - [x] T2.18 [C] Apply D-W3 to the K8s Multinode (10.9 min) and K8s repo (7.3 min) tests.
     (ticked) 2026-09-26T21:27:58Z by d778be9d: dropped by the operator's 2026-09-25 ruling D-W3: K8s Multinode and K8s repo stay whole as named exemptions (commit 2d8d0534b, agent/plans/PLAN-ci-time-budget.md:354)
 
@@ -371,3 +372,4 @@ Every "after" number is a projection built from the measured components named in
 - **D-W3: approved exemptions** (revised from the checkpoint split). `kube/17-multinode-cluster` (one 10.9-min test) and `kube/15-k8s-repo` (one 7.3-min test) stay whole; the lane gate carries them as a named, operator-approved exemption list, and T2.18 is dropped.
 - **D-W5: enforce on PRs and main together** (revised from PRs-first). One switch; an over-budget main push cancels that release.
 - D-W2 and D-W6 take the plan's recommendation: the lane gate supersedes the 1.5x headroom rule for budgeted jobs; drop quality/review-gate from ops-tests needs and keep review-gate on stage-artifacts.
+- **T2.17 dropped (2026-09-27, AskUserQuestion after web research).** console is public and a VM snapshot carries the compiled private renet binary; a fork PR's workflow can restore base-branch Actions caches and publish them. The operator chose to drop snapshots over splitting them (public disks plus an encrypted binary in R2) or encrypting them whole. Consequence: the E2E Ceph, Ceph Workers, K8s Ceph and K8s Multinode jobs stay bound by their fixed VM preparation (19-29 min) and are named exemptions from the 15-minute per-job budget, beside D-W3's; T4.1's `timeout-minutes` for them follows their measured max plus headroom instead of 15.
