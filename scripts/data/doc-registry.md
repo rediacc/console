@@ -852,7 +852,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/pr | 1 | .sh 1 |
 | .ci/scripts/private | 6 | .sh 6 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
-| .ci/scripts/quality | 163 | .py 156, .sh 4, .json 2, .mjs 1 |
+| .ci/scripts/quality | 162 | .py 156, .sh 4, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
 | .ci/scripts/release | 15 | .sh 15 |
 | .ci/scripts/review | 4 | .sh 4 |
@@ -1020,7 +1020,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/deps-major-allow.json` | .ci/config | code: `scripts/gates/check-deps.ts` | no -- hardcoded in `scripts/gates/check-deps.ts` |
 | `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_allowlist_key_matching.py` | no -- hardcoded in `.ci/scripts/quality/check_allowlist_key_matching.py` |
 | `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_vars.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_vars.py` |
-| `.ci/config/lane-durations.json` | .ci/config | code: `scripts/ci-runner/lanes.ts` | no -- hardcoded in `scripts/ci-runner/lanes.ts` |
+| `.ci/config/lane-durations.json` | .ci/config | code: `.ci/rediacc_ci/ci/budget_report.py` | no -- hardcoded in `.ci/rediacc_ci/ci/budget_report.py` |
 | `.ci/config/language-policy-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
 | `.ci/config/plan-boxes.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_lifecycle.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_lifecycle.py` |
 | `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/scripts/quality/check_plan_implementation.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_implementation.py` |

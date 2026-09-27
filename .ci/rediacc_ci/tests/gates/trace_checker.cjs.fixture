@@ -17,7 +17,7 @@ const SITES = {
   e2e_migrate: { wf: 'ct-tests.yml', jobs: ['test-e2e-migrate'] },
   e2e_ceph: { wf: 'ct-tests.yml', jobs: ['test-e2e-ceph'] },
   fork_isolation: { wf: 'ct-tests.yml', jobs: ['test-fork-isolation'] },
-  renet: { wf: 'ct-tests.yml', jobs: ['test-renet'] },
+  renet: { wf: 'ct-tests.yml', jobs: ['test-renet-go', 'test-renet-integration'] },
   ops: { wf: 'ci-ops-test.yml', jobs: [] },
   install_methods: { wf: 'ct-install-methods.yml', jobs: [] },
   account_e2e: { wf: 'ct-tests.yml', jobs: ['test-account-e2e'] },

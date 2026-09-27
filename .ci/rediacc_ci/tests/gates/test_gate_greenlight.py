@@ -129,7 +129,7 @@ def green_candidate(run_id: int) -> str:
     Cases mutate one field of it, so each assertion isolates one rule.
     """
     return (
-        '{"runId":%d,"jobs":[{"name":"Tests + Infra / Renet","conclusion":"success"}],'
+        '{"runId":%d,"jobs":[{"name":"Tests + Infra / License Enforcement","conclusion":"success"}],'
         '"gitlinks":{"private/renet":"%s"},"closureHash":"%s"}' % (run_id, SHA_A, HASH_A)
     )
 
@@ -141,7 +141,7 @@ def want(candidates: str) -> str:
     submodules (the eight VM/E2E keys pin four) or none at all.
     """
     return (
-        '{"key":"renet","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
+        '{"key":"license_enforcement","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
         '"candidates":%s}' % (SHA_A, HASH_A, candidates)
     )
 
@@ -175,7 +175,7 @@ def test_full_match_greenlights_and_names_the_run(gate):
     # CONTROL: greenlit is not the constant answer. The SAME candidate against a different wanted pointer must refuse, or nothing above is proven.
     v = ev(
         gate,
-        '{"key":"renet","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
+        '{"key":"license_enforcement","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
         '"candidates":[%s]}' % (SHA_B, HASH_A, green_candidate(4242)),
     )
     gate.assert_eq(
@@ -194,7 +194,11 @@ def test_full_match_greenlights_and_names_the_run(gate):
 
 def test_failed_job_refuses(gate):
     cand = candidate(
-        7, "Tests + Infra / Renet", "failure", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        7,
+        "Tests + Infra / License Enforcement",
+        "failure",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "a failed job must never greenlight")
@@ -204,7 +208,11 @@ def test_failed_job_refuses(gate):
 
     # A cancelled run is the same class and is NOT rare: a live listing of rediacc/console showed 'Tests + Infra / Account E2E' cancelled on the most recent completed run.
     cand = candidate(
-        8, "Tests + Infra / Renet", "cancelled", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        8,
+        "Tests + Infra / License Enforcement",
+        "cancelled",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_contains(
@@ -223,7 +231,11 @@ def test_failed_job_refuses(gate):
 
 def test_skipped_job_refuses_as_not_run(gate):
     cand = candidate(
-        9, "Tests + Infra / Renet", "skipped", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        9,
+        "Tests + Infra / License Enforcement",
+        "skipped",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "a skipped job must never greenlight")
@@ -240,7 +252,11 @@ def test_skipped_job_refuses_as_not_run(gate):
 
     # CONTROL: flipping only the conclusion to success greenlights the very same fixture, so the refusal above is about the conclusion and nothing else in the candidate.
     cand = candidate(
-        9, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        9,
+        "Tests + Infra / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(
@@ -254,7 +270,11 @@ def test_skipped_job_refuses_as_not_run(gate):
 
 def test_differing_closure_refuses(gate):
     cand = candidate(
-        11, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_B
+        11,
+        "Tests + Infra / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_B,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "a differing console-side closure must refuse")
@@ -262,7 +282,11 @@ def test_differing_closure_refuses(gate):
 
     # CONTROL: flipping only the closure hash back greenlights the same fixture, so the refusal is about the closure and nothing else.
     cand = candidate(
-        11, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        11,
+        "Tests + Infra / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(
@@ -282,13 +306,13 @@ const out = [];
 for (const stage of ["jobs", "gitlinks", "closureHash"]) {
   const cand = {
     runId: 1,
-    jobs: [{ name: "Tests + Infra / Renet", conclusion: "success" }],
+    jobs: [{ name: "Tests + Infra / License Enforcement", conclusion: "success" }],
     gitlinks: { "private/renet": "1111111111111111111111111111111111111111" },
     closureHash: "aaaa000000000000000000000000000000000000000000000000000000000000",
   };
   cand[stage] = boom;
   const v = g.evaluateGreenlight({
-    key: "renet",
+    key: "license_enforcement",
     wantGitlinks: { "private/renet": "1111111111111111111111111111111111111111" },
     wantClosureHash: "aaaa000000000000000000000000000000000000000000000000000000000000",
     candidates: [cand],
@@ -306,7 +330,7 @@ def test_absent_and_throwing_candidates_fail_open(gate):
 
     v = ev(
         gate,
-        '{"key":"renet","wantGitlinks":{},"wantClosureHash":"%s","candidates":[%s]}'
+        '{"key":"license_enforcement","wantGitlinks":{},"wantClosureHash":"%s","candidates":[%s]}'
         % (HASH_A, green_candidate(1)),
     )
     gate.assert_eq(
@@ -361,7 +385,7 @@ const out = (o) => process.stdout.write(JSON.stringify(o));
 if (endpoint.includes('/actions/workflows/ci.yml/runs')) {
   out({ workflow_runs: [{ id: 555001, head_sha: 'deadbee' + 'f'.repeat(33) }] });
 } else if (/\/actions\/runs\/\d+\/jobs/.test(endpoint)) {
-  out({ jobs: [{ name: 'Tests + Infra / Renet', conclusion: process.env.GL_CONCLUSION || 'success' }] });
+  out({ jobs: [{ name: 'Tests + Infra / License Enforcement', conclusion: process.env.GL_CONCLUSION || 'success' }] });
 } else if (endpoint.startsWith('repos/') && endpoint.includes('/contents')) {
   const dir = endpoint.replace(/^.*\/contents\/?/, '').replace(/\?.*$/, '');
   const spec = dir ? `${dir}/` : './';
@@ -396,12 +420,21 @@ def install_fake_gh(work) -> pathlib.Path:
 
 
 def run_cli(gate, bindir, **extra) -> harness.RunResult:
-    """`PATH=<bin>:$PATH node "$ENGINE" --key renet --repo owner/name --limit 1`."""
+    """`PATH=<bin>:$PATH node "$ENGINE" --key license_enforcement --repo owner/name --limit 1`."""
     node = require_engine(gate)
     env = {"PATH": "%s%s%s" % (bindir, os.pathsep, os.environ.get("PATH", ""))}
     env.update(extra)
     return harness.run(
-        [node, os.fspath(ENGINE), "--key", "renet", "--repo", "owner/name", "--limit", "1"],
+        [
+            node,
+            os.fspath(ENGINE),
+            "--key",
+            "license_enforcement",
+            "--repo",
+            "owner/name",
+            "--limit",
+            "1",
+        ],
         env=env,
     )
 
@@ -419,10 +452,18 @@ def test_cli_emit_is_false_only(gate):
         bindir = install_fake_gh(work)
 
         out = captured(run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT)))
-        gate.assert_contains(out, "run_renet=false", "a due greenlight emits run_renet=false")
-        gate.assert_not_contains(out, "run_renet=true", "and NEVER emits run_renet=true")
+        gate.assert_contains(
+            out,
+            "run_license_enforcement=false",
+            "a due greenlight emits run_license_enforcement=false",
+        )
+        gate.assert_not_contains(
+            out, "run_license_enforcement=true", "and NEVER emits run_license_enforcement=true"
+        )
         gate.assert_not_contains(out, "=true", "the CLI has no =true emit form at all")
-        gate.assert_contains(out, "evidence_renet=555001", "naming the run that is the evidence")
+        gate.assert_contains(
+            out, "evidence_license_enforcement=555001", "naming the run that is the evidence"
+        )
 
         # CONTROL 1: the same fixture with the job skipped emits NOTHING. This is
         # case 3 again at CLI level, where it decides real jobs.
@@ -433,7 +474,7 @@ def test_cli_emit_is_false_only(gate):
 
         # CONTROL 2: one console-side closure blob moved, everything else identical.
         out = captured(
-            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="run_renet.py")
+            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="license-e2e.sh")
         )
         gate.assert_eq(out, "", "a single changed closure file withdraws the greenlight")
 
@@ -458,7 +499,11 @@ def test_cli_emit_is_false_only(gate):
 def test_moved_pointer_refuses(gate):
     # FIRE: everything else is a perfect match. Job green, closure identical, and ONLY the gitlink moved.
     cand = candidate(
-        31, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_B, HASH_A
+        31,
+        "Tests + Infra / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % SHA_B,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "a moved submodule pointer must never greenlight")
@@ -467,7 +512,11 @@ def test_moved_pointer_refuses(gate):
 
     # CONTROL: restore the pointer, change nothing else, and the same fixture greenlights. Without this the refusal above could come from any field.
     cand = candidate(
-        31, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        31,
+        "Tests + Infra / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(
@@ -477,13 +526,17 @@ def test_moved_pointer_refuses(gate):
     # A one-character difference is a difference. Equality is over the whole hash, not a prefix, so a near-miss cannot be read as a match.
     near = SHA_A[:39] + "9"
     cand = candidate(
-        32, "Tests + Infra / Renet", "success", '{"private/renet":"%s"}' % near, HASH_A
+        32,
+        "Tests + Infra / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % near,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "a pointer differing in one character must refuse")
 
     # An absent gitlink (the candidate commit did not carry that submodule) is a difference too, not a free pass.
-    cand = candidate(33, "Tests + Infra / Renet", "success", "{}", HASH_A)
+    cand = candidate(33, "Tests + Infra / License Enforcement", "success", "{}", HASH_A)
     v = ev(gate, want("[%s]" % cand))
     gate.assert_contains(
         jget(v, "trail"), "pointer-differs", "an absent gitlink refuses as pointer-differs"
@@ -497,29 +550,36 @@ def test_moved_pointer_refuses(gate):
 
         # CONTROL for that emit: the same invocation WITHOUT the perturbation does greenlight, so the empty output above is the moved pointer and not a broken harness quietly emitting nothing for every input.
         out = captured(run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT)))
-        gate.assert_contains(out, "run_renet=false", "the unperturbed pointer still greenlights")
+        gate.assert_contains(
+            out, "run_license_enforcement=false", "the unperturbed pointer still greenlights"
+        )
     gate.log_pass("the skip requires the EXACT submodule hash; any move runs the tests (case 7)")
 
 
-# --------------------------------------------------------------------------- The job-name hazard, live-derived. A real run of rediacc/console carries all of "Tests + Infra / Renet" (the suite), "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker". A prefix or substring match would read a cache-hit build job as proof that a 90-minute test suite passed.
+# --------------------------------------------------------------------------- The job-name hazard, generic. A prefix or substring match would read an unrelated job as proof that a suite ran. Exercised against `license_enforcement` (still a single bare job name, unlike `renet` below), with the REAL live collision -- "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker" both riding in the same workflow run as the actual `renet` legs -- reproven separately in `test_renet_matrix_requires_all_five_legs_and_ignores_decoys`, since it is specific to that key's real job names rather than to the leaf-matching rule itself.
 # ---------------------------------------------------------------------------
 
 
 def test_job_name_leaf_must_match_exactly(gate):
     for decoy in (
-        "Build (Renet) / Renet (cached)",
-        "Build (Docker Fast) / Renet Docker",
-        "Tests + Infra / Renet Extra",
+        "Build (License) / License Enforcement (cached)",
+        "Tests + Infra / License Enforcement Extra",
     ):
         cand = candidate(21, decoy, "success", '{"private/renet":"%s"}' % SHA_A, HASH_A)
         v = ev(gate, want("[%s]" % cand))
         gate.assert_eq(
-            jget(v, "greenlit"), "false", "'%s' must not be read as the Renet suite" % decoy
+            jget(v, "greenlit"),
+            "false",
+            "'%s' must not be read as the License Enforcement suite" % decoy,
         )
 
     # CONTROL: the real name, under a DIFFERENT caller prefix, still matches. Only the leaf is ct-tests.yml's to control, so only the leaf is matched.
     cand = candidate(
-        22, "Some Other Caller / Renet", "success", '{"private/renet":"%s"}' % SHA_A, HASH_A
+        22,
+        "Some Other Caller / License Enforcement",
+        "success",
+        '{"private/renet":"%s"}' % SHA_A,
+        HASH_A,
     )
     v = ev(gate, want("[%s]" % cand))
     gate.assert_eq(
@@ -528,8 +588,8 @@ def test_job_name_leaf_must_match_exactly(gate):
 
     # Two jobs answering to one name means the name no longer identifies the suite, so neither reading is evidence.
     cand = (
-        '{"runId":23,"jobs":[{"name":"A / Renet","conclusion":"success"},'
-        '{"name":"B / Renet","conclusion":"success"}],'
+        '{"runId":23,"jobs":[{"name":"A / License Enforcement","conclusion":"success"},'
+        '{"name":"B / License Enforcement","conclusion":"success"}],'
         '"gitlinks":{"private/renet":"%s"},"closureHash":"%s"}' % (SHA_A, HASH_A)
     )
     v = ev(gate, want("[%s]" % cand))
@@ -537,6 +597,75 @@ def test_job_name_leaf_must_match_exactly(gate):
         jget(v, "trail"), "job-ambiguous", "two jobs of one name refuse as job-ambiguous"
     )
     gate.log_pass("only an exact job leaf name is evidence, and only when it is unique")
+
+
+# --------------------------------------------------------------------------- The job-name hazard, live-derived, for the FIVE-LEG `renet` key (PLAN-ci-time-budget T2.14 split it out of a single bare "Renet" job). A real run of rediacc/console still carries "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker" alongside the five real legs, so the exact-match rule has to be reproven against the real leg names, not just the generic property above. ---------------------------------------------------------------------------
+
+RENET_LEGS_JS = """
+const { CLOSURES } = require(process.argv[1]);
+process.stdout.write(CLOSURES.renet.jobNames.join("\\n"));
+"""
+
+
+def test_renet_matrix_requires_all_five_legs_and_ignores_decoys(gate):
+    result = node_eval(gate, RENET_LEGS_JS, os.fspath(ENGINE))
+    if result.rc != 0:
+        gate.log_fail(
+            "the renet leg list could not be read at all (rc=%s)"
+            % harness.describe_exit(result.rc),
+            result,
+        )
+    legs = [ln for ln in result.out.split("\n") if ln != ""]
+    gate.assert_eq(len(legs), 5, "renet declares five matrix legs (2 go + 3 integration)")
+
+    # The two decoys are REAL job names from the same workflow run (renet's own build/cache
+    # jobs), carried over from the single-leg version of this hazard case.
+    decoys = [
+        {"name": "Build (Renet) / Renet (cached)", "conclusion": "success"},
+        {"name": "Build (Docker Fast) / Renet Docker", "conclusion": "success"},
+    ]
+
+    def renet_candidate(run_id: int, legs_out: list[str], extra_jobs: list[dict]) -> str:
+        jobs = [{"name": "Tests + Infra / %s" % leg, "conclusion": "success"} for leg in legs_out]
+        jobs.extend(extra_jobs)
+        return json.dumps(
+            {
+                "runId": run_id,
+                "jobs": jobs,
+                "gitlinks": {"private/renet": SHA_A},
+                "closureHash": HASH_A,
+            }
+        )
+
+    def want_renet(cand: str) -> str:
+        return (
+            '{"key":"renet","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s",'
+            '"candidates":[%s]}' % (SHA_A, HASH_A, cand)
+        )
+
+    # FIRE: all five real legs green, decoys riding along in the same job list. The decoys
+    # must not be read as extra evidence, and must not stop the five real legs from counting.
+    cand = renet_candidate(80, legs, decoys)
+    v = ev(gate, want_renet(cand))
+    gate.assert_eq(
+        jget(v, "greenlit"), "true", "five exact legs green greenlights even with decoys present"
+    )
+    gate.assert_eq(jget(v, "runId"), "80", "naming the run that proved it")
+
+    # FIRE: one exact leg missing, decoys still present. A decoy must never be mistaken for the missing leg.
+    cand = renet_candidate(81, legs[:-1], decoys)
+    v = ev(gate, want_renet(cand))
+    gate.assert_eq(
+        jget(v, "greenlit"), "false", "four of five real legs, decoys included, is not evidence"
+    )
+    gate.assert_contains(
+        jget(v, "trail"),
+        "job-not-run@%s" % legs[-1],
+        "and the trail names the missing leg, not a decoy",
+    )
+    gate.log_pass(
+        "renet's five real legs are required exactly, and known decoy job names never interfere"
+    )
 
 
 # --------------------------------------------------------------------------- ANTI-VACUITY on the closure table itself. A declared path that no longer exists would be hashed by nobody and noticed by nothing; the table would quietly stop covering the input it names. Assert the paths are real, and that both keys declare a non-trivial closure.

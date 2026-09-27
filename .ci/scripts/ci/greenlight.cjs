@@ -184,19 +184,31 @@ const CLOSURES = {
     submodules: VM_E2E_SUBMODULES,
     paths: VM_E2E_PATHS,
   },
-  // ct-tests.yml:1465 `test-renet`, gate at :1467
+  // ct-tests.yml `test-renet-go` / `test-renet-integration`, gated on
   // `inputs.full_suite == 'true' && inputs.run_renet != 'false'`.
   renet: {
-    // The API job name is the CALLER's job name plus the callee's, joined by " / ": a live run shows "Tests + Infra / Renet". Matching is on the last segment, which is the only part ct-tests.yml controls. Exactness matters here: the same run also carries "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker", and a prefix or substring match would accept either
-    // as evidence for a suite neither of them runs.
-    jobNames: ['Renet'],
+    // The API job name is the CALLER's job name plus the callee's, joined by " / ": a live run shows "Tests + Infra / Renet (go, 1/2)". Matching is on the last segment, which is the only part ct-tests.yml controls. Exactness matters here: the same run also carries "Build (Renet) / Renet (cached)" and "Build (Docker Fast) / Renet Docker", and a prefix or substring match would accept either as evidence for a suite neither of them runs.
+    //
+    // FIVE LEGS, NOT ONE (PLAN-ci-time-budget T2.14 split `test-renet` into `test-renet-go` (2 legs) and `test-renet-integration` (3 legs), ct-tests.yml's own comment on that job names this file as needing the update). Every name below must match exactly one job and every one of them must be `success` -- a five-leg matrix with four green legs and one skipped leg proves nothing about the fifth, same as every other multi-leg closure here.
+    jobNames: [
+      'Renet (go, 1/2)',
+      'Renet (go, 2/2)',
+      'Renet (integration, 1/3)',
+      'Renet (integration, 2/3)',
+      'Renet (integration, 3/3)',
+    ],
     submodules: ['private/renet'],
     // Steps at ct-tests.yml:1516 / :1544 / :1550 / :1556 / :1560, plus the two libraries they source: run-renet.sh:12 pulls in lib/common.sh, and renet's own private/renet/.ci/scripts/test/run-tests.sh:15-26 sources the CONSOLE-side infra/ci-env.sh, which is why this job is not submodule-only however much it looks like it.
     paths: [
       '.ci/rediacc_ci',
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
+      // The split renet legs (spec W T2.14) carry the profiler step; the composite resolves from the WORKSPACE, so an edit to it must re-run these legs.
+      '.github/actions/profiler',
       '.github/actions/bws-secrets',
       '.ci/rediacc_ci/private/run_renet.py',
+      // T2.14's own shard manifests: each leg's `--shard-manifest`/`jq` argument picks its file list straight from these, so a manifest edit that moves work between legs is exactly the kind of console-side input rule 3 exists to catch.
+      '.ci/config/shards/test-renet-go.json',
+      '.ci/config/shards/test-renet-integration.json',
       '.ci/scripts/private/renet-ebpf-e2e.sh',
       '.ci/scripts/private/renet-root-tests.sh',
       '.ci/scripts/private/renet-csi-sanity.sh',

@@ -1,0 +1,34 @@
+{
+  "lane": "test-renet-integration",
+  "of": 3,
+  "generatedAt": "2026-09-27T00:00:00.000Z",
+  "legs": [
+    {
+      "index": 1,
+      "ids": [
+        "renet-integration:test_config_autosync.py",
+        "renet-integration:test_daemon_proxy_sync.py",
+        "renet-integration:test_dns_resolution.py",
+        "renet-integration:test_repository_commands.py"
+      ]
+    },
+    {
+      "index": 2,
+      "ids": [
+        "renet-integration:test_container_networking.py",
+        "renet-integration:test_datastore_commands.py",
+        "renet-integration:test_proxy_routes.py",
+        "renet-integration:test_repository_ownership.py"
+      ]
+    },
+    {
+      "index": 3,
+      "ids": [
+        "renet-integration:test_daemon_lifecycle.py",
+        "renet-integration:test_datastore_workflows.py",
+        "renet-integration:test_renet_commands.py",
+        "renet-integration:test_repository_workflows.py"
+      ]
+    }
+  ]
+}

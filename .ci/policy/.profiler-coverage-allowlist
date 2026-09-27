@@ -107,7 +107,6 @@ ct-install-methods.yml:test-linux-x64
 # ct-tests.yml
 ct-tests.yml:migration-test
 ct-tests.yml:test-license-enforcement
-ct-tests.yml:test-renet
 #
 # ct-update-flow.yml
 ct-update-flow.yml:test-linux-x64

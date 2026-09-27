@@ -62,6 +62,7 @@ lane: quality-go
 from __future__ import annotations
 
 import inspect
+import json
 import os
 import pathlib
 import subprocess
@@ -100,8 +101,129 @@ def stage_of(argv: list[str]) -> str:
     return argv[0] if argv and argv[0] else DEFAULT_STAGE
 
 
-def main(argv: list[str]) -> int:
+class ShardManifestError(ValueError):
+    """A malformed or inapplicable `--shard-manifest`/`--shard` pair.
+
+    Always caught in `main`, never left to raise a traceback: every other guard in this
+    file (the submodule arms, the exec failures) reports a clean one-line diagnostic and a
+    real exit code, and a stack trace here would be the odd one out.
+    """
+
+
+def parse_shard_spec(spec: str) -> tuple[int, int]:
+    """`"i/N"`, 1-based -- the same shape `--shard` takes everywhere else in this codebase
+    (`scripts/ci-runner/run.ts`'s own `--shard` parsing, `shard-manifest.ts`'s `legIds`)."""
+    left, sep, right = spec.partition("/")
+    if not sep:
+        raise ShardManifestError('--shard must be "i/N" (1-based), got %r' % (spec,))
+    try:
+        index, of = int(left), int(right)
+    except ValueError:
+        raise ShardManifestError('--shard must be "i/N" (1-based), got %r' % (spec,)) from None
+    if of < 1 or index < 1 or index > of:
+        raise ShardManifestError("--shard %r: index must be between 1 and %d" % (spec, of))
+    return index, of
+
+
+def leg_ids(manifest_text: str, manifest_path: str, index: int, of: int) -> list[str]:
+    """The exact ids one leg of a committed `.ci/config/shards/<lane>.json` manifest holds
+    (`test-e2e-workers.json`'s own shape: `{lane, of, generatedAt, legs:[{index, ids}]}`).
+
+    An independent Python reading of the same language-agnostic JSON `legIds`
+    (`scripts/ci-runner/shard-manifest.ts`) reads, not a port of it: this mirrors its three
+    refusals (an `of` mismatch, a missing leg, an EMPTY leg -- a leg that would report green
+    having run nothing) rather than importing TypeScript into a Python gate.
+    """
+    try:
+        data = json.loads(manifest_text)
+    except json.JSONDecodeError as exc:
+        raise ShardManifestError("%s is not valid JSON: %s" % (manifest_path, exc)) from None
+    if not isinstance(data, dict) or not isinstance(data.get("legs"), list):
+        raise ShardManifestError('%s is missing "legs"' % (manifest_path,))
+    manifest_of = data.get("of")
+    if not isinstance(manifest_of, int) or manifest_of != of:
+        raise ShardManifestError(
+            "%s has %r leg(s) on record; asked for shard %d/%d"
+            % (manifest_path, manifest_of, index, of)
+        )
+    matches = [leg for leg in data["legs"] if isinstance(leg, dict) and leg.get("index") == index]
+    if not matches:
+        known = sorted(
+            leg["index"]
+            for leg in data["legs"]
+            if isinstance(leg, dict) and isinstance(leg.get("index"), int)
+        )
+        raise ShardManifestError(
+            "%s has no leg %d (of %d); legs on record: %s"
+            % (manifest_path, index, of, ", ".join(str(i) for i in known))
+        )
+    ids = matches[0].get("ids")
+    if not isinstance(ids, list) or not ids:
+        raise ShardManifestError("%s leg %d is EMPTY" % (manifest_path, index))
+    return [str(x) for x in ids]
+
+
+def parse_argv(argv: list[str]) -> tuple[str, str | None, str | None]:
+    """The stage, plus an optional `--shard-manifest PATH --shard i/N` pair.
+
+    EVERYTHING ELSE AFTER THE STAGE IS STILL DROPPED IN SILENCE: this only recognises the
+    two new flags by exact token match and never turns an unrecognised trailing argument
+    into an error, which is what keeps `"extra arguments are dropped"` true for every argv
+    this file was already driven with before this box.
+    """
     stage = stage_of(argv)
+    rest = argv[1:] if argv else []
+    manifest_path: str | None = None
+    shard_spec: str | None = None
+    i = 0
+    while i < len(rest):
+        if rest[i] == "--shard-manifest" and i + 1 < len(rest):
+            manifest_path = rest[i + 1]
+            i += 2
+            continue
+        if rest[i] == "--shard" and i + 1 < len(rest):
+            shard_spec = rest[i + 1]
+            i += 2
+            continue
+        i += 1
+    return stage, manifest_path, shard_spec
+
+
+def main(argv: list[str]) -> int:
+    stage, manifest_path, shard_spec = parse_argv(argv)
+
+    # PLAN-ci-time-budget T2.14. `--shard-manifest PATH --shard i/N` (both or neither,
+    # the same conjunct `scripts/ci-runner/run.ts` enforces for its own `--lane`/`--shard`)
+    # reads one leg of a committed go-package manifest and exports it as RENET_TEST_PKGS,
+    # which `private/renet/.ci/scripts/test/run-tests.sh` reads in place of `./pkg/...
+    # ./cmd/...`. An EXPORT, like GOTOOLCHAIN below: `ci.sh test` is the direct child that
+    # sources run-tests.sh, not a grandchild, but the pattern is one this file already
+    # uses and a per-call `env=` would be the same trap noted there.
+    if manifest_path is not None or shard_spec is not None:
+        if manifest_path is None or shard_spec is None:
+            print(
+                _shell_diagnostic("--shard-manifest and --shard must both be given, or neither"),
+                file=sys.stderr,
+                flush=True,
+            )
+            return 1
+        try:
+            index, of = parse_shard_spec(shard_spec)
+            ids = leg_ids(
+                pathlib.Path(manifest_path).read_text(encoding="utf-8"), manifest_path, index, of
+            )
+        except ShardManifestError as exc:
+            print(_shell_diagnostic(str(exc)), file=sys.stderr, flush=True)
+            return 1
+        except OSError as exc:
+            print(
+                _shell_diagnostic("%s: %s" % (manifest_path, exc.strerror or exc)),
+                file=sys.stderr,
+                flush=True,
+            )
+            return 1
+        os.environ["RENET_TEST_PKGS"] = " ".join(ids)
+
     renet_dir = console_root() / "private" / "renet"
     ci_sh = renet_dir / ".ci" / "ci.sh"
 

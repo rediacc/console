@@ -1,10 +1,8 @@
 """`rediacc_ci.private.run_renet`, driven against the bytes its bash twin produced.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/private/run-renet.sh` and the port over one fixture tree apiece and compared four channels: the exit code, stdout, stderr and the recorded argv of the submodule stage. Every case now compares against `goldens/run-renet/`, which holds the twin's OWN recorded bytes; each golden's provenance header carries
-the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/private/run-renet.sh` and the port over one fixture tree apiece and compared four channels: the exit code, stdout, stderr and the recorded argv of the submodule stage. Every case now compares against `goldens/run-renet/`, which holds the twin's OWN recorded bytes; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-THE LEDGER IS `.ci/shadow/w7p4b-run-renet.observations.jsonl`, NINE rows over nine distinct trees, every one EQUIVALENT. The older `w7p6-run-renet` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it, which is what makes the licence
-readable back.
+THE LEDGER IS `.ci/shadow/w7p4b-run-renet.observations.jsonl`, NINE rows over nine distinct trees, every one EQUIVALENT. The older `w7p6-run-renet` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it, which is what makes the licence readable back.
 
 THE REAL `private/renet/.ci/ci.sh` IS NEVER INVOKED. It is the submodule's whole CI: govulncheck, golangci-lint, deadcode and `go test ./...` under root. A suite that reached it would take many minutes, would need a Go toolchain and root, and would SKIP on a checkout without the submodule, and a skip here is exactly the failure `common.sh`'s CI arm exists to prevent.
  The fixture
@@ -18,11 +16,11 @@ NO `cd` HAPPENS IN EITHER SUBJECT, so the recorded cwd is the CALLER's, and ever
 
 THE THREE ARMS OF THE SUBMODULE GUARD ARE ALL RECORDED. Present, absent-under-CI (three errors, exit 1) and absent-locally (one warning, exit 0). The middle one is the arm that stops this gate from reporting success while checking nothing.
 
-WHAT IS MASKED: the fixture root as `<root>`, the scratch directory as `<tmp>`, and one prefix. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it was running, and the port composes the same prefix from `sys.argv[0]` and its own live frame; those can never be equal, so `_mask` collapses exactly that prefix. `test_the_mask_does_not_hide_the_message` pins
-that it collapses nothing else.
+WHAT IS MASKED: the fixture root as `<root>`, the scratch directory as `<tmp>`, and one prefix. Bash prefixes its own diagnostics with `<$0>: line <n>: `, naming the file it was running, and the port composes the same prefix from `sys.argv[0]` and its own live frame; those can never be equal, so `_mask` collapses exactly that prefix. `test_the_mask_does_not_hide_the_message` pins that it collapses nothing else.
 """
 
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -31,6 +29,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.private import run_renet as port_module
 from rediacc_ci.tests import frozen
 
 ROOT = paths.repo_root()
@@ -334,8 +333,7 @@ def test_the_mask_does_not_hide_the_message():
 
     `_mask` collapses the `<$0>: line <n>: ` prefix; if it were greedier it would hide real divergences and every case above would pass for the wrong reason. The unit half below still drives that directly.
 
-    What is gone is the half that ran BOTH subjects over an unexecutable `ci.sh` and asserted their raw prefixes DIFFER, which was the proof that the mask was necessary rather than
-    decorative; the twin's own prefix survives only in the blob every golden header names. The recording still shows the mask fired and still carries the message it must not have eaten.
+    What is gone is the half that ran BOTH subjects over an unexecutable `ci.sh` and asserted their raw prefixes DIFFER, which was the proof that the mask was necessary rather than decorative; the twin's own prefix survives only in the blob every golden header names. The recording still shows the mask fired and still carries the message it must not have eaten.
     """
     sample = "/a/b/twin.sh: line 30: /x/ci.sh: Permission denied\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))
@@ -376,3 +374,158 @@ def test_a_planted_loss_of_the_export_is_caught(tmp_path):
 
     compare(tmp_path / "good", name)
     assert PORT.read_text(encoding="utf-8") == original
+
+
+# ---------------------------------------------------------------------------
+# PLAN-ci-time-budget T2.14: `--shard-manifest PATH --shard i/N`. NEW behaviour with no twin, so these are ordinary pytest cases against the live functions rather than golden comparisons -- there is no retired bash byte stream to reproduce here. Each one calls the pure functions directly, or drives `main` with `subprocess.run` and the submodule guard monkeypatched out, so no test in this section spawns the real `ci.sh` (the same rule the rest of the file follows, stated in the module's own docstring).
+# ---------------------------------------------------------------------------
+
+
+def _manifest(index_ids: dict, of: int) -> str:
+    return json.dumps(
+        {
+            "lane": "test-renet-go",
+            "of": of,
+            "generatedAt": "2026-09-27T00:00:00.000Z",
+            "legs": [{"index": i, "ids": ids} for i, ids in index_ids.items()],
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    ("spec", "want"),
+    [("1/2", (1, 2)), ("2/2", (2, 2)), ("1/1", (1, 1)), ("10/40", (10, 40))],
+)
+def test_parse_shard_spec_accepts_i_of_n(spec, want):
+    assert port_module.parse_shard_spec(spec) == want
+
+
+@pytest.mark.parametrize("spec", ["abc", "1", "1/", "/2", "0/2", "3/2", "-1/2", "1/0", "1/-2"])
+def test_parse_shard_spec_refuses_everything_else(spec):
+    with pytest.raises(port_module.ShardManifestError):
+        port_module.parse_shard_spec(spec)
+
+
+def test_leg_ids_returns_the_named_legs_ids():
+    text = _manifest({1: ["pkg/a", "pkg/b"], 2: ["pkg/c"]}, of=2)
+    assert port_module.leg_ids(text, "m.json", 1, 2) == ["pkg/a", "pkg/b"]
+    assert port_module.leg_ids(text, "m.json", 2, 2) == ["pkg/c"]
+
+
+def test_leg_ids_refuses_an_of_mismatch():
+    text = _manifest({1: ["pkg/a"], 2: ["pkg/b"]}, of=2)
+    with pytest.raises(port_module.ShardManifestError, match="asked for shard 1/3"):
+        port_module.leg_ids(text, "m.json", 1, 3)
+
+
+def test_leg_ids_refuses_a_missing_leg():
+    text = _manifest({1: ["pkg/a"], 2: ["pkg/b"]}, of=2)
+    with pytest.raises(port_module.ShardManifestError, match="no leg 5"):
+        port_module.leg_ids(text, "m.json", 5, 2)
+
+
+def test_leg_ids_refuses_an_empty_leg():
+    """A leg that would report green having run nothing -- the same refusal `shard-manifest.ts`'s `legIds` makes, independently reproduced here."""
+    text = _manifest({1: [], 2: ["pkg/b"]}, of=2)
+    with pytest.raises(port_module.ShardManifestError, match="leg 1 is EMPTY"):
+        port_module.leg_ids(text, "m.json", 1, 2)
+
+
+def test_leg_ids_refuses_malformed_json():
+    with pytest.raises(port_module.ShardManifestError, match="not valid JSON"):
+        port_module.leg_ids("{not json", "m.json", 1, 1)
+
+
+def test_leg_ids_refuses_a_missing_legs_key():
+    with pytest.raises(port_module.ShardManifestError, match='missing "legs"'):
+        port_module.leg_ids(json.dumps({"lane": "x", "of": 1}), "m.json", 1, 1)
+
+
+def test_parse_argv_extracts_both_shard_flags():
+    assert port_module.parse_argv(["test", "--shard-manifest", "m.json", "--shard", "1/2"]) == (
+        "test",
+        "m.json",
+        "1/2",
+    )
+
+
+def test_parse_argv_flags_may_appear_in_either_order():
+    assert port_module.parse_argv(["test", "--shard", "1/2", "--shard-manifest", "m.json"]) == (
+        "test",
+        "m.json",
+        "1/2",
+    )
+
+
+def test_parse_argv_a_dangling_flag_with_no_value_is_dropped():
+    """`--shard-manifest` as the LAST token has no following value, so it is just another unrecognised trailing token -- dropped in silence, same as any other."""
+    assert port_module.parse_argv(["test", "--shard-manifest"]) == ("test", None, None)
+
+
+def test_parse_argv_unrelated_extra_arguments_still_drop_silently():
+    assert port_module.parse_argv(["quality", "test"]) == ("quality", None, None)
+
+
+def test_main_requires_both_shard_flags_together(monkeypatch, capsys):
+    monkeypatch.setattr(
+        port_module.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("ci.sh must not run when the shard flags are incomplete")
+        ),
+    )
+    rc = port_module.main(["test", "--shard", "1/2"])
+    assert rc == 1
+    assert "must both be given, or neither" in capsys.readouterr().err
+
+
+def test_main_reports_a_shard_manifest_error_without_a_traceback(tmp_path, capsys):
+    missing = tmp_path / "does-not-exist.json"
+    rc = port_module.main(["test", "--shard-manifest", str(missing), "--shard", "1/2"])
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "No such file or directory" in err or str(missing) in err
+
+
+def test_main_exports_renet_test_pkgs_from_the_named_leg_before_invoking_ci_sh(
+    tmp_path, monkeypatch
+):
+    """The end-to-end contract: a valid `--shard-manifest`/`--shard` pair must set RENET_TEST_PKGS in `os.environ` BEFORE `ci.sh` (here, the stand-in `subprocess.run`) is invoked, exactly as `os.environ["GOTOOLCHAIN"]` is set before it further down in the same function. `subprocess.run` and the submodule guard are monkeypatched so this stays a Python-level test of `main`'s own control flow, never a real `ci.sh` run."""
+    manifest = tmp_path / "test-renet-go.json"
+    manifest.write_text(_manifest({1: ["pkg/a", "pkg/b"], 2: ["pkg/c"]}, of=2), encoding="utf-8")
+
+    monkeypatch.setattr(port_module.common, "require_submodule", lambda *_args, **_kwargs: True)
+    monkeypatch.delenv("RENET_TEST_PKGS", raising=False)
+    captured: dict[str, object] = {}
+
+    class _Completed:
+        returncode = 0
+
+    def fake_run(argv, check=False):  # noqa: ARG001 -- part of subprocess.run's signature
+        captured["argv"] = argv
+        captured["RENET_TEST_PKGS"] = os.environ.get("RENET_TEST_PKGS")
+        return _Completed()
+
+    monkeypatch.setattr(port_module.subprocess, "run", fake_run)
+
+    rc = port_module.main(["test", "--shard-manifest", str(manifest), "--shard", "1/2"])
+
+    assert rc == 0
+    assert captured["RENET_TEST_PKGS"] == "pkg/a pkg/b"
+    assert captured["argv"][-1] == "test", "the stage itself must still reach ci.sh unchanged"
+
+
+def test_main_without_shard_flags_never_touches_renet_test_pkgs(monkeypatch):
+    """THE CONTROL on the test above: no shard flags means `main` must not set (or clear) RENET_TEST_PKGS at all, so a plain `run_renet.py test` -- every caller before this box -- keeps whatever the environment already carried, or nothing."""
+    monkeypatch.setattr(port_module.common, "require_submodule", lambda *_args, **_kwargs: True)
+    monkeypatch.delenv("RENET_TEST_PKGS", raising=False)
+
+    class _Completed:
+        returncode = 0
+
+    monkeypatch.setattr(port_module.subprocess, "run", lambda *_args, **_kwargs: _Completed())
+
+    rc = port_module.main(["test"])
+
+    assert rc == 0
+    assert "RENET_TEST_PKGS" not in os.environ
