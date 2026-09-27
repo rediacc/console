@@ -416,49 +416,7 @@ jobs:
       - name: Create E2E Test Environment
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
-      # T2.17 (PLAN-ci-time-budget): prepared-VM snapshot. The key names the
-      # renet commit, the Ceph image pin, the base image's bytes, the cluster
-      # topology and the month, so any change is a miss. On a hit the VMs come
-      # back from the cache and the harness skips its reset (step 1); on a miss
-      # shard 1 of each distro prepares, captures and saves, and the other
-      # shards prepare as before. Every outcome writes its seconds to the step
-      # summary: the plan's 3-minute restore is a hypothesis until those
-      # numbers exist. Kill switch: OPS_SNAPSHOT on the key step; any value
-      # but 'on' forces the normal path, so a bad snapshot cannot wedge CI.
-      - name: Compute ops snapshot key
-        id: snap-key
-        env:
-          # OFF (operator 2026-09-27): console is PUBLIC and renet PRIVATE, and a snapshot is the prepared VM disks, which carry the compiled renet binary built from the private source. A fork PR's workflow can restore base-branch caches and publish them, so snapshots stay off until they are stored where only this repo's own runs can read them.
-          OPS_SNAPSHOT: 'off'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key workers
-      - name: Restore ops snapshot cache
-        id: snap-cache
-        if: steps.snap-key.outputs.enabled == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Restore prepared VMs from snapshot
-        id: snap-restore
-        if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore workers "${{ steps.snap-key.outputs.t0 }}"
-      - name: Prepare VMs and capture snapshot
-        id: snap-save
-        if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true' && matrix.shard == 1
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare workers
-      - name: Save ops snapshot cache
-        if: steps.snap-save.outputs.ready == 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Drop the local ops snapshot copy
-        if: always() && steps.snap-key.outputs.enabled == 'true'
-        run: rm -rf "$RUNNER_TEMP/ops-snapshot"
-
       - name: Run E2E Tests (Workers)
-        env:
-          BRIDGE_TEST_SKIP_RESET: ${{ (steps.snap-restore.outputs.ready == 'true' || steps.snap-save.outputs.ready == 'true') && '1' || '' }}
         # T2.12: shard 6 also carries the FULL_INTEGRATION-only composition
         # suites (12a/12b/12d/13b) on the two distros that set full-integration
         # -- they stay off the sharded plan (their own cost is unmeasured) and
@@ -638,42 +596,7 @@ jobs:
       - name: Create E2E Test Environment
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --ceph --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
-      # T2.17 prepared-VM snapshot, as in the E2E Workers job. Kill switch:
-      # OPS_SNAPSHOT on the key step.
-      - name: Compute ops snapshot key
-        id: snap-key
-        env:
-          # OFF (operator 2026-09-27): see the E2E Workers job's key step.
-          OPS_SNAPSHOT: 'off'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
-      - name: Restore ops snapshot cache
-        id: snap-cache
-        if: steps.snap-key.outputs.enabled == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Restore prepared VMs from snapshot
-        id: snap-restore
-        if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
-      - name: Prepare VMs and capture snapshot
-        id: snap-save
-        if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.ceph.config.ts
-      - name: Save ops snapshot cache
-        if: steps.snap-save.outputs.ready == 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Drop the local ops snapshot copy
-        if: always() && steps.snap-key.outputs.enabled == 'true'
-        run: rm -rf "$RUNNER_TEMP/ops-snapshot"
-
       - name: Run E2E Tests (Ceph)
-        env:
-          BRIDGE_TEST_SKIP_RESET: ${{ (steps.snap-restore.outputs.ready == 'true' || steps.snap-save.outputs.ready == 'true') && '1' || '' }}
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph.config.ts --fail-on-skip
 
       - if: always()
@@ -842,41 +765,7 @@ jobs:
             --vm-ram-ceph "$VM_RAM_CEPH" \
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
-      # T2.17 prepared-VM snapshot, as in the E2E Workers job. Kill switch:
-      # OPS_SNAPSHOT on the key step.
-      - name: Compute ops snapshot key
-        id: snap-key
-        env:
-          OPS_SNAPSHOT: 'off'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
-      - name: Restore ops snapshot cache
-        id: snap-cache
-        if: steps.snap-key.outputs.enabled == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Restore prepared VMs from snapshot
-        id: snap-restore
-        if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
-      - name: Prepare VMs and capture snapshot
-        id: snap-save
-        if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.ceph-workers.config.ts
-      - name: Save ops snapshot cache
-        if: steps.snap-save.outputs.ready == 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Drop the local ops snapshot copy
-        if: always() && steps.snap-key.outputs.enabled == 'true'
-        run: rm -rf "$RUNNER_TEMP/ops-snapshot"
-
       - name: Run E2E Tests (Ceph Workers)
-        env:
-          BRIDGE_TEST_SKIP_RESET: ${{ (steps.snap-restore.outputs.ready == 'true' || steps.snap-save.outputs.ready == 'true') && '1' || '' }}
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
 
       - if: always()
@@ -1196,41 +1085,7 @@ jobs:
             --vm-ram-ceph "$VM_RAM_CEPH" \
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
-      # T2.17 prepared-VM snapshot, as in the E2E Workers job. Kill switch:
-      # OPS_SNAPSHOT on the key step.
-      - name: Compute ops snapshot key
-        id: snap-key
-        env:
-          OPS_SNAPSHOT: 'off'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
-      - name: Restore ops snapshot cache
-        id: snap-cache
-        if: steps.snap-key.outputs.enabled == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Restore prepared VMs from snapshot
-        id: snap-restore
-        if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
-      - name: Prepare VMs and capture snapshot
-        id: snap-save
-        if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.k8s-ceph.config.ts
-      - name: Save ops snapshot cache
-        if: steps.snap-save.outputs.ready == 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Drop the local ops snapshot copy
-        if: always() && steps.snap-key.outputs.enabled == 'true'
-        run: rm -rf "$RUNNER_TEMP/ops-snapshot"
-
       - name: Run E2E Tests (K8s Ceph)
-        env:
-          BRIDGE_TEST_SKIP_RESET: ${{ (steps.snap-restore.outputs.ready == 'true' || steps.snap-save.outputs.ready == 'true') && '1' || '' }}
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-ceph.config.ts --fail-on-skip
 
       - if: always()
@@ -1406,38 +1261,6 @@ jobs:
             --vm-ram-ceph "$VM_RAM_CEPH" \
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
-      # T2.17 prepared-VM snapshot, as in the E2E Workers job. Kill switch:
-      # OPS_SNAPSHOT on the key step.
-      - name: Compute ops snapshot key
-        id: snap-key
-        env:
-          OPS_SNAPSHOT: 'off'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
-      - name: Restore ops snapshot cache
-        id: snap-cache
-        if: steps.snap-key.outputs.enabled == 'true'
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Restore prepared VMs from snapshot
-        id: snap-restore
-        if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
-      - name: Prepare VMs and capture snapshot
-        id: snap-save
-        if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.k8s-multinode.config.ts
-      - name: Save ops snapshot cache
-        if: steps.snap-save.outputs.ready == 'true'
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ${{ runner.temp }}/ops-snapshot
-          key: ${{ steps.snap-key.outputs.key }}
-      - name: Drop the local ops snapshot copy
-        if: always() && steps.snap-key.outputs.enabled == 'true'
-        run: rm -rf "$RUNNER_TEMP/ops-snapshot"
-
       # Suite 24's ACCOUNT tier: an account server and a subscription token, no
       # VMs. Its assertions are all pre-flight refusals (`assertMachineSlotsAvailable`
       # runs BEFORE anything is provisioned), so the whole tier costs a server
@@ -1472,7 +1295,6 @@ jobs:
       # is ever removed.
       - name: Run E2E Tests (K8s Multinode)
         env:
-          BRIDGE_TEST_SKIP_RESET: ${{ (steps.snap-restore.outputs.ready == 'true' || steps.snap-save.outputs.ready == 'true') && '1' || '' }}
           # Lights project `k8s-multinode-24` in playwright.k8s-multinode.config.ts.
           CLUSTER_LICENSING_SUITE: '1'
           E2E_EXPECT_NO_CLUSTER_VMS: >-

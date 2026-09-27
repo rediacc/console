@@ -458,9 +458,6 @@
       "CI_DOCKER_DIR",
       "GITHUB_OUTPUT"
     ],
-    ".ci/rediacc_ci/infra/ops_snapshot.py": [
-      "OPS_SNAPSHOT"
-    ],
     ".ci/rediacc_ci/infra/verify_ssh.py": [
       "ATTEMPTS",
       "CHOWN_PATH",
@@ -1326,9 +1323,6 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_infra_ops_snapshot.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_build_server.py": [
