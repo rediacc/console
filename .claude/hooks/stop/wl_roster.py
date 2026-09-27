@@ -357,6 +357,26 @@ def inflight_tool(rec):
     return name
 
 
+INTERRUPTED_MARK = "[Request interrupted by user"
+
+
+def interrupted(rec):
+    """True when the record is the harness's interrupt marker: the turn was cut and nothing runs after it (a workflow retry writes a NEW transcript)."""
+    if not isinstance(rec, dict) or rec.get("type") != "user":
+        return False
+    content = (rec.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return content.startswith(INTERRUPTED_MARK)
+    if isinstance(content, list):
+        return any(
+            isinstance(b, dict)
+            and b.get("type") == "text"
+            and str(b.get("text") or "").startswith(INTERRUPTED_MARK)
+            for b in content
+        )
+    return False
+
+
 def proven_finished(jsonl, now, name="", cwd="", session_id=""):
     """True only when the transcript's last record ENDED THE TURN and nothing was written after.
 
@@ -368,8 +388,11 @@ def proven_finished(jsonl, now, name="", cwd="", session_id=""):
     if mtime is None:
         return False
     rec = last_record(jsonl)
-    if L._record_is_idle(rec):
+    if L._record_is_idle(rec) or interrupted(rec):
         return now - mtime >= FINISHED_QUIET_S
+    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still held nine writer slots at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
+    if not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60:
+        return True
     if name:
         edge = L.idle_edge(cwd, session_id, name)
         if edge is not None and mtime <= edge + FINISHED_QUIET_S:

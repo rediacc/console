@@ -224,3 +224,54 @@ def test_r6d_inverse_no_completion_keeps_the_slot(wl):  # noqa: F811
     completion_world(wl)
     lead_notified(wl, W1)
     assert W4 in estimate(wl)
+
+
+# ---- #2a252641: an interrupted or long-dead transcript frees its slot ------------------------------
+
+
+def dead_world(fix, last_record: dict, silent_min: float) -> None:
+    """W4 is listed running by a last Stop event older than the agent, and its transcript ends in `last_record`, untouched for `silent_min` minutes."""
+    mk_sub(fix, W4, "general-purpose", silent_min + 1, last="text", running=True)
+    tx = subagents_dir(fix) / ("agent-%s.jsonl" % W4)
+    with tx.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(last_record) + "\n")
+    backdate(tx, silent_min)
+    lastevent(fix).write_text(fix.event(), encoding="utf-8")
+    backdate(lastevent(fix), silent_min + 5)
+    lead_transcript(fix).write_text("", encoding="utf-8")
+
+
+INTERRUPT = {
+    "type": "user",
+    "message": {"content": [{"type": "text", "text": "[Request interrupted by user]"}]},
+}
+ANSWERED_TOOL = {
+    "type": "user",
+    "message": {"content": [{"type": "tool_result", "tool_use_id": "t", "content": "ok"}]},
+}
+TOOL_IN_FLIGHT = {
+    "type": "assistant",
+    "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {}}]},
+}
+
+
+def test_2a252641_an_interrupted_transcript_frees_the_slot(wl):  # noqa: F811
+    """CONTROL: a workflow agent cut by the harness ends in the interrupt marker, and before the fix it held a writer slot until the next Stop event."""
+    dead_world(wl, INTERRUPT, 1)
+    assert W4 not in estimate(wl)
+
+
+def test_2a252641_inverse_an_answered_tool_a_minute_ago_is_live(wl):  # noqa: F811
+    dead_world(wl, ANSWERED_TOOL, 1)
+    assert W4 in estimate(wl)
+
+
+def test_2a252641_a_transcript_silent_past_the_horizon_frees_the_slot(wl):  # noqa: F811
+    """CONTROL: nine agents killed mid-turn held nine slots for nine hours."""
+    dead_world(wl, ANSWERED_TOOL, 180)
+    assert W4 not in estimate(wl)
+
+
+def test_2a252641_inverse_a_tool_in_flight_past_the_horizon_stays_live(wl):  # noqa: F811
+    dead_world(wl, TOOL_IN_FLIGHT, 180)
+    assert W4 in estimate(wl)
