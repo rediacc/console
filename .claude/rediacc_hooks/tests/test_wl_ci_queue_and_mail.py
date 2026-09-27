@@ -14,7 +14,9 @@ import re
 import time
 from typing import TYPE_CHECKING
 
-from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_run, ci_setup, write_exec
+from rediacc_hooks.tests.test_wl_ci_status import ci_job
+from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
+from rediacc_hooks.tests.test_wl_ci_status import ci_run, ci_setup, write_exec
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 if TYPE_CHECKING:
@@ -73,7 +75,7 @@ def ci_queue_fixture(fix, runs: dict, runs_body: str = "") -> None:
 def ci_queue_ready(fix) -> str:
     """The shared queue prelude: a green rollup on a repo with a published tip, and a 30-minute-old creation stamp for the runs the cases plant."""
     ci_setup(fix)
-    ci_rollup(fix, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
+    ci_status_rollup(fix, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
     return stamp(30)
 
 

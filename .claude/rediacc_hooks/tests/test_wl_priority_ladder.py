@@ -16,7 +16,8 @@ import shutil
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import cldeliver, clfile
-from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_setup
+from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_setup
+from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # One work loop, the canonical cron shape.
@@ -213,7 +214,7 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     ci_setup(wl)
     (wl.base / "projects" / "reports").mkdir(parents=True, exist_ok=True)
     prf_log(wl, 3)
-    ci_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
+    ci_status_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
     got = prf_run(wl)
     unfinished = "233: the finish line did not hold a green-but-unfinished wave: %s" % got.out[:500]
     assert "THE WAVE IS NOT FINISHED" in got.out, unfinished

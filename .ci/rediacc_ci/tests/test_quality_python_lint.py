@@ -36,6 +36,7 @@ import subprocess
 
 import pytest
 
+from rediacc_ci.core import platform as plat
 from rediacc_ci.quality import python_lint as gate
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
@@ -144,6 +145,11 @@ def slug(case_id: str) -> str:
 FLOOR_CASE = "the file floor refuses rather than reporting clean"
 NO_RUFF_CASE = "a missing ruff is 77 and not 1"
 
+# The two cases whose stdout channel is ruff's OWN native EXE001/EXE002 finding, which `ruff rule EXE001` documents as a platform gap rather than a version one: "this rule is only available on Unix-like systems, and is not enforced on Windows or WSL." A WSL devbox linting the exact same fixture with the exact same ruff binary as CI still reports "All checks passed!" on stdout, so there is no local rerun that proves these two right or wrong; they are skipped rather than pinned to a WSL-only text CI never produces.
+EXE_MODE_CASES = frozenset(
+    {"a shebang with git mode 100644 is EXE001", "no shebang with git mode 100755 is EXE002"}
+)
+
 
 CASES = [
     # THE NEGATIVE HALF. A clean corpus must exit 0 AND print ruff's own "All checks passed!" line, which is the byte the port lost when it captured ruff's output in order to inspect it.
@@ -159,13 +165,13 @@ CASES = [
         1,
     ),
     (
-        # EXE001. The property is the GIT mode, not the disk mode: CI lints a fresh checkout, so what it sees is whatever git recorded.
+        # EXE001, TWICE OVER: ruff's own native rule reads the DISK mode, which `ruff rule EXE001` documents as unenforced on WSL ("this rule is only available on Unix-like systems, and is not enforced on Windows or WSL"), so this case is skipped there (see `EXE_MODE_CASES`); the port's own separate git-mode-based check, printed to stderr as "(EXE001 in CI)", is WSL-safe and always runs.
         "a shebang with git mode 100644 is EXE001",
         {"probe_exe.py": ("#!/usr/bin/env python3\nx = 1\n", 0o644)},
         1,
     ),
     (
-        # EXE002, the other direction. Both are defects.
+        # EXE002, the other direction, and the same WSL fork as EXE001 above.
         "no shebang with git mode 100755 is EXE002",
         {"probe_noshebang.py": ("x = 1\n", 0o755)},
         1,
@@ -189,6 +195,11 @@ CASES = [
 )
 def test_port_matches_the_twins_recorded_output(tmp_path, case_id, extra, want_exit):
     """Byte equality on BOTH streams against the twin's recording, plus the exit code."""
+    if case_id in EXE_MODE_CASES and plat.detect_wsl().is_wsl:
+        pytest.skip(
+            "ruff disables its native EXE001/EXE002 under WSL (see EXE_MODE_CASES), so "
+            "this host's ruff cannot reproduce either the recorded stdout or CI's own"
+        )
     root = build(tmp_path, extra)
     want_exit_recorded, want_out, want_err = split_golden(frozen.read(SLUG, slug(case_id)))
     returncode, stdout, stderr = run_port(root)

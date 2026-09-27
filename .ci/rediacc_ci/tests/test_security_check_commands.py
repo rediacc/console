@@ -112,7 +112,8 @@ def run(subject: pathlib.Path, where: pathlib.Path, name: str) -> tuple[int, str
         # A CURATED environment, not an overlay: the colour decision is the subject of this case and an inherited NO_COLOR would decide it instead.
         env = {"CI": "true", "PATH": os.environ.get("PATH", "")}
     else:
-        env = dict(os.environ)
+        # Curated for the SAME reason, in the other direction: the subject's colour decision is `os.environ.get("CI") == "true"` alone, and GitHub Actions exports `CI=true` for every step, so overlaying the caller's own environment here would recolour these cases by the harness's CI-ness rather than by the subject's. The recordings were taken on a shell that never exported it, so `CI` (and `NO_COLOR`, for the same reason) is stripped rather than inherited.
+        env = {k: v for k, v in os.environ.items() if k not in ("CI", "NO_COLOR")}
     if subject.suffix != ".sh":
         # `check_commands.py` imports `rediacc_ci.paths`; `fixture` carries a copy of the package this points Python at, the same way `test_security_shfmt.py` does for its own python subject.
         env["PYTHONPATH"] = str(root / ".ci")

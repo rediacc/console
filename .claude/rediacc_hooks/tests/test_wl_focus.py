@@ -27,9 +27,9 @@ from rediacc_hooks.tests.test_wl_ci_status import (
     CI_FRESH_PAYLOAD,
     CI_JOB_PAYLOAD,
     ci_job,
-    ci_rollup,
     write_exec,
 )
+from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.test_wl_judge_fixset_scope import capturing_judge
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
@@ -99,9 +99,9 @@ def world(fix, ci: bool = False, red: bool = False) -> None:
     merged_nodes(fix, [])
     write_exec(fix.base / "binonly" / "gh", GH_SHIM % {"base": fix.base})
     if red:
-        ci_rollup(fix, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
+        ci_status_rollup(fix, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
     elif ci:
-        ci_rollup(fix, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
+        ci_status_rollup(fix, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
 
 
 def adopted_plan(fix) -> None:
@@ -255,7 +255,7 @@ def test_f4_focus_off_restores_all_three(wl):  # noqa: F811
     assert ADOPTED not in focused.out, focused.out[:900]
     assert spawn(wl)[0] == 2
     focus_off(wl)
-    ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
+    ci_status_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
     wl.newturn()
     got = stop(wl, {"WORKLIST_PUBLISH_REF": "pub"})
     assert got.decision == "block", wl.why("f4", "block", got, ADOPTED)

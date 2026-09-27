@@ -227,7 +227,7 @@ def test_a_key_read_from_the_wrong_server_info_field_is_caught(tmp_path: pathlib
     Reading `keyId` instead of `publicKeySpki` still seeds a non-empty value, so only the dev.json comparison against the curl shim's `stubpublickey` notices.
     """
     fixture = build_fixture(tmp_path)
-    mutate(fixture, "?.publicKeySpki ??", "?.keyId ??")
+    mutate(fixture, "?.publicKeySpki??", "?.keyId??")
     old, new = run_both(fixture)
     assert old.returncode == 1
     assert old.stderr == BAD_GLYPH + "dev.json e2ePublicKey=v1 (expected stubpublickey)\n"

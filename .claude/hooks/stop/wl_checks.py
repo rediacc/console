@@ -2179,6 +2179,8 @@ PRIORITY_LADDER = (
                 "roster-dead",
                 # Queued writer work with a writer slot free (agent/plans/PLAN-stop-hook-retro-20260924.md R.5): split out of roster-dead, because a queue is not a finished worker.
                 "queue-slot",
+                # The Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers already serving plans that break a mutex or share files, which the pre-agent guard missed or was bypassed for. Same roster family as roster-unleased/roster-dead above.
+                "roster-concurrency",
             }
         ),
     ),

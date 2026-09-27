@@ -2,8 +2,10 @@
 exit: 1
 --- stdout ---
 info: linting 13 Python file(s) with ruff 0.16.1
-All checks passed!
-13 files already formatted
+EXE002 The file is executable but no shebang is present
+--> probe_noshebang.py:1:1
+
+Found 1 error.
 --- stderr ---
 [0;31m✗[0m probe_noshebang.py is git mode 100755 but has no shebang (EXE002 in CI)
     fix: git update-index --chmod=-x probe_noshebang.py

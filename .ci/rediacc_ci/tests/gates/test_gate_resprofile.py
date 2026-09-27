@@ -129,7 +129,7 @@ def build_fixture(gate, work: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "config").mkdir(parents=True)
     (root / ".ci" / "cache").mkdir(parents=True)
     (root / ".claude" / "hooks" / "stop").mkdir(parents=True)
-    for name in ("wl_profile.py", "wl_ressample.py"):
+    for name in ("wl_profile.py", "wl_ressample.py", "wl_common.py"):
         source = HOOKS / name
         if not source.is_file():
             gate.log_fail(

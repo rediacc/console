@@ -74,7 +74,7 @@ def test_a_removed_hook_command_reds_and_says_shrank(gate):
         gate.assert_exit(1, result, "a cheaper wiring is still a finding")
         gate.assert_contains(result.combined, "entryCount SHRANK", "names the direction")
         gate.assert_contains(
-            result.combined, "repin it with 10", "and hands over the value to paste"
+            result.combined, "repin it with 11", "and hands over the value to paste"
         )
     gate.log_pass("a SHRINK reds with the repin value, which is what keeps the pin honest")
 

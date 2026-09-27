@@ -16,7 +16,8 @@ import time
 from typing import Any
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_run, ci_running, ci_setup
+from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_run, ci_running, ci_setup
+from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.test_wl_guide_and_deferrals import shim_judge_out
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
@@ -170,7 +171,7 @@ def test_175_the_class_0_ci_note_is_released_ahead_of_the_older_class_2_advisory
     # An ORPHANED item (a dead owner's open item) is the older class-2 advisory: `ci_run` carries no transcript path to derive the projects directory from, so it is pinned to where the stale transcript lives.
     stale_peer_transcript(wl)
     wl.env["WORKLIST_PROJECTS_DIR"] = str(wl.base)
-    ci_rollup(
+    ci_status_rollup(
         wl,
         "PENDING",
         "[%s, %s]" % (ci_job("E2E / opensuse", "FAILURE"), ci_running("E2E / ubuntu")),

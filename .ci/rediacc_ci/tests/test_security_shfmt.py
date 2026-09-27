@@ -292,9 +292,15 @@ def recorded(name: str) -> tuple[int, str, str, list[str]]:
     )
 
 
+# `acquire_shfmt` (and its bash twin at `.ci/scripts/lib/toolchain.sh:416`) print this line ONLY when `go` resolves on the curated PATH `an-unacquirable-shfmt` builds (`<fake>/bin:/usr/bin:/bin`): CI's quality-security lane has a system `go` on that minimal PATH, this suite's other hosts need not (`rediacc_ci.core.toolchain.acquire_shfmt`'s own docstring names both, and the golden was re-pinned to CI's fuller form in the same change that added this normalisation). Stripped back out here when THIS run's own PATH will not find `go` either, so the comparison tracks the same fact the subject itself branches on -- `shutil.which("go")` -- rather than pinning one host's answer.
+_GO_INSTALL_FAILED_LINE = "toolchain: go install shfmt@v%s failed\n" % FIXTURE_VERSION
+
+
 def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, list[str]]:
     want = recorded(name)
     got = run(tmp_path, name)
+    if name == "an-unacquirable-shfmt" and shutil.which("go", path="/usr/bin:/bin") is None:
+        want = (want[0], want[1], want[2].replace(_GO_INSTALL_FAILED_LINE, "", 1), want[3])
     assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (name, want[0], got[0])
     assert got[1] == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
     assert got[2] == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])

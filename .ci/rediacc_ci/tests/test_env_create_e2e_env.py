@@ -327,8 +327,21 @@ def build_cases() -> dict[str, dict[str, typing.Any]]:
 CASE_KW = build_cases()
 CASES = tuple(CASE_KW)
 
-# The one case the port does not reproduce. Compared by shape, in its own test.
-DIVERGENT = ("an-unsupported-shift-operator",)
+# The two cases a diagnostic belongs to something other than the port itself. Compared by shape, in their own tests.
+DIVERGENT = ("an-unsupported-shift-operator", "an-output-directory-that-cannot-be-created")
+
+
+def mkdir_looks_gnu(text: str) -> bool:
+    """Does a captured `mkdir -p` diagnostic have GNU's shape, or a reimplementation's?
+
+    Decided from the TEXT ITSELF, never from the live host's `mkdir --version`: the recording is frozen forever the moment the twin is retired, but a live probe answers for whichever host happens to run pytest today, which need not be the host that made the recording (this is the same reasoning `test_build_pack_cli_npm.mkdir_looks_gnu` documents at length for its own `mkdir -p` divergence). Asking the golden about itself instead keeps the verdict identical on every host that ever runs this suite:
+
+        GNU coreutils
+            mkdir: cannot create directory '/dev/null/x': Not a directory
+        uutils coreutils
+            mkdir: Not a directory
+    """
+    return "cannot create directory" in text
 
 
 def prepare(tmp_path: pathlib.Path, name: str) -> tuple[pathlib.Path, pathlib.Path, dict[str, str]]:
@@ -395,9 +408,11 @@ def run(tmp_path: pathlib.Path, name: str, *, subject: str | None = None) -> tup
             text = text.replace(spelling, "<prog>")
         if subject is not None and subject.startswith("python3 /"):
             text = text.replace(subject.split(" ", 1)[1].strip("'"), "<prog>")
+        # PATH masked FIRST, against the untouched text. A CI runner's PATH is walked by npm's own `node_modules/.bin` lookup from the checkout root up to `/`, so the checkout root -- masked to `<root>` two lines down -- is one of PATH's own entries. Masking `<root>` before PATH would shorten that one copy of it, so the exact-value PATH match below stops matching anything: the text then holds `<root>/node_modules/.bin:...` where the child's real, unmasked PATH value never appears intact.
+        text = frozen.mask_env(text, {"PATH": child_env.get("PATH")})
         text = text.replace(str(output), "<out>").replace(diff.repo(), "<root>")
-        # The host's own PATH and HOME, for the cases that hand bash those NAMES as arithmetic; see `frozen.mask_env`. Last, so the fixture paths above are already tokens.
-        return frozen.mask_env(text, child_env)
+        # The host's own HOME, for the cases that hand bash that NAME as arithmetic; see `frozen.mask_env`. Last, so the fixture and PATH tokens above are already in place.
+        return frozen.mask_env(text, {"HOME": child_env.get("HOME")})
 
     return code, clean(stdout), clean(stderr), clean(produced)
 
@@ -509,6 +524,25 @@ def test_a_directory_that_cannot_be_created_surfaces_mkdirs_own_message() -> Non
     code, _stdout, stderr, _produced = recorded("an-output-directory-that-cannot-be-created")
     assert code != 0
     assert "mkdir:" in stderr
+
+
+def test_a_missing_output_directory_passes_mkdirs_own_live_message_through(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The port's `mkdir -p` is a real subprocess call, not a synthesised message, so its diagnostic is coreutils' own and only ever comparable to what THIS host's `mkdir` actually prints -- never to a historical recording, which may have been captured under a different coreutils (`mkdir_looks_gnu` and `test_build_pack_cli_npm.mkdir_looks_gnu` document the same fork for the one case that DOES synthesise the text). The property that survives every coreutils, on every host that ever runs this suite, is that the port passes the diagnostic through unedited: a FRESH `mkdir -p` on this same host, against the same unwritable target, is the oracle here instead of the golden."""
+    name = "an-output-directory-that-cannot-be-created"
+    got = run(tmp_path, name)
+    live = subprocess.run(
+        ["mkdir", "-p", "/dev/null/x"], capture_output=True, text=True, check=False
+    )
+    assert got[0] == live.returncode != 0, (got[0], live.returncode)
+    assert got[1] == "", got[1]
+    assert got[2].endswith(live.stderr), "port: %r\n live mkdir: %r" % (got[2], live.stderr)
+    assert mkdir_looks_gnu(live.stderr) == mkdir_looks_gnu(got[2]), (
+        "the port's stderr no longer has the same coreutils shape as a live mkdir -p on this "
+        "same host, so it stopped being a pass-through somewhere before this last line"
+    )
+    assert got[3] is None, "something was written despite the mkdir failure"
 
 
 # --------------------------------------------------------------------------- The RAM budget, and DEFECT A ---------------------------------------------------------------------------

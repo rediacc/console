@@ -5,6 +5,7 @@ info: Checking shell script formatting
 info: Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report
 info: Or run the gate where it is pinned: ./run.sh devbox exec -- .ci/scripts/security/shfmt.sh
 --- stderr ---
+toolchain: go install shfmt@v9.99.0 failed
 toolchain: could not download shfmt from https://github.com/mvdan/sh/releases/download/v9.99.0/shfmt_v9.99.0_linux_amd64
 [0;31merror: shfmt is unusable for this gate -- CANNOT RUN, not a verdict[0m
 --- calls ---

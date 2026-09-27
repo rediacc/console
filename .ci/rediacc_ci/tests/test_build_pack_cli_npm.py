@@ -517,33 +517,32 @@ def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(
     assert want[3] == got[3] == "", "something ran after the cd failed"
 
 
-def mkdir_is_gnu() -> bool:
-    """Is the `mkdir` on PATH GNU coreutils, or a reimplementation?
+def mkdir_looks_gnu(text: str) -> bool:
+    """Does a captured `mkdir -p` diagnostic have GNU's shape, or a reimplementation's?
 
-    ASKED, because the answer decides what the case below may assert and it is NOT the same on every machine that runs this suite:
+    Decided from the TEXT ITSELF, never from the live host's `mkdir --version`. The
+    recording is frozen forever the moment the twin is retired, but a live probe is
+    not: it answers for whichever host happens to run pytest today, which need not be
+    -- and, as CI run 34970782616 showed, was not -- the host that made the recording.
+    A probe-based branch silently re-derives "what should the recording equal" from
+    an environment that can disagree with the environment that produced it, which is
+    exactly backwards for a frozen golden. Asking the golden about itself instead
+    keeps the verdict identical on every host that ever runs this suite:
 
-        GNU coreutils 9.7 (the CI runner)
+        GNU coreutils 9.7
             mkdir: cannot create directory 'denied/out': Permission denied
-        uutils coreutils 0.8.0 (this tree's hosts)
+        uutils coreutils 0.8.0
             mkdir: Permission denied
     """
-    try:
-        proc = subprocess.run(
-            ["mkdir", "--version"], capture_output=True, text=True, check=False, timeout=30
-        )
-    except (OSError, subprocess.SubprocessError):
-        return True
-    return "GNU coreutils" in proc.stdout
+    return "cannot create directory" in text
 
 
 def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(
     tmp_path: pathlib.Path,
 ) -> None:
-    """DIVERGENCE 2, pinned rather than asserted away, and it depends on WHICH coreutils is installed.
+    """DIVERGENCE 2, pinned rather than asserted away, and it depends on WHICH coreutils recorded it.
 
-    `mkdir -p` on an unwritable parent: the exit code is the subject's and agrees with the recording. The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording, so whether the two texts differ is a property of the host's mkdir.
-
-    An unconditional `!=` passed on every machine in this tree and failed in CI run 34970782616, which was true where it ran and false where it was written.
+    `mkdir -p` on an unwritable parent: the exit code is the subject's and agrees with the recording. The diagnostic belongs to coreutils, and the port SYNTHESISES GNU's wording, so whether the two texts agree is a property of whichever coreutils recorded this golden, read off the recording itself rather than off the live host running pytest today (see `mkdir_looks_gnu`).
 
     The port's own text is asserted EXACTLY either way, so a port that drifted from GNU's wording still reds here on any host.
     """
@@ -554,7 +553,7 @@ def test_a_failing_mkdir_agrees_on_the_status_and_not_on_the_text(
     assert want[3] == got[3] == "", "npm ran despite the mkdir failure"
     assert "mkdir" in want[2], want[2]
     assert got[2] == "mkdir: cannot create directory 'denied/out': Permission denied\n", got[2]
-    if mkdir_is_gnu():
+    if mkdir_looks_gnu(want[2]):
         assert want[2] == got[2], (
             "GNU coreutils and the port disagree, so the port no longer reproduces the "
             "diagnostic it was written to reproduce: %r vs %r" % (want[2], got[2])

@@ -14,7 +14,9 @@ import time
 from typing import TYPE_CHECKING
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_rollup, ci_run, ci_setup
+from rediacc_hooks.tests.test_wl_ci_status import ci_job
+from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
+from rediacc_hooks.tests.test_wl_ci_status import ci_run, ci_setup
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 if TYPE_CHECKING:
@@ -521,7 +523,7 @@ def test_156c_control_focus_off_restores_the_dump_all_block(wl):  # noqa: F811
 def test_156d_the_always_tier_rides_every_focused_block(wl):  # noqa: F811
     """CI-red is latched (its block budget is spent at compute time), so hiding it behind rotation would swallow it forever. It must appear IN ADDITION to the one rotating check."""
     ci_setup(wl)
-    ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
+    ci_status_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
     wl.add_item("- [ ] (deadbeef) open thing")
     got = ci_run(wl)
     assert '"decision": "block"' in got.out, got.out[:400]

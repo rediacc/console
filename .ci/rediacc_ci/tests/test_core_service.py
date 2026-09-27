@@ -292,6 +292,30 @@ LIFECYCLE_CASES = [
     (scenario, case) for scenario, cases in svc_driver.SCENARIOS.items() for case in cases
 ]
 
+# A bash-internal diagnostic some builds print to stderr when `set -e` unwinds a sourced script's failure through a function's `local` scope: a documented bash bug (https://lists.gnu.org/archive/html/bug-bash), not a defect in the twin or the port, whose exact wording and whether it fires at all depends on the bash BUILD the twin happens to run under rather than on anything either
+# side does. `service-old` is the ONLY `$0` `run_side` ever gives bash (see `service_shadow_driver.run_side`), so it anchors the match to lines this differential's own bash child produced.
+_BASH_POP_VAR_CONTEXT_BUG = re.compile(
+    r"^obs \S+ err#\d+\| service-old: line \d+: "
+    r"pop_var_context: head of shell_variables not a function context$"
+)
+
+
+def _drop_bash_internal_noise(lines: list[str]) -> list[str]:
+    """`old`'s stderr, minus `_BASH_POP_VAR_CONTEXT_BUG`, with the remaining `err#` lines renumbered.
+
+    `new` is Python and can never print this: pinning its presence would make the differential fail or pass by the CI image's bash patch level rather than by whether the port is equivalent to the twin.
+    """
+    kept = [line for line in lines if not _BASH_POP_VAR_CONTEXT_BUG.match(line)]
+    renumbered = []
+    next_err = 0
+    for line in kept:
+        if re.match(r"^obs \S+ err#\d+\|", line):
+            renumbered.append(re.sub(r"err#\d+\|", "err#%d|" % next_err, line, count=1))
+            next_err += 1
+        else:
+            renumbered.append(line)
+    return renumbered
+
 
 @pytest.mark.parametrize(
     ("scenario", "case"),
@@ -300,7 +324,7 @@ LIFECYCLE_CASES = [
 )
 def test_lifecycle_matches_the_live_twin(scenario, case) -> None:
     repo = pathlib.Path(diff.repo())
-    old = svc_driver.observe("old", repo, case)
+    old = _drop_bash_internal_noise(svc_driver.observe("old", repo, case))
     new = svc_driver.observe("new", repo, case)
     assert old == new, "case %s/%s diverged" % (scenario, case.name)
 
