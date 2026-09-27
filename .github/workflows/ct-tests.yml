@@ -428,8 +428,8 @@ jobs:
       - name: Compute ops snapshot key
         id: snap-key
         env:
-          # Operator default #1657f3f6 (2026-09-27): ubuntu-24.04 legs only, to measure snapshot size and restore time inside the 10 GB cache budget; off again if the two snapshots exceed 3 GB.
-          OPS_SNAPSHOT: ${{ matrix.os-image == 'ubuntu-24.04' && 'on' || 'off' }}
+          # OFF (operator 2026-09-27): console is PUBLIC and renet PRIVATE, and a snapshot is the prepared VM disks, which carry the compiled renet binary built from the private source. A fork PR's workflow can restore base-branch caches and publish them, so snapshots stay off until they are stored where only this repo's own runs can read them.
+          OPS_SNAPSHOT: 'off'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key workers
       - name: Restore ops snapshot cache
         id: snap-cache
@@ -643,8 +643,8 @@ jobs:
       - name: Compute ops snapshot key
         id: snap-key
         env:
-          # Operator default #1657f3f6: E2E Ceph is the second measured snapshot.
-          OPS_SNAPSHOT: 'on'
+          # OFF (operator 2026-09-27): see the E2E Workers job's key step.
+          OPS_SNAPSHOT: 'off'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
       - name: Restore ops snapshot cache
         id: snap-cache
