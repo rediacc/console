@@ -16252,7 +16252,7 @@
   {
     "id": "search-9824",
     "content": "Pourquoi `rdc` réside sur votre ordinateur",
-    "body": "rdc sur votre ordinateur, renet sur le serveur rdc est le CLI sur votre ordinateur. Le serveur exécute un composant distinct appelé renet, que rdc provisionne et pilote via SSH. Vous n'avez jamais besoin de vous connecter manuellement à un serveur en SSH. rdc le fait pour vous. C'est le modèle : un seul outil sur votre machine, rien à gérer directement sur le serveur. Nous aborderons la configuration de renet dans les deux tutoriels suivants. C'est plus complexe que l'installation du CLI, mais vous ne le ferez qu'une seule fois par machine. --- Suivant : Configuration des clés SSH.",
+    "body": "rdc sur votre ordinateur, renet sur le serveur rdc est le CLI sur votre ordinateur. Le serveur exécute un composant distinct appelé renet, que rdc provisionne et pilote via SSH. Vous n'avez jamais besoin de vous connecter manuellement à un serveur en SSH. rdc le fait pour vous. C'est le modèle : un seul outil sur votre machine, rien à gérer directement sur le serveur. Nous aborderons la configuration de renet dans les deux tutoriels suivants. C'est plus complexe que l'installation du CLI, mais vous ne le ferez qu'une seule fois par machine. Chaque tutoriel est autonome : il met en place la machine, la configuration et les dépôts qu'il utilise, et rien de ce qu'un tutoriel laisse derrière lui ne se répercute sur le suivant. --- Suivant : Configuration des clés SSH.",
     "excerpt": "rdc sur votre ordinateur, renet sur le serveur rdc est le CLI sur votre ordinateur. Le serveur exécute un composant distinct appelé renet, que rdc pro...",
     "category": "Documentation",
     "page": "/fr/docs/tutorial-installation",

@@ -16252,7 +16252,7 @@
   {
     "id": "search-18434",
     "content": "`rdc` neden dizüstü bilgisayarınızda yaşar?",
-    "body": "rdc on your laptop, renet on the server rdc, dizüstü bilgisayarınızdaki CLI aracıdır. Sunucu ise renet adlı ayrı bir bileşen çalıştırır. rdc, SSH üzerinden renet'i yapılandırır ve yönetir. Sunucularınıza manuel olarak SSH yapmanıza hiç gerek kalmaz. rdc bunu sizin için halleder. Bu şekilde çalışır: makinenizde tek bir araç, sunucuda doğrudan yönetilecek bir şey yok. renet yapılandırmasını sonraki iki öğreticide ele alacağız. CLI kurulumundan daha karmaşıktır, ancak bunu makine başına yalnızca bir kez yaparsınız. --- Sonraki: SSH Anahtar Yapılandırması.",
+    "body": "rdc on your laptop, renet on the server rdc, dizüstü bilgisayarınızdaki CLI aracıdır. Sunucu ise renet adlı ayrı bir bileşen çalıştırır. rdc, SSH üzerinden renet'i yapılandırır ve yönetir. Sunucularınıza manuel olarak SSH yapmanıza hiç gerek kalmaz. rdc bunu sizin için halleder. Bu şekilde çalışır: makinenizde tek bir araç, sunucuda doğrudan yönetilecek bir şey yok. renet yapılandırmasını sonraki iki öğreticide ele alacağız. CLI kurulumundan daha karmaşıktır, ancak bunu makine başına yalnızca bir kez yaparsınız. Her öğretici kendi başınadır: kullandığı makineyi, yapılandırmayı ve depoları kurar ve bir öğreticinin geride bıraktığı hiçbir şey bir sonrakine geçmez. --- Sonraki: SSH Anahtar Yapılandırması.",
     "excerpt": "rdc on your laptop, renet on the server rdc, dizüstü bilgisayarınızdaki CLI aracıdır. Sunucu ise renet adlı ayrı bir bileşen çalıştırır. rdc, SSH üzer...",
     "category": "Documentation",
     "page": "/tr/docs/tutorial-installation",

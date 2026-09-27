@@ -16252,7 +16252,7 @@
   {
     "id": "search-11259",
     "content": "Perché `rdc` si trova sul tuo laptop",
-    "body": "rdc sul tuo laptop, renet sul server rdc è la CLI sul tuo laptop. Il server esegue un componente separato chiamato renet, che rdc provisiona e gestisce via SSH. Non hai mai bisogno di connetterti via SSH a un server manualmente: rdc se ne occupa per te. Questo è il modello: uno strumento sulla tua macchina, niente da gestire direttamente sul server. Affronteremo la configurazione di renet nei prossimi due tutorial. È più complessa dell'installazione del CLI, ma la fai una sola volta per macchina. --- Successivo: Configurazione della Chiave SSH.",
+    "body": "rdc sul tuo laptop, renet sul server rdc è la CLI sul tuo laptop. Il server esegue un componente separato chiamato renet, che rdc provisiona e gestisce via SSH. Non hai mai bisogno di connetterti via SSH a un server manualmente: rdc se ne occupa per te. Questo è il modello: uno strumento sulla tua macchina, niente da gestire direttamente sul server. Affronteremo la configurazione di renet nei prossimi due tutorial. È più complessa dell'installazione del CLI, ma la fai una sola volta per macchina. Ogni tutorial è autonomo: prepara la macchina, la configurazione e i repository che usa, e quello che un tutorial lascia non si trascina nel successivo. --- Successivo: Configurazione della Chiave SSH.",
     "excerpt": "rdc sul tuo laptop, renet sul server rdc è la CLI sul tuo laptop. Il server esegue un componente separato chiamato renet, che rdc provisiona e gestisc...",
     "category": "Documentation",
     "page": "/it/docs/tutorial-installation",

@@ -16252,7 +16252,7 @@
   {
     "id": "search-8389",
     "content": "Miks `rdc` asub sinu sülearvutis",
-    "body": "rdc on your laptop, renet on the server rdc on CLI sinu sülearvutis. Server käitab eraldi komponenti nimega renet, mida rdc ettevalmistab ja juhib üle SSH. Sul ei ole kunagi vaja käsitsi serverisse SSH kaudu ühenduda. rdc teeb seda sinu eest. See on mudel: üks tööriist sinu masinas, midagi ei ole vaja serveri poolel otse hallata. Käsitleme renet-i seadistamist järgmistes kahes juhendis. See on CLI paigaldusest keerulisem, kuid teete seda iga masina kohta ainult üks kord. --- Edasi: SSH võtme seadistamine.",
+    "body": "rdc on your laptop, renet on the server rdc on CLI sinu sülearvutis. Server käitab eraldi komponenti nimega renet, mida rdc ettevalmistab ja juhib üle SSH. Sul ei ole kunagi vaja käsitsi serverisse SSH kaudu ühenduda. rdc teeb seda sinu eest. See on mudel: üks tööriist sinu masinas, midagi ei ole vaja serveri poolel otse hallata. Käsitleme renet-i seadistamist järgmistes kahes juhendis. See on CLI paigaldusest keerulisem, kuid teete seda iga masina kohta ainult üks kord. Iga juhend on iseseisev: see seadistab masina, konfiguratsiooni ja repositooriumid, mida ta kasutab, ning miski, mille üks juhend maha jätab, ei kandu järgmisesse üle. --- Edasi: SSH võtme seadistamine.",
     "excerpt": "rdc on your laptop, renet on the server rdc on CLI sinu sülearvutis. Server käitab eraldi komponenti nimega renet, mida rdc ettevalmistab ja juhib üle...",
     "category": "Documentation",
     "page": "/et/docs/tutorial-installation",

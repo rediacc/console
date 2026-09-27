@@ -16252,7 +16252,7 @@
   {
     "id": "search-15564",
     "content": "Porquê o `rdc` vive no seu computador portátil",
-    "body": "rdc on your laptop, renet on the server O rdc é o CLI no seu computador portátil. O servidor executa um componente separado chamado renet, que o rdc provisiona e controla via SSH. Nunca precisa de fazer SSH para um servidor manualmente. O rdc encarrega-se disso. Esse é o modelo: uma ferramenta na sua máquina, nada para gerir diretamente no servidor. Vamos cobrir a configuração do renet nos próximos dois tutoriais. É mais envolvido do que a instalação do CLI, mas faz-se apenas uma vez por máquina. --- Próximo: Configuração de Chave SSH.",
+    "body": "rdc on your laptop, renet on the server O rdc é o CLI no seu computador portátil. O servidor executa um componente separado chamado renet, que o rdc provisiona e controla via SSH. Nunca precisa de fazer SSH para um servidor manualmente. O rdc encarrega-se disso. Esse é o modelo: uma ferramenta na sua máquina, nada para gerir diretamente no servidor. Vamos cobrir a configuração do renet nos próximos dois tutoriais. É mais envolvido do que a instalação do CLI, mas faz-se apenas uma vez por máquina. Cada tutorial é autónomo: prepara a máquina, a configuração e os repositórios que utiliza, e nada do que um tutorial deixa passa para o seguinte. --- Próximo: Configuração de Chave SSH.",
     "excerpt": "rdc on your laptop, renet on the server O rdc é o CLI no seu computador portátil. O servidor executa um componente separado chamado renet, que o rdc p...",
     "category": "Documentation",
     "page": "/pt/docs/tutorial-installation",

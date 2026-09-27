@@ -16252,7 +16252,7 @@
   {
     "id": "search-14129",
     "content": "`rdc`가 노트북에 있는 이유",
-    "body": "rdc on your laptop, renet on the server rdc는 노트북의 CLI입니다. 서버는 renet이라는 별도의 구성 요소를 실행하며, rdc가 SSH를 통해 프로비저닝하고 구동합니다. 서버에 직접 SSH로 접속할 필요가 없습니다. rdc가 대신 처리합니다. 이것이 모델입니다: 머신에 하나의 도구, 서버에서 직접 관리할 것이 없습니다. 다음 두 튜토리얼에서 renet 구성을 다룰 것입니다. CLI 설치보다 더 복잡하지만, 머신당 한 번만 수행하면 됩니다. --- 다음: SSH 키 구성.",
+    "body": "rdc on your laptop, renet on the server rdc는 노트북의 CLI입니다. 서버는 renet이라는 별도의 구성 요소를 실행하며, rdc가 SSH를 통해 프로비저닝하고 구동합니다. 서버에 직접 SSH로 접속할 필요가 없습니다. rdc가 대신 처리합니다. 이것이 모델입니다: 머신에 하나의 도구, 서버에서 직접 관리할 것이 없습니다. 다음 두 튜토리얼에서 renet 구성을 다룰 것입니다. CLI 설치보다 더 복잡하지만, 머신당 한 번만 수행하면 됩니다. 각 튜토리얼은 독립적입니다. 사용하는 머신, 구성, 저장소를 그 튜토리얼 안에서 준비하며, 한 튜토리얼이 남긴 것은 다음 튜토리얼로 이어지지 않습니다. --- 다음: SSH 키 구성.",
     "excerpt": "rdc on your laptop, renet on the server rdc는 노트북의 CLI입니다. 서버는 renet이라는 별도의 구성 요소를 실행하며, rdc가 SSH를 통해 프로비저닝하고 구동합니다. 서버에 직접 SSH로 접속할 필요가 없습니다. rdc가 대신...",
     "category": "Documentation",
     "page": "/ko/docs/tutorial-installation",
