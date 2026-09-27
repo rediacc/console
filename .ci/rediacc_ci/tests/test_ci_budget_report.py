@@ -596,3 +596,46 @@ def test_inverse_a_failed_job_in_a_completed_run_is_still_not_sampled() -> None:
         )
         is None
     )
+
+
+def test_every_read_asks_ghx_for_the_retrying_attempt_count(monkeypatch):
+    """A single transient failure (2026-09-27: `stream error ... CANCEL` on one run's jobs) aborted a whole refresh; every read now asks ghx for GH_ATTEMPTS."""
+    seen = []
+
+    def fake_api_json(_path, **kw):
+        seen.append(kw.get("attempts"))
+        return {"workflow_runs": [], "jobs": [], "artifacts": []}
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
+    br.fetch_jobs("o/r", 1)
+    br.fetch_artifacts("o/r", 1)
+    assert br.GH_ATTEMPTS > 1
+    assert seen == [br.GH_ATTEMPTS] * 3
+
+
+class _Proc:
+    def __init__(self, rc, out=b""):
+        self.returncode, self.stdout, self.stderr = rc, out, b"stream error"
+
+
+def test_artifact_download_retries_a_transient_failure(monkeypatch):
+    calls = iter([_Proc(1), _Proc(0, b"ZIP")])
+    monkeypatch.setattr(br.subprocess, "run", lambda *_a, **_k: next(calls))
+    monkeypatch.setattr(br.time, "sleep", lambda _s: None)
+    assert br.download_artifact_zip("o/r", 7) == b"ZIP"
+
+
+def test_artifact_download_still_raises_after_the_last_attempt(monkeypatch):
+    """Inverse control: the retry is bounded, and a persistent failure still surfaces as an error, never as empty bytes."""
+    n = []
+
+    def run(*_a, **_k):
+        n.append(1)
+        return _Proc(1)
+
+    monkeypatch.setattr(br.subprocess, "run", run)
+    monkeypatch.setattr(br.time, "sleep", lambda _s: None)
+    with pytest.raises(br.ghx.GhBadOutputError):
+        br.download_artifact_zip("o/r", 7)
+    assert len(n) == br.GH_ATTEMPTS

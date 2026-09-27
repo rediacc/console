@@ -88,6 +88,7 @@ import re
 import statistics
 import subprocess
 import sys
+import time
 import xml.etree.ElementTree as ET
 import zipfile
 from datetime import UTC, datetime
@@ -109,6 +110,9 @@ DEFAULT_STATUS = "success"
 REFRESH_PR_STATUS = "completed"
 # T3.2: how many completed PR-full runs `--refresh`/`--check` sample (see REFRESH_PR_STATUS). Separate from DEFAULT_LIMIT (15, the read-only report's own default) because the plan's box names 10 explicitly, and the two commands have different costs -- --refresh/--check also list and download artifacts per run, which --limit 15's report path never does.
 DEFAULT_REFRESH_LIMIT = 10
+
+# EVERY READ HERE RETRIES, because one report makes dozens of calls and a single transient failure used to abort all of them: on 2026-09-27 a `--refresh --dry-run` died on `stream error: stream ID 1; CANCEL; received from peer` for one run's jobs, and the identical rerun succeeded. `ghx.gh` defaults to one attempt on purpose (an auth failure should not cost backoff); a report over many runs is the caller that wants three.
+GH_ATTEMPTS = 3
 LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 PER_LEG_BUDGET_MINUTES = 12.0
 DRIFT_THRESHOLD = 0.25
@@ -231,7 +235,9 @@ def fetch_runs(
     query = "event=%s&status=%s&per_page=%d" % (event, status, min(limit, 100))
     if branch:
         query += "&branch=%s" % branch
-    data = ghx.api_json("repos/%s/actions/workflows/%s/runs?%s" % (repo, workflow, query))
+    data = ghx.api_json(
+        "repos/%s/actions/workflows/%s/runs?%s" % (repo, workflow, query), attempts=GH_ATTEMPTS
+    )
     if not isinstance(data, dict):
         raise ghx.GhBadOutputError(
             [], 0, "expected a JSON object from the workflow-runs endpoint", ghx.FAILURE_FAILED
@@ -245,7 +251,9 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
 
     Capped at 100 (one page): every measured run in the plan's own section 1c tops out at 80 jobs, so a second page is not expected in practice, and this is a report rather than a gate that must prove completeness.
     """
-    data = ghx.api_json("repos/%s/actions/runs/%s/jobs?per_page=100" % (repo, run_id))
+    data = ghx.api_json(
+        "repos/%s/actions/runs/%s/jobs?per_page=100" % (repo, run_id), attempts=GH_ATTEMPTS
+    )
     if not isinstance(data, dict):
         return []
     jobs = data.get("jobs")
@@ -682,7 +690,9 @@ def parse_unit_duration_artifact(lane: str, blob: bytes) -> dict[str, float]:
 
 def fetch_artifacts(repo: str, run_id: int) -> list[dict[str, Any]]:
     """Every artifact of one run (id, name, ...). Capped at 100, matching `fetch_jobs`."""
-    data = ghx.api_json("repos/%s/actions/runs/%s/artifacts?per_page=100" % (repo, run_id))
+    data = ghx.api_json(
+        "repos/%s/actions/runs/%s/artifacts?per_page=100" % (repo, run_id), attempts=GH_ATTEMPTS
+    )
     if not isinstance(data, dict):
         return []
     artifacts = data.get("artifacts")
@@ -693,6 +703,11 @@ def download_artifact_zip(repo: str, artifact_id: Any) -> bytes:
     """One artifact's raw zip bytes. Raises `ghx.GhBadOutputError` on a non-zero exit, the same failure class every other call in this module raises -- TRAP 1 stays closed even off the `ghx.gh()` path."""
     argv = ["gh", "api", "repos/%s/actions/artifacts/%s/zip" % (repo, artifact_id)]
     result = subprocess.run(argv, capture_output=True, check=False, timeout=60)
+    for attempt in range(1, GH_ATTEMPTS):
+        if result.returncode == 0:
+            break
+        time.sleep(2**attempt)
+        result = subprocess.run(argv, capture_output=True, check=False, timeout=60)
     if result.returncode != 0:
         raise ghx.GhBadOutputError(
             argv, result.returncode, result.stderr.decode("utf-8", "replace"), ghx.FAILURE_FAILED
