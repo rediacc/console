@@ -7,7 +7,7 @@ LOAD-BEARING, NOT OPTIONAL. The guard declares `OWN_SUITE = True`, so `test_guar
 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER against a real fixture on disk, in ONE pid-stamped directory removed on exit: a plan tree (`CLAUDE_PROJECT_DIR`), a projects store with this session's live and finished writers (`CLAUDE_CONFIG_DIR`), a worklist store with this session's and a peer's items and leases (`WORKLIST_STORE_DIR`), and a TMPDIR.
 
-BEFORE AND AFTER THE MIGRATION. The "plan with no Owns" cases follow `wl_plandeps.X_FIELDS_REQUIRED`, read from its source: not judged (allowed with a note) while it is False, refused (fail closed as `**`) once T11 sets it to True.
+THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11). A plan with no Owns is refused, fail closed as `**`.
 
 THE DEFECT IS PROVEN HERE TOO. The guard's declared `DEFECT` is planted in-process and run on the same payloads; at least one answer must change.
 """
@@ -34,13 +34,6 @@ PEER = "0fee0fee"
 BASE = pathlib.Path(tempfile.gettempdir()) / ("planconc-guard-%d" % os.getpid())
 atexit.register(shutil.rmtree, BASE, ignore_errors=True)
 SOURCE = GUARD.read_text(encoding="utf-8")
-XREQ = bool(
-    re.search(
-        r"^X_FIELDS_REQUIRED = True$",
-        (HERE.parents[1] / "hooks" / "stop" / "wl_plandeps.py").read_text(encoding="utf-8"),
-        re.MULTILINE,
-    )
-)
 
 PLAN = "# PLAN: {n}\n\nStatus: in-progress\nOwner: cafe0000\nDepends-On: no-dep -- a fixture plan for the concurrency suite\nPriority: P2\n{x}\n## Tasks\n\n- [ ] T1 a box\n"
 
@@ -272,15 +265,15 @@ CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
         "n1 a plan with no Owns",
         {"plans": {"h": NO_OWNS, "f": PAR_F}, "writers": ["Plan: PLAN-f.md"]},
         payload("Plan: PLAN-h.md"),
-        2 if XREQ else 0,
-        ["declares no valid Owns"] if XREQ else ["declares no Owns yet"],
+        2,
+        ["declares no valid Owns"],
     ),
     (
         "n1 a live writer on a plan with no file is ** once required",
         {"plans": {"q": PAR_AB}, "writers": ["Plan: PLAN-gone.md"]},
         payload("Plan: PLAN-q.md"),
-        2 if XREQ else 0,
-        ["PLAN-gone.md is parallel and live"] if XREQ else [],
+        2,
+        ["PLAN-gone.md is parallel and live"],
     ),
     (
         "n1 Owns none refuses a writer",
@@ -441,8 +434,8 @@ def main():
         )
         fails += 1
     print(
-        "block_plan_concurrency: %d case(s), %d refused, X fields %s, %d failure(s)"
-        % (len(CASES), refused, "required" if XREQ else "optional", fails)
+        "block_plan_concurrency: %d case(s), %d refused, X fields required, %d failure(s)"
+        % (len(CASES), refused, fails)
     )
     return 1 if fails else 0
 

@@ -15,7 +15,7 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
 
 The writer cap still applies first: `block_agent_cap` is ORDER 3 and `block_focus_spawn` ORDER 4 on the same chain.
 
-UNTIL THE MIGRATION. While `wl_plandeps.X_FIELDS_REQUIRED` is False a plan with no Owns is not judged for overlap (stderr note); once it is True a missing Owns fails closed as `**` and a spawn for such a plan is refused.
+THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11): a missing Owns fails closed as `**` and a spawn for such a plan is refused.
 
 FAILS OPEN, LOUDLY, when it cannot see: a module that will not import, a store that will not fold, or a writer estimate that is blind with no cross-session lease visible either. The Stop hook's roster recounts from the authoritative event (PLAN-plan-priority-concurrency T8, `roster-concurrency`).
 

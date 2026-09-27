@@ -129,7 +129,7 @@ PLAN = (
     "# A fixture plan\n"
     "Status: executing\n"
     "Owner: deadbeef\n"
-    # The X lines every live plan carries once PLAN-plan-priority-concurrency T11 lands, so revive() round-trips this plan in both states of `X_FIELDS_REQUIRED`.
+    # The X lines every live plan carries (PLAN-plan-priority-concurrency T11), so revive() round-trips this plan.
     "Priority: P2 -- the fixture plan\n"
     "Concurrency: parallel\n"
     "Owns: docs/fixture/**\n"
@@ -537,22 +537,11 @@ control(
     _xl[_sig + 1 : _sig + 4],
 )
 (ROOT / REL).write_text(R.render(dict(REC, blob=_legacy_blob, x={})), encoding="utf-8")
-_was_required = R.PD.X_FIELDS_REQUIRED
-try:
-    R.PD.X_FIELDS_REQUIRED = True
-    raises(
-        "revive: once the fields are mandatory, a record and blob carrying none are refused with the fix",
-        lambda: R.revive(ROOT, REL),
-        "--set-x",
-    )
-    R.PD.X_FIELDS_REQUIRED = False
-    control(
-        "revive: before the migration the same record revives untouched",
-        R.revive(ROOT, REL)[0],
-        LEGACY,
-    )
-finally:
-    R.PD.X_FIELDS_REQUIRED = _was_required
+raises(
+    "revive: a record and blob carrying no X lines is refused with the fix",
+    lambda: R.revive(ROOT, REL),
+    "--set-x",
+)
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
 # --------------------------------------------------------------------------- 9. Sizes, placeholders and the index. ---------------------------------------------------------------------------

@@ -381,7 +381,7 @@ def materialise(globs, files) -> list[str]:
 
 @dataclasses.dataclass(frozen=True)
 class XFinding:
-    """One D10-D16 finding. `missing` marks "the field is absent", which `wl_plandeps.X_FIELDS_REQUIRED` decides whether to enforce; every other finding is a malformed line that is present."""
+    """One D10-D16 finding. `missing` marks "the field is absent" (always enforced); every other finding is a malformed line that is present."""
 
     code: str
     message: str
@@ -643,22 +643,18 @@ class Verdict:
     note: str = ""
 
 
-def _owns_of(x: PlanX, required: bool) -> tuple[str, ...] | None:
-    """A plan's Owns for overlap: its globs, `()` for none, FAIL_CLOSED_GLOB when missing and the fields are mandatory, None (unknown, not judged) when missing before the migration."""
-    if x.owns is not None:
-        return x.owns
-    return (FAIL_CLOSED_GLOB,) if required else None
+def _owns_of(x: PlanX) -> tuple[str, ...]:
+    """A plan's Owns for overlap: its globs, `()` for none, FAIL_CLOSED_GLOB when missing."""
+    return x.owns if x.owns is not None else (FAIL_CLOSED_GLOB,)
 
 
-def spawn_verdict(serving, live, xinfo, declared=None, required=None) -> Verdict:
+def spawn_verdict(serving, live, xinfo, declared=None) -> Verdict:
     """Section 5a steps 2-6 as one pure decision.
 
-    `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is a planless spawn's own Owns globs or None; `required` defaults to `wl_plandeps.X_FIELDS_REQUIRED`. Before the migration a missing Owns is UNKNOWN and not judged (the spawn is allowed with a note); after it, a missing Owns fails closed as `**`.
+    `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is a planless spawn's own Owns globs or None. A missing Owns fails closed as `**`.
     """
-    required = D.X_FIELDS_REQUIRED if required is None else required
     serving = set(serving or ())
     others = {p: h for p, h in (live or {}).items() if p not in serving and h}
-    notes: list[str] = []
     xs = {p: xinfo(p) for p in serving}
     xl = {p: xinfo(p) for p in others}
 
@@ -677,16 +673,11 @@ def spawn_verdict(serving, live, xinfo, declared=None, required=None) -> Verdict
                 "owns-none",
                 ("%s declares `Owns: none`, so a writer serving it is a contradiction" % s,),
             )
-        if x.owns is None and required:
+        if x.owns is None:
             return Verdict(
                 False,
                 "no-owns",
                 ("%s declares no valid Owns; add it with `check_plan_deps.py --set-x`" % s,),
-            )
-        if x.owns is None:
-            notes.append(
-                "%s declares no Owns yet (optional until the migration), so its overlap is not judged"
-                % s
             )
     for p in sorted(xl):
         if xl[p].exclusive:
@@ -706,26 +697,20 @@ def spawn_verdict(serving, live, xinfo, declared=None, required=None) -> Verdict
     mine: tuple[str, ...] | None
     if serving:
         union: list[str] = []
-        unknown = False
         for s in sorted(xs):
-            got = _owns_of(xs[s], required)
-            if got is None:
-                unknown = True
-            else:
-                union.extend(got)
-        mine = None if unknown and not union else tuple(union)
+            union.extend(_owns_of(xs[s]))
+        mine = tuple(union)
     else:
         mine = tuple(declared) if declared is not None else None
     if mine is None:
-        if not serving:
-            notes.append(
-                "a planless writer spawn declares no `Owns:` line, so its files are not checked against live plans"
-            )
-        return Verdict(True, "unjudged", (), "; ".join(notes))
+        return Verdict(
+            True,
+            "unjudged",
+            (),
+            "a planless writer spawn declares no `Owns:` line, so its files are not checked against live plans",
+        )
     for p in sorted(xl):
-        theirs = _owns_of(xl[p], required)
-        if theirs is None:
-            continue
+        theirs = _owns_of(xl[p])
         hits = owns_overlap(mine, theirs)
         if hits:
             ga, gb, w = hits[0]
@@ -737,7 +722,7 @@ def spawn_verdict(serving, live, xinfo, declared=None, required=None) -> Verdict
                     "this spawn claims `%s` and %s claims `%s`; both claim `%s`" % (ga, p, gb, w),
                 ),
             )
-    return Verdict(True, "ok", (), "; ".join(notes))
+    return Verdict(True, "ok")
 
 
 # ---------------------------------------------------------------- ranking

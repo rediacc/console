@@ -30,7 +30,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 216  # 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls
+CONTROL_FLOOR = 215  # 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -692,8 +692,8 @@ XI = {
 xi = XI.__getitem__
 
 
-def sv(serving, live, declared=None, required=True):
-    return X.spawn_verdict(serving, live, xi, declared, required)
+def sv(serving, live, declared=None):
+    return X.spawn_verdict(serving, live, xi, declared)
 
 
 LIVE_E = {"PLAN-e.md": ["writer a1b2c3d4 (general-purpose)"]}
@@ -724,14 +724,6 @@ check(
     "verdict n1: a plan with no Owns fails closed once required",
     sv({"PLAN-h.md"}, {}).kind,
     "no-owns",
-)
-check(
-    "verdict n1: before the migration it is not judged",
-    (
-        sv({"PLAN-h.md"}, LIVE_F, required=False).allow,
-        bool(sv({"PLAN-h.md"}, LIVE_F, required=False).note),
-    ),
-    (True, True),
 )
 check(
     "verdict n1: a live plan with no Owns is ** once required",

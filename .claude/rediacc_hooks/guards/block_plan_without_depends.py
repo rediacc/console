@@ -8,7 +8,7 @@ SCOPE. `agent/plans/PLAN-*.md` at the top level only. `_done/`, `_removed/`, `.c
 
 REFUSED: missing, malformed, dangling, withdrawn, ambiguous, a self-dependency, a cycle through this plan (codes D1-D7, shared with the gate).
 
-THE X FIELDS (agent/plans/PLAN-plan-priority-concurrency.md section 6a, T4). The same result document is judged for `Priority:`, `Concurrency:` and `Owns:` through `wl_planconc.x_findings` (D10-D16, shared with the gate). While `wl_plandeps.X_FIELDS_REQUIRED` is False (until the T11 migration) a MISSING field is not refused, a malformed one is, and a plan that already carried a malformed line may keep it (the same ratchet as below, on the X codes); once it is True every X finding is refused.
+THE X FIELDS (agent/plans/PLAN-plan-priority-concurrency.md section 6a, T4). The same result document is judged for `Priority:`, `Concurrency:` and `Owns:` through `wl_planconc.x_findings` (D10-D16, shared with the gate): every X finding, missing or malformed, is refused.
 
 THE OPERATOR FREEZE. An on-disk `Priority:` carrying `(operator)` is the operator's: an Edit or Write that drops the line, drops the marker, or changes the level or the reason (whitespace-normalised) is refused, and so is introducing `(operator)` on a line that had none. The one escape carries no token: ALLOWED when the new line still carries `(operator)` AND the operator's latest turn (`wl_admit.turn_tools`), or an AskUserQuestion answer after it, names both the plan (basename or slug) and the new `P0`-`P3`. The AI can write neither. Bash writes bypass this chain; CI D17 is the backstop.
 
@@ -420,20 +420,7 @@ def run(ev):
             return hookio.ALLOW
         graph = deps.Graph.load(tree, override={rel: text})
         problems = graph.check(rel)
-        xprob = [
-            (f.code, f.message)
-            for f in conc.x_findings(header, text)
-            if deps.X_FIELDS_REQUIRED or not f.missing
-        ]
-        if xprob and not deps.X_FIELDS_REQUIRED and before_h is not None:
-            had_x = {f.code for f in conc.x_findings(before_h, before_text) if not f.missing}
-            if {code for code, _ in xprob} <= had_x:
-                ev.warn(
-                    "block-plan-without-depends: %s keeps a malformed X header line (%s) it already "
-                    "had; allowed only until the migration (PLAN-plan-priority-concurrency T11)."
-                    % (rel, ", ".join(sorted(had_x)))
-                )
-                xprob = []
+        xprob = [(f.code, f.message) for f in conc.x_findings(header, text)]
         if not problems and not xprob:
             return hookio.ALLOW
         if problems and PRE_BACKFILL_RATCHET and path.is_file():

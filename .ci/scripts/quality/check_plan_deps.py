@@ -39,7 +39,7 @@ THE X FINDINGS (agent/plans/PLAN-plan-priority-concurrency.md section 6b), over 
         operator's own hand edit looks identical.
     D8  (extended) at least MIN_REQUIRED required plans carry a parsed triple
 
-UNTIL THE MIGRATION. `wl_plandeps.X_FIELDS_REQUIRED` is False until PLAN-plan-priority-concurrency.md T11 writes the three lines into every required plan and flips it in the same commit. While it is False, D10-D16 are PRINTED as a pending-migration block with their counts and do not fail the gate; D17 fails it either way, because the operator freeze does not wait for a migration.
+D10-D16 are enforced like every other finding: PLAN-plan-priority-concurrency.md T11 wrote the three lines into every required plan (migration commit 7ad4a8c78), and that is the only behaviour since. D17 fails the gate the same way, because the operator freeze does not wait for a migration.
 
 THE VERBS.
 
@@ -120,7 +120,7 @@ except ImportError as _exc:  # pragma: no cover -- a tree without .claude/hooks/
 
 #: The floor under how many required plans a run must parse. Measured 2026-09-25: 41. The floor guards against a glob or a Status reader that stopped seeing the corpus, not against ordinary closing of plans.
 MIN_REQUIRED = 10
-CONTROL_FLOOR = 104
+CONTROL_FLOOR = 101
 #: Where `--migrate-x --save` writes the reviewed-before-apply proposal. Under the ignored `.ci/cache/`, so nothing tracked changes.
 PROPOSAL_REL = ".ci/cache/plan-x-migration/proposal.json"
 #: A seed Owns that materialises to more files than this is proposed `exclusive` (section 7).
@@ -139,14 +139,11 @@ class Finding:
     missing: bool = False
 
 
-def evaluate(
-    graph: D.Graph, strict_x: bool | None = None
-) -> tuple[list[Finding], dict[str, typing.Any]]:
+def evaluate(graph: D.Graph) -> tuple[list[Finding], dict[str, typing.Any]]:
     """(findings, stats) over every required plan. Raises CannotRunError on zero.
 
-    `strict_x` defaults to `wl_plandeps.X_FIELDS_REQUIRED`. When it is False the D10-D16 X findings land in `stats["pending"]` (a list, printed by `check`) instead of `findings`; when True they are findings like any other and the D8 floor also counts parsed X triples.
+    The D10-D16 X findings are findings like any other, and the D8 floor also counts parsed X triples.
     """
-    strict_x = D.X_FIELDS_REQUIRED if strict_x is None else strict_x
     required = graph.required()
     if not required:
         raise CannotRunError(
@@ -154,7 +151,6 @@ def evaluate(
             % D.PLANS_DIR
         )
     findings: list[Finding] = []
-    pending: list[Finding] = []
     verdicts = 0
     edges = 0
     triples = 0
@@ -171,9 +167,7 @@ def evaluate(
             triples += 1
             conc = header.concurrency
             exclusive += bool(conc and conc.exclusive)
-        (findings if strict_x else pending).extend(
-            Finding(f.code, rel, f.message, f.missing) for f in xf
-        )
+        findings.extend(Finding(f.code, rel, f.message, f.missing) for f in xf)
     if len(required) < MIN_REQUIRED:
         findings.append(
             Finding(
@@ -183,7 +177,7 @@ def evaluate(
                 "loading, or the Status reader stopped matching" % (len(required), MIN_REQUIRED),
             )
         )
-    if strict_x and triples < MIN_REQUIRED:
+    if triples < MIN_REQUIRED:
         findings.append(
             Finding(
                 "D8",
@@ -208,8 +202,6 @@ def evaluate(
         "verdicts": verdicts,
         "triples": triples,
         "exclusive": exclusive,
-        "strict_x": strict_x,
-        "pending": pending,
     }
     return findings, stats
 
@@ -353,9 +345,13 @@ def _clean() -> dict[str, str]:
 
 
 def _codes(texts: dict[str, str], index: str = _INDEX) -> set[str]:
-    """The Depends-On controls' verdict. Lax on the X fields by construction, so these controls mean the same before and after `X_FIELDS_REQUIRED` flips; the X controls below pass `strict` themselves."""
-    findings, _stats = evaluate(D.Graph.from_texts(texts, index), strict_x=False)
-    return {f.code for f in findings}
+    """The Depends-On controls' verdict: D1-D8 only, independent of the X grammar (the X controls below, `_xcodes`, exercise that grammar's own verdict on the X-clean fixture). Reimplements `evaluate`'s D1-D8 half directly instead of filtering its output, because the X-triple floor shares D8's code with the required-plan floor and the two cannot be told apart by code alone once both are unconditional."""
+    graph = D.Graph.from_texts(texts, index)
+    required = graph.required()
+    codes = {code for rel in required for code, _ in graph.check(rel)}
+    if len(required) < MIN_REQUIRED:
+        codes.add("D8")
+    return codes
 
 
 _X_OK = {
@@ -378,8 +374,8 @@ def _xclean() -> dict[str, str]:
     return texts
 
 
-def _xcodes(texts: dict[str, str], strict: bool = True) -> set[str]:
-    findings, _stats = evaluate(D.Graph.from_texts(texts, _INDEX), strict_x=strict)
+def _xcodes(texts: dict[str, str]) -> set[str]:
+    findings, _stats = evaluate(D.Graph.from_texts(texts, _INDEX))
     return {f.code for f in findings}
 
 
@@ -418,7 +414,7 @@ def selftest() -> int:
     tally.check("clean fixture is green", _codes(_clean()), set())
     tally.check(
         "clean fixture parses exactly the floor",
-        evaluate(D.Graph.from_texts(_clean(), _INDEX), strict_x=False)[1]["required"],
+        evaluate(D.Graph.from_texts(_clean(), _INDEX))[1]["required"],
         MIN_REQUIRED,
     )
 
@@ -503,10 +499,7 @@ def selftest() -> int:
     tally.check("D6 planted: a 2-cycle", _codes(_with(z=_plan(dep="PLAN-y.md"))), {"D6"})
     tally.check("D6 planted: a 3-cycle", _codes(_with(z=_plan(dep="PLAN-x.md"))), {"D6"})
     msgs = [
-        f.message
-        for f in evaluate(
-            D.Graph.from_texts(_with(z=_plan(dep="PLAN-x.md")), _INDEX), strict_x=False
-        )[0]
+        f.message for f in evaluate(D.Graph.from_texts(_with(z=_plan(dep="PLAN-x.md")), _INDEX))[0]
     ]
     tally.check(
         "D6 names the path",
@@ -562,19 +555,8 @@ def _x_controls(tally: controls.Controls) -> None:
     tally.check("X clean fixture is green (strict)", _xcodes(_xclean()), set())
     tally.check(
         "X clean fixture counts 11 triples",
-        evaluate(D.Graph.from_texts(_xclean(), _INDEX), strict_x=True)[1]["triples"],
+        evaluate(D.Graph.from_texts(_xclean(), _INDEX))[1]["triples"],
         11,
-    )
-    lax = evaluate(D.Graph.from_texts(_clean(), _INDEX), strict_x=False)
-    tally.check(
-        "X lax: the fieldless fixture is green before the migration",
-        {f.code for f in lax[0]},
-        set(),
-    )
-    tally.check(
-        "X lax: its missing fields are PENDING, not dropped",
-        sorted({(f.code, f.missing) for f in lax[1]["pending"]}),
-        [("D10", True), ("D12", True), ("D13", True)],
     )
     tally.check(
         "X strict: the fieldless fixture is red",
@@ -583,11 +565,6 @@ def _x_controls(tally: controls.Controls) -> None:
     )
 
     tally.check("D10 planted: no Priority", _xcodes(_xwith("p00", Priority="DROP")), {"D10"})
-    tally.check(
-        "D10 twin: lax does not fail on it",
-        _xcodes(_xwith("p00", Priority="DROP"), strict=False),
-        set(),
-    )
     for label, value in (
         ("P4", "P4"),
         ("a period separator", "P0. This is an operator ruling"),
@@ -877,23 +854,6 @@ def check(root: pathlib.Path, base_tree: pathlib.Path | None = None) -> int:
     findings, stats = evaluate(graph)
     d17, infos, how = _d17(root, graph, base_tree)
     findings.extend(d17)
-    pending: list[Finding] = stats["pending"]
-    if pending:
-        per: dict[str, int] = {}
-        for f in pending:
-            per[f.code] = per.get(f.code, 0) + 1
-        present = [f for f in pending if not f.missing]
-        print(
-            "⚠ X fields pending migration (PLAN-plan-priority-concurrency T11): %d finding(s) on %d "
-            "required plan(s) (%s). NOT enforced while wl_plandeps.X_FIELDS_REQUIRED is False."
-            % (
-                len(pending),
-                len({f.rel for f in pending}),
-                ", ".join("%s=%d" % kv for kv in sorted(per.items())),
-            )
-        )
-        for f in present:
-            print("    %s  %s  %s" % (f.code, f.rel, f.message[:160]))
     for row in infos:
         print("  INFO D17 %s" % row)
     if findings:
@@ -931,12 +891,11 @@ def check(root: pathlib.Path, base_tree: pathlib.Path | None = None) -> int:
     )
     print(
         "  X fields: %d of %d required plan(s) carry a valid Priority/Concurrency/Owns triple "
-        "(%d exclusive); enforcement %s. D17 %s."
+        "(%d exclusive). D17 %s."
         % (
             stats["triples"],
             stats["required"],
             stats["exclusive"],
-            "ON" if stats["strict_x"] else "OFF until the T11 migration",
             how,
         )
     )

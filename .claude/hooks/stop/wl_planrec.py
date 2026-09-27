@@ -2641,7 +2641,7 @@ def revive(root, rel):
             ) from exc
         note += "; carried %s over from the record" % ", ".join(carry)
     missing = [k for k in PD.X_FIELDS if k not in x_values(body)]
-    if missing and PD.X_FIELDS_REQUIRED:
+    if missing:
         raise RecordError(
             "%s would come back live without %s, which every live plan carries. Set them on the "
             'record first -- `.ci/scripts/quality/check_plan_deps.py --set-x %s "Priority: P3 -- <why>" '

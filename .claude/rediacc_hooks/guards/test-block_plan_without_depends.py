@@ -11,7 +11,7 @@ THE DEFECT IS PROVEN HERE TOO. After the cases, the guard's source is loaded wit
 
 PRE-BACKFILL RATCHET. The expectation of "an Edit to a plan that already lacks the field" follows the guard's `PRE_BACKFILL_RATCHET` constant, read from its source: ALLOWED with a warning while it is True, REFUSED once T10 sets it to False.
 
-THE X FIELDS AND THE OPERATOR FREEZE (agent/plans/PLAN-plan-priority-concurrency.md section 8, T4). Every fixture plan carries a valid Priority/Concurrency/Owns triple unless a case is about its absence, and the absence cases follow `wl_plandeps.X_FIELDS_REQUIRED`, read from its source, the way the ratchet cases follow the ratchet. The freeze cases run against an on-disk `(operator)` plan, and the escape against transcript fixtures whose operator turn (or AskUserQuestion answer) names the plan and the level. BOTH declared defects are planted: `DEFECT` (the freeze) and `VERDICT_DEFECT` (the D1-D7 verdict); each must change at least one answer.
+THE X FIELDS AND THE OPERATOR FREEZE (agent/plans/PLAN-plan-priority-concurrency.md section 8, T4). Every fixture plan carries a valid Priority/Concurrency/Owns triple unless a case is about its absence, and the absence cases are always refused: the X fields are mandatory (T11). The freeze cases run against an on-disk `(operator)` plan, and the escape against transcript fixtures whose operator turn (or AskUserQuestion answer) names the plan and the level. BOTH declared defects are planted: `DEFECT` (the freeze) and `VERDICT_DEFECT` (the D1-D7 verdict); each must change at least one answer.
 """
 
 import atexit
@@ -34,13 +34,6 @@ atexit.register(shutil.rmtree, BASE, ignore_errors=True)
 
 SOURCE = GUARD.read_text(encoding="utf-8")
 RATCHET = bool(re.search(r"^PRE_BACKFILL_RATCHET = True$", SOURCE, re.MULTILINE))
-XREQ = bool(
-    re.search(
-        r"^X_FIELDS_REQUIRED = True$",
-        (HERE.parents[1] / "hooks" / "stop" / "wl_plandeps.py").read_text(encoding="utf-8"),
-        re.MULTILINE,
-    )
-)
 X_OK = "Priority: P2 -- a fixture plan\nConcurrency: parallel\nOwns: docs/fixture/**\n"
 OP = "Priority: P1 (operator) -- ruled by the operator\n"
 
@@ -220,11 +213,11 @@ CASES = [
     ),
     ("an empty payload", {}, False),
     # ---- the X fields ----
-    ("a new plan without X lines", write(NEW, plan(dep="PLAN-y.md", x="")), XREQ),
+    ("a new plan without X lines", write(NEW, plan(dep="PLAN-y.md", x="")), True),
     (
         "a prose Edit to a plan without X lines",
         edit("agent/plans/PLAN-nox.md", "T1 a box", "T1 the box"),
-        XREQ,
+        True,
     ),
     ("a malformed Priority", write(NEW, plan(dep="PLAN-y.md", x="Priority: P7\n")), True),
     (
@@ -256,7 +249,7 @@ CASES = [
     (
         "a prose Edit keeping a malformed X line it had",
         edit("agent/plans/PLAN-mal.md", "T1 a box", "T1 the box"),
-        XREQ,
+        True,
     ),
     (
         "an Edit adding a NEW malformed X line",
@@ -501,13 +494,12 @@ def main():
         )
         fails += 1
     print(
-        "%d case(s), %d blocked, %d allowed (ratchet %s, X fields %s)"
+        "%d case(s), %d blocked, %d allowed (ratchet %s, X fields required)"
         % (
             len(CASES),
             blocked,
             len(CASES) - blocked,
             "on" if RATCHET else "off",
-            "required" if XREQ else "optional",
         )
     )
     print("FAILURES: %d" % fails)

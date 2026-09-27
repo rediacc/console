@@ -29,7 +29,7 @@ INDEX = (
 )
 
 
-#: Every fixture plan carries a valid X triple (agent/plans/PLAN-plan-priority-concurrency.md), so each tree below means the same before and after `wl_plandeps.X_FIELDS_REQUIRED` flips at the T11 migration.
+#: Every fixture plan carries a valid X triple (agent/plans/PLAN-plan-priority-concurrency.md), mandatory since the T11 migration.
 X_TRIPLE = "Priority: P2 -- a fixture plan\nConcurrency: parallel\nOwns: docs/fixture/**\n"
 
 

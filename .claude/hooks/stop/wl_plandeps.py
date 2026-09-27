@@ -22,7 +22,7 @@ THE X FIELDS (PLAN-plan-priority-concurrency.md section 1), one anchored line ea
 
 `(operator)` is the only marker, and an operator-set Priority is never changed by the AI (the pre-edit guard freezes it, CI D17 backstops it). An Owns item may carry a trailing parenthesised note (`routes/index.ts (one mount line)`), because the live corpus already narrows claims that way; the note is kept for the reader and the glob is judged whole, which over-claims toward refusal, the safe side. The glob refusal rules (absolute, `..`, `!`, backslash, more than 32 brace expansions) and the overlap engine live in `wl_planconc`.
 
-`X_FIELDS_REQUIRED` is the one switch between "optional until the migration" and "mandatory". It is False until PLAN-plan-priority-concurrency.md T11 writes the three lines into every required plan, and T11 flips it in the same commit. While False, the gate reports X findings without failing and the guard refuses only NEW ones (the plan-deps ratchet shape); the operator freeze (D17 and the guard's freeze) is enforced either way.
+THE X FIELDS ARE MANDATORY. PLAN-plan-priority-concurrency.md T11 wrote the three lines into every required plan and this has been the only behaviour since (the migration commit is 7ad4a8c78): every required plan must carry them, the gate fails on any X finding, and the guard refuses any new one. The operator freeze (D17 and the guard's freeze) is enforced the same way.
 
 STDLIB ONLY AT IMPORT. The guard runs this in the pre-edit chain on every plan edit. `wl_planfile` (for `FINISHED_STATES`) is imported lazily inside `finished_states`, so a broken sibling module costs the guard its completeness answer, never its import. Reads no environment variable.
 
@@ -60,8 +60,6 @@ PRIORITY = "Priority"
 CONCURRENCY = "Concurrency"
 OWNS = "Owns"
 X_FIELDS = (PRIORITY, CONCURRENCY, OWNS)
-# See the module docstring. PLAN-plan-priority-concurrency.md T11 sets this to True in the migration commit.
-X_FIELDS_REQUIRED = True
 OPERATOR_MARK = "operator"
 PARALLEL = "parallel"
 EXCLUSIVE = "exclusive"
