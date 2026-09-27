@@ -406,9 +406,13 @@ def counter_findings(root, profile=None):
         if ln.startswith("{"):
             line = ln
     if not line:
-        return [], "counter produced no JSON (exit %d): %s" % (
+        # The FIRST error line carries the cause (a Node `Error: ... code`), the tail only the stack's end; a tail-only excerpt cut exactly the part that mattered from CI run 36348212746 ("...tsx-1001/4878.pipe', port: -1 }").
+        text = proc.stderr or proc.stdout or ""
+        cause = next((ln.strip() for ln in text.splitlines() if "Error" in ln or "error" in ln), "")
+        return [], "counter produced no JSON (exit %d): %s%s" % (
             proc.returncode,
-            (proc.stderr or proc.stdout or "")[-160:],
+            (cause[:200] + " ... ") if cause and cause not in text[-160:] else "",
+            text[-160:],
         )
     try:
         data = json.loads(line)
