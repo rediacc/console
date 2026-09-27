@@ -32,7 +32,7 @@ THE HEADER SAID `Status: draft` AND THE TREE DISAGREES. The work is in the tree;
 TWO DIVERGENCES, ONE OF WHICH IS AN OPEN DEFECT.
 
 1. OPEN: the plan required `backup_snapshot` to get the 5-minute I/O budget rather
-than the 30-second default, for the first backup of a large repository. It did not get it. `private/renet/cmd/renet/functions_commands.go:903` still reads `var slowFunctionNames = []string{"backup_push", "backup_pull"}` and `slowFunctionPrefixes` at :898 is `{"datastore_", "kube_", "ceph_", "repository_"}`, which does not cover `backup_`. So the verb runs on the default timeout
+than the 30-second default, for the first backup of a large repository. It did not get it. `private/renet/cmd/renet/functions_commands.go:901` still reads `var slowFunctionNames = []string{"backup_push", "backup_pull"}` and `slowFunctionPrefixes` at :896 is `{"datastore_", "kube_", "ceph_", "repository_"}`, which does not cover `backup_`. So the verb runs on the default timeout
 today.
 2. The plan asserted restore would stay where it was, as the stubbed `backup pull
 --at`. It did not: `backup_restore` is now its own registered function (`private/renet/pkg/functions/commands/backup.go:191`) with its own `cmd/renet/backup_restore.go`. The flag surface also grew past the plan's seven with `--include-repo`, `--exclude-repo`, `--segment-depth` and `--cold`.
