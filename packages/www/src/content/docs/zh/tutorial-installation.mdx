@@ -8,8 +8,8 @@ tags:
 subcategory: essentials
 order: 1
 language: zh
-sourceHash: "a3d19fc14caec144"
-sourceCommit: "4c8e5f6dcaf6b6317e8e0f5cf3715f1a547e0c4e"
+sourceHash: "c64a66a4ac73c751"
+sourceCommit: "b3a23cc367115224b37a5eb572f3cd011a334a87"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,6 +53,8 @@ iwr -useb https://www.rediacc.com/install.ps1 | iex
 `rdc` 是运行在笔记本上的 CLI。服务器运行一个名为 `renet` 的独立组件，`rdc` 通过 SSH 对其进行配置和驱动。你永远不需要手动 SSH 进入服务器，`rdc` 会替你完成这一切。这就是我们的设计理念：笔记本上只需一个工具，服务器端无需直接管理任何东西。
 
 接下来的两个教程中，我们会讲解 renet 的配置。这部分配置比 CLI 安装要复杂，但每台机器只需要做一次。
+
+每个教程都是独立的：它会搭建自己所需的机器、配置和仓库，前一个教程留下的东西不会带到下一个教程中。
 
 ---
 

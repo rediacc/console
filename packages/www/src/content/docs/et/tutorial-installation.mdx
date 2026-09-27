@@ -8,8 +8,8 @@ tags:
 subcategory: essentials
 order: 1
 language: et
-sourceHash: "a3d19fc14caec144"
-sourceCommit: "4c8e5f6dcaf6b6317e8e0f5cf3715f1a547e0c4e"
+sourceHash: "c64a66a4ac73c751"
+sourceCommit: "b3a23cc367115224b37a5eb572f3cd011a334a87"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,6 +53,8 @@ Käivita `rdc doctor`, et kontrollida Node'i, SSH-d ja ülejäänud `rdc` sõltu
 `rdc` on CLI sinu sülearvutis. Server käitab eraldi komponenti nimega `renet`, mida `rdc` ettevalmistab ja juhib üle SSH. Sul ei ole kunagi vaja käsitsi serverisse SSH kaudu ühenduda. `rdc` teeb seda sinu eest. See on mudel: üks tööriist sinu masinas, midagi ei ole vaja serveri poolel otse hallata.
 
 Käsitleme renet-i seadistamist järgmistes kahes juhendis. See on CLI paigaldusest keerulisem, kuid teete seda iga masina kohta ainult üks kord.
+
+Iga juhend on iseseisev: see seadistab masina, konfiguratsiooni ja repositooriumid, mida ta kasutab, ning miski, mille üks juhend maha jätab, ei kandu järgmisesse üle.
 
 ---
 

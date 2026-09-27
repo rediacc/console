@@ -1,5 +1,5 @@
 #!/bin/bash
-# Tutorial 14: VS Code in the Browser + Sandbox Isolation
+# Tutorial 7: VS Code in the Browser + Sandbox Isolation
 # `rdc vscode connect --browser` serves VS Code from inside the repo
 # sandbox — no local install, works from any OS. The same kernel sandbox
 # that guards `rdc term` guards the editor: the file tree and the
