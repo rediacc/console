@@ -1950,7 +1950,8 @@ jobs:
             '.legs[] | select(.index == $idx) | .ids | map(sub("^renet-integration:"; "")) | join(" ")' \
             .ci/config/shards/test-renet-integration.json)
           echo "Shard ${{ matrix.shard }}/3 files: $FILES"
-          sudo env "RENET_INTEGRATION_FILES=$FILES" .ci/scripts/private/renet-integration.sh --no-cleanup
+          # CI=true rides into sudo explicitly: sudo resets the environment, and ci-test.sh writes its --junit-xml (the unit-durations and results artifacts below) only under CI. Before this line both uploads found no file on every run.
+          sudo env "CI=true" "RENET_INTEGRATION_FILES=$FILES" .ci/scripts/private/renet-integration.sh --no-cleanup
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
