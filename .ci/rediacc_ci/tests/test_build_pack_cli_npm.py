@@ -520,14 +520,7 @@ def test_a_missing_packages_cli_names_the_program_that_could_not_proceed(
 def mkdir_looks_gnu(text: str) -> bool:
     """Does a captured `mkdir -p` diagnostic have GNU's shape, or a reimplementation's?
 
-    Decided from the TEXT ITSELF, never from the live host's `mkdir --version`. The
-    recording is frozen forever the moment the twin is retired, but a live probe is
-    not: it answers for whichever host happens to run pytest today, which need not be
-    -- and, as CI run 34970782616 showed, was not -- the host that made the recording.
-    A probe-based branch silently re-derives "what should the recording equal" from
-    an environment that can disagree with the environment that produced it, which is
-    exactly backwards for a frozen golden. Asking the golden about itself instead
-    keeps the verdict identical on every host that ever runs this suite:
+    Decided from the TEXT ITSELF, never from the live host's `mkdir --version`. The recording is frozen forever the moment the twin is retired, but a live probe is not: it answers for whichever host happens to run pytest today, which need not be -- and, as CI run 34970782616 showed, was not -- the host that made the recording. A probe-based branch silently re-derives "what should the recording equal" from an environment that can disagree with the environment that produced it, which is exactly backwards for a frozen golden. Asking the golden about itself instead keeps the verdict identical on every host that ever runs this suite:
 
         GNU coreutils 9.7
             mkdir: cannot create directory 'denied/out': Permission denied
