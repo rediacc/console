@@ -15,10 +15,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "@vitest/utils": "^5.0.1",
+    "@vitest/utils": "^5.0.2",
     "rimraf": "^6.1.2",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.2"
   },
   "exports": {
     ".": {
