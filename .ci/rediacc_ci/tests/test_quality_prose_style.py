@@ -407,6 +407,21 @@ def test_an_explicitly_named_untracked_file_is_still_scanned(tmp_path, capsys):
     assert "brand-new.md" not in ps.discover(root, GLOBALS)
 
 
+def test_a_named_file_outside_the_corpus_is_reported_not_scanned(tmp_path, capsys):
+    """CONTROL (#b665dbcd): a named `.sh` went through the C-style extractor and reported R19 on shell assignments the full gate never scans."""
+    root = _repo(tmp_path, {"kept.md": CLEAN}, untracked={"script.sh": "# " + DIRTY})
+    rc = ps.run_check(root, GLOBALS, RULES, ["script.sh"])
+    assert rc == 0
+    assert "outside the prose corpus" in capsys.readouterr().err
+
+
+def test_inverse_a_named_file_inside_the_corpus_is_still_scanned_beside_one_outside(tmp_path):
+    root = _repo(
+        tmp_path, {"kept.md": CLEAN}, untracked={"script.sh": "# x", "brand-new.md": DIRTY}
+    )
+    assert ps.run_check(root, GLOBALS, RULES, ["script.sh", "brand-new.md"]) == 1
+
+
 def test_discovery_outside_a_checkout_refuses_rather_than_reporting_nothing(tmp_path, capsys):
     root = _tree(tmp_path, {"a.md": DIRTY})
     with pytest.raises(ps.RuleError):

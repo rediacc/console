@@ -994,20 +994,28 @@ def discover(root, globals_, subtrees=None):
 
     SORTED, NOT READDIR ORDER. `check_content_quality.py` records measuring the same thing on this tree: raw `find` is not lexicographic here, so an unsorted walk makes the output depend on filesystem state rather than on repository content, and two runs on two machines disagree for no reason a reader can act on. git's own order is not this order either, so the sort stays.
     """
-    patterns = tuple(globals_.get("include") or ())
-    skip = set(globals_.get("exclude_dirs") or ())
     prefixes = tuple(str(s).rstrip("/") + "/" for s in (subtrees or ()))
     out = []
     for path in tracked_files(root):
         rel = path.replace(os.sep, "/")
-        if not any(fnmatch.fnmatchcase(rel, pat) for pat in patterns):
-            continue
-        if under_excluded_dir(rel, skip):
+        if not admitted(rel, globals_):
             continue
         if prefixes and not rel.startswith(prefixes):
             continue
         out.append(rel)
     return sorted(set(out))
+
+
+def admitted(rel, globals_):
+    """Is this repo-relative path inside the corpus the rules file declares (`include` minus `exclude_dirs`)?
+
+    Asked of the broad sweep AND of every explicit target. A target skips only the git-tracked filter, never the scope: `check .ci/scripts/test/run-account-e2e.sh` once ran a `.sh` file (out of scope by the rules file's decision) through the C-style extractor and reported R19 on shell assignments the full gate never scans (#b665dbcd).
+    """
+    rel = rel.replace(os.sep, "/")
+    patterns = tuple(globals_.get("include") or ())
+    if not any(fnmatch.fnmatchcase(rel, pat) for pat in patterns):
+        return False
+    return not under_excluded_dir(rel, set(globals_.get("exclude_dirs") or ()))
 
 
 def read_text(path):
@@ -1365,12 +1373,26 @@ def run_check(
 
     ZERO SCANNED FILES IS A FAILURE. So is zero extracted prose lines across a non-empty file set: the second one is the extractor breaking rather than the glob, and both look like a clean tree from the outside.
     """
-    # TARGETS BYPASS DISCOVERY DELIBERATELY. A path named on the command line is scanned whether or not git tracks it; only the broad sweep is narrowed.
+    # TARGETS BYPASS THE GIT-TRACKED FILTER DELIBERATELY. A path named on the command line is scanned whether or not git tracks it; only the broad sweep is narrowed to tracked files. The corpus SCOPE still applies to both, and a named path outside it is reported, not scanned.
     try:
-        files = targets or discover(root, globals_)
+        files = discover(root, globals_) if not targets else []
     except RuleError as exc:
         log.error(str(exc))
         return 1
+    if targets:
+        outside = [
+            t
+            for t in targets
+            if not admitted(os.path.relpath(t, root) if os.path.isabs(t) else t, globals_)
+        ]
+        files = [t for t in targets if t not in outside]
+        for t in outside:
+            log.info(
+                "%s is outside the prose corpus (globals.include / exclude_dirs in %s); not scanned"
+                % (t, RULES_FILE)
+            )
+        if not files:
+            return 0
     if not files:
         log.error(
             "VACUOUS: zero files matched. This gate is not seeing the tree, and its green "
@@ -2344,7 +2366,7 @@ def selftest():
     real_globals, real_rules = load_rules(
         json.dumps(
             {
-                "globals": {"scopes": ["markdown"], "max_line_length": 384},
+                "globals": {"scopes": ["markdown"], "max_line_length": 384, "include": ["*.md"]},
                 "rules": [
                     {
                         "id": "R2",
