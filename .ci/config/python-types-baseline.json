@@ -16,13 +16,6 @@
       "message": "Incompatible types in assignment (expression has type \"_Environ[str] | dict[str, str]\", variable has type \"dict[str, str] | None\")"
     },
     {
-      "id": "e6b9e658a7c7f40f",
-      "file": ".ci/rediacc_ci/check_pytest.py",
-      "code": "str-format",
-      "count": 1,
-      "message": "Incompatible types in string interpolation (expression has type \"int | None\", placeholder has type \"int | float | SupportsInt\")"
-    },
-    {
       "id": "12f62ec54c555ccf",
       "file": ".ci/rediacc_ci/ci/scope_reconcile_shadow.py",
       "code": "call-overload",

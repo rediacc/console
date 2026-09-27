@@ -1174,7 +1174,7 @@ def main(argv: list[str]) -> int:
             return EXIT_FAIL
         print(
             "%s✓%s %d test(s) collected and passed (shard %d/%d, corpus %d, floor %d)"
-            % (GREEN, NC, collected, index, of, corpus, leg_min_tests)
+            % (GREEN, NC, collected or 0, index, of, corpus, leg_min_tests)
         )
         return EXIT_OK
 
@@ -1231,7 +1231,7 @@ def main(argv: list[str]) -> int:
 
     print(
         "%s✓%s %d test(s) collected and passed (corpus %d, floor %d)"
-        % (GREEN, NC, collected, corpus, MIN_TESTS)
+        % (GREEN, NC, collected or 0, corpus, MIN_TESTS)
     )
     return EXIT_OK
 

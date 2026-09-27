@@ -723,7 +723,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
 | .ci/config | 40 | .json 33, .txt 4, .conf 1, .sh 1, .yaml 1 |
-| .ci/config/shards | 5 | .json 5 |
+| .ci/config/shards | 6 | .json 6 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
 | .ci/docker/render | 1 | (none) 1 |
