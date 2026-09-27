@@ -22,17 +22,6 @@ const DEFAULT_GATE_PORT = '4511';
 const port = Number(process.env.TUTORIAL_PLAYER_GATE_PORT ?? DEFAULT_GATE_PORT);
 const baseUrl = `http://127.0.0.1:${port}`;
 
-// NO VIDEO SOURCE MEANS THIS GATE CANNOT RUN, and it must say so rather than fail. With PUBLIC_VIDEO_CDN_BASE_URL unset, remark-tutorial-embed.ts embeds the LOCAL path, and a clean checkout has no local media (gitignored): the dev server answers the video with a 404 page, Chrome reports "Format error", and every scenario failed as "start did not enter playing state", which reads as a player regression. The ci-runner and the CI step both set the variable; a bare `npm run check:test:tutorial-player` in a clean clone did not (2026-09-27).
-const LOCAL_PROBE_VIDEO = path.join(repoRoot, 'packages/www/public/assets/tutorials/video/en/tutorial-production-mode.mp4');
-if (!process.env.PUBLIC_VIDEO_CDN_BASE_URL && !fs.existsSync(LOCAL_PROBE_VIDEO)) {
-  console.error(
-    'tutorial player gate: no video source. Set PUBLIC_VIDEO_CDN_BASE_URL=https://media.rediacc.com ' +
-      '(what CI and the ci-runner set), or sync the local media into packages/www/public/assets/tutorials/video/ ' +
-      '(docs/agent-reference/media-assets.md). Exiting 77 (cannot-run): NOT a verdict on the player.',
-  );
-  process.exit(77);
-}
-
 fs.mkdirSync(runDir, { recursive: true });
 
 const failures = [];
