@@ -32,8 +32,7 @@ THE TWIN IS FLAT -- it declares no `test_*()` functions -- so `test_twin_parity.
 WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, and it is the sharpest reason in the batch. Case B WRITES a perturbation into `scripts/data/doc-registry.md` and
 case C runs `--write`, which rewrites every discovered region in every `.md` file
 in the repository -- `CLAUDE.md` among them. The lock records `mutex: ["tree:repo"]` for `gate-test:docs-gen` for exactly that. Two of these running at once, or one running beside a gate that reads those files, is a
-corruption rather than a flake. `REAL_TREE_TWIN = True` buys the serialisation,
-and it is honoured only because this module names no `XDIST_GROUP` of its own.
+corruption rather than a flake. `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` buys the serialisation. It used to be `REAL_TREE_TWIN = True`, which `xdist_groups.group_for` honours only while the retired twin's basename is in the lock's `tree:` set; after the retirement it serialised nothing, and CI caught case C reading the doc-registry.md case B had just perturbed (Quality / Pytest on e4d4e4cae: "--write changed a file that verify had just called clean").
 
 THE `--write` IS SAFE ONLY BECAUSE A IS ASSERTED FIRST, and that ordering is load-bearing rather than stylistic: a green verify means the rendered text already equals the file, so `--write` cannot change a byte. `assert_targets_unchanged` makes that a claim rather than an assumption by digesting every target before and after.
 """
@@ -43,11 +42,11 @@ import hashlib
 import json
 import pathlib
 
-from rediacc_ci import paths
+from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
 # Case B perturbs a tracked file and case C runs `--write`. See the docstring.
-REAL_TREE_TWIN = True
+XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 GEN = ROOT / "scripts" / "gen" / "gen-docs.ts"
