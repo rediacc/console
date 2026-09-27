@@ -11,8 +11,8 @@ WHAT IS PROVED, and why each case is here rather than assumed:
      because a generator with no targets, or one that silently renders nothing, is
      also green. Hence B through E.
   B. verify goes RED when one generated row is perturbed. THE CONTROL. Without it,
-     A is a check that cannot fail. The perturbation is restored, and the restore
-     is itself asserted.
+     A is a check that cannot fail. The perturbation never touches the real
+     `doc-registry.md`; it is injected through `GEN_DOCS_OVERRIDE_FILE` instead (see below).
   C. two `--write` runs are byte-identical. Determinism is not a nicety here:
      verify compares rendered text against a file, so a render that reorders on a
      whim reds on noise and teaches everyone to run `--write` without reading.
@@ -29,10 +29,14 @@ WHAT IS DELIBERATELY NOT ASSERTED: that the live sets still equal the snapshot. 
 
 THE TWIN IS FLAT -- it declares no `test_*()` functions -- so `test_twin_parity.py` has no case set to compare and falls back to the twin's runtime `PASS:` count as the floor on this port's recorded controls. The five cases below are therefore split so that each of the twin's six PASS lines has a control of its own, plus the two the port adds.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, and it is the sharpest reason in the batch. Case B WRITES a perturbation into `scripts/data/doc-registry.md` and
-case C runs `--write`, which rewrites every discovered region in every `.md` file
-in the repository -- `CLAUDE.md` among them. The lock records `mutex: ["tree:repo"]` for `gate-test:docs-gen` for exactly that. Two of these running at once, or one running beside a gate that reads those files, is a
-corruption rather than a flake. `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` buys the serialisation. It used to be `REAL_TREE_TWIN = True`, which `xdist_groups.group_for` honours only while the retired twin's basename is in the lock's `tree:` set; after the retirement it serialised nothing, and CI caught case C reading the doc-registry.md case B had just perturbed (Quality / Pytest on e4d4e4cae: "--write changed a file that verify had just called clean").
+WHY THIS MODULE STILL OPTS IN TO THE REAL-TREE GROUP EVEN THOUGH CASE B NO LONGER WRITES ANYTHING. Case C runs `--write`, which rewrites every discovered region in every `.md` file
+in the repository -- `CLAUDE.md` among them -- and cases A, D and E all exercise the real generator against the real tree. `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` buys the serialisation. It used to be `REAL_TREE_TWIN = True`, which `xdist_groups.group_for` honours only while the retired twin's basename is in the lock's `tree:` set; after the retirement it serialised nothing, and CI caught case C reading the doc-registry.md case B had just perturbed (Quality / Pytest on e4d4e4cae: "--write changed a file that verify had just called clean").
+
+CASE B NO LONGER WRITES THE REAL TREE AT ALL, which is the fix for the incident above rather than a second layer on top of the group. It used to overwrite the tracked `scripts/data/doc-registry.md` in place and restore it in a `finally` -- safe against a killed process only in theory, and still a real write another reader could observe mid-flight even with the group serialising the
+battery's OWN gate tests against it (an operator running `git status`, or a gate outside this repo's pytest battery entirely, would still see a dirty tree for the run's duration). `gen-docs.ts` has no seam for pointing its whole ROOT at a fixture -- `targets()` and every provider shell out to `git ls-files` against it, so a fixture would mean cloning the repository just to fake one
+file's bytes -- so the smallest seam that avoids the write is `GEN_DOCS_OVERRIDE_FILE`, naming a JSON file the generator reads once to answer "what are `f`'s CURRENT bytes" for exactly the target path it names, in `build()` only. A FILE rather than the JSON inline in the env var itself: `doc-registry.md` alone is over 130 KB, and passing it as a raw env VALUE hit this sandbox's
+~128 KB single-variable ceiling (`OSError: Argument list too long`) well under the 2 MB `ARG_MAX` `getconf` reports -- measured, not assumed, after the first draft failed exactly that way. Case B writes the perturbed text to a tmp file and never touches the real target; the DERIVED half of the comparison still comes from the real tree, so the control still proves the real generator
+disagrees with a bad row, not with a fake standing in for the whole subject.
 
 THE `--write` IS SAFE ONLY BECAUSE A IS ASSERTED FIRST, and that ordering is load-bearing rather than stylistic: a green verify means the rendered text already equals the file, so `--write` cannot change a byte. `assert_targets_unchanged` makes that a claim rather than an assumption by digesting every target before and after.
 """
@@ -65,9 +69,9 @@ SELFTEST_CONTROLS = (
 )
 
 
-def gen(*args: str) -> harness.RunResult:
+def gen(*args: str, env: dict[str, str] | None = None) -> harness.RunResult:
     npx = harness.require_tool("npx", "install node (the lane's setup-workspace step provides it)")
-    return harness.run([npx, "tsx", str(GEN), *args], cwd=ROOT, timeout=900)
+    return harness.run([npx, "tsx", str(GEN), *args], cwd=ROOT, timeout=900, env=env)
 
 
 def require_inputs(gate) -> None:
@@ -183,33 +187,33 @@ def test_verify_accepts_the_tree_as_it_stands(gate):
 
 
 def test_a_perturbed_row_is_reported_as_drift(gate):
-    """B. THE CONTROL, and the restore is asserted rather than trusted.
+    """B. THE CONTROL, and the real tree is never written to plant it.
 
-    A killed run must not leave a perturbed row behind: the next verify would red, which is the safe direction, but the finding would name a defect nobody introduced. So the original bytes are captured first and written back in a `finally`, and the file's digest is compared afterwards.
+    The perturbation goes in through `GEN_DOCS_OVERRIDE_FILE` -- the generator's own bytes for `TARGET`'s CURRENT content are replaced for the duration of this one subprocess, so there is nothing to restore and nothing a killed run could strand in the working tree. The real file on disk is asserted unmoved afterwards, which is the claim a write-and-restore dance could only ever assume.
     """
     require_inputs(gate)
     original = TARGET.read_bytes()
     before = hashlib.sha256(original).hexdigest()
-    try:
-        TARGET.write_text(perturb_first_row(gate, original.decode("utf-8")), encoding="utf-8")
-        result = gen()
-        if result.rc == 0:
-            gate.log_fail("CONTROL DID NOT FIRE: verify passed over a perturbed generated row")
-        gate.assert_contains(
-            result.err, "DRIFT", "verify failed but never said DRIFT: %s" % result.err.strip()
-        )
-        gate.assert_contains(
-            result.err, "doc-registry.md", "the drift report did not name the file"
-        )
-        gate.log_pass("B. a single perturbed row is reported as DRIFT and exits non-zero")
-    finally:
-        TARGET.write_bytes(original)
+    perturbed = perturb_first_row(gate, original.decode("utf-8"))
+    override = {str(paths.relative_to_root(TARGET)): perturbed}
+    with harness.temp_dir() as tmp:
+        override_file = tmp / "override.json"
+        override_file.write_text(json.dumps(override), encoding="utf-8")
+        result = gen(env={"GEN_DOCS_OVERRIDE_FILE": str(override_file)})
+    if result.rc == 0:
+        gate.log_fail("CONTROL DID NOT FIRE: verify passed over a perturbed generated row")
+    gate.assert_contains(
+        result.err, "DRIFT", "verify failed but never said DRIFT: %s" % result.err.strip()
+    )
+    gate.assert_contains(result.err, "doc-registry.md", "the drift report did not name the file")
+    gate.log_pass("B. a single perturbed row is reported as DRIFT and exits non-zero")
     if digest(TARGET) != before:
-        gate.log_fail("restore failed -- the target is not what it was")
+        gate.log_fail("the real tracked file must never move for this control: it did")
+    gate.log_pass("B. the real tree was never written")
     restored = gen()
     if restored.rc != 0:
-        gate.log_fail("verify is still red after restoring the target: %s" % restored.err.strip())
-    gate.log_pass("B. restored, and verify is green again")
+        gate.log_fail("verify is red on the untouched real tree: %s" % restored.err.strip())
+    gate.log_pass("B. verify on the real tree is unaffected and still green")
 
 
 def test_two_write_runs_are_byte_identical(gate):

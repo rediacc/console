@@ -20,20 +20,22 @@ no-op.
 
 TWO REGISTRIES WERE TWO ANSWERS TO ONE QUESTION while both files existed, and `test_the_registry_agrees_with_the_twins` held them equal by parsing the twin's array. The retirement resolves the hazard by removing one of the two answers rather than by dropping a control: there is now a single REGISTRY, this one, and no second list for it to drift against.
 
-WHY THIS MODULE IS SERIALISED. Three cases PLANT a file inside `scripts/` or `.ci/scripts/` and remove it again, and every registry case copies `scripts/`, `.ci/scripts/` and `.ci/rediacc_ci/` while another gate may be walking them. While the twin existed, `gates.lock.json` recorded `mutex: ["tree:repo"]` for `gate-test:gate-anti-vacuity` and `REAL_TREE_TWIN = True` bought
-the serialisation off that entry, through the basename lookup in `xdist_groups.group_for`. The entry went with the twin, so the lookup would now answer no and the attribute would promise an isolation the scheduler will not give. `XDIST_GROUP` is the documented escape hatch for a resource no registry knows about, and after the retirement this module's plants are one.
+NONE OF THE FOUR CASES THAT PLANT A PROBE WRITES THE REAL TREE ANY MORE. Each builds its own COPY of `scripts/` and `.ci/scripts/` (`empty_tree_fixture`, the tree-building half of `run_against_empty_tree` split out so it can be reused before anything runs), writes the probe into THAT copy, and runs against it -- the real, tracked `scripts/` and `.ci/scripts/` are opened only for
+reading, by `shutil.copytree`. This also retires the PID-keying the fixtures used to need: a name collision between two concurrent sessions was a real, measured failure (the `.gate-paths-exist` pair's "each cleanup deleting the other's file"), and a plant that lives in its OWN temp directory cannot collide with anything, in this battery or another session's.
 
-THE PLANTED FIXTURES ARE PID-KEYED for the reason the battery's W/S/T schedule records about the `.gate-paths-exist` pair: this schedule serialises the writer tests WITHIN one battery, but two batteries (two sessions in one tree) collide on a fixed fixture name, each cleanup deleting the other's file, which reads as "the detector is broken" rather than as a collision.
+WHY THIS MODULE IS STILL SERIALISED, given that nothing here writes any more. Every case -- the four plants and every registry entry -- reads the real `scripts/` and/or `.ci/scripts/` wholesale through `shutil.copytree`, and that read is not instantaneous: a REAL-tree WRITER elsewhere in the battery (`test_gate_docs_gen.py`'s `--write` case, `test_gate_paths_exist.py`'s and
+`test_gate_shrink_only_composition.py`'s own plants) can still land mid-copy and hand this module a half-written file, which is the `cp: cannot stat` / truncated-read flake this group exists to prevent. `XDIST_GROUP` is the documented escape hatch for a resource no registry knows about; while the twin existed the same protection came from `REAL_TREE_TWIN = True`, honoured only through
+a basename lookup keyed on the twin's now-deleted lock entry, so it bought nothing after the retirement and has been removed.
 """
 
-import os
+import contextlib
 import pathlib
 import shutil
 
 from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
-# Three cases plant inside the tracked tree and every registry case copies it.
+# Every case reads the real scripts/ and .ci/scripts/ wholesale via shutil.copytree, racing any real-tree writer elsewhere in the battery. See the module docstring.
 XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
@@ -155,18 +157,11 @@ REGISTRY: tuple[tuple[str, str], ...] = (
 )
 
 
-def run_against_empty_tree(script: str) -> harness.RunResult:
-    """Execute `script` with the tooling trees copied into an otherwise empty directory, so every `__dirname/../packages/...` and `__dirname/../private/...` lookup resolves to nothing.
+@contextlib.contextmanager
+def empty_tree_fixture():
+    """Build the copied tree `run_against_empty_tree` runs a validator against, without running anything.
 
-    COPYING (rather than deleting the real trees) is what makes this safe to run against a working tree holding other sessions' uncommitted work.
-
-    `.ci/scripts` IS IN THE COPY LIST, and it is not a convenience: without it the harness could only ever test `scripts/*.ts`, which excluded about thirty shell gates -- and the worst real instance of a vacuous gate lived in one of them (`.ci/scripts/private/run-renet.sh` used to exit 0, silently taking govulncheck, deadcode and golangci-lint with it).
-
-    `.ci/rediacc_ci` IS ALSO IN IT, and that one is load-bearing in a subtler way. The CI programs are moving into that Python package, so gates start with `import rediacc_ci`. Copy only `scripts/` and `config/` and every one of them dies in here with `ModuleNotFoundError` -- which arrives as a NON-ZERO EXIT AND A MESSAGE ABOUT A MISSING INPUT, i.e. indistinguishable from the gate
-    correctly rejecting an empty tree. This harness would then report every such gate as healthy while testing nothing about it. `test_fixture_can_import_package` is the control that keeps that line honest.
-
-    `CI=true` on purpose: a gate is being judged on what it does IN CI, and some
-    deliberately soften to a warning locally.
+    Split out from `run_against_empty_tree` so a case that must PLANT a probe (four below) can write it into THIS COPY before anything runs, instead of into the real, tracked `scripts/` or `.ci/scripts/` -- the same directories other gates, and other sessions, may be reading or walking at the same moment. Everything about the copy itself is unchanged from before the split; see `run_against_empty_tree` for why each leg of it is in the list.
     """
     with harness.temp_dir() as tmp:
         shutil.copytree(ROOT / "scripts", tmp / "scripts", symlinks=True)
@@ -178,39 +173,62 @@ def run_against_empty_tree(script: str) -> harness.RunResult:
                 shutil.copytree(source, tmp / ".ci" / optional, symlinks=True)
         # node_modules resolution walks upward from the script, so link the real one in; the point of the fixture is an empty SOURCE tree, not a broken runtime.
         (tmp / "node_modules").symlink_to(ROOT / "node_modules")
-
-        env = {"CI": "true"}
-        if script.startswith(".ci/rediacc_ci/"):
-            # A PACKAGE MODULE, not a standalone entry point. The `.ci/scripts/quality/check_*.py`
-            # entries below carry their own `_cipath` hop and need nothing; a module under the
-            # package imports `rediacc_ci` directly and is reached through PYTHONPATH the way
-            # `package.json` reaches it, so the fixture has to say so rather than inherit it.
-            env["PYTHONPATH"] = ".ci"
-            env["PYTHONDONTWRITEBYTECODE"] = "1"
-        if script.endswith(".sh"):
-            argv = [harness.require_tool("bash", "install bash"), script]
-        elif script.endswith(".py"):
-            argv = [harness.require_tool("python3", "install python3"), script]
-        else:
-            # The else-branch used to be the ONLY alternative to `.sh`, which silently resolved any new language to `scripts/<path>` and failed as a stale-registry error rather than as an unsupported one -- the first `.py` entry hit exactly that. Two homes, in step with the twin and with `registry_path` above: after W9 P2 a `.ts` validator lives under `scripts/gates/`. Resolved
-            # against the COPY, not the repo, because that is what this process will execute. Fixing only `registry_path` and leaving this on the old home is exactly what broke `test_validator_rejects_empty_tree` here on 2026-09-09 while the twin passed -- one resolver moved and its pair did not.
-            rel = "scripts/gates/%s" % script
-            if not (tmp / rel).is_file():
-                rel = "scripts/%s" % script
-            argv = [
-                harness.require_tool("npx", "install node; tsx is resolved through npx"),
-                "tsx",
-                rel,
-            ]
-        return harness.run(argv, cwd=tmp, env=env, timeout=600)
+        yield tmp
 
 
-def registry_verdict(script: str, needle: str) -> str | None:
+def run_in_tree(tmp: pathlib.Path, script: str) -> harness.RunResult:
+    """Execute `script` (repo-relative) inside an ALREADY-BUILT `empty_tree_fixture` copy.
+
+    Split out from `run_against_empty_tree` so a case that plants a probe into the copy first can run against that SAME copy rather than a second, freshly-built one that never saw the plant.
+
+    `CI=true` on purpose: a gate is being judged on what it does IN CI, and some deliberately soften to a warning locally.
+    """
+    env = {"CI": "true"}
+    if script.startswith(".ci/rediacc_ci/"):
+        # A PACKAGE MODULE, not a standalone entry point. The `.ci/scripts/quality/check_*.py`
+        # entries below carry their own `_cipath` hop and need nothing; a module under the
+        # package imports `rediacc_ci` directly and is reached through PYTHONPATH the way
+        # `package.json` reaches it, so the fixture has to say so rather than inherit it.
+        env["PYTHONPATH"] = ".ci"
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if script.endswith(".sh"):
+        argv = [harness.require_tool("bash", "install bash"), script]
+    elif script.endswith(".py"):
+        argv = [harness.require_tool("python3", "install python3"), script]
+    else:
+        # The else-branch used to be the ONLY alternative to `.sh`, which silently resolved any new language to `scripts/<path>` and failed as a stale-registry error rather than as an unsupported one -- the first `.py` entry hit exactly that. Two homes, in step with the twin and with `registry_path` above: after W9 P2 a `.ts` validator lives under `scripts/gates/`. Resolved
+        # against the COPY, not the repo, because that is what this process will execute. Fixing only `registry_path` and leaving this on the old home is exactly what broke `test_validator_rejects_empty_tree` here on 2026-09-09 while the twin passed -- one resolver moved and its pair did not.
+        rel = "scripts/gates/%s" % script
+        if not (tmp / rel).is_file():
+            rel = "scripts/%s" % script
+        argv = [
+            harness.require_tool("npx", "install node; tsx is resolved through npx"),
+            "tsx",
+            rel,
+        ]
+    return harness.run(argv, cwd=tmp, env=env, timeout=600)
+
+
+def run_against_empty_tree(script: str) -> harness.RunResult:
+    """Execute `script` with the tooling trees copied into an otherwise empty directory, so every `__dirname/../packages/...` and `__dirname/../private/...` lookup resolves to nothing.
+
+    COPYING (rather than deleting the real trees) is what makes this safe to run against a working tree holding other sessions' uncommitted work.
+
+    `.ci/scripts` IS IN THE COPY LIST, and it is not a convenience: without it the harness could only ever test `scripts/*.ts`, which excluded about thirty shell gates -- and the worst real instance of a vacuous gate lived in one of them (`.ci/scripts/private/run-renet.sh` used to exit 0, silently taking govulncheck, deadcode and golangci-lint with it).
+
+    `.ci/rediacc_ci` IS ALSO IN IT, and that one is load-bearing in a subtler way. The CI programs are moving into that Python package, so gates start with `import rediacc_ci`. Copy only `scripts/` and `config/` and every one of them dies in here with `ModuleNotFoundError` -- which arrives as a NON-ZERO EXIT AND A MESSAGE ABOUT A MISSING INPUT, i.e. indistinguishable from the gate
+    correctly rejecting an empty tree. This harness would then report every such gate as healthy while testing nothing about it. `test_fixture_can_import_package` is the control that keeps that line honest.
+    """
+    with empty_tree_fixture() as tmp:
+        return run_in_tree(tmp, script)
+
+
+def registry_verdict(script: str, needle: str, tmp: pathlib.Path | None = None) -> str | None:
     """None when `script` correctly rejects an empty tree, else why not.
 
-    A SEPARATE FUNCTION so `test_harness_catches_a_vacuous_validator` can drive the identical code path against a planted validator instead of a lookalike.
+    A SEPARATE FUNCTION so `test_harness_catches_a_vacuous_validator` can drive the identical code path against a planted validator instead of a lookalike. `tmp`, when given, is an already-built `empty_tree_fixture` copy the caller already planted a probe into; omitted, a fresh empty tree is built and torn down just for this one call.
     """
-    result = run_against_empty_tree(script)
+    result = run_in_tree(tmp, script) if tmp is not None else run_against_empty_tree(script)
     if result.rc == 0:
         return "%s exited 0 on an EMPTY tree -- it asserts nothing (vacuous gate)\n%s" % (
             script,
@@ -245,24 +263,21 @@ def test_fixture_can_import_package(gate):
 
     `import rediacc_ci` must work INSIDE the fixture; if it does not, a gate that uses the package fails here for a reason that has nothing to do with what the gate asserts, and that failure looks exactly like the empty-tree rejection this file is built to observe.
 
-    RED-THEN-GREEN, run in that order rather than assumed: delete the `rediacc_ci` leg of the copy list in `run_against_empty_tree` and this case goes red with `ModuleNotFoundError: No module named 'rediacc_ci'`.
+    RED-THEN-GREEN, run in that order rather than assumed: delete the `rediacc_ci` leg of the copy list in `empty_tree_fixture` and this case goes red with `ModuleNotFoundError: No module named 'rediacc_ci'`.
 
-    The probe is planted under `.ci/scripts/` specifically because that is a directory the fixture copies -- a probe outside the copy list could not be run in there at all. And it must resolve to the fixture's OWN copy of the package rather than the repo's, or the case would stay green with the copy-list leg deleted; hence the last assertion.
+    The probe is planted under `.ci/scripts/` specifically because that is a directory the fixture copies -- a probe outside the copy list could not be run in there at all. It is planted into the COPY, not the real tree: `empty_tree_fixture` builds the tree first, the probe is written into that tmp directory, and both vanish together when the `with` block exits, so a killed run
+    strands an orphaned tmp directory (already swept by `rediacc_ci.runtmp`) rather than an untracked file in the real, tracked `.ci/scripts/`. And it must resolve to the fixture's OWN copy of the package rather than the repo's, or the case would stay green with the copy-list leg deleted; hence the last assertion.
     """
-    probe_rel = ".ci/scripts/.rediacc-ci-import-probe.%d.py" % os.getpid()
-    probe = ROOT / probe_rel
-    probe.write_text(
-        "import importlib\nimport os\nimport sys\n\n"
-        "sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n"
-        'mod = importlib.import_module("rediacc_ci")\n'
-        'print("imported rediacc_ci from " + str(mod.__file__))\n',
-        encoding="utf-8",
-    )
-    try:
-        result = run_against_empty_tree(probe_rel)
-    finally:
-        # REMOVED IN A `finally`, and not left to a later line. Every assertion helper raises, and the twin's `trap ... RETURN` does NOT fire on the `exit 1` those helpers perform -- measured while proving this case can fail, the planted `.py` survived the red run and showed up in `git status` as an untracked file in a tree holding other sessions' work.
-        probe.unlink(missing_ok=True)
+    probe_rel = ".ci/scripts/rediacc-ci-import-probe.py"
+    with empty_tree_fixture() as tmp:
+        (tmp / probe_rel).write_text(
+            "import importlib\nimport os\nimport sys\n\n"
+            "sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))\n"
+            'mod = importlib.import_module("rediacc_ci")\n'
+            'print("imported rediacc_ci from " + str(mod.__file__))\n',
+            encoding="utf-8",
+        )
+        result = run_in_tree(tmp, probe_rel)
     if result.rc != 0:
         gate.log_fail(
             "a gate run inside the fixture cannot import rediacc_ci (exit %d) -- add .ci/rediacc_ci to the copy list in run_against_empty_tree"
@@ -323,20 +338,21 @@ def test_sharedselftestcases_can_fail(gate):
 
     `scripts/lib/shrink-only-baseline.ts` exports `sharedSelftestCases()`, and NINE gates run its cases as their own controls. Nothing proved those cases can go false: if the provider ever returned an all-passing set -- a refactor that stubs `baselineAdditions`, a short-circuit -- all nine gates would keep printing PASS while asserting nothing, at once.
 
-    THE PLANT IS ON THE FUNCTION THE CASES ARE COMPUTED FROM, not on the cases: a provider that hardcoded `ok: true` would survive any assertion about its shape.
+    THE PLANT IS ON THE FUNCTION THE CASES ARE COMPUTED FROM, not on the cases: a provider that hardcoded `ok: true` would survive any assertion about its shape. It lands in a COPY of `scripts/` (`empty_tree_fixture`), not the real, tracked file: `guard` is read from the copy, the mutated `work` and the importing `probe` are written into that same copy, and `node_modules`
+    resolves from there exactly as it does for every other case run through `run_in_tree`.
     """
     npx = harness.require_tool("npx", "install node; tsx is resolved through npx")
-    guard = ROOT / "scripts" / "lib" / "shrink-only-baseline.ts"
-    work = ROOT / "scripts" / (".shrink-only-baseline-fixture.%d.ts" % os.getpid())
-    probe = ROOT / "scripts" / (".shared-cases-probe.%d.ts" % os.getpid())
-    try:
+    with empty_tree_fixture() as tmp:
+        guard = tmp / "scripts" / "lib" / "shrink-only-baseline.ts"
+        work = tmp / "scripts" / "shrink-only-baseline-fixture.ts"
+        probe = tmp / "scripts" / "shared-cases-probe.ts"
         source = guard.read_text(encoding="utf-8")
         needle = "export const baselineAdditions = ("
         if needle not in source:
             gate.log_fail(
                 "CONTROL COULD NOT PLANT: %s no longer spells baselineAdditions as an "
                 "exported arrow, so the mutation would leave the file unchanged"
-                % paths.relative_to_root(guard)
+                % paths.relative_to_root(guard, root=tmp)
             )
         work.write_text(
             source.replace(
@@ -357,10 +373,7 @@ def test_sharedselftestcases_can_fail(gate):
             % work.name[: -len(".ts")],
             encoding="utf-8",
         )
-        result = harness.run([npx, "tsx", str(probe)], cwd=ROOT, timeout=600)
-    finally:
-        work.unlink(missing_ok=True)
-        probe.unlink(missing_ok=True)
+        result = harness.run([npx, "tsx", str(probe)], cwd=tmp, timeout=600)
     if result.rc != 0:
         gate.log_fail(
             "the shared-cases probe did not run (exit %d) -- this meta-control asserts nothing"
@@ -385,10 +398,12 @@ def test_runcontrols_can_fail(gate):
     grading itself.
 
     Three assertions, because two of them are the ways this could go quietly wrong: a failing case must return non-zero, an all-passing set must return zero (or the "proof" is satisfied by a function that always fails), and an EMPTY set must return non-zero (a case-builder that silently returns [] would otherwise get a clean 0).
+
+    The fixture lands in a COPY of `scripts/` (`empty_tree_fixture`), not the real, tracked tree.
     """
     npx = harness.require_tool("npx", "install node; tsx is resolved through npx")
-    fixture = ROOT / "scripts" / (".controls-harness-fixture.%d.ts" % os.getpid())
-    try:
+    with empty_tree_fixture() as tmp:
+        fixture = tmp / "scripts" / "controls-harness-fixture.ts"
         fixture.write_text(
             "import { runControls } from './lib/controls.js';\n"
             "const planted = runControls([\n"
@@ -400,9 +415,7 @@ def test_runcontrols_can_fail(gate):
             "console.log(`planted=${planted} clean=${clean} empty=${empty}`);\n",
             encoding="utf-8",
         )
-        result = harness.run([npx, "tsx", str(fixture)], cwd=ROOT, timeout=600)
-    finally:
-        fixture.unlink(missing_ok=True)
+        result = harness.run([npx, "tsx", str(fixture)], cwd=tmp, timeout=600)
     if result.rc != 0:
         gate.log_fail(
             "the controls-harness fixture did not run (exit %d) -- the meta-control asserts nothing"
@@ -427,17 +440,15 @@ def test_runcontrols_can_fail(gate):
 def test_harness_catches_a_vacuous_validator(gate):
     """CONTROL: prove this file can FAIL.
 
-    A synthetic validator that ignores its input and exits 0 -- the exact shape of the bugs being policed -- must be reported. Without this, a harness that silently never asserts would look identical to a clean run.
+    A synthetic validator that ignores its input and exits 0 -- the exact shape of the bugs being policed -- must be reported. Without this, a harness that silently never asserts would look identical to a clean run. It lands in a COPY of `scripts/` (`empty_tree_fixture`), not the real, tracked tree: `registry_verdict` is handed that same copy so it runs the planted fixture rather
+    than building (and finding nothing in) a second one.
     """
-    name = ".gate-anti-vacuity-fixture.%d.ts" % os.getpid()
-    fixture = ROOT / "scripts" / name
-    try:
-        fixture.write_text(
+    name = "gate-anti-vacuity-fixture.ts"
+    with empty_tree_fixture() as tmp:
+        (tmp / "scripts" / name).write_text(
             'console.log("locale check passed");\nprocess.exit(0);\n', encoding="utf-8"
         )
-        why = registry_verdict(name, "locale")
-    finally:
-        fixture.unlink(missing_ok=True)
+        why = registry_verdict(name, "locale", tmp=tmp)
     if why is None:
         gate.log_fail(
             "harness must reject a validator that exits 0 on an empty tree, and it did not"

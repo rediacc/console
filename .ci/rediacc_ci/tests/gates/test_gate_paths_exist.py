@@ -19,10 +19,10 @@ WHAT IT DELIBERATELY DOES NOT CATCH, precision over recall, because a noisy gate
 THE SUBJECT IS THE SCAN ITSELF, which makes this port unlike most of the family. There is no separate `check-*.sh` to shell out to: the twin IS the detector, so porting it means re-expressing the detector in Python rather than driving a subject through a seam. The consequence is that parity here is a claim about two independent implementations agreeing on the same tree, which is
 why the plant proof matters more than usual and why the extraction rules below are transcribed clause by clause from the twin's awk program rather than paraphrased.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case walks the working tree (`scripts/`, `packages/www/scripts/`, `.ci/scripts/`) and two of them PLANT a file inside `.ci/scripts/` and remove it again. A battery step reading that directory mid-plant, or a second scanner seeing a fixture that vanishes under it, is the flake that would be blamed on this port -- and the twin
-carries `mutex: ["tree:repo"]` in `gates.lock.json` for exactly that reason.
-`REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses that combination.
+WHY THIS MODULE CARRIES AN EXPLICIT `XDIST_GROUP`. Every case walks the working tree (`scripts/`, `packages/www/scripts/`, `.ci/scripts/`) and two of them PLANT a file inside `.ci/scripts/` and remove it again. A battery step reading that directory mid-plant, or a second scanner seeing a fixture that vanish under it, is the flake that would be blamed on this port. `REAL_TREE_TWIN = True`
+used to sit here on the theory that `gates.lock.json`'s retired `mutex: ["tree:repo"]` entry for this twin bought the serialisation through `real_tree_admission` in `test_twin_parity.py` -- but that function only ever runs against modules that still declare a `BASH_TWIN`, and this file's twin is retired (see the opening paragraph), so it was NEVER once checked here, and
+`xdist_groups.group_for` does not read `REAL_TREE_TWIN` either; it keys off `BASH_TWIN` plus the lock, both absent. The two PID-keyed plants were therefore running completely unserialised against concurrent xdist workers, protected only by the PID suffix against a second SESSION colliding on the same path -- the same failure shape `test_gate_shrink_only_composition.py` documents actually firing on 2026-09-27 for its own, differently-located plants (`FileNotFoundError` when two of its cases landed
+on different workers with no group in common). `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` is the fix here too: the same escape hatch that module and `test_gate_gate_anti_vacuity.py` use for the identical shape.
 
 THE SELF-SCANNING TRAP, and this file is squarely in it. The detector reports dead `packages/...` literals found in source files, and a port of it is a source file full of dead `packages/...` literals. The twin is invisible to itself because `scan_targets` excludes `.ci/scripts/test/*`; this module lives outside every scanned root, so it is invisible for a different and less
 deliberate reason -- one that a future scanner widening its roots would quietly remove. So the fixture literal is RENDERED through a `%s` template and never appears whole in this file's bytes (`%` is outside the `[A-Za-z0-9._+-]` class the extractor uses, so the template cannot be extracted as a path), and `test_this_module_is_not_itself_a_finding` points the real detector at this
@@ -34,11 +34,11 @@ import os
 import pathlib
 import re
 
-from rediacc_ci import paths
+from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
-# Every case walks the real tree and two of them plant a file inside `.ci/scripts/`. See the module docstring.
-REAL_TREE_TWIN = True
+# Two cases plant a file inside `.ci/scripts/` and remove it again. See the module docstring: this is the explicit escape hatch, not `REAL_TREE_TWIN` (which never reached the scheduler and has been removed).
+XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 

@@ -74,6 +74,43 @@ import { findRegions, OPEN_RE, rewriteRegions } from '../lib/doc-regions.js';
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const SNAPSHOT = 'scripts/data/doc-registry-preport.json';
 
+/**
+ * TEST-ONLY CONTENT OVERRIDE, keyed by repo-relative target path.
+ *
+ * `gate-test:docs-gen`'s drift control (`test_gate_docs_gen.py`, case B) has to prove verify
+ * reports DRIFT on a perturbed generated row, and the row lives in a TRACKED file. Every other
+ * seam in this generator resolves against the real ROOT -- `targets()` and every provider's
+ * `.rows(root)` shell out to `git ls-files` there -- so faking the perturbation by pointing the
+ * whole generator at a copy would mean cloning the repository just to satisfy that one call.
+ * This overrides only what `build()` treats as a target's CURRENT bytes, which is the one read
+ * the control needs to fake; the DERIVED half still comes from the real tree, so the control
+ * still proves the real thing.
+ *
+ * `GEN_DOCS_OVERRIDE_FILE` NAMES A FILE RATHER THAN CARRYING THE JSON ITSELF, and that is a
+ * measured constraint, not a style choice: `doc-registry.md` alone is over 130 KB, an env VALUE
+ * that size hit this sandbox's ~128 KB single-variable ceiling (`OSError: Argument list too
+ * long`, well under the 2 MB `ARG_MAX` `getconf` reports -- some container runtimes cap a lot
+ * lower), and a control that only works on machines with a generous env limit is not one. A file
+ * has no such ceiling. Unset (the only shape any real invocation, including CI's, ever sees)
+ * `OVERRIDES` is `{}` and every read falls through to disk exactly as before.
+ */
+const OVERRIDES: Record<string, string> = (() => {
+  const file = process.env.GEN_DOCS_OVERRIDE_FILE;
+  if (!file) return {};
+  const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('GEN_DOCS_OVERRIDE_FILE must name a JSON file holding an object of {path: content}');
+  }
+  return parsed as Record<string, string>;
+})();
+
+/** A target's CURRENT bytes: the override when the test set one, disk otherwise. */
+function readTargetContent(root: string, f: string): string {
+  return Object.prototype.hasOwnProperty.call(OVERRIDES, f)
+    ? OVERRIDES[f]
+    : fs.readFileSync(path.join(root, f), 'utf-8');
+}
+
 const RED = process.stdout.isTTY ? '\u001b[0;31m' : '';
 const GREEN = process.stdout.isTTY ? '\u001b[0;32m' : '';
 const NC = process.stdout.isTTY ? '\u001b[0m' : '';
@@ -178,7 +215,7 @@ function build(root: string): { rendered: Rendered[] } | { errors: string[] } {
   const rendered: Rendered[] = [];
   const errors: string[] = [];
   for (const f of targets(root)) {
-    const current = fs.readFileSync(path.join(root, f), 'utf-8');
+    const current = readTargetContent(root, f);
     const res = rewriteRegions(current, renderProvider);
     if ('errors' in res) {
       for (const e of res.errors) errors.push(`${f}:${e.line}: ${e.message}`);
@@ -630,6 +667,13 @@ function selftest(): number {
 /* ------------------------------------------------------------------- main */
 
 function main(argv: string[]): number {
+  if (argv.includes('--write') && Object.keys(OVERRIDES).length > 0) {
+    // GEN_DOCS_OVERRIDE_FILE exists to fake a target's CURRENT bytes for verify; combined with `--write` it would fake the "before" half of a real file and then write the DERIVED half over it for real, which is the opposite of what a read-only test override is for. Refuse rather than silently doing the one thing it must never do.
+    console.error(
+      `${RED}✗${NC} GEN_DOCS_OVERRIDE_FILE is set; refusing --write (it exists for verify only).`
+    );
+    return 1;
+  }
   if (argv.includes('--selftest')) return selftest() === 0 ? 0 : 1;
   if (argv.includes('--re-record')) {
     const at = argv.indexOf('--re-record');

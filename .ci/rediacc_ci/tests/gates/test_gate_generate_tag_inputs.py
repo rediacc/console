@@ -11,28 +11,31 @@ exiting 0.
 
 WHY A FIXTURE TREE. The gate reads real files from the working directory, so the only way to plant a defect without touching a tracked file is to build a throwaway repo with the same shape and run the real script inside it. Nothing about the SUBJECT is reimplemented here: every invocation below is the real `bash .ci/scripts/ci/generate-tag.sh`.
 
-WHY THIS MODULE IS SERIALISED, and it is the sharper reason of the two kinds. Most real-tree tests only READ the working tree. This one WRITES it: the last two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh`
-with a stub resolver and restore it a second later, because `generate-tag.sh`
-gives them no fixture seam to do it in (the closure mode invokes the resolver via `cd "$REPO_ROOT"`). A gate reading that script inside the window sees a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean.
+THIS MODULE NO LONGER WRITES THE REAL TREE, AND THAT IS THE FIX FOR AN INCIDENT RECORDED HERE FOR THE NEXT READER. The last two cases (closure mode) used to overwrite the tracked `.ci/scripts/version/resolve-version.sh` with a stub resolver and restore it a second later, because `generate-tag.sh`'s closure branch invokes the resolver as `"$SCRIPT_DIR/../version/resolve-version.sh"`, where `SCRIPT_DIR` is derived from wherever the running copy of `generate-tag.sh` itself lives -- there was no seam to redirect just that one call. A gate reading that script inside the write-restore window saw a half-written file: on 2026-08-17 that reddened `gate-test:claude-hooks` with a bash syntax error in a file that parses clean. `REAL_TREE_TWIN = True`, later `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP`, bought serialisation against the battery's OWN gate tests, but a write to the real tree is still visible to anything outside that battery (an operator's `git status`, a concurrent tool run) for as long as the write survives -- serialisation narrows the blast radius, it does not remove it.
 
-THE DECLARATION MOVED WITH THE RETIREMENT, and it had to. While the twin existed the serialisation was bought by `REAL_TREE_TWIN = True`, which `xdist_groups.group_for` honours only by looking the twin's BASENAME up in the lock's `tree:` set. Delete the twin and its lock entry and that lookup answers no, so the attribute would promise an isolation the scheduler no longer
-gives: the port would distribute freely and write `resolve-version.sh` under a concurrent reader. `XDIST_GROUP` is the documented escape hatch for a resource no registry knows about, and after the retirement this module's write IS one. It names `xdist_groups.REAL_TREE_GROUP` rather than a literal so the two spellings cannot drift into two groups that run at once.
+THE FIX IS `build_closure_fixture()`: a COPY of the three files closure mode's `SCRIPT_DIR`-relative call chain touches -- `generate-tag.sh` itself, `lib/*.sh` (sourced for logging), and `version/resolve-version.sh` (the one that gets swapped) -- laid out under a tmp dir in the same relative shape, with the resolver either copied verbatim or replaced by a stub. `invoke_closure()`
+then runs THAT COPY's `generate-tag.sh` by absolute path, with `cwd` set to the REAL repo root rather than to the fixture. That split is what makes the fixture correct rather than merely convenient: `git rev-parse HEAD:<closure_path>` (the part of closure mode that hashes the real Dockerfiles, `package.json` and so on) needs the real repository to answer from, and it reads `cwd`,
+not `SCRIPT_DIR` -- so pointing `cwd` at the fixture instead would make every `CLOSURE_PATHS` entry fail to resolve. `SCRIPT_DIR`, by contrast, is derived from the invoked script's own path regardless of `cwd`, so passing the fixture copy's absolute path is what redirects `../version/resolve-version.sh` without redirecting anything else. Three fresh copies (real resolver, fake
+resolver, real resolver again) replace the old write-swap-restore dance entirely: there is no shared mutable file for a concurrent reader to observe, so nothing here needs a real-tree group any more, and none is declared.
 
-WHAT THE PORT ADDS RATHER THAN DROPS. The twin restores the resolver with `cp` and then infers success from the tag coming back to baseline. This restores in a `finally` (so a raised assertion cannot strand the stub the way an `exit` from inside a bash function can) and additionally asserts the restored file is byte-identical by sha256 and keeps its mode. A tag that matches is good
-evidence the CONTENT came back; it says nothing about the permission bit, and a resolver left non-executable would fail somewhere else entirely.
+WHY A FIXTURE TREE FOR THE `--submodule` CASES TOO. The gate reads real files from the working directory, so the only way to plant a defect without touching a tracked file is to build a throwaway repo with the same shape and run the real script inside it (`build_fixture_tree`). Nothing about the SUBJECT is reimplemented here: every invocation below is the real `bash
+.ci/scripts/ci/generate-tag.sh`, whichever copy of it a given case is pointed at.
+
+WHAT THE PORT ADDS. The twin restored the resolver with `cp` and inferred success from the tag coming back to baseline. This proves the same claim without ever mutating a shared file: a tag computed against a FRESH copy of the real resolver, taken before and after the fake-resolver run, must match, and the fixture's resolver copy is asserted byte-identical to the real one by
+sha256 so "restored" is a measurement rather than an assumption.
 """
 
+import contextlib
 import hashlib
 import os
 import pathlib
 import re
 import shutil
 
-from rediacc_ci import paths, xdist_groups
+from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Two cases overwrite the tracked `.ci/scripts/version/resolve-version.sh` in place and restore it. See the module docstring.
-XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
+# No case writes the real tree any more: the closure cases run a fixture copy of generate-tag.sh, lib/*.sh and resolve-version.sh (see build_closure_fixture and the module docstring), so no XDIST_GROUP is needed.
 
 GATE_REL = ".ci/scripts/ci/generate-tag.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))
@@ -352,35 +355,45 @@ def test_real_tree_still_produces_a_tag(gate):
     gate.log_pass("the real private/renet tag still generates (%s)" % out)
 
 
-def swap_resolver(gate, body: str) -> str:
-    """Overwrite the REAL resolver with `body`, returning its original sha256.
+@contextlib.contextmanager
+def closure_fixture(gate, resolver_body: str | None = None):
+    """Yield a COPY of `generate-tag.sh`'s closure-mode call chain, absolute path, real tree untouched.
 
-    THE WRITE IS THE POINT and there is no seam that avoids it: closure mode invokes `.ci/scripts/version/resolve-version.sh` from the repo root, so the only way to move the released version is to move that file. It is why this module is a real-tree WRITER and why the twin lives in `WRITER_TESTS`.
+    Closure mode resolves `lib/common.sh` and `version/resolve-version.sh` relative to `SCRIPT_DIR`, which bash derives from wherever the RUNNING copy of `generate-tag.sh` lives -- never from `cwd`. So copying the three files this branch touches (the gate itself, every `lib/*.sh`, and the resolver) into a tmp dir in the same relative shape, then invoking THAT copy by absolute
+    path, redirects the resolver call without redirecting `git rev-parse HEAD:<path>`, which reads `cwd` and needs the real repository to answer from. `invoke_closure` below is what supplies that split `cwd`.
+
+    `resolver_body=None` copies the REAL resolver byte-for-byte (its mode included, via `copy2`); a caller wanting the swapped behaviour passes the stub body instead, and it is written with the execute bit set since `generate-tag.sh` calls it directly rather than through `bash`. Either way nothing under the real ROOT is opened for writing.
     """
-    if not RESOLVER.is_file():
-        gate.log_fail("the version resolver is missing at %s" % RESOLVER_REL)
-    before = digest(RESOLVER)
-    RESOLVER.write_text(body, encoding="utf-8")
-    RESOLVER.chmod(RESOLVER.stat().st_mode | 0o111)
-    return before
+    require_gate(gate)
+    with harness.temp_dir() as tmp:
+        ci_dir = tmp / ".ci" / "scripts"
+        (ci_dir / "ci").mkdir(parents=True)
+        (ci_dir / "lib").mkdir(parents=True)
+        (ci_dir / "version").mkdir(parents=True)
+        shutil.copy2(GATE, ci_dir / "ci" / GATE.name)
+        for lib in sorted(paths.from_root(".ci", "scripts", "lib").glob("*.sh")):
+            shutil.copy2(lib, ci_dir / "lib" / lib.name)
+        resolver_copy = ci_dir / "version" / RESOLVER.name
+        if resolver_body is None:
+            shutil.copy2(RESOLVER, resolver_copy)
+            gate.assert_eq(
+                digest(resolver_copy),
+                digest(RESOLVER),
+                "the fixture's copy of the real resolver must be byte-identical to it",
+            )
+        else:
+            resolver_copy.write_text(resolver_body, encoding="utf-8")
+            resolver_copy.chmod(resolver_copy.stat().st_mode | 0o111)
+        yield ci_dir / "ci" / GATE.name
 
 
-def restore_resolver(gate, backup: pathlib.Path, mode: int, before: str) -> None:
-    """Put it back, and PROVE it went back.
+def invoke_closure(gate, script: pathlib.Path, *args: str) -> harness.RunResult:
+    """Run a `closure_fixture` copy of `generate-tag.sh` by absolute path, `cwd` at the REAL repo root.
 
-    A `finally`, not a trap: a bash function cannot clean up after an `exit` from inside itself, which is why the twin binds its restore to a `cp` on the happy path. Python unwinds, so the stub cannot outlive a failed assertion here.
+    The absolute path is what makes `SCRIPT_DIR` resolve to the fixture; the real `cwd` is what makes `git rev-parse HEAD:<path>` keep answering from the actual repository. See `closure_fixture`'s docstring for why both halves are required together.
     """
-    shutil.copyfile(backup, RESOLVER)
-    RESOLVER.chmod(mode)
-    gate.assert_eq(
-        digest(RESOLVER), before, "the real %s must be byte-identical afterwards" % RESOLVER_REL
-    )
-    gate.assert_eq(
-        RESOLVER.stat().st_mode & 0o777,
-        mode & 0o777,
-        "the real %s must keep its mode; a resolver left non-executable fails elsewhere"
-        % RESOLVER_REL,
-    )
+    bash = require_gate(gate)
+    return harness.run([bash, str(script), *args], cwd=paths.repo_root())
 
 
 def test_closure_tag_moves_when_the_released_version_moves(gate):
@@ -391,57 +404,57 @@ def test_closure_tag_moves_when_the_released_version_moves(gate):
     Release v1.2.12 landed 2026-07-30T10:16:14Z mid-PR. Runs 30534726467 and 30542942037 both failed `Validate Install Methods / Linux` with "Version mismatch: expected '1.2.13', got '1.2.12'", because `Build (Docker) / CLI Docker` was SKIPPED while its cached twin succeeded and the mutable pr-546 tag kept serving a pre-release image. Deterministic and self-perpetuating, not a
     race: nothing on the branch could move the key.
 
-    Driven by swapping the RESOLVER rather than by cutting a git tag, so the case needs no write access to the real tag namespace.
+    Driven by pointing closure mode at a FAKE resolver rather than by cutting a git tag, so the case needs no write access to the real tag namespace -- and, since W7 P5's isolation fix, no write access to the real resolver either: each of the three tags below comes from its own fresh `closure_fixture` copy.
     """
-    root = paths.repo_root()
-    with harness.temp_dir() as tmp:
-        backup = tmp / "resolve-version.real"
-        shutil.copyfile(RESOLVER, backup)
-        mode = RESOLVER.stat().st_mode
-        before_tag = invoke(gate, root, "--closure", "rdc", "--extra", "fixed").out.rstrip("\n")
-        after_tag = ""
-        try:
-            swap_resolver(
-                gate,
-                '#!/bin/bash\n[ "$1" = "--current" ] && echo "v9.9.9" || echo "9.9.10"\n',
-            )
-            after_tag = invoke(gate, root, "--closure", "rdc", "--extra", "fixed").out.rstrip("\n")
-        finally:
-            restore_resolver(gate, backup, mode, digest(backup))
-        restored = invoke(gate, root, "--closure", "rdc", "--extra", "fixed").out.rstrip("\n")
+    real_before = digest(RESOLVER)
+    with closure_fixture(gate) as before_script:
+        before_tag = invoke_closure(
+            gate, before_script, "--closure", "rdc", "--extra", "fixed"
+        ).out.rstrip("\n")
+    with closure_fixture(
+        gate, '#!/bin/bash\n[ "$1" = "--current" ] && echo "v9.9.9" || echo "9.9.10"\n'
+    ) as fake_script:
+        after_tag = invoke_closure(
+            gate, fake_script, "--closure", "rdc", "--extra", "fixed"
+        ).out.rstrip("\n")
+    with closure_fixture(gate) as restored_script:
+        restored = invoke_closure(
+            gate, restored_script, "--closure", "rdc", "--extra", "fixed"
+        ).out.rstrip("\n")
 
-        if before_tag == after_tag:
-            gate.log_fail(
-                "the rdc closure tag did NOT move when the released version moved (%s): a "
-                "cached pre-release image would be served under the new version" % before_tag
-            )
-        # CONTROL: without this the assertion above is satisfied by ANY nondeterminism, including a tag that changes on every invocation, which would be a different and worse bug.
-        gate.assert_eq(
-            restored,
-            before_tag,
-            "restoring the resolver must reproduce the ORIGINAL tag, so the key is "
-            "version-sensitive rather than merely unstable",
+    if before_tag == after_tag:
+        gate.log_fail(
+            "the rdc closure tag did NOT move when the released version moved (%s): a "
+            "cached pre-release image would be served under the new version" % before_tag
         )
-        gate.log_pass(
-            "the closure tag tracks the released version (%s -> %s -> %s)"
-            % (before_tag, after_tag, restored)
-        )
+    # CONTROL: without this the assertion above is satisfied by ANY nondeterminism, including a tag that changes on every invocation, which would be a different and worse bug.
+    gate.assert_eq(
+        restored,
+        before_tag,
+        "a fresh copy of the real resolver must reproduce the ORIGINAL tag, so the key is "
+        "version-sensitive rather than merely unstable",
+    )
+    gate.assert_eq(
+        digest(RESOLVER), real_before, "the real resolver must never move for this control: it did"
+    )
+    gate.log_pass(
+        "the closure tag tracks the released version (%s -> %s -> %s), real tree untouched"
+        % (before_tag, after_tag, restored)
+    )
 
 
 def test_closure_tag_survives_an_unresolvable_version(gate):
     """This script also runs where no tag is reachable (a shallow clone, a fresh fork). Failing to resolve must degrade to a well-defined key, never break the build, so the marker is added even when empty."""
-    root = paths.repo_root()
-    with harness.temp_dir() as tmp:
-        backup = tmp / "resolve-version.real2"
-        shutil.copyfile(RESOLVER, backup)
-        mode = RESOLVER.stat().st_mode
-        try:
-            swap_resolver(gate, "#!/bin/bash\nexit 1\n")
-            result = invoke(gate, root, "--closure", "rdc", "--extra", "fixed")
-        finally:
-            restore_resolver(gate, backup, mode, digest(backup))
-        out = result.out.rstrip("\n")
-        gate.assert_exit(0, result, "an unresolvable version must not fail tag generation")
-        if not CLOSURE_TAG_RE.match(out):
-            gate.log_fail("an unresolvable version produced a malformed tag: '%s'" % out)
-        gate.log_pass("an unresolvable version degrades to a well-formed tag (%s)" % out)
+    real_before = digest(RESOLVER)
+    with closure_fixture(gate, "#!/bin/bash\nexit 1\n") as script:
+        result = invoke_closure(gate, script, "--closure", "rdc", "--extra", "fixed")
+    out = result.out.rstrip("\n")
+    gate.assert_exit(0, result, "an unresolvable version must not fail tag generation")
+    if not CLOSURE_TAG_RE.match(out):
+        gate.log_fail("an unresolvable version produced a malformed tag: '%s'" % out)
+    gate.assert_eq(
+        digest(RESOLVER), real_before, "the real resolver must never move for this control: it did"
+    )
+    gate.log_pass(
+        "an unresolvable version degrades to a well-formed tag (%s), real tree untouched" % out
+    )
