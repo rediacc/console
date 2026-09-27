@@ -201,20 +201,7 @@ test.describe
       );
     });
 
-    // Setup and start daemon first (required for container operations)
-    test('2a. daemon_setup: set up daemon service', async () => {
-      // daemonSetup only takes networkId as parameter
-      const result = await runner.daemonSetup(networkId.toString());
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
-    test('2b. daemon_start: start daemon service', async () => {
-      // daemonStart takes (repository, datastorePath, networkId)
-      const result = await runner.daemonStart(repositoryName, datastorePath, networkId.toString());
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
-    // Start services (which starts containers)
+    // Start services (which starts containers). No daemonSetup/daemonStart pre-start: repositoryNew (step 1) and repositoryUp below each claim `networkId` and bring up their own per-network daemon; a bare, repo-less pre-start on the SAME id races those claims -- "network ID ... already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
     test('3. up: start repository services', async () => {
       const result = await runner.repositoryUp(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);

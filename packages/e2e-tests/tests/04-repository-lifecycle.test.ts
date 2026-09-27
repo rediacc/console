@@ -171,6 +171,10 @@ test.describe
     });
 
     test('repository with special characters in password should handle correctly', async () => {
+      // encrypted-repo (still mounted from the previous test) auto-detects the SAME default network id that special-repo below is about to create on. Its state mirror keeps claiming that id for as long as its repository image exists (netid_guard.go), regardless of mount state, so special-repo's create was refused with "network ID ... already in use (holder: repo, encrypted-repo)" until this unmount+rm freed it first.
+      await runner.repositoryUnmount('encrypted-repo', DEFAULT_DATASTORE_PATH);
+      await runner.repositoryRm('encrypted-repo', DEFAULT_DATASTORE_PATH);
+
       // Test with special characters that might need escaping
       const result = await runner.repositoryNew(
         'special-repo',
@@ -179,6 +183,11 @@ test.describe
         DEFAULT_DATASTORE_PATH
       );
       expect(runner.isSuccess(result)).toBe(true);
+    });
+
+    test.afterAll(async () => {
+      await runner.repositoryUnmount('special-repo', DEFAULT_DATASTORE_PATH).catch(() => undefined);
+      await runner.repositoryRm('special-repo', DEFAULT_DATASTORE_PATH).catch(() => undefined);
     });
   });
 

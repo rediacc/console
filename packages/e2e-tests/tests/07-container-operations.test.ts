@@ -42,27 +42,17 @@ test.describe('Container Operations @bridge', () => {
     // 1. Initialize datastore
     await runner.datastoreInitPool('5G', datastorePath, true);
 
-    // 2. Setup and start daemon (required for Docker socket)
-    const setupResult = await runner.daemonSetup(networkId);
-    if (!runner.isSuccess(setupResult)) {
-      throw new Error(`daemon_setup failed: ${runner.getCombinedOutput(setupResult)}`);
-    }
-    const startResult = await runner.daemonStart(undefined, undefined, networkId);
-    if (!runner.isSuccess(startResult)) {
-      throw new Error(`daemon_start failed: ${runner.getCombinedOutput(startResult)}`);
-    }
-
-    // 3. Create repository
+    // 2. Create repository. No daemonSetup/daemonStart pre-start: repositoryNew and repositoryUp below each claim `networkId` and bring up their own per-network daemon; a bare, repo-less pre-start on the SAME id races those claims -- "network ID ... already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
     const repoResult = await runner.repositoryNew(testRepo, '1G', TEST_PASSWORD, datastorePath);
     if (!runner.isSuccess(repoResult)) {
       throw new Error(`repository_new failed: ${runner.getCombinedOutput(repoResult)}`);
     }
 
-    // 4. Write Rediaccfile (nginx)
+    // 3. Write Rediaccfile (nginx)
     const rediaccfile = runner.readFixture('bridge/Rediaccfile.nginx');
     await runner.writeFileToRepository(testRepo, 'Rediaccfile', rediaccfile, datastorePath);
 
-    // 5. Write docker-compose with unique container name
+    // 4. Write docker-compose with unique container name
     const dockerCompose = runner
       .readFixture('bridge/docker-compose.nginx.yaml')
       .replaceAll('${CONTAINER_NAME}', testContainer);
@@ -73,13 +63,13 @@ test.describe('Container Operations @bridge', () => {
       datastorePath
     );
 
-    // 6. Start services (creates container)
+    // 5. Start services (creates container)
     const upResult = await runner.repositoryUp(testRepo, datastorePath, networkId);
     if (!runner.isSuccess(upResult)) {
       throw new Error(`repository_up failed: ${runner.getCombinedOutput(upResult)}`);
     }
 
-    // 7. Verify container exists and is running
+    // 6. Verify container exists and is running
     const running = await runner.isContainerRunning(testContainer, networkId);
     if (!running) {
       throw new Error(`Container ${testContainer} is not running after setup`);
@@ -267,17 +257,7 @@ test.describe
       // 1. Initialize datastore
       await runner.datastoreInitPool('5G', datastorePath, true);
 
-      // 2. Setup and start daemon
-      const setupResult = await runner.daemonSetup(networkId);
-      if (!runner.isSuccess(setupResult)) {
-        throw new Error(`daemon_setup failed: ${runner.getCombinedOutput(setupResult)}`);
-      }
-      const startResult = await runner.daemonStart(undefined, undefined, networkId);
-      if (!runner.isSuccess(startResult)) {
-        throw new Error(`daemon_start failed: ${runner.getCombinedOutput(startResult)}`);
-      }
-
-      // 3. Create repository
+      // 2. Create repository. No daemonSetup/daemonStart pre-start: repositoryNew and repositoryUp below each claim `networkId` and bring up their own per-network daemon; a bare, repo-less pre-start on the SAME id races those claims -- "network ID ... already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
       const repoResult = await runner.repositoryNew(
         repositoryName,
         '1G',
@@ -288,11 +268,11 @@ test.describe
         throw new Error(`repository_new failed: ${runner.getCombinedOutput(repoResult)}`);
       }
 
-      // 4. Write Rediaccfile (nginx)
+      // 3. Write Rediaccfile (nginx)
       const rediaccfile = runner.readFixture('bridge/Rediaccfile.nginx');
       await runner.writeFileToRepository(repositoryName, 'Rediaccfile', rediaccfile, datastorePath);
 
-      // 5. Write docker-compose with unique container name
+      // 4. Write docker-compose with unique container name
       const dockerCompose = runner
         .readFixture('bridge/docker-compose.nginx.yaml')
         .replaceAll('${CONTAINER_NAME}', containerName);
@@ -303,13 +283,13 @@ test.describe
         datastorePath
       );
 
-      // 6. Start services (creates container)
+      // 5. Start services (creates container)
       const upResult = await runner.repositoryUp(repositoryName, datastorePath, networkId);
       if (!runner.isSuccess(upResult)) {
         throw new Error(`repository_up failed: ${runner.getCombinedOutput(upResult)}`);
       }
 
-      // 7. Stop container to test lifecycle from stopped state
+      // 6. Stop container to test lifecycle from stopped state
       await runner.containerStop(containerName, repositoryName, datastorePath, networkId);
     });
 
@@ -547,17 +527,7 @@ test.describe('Multiple Container Operations @bridge', () => {
     // 1. Initialize datastore
     await runner.datastoreInitPool('5G', datastorePath, true);
 
-    // 2. Setup and start daemon
-    const setupResult = await runner.daemonSetup(networkId);
-    if (!runner.isSuccess(setupResult)) {
-      throw new Error(`daemon_setup failed: ${runner.getCombinedOutput(setupResult)}`);
-    }
-    const startResult = await runner.daemonStart(undefined, undefined, networkId);
-    if (!runner.isSuccess(startResult)) {
-      throw new Error(`daemon_start failed: ${runner.getCombinedOutput(startResult)}`);
-    }
-
-    // 3. Create repository
+    // 2. Create repository. No daemonSetup/daemonStart pre-start: repositoryNew and repositoryUp below each claim `networkId` and bring up their own per-network daemon; a bare, repo-less pre-start on the SAME id races those claims -- "network ID ... already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
     const repoResult = await runner.repositoryNew(
       repositoryName,
       '1G',
@@ -568,11 +538,11 @@ test.describe('Multiple Container Operations @bridge', () => {
       throw new Error(`repository_new failed: ${runner.getCombinedOutput(repoResult)}`);
     }
 
-    // 4. Write Rediaccfile
+    // 3. Write Rediaccfile
     const rediaccfile = runner.readFixture('bridge/Rediaccfile.nginx');
     await runner.writeFileToRepository(repositoryName, 'Rediaccfile', rediaccfile, datastorePath);
 
-    // 5. Write docker-compose with TWO containers
+    // 4. Write docker-compose with TWO containers
     const dockerCompose = `services:
   nginx1:
     image: nginx:alpine
@@ -590,7 +560,7 @@ test.describe('Multiple Container Operations @bridge', () => {
       datastorePath
     );
 
-    // 6. Start services (creates both containers)
+    // 5. Start services (creates both containers)
     const upResult = await runner.repositoryUp(repositoryName, datastorePath, networkId);
     if (!runner.isSuccess(upResult)) {
       throw new Error(`repository_up failed: ${runner.getCombinedOutput(upResult)}`);

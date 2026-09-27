@@ -54,28 +54,7 @@ test.describe
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    // Daemon setup - required for checkpoint operations (creates Docker socket)
-    test('2a. daemon_setup: set up daemon service', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
-      const result = await runner.daemonSetup(DEFAULT_NETWORK_ID.toString());
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
-    test('2b. daemon_start: start daemon service', async () => {
-      if (!criuAvailable) {
-        test.skip();
-        return;
-      }
-      const result = await runner.daemonStart(
-        repositoryName,
-        datastorePath,
-        DEFAULT_NETWORK_ID.toString()
-      );
-      expect(runner.isSuccess(result)).toBe(true);
-    });
+    // No daemonSetup/daemonStart pre-start here: repositoryNew (step 1) already brought up the per-network daemon that checkpoint operations and repositoryUp below reuse, since network isolation defaults ON and repository create starts Docker for it. A bare, repo-less pre-start on the SAME id took that daemon over out from under the repo's own claim -- "network ID ... already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
 
     // Checkpoint workflow - requires CRIU
     test('3. create initial checkpoint', async () => {

@@ -46,15 +46,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
-      // Setup and start daemon for Docker operations
-      const setupResult = await runner.daemonSetup(networkId);
-      if (!runner.isSuccess(setupResult)) {
-        throw new Error(`daemon_setup failed: ${runner.getCombinedOutput(setupResult)}`);
-      }
-      const startResult = await runner.daemonStart(undefined, undefined, networkId);
-      if (!runner.isSuccess(startResult)) {
-        throw new Error(`daemon_start failed: ${runner.getCombinedOutput(startResult)}`);
-      }
+      // No pre-started daemon here: repositoryUp below claims `networkId` and brings up its own per-network daemon. A daemonSetup/daemonStart pre-start races that claim with a bare, repo-less one on the SAME id -- "network ID 9152 is already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
     });
 
     test.afterAll(async () => {
@@ -198,21 +190,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('12G', datastorePath, true);
-      // Setup and start daemons for both network IDs (parent and fork)
-      for (const netId of [parentNetworkId, forkNetworkId]) {
-        const setupResult = await runner.daemonSetup(netId);
-        if (!runner.isSuccess(setupResult)) {
-          throw new Error(
-            `daemon_setup failed for ${netId}: ${runner.getCombinedOutput(setupResult)}`
-          );
-        }
-        const startResult = await runner.daemonStart(undefined, undefined, netId);
-        if (!runner.isSuccess(startResult)) {
-          throw new Error(
-            `daemon_start failed for ${netId}: ${runner.getCombinedOutput(startResult)}`
-          );
-        }
-      }
+      // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
     });
 
     test.afterAll(async () => {
@@ -482,21 +460,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
-      // Setup and start daemons for all three network IDs (parent and both forks)
-      for (const netId of [parentNetworkId, forkANetworkId, forkBNetworkId]) {
-        const setupResult = await runner.daemonSetup(netId);
-        if (!runner.isSuccess(setupResult)) {
-          throw new Error(
-            `daemon_setup failed for ${netId}: ${runner.getCombinedOutput(setupResult)}`
-          );
-        }
-        const startResult = await runner.daemonStart(undefined, undefined, netId);
-        if (!runner.isSuccess(startResult)) {
-          throw new Error(
-            `daemon_start failed for ${netId}: ${runner.getCombinedOutput(startResult)}`
-          );
-        }
-      }
+      // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or a fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
     });
 
     test.afterAll(async () => {
@@ -695,21 +659,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
-      // Setup and start daemons for both network IDs (parent and fork)
-      for (const netId of [parentNetworkId, forkNetworkId]) {
-        const setupResult = await runner.daemonSetup(netId);
-        if (!runner.isSuccess(setupResult)) {
-          throw new Error(
-            `daemon_setup failed for ${netId}: ${runner.getCombinedOutput(setupResult)}`
-          );
-        }
-        const startResult = await runner.daemonStart(undefined, undefined, netId);
-        if (!runner.isSuccess(startResult)) {
-          throw new Error(
-            `daemon_start failed for ${netId}: ${runner.getCombinedOutput(startResult)}`
-          );
-        }
-      }
+      // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
     });
 
     test.afterAll(async () => {
@@ -830,21 +780,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
-      // Setup and start daemons for both network IDs (parent and fork)
-      for (const netId of [parentNetworkId, forkNetworkId]) {
-        const setupResult = await runner.daemonSetup(netId);
-        if (!runner.isSuccess(setupResult)) {
-          throw new Error(
-            `daemon_setup failed for ${netId}: ${runner.getCombinedOutput(setupResult)}`
-          );
-        }
-        const startResult = await runner.daemonStart(undefined, undefined, netId);
-        if (!runner.isSuccess(startResult)) {
-          throw new Error(
-            `daemon_start failed for ${netId}: ${runner.getCombinedOutput(startResult)}`
-          );
-        }
-      }
+      // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
     });
 
     test.afterAll(async () => {
@@ -972,15 +908,7 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
-      // Setup and start daemon for Docker operations
-      const setupResult = await runner.daemonSetup(networkId);
-      if (!runner.isSuccess(setupResult)) {
-        throw new Error(`daemon_setup failed: ${runner.getCombinedOutput(setupResult)}`);
-      }
-      const startResult = await runner.daemonStart(undefined, undefined, networkId);
-      if (!runner.isSuccess(startResult)) {
-        throw new Error(`daemon_start failed: ${runner.getCombinedOutput(startResult)}`);
-      }
+      // No pre-started daemon here: repositoryUp below claims `networkId` and brings up its own per-network daemon. A daemonSetup/daemonStart pre-start races that claim with a bare, repo-less one on the SAME id -- "network ID 9152 is already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
     });
 
     test.afterAll(async () => {

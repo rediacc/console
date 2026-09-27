@@ -104,20 +104,8 @@ test.describe
       expect(runner.isSuccess(result)).toBe(true);
     });
 
-    test('2c. daemon_setup: set up daemon service', async () => {
-      // Set up daemon before running up with containers
-      const result = await runner.daemonSetup(DEFAULT_NETWORK_ID);
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
-    test('2d. daemon_start: start daemon service', async () => {
-      // Start daemon after setup (setup only creates service, doesn't start it)
-      const result = await runner.daemonStart(undefined, undefined, DEFAULT_NETWORK_ID);
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
     test('3. up: execute Rediaccfile up()', async () => {
-      // The up command: 1. Checks for Rediaccfile 2. Executes up() function Note: Network ID required for daemon startup
+      // The up command checks for a Rediaccfile and executes its up() function. No daemonSetup/daemonStart pre-start: repositoryUp claims DEFAULT_NETWORK_ID and brings up its own per-network daemon; a bare, repo-less pre-start on the SAME id races that claim -- "network ID 9152 is already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
       const result = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -313,20 +301,8 @@ test.describe
       expect(result.code).toBe(0);
     });
 
-    test('3a. daemon_setup: set up daemon service', async () => {
-      // Set up daemon before running up with containers
-      const result = await runner.daemonSetup(DEFAULT_NETWORK_ID);
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
-    test('3b. daemon_start: start daemon service', async () => {
-      // Start daemon after setup (setup only creates service, doesn't start it)
-      const result = await runner.daemonStart(undefined, undefined, DEFAULT_NETWORK_ID);
-      expect(runner.isSuccess(result)).toBe(true);
-    });
-
     test('4. up: execute Rediaccfile up()', async () => {
-      // Network ID required for daemon startup and renet compose
+      // No daemonSetup/daemonStart pre-start: repositoryUp claims DEFAULT_NETWORK_ID and brings up its own per-network daemon for renet compose; a bare, repo-less pre-start on the SAME id races that claim -- "network ID 9152 is already in use (holder: daemon)" (netid_guard.go). Same fix as private/renet commit 2a1f641.
       const result = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       expect(runner.isSuccess(result)).toBe(true);
 

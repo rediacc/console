@@ -92,8 +92,14 @@ test.describe('Multi-Machine System Checks @bridge @multi-machine', () => {
 test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
   let runner: BridgeTestRunner;
 
-  test.beforeAll(() => {
+  test.beforeAll(async () => {
     runner = BridgeTestRunner.forWorker();
+    // Global setup lays BTRFS down once at the START of the whole shard job, but a co-shard file that runs before this one and calls resetWorkerState() without re-initializing afterward (06-daemon-operations.test.ts does, in every describe) unmounts it and deletes the backing .img. Re-initializing both workers' datastores here, right before checking them, makes this describe's own assertion independent of shard composition and file order.
+    const vm2Runner = BridgeTestRunner.forWorker(2);
+    await Promise.all([
+      runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, true),
+      vm2Runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, true),
+    ]);
   });
 
   test('check_system on worker VM 1', async () => {
@@ -112,7 +118,12 @@ test.describe('Multi-Machine Setup @bridge @multi-machine', () => {
 
     for (const vm of workers) {
       const result = await runner.checkDatastoreOnMachine(vm, DEFAULT_DATASTORE_PATH);
+      // checkDatastoreOnMachine's `|| echo "datastore check completed"` fallback means isSuccess alone cannot fail here (it hid VM1 running "Mounted: false" for the rest of run 36280898318's shard 5, since `renet datastore status` still exits 0 while reporting an unmounted datastore). Assert the reported state, not just the exit code.
       expect(runner.isSuccess(result)).toBe(true);
+      const output = runner.getCombinedOutput(result).toLowerCase();
+      expect(output, `${vm} datastore not reported as mounted: ${output}`).toContain(
+        'mounted: true'
+      );
     }
   });
 });
@@ -128,7 +139,11 @@ test.describe
       runner = BridgeTestRunner.forWorker();
       vm2Runner = BridgeTestRunner.forWorker(2);
 
-      // Note: Datastore initialization is now handled by global setup (Step 5) All worker VMs have datastores initialized before tests run
+      // Datastore init is NOT left to global setup here: global setup lays BTRFS down once at the START of the whole shard job, but a co-shard file that runs before this one and calls resetWorkerState() (06-daemon-operations.test.ts does, in every describe, without ever re-running datastoreInitPool afterward) unmounts it and deletes the backing .img -- resetWorkerState's own doc comment says as much ("Call in test.beforeAll() for groups that need fresh datastore"). Shard 5 hit exactly that ordering (06 before 11) and backup_push then failed on VM1 with "BTRFS filesystem required for snapshots". Re-initializing both VMs' datastores here removes the dependency on shard composition and file order instead of just reshuffling it.
+      await Promise.all([
+        runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, true),
+        vm2Runner.datastoreInitPool('5G', DEFAULT_DATASTORE_PATH, true),
+      ]);
 
       // Create repository before running data transfer tests
       await runner.repositoryNew(testRepo, '500M', TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
