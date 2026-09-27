@@ -429,7 +429,7 @@ jobs:
         id: snap-key
         env:
           OPS_SNAPSHOT: 'off'
-        run: .ci/scripts/test/ops-snapshot.sh key workers
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key workers
       - name: Restore ops snapshot cache
         id: snap-cache
         if: steps.snap-key.outputs.enabled == 'true'
@@ -440,11 +440,11 @@ jobs:
       - name: Restore prepared VMs from snapshot
         id: snap-restore
         if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: .ci/scripts/test/ops-snapshot.sh restore workers "${{ steps.snap-key.outputs.t0 }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore workers "${{ steps.snap-key.outputs.t0 }}"
       - name: Prepare VMs and capture snapshot
         id: snap-save
         if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true' && matrix.shard == 1
-        run: .ci/scripts/test/ops-snapshot.sh prepare workers
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare workers
       - name: Save ops snapshot cache
         if: steps.snap-save.outputs.ready == 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -643,7 +643,7 @@ jobs:
         id: snap-key
         env:
           OPS_SNAPSHOT: 'off'
-        run: .ci/scripts/test/ops-snapshot.sh key ceph
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
       - name: Restore ops snapshot cache
         id: snap-cache
         if: steps.snap-key.outputs.enabled == 'true'
@@ -654,11 +654,11 @@ jobs:
       - name: Restore prepared VMs from snapshot
         id: snap-restore
         if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: .ci/scripts/test/ops-snapshot.sh restore ceph "${{ steps.snap-key.outputs.t0 }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
       - name: Prepare VMs and capture snapshot
         id: snap-save
         if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: .ci/scripts/test/ops-snapshot.sh prepare ceph playwright.ceph.config.ts
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.ceph.config.ts
       - name: Save ops snapshot cache
         if: steps.snap-save.outputs.ready == 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -846,7 +846,7 @@ jobs:
         id: snap-key
         env:
           OPS_SNAPSHOT: 'off'
-        run: .ci/scripts/test/ops-snapshot.sh key ceph
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
       - name: Restore ops snapshot cache
         id: snap-cache
         if: steps.snap-key.outputs.enabled == 'true'
@@ -857,11 +857,11 @@ jobs:
       - name: Restore prepared VMs from snapshot
         id: snap-restore
         if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: .ci/scripts/test/ops-snapshot.sh restore ceph "${{ steps.snap-key.outputs.t0 }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
       - name: Prepare VMs and capture snapshot
         id: snap-save
         if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: .ci/scripts/test/ops-snapshot.sh prepare ceph playwright.ceph-workers.config.ts
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.ceph-workers.config.ts
       - name: Save ops snapshot cache
         if: steps.snap-save.outputs.ready == 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1200,7 +1200,7 @@ jobs:
         id: snap-key
         env:
           OPS_SNAPSHOT: 'off'
-        run: .ci/scripts/test/ops-snapshot.sh key ceph
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
       - name: Restore ops snapshot cache
         id: snap-cache
         if: steps.snap-key.outputs.enabled == 'true'
@@ -1211,11 +1211,11 @@ jobs:
       - name: Restore prepared VMs from snapshot
         id: snap-restore
         if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: .ci/scripts/test/ops-snapshot.sh restore ceph "${{ steps.snap-key.outputs.t0 }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
       - name: Prepare VMs and capture snapshot
         id: snap-save
         if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: .ci/scripts/test/ops-snapshot.sh prepare ceph playwright.k8s-ceph.config.ts
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.k8s-ceph.config.ts
       - name: Save ops snapshot cache
         if: steps.snap-save.outputs.ready == 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1410,7 +1410,7 @@ jobs:
         id: snap-key
         env:
           OPS_SNAPSHOT: 'off'
-        run: .ci/scripts/test/ops-snapshot.sh key ceph
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot key ceph
       - name: Restore ops snapshot cache
         id: snap-cache
         if: steps.snap-key.outputs.enabled == 'true'
@@ -1421,11 +1421,11 @@ jobs:
       - name: Restore prepared VMs from snapshot
         id: snap-restore
         if: steps.snap-cache.outputs.cache-hit == 'true'
-        run: .ci/scripts/test/ops-snapshot.sh restore ceph "${{ steps.snap-key.outputs.t0 }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot restore ceph "${{ steps.snap-key.outputs.t0 }}"
       - name: Prepare VMs and capture snapshot
         id: snap-save
         if: steps.snap-key.outputs.enabled == 'true' && steps.snap-cache.outputs.cache-hit != 'true'
-        run: .ci/scripts/test/ops-snapshot.sh prepare ceph playwright.k8s-multinode.config.ts
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ops_snapshot prepare ceph playwright.k8s-multinode.config.ts
       - name: Save ops snapshot cache
         if: steps.snap-save.outputs.ready == 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

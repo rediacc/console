@@ -60,7 +60,7 @@ jobs:
 
       - name: Derive the probe file list from the committed shard manifest
         id: list
-        run: .ci/scripts/test/list-e2e-probe-files.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.list_e2e_probe_files
 
   # ==========================================================================
   # One leg per file, ubuntu-24.04 only (T2.12: "one distro"). Provisioning
@@ -187,7 +187,7 @@ jobs:
         # marks the job failed and every later `if: always()` step,
         # including this one, still runs -- the same pattern
         # test-e2e-workers' own create_complete step relies on.
-        run: .ci/scripts/test/record-e2e-probe-outcome.sh "${{ matrix.file }}" "${{ job.status }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.record_e2e_probe_outcome "${{ matrix.file }}" "${{ job.status }}"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
