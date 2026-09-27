@@ -36,8 +36,7 @@ import re
 from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
-# Four control cases plant a probe inside the scanned tree. See the docstring: this module has no BASH_TWIN, so REAL_TREE_TWIN alone would not reach the scheduler -- the explicit group is what actually serialises it.
-REAL_TREE_TWIN = True
+# Four control cases plant a probe inside the scanned tree. See the docstring: this module has no BASH_TWIN, so only the explicit group serialises it; REAL_TREE_TWIN never did anything here and was removed.
 XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()

@@ -8,9 +8,9 @@ opposite outcome: an engine hardcoded to "always greenlight" and one hardcoded t
 THE RULE THAT CARRIES THE MOST WEIGHT is rule 1, intent versus outcome: a SKIPPED job must never count as evidence. Without it a reduced run whose renet job was skipped would greenlight the next PR, which would skip it too, and the suite would go unrun forever while every check stayed green.
 
 --------------------------------------------------------------------------
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
+WHAT READS THE REAL TREE, AND WHY THAT NEEDS NO GROUP
 --------------------------------------------------------------------------
-Read from the lock rather than guessed from the fixtures, because the fixtures mislead: most cases here are pure JSON in a tempdir and would suggest this port needs no isolation at all. `gates.lock.json` declares `gate-test:greenlight` with `reads: ["tree:repo"]`, and four cases earn it:
+Stated explicitly rather than guessed from the fixtures, because the fixtures mislead: most cases here are pure JSON in a tempdir and would suggest nothing here touches the real tree at all. Four cases do:
 
   * `test_declared_closure_paths_exist` runs `git ls-tree HEAD` for all 428
     declared closure entries of the REAL table.
@@ -21,10 +21,7 @@ Read from the lock rather than guessed from the fixtures, because the fixtures m
     read the real `.ci/scripts/ci/scope-shadow.sh`, and
     `test_the_trail_digest_names_every_key` extracts a shell function out of it.
 
-A battery step rewriting `scope-shadow.sh` or the engine mid-sweep is a divergence that would be blamed on this port.
-
-`REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, where an own group makes the opt-in vacuous.
+All four are reads. No `XDIST_GROUP` is declared: `gates.lock.json` no longer carries a `gate-test:greenlight` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
 
 --------------------------------------------------------------------------
 DOES THE SUBJECT SELF-SCAN? NO, AND IT WAS MEASURED RATHER THAN ASSUMED
@@ -52,8 +49,7 @@ from rediacc_ci import paths
 from rediacc_ci.ci import scope_shadow
 from rediacc_ci.tests.gates import harness
 
-# The closure-path sweep, the two fake-gh CLI cases and the three cases reading scope-shadow.sh all read the tracked tree. The lock says `tree:repo` too. See the docstring.
-REAL_TREE_TWIN = True
+# The closure-path sweep, the two fake-gh CLI cases and the three cases reading scope-shadow.sh all read the tracked tree; reads need no group. See the docstring.
 
 ENGINE_REL = ".ci/scripts/ci/greenlight.cjs"
 ENGINE = paths.from_root(*ENGINE_REL.split("/"))

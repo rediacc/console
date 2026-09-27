@@ -26,9 +26,7 @@ carried faithfully and has never run in this checkout. If it ever fires, it is b
 ONE DELIBERATE ADDITION over the twin. Where the twin's second arm prints two `INFO` lines and returns having asserted NOTHING, this port asserts the thing those lines assume: that `HEAD` really is free of the buggy increment. A bash test may return without a `PASS:` line; a ported test may not (`conftest.py` here refuses a green that recorded no control), and inventing a
 decorative pass to satisfy that refusal would be exactly the vacuity it exists to catch. So the arm makes a real claim.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the working tree directly: the extraction reads `.ci/scripts/quality/check-submodule-branches.sh` line by line, and the structural sweep greps every `.sh` under `.ci/scripts/quality/` and `.ci/scripts/security/`. A battery step rewriting one of
-those mid-sweep is a flake that would be blamed on this port. `REAL_TREE_TWIN = True`
-is what buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
+TWO OF ITS CASES READ THE WORKING TREE DIRECTLY: the extraction reads `.ci/scripts/quality/check-submodule-branches.sh` line by line, and the structural sweep greps every `.sh` under `.ci/scripts/quality/` and `.ci/scripts/security/`. Both are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with. A pure reader needs no group.
 """
 
 import json
@@ -39,8 +37,7 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Reads `.ci/scripts/quality/*.sh` and `.ci/scripts/security/*.sh` off the real working tree. See the module docstring.
-REAL_TREE_TWIN = True
+# Reads `.ci/scripts/quality/*.sh` and `.ci/scripts/security/*.sh` off the real working tree; reads need no group. See the module docstring.
 
 GATE_REL = ".ci/scripts/quality/check-submodule-branches.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))

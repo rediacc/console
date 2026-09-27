@@ -7,9 +7,8 @@ CI-coverage claim true.
 
 Every fire case has its control: the same fixture, one thing changed, and the opposite verdict asserted. A gate that cannot be made to fire is not a gate.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `gate-test:profiler-coverage` declares `reads: ["tree:repo"]` in `scripts/ci-runner/gates.lock.json`, so the twin is in the set `xdist_groups.real_tree_twins` derives and `real_tree_admission` requires the declaration. It is right on the merits too: `test_real_tree_seam_free` sweeps the real `.github/workflows`,
-`test_setup_workspace_is_builtin_coverage` and `test_wrapper_that_lost_the_profiler_refuses` read the real `.github/actions/setup-workspace`, and `test_undeclared_input_fails` is checked against the real `.github/actions/profiler/action.yml`. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port. The opt-in is honoured only because this
-module declares no `XDIST_GROUP` of its own.
+`test_real_tree_seam_free` SWEEPS THE REAL `.github/workflows`,
+`test_setup_workspace_is_builtin_coverage` and `test_wrapper_that_lost_the_profiler_refuses` read the real `.github/actions/setup-workspace`, and `test_undeclared_input_fails` is checked against the real `.github/actions/profiler/action.yml`. All are reads, and no `XDIST_GROUP` is declared: `gates.lock.json` no longer carries a `gate-test:profiler-coverage` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
 
 --------------------------------------------------------------------------
 IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED
@@ -28,8 +27,7 @@ import os
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_real_tree_seam_free, test_setup_workspace_is_builtin_coverage, test_wrapper_that_lost_the_profiler_refuses and the added control all read the real tree, and the lock declares `reads: ["tree:repo"]`. See the docstring.
-REAL_TREE_TWIN = True
+# test_real_tree_seam_free, test_setup_workspace_is_builtin_coverage, test_wrapper_that_lost_the_profiler_refuses and the added control all read the real tree; reads need no group. See the docstring.
 
 GATE_REL = ".ci/scripts/quality/check-profiler-coverage.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))

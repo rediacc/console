@@ -17,9 +17,9 @@ is driven here against planted state, in BOTH directions:
 GitHub is stubbed with a routing fake `gh` that applies the script's own --jq expressions to fixture JSON, so the real jq/sed extraction is exercised rather than reimplemented. Every write (check-run POST/PATCH) is captured and asserted on, including WHICH SHA it was anchored to.
 
 --------------------------------------------------------------------------
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP
+WHAT READS THE REAL TREE, AND WHY THAT NEEDS NO GROUP
 --------------------------------------------------------------------------
-Read from the lock rather than inferred from the fixtures, which would mislead: almost every case here builds a temp world and would suggest no isolation is needed. `gates.lock.json` declares `gate-test:review-status` with `reads: ["tree:repo"]`, and it is right. Seven cases read tracked files with no seam at all:
+Stated explicitly rather than inferred from the fixtures, which would mislead: almost every case here builds a temp world and would suggest nothing touches the real tree at all. Seven cases read tracked files with no seam at all:
 
   * `test_real_gate_constants_parseable` sed-parses the real
     `claude-review-gate.sh` and sources the real `.ci/scripts/lib/common.sh`.
@@ -35,11 +35,10 @@ Read from the lock rather than inferred from the fixtures, which would mislead: 
     `test_review_report_count_is_shared_and_unqualified` parse constants out of
     the two real hygiene gates and `common.sh`.
 
-Every temp-world case also RUNS the real `review-status.sh`, `check_review_comments.py`, `check_review_report_replies.py` and `claude-review-gate.sh` off the tracked tree. A battery step rewriting any of those mid-sweep is a divergence that would be blamed on this port. The two hygiene gates are named by their entry points because their bash twins were retired in W7 P5 batch G1;
+Every temp-world case also RUNS the real `review-status.sh`, `check_review_comments.py`, `check_review_report_replies.py` and `claude-review-gate.sh` off the tracked tree -- reads, all of them; nothing here writes a tracked file. The two hygiene gates are named by their entry points because their bash twins were retired in W7 P5 batch G1;
 see the pin rule beside `REVIEW_COMMENTS_GATE_REL` for why a harness that RUNS a gate and one that READS it take different files.
 
-`REAL_TREE_TWIN = True` buys the serialisation, and it is honoured ONLY because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, where an own group silently makes the opt-in vacuous.
+No `XDIST_GROUP` is declared: this file's own bash twin is retired too, `gates.lock.json` no longer carries a `gate-test:review-status` entry, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. `xdist_groups.group_for` never read `REAL_TREE_TWIN` either way. A pure reader needs no group.
 
 NO `TWIN_TIMEOUT`. The twin was MEASURED at 75s on this machine (most of it wall-clock spent in `common.sh`'s retry backoff on the deliberately-unreadable-API cases, `user` time is only 7s), which is inside the driver's 600s default even
 with the port driven serially after it. A declaration here would be a guess
@@ -74,8 +73,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Seven cases read tracked files seam-free and every temp-world case runs the real scripts off the tracked tree. The lock says `tree:repo` too. See the docstring.
-REAL_TREE_TWIN = True
+# Seven cases read tracked files seam-free and every temp-world case runs the real scripts off the tracked tree; reads need no group. See the docstring.
 
 REPO_ROOT = paths.repo_root()
 UNDER_TEST_REL = ".ci/scripts/review/review-status.sh"

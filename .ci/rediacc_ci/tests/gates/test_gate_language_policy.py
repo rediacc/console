@@ -6,8 +6,8 @@ refused rather than printed.
 HOW IT IS DRIVEN. Every case but the last builds a throwaway git repository and points the subject at it through `LANGUAGE_POLICY_ROOT` / `_BASELINE` / `_ALLOWLIST`, so no tracked baseline, allowlist or script is touched. `git ls-files` IS the subject's corpus, which is why the fixture has to be a real repository with a real index rather than a directory of files: a fixture that
 merely looks like a tree exercises a code path the subject does not have.
 
-THE LAST CASE IS SEAM-FREE, against the real repository, because every seam above it is a chance for the subject to be correct about a fixture and wrong about the tree it ships with. That case is also why this module opts in to the real-tree group: `gates.lock.json` records `reads: ["tree:repo"]` for `gate-test:language-policy`, and `real_tree_admission` refuses a twin in that set
-that does not declare `REAL_TREE_TWIN`.
+THE LAST CASE IS SEAM-FREE, against the real repository, because every seam above it is a chance for the subject to be correct about a fixture and wrong about the tree it ships with. It is a read, and no `XDIST_GROUP` is declared: this file's bash twin is retired, `gates.lock.json` no longer carries a `gate-test:language-policy` entry, and `real_tree_admission` in `test_twin_parity.py`
+only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
 
 EVERY FIRE CASE HAS ITS CONTROL: the same fixture with one thing changed and the opposite verdict asserted. A gate that cannot be made to fire is not a gate, and a gate that fires on everything is not one either.
 """
@@ -17,8 +17,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# The seam-free case runs the subject against the real repository. See the docstring.
-REAL_TREE_TWIN = True
+# The seam-free case runs the subject against the real repository, but it is a read; no group needed. See the docstring.
 
 # THE SELF-SCANNING TRAP, AND WHY THIS FLAG IS RENDERED RATHER THAN WRITTEN. `gate-test:shrink-only-composition` enumerates every tracked-or-untracked `.ts`/`.js`/`.py` file whose TEXT contains the drain flag and requires each one to consume the composition guard. It excludes nothing by name, so a PORT that quotes the flag becomes an "unguarded Python baseline writer" and reds that
 # gate tree-wide. Measured on 2026-09-09: writing the flag literally here put this file on that gate's offender list within minutes of it being created. Splitting it means the contiguous string never appears in this file's bytes, and `test_this_port_is_not_a_shrink_only_offender` reds BY NAME if that ever stops being true. Batch 3's `label-references` port paid for this rule first;

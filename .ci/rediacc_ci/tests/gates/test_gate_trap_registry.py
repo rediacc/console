@@ -10,9 +10,7 @@ being written (an empty `Residue` collapsing because TAB is IFS whitespace in ba
 
 THE PLANTS BELOW GO INTO A COPY OF THE REAL CORPUS, never the tracked file. A killed test must not strand a mutated TRAPS.md in a shared checkout, and this tree routinely holds other sessions' uncommitted work.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_real_tree_is_green_and_the_controls_fired` runs the subject seam-free, and every `--scan-only` case leaves the manifest, the dispatcher, the hook suite and `.claude/settings.json` REAL so a planted corpus is judged against live resolution sources. A battery step rewriting any of those
-mid-scan is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
-buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+`test_real_tree_is_green_and_the_controls_fired` RUNS THE SUBJECT SEAM-FREE, and every `--scan-only` case leaves the manifest, the dispatcher, the hook suite and `.claude/settings.json` REAL so a planted corpus is judged against live resolution sources. All of it is reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 NO `TWIN_TIMEOUT` DECLARED. Measured 2026-09-08: the twin takes 63s and this module takes comparable time, both far inside the 600s default. A declared timeout that nothing needs is a number that will be believed later.
 
@@ -30,8 +28,7 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# The real-tree case runs the subject seam-free, and every scan resolves pointers against the live manifest, dispatcher, hook suite and settings. See the docstring.
-REAL_TREE_TWIN = True
+# The real-tree case runs the subject seam-free, and every scan resolves pointers against the live manifest, dispatcher, hook suite and settings; reads need no group. See the docstring.
 
 GATE_REL = ".ci/scripts/quality/check-trap-registry.sh"
 GATE = paths.from_root(*GATE_REL.split("/"))

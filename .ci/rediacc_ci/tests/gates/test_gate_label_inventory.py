@@ -9,10 +9,8 @@ Every case carries its control: a firing direction is only meaningful next to th
 
 NO NETWORK. The live list is injected through `LABEL_INVENTORY_LIVE_FILE`, which is also how the real-tree case below drives the REAL gate over the REAL `.github/labels.yml`.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree directly: the two real-tree cases derive their live list from `.github/labels.yml` and drive the subject at it in place (real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs`), and the malformed-JSON
-case copies the subject itself. A battery step rewriting either mid-read is a
-divergence that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+THREE CASES READ THE WORKING TREE DIRECTLY: the two real-tree cases derive their live list from `.github/labels.yml` and drive the subject at it in place (real parse, real floor, real allowlist verification against the real `report-nightly-status.cjs`), and the malformed-JSON
+case copies the subject itself. All three are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `python3 check_label_inventory.py`. The subject was `bash check-label-inventory.sh` until W7 P5 froze its output into `goldens/label-inventory/` and deleted it, and the mutant in `test_malformed_live_json_fails_closed` moved with it: it now patches the ported module rather than the shell script, keeping the
 lands somewhere else is a control that fires for the wrong reason.
@@ -24,8 +22,7 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Two cases drive the subject over the real .github/labels.yml, and a third copies the subject out of the tree to build a mutant. See the module docstring.
-REAL_TREE_TWIN = True
+# Two cases drive the subject over the real .github/labels.yml, and a third copies the subject out of the tree to build a mutant; all reads, no group needed. See the module docstring.
 
 GATE_REL = ".ci/scripts/quality/check_label_inventory.py"
 GATE = paths.from_root(*GATE_REL.split("/"))

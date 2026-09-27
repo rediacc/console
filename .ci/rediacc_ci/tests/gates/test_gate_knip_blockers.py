@@ -7,10 +7,7 @@ CONFIGURATION and are exempt; the exemption is a case here rather than a comment
 
 STALENESS IS NOT THIS GATE'S JOB, and the twin says so out loud: an ignore entry that no longer suppresses anything is reported by knip itself under `--treat-config-hints-as-errors`. Two gates asking different questions.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_accepts_real_config` drives the validator seam-free over the REAL `knip.jsonc` at the repo root, and the validator additionally shells out to `git grep` across the working tree and the `private/account` submodule to collect `@public` tags. A battery step rewriting either mid-read is a divergence that would be blamed on this
-port.
-`REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+`test_accepts_real_config` DRIVES THE VALIDATOR SEAM-FREE over the REAL `knip.jsonc` at the repo root, and the validator additionally shells out to `git grep` across the working tree and the `private/account` submodule to collect `@public` tags. It is a read, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from a real `npx tsx scripts/gates/check-knip-blockers.ts` run. The fixtures are the twin's, string
 for string.
@@ -25,8 +22,7 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_accepts_real_config runs the validator over the real knip.jsonc, and the validator git-greps the whole working tree for @public tags. See the docstring.
-REAL_TREE_TWIN = True
+# test_accepts_real_config runs the validator over the real knip.jsonc, and the validator git-greps the whole working tree for @public tags; both reads, no group needed. See the docstring.
 
 SUBJECT_REL = "scripts/gates/check-knip-blockers.ts"
 SUBJECT = paths.from_root(*SUBJECT_REL.split("/"))

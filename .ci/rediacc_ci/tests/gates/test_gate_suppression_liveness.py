@@ -7,10 +7,7 @@ job at all. A gate that has only ever been seen to pass is indistinguishable fro
 
 EVERY FIXTURE CASE RUNS AGAINST A FIXTURE ROOT through `SUPPRESSION_LIVENESS_ROOT`, so no tracked file is ever mutated. The working tree routinely holds uncommitted work from other sessions, which is the reason the twin took that shape and the reason this port keeps it.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `test_passes_on_real_repo` and the added shape case drive the subject seam-free over the REAL repository: the probes walk `.ci`, `scripts`, `.claude`, `.devcontainer`, `packages` and `private` for shell scripts, shell out to `git ls-files`, and read the real `package.json`, `package-lock.json` and eleven policy files. A battery step
-writing under any of those mid-sweep is a divergence that would be blamed on this port.
-`REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only because
-this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+`test_passes_on_real_repo` AND THE ADDED SHAPE CASE drive the subject seam-free over the REAL repository: the probes walk `.ci`, `scripts`, `.claude`, `.devcontainer`, `packages` and `private` for shell scripts, shell out to `git ls-files`, and read the real `package.json`, `package-lock.json` and eleven policy files. Both cases are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 THE SUBJECT DOES NOT SELF-SCAN THIS FILE, checked rather than assumed. The one probe that walks `.ci` recursively is `dead-bash-allowlist`, and it collects only names ending `.sh`; `dockerfileFetchTokens` reads `git ls-files` filtered to `Dockerfile*`. Nothing in either corpus can match a `.py` file under `.ci/rediacc_ci/tests/gates/`, so the fixture strings below are written out
 literally rather than through the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject.
@@ -44,8 +41,7 @@ import shutil
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_passes_on_real_repo and test_the_real_run_reports_a_non_trivial_corpus both drive the subject over the real tree. See the docstring.
-REAL_TREE_TWIN = True
+# test_passes_on_real_repo and test_the_real_run_reports_a_non_trivial_corpus both drive the subject over the real tree, but both are reads; no group needed. See the docstring.
 
 SUBJECT_REL = "scripts/gates/check-suppression-liveness.ts"
 SUBJECT = paths.from_root(*SUBJECT_REL.split("/"))

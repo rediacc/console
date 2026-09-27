@@ -6,9 +6,7 @@ over-reports burns hours of CPU re-rendering finished work.
 WHAT IS CHECKED HERE VERSUS IN `--selftest`, carried over from the twin. The predicate ships its own staleness cases (mp4 missing, timeline newer, mp4 newer, wrong provider, audio dir absent) and this file does NOT duplicate them. It checks what a self-test cannot honestly check about itself: the empty-tree refusal against a REAL empty tree, that `--selftest` is wired into the npm
 gate AND propagates its exit code, and that the self-test carries controls.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Three cases read the working tree in place -- the predicate file itself, `package.json`'s script table, and `scripts/ci-runner/manifest.ts` -- and `--selftest` runs the real shipped predicate out of `packages/www/scripts/`. A battery step rewriting any of those mid-read is
-the flake that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`, which refuses the combination.
+THREE CASES READ THE WORKING TREE IN PLACE -- the predicate file itself, `package.json`'s script table, and `scripts/ci-runner/manifest.ts` -- and `--selftest` runs the real shipped predicate out of `packages/www/scripts/`. All are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 TWO CASES ARE REIMPLEMENTED RATHER THAN SHELLED OUT, and both are reads, not verdicts. The twin asks node to print `package.json`'s script value (`node -e "...require(package.json).scripts[...]"`) and greps `manifest.ts` for a literal; this reads the same two files with `json.loads` and a substring search. The strings asserted on are byte-identical to the twin's, so a drift in
 either file reds both sides. Nothing about the SUBJECT is reimplemented: every predicate invocation below is the real `node <predicate>`.
@@ -20,8 +18,7 @@ import os
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Reads packages/www/scripts/, package.json and scripts/ci-runner/manifest.ts off the real working tree on every case. See the module docstring.
-REAL_TREE_TWIN = True
+# Reads packages/www/scripts/, package.json and scripts/ci-runner/manifest.ts off the real working tree on every case; reads need no group. See the module docstring.
 
 PREDICATE_REL = "packages/www/scripts/list-tutorial-render-pairs.js"
 PREDICATE = paths.from_root(*PREDICATE_REL.split("/"))

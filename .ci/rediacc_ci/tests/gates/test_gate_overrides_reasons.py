@@ -9,10 +9,8 @@ same reason; re-implementing the validator in Python to avoid the copy would be 
 
 THE FIRST CASE HAS NO FIXTURE AT ALL. `test_accepts_real_package_json` drives the validator against the repo's own package.json, which is what makes this a real-tree reader rather than a self-contained unit test.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Every case reads the working tree: three of them `cp -r` the entire `scripts/` directory, and the fourth reads
-package.json in place. A battery step rewriting either mid-copy is a `cp: cannot
-stat` flake that would be blamed on this port. `REAL_TREE_TWIN = True` is what buys
-the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
+EVERY CASE READS THE WORKING TREE: three of them `cp -r` the entire `scripts/` directory, and the fourth reads
+package.json in place. All are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with. A pure reader needs no group.
 """
 
 import json
@@ -22,8 +20,7 @@ import shutil
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Copies `scripts/` and reads `package.json` off the real working tree.
-REAL_TREE_TWIN = True
+# Copies `scripts/` and reads `package.json` off the real working tree; reads need no group.
 
 VALIDATOR_REL = "scripts/gates/check-overrides-reasons.ts"
 VALIDATOR = paths.from_root(*VALIDATOR_REL.split("/"))

@@ -6,11 +6,9 @@ is an assertion that cannot fail, and the gate exists because one of them passed
 
 THE SUBJECT IS CONTROL-FIRST, so the FIRST case here is the seam-free one: the real invocation over the real tree, asserting both that it is clean AND that its own planted-arm control fired. A gate that reported "clean" without its control firing would be reporting on a scanner nobody had seen work.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `check-dead-case-arms.sh` reads `.ci/scripts/test`, `.ci/media`, `.ci/scripts`, `scripts` and `packages/www/scripts`
+`check-dead-case-arms.sh` READS `.ci/scripts/test`, `.ci/media`, `.ci/scripts`, `scripts` and `packages/www/scripts`
 with recursive greps over the working tree, and every case below reaches the real
-tree at least through `DEAD_CASE_MEDIA_DIRS`, which the twin never overrides. So it is a real-tree SCANNER: a battery step rewriting a scanned file mid-grep is the `grep: ... No such file or directory` flake that would be blamed on this port.
-`REAL_TREE_TWIN = True` is what buys the serialisation, and it is only honoured
-because this module declares no `XDIST_GROUP` of its own -- see `real_tree_admission` in `test_twin_parity.py`, which refuses the combination.
+tree at least through `DEAD_CASE_MEDIA_DIRS`, which the twin never overrides -- a real-tree SCANNER, but every reach is a read. No `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 WHAT IS DELIBERATELY NOT RE-IMPLEMENTED. The scanner is never reproduced in Python. Every case drives the real `check_dead_case_arms.py` entry point as a subprocess with the same two environment overrides the twin used, so the code under test is the code that ships.
 """
@@ -22,8 +20,7 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# The twin reads the real tree (`.ci/media` is scanned on every invocation, and the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`), so this module must be serialised against the battery. See the module docstring.
-REAL_TREE_TWIN = True
+# The twin reads the real tree (`.ci/media` is scanned on every invocation, and the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`), but reads need no group. See the module docstring.
 
 # THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-dead-case-arms.sh` (blob `19c18e3f491528ad54c0e1fb8832f626b0eade9d`), retired in W7P5-c once `.ci/shadow/w7p2-dead-case-arms.observations.jsonl` held K=5 -- 5 rows, 5 distinct tree ids, 5 distinct fingerprints, every verdict `EQUIVALENT`. The repoint was DRIVEN before the deletion, not assumed: a clean
 # real-tree run with no overrides and a fixture carrying one dead arm beside one live arm were each run on both sides, stdout and stderr captured SEPARATELY, byte-identical on all four streams, with the fixture genuinely exiting 1 and naming the dead arm so the comparison was not made over two silent runs.

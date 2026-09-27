@@ -9,10 +9,9 @@ WHY THE TWO HISTORICAL CASES ARE THE CENTRE OF THIS FILE. A lint of this shape i
 
 CALIBRATION IS PART OF THE CONTRACT. `test_real_tree_is_clean` pins the count on the live tree at ZERO. The gate opened at 16 findings; all 16 were fixed, none waived. Pinning zero is what stops the class regrowing one call site at a time, which is how it reached 16 in the first place.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two cases drive the subject over the REAL tree: `test_real_tree_is_clean` runs it seam-free, and `test_the_repaired_sites_stay_repaired` greps the real files in REPAIRS. A battery step rewriting either mid-sweep is a divergence that would be blamed on this port. A third case, `test_silent_on_the_fixed_go_deps_probe`, used to point
+TWO CASES DRIVE THE SUBJECT OVER THE REAL TREE, both reads: `test_real_tree_is_clean` runs it seam-free, and `test_the_repaired_sites_stay_repaired` greps the real files in REPAIRS. A third case, `test_silent_on_the_fixed_go_deps_probe`, used to point
 the subject at the real `.ci/scripts/quality` to prove it stayed silent about the fixed probe in `check-go-deps.sh`; that file was deleted in W7P5-c and the case retired with it, since the subject here only ever scanned `.sh` files and the survivor, `rediacc_ci.quality.go_deps`, is `.py`. What the case proved about the FIX is now a REPAIRS row instead, naming the surviving
-module. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured only
-because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+module. No `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with. A pure reader needs no group.
 
 --------------------------------------------------------------------------
 IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED
@@ -38,8 +37,7 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree. See the docstring.
-REAL_TREE_TWIN = True
+# test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree, but reads need no group. See the docstring.
 
 # THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-swallowed-failures.sh` (blob `e7b12ba15c41569a88ea8065007e246ab948f2ee`), retired in W7P5-c once `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` held K=5 -- 10 rows, 10 distinct tree ids, 4 distinct fingerprints, every verdict `EQUIVALENT`.
 # The repoint was DRIVEN before the deletion rather than assumed: a seam-free real-tree run and a fixture whose single swallowed capture exits 1 were each run on both sides, stdout and stderr captured SEPARATELY, byte-identical on all four streams.

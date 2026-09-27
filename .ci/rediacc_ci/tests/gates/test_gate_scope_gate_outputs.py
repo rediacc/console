@@ -14,14 +14,11 @@ resolves a symlinked module to its real path and `__dirname` would land back on 
 
 EVERY CASE CARRIES ITS CONTROL. An emitter that writes nothing at all passes cases (b), (c) and (d) trivially, so case (a) pins the exact set of false lines a reduced plan must produce, and cases (b) and (d) re-run the SAME fixture with the defect removed and require the lines to come back.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. `build_fixture` reads the real `.ci/scripts/ci` tree wholesale and every case runs against that copy, so a battery step rewriting the subject, `scope-map.cjs` or `skip-plan-reconcile.cjs`
-mid-copy is a divergence that would be blamed on this port. `REAL_TREE_TWIN = True`
-buys the serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+`build_fixture` READS the real `.ci/scripts/ci` tree wholesale, once, and every case runs against that COPY -- nothing here writes a tracked file. No `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with. A pure reader needs no group.
 
 THE SUBJECT DOES NOT SELF-SCAN. It classifies a git delta inside the fixture repository and never walks `.ci` looking for samples, so no fixture string in this file needs the `%s` template treatment `test_gate_label_references.py` owes its own self-scanning subject. Checked before any fixture was written, not assumed.
 
-THE FIXTURE IS BUILT ONCE PER MODULE, where the twin builds it once per process. Same shape: eight cases against one repository, each writing into its own `out-<name>` directory. A function-scoped build would re-run `git init`, four commits, a merge and two `node -e` calls eight times for no additional coverage. All eight land on one xdist worker because the module is in
-`REAL_TREE_GROUP`.
+THE FIXTURE IS BUILT ONCE PER MODULE, where the twin builds it once per process. Same shape: eight cases against one repository, each writing into its own `out-<name>` directory. A function-scoped build would re-run `git init`, four commits, a merge and two `node -e` calls eight times for no additional coverage. Module scope is enough on its own: this module carries no `XDIST_GROUP`, so its eight cases distribute freely across workers under `--dist loadgroup`, and the module-scoped build simply reruns once per worker that draws one of them rather than once per process -- still eight rebuilds fewer than a function-scoped fixture, never a single global one.
 
 TWO PORT-SPECIFIC NOTES ON THE ORDERING ASSERTION, both about the same trap.
 
@@ -54,8 +51,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# build_fixture copies the real .ci/scripts/ci and every case runs that copy. See the docstring.
-REAL_TREE_TWIN = True
+# build_fixture copies the real .ci/scripts/ci and every case runs that copy; a pure reader needs no group. See the docstring.
 
 CI_SRC_REL = ".ci/scripts/ci"
 CI_SRC = paths.from_root(*CI_SRC_REL.split("/"))

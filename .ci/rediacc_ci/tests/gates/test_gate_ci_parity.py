@@ -9,8 +9,7 @@ built that way reports perfect parity forever. `test_step_name_is_not_an_invocat
 HOW IT IS DRIVEN, and why the port is a transcription rather than a reimplementation. Every case builds a throwaway repository under a temp dir and points the subject at it through `CI_PARITY_ROOT` / `CI_PARITY_MANIFEST`. The subject stays the real TypeScript gate, invoked exactly as the twin invokes it, so what is being compared between the two sides is the FIXTURE and the
 ASSERTIONS, never two independent reimplementations of the detector. No tracked file is written by any case here.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP even though no case writes the tree. `gates.lock.json` records `reads: ["tree:repo"]` for `gate-test:ci-parity`, and `real_tree_admission` in `test_twin_parity.py` reads that lock: a twin in the real-tree set that does NOT declare `REAL_TREE_TWIN` is refused, because the parity driver runs the twin itself and would then overlap the
-battery with no isolation declared to either scheduler. The declaration is honoured only while this module names no `XDIST_GROUP` of its own, which the same function checks.
+NO CASE WRITES THE TREE, and no `XDIST_GROUP` is declared either: this module has no `BASH_TWIN` of its own (it drives `check-ci-parity.ts` directly), `gates.lock.json` no longer carries a `gate-test:ci-parity` entry, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN`. A pure reader needs no group.
 
 THE FIXTURE IS A REAL GIT REPOSITORY, not a directory of files, and that is not tidiness: `loadScripts()` in the subject derives its tracked set from `git ls-files`, so a fixture with no index exercises a code path the gate does not have and every case would fail for the wrong reason.
 """
@@ -21,8 +20,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# `gate-test:ci-parity` carries `reads: ["tree:repo"]`. See the docstring.
-REAL_TREE_TWIN = True
+# No case writes the tree; reads need no group. See the docstring.
 
 ROOT = paths.repo_root()
 GATE = ROOT / "scripts" / "gates" / "check-ci-parity.ts"

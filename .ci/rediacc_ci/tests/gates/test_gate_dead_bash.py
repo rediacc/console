@@ -8,8 +8,7 @@ THE REAL-TREE HALF LIVES IN `check:ci-dead-bash`, NOT HERE, and the twin records
 for the two long-lived processes. What replaced it is
 `test_real_tree_scan_is_delegated`, which asserts the delegate still EXISTS and is still scheduled. Deleting that assertion is how the coverage would actually be lost, so it fails this gate rather than being left to a comment.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two of its cases read the real `package.json` and the real `scripts/ci-runner/manifest.ts` -- the lock records `reads: ["tree:repo"]` for `gate-test:dead-bash` -- and `real_tree_admission` in `test_twin_parity.py` refuses a twin in that set that does not declare `REAL_TREE_TWIN`. Nothing here WRITES a tracked file: every fixture lives
-under a temp dir reached through `DEAD_BASH_ROOT`, because the working tree routinely holds other sessions' uncommitted work.
+TWO OF ITS CASES READ THE REAL TREE: the real `package.json` and the real `scripts/ci-runner/manifest.ts`. Nothing here WRITES a tracked file: every fixture lives under a temp dir reached through `DEAD_BASH_ROOT`, because the working tree routinely holds other sessions' uncommitted work. A pure reader needs no `XDIST_GROUP`: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, `gates.lock.json` no longer carries a `gate-test:dead-bash` entry to declare against, and `xdist_groups.group_for` was never reading `REAL_TREE_TWIN` in the first place -- it keys off `BASH_TWIN` plus the lock. The attribute promised isolation neither scheduler gave, so it is gone rather than kept as a false claim.
 
 `delegation_verdict` IS A PURE FUNCTION TAKING BOTH REGISTRIES AS ARGUMENTS, and that is the same seam the twin cut for the same reason: the control below drives the IDENTICAL code path against four doctored registries rather than against a lookalike reimplementation of it. A control that re-derives the answer proves only that the control agrees with itself.
 """
@@ -20,8 +19,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Two cases read the real package.json and manifest.ts. See the docstring.
-REAL_TREE_TWIN = True
+# Two cases read the real package.json and manifest.ts, but a pure reader needs no group. See the docstring.
 
 ROOT = paths.repo_root()
 GATE = ROOT / "scripts" / "gates" / "check-dead-bash.ts"

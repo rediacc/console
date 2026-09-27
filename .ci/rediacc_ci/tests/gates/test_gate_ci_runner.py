@@ -61,11 +61,9 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# THE OPT-IN IS OWED, AND THE FIRST DRAFT OF THIS FILE GOT IT WRONG. The reasoning was that every case drives a synthetic manifest in a tempdir, so nothing here touches the real tree and the attribute would be an over-claim. The LOCK says otherwise: `gate-test:ci-runner` declares `reads: ["tree:repo"]`, which puts the twin in the real-tree set that `xdist_groups.real_tree_twins`
-# derives, and `real_tree_admission` refuses a member that does not opt in. The declaration is also right on the merits: the runner is driven FROM the repo root, case 11 reads
-# package.json and runs `--selftest` with no seam at all, and the added seam control
-# reads gates.lock.json. Reading the tree while another step rewrites it is the divergence that would be blamed on this port.
-REAL_TREE_TWIN = True
+# EVERY CASE DRIVES A SYNTHETIC MANIFEST IN A TEMPDIR, except three reads: the runner is driven FROM the repo root, case 11 reads `package.json` and runs `--selftest` with no seam at all, and the added seam control reads `gates.lock.json`. All are reads, so no `XDIST_GROUP` is needed: this file has no `BASH_TWIN`
+# (there is no `check-ci-runner.sh` to port; `run.ts` is the subject), so `real_tree_admission` in `test_twin_parity.py` -- which only runs against modules that still declare one -- never looks at this module, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` either way. A `REAL_TREE_TWIN = True` line lived here
+# claiming a serialisation that was never wired to anything; removed rather than kept as a false promise.
 
 TSX_REL = "node_modules/.bin/tsx"
 RUNNER_REL = "scripts/ci-runner/run.ts"

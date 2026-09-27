@@ -7,9 +7,7 @@ absent.
 
 ONE DIRECTION ONLY, and that is a decision rather than an omission: a declared label nothing references is inventory, not an error. `test_declared_but_unreferenced_is_fine` is the case that pins it, and it is the converse without which every firing case here would also be satisfied by a gate that reds on anything.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. Two cases drive the subject seam-free over the REAL tree: it recursively greps `.github` and `.ci` and reconciles what it finds against the real `.github/labels.yml`. A battery step writing under either directory mid-sweep is a divergence that would be blamed on
-this port. `REAL_TREE_TWIN = True` buys the serialisation, and it is honoured
-only because this module declares no `XDIST_GROUP` of its own; see `real_tree_admission` in `test_twin_parity.py`.
+TWO CASES DRIVE THE SUBJECT SEAM-FREE OVER THE REAL TREE: it recursively greps `.github` and `.ci` and reconciles what it finds against the real `.github/labels.yml`. Both are reads. No `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with -- it keys off `BASH_TWIN` plus the lock, neither of which this module carries any more. A pure reader needs no group.
 
 --------------------------------------------------------------------------
 WHY EVERY FIXTURE LINE IN THIS FILE IS BUILT FROM A `%s` TEMPLATE
@@ -30,8 +28,7 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_real_tree_is_clean_and_excludes_this_file and the added inertness control both drive the subject over the real .github and .ci trees. See the docstring.
-REAL_TREE_TWIN = True
+# test_real_tree_is_clean_and_excludes_this_file and the added inertness control both drive the subject over the real .github and .ci trees, but both are reads; no group needed. See the docstring.
 
 GATE_REL = ".ci/scripts/quality/check_label_references.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
