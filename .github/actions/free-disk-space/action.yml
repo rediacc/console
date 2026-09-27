@@ -13,11 +13,25 @@ description: >
   only ever calls 'start' leaves the cleanup running past the job's end,
   which is harmless: the runner is destroyed either way.
 
+  PLAN-ci-time-budget follow-up (measured problem, job 108658401190): these
+  runners already have about 83 GB free on / before any cleanup, well above
+  what a VM/E2E leg needs, yet the cleanup (and its paired 'wait') ran
+  unconditionally and cost 221-309s on some legs for no benefit. 'start' now
+  measures free space on / first and only launches the deletion, and writes
+  a pidfile for 'wait' to join, when that measurement is below
+  `threshold_gb`. It always logs the measurement and its decision. 'wait'
+  is unaffected: it already no-ops when no pidfile exists, which is exactly
+  the case when 'start' decided free space was already sufficient.
+
 inputs:
   mode:
     description: "'start' launches the cleanup in the background; 'wait' blocks until the background cleanup from a prior 'start' call finishes."
     required: false
     default: start
+  threshold_gb:
+    description: "'start' only: only clean up when free space on / is below this many GB."
+    required: false
+    default: '40'
 
 runs:
   using: composite
@@ -25,14 +39,23 @@ runs:
     - name: Free Disk Space (start)
       if: inputs.mode == 'start'
       shell: bash
+      env:
+        THRESHOLD_GB: ${{ inputs.threshold_gb }}
       run: |
         echo "=== Disk usage before cleanup ==="
         df -h / || true
-        (
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-        ) &
-        echo $! > "${RUNNER_TEMP}/free-disk-space.pid"
+        avail_gb="$(df -BG --output=avail / | tail -n1 | tr -dc '0-9')"
+        echo "Free space on /: ${avail_gb}GB (threshold: ${THRESHOLD_GB}GB)"
+        if [ -n "$avail_gb" ] && [ "$avail_gb" -lt "$THRESHOLD_GB" ]; then
+          echo "Below threshold; starting background cleanup"
+          (
+            sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+            docker system prune -af 2>/dev/null || true
+          ) &
+          echo $! > "${RUNNER_TEMP}/free-disk-space.pid"
+        else
+          echo "At or above threshold; skipping cleanup"
+        fi
 
     - name: Free Disk Space (wait)
       if: inputs.mode == 'wait'
@@ -43,6 +66,8 @@ runs:
           pid="$(cat "$pidfile")"
           while kill -0 "$pid" 2>/dev/null; do sleep 1; done
           rm -f "$pidfile"
+        else
+          echo "No cleanup was started (free space was already above threshold); nothing to wait for"
         fi
         echo "=== Disk usage after cleanup ==="
         df -h / || true

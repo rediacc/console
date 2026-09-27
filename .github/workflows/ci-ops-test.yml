@@ -83,7 +83,18 @@ jobs:
       # runner's own worker with ENOSPC mid-sequence (run 30017108104
       # attempt 1 -- no logs, no artifacts, diag writer itself failed).
       - name: Free runner disk (preinstalled bloat)
-        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+        # PLAN-ci-time-budget follow-up: measure free space on / first and
+        # only pay for the removal (38-341s observed) when it is actually
+        # needed, mirroring .github/actions/free-disk-space's guard.
+        run: |
+          avail_gb="$(df -BG --output=avail / | tail -n1 | tr -dc '0-9')"
+          echo "Free space on /: ${avail_gb}GB (threshold: 40GB)"
+          if [ -n "$avail_gb" ] && [ "$avail_gb" -lt 40 ]; then
+            echo "Below threshold; removing preinstalled toolchains"
+            sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+          else
+            echo "At or above threshold; skipping cleanup"
+          fi
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
