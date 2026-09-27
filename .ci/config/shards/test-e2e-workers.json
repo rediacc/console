@@ -29,7 +29,6 @@
       "index": 4,
       "ids": [
         "e2e-workers:07-container-operations.test.ts",
-        "e2e-workers:04-repository-lifecycle.test.ts",
         "e2e-workers:05-rediaccfiles-updown.test.ts"
       ]
     },
@@ -37,7 +36,6 @@
       "index": 5,
       "ids": [
         "e2e-workers:17-repo-branching.test.ts",
-        "e2e-workers:06-daemon-operations.test.ts",
         "e2e-workers:11-multi-machine.test.ts"
       ]
     },
@@ -53,7 +51,8 @@
       "ids": [
         "e2e-workers:15-storage-backup.test.ts",
         "e2e-workers:16-setup-installation-params.test.ts",
-        "e2e-workers:22-setup-command.test.ts"
+        "e2e-workers:22-setup-command.test.ts",
+        "e2e-workers:06-daemon-operations.test.ts"
       ]
     },
     {
@@ -61,7 +60,8 @@
       "ids": [
         "e2e-workers:18-ops-workflow.test.ts",
         "e2e-workers:19-rustfs-operations.test.ts",
-        "e2e-workers:21-local-executor.test.ts"
+        "e2e-workers:21-local-executor.test.ts",
+        "e2e-workers:04-repository-lifecycle.test.ts"
       ]
     }
   ]
