@@ -14,10 +14,35 @@
     "is unaffected until this file actually names one of its ids (see the selftest control",
     "'shardPlan(durations: {}) is byte-identical to shardPlan() with no durations argument'",
     "in scripts/gate-bind.ts).",
-    "T3.1's freshness check (not yet built) reds when 'refreshed_at' is older than 14 days."
+    "T3.1's freshness check (scripts/gates/check-lane-budget.ts) reds when the TOP-LEVEL",
+    "'refreshed_at' is older than 14 days -- that field, plus 'jobs'/'units'/'defaultUnitMs',",
+    "is written ONLY by 'budget_report.py --refresh' (T3.2/T3.3).",
+    "'job_max_seconds' is a SEPARATE section, D-W2/T3.4's retirement of the old",
+    "job-timeout-baseline.json into this one file: check_job_timeout_headroom.py's own",
+    "baseline for the two direct (never lane-sharded) ci.yml jobs the lane-budget gate does",
+    "not cover, Validate Promotion and Stage Artifacts. It carries its OWN 'refreshed_at',",
+    "written ONLY by 'check_job_timeout_headroom.py --refresh' -- a shared timestamp would",
+    "let either refresh silently un-stale numbers the other half never re-measured.",
+    "'job_max_seconds.jobs[*].observed_max_seconds' is the worst observed wall time in",
+    "SECONDS (MIN_HEADROOM=1.5x that number must fit under the job's timeout-minutes),",
+    "migrated verbatim from job-timeout-baseline.json's last real refresh (run 32491717875,",
+    "see that retired file's own history for the full 'why one sample' account)."
   ],
   "refreshed_at": null,
   "concurrency": 20,
   "jobs": {},
-  "units": {}
+  "units": {},
+  "job_max_seconds": {
+    "refreshed_at": "2026-09-27T06:23:09Z",
+    "jobs": {
+      "Validate Promotion": {
+        "observed_max_seconds": 1342,
+        "samples": 8
+      },
+      "Stage Artifacts": {
+        "observed_max_seconds": 641,
+        "samples": 8
+      }
+    }
+  }
 }

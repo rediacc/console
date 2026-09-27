@@ -188,3 +188,60 @@ jobs:
           done
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+
+  budget-check:
+    name: CI time budget check
+    # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets
+    # (readonly, housekeeping, cd) grant `issues`, the same reason nightly-status.yml
+    # gives for using its own job-scoped `github.token` instead of the App -- it cannot
+    # bypass the branch-protection ruleset and creates no further workflow runs, so it
+    # is the smaller grant for the same read (Actions API) plus post (an issue comment)
+    # this job needs.
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # sample ci.yml's own runs/jobs/artifacts (budget_report.py)
+      issues: write # post to the nightly-red issue thread on a failing check
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # .ci for the rediacc_ci package, scripts/ci for report-budget-check.cjs,
+          # .github for the workflow YAML budget_report.py's lane_display_patterns reads.
+          sparse-checkout: |
+            .ci
+            .github
+            scripts/ci
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      - name: CI time budget check
+        id: budget-check
+        run: |
+          set +e
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --check >/tmp/budget-check.txt 2>&1
+          rc=$?
+          echo "rc=$rc" >>"$GITHUB_OUTPUT"
+          cat /tmp/budget-check.txt
+          exit 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # A SEPARATE STEP FROM THE FAILURE ITSELF, so the issue gets posted whether or
+      # not the next step's own `exit 1` runs -- see report-budget-check.cjs's own
+      # header for why this posts its own dated section rather than reusing
+      # report-nightly-status.cjs's function, which is wired to a DIFFERENT trigger
+      # (workflow_run: completed of "Console CI") with no payload this cron carries.
+      - name: Report a stale or over-budget CI leg
+        if: steps.budget-check.outputs.rc != '0'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BUDGET_CHECK_SUMMARY_PATH: /tmp/budget-check.txt
+        with:
+          script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
+
+      - name: Fail the job when the budget check failed
+        if: steps.budget-check.outputs.rc != '0'
+        run: exit 1

@@ -14,11 +14,13 @@ The job log's only clue is `The operation was canceled.` The fix was to raise th
 for weeks -- 21m57s, 27m20s, CANCELLED 31m03s, 28m35s, 24m09s, 24m56s, 24m01s,
 CANCELLED 30m51s. Nothing was watching the MARGIN, only pass/fail.
 
-WHAT IT CHECKS. For every job named in job-timeout-baseline.json, the workflow's declared `timeout-minutes` must exceed the observed worst case by MIN_HEADROOM. It fails when a timeout is lowered, when a job silently loses its `timeout-minutes`, when a baseline job is renamed out of the workflow, and -- after a `--refresh` -- when real durations have crept toward the ceiling.
+WHAT IT CHECKS. For every job named in `.ci/config/lane-durations.json`'s `job_max_seconds.jobs`, the workflow's declared `timeout-minutes` must exceed the observed worst case by MIN_HEADROOM. It fails when a timeout is lowered, when a job silently loses its `timeout-minutes`, when a baseline job is renamed out of the workflow, and -- after a `--refresh` -- when real durations have crept toward the ceiling.
 
 WHY A COMMITTED BASELINE INSTEAD OF A LIVE QUERY. `npm run ci` must work offline and deterministically, so the gate reads committed numbers only. The network lives in `--refresh`, which rewrites the baseline from the Actions API. That split is deliberate: a gate that needs a token is a gate that silently degrades to "passed" on the machine that lacks one.
 
 WHAT IT DOES NOT DO. It does not predict duration, and it cannot: promotion cost scales with the `edge` channel, which grows with every release. It only asserts that the margin between measured reality and the declared ceiling has not closed. Catching the creep still requires refreshing the baseline; the `stale baseline` check below is what stops that from being forgotten quietly.
+
+RETIRED INTO `.ci/config/lane-durations.json` (D-W2/T3.4, `agent/plans/PLAN-ci-time-budget.md`). `job-timeout-baseline.json` used to hold this gate's ONLY baseline; it is gone, folded into that file's `job_max_seconds` section, `{"refreshed_at": ..., "jobs": {name: {"observed_max_seconds", "samples"}}}` -- the exact shape `verdicts()`/`controls()` already expected, so neither changed. `job_max_seconds` carries its OWN `refreshed_at`, separate from the file's top-level one: `budget_report.py --refresh` (T3.2) stamps the top-level field for `jobs`/`units`, this script's OWN `--refresh` stamps `job_max_seconds.refreshed_at`, and a shared single timestamp would let either refresh silently un-stale the other half. The two jobs this gate still covers, `Validate Promotion` and `Stage Artifacts`, are direct `ci.yml` jobs (never lane-sharded), which is exactly why `scripts/gates/check-lane-budget.ts`'s lane-budget gate does not already cover them and this one still must.
 
 ---- gate ----
 step: CI job timeout headroom
@@ -41,13 +43,15 @@ import sys
 # 28m35s worst case under a 30m ceiling was a ratio of 1.05, and it blew up twice. At 1.5 that ceiling would have had to be 43m, which would have carried both timeouts.
 MIN_HEADROOM = 1.5
 
-# A baseline nobody refreshes stops describing reality. Loud, not silent.
-MAX_BASELINE_AGE_DAYS = 45
+# A baseline nobody refreshes stops describing reality. Loud, not silent. Tightened from 45 to 14 by D-W2 (PLAN-ci-time-budget): the file this baseline now lives in, `.ci/config/lane-durations.json`, is also `scripts/gates/check-lane-budget.ts`'s own `MAX_STALENESS_DAYS`, and one committed file keeps one freshness discipline even though `job_max_seconds` carries its own separate `refreshed_at` field.
+MAX_BASELINE_AGE_DAYS = 14
 
 # Vacuity floor. An empty baseline makes every comparison vacuous and the gate would exit 0 reading exactly like full coverage.
 MIN_BASELINE_JOBS = 2
 
 WORKFLOW = ".github/workflows/ci.yml"
+# D-W2/T3.4: retired from its own `job-timeout-baseline.json` into this shared file's `job_max_seconds` section (see the module docstring).
+LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 
 
 class WorkflowUnreadableError(Exception):
@@ -139,8 +143,11 @@ def controls(timeouts):
     return None
 
 
-def refresh(root, baseline_path, limit):
-    """Rewrite observed_max_seconds from the Actions API. Network lives HERE."""
+def refresh(root, lane_durations_path, limit):
+    """Rewrite `job_max_seconds.jobs[*].observed_max_seconds` from the Actions API. Network lives HERE.
+
+    Reads and rewrites the WHOLE `.ci/config/lane-durations.json`, but touches only its `job_max_seconds` section -- `budget_report.py --refresh`'s own `jobs`/`units`/`concurrency`/`$comment`/`defaultUnitMs` pass through unchanged, and `job_max_seconds` keeps its OWN `refreshed_at` rather than the file's top-level one (see the module docstring's "RETIRED INTO" section for why the two must stay independent).
+    """
     runs = subprocess.run(
         [
             "gh",
@@ -170,7 +177,13 @@ def refresh(root, baseline_path, limit):
     if not ids:
         print("refresh found no main push runs; baseline untouched", file=sys.stderr)
         return 1
-    data = json.loads(baseline_path.read_text(encoding="utf-8"))
+    data = json.loads(lane_durations_path.read_text(encoding="utf-8"))
+    section = data.get("job_max_seconds")
+    if not isinstance(section, dict):
+        section = {"refreshed_at": None, "jobs": {}}
+    baseline_jobs = section.get("jobs")
+    if not isinstance(baseline_jobs, dict):
+        baseline_jobs = {}
     seen = {}
     for run_id in ids:
         out = subprocess.run(
@@ -204,7 +217,7 @@ def refresh(root, baseline_path, limit):
                 if secs > seen.get(alias, 0):
                     seen[alias] = secs
     updated = 0
-    for name, rec in data["jobs"].items():
+    for name, rec in baseline_jobs.items():
         if name in seen and seen[name] > 0:
             rec["observed_max_seconds"] = seen[name]
             rec["samples"] = len(ids)
@@ -224,8 +237,10 @@ def refresh(root, baseline_path, limit):
             file=sys.stderr,
         )
         return 1
-    data["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    section["jobs"] = baseline_jobs
+    section["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    data["job_max_seconds"] = section
+    lane_durations_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     print("baseline refreshed from %d run(s); %d job duration(s) observed" % (len(ids), len(seen)))
     return 0
 
@@ -241,10 +256,10 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = pathlib.Path(__file__).resolve().parents[3]
-    baseline_path = root / ".ci/scripts/quality/job-timeout-baseline.json"
+    lane_durations_path = root / LANE_DURATIONS_REL_PATH
     workflow_path = root / WORKFLOW
 
-    if not baseline_path.is_file() or not workflow_path.is_file():
+    if not lane_durations_path.is_file() or not workflow_path.is_file():
         print(
             "VACUOUS INPUT: baseline or workflow missing, so nothing can be compared",
             file=sys.stderr,
@@ -252,9 +267,11 @@ def main(argv=None):
         return 1
 
     if args.refresh:
-        return refresh(root, baseline_path, args.runs)
+        return refresh(root, lane_durations_path, args.runs)
 
-    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    lane_durations = json.loads(lane_durations_path.read_text(encoding="utf-8"))
+    section = lane_durations.get("job_max_seconds")
+    baseline = section if isinstance(section, dict) else {}
     jobs = baseline.get("jobs", {})
     if len(jobs) < MIN_BASELINE_JOBS:
         print(
