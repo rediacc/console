@@ -67,6 +67,7 @@ SOFT_REQUIRED = (
     "SMOKE_TEST_PREVIEW",
     "BREAKPOINT_LIFECYCLE",
     "CHECK_RELEASE_STATE",
+    "E2E_DEPENDENCY_PROBE",
 )
 
 # The pointer-bump fast path (see `.ci/scripts/ci/detect-pointer-bump.sh`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is deliberately absent from this list because it is absent from the twin's -- see the hole documented above.

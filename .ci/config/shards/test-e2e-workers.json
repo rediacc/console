@@ -21,7 +21,8 @@
       "index": 3,
       "ids": [
         "e2e-workers:10-backup-checkpoint.test.ts",
-        "e2e-workers:03-datastore-lifecycle.test.ts"
+        "e2e-workers:03-datastore-lifecycle.test.ts",
+        "e2e-workers:25-backup-chunk-store.test.ts"
       ]
     },
     {

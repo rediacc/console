@@ -1061,6 +1061,32 @@ jobs:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 
   # ============================================================================
+  # COLUMN 4C: E2E DEPENDENCY PROBE (T2.12, PLAN-ci-time-budget)
+  # Opt-in, label-gated: re-provisions one full VM topology per E2E Workers
+  # spec file to test whether the shard manifest's files are genuinely
+  # independent, the way `no-external-quality` and `no-media-quality` above
+  # read a label into `initialize`'s outputs. This one is read directly on
+  # the job `if:`, the same way `watchdog-monitor.cjs` reads `no-auto-cancel`
+  # off the PR: it is a diagnostic a human asks for, never part of the
+  # scope engine's own run_* decisions.
+  # ============================================================================
+  e2e-dependency-probe:
+    name: E2E Dependency Probe
+    permissions:
+      contents: read
+      packages: read
+    needs: [initialize]
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.is_bot != 'true' &&
+      contains(github.event.pull_request.labels.*.name, 'e2e-dependency-probe')
+    uses: ./.github/workflows/ct-e2e-probe.yml
+    secrets:
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+
+  # ============================================================================
   # COLUMN 4D: OPS VM TESTS
   # Validates rdc ops provisioning commands across platforms
   # Dependencies: build-renet (needs renet binary)
@@ -1773,7 +1799,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
+    needs: [initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -1826,6 +1852,7 @@ jobs:
           RESULT_DEPLOY_PREVIEW: ${{ needs.deploy-preview.result }}
           RESULT_SMOKE_TEST_PREVIEW: ${{ needs.smoke-test-preview.result }}
           RESULT_BREAKPOINT_LIFECYCLE: ${{ needs.breakpoint-lifecycle.result }}
+          RESULT_E2E_DEPENDENCY_PROBE: ${{ needs.e2e-dependency-probe.result }}
 
       # SHADOW reconciliation, and it runs AFTER the real gate above on
       # purpose: this must never influence the verdict, only observe it.

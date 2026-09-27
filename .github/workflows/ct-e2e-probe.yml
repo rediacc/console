@@ -1,0 +1,250 @@
+name: Console CT - E2E Dependency Probe
+
+# T2.12 (PLAN-ci-time-budget). The E2E Workers shard wiring (ct-tests.yml's
+# `test-e2e-workers` job, T2.10's committed shard manifest) assumes every
+# spec file is independent enough to land on any leg. The config comment
+# "Order maintained by workers:1 + fullyParallel:false"
+# (packages/e2e-tests/playwright.config.ts) says some of that independence
+# may not be real, so this probes it directly: run each file the shard
+# manifest currently ships ALONE, on its own fresh VM, and let
+# e2e-probe-edges.ts turn "failed alone" into a proposed `needs` edge.
+#
+# NEVER TOUCHES THE MANIFEST. This workflow only measures and reports; a
+# human (the plan's lead) reviews the aggregate job's printed/uploaded edges
+# and applies them to unit-enumerators.ts by hand. Opt-in via the PR label
+# `e2e-dependency-probe` (see ci.yml's call site) because it re-provisions
+# one full VM topology per file -- expensive to run on every push, cheap to
+# skip.
+#
+# MIRRORS ct-tests.yml's `test-e2e-workers` JOB, deliberately, one distro
+# (ubuntu-24.04) and one file per leg instead of a shard's worth: same
+# composite actions, same renet build, same VM bridge topology, so the only
+# variable is which spec file(s) the leg selects.
+
+on:
+  workflow_call:
+    secrets:
+      # Bitwarden machine-account token for the shadow secret fetch
+      # (.github/actions/bws-secrets). Every caller must pass it.
+      BWS_ACCESS_TOKEN:
+        required: true
+
+permissions: {}
+
+jobs:
+  # ==========================================================================
+  # List the exact file set T2.10's committed shard manifest ships today, so
+  # the probe measures what CI actually shards rather than a fresh
+  # enumeration that could silently disagree with it (a file the manifest
+  # does not run yet has no "passes in the full suite" baseline to probe
+  # against). One entry per FILE, not per manifest id: the describe-group
+  # buckets `13-postgres-fork-isolation.test.ts#part1/2/3` split one file
+  # into three shard units, and this probe runs that file whole.
+  # ==========================================================================
+  list-files:
+    name: E2E Probe / List Files
+    permissions:
+      contents: read
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    outputs:
+      files: ${{ steps.list.outputs.files }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      - name: Derive the probe file list from the committed shard manifest
+        id: list
+        run: .ci/scripts/test/list-e2e-probe-files.sh
+
+  # ==========================================================================
+  # One leg per file, ubuntu-24.04 only (T2.12: "one distro"). Provisioning
+  # steps are ct-tests.yml's test-e2e-workers job, unchanged, down to the
+  # embed-assets cache key so a run here can share that cache with a
+  # concurrent real CI run instead of paying to stage it twice.
+  # ==========================================================================
+  probe-file:
+    name: E2E Probe (${{ matrix.file }})
+    permissions:
+      contents: read
+      packages: read
+    needs: [list-files]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJson(needs.list-files.outputs.files) }}
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: ''
+      VM_IMAGE: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Free Disk Space (start)
+        uses: ./.github/actions/free-disk-space
+      - uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+      - name: Install CLI Globally
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
+
+      - name: Install clang for BPF compilation
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Build renet
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Install renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-probe-${{ env.VM_IMAGE }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Free Disk Space (wait)
+        uses: ./.github/actions/free-disk-space
+        with:
+          mode: wait
+
+      - name: Setup KVM Host
+        run: sudo "$RENET_BINARY" ops host setup
+
+      - name: Create E2E Test Environment
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
+
+      - name: Run E2E test alone (${{ matrix.file }})
+        id: run
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --test "tests/${{ matrix.file }}"
+
+      - name: Record outcome
+        if: always()
+        # job.status, not steps.run.outcome: no continue-on-error is set
+        # above (banned by check:ci-workflows), so a real failure already
+        # marks the job failed and every later `if: always()` step,
+        # including this one, still runs -- the same pattern
+        # test-e2e-workers' own create_complete step relies on.
+        run: .ci/scripts/test/record-e2e-probe-outcome.sh "${{ matrix.file }}" "${{ job.status }}"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: e2e-probe-result-${{ matrix.file }}-${{ github.sha }}
+          path: ${{ runner.temp }}/e2e-probe/result.json
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Fix VM image ownership for cache save
+        if: always()
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      - name: Save VM base image cache
+        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  # ==========================================================================
+  # THE SHARD AGGREGATOR (same shape as ci-quality.yml's `quality-complete`):
+  # a matrix leg reports one roll-up result each, so this is the only place
+  # that reads every leg's own outcome and turns the set of them into a
+  # verdict. `!cancelled()` so a leg that died still lets the rest report,
+  # matching the sibling job's own reasoning.
+  # ==========================================================================
+  aggregate:
+    name: E2E Probe / Aggregate
+    needs: [probe-file]
+    if: ${{ !cancelled() }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-workspace
+
+      - name: Download probe leg results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          pattern: e2e-probe-result-*-${{ github.sha }}
+          path: /tmp/e2e-probe-results
+
+      - name: Compute proposed needs edges
+        run: |
+          npx tsx scripts/ci-runner/e2e-probe-edges.ts --results-dir /tmp/e2e-probe-results \
+            > e2e-probe-edges.json
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: e2e-probe-edges-${{ github.sha }}
+          path: e2e-probe-edges.json
+          retention-days: 14
+          if-no-files-found: error

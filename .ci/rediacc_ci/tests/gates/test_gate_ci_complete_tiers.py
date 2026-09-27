@@ -53,6 +53,8 @@ FASTPATH_SKIPS = {
     "RESULT_LABEL_GUIDE": "skipped",
     # breakpoint-lifecycle's if: excludes pointer_bump_only, so it skips here too
     "RESULT_BREAKPOINT_LIFECYCLE": "skipped",
+    # e2e-dependency-probe runs only on a PR carrying its label, so every other run skips it
+    "RESULT_E2E_DEPENDENCY_PROBE": "skipped",
 }
 
 # The twin's hand-typed set, kept ONLY so the derivation can be checked against it. Nothing below is driven from this.
@@ -80,6 +82,7 @@ TWIN_BASELINE_NAMES = frozenset(
         "DEPLOY_PREVIEW",
         "SMOKE_TEST_PREVIEW",
         "BREAKPOINT_LIFECYCLE",
+        "E2E_DEPENDENCY_PROBE",
     }
 )
 
