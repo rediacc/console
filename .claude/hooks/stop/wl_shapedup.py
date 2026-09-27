@@ -20,6 +20,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 
 import wl_core as C
 import wl_judge
@@ -408,7 +409,16 @@ def counter_findings(root, profile=None):
     if not line:
         # The FIRST error line carries the cause (a Node `Error: ... code`), the tail only the stack's end; a tail-only excerpt cut exactly the part that mattered from CI run 36348212746 ("...tsx-1001/4878.pipe', port: -1 }").
         text = proc.stderr or proc.stdout or ""
-        cause = next((ln.strip() for ln in text.splitlines() if "Error" in ln or "error" in ln), "")
+        lines = [ln.strip() for ln in text.splitlines()]
+        # A Node crash prints its source excerpt first ("const error = new UVException..."), so match the `Error: <message>` line and the `code: 'E...'` field of the thrown object, not any line that mentions an error.
+        cause = " ".join(
+            ln
+            for ln in (
+                next((ln for ln in lines if re.match(r"^(\w*Error|Error)\b.*:", ln)), ""),
+                next((ln for ln in lines if ln.startswith(("code:", "errno:", "syscall:"))), ""),
+            )
+            if ln
+        )
         return [], "counter produced no JSON (exit %d): %s%s" % (
             proc.returncode,
             (cause[:200] + " ... ") if cause and cause not in text[-160:] else "",
