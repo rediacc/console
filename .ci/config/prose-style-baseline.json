@@ -15,7 +15,7 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2894,
+ "count": 2893,
  "files": 716,
  "by_rule": {
   "R1": 1579,
@@ -24,7 +24,7 @@
   "R18": 13,
   "R19": 62,
   "R2": 611,
-  "R7": 478
+  "R7": 477
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -566,7 +566,6 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_gate_lanes.py": {
    "R7": [
-    "1ecfc1086217e4b1",
     "3bb6d5b8461054d7"
    ]
   },

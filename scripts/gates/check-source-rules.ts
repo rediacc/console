@@ -178,6 +178,18 @@ const EN_CLI = 'packages/cli/src/i18n/locales/en/cli.json';
 const EN_TRANSCRIPT =
   'packages/www/src/data/tutorial-transcripts/en/tutorial-storage-management.json';
 
+/**
+ * A directory a probe's synthetic `filePath`/`goodFilePath` builds on. `runProbe`
+ * turns it into an in-memory lint `filename` only (see `path.join(REPO_ROOT,
+ * filePath)` there): the string is never read from disk, so nothing under it
+ * needs to exist. The probes that need a name matching `e2e-test-naming-convention`
+ * or scoped to an e2e-only rule build their filename as a template literal off
+ * this constant rather than a whole quoted literal, which is also what keeps
+ * `check:ci-paths-exist` from mistaking a probe filename for a checked-in path
+ * (its own `NOISE_BODY` fixture documents the same `${}` exemption).
+ */
+const E2E_TESTS_DIR = 'packages/e2e-tests/tests';
+
 function keyPath(obj: unknown, dotted: string): unknown {
   return dotted
     .split('.')
@@ -430,10 +442,10 @@ function buildProbes(): Probe[] {
       kind: 'source',
       modulePath: 'eslint-rules/e2e-test-naming-convention.js',
       exportName: 'e2eTestNamingConvention',
-      filePath: 'packages/e2e-tests/tests/zz_Bad-Name.test.ts',
+      filePath: `${E2E_TESTS_DIR}/zz_Bad-Name.test.ts`,
       bad: 'export const x = 1;\n',
       good: 'export const x = 1;\n',
-      goodFilePath: 'packages/e2e-tests/tests/99-probe-good.test.ts',
+      goodFilePath: `${E2E_TESTS_DIR}/99-probe-good.test.ts`,
       options: [{}],
     },
     {
@@ -625,7 +637,7 @@ function buildNewHostRuleProbes(): Probe[] {
       kind: 'source',
       modulePath: 'eslint-rules/e2e-expect-expect.js',
       exportName: 'e2eExpectExpect',
-      filePath: 'packages/e2e-tests/tests/zz-probe.test.ts',
+      filePath: `${E2E_TESTS_DIR}/zz-probe.test.ts`,
       bad: "test('does a thing', async ({ page }) => {\n  await page.goto('/');\n});\n",
       good: "test('does a thing', async ({ page }) => {\n  await page.goto('/');\n  expect(page).toBeDefined();\n});\n",
       options: [
@@ -730,11 +742,11 @@ function fillBenignDefaults(ruleId: string, options: unknown[]): unknown[] {
 }
 
 /**
- * The 6 real `eslint-disable custom/no-hardcoded-text` file headers in the
+ * The 5 real `eslint-disable custom/no-hardcoded-text` file headers in the
  * current tree (`private/account/web/src/pages/*.tsx`, none with an inline
  * reason). ESLint's `calculateConfigForFile` resolves STATIC config only -- it
  * has no notion of a disable comment inside the file -- so its snapshot shows
- * this rule ON for all 6. `scripts/data/source-rules.ts`'s own `ignores` list
+ * this rule ON for all 5. `scripts/data/source-rules.ts`'s own `ignores` list
  * for `custom/no-hardcoded-text` (rule map row 141) replicates what the
  * disable comment actually suppressed at lint time by scoping the rule OFF for
  * these paths instead, which is by design, not a gap. Any OTHER path, or any
@@ -746,7 +758,6 @@ const ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES = new Set([
   'private/account/web/src/pages/ConfigMembers.tsx',
   'private/account/web/src/pages/ConfigSetup.tsx',
   'private/account/web/src/pages/ConfigStorage.tsx',
-  'private/account/web/src/pages/DeviceConfigSetup.tsx',
   'private/account/web/src/pages/admin/ConfigAdmin.tsx',
 ]);
 

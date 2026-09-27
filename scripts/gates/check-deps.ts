@@ -1110,6 +1110,9 @@ interface FixtureSpec {
   blocklist?: string;
 }
 
+// The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
+const GROWTH_DIR = 'private/growth';
+
 /**
  * A synthetic console tree the real script can be run against: a .gitmodules declaring private/account, a checked-out marker for it, the manifests and lockfiles in `spec`, a local-only private/growth that is NOT a submodule, a zero release-age window (so nothing reaches the network), and a stub `npm` on PATH that serves the canned `outdated` JSON and records every `install` instead of running it.
  */
@@ -1131,10 +1134,10 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     path.relative(root, policyPath('.deps-upgrade-blocklist', root)),
     spec.blocklist ?? '# fixture blocklist\n'
   );
-  // Local-only, NOT a submodule: must never be scanned, and its canned report would be a must-upgrade if it were.
-  write('private/growth/package.json', '{}');
+  // Local-only, NOT a submodule: must never be scanned, and its canned report would be a must-upgrade if it were. `GROWTH_DIR` (module scope, extension-less) plus a template literal here, rather than a whole quoted `private/growth/...` literal, keeps `check:ci-paths-exist` from reading this fixture path as a real one: on a machine where `private/growth` happens to be checked out (a separate, gitignored sibling repo -- see CLAUDE.md's worktree warning) the bare literal would otherwise resolve to Tier A and then dead-end at Tier B, since neither fixture file is real.
+  write(`${GROWTH_DIR}/package.json`, '{}');
   write(
-    'private/growth/.fixture-outdated.json',
+    `${GROWTH_DIR}/.fixture-outdated.json`,
     JSON.stringify({ leftpad: { current: '1.0.0', latest: '1.0.1' } })
   );
   for (const rel of new Set(['', ...Object.keys(spec.outdated), ...Object.keys(spec.locks)])) {

@@ -95,6 +95,9 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
     """THE MUTANT. The control that proves the controls can fail."""
     gate.log_test("CONTROL: reverting the quantifier must make the gate's own plants go red")
     (tmp_path / "node_modules").symlink_to(paths.from_root("node_modules"))
+    # The gate imports `../lib/findings-report.js`; symlink `scripts/lib` in at the tmp root and write the mutant under a `gates/` subdir so the relative import still resolves, exactly as check-player-css-scope.ts's own mutant harness does.
+    (tmp_path / "lib").symlink_to(paths.from_root("scripts", "lib"))
+    (tmp_path / "gates").mkdir()
     source = GATE.read_text(encoding="utf-8")
     mutated = source.replace(FIXED, REVERTED)
     # VACUITY GUARD: if the replacement stopped matching, the mutant IS the gate and a green run below would mean nothing.
@@ -103,7 +106,7 @@ def test_mutant_reverts_the_fix(gate, tmp_path):
             "the mutation did not apply (%r is no longer in the gate); this control would "
             "be testing the unmutated gate" % FIXED
         )
-    mutant = tmp_path / "mutant.ts"
+    mutant = tmp_path / "gates" / "mutant.ts"
     mutant.write_text(mutated, encoding="utf-8")
     result = run_tsx(gate, mutant, "--selftest")
     gate.assert_exit(1, result, r"reverting \s* to \s+ must make the selftest FAIL")

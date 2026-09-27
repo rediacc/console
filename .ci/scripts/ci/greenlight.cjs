@@ -80,6 +80,8 @@ const VM_E2E_PATHS = [
   '.ci/scripts/private/concurrent-fork-isolation-test.sh',
   '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
   '.ci/scripts/lib/common.sh',
+  // Added 4b5a52d9f (spec W T2.1-T2.3, T2.6): every VM/E2E leg now `uses:` this local composite before its build steps, which resolves from the WORKSPACE exactly like bws-secrets above, so a change to the action does not re-run these legs unless it is in the closure. Found by test_gate_greenlight_closure_trace.py.
+  '.github/actions/free-disk-space',
   '.github/actions/setup-workspace',
   '.github/actions/app-token',
   // `npm ci` resolves the lockfile and reads .npmrc (which turns off lifecycle scripts repo-wide, so it changes what gets installed).
@@ -137,7 +139,8 @@ const CLOSURES = {
       'E2E Workers (oracle-10, 8/8)',
     ],
     submodules: VM_E2E_SUBMODULES,
-    paths: VM_E2E_PATHS,
+    // 348e25fcb (spec W T2.12) shards this leg eight ways per distro off this manifest (ct-tests.yml:430); the other seven VM/E2E keys have no shard manifest of their own, so it is added on top of the shared list rather than into it. Found by test_gate_greenlight_closure_trace.py.
+    paths: [...VM_E2E_PATHS, '.ci/config/shards/test-e2e-workers.json'],
   },
   // ct-tests.yml:943.
   e2e_k8s_multinode: {
@@ -258,6 +261,8 @@ const CLOSURES = {
     submodules: ['private/renet', 'private/homebrew-tap'],
     paths: [
       '.ci/rediacc_ci',
+      // ct-install-methods.yml's aggregator job widened its sparse-checkout to the whole cone on 2026-09-21 (`.ci/rediacc_ci, because a cone that stops at .ci/scripts does not put that package on disk at all`), which made `.ci/scripts` itself an input and not only the narrower entries below it. Found by test_gate_greenlight_closure_trace.py.
+      '.ci/scripts',
       'packages/cli',
       'packages/shared',
       'packages/provisioning',
@@ -304,6 +309,8 @@ const CLOSURES = {
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
       '.ci/scripts/test/run-account-e2e.sh',
+      // 348e25fcb (spec W T2.13) shards this job four ways off this manifest (ct-tests.yml:1965). Found by test_gate_greenlight_closure_trace.py.
+      '.ci/config/shards/test-account-e2e.json',
       // run-account-e2e.sh:27 sources it.
       '.ci/scripts/lib/common.sh',
       // The cache-miss install path, action.yml:77 and :81.

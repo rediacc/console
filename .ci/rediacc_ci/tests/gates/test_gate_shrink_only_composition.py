@@ -12,10 +12,10 @@ A reseed that drains thirty findings and absorbs one satisfies the first, violat
 STRUCTURAL PLUS BEHAVIOURAL, and the split is deliberate. Driving every gate's drain flag for real would mean rewriting live suppression files, and four of the gates do not even accept a `--baseline` override to redirect the write. So the structural half asserts that every CLI offering the flag consumes the shared guard, and the behavioural half proves the guard really refuses, end
 to end, on the one gate that CAN be pointed at a copy.
 
-WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP. The scan enumerates the working tree through `git ls-files --cached --others`, and four control cases PLANT a probe file inside `scripts/` and `.ci/scripts/quality/` and remove it again -- the lock records `mutex: ["tree:repo"]` for `gate-test:shrink-only-composition`
-for exactly that reason. A battery step reading either directory mid-plant is the
-flake that would be blamed on this port. `REAL_TREE_TWIN = True` buys the
-serialisation, and it is honoured only because this module declares no `XDIST_GROUP` of its own.
+WHY THIS MODULE OPTS IN TO THE REAL-TREE GROUP, AND WHY THAT TAKES AN EXPLICIT `XDIST_GROUP` RATHER THAN JUST `REAL_TREE_TWIN`. The scan enumerates the working tree through `git ls-files --cached --others`, and four control cases PLANT a probe file inside `scripts/` and `.ci/scripts/quality/` and remove it again, so a battery step reading either directory mid-plant is the flake this
+module cannot afford. There is no `BASH_TWIN` here -- see the module's opening paragraph -- so `rediacc_ci.xdist_groups.group_for` never even reads `REAL_TREE_TWIN`: that attribute only feeds the lock join a `BASH_TWIN` triggers, and a lock entry keyed on a shell script that was never written cannot exist. `REAL_TREE_TWIN = True` alone was therefore a promise the scheduler was
+not honouring, caught 2026-09-27 by four `zz_composition_*_probe` control cases failing with `FileNotFoundError` under `-n`: two of THIS module's own tests, scheduled onto different workers with no group in common, ran their plant-and-scan windows at the same time, and one read the other's probe path between its `all_offerers()` listing and its `py_parse` re-read of the same
+file. `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` is the escape hatch `xdist_groups.py` documents for exactly this shape: a module that shares the real tree with the lock-declared twins without being one itself, taking the same group name so a reader in one is never scheduled beside a writer in the other.
 
 THE PROBES ARE PID-KEYED, which the twin's are not. The twin uses fixed names, so two concurrent invocations plant the same path and each cleanup deletes the OTHER run's fixture -- the failure the battery's schedule records for the `.gate-paths-exist` pair. Adding the pid costs nothing and removes a way for this port and its own twin to collide when both are driven from one
 parity run.
@@ -33,11 +33,12 @@ import os
 import pathlib
 import re
 
-from rediacc_ci import paths
+from rediacc_ci import paths, xdist_groups
 from rediacc_ci.tests.gates import harness
 
-# Four control cases plant a probe inside the scanned tree. See the docstring.
+# Four control cases plant a probe inside the scanned tree. See the docstring: this module has no BASH_TWIN, so REAL_TREE_TWIN alone would not reach the scheduler -- the explicit group is what actually serialises it.
 REAL_TREE_TWIN = True
+XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 ROOT = paths.repo_root()
 

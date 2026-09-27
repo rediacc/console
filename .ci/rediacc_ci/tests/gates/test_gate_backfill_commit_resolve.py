@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-backfill-commit-resolve.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/release/resolve-backfill-commit.sh` -- the step that decides which commit a backfilled release sentinel records.
+Both-ways test for `rediacc_ci.release.resolve_backfill_commit` -- the step that decides which commit a backfilled release sentinel records. The bash subject this file originally drove, `.ci/scripts/release/resolve-backfill-commit.sh`, was deleted; `.ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py` covers the port's byte-for-byte parity with the twin's own recordings, and this file keeps driving the same behavioural cases against the port directly (not the recordings), the same way 204fea21c re-pointed `test_gate_stage_artifacts_channel.py` at `rediacc_ci.release.validate_stage_artifacts`.
 
 WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a manually-dispatched workflow (`.github/workflows/backfill-release-sentinel.yml`), so its failure paths are seen by a human roughly never, and then only by a human already mid-incident, reading the message to decide what went wrong. A wrong message there does not fail loudly; it sends the investigation
 somewhere else.
@@ -9,7 +9,7 @@ THE DEFECT THIS PINS. `git merge-base --is-ancestor` returns non-zero for two un
 from origin/main" -- which reads as a real tag pointing somewhere odd. After the
 2026-08-23 history rewrite the second case is the LIKELY one, because any SHA copied out of an old release note or an R2 sentinel no longer exists.
 
-HOW. Every case runs the REAL script (not a copy) with its working directory set to a purpose-built synthetic repository, so the git behaviour under test is git's and not a fake's. The one exception is the anti-swallow control, which needs the existence probe neutralised and says so.
+HOW. Every case runs the REAL module (not a copy), as a subprocess (`python3 -m rediacc_ci.release.resolve_backfill_commit`) with its working directory set to a purpose-built synthetic repository, so the git behaviour under test is git's and not a fake's. The one exception is the anti-swallow control, which needs the existence probe neutralised and says so.
 
 EXIT CODES ARE PART OF THE CONTRACT. This was a diagnosis change, not a control-flow change, so every case asserts the exit code as well as the text. A "clearer message" that also changed which inputs are accepted would be a different and much worse change.
 
@@ -27,7 +27,9 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-SUT = paths.from_root(".ci", "scripts", "release", "resolve-backfill-commit.sh")
+# The real `.ci` tree (never the fixture's), so the subprocess can `import rediacc_ci`.
+CI_DIR = paths.from_root(".ci")
+MODULE_SRC = paths.from_root(".ci", "rediacc_ci", "release", "resolve_backfill_commit.py")
 
 NOT_A_COMMIT = "does not name a commit in this repository"
 DETACHED = "refusing to backfill a sentinel for a detached tag"
@@ -56,8 +58,8 @@ def make_repo(gate, base: pathlib.Path) -> pathlib.Path:
     The detached commit is the whole point: it is the case the existence probe could plausibly break by re-classifying it as "does not exist".
     """
     harness.require_tool("git", "install git; this gate drives real git deliberately")
-    if not SUT.is_file():
-        gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(SUT))
+    if not MODULE_SRC.is_file():
+        gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(MODULE_SRC))
     repo = base / "repo"
     repo.mkdir(parents=True)
     _git(gate, repo, "init", "-q")
@@ -90,12 +92,19 @@ class Resolved:
         self.step_output = step_output
 
 
-def run_resolve(repo: pathlib.Path, script: pathlib.Path, **env: str) -> Resolved:
+def run_resolve(repo: pathlib.Path, **env: str) -> Resolved:
     step_output = repo / "step-output"
     result = harness.run(
-        ["bash", str(script)],
+        ["python3", "-m", "rediacc_ci.release.resolve_backfill_commit"],
         cwd=repo,
-        env={"VERSION": "v9.9.9", "GITHUB_OUTPUT": str(step_output), "NO_COLOR": "1", **env},
+        env={
+            "VERSION": "v9.9.9",
+            "GITHUB_OUTPUT": str(step_output),
+            "NO_COLOR": "1",
+            "PYTHONPATH": str(CI_DIR),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            **env,
+        },
     )
     return Resolved(
         result.rc,
@@ -107,7 +116,7 @@ def run_resolve(repo: pathlib.Path, script: pathlib.Path, **env: str) -> Resolve
 def test_a_nonexistent_sha_is_named_as_nonexistent(gate, tmp_path: pathlib.Path):
     gate.log_test("FIRE: the post-rewrite case, a SHA that is not in the repository at all")
     repo = make_repo(gate, tmp_path)
-    got = run_resolve(repo, SUT, INPUT_SHA=GHOST_SHA)
+    got = run_resolve(repo, INPUT_SHA=GHOST_SHA)
     gate.assert_exit(
         1, got, "a SHA that does not exist must still fail, and fail the same way it always did"
     )
@@ -135,7 +144,7 @@ def test_a_real_but_detached_sha_still_says_detached(gate, tmp_path: pathlib.Pat
     gate.log_test("THE CONTROL THAT MATTERS: a commit that genuinely exists and is off main")
     # If the probe were too broad -- a bare `cat-file -e` on the wrong argument, or the check applied to the tag path -- this would flip to the not-an-object message and the fix would have traded one misdiagnosis for another.
     repo = make_repo(gate, tmp_path)
-    got = run_resolve(repo, SUT, INPUT_SHA=detached_sha(gate, repo))
+    got = run_resolve(repo, INPUT_SHA=detached_sha(gate, repo))
     gate.assert_exit(1, got, "a detached commit still fails, with the same exit code")
     gate.assert_contains(got.out, DETACHED, "and is still diagnosed as a detached tag")
     gate.assert_contains(
@@ -155,7 +164,7 @@ def test_a_real_but_detached_sha_still_says_detached(gate, tmp_path: pathlib.Pat
 def test_the_tag_path_is_untouched_by_the_probe(gate, tmp_path: pathlib.Path):
     gate.log_test("the probe is scoped to the operator-supplied path")
     repo = make_repo(gate, tmp_path)
-    got = run_resolve(repo, SUT)
+    got = run_resolve(repo)
     gate.assert_exit(1, got, "the tag path still rejects a detached tag")
     gate.assert_contains(got.out, "resolved v9.9.9", "having resolved the tag itself")
     gate.assert_contains(got.out, DETACHED, "with the detached diagnosis")
@@ -170,7 +179,7 @@ def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
     # A bare `cat-file -e <sha>` waves a tree through -- it then fails reachability and gets reported as a DETACHED TAG, the same misdiagnosis one layer down.
     repo = make_repo(gate, tmp_path)
     tree_sha = _git(gate, repo, "rev-parse", "main^{tree}")
-    got = run_resolve(repo, SUT, INPUT_SHA=tree_sha)
+    got = run_resolve(repo, INPUT_SHA=tree_sha)
     gate.assert_exit(1, got, "a tree SHA is not backfillable and must fail")
     gate.assert_contains(got.out, NOT_A_COMMIT, "and is diagnosed as not naming a commit")
     gate.assert_contains(
@@ -182,7 +191,7 @@ def test_a_non_commit_object_is_rejected(gate, tmp_path: pathlib.Path):
     # CONTROL: the COMMIT that owns that very tree is accepted, so the rejection above is about the object's TYPE and not about that repository.
     (repo / "step-output").unlink(missing_ok=True)
     commit_sha = _git(gate, repo, "rev-list", "-n1", "main")
-    ok = run_resolve(repo, SUT, VERSION="v1.0.0", INPUT_SHA=commit_sha)
+    ok = run_resolve(repo, VERSION="v1.0.0", INPUT_SHA=commit_sha)
     gate.assert_exit(0, ok, "CONTROL: the commit holding that tree resolves fine")
     gate.log_pass("a tree SHA is rejected as not-a-commit (control: its own commit is accepted)")
 
@@ -192,7 +201,7 @@ def test_a_reachable_commit_still_succeeds(gate, tmp_path: pathlib.Path):
     # If this broke, every case above would be asserting that a script which rejects everything is correct.
     repo = make_repo(gate, tmp_path)
     main_sha = _git(gate, repo, "rev-list", "-n1", "main")
-    got = run_resolve(repo, SUT, VERSION="v1.0.0")
+    got = run_resolve(repo, VERSION="v1.0.0")
     gate.assert_exit(0, got, "a reachable tag exits 0")
     gate.assert_contains(
         got.step_output, "commit_sha=%s" % main_sha, "and writes the commit to the step output"
@@ -200,7 +209,7 @@ def test_a_reachable_commit_still_succeeds(gate, tmp_path: pathlib.Path):
     gate.assert_contains(got.out, "commit reachable from origin/main", "and says so")
 
     (repo / "step-output").unlink(missing_ok=True)
-    again = run_resolve(repo, SUT, VERSION="v1.0.0", INPUT_SHA=main_sha)
+    again = run_resolve(repo, VERSION="v1.0.0", INPUT_SHA=main_sha)
     gate.assert_exit(
         0, again, "a reachable operator-supplied SHA also exits 0 -- the probe passes it through"
     )
@@ -211,7 +220,7 @@ def test_a_reachable_commit_still_succeeds(gate, tmp_path: pathlib.Path):
 def test_a_missing_tag_is_unchanged(gate, tmp_path: pathlib.Path):
     gate.log_test("the one other failure path in the script must not have moved")
     repo = make_repo(gate, tmp_path)
-    got = run_resolve(repo, SUT, VERSION="v4.5.6")
+    got = run_resolve(repo, VERSION="v4.5.6")
     gate.assert_exit(1, got, "an unknown tag still exits 1")
     gate.assert_contains(got.out, "tag v4.5.6 not found in this checkout", "with its own message")
     gate.assert_not_contains(got.out, NOT_A_COMMIT, "and not the new one")
@@ -246,11 +255,11 @@ def test_the_two_failures_are_distinguishable(gate, tmp_path: pathlib.Path):
     gate.log_test("ANTI-SWALLOW: the two situations must reach the operator as DIFFERENT diagnoses")
     repo = make_repo(gate, tmp_path)
     sha = detached_sha(gate, repo)
-    ghost_out = run_resolve(repo, SUT, INPUT_SHA=GHOST_SHA).out
-    detached_out = run_resolve(repo, SUT, INPUT_SHA=sha).out
+    ghost_out = run_resolve(repo, INPUT_SHA=GHOST_SHA).out
+    detached_out = run_resolve(repo, INPUT_SHA=sha).out
     found = swallowed_distinction(ghost_out, detached_out)
     if found:
-        gate.log_fail("resolve-backfill-commit.sh: %s" % found)
+        gate.log_fail("resolve_backfill_commit: %s" % found)
     gate.assertions += 1
 
     # CONTROL: reproduce the PRE-FIX behaviour and require it to be reported.
@@ -272,8 +281,8 @@ def test_the_two_failures_are_distinguishable(gate, tmp_path: pathlib.Path):
     )
     shim.chmod(0o755)
     shimmed = "%s%s%s" % (nogit, os.pathsep, os.environ["PATH"])
-    ghost_out = run_resolve(repo, SUT, PATH=shimmed, INPUT_SHA=GHOST_SHA).out
-    detached_out = run_resolve(repo, SUT, PATH=shimmed, INPUT_SHA=sha).out
+    ghost_out = run_resolve(repo, PATH=shimmed, INPUT_SHA=GHOST_SHA).out
+    detached_out = run_resolve(repo, PATH=shimmed, INPUT_SHA=sha).out
     found = swallowed_distinction(ghost_out, detached_out)
     if not found:
         gate.log_fail(

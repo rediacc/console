@@ -103,13 +103,14 @@ process.stdout.write(JSON.stringify({
   },
   plans: {
     security4: planned('quality-security', 4),
+    i18n4: planned('quality-i18n', 4),
     code8: planned('quality-code', 8),
     code4: planned('quality-code', 4),
     www3: planned('quality-www-build', 3),
     static3: planned('quality-static', 3),
   },
   refusals: {
-    branch7: refusal('quality-branch', 7),
+    branch10: refusal('quality-branch', 10),
     www5: refusal('quality-www-build', 5),
     submodule2: refusal('quality-submodule-branches', 2),
     nowhere2: refusal('quality-nowhere', 2),
@@ -381,9 +382,9 @@ def test_the_sharder_read_a_real_lock(gate):
     """ANTI-VACUITY for the sharding half, and it comes first for the same reason the lane one does: an empty lock satisfies most of what follows."""
     gate.log_test("the lock the sharder reads is not empty")
     data = probe(gate)
-    # 20, not 40 and not 100: W7 P5 census batches B1 to B3 retired 26 of quality-security's gate-test entries and took the lane from 69 to 43, and the batches after them took it to 29 while this floor still read 40, so it was refusing the campaign's own success rather than a collapsed read. A floor sits BELOW the live count, and it is restated on each
+    # 15, not 40, not 20 and not 100: W7 P5 census batches B1 to B3 retired 26 of quality-security's gate-test entries and took the lane from 69 to 43, the batches after them took it to 29 while this floor still read 40, and 6e713d7cc's Quality/Security split (2026-09-26) moved the whole gate-test battery and the Python package tests out to their own jobs and took it to 18 while this floor still read 20 -- so each time it was refusing the campaign's own success rather than a collapsed read. A floor sits BELOW the live count, and it is restated on each
     # retirement batch so a closing margin is visible early.
-    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 20:
+    if data["lockSize"] < 100 or len(data["laneSets"]["quality-security"]) < 15:
         gate.log_fail(
             "the sharder saw %d lock entries and %d in quality-security. A plan over a "
             "collapsed lock emits shards that run nothing, and it would satisfy the "
@@ -429,10 +430,9 @@ def test_no_shard_is_empty(gate):
 
 
 def test_the_shards_are_balanced_on_weight(gate):
-    """T-SCHED B2 D1 moved this fixture off `security4`. Before the step-merge, `quality-security`'s 149-id `Quality-gate unit tests` step was NOT one unit, so the packer could spread its ids across shards for an even weight -- a plan real CI could never run, since gate-bind can attach one conjunct to that one step. After the merge the 149 ids are correctly ONE unit and `security4`
-    is (correctly) unbalanceable: 150 of 166 entries sit in a single indivisible
-    block. `quality-code` divides on real step boundaries and balances for real;
-    it is the box's own worked example (D1/D2) of a lane the mechanism suits."""
+    """T-SCHED B2 D1 moved this fixture off `security4`. Before the step-merge, `quality-security`'s 149-id `Quality-gate unit tests` step was NOT one unit, so the packer could spread its ids across shards for an even weight -- a plan real CI cannot run, since gate-bind can attach one conjunct to that one step. After the merge the 149 ids were (correctly) ONE unit and `security4`
+    was unbalanceable: 150 of 166 entries sat in a single indivisible block. 6e713d7cc (2026-09-26) later gave that block a job of its own (`quality-gate-tests`), which is WHY `security4` is a fine union/disjointness/non-empty fixture again today but no longer the dominant-step example -- see
+    `test_a_dominant_single_step_lane_is_correctly_unbalanceable`, which moved to `quality-i18n`. `quality-code` divides on real step boundaries and balances for real regardless of where the dominant step lives; it is the box's own worked example (D1/D2) of a lane the mechanism suits."""
     gate.log_test("balance on `weight`, which is the rule the box states")
     plan = probe(gate)["plans"]["code8"]
     weights = [s["weight"] for s in plan["shards"]]
@@ -446,18 +446,19 @@ def test_the_shards_are_balanced_on_weight(gate):
 
 
 def test_a_dominant_single_step_lane_is_correctly_unbalanceable(gate):
-    """The negative space of the test above, named rather than left implicit. `quality-security` is NOT a planner bug: 149 of its 166 entries are one hand-written step (`Quality-gate unit tests`), so no packer can spread that unit without proposing a plan gate-bind cannot realize. This is exactly the shape T-SCHED B2's own later measurement used to prefer `quality-code`."""
-    gate.log_test("quality-security's dominant step correctly resists balance")
-    plan = probe(gate)["plans"]["security4"]
+    """The negative space of the test above, named rather than left implicit. THIS WAS `quality-security` UNTIL 6e713d7cc (2026-09-26) moved its 149-id `Quality-gate unit tests` step to a new `quality-gate-tests` job of its own, which correctly left quality-security's remaining 18 entries evenly packable (`test_the_shards_are_balanced_on_weight`'s box would now accept it too). The
+    same shape lives in `quality-i18n` instead: 27 of its 40 entries are one hand-written `i18n` step, so no packer can spread that unit without proposing a plan gate-bind cannot realize. This is exactly the shape T-SCHED B2's own later measurement used to prefer `quality-code` over quality-security, and it still holds for whichever lane the dominant step lands in next."""
+    gate.log_test("quality-i18n's dominant step correctly resists balance")
+    plan = probe(gate)["plans"]["i18n4"]
     weights = [s["weight"] for s in plan["shards"]]
     if max(weights) - min(weights) <= 2:
         gate.log_fail(
-            "shard weights %s are balanced; quality-security's 149-id battery step "
+            "shard weights %s are balanced; quality-i18n's 27-id naturalization step "
             "should make that impossible, so either the lock or the merge changed "
             "underneath this control" % weights
         )
     gate.assertions += 1
-    gate.log_pass("quality-security stays lopsided (%s), as its structure demands" % weights)
+    gate.log_pass("quality-i18n stays lopsided (%s), as its structure demands" % weights)
 
 
 def test_a_mutex_group_never_splits(gate):
@@ -529,11 +530,11 @@ def test_the_plan_is_deterministic(gate):
 
 
 def test_more_shards_than_gates_refuses(gate):
-    """THE REFUSAL THE BOX CALLS OUT BY NAME."""
+    """THE REFUSAL THE BOX CALLS OUT BY NAME. quality-branch has grown from 6 gates to 9 across several unrelated commits since this fixture was written, so the ask has to keep sitting one past the live count rather than naming a number the lane has already grown past."""
     gate.log_test("more shards than gates must REFUSE, not emit an empty shard")
-    message = probe(gate)["refusals"]["branch7"]
+    message = probe(gate)["refusals"]["branch10"]
     gate.assert_contains(
-        message, "Ask for at most 6", "7 shards over quality-branch's 6 gates must refuse"
+        message, "Ask for at most 9", "10 shards over quality-branch's 9 gates must refuse"
     )
     gate.log_pass("more shards than gates refuses, and the message names the ceiling")
 

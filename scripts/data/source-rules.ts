@@ -381,11 +381,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/no-hardcoded-cli-text.js',
     exportName: 'noHardcodedCliText',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: [
-      'packages/cli/src/__tests__/**',
-      'packages/cli/src/commands/refprobe.ts',
-      ...TEST_FILE_GLOBS,
-    ],
+    ignores: ['packages/cli/src/__tests__/**', ...TEST_FILE_GLOBS],
   },
   {
     ruleId: 'custom/require-command-summary',
@@ -393,11 +389,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/require-command-summary.js',
     exportName: 'requireCommandSummary',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: [
-      'packages/cli/src/__tests__/**',
-      'packages/cli/src/commands/refprobe.ts',
-      ...TEST_FILE_GLOBS,
-    ],
+    ignores: ['packages/cli/src/__tests__/**', ...TEST_FILE_GLOBS],
   },
   {
     ruleId: 'custom/require-translation',
@@ -405,11 +397,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/require-translation.js',
     exportName: 'requireTranslation',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: [
-      'packages/cli/src/__tests__/**',
-      'packages/cli/src/commands/refprobe.ts',
-      ...TEST_FILE_GLOBS,
-    ],
+    ignores: ['packages/cli/src/__tests__/**', ...TEST_FILE_GLOBS],
     options: [{ localeDir: CLI_EN_LOCALE_DIR }],
   },
   {
@@ -418,7 +406,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/require-translation-key-arg.js',
     exportName: 'requireTranslationKeyArg',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: ['packages/cli/src/__tests__/**', 'packages/cli/src/commands/refprobe.ts'],
+    ignores: ['packages/cli/src/__tests__/**'],
     options: [{ localeDir: CLI_EN_LOCALE_DIR, functions: [{ name: 'errorResult', argIndex: 0 }] }],
   },
   {
@@ -427,7 +415,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/i18n/interpolation-match.js',
     exportName: 'interpolationMatch',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: ['packages/cli/src/__tests__/**', 'packages/cli/src/commands/refprobe.ts'],
+    ignores: ['packages/cli/src/__tests__/**'],
     options: [{ localeDir: CLI_EN_LOCALE_DIR }],
   },
   {
@@ -436,7 +424,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/no-positional-cli-syntax-source.js',
     exportName: 'noPositionalCliSyntaxSource',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: ['packages/cli/src/__tests__/**', 'packages/cli/src/commands/refprobe.ts'],
+    ignores: ['packages/cli/src/__tests__/**'],
   },
   {
     ruleId: 'custom/no-direct-sftp-client',
@@ -444,7 +432,7 @@ const CLI_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/no-direct-sftp-client.js',
     exportName: 'noDirectSftpClient',
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
-    ignores: ['packages/cli/src/__tests__/**', 'packages/cli/src/commands/refprobe.ts'],
+    ignores: ['packages/cli/src/__tests__/**'],
     options: [{ allow: ['src/services/machine/machine-connection.ts'] }],
   },
 ];
@@ -469,11 +457,10 @@ const ACCOUNT_WEB_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/no-hardcoded-text.js',
     exportName: 'noHardcodedText',
     files: ['private/account/web/src/**/*.ts', 'private/account/web/src/**/*.tsx'],
-    // The 6 files below carry a file-level ESLint suppression comment for this rule in the current tree (none states an inline reason), carried over here as explicit ignores per the rule map (row 141): a directive nothing honours once ESLint is gone must not silently start reporting instead.
+    // The 5 files below carry a file-level ESLint suppression comment for this rule in the current tree (none states an inline reason), carried over here as explicit ignores per the rule map (row 141): a directive nothing honours once ESLint is gone must not silently start reporting instead.
     ignores: [
       'private/account/web/src/**/__tests__/**',
       'private/account/web/src/components/ui/**',
-      'private/account/web/src/pages/DeviceConfigSetup.tsx',
       'private/account/web/src/pages/ConfigMemberAccept.tsx',
       'private/account/web/src/pages/admin/ConfigAdmin.tsx',
       'private/account/web/src/pages/ConfigStorage.tsx',

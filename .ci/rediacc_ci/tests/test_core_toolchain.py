@@ -1150,7 +1150,8 @@ def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
 def test_defect_1_has_a_live_variant_on_env() -> None:
     """`--env` with no pins file: exit 0 and ZERO bytes, into $GITHUB_ENV.
 
-    Two live call sites, `.github/workflows/ci-quality.yml:171` and `:1897`. Run against a COPY of the library under a fake root, so the real pins file is never touched.
+    FOUR live call sites as of 6e713d7cc (2026-09-26): `.github/workflows/ci-quality.yml`'s `quality-static`, `quality-security`, and the two jobs that split out of quality-security, `quality-pytest` and `quality-gate-tests` -- each of the new jobs needs the same toolchain versions loaded into its own runner. Run against a COPY of the library under a fake root, so the real pins
+    file is never touched.
     """
     with tempfile.TemporaryDirectory() as scratch:
         fake = pathlib.Path(scratch, ".ci", "scripts", "lib")
@@ -1163,7 +1164,7 @@ def test_defect_1_has_a_live_variant_on_env() -> None:
         assert "No such file or directory" in err
     # THE CALL SITES, so the finding's blast radius is asserted and not claimed.
     workflow = paths.from_root(".github/workflows/ci-quality.yml").read_text(encoding="utf-8")
-    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 2
+    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 4
 
 
 def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:

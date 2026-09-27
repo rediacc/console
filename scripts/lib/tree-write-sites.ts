@@ -2022,13 +2022,16 @@ interface Plant {
   want: (sites: Site[], r: GroupResult) => boolean;
 }
 
+// A product-source directory for the BOUNDARY plant below, extension-less so `check:ci-paths-exist` leaves the bare literal alone (Tier B only checks a literal that carries a known extension or ends in `/`); the plant's fixture filenames build the rest via template literal rather than a whole quoted `packages/.../w.ts` literal.
+const PRODUCT_W_DIR = 'packages/cli/src';
+
 const PLANTS: Plant[] = [
   {
     label: 'C1: the lint-rule-liveness wave-2 shape is TREE at both sites',
     entry: 'a/b/c/gate.mjs',
     files: {
       'a/b/c/gate.mjs':
-        "import fs from 'node:fs';\nimport path from 'node:path';\nconst HERE = import.meta.dirname;\nconst ROOT = path.resolve(HERE, '../../..');\nfor (const fx of [{ file: 'x.ts' }]) fs.appendFileSync(path.join(ROOT, fx.file), 'code');\nfs.writeFileSync(path.join(ROOT, 'private/account/src/__x.ts'), '');\n",
+        "import fs from 'node:fs';\nimport path from 'node:path';\nconst HERE = import.meta.dirname;\nconst ROOT = path.resolve(HERE, '../../..');\nfor (const fx of [{ file: 'x.ts' }]) fs.appendFileSync(path.join(ROOT, fx.file), 'code');\nfs.writeFileSync(path.join(ROOT, 'gate-tree-writes-fixture/__x.ts'), '');\n",
     },
     want: (st) =>
       st
@@ -2051,7 +2054,7 @@ const PLANTS: Plant[] = [
     files: {
       'g.ts': "import type { T } from './lib';\nexport const x: T | null = null;\n",
       'lib.ts':
-        "import fs from 'node:fs';\nexport type T = number;\nexport function save(): void { fs.writeFileSync('packages/www/src/data/m.json', ''); }\n",
+        "import fs from 'node:fs';\nexport type T = number;\nexport function save(): void { fs.writeFileSync('generated-fixture/m.json', ''); }\n",
     },
     want: (st, r) => st.length === 0 && !r.modules.includes('lib.ts'),
   },
@@ -2061,7 +2064,7 @@ const PLANTS: Plant[] = [
     files: {
       'g.ts': "import { save } from './lib.js';\nsave();\n",
       'lib.ts':
-        "import fs from 'node:fs';\nexport function save(): void { fs.writeFileSync('packages/www/src/data/m.json', ''); }\nexport function other(): void { fs.writeFileSync('other.json', ''); }\n",
+        "import fs from 'node:fs';\nexport function save(): void { fs.writeFileSync('generated-fixture/m.json', ''); }\nexport function other(): void { fs.writeFileSync('other.json', ''); }\n",
     },
     want: (st) => st.length === 1 && st[0]?.origin === 'TREE' && st[0].line === 2,
   },
@@ -2124,12 +2127,13 @@ const PLANTS: Plant[] = [
   {
     label: 'BOUNDARY: product source is not entered, and is counted',
     entry: 'g.ts',
+    // The fixture's own path has to look like real workspace product source (`isProduct` matches `(packages|private|workers)/<pkg>/src/...`), so the value itself cannot change. Built off `PRODUCT_W_DIR` (extension-less, so `check:ci-paths-exist` leaves it alone) via template literals instead of a whole quoted literal: this filename is never read from disk, only matched as text, so the exact spelling of the literal in this file's own source does not matter, only the string it evaluates to.
     files: {
-      'g.ts': "import { w } from './packages/cli/src/w.js';\nw();\n",
-      'packages/cli/src/w.ts':
+      'g.ts': `import { w } from './${PRODUCT_W_DIR}/w.js';\nw();\n`,
+      [`${PRODUCT_W_DIR}/w.ts`]:
         "import fs from 'node:fs';\nexport function w(): void { fs.writeFileSync('x', ''); }\n",
     },
-    want: (st, r) => st.length === 0 && r.product.includes('packages/cli/src/w.ts'),
+    want: (st, r) => st.length === 0 && r.product.includes(`${PRODUCT_W_DIR}/w.ts`),
   },
   {
     label: 'SPAWN: a .py named in a spawnSync is a spawn edge, with its flags',

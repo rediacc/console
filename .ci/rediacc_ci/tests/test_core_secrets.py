@@ -4,8 +4,9 @@ THE PROPERTY THIS SUITE IS REALLY ABOUT is a negative one -- "the value does not
 paired with a POSITIVE control that proves the value was genuinely in play: the names are still legible, the surrounding text survived, or the same call masked something
 else.
 
-THE NAME CLASSIFIER IS TESTED AGAINST A CORPUS, NOT A TABLE. `looks_secret` is a heuristic, and a table of expectations written next to it only records what its author believed twice. `rdc.sh:240-248` is an INDEPENDENT ruling: written for a different reason, by someone solving a different problem, it names four variables it refuses to let into a process and two it extracts by hand.
-Those six names are harvested from the file at run time and the classifier has to agree with all of them. `.ci/config/bws-secret-map.json` supplies the second, wider corpus.
+THE NAME CLASSIFIER IS TESTED AGAINST A CORPUS, NOT A TABLE. `looks_secret` is a heuristic, and a table of expectations written next to it only records what its author believed twice. `.ci/rediacc_ci/security/rdc_sh_env_check.py` (the gate that drives `rdc.sh`'s dev path, `check:ci-rdc-sh-env`) is an INDEPENDENT ruling: written for a different reason, by someone solving a
+different problem, it names four private variables that must never reach the CLI's environment (`SECRET_NAMES`) and the exact three it allows through (`ALLOWLIST`). Those seven names are harvested from the file at run time and the classifier has to agree with all of them. Before account-env's retirement (eeaff0693) this ruling was rdc.sh's own comment, quoted verbatim
+byte for byte; the comment moved to prose in this gate module when rdc.sh stopped sourcing `private/account/.env` at all, but the ruling -- which names are secret-shaped and which are not -- is the same one, still enforced, still independent of this file. `.ci/config/bws-secret-map.json` supplies the second, wider corpus.
 """
 
 import hashlib
@@ -112,15 +113,18 @@ def test_redact_env_masks_only_the_secret_named_variables() -> None:
 
 
 def _rdc_sh_rulings() -> tuple[set[str], set[str]]:
-    """The four names rdc.sh refuses to source, and the two it extracts.
+    """The four names `rdc.sh`'s dev path must never export, and the three it does.
 
-    Harvested from the file so the corpus tracks the file. The caller asserts both sets are non-empty, which is what turns a broken harvest into a red instead of a vacuous pass.
+    Harvested from `.ci/rediacc_ci/security/rdc_sh_env_check.py` -- the gate that makes this ruling and enforces it against the real `rdc.sh` -- so the corpus tracks the ruling rather than a copy of it. The caller asserts both sets are non-empty, which is what turns a broken harvest into a red instead of a vacuous pass.
     """
-    text = paths.from_root("rdc.sh").read_text(encoding="utf-8")
-    start = text.index("by grep. NEVER")
-    end = text.index("grep + cut extracts")
-    unsafe = set(re.findall(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b", text[start:end]))
-    safe = set(re.findall(r"grep -E '\^([A-Z][A-Z0-9_]*)='", text))
+    text = paths.from_root(".ci", "rediacc_ci", "security", "rdc_sh_env_check.py").read_text(
+        encoding="utf-8"
+    )
+    start = text.index("SECRET_NAMES = (")
+    end = text.index(")", start)
+    unsafe = set(re.findall(r'"([A-Z][A-Z0-9_]*)"', text[start:end]))
+    allowlist_line = next(line for line in text.splitlines() if line.startswith("ALLOWLIST = "))
+    safe = set(re.findall(r"[A-Z][A-Z0-9_]*", allowlist_line.split("=", 1)[1]))
     return unsafe, safe
 
 
