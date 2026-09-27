@@ -9,7 +9,7 @@ The devbox container startup renumbers the `vscode` user from a static 7111 (bak
 chowning files in a lower layer, not loop overhead.
 
 ## Outcome
-Plan drafted 2026-09-07 on operator instruction. Proposes a two-layer approach: uid-agnostic published base + thin per-operator derived layer baked at image build via `Dockerfile.uid`. Design includes file edits, new gates, and proof strategy. Status: design complete, not yet implemented.
+Plan drafted 2026-09-07 on operator instruction. Proposes a two-layer approach: uid-agnostic published base + thin per-operator derived layer baked at image build via `Dockerfile.uid`. Design includes file edits, new gates, and proof strategy. Implemented 2026-09-27 in ad4b21c78, with one deviation: the published base keeps 7111 because renet's hub pins it (pkg/hub/containers.go resolveUserIDs), so the local layer derives only when the host ids differ, and its tag also carries a hash of Dockerfile.uid.
 
 ## Lessons
 - Two necessary fixes can remain insufficient when the residual is a property of the system (overlayfs copy-up), not of the loop. Performance bottleneck must be moved, not optimized in place.
