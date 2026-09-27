@@ -496,7 +496,7 @@ def test_main_exports_renet_test_pkgs_from_the_named_leg_before_invoking_ci_sh(
 
     monkeypatch.setattr(port_module.common, "require_submodule", lambda *_args, **_kwargs: True)
     monkeypatch.delenv("RENET_TEST_PKGS", raising=False)
-    captured: dict[str, object] = {}
+    captured: dict[str, list[str] | str | None] = {}
 
     class _Completed:
         returncode = 0
@@ -512,7 +512,9 @@ def test_main_exports_renet_test_pkgs_from_the_named_leg_before_invoking_ci_sh(
 
     assert rc == 0
     assert captured["RENET_TEST_PKGS"] == "pkg/a pkg/b"
-    assert captured["argv"][-1] == "test", "the stage itself must still reach ci.sh unchanged"
+    argv = captured["argv"]
+    assert isinstance(argv, list)
+    assert argv[-1] == "test", "the stage itself must still reach ci.sh unchanged"
 
 
 def test_main_without_shard_flags_never_touches_renet_test_pkgs(monkeypatch):

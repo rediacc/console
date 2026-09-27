@@ -2126,8 +2126,8 @@ jobs:
             '.legs[] | select(.index == $idx) | .ids | map(sub("^renet-integration:"; "")) | join(" ")' \
             .ci/config/shards/test-renet-integration.json)
           echo "Shard ${{ matrix.shard }}/3 files: $FILES"
-          # CI=true rides into sudo explicitly: sudo resets the environment, and ci-test.sh writes its --junit-xml (the unit-durations and results artifacts below) only under CI. Before this line both uploads found no file on every run.
-          sudo env "CI=true" "RENET_INTEGRATION_FILES=$FILES" .ci/scripts/private/renet-integration.sh --no-cleanup
+          # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it.
+          sudo env "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" .ci/scripts/private/renet-integration.sh --no-cleanup
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
