@@ -782,6 +782,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
+      "packages/www/scripts/check-video-source.js",
       "packages/www/scripts/test-tutorial-player-release-gate.js"
     ],
     "ci": {
@@ -4183,6 +4184,9 @@
     "id": "check:ci-browser-smoke",
     "run": "npm run check:ci-browser-smoke",
     "slow": true,
+    "needs": [
+      "build:www"
+    ],
     "gate": true,
     "leaves": [
       ".ci/rediacc_ci/quality/browser_smoke.py"
@@ -4212,6 +4216,9 @@
     "id": "check:ci-page-density",
     "run": "npm run check:ci-page-density",
     "slow": true,
+    "needs": [
+      "build:www"
+    ],
     "gate": true,
     "leaves": [
       ".ci/rediacc_ci/quality/page_density.py"

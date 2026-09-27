@@ -774,7 +774,10 @@ export const GATES: readonly GateSpec[] = [
     // It boots the real www dev server and asserts on rendered DOM, so the whole astro graph is in scope: the remark plugins, the i18n catalogs, and the two workspaces www depends on. Narrowing to the content and the player component is the mistake to avoid.
     paths: ['packages/www/**', 'packages/shared/**', 'packages/locales/**', 'package.json'],
     pathsOrigin: 'declared',
-    leaves: ['packages/www/scripts/test-tutorial-player-release-gate.js'],
+    leaves: [
+      'packages/www/scripts/check-video-source.js',
+      'packages/www/scripts/test-tutorial-player-release-gate.js',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -3912,6 +3915,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-browser-smoke',
     run: 'npm run check:ci-browser-smoke',
     slow: true, // 20.4s measured
+    // Reads packages/www/dist, which build:www rewrites under the www-dist mutex; without this edge a full local run scheduled it mid-build and it saw "zero routes" (2026-09-27). CI orders it after the build step in quality-www-build already.
+    needs: ['build:www'],
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/browser_smoke.py'],
     ci: {
@@ -3939,6 +3944,8 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-page-density',
     run: 'npm run check:ci-page-density',
     slow: true, // drives 3 routes x 4 viewports in a container
+    // Reads packages/www/dist, which build:www rewrites under the www-dist mutex; without this edge a full local run scheduled it mid-build and it saw "zero routes" (2026-09-27). CI orders it after the build step in quality-www-build already.
+    needs: ['build:www'],
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/page_density.py'],
     ci: {
