@@ -68,6 +68,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
@@ -78,6 +79,8 @@ from rediacc_ci.controls import Controls
 GATES_SUBDIR = (".ci", "scripts", "test", "gates")
 LOCK_SUBDIR = ("scripts", "ci-runner", "gates.lock.json")
 DEFAULT_PATTERN = "test-*.sh"
+# T1.6 (PLAN-ci-time-budget): per-driver durations, for budget_report.py --refresh (T3.2) to read as the `quality-gate-tests` lane's units. `reports/` is gitignored at the repo root; `ci-quality.yml`'s `quality-gate-tests` job uploads this exact path as `unit-durations-quality-gate-tests-<sha>`, `if: always()` -- a red run's partial durations still matter to a future refresh even though T3.2 itself only samples GREEN runs, and it is not this constant's job to guess which runs T3.2 will pick.
+UNIT_DURATIONS_RELPATH = pathlib.PurePosixPath("reports/quality-gate-tests/unit-durations.json")
 
 EXIT_OK = 0
 EXIT_FAIL = 1
@@ -225,6 +228,8 @@ class Outcome:
         self.rc: int | None = None
         self.log = ""
         self.assertions = 0
+        # T1.6: wall time in milliseconds, 0.0 until run_one sets it. A test that never launched (not recorded) keeps 0.0 rather than a guessed cost.
+        self.duration_ms = 0.0
 
     @property
     def verdict(self) -> str:
@@ -251,7 +256,9 @@ def run_one(gates_dir: pathlib.Path, name: str, timeout: int = 1800) -> Outcome:
         # reporting rc=1 here would say "your gate test failed", which is false.
         outcome.log = "battery: could not run %s: not an executable file\n" % name
         return outcome
+    started = time.monotonic()
     result = ci_proc.run(["./" + name], cwd=gates_dir, timeout=timeout)
+    outcome.duration_ms = (time.monotonic() - started) * 1000.0
     outcome.recorded = True
     outcome.rc = result.returncode
     outcome.log = result.stdout + result.stderr
@@ -443,6 +450,13 @@ def _default_jobs() -> int:
     return min(8, os.cpu_count() or 4)
 
 
+def write_unit_durations_summary(report: Report, path: pathlib.Path) -> None:
+    """T1.6/T3.2's `battery-json` format: `{"drivers": [{"name": str, "duration_ms": number}, ...]}`, one entry per SCORED outcome (so a lost test still contributes its 0.0 rather than being absent). Creates `path`'s parent directory; called unconditionally, win or lose, the same `if: always()` shape `check_pytest.py`'s own junit write already uses for this lane's sibling."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    drivers = [{"name": o.name, "duration_ms": o.duration_ms} for o in report.outcomes]
+    path.write_text(json.dumps({"drivers": drivers}, indent=2) + "\n", encoding="utf-8")
+
+
 def print_report(report: Report) -> None:
     for line in report.notices:
         print(line, file=sys.stderr)
@@ -474,7 +488,8 @@ def _fixture(directory: pathlib.Path, name: str, body: str) -> None:
 def selftest(*, verbose: bool = False) -> bool:
     import tempfile  # noqa: PLC0415 -- only the selftest needs it
 
-    controls = Controls("battery", floor=24, verbose=verbose)
+    # FLOOR RAISED WITH THE SUITE, 24 -> 35 (five new T1.6 controls for run_one's duration_ms and write_unit_durations_summary's shape, including the lost-outcome control that would otherwise let a report silently drop the tests it never scored). 38 controls run today; slack kept at three, the same margin check_pytest.py's own floor carries.
+    controls = Controls("battery", floor=35, verbose=verbose)
 
     # -- score(), the whole matrix, without a scheduler
     for verdict, recorded, rc, assertions in (
@@ -607,6 +622,40 @@ def selftest(*, verbose: bool = False) -> bool:
         controls.truthy("SANITY: a healthy fixture battery is green", result.ok)
         controls.check("...and counts its assertions", result.assertions, 2)
         controls.check("...and runs SERIAL while isolation is undeclared", result.jobs, 1)
+
+        # -- T1.6: run_one records a real wall time, and write_unit_durations_summary shapes it for the consumer
+        controls.truthy(
+            "T1.6: a launched test's Outcome carries a positive duration_ms",
+            result.outcomes[0].duration_ms > 0.0,
+        )
+        durations_path = base / "unit-durations.json"
+        write_unit_durations_summary(result, durations_path)
+        written = json.loads(durations_path.read_text(encoding="utf-8"))
+        controls.check(
+            "write_unit_durations_summary shapes {'drivers': [{'name', 'duration_ms'}, ...]}",
+            sorted(written.keys()),
+            ["drivers"],
+        )
+        controls.check(
+            "...one driver entry per scored outcome",
+            [d["name"] for d in written["drivers"]],
+            [o.name for o in result.outcomes],
+        )
+        controls.truthy(
+            "...and the driver's own duration_ms rode along",
+            all(isinstance(d["duration_ms"], int | float) for d in written["drivers"]),
+        )
+        lost_summary = Report()
+        lost_outcome = Outcome("l.sh")
+        lost_summary.outcomes.append(lost_outcome)
+        score(lost_outcome, lost_summary)
+        write_unit_durations_summary(lost_summary, durations_path)
+        lost_written = json.loads(durations_path.read_text(encoding="utf-8"))
+        controls.check(
+            "CONTROL: a test the scheduler LOST still contributes a driver entry, at duration_ms 0.0 rather than being dropped",
+            lost_written["drivers"],
+            [{"name": "l.sh", "duration_ms": 0.0}],
+        )
 
         _fixture(gates, "test-vacuous.sh", "#!/bin/bash\necho 'did nothing'\nexit 0\n")
         result = run_battery(
@@ -761,6 +810,8 @@ def main(argv: list[str]) -> int:
         verbose=verbose,
     )
     print_report(report)
+    # T1.6: written win or lose, matching ci-quality.yml's `if: always()` upload -- a red run's partial per-driver durations are still real measurements, and it is the workflow's job (not this runner's) to decide which runs T3.2 samples from.
+    write_unit_durations_summary(report, root / UNIT_DURATIONS_RELPATH)
     return EXIT_OK if report.ok else EXIT_FAIL
 
 

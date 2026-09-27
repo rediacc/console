@@ -17,14 +17,12 @@
 #
 # T2.16 (PLAN-ci-time-budget, D-W4): CI no longer runs one invocation over all
 # 18 -- it runs `TUTORIAL_SHARD` shards in parallel, each its own freshly
-# provisioned machine, so state stops carrying across a shard boundary. That
-# is the operator's decision, not a proven property of the scripts: nothing
-# here has verified that no tutorial-<slug>.sh still reads state only a
-# specific PRECEDING tutorial leaves behind. Two tutorials the same shard's
-# contiguous slice keeps adjacent still run back-to-back on one machine
-# exactly as before, so an undiscovered dependency between neighbours is
-# unaffected either way; one crossing a shard boundary is what a live sharded
-# run is what actually proves.
+# provisioned machine, so state stops carrying across a shard boundary. Every
+# tutorial-<slug>.sh rebuilds the config, machines and repos it uses in its own
+# pre-recording setup (audited 2026-09-27), and the first green four-way run
+# (CI run 36293027142, OPS Provision linux-amd64 1/4..4/4) is the live proof
+# that no tutorial reads state only a preceding one leaves behind. Neighbours
+# inside one shard still share a machine, as before.
 #
 # Environment (all optional; defaults in lib/tutorial-helpers.sh and the
 # scripts themselves):
@@ -155,6 +153,7 @@ echo "Tutorial sequence (${#sequence[@]}): ${sequence[*]}"
 echo "Logs: $LOG_DIR"
 overall_start=$(date +%s)
 declare -a results=()
+declare -a json_entries=()
 failed=0
 for slug in "${sequence[@]}"; do
     log="$LOG_DIR/$slug.log"
@@ -165,13 +164,17 @@ for slug in "${sequence[@]}"; do
     # A KILLED TUTORIAL IS NOT A TUTORIAL THAT FAILED. Without this the summary
     # table shows `rc=143` beside a normal-looking duration and reads as the
     # script's own verdict.
+    killed_signal="null"
     if [[ $rc -gt 128 && $rc -lt 160 ]]; then
-        rc_text="killed:SIG$((rc - 128))"
+        killed_signal=$((rc - 128))
+        rc_text="killed:SIG$killed_signal"
     else
         rc_text="$rc"
     fi
     results+=("$(printf '%-20s rc=%-12s %4ss' "$slug" "$rc_text" "$dur")")
     echo "${results[-1]}"
+    # T1.6 (PLAN-ci-time-budget): the same numbers as the printf line above, as one JSON object per tutorial rather than a column a human reads. `duration_ms` is the field name and unit `budget_report.py`'s own T1.6 producer-contract docstring names for this lane (`{"tutorials": [{"slug": str, "duration_ms": number}, ...]}`); this driver only measures whole seconds, so the value is `dur * 1000` rather than a false claim of millisecond precision. `rc`/`killed_signal` ride along as extra fields the T3.2 reader does not need but a human grepping the file might. Slugs are derived from `tutorial-*.mdx` filenames (checked earlier against the doc-driven sequence above), so none of these fields needs escaping.
+    json_entries+=("$(printf '{"slug":"%s","duration_ms":%s,"rc":%s,"killed_signal":%s}' "$slug" "$((dur * 1000))" "$rc" "$killed_signal")")
     if [[ $rc -ne 0 ]]; then
         failed=1
         echo "──── $slug failed; last 40 lines of $log ────"
@@ -181,8 +184,23 @@ for slug in "${sequence[@]}"; do
     fi
 done
 
+total=$(($(date +%s) - overall_start))
 echo
 echo "Summary:"
 printf '%s\n' "${results[@]}"
-echo "TOTAL $(($(date +%s) - overall_start))s"
+echo "TOTAL ${total}s"
+
+# T1.6 (PLAN-ci-time-budget): a machine-readable summary beside the human logs, in the same $LOG_DIR the OPS Provision job uploads whole as `tutorial-sequence-logs-<name>-<shard>-<sha>` (`if: always()`, so a failed or killed run still lands its partial durations). budget_report.py --refresh (T3.2) reads this rather than parsing the printf table above, which stays for a human tailing the job log.
+shard_json="null"
+[[ -n "${TUTORIAL_SHARD:-}" ]] && shard_json="\"$TUTORIAL_SHARD\""
+json_list=""
+if [[ ${#json_entries[@]} -gt 0 ]]; then
+    json_list="$(
+        IFS=,
+        echo "${json_entries[*]}"
+    )"
+fi
+printf '{"shard":%s,"total_seconds":%s,"tutorials":[%s]}\n' \
+    "$shard_json" "$total" "$json_list" >"$LOG_DIR/tutorial-durations.json"
+
 exit $failed

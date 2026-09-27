@@ -200,6 +200,7 @@ if [[ -n "$SHARD_MANIFEST" ]]; then
     PLAIN_FILES=()
     BUCKET_FILES=()
     BUCKET_GREPS=()
+    BUCKET_NAMES=()
     for id in "${LEG_IDS[@]}"; do
         rest="${id#e2e-workers:}"
         if [[ "$rest" == "$id" ]]; then
@@ -216,6 +217,7 @@ if [[ -n "$SHARD_MANIFEST" ]]; then
             fi
             BUCKET_FILES+=("$file")
             BUCKET_GREPS+=("$grep_pattern")
+            BUCKET_NAMES+=("$bucket")
         else
             PLAIN_FILES+=("$rest")
         fi
@@ -228,14 +230,24 @@ if [[ -n "$SHARD_MANIFEST" ]]; then
     RUN_OPTS=("--workers=$WORKERS")
     is_ci && RUN_OPTS+=("--max-failures=3")
 
+    # T1.6 (PLAN-ci-time-budget): each `npx playwright test` invocation below
+    # loads playwright.config.ts fresh, and that config's json reporter writes
+    # to E2E_JSON_REPORT_FILE (default reports/bridge-logs/unit-durations.json)
+    # if the env var is unset. A shard whose manifest has both plain files and
+    # bucket units runs more than one invocation, so a shared default name
+    # would have each later call overwrite the previous one's durations. A
+    # distinct name per invocation keeps all of them on disk; nothing merges
+    # them yet (T3.2's job) but no data is lost between now and then.
     set +e
     if [[ ${#PLAIN_FILES[@]} -gt 0 ]]; then
-        (cd "$E2E_TESTS_DIR" && npx playwright test "${RUN_OPTS[@]}" "${PLAIN_FILES[@]}") 2>&1 | tee -a "$E2E_LOG"
+        (cd "$E2E_TESTS_DIR" && E2E_JSON_REPORT_FILE="reports/bridge-logs/unit-durations-plain.json" \
+            npx playwright test "${RUN_OPTS[@]}" "${PLAIN_FILES[@]}") 2>&1 | tee -a "$E2E_LOG"
         leg_rc=${PIPESTATUS[0]}
         [[ $leg_rc -ne 0 ]] && RC=$leg_rc
     fi
     for i in "${!BUCKET_FILES[@]}"; do
-        (cd "$E2E_TESTS_DIR" && npx playwright test "${RUN_OPTS[@]}" --grep "${BUCKET_GREPS[$i]}" "${BUCKET_FILES[$i]}") 2>&1 | tee -a "$E2E_LOG"
+        (cd "$E2E_TESTS_DIR" && E2E_JSON_REPORT_FILE="reports/bridge-logs/unit-durations-${BUCKET_NAMES[$i]}.json" \
+            npx playwright test "${RUN_OPTS[@]}" --grep "${BUCKET_GREPS[$i]}" "${BUCKET_FILES[$i]}") 2>&1 | tee -a "$E2E_LOG"
         leg_rc=${PIPESTATUS[0]}
         [[ $leg_rc -ne 0 ]] && RC=$leg_rc
     done

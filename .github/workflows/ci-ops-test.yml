@@ -365,6 +365,23 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # T1.6 (PLAN-ci-time-budget): the same file as above, ALSO under its own
+      # `unit-durations-ops-tutorials-` artifact -- the prefix
+      # `budget_report.py`'s T1.6 producer-contract docstring says its
+      # (not-yet-written) T3.2 reader will match artifacts by, ahead of the
+      # `ops-tutorials` lane id. The human-log artifact above keeps its
+      # existing name so `.ci/scripts/ci/skip-plan-reconcile.cjs` and anything
+      # else already keyed on it is undisturbed; this is a second, narrower
+      # upload of one file, not a rename.
+      - name: Upload tutorial durations (unit-durations)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unit-durations-ops-tutorials-${{ matrix.name }}-${{ matrix.shard }}-${{ github.sha }}
+          path: ${{ runner.temp }}/tutorial-logs/tutorial-durations.json
+          retention-days: 3
+          if-no-files-found: ignore
+
       - name: "Test: rdc ops down"
         if: always()
         run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true

@@ -41,10 +41,30 @@ export default test.defineConfig({
   workers: 1,
   /* Longer timeout in CI (10 min vs 5 min locally) */
   timeout: process.env.CI ? 600000 : 300000,
-  /* Reporters: HTML report + text file output for each test */
+  /* Reporters: HTML report + text file output for each test, plus a JSON
+   * reporter for T1.6 (PLAN-ci-time-budget): per-test durations that
+   * budget_report.py --refresh (T3.2) will read to compute lane-duration
+   * estimates. Written under reports/bridge-logs/, which the E2E Workers
+   * job's upload step already ships whole (ct-tests.yml, `if: always()`),
+   * so no workflow edit is needed to get it off the runner.
+   *
+   * The output path is overridable per invocation
+   * (E2E_JSON_REPORT_FILE): run-e2e.sh's --shard-manifest branch calls
+   * `npx playwright test` more than once per leg (once for the leg's plain
+   * files, once per describe-group bucket), and each call loads this config
+   * fresh. A single static outputFile would have every later call in the
+   * leg overwrite the previous one's durations rather than adding to them,
+   * so run-e2e.sh sets a distinct name per call instead.
+   */
   reporter: [
     ['html', { outputFolder: 'reports/bridge' }],
     ['./src/reporters/TextFileReporter.ts', { outputDir: 'reports/bridge-logs' }],
+    [
+      'json',
+      {
+        outputFile: process.env.E2E_JSON_REPORT_FILE || 'reports/bridge-logs/unit-durations.json',
+      },
+    ],
   ],
   /* No browser needed for bridge tests */
   use: {

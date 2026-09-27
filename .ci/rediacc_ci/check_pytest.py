@@ -93,6 +93,15 @@ MIN_TESTS = 150
 # the twenty-two steps around it -- including `Quality-gate unit tests`, which runs AFTER this one and has been cancelled on every run of this wave, so its cost is still unknown. As before: this does not make the suite faster and does not pretend to. It buys a VERDICT where there was an opaque kill, and the real fix is still to split what this gate is billed for.
 RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 1800)
 
+# T1.6 (PLAN-ci-time-budget): per-test durations, so budget_report.py --refresh (T3.2) has a real per-unit p90 for this lane instead of falling back to `weight`. `reports/` is gitignored at the repo root, and `ci-quality.yml`'s `quality-pytest` job uploads this exact directory as `unit-durations-quality-pytest-<sha>`, `if: always()` so a red run's partial durations are captured too -- T3.2 only reads GREEN runs, but a red run is not this constant's business to guess at.
+JUNIT_XML_RELPATH = pathlib.PurePosixPath("reports/quality-pytest/junit.xml")
+
+
+def junit_xml_path(root: pathlib.Path) -> pathlib.Path:
+    """Where `--junitxml` writes, given the repo root. A pure function, so the selftest checks it without a pytest run: it moves with `root` rather than being hard-coded absolute, which is the property that keeps this gate runnable from a worktree other than the one it was written in."""
+    return root / JUNIT_XML_RELPATH
+
+
 # HOW MANY WORKERS, and it is not `auto`. `-n auto` takes every core (24 here) and oversubscribes against the ci-runner's own 22-slot pool, which is already running 356 other gates. The shape and the reason are copied from `battery._default_jobs` rather than re-derived.
 #
 # `-n` AND `weight` MOVE TOGETHER. `pool.ts:242` caps effective weight at the pool size, so `weight: 8` reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally. An `-n` larger than the declared weight is an undeclared claim on the machine, which is how a parallel gate makes a lane SLOWER.
@@ -428,7 +437,19 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     """
     # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter controls, then two more for class methods). It was 16 against 19 controls; the parallel-header work adds nine (six string fixtures and three against a real two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the entire parallel block deleted, which is precisely the "the file is not
     # being executed as written" failure the floor exists for. Slack is kept at three, the same margin the previous pair carried.
-    c = Controls("check_pytest", floor=44, verbose=verbose)
+    c = Controls("check_pytest", floor=46, verbose=verbose)
+
+    # -- T1.6: junit_xml_path, pure and root-relative
+    c.check(
+        "junit_xml_path resolves under reports/quality-pytest, the path ci-quality.yml's quality-pytest job uploads as unit-durations-quality-pytest-<sha>",
+        junit_xml_path(pathlib.Path("/x")),
+        pathlib.Path("/x/reports/quality-pytest/junit.xml"),
+    )
+    c.check(
+        "CONTROL: junit_xml_path moves with root rather than being hard-coded absolute -- two different roots must not collide on one file",
+        junit_xml_path(pathlib.Path("/x")) == junit_xml_path(pathlib.Path("/y")),
+        False,
+    )
 
     # A CORPUS SIZE THAT IS COMFORTABLY ABOVE THE FLOOR, DERIVED FROM IT. These controls used to write 65 as a literal, and raising MIN_TESTS from 40 to 120 in phase 3 turned the first one -- the SANITY control, the one that asserts a healthy run is green -- red for a reason that had nothing to do with the thing under test. A literal that must be edited in step with another literal
     # is a second place to forget, so it is computed.
@@ -897,7 +918,14 @@ def main(argv: list[str]) -> int:
             return EXIT_FAIL
     print("info: corpus %d across %d root(s) (floor %d)" % (corpus, len(per_root), MIN_TESTS))
 
-    returncode, out = run_pytest(pytest_bin, root, ["-n", str(jobs()), "--dist", "loadgroup"])
+    # T1.6: the parent directory is created here rather than left to pytest's junitxml plugin -- some releases refuse to write into a missing directory, and a gate that will not `mkdir -p` its own output path is a worse failure mode than the run it is judging.
+    junit_path = junit_xml_path(root)
+    junit_path.parent.mkdir(parents=True, exist_ok=True)
+    returncode, out = run_pytest(
+        pytest_bin,
+        root,
+        ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path)],
+    )
     collected, passed = parse_counts(out)
     # pytest exit 4 is a USAGE error: this repo's own ini table is wrong. That is a defect in the tree, not an absent tool, so it is a 1 and never a 77.
     contract_skips = parse_contract_skips(out)
