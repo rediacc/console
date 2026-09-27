@@ -245,11 +245,14 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 | Quality / Packages | none | 1 | verify T1.1 shows at most 12 after the pytest port (4.6 in 36040274865) | unchanged | -- |
 
 - [ ] T2.12 [C] E2E Workers shard wiring, as in the table. It is preceded by a **dependency probe**: run each file alone on fresh VMs (`--project test-NN`) and encode every file that fails without a predecessor as a `needs` edge. The config comment "Order maintained by workers:1 + fullyParallel:false" (`packages/e2e-tests/playwright.config.ts:53-55`) means some order dependence may be real.
-- [ ] T2.13 [D] Account E2E and vitest `--shard` passthrough, as in the table. Test code stays in `private/account`. Cache the three `npm ci` trees and `~/.cache/ms-playwright` so the fixed cost per leg stays under 3 min.
-- [ ] T2.14 [D] Renet split: the renet PR for the `RENET_TEST_PKGS` / file-list hooks first, then the console `run_renet.py` and ct-tests.yml changes. Record the honest note that go test (2.5-3.2) is not the long pole; integration (12.9) is.
+- [x] T2.13 [D] Account E2E and vitest `--shard` passthrough, as in the table. Test code stays in `private/account`. Cache the three `npm ci` trees and `~/.cache/ms-playwright` so the fixed cost per leg stays under 3 min.
+    (ticked) 2026-09-27T08:52:56Z by d778be9d: Account E2E 4 legs green on run 36305403834 with ~/.cache/ms-playwright cached (npm trees already cached by setup-workspace); vitest --shard not needed, the Go job holding it measures 4.5-8.2 min, under 12 (commit 13301eead, .ci/config/shards/test-account-e2e.json:1)
+- [x] T2.14 [D] Renet split: the renet PR for the `RENET_TEST_PKGS` / file-list hooks first, then the console `run_renet.py` and ct-tests.yml changes. Record the honest note that go test (2.5-3.2) is not the long pole; integration (12.9) is.
+    (ticked) 2026-09-27T08:52:56Z by d778be9d: Renet split into Renet (go, 1/2, 2/2) and Renet (integration, 1/3..3/3), all five legs green on run 36305403834 (285d6c383); go test is not the long pole, integration is (commit 13301eead, .github/workflows/ct-tests.yml:1724)
 - [x] T2.15 [B] Quality / Security split into three jobs (`quality-pytest`, `quality-gate-tests`, Security core). Lower `timeout-minutes: 45` (`:2118`) after the split.
     (ticked) 2026-09-26T20:35:58Z by d778be9d: quality-security split into Security core, quality-pytest and quality-gate-tests (commit 6e713d7cc, .github/workflows/ci-quality.yml:1)
-- [ ] T2.16 [C] OPS tutorial segments, per D-W4.
+- [x] T2.16 [C] OPS tutorial segments, per D-W4.
+    (ticked) 2026-09-27T08:52:57Z by d778be9d: Revised D-W4: every tutorial rebuilds its own state (audited 2026-09-27), OPS Provision 1/4..4/4 green on runs 36293027142 and 36305403834, per-tutorial durations uploaded; docs note in 13 locales (31f102354) (commit b8f29d004, .ci/tutorials/run-sequence.sh:18)
 
 **P2d. Fixed-cost reduction by snapshot (renet feature, cross-repo)**
 
@@ -275,12 +278,15 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
   6. **Pipeline:** critical-path estimate plus `max(0, runnerMinutes / concurrency - critical path)` at 20 or under. Advisory until D-W1 is decided, then red.
   7. **After P4:** every job declares `timeout-minutes` of 15 or less.
   - Selftest controls: 12.1 fails and 11.9 passes; stale fails and fresh passes; a planted unestimated file fails, and the same file with `defaultUnitMs` passes; quality-code's plan is unchanged. Offline and deterministic, like the headroom gate.
-- [ ] T3.2 [A] **Where the estimates come from.** `budget_report.py --refresh` rewrites `.ci/config/lane-durations.json`:
+- [x] T3.2 [A] **Where the estimates come from.** `budget_report.py --refresh` rewrites `.ci/config/lane-durations.json`:
   - per job: fixed cost p90, meaning setup steps up to the runner step, taken from the step API;
   - per unit: p90 from the T1.6 unit-duration artifacts of the last 10 green full runs;
   - plus the `concurrency` value.
-- [ ] T3.3 [A] **How they stay fresh.** `housekeeping.yml` (the daily 03:00 cron) runs `budget_report.py --check`. When any leg's *measured* p90 exceeds 12, or a committed estimate drifts more than 25% from measured, the job fails and posts to the nightly-status issue thread. That catches real regressions the estimate misses. The 14-day staleness in T3.1 forces a refresh commit at least twice a month.
-- [ ] T3.4 [B] Retire `job-timeout-baseline.json` into `lane-durations.json` per D-W2. `check:ci-timeout-headroom` keeps its non-budgeted jobs, or folds into T3.1.
+    (ticked) 2026-09-27T08:53:12Z by d778be9d: budget_report.py --refresh rewrites lane-durations.json from the last 10 green full runs (fixed-cost p90 from the steps API, unit p90 from unit-durations-<lane>-* artifacts, all members summed); 42 fixture tests; the first real refresh waits for 10 green runs (commit da1010257, .ci/rediacc_ci/ci/budget_report.py:839)
+- [x] T3.3 [A] **How they stay fresh.** `housekeeping.yml` (the daily 03:00 cron) runs `budget_report.py --check`. When any leg's *measured* p90 exceeds 12, or a committed estimate drifts more than 25% from measured, the job fails and posts to the nightly-status issue thread. That catches real regressions the estimate misses. The 14-day staleness in T3.1 forces a refresh commit at least twice a month.
+    (ticked) 2026-09-27T08:53:13Z by d778be9d: budget_report.py --check (leg p90 over 12 min or drift over 25%) runs in housekeeping.yml's daily cron and posts via scripts/ci/report-budget-check.cjs; a live --check against the real repo reported only the expected no-artifact lanes (commit da1010257, .github/workflows/housekeeping.yml:192)
+- [x] T3.4 [B] Retire `job-timeout-baseline.json` into `lane-durations.json` per D-W2. `check:ci-timeout-headroom` keeps its non-budgeted jobs, or folds into T3.1.
+    (ticked) 2026-09-27T08:53:13Z by d778be9d: job-timeout-baseline.json retired into lane-durations.json job_max_seconds per D-W2; check_job_timeout_headroom.py reads it, MAX_BASELINE_AGE_DAYS 45 -> 14; check:ci-timeout-headroom rc=0 (commit da1010257, .ci/scripts/quality/check_job_timeout_headroom.py:1)
 
 ### P4: enforce 15 and 20 minutes
 
