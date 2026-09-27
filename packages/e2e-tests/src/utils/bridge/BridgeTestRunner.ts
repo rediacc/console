@@ -1285,8 +1285,12 @@ export class BridgeTestRunner {
     this.repositoryHelpers.writeFileToRepository(repositoryName, filePath, content, datastorePath);
   isContainerRunning = (containerName: string, networkId: string) =>
     this.repositoryHelpers.isContainerRunning(containerName, networkId);
-  createRepositoryFork = (parentRepo: string, tag: string, datastorePath: string) =>
-    this.repositoryHelpers.createRepositoryFork(parentRepo, tag, datastorePath);
+  createRepositoryFork = (
+    parentRepo: string,
+    tag: string,
+    datastorePath: string,
+    networkId?: string
+  ) => this.repositoryHelpers.createRepositoryFork(parentRepo, tag, datastorePath, networkId);
   repositoryCommit = (
     workingFork: string,
     commitGuid: string,

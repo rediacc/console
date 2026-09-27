@@ -267,7 +267,12 @@ test.describe
     });
 
     test('7. create fork by copying parent repository', async () => {
-      const result = await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath);
+      const result = await runner.createRepositoryFork(
+        parentRepoName,
+        forkRepoName,
+        datastorePath,
+        forkNetworkId
+      );
       expect(result.code).toBe(0);
 
       const exists = await runner.repositoryExists(forkRepoName, datastorePath);
@@ -513,7 +518,12 @@ test.describe
     });
 
     test('4. create fork A', async () => {
-      await runner.createRepositoryFork(parentRepoName, forkARepoName, datastorePath);
+      await runner.createRepositoryFork(
+        parentRepoName,
+        forkARepoName,
+        datastorePath,
+        forkANetworkId
+      );
       await runner.repositoryMount(forkARepoName, TEST_PASSWORD, datastorePath);
 
       const dockerComposeContent = runner
@@ -528,7 +538,12 @@ test.describe
     });
 
     test('5. create fork B', async () => {
-      await runner.createRepositoryFork(parentRepoName, forkBRepoName, datastorePath);
+      await runner.createRepositoryFork(
+        parentRepoName,
+        forkBRepoName,
+        datastorePath,
+        forkBNetworkId
+      );
       await runner.repositoryMount(forkBRepoName, TEST_PASSWORD, datastorePath);
 
       const dockerComposeContent = runner
@@ -711,7 +726,7 @@ test.describe
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
       await runner.repositoryUnmount(parentRepoName, datastorePath);
 
-      await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath);
+      await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath);
 
       const dockerComposeContent = runner
@@ -837,7 +852,7 @@ test.describe
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
       await runner.repositoryUnmount(parentRepoName, datastorePath);
 
-      await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath);
+      await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath);
 
       const dockerComposeContent = runner

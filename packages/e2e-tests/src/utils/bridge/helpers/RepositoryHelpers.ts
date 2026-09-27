@@ -64,11 +64,16 @@ export class RepositoryHelpers {
   async createRepositoryFork(
     parentRepo: string,
     tag: string,
-    datastorePath: string
+    datastorePath: string,
+    networkId?: string
   ): Promise<ExecResult> {
-    // Use renet repository fork command for proper CoW forking
+    // Use renet repository fork command for proper CoW forking. A fork that will be
+    // brought up records its own network ID here: renet refuses to renumber a repo
+    // later (network_id_mismatch), so an `up` on another ID is an error, not a
+    // silent renumber. A checkout of an immutable commit never comes up and passes none.
+    const networkFlag = networkId ? ` --network-id ${networkId}` : '';
     return this.executeViaBridge(
-      `sudo renet repository fork --name "${parentRepo}" --tag "${tag}" --datastore "${datastorePath}"`
+      `sudo renet repository fork --name "${parentRepo}" --tag "${tag}" --datastore "${datastorePath}"${networkFlag}`
     );
   }
 
