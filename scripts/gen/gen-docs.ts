@@ -99,7 +99,9 @@ const OVERRIDES: Record<string, string> = (() => {
   if (!file) return {};
   const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('GEN_DOCS_OVERRIDE_FILE must name a JSON file holding an object of {path: content}');
+    throw new Error(
+      'GEN_DOCS_OVERRIDE_FILE must name a JSON file holding an object of {path: content}'
+    );
   }
   return parsed as Record<string, string>;
 })();

@@ -52,7 +52,8 @@ ALIASES: dict[str, str] = {
 }
 
 _BASH_FN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*\(\)", re.MULTILINE)
-_PY_DEF = re.compile(r"^def ([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
+# Indented defs count: a twin may be a class method (core/devbox.py ports devbox.sh as methods of one class). A column-0-only match left 39 ported devbox functions baselined as "unported" until 2026-09-27.
+_PY_DEF = re.compile(r"^[ \t]*def ([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
 
 
 def _prefix(lib: str) -> str:
@@ -130,6 +131,13 @@ def selftest() -> bool:
         print(
             "\u2717 control: a NEW bash function without a twin was not reported", file=sys.stderr
         )
+        failed = True
+    if unported(
+        bash,
+        ["class D:\n    def a(self):\n        pass\n    def b(self):\n        pass\n"],
+        ".ci/lib/account.sh",
+    ):
+        print("\u2717 control: a twin written as a class method read as unported", file=sys.stderr)
         failed = True
     if unported(bash, ["def a():\n    pass\n"], ".ci/lib/account.sh") != ["account_b"]:
         print("\u2717 control: a removed Python def was not reported", file=sys.stderr)

@@ -64,7 +64,7 @@ CLOBBER versus STRAY, the distinction that keeps this gate honest in both direct
 WHAT THIS STILL DOES NOT CATCH, said out loud. A path built from a sandboxed copy (`shutil.copy2(REAL, tmp_copy)`, `tmp_path / "x"`, `harness.temp_dir()`) is the safe pattern and is skipped by construction -- correct, that is the pattern this gate wants MORE of. Dataflow tracking is same-function and same-name only: a real path handed to a helper as an ARGUMENT, or stashed on an
 object attribute, is not followed. That bound is deliberate; a full dataflow pass would buy little here and would be unreadable.
 
-ALLOWLIST: two entries, both live, both proven live on every run. It held three. `test_gate_hook_cross_os.py` came out, and the reason is the point of the STRAY
+ALLOWLIST: empty since 2026-09-27, when both remaining plants were fixed at the root (8cd0334f9: test_gate_docs_gen fakes the registry through gen-docs.ts's GEN_DOCS_OVERRIDE_FILE seam, test_gate_generate_tag_inputs runs a fixture copy of the resolver). It held three before that. `test_gate_hook_cross_os.py` came out, and the reason is the point of the STRAY
 class above rather than a relaxation: that entry's whole argument was "the target
 is verified NOT tracked by git", asserted once by a human in 2026-09-14 prose. The classifier now asks `git ls-files` that question on every run, so the entry would name no finding and fail the liveness check. A machine-checked claim replaced a hand-checked one; if the probe is ever moved onto a tracked path it becomes a hazard again by itself, with nobody having to remember.
 
@@ -104,29 +104,7 @@ GREEN = "\033[0;32m"
 NC = "\033[0m"
 
 # file -> BLOCKER reason. Printed every run, never silent, and LIVENESS-CHECKED: an entry that names no current finding fails the gate rather than sitting here looking like a tracked debt. That check exists because the entry this dict used to open with (`test_gate_docs_gen.py`) was decorative for its whole life -- the detector could not see the file it excused.
-ALLOWLIST = {
-    "test_gate_docs_gen.py": (
-        "BLOCKER: TARGET (scripts/data/doc-registry.md) needs the same "
-        "override-seam treatment as WORKLIST_REGISTRY_OVERRIDE_FILE, inside "
-        "scripts/gen/gen-docs.ts (TypeScript, a separate change from the Python "
-        "fixes). Tracked 2026-09-14; DETECTED for the first time 2026-09-15, "
-        "when indirect `ROOT / ...` derivation was added -- until then this "
-        "entry excused a finding the scan could not produce."
-    ),
-    "test_gate_generate_tag_inputs.py": (
-        "BLOCKER: RESOLVER is a DELIBERATE, documented real-tree WRITER (its "
-        "own docstring: 'THE WRITE IS THE POINT and there is no seam that "
-        "avoids it' -- resolve-version.sh is invoked from the repo root, so "
-        "moving the released version means moving that file). Not the "
-        "accidental hazard this gate exists to catch: the restore is verified "
-        "by digest AND mode afterward, and the module declares "
-        "XDIST_GROUP = xdist_groups.REAL_TREE_GROUP specifically so it is "
-        "serialised against every other real-tree test rather than racing one "
-        "on a second xdist worker. That declaration replaced REAL_TREE_TWIN on "
-        "2026-09-21, when the bash twin whose lock entry used to buy the "
-        "serialisation was retired."
-    ),
-}
+ALLOWLIST: dict[str, str] = {}
 
 REAL_PATH_RE = re.compile(r"paths\.from_root\(|paths\.repo_root\(\)\s*/")
 ROOT_CALL_RE = re.compile(r"^paths\.repo_root\(\)$|^paths\.from_root\(")
