@@ -501,7 +501,11 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         shard_min_tests(MIN_TESTS * 10),
         1,
     )
-    c.check("CONTROL: of=1 (unsharded framing) is the whole floor unchanged", shard_min_tests(1), MIN_TESTS)
+    c.check(
+        "CONTROL: of=1 (unsharded framing) is the whole floor unchanged",
+        shard_min_tests(1),
+        MIN_TESTS,
+    )
 
     # -- T2.10: parse_shard_args / parse_shard_spec / shard_leg_ids / shard_file_relpaths
     c.check(
@@ -594,7 +598,13 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     )
     c.check(
         "a custom min_tests can pass a corpus the default floor would refuse",
-        verdict(corpus=MIN_TESTS - 1, collected=MIN_TESTS - 1, passed=MIN_TESTS - 1, returncode=0, min_tests=1),
+        verdict(
+            corpus=MIN_TESTS - 1,
+            collected=MIN_TESTS - 1,
+            passed=MIN_TESTS - 1,
+            returncode=0,
+            min_tests=1,
+        ),
         "",
     )
 
@@ -1091,8 +1101,7 @@ def main(argv: list[str]) -> int:
     manifest_arg, shard_spec_arg = parse_shard_args(argv)
     if (manifest_arg is None) != (shard_spec_arg is None):
         print(
-            "%s✗%s --shard-manifest and --shard must both be given, or neither."
-            % (RED, NC),
+            "%s✗%s --shard-manifest and --shard must both be given, or neither." % (RED, NC),
             file=sys.stderr,
         )
         return EXIT_FAIL
