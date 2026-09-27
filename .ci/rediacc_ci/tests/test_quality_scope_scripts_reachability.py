@@ -341,3 +341,19 @@ def test_selftest_exits_zero_and_prints_a_count():
     assert code == 0, err
     assert "control(s) passed" in out
     assert int(out.split(" control(s)")[0].strip()) >= 16
+
+
+def test_a_path_named_in_a_comment_is_not_a_reference() -> None:
+    """CONTROL (2026-09-27): three workflow comments naming scripts/ci-runner files read as invocations and demanded full-CI carve-outs for files no job runs."""
+    lines = [
+        "    # the leg list comes from scripts/ci-runner/unit-enumerators.ts",
+        "  # see ./scripts/ci/x.cjs",
+    ]
+    assert gate._refs(lines, gate.ROOT_LINE, gate.ROOT_COMMAND, gate.ROOT_PATH) == []
+
+
+def test_inverse_the_same_path_at_a_command_position_is_a_reference() -> None:
+    lines = ["        run: node scripts/ci/write-shard-receipt.cjs"]
+    assert gate._refs(lines, gate.ROOT_LINE, gate.ROOT_COMMAND, gate.ROOT_PATH) == [
+        "scripts/ci/write-shard-receipt.cjs"
+    ]

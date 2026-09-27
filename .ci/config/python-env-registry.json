@@ -1328,6 +1328,9 @@
     ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_private_run_renet.py": [
+      "RENET_TEST_PKGS"
+    ],
     ".ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": [
       "HOME",
       "PATH"

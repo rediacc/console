@@ -247,6 +247,9 @@ def _refs(lines, line_re, command_re, path_re) -> list[str]:
     for line in lines:
         if not line_re.search(line):
             continue
+        # A COMMENT LINE EXECUTES NOTHING. YAML and shell both open one with `#`, and a path named in one is prose about a dependency, never the dependency: on 2026-09-27 three workflow comments naming scripts/ci-runner/lanes.ts and unit-enumerators.ts read as "reachable from a gated job" and demanded full-CI carve-outs for files no job runs.
+        if line.lstrip().startswith("#"):
+            continue
         if OUTPUT_STATEMENT.search(line):
             continue
         for hit in command_re.findall(line):
