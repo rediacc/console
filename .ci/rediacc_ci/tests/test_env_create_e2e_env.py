@@ -532,8 +532,13 @@ def test_a_missing_output_directory_passes_mkdirs_own_live_message_through(
     """The port's `mkdir -p` is a real subprocess call, not a synthesised message, so its diagnostic is coreutils' own and only ever comparable to what THIS host's `mkdir` actually prints -- never to a historical recording, which may have been captured under a different coreutils (`mkdir_looks_gnu` and `test_build_pack_cli_npm.mkdir_looks_gnu` document the same fork for the one case that DOES synthesise the text). The property that survives every coreutils, on every host that ever runs this suite, is that the port passes the diagnostic through unedited: a FRESH `mkdir -p` on this same host, against the same unwritable target, is the oracle here instead of the golden."""
     name = "an-output-directory-that-cannot-be-created"
     got = run(tmp_path, name)
+    # SAME ENVIRONMENT THE PORT'S OWN `mkdir -p` RAN UNDER, not whatever locale this pytest process happened to inherit. The port's child process is launched with `diff.env_for()` (LC_ALL=C, LANG=C -- see differential.BASE_ENV), and its own `subprocess.run(["mkdir", ...])` call passes no `env=`, so it inherits exactly that. A live oracle that instead inherited the host's ambient locale would only agree by coincidence: GNU coreutils' `quotearg` spells its message with plain quotes under `LC_ALL=C` and with Unicode ones under a UTF-8-aware locale, and a CI runner's default locale is not this pin. Matching the pin is what makes the live host's `mkdir` an oracle for the case the port actually exercises, on every host that ever runs this suite.
     live = subprocess.run(
-        ["mkdir", "-p", "/dev/null/x"], capture_output=True, text=True, check=False
+        ["mkdir", "-p", "/dev/null/x"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=diff.env_for(),
     )
     assert got[0] == live.returncode != 0, (got[0], live.returncode)
     assert got[1] == "", got[1]

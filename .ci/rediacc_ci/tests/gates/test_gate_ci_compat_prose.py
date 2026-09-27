@@ -56,12 +56,13 @@ def build_root(gate, work: pathlib.Path, probe: str) -> pathlib.Path:
     return root
 
 
-def run_in(root: pathlib.Path) -> int:
+def run_in(root: pathlib.Path) -> harness.RunResult:
+    """The FULL result, not just `.rc`: every caller's `log_fail` needs the streams too."""
     return harness.run(
         ["python3", "./.ci/rediacc_ci/security/check_commands.py"],
         cwd=root,
         env={"PYTHONPATH": str(paths.from_root(".ci")), "PYTHONDONTWRITEBYTECODE": "1"},
-    ).rc
+    )
 
 
 def test_a_banned_command_in_code_is_caught(gate):
@@ -69,8 +70,12 @@ def test_a_banned_command_in_code_is_caught(gate):
     # If this does not fail, every other assertion here is vacuous: the gate would be passing everything.
     with harness.temp_dir() as work:
         probe = "#!/bin/bash\n%s 1 10\n" % BANNED_SEQ
-        if run_in(build_root(gate, work, probe)) == 0:
-            gate.log_fail("a real %s call was NOT caught; this gate proves nothing" % BANNED_SEQ)
+        result = run_in(build_root(gate, work, probe))
+        if result.rc == 0:
+            gate.log_fail(
+                "a real %s call was NOT caught; this gate proves nothing" % BANNED_SEQ,
+                result=result,
+            )
     gate.log_pass("a banned command in code is caught")
 
 
@@ -81,9 +86,11 @@ def test_the_same_command_in_a_comment_is_ignored(gate):
     # directly after a trigger character makes the outer scan match, so the only thing that can suppress it is the skip branch itself.
     with harness.temp_dir() as work:
         probe = "#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n" % BANNED_SEQ
-        if run_in(build_root(gate, work, probe)) != 0:
+        result = run_in(build_root(gate, work, probe))
+        if result.rc != 0:
             gate.log_fail(
-                "a banned command inside a COMMENT was flagged -- the gate now reads prose as code"
+                "a banned command inside a COMMENT was flagged -- the gate now reads prose as code",
+                result=result,
             )
     gate.log_pass("a comment whose banned word FOLLOWS a trigger char is not an invocation")
 
@@ -95,7 +102,7 @@ def test_control_the_probe_actually_reaches_the_skip_branch(gate):
         probe = "#!/bin/bash\n# equivalent to: cmd | %s 1 10\necho ok\n" % BANNED_SEQ
         root = build_root(gate, work, probe)
         copy = root / ".ci" / "rediacc_ci" / "security" / "check_commands.py"
-        rc_intact = run_in(root)
+        run_intact = run_in(root)
 
         # The same edit the twin's version made, against the port's own two-line branch: the cut is the whole `if`, not a comment above it, so a rename reds this loudly rather than turning it into a no-op.
         source = copy.read_text(encoding="utf-8")
@@ -107,18 +114,22 @@ def test_control_the_probe_actually_reaches_the_skip_branch(gate):
             )
         copy.write_text(source.replace(SKIP_ANCHOR, ""), encoding="utf-8")
 
-        rc_cut = run_in(root)
+        run_cut = run_in(root)
 
-        if rc_intact != 0:
+        if run_intact.rc != 0:
             gate.log_fail(
-                "the probe already fails WITH the skip branch present (rc=%d)" % rc_intact
+                "the probe already fails WITH the skip branch present (rc=%d)" % run_intact.rc,
+                result=run_intact,
             )
-        if rc_cut == 0:
+        if run_cut.rc == 0:
             gate.log_fail(
                 "CONTROL DID NOT FIRE: deleting the comment-skip branch changed nothing, "
-                "so the probe never reaches it"
+                "so the probe never reaches it",
+                result=run_cut,
             )
-    gate.log_pass("probe reaches the branch: intact=%d, branch-deleted=%d" % (rc_intact, rc_cut))
+    gate.log_pass(
+        "probe reaches the branch: intact=%d, branch-deleted=%d" % (run_intact.rc, run_cut.rc)
+    )
 
 
 def test_this_repos_own_explanations_survive(gate):
@@ -149,8 +160,17 @@ def test_this_repos_own_explanations_survive(gate):
         gate.log_fail(
             "anti-vacuity: found no file documenting a banned command, so this proves nothing"
         )
-    if harness.run([str(SUT)], cwd=paths.repo_root()).rc != 0:
-        gate.log_fail("the live tree fails the gate; its own explanations are being read as code")
+    # `-m` AND AN EXPLICIT `PYTHONPATH`, matching the module's own registered invocation (`run: PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands` in its docstring) rather than executing the file's shebang directly. Unlike `run_in()` above, this call used to hand the subprocess neither: `[str(SUT)]` inherits whatever PYTHONPATH the calling process happens to have, and `check:ci-pytest` (`.ci/rediacc_ci/check_pytest.py`) launches pytest with none -- `.ci` reaches pytest's OWN imports through `pythonpath = [".ci"]` in pyproject.toml, an in-process sys.path change a subprocess never inherits. A session that always exports `PYTHONPATH=.ci` before running pytest by hand never saw the gap; a CI runner that never sets it hit `ModuleNotFoundError: No module named 'rediacc_ci'` from `check_commands.py` line 46, an exit 1 this test then blamed on prose being read as code.
+    live_run = harness.run(
+        ["python3", "-m", "rediacc_ci.security.check_commands"],
+        cwd=paths.repo_root(),
+        env={"PYTHONPATH": str(paths.from_root(".ci")), "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    if live_run.rc != 0:
+        gate.log_fail(
+            "the live tree fails the gate; its own explanations are being read as code",
+            result=live_run,
+        )
     gate.log_pass(
         "%d of %d file(s) document a banned command in prose; tree green (over-fire "
         "guard, NOT skip-branch coverage)" % (documented, scanned)

@@ -12,7 +12,8 @@ EXE001 Shebang is present but file is not executable
 
 Found 1 error.
 --- stderr ---
-[0;31m✗[0m probe_exe.py has a shebang but git mode is 100644 (EXE001 in CI)
-    fix: git update-index --chmod=+x probe_exe.py
 
-[0;31m✗[0m 1 Python file(s) have a git mode CI will reject.
+[0;31m✗[0m ruff reported findings in Python this gate scans (tracked and untracked).
+  Fix them. Do NOT add a per-line noqa to get past this gate: if a rule
+  is genuinely wrong for this repo it is disabled in pyproject.toml with a
+  stated reason, where it is reviewable.
