@@ -386,13 +386,15 @@ devbox_ensure_image() {
 
     if devbox_image_present && [[ "$force_pull" != true ]]; then
         log_debug "Image present: $DEVBOX_IMAGE"
-        return 0
+        devbox_ensure_uid_image
+        return
     fi
 
     log_step "Pulling $DEVBOX_IMAGE"
     log_info "This image carries node, go, playwright deps and a desktop; the first pull is several GB and takes a while."
     if $d pull "$DEVBOX_IMAGE"; then
-        return 0
+        devbox_ensure_uid_image
+        return
     fi
 
     # ghcr.io/rediacc/* is private. A GitHub token needs the read:packages
@@ -402,7 +404,93 @@ devbox_ensure_image() {
     log_info "That registry is private. To pull it, a GitHub token needs the read:packages scope:"
     log_info "    echo \$PAT | docker login ghcr.io -u <user> --password-stdin"
     log_info "Falling back to building the image locally from .devcontainer/Dockerfile."
-    devbox_build_image
+    devbox_build_image || return 1
+    devbox_ensure_uid_image
+}
+
+# =============================================================================
+# THE RUN IMAGE: the base, or a thin local layer with vscode at the host's ids
+# =============================================================================
+#
+# The published base keeps `vscode` at 7111, because renet's hub runs the same
+# image and chowns its workspaces to config.RediaccUID
+# (private/renet/pkg/hub/containers.go, resolveUserIDs). A host operator is
+# almost never 7111, and renumbering at container START cost 441 seconds of
+# overlayfs copy-up (measured 2026-09-07). So the renumber happens ONCE per
+# operator per base image, at build time, into DEVBOX_UID_IMAGE_REPO, and the
+# entrypoint only asserts it.
+
+# vscode's "<uid>:<gid>" in the base image, read from its own /etc/passwd.
+devbox_base_user_ids() {
+    local d entry uid gid
+    d="$(devbox_docker)"
+    entry="$($d run --rm --entrypoint getent "$DEVBOX_IMAGE" passwd vscode)" || return 1
+    IFS=: read -r _ _ uid gid _ <<<"$entry"
+    [[ -n "$uid" && -n "$gid" ]] || return 1
+    printf '%s:%s\n' "$uid" "$gid"
+}
+
+# The derived tag for this host, the base in hand and the recipe that derives
+# it. Keyed on the base's IMAGE ID, so a re-pulled base names a tag that is not
+# present and re-derives; and on the first 12 hex of Dockerfile.uid's sha256, so
+# an edited recipe re-derives too instead of silently reusing the old layer.
+# The hash is python3's, which this library already requires, because
+# sha256sum is not on every host (macOS ships shasum instead).
+devbox_uid_image() {
+    local d base_id recipe recipe_hash
+    d="$(devbox_docker)"
+    base_id="$($d image inspect --format '{{.Id}}' "$DEVBOX_IMAGE")" || return 1
+    base_id="${base_id#sha256:}"
+    [[ -n "$base_id" ]] || return 1
+    recipe="$(devbox_mount_root)/.devcontainer/Dockerfile.uid"
+    [[ -f "$recipe" ]] || {
+        log_error "No derive recipe at $recipe"
+        return 1
+    }
+    recipe_hash="$(python3 -c 'import hashlib, sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' "$recipe")" || return 1
+    printf '%s:uid%s-gid%s-%s-%s\n' "$DEVBOX_UID_IMAGE_REPO" "$(id -u)" "$(id -g)" "${base_id:0:12}" "${recipe_hash:0:12}"
+}
+
+# The image devbox_up runs: the base itself when its vscode already carries
+# this host's ids, otherwise the derived tag. Resolves; never builds.
+devbox_run_image() {
+    local ids
+    ids="$(devbox_base_user_ids)" || return 1
+    if [[ "$ids" == "$(id -u):$(id -g)" ]]; then
+        printf '%s\n' "$DEVBOX_IMAGE"
+        return 0
+    fi
+    devbox_uid_image
+}
+
+# Build the derived tag when it is needed and absent. Skipped entirely when the
+# ids already match, and reused when the tag exists.
+devbox_ensure_uid_image() {
+    local d image dockerfile_dir
+    d="$(devbox_docker)"
+    image="$(devbox_run_image)" || {
+        log_error "Could not resolve the devbox run image from $DEVBOX_IMAGE (reading vscode's ids, or its image id, failed)"
+        return 1
+    }
+    if [[ "$image" == "$DEVBOX_IMAGE" ]]; then
+        log_debug "$DEVBOX_IMAGE already runs vscode as $(id -u):$(id -g); nothing to derive"
+        return 0
+    fi
+    if $d image inspect "$image" &>/dev/null; then
+        log_debug "Derived image present: $image"
+        return 0
+    fi
+    dockerfile_dir="$(devbox_mount_root)/.devcontainer"
+    log_step "Deriving $image (vscode renumbered to $(id -u):$(id -g), once per base image)"
+    $d build -t "$image" \
+        --build-arg "BASE=$DEVBOX_IMAGE" \
+        --build-arg "HOST_UID=$(id -u)" \
+        --build-arg "HOST_GID=$(id -g)" \
+        -f "$dockerfile_dir/Dockerfile.uid" "$dockerfile_dir" || {
+        log_error "Deriving $image failed"
+        return 1
+    }
+    log_info "Built $image"
 }
 
 # Build the devcontainer image from source.
@@ -524,7 +612,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         --no-rehost | false | no) rehost=false ;;
     esac
     [[ "${DEVBOX_NO_REHOST:-}" == 1 || "${DEVBOX_NO_REHOST:-}" == true ]] && rehost=false
-    local d base_port mount_root workspace name docker_gid cid
+    local d base_port mount_root workspace name docker_gid cid run_image
     d="$(devbox_docker)"
 
     # REHOST ON DRIFT. The routers are baked at `docker run`, so a container
@@ -595,6 +683,12 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     fi
 
     devbox_ensure_image "$force_pull" || return 1
+    # The base when its vscode already matches this host, else the derived tag
+    # devbox_ensure_image has just made sure of. The entrypoint asserts the ids.
+    run_image="$(devbox_run_image)" || {
+        log_error "Could not resolve the devbox run image from $DEVBOX_IMAGE"
+        return 1
+    }
     devbox_proxy_ensure || return 1
 
     base_port="$(devbox_base_port)" || {
@@ -816,6 +910,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     log_step "Creating devbox for $workspace"
     log_info "container: $name"
     log_info "hostname:  ${slug}.${DEVBOX_DOMAIN}"
+    log_info "image:     $run_image"
     log_info "reachable ONLY through the proxy on :${DEVBOX_PROXY_PORT}; the container publishes no ports"
 
     # Published on 0.0.0.0, not 127.0.0.1: on ChromeOS the browser is outside
@@ -848,7 +943,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         -e REDIACC_DEV_PORT_BASE=4800 \
         -w "$workspace" \
         --entrypoint /usr/local/bin/devbox-entrypoint.sh \
-        "$DEVBOX_IMAGE" >/dev/null || {
+        "$run_image" >/dev/null || {
         log_error "docker run failed"
         return 1
     }
@@ -1046,7 +1141,7 @@ devbox_shell() {
         return 1
     }
     # -u vscode BY NAME, for the reason spelled out above devbox_exec: the
-    # entrypoint has already renumbered `vscode` to the host identity, so the
+    # run image already carries `vscode` at the host identity, so the
     # name is right on Linux, macOS (501:20, where gid 20 is dialout) and WSL2,
     # while a numeric id is right only where the host's numbering means
     # something inside the container. This was the one site still using it.
@@ -1060,8 +1155,9 @@ devbox_shell() {
 # devbox_shell() above is `-it ... bash` and cannot run a command. This is its
 # missing sibling, and it is what a gate lane routes through.
 #
-# -u vscode BY NAME, not `$(id -u):$(id -g)`. devbox-entrypoint.sh has already
-# renumbered `vscode` to the host identity, so the name is correct on Linux,
+# -u vscode BY NAME, not `$(id -u):$(id -g)`. The run image carries `vscode` at
+# the host identity (devbox_ensure_uid_image derives it; devbox-entrypoint.sh
+# asserts it), so the name is correct on Linux,
 # macOS (where id is 501:20 and gid 20 collides with dialout) and WSL2 alike,
 # while a numeric id is correct only where the host's numbering means anything.
 # Exec as root instead and git refuses the worktree with "dubious ownership",

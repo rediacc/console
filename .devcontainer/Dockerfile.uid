@@ -1,0 +1,58 @@
+# The devbox's thin, local, per-operator layer: the published devcontainer image
+# with its `vscode` account renumbered to the host operator's uid/gid.
+#
+# Built by devbox_ensure_uid_image (.ci/lib/devbox.sh) and never published. The
+# tag is rediacc/devbox:uid<UID>-gid<GID>-<base image id, 12 hex>-<sha256 of this
+# file, 12 hex>, so a new base, or an edit to this file, is a tag that is not
+# present yet and re-derives on its own. When the base's
+# `vscode` already carries the host's ids, nothing is derived and the base runs
+# as it is.
+#
+# WHY A BUILD-TIME LAYER AND NOT THE ENTRYPOINT. The entrypoint used to renumber
+# and chown on every container start. The chown is overlayfs copy-up of files in
+# a lower layer, and measured 2026-09-07 it cost 441 seconds (81,881 entries,
+# 1.8 GiB), against a 60-second readiness probe. Here the same work happens
+# once per operator per base image, into a layer.
+#
+# WHY THE BASE KEEPS 7111. renet's hub runs this same published image as
+# `vscode` and chowns each user's bind-mounted workspace to config.RediaccUID
+# (private/renet/pkg/hub/containers.go, resolveUserIDs), so the published id is
+# a contract. Only this local layer moves it.
+#
+# `usermod -u` RECURSIVELY CHOWNS THE HOME, and here that is correct: at build
+# time nothing is bind-mounted into /home/vscode, so the walk is bounded to the
+# image's own files. (The old entrypoint had to hide the home from usermod with
+# a mktemp -d swap because six host mounts sat inside it; that is not needed.)
+# The find below then catches what usermod does not touch: the old GID
+# everywhere, and the old UID in /opt/openvscode-server and /go. It carries no
+# `2>/dev/null` and no `|| true`: a chown failure fails the build.
+# BASE has the published tag as its default only so the reference is never
+# empty; devbox_ensure_uid_image always passes it explicitly.
+ARG BASE=ghcr.io/rediacc/devcontainer:latest
+# hadolint ignore=DL3006
+FROM ${BASE}
+
+ARG HOST_UID
+ARG HOST_GID
+
+# Root on purpose, and it is the base's own last USER too: the RUN below needs
+# it, and devbox-entrypoint.sh starts as root and drops to vscode with setpriv.
+# hadolint ignore=DL3002,DL3066
+USER root
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+RUN : "${HOST_UID:?build arg HOST_UID is required}" \
+    && : "${HOST_GID:?build arg HOST_GID is required}" \
+    && old_uid="$(id -u vscode)" \
+    && old_gid="$(id -g vscode)" \
+    && if getent group "$HOST_GID" >/dev/null; then \
+         echo "note: gid $HOST_GID already exists in the base ($(getent group "$HOST_GID" | cut -d: -f1)); vscode joins it"; \
+         usermod -g "$HOST_GID" vscode; \
+       else \
+         groupmod -g "$HOST_GID" vscode; \
+       fi \
+    && usermod -u "$HOST_UID" vscode \
+    && find /home/vscode /opt/openvscode-server /go -xdev \
+         \( -uid "$old_uid" -o -gid "$old_gid" \) -exec chown -h "$HOST_UID:$HOST_GID" {} + \
+    && test "$(id -u vscode):$(id -g vscode)" = "$HOST_UID:$HOST_GID"
+
+LABEL com.rediacc.devbox.uid="${HOST_UID}:${HOST_GID}"

@@ -1,6 +1,6 @@
-"""`.ci/lib/devbox.sh`, ported function for function: all forty-two of them.
+"""`.ci/lib/devbox.sh`, ported function for function: all forty-six of them.
 
-PORTED FROM `.ci/lib/devbox.sh` (1184 lines, 42 functions).
+PORTED FROM `.ci/lib/devbox.sh` (1270 lines, 46 functions).
 The twin still exists, is untouched by this file, and is still sourced at `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35` (inside the bridged `bash -c` prelude), `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090`. Those five are the real `source` sites; nothing is cut over here.
 This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/rediacc_ci/core/local_common.py` is the worked precedent: its twin `.ci/lib/local-common.sh` is still sourced at five sites while the port carries a K=5 ledger.
 
@@ -11,8 +11,8 @@ EVERY FUNCTION THE TWIN DEFINES HAS A COUNTERPART, in two shapes.
 
   THE THREE PURE ONES are module-level functions, exactly as the first slice (2026-09-23) shipped them: `slugify` (`devbox_slugify:186`), `slug_drift` (`devbox_slug_drift:242`) and `route_label` (`devbox_route_label:902`). Their whole answer is computation over their own arguments, and they stay importable without constructing anything.
 
-  THE OTHER THIRTY-NINE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
-  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all forty-two through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
+  THE OTHER FORTY-THREE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
+  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all forty-six through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
 
 EACH METHOD TAKES ITS ARGUMENTS AS BASH DOES, as strings in `*argv`, and RETURNS AN EXIT STATUS. What the function prints goes to the instance's `stdout` and `stderr` streams, never to a return value, because every caller of the twin reads a function's answer by capturing what it PRINTED (`d="$(devbox_docker)"`) and its verdict by its STATUS (`devbox_container_running || ...`).
 A port that returned values instead would have to restate, at every call site, which of the two channels the twin's caller really read.
@@ -94,6 +94,7 @@ SEVEN BEHAVIOURS OF THE PURE THREE, REPRODUCED ON PURPOSE:
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import io
 import os
 import re
@@ -136,6 +137,8 @@ UNBOUND_STATUS = 1
 # COPIED, NOT READ, and `test_core_devbox.py::test_the_constants_match_constants_sh` parses the `readonly` lines of that file on every run and fails on any drift. Reading them at import would mean parsing bash from Python at every call; copying them and checking the copy is the pattern `account.py` set.
 
 DEVBOX_IMAGE = "ghcr.io/rediacc/devcontainer:latest"
+# The LOCAL repository of the per-operator derived image (`.devcontainer/Dockerfile.uid`): the base with `vscode` renumbered to the host's ids. Deliberately not a ghcr.io/ name, so a derived tag can never be mistaken for something to push.
+DEVBOX_UID_IMAGE_REPO = "rediacc/devbox"
 DEVBOX_PORT_RANGE_START = 17000
 DEVBOX_PORT_RANGE_END = 17999
 DEVBOX_PORT_BLOCK = 10
@@ -653,7 +656,7 @@ def repo_root_default() -> str:
 
 
 class Devbox:
-    """The thirty-nine side-effecting functions, over one environment and one pair of streams.
+    """The forty-three side-effecting functions, over one environment and one pair of streams.
 
     CONSTRUCT ONE PER TOP-LEVEL CALL. The instance carries the shell state bash would carry across one invocation (errexit, the current streams) and the configuration bash resolves at SOURCE time (`CONSOLE_ROOT_DIR`, the state file, `DEVBOX_LIB_DIR`, `DEVBOX_CI_DIR`, whether stderr gets colour). A long-lived instance would freeze the source-time answers across calls, which is also what a long-lived shell does, and is fine; it is the per-call mutable part that must not leak.
 
@@ -1296,7 +1299,7 @@ class Devbox:
         return 0
 
     def ensure_image(self, *argv: str) -> int:
-        """`devbox_ensure_image`, `.ci/lib/devbox.sh:382-406`: present (and not forced) is done; else pull; else build.
+        """`devbox_ensure_image`, `.ci/lib/devbox.sh:382-409`: present (and not forced), else pull, else build; then `ensure_uid_image` in every arm that obtained the base.
 
         ghcr.io/rediacc/* is private. A GitHub token needs the read:packages scope to pull it -- repo+workflow is NOT enough, and the registry's only signal is the word "denied", which reads like the image does not exist. So a failed pull explains that and falls back to building from .devcontainer/Dockerfile, and the build's status is the function's.
         """
@@ -1304,14 +1307,14 @@ class Devbox:
         d = self.docker_words()
         if self.cond(self.image_present) == 0 and force_pull != "true":
             self.log("debug", "Image present: %s" % DEVBOX_IMAGE)
-            return 0
+            return self.checked(self.ensure_uid_image())
         self.log("step", "Pulling %s" % DEVBOX_IMAGE)
         self.log(
             "info",
             "This image carries node, go, playwright deps and a desktop; the first pull is several GB and takes a while.",
         )
         if self.run([*d, "pull", DEVBOX_IMAGE])[0] == 0:
-            return 0
+            return self.checked(self.ensure_uid_image())
         self.log("warn", "Could not pull %s" % DEVBOX_IMAGE)
         self.log(
             "info",
@@ -1321,7 +1324,9 @@ class Devbox:
         self.log(
             "info", "Falling back to building the image locally from .devcontainer/Dockerfile."
         )
-        return self.checked(self.build_image())
+        if self.cond(self.build_image) != 0:
+            return 1
+        return self.checked(self.ensure_uid_image())
 
     def build_image(self, *_argv: str) -> int:
         """`devbox_build_image`, `.ci/lib/devbox.sh:413-429`: build the devcontainer image from source.
@@ -1349,6 +1354,115 @@ class Devbox:
             self.log("error", "Local image build failed")
             return 1
         self.log("info", "Built %s" % DEVBOX_IMAGE)
+        return 0
+
+    # ------------------------------------------------------------------ THE RUN IMAGE
+
+    def base_user_ids(self, *_argv: str) -> int:
+        """`devbox_base_user_ids`: vscode's `<uid>:<gid>` in the base image, from its own /etc/passwd.
+
+        `entry="$($d run --rm --entrypoint getent "$DEVBOX_IMAGE" passwd vscode)" || return 1`, then `IFS=: read -r _ _ uid gid _ <<<"$entry"`: the FIRST line, split on colons, the fourth variable taking only its own field because a fifth follows it. Status 1 when either id is empty.
+        """
+        d = self.docker_words()
+        status, entry = self.value(
+            [*d, "run", "--rm", "--entrypoint", "getent", DEVBOX_IMAGE, "passwd", "vscode"]
+        )
+        if status != 0:
+            return 1
+        fields = entry.split("\n", 1)[0].split(":", 4)
+        uid = fields[2] if len(fields) > 2 else ""
+        gid = fields[3] if len(fields) > 3 else ""
+        if not uid or not gid:
+            return 1
+        self.write("%s:%s\n" % (uid, gid))
+        return 0
+
+    def uid_image(self, *_argv: str) -> int:
+        """`devbox_uid_image`: `<DEVBOX_UID_IMAGE_REPO>:uid<UID>-gid<GID>-<base image id, 12>-<Dockerfile.uid sha256, 12>`.
+
+        Keyed on the base's IMAGE ID, so a re-pulled base re-derives, and on the recipe's hash, so an edited `Dockerfile.uid` re-derives too. The twin hashes with a `python3 -c` hashlib one-liner; that is reimplemented here with hashlib rather than shelled out, as `tr` and `sed` are. A missing recipe is a logged refusal, checked before any hashing.
+        """
+        d = self.docker_words()
+        status, base_id = self.value([*d, "image", "inspect", "--format", "{{.Id}}", DEVBOX_IMAGE])
+        if status != 0:
+            return 1
+        base_id = base_id.removeprefix("sha256:")
+        if not base_id:
+            return 1
+        status, root = self.sub(self.mount_root)
+        self.checked(status)
+        recipe = root + "/.devcontainer/Dockerfile.uid"
+        if not os.path.isfile(recipe):
+            self.log("error", "No derive recipe at %s" % recipe)
+            return 1
+        with open(recipe, "rb") as handle:
+            recipe_hash = hashlib.sha256(handle.read()).hexdigest()
+        self.write(
+            "%s:uid%d-gid%d-%s-%s\n"
+            % (DEVBOX_UID_IMAGE_REPO, os.geteuid(), os.getegid(), base_id[:12], recipe_hash[:12])
+        )
+        return 0
+
+    def host_ids(self) -> str:
+        """`$(id -u):$(id -g)`, the EFFECTIVE ids."""
+        return "%d:%d" % (os.geteuid(), os.getegid())
+
+    def run_image(self, *_argv: str) -> int:
+        """`devbox_run_image`: the base when its vscode already carries this host's ids, else the derived tag. Resolves; never builds."""
+        status, ids = self.sub(self.base_user_ids)
+        if status != 0:
+            return 1
+        if ids == self.host_ids():
+            self.write(DEVBOX_IMAGE + "\n")
+            return 0
+        return self.uid_image()
+
+    def ensure_uid_image(self, *_argv: str) -> int:
+        """`devbox_ensure_uid_image`: build the derived tag from `.devcontainer/Dockerfile.uid` when it is needed and absent; skip when the ids match; reuse a present tag."""
+        d = self.docker_words()
+        status, image = self.sub(self.run_image)
+        if status != 0:
+            self.log(
+                "error",
+                "Could not resolve the devbox run image from %s (reading vscode's ids, or its image id, failed)"
+                % DEVBOX_IMAGE,
+            )
+            return 1
+        if image == DEVBOX_IMAGE:
+            self.log(
+                "debug",
+                "%s already runs vscode as %s; nothing to derive" % (DEVBOX_IMAGE, self.host_ids()),
+            )
+            return 0
+        if self.run([*d, "image", "inspect", image], out=NULL, err=NULL)[0] == 0:
+            self.log("debug", "Derived image present: %s" % image)
+            return 0
+        status, root = self.sub(self.mount_root)
+        self.checked(status)
+        dockerfile_dir = root + "/.devcontainer"
+        self.log(
+            "step",
+            "Deriving %s (vscode renumbered to %s, once per base image)" % (image, self.host_ids()),
+        )
+        build = [
+            *d,
+            "build",
+            "-t",
+            image,
+            "--build-arg",
+            "BASE=" + DEVBOX_IMAGE,
+            "--build-arg",
+            "HOST_UID=%d" % os.geteuid(),
+            "--build-arg",
+            "HOST_GID=%d" % os.getegid(),
+            "-f",
+            dockerfile_dir + "/Dockerfile.uid",
+            dockerfile_dir,
+        ]
+        if self.run(build)[0] != 0:
+            self.log("error", "Deriving %s failed" % image)
+            return 1
+        self.log("info", "Built %s" % image)
         return 0
 
     # ------------------------------------------------------------------ CONTAINER
@@ -1544,6 +1658,10 @@ class Devbox:
 
         if self.cond(self.ensure_image, force_pull) != 0:
             return 1
+        status, run_image = self.sub(self.run_image)
+        if status != 0:
+            self.log("error", "Could not resolve the devbox run image from %s" % DEVBOX_IMAGE)
+            return 1
         if self.cond(self.proxy_ensure) != 0:
             return 1
 
@@ -1646,6 +1764,7 @@ class Devbox:
         self.log("step", "Creating devbox for %s" % workspace)
         self.log("info", "container: %s" % name)
         self.log("info", "hostname:  %s.%s" % (slug, DEVBOX_DOMAIN))
+        self.log("info", "image:     %s" % run_image)
         self.log(
             "info",
             "reachable ONLY through the proxy on :%d; the container publishes no ports"
@@ -1704,7 +1823,7 @@ class Devbox:
             workspace,
             "--entrypoint",
             "/usr/local/bin/devbox-entrypoint.sh",
-            DEVBOX_IMAGE,
+            run_image,
         ]
         if self.run(run, out=NULL)[0] != 0:
             self.log("error", "docker run failed")
@@ -2000,7 +2119,7 @@ class Devbox:
             self.log("info", "devbox is usable: mount, identity and writability all verified")
         return status
 
-    # ------------------------------------------------------------------ one entry point for all forty-two
+    # ------------------------------------------------------------------ one entry point for all forty-six
 
     def invoke(self, name: str, argv: list[str] | tuple[str, ...] = ()) -> int:
         """`( set -e; <name> "$@" )`: call a twin function by its BASH name, and return the subshell's status.
@@ -2031,7 +2150,7 @@ def _pad(text: str, width: int) -> bytes:
     return data + b" " * max(0, width - len(data))
 
 
-# The forty-two, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
+# The forty-six, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
 BASH_NAMES = {
     "devbox_worktree": "worktree",
     "devbox_mount_root": "mount_root",
@@ -2057,6 +2176,10 @@ BASH_NAMES = {
     "devbox_image_digest": "image_digest",
     "devbox_ensure_image": "ensure_image",
     "devbox_build_image": "build_image",
+    "devbox_base_user_ids": "base_user_ids",
+    "devbox_uid_image": "uid_image",
+    "devbox_run_image": "run_image",
+    "devbox_ensure_uid_image": "ensure_uid_image",
     "devbox_container_id": "container_id",
     "devbox_container_running": "container_running",
     "_devbox_bind_if_present": "bind_if_present",

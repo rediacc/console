@@ -27,7 +27,8 @@ The twin's header, carried whole because the incident, the "why static" argument
 
     B2 exists because fixing B1 surfaced a sibling: devbox_shell was still
     passing the numeric `-u $(id -u):$(id -g)` into the container.
-    devbox-entrypoint.sh renumbers `vscode` to the host identity, so the NAME is
+    the devbox runs a local layer whose `vscode` carries the host identity
+    (devbox_ensure_uid_image, .devcontainer/Dockerfile.uid), so the NAME is
     correct on Linux, macOS (501:20, where gid 20 is dialout) and WSL2, while a
     numeric id is correct only where the host's numbering means something inside
     the container. Exec as the wrong identity and git refuses the worktree with

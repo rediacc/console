@@ -50,6 +50,14 @@ ARG CURL_RETRY="--retry 8 --retry-all-errors --retry-max-time 180"
 # else on the platform. Without this, a container running as vscode cannot
 # access paths owned by the universal user. Must happen before any later
 # `USER vscode` block so subsequent layers inherit the new UID.
+#
+# 7111 IS A CONTRACT OF THE PUBLISHED IMAGE, not a devbox detail. renet's hub
+# runs this image as `vscode` and chowns each user's bind-mounted workspace to
+# config.RediaccUID (private/renet/pkg/hub/containers.go, resolveUserIDs), so
+# moving it here would leave every hub workspace unwritable. The local devbox
+# does NOT renumber at container start any more: devbox_ensure_uid_image
+# (.ci/lib/devbox.sh) derives a thin per-operator layer from
+# .devcontainer/Dockerfile.uid instead.
 RUN groupmod -g 7111 vscode \
     && usermod -u 7111 -g 7111 vscode \
     && find / -xdev \( -uid 1000 -o -gid 1000 \) -exec chown -h 7111:7111 {} + 2>/dev/null || true

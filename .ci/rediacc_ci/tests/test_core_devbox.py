@@ -1,10 +1,10 @@
-"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all forty-two functions.
+"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all forty-six functions.
 
 THE TWIN IS STILL HERE AND IS STILL SOURCED. `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
 WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in its module docstring rather than restated here. Seven are the first slice's pure-function scenarios; sixteen are the STUB-FARM scenarios, in which `docker`, `sudo`, `curl`, `sleep`, `getent`, `stat` and `ss` are stubs that record every call and answer from a scripted table, so a side-effecting function is compared on the calls it MADE as well as on what it printed.
 
-THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the forty-two functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
+THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the forty-six functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
 THE TWIN'S OWN DEFECTS are pinned against the LIVE TWIN's transcript, not against the port: `SCENARIO_CLAIMS` asserts each one inside the scenario's own comparison, so a twin that is later fixed fails here loudly rather than silently diverging from a port that still reproduces it.
 
 NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, so a scenario is driven once per worker that runs it; the driver's fixed work directory is serialised by its own `flock`, which is a lock the scheduler does not need to know about.
@@ -12,6 +12,7 @@ NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, so a sce
 
 import ast
 import contextlib
+import hashlib
 import io
 import json
 import os
@@ -254,7 +255,41 @@ def claims_proxy(obs: dict[str, list[str]]) -> None:
     assert status_of(obs["ensure-sleep-fails"]) == 1
 
 
+def claims_image(obs: dict[str, list[str]]) -> None:
+    # The derive is SKIPPED when the base's vscode already carries the host's ids: the base is the run image and nothing is built.
+    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
+    assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
+    # A present derived tag is REUSED: inspected, never rebuilt.
+    assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
+    # An absent one is built from Dockerfile.uid with the host's ids, tagged by the base's image id.
+    # The fixture's recipe is `ARG BASE\nFROM ${BASE}\n`, so its hash is fixed; an edited recipe is a different tag.
+    recipe = hashlib.sha256(b"ARG BASE\nFROM ${BASE}\n").hexdigest()[:12]
+    tag = "%s:uid%d-gid%d-52b359d8cc2e-%s" % (
+        devbox.DEVBOX_UID_IMAGE_REPO,
+        os.geteuid(),
+        os.getegid(),
+        recipe,
+    )
+    assert stdout_of(obs["run-image-derive"]) == (tag + "\n").encode()
+    build = next(call for call in calls_of(obs["ensure-uid-builds"]) if call[1] == "build")
+    assert build[2:4] == ["-t", tag]
+    assert "HOST_UID=%d" % os.geteuid() in build
+    assert build[-2].endswith("/.devcontainer/Dockerfile.uid")
+    # Unreadable ids are a failure, never a silent run of the base.
+    assert status_of(obs["ensure-uid-unresolved"]) == 1
+    assert status_of(obs["ensure-ids-fail"]) == 1
+
+
+def claims_identity_worktree(obs: dict[str, list[str]]) -> None:
+    # No Dockerfile.uid under the mount root is a named refusal, never a tag with an empty hash.
+    assert status_of(obs["uid-image-no-recipe"]) == 1
+    assert stdout_of(obs["uid-image-no-recipe"]) == b""
+    assert any("No derive recipe at" in line for line in errs_of(obs["uid-image-no-recipe"]))
+
+
 SCENARIO_CLAIMS = {
+    "image": claims_image,
+    "identity-worktree": claims_identity_worktree,
     "identity": claims_identity,
     "docker-query": claims_docker_query,
     "lifecycle": claims_lifecycle,
@@ -310,7 +345,7 @@ def stub_functions() -> set[str]:
 
 
 def test_every_function_is_driven_by_some_scenario() -> None:
-    """Every one of the forty-two is the subject of a step, so none of them is licensed by a ledger that never called it."""
+    """Every one of the forty-six is the subject of a step, so none of them is licensed by a ledger that never called it."""
     driven = stub_functions() | {"devbox_slugify", "devbox_slug_drift", "devbox_route_label"}
     assert driven == set(devbox.BASH_NAMES), sorted(set(devbox.BASH_NAMES) ^ driven)
 
@@ -340,6 +375,8 @@ PLANTS = (
         "Devbox.build_image",
         "identity-worktree",
     ),
+    ("the run image is always the base, so nothing is ever derived", "Devbox.run_image", "image"),
+    ("the derived tag drops the recipe hash", "Devbox.uid_image", "image"),
 )
 
 
@@ -383,6 +420,24 @@ def planted_value(attribute: str):
             return 1
 
         return build_image
+    if attribute == "Devbox.run_image":
+
+        def run_image(self, *_argv):
+            self.write(devbox.DEVBOX_IMAGE + "\n")
+            return 0
+
+        return run_image
+    if attribute == "Devbox.uid_image":
+
+        def uid_image(self, *_argv):
+            self.docker_words()
+            self.write(
+                "%s:uid%d-gid%d-52b359d8cc2e\n"
+                % (devbox.DEVBOX_UID_IMAGE_REPO, os.geteuid(), os.getegid())
+            )
+            return 0
+
+        return uid_image
     raise AssertionError("no planted value for %s" % attribute)
 
 
@@ -492,11 +547,11 @@ def twin_text() -> str:
     return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
 
 
-def test_the_twin_defines_these_forty_two_and_nothing_else() -> None:
+def test_the_twin_defines_these_forty_six_and_nothing_else() -> None:
     """Measured rather than remembered: a function added to the twin later cannot slip past unported."""
     text = twin_text()
     defined = set(re.findall(r"^([a-z_]+)\(\) *\{", text, re.MULTILINE))
-    assert len(devbox.BASH_NAMES) == 42
+    assert len(devbox.BASH_NAMES) == 46
     assert defined == set(devbox.BASH_NAMES), sorted(defined ^ set(devbox.BASH_NAMES))
 
 

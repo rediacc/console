@@ -49,21 +49,21 @@ THE CORPUS IS BUILT IN PYTHON FOR BOTH SIDES and handed to bash as NUL-separated
 THE STUB-FARM SCENARIOS, and what each one would catch
 -----------------------------------------------------------------------------
   identity           devbox_worktree, mount_root (relative `--git-common-dir`), branch, slug_basename, slug (with and without `DEVBOX_SLUG`, including one that sanitises away), container_name, all four `devbox_docker` answers including both sudo arms, the two bind lists, `_devbox_bind_if_present` present/absent/arity, and `devbox_url` explicit, defaulted, through sudo, and SURVIVING a failing `docker ps` because the death of twin defect 7 does not cross a command substitution.
-  identity-worktree  a LINKED worktree: mount_root answers the MAIN checkout from an absolute common dir, and build_image finds no Dockerfile there.
+  identity-worktree  a LINKED worktree: mount_root answers the MAIN checkout from an absolute common dir, and build_image finds no Dockerfile there, nor uid_image a derive recipe.
   identity-detached  a detached HEAD in a directory whose name needs the basename fallback, under `LC_ALL=C`, plus `devbox_up` against a drifted container that must NOT be rehosted because the branch is empty.
   identity-utf8      the same fixture under `LC_ALL=C.utf8`: the fallback hostname changes with the locale (twin defect 10), and a `\\u` escape in a logged label encodes rather than printing `\\u00FC`.
   identity-gone      a worktree directory that does not exist: the literal-path fallback, the state file that cannot be written, and a port block from the allocator.
   state              devbox_state_write at every arity and with `REDIACC_GATE_LANE`, devbox_state_get over present, missing, empty, duplicate, `=`-bearing, unterminated and regex-shaped keys (twin defect 11), and devbox_base_port from the record, from an empty record, and from the allocator with a busy first block.
   docker-query       container_id, container_running, slug_active, slug_conflicts (twin defect 3), router_hosts and missing_binds over every answer shape the daemon can give, including a failing `docker ps` (twin defect 7).
   proxy              network_ensure, proxy_running, proxy_ensure through every exit (already running, leftover started, leftover that will not start, run failure, a late answer, the 30-round timeout, a failing network, a failing `sleep`) and proxy_stop.
-  image              image_present, image_digest (including a failing inspect that printed something), ensure_image through pull, force, the private-registry fallback and a failing build, and build_image.
+  image              image_present, image_digest (including a failing inspect that printed something), ensure_image through pull, force, the private-registry fallback, a failing build, a failing derive and unreadable base ids, build_image, and the run image's four: base_user_ids over every passwd shape, uid_image over every id shape, run_image through the match and derive arms, and ensure_uid_image skipping, reusing, building, failing and through sudo.
   lifecycle          devbox_stop, devbox_remove (the state file really goes), devbox_logs and devbox_shell, each with and without a container and with a failing daemon.
   exec               devbox_exec's one-argument and many-argument shapes, zero arguments (twin defect 5), forwarded environment, sudo, and its status; then the three probes and devbox_doctor, including the not-running identity probe that passes (twin defect 2).
   exec-quote         devbox_exec over a corpus of argv built to exercise every `printf %q` rule: the backslash set, `~` and `#` by position, ANSI-C quoting, the empty word, non-UTF-8 bytes.
   exec-quote-utf8    the same corpus under `LC_ALL=C.utf8`, where a printable multibyte character is no longer ANSI-C quoted.
   status             devbox_status stopped, missing, running with every route label, drifted, conflicted (with a label that `echo -e` mangles, twin defect 4), with the proxy down, through sudo, and dying when the label inspect fails (twin defect 8).
   up-existing        devbox_up against an existing container: already running, drifted with and without the opt-out (both spellings), rehosted into a full create, bind drift, stopped then started, a start that does not come up, a start that fails (twin defect 9), and a removal that fails.
-  up-create          devbox_up's create path: success, the slug refusal, image and proxy failures, no free block, no docker group (twin defect 1), an odd group line, no kvm gid, `docker run` failing, the container exiting, the 60-round timeout, an octal base port (twin defect 6), force-pull, a manual slug and sudo.
+  up-create          devbox_up's create path: success, the slug refusal, image and proxy failures, no free block, no docker group (twin defect 1), an odd group line, no kvm gid, `docker run` failing, the container exiting, the 60-round timeout, an octal base port (twin defect 6), a derived image that has to be built, a run image that cannot be resolved, force-pull, a manual slug and sudo.
 """
 
 from __future__ import annotations
@@ -769,6 +769,10 @@ PROXY = devbox.DEVBOX_PROXY_NAME
 WORKTREE_LABEL = '{{index .Config.Labels "%s"}}' % devbox.DEVBOX_LABEL_KEY
 SLUG_LABEL = '{{index .Config.Labels "%s"}}' % devbox.DEVBOX_SLUG_LABEL_KEY
 SLUG = "feat-box-one"
+# What the base image answers for `getent passwd vscode` and for its image id: the published base, vscode at 7111. A host that is 7111 would take the no-derive arm here; the `run-image-match` step builds its answer from the host's own ids so that arm is driven on every machine.
+BASE_ACCOUNT_LINE = "vscode:x:7111:7111::/home/vscode:/bin/bash\n"
+BASE_ID = "sha256:52b359d8cc2e6566a9e435fc302cecd3b8270eb43aa06f43f9be016413e97ada\n"
+DERIVED_PATTERN = devbox.DEVBOX_UID_IMAGE_REPO + ":uid*"
 
 
 class Rules:
@@ -819,6 +823,33 @@ class Rules:
 
     def run_pattern(self):
         return [*self.d, "run", "-d", "--name", "rediacc-devbox-[0-9]*"]
+
+    def base_ids(self, out=BASE_ACCOUNT_LINE, **kw):
+        """`devbox_base_user_ids`' one call: vscode's passwd line from the base image."""
+        return rule(
+            *self.d,
+            "run",
+            "--rm",
+            "--entrypoint",
+            "getent",
+            IMAGE,
+            "passwd",
+            "vscode",
+            out=out,
+            **kw,
+        )
+
+    def base_id(self, out=BASE_ID, **kw):
+        """`devbox_uid_image`'s one call: the base image's id."""
+        return rule(*self.d, "image", "inspect", "--format", "{{.Id}}", IMAGE, out=out, **kw)
+
+    def derived_absent(self, **kw):
+        """The derived tag is not in the local store, so `devbox_ensure_uid_image` builds it."""
+        return rule(*self.d, "image", "inspect", DERIVED_PATTERN, exact=True, rc=1, **kw)
+
+    def base_answers(self):
+        """The base as published: vscode at 7111 and a real-shaped image id. Listed BEFORE any broader `image inspect --format` rule, which would otherwise answer the id probe too."""
+        return [self.base_ids(), self.base_id()]
 
 
 DOCKER = Rules()
@@ -871,6 +902,7 @@ def create_rules(
     """The daemon a fresh `devbox_up` meets: nothing of this worktree's until its own `docker run`, then a running container."""
     after = d.run_pattern()
     out = [
+        *d.base_answers(),
         d.ps_self(CID + "\n", after=after),
         d.running(running_after, after=after),
         d.slug_label(SLUG + "\n"),
@@ -986,6 +1018,7 @@ def worktree_steps() -> list[Step]:
         Step("name", "devbox_container_name"),
         Step("url", "devbox_url"),
         Step("build-no-dockerfile", "devbox_build_image"),
+        Step("uid-image-no-recipe", "devbox_uid_image", rules=DOCKER.base_answers()),
     ]
 
 
@@ -1250,8 +1283,15 @@ def proxy_steps() -> list[Step]:
 
 
 def image_steps() -> list[Step]:
+    d = DOCKER
     absent = rule("docker", "image", "inspect", IMAGE, exact=True, rc=1)
     digest = ("docker", "image", "inspect", "--format")
+    base = d.base_answers()
+    # The host's own ids as the base would answer them, so the no-derive arm is driven whatever uid runs this.
+    matching = d.base_ids(
+        out="vscode:x:%d:%d::/home/vscode:/bin/bash\n" % (os.geteuid(), os.getegid())
+    )
+    build = ("docker", "build", "-t", DERIVED_PATTERN)
     return [
         Step("present", "devbox_image_present"),
         Step("absent", "devbox_image_present", rules=[absent]),
@@ -1262,15 +1302,20 @@ def image_steps() -> list[Step]:
         ),
         Step("digest-fail", "devbox_image_digest", rules=[rule(*digest, rc=1)]),
         Step("digest-partial", "devbox_image_digest", rules=[rule(*digest, out="partial\n", rc=1)]),
-        Step("ensure-present", "devbox_ensure_image"),
-        Step("ensure-debug", "devbox_ensure_image", env={"DEBUG": "true"}),
-        Step("ensure-force", "devbox_ensure_image", ("true",), unset=("DEBUG",)),
-        Step("ensure-force-other", "devbox_ensure_image", ("yes",)),
-        Step("ensure-pull", "devbox_ensure_image", rules=[absent]),
+        Step("ensure-present", "devbox_ensure_image", rules=base),
+        Step("ensure-debug", "devbox_ensure_image", env={"DEBUG": "true"}, rules=base),
+        Step("ensure-force", "devbox_ensure_image", ("true",), unset=("DEBUG",), rules=base),
+        Step("ensure-force-other", "devbox_ensure_image", ("yes",), rules=base),
+        Step("ensure-pull", "devbox_ensure_image", rules=[absent, *base]),
+        Step(
+            "ensure-pull-derives",
+            "devbox_ensure_image",
+            rules=[absent, d.derived_absent(), *base],
+        ),
         Step(
             "ensure-pull-fails",
             "devbox_ensure_image",
-            rules=[absent, rule("docker", "pull", rc=1, err="denied\n")],
+            rules=[absent, rule("docker", "pull", rc=1, err="denied\n"), *base],
         ),
         Step(
             "ensure-build-fails",
@@ -1279,10 +1324,67 @@ def image_steps() -> list[Step]:
                 absent,
                 rule("docker", "pull", rc=1),
                 rule("docker", "build", rc=1, err="build failed\n"),
+                *base,
             ],
         ),
+        Step(
+            "ensure-derive-fails",
+            "devbox_ensure_image",
+            rules=[d.derived_absent(), rule(*build, rc=1, err="derive failed\n"), *base],
+        ),
+        Step("ensure-ids-fail", "devbox_ensure_image", rules=[d.base_ids(out="", rc=125)]),
         Step("build", "devbox_build_image"),
         Step("build-fails", "devbox_build_image", rules=[rule("docker", "build", rc=2)]),
+        # THE RUN IMAGE. The four functions, each through every arm it has.
+        Step("base-ids", "devbox_base_user_ids", rules=base),
+        Step(
+            "base-ids-run-fails",
+            "devbox_base_user_ids",
+            rules=[d.base_ids(rc=125, err="no such image\n")],
+        ),
+        Step("base-ids-empty", "devbox_base_user_ids", rules=[d.base_ids(out="")]),
+        Step("base-ids-short", "devbox_base_user_ids", rules=[d.base_ids(out="vscode:x:7111\n")]),
+        Step("base-ids-no-gid", "devbox_base_user_ids", rules=[d.base_ids(out="vscode:x:7111:\n")]),
+        Step(
+            "base-ids-two-lines",
+            "devbox_base_user_ids",
+            rules=[d.base_ids(out="vscode:x:1:2\nother:x:3:4\n")],
+        ),
+        Step("base-ids-bare", "devbox_base_user_ids", rules=[d.base_ids(out="vscode:x:5:6")]),
+        Step("uid-image", "devbox_uid_image", rules=base),
+        Step(
+            "uid-image-inspect-fails",
+            "devbox_uid_image",
+            rules=[d.base_id(out="", rc=1, err="gone\n")],
+        ),
+        Step("uid-image-empty", "devbox_uid_image", rules=[d.base_id(out="\n")]),
+        Step("uid-image-bare-prefix", "devbox_uid_image", rules=[d.base_id(out="sha256:\n")]),
+        Step(
+            "uid-image-no-prefix",
+            "devbox_uid_image",
+            rules=[d.base_id(out="0123456789abcdef0123\n")],
+        ),
+        Step("run-image-derive", "devbox_run_image", rules=base),
+        Step("run-image-match", "devbox_run_image", rules=[matching]),
+        Step("run-image-ids-fail", "devbox_run_image", rules=[d.base_ids(rc=1)]),
+        Step("run-image-id-fails", "devbox_run_image", rules=[d.base_id(rc=1), d.base_ids()]),
+        Step("ensure-uid-present", "devbox_ensure_uid_image", env={"DEBUG": "true"}, rules=base),
+        Step("ensure-uid-match", "devbox_ensure_uid_image", rules=[matching]),
+        Step(
+            "ensure-uid-match-quiet", "devbox_ensure_uid_image", unset=("DEBUG",), rules=[matching]
+        ),
+        Step("ensure-uid-builds", "devbox_ensure_uid_image", rules=[d.derived_absent(), *base]),
+        Step(
+            "ensure-uid-build-fails",
+            "devbox_ensure_uid_image",
+            rules=[d.derived_absent(), rule(*build, rc=2), *base],
+        ),
+        Step("ensure-uid-unresolved", "devbox_ensure_uid_image", rules=[d.base_ids(out="")]),
+        Step(
+            "ensure-uid-sudo",
+            "devbox_ensure_uid_image",
+            rules=[NO_DOCKER_GROUP, SUDO.derived_absent(), *SUDO.base_answers()],
+        ),
     ]
 
 
@@ -1481,6 +1583,7 @@ def up_existing_steps() -> list[Step]:
         d.slug_label(SLUG + "\n"),
         d.mounts(ALL_MOUNTS),
         *settled,
+        *d.base_answers(),
         rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
         rule("stat", out="993\n"),
     ]
@@ -1524,6 +1627,7 @@ def up_existing_steps() -> list[Step]:
                 d.mounts("/usr/local/bin/devbox-entrypoint.sh\n", before=removed),
                 d.mounts(ALL_MOUNTS),
                 *settled,
+                *d.base_answers(),
                 rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
                 rule("stat", out="993\n"),
             ],
@@ -1637,6 +1741,13 @@ def up_create_steps() -> list[Step]:
             ],
         ),
         Step("octal", "devbox_up", state=b"base_port=017000\n", rules=create),
+        Step("derives", "devbox_up", state=saved, rules=[d.derived_absent(), *create]),
+        Step(
+            "run-image-fails",
+            "devbox_up",
+            state=saved,
+            rules=[d.base_ids(out="", nth=2), *create],
+        ),
         Step("force", "devbox_up", ("true",), state=saved, rules=create),
         Step("manual-slug", "devbox_up", state=saved, env={"DEVBOX_SLUG": "My Name"}, rules=create),
         Step(
@@ -1708,6 +1819,10 @@ def init_repo(path: pathlib.Path, env: dict[str, str], dockerfile: bool) -> None
     if dockerfile:
         (path / ".devcontainer").mkdir()
         (path / ".devcontainer" / "Dockerfile").write_text("FROM scratch\n", encoding="utf-8")
+        # The derive recipe `devbox_uid_image` hashes into the derived tag. Fixed bytes, so the hash is the same on both sides and on every run.
+        (path / ".devcontainer" / "Dockerfile.uid").write_text(
+            "ARG BASE\nFROM ${BASE}\n", encoding="utf-8"
+        )
     git_run(path, ["init", "-q", "-b", "main"], env)
     git_run(path, ["add", "-A"], env)
     git_run(path, ["commit", "-q", "-m", "fixture"], env)

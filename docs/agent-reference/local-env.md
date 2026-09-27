@@ -36,8 +36,11 @@ serves its UI from the same origin as the data, so there is no third-party page 
 **One container per worktree, on a stable port.** The port block is derived from the worktree's absolute path (`derive_slot`/`find_port_block` in `.ci/lib/find-port.sh`), so a bookmarked URL survives a reboot and two worktrees never collide. A running container is authoritative for its own ports; the `.devbox-state` file is only a cache, and the container is found by the
 `com.rediacc.devbox.worktree` label rather than by name.
 
-**The container runs as YOU.** The image bakes its `vscode` user at UID 7111 and chowns `/home/vscode`, `/opt/openvscode-server` (extensions included) and `/go` to it. `docker run --user $(id -u)` therefore does NOT work — it leaves that ownership untouched, and every extension install fails with EACCES. Instead `.devcontainer/devbox-entrypoint.sh` starts as root, renumbers
-`vscode` to the host uid/gid, chowns exactly those three trees, and drops privileges with `setpriv`. It also sets `HOME` explicitly, because setpriv changes credentials and not the environment.
+**The container runs as the host operator.** The published image keeps its `vscode` user at UID/GID 7111, because renet's hub runs the same image and chowns its workspaces to `config.RediaccUID`.
+So `devbox_ensure_uid_image` (`.ci/lib/devbox.sh`) derives a thin local image, `rediacc/devbox:uid<UID>-gid<GID>-<base id 12>-<Dockerfile.uid sha256 12>`, from `.devcontainer/Dockerfile.uid`, which renumbers `vscode` to the host ids and chowns `/home/vscode`, `/opt/openvscode-server` and `/go` at BUILD time.
+It runs once per operator per base image (501 s measured 2026-09-27: 337 s of chown copy-up, then 162 s exporting the layer) and before `docker run`, so it never races the readiness probe; it is skipped when the base ids already match, and is reused while its tag exists; a re-pulled base (new id) or an edited `Dockerfile.uid` (new hash) re-derives on the next `devbox up`.
+`.devcontainer/devbox-entrypoint.sh` only ASSERTS that `vscode` matches `HOST_UID:HOST_GID` and exits 1 when it does not, then drops privileges with `setpriv`. It also sets `HOME` explicitly, because setpriv changes credentials and not the environment.
+`docker run --user $(id -u)` does NOT work: a uid with no passwd entry has no home and no sudo, and the image's ownership stays untouched.
 
 The repo is bind-mounted at its IDENTICAL host path (never `/workspace`): a git worktree's gitdir link is absolute, and a nested `docker -v $(pwd)` is resolved by the host daemon. `~/.gitconfig`, `~/.git-credentials`, `~/.config/gh`, `~/.claude`, `~/.claude.json` and `~/.config/rediacc` are bound in by name.
 
