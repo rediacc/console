@@ -106,7 +106,7 @@ process.stdout.write(JSON.stringify({
     i18n4: planned('quality-i18n', 4),
     code8: planned('quality-code', 8),
     code4: planned('quality-code', 4),
-    www3: planned('quality-www-build', 3),
+    www2: planned('quality-www-build', 2),
     static3: planned('quality-static', 3),
   },
   refusals: {
@@ -484,9 +484,9 @@ def test_heavy_is_capped_at_one_per_shard(gate):
 
 
 def test_a_within_lane_needs_edge_co_locates(gate):
-    """THE FOURTH RULE, which the box does not name. Twelve `quality-www-build` entries declare `needs: [build:www]` and `build:www` is a step in that same lane, so a plan honouring only mutex would put a gate in a runner that never built the thing it validates."""
+    """THE FOURTH RULE, which the box does not name. Fourteen `quality-www-build` entries declare `needs: [build:www]` and `build:www` is a step in that same lane, so a plan honouring only mutex would put a gate in a runner that never built the thing it validates."""
     gate.log_test("a within-lane `needs` target shares its dependent's shard")
-    plan = probe(gate)["plans"]["www3"]
+    plan = probe(gate)["plans"]["www2"]
     gate.assert_eq(
         _home_of(plan, "build:www"),
         _home_of(plan, "check:ci-seo"),
@@ -497,7 +497,7 @@ def test_a_within_lane_needs_edge_co_locates(gate):
 
 def test_a_needs_target_is_ordered_first_inside_its_shard(gate):
     gate.log_test("and the order inside the shard is topological, because CI steps run in order")
-    plan = probe(gate)["plans"]["www3"]
+    plan = probe(gate)["plans"]["www2"]
     shard = next(s for s in plan["shards"] if "build:www" in s["ids"])
     if shard["ids"].index("build:www") > shard["ids"].index("check:ci-seo"):
         gate.log_fail(
@@ -541,15 +541,15 @@ def test_more_shards_than_gates_refuses(gate):
 
 def test_the_ceiling_is_units_not_entries(gate):
     gate.log_test("the ceiling counts INDIVISIBLE UNITS, which is the stricter threshold")
-    # 16 entries in quality-www-build are 4 units, because 13 of them are welded together by one mutex group and twelve needs edges. Counting entries would
-    # let five shards through and leave one empty.
+    # 16 entries in quality-www-build are 2 units, because 15 of them are welded together by one mutex group and fourteen needs edges (browser-smoke and page-density joined build:www on 2026-09-27; they read its dist). Counting entries would
+    # let five shards through and leave three empty.
     message = probe(gate)["refusals"]["www5"]
     gate.assert_contains(
         message,
-        "only 4 indivisible unit(s) (16 entries",
+        "only 2 indivisible unit(s) (16 entries",
         "the refusal must count units and SAY it counted entries too",
     )
-    gate.log_pass("the ceiling is units, not entries: 16 www-build entries are 4 units")
+    gate.log_pass("the ceiling is units, not entries: 16 www-build entries are 2 units")
 
 
 def test_a_lane_with_zero_lock_entries_refuses(gate):

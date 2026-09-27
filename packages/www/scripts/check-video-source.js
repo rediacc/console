@@ -14,7 +14,7 @@ const probe = path.join(wwwRoot, 'public/assets/tutorials/video/en/tutorial-prod
 if (!process.env.PUBLIC_VIDEO_CDN_BASE_URL && !fs.existsSync(probe)) {
   console.error(
     'tutorial player gate: no video source. Set PUBLIC_VIDEO_CDN_BASE_URL=https://media.rediacc.com ' +
-      '(what CI and the ci-runner set), or sync the local media into packages/www/public/assets/tutorials/video/ ' +
+      `(what CI and the ci-runner set), or sync the local media into ${path.relative(process.cwd(), path.dirname(path.dirname(probe)))} ` +
       '(docs/agent-reference/media-assets.md). Exiting 77 (cannot-run): NOT a verdict on the player.'
   );
   process.exit(77);
