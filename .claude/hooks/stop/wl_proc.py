@@ -13,8 +13,11 @@ THE FAILURE IS DEFERRED TO THE CALL, NOT RAISED AT IMPORT, and that is not polit
 So the import always succeeds, and `run()` refuses -- loudly, naming what is missing -- only if something actually tries to launch a forking child without the runner present. Everything else the hook does keeps working.
 """
 
+import os
 import pathlib
+import shutil
 import sys
+import tempfile
 
 _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci"
 if _CI.is_dir() and str(_CI) not in sys.path:
@@ -48,7 +51,26 @@ def run(argv, **kwargs):
             "rather than re-implementing a process-group kill inside .claude/hooks."
             % (argv[:1], _CI, _IMPORT_ERROR)
         )
-    return _run(argv, **kwargs)
+    if not _tsx_argv(argv):
+        return _run(argv, **kwargs)
+    env = dict(kwargs.get("env") or os.environ)
+    if len(env.get("TMPDIR") or tempfile.gettempdir()) <= TSX_TMPDIR_MAX:
+        return _run(argv, **kwargs)
+    # tsx listens on an IPC socket at $TMPDIR/tsx-<uid>/<pid>.pipe, and Linux keeps only the first ~107 bytes of a socket path: under a deep TMPDIR (a hook suite inside a pytest leg) two tsx processes truncate to the SAME socket and the second dies `listen EADDRINUSE` (test-judge-schema control 6o, CI runs on 588e2fb4e and ac1d14ad5, a 140-byte pipe path). A short private TMPDIR for the child keeps the path well inside the limit.
+    short = tempfile.mkdtemp(prefix="tsx-", dir="/tmp" if os.path.isdir("/tmp") else None)
+    try:
+        env["TMPDIR"] = short
+        return _run(argv, **{**kwargs, "env": env})
+    finally:
+        shutil.rmtree(short, ignore_errors=True)
+
+
+# The longest TMPDIR a tsx child inherits as is: + "/tsx-<uid>/<pid>.pipe" (about 25 bytes) stays under the ~107-byte AF_UNIX path limit.
+TSX_TMPDIR_MAX = 72
+
+
+def _tsx_argv(argv) -> bool:
+    return any(os.path.basename(str(a)) == "tsx" for a in list(argv)[:3])
 
 
 __all__ = ["SPAWN_FAILED_RC", "TIMEOUT_RC", "Result", "run"]
