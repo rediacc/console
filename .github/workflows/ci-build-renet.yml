@@ -404,7 +404,7 @@ jobs:
         run: |
           cd private/renet
           # Keep the version in sync with .ci/scripts/quality/lint.sh
-          GOLANGCI_VERSION="v2.9.0"
+          GOLANGCI_VERSION="v2.14.0"
           # Installer pinned to the RELEASE TAG, not master. Piping a script from
           # a moving branch into sh means the thing being executed can change
           # between two runs of the same commit; the tagged copy cannot. The
