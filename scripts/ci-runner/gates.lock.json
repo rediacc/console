@@ -5110,6 +5110,20 @@
     }
   },
   {
+    "id": "check:ci-shard-manifest-coverage",
+    "run": "npm run check:ci-shard-manifest-coverage",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-shard-manifest-coverage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Shard manifest coverage"
+    }
+  },
+  {
     "id": "check:ci-quality-gates",
     "run": "npm run check:ci-quality-gates",
     "gate": false,

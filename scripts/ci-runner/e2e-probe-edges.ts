@@ -133,7 +133,9 @@ export function parseResultsDir(dir: string): ProbeResult[] {
       throw new Error(`e2e-probe-edges: ${f} is missing a non-empty string "file".`);
     }
     if (outcome !== 'pass' && outcome !== 'fail') {
-      throw new Error(`e2e-probe-edges: ${f} has outcome ${JSON.stringify(outcome)}; must be "pass" or "fail".`);
+      throw new Error(
+        `e2e-probe-edges: ${f} has outcome ${JSON.stringify(outcome)}; must be "pass" or "fail".`
+      );
     }
     const already = seenAt.get(file);
     if (already !== undefined) {
@@ -179,15 +181,24 @@ function selftest(): number {
     { file: '03-datastore-lifecycle.test.ts', outcome: 'fail' },
     { file: '04-repository-lifecycle.test.ts', outcome: 'pass' },
   ]);
-  require_(control.failedAlone.length === 1, `control: expected 1 failedAlone, got ${control.failedAlone.length}`, failures);
-  require_(control.edges.length === 1, `control: expected 1 edge, got ${control.edges.length}`, failures);
+  require_(
+    control.failedAlone.length === 1,
+    `control: expected 1 failedAlone, got ${control.failedAlone.length}`,
+    failures
+  );
+  require_(
+    control.edges.length === 1,
+    `control: expected 1 edge, got ${control.edges.length}`,
+    failures
+  );
   require_(
     control.edges[0]?.id === 'e2e-workers:03-datastore-lifecycle.test.ts',
     `control: edge id was ${String(control.edges[0]?.id)}`,
     failures
   );
   require_(
-    JSON.stringify(control.edges[0]?.needs) === JSON.stringify(['e2e-workers:02-machine-setup.test.ts']),
+    JSON.stringify(control.edges[0]?.needs) ===
+      JSON.stringify(['e2e-workers:02-machine-setup.test.ts']),
     `control: needs was ${JSON.stringify(control.edges[0]?.needs)}`,
     failures
   );
@@ -199,16 +210,32 @@ function selftest(): number {
     { file: '02-machine-setup.test.ts', outcome: 'pass' },
     { file: '03-datastore-lifecycle.test.ts', outcome: 'pass' },
   ]);
-  require_(inverse.failedAlone.length === 0, `inverse: expected 0 failedAlone, got ${inverse.failedAlone.length}`, failures);
-  require_(inverse.edges.length === 0, `inverse: expected 0 edges, got ${inverse.edges.length}`, failures);
-  require_(inverse.unexplained.length === 0, `inverse: expected 0 unexplained, got ${inverse.unexplained.length}`, failures);
+  require_(
+    inverse.failedAlone.length === 0,
+    `inverse: expected 0 failedAlone, got ${inverse.failedAlone.length}`,
+    failures
+  );
+  require_(
+    inverse.edges.length === 0,
+    `inverse: expected 0 edges, got ${inverse.edges.length}`,
+    failures
+  );
+  require_(
+    inverse.unexplained.length === 0,
+    `inverse: expected 0 unexplained, got ${inverse.unexplained.length}`,
+    failures
+  );
 
   // NO PREDECESSOR: the very first file in suite order fails alone. That is not an ordering dependency (nothing precedes it), so it must land in `unexplained`, never as an edge to a nonexistent unit.
   const noPredecessor = computeEdges([
     { file: '01-system-checks.test.ts', outcome: 'fail' },
     { file: '02-machine-setup.test.ts', outcome: 'pass' },
   ]);
-  require_(noPredecessor.edges.length === 0, `no-predecessor: expected 0 edges, got ${noPredecessor.edges.length}`, failures);
+  require_(
+    noPredecessor.edges.length === 0,
+    `no-predecessor: expected 0 edges, got ${noPredecessor.edges.length}`,
+    failures
+  );
   require_(
     JSON.stringify(noPredecessor.unexplained) === JSON.stringify(['01-system-checks.test.ts']),
     `no-predecessor: unexplained was ${JSON.stringify(noPredecessor.unexplained)}`,
@@ -221,7 +248,11 @@ function selftest(): number {
     { file: '02-machine-setup.test.ts', outcome: 'fail' },
     { file: '03-datastore-lifecycle.test.ts', outcome: 'fail' },
   ]);
-  require_(consecutive.edges.length === 2, `consecutive: expected 2 edges, got ${consecutive.edges.length}`, failures);
+  require_(
+    consecutive.edges.length === 2,
+    `consecutive: expected 2 edges, got ${consecutive.edges.length}`,
+    failures
+  );
   require_(
     consecutive.edges[0]?.needs[0] === 'e2e-workers:01-system-checks.test.ts',
     'consecutive: first edge must point at its own immediate predecessor',
@@ -246,7 +277,9 @@ function selftest(): number {
     for (const message of failures) process.stderr.write(`FAIL: ${message}\n`);
     return 1;
   }
-  process.stderr.write('OK: e2e-probe-edges selftest passed (control, inverse, no-predecessor, consecutive, vacuous)\n');
+  process.stderr.write(
+    'OK: e2e-probe-edges selftest passed (control, inverse, no-predecessor, consecutive, vacuous)\n'
+  );
   return 0;
 }
 

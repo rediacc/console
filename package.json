@@ -150,6 +150,7 @@
     "check:ci-syncpack-reasons": "tsx scripts/gates/check-syncpack-reasons.ts",
     "check:ci-quality-complete": "tsx scripts/gates/check-quality-complete.ts --selftest && tsx scripts/gates/check-quality-complete.ts",
     "check:ci-lane-budget": "tsx scripts/gates/check-lane-budget.ts --selftest && tsx scripts/gates/check-lane-budget.ts",
+    "check:ci-shard-manifest-coverage": "tsx scripts/gates/check-shard-manifest-coverage.ts --selftest && tsx scripts/gates/check-shard-manifest-coverage.ts",
     "check:ci-quality-gates": ".ci/rediacc_ci/battery.py",
     "check:ci-security-audit": "PYTHONPATH=.ci python3 -m rediacc_ci.security.audit",
     "check:ci-shell-commands": "PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands",

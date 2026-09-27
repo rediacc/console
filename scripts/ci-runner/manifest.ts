@@ -4786,6 +4786,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Every committed .ci/config/shards/<lane>.json against its lane's real unit set, both ways (suite 25 of E2E Workers ran in no CI job until 2026-09-27). quality-go because it is the one quality lane holding all four enumerators' prerequisites: node + root npm ci (playwright --list), actions/setup-go (go list) and every submodule; placeGate picks it from the header's needs. NO `paths`: its inputs span both submodules, whose change arrives as a gitlink, plus the lock, the playwright config and run-e2e.sh, and a partial path table would make --changed drop it silently.
+    id: 'check:ci-shard-manifest-coverage',
+    run: 'npm run check:ci-shard-manifest-coverage',
+    gate: true,
+    leaves: ['scripts/gates/check-shard-manifest-coverage.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Shard manifest coverage',
+    },
+  },
+  {
     // NO `env:`. The PR_HEAD_REF this carried was empty on push, schedule and the nightly dispatch, and nothing under `.ci/rediacc_ci/` reads it from the ambient environment -- the battery's tests scrub it or pin their own.
     id: 'check:ci-quality-gates',
     run: 'npm run check:ci-quality-gates',

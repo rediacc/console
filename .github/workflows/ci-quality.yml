@@ -2633,6 +2633,11 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-renet-types
 
+      # Every committed .ci/config/shards/<lane>.json against the lane's real unit set. This lane is the one with both Go (renet go list) and node (playwright --list). Found suite 25 and pkg/infra/vmsnapshot running in no CI job on its first run.
+      - name: Shard manifest coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-shard-manifest-coverage
+
       - name: Check subscription schema consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_subscription_schema.py

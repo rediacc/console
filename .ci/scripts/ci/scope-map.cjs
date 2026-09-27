@@ -162,7 +162,11 @@ const RULES = [
   { name: 'scripts-gate-bind', match: matchPrefix('scripts/gate-bind.ts'), full: 'harness' },
 
   // The E2E dependency probe's analysis step (spec W T2.12): ct-e2e-probe.yml's aggregate job runs it over the probe legs' results, so a delta touching only it changes that gated job's output.
-  { name: 'scripts-e2e-probe-edges', match: matchPrefix('scripts/ci-runner/e2e-probe-edges.ts'), full: 'harness' },
+  {
+    name: 'scripts-e2e-probe-edges',
+    match: matchPrefix('scripts/ci-runner/e2e-probe-edges.ts'),
+    full: 'harness',
+  },
 
   // The shape-duplication SEED, and it must force full CI for a reason that is easy to get backwards. The seed is not an input the gate reads for reference -- it IS the gate's baseline: every hash in it is a shape the gate has agreed to stay silent about. A delta touching only the seed is therefore a delta that CHANGES WHAT THE GATE ENFORCES, and under 'reduced' it would skip the
   // very job that runs check:ci-shape-duplication. Seeding a shape and never running the gate that honours it is exactly how a baseline stops describing anything real.
