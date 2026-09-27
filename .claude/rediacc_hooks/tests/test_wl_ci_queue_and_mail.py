@@ -14,9 +14,8 @@ import re
 import time
 from typing import TYPE_CHECKING
 
-from rediacc_hooks.tests.test_wl_ci_status import ci_job
+from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_run, ci_setup, write_exec
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
-from rediacc_hooks.tests.test_wl_ci_status import ci_run, ci_setup, write_exec
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 if TYPE_CHECKING:

@@ -6,7 +6,7 @@ else.
 
 THE NAME CLASSIFIER IS TESTED AGAINST A CORPUS, NOT A TABLE. `looks_secret` is a heuristic, and a table of expectations written next to it only records what its author believed twice. `.ci/rediacc_ci/security/rdc_sh_env_check.py` (the gate that drives `rdc.sh`'s dev path, `check:ci-rdc-sh-env`) is an INDEPENDENT ruling: written for a different reason, by someone solving a
 different problem, it names four private variables that must never reach the CLI's environment (`SECRET_NAMES`) and the exact three it allows through (`ALLOWLIST`). Those seven names are harvested from the file at run time and the classifier has to agree with all of them. Before account-env's retirement (eeaff0693) this ruling was rdc.sh's own comment, quoted verbatim
-byte for byte; the comment moved to prose in this gate module when rdc.sh stopped sourcing `private/account/.env` at all, but the ruling -- which names are secret-shaped and which are not -- is the same one, still enforced, still independent of this file. `.ci/config/bws-secret-map.json` supplies the second, wider corpus.
+byte for byte; the comment moved to prose in this gate module when rdc.sh stopped sourcing the retired account env file at all, but the ruling -- which names are secret-shaped and which are not -- is the same one, still enforced, still independent of this file. `.ci/config/bws-secret-map.json` supplies the second, wider corpus.
 """
 
 import hashlib
