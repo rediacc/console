@@ -46,6 +46,10 @@
   color: "FEF2C0"
   description: "Forces an unconditional full CI round, bypassing the scope engine's job skips"
 
+- name: e2e-dependency-probe
+  color: "FEF2C0"
+  description: "Runs each E2E Workers spec file alone on a fresh VM and proposes needs edges (T2.12)"
+
 # Release control
 - name: rollback
   color: "D93F0B"
