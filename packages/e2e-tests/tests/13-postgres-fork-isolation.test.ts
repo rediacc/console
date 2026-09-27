@@ -280,7 +280,12 @@ test.describe
     });
 
     test('8. mount fork repository', async () => {
-      const result = await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath);
+      const result = await runner.repositoryMount(
+        forkRepoName,
+        TEST_PASSWORD,
+        datastorePath,
+        forkNetworkId
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -524,7 +529,7 @@ test.describe
         datastorePath,
         forkANetworkId
       );
-      await runner.repositoryMount(forkARepoName, TEST_PASSWORD, datastorePath);
+      await runner.repositoryMount(forkARepoName, TEST_PASSWORD, datastorePath, forkANetworkId);
 
       const dockerComposeContent = runner
         .readFixture('bridge/docker-compose.postgresql.yaml')
@@ -544,7 +549,7 @@ test.describe
         datastorePath,
         forkBNetworkId
       );
-      await runner.repositoryMount(forkBRepoName, TEST_PASSWORD, datastorePath);
+      await runner.repositoryMount(forkBRepoName, TEST_PASSWORD, datastorePath, forkBNetworkId);
 
       const dockerComposeContent = runner
         .readFixture('bridge/docker-compose.postgresql.yaml')
@@ -727,7 +732,7 @@ test.describe
       await runner.repositoryUnmount(parentRepoName, datastorePath);
 
       await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath, forkNetworkId);
-      await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath);
+      await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath, forkNetworkId);
 
       const dockerComposeContent = runner
         .readFixture('bridge/docker-compose.postgresql.yaml')
@@ -853,7 +858,7 @@ test.describe
       await runner.repositoryUnmount(parentRepoName, datastorePath);
 
       await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath, forkNetworkId);
-      await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath);
+      await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath, forkNetworkId);
 
       const dockerComposeContent = runner
         .readFixture('bridge/docker-compose.postgresql.yaml')
