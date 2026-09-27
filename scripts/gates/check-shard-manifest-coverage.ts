@@ -68,6 +68,7 @@ import process from 'node:process';
 import { parseShardManifest, type ShardManifestFile } from '../ci-runner/shard-manifest.js';
 import { LANE_ENUMERATORS } from '../ci-runner/unit-enumerators.js';
 import { GREEN, NC, RED } from '../lib/console.js';
+import { refused } from '../lib/controls.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const DEFAULT_SHARDS_DIR = path.join(ROOT, '.ci', 'config', 'shards');
@@ -315,11 +316,10 @@ async function main(): Promise<number> {
         .sort()
     : [];
   if (names.length === 0) {
-    console.error(
+    return refused(
       `${RED}✗ ${rel(shardsDir)} holds ZERO shard manifests. The gate is not seeing the tree; ` +
         `its green would mean nothing.${NC}`
     );
-    return 1;
   }
 
   for (const [k, v] of Object.entries(PINNED_ENV)) process.env[k] = v;
@@ -387,11 +387,10 @@ async function main(): Promise<number> {
   for (const f of failures) console.error(`${RED}✗ ${f}${NC}`);
   for (const f of findings) console.error(`${RED}✗ [${f.kind}] ${f.message}${NC}`);
   if (failures.length > 0 || findings.length > 0) {
-    console.error(
+    return refused(
       `${RED}✗ shard manifest coverage: ${findings.length} finding(s), ${failures.length} lane(s) ` +
         `unchecked. An unchecked lane is a failure, not a pass.${NC}`
     );
-    return 1;
   }
   console.log(
     `${GREEN}✓ shard manifest coverage: ${names.length} manifest(s), ${unitTotal} unit(s), ` +

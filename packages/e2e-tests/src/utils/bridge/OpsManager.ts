@@ -155,14 +155,30 @@ export class OpsManager extends BaseOpsManager {
 // Singleton instance for shared state across tests
 let opsManagerInstance: OpsManager | null = null;
 
-/**
- * Get the singleton OpsManager instance using environment configuration.
- *
- * @throws Error if required environment variables are missing
- */
-export function getOpsManager(): OpsManager {
+function realOpsManager(): OpsManager {
   opsManagerInstance ??= new OpsManager(loadConfigFromEnv());
   return opsManagerInstance;
+}
+
+/**
+ * The singleton OpsManager, resolved from the environment on FIRST USE, not on this call.
+ *
+ * Suites call this in a describe body, and a describe body runs at collection time: an eager
+ * `loadConfigFromEnv()` made `playwright test --list` throw "VM_NET_BASE environment variable is
+ * required" on any machine without a live VM env (check:ci-shard-manifest-coverage enumerates the
+ * suite that way, 2026-09-27). The proxy defers construction until a method or property is read,
+ * where a missing variable still throws with the same message.
+ *
+ * @throws Error on first use if required environment variables are missing
+ */
+export function getOpsManager(): OpsManager {
+  return new Proxy({} as OpsManager, {
+    get(_target, prop) {
+      const real = realOpsManager();
+      const value = Reflect.get(real, prop, real);
+      return typeof value === 'function' ? value.bind(real) : value;
+    },
+  });
 }
 
 /**

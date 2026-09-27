@@ -740,7 +740,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 15 | .py 15 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
-| .ci/rediacc_ci/ci | 19 | .py 19 |
+| .ci/rediacc_ci/ci | 21 | .py 21 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 33 | .py 33 |
 | .ci/rediacc_ci/deploy | 33 | .py 33 |
@@ -749,7 +749,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/docker | 6 | .py 6 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/housekeeping | 7 | .py 7 |
-| .ci/rediacc_ci/infra | 12 | .py 12 |
+| .ci/rediacc_ci/infra | 13 | .py 13 |
 | .ci/rediacc_ci/ops | 4 | .py 4 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 9 | .py 9 |
@@ -759,7 +759,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
-| .ci/rediacc_ci/tests | 295 | .py 295 |
+| .ci/rediacc_ci/tests | 298 | .py 298 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 176 | .py 175, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
@@ -860,7 +860,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/review/prompts | 2 | .md 2 |
 | .ci/scripts/security | 2 | .sh 2 |
 | .ci/scripts/setup | 2 | .sh 2 |
-| .ci/scripts/test | 17 | .sh 16, .ts 1 |
+| .ci/scripts/test | 14 | .sh 13, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/gates | 5 | .sh 5 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
