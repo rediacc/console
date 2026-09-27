@@ -17,3 +17,8 @@ Writer running: #f5dd5092 (tests stop writing the real tree; drop REAL_TREE_TWIN
 2. Commit renet in reviewable groups (cmd/renet, pkg/functions, pkg/*, snapshot removal, config+lint.sh, security fixes separately), bump the pointer, then receipt, push, watch.
 3. Rebuild the devbox image (docker build -t ghcr.io/rediacc/devcontainer:latest -f .devcontainer/Dockerfile .devcontainer; ./run.sh devbox remove && up) so it runs golangci 2.14.0.
 4. Spot-check and commit the #f5dd5092 writer's output.
+
+## 2026-09-27T19:05Z update
+- Pushed-pending head e09b4ef78 (renet d0d6e24). CI on 1128150ac was red on renet cross-OS build; fixed (renet ef4c1bd/74c89ad/d0d6e24).
+- Spec W: the 10-run window is full; P2 fails on job LENGTH (50/148 over). Plan agent's levers verified; writers: #54efe106 run-e2e single invocation, #3510fc0e renet parallel ops up, #dfdcd672 pytest 3 legs; #85d7384b disk cleanup landed 9daee5968. Commit 4 (rebalance) after those. Caps for Ceph/K8s parked #d5ba825c.
+- Devbox uid-derived image landed ad4b21c78; live up 15s.
