@@ -164,13 +164,14 @@ Every other job (about 60 more) has a median under 6.5 and a max under 11 in eve
     (ticked) 2026-09-26T21:27:55Z by d778be9d: 11 tests, boundaries, exclusions, report vs enforce, rerun resets (commit 0eab7c5b0, .ci/rediacc_ci/tests/gates/test_gate_watchdog_budget.py:1)
 - [x] T1.5 [A] `report-nightly-status.cjs` lists the night's budget violations under their own heading, so the schedule run (cancel-exempt, `:54`) still surfaces them.
     (ticked) 2026-09-26T21:27:56Z by d778be9d: nightly report lists budget violations under their own heading (commit 0eab7c5b0, .ci/scripts/ci/report-nightly-status.cjs:1)
-- [ ] T1.6 [B] **Unit-duration artifacts from every lane that will be sharded.** No sharding yet.
+- [x] T1.6 [B] **Unit-duration artifacts from every lane that will be sharded.** No sharding yet.
   - Playwright `--reporter=json` beside the existing reporters in `run-e2e.sh` and `.ci/scripts/test/run-account-e2e.sh:220-224`.
   - `gotestsum --jsonfile` in renet.
   - `pytest --junitxml` durations in `check_pytest.py`.
   - The battery's own per-test timings.
   - `vitest --reporter=json` in `run_account.py`.
   - Each is uploaded as `unit-durations-<lane>-<leg>-<sha>`. `budget_report.py --refresh` (T3.2) consumes them.
+    (ticked) 2026-09-27T11:38:48Z by d778be9d: Every sharded lane uploads unit-durations-<lane>-* on run 36311800722 (6b7000c71): test-e2e-workers, test-account-e2e, test-renet-go, test-renet-integration (junit, 82 timed testcases in leg 1, after RENET_PYTEST_JUNIT), quality-pytest, quality-gate-tests, ops-tutorials (commits b8f29d004, 13301eead, 53b54e9e3)
 - **Exit P1:** 7 days of report-only data, and T1.1 output matches section 1.
 
 ### P2: split every job over 12 minutes
