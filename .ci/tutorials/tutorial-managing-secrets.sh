@@ -34,22 +34,7 @@ rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mo
 
 rdc repo delete my-app:test --yes 2>/dev/null || true
 rdc repo delete my-app --yes 2>/dev/null || true
-# The tutorial immediately before this one in the sequence (fork-isolation)
-# deliberately keeps its own grand repo (demo-pgadmin) running for the video
-# render stage, so the prune above targets it as an orphan (this script's
-# config was just wiped, so it has no record of it) and tears it down
-# asynchronously on the machine. That teardown can still be in flight here:
-# this is always the first repo in a freshly-inited config, so it always
-# requests the same starting network ID, and renet refuses a same-ID create
-# while the old claim is still settling (NetworkIDConflictExitCode = 17, see
-# private/renet/pkg/repository/netid_guard.go). Retry rather than fail.
-for attempt in 1 2 3 4 5; do
-    rdc repo create my-app --machine "$M" --size 2G && break
-    rc=$?
-    [[ $rc -eq 17 && $attempt -lt 5 ]] || exit "$rc"
-    echo "repo create my-app: network ID still held by the previous tutorial's leftover repo (exit 17); retrying in 5s ($attempt/5)" >&2
-    sleep 5
-done
+rdc repo create my-app --machine "$M" --size 2G
 # Stage the compose that consumes BOTH secret modes (env interpolation +
 # /run/secrets file mount) so the on-camera `repo up` has something real
 # to feed.
