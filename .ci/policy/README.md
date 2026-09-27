@@ -91,7 +91,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
 | `.language-policy-allowlist` | name per line | 17 | 18 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
-| `.profiler-coverage-allowlist` | name per line | 67 | 4 | both |
+| `.profiler-coverage-allowlist` | name per line | 66 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
 | `.w7p5a-real-run-blocklist` | name per line | 6 | 6 | both |

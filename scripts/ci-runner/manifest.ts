@@ -3997,7 +3997,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
     gate: true,
-    // `leaves` is what package.json's run command actually resolves to (the real source file check:ci-parity cross-checks); the 13 baseline JSON files this script reads at runtime belong in `paths` (change-detection selection), not here -- conflating the two is what check:ci-parity caught on this entry's first real run.
+    // `leaves` is what package.json's run command actually resolves to (the real source file check:ci-parity cross-checks); the baseline JSON files this script reads at runtime belong in `paths` (change-detection selection), not here -- conflating the two is what check:ci-parity caught on this entry's first real run.
     paths: [
       'scripts/gates/check-baseline-key-semantics.ts',
       'scripts/data/dead-translation-keys-baseline.json',
@@ -4011,7 +4011,6 @@ export const GATES: readonly GateSpec[] = [
       'scripts/data/hook-coverage-baseline.json',
       'scripts/data/css-dom-refs-baseline.json',
       'scripts/data/hook-inventory-baseline.json',
-      '.ci/scripts/quality/job-timeout-baseline.json',
       '.ci/scripts/quality/runner-sizing-baseline.json',
     ],
     pathsOrigin: 'declared',

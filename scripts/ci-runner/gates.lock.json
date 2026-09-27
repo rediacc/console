@@ -4292,7 +4292,6 @@
       "scripts/data/hook-coverage-baseline.json",
       "scripts/data/css-dom-refs-baseline.json",
       "scripts/data/hook-inventory-baseline.json",
-      ".ci/scripts/quality/job-timeout-baseline.json",
       ".ci/scripts/quality/runner-sizing-baseline.json"
     ],
     "pathsOrigin": "declared",
