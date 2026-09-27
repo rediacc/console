@@ -309,12 +309,38 @@ def _sed_strip_quoted_spans(text):
     The order is not cosmetic: single-quoted spans go first, so a double quote living inside a single-quoted span is gone before the second expression can pair it with an unrelated quote later in the line. The caller has already mapped newlines to \\001, so "multi-line aware" means the whole command is ONE record here and a quoted span may cross what were lines.
     """
     records, terminated = _records(text)
+    return _sed_out([_strip_quoted_left_to_right(record) for record in records], terminated)
+
+
+def _strip_quoted_left_to_right(line):
+    """Every quoted span removed in ONE left-to-right pass, the way bash reads quotes.
+
+    Two passes (every '...' first, then every "...") pair the wrong quotes on the POSIX idiom for a literal apostrophe, `'it'"'"'s x; tool y'`: the first pass eats `'it'` and `'"'`, the second finds `"'s x; tool y'` unterminated, and `tool` surfaced at a command position. block_host_toolchain_run refused a commit whose message merely NAMED a missing tool that way (2026-09-27, #ecf56658). Here a single quote opens a span that only a single quote closes; a double quote opens one that only an unescaped double quote closes (a backslash escapes inside it, as in bash). An unterminated span keeps the rest of the line, exactly as the two-pass form did.
+    """
     out = []
-    for record in records:
-        line = re.sub(r"'[^']*'", "", record)
-        line = re.sub(r'"[^"]*"', "", line)
-        out.append(line)
-    return _sed_out(out, terminated)
+    i = 0
+    n = len(line)
+    while i < n:
+        ch = line[i]
+        if ch == "'":
+            end = line.find("'", i + 1)
+            if end < 0:
+                out.append(line[i:])
+                break
+            i = end + 1
+            continue
+        if ch == '"':
+            j = i + 1
+            while j < n and line[j] != '"':
+                j += 2 if line[j] == "\\" else 1
+            if j >= n:
+                out.append(line[i:])
+                break
+            i = j + 1
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 def _sed_quotes_to_spaces(text):
