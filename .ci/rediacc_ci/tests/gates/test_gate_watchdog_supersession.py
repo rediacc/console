@@ -183,3 +183,41 @@ def test_the_api_lookup_fails_closed_in_source(gate):
     gate.assert_contains(text, "catch", "hasNewerRun must catch lookup errors")
     gate.assert_contains(text, "return false", "hasNewerRun must resolve an error to false")
     gate.log_pass("hasNewerRun fails closed on an unreadable lookup")
+
+
+RERUN_JS = """
+const w = require(process.argv[1]);
+const newer = process.argv[4] === "missing" ? undefined : process.argv[4] === "true";
+const v = w.evaluatePendingRerun({
+  attempt: Number(process.argv[2]),
+  maxAttempts: Number(process.argv[3]),
+  newerRunExists: newer,
+});
+process.stdout.write(v.rerun ? "rerun" : "hold");
+"""
+
+
+def rerun_verdict(gate, attempt: int, max_attempts: int, newer: str) -> str:
+    """ "rerun" or "hold"."""
+    result = node(gate, RERUN_JS, str(attempt), str(max_attempts), newer)
+    if result.rc != 0:
+        gate.log_fail(
+            "evaluatePendingRerun could not be driven (rc=%d): %s" % (result.rc, result.err.strip())
+        )
+    return result.out
+
+
+def test_a_pending_rerun_on_a_superseded_head_holds(gate):
+    """CONTROL, 2026-09-27: the watchdog re-ran 5654536fe's run (attempt 2) after 6b7000c71 was pushed; the rerun joined the PR's concurrency group and cancelled the newer run in Initialize."""
+    gate.assert_eq(rerun_verdict(gate, 1, 3, "true"), "hold", "a newer run exists, so no rerun")
+    gate.log_pass("a superseded head is not re-run")
+
+
+def test_inverse_a_pending_rerun_on_the_current_head_fires(gate):
+    gate.assert_eq(rerun_verdict(gate, 1, 3, "false"), "rerun", "no newer run and attempts left")
+    gate.log_pass("the current head is still re-run")
+
+
+def test_the_attempt_cap_still_holds_first(gate):
+    gate.assert_eq(rerun_verdict(gate, 3, 3, "false"), "hold", "attempt 3 of 3 is the cap")
+    gate.log_pass("the attempt cap wins over an absent newer run")

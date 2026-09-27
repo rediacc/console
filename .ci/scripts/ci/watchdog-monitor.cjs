@@ -152,6 +152,25 @@ function evaluateSupersession({ failedCount, normalCancelledCount, newerRunExist
 }
 
 /**
+ * May a pending transient-failure rerun still fire on a run that has completed?
+ *
+ * NOT ON A SUPERSEDED HEAD. A rerun re-enters the PR's concurrency group, and that group cancels in-progress runs, so retrying a run a newer push already replaced cancels the NEWER run: on 2026-09-27 the watchdog re-ran 5654536fe's run 36309389932 (attempt 2, 10:14:27Z) and the same second killed 6b7000c71's run 36311800722 in Initialize, sixteen jobs cancelled with nothing failing. The attempt cap still applies first.
+ */
+function evaluatePendingRerun({ attempt, maxAttempts, newerRunExists }) {
+  if (attempt >= maxAttempts) {
+    return { rerun: false, reason: `already at attempt ${attempt}/${maxAttempts}` };
+  }
+  if (newerRunExists === true) {
+    return {
+      rerun: false,
+      reason:
+        'a newer run exists for this workflow and branch; a rerun would join the concurrency group and cancel it',
+    };
+  }
+  return { rerun: true, reason: 'attempt cap not reached and no newer run' };
+}
+
+/**
  * Ask GitHub whether a newer run exists for the same workflow and branch.
  *
  * Only ever called once the cheap local half of evaluateSupersession already
@@ -1559,9 +1578,15 @@ const monitor = async ({ github, context, core }) => {
 
     // Pending rerun: the run has finished, so retry its failed jobs and keep monitoring the new attempt (the workflow resets the generation counter). Checked BEFORE the completed-exit below, which would end the chain.
     if (pendingRerun && run.status === 'completed') {
-      if (run.run_attempt >= MAX_ATTEMPTS) {
+      const rerunVerdict = evaluatePendingRerun({
+        attempt: run.run_attempt,
+        maxAttempts: MAX_ATTEMPTS,
+        newerRunExists:
+          run.run_attempt >= MAX_ATTEMPTS ? undefined : await hasNewerRun({ github, context, run }),
+      });
+      if (!rerunVerdict.rerun) {
         console.log(
-          `Run ${targetRunId} completed but already at attempt ${run.run_attempt}/${MAX_ATTEMPTS} - ending the chain without retry`
+          `Run ${targetRunId} completed; no retry: ${rerunVerdict.reason} - ending the chain`
         );
         return;
       }
@@ -1624,4 +1649,5 @@ module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
 module.exports.evaluateSupersession = evaluateSupersession;
+module.exports.evaluatePendingRerun = evaluatePendingRerun;
 module.exports.evaluateBudget = evaluateBudget;
