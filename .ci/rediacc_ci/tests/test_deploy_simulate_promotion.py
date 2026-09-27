@@ -362,12 +362,14 @@ def run_both(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw)
 def _normalise(log: str) -> str:
     """Sort each maximal run of parallel copy lines; leave everything else alone.
 
-    THE COPIES ARE THE ONLY NON-DETERMINISTIC PART, and they are non-deterministic on BOTH sides. Every other line keeps its position, so directory order, the `s3 ls` that opens each block, the sed-fix downloads and uploads, the retries and the purge are all compared as a SEQUENCE.
+    THE COPIES ARE THE ONLY NON-DETERMINISTIC PART, and they are non-deterministic on BOTH sides. Every other line keeps its position, so directory order, the `s3 ls` that opens each block, the sed-fix downloads and uploads and the purge are all compared as a SEQUENCE.
+
+    A RETRY'S `sleep` BELONGS TO ITS COPY. Since copies run 16 wide (6e713d7cc), a failing copy's backoff `call: sleep N` lands wherever its copy happens to be, so leaving it outside the block split the block at a different point each run (Quality / Pytest on 6b7000c71: copy-fails' two logs differed only in where `sleep 5` fell). It joins the sorted block, so the retry count and backoff values are still compared, just not their interleaving.
     """
     out: list[str] = []
     block: list[str] = []
     for line in log.splitlines():
-        if line.startswith(("call: aws s3api copy-object", "COPIED ")):
+        if line.startswith(("call: aws s3api copy-object", "COPIED ", "call: sleep ")):
             block.append(line)
             continue
         if block:
@@ -904,3 +906,16 @@ def test_the_twin_still_says_what_this_port_says_it_says() -> None:
     assert '--zone "$CLOUDFLARE_ZONE_ID"' in text
     assert "${CLOUDFLARE_ZONE_ID:-}" not in text
     assert "aws configure set default.s3.max_concurrent_requests 3" in text
+
+
+def test_normalise_ignores_where_a_parallel_retry_sleep_lands() -> None:
+    """CONTROL (Quality / Pytest on 6b7000c71): two runs of copy-fails differed only in where a retrying copy's `sleep 5` fell among the parallel copies."""
+    first = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: sleep 5\ncall: aws s3api copy-object B\nCOPIED B\n"
+    second = "call: aws s3 ls x\ncall: aws s3api copy-object B\nCOPIED B\ncall: aws s3api copy-object A\ncall: sleep 5\n"
+    assert _normalise(first) == _normalise(second)
+
+
+def test_inverse_normalise_still_sees_a_missing_retry() -> None:
+    first = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: sleep 5\ncall: aws s3api copy-object A\n"
+    second = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: aws s3api copy-object A\n"
+    assert _normalise(first) != _normalise(second)
