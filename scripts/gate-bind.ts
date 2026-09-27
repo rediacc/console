@@ -44,8 +44,8 @@ import {
 import {
   buildShardManifest,
   legsFromAssignment,
-  shardManifestPath,
   parseShardManifest,
+  shardManifestPath,
 } from './ci-runner/shard-manifest.js';
 import type { GateKind } from './lib/gate-header.js';
 import {
