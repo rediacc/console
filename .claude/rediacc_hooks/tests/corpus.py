@@ -360,7 +360,10 @@ EDGE_CASES = [
     ("L5 a commented marker is not a heredoc", "true # <<EOF\ngh pr merge 1 --admin"),
     ("L6 an apostrophe inside double quotes", "echo \"it's\"; gh pr merge 1 --admin; echo 'y'"),
     # #ecf56658: the POSIX literal-apostrophe idiom inside a single-quoted message. The two-pass strip surfaced `shellcheck` at a command position; the words inside the quotes must stay invisible.
-    ("L6 the '\"'\"' idiom keeps its quoted text quoted", "printf 'it'\"'\"'s rc=0; shellcheck x' > msg; git commit -F msg"),
+    (
+        "L6 the '\"'\"' idiom keeps its quoted text quoted",
+        "printf 'it'\"'\"'s rc=0; shellcheck x' > msg; git commit -F msg",
+    ),
     ("L6 an escaped double quote", 'echo "p \\" q"; gh pr merge 1 --admin; echo "r"'),
     ("L7 a quoted command word", '"gh" pr merge 1 --admin'),
     ("L7 a partly quoted command word", 'g"h" pr merge 1 --admin'),
