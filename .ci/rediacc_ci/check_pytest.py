@@ -48,6 +48,7 @@ missing is the registration the header has to agree with, and that is the root d
 """
 
 import ast
+import json
 import os
 import pathlib
 import re
@@ -66,6 +67,13 @@ from rediacc_ci.controls import Controls
 
 # See the module docstring for why this is a constant and floor 2 is not.
 MIN_TESTS = 150
+
+
+def shard_min_tests(of: int) -> int:
+    """MIN_TESTS scaled down for a `--shard`-selected leg holding roughly 1/`of` the corpus -- so a leg that silently ran zero tests (a wrong manifest, an empty leg, a selection bug) still fails floor 1, exactly as the unsharded run already refuses an empty corpus. Integer floor division, floor of 1 so `of` values far above MIN_TESTS never divide it to 0 and turn floor 1 into `0 >= 0`, the exact collapse the module docstring already argues against for the unsharded case."""
+    return max(1, MIN_TESTS // of)
+
+
 # HOW LONG THE SUITE MAY TAKE BEFORE THIS GATE REFUSES, and it is a refusal rather than a crash: see the TimeoutExpired arm in run_pytest.
 #
 # 900 was the value until 2026-09-07, chosen when the corpus was small. That day it measured 810.16s -- 90 seconds of margin -- while the corpus grew from 318s to 675s in a single day and gains about 200 tests per gate-test port batch. The number is now sized against a MEASURED floor with real headroom, not against the last run that happened to fit, and it is a module constant so
@@ -91,15 +99,23 @@ MIN_TESTS = 150
 #
 # 1800 = 30 minutes, under the job's 2700s ceiling with fifteen minutes left for
 # the twenty-two steps around it -- including `Quality-gate unit tests`, which runs AFTER this one and has been cancelled on every run of this wave, so its cost is still unknown. As before: this does not make the suite faster and does not pretend to. It buys a VERDICT where there was an opaque kill, and the real fix is still to split what this gate is billed for.
-RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 1800)
+#
+# 1800 -> 600 on 2026-09-27 (spec W, quality-pytest split into 3 shard legs). The WHOLE-CORPUS number this constant used to bound no longer describes any single run of this gate: `--shard-manifest`/`--shard` (below) hand it roughly a THIRD of the corpus now, and the unsharded invocation (`npm run check:ci-pytest` with neither flag, still the local dev path) is untouched by this number's history -- it inherits whatever the corpus measures on the day it is run, same as always. 600 was a PROJECTION from the pre-split ratio (1800s bounded a measured 1389s, 1.30x; applied to a third of that corpus), not a measurement, and it was wrong: driven for real the same day against the balanced 3-leg manifest (6290 collected items per leg, LPT-balanced by `pytest --collect-only` count -- see this constant's job's own comment in `ci-quality.yml`), legs 2 and 3 were KILLED at 600s having reached 98% and 99%+ of their own progress bars, not because the suite is slow but because the projection undershot by roughly 5-10%.
+#
+# 600 -> 900 THE SAME DAY, on that measurement: a leg needs just over 600s and comfortably fits under 900s with real margin, matching the roughly 1.3-1.5x ratio this file has kept between a measured floor and its kill timer at every prior sizing (810s/1080s, 1389s/1800s). `timeout-minutes` on the `quality-pytest` job moves with it, 15 -> 20 (1200s), keeping the same 1.33x job-ceiling-over-kill-timer ratio the un-split value held (2400s/1800s). The exact per-leg number is still a projection from an incomplete run (98-99%, not a finished one) rather than a clean pass; `budget_report.py --refresh` (T3.2) reads each leg's own `unit-durations-quality-pytest-s<N>-<sha>` artifact once a green CI run lands, and this comment is due for a correction against that measurement rather than against a second guess.
+RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 900)
 
 # T1.6 (PLAN-ci-time-budget): per-test durations, so budget_report.py --refresh (T3.2) has a real per-unit p90 for this lane instead of falling back to `weight`. `reports/` is gitignored at the repo root, and `ci-quality.yml`'s `quality-pytest` job uploads this exact directory as `unit-durations-quality-pytest-<sha>`, `if: always()` so a red run's partial durations are captured too -- T3.2 only reads GREEN runs, but a red run is not this constant's business to guess at.
 JUNIT_XML_RELPATH = pathlib.PurePosixPath("reports/quality-pytest/junit.xml")
 
 
-def junit_xml_path(root: pathlib.Path) -> pathlib.Path:
-    """Where `--junitxml` writes, given the repo root. A pure function, so the selftest checks it without a pytest run: it moves with `root` rather than being hard-coded absolute, which is the property that keeps this gate runnable from a worktree other than the one it was written in."""
-    return root / JUNIT_XML_RELPATH
+def junit_xml_path(root: pathlib.Path, shard_index: int | None = None) -> pathlib.Path:
+    """Where `--junitxml` writes, given the repo root. A pure function, so the selftest checks it without a pytest run: it moves with `root` rather than being hard-coded absolute, which is the property that keeps this gate runnable from a worktree other than the one it was written in.
+
+    `shard_index` NONE (the default) is the unsharded path, byte-identical to before shard support existed. A leg gets its own `junit-shard-<N>.xml` sibling rather than sharing the bare name: each CI leg is its own job on its own runner, so this is not about avoiding a CI collision, it is about `npm run ci -- --lane quality-pytest --shard i/N` staying safe when a developer reproduces two legs locally, one after another or (accidentally) at once, against the same checkout. `budget_report.parse_unit_duration_artifact` matches any member ending `.xml` inside the uploaded zip, so the extra path segment changes nothing about how a leg's own artifact is read."""
+    if shard_index is None:
+        return root / JUNIT_XML_RELPATH
+    return root / "reports" / "quality-pytest" / ("junit-shard-%d.xml" % shard_index)
 
 
 # HOW MANY WORKERS, and it is not `auto`. `-n auto` takes every core (24 here) and oversubscribes against the ci-runner's own 22-slot pool, which is already running 356 other gates. The shape and the reason are copied from `battery._default_jobs` rather than re-derived.
@@ -217,6 +233,18 @@ def corpus_test_count(tests_dir: pathlib.Path) -> int:
     return total
 
 
+def corpus_test_count_files(files: list[pathlib.Path]) -> int:
+    """`corpus_test_count`'s per-directory sum, but over an EXPLICIT file list -- what a `--shard`-selected leg needs, since its files are a manifest's ids rather than one root's whole glob. Same fallback-to-regex behaviour as `count_test_defs`, and the same reason: a leg's floor must not fail for its own reasons either."""
+    total = 0
+    for path in files:
+        try:
+            body = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        total += count_test_defs(body)
+    return total
+
+
 def count_test_defs(body: str) -> int:
     """Test functions really DEFINED in `body`; a string literal is not one."""
     try:
@@ -277,10 +305,13 @@ def verdict(
     passed: int | None,
     returncode: int,
     contract_skips: int = 0,
+    min_tests: int = MIN_TESTS,
 ) -> str:
     """The whole decision, as a pure function of four numbers. "" means green.
 
     PURE ON PURPOSE. Every refusal this gate can make is decided here, so the selftest can exercise the entire matrix -- including combinations that are hard to produce for real, like `pytest exited 0 having collected nothing` -- without running pytest at all.
+
+    `min_tests` DEFAULTS TO THE WHOLE-CORPUS FLOOR, so every existing caller (the unsharded run, and every selftest control that does not pass it) is unaffected byte-for-byte. A `--shard`-selected leg passes `shard_min_tests(of)` instead, the same floor scaled to roughly 1/`of` of the corpus.
     """
     if collected is None:
         return (
@@ -288,12 +319,12 @@ def verdict(
             "a verdict. Treating that as a pass would be reporting on a run that did "
             "not happen."
         )
-    if corpus < MIN_TESTS:
+    if corpus < min_tests:
         return (
             "only %d test function(s) exist on disk, floor %d. The suite has been "
             "deleted or the directory has moved; every count derived from it is "
             "meaningless, including the collection floor, which would be 0 and "
-            "therefore satisfied by collecting nothing." % (corpus, MIN_TESTS)
+            "therefore satisfied by collecting nothing." % (corpus, min_tests)
         )
     if collected < corpus:
         return (
@@ -437,7 +468,8 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     """
     # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter controls, then two more for class methods). It was 16 against 19 controls; the parallel-header work adds nine (six string fixtures and three against a real two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the entire parallel block deleted, which is precisely the "the file is not
     # being executed as written" failure the floor exists for. Slack is kept at three, the same margin the previous pair carried.
-    c = Controls("check_pytest", floor=46, verbose=verbose)
+    # 46 -> 80 on 2026-09-27 (spec W, quality-pytest sharding): new controls for the shard-support functions (`junit_xml_path`'s shard_index, `shard_min_tests`, `parse_shard_args`, `parse_shard_spec`, `shard_leg_ids`, `shard_file_relpaths`, `corpus_test_count_files`, and `verdict`'s `min_tests` parameter), against 81 controls actually run. Same one-control slack as the previous pair carried in ratio.
+    c = Controls("check_pytest", floor=80, verbose=verbose)
 
     # -- T1.6: junit_xml_path, pure and root-relative
     c.check(
@@ -449,6 +481,121 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         "CONTROL: junit_xml_path moves with root rather than being hard-coded absolute -- two different roots must not collide on one file",
         junit_xml_path(pathlib.Path("/x")) == junit_xml_path(pathlib.Path("/y")),
         False,
+    )
+    c.check(
+        "T2.10: a shard leg gets its own junit-shard-<N>.xml sibling, not the bare unsharded name",
+        junit_xml_path(pathlib.Path("/x"), shard_index=2),
+        pathlib.Path("/x/reports/quality-pytest/junit-shard-2.xml"),
+    )
+    c.check(
+        "CONTROL: two different legs of the same root do not collide with each other either",
+        junit_xml_path(pathlib.Path("/x"), shard_index=1)
+        == junit_xml_path(pathlib.Path("/x"), shard_index=2),
+        False,
+    )
+
+    # -- T2.8/T2.10: shard_min_tests, the per-leg floor
+    c.check("a 3-leg split divides MIN_TESTS by 3", shard_min_tests(3), MIN_TESTS // 3)
+    c.check(
+        "CONTROL: the floor is never 0 even for an `of` far above MIN_TESTS -- 0 >= 0 is the exact collapse this floor exists to refuse",
+        shard_min_tests(MIN_TESTS * 10),
+        1,
+    )
+    c.check("CONTROL: of=1 (unsharded framing) is the whole floor unchanged", shard_min_tests(1), MIN_TESTS)
+
+    # -- T2.10: parse_shard_args / parse_shard_spec / shard_leg_ids / shard_file_relpaths
+    c.check(
+        "both flags present are both read",
+        parse_shard_args(["--shard-manifest", "a.json", "--shard", "2/3"]),
+        ("a.json", "2/3"),
+    )
+    c.check("neither flag is (None, None)", parse_shard_args(["--selftest"]), (None, None))
+    c.check(
+        "CONTROL: a flag with nothing after it is not read as if it had a value",
+        parse_shard_args(["--shard-manifest"]),
+        (None, None),
+    )
+    c.check("a well-formed spec parses", parse_shard_spec("2/3"), (2, 3))
+    c.raises("CONTROL: a non-numeric spec is refused", ValueError, parse_shard_spec, "a/b")
+    c.raises("CONTROL: an index of 0 is refused (1-based)", ValueError, parse_shard_spec, "0/3")
+    c.raises("CONTROL: an index above `of` is refused", ValueError, parse_shard_spec, "4/3")
+
+    manifest_json = (
+        '{"lane": "quality-pytest", "of": 2, "legs": '
+        '[{"index": 1, "ids": ["pytest:a.py"]}, {"index": 2, "ids": ["pytest:b.py", "pytest:c.py"]}]}'
+    )
+    c.check(
+        "shard_leg_ids reads the asked-for leg's ids, not the other one",
+        shard_leg_ids(manifest_json, "m.json", 2, 2),
+        ["pytest:b.py", "pytest:c.py"],
+    )
+    c.raises(
+        "CONTROL: an `of` disagreeing with the manifest's own is refused rather than silently sliced",
+        ValueError,
+        shard_leg_ids,
+        manifest_json,
+        "m.json",
+        1,
+        3,
+    )
+    c.raises(
+        "CONTROL: a manifest for a different lane is refused -- this file must never run another lane's leg",
+        ValueError,
+        shard_leg_ids,
+        '{"lane": "test-renet-go", "of": 2, "legs": []}',
+        "m.json",
+        1,
+        2,
+    )
+    c.raises(
+        "CONTROL: unparseable JSON is refused by name",
+        ValueError,
+        shard_leg_ids,
+        "{not json",
+        "m.json",
+        1,
+        1,
+    )
+    c.check(
+        "shard_file_relpaths strips the pytest: prefix",
+        shard_file_relpaths(["pytest:a/b.py", "pytest:c.py"]),
+        ["a/b.py", "c.py"],
+    )
+    c.raises(
+        "CONTROL: an id this lane never minted (no pytest: prefix) is refused rather than handed to pytest as a literal path",
+        ValueError,
+        shard_file_relpaths,
+        ["renet-integration:x.py"],
+    )
+
+    # -- T2.10: corpus_test_count_files matches corpus_test_count over the same files
+    with tempfile.TemporaryDirectory() as td:
+        d = pathlib.Path(td)
+        (d / "test_shard_a.py").write_text("def test_one():\n    pass\n", encoding="utf-8")
+        (d / "test_shard_b.py").write_text(
+            "def test_two():\n    pass\ndef test_three():\n    pass\n", encoding="utf-8"
+        )
+        c.check(
+            "corpus_test_count_files sums an explicit file list the same way corpus_test_count sums a whole directory",
+            corpus_test_count_files([d / "test_shard_a.py", d / "test_shard_b.py"]),
+            corpus_test_count(d),
+        )
+        c.check(
+            "CONTROL: a SUBSET of the files counts only that subset, not the directory's whole total",
+            corpus_test_count_files([d / "test_shard_a.py"]),
+            1,
+        )
+
+    # -- T2.10: verdict's min_tests parameter
+    c.check(
+        "verdict defaults min_tests to MIN_TESTS, unchanged for every caller that does not pass it",
+        verdict(corpus=MIN_TESTS - 1, collected=0, passed=0, returncode=0) != "",
+        True,
+    )
+    c.check(
+        "a custom min_tests can pass a corpus the default floor would refuse",
+        verdict(corpus=MIN_TESTS - 1, collected=MIN_TESTS - 1, passed=MIN_TESTS - 1, returncode=0, min_tests=1),
+        "",
     )
 
     # A CORPUS SIZE THAT IS COMFORTABLY ABOVE THE FLOOR, DERIVED FROM IT. These controls used to write 65 as a literal, and raising MIN_TESTS from 40 to 120 in phase 3 turned the first one -- the SANITY control, the one that asserts a healthy run is green -- red for a reason that had nothing to do with the thing under test. A literal that must be edited in step with another literal
@@ -810,10 +957,76 @@ def testpath_dirs(root: pathlib.Path) -> list[pathlib.Path]:
     return [paths.from_root(*pathlib.PurePosixPath(p).parts, root=root) for p in listed]
 
 
+# --------------------------------------------------------------------------- T2.8/T2.10 shard support. `--shard-manifest`/`--shard` select one committed leg of `.ci/config/shards/quality-pytest.json` (`qualityPytestUnits` in `scripts/ci-runner/unit-enumerators.ts` is the enumerator that manifest is checked against, by `check:ci-shard-manifest-coverage`) instead of the whole corpus `testpath_dirs` names. Both flags or neither, the same both-required discipline `run-account-e2e.sh`'s `--shard-manifest`/`--shard` pair and `run.ts`'s `--lane`/`--shard` pair already hold each other to.
+
+
+def parse_shard_args(argv: list[str]) -> tuple[str | None, str | None]:
+    """(`--shard-manifest` path, `--shard` spec) from argv, or (None, None) for either flag absent. The caller refuses one given without the other; this function only reads what is there."""
+    manifest: str | None = None
+    spec: str | None = None
+    for i, arg in enumerate(argv):
+        if arg == "--shard-manifest" and i + 1 < len(argv):
+            manifest = argv[i + 1]
+        elif arg == "--shard" and i + 1 < len(argv):
+            spec = argv[i + 1]
+    return manifest, spec
+
+
+def parse_shard_spec(spec: str) -> tuple[int, int]:
+    """`"i/N"` (1-based) to `(index, of)`, or raise ValueError naming exactly what is wrong -- the same two checks `run.ts`'s own `--shard` parser makes (a real "i/N" shape, then `1 <= i <= N`)."""
+    parts = spec.split("/")
+    if len(parts) != 2 or not parts[0].isdigit() or not parts[1].isdigit():
+        raise ValueError('--shard needs "i/N" (1-based), got %r' % spec)
+    index, of = int(parts[0]), int(parts[1])
+    if of < 1 or not (1 <= index <= of):
+        raise ValueError("--shard %s: index must be between 1 and %d" % (spec, of))
+    return index, of
+
+
+def shard_leg_ids(manifest_text: str, manifest_label: str, index: int, of: int) -> list[str]:
+    """This leg's raw unit ids from a `ShardManifestFile`-shaped JSON text (`scripts/ci-runner/shard-manifest.ts`), or raise ValueError naming the disagreement. `manifest_label` is only for the message; the text itself is already read by the caller so this stays testable without a real file."""
+    try:
+        data = json.loads(manifest_text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("%s is not valid JSON: %s" % (manifest_label, exc)) from exc
+    if not isinstance(data, dict) or data.get("lane") != "quality-pytest":
+        raise ValueError(
+            "%s is not a quality-pytest shard manifest (lane=%r)"
+            % (manifest_label, data.get("lane") if isinstance(data, dict) else None)
+        )
+    if data.get("of") != of:
+        raise ValueError(
+            "%s has %s leg(s); asked for %d/%d" % (manifest_label, data.get("of"), index, of)
+        )
+    legs = data.get("legs")
+    leg = next(
+        (leg for leg in (legs or []) if isinstance(leg, dict) and leg.get("index") == index), None
+    )
+    ids = leg.get("ids") if isinstance(leg, dict) else None
+    if not ids:
+        raise ValueError("%s has no non-empty leg %d" % (manifest_label, index))
+    return list(ids)
+
+
+def shard_file_relpaths(ids: list[str]) -> list[str]:
+    """`pytest:<relpath>` unit ids to bare relpaths pytest can take as positional arguments, refusing an id this lane never minted -- a manifest pointed at the wrong lane's ids would otherwise silently strip nothing and hand pytest a literal `pytest:...` path that does not exist."""
+    out = []
+    for uid in ids:
+        if not uid.startswith("pytest:"):
+            raise ValueError(
+                "shard id %r is not a quality-pytest unit (want 'pytest:<relpath>')" % uid
+            )
+        out.append(uid[len("pytest:") :])
+    return out
+
+
 USAGE = """\
 check:ci-pytest -- run the Python test corpus and refuse a partial pass.
 
-  check_pytest.py              judge the suite
+  check_pytest.py              judge the whole suite
+  check_pytest.py --shard-manifest <path> --shard i/N
+                                judge only that leg's files, from a committed
+                                shard manifest (both flags together, or neither)
   check_pytest.py --selftest   run this gate's own controls and exit
   check_pytest.py --help       this text
 
@@ -874,6 +1087,27 @@ def main(argv: list[str]) -> int:
         return EXIT_OK
 
     root = paths.repo_root()
+
+    manifest_arg, shard_spec_arg = parse_shard_args(argv)
+    if (manifest_arg is None) != (shard_spec_arg is None):
+        print(
+            "%s✗%s --shard-manifest and --shard must both be given, or neither."
+            % (RED, NC),
+            file=sys.stderr,
+        )
+        return EXIT_FAIL
+    shard: tuple[int, int, list[str]] | None = None
+    if manifest_arg is not None and shard_spec_arg is not None:
+        try:
+            index, of = parse_shard_spec(shard_spec_arg)
+            manifest_text = (root / manifest_arg).read_text(encoding="utf-8")
+            ids = shard_leg_ids(manifest_text, manifest_arg, index, of)
+            relpaths = shard_file_relpaths(ids)
+        except (ValueError, OSError) as exc:
+            print("%s✗%s %s" % (RED, NC, exc), file=sys.stderr)
+            return EXIT_FAIL
+        shard = (index, of, relpaths)
+
     test_dirs = testpath_dirs(root)
     pytest_bin = resolve_pytest(root)
 
@@ -893,6 +1127,47 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return EXIT_FAIL
+
+    if shard is not None:
+        index, of, relpaths = shard
+        files = [root / rp for rp in relpaths]
+        corpus = corpus_test_count_files(files)
+        leg_min_tests = shard_min_tests(of)
+        print(
+            "info: shard %d/%d: %d file(s), %d test function(s) on disk (floor %d)"
+            % (index, of, len(files), corpus, leg_min_tests)
+        )
+        junit_path = junit_xml_path(root, shard_index=index)
+        junit_path.parent.mkdir(parents=True, exist_ok=True)
+        returncode, out = run_pytest(
+            pytest_bin,
+            root,
+            ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path), *relpaths],
+        )
+        collected, passed = parse_counts(out)
+        contract_skips = parse_contract_skips(out)
+        if contract_skips:
+            print(
+                "info: %d test(s) skipped under a proxy's declared cannot-run contract"
+                % contract_skips
+            )
+        problem = verdict(
+            corpus=corpus,
+            collected=collected,
+            passed=passed,
+            returncode=returncode,
+            contract_skips=contract_skips,
+            min_tests=leg_min_tests,
+        )
+        if problem:
+            print(out, file=sys.stderr)
+            print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
+            return EXIT_FAIL
+        print(
+            "%s✓%s %d test(s) collected and passed (shard %d/%d, corpus %d, floor %d)"
+            % (GREEN, NC, collected, index, of, corpus, leg_min_tests)
+        )
+        return EXIT_OK
 
     if not test_dirs:
         print(

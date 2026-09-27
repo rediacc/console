@@ -219,6 +219,56 @@ const TESTPATHS_RE = /testpaths\s*=\s*\[([^\]]*)\]/;
  * `pyproject.toml`'s comment on why) is de-duplicated by absolute path, so a file under both
  * is one unit, not two.
  */
+/**
+ * `quality-pytest`'s cross-file `xdist_group`s, as `mutex` -- the plan's own P2c table
+ * ("file units with xdist groups as mutex"). `--dist loadgroup` (pyproject.toml addopts)
+ * only ever serialises items WITHIN one pytest session, so this buys nothing for two
+ * separate CI runners' separate checkouts; it matters for `npm run ci -- --lane
+ * quality-pytest --shard i/N` reproducing two legs against the SAME local tree, where
+ * two of a group's files landing on two legs run concurrently is exactly the shared-
+ * resource race `.ci/rediacc_ci/xdist_groups.py`'s module docstring describes.
+ *
+ * HAND-DERIVED, NOT RE-COMPUTED HERE, and that is a deliberate choice, not a shortcut
+ * skipped for time: the real derivation imports every module and asks `xdist_groups
+ * .group_for()`, which needs a working Python/pytest environment this enumerator's own
+ * docstring says NOT to assume. So the three groups below are the ones with more than
+ * one file, found by grepping the FULL corpus for every `XDIST_GROUP = "..."`, `XDIST_GROUP
+ * = xdist_groups.REAL_TREE_GROUP` and `pytest.mark.xdist_group(...)` declaration
+ * (2026-09-27; `.ci/rediacc_ci/xdist_groups.py`, `.ci/scripts/quality/check_pool_writer_safety.py`
+ * carry the mechanism). Every OTHER declared group in the corpus is confined to a single
+ * file already, so it needs no cross-file placement care and is not listed. If a new
+ * group grows a second file, this table is the one to update -- the same "raise it when
+ * the suite grows" discipline `check_pytest.py`'s own `MIN_TESTS` documents.
+ *
+ *   "ports"        test_core_account.py, test_core_ports.py (both declare
+ *                  XDIST_GROUP = "ports": a deterministic port-range scan racing itself)
+ *   "real-tree"    test_gate_docs_gen.py, test_gate_gate_anti_vacuity.py,
+ *                  test_gate_paths_exist.py, test_gate_shrink_only_composition.py (each
+ *                  XDIST_GROUP = xdist_groups.REAL_TREE_GROUP) plus test_gate_runner_advice.py,
+ *                  whose BASH_TWIN ("test-runner-advice.sh") resolves into the same group
+ *                  through gates.lock.json's `tree:` declarations (xdist_groups.real_tree_twins)
+ *   "hooks-guards" test_guards_differential.py (XDIST_GROUP = "hooks-guards") and
+ *                  test_hooks_procs.py, which marks three of its own items with that
+ *                  module's XDIST_GROUP via `@pytest.mark.xdist_group(test_guards_differential.XDIST_GROUP)`
+ */
+const PYTEST_XDIST_MUTEX_GROUPS: Readonly<Record<string, readonly string[]>> = {
+  'quality-pytest-ports': [
+    '.ci/rediacc_ci/tests/test_core_account.py',
+    '.ci/rediacc_ci/tests/test_core_ports.py',
+  ],
+  'quality-pytest-real-tree': [
+    '.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py',
+    '.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py',
+    '.ci/rediacc_ci/tests/gates/test_gate_paths_exist.py',
+    '.ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py',
+    '.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py',
+  ],
+  'quality-pytest-hooks-guards': [
+    '.claude/rediacc_hooks/tests/test_guards_differential.py',
+    '.claude/rediacc_hooks/tests/test_hooks_procs.py',
+  ],
+};
+
 export async function qualityPytestUnits(repoRoot: string): Promise<Unit[]> {
   const pyproject = fs.readFileSync(path.join(repoRoot, 'pyproject.toml'), 'utf-8');
   const m = TESTPATHS_RE.exec(pyproject);
@@ -248,7 +298,14 @@ export async function qualityPytestUnits(repoRoot: string): Promise<Unit[]> {
   if (seen.size === 0) {
     throw new Error(`qualityPytestUnits: testpaths ${roots.join(', ')} hold no test_*.py file.`);
   }
-  return [...seen.values()].sort().map((rel) => ({ id: `pytest:${rel}` }));
+  const relToMutex = new Map<string, string>();
+  for (const [group, rels] of Object.entries(PYTEST_XDIST_MUTEX_GROUPS)) {
+    for (const rel of rels) relToMutex.set(rel, group);
+  }
+  return [...seen.values()].sort().map((rel) => {
+    const mutex = relToMutex.get(rel);
+    return mutex === undefined ? { id: `pytest:${rel}` } : { id: `pytest:${rel}`, mutex };
+  });
 }
 
 const BATTERY_LIST_RE = /^([WST])\s+(\S+)\s*$/;

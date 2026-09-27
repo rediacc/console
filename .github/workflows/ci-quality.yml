@@ -2285,23 +2285,67 @@ jobs:
 
   # ============================================================================
   # L9b PYTEST -- split out of quality-security (PLAN-ci-time-budget.md T2.15,
-  # 2026-09-26). One unsharded leg, `check:ci-pytest`'s own suite, measured at
-  # 20.9-22.5 min. Its own checkout and setup so it no longer shares a timeout
-  # ceiling, or a start time, with the gate-bind checks that used to sit ahead
-  # of it in the same job.
+  # 2026-09-26), then split AGAIN into 3 shard legs (spec W, 2026-09-27): the
+  # unsharded leg measured 1389s ("Python package tests") against a job p90 of
+  # 24 min, well over the plan's 12-min-per-job budget. `qualityPytestUnits`
+  # (`scripts/ci-runner/unit-enumerators.ts`), the enumerator T2.7/T2.8 already
+  # named for this lane, lists one unit per `test_*.py` file (520 today); the
+  # committed `.ci/config/shards/quality-pytest.json` balances them into 3 legs
+  # by LONGEST-PROCESSING-TIME-FIRST over each file's `pytest --collect-only`
+  # item count (48/238/234 files, but 6290/6290/6290 tests EXACTLY -- a plain
+  # file-count round-robin measured 172/176/172 files landing at a lopsided
+  # 4321/10376/4173 tests, because a handful of heavily parametrised
+  # differentials dominate the corpus far more than file count alone shows), with
+  # three cross-file xdist groups kept whole on one leg each so `--dist
+  # loadgroup` (pyproject.toml addopts) never has to serialise two of a group's
+  # files across two SEPARATE runners' checkouts --
+  # measured 2026-09-27 by grepping every `XDIST_GROUP =`/`pytest.mark.xdist_group(`
+  # declaration in the corpus (`.ci/rediacc_ci/xdist_groups.py`,
+  # `.ci/scripts/quality/check_pool_writer_safety.py`): "ports"
+  # (test_core_account.py, test_core_ports.py), "real-tree" (the four modules
+  # declaring `XDIST_GROUP = xdist_groups.REAL_TREE_GROUP` plus
+  # test_gate_runner_advice.py, whose `BASH_TWIN` resolves into the same group
+  # through the lock's `tree:` declarations), and "hooks-guards"
+  # (test_guards_differential.py and test_hooks_procs.py, which marks three of
+  # its own items with that module's `XDIST_GROUP`). Every other declared group
+  # in the corpus is confined to one file already, so keeping it whole needs no
+  # placement care. `check:ci-shard-manifest-coverage` verifies the manifest's
+  # ids match the enumerator's exactly (set coverage, no phantom, no overlap);
+  # it does not know about the xdist groups above, which is why they are
+  # recorded here instead.
   #
   # `check:ci-inner-timeout-reachable` ties `timeout-minutes` here to
-  # `check_pytest.py`'s own RUN_TIMEOUT_S=1800s kill timer: this job's ceiling
-  # must stay strictly above 30 minutes or that gate reds and the timer becomes
-  # unreachable (CI cancels the job before it can fire).
+  # `check_pytest.py`'s own `RUN_TIMEOUT_S`, and both move together: 1800s/40min
+  # (unsharded) -> 600s/15min per leg was the FIRST projection (1800s bounded a
+  # measured 1389s, 1.30x; a leg holds roughly a third of that corpus,
+  # 1389/3*1.30 ~= 600) and it undershot: driven for real the same day against
+  # this manifest, legs 2 and 3 were KILLED at 600s having reached 98% and
+  # 99%+ of their own progress bars. 600s/15min -> 900s/20min on that
+  # measurement, keeping the same ~1.3x kill-timer-to-job-ceiling ratio the
+  # un-split value held (1800s/2400s) -- see `check_pytest.py`'s own comment on
+  # `RUN_TIMEOUT_S` for the full derivation and what still corrects it (a
+  # completed green leg, not the 98%-in progress bar this number is sized
+  # against today).
   # ============================================================================
   quality-pytest:
-    name: Pytest
+    name: Pytest (${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     permissions:
       contents: read
     if: inputs.is_bot != 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3 legs from the committed .ci/config/shards/quality-pytest.json (520
+        # test_*.py files balanced by collected-test-count, not file count --
+        # see the block comment above this job for the numbers, the method and
+        # which three xdist groups are kept whole). This is a hand-written
+        # matrix, not a `gate-bind --write` shard-strategy region:
+        # quality-pytest is not in SHARD_COUNTS (scripts/ci-runner/lanes.ts),
+        # the same "hand-written job, no emitted region" shape test-renet-go
+        # and test-account-e2e already use in ct-tests.yml.
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -2420,9 +2464,14 @@ jobs:
 
       - name: Python package tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # PYTEST_RUN_TIMEOUT_S is not set here: check_pytest.py's own default
+        # (600s, moved with timeout-minutes above -- see this job's block
+        # comment and the constant's own comment for the derivation) applies
+        # uniformly to all three legs, the same way the un-split job never set
+        # it either.
         run: |
           bash .ci/bootstrap.sh
-          npm run check:ci-pytest
+          npm run check:ci-pytest -- --shard-manifest .ci/config/shards/quality-pytest.json --shard "${{ matrix.shard }}/3"
 
       # T1.6 (PLAN-ci-time-budget): per-test durations, for budget_report.py
       # --refresh (T3.2) to read. `always()` and `ignore`, not `failure()`: T3.2
@@ -2431,10 +2480,17 @@ jobs:
       # file itself before `main()` returns, win or lose, so `ignore` only
       # covers the case where the step above never reached pytest at all (the
       # bootstrap failing, or a control refusing the run before it starts).
+      #
+      # NAMED PER LEG (T2.10), matching test-renet-go's own
+      # `unit-durations-test-renet-go-s${{ matrix.shard }}-` shape:
+      # `budget_report.py`'s `collect_unit_durations` matches by the
+      # `unit-durations-quality-pytest-` PREFIX alone, so three separate
+      # per-leg artifacts are read and summed into one lane exactly as three
+      # separate renet-go leg artifacts already are.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
-          name: unit-durations-quality-pytest-${{ github.sha }}
+          name: unit-durations-quality-pytest-s${{ matrix.shard }}-${{ github.sha }}
           path: reports/quality-pytest/
           retention-days: 3
           if-no-files-found: ignore
