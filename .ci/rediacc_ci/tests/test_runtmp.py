@@ -283,3 +283,22 @@ def test_every_bash_use_of_the_prefix_is_the_canonical_spelling() -> None:
     assert not missing, "known users of the contract no longer found by the scan: %s" % sorted(
         missing
     )
+
+
+def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch):
+    """A tsx child under a deep TMPDIR truncates its IPC socket path to one shared socket (listen EADDRINUSE); past DEEP_TMPDIR bytes run_dir roots at /tmp instead. Inverse control: a shallow tempdir is kept."""
+    deep = tmp_path / ("d" * runtmp.DEEP_TMPDIR)
+    deep.mkdir()
+    monkeypatch.setattr(runtmp.tempfile, "tempdir", str(deep))
+    d = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
+    try:
+        assert d.parent == pathlib.Path("/tmp")
+    finally:
+        runtmp.remove_tree(str(d))
+    shallow = pathlib.Path("/tmp")
+    monkeypatch.setattr(runtmp.tempfile, "tempdir", str(shallow))
+    e = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
+    try:
+        assert e.parent == shallow
+    finally:
+        runtmp.remove_tree(str(e))

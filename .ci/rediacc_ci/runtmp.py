@@ -142,11 +142,23 @@ def shell_mktemp(tag: str) -> str:
     return SHELL_MKTEMP % tag
 
 
+# THE DEFAULT BASE STAYS SHALLOW. Run directories nest (a hook suite inside a pytest leg inside a gate run), each level adding a ~40-byte stamp, and a tsx child listens on $TMPDIR/tsx-<uid>/<pid>.pipe while Linux keeps only the first ~107 bytes of a socket path: once the prefix passes that, every tsx under it truncates to ONE socket and the second dies `listen EADDRINUSE` (test-judge-schema control 6o, three CI runs, 2026-09-27). Past DEEP_TMPDIR bytes a new run directory is rooted at /tmp instead; it is still pid-stamped, swept and removed at exit.
+DEEP_TMPDIR = 48
+
+
+def _shallow_base() -> str | None:
+    inherited = tempfile.gettempdir()
+    if len(inherited) > DEEP_TMPDIR and os.path.isdir("/tmp"):
+        return "/tmp"
+    return None
+
+
 def run_dir(prefix: str, base: str | None = None) -> str:
     """Sweep dead runs of `prefix`, then create and return this process's run directory.
 
     Removed at interpreter exit; removed by the next run's sweep when the exit never happens. Every call ALSO sweeps `SHELL_PREFIX`, which is how a killed bash script's directory gets reclaimed: bash has no sweeper of its own, and this is called on every suite and gate start.
     """
+    base = base or _shallow_base()
     sweep_dead(prefix, base)
     sweep_dead(SHELL_PREFIX, base)
     path = tempfile.mkdtemp(prefix=stamp(prefix), dir=base)
