@@ -45,6 +45,7 @@ import {
   buildShardManifest,
   legsFromAssignment,
   shardManifestPath,
+  parseShardManifest,
 } from './ci-runner/shard-manifest.js';
 import type { GateKind } from './lib/gate-header.js';
 import {
@@ -2453,11 +2454,20 @@ function main(argv: string[]): void {
       }
       shardMap.set(job, assigned.legs);
       // T2.10. THE COMMITTED MANIFEST A CI LEG AND `npm run ci -- --lane/--shard` BOTH READ, written from the SAME `assigned.legs` the `matrix.shard` conjunct above comes from, so the two can never name different plans. `--dry-run` reports what would change without writing, same as the workflow rewrite below.
-      const manifestFile = buildShardManifest(
-        job,
-        legsFromAssignment(assigned.legs, SHARD_COUNTS[job] as number)
-      );
       const manifestPath = path.join(ROOT, shardManifestPath(job));
+      const freshLegs = legsFromAssignment(assigned.legs, SHARD_COUNTS[job] as number);
+      // AN UNCHANGED PLAN KEEPS ITS TIMESTAMP. Stamping `now` on every `--write` rewrote the committed manifest with a new `generatedAt` and nothing else, so every regenerate left a one-line diff that reviewed as a plan change (2026-09-27, quality-code.json). The stamp moves only when the legs do.
+      let keptAt: string | undefined;
+      if (fs.existsSync(manifestPath)) {
+        try {
+          const committed = parseShardManifest(fs.readFileSync(manifestPath, 'utf8'), job);
+          const probe = buildShardManifest(job, freshLegs, committed.generatedAt);
+          if (JSON.stringify(probe) === JSON.stringify(committed)) keptAt = committed.generatedAt;
+        } catch {
+          keptAt = undefined;
+        }
+      }
+      const manifestFile = buildShardManifest(job, freshLegs, keptAt);
       const manifestText = `${JSON.stringify(manifestFile, null, 2)}\n`;
       if (dryRun) {
         console.log(
