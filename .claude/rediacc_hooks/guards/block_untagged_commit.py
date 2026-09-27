@@ -244,6 +244,9 @@ def run(ev):
         if name in {"", "-"}:
             continue
         msg_files.append(name)
+        # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810).
+        if shellscan.writes_file(cmd, name):
+            continue
         for cand in (name, "%s/%s" % (root, name)):
             path = pathlib.Path(cand)
             if path.is_file():

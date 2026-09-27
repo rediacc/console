@@ -239,21 +239,20 @@ def messages(command, cwd=None):
             out.append(
                 (
                     "--body",
-                    _read_file(_expand_assigned(value[1:], command), cwd)
-                    if value.startswith("@")
-                    else value,
+                    _read_message_file(value[1:], command, cwd) if value.startswith("@") else value,
                 )
             )
             index += 2
             continue
         if token in ("-F", "--file", "--body-file"):
             if index + 1 < len(tokens):
-                out.append((token, _read_file(_expand_assigned(tokens[index + 1], command), cwd)))
+                out.append((token, _read_message_file(tokens[index + 1], command, cwd)))
             index += 2
             continue
         if token.startswith(("--file=", "--body-file=")):
-            name = _expand_assigned(token.split("=", 1)[1], command)
-            out.append((token.split("=", 1)[0], _read_file(name, cwd)))
+            out.append(
+                (token.split("=", 1)[0], _read_message_file(token.split("=", 1)[1], command, cwd))
+            )
             index += 1
             continue
         index += 1
@@ -281,6 +280,25 @@ def _expand_assigned(word, command):
             break
         text = new
     return word if ("$" in text or "`" in text) else text
+
+
+def _expand_assigned_all(command):
+    """The command with every `$NAME` its own earlier assignments define expanded, so `> $S/msg` and `-F /tmp/x/msg` compare equal."""
+    names = {}
+    for verb in ("gh pr", "gh api", "git commit"):
+        names.update(shellscan.assignments_before(command, verb))
+    return PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), command)
+
+
+def _read_message_file(raw, command, cwd):
+    """`-F <raw>`: expanded against the command's own assignments, then read, unless the command writes it first."""
+    name = _expand_assigned(raw, command)
+    # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810).
+    if shellscan.writes_file(command, raw, name) or shellscan.writes_file(
+        _expand_assigned_all(command), name
+    ):
+        return ""
+    return _read_file(name, cwd)
 
 
 def _read_file(name, cwd):

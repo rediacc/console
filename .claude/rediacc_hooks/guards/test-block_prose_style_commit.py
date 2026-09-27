@@ -186,6 +186,29 @@ CASES = [
         % (pathlib.Path(BODY_FILE_PATH).parent, COMMIT, pathlib.Path(BODY_FILE_PATH).name),
         True,
     ),
+    # A message file the SAME command writes before the verb (#9ec22810). The guard runs before the command, so the file still holds an EARLIER command's bytes -- here, the planted violation. Before the fix this was BLOCKED on bytes that were never the message.
+    (
+        "a -F file this command writes first is not judged on its old bytes",
+        "D=%s; printf 'fix: the thing\\n' > $D/%s; %s -F $D/%s"
+        % (
+            pathlib.Path(BODY_FILE_PATH).parent,
+            pathlib.Path(BODY_FILE_PATH).name,
+            COMMIT,
+            pathlib.Path(BODY_FILE_PATH).name,
+        ),
+        False,
+    ),
+    (
+        "the same with a literal path and a heredoc cat",
+        "cat > %s <<'EOF'\nfix: the thing\nEOF\n%s -F %s"
+        % (BODY_FILE_PATH, COMMIT, BODY_FILE_PATH),
+        False,
+    ),
+    (
+        "INVERSE: a write to a DIFFERENT file leaves the -F file judged",
+        "printf x > %s.other; %s -F %s" % (BODY_FILE_PATH, COMMIT, BODY_FILE_PATH),
+        True,
+    ),
     (
         "-F through a variable never assigned stays unexamined (fails open)",
         "%s -F $NEVER_SET_HERE/%s" % (COMMIT, pathlib.Path(BODY_FILE_PATH).name),

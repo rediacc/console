@@ -133,6 +133,9 @@ def _bodies_for(pattern, strip, cmd, root):
         name = hookio.sed_sub(strip, "", match).rstrip("\n")
         if name in {"", "-"}:
             continue
+        # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810).
+        if shellscan.writes_file(cmd, name):
+            continue
         # AN UNRESOLVED ROOT DROPS THE SECOND CANDIDATE RATHER THAN DEGRADING IT. With `root` empty the rooted spelling collapses to the absolute path "/<name>", which is a different file on the filesystem, and reading its bytes as a commit message body is a verdict about the wrong file.
         for cand in (name, "%s/%s" % (root, name)) if root else (name,):
             path = pathlib.Path(cand)

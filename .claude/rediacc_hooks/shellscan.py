@@ -1708,3 +1708,16 @@ def assignments_before(cmd, verb):
         if isinstance(tok, _Word):
             cur.append(tok)
     return out
+
+
+# A redirect or `tee` that writes a file: the shapes a same-command message file is produced by (`printf ... > $S/msg`, `cat > $S/msg <<'EOF'`, `... | tee $S/msg`).
+_WRITE_TARGET = re.compile(r"""(?:>>?|\btee(?:\s+-a)?)\s*["']?([^\s"';|&<>]+)""")
+
+
+def writes_file(cmd, *names):
+    """Does `cmd` itself write any of `names` (a redirect or `tee` target), spelled as given?
+
+    A PreToolUse guard runs BEFORE the command, so a message file the same command writes still holds whatever an EARLIER command left there. On 2026-09-27 `printf ... > $S/ps.txt; git commit -F $S/ps.txt` was judged on a stale ps.txt and refused for 28 findings that were never in the message; the same shape passes a bad message as easily (#9ec22810). A caller that gets True treats the message as unreadable, its existing fail-open.
+    """
+    wanted = {n for n in names if n}
+    return any(target in wanted for target in _WRITE_TARGET.findall(cmd or ""))
