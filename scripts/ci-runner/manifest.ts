@@ -764,6 +764,8 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:test:tutorial-player',
     slow: true, // spins up a real astro dev server; measured ~90s+ cold
+    // heavy: an astro dev server plus headless Chrome, timing-sensitive. Scheduled beside every other gate in a full `npm run ci` (12x parallel), its clicks timed out ("play button click failed at start") on 2026-09-27 while the same tree passed alone and in CI.
+    heavy: true,
     gate: true,
     // check:ci-gate-tree-writes V10: the run directory is repo-relative.
     mutex: ['tree:repo'],

@@ -768,6 +768,7 @@
     },
     "run": "npm run check:test:tutorial-player",
     "slow": true,
+    "heavy": true,
     "gate": true,
     "mutex": [
       "tree:repo"
