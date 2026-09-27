@@ -49,12 +49,10 @@ export default test.defineConfig({
    * so no workflow edit is needed to get it off the runner.
    *
    * The output path is overridable per invocation
-   * (E2E_JSON_REPORT_FILE): run-e2e.sh's --shard-manifest branch calls
-   * `npx playwright test` more than once per leg (once for the leg's plain
-   * files, once per describe-group bucket), and each call loads this config
-   * fresh. A single static outputFile would have every later call in the
-   * leg overwrite the previous one's durations rather than adding to them,
-   * so run-e2e.sh sets a distinct name per call instead.
+   * (E2E_JSON_REPORT_FILE). run-e2e.sh's --shard-manifest branch runs ONE
+   * `npx playwright test` per leg (plain files and describe-group buckets
+   * under a single --grep), because every invocation's globalSetup repeats
+   * the full VM reset; so the default outputFile holds the whole leg.
    */
   reporter: [
     ['html', { outputFolder: 'reports/bridge' }],
