@@ -856,7 +856,9 @@ def selftest(root):
     # this whole gate estate keeps getting caught by, and adding two of them to look thorough would be the same mistake in a new place. The independent check is the SUBSET one above (a path it invents would not be declared) and the tempdir fixture, whose expectation is built without calling the function at all.
 
     # The EXTRACTOR, separately from the resolvers: a line carrying all four shapes must yield all four. A resolver that works over an extractor that sees nothing is a gate that cannot fail.
-    probe = f"see {scoped[0]}:12 and {scoped[0]} plus check:ci-plan-record at {head[:12]}"
+    # The object token is the shortest prefix of HEAD (12 or more) that carries a letter: the extractor never judges an ALL-DIGIT token (see `citations`), and about 1 in 285 SHAs opens with twelve digits. A CI run drew one and this control failed on a working extractor (test_gate_plan_citations, run on 101fa974a).
+    obj = next((head[:n] for n in range(12, len(head) + 1) if not head[:n].isdigit()), head)
+    probe = f"see {scoped[0]}:12 and {scoped[0]} plus check:ci-plan-record at {obj}"
     kinds = {k for k, _t in citations(probe)}
     ck(
         "the extractor finds all four citation kinds on one line",
