@@ -1958,7 +1958,8 @@ jobs:
             https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public \
             | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg >/dev/null
           echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
-          sudo apt-get update -qq && sudo apt-get install -y -qq stripe
+          # Pinned: an unpinned install pulled 1.52.0, whose `stripe listen` refuses to start without an event selector, and broke this leg silently (run 36288155344). A bump is a deliberate edit here, with run-account-e2e.sh checked against the new CLI.
+          sudo apt-get update -qq && sudo apt-get install -y -qq stripe=1.52.0
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
       - name: Run Account Portal E2E tests
