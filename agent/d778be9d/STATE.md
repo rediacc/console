@@ -22,3 +22,14 @@ Writer running: #f5dd5092 (tests stop writing the real tree; drop REAL_TREE_TWIN
 - Pushed-pending head e09b4ef78 (renet d0d6e24). CI on 1128150ac was red on renet cross-OS build; fixed (renet ef4c1bd/74c89ad/d0d6e24).
 - Spec W: the 10-run window is full; P2 fails on job LENGTH (50/148 over). Plan agent's levers verified; writers: #54efe106 run-e2e single invocation, #3510fc0e renet parallel ops up, #dfdcd672 pytest 3 legs; #85d7384b disk cleanup landed 9daee5968. Commit 4 (rebalance) after those. Caps for Ceph/K8s parked #d5ba825c.
 - Devbox uid-derived image landed ad4b21c78; live up 15s.
+
+## 2026-09-28T04:50Z update (compaction insurance)
+- Branch 0923-1 pushed through 1d5244241; CI on it: only the carried Plan implementation clock red (all test jobs green).
+- Local, unpushed commits: 5fe271760 (W exemption caps, #d5ba825c default executed), 722155808 (lane-budget gate progress), 239b0c210 (budget_report pagination/keys/job_p90/staleness), 5c4433654 (ghx paginate --slurp).
+- In flight (writers, lead spot-checks and commits each):
+  - #ea76a8c5 renet datastore: heal system dirs only when .immovable marks an initialized datastore + e2e ensureDatastoreReady (12a/12b/12d/13b/26 beforeAll). Writer a897081. Owns private/renet pkg/datastore, cmd/renet, locales; packages/e2e-tests BridgeTestRunner.ts + those suites.
+  - #900510d9 renet Ceph levers L1-L3/L5 (pkg/infra/ceph). Writer a9521dad.
+  - #5a0e1a22 CI/test levers L4-L10: DONE by writer ae75c8f2, NOT yet committed: ct-tests.yml, ci-build-renet.yml, ci-ops-test.yml, run-sequence.sh, InfrastructureManager.ts, bridge-global-setup.ts, kube/15-k8s-repo.test.ts. Spot-check pending (license-e2e test failure is from the renet writers' uncommitted tree, re-check after).
+  - #78a8573d T3.1: budget_report --refresh running (bm3y0u03f), then wire job_p90_minutes into check-lane-budget check 2; gate stays local-only until P2 exit.
+- W: P4 (T4.1-4) needs P2 exit (non-exempt p90<=12 over 10 runs) + 5 green runs.
+- Flakes fixed today: tsx AF_UNIX pipe truncation (f79ce8533 wl_proc, 3ddf2150d runtmp), Plausible blocking load (1d5244241), ssh-copy-id first-boot retry (renet 493a0af).
