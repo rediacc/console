@@ -392,9 +392,9 @@ jobs:
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # VM base-image cache, one entry per matrix distro. The disks dir is
-      # cached whole because every leg also downloads the Ubuntu default image
-      # (prepareDriver runs EnsureBaseImage unconditionally) in addition to the
-      # VM_IMAGE distro. Monthly key: several of these URLs are moving
+      # cached whole; since renet e599aa3 it holds only the VM_IMAGE distro
+      # (EnsureBaseImage used to fetch the Ubuntu default on every leg).
+      # Monthly key: several of these URLs are moving
       # pointers. Restored before any sudo step touches $RUNNER_TEMP/renet so
       # extraction happens as the runner user.
       - name: Compute VM image cache key
