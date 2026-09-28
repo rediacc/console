@@ -10,7 +10,7 @@ import type { ProvisioningConfig, VMNetworkConfig } from './types';
  * - VM_NET_BASE: Network prefix (e.g., "192.168.111")
  * - VM_NET_OFFSET: Offset added to VM ID
  * - VM_CONTROL: Control-node VM ID (VM_BRIDGE is a kept alias)
- * - VM_WORKERS: Space-separated worker VM IDs (can be empty in Ceph-only mode)
+ * - VM_WORKERS: Space-separated worker VM IDs (can be empty in a Ceph-only topology)
  * - VM_CEPH_NODES: Space-separated Ceph node IDs (optional)
  *
  * @throws Error if required environment variables are missing
@@ -34,7 +34,7 @@ export function loadNetworkConfigFromEnv(): VMNetworkConfig {
   }
   const bridgeId = Number.parseInt(bridgeIdStr, 10);
 
-  // Parse worker IDs from space-separated string (can be empty in Ceph-only mode)
+  // Parse worker IDs from space-separated string (can be empty in a Ceph-only topology)
   const workersStr = process.env.VM_WORKERS ?? '';
   const workerIds = workersStr
     .split(/\s+/)
@@ -48,10 +48,10 @@ export function loadNetworkConfigFromEnv(): VMNetworkConfig {
     .map((id) => Number.parseInt(id, 10))
     .filter((id) => !Number.isNaN(id));
 
-  // Allow empty workers if Ceph nodes are configured (Ceph-only mode)
+  // Allow empty workers if Ceph nodes are configured (a Ceph-only topology)
   if (workerIds.length === 0 && cephIds.length === 0) {
     throw new Error(
-      'VM_WORKERS must contain at least one worker ID (or configure VM_CEPH_NODES for Ceph-only mode)'
+      'VM_WORKERS must contain at least one worker ID (or configure VM_CEPH_NODES for a Ceph-only topology)'
     );
   }
 
