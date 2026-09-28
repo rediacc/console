@@ -69,8 +69,15 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
 /**
  * Run renet setup on ALL VMs (bridge + workers)
  * This installs Docker and other dependencies on fresh base images.
+ *
+ * After a reset in this same process, the bridge's setup is skipped when ops up already completed it with the local renet binary.
+ * `renet ops up` runs `renet setup --skip-datastore` on the bridge (setupBridge in private/renet/cmd/renet/ops_up.go), and a second run only takes renet's already-completed path.
  */
-async function setupAllVMs(opsManager: ReturnType<typeof getOpsManager>) {
+async function setupAllVMs(
+  opsManager: ReturnType<typeof getOpsManager>,
+  infra: InfrastructureManager,
+  freshReset: boolean
+) {
   console.warn('');
   console.warn('Step 3: Running renet setup on ALL VMs (bridge + workers)...');
 
@@ -83,6 +90,10 @@ async function setupAllVMs(opsManager: ReturnType<typeof getOpsManager>) {
   await Promise.all(
     allVmIps.map(async (ip) => {
       const vmType = ip === bridgeIp ? 'bridge' : 'worker';
+      if (vmType === 'bridge' && freshReset && (await infra.isSetupCompleteWithLocalRenet(ip))) {
+        console.warn(`  ✓ Setup already completed by ops up on ${ip} (${vmType}), skipped`);
+        return;
+      }
       console.warn(`  Setting up ${vmType} VM at ${ip}...`);
       const result = await opsManager.executeOnVM(ip, 'sudo renet setup', RENET_SETUP_TIMEOUT_MS);
       if (result.code === 0) {
@@ -140,7 +151,7 @@ async function initializeDatastoresIfNeeded(
     console.warn('  ✓ All datastores initialized');
   } else {
     console.warn('');
-    console.warn('Step 7: Skipping datastore initialization (Ceph-only mode, no workers)');
+    console.warn('Step 7: Skipping datastore initialization (no workers in this topology)');
   }
 }
 
@@ -155,14 +166,25 @@ async function deployCRIUIfNeeded(infra: InfrastructureManager, workerIps: strin
     console.warn('  ✓ CRIU deployed to all worker VMs');
   } else {
     console.warn('');
-    console.warn('Step 8: Skipping CRIU deployment (Ceph-only mode, no workers)');
+    console.warn('Step 8: Skipping CRIU deployment (no workers in this topology)');
   }
 }
 
 /**
- * Start RustFS S3 storage on bridge VM.
+ * Start RustFS S3 storage on bridge VM if workers are configured.
+ *
+ * The live RustFS consumers, suites 15 and 19, drive it from worker VMs through the rclone config Step 6 writes.
+ * A run without workers is the Ceph-only topology, whose suites under tests/ceph never touch RustFS.
  */
-async function startRustFSStorage(opsManager: ReturnType<typeof getOpsManager>) {
+async function startRustFSStorageIfNeeded(
+  opsManager: ReturnType<typeof getOpsManager>,
+  workerIps: string[]
+) {
+  if (workerIps.length === 0) {
+    console.warn('');
+    console.warn('Step 5: Skipping RustFS S3 storage (no workers in this topology)');
+    return;
+  }
   console.warn('');
   console.warn('Step 5: Starting RustFS S3 storage...');
   const rustfsResult = await opsManager.startRustFS();
@@ -248,7 +270,7 @@ function writeSetupErrorLog(error: unknown) {
  * 2. Deploy renet binary to all VMs
  * 3. Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies
  * 4. Verify all VMs are ready (bridge + workers + ceph)
- * 5. Start RustFS S3 storage on bridge VM
+ * 5. Start RustFS S3 storage on bridge VM (skipped without workers)
  * 6. Configure rclone on workers for RustFS access
  * 7. Initialize datastores on worker VMs
  * 8. Deploy CRIU to worker VMs
@@ -263,6 +285,8 @@ function writeSetupErrorLog(error: unknown) {
 async function bridgeGlobalSetup(_config: FullConfig) {
   // KEEP_CLUSTER implies skip-reset: iteration mode exists to reuse a standing cluster, and a VM reboot both costs minutes per invocation and races the suite against boot recovery (observed live: a scoped re-run red on half-regenerated containerd config). CI sets neither flag.
   const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1' || process.env.KEEP_CLUSTER === '1';
+  // A reset that returns at all succeeded (a failed one throws below), so every VM was just recreated and provisioned by ops up in this process.
+  const freshReset = !skipReset;
 
   /* eslint-disable no-console */
   console.log('');
@@ -307,21 +331,21 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     console.log('');
     // eslint-disable-next-line no-console
     console.log('Step 2: Building and deploying renet...');
-    await infra.ensureInfrastructure();
+    await infra.ensureInfrastructure({ freshReset });
     // eslint-disable-next-line no-console
     console.log('  ✓ Renet deployed to all VMs');
 
     // Step 3: Run renet setup on ALL VMs (bridge + workers) to install Docker and dependencies This is required for fresh base images that don't have Docker pre-installed
-    await setupAllVMs(opsManager);
+    await setupAllVMs(opsManager, infra, freshReset);
 
     // Step 4: Verify all VMs are ready
     await verifyVMsWithRetry(opsManager, infra);
 
-    // Step 5: Start RustFS S3 storage on bridge VM (mandatory for storage tests)
-    await startRustFSStorage(opsManager);
+    // Step 5: Start RustFS S3 storage on bridge VM (if workers exist, the storage suites' only hosts)
+    const workerIps = opsManager.getWorkerVMIps();
+    await startRustFSStorageIfNeeded(opsManager, workerIps);
 
     // Step 6: Configure rclone on workers for RustFS access (if workers exist)
-    const workerIps = opsManager.getWorkerVMIps();
     await configureRustFSWorkersIfNeeded(opsManager, workerIps);
 
     // Step 7: Initialize datastores on all worker VMs

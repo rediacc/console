@@ -557,9 +557,9 @@ jobs:
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'
-      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
-      - name: Install CLI Globally
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
+      # No CLI build or global `rdc` install here (spec W, PLAN-ci-time-budget).
+      # The Ceph suites drive renet over SSH through BridgeTestRunner, and the only consumer of the CLI bundle or `rdc` on PATH is CliRunner, which no suite under tests/ceph imports.
+      # The E2E Workers jobs keep both steps.
 
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt

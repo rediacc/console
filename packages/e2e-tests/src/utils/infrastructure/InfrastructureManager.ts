@@ -18,9 +18,44 @@ function getFileMD5(filePath: string): string {
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
+/**
+ * The renet `ops up` installed on a VM, as whatever /usr/bin/renet resolves to.
+ * bridgesvc.InstallRenet (the bridge and every Ceph node) moves the binary to RENET_BINARY_PATH when that is set, and to /usr/lib/rediacc/renet/current/renet otherwise, then points /usr/bin/renet at it.
+ * The target path therefore differs between CI and a local run, and only the resolved symlink is stable.
+ */
+const OPS_UP_RENET_PATH = '"$(readlink -f /usr/bin/renet)"';
+const OPS_UP_RENET_MD5_COMMAND = `md5sum ${OPS_UP_RENET_PATH} 2>/dev/null | cut -d" " -f1`;
+
+/**
+ * The marker `renet setup` writes on completion for the default uid 7111 (config.SetupMarkerPath in private/renet/pkg/config/paths.go).
+ * `renet ops up` runs `renet setup --skip-datastore` on the bridge, and with no --datastore that is the same run as the harness's own `sudo renet setup`.
+ */
+const RENET_SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';
+
+/**
+ * True when the output of OPS_UP_RENET_MD5_COMMAND is exactly the local binary's md5.
+ * Empty output (no /usr/bin/renet), extra lines or a mismatch are false, so the caller falls back to copying from the host.
+ */
+export function opsUpRenetMatchesLocal(md5Output: string, localMD5: string): boolean {
+  const lines = md5Output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  return lines.length === 1 && lines[0] === localMD5;
+}
+
+export interface EnsureRenetOptions {
+  /**
+   * Set only by a global setup that has just run `renet ops up --force` in this same process.
+   * Every VM was then recreated from its base image and given renet by ops up, so a VM whose ops-up install already matches the local binary byte for byte stages the deploy from that copy instead of transferring the binary from the host again.
+   * The install layout and the md5 verification after it are unchanged.
+   */
+  freshReset?: boolean;
+}
+
 export interface InfrastructureConfig {
   bridgeVM: string;
-  workerVM: string | undefined; // Can be undefined in Ceph-only mode
+  workerVM: string | undefined; // Can be undefined in a Ceph-only topology
   defaultTimeout: number;
 }
 
@@ -41,6 +76,11 @@ export class InfrastructureManager {
   private readonly opsManager: OpsManager;
   private readonly resolver: RenetResolver;
   private readonly sshExecutor: SSHExecutor;
+  /**
+   * VMs whose ops-up renet was proven identical to the local binary before the deploy replaced it.
+   * The deploy rewrites /usr/bin/renet, so this is the only record of which binary ops up ran `renet setup` with.
+   */
+  private readonly opsUpRenetMatched = new Set<string>();
 
   constructor() {
     this.opsManager = getOpsManager();
@@ -96,10 +136,10 @@ export class InfrastructureManager {
   /**
    * Check if worker VM is reachable via SSH.
    * Delegates to SSHExecutor for consistent behavior.
-   * Returns true if no worker VMs are configured (Ceph-only mode).
+   * Returns true if no worker VMs are configured (a Ceph-only topology).
    */
   async isWorkerVMReachable(): Promise<boolean> {
-    // In Ceph-only mode, there are no workers - return true
+    // In a Ceph-only topology, there are no workers - return true
     if (this.config.workerVM === undefined) {
       return true;
     }
@@ -136,7 +176,7 @@ export class InfrastructureManager {
    * - Starts VMs if not running
    * - Deploys renet to VMs if outdated
    */
-  async ensureInfrastructure(): Promise<void> {
+  async ensureInfrastructure(options: EnsureRenetOptions = {}): Promise<void> {
     // eslint-disable-next-line no-console
     console.log('Checking infrastructure status...');
 
@@ -161,31 +201,31 @@ export class InfrastructureManager {
     await this.ensureVMsRunning(status);
 
     // Ensure renet is installed on all VMs
-    await this.ensureRenetOnVMs();
+    await this.ensureRenetOnVMs(options);
   }
 
   /**
-   * Check if workers are configured (not Ceph-only mode).
+   * Check if workers are configured (not a Ceph-only topology).
    */
   private hasWorkerVMs(): boolean {
     return this.config.workerVM !== undefined;
   }
 
   /**
-   * Check if worker VMs are ready, accounting for Ceph-only mode.
+   * Check if worker VMs are ready, accounting for a Ceph-only topology.
    */
   private isWorkerVMStatusReady(workerStatus: boolean): boolean {
     return this.hasWorkerVMs() ? workerStatus : true;
   }
 
   /**
-   * Log worker VM status with Ceph-only mode support.
+   * Log worker VM status, including for a Ceph-only topology.
    */
   private logWorkerStatus(workerStatus: boolean): void {
     if (this.hasWorkerVMs()) {
       console.warn('  Worker VM:', workerStatus ? 'OK' : 'DOWN');
     } else {
-      console.warn('  Worker VM: N/A (Ceph-only mode)');
+      console.warn('  Worker VM: N/A (Ceph-only topology)');
     }
   }
 
@@ -252,7 +292,12 @@ export class InfrastructureManager {
    * Deploy renet binary to a VM if it's different from the local version.
    * Verifies the deployment by checking MD5 after copy.
    */
-  private async deployRenetToVM(ip: string, localPath: string, localMD5: string): Promise<boolean> {
+  private async deployRenetToVM(
+    ip: string,
+    localPath: string,
+    localMD5: string,
+    stageFromVM = false
+  ): Promise<boolean> {
     const remoteMD5 = await this.getRemoteRenetMD5(ip);
 
     if (remoteMD5 === localMD5) {
@@ -263,12 +308,15 @@ export class InfrastructureManager {
       // Copy to a temp location using SSHExecutor. Stage in /var/tmp, NOT /tmp: Fedora mounts /tmp as tmpfs capped by VM RAM, and the dev renet binary intermittently does not fit ('scp: write remote "/tmp/renet": Failure' — the recurring fedora-only setup red). Same fix as renet's
       // own Go staging sites (bridge/worker/image-builder); /var/tmp is
       // disk-backed on every distro.
-      const copyResult = await this.sshExecutor.copyTo(ip, localPath, '/var/tmp/renet', {
-        execTimeout: 60000, // Increased timeout for larger binaries
-      });
+      // With stageFromVM the VM already holds these exact bytes from ops up, so the stage is a VM-local copy rather than a ~200 MB transfer from the host.
+      const copyResult = stageFromVM
+        ? await this.stageRenetFromVM(ip)
+        : await this.sshExecutor.copyTo(ip, localPath, '/var/tmp/renet', {
+            execTimeout: 60000, // Increased timeout for larger binaries
+          });
 
       if (!copyResult.success) {
-        throw new Error(`SCP failed: ${copyResult.stderr}`);
+        throw new Error(`Staging renet failed: ${copyResult.stderr}`);
       }
 
       // Move to final location, set permissions, and create symlinks: - /usr/lib/rediacc/renet/current -> versioned dir (for bridge commands) - /usr/bin/renet -> versioned binary (for PATH lookup)
@@ -317,7 +365,7 @@ export class InfrastructureManager {
    * Verify renet is installed and up-to-date on all VMs (bridge, workers, ceph).
    * Deploys the local version if VMs have outdated binary.
    */
-  async ensureRenetOnVMs(): Promise<void> {
+  async ensureRenetOnVMs(options: EnsureRenetOptions = {}): Promise<void> {
     // eslint-disable-next-line no-console
     console.log('');
     // eslint-disable-next-line no-console
@@ -338,7 +386,7 @@ export class InfrastructureManager {
     await Promise.all(
       allIPs.map(async (ip) => {
         try {
-          await this.ensureRenetOnVM(ip, localPath, localMD5);
+          await this.ensureRenetOnVM(ip, localPath, localMD5, options);
         } catch (error: unknown) {
           const err = error as { message?: string };
           throw new Error(`ensureRenetOnVMs failed for ${ip}: ${err.message ?? 'Unknown error'}`);
@@ -352,17 +400,27 @@ export class InfrastructureManager {
    * missing or outdated. Split out of ensureRenetOnVMs so that method can run
    * this concurrently over every VM via Promise.all.
    */
-  private async ensureRenetOnVM(ip: string, localPath: string, localMD5: string): Promise<void> {
+  private async ensureRenetOnVM(
+    ip: string,
+    localPath: string,
+    localMD5: string,
+    options: EnsureRenetOptions
+  ): Promise<void> {
+    const stageFromVM = options.freshReset === true && (await this.opsUpRenetIsLocal(ip, localMD5));
+    if (stageFromVM) {
+      this.opsUpRenetMatched.add(ip);
+    }
     const hasRenet = await this.opsManager.isRenetInstalledOnVM(ip);
 
     if (hasRenet) {
       // Check if update is needed
-      const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5);
+      const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5, stageFromVM);
       const version = await this.opsManager.getRenetVersionOnVM(ip);
 
       if (wasUpdated) {
+        const source = stageFromVM ? ', staged from the ops-up copy' : '';
         // eslint-disable-next-line no-console
-        console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'})`);
+        console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'}${source})`);
       } else {
         // eslint-disable-next-line no-console
         console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
@@ -376,6 +434,40 @@ export class InfrastructureManager {
       // eslint-disable-next-line no-console
       console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
     }
+  }
+
+  /**
+   * Stage the renet ops up installed into /var/tmp/renet, the same place the host transfer writes.
+   */
+  private async stageRenetFromVM(ip: string): Promise<{ success: boolean; stderr: string }> {
+    const result = await this.opsManager.executeOnVM(
+      ip,
+      `cp ${OPS_UP_RENET_PATH} /var/tmp/renet`,
+      60000
+    );
+    return { success: result.code === 0, stderr: result.stderr };
+  }
+
+  /**
+   * True when the renet /usr/bin/renet resolves to on the VM is the local binary.
+   */
+  private async opsUpRenetIsLocal(ip: string, localMD5: string): Promise<boolean> {
+    const result = await this.opsManager.executeOnVM(ip, OPS_UP_RENET_MD5_COMMAND);
+    return result.code === 0 && opsUpRenetMatchesLocal(result.stdout, localMD5);
+  }
+
+  /**
+   * True when `renet setup` already completed on this VM with the local renet binary.
+   * Requires ensureRenetOnVMs({ freshReset: true }) to have proven the ops-up binary identical to the local one first.
+   * The VM was then just recreated from its base image, so the marker can only come from the setup ops up ran with that binary.
+   * When the base image already carries Docker, ops up skips its setup, the marker is absent, and this returns false.
+   */
+  async isSetupCompleteWithLocalRenet(ip: string): Promise<boolean> {
+    if (!this.opsUpRenetMatched.has(ip)) {
+      return false;
+    }
+    const marker = await this.opsManager.executeOnVM(ip, `sudo test -f ${RENET_SETUP_MARKER_PATH}`);
+    return marker.code === 0;
   }
 
   /**
