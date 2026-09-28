@@ -20,7 +20,8 @@ fi
 repos=()
 IFS=',' read -r -a raw <<<"$repos_csv"
 for r in "${raw[@]}"; do
-    r="$(echo "$r" | xargs)"
+    r="${r#"${r%%[![:space:]]*}"}"
+    r="${r%"${r##*[![:space:]]}"}"
     [[ -n "$r" ]] && repos+=("$r")
 done
 if ((${#repos[@]} == 0)); then
@@ -33,6 +34,15 @@ export GIT_TERMINAL_PROMPT=0
 # Probe from outside any checkout. actions/checkout persists an Authorization extraheader for the job's GITHUB_TOKEN into the repository's local config, and inside that repository it wins over the app token in the global insteadOf URL: run 36455077278 read console and homebrew-tap but got "not found" for every private repository in each job whose first checkout kept its credentials.
 probe_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/app-token-probe.XXXXXX")"
 cd "$probe_dir" || exit 2
+# Bound each attempt: coreutils timeout on Linux and Windows' Git Bash, gtimeout where Homebrew installed it, and otherwise git's own stall limit, since macOS runners ship neither (run 36461941122: "timeout: command not found" was misread as an unreadable repository).
+bound=()
+if command -v timeout >/dev/null 2>&1; then
+    bound=(timeout 30)
+elif command -v gtimeout >/dev/null 2>&1; then
+    bound=(gtimeout 30)
+else
+    export GIT_HTTP_LOW_SPEED_LIMIT=1000 GIT_HTTP_LOW_SPEED_TIME=30
+fi
 
 failed=()
 for repo in "${repos[@]}"; do
@@ -40,7 +50,7 @@ for repo in "${repos[@]}"; do
     attempt=1
     last_err=""
     while :; do
-        if err="$(timeout 30 git ls-remote "$url" HEAD 2>&1 >/dev/null)"; then
+        if err="$(${bound[@]+"${bound[@]}"} git ls-remote "$url" HEAD 2>&1 >/dev/null)"; then
             if ((attempt > 1)); then
                 echo "::warning::app-token: ${owner}/${repo} became readable on attempt ${attempt}; the token was not yet valid for it right after the mint."
             else
