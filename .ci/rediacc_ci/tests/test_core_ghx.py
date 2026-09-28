@@ -685,3 +685,17 @@ def test_the_module_documents_every_incident_it_claims_to_close():
     assert cited, "the docstring cites no files at all, so this check is vacuous"
     missing = {rel for rel in cited if not (paths.repo_root() / rel).exists()}
     assert missing == set()
+
+
+def test_api_json_paginate_asks_gh_to_slurp_pages(monkeypatch):
+    """--paginate alone prints one JSON document per page for an object response, which json.loads rejects ("Extra data"); --slurp makes it one array of pages."""
+    seen = {}
+
+    def fake_gh(args, **_kw):
+        seen["args"] = list(args)
+        return ghx.GhResult(["gh", *args], 0, '[{"jobs": [1]}, {"jobs": [2]}]', "")
+
+    monkeypatch.setattr(ghx, "gh", fake_gh)
+    pages = ghx.api_json("repos/x/y/actions/runs/1/jobs", paginate=True)
+    assert seen["args"][-2:] == ["--paginate", "--slurp"]
+    assert pages == [{"jobs": [1]}, {"jobs": [2]}]

@@ -399,7 +399,12 @@ def api_json(
         )
     args = ["api", path]
     if paginate:
-        args.append("--paginate")
+        # --slurp, because --paginate alone is ALSO not one document for an OBJECT response
+        # (`.../runs/<id>/jobs` is {"total_count", "jobs": [...]}): gh prints one full document
+        # per page and json.loads fails "Extra data" (measured 2026-09-28, budget_report). With
+        # --slurp gh wraps every page in one array, so a paginated call returns the LIST OF
+        # PAGES, each page exactly as the endpoint shapes it.
+        args += ["--paginate", "--slurp"]
     if jq is not None:
         args += ["--jq", jq]
     return gh(args, env=env, timeout=timeout, attempts=attempts, sleep=sleep).json()
