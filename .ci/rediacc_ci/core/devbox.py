@@ -2010,7 +2010,21 @@ class Devbox:
             self.log("error", "Devbox is not running. Start it with: ./run.sh devbox up")
             return 1
         return self.run(
-            [*d, "exec", "-it", "-u", "vscode", "-w", self.worktree_path(), cid, "bash"]
+            [
+                *d,
+                "exec",
+                "-it",
+                "-u",
+                "vscode",
+                "-e",
+                "USER=vscode",
+                "-e",
+                "LOGNAME=vscode",
+                "-w",
+                self.worktree_path(),
+                cid,
+                "bash",
+            ]
         )[0]
 
     def exec(self, *argv: str) -> int:
@@ -2035,6 +2049,8 @@ class Devbox:
         if stdin_tty and _isatty(self.stdout):
             flags.append("-t")
         flags += ["-e", "REDIACC_IN_DEVBOX=1"]
+        # docker exec -u sets no USER or LOGNAME, and tools that read them (SSHExecutor, renet InitVM) then fall back to root.
+        flags += ["-e", "USER=vscode", "-e", "LOGNAME=vscode"]
         for name in EXEC_FORWARDED_ENV:
             if self.env.get(name, SHELL_DEFAULTS.get(name, "")):
                 flags += ["-e", name]

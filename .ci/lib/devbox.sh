@@ -1145,7 +1145,7 @@ devbox_shell() {
     # name is right on Linux, macOS (501:20, where gid 20 is dialout) and WSL2,
     # while a numeric id is right only where the host's numbering means
     # something inside the container. This was the one site still using it.
-    $d exec -it -u vscode -w "$(devbox_worktree)" "$cid" bash
+    $d exec -it -u vscode -e USER=vscode -e LOGNAME=vscode -w "$(devbox_worktree)" "$cid" bash
 }
 
 # -----------------------------------------------------------------------------
@@ -1180,6 +1180,8 @@ devbox_exec() {
     [[ -t 0 ]] && flags+=(-i)
     [[ -t 0 && -t 1 ]] && flags+=(-t)
     flags+=(-e REDIACC_IN_DEVBOX=1)
+    # docker exec -u sets no USER or LOGNAME, and tools that read them (SSHExecutor, renet InitVM) then fall back to root.
+    flags+=(-e USER=vscode -e LOGNAME=vscode)
     local v
     for v in CI NO_COLOR TERM GH_TOKEN GITHUB_TOKEN; do
         [[ -n "${!v:-}" ]] && flags+=(-e "$v")
