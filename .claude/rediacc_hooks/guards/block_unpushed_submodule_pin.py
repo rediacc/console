@@ -67,10 +67,14 @@ def _pinned_world(path, published):
     _fixture_git(sub, "init", "-q", "--initial-branch=main")
     _fixture_git(sub, "commit", "-q", "--allow-empty", "-m", "published")
     old = _fixture_git(sub, "rev-parse", "HEAD")
+    if not old:
+        raise RuntimeError("fixture: rev-parse HEAD printed nothing in %s" % sub)
     _fixture_git(sub, "update-ref", "refs/remotes/origin/main", old)
     _fixture_git(sub, "checkout", "-q", "-b", "0923-1")
     _fixture_git(sub, "commit", "-q", "--allow-empty", "-m", "local only")
     new = _fixture_git(sub, "rev-parse", "HEAD")
+    if not new:
+        raise RuntimeError("fixture: rev-parse HEAD printed nothing in %s" % sub)
     if published:
         _fixture_git(sub, "update-ref", "refs/remotes/origin/0923-1", new)
     _fixture_git(
