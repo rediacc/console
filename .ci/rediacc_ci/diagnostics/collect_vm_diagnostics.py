@@ -10,8 +10,8 @@ HOST SIDE (always, through `sudo -n virsh`, the same `sudo virsh` renet itself d
   console-log.txt  the tail of any `<log file=...>` configured on a serial or console device.
   console-live.txt  a bounded read of the console pty, when the console is a pty.
 
-renet defines the console as `--console pty` with no log file (private/renet/pkg/infra/vm/kvm/driver.go), so libvirt keeps no history of the serial output.
-console-live.txt is therefore only what the guest prints during the read window, and console-log.txt starts appearing on its own once the domain definition gains a `log.file`.
+renet's KVM driver gives the console a `log.file` (private/renet/pkg/infra/vm/kvm/driver.go, renet c26f8a3), so console-log.txt holds the serial history from boot.
+console-live.txt adds what the guest prints during the read window, and it is the only console record for a domain defined without a log file.
 
 GUEST SIDE (only when an SSH probe succeeds): `journalctl -b --no-pager`, `cloud-init status --long` and `last -x`.
 
@@ -259,9 +259,7 @@ def collect_vm(
                 [*_sudo(), "timeout", str(int(console_seconds)), "cat", path],
                 deadline.left(console_seconds + 5),
             )
-            parts.append(
-                f"==> {path} ({int(console_seconds)}s read window; renet keeps no console history) <==\n{text}"
-            )
+            parts.append(f"==> {path} ({int(console_seconds)}s read window) <==\n{text}")
         _write(dest / "console-live.txt", "\n".join(parts))
 
     ip = _guest_ip(domain, xml_text, deadline)
