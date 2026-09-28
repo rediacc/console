@@ -166,8 +166,7 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 libvirt-clients \
                 bridge-utils \
                 virtinst \
-                cloud-image-utils \
-                genisoimage \
+                xorriso \
                 dnsmasq-base \
                 iputils-ping; then \
             break; \

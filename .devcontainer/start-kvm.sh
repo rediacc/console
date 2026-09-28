@@ -15,7 +15,7 @@
 #   start-kvm.sh --stop       # Stop all KVM services
 #   start-kvm.sh --status     # Show service status
 #
-# The renet ops tool expects: virsh, virt-install, qemu-img, cloud-localds,
+# The renet ops tool expects: virsh, virt-install, qemu-img, xorrisofs,
 # jq, ssh, and a running libvirtd.
 
 set -euo pipefail

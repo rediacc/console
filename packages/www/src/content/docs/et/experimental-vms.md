@@ -59,7 +59,7 @@ Kasutusjuhtumid:
 rdc ops setup
 
 # Või käsitsi:
-sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io
+sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io
 sudo systemctl enable --now libvirtd
 ```
 

@@ -59,7 +59,7 @@ O suporte a **Windows (Hyper-V)** está planeado. Consulte a [issue #380](https:
 rdc ops setup
 
 # Ou manualmente:
-sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io
+sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io
 sudo systemctl enable --now libvirtd
 ```
 
