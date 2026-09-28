@@ -6525,8 +6525,8 @@
   {
     "id": "search-17590",
     "content": "Linux",
-    "body": "# Ön koşulları otomatik kur rdc ops setup # Veya manuel olarak: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io sudo systemctl enable --now libvirtd",
-    "excerpt": "# Ön koşulları otomatik kur rdc ops setup # Veya manuel olarak: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io...",
+    "body": "# Ön koşulları otomatik kur rdc ops setup # Veya manuel olarak: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo systemctl enable --now libvirtd",
+    "excerpt": "# Ön koşulları otomatik kur rdc ops setup # Veya manuel olarak: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo syst...",
     "category": "Documentation",
     "page": "/tr/docs/experimental-vms",
     "fragment": "linux",

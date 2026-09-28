@@ -6525,8 +6525,8 @@
   {
     "id": "search-1792",
     "content": "Linux",
-    "body": "# تثبيت المتطلبات الأساسية تلقائياً rdc ops setup # أو يدوياً: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io sudo systemctl enable --now libvirtd",
-    "excerpt": "# تثبيت المتطلبات الأساسية تلقائياً rdc ops setup # أو يدوياً: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io...",
+    "body": "# تثبيت المتطلبات الأساسية تلقائياً rdc ops setup # أو يدوياً: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo systemctl enable --now libvirtd",
+    "excerpt": "# تثبيت المتطلبات الأساسية تلقائياً rdc ops setup # أو يدوياً: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo syste...",
     "category": "Documentation",
     "page": "/ar/docs/experimental-vms",
     "fragment": "linux",

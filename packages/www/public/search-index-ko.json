@@ -6525,8 +6525,8 @@
   {
     "id": "search-13285",
     "content": "Linux",
-    "body": "# 사전 조건 자동 설치 rdc ops setup # 또는 수동으로: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io sudo systemctl enable --now libvirtd",
-    "excerpt": "# 사전 조건 자동 설치 rdc ops setup # 또는 수동으로: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io sudo systemctl enable --...",
+    "body": "# 사전 조건 자동 설치 rdc ops setup # 또는 수동으로: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo systemctl enable --now libvirtd",
+    "excerpt": "# 사전 조건 자동 설치 rdc ops setup # 또는 수동으로: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo systemctl enable --now libvir...",
     "category": "Documentation",
     "page": "/ko/docs/experimental-vms",
     "fragment": "linux",

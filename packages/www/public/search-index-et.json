@@ -6525,8 +6525,8 @@
   {
     "id": "search-7545",
     "content": "Linux",
-    "body": "# Installi eeltingimused automaatselt rdc ops setup # Või käsitsi: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker.io sudo systemctl enable --now libvirtd",
-    "excerpt": "# Installi eeltingimused automaatselt rdc ops setup # Või käsitsi: sudo apt install libvirt-daemon-system virtinst qemu-utils cloud-image-utils docker...",
+    "body": "# Installi eeltingimused automaatselt rdc ops setup # Või käsitsi: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo systemctl enable --now libvirtd",
+    "excerpt": "# Installi eeltingimused automaatselt rdc ops setup # Või käsitsi: sudo apt install libvirt-daemon-system virtinst qemu-utils xorriso docker.io sudo s...",
     "category": "Documentation",
     "page": "/et/docs/experimental-vms",
     "fragment": "linux",
