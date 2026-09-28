@@ -2,7 +2,9 @@
 
 FIXTURE-DRIVEN, NO NETWORK. Every test here drives a pure function directly, or a network-touching one (`compute_lane_durations`, `collect_unit_durations`) through its injectable `compute`/`list_artifacts`/`download` parameters -- the same seam the module's own docstring names as the reason those parameters exist: T1.6 has not landed, so there is no live artifact to record a fixture FROM, only the contract this module's own docstring defines. `refresh_lane_durations`/`check_lane_durations` are driven the same way, through their own `compute` parameter, so neither test calls `gh` or the real Actions API.
 
-T1.1's `build_report`/`collect_class`/`fetch_runs`/`fetch_jobs` machinery already exists and is unchanged by this box; it is not retested here.
+T1.1's `build_report`/`collect_class` machinery already exists and is unchanged by this box; it is not retested here. `fetch_runs`/`fetch_jobs`/`fetch_artifacts` ARE part of T3.1's own fix set (pagination, explicit sort, staleness) and are retested below, against `br.ghx.api_json` monkeypatched -- still no real `gh` call.
+
+T3.1 ALSO CLOSES `scripts/gates/check-lane-budget.ts`'s own BLOCKER, so several tests below drive the real parser against classnames and describe titles MEASURED live from a real downloaded artifact (cited by run id in each test's own docstring) and check the produced ids against the ACTUALLY COMMITTED shard manifest (`.ci/config/shards/*.json`, read via `rediacc_ci.paths.repo_root()`) rather than a copy of it -- the same "prove it against the real committed file" shape `check-lane-budget.ts`'s own selftest uses for `quality-code`'s manifest.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ import zipfile
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.ci import budget_report as br
 
 # --------------------------------------------------------------------------- parse_workflow_jobs: has_matrix ---------------------------------------------------------------------------
@@ -424,6 +427,7 @@ def _fake_compute(**overrides):
         "jobs": {},
         "units": {},
         "job_max_seconds": {},
+        "job_p90_minutes": {},
         "missing_artifact_lanes": [],
     }
     base.update(overrides)
@@ -639,3 +643,479 @@ def test_artifact_download_still_raises_after_the_last_attempt(monkeypatch):
     with pytest.raises(br.ghx.GhBadOutputError):
         br.download_artifact_zip("o/r", 7)
     assert len(n) == br.GH_ATTEMPTS
+
+
+# --------------------------------------------------------------------------- T3.1: fetch_jobs/fetch_artifacts pagination ---------------------------------------------------------------------------
+
+
+def test_fetch_jobs_paginates_beyond_the_first_page(monkeypatch):
+    """FIRES-if-unfixed: MEASURED live, run 36358238015 -- 158 jobs across two Actions API pages; a single `per_page=100` call used to silently drop the last 58."""
+    page1 = [{"id": i} for i in range(100)]
+    page2 = [{"id": i} for i in range(100, 158)]
+
+    def fake_api_json(path, **_kw):
+        assert "per_page=100" in path
+        if path.endswith("&page=1"):
+            return {"total_count": 158, "jobs": page1}
+        if path.endswith("&page=2"):
+            return {"total_count": 158, "jobs": page2}
+        raise AssertionError("unexpected page in %r" % path)
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    jobs = br.fetch_jobs("o/r", 1)
+    assert [j["id"] for j in jobs] == list(range(158))
+
+
+def test_fetch_jobs_stops_at_a_short_page_even_with_no_total_count(monkeypatch):
+    """CONTROL: a page shorter than per_page ends the walk even when `total_count` is absent, rather than looping forever."""
+    calls = []
+
+    def fake_api_json(path, **_kw):
+        calls.append(path)
+        return {"jobs": [{"id": 1}, {"id": 2}]}
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    assert br.fetch_jobs("o/r", 1) == [{"id": 1}, {"id": 2}]
+    assert len(calls) == 1
+
+
+def test_fetch_jobs_stops_once_total_count_is_reached(monkeypatch):
+    """CONTROL: a full page whose `total_count` is already satisfied does not fetch a third page it does not need."""
+    calls = []
+
+    def fake_api_json(path, **_kw):
+        calls.append(path)
+        page = int(path.rsplit("page=", 1)[1])
+        if page == 1:
+            return {"total_count": 100, "jobs": [{"id": i} for i in range(100)]}
+        raise AssertionError("should not fetch a second page once total_count is met")
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    jobs = br.fetch_jobs("o/r", 1)
+    assert len(jobs) == 100
+    assert len(calls) == 1
+
+
+def test_fetch_artifacts_paginates_beyond_the_first_page(monkeypatch):
+    """Same pagination fix as `fetch_jobs`, over `.../artifacts` (also `per_page=100` before this box)."""
+    page1 = [{"id": i, "name": "a-%d" % i} for i in range(100)]
+    page2 = [{"id": i, "name": "a-%d" % i} for i in range(100, 130)]
+
+    def fake_api_json(path, **_kw):
+        if path.endswith("&page=1"):
+            return {"total_count": 130, "artifacts": page1}
+        if path.endswith("&page=2"):
+            return {"total_count": 130, "artifacts": page2}
+        raise AssertionError("unexpected page in %r" % path)
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    artifacts = br.fetch_artifacts("o/r", 1)
+    assert len(artifacts) == 130
+
+
+def test_fetch_artifacts_stops_at_a_short_page(monkeypatch):
+    def fake_api_json(_path, **_kw):
+        return {"artifacts": [{"id": 1}]}
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    assert br.fetch_artifacts("o/r", 1) == [{"id": 1}]
+
+
+# --------------------------------------------------------------------------- T3.1: fetch_runs sorting and sample staleness ---------------------------------------------------------------------------
+
+
+def test_fetch_runs_sorts_by_created_at_descending_explicitly(monkeypatch):
+    """FIRES-if-unfixed: MEASURED live, 2026-09-27 -- the identical query returned an out-of-order page (an August-dated run after September-dated ones), so slicing on the API's own order silently picked stale runs."""
+    runs = [
+        {"id": 1, "created_at": "2026-08-01T00:00:00Z"},
+        {"id": 2, "created_at": "2026-09-20T00:00:00Z"},
+        {"id": 3, "created_at": "2026-09-10T00:00:00Z"},
+    ]
+    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": runs})
+    result = br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 2)
+    assert [r["id"] for r in result] == [2, 3]
+
+
+def test_stale_sample_findings_fires_past_14_days():
+    now = br._iso_to_epoch("2026-09-28T00:00:00Z")
+    runs = [{"id": 9, "created_at": "2026-09-10T00:00:00Z"}]
+    findings = br.stale_sample_findings(runs, now=now)
+    assert findings
+    assert "18.0 day" in findings[0]
+    assert "14-day" in findings[0]
+
+
+def test_stale_sample_findings_silent_within_the_limit():
+    now = br._iso_to_epoch("2026-09-28T00:00:00Z")
+    runs = [{"id": 9, "created_at": "2026-09-20T00:00:00Z"}]
+    assert br.stale_sample_findings(runs, now=now) == []
+
+
+def test_stale_sample_findings_ignores_a_run_with_no_created_at():
+    assert br.stale_sample_findings([{"id": 1}], now=0.0) == []
+
+
+def test_fetch_runs_warns_loudly_on_a_stale_sample(monkeypatch, capsys):
+    old_run = {"id": 9, "created_at": "2026-01-01T00:00:00Z"}
+    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": [old_run]})
+    br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
+    err = capsys.readouterr().err
+    assert "over the 14-day sample limit" in err
+
+
+def test_fetch_runs_silent_on_a_fresh_sample(monkeypatch, capsys):
+    fresh_run = {"id": 9, "created_at": "2026-09-27T00:00:00Z"}
+    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": [fresh_run]})
+    br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
+    assert capsys.readouterr().err == ""
+
+
+# --------------------------------------------------------------------------- T3.1: pytest/renet-integration classname keying (BLOCKER item 2) ---------------------------------------------------------------------------
+
+
+def test_classname_to_module_relpath_keeps_the_leading_dot_of_a_dot_prefixed_testpath():
+    """FIRES-if-unfixed: MEASURED live (run 36358238015) -- a blind `classname.replace(".", "/")` turns ".ci.rediacc_ci.tests.test_x" into "/ci/rediacc_ci/tests/test_x.py" (a leading SLASH), not the manifest's ".ci/rediacc_ci/tests/test_x.py" (a leading DOT)."""
+    assert (
+        br._classname_to_module_relpath(".ci.rediacc_ci.tests.test_housekeeping_cleanup_versions")
+        == ".ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py"
+    )
+
+
+def test_classname_to_module_relpath_keeps_the_leading_dot_under_dot_claude_too():
+    assert (
+        br._classname_to_module_relpath(".claude.rediacc_hooks.tests.test_hooks_fixtures")
+        == ".claude/rediacc_hooks/tests/test_hooks_fixtures.py"
+    )
+
+
+def test_classname_to_module_relpath_drops_a_trailing_pascalcase_class_segment():
+    """FIRES-if-unfixed: MEASURED live (run 36332059919) -- every `private/renet/tests/integration` file wraps its tests in a `class TestXxx:`, so a blind replace produced "TestPortAutoSync.py" instead of the file the class lives in."""
+    assert (
+        br._classname_to_module_relpath("tests.integration.test_config_autosync.TestPortAutoSync")
+        == "tests/integration/test_config_autosync.py"
+    )
+
+
+def test_classname_to_module_relpath_unchanged_with_no_class_segment():
+    assert (
+        br._classname_to_module_relpath("tests.integration.test_daemon_lifecycle")
+        == "tests/integration/test_daemon_lifecycle.py"
+    )
+
+
+def test_parse_pytest_junit_unit_ms_falls_back_correctly_for_quality_pytest_real_shape():
+    """The exact junit shape MEASURED live (run 36358238015, quality-pytest shard 3): no `file` attribute at all."""
+    text = (
+        "<testsuites><testsuite>"
+        '<testcase classname=".ci.rediacc_ci.tests.test_housekeeping_cleanup_versions" '
+        'name="test_both_subjects_exist@housekeeping-cleanup-versions" time="0.025" />'
+        "</testsuite></testsuites>"
+    )
+    out = br.parse_pytest_junit_unit_ms(text, "quality-pytest")
+    assert out == {
+        "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py": pytest.approx(25.0)
+    }
+
+
+def test_parse_pytest_junit_unit_ms_falls_back_correctly_for_renet_integration_real_shape():
+    """The exact junit shape MEASURED live (run 36332059919, test-renet-integration shard 1): a class-wrapped test, no `file` attribute."""
+    text = (
+        "<testsuites><testsuite>"
+        '<testcase classname="tests.integration.test_config_autosync.TestPortAutoSync" '
+        'name="test_default_port_when_no_env_file" time="120.131" />'
+        "</testsuite></testsuites>"
+    )
+    out = br.parse_pytest_junit_unit_ms(text, "test-renet-integration")
+    assert out == {"renet-integration:test_config_autosync.py": pytest.approx(120131.0)}
+
+
+# --------------------------------------------------------------------------- CONTROL: real classname shapes land in the committed manifests ---------------------------------------------------------------------------
+
+
+def test_quality_pytest_classname_ids_land_in_the_committed_manifest():
+    """The BLOCKER this box closes, in its own words: "quality-pytest ... unit p90s are keyed by junit classname ... and match no committed manifest id". Drives the real parser over classnames MEASURED from a live artifact (run 36358238015) and checks the produced ids against the ACTUALLY COMMITTED shard manifest, not a copy of it."""
+    root = paths.repo_root()
+    manifest = json.loads((root / ".ci/config/shards/quality-pytest.json").read_text())
+    manifest_ids = {i for leg in manifest["legs"] for i in leg["ids"]}
+    real_classnames = [
+        ".ci.rediacc_ci.tests.test_housekeeping_cleanup_versions",
+        ".ci.rediacc_ci.tests.test_release_assert_artifact_version",
+        ".claude.rediacc_hooks.tests.test_hooks_fixtures",
+        ".claude.rediacc_hooks.tests.test_guards_differential",
+    ]
+    text = (
+        "<testsuites><testsuite>"
+        + "".join('<testcase classname="%s" name="t" time="1.0" />' % c for c in real_classnames)
+        + "</testsuite></testsuites>"
+    )
+    ids = br.parse_pytest_junit_unit_ms(text, "quality-pytest")
+    assert len(ids) == len(real_classnames)
+    for unit_id in ids:
+        assert unit_id in manifest_ids, "%s not in the committed manifest" % unit_id
+
+
+def test_renet_integration_classname_ids_land_in_the_committed_manifest():
+    """Same control, other lane: classnames MEASURED from run 36332059919's test-renet-integration shard 1."""
+    root = paths.repo_root()
+    manifest = json.loads((root / ".ci/config/shards/test-renet-integration.json").read_text())
+    manifest_ids = {i for leg in manifest["legs"] for i in leg["ids"]}
+    real_classnames = [
+        "tests.integration.test_config_autosync.TestPortAutoSync",
+        "tests.integration.test_config_autosync.TestDomainAutoSync",
+        "tests.integration.test_daemon_proxy_sync.TestDaemonProxyCoordination",
+    ]
+    text = (
+        "<testsuites><testsuite>"
+        + "".join('<testcase classname="%s" name="t" time="1.0" />' % c for c in real_classnames)
+        + "</testsuite></testsuites>"
+    )
+    ids = br.parse_pytest_junit_unit_ms(text, "test-renet-integration")
+    # TestPortAutoSync/TestDomainAutoSync share test_config_autosync.py; TestDaemonProxyCoordination is a second file.
+    assert len(ids) == 2
+    for unit_id in ids:
+        assert unit_id in manifest_ids, "%s not in the committed manifest" % unit_id
+
+
+# --------------------------------------------------------------------------- T3.1: e2e-workers describe-block buckets (BLOCKER item 5, #partN) ---------------------------------------------------------------------------
+
+_FIXTURE_RUN_E2E_SH = """
+declare -A E2E_SHARD_GREP_BUCKETS=(
+    ["part1"]="PostgreSQL Data Persistence @bridge @integration|Repository Fork Data Inheritance @bridge @integration"
+    ["part2"]="Multiple Fork Independence @bridge @integration|Fork Data Integrity @bridge @integration"
+    ["part3"]="Large Data Volume Fork @bridge @integration|Service Restart Persistence @bridge @integration"
+)
+"""
+
+
+def _write_fixture_run_e2e_sh(tmp_path):
+    script_dir = tmp_path / ".ci" / "scripts" / "test"
+    script_dir.mkdir(parents=True)
+    (script_dir / "run-e2e.sh").write_text(_FIXTURE_RUN_E2E_SH, encoding="utf-8")
+    return tmp_path
+
+
+def test_e2e_shard_bucket_titles_reads_the_bash_array(tmp_path):
+    root = _write_fixture_run_e2e_sh(tmp_path)
+    titles = br._e2e_shard_bucket_titles(root)
+    assert titles["PostgreSQL Data Persistence @bridge @integration"] == "part1"
+    assert titles["Repository Fork Data Inheritance @bridge @integration"] == "part1"
+    assert titles["Large Data Volume Fork @bridge @integration"] == "part3"
+
+
+def test_e2e_shard_bucket_titles_missing_script_is_an_empty_map_not_a_crash(tmp_path):
+    assert br._e2e_shard_bucket_titles(tmp_path) == {}
+
+
+def _pw_describe_suite(file, describe_title, duration):
+    return {
+        "title": describe_title,
+        "specs": [{"file": file, "tests": [{"results": [{"duration": duration}]}]}],
+    }
+
+
+def test_parse_playwright_unit_ms_buckets_a_describe_block_into_its_partn_id():
+    """FIRES-if-unfixed: the shard manifest's own three `13-postgres-fork-isolation.test.ts#partN` units have no sample at all. MEASURED live shape (run 36358238015): the Playwright JSON nests one suite per describe directly under the file-level suite."""
+    bucket_titles = {"PostgreSQL Data Persistence @bridge @integration": "part1"}
+    file = "13-postgres-fork-isolation.test.ts"
+    text = json.dumps(
+        {
+            "suites": [
+                {
+                    "title": file,
+                    "file": file,
+                    "suites": [
+                        _pw_describe_suite(
+                            file, "PostgreSQL Data Persistence @bridge @integration", 5000
+                        )
+                    ],
+                }
+            ]
+        }
+    )
+    out = br.parse_playwright_unit_ms(text, "test-e2e-workers", bucket_titles=bucket_titles)
+    assert out == {"e2e-workers:13-postgres-fork-isolation.test.ts#part1": 5000.0}
+
+
+def test_parse_playwright_unit_ms_sums_two_describes_sharing_one_bucket():
+    bucket_titles = {
+        "PostgreSQL Data Persistence @bridge @integration": "part1",
+        "Repository Fork Data Inheritance @bridge @integration": "part1",
+    }
+    file = "13-postgres-fork-isolation.test.ts"
+    text = json.dumps(
+        {
+            "suites": [
+                {
+                    "title": file,
+                    "file": file,
+                    "suites": [
+                        _pw_describe_suite(
+                            file, "PostgreSQL Data Persistence @bridge @integration", 1000
+                        ),
+                        _pw_describe_suite(
+                            file, "Repository Fork Data Inheritance @bridge @integration", 2000
+                        ),
+                    ],
+                }
+            ]
+        }
+    )
+    out = br.parse_playwright_unit_ms(text, "test-e2e-workers", bucket_titles=bucket_titles)
+    assert out == {"e2e-workers:13-postgres-fork-isolation.test.ts#part1": 3000.0}
+
+
+def test_parse_playwright_unit_ms_leaves_an_unbucketed_file_whole():
+    """CONTROL: a file whose describe titles are not in bucket_titles keeps the pre-existing whole-file grouping."""
+    bucket_titles = {"PostgreSQL Data Persistence @bridge @integration": "part1"}
+    file = "01-system-checks.test.ts"
+    text = json.dumps(
+        {
+            "suites": [
+                {
+                    "title": file,
+                    "file": file,
+                    "suites": [_pw_describe_suite(file, "System Functions @bridge @smoke", 743)],
+                }
+            ]
+        }
+    )
+    out = br.parse_playwright_unit_ms(text, "test-e2e-workers", bucket_titles=bucket_titles)
+    assert out == {"e2e-workers:01-system-checks.test.ts": 743.0}
+
+
+def test_parse_playwright_unit_ms_with_no_bucket_titles_is_unchanged():
+    """INVERSE control: the default (no bucket_titles) behaves exactly as before this box -- whole-file grouping, no '#'."""
+    text = json.dumps(
+        {
+            "suites": [
+                {"specs": [{"file": "a.spec.ts", "tests": [{"results": [{"duration": 1000}]}]}]}
+            ]
+        }
+    )
+    assert br.parse_playwright_unit_ms(text, "test-e2e-workers") == {
+        "e2e-workers:a.spec.ts": 1000.0
+    }
+
+
+def test_e2e_workers_bucket_ids_land_in_the_committed_manifest():
+    """The BLOCKER's other named gap: the three `#partN` units have no sample. Reads the REAL `run-e2e.sh` bucket table and the REAL committed `test-e2e-workers.json` manifest (both via `paths.repo_root()`, no fixture copy) and checks the produced ids against it."""
+    root = paths.repo_root()
+    bucket_titles = br._e2e_shard_bucket_titles(root)
+    assert bucket_titles, "run-e2e.sh's E2E_SHARD_GREP_BUCKETS did not parse"
+    manifest = json.loads((root / ".ci/config/shards/test-e2e-workers.json").read_text())
+    manifest_ids = {i for leg in manifest["legs"] for i in leg["ids"]}
+    file = "13-postgres-fork-isolation.test.ts"
+    text = json.dumps(
+        {
+            "suites": [
+                {
+                    "title": file,
+                    "file": file,
+                    "suites": [_pw_describe_suite(file, title, 1000) for title in bucket_titles],
+                }
+            ]
+        }
+    )
+    ids = br.parse_playwright_unit_ms(text, "test-e2e-workers", bucket_titles=bucket_titles)
+    bucketed = {i for i in ids if "#" in i}
+    assert bucketed == {
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part2",
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part3",
+    }
+    for unit_id in bucketed:
+        assert unit_id in manifest_ids, "%s not in the committed manifest" % unit_id
+
+
+# --------------------------------------------------------------------------- T3.1: job_p90_minutes (check 2's whole-job p90, BLOCKER item 3) ---------------------------------------------------------------------------
+
+
+def test_compute_lane_durations_reports_job_p90_minutes_by_display_name(tmp_path, monkeypatch):
+    """FIRES-if-unfixed: `check-lane-budget.ts`'s own BLOCKER -- "no whole-job p90 exists for check 2 over the 63 non-lane jobs"."""
+    root = _write_fixture_workflows(tmp_path)
+
+    def fake_fetch_runs(_repo, _workflow, event, _branch, _status, _limit):
+        return [{"id": 1, "created_at": "2026-09-27T00:00:00Z"}] if event == "pull_request" else []
+
+    def fake_fetch_jobs(_repo, _run_id):
+        return [
+            {
+                "name": "Tests + Infra / E2E K8s Ceph",
+                "conclusion": "success",
+                "started_at": "2026-09-27T00:00:00Z",
+                "completed_at": "2026-09-27T00:14:00Z",
+            }
+        ]
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "fetch_jobs", fake_fetch_jobs)
+    computed = br.compute_lane_durations(
+        root=root, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert computed["job_p90_minutes"] == {"Tests + Infra / E2E K8s Ceph": pytest.approx(14.0)}
+
+
+def test_compute_lane_durations_job_p90_minutes_is_success_only(tmp_path, monkeypatch):
+    root = _write_fixture_workflows(tmp_path)
+
+    def fake_fetch_runs(_repo, _workflow, event, _branch, _status, _limit):
+        return [{"id": 1, "created_at": "2026-09-27T00:00:00Z"}] if event == "pull_request" else []
+
+    def fake_fetch_jobs(_repo, _run_id):
+        return [
+            {
+                "name": "flaky job",
+                "conclusion": "failure",
+                "started_at": "2026-09-27T00:00:00Z",
+                "completed_at": "2026-09-27T00:30:00Z",
+            }
+        ]
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "fetch_jobs", fake_fetch_jobs)
+    computed = br.compute_lane_durations(
+        root=root, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert computed["job_p90_minutes"] == {}
+
+
+def test_refresh_lane_durations_writes_job_p90_minutes(tmp_path):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
+    compute = _fake_compute(job_p90_minutes={"Tests + Infra / E2E K8s Ceph": 14.0})
+    rc = br.refresh_lane_durations(path, limit=10, compute=compute)
+    assert rc == 0
+    data = json.loads(path.read_text())
+    assert data["job_p90_minutes"] == {"Tests + Infra / E2E K8s Ceph": 14.0}
+
+
+def test_refresh_lane_durations_merges_job_p90_minutes_with_existing(tmp_path):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": "2026-01-01T00:00:00Z",
+                "concurrency": 20,
+                "jobs": {},
+                "units": {},
+                "job_p90_minutes": {"Quality / Content": 3.0},
+            }
+        )
+    )
+    compute = _fake_compute(job_p90_minutes={"Tests + Infra / E2E K8s Ceph": 14.0})
+    rc = br.refresh_lane_durations(path, limit=10, compute=compute)
+    assert rc == 0
+    data = json.loads(path.read_text())
+    assert data["job_p90_minutes"] == {
+        "Quality / Content": 3.0,
+        "Tests + Infra / E2E K8s Ceph": 14.0,
+    }
+
+
+def test_refresh_lane_durations_still_refuses_when_only_job_p90_minutes_would_be_empty(tmp_path):
+    """CONTROL: `job_p90_minutes` joins the "nothing measured" refusal set -- an empty result across all four sections still refuses to stamp `refreshed_at`."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
+    rc = br.refresh_lane_durations(path, limit=10, compute=_fake_compute())
+    assert rc == 1
+    assert json.loads(path.read_text())["refreshed_at"] is None
