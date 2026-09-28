@@ -33,6 +33,23 @@ const OPS_UP_RENET_MD5_COMMAND = `md5sum ${OPS_UP_RENET_PATH} 2>/dev/null | cut 
 const RENET_SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';
 
 /**
+ * Finds a working CRIU as root, with an explicit PATH.
+ * `renet setup` installs CRIU to /usr/sbin/criu, and the copy fallback below installs it to /usr/local/bin/criu.
+ * A bare `which criu` over SSH runs as the login user, whose PATH on debian and opensuse has no /usr/sbin, so it reported an installed CRIU as missing and sent the harness into a source build that then failed with "criu: command not found".
+ * Setting PATH inside the root shell keeps the answer independent of both the login user's PATH and sudo's secure_path, and `criu --version` proves the binary runs rather than merely exists.
+ */
+export const CRIU_PROBE_COMMAND =
+  "sudo sh -c 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; command -v criu && criu --version' 2>&1";
+
+/**
+ * True when CRIU_PROBE_COMMAND found a runnable CRIU: exit 0 and an absolute path on the first line.
+ */
+export function criuProbeFound(result: { code: number; stdout: string }): boolean {
+  const firstLine = result.stdout.split('\n')[0]?.trim() ?? '';
+  return result.code === 0 && firstLine.startsWith('/');
+}
+
+/**
  * True when the output of OPS_UP_RENET_MD5_COMMAND is exactly the local binary's md5.
  * Empty output (no /usr/bin/renet), extra lines or a mismatch are false, so the caller falls back to copying from the host.
  */
@@ -460,7 +477,8 @@ export class InfrastructureManager {
    * True when `renet setup` already completed on this VM with the local renet binary.
    * Requires ensureRenetOnVMs({ freshReset: true }) to have proven the ops-up binary identical to the local one first.
    * The VM was then just recreated from its base image, so the marker can only come from the setup ops up ran with that binary.
-   * When the base image already carries Docker, ops up skips its setup, the marker is absent, and this returns false.
+   * The rule holds for the bridge and for every worker: ops up runs `renet setup --skip-datastore` on the bridge (setupBridge) and plain `sudo renet setup` on each worker in its cluster (worker.Service.Setup in private/renet/pkg/infra/worker/service.go), and both are the run the harness would repeat.
+   * When ops up skipped a VM's setup (a base image that already carries Docker, or a worker outside the `--basic` cluster), the marker is absent and this returns false.
    */
   async isSetupCompleteWithLocalRenet(ip: string): Promise<boolean> {
     if (!this.opsUpRenetMatched.has(ip)) {
@@ -481,9 +499,11 @@ export class InfrastructureManager {
    * Deploy CRIU to all worker VMs.
    *
    * Strategy:
-   * 1. Try to extract CRIU from bridge container (pre-built, fast)
-   * 2. Fall back to building from source if container not available
+   * 1. Probe every worker; one that already runs CRIU (normally all of them, since `renet setup` installs it) needs nothing.
+   * 2. For the rest, try to extract CRIU from the bridge container (pre-built, fast).
+   * 3. Fall back to building from source if the container or the copy is not available.
    *
+   * Each worker is its own SSH target, so the probes and installs run concurrently.
    * CRIU is required for container checkpointing tests.
    */
   async deployCRIUToAllVMs(): Promise<void> {
@@ -497,38 +517,65 @@ export class InfrastructureManager {
       throw new Error('USER environment variable is not set');
     }
 
-    // Check if any worker needs CRIU
-    const anyNeedsCriu = await this.checkIfCriuNeeded(workerIPs);
-
-    if (!anyNeedsCriu) {
+    const missing = await this.workersMissingCriu(workerIPs);
+    if (missing.length === 0) {
       // eslint-disable-next-line no-console
       console.log('  CRIU already installed on all workers');
       return;
     }
 
-    // Try to extract CRIU from bridge container
     const criuSourcePath = await this.extractCriuFromContainer(bridgeIP);
-
-    // Deploy CRIU to each worker VM
-    await this.deployCriuToWorkers(workerIPs, criuSourcePath, bridgeIP, user);
-
-    // Cleanup temp file on bridge
-    if (criuSourcePath) {
-      await this.opsManager.executeOnVM(bridgeIP, 'rm -f /tmp/criu');
+    try {
+      await Promise.all(
+        missing.map((ip) => this.installCriuOnWorker(ip, criuSourcePath, bridgeIP, user))
+      );
+    } finally {
+      if (criuSourcePath) {
+        await this.opsManager.executeOnVM(bridgeIP, `rm -f ${criuSourcePath}`);
+      }
     }
   }
 
   /**
-   * Check if any worker VM needs CRIU installation.
+   * Run CRIU_PROBE_COMMAND on one VM.
    */
-  private async checkIfCriuNeeded(workerIPs: string[]): Promise<boolean> {
-    for (const ip of workerIPs) {
-      const result = await this.opsManager.executeOnVM(ip, 'which criu 2>/dev/null');
-      if (result.code !== 0) {
-        return true;
+  private async probeCriu(ip: string): Promise<{ found: boolean; output: string }> {
+    const result = await this.opsManager.executeOnVM(ip, CRIU_PROBE_COMMAND);
+    return { found: criuProbeFound(result), output: `${result.stdout}${result.stderr}`.trim() };
+  }
+
+  /**
+   * The worker VMs with no runnable CRIU, each logged with the probe's own output.
+   */
+  private async workersMissingCriu(workerIPs: string[]): Promise<string[]> {
+    const probes = await Promise.all(
+      workerIPs.map(async (ip) => ({ ip, ...(await this.probeCriu(ip)) }))
+    );
+    for (const probe of probes) {
+      if (probe.found) {
+        // eslint-disable-next-line no-console
+        console.log(`  ✓ ${probe.ip}: CRIU already installed (${probe.output.split('\n')[0]})`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(`  ${probe.ip}: CRIU not found: ${probe.output || '(no output)'}`);
       }
     }
-    return false;
+    return probes.filter((probe) => !probe.found).map((probe) => probe.ip);
+  }
+
+  /**
+   * Install CRIU on one worker: the bridge copy first, the source build as the fallback.
+   */
+  private async installCriuOnWorker(
+    ip: string,
+    criuSourcePath: string | null,
+    bridgeIP: string,
+    user: string
+  ): Promise<void> {
+    if (criuSourcePath && (await this.copyCriuFromBridge(ip, criuSourcePath, bridgeIP, user))) {
+      return;
+    }
+    await this.buildCriuFromSource(ip);
   }
 
   /**
@@ -563,34 +610,6 @@ export class InfrastructureManager {
   }
 
   /**
-   * Deploy CRIU to worker VMs.
-   */
-  private async deployCriuToWorkers(
-    workerIPs: string[],
-    criuSourcePath: string | null,
-    bridgeIP: string,
-    user: string
-  ): Promise<void> {
-    for (const ip of workerIPs) {
-      const criuCheck = await this.opsManager.executeOnVM(ip, 'which criu 2>/dev/null');
-      if (criuCheck.code === 0 && criuCheck.stdout.trim()) {
-        // eslint-disable-next-line no-console
-        console.log(`  ✓ ${ip}: CRIU already installed`);
-        continue;
-      }
-
-      if (criuSourcePath) {
-        const copied = await this.copyCriuFromBridge(ip, criuSourcePath, bridgeIP, user);
-        if (copied) {
-          continue;
-        }
-      }
-
-      await this.buildCriuFromSource(ip);
-    }
-  }
-
-  /**
    * Copy CRIU from bridge VM to worker VM.
    * Uses SSHExecutor for consistent SSH options in nested commands.
    */
@@ -618,12 +637,15 @@ export class InfrastructureManager {
       console.warn(`  ✓ ${ip}: CRIU installed from container`);
       return true;
     }
-    console.warn(`  Warning: Copy failed for ${ip}, will try building from source`);
+    console.warn(
+      `  Warning: Copy failed for ${ip} (exit ${copyResult.code}: ${copyResult.stderr.trim()}), will try building from source`
+    );
     return false;
   }
 
   /**
    * Build CRIU from source on a worker VM.
+   * A failure stays non-fatal for the run, since most suites never checkpoint, but both the install command's error and the final probe's output are printed, so the reason is in the log rather than only the word "failed".
    */
   private async buildCriuFromSource(ip: string): Promise<void> {
     // eslint-disable-next-line no-console
@@ -631,20 +653,24 @@ export class InfrastructureManager {
 
     const vmId = ip.split('.').pop();
 
-    await execAsync(`${this.getRenetPath()} ops worker install-criu ${vmId}`, {
+    const installError = await execAsync(`${this.getRenetPath()} ops worker install-criu ${vmId}`, {
       timeout: 600000,
-    }).catch((error: unknown) => ({
-      stdout: '',
-      stderr: error instanceof Error ? error.message : String(error),
-    }));
+    }).then(
+      () => null,
+      (error: unknown) => (error instanceof Error ? error.message : String(error))
+    );
 
-    const verifyResult = await this.opsManager.executeOnVM(ip, 'criu --version');
-    if (verifyResult.code === 0) {
+    const probe = await this.probeCriu(ip);
+    if (probe.found) {
       // eslint-disable-next-line no-console
-      console.log(`  ✓ ${ip}: CRIU built and installed`);
-    } else {
-      // eslint-disable-next-line no-console
-      console.log(`  Warning: CRIU installation failed on ${ip} (non-fatal for most tests)`);
+      console.log(`  ✓ ${ip}: CRIU built and installed (${probe.output.split('\n')[0]})`);
+      return;
     }
+    // eslint-disable-next-line no-console
+    console.log(
+      `  Warning: CRIU installation failed on ${ip} (non-fatal for most tests)\n` +
+        `    install-criu: ${installError ?? 'exited 0'}\n` +
+        `    probe: ${probe.output || '(no output)'}`
+    );
   }
 }

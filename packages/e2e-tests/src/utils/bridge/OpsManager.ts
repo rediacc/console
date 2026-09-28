@@ -111,35 +111,42 @@ export class OpsManager extends BaseOpsManager {
    * Initialize datastores on all worker VMs.
    * This ensures /mnt/rediacc is mounted with BTRFS filesystem.
    * Should be called during global setup, not in individual tests.
+   *
+   * Each worker's datastore is its own loop file and mount, so the workers run concurrently; every rejection names its worker's IP, so the first failure Promise.all reports still says which VM it was.
    */
   async initializeAllDatastores(
     size = '10G',
     datastorePath = DEFAULT_DATASTORE_PATH
   ): Promise<void> {
     console.warn('[OpsManager] Initializing datastores on all worker VMs...');
+    await Promise.all(
+      this.getWorkerVMIps().map((ip) => this.initializeDatastore(ip, size, datastorePath))
+    );
+    console.warn('[OpsManager] All datastores initialized');
+  }
 
-    const workerIPs = this.getWorkerVMIps();
+  /**
+   * Initialize the base BTRFS datastore pool on one worker VM.
+   */
+  async initializeDatastore(
+    ip: string,
+    size = '10G',
+    datastorePath = DEFAULT_DATASTORE_PATH
+  ): Promise<void> {
+    console.warn(`  Initializing datastore on ${ip}...`);
 
-    for (const ip of workerIPs) {
-      console.warn(`  Initializing datastore on ${ip}...`);
+    // Initialize the base BTRFS datastore pool via the `renet datastore init` CLI. The datastore-centric redesign removed the `datastore_init` BRIDGE function (only named-datastore verbs — datastore_create/attach/... — are registered now), so the old `functions once --function datastore_init` path fails with "no command builder registered". The CLI command (needs root for the BTRFS mount, like `sudo renet setup`) is the surviving way to lay down /mnt/rediacc.
+    const result = await this.executeOnVM(
+      ip,
+      `sudo renet datastore init --path ${datastorePath} --size ${size} --force`,
+      120000 // 2 minute timeout for datastore initialization
+    );
 
-      // Initialize the base BTRFS datastore pool via the `renet datastore init` CLI. The datastore-centric redesign removed the `datastore_init` BRIDGE
-      // function (only named-datastore verbs — datastore_create/attach/... — are
-      // registered now), so the old `functions once --function datastore_init` path fails with "no command builder registered". The CLI command (needs root for the BTRFS mount, like `sudo renet setup` above) is the surviving way to lay down /mnt/rediacc.
-      const result = await this.executeOnVM(
-        ip,
-        `sudo renet datastore init --path ${datastorePath} --size ${size} --force`,
-        120000 // 2 minute timeout for datastore initialization
-      );
-
-      if (result.code !== 0) {
-        throw new Error(`Failed to initialize datastore on ${ip}: ${result.stderr}`);
-      }
-
-      console.warn(`  ✓ Datastore initialized on ${ip}`);
+    if (result.code !== 0) {
+      throw new Error(`Failed to initialize datastore on ${ip}: ${result.stderr}`);
     }
 
-    console.warn('[OpsManager] All datastores initialized');
+    console.warn(`  ✓ Datastore initialized on ${ip}`);
   }
 
   /**
