@@ -368,6 +368,7 @@ ARG GOIMPORTS_VERSION=0.49.0
 # SHFMT_VERSION is guarded against toolchain.env (it is sourced); the other five
 # are guarded against their ARG defaults, which `docker build --build-arg
 # GOPLS_VERSION=` can blank out just as easily.
+# Each install is retried: run 36470769435 lost the image to one proxy.golang.org stream error while gopls fetched golang.org/x/vuln.
 RUN . /etc/rediacc/toolchain.env \
     && : "${SHFMT_VERSION:?toolchain.env did not define SHFMT_VERSION}" \
     && : "${GOPLS_VERSION:?ARG GOPLS_VERSION resolved empty}" \
@@ -376,12 +377,20 @@ RUN . /etc/rediacc/toolchain.env \
     && : "${GOLANGCILINT_VERSION:?ARG GOLANGCILINT_VERSION resolved empty}" \
     && : "${GOIMPORTS_VERSION:?ARG GOIMPORTS_VERSION resolved empty}" \
     && go telemetry off \
-    && go install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
-    && go install "github.com/go-delve/delve/cmd/dlv@v${DLV_VERSION}" \
-    && go install "honnef.co/go/tools/cmd/staticcheck@v${STATICCHECK_VERSION}" \
-    && go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GOLANGCILINT_VERSION}" \
-    && go install "golang.org/x/tools/cmd/goimports@v${GOIMPORTS_VERSION}" \
-    && go install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}" \
+    && go_install() { \
+        for i in 1 2 3 4; do \
+            go install "$1" && return 0; \
+            if [ "$i" = "4" ]; then echo "go install $1 failed after 4 attempts" >&2; return 1; fi; \
+            echo "go install $1 attempt $i/4 failed, retrying in $((i * 15))s..." >&2; \
+            sleep $((i * 15)); \
+        done; \
+    } \
+    && go_install "golang.org/x/tools/gopls@v${GOPLS_VERSION}" \
+    && go_install "github.com/go-delve/delve/cmd/dlv@v${DLV_VERSION}" \
+    && go_install "honnef.co/go/tools/cmd/staticcheck@v${STATICCHECK_VERSION}" \
+    && go_install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${GOLANGCILINT_VERSION}" \
+    && go_install "golang.org/x/tools/cmd/goimports@v${GOIMPORTS_VERSION}" \
+    && go_install "mvdan.cc/sh/v3/cmd/shfmt@v${SHFMT_VERSION}" \
     && rm -rf /home/vscode/.cache/go-build \
     && rm -rf "$GOPATH/pkg/mod/cache"
 USER root
