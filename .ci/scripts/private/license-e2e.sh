@@ -579,6 +579,11 @@ preflight
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/license-e2e.XXXXXX")"
 mkdir -p "$WORK/ds" "$WORK/ds-chain/repositories/$CHAIN_GUID"
+# An initialized datastore carries the .immovable marker (renet CreateDatastoreDirectories writes it
+# at format time); since renet a0d3941 repository up/down/fork/delete refuse a directory without it as
+# "not initialized" instead of building a datastore skeleton there. $WORK/ds stands in for a formatted
+# datastore, so it carries the marker; S5b/S5d then reach their expected password failure again.
+touch "$WORK/ds/.immovable"
 # S9/S10 use PLAIN datastores (no descriptor), so their repos stay in the legacy
 # unscoped population — the implicit-default case, which must keep behaving
 # exactly as it did.
