@@ -136,6 +136,7 @@ runs:
     # down and cannot break one. A mismatch is the one loud case: the bytes at
     # a pinned release changed, and that is not a thing to route around.
     - name: Pre-place the sm-action binary (its own download has no retry)
+      id: prewarm
       shell: bash
       run: |
         set -uo pipefail
@@ -157,7 +158,11 @@ runs:
         esac
 
         dest="$dir/target/$triple/release/sm-action$ext"
-        [[ -f "$dest" ]] && { echo "sm-action binary already present; nothing to do"; exit 0; }
+        if [[ -f "$dest" ]]; then
+          echo "sm-action binary already present; nothing to do"
+          echo "binary=$dest" >>"$GITHUB_OUTPUT"
+          exit 0
+        fi
 
         version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$dir/version.json" 2>/dev/null | head -1)"
         [[ -n "$version" ]] || skip "cannot read a version from $dir/version.json"
@@ -204,9 +209,26 @@ runs:
           skip "could not install the binary at $dest"
         fi
         echo "pre-placed sm-action $version/$triple (sha256 verified)"
+        echo "binary=$dest" >>"$GITHUB_OUTPUT"
 
-    - name: Fetch from Bitwarden Secrets Manager
+    # THE FETCH IS A PAIR, AND EXACTLY ONE HALF RUNS. The prewarm step sets `binary` only when a verified binary sits at the path sm-action's index.js would use, and every skip leaves it empty.
+    # With the binary, fetch.sh runs it directly with sm-action's own INPUT_* contract and retries a transient failure (5xx, 429, connection, timeout), which a `uses:` step cannot do and a later step cannot do for it.
+    # That retry exists because job 109063577876 (run 36461941122) died on one "[503 Service Unavailable]" from Bitwarden and then printed a rotation notice for a healthy credential.
+    # Without the binary, the `uses:` half fetches exactly as before, once. It still needs the `uses:` step, since it is the only way to run sm-action's own download and build path.
+    - name: Fetch from Bitwarden Secrets Manager (with retry)
       id: fetch
+      if: ${{ steps.prewarm.outputs.binary != '' }}
+      shell: bash
+      env:
+        INPUT_ACCESS_TOKEN: ${{ inputs.access-token }}
+        INPUT_SECRETS: ${{ steps.resolve.outputs.mapping }}
+        BWS_FETCH: ${{ github.action_path }}/fetch.sh
+        SM_ACTION_BIN: ${{ steps.prewarm.outputs.binary }}
+      run: bash "$BWS_FETCH" "$SM_ACTION_BIN"
+
+    - name: Fetch from Bitwarden Secrets Manager (sm-action fallback, no retry)
+      id: fetch-fallback
+      if: ${{ steps.prewarm.outputs.binary == '' }}
       uses: bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793  # v3.0.1
       with:
         access_token: ${{ inputs.access-token }}
@@ -223,20 +245,18 @@ runs:
     # "Resolve names to UUIDs" rejected a malformed line or a name absent from the map,
     # neither of which is a credential problem, and a rotation notice printed over a
     # typo is the precision decay that teaches readers to scroll past the next one.
-    # `steps.fetch.outcome == 'failure'` says the resolution was fine and the fetch
+    # A failed fetch outcome says the resolution was fine and the fetch
     # itself is what died, which is the same narrowing the classifier does locally.
     #
-    # NO CLASSIFIER RUNS HERE, and that is a deliberate difference from the two local
-    # emitters. sm-action's own stderr is not available to a following step, so there is
-    # nothing to classify; what remains is the one case the classifier's default covers
-    # anyway. The alternative -- guessing -- is how a check starts reporting on the
-    # wrong thing.
+    # THE CLASSIFIER RUNS IN fetch.sh, the only place that sees sm-action's stderr, and it hands this step its verdict as `steps.fetch.outputs.class`.
+    # A `transient` class has already printed its own outage error naming the last status line, so the notice stays silent for it; any other value, including an absent one from a crash before classification, keeps the rotation notice as the default.
+    # The `uses:` fallback has no stderr to classify, so its failure keeps the old unconditional notice.
     #
     # A MISSING NOTICE FILE IS ITSELF AN ANNOTATION, never a silent success. An `exit 0`
     # on a failed read would leave the job reporting only sm-action's own error, which
     # names no procedure at all.
     - name: Rotation notice (the fetch failed, and that is the only signal there is)
-      if: ${{ failure() && steps.fetch.outcome == 'failure' }}
+      if: ${{ failure() && ((steps.fetch.outcome == 'failure' && steps.fetch.outputs.class != 'transient') || steps.fetch-fallback.outcome == 'failure') }}
       shell: bash
       env:
         NOTICE: ${{ github.action_path }}/../../../.ci/config/bws-rotation-notice.txt
