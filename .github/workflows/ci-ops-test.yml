@@ -313,6 +313,21 @@ jobs:
         # /usr/lib/rediacc/renet/current, which orchestration would have
         # deployed; under --skip-orchestration nothing has (round-7 red:
         # "sudo: /usr/lib/rediacc/renet/current/renet: command not found").
+        #
+        # spec W L9: gated to the one shard whose tutorial even names the
+        # chunk store. `grep -rniE 's3|rustfs|chunk.?store|backup
+        # (snapshot|restore|usage|manifests|verify)' .ci/tutorials/tutorial-*.sh`
+        # matches only tutorial-backup-restore.sh (shard 3 of 4, both before
+        # and after the L10 resize below), and `grep -rn TUTORIAL_S3_ENDPOINT`
+        # over the tree finds no reader at all outside this workflow -- the
+        # var is set for every shard but consumed nowhere. Within that one
+        # script, `rdc backup verify` is the credential-free read side (the
+        # header above it: "answers no-backup ... exits 0 doing so") and
+        # `rdc backup snapshot` is `type_only_cmd` (typed, never run), so even
+        # shard 3 does not strictly need a live endpoint today; kept there
+        # rather than dropped everywhere, since it is the one tutorial the
+        # feature is under.
+        if: matrix.shard == 3
         run: |
           "$RENET_BINARY" ops service install-renet 1
           "$RENET_BINARY" ops docker install 1

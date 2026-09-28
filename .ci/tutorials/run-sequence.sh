@@ -102,13 +102,35 @@ if [[ -n "${TUTORIAL_SHARD:-}" ]]; then
         echo "TUTORIAL_SHARD '$TUTORIAL_SHARD': index must be between 1 and $shard_of" >&2
         exit 2
     fi
-    # Contiguous chunks, ceil(total/N): D-W4 treats every tutorial as an
-    # independent unit (scripts/ci-runner/unit-enumerators.ts opsTutorialUnits
-    # emits none of them with a `needs`), so balancing by COUNT is enough
-    # until this lane has recorded per-tutorial durations for T2.9's
-    # measured-duration balancing to use.
-    chunk=$(((total + shard_of - 1) / shard_of))
-    start=$(((shard_index - 1) * chunk))
+    # T2.9 (PLAN-ci-time-budget, spec W L10): contiguous chunks sized by MEASURED
+    # duration, not by count. CI run 36366933791 (4 equal-count chunks over the
+    # current 18-tutorial sequence) measured shard totals 144/487/362/337s --
+    # shard 2's work-with-repo alone (~108s) made it the long pole. MEASURED_SHARD_SIZES
+    # below moves work-with-repo into shard 1 (6/4/5/3 tutorials), giving an
+    # estimated 252/379/362/337s: still uneven, but shard 2 no longer dominates.
+    # Still by COUNT within each hand-tuned chunk (D-W4: no per-tutorial duration
+    # file exists yet for T2.9's general case) -- this is a one-time correction
+    # of the worst imbalance the 4-way equal split produced, not a durable
+    # duration model. Only applies when the sequence still has exactly the
+    # tutorial count these sizes were measured against AND shard_of matches;
+    # anything else (a tutorial added/removed/reordered by editing the docs, or
+    # a different TUTORIAL_SHARD width) falls back to the old ceil(total/N)
+    # equal-count split rather than silently mis-slicing a changed sequence.
+    MEASURED_SHARD_SIZES=(6 4 5 3)
+    measured_total=0
+    for _sz in "${MEASURED_SHARD_SIZES[@]}"; do
+        measured_total=$((measured_total + _sz))
+    done
+    if [[ "$shard_of" -eq "${#MEASURED_SHARD_SIZES[@]}" && "$total" -eq "$measured_total" ]]; then
+        start=0
+        for ((_i = 0; _i < shard_index - 1; _i++)); do
+            start=$((start + MEASURED_SHARD_SIZES[_i]))
+        done
+        chunk=${MEASURED_SHARD_SIZES[shard_index - 1]}
+    else
+        chunk=$(((total + shard_of - 1) / shard_of))
+        start=$(((shard_index - 1) * chunk))
+    fi
     if [[ "$start" -ge "$total" ]]; then
         echo "TUTORIAL_SHARD $TUTORIAL_SHARD: shard $shard_index has no tutorials ($total total, chunk size $chunk)" >&2
         exit 2

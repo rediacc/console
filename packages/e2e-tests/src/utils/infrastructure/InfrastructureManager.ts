@@ -332,33 +332,49 @@ export class InfrastructureManager {
       throw new Error(`Cannot read local renet binary at ${localPath}`);
     }
 
-    // Deploy to all VMs: bridge + workers + ceph
+    // Deploy to all VMs: bridge + workers + ceph. Each VM is an independent SSH/SCP round trip against its own machine, so these run concurrently rather than one at a time; the catch below re-throws with the offending IP named, so Promise.all's first-rejection-wins behavior never hides which VM failed.
     const allIPs = this.opsManager.getAllVMIps();
 
-    for (const ip of allIPs) {
-      const hasRenet = await this.opsManager.isRenetInstalledOnVM(ip);
-
-      if (hasRenet) {
-        // Check if update is needed
-        const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5);
-        const version = await this.opsManager.getRenetVersionOnVM(ip);
-
-        if (wasUpdated) {
-          // eslint-disable-next-line no-console
-          console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'})`);
-        } else {
-          // eslint-disable-next-line no-console
-          console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
+    await Promise.all(
+      allIPs.map(async (ip) => {
+        try {
+          await this.ensureRenetOnVM(ip, localPath, localMD5);
+        } catch (error: unknown) {
+          const err = error as { message?: string };
+          throw new Error(`ensureRenetOnVMs failed for ${ip}: ${err.message ?? 'Unknown error'}`);
         }
-      } else {
-        // Install renet for the first time
+      })
+    );
+  }
+
+  /**
+   * Verify renet is installed and up-to-date on a single VM, deploying it if
+   * missing or outdated. Split out of ensureRenetOnVMs so that method can run
+   * this concurrently over every VM via Promise.all.
+   */
+  private async ensureRenetOnVM(ip: string, localPath: string, localMD5: string): Promise<void> {
+    const hasRenet = await this.opsManager.isRenetInstalledOnVM(ip);
+
+    if (hasRenet) {
+      // Check if update is needed
+      const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5);
+      const version = await this.opsManager.getRenetVersionOnVM(ip);
+
+      if (wasUpdated) {
         // eslint-disable-next-line no-console
-        console.log(`  ${ip}: Installing renet...`);
-        await this.deployRenetToVM(ip, localPath, localMD5);
-        const version = await this.opsManager.getRenetVersionOnVM(ip);
+        console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'})`);
+      } else {
         // eslint-disable-next-line no-console
         console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
       }
+    } else {
+      // Install renet for the first time
+      // eslint-disable-next-line no-console
+      console.log(`  ${ip}: Installing renet...`);
+      await this.deployRenetToVM(ip, localPath, localMD5);
+      const version = await this.opsManager.getRenetVersionOnVM(ip);
+      // eslint-disable-next-line no-console
+      console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
     }
   }
 

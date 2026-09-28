@@ -123,6 +123,18 @@ jobs:
           cd private/renet
           go generate ./pkg/ebpf/...
 
+      # spec W L6: ct-tests.yml's E2E jobs no longer install clang, so a fresh
+      # checkout falls back to these committed objects (private/renet/build.sh
+      # ebpf_generate: "clang not found -- using pre-committed BPF objects").
+      # This job still installs clang and just regenerated them above, so it
+      # is the one place left that can catch the objects going stale against
+      # a real clang/bpf2go rebuild, before a fallback build silently ships
+      # the wrong bytes.
+      - name: Verify committed BPF objects match a clang rebuild
+        run: |
+          cd private/renet
+          git diff --exit-code -- pkg/ebpf/socketisolation_arm64_bpfel.o pkg/ebpf/socketisolation_x86_bpfel.o
+
       - name: Run renet unit tests (repodiff/delta/fiemap/kernel/procwalk)
         run: |
           cd private/renet

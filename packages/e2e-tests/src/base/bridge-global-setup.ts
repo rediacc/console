@@ -79,19 +79,22 @@ async function setupAllVMs(opsManager: ReturnType<typeof getOpsManager>) {
   const workerIps = opsManager.getWorkerVMIps();
   const allVmIps = [bridgeIp, ...workerIps];
 
-  for (const ip of allVmIps) {
-    const vmType = ip === bridgeIp ? 'bridge' : 'worker';
-    console.warn(`  Setting up ${vmType} VM at ${ip}...`);
-    const result = await opsManager.executeOnVM(ip, 'sudo renet setup', RENET_SETUP_TIMEOUT_MS);
-    if (result.code === 0) {
-      console.warn(`  ✓ Setup completed on ${ip} (${vmType})`);
-    } else {
-      // Fail fast - subsequent steps depend on setup being successful (Docker installed)
-      throw new Error(
-        `Setup failed on ${ip} (${vmType}): exit code ${result.code}\nstderr: ${result.stderr}\nstdout: ${result.stdout}`
-      );
-    }
-  }
+  // Each VM's `renet setup` is an independent SSH round trip against its own machine, so run them concurrently rather than one at a time. Promise.all rejects with the first error; the message below already names the offending IP and VM type, so that identity survives whichever VM happens to finish (or fail) first.
+  await Promise.all(
+    allVmIps.map(async (ip) => {
+      const vmType = ip === bridgeIp ? 'bridge' : 'worker';
+      console.warn(`  Setting up ${vmType} VM at ${ip}...`);
+      const result = await opsManager.executeOnVM(ip, 'sudo renet setup', RENET_SETUP_TIMEOUT_MS);
+      if (result.code === 0) {
+        console.warn(`  ✓ Setup completed on ${ip} (${vmType})`);
+      } else {
+        // Fail fast - subsequent steps depend on setup being successful (Docker installed)
+        throw new Error(
+          `Setup failed on ${ip} (${vmType}): exit code ${result.code}\nstderr: ${result.stderr}\nstdout: ${result.stdout}`
+        );
+      }
+    })
+  );
 }
 
 /**

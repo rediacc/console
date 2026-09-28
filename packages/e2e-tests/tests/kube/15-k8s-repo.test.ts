@@ -201,6 +201,7 @@ metadata:
   labels:
     app: ${name}
 spec:
+  terminationGracePeriodSeconds: 1
   securityContext:
     runAsNonRoot: true
     runAsUser: 65534
@@ -761,7 +762,9 @@ spec:
       const ready = await kubectl(
         `-n ${NS} wait pod/zotprobe --for=condition=Ready --timeout=120s`
       );
-      await kubectl(`-n ${NS} delete pod zotprobe --ignore-not-found --timeout=60s`);
+      await kubectl(
+        `-n ${NS} delete pod zotprobe --ignore-not-found --grace-period=1 --timeout=60s`
+      );
       expect(ready.code, `zotprobe never Ready: ${ready.stderr.slice(-200)}`).toBe(0);
     });
 

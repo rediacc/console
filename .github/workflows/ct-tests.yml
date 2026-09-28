@@ -365,10 +365,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -379,6 +375,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -552,10 +554,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -566,6 +564,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -630,9 +634,11 @@ jobs:
 
   # Combined workers + Ceph topology: a worker consuming a Ceph RBD datastore
   # (suite 13) and multi-client read-only RBD + per-client COW (suite 14). Fits
-  # a 16 GB runner via per-role RAM (bridge 1024 + 2x2560 worker + 3x2560 ceph =
-  # 13.5 GB) and a lowered osd_memory_target (~1.6 GB, PBKDF2/FastKDF since
-  # renet #78 removed the old 4 GB LUKS-unlock floor).
+  # a 16 GB runner via per-role RAM (bridge 1024 + 2x2560 worker + 2x2560 ceph =
+  # 10.9 GB) and a lowered osd_memory_target (~1.6 GB, PBKDF2/FastKDF since
+  # renet #78 removed the old 4 GB LUKS-unlock floor). 2 Ceph OSDs (not 3):
+  # SetPoolDefaultsForTopology pins pool size/min_size for sub-3-OSD topologies,
+  # and neither suite 13 nor 14 asserts a 3-OSD count or size=3 (spec W L4).
   test-e2e-ceph-workers:
     name: E2E Ceph Workers
     # Logs into ghcr with github.token and PULLS only (the credential is then
@@ -649,7 +655,7 @@ jobs:
       BRIDGE_TIMEOUT: 240000
       VM_BRIDGE: '1'
       VM_WORKERS: '11 12'
-      VM_CEPH_NODES: '21 22 23'
+      VM_CEPH_NODES: '21 22'
       CEPH_MODE: 'true'
       VM_RAM_WORKER: '2560'
       VM_RAM_CEPH: '2560'
@@ -710,10 +716,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -724,6 +726,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -764,7 +772,7 @@ jobs:
             --renet-path /usr/bin/renet \
             --output packages/e2e-tests/.env \
             --vm-workers "11 12" \
-            --vm-ceph-nodes "21 22 23" \
+            --vm-ceph-nodes "21 22" \
             --vm-ram-worker "$VM_RAM_WORKER" \
             --vm-ram-ceph "$VM_RAM_CEPH" \
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
@@ -872,10 +880,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -886,6 +890,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1031,10 +1041,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -1045,6 +1051,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1206,10 +1218,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -1220,6 +1228,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1421,10 +1435,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -1435,6 +1445,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1599,10 +1615,6 @@ jobs:
       - name: Install CLI Globally
         run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
 
-      - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
@@ -1613,6 +1625,12 @@ jobs:
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
+      # step is a verified no-op (see above), so the multi-arch base images this
+      # exists to avoid buildx auth issues for are never fetched by that build.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
