@@ -405,16 +405,17 @@ const CLOSE_RE = /^\s*# <<< gate-bind\s*$/;
  * script importing yaml in a job whose earlier steps never name it dies with
  * ModuleNotFoundError on a clean runner and passes on any machine that happens to have
  * the module. The lane answers WHERE; this answers WITH WHAT.
+ * Each install is retried: pip reports a truncated wheel as a hash mismatch and does not retry it (job 108856280214).
  */
 const ACQUIRE: Record<string, string[]> = {
   'python-yaml': [
-    '          python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}"',
+    '          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done',
     '          python3 -c "import yaml; print(\'PyYAML\', yaml.__version__)"',
   ],
   // NO VERIFY LINE HERE, and the asymmetry with python-yaml above is deliberate.
   // The PyYAML pair prints a version because a library's presence is otherwise invisible until a gate crashes importing it. mypy is a TOOL, and check:ci-toolchain-pins A8 refuses a workflow that invokes a gated tool directly; the gate resolves `python3 -m mypy` itself and refuses unless it answers AT THE PIN, which is a stronger check than an echoed version.
   'python-mypy': [
-    '          python3 -m pip install --user --disable-pip-version-check "mypy==${MYPY_VERSION}"',
+    '          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "mypy==${MYPY_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done',
   ],
 };
 
