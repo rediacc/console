@@ -971,6 +971,8 @@ export const GATES: readonly GateSpec[] = [
       PR_HEAD_REF: '${{ github.event.pull_request.head.ref || github.ref_name }}',
     },
     run: 'npm run check:ci-pr-task-trailers',
+    // Added 2026-09-28: CI step timing measures 43.9s -- the step reads the PR's full commit history rather than a synthetic local scope, which a bare local run does not pay.
+    slow: true,
     gate: true,
     leaves: ['scripts/gates/check-pr-task-trailers.ts'],
     ci: {
@@ -1428,7 +1430,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-script-exec-bit',
     run: 'npm run check:ci-script-exec-bit',
-    slow: true, // 22.1s measured
+    // Dropped 2026-09-28: CI step timing (budget_report.py's gate_step_p90_seconds) measures 2.0s, not the 22.1s a local run once read.
     gate: true,
     leaves: ['.ci/scripts/quality/check_script_exec_bit.py'],
     ci: {
@@ -4077,7 +4079,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-content-quality',
     run: 'npm run check:ci-content-quality',
-    slow: true, // 17.3s measured
+    // Dropped 2026-09-28: CI step timing (budget_report.py's gate_step_p90_seconds) measures 4.0s, not the 17.3s a local run once read.
     gate: true,
     leaves: ['.ci/scripts/quality/check_content_quality.py'],
     ci: {
@@ -4612,7 +4614,7 @@ export const GATES: readonly GateSpec[] = [
     // B4. `--changed` scopes by `paths` and only 46 of 465 gates declare any, so the other 419 are selected by nothing. Worse than fail-open: on an EMPTY file list the rule INVERTS -- no file matches any glob, so the 46 scoped gates drop and the run reports green having skipped them. Both unusable change sets (unresolvable differ, zero files) now REFUSE instead of scoping. No
     // `paths` key here on purpose: always selected.
     id: 'check:ci-changed-selection',
-    slow: true, // 15.1s in the idle pre-push pool, 3.4s alone (seven runner subprocesses); 2026-09-26
+    // Dropped 2026-09-28: CI step timing measures 4.0s, matching the 2026-09-26 comment's own "3.4s alone" figure rather than its "15.1s in the idle pre-push pool" one -- a local-pool-contention reading, not this gate's own cost, and the local cache since then reads 160-565s on this same box, confirming the pool figure was never a stable number to tier on.
     run: 'npm run check:ci-changed-selection',
     gate: true,
     leaves: ['scripts/gates/check-changed-selection.ts'],

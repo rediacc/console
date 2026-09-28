@@ -63,7 +63,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-bws-rotation-notice | quality-security / BWS rotation notice | yes | no | no |
 | check:ci-captcha-recovery | quality-www-build / Captcha recovery | yes | no | no |
 | check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no | no |
-| check:ci-changed-selection | quality-code / Changed-file selection contract | yes | yes | no |
+| check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no | no |
 | check:ci-checkout-cone | quality-static / Checkout cone covers what steps run | yes | no | no |
 | check:ci-cli-contract | quality-packages / CLI contract | yes | yes | no |
 | check:ci-cli-doc-coverage | quality-code / CLI docs stay in sync with their scripts' real flags | yes | no | no |
@@ -75,7 +75,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-compose-env | quality-static / Compose env | yes | no | no |
 | check:ci-config-migrations | quality-packages / Check config-migration runner + fixtures | yes | no | no |
 | check:ci-container-build-context | quality-static / Container build context | yes | no | no |
-| check:ci-content-quality | quality-content / Check content for AI slop patterns | yes | yes | no |
+| check:ci-content-quality | quality-content / Check content for AI slop patterns | yes | no | no |
 | check:ci-control-in-string | quality-code / Controls are not written inside string literals | yes | no | no |
 | check:ci-control-vacuity | quality-code / Control-first gates prove their plant landed | yes | no | no |
 | check:ci-css-dom-refs | quality-content / CSS DOM references | yes | no | no |
@@ -231,7 +231,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-portal-sitekey-guard | quality-static / Portal site-key guard | yes | no | no |
 | check:ci-pr-epic-block | quality-code / PR epic block matches the published worklist | yes | no | no |
 | check:ci-pr-head-ref-completeness | quality-code / PR_HEAD_REF completeness | yes | no | no |
-| check:ci-pr-task-trailers | quality-code / Every commit names its epic | yes | no | no |
+| check:ci-pr-task-trailers | quality-code / Every commit names its epic | yes | yes | no |
 | check:ci-pricing-consistency | quality-content / Pricing consistency | yes | no | no |
 | check:ci-probe-parity | quality-static / Capability-probe parity | yes | no | no |
 | check:ci-profiler-coverage | test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py | yes | no | no |
@@ -280,7 +280,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-schema-coverage | quality-code / Schema coverage | yes | no | no |
 | check:ci-scope-completeness | quality-security / Scope completeness | yes | no | no |
 | check:ci-scope-scripts-reachability | quality-security / Scope map, reachable scripts/ paths force full CI | yes | yes | no |
-| check:ci-script-exec-bit | quality-code / Block non-executable invoked scripts | yes | yes | no |
+| check:ci-script-exec-bit | quality-code / Block non-executable invoked scripts | yes | no | no |
 | check:ci-search-index | quality-i18n / Search index | yes | no | no |
 | check:ci-secret-reachability | quality-security / Secret reachability | yes | no | no |
 | check:ci-secret-scope | quality-security / Secret scope | yes | no | no |

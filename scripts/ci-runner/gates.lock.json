@@ -992,6 +992,7 @@
       "PR_HEAD_REF": "${{ github.event.pull_request.head.ref || github.ref_name }}"
     },
     "run": "npm run check:ci-pr-task-trailers",
+    "slow": true,
     "gate": true,
     "leaves": [
       "scripts/gates/check-pr-task-trailers.ts"
@@ -1478,7 +1479,6 @@
   {
     "id": "check:ci-script-exec-bit",
     "run": "npm run check:ci-script-exec-bit",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_script_exec_bit.py"
@@ -4366,7 +4366,6 @@
   {
     "id": "check:ci-content-quality",
     "run": "npm run check:ci-content-quality",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_content_quality.py"
@@ -4930,7 +4929,6 @@
   },
   {
     "id": "check:ci-changed-selection",
-    "slow": true,
     "run": "npm run check:ci-changed-selection",
     "gate": true,
     "leaves": [
