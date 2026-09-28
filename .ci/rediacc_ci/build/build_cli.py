@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/build-cli.sh`.
 
-Builds the CLI workspace, optionally bundles it into a single file, and optionally verifies that the build left something behind. Six live call sites, all of them workflow steps: `.github/workflows/ci-build-docker.yml:69` and five in `.github/workflows/ct-tests.yml` (356, 518, 673, 832, 988). Every one of them invokes it bare, with no arguments, so the default path -- bundle AND
+Builds the CLI workspace, optionally bundles it into a single file, and optionally verifies that the build left something behind. Every live call site is a workflow step, and `grep -n 'rediacc_ci.build.build_cli$' .github/workflows/*.yml` lists them; line numbers are not pinned here because every workflow edit moves them. Every one of them invokes it bare, with no arguments, so the default path -- bundle AND
 verify -- is the only path CI exercises.
 
 -----------------------------------------------------------------------------
