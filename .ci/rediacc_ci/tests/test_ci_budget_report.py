@@ -444,6 +444,7 @@ def _fake_compute(**overrides):
         "units": {},
         "job_max_seconds": {},
         "job_p90_minutes": {},
+        "gate_step_p90_seconds": {},
         "missing_artifact_lanes": [],
     }
     base.update(overrides)
@@ -1193,3 +1194,309 @@ def test_prune_units_to_manifests_keeps_everything_without_manifests(tmp_path):
     """Inverse control: with no manifests on disk nothing can be judged stale, so nothing is dropped."""
     units = {"pytest:/ci/a.py": 2, "example.com/gone": 4}
     assert br.prune_units_to_manifests(units, tmp_path) == units
+
+
+# --------------------------------------------------------------------------- gate_step_p90_seconds (CI-representative tier timing) ---------------------------------------------------------------------------
+
+
+def _write_gates_lock(root, gates):
+    lock_dir = root / "scripts" / "ci-runner"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    (lock_dir / "gates.lock.json").write_text(json.dumps(gates), encoding="utf-8")
+    return root
+
+
+def test_load_gate_ci_steps_reads_only_kind_step_gates(tmp_path):
+    _write_gates_lock(
+        tmp_path,
+        [
+            {
+                "id": "check:a",
+                "ci": {"kind": "step", "job": "quality-code", "step": "Lint"},
+            },
+            {"id": "check:b", "ci": {"kind": "local-only"}},
+            {"id": "check:c", "ci": {"kind": "test"}},
+            {"id": "check:d"},
+        ],
+    )
+    assert br.load_gate_ci_steps(tmp_path) == {"check:a": ("quality-code", "Lint")}
+
+
+def test_load_gate_ci_steps_missing_or_malformed_lock_is_empty(tmp_path):
+    assert br.load_gate_ci_steps(tmp_path) == {}
+    (tmp_path / "scripts" / "ci-runner").mkdir(parents=True)
+    (tmp_path / "scripts" / "ci-runner" / "gates.lock.json").write_text("not json")
+    assert br.load_gate_ci_steps(tmp_path) == {}
+
+
+def test_exclusive_ci_steps_drops_a_pair_shared_by_two_gates(tmp_path):
+    """FIRES-if-unfixed: MEASURED 2026-09-28, `ci-quality.yml`'s `i18n` step chains 27 gates into one `npm run check:i18n` and measured 36.1s in CI while five of those ids' own standalone local costs were 2-9s each -- attributing the whole step to each id would wrongly tell every fast one to mark `slow: true`."""
+    _write_gates_lock(
+        tmp_path,
+        [
+            {"id": "check:shared-a", "ci": {"kind": "step", "job": "quality-i18n", "step": "i18n"}},
+            {"id": "check:shared-b", "ci": {"kind": "step", "job": "quality-i18n", "step": "i18n"}},
+            {"id": "check:solo", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}},
+        ],
+    )
+    assert br._exclusive_ci_steps(tmp_path) == {"check:solo": ("quality-code", "Lint")}
+
+
+def test_exclusive_ci_steps_control_a_pair_occupied_by_one_gate_is_kept(tmp_path):
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:solo", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+    assert br._exclusive_ci_steps(tmp_path) == {"check:solo": ("quality-code", "Lint")}
+
+
+def _step_job(name, steps):
+    return {"name": name, "conclusion": "success", "steps": steps}
+
+
+def test_gate_step_seconds_measures_success_only_step_wall_time(tmp_path):
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:a", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+    patterns = {"quality-code": br._display_name_pattern("Quality / Code", False)}
+    jobs_by_run = [
+        [
+            _step_job(
+                "Quality / Code",
+                [
+                    {
+                        "name": "Lint",
+                        "conclusion": "success",
+                        "started_at": "2026-09-27T00:00:00Z",
+                        "completed_at": "2026-09-27T00:00:10Z",
+                    }
+                ],
+            )
+        ]
+    ]
+    assert br.gate_step_seconds(tmp_path, patterns, jobs_by_run) == {"check:a": pytest.approx(10.0)}
+
+
+def test_gate_step_seconds_skips_a_job_with_no_display_pattern(tmp_path):
+    """A gate whose ci.job names a lane with no pattern yet (not split out of its reusable workflow) contributes no entry, never a guess."""
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:a", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+    jobs_by_run = [
+        [
+            _step_job(
+                "Quality / Code",
+                [
+                    {
+                        "name": "Lint",
+                        "conclusion": "success",
+                        "started_at": "2026-09-27T00:00:00Z",
+                        "completed_at": "2026-09-27T00:00:10Z",
+                    }
+                ],
+            )
+        ]
+    ]
+    assert br.gate_step_seconds(tmp_path, {}, jobs_by_run) == {}
+
+
+def test_gate_step_seconds_skips_a_non_success_step_and_a_non_success_job(tmp_path):
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:a", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+    patterns = {"quality-code": br._display_name_pattern("Quality / Code", False)}
+    step_failed_job = _step_job(
+        "Quality / Code",
+        [
+            {
+                "name": "Lint",
+                "conclusion": "failure",
+                "started_at": "2026-09-27T00:00:00Z",
+                "completed_at": "2026-09-27T00:00:10Z",
+            }
+        ],
+    )
+    job_failed = {
+        "name": "Quality / Code",
+        "conclusion": "failure",
+        "steps": [
+            {
+                "name": "Lint",
+                "conclusion": "success",
+                "started_at": "2026-09-27T00:00:00Z",
+                "completed_at": "2026-09-27T00:00:10Z",
+            }
+        ],
+    }
+    assert br.gate_step_seconds(tmp_path, patterns, [[step_failed_job]]) == {}
+    assert br.gate_step_seconds(tmp_path, patterns, [[job_failed]]) == {}
+
+
+def test_gate_step_seconds_never_attributes_a_shared_step_to_either_gate_sharing_it(tmp_path):
+    """The end-to-end shape of the composite-step bug: two gates declared against the SAME (job, step) both get excluded, even though the step ran and would otherwise measure cleanly."""
+    _write_gates_lock(
+        tmp_path,
+        [
+            {"id": "check:shared-a", "ci": {"kind": "step", "job": "quality-i18n", "step": "i18n"}},
+            {"id": "check:shared-b", "ci": {"kind": "step", "job": "quality-i18n", "step": "i18n"}},
+        ],
+    )
+    patterns = {"quality-i18n": br._display_name_pattern("Quality / i18n", False)}
+    jobs_by_run = [
+        [
+            _step_job(
+                "Quality / i18n",
+                [
+                    {
+                        "name": "i18n",
+                        "conclusion": "success",
+                        "started_at": "2026-09-27T00:00:00Z",
+                        "completed_at": "2026-09-27T00:00:36Z",
+                    }
+                ],
+            )
+        ]
+    ]
+    assert br.gate_step_seconds(tmp_path, patterns, jobs_by_run) == {}
+
+
+def test_prune_gate_steps_to_lock_drops_ids_no_longer_in_the_lock(tmp_path):
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:kept", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+    gate_steps = {"check:kept": 5.0, "check:retired": 9.0}
+    assert br.prune_gate_steps_to_lock(gate_steps, tmp_path) == {"check:kept": 5.0}
+
+
+def test_prune_gate_steps_to_lock_drops_an_id_whose_step_became_shared(tmp_path):
+    """A stale entry for an id whose (job, step) now has a second occupant is pruned too -- not just an id the lock dropped outright -- so a composite-step mis-attribution from a stale write does not linger forever."""
+    _write_gates_lock(
+        tmp_path,
+        [
+            {
+                "id": "check:now-shared",
+                "ci": {"kind": "step", "job": "quality-i18n", "step": "i18n"},
+            },
+            {
+                "id": "check:new-sibling",
+                "ci": {"kind": "step", "job": "quality-i18n", "step": "i18n"},
+            },
+        ],
+    )
+    assert br.prune_gate_steps_to_lock({"check:now-shared": 36.1}, tmp_path) == {}
+
+
+def test_prune_gate_steps_to_lock_drops_an_id_whose_gate_kind_changed(tmp_path):
+    """A gate still in the lock but no longer `kind: step` (moved local-only or test) is dropped too -- not just an id removed outright."""
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:moved", "ci": {"kind": "local-only"}}],
+    )
+    assert br.prune_gate_steps_to_lock({"check:moved": 5.0}, tmp_path) == {}
+
+
+def _lane_durations_path(root):
+    """`refresh_lane_durations` derives the repo root for pruning as `path.parent.parent.parent`, matching the real `.ci/config/lane-durations.json` -> repo-root nesting; a fixture that wants pruning against a real `root` must nest its lane-durations.json the same three levels down."""
+    config_dir = root / ".ci" / "config"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir / "lane-durations.json"
+
+
+def test_refresh_lane_durations_writes_gate_step_p90_seconds(tmp_path):
+    path = _lane_durations_path(tmp_path)
+    path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
+    _write_gates_lock(
+        tmp_path,
+        [
+            {
+                "id": "check:ci-embed-asset-versions",
+                "ci": {
+                    "kind": "step",
+                    "job": "quality-go",
+                    "step": "Check embedded asset versions match their pins",
+                },
+            }
+        ],
+    )
+    compute = _fake_compute(gate_step_p90_seconds={"check:ci-embed-asset-versions": 1.2})
+    rc = br.refresh_lane_durations(path, limit=10, compute=compute)
+    assert rc == 0
+    data = json.loads(path.read_text())
+    assert data["gate_step_p90_seconds"] == {"check:ci-embed-asset-versions": 1.2}
+
+
+def test_refresh_lane_durations_merges_and_prunes_gate_step_p90_seconds(tmp_path):
+    """A previously-committed id the lock no longer names as a step gate is dropped on refresh, the same ADD-and-PRUNE shape `units` already gets from `prune_units_to_manifests`."""
+    path = _lane_durations_path(tmp_path)
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": "2026-01-01T00:00:00Z",
+                "concurrency": 20,
+                "jobs": {},
+                "units": {},
+                "gate_step_p90_seconds": {"check:kept": 3.0, "check:retired": 99.0},
+            }
+        )
+    )
+    _write_gates_lock(
+        tmp_path,
+        [{"id": "check:kept", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+    compute = _fake_compute(gate_step_p90_seconds={"check:kept": 4.0})
+    rc = br.refresh_lane_durations(path, limit=10, compute=compute)
+    assert rc == 0
+    data = json.loads(path.read_text())
+    assert data["gate_step_p90_seconds"] == {"check:kept": 4.0}
+
+
+def test_refresh_lane_durations_still_refuses_when_only_gate_step_p90_seconds_would_be_empty(
+    tmp_path,
+):
+    """CONTROL: `gate_step_p90_seconds` joins the "nothing measured" refusal set."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
+    rc = br.refresh_lane_durations(path, limit=10, compute=_fake_compute())
+    assert rc == 1
+    assert json.loads(path.read_text())["refreshed_at"] is None
+
+
+def test_compute_lane_durations_reports_gate_step_p90_seconds(tmp_path, monkeypatch):
+    """Integration: a fixture ci.yml/ci-quality.yml plus a fixture gates.lock.json produce a gate's own step p90 from the same PR-full job sample job_p90_minutes already walks -- no extra network call."""
+    root = _write_fixture_workflows(tmp_path)
+    _write_gates_lock(
+        root,
+        [{"id": "check:lint", "ci": {"kind": "step", "job": "quality-code", "step": "Lint"}}],
+    )
+
+    def fake_fetch_runs(_repo, _workflow, event, _branch, _status, _limit):
+        return [{"id": 1, "created_at": "2026-09-27T00:00:00Z"}] if event == "pull_request" else []
+
+    def fake_fetch_jobs(_repo, _run_id):
+        return [
+            {
+                "name": "Quality / Code (1)",
+                "conclusion": "success",
+                "started_at": "2026-09-27T00:00:00Z",
+                "completed_at": "2026-09-27T00:14:00Z",
+                "steps": [
+                    {
+                        "name": "Lint",
+                        "conclusion": "success",
+                        "started_at": "2026-09-27T00:00:00Z",
+                        "completed_at": "2026-09-27T00:00:30Z",
+                    }
+                ],
+            }
+        ]
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "fetch_jobs", fake_fetch_jobs)
+    computed = br.compute_lane_durations(
+        root=root, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert computed["gate_step_p90_seconds"] == {"check:lint": pytest.approx(30.0)}

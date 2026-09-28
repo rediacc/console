@@ -7,12 +7,23 @@
  * manifest being true about two things nobody re-reads: which gates are cheap,
  * and which files select them.
  *
- * 1. TIER HONESTY, BOTH DIRECTIONS. `slow: true` is a claim about cost, and
- *    `.ci/cache/gate-durations.json` is the measurement. A gate marked slow
- *    that is in fact cheap fails just as loudly as a fast one that is
- *    expensive -- and it is the FIRST direction that needs a gate, because it
- *    is invisible: the push stays fast while the lane quietly covers less. The
- *    other direction announces itself by making every push slower.
+ * 1. TIER HONESTY, BOTH DIRECTIONS. `slow: true` is a claim about cost. For a
+ *    gate the lock runs as its OWN named CI workflow step (`ci.kind ===
+ *    'step'`), the measurement is `.ci/config/lane-durations.json`'s
+ *    `gate_step_p90_seconds` -- CI-representative, checkout-independent, and
+ *    written by `budget_report.py --refresh` from the SAME PR-full sample
+ *    `job_p90_minutes` already walks. `.ci/cache/gate-durations.json` (a local
+ *    run's own timings) is the fallback for a gate with no CI step to time at
+ *    all (`local-only`, or a `test`-kind gate a battery drives) -- NEVER for a
+ *    step gate, because the local cache depends on the checkout: MEASURED
+ *    2026-09-28, `check:ci-embed-asset-versions` read ~1.2s in a clean clone
+ *    and 38-86s in a tree carrying large gitignored assets, giving the
+ *    identical code contradictory verdicts depending on which tree asked. A
+ *    gate marked slow that is in fact cheap fails just as loudly as a fast one
+ *    that is expensive -- and it is the FIRST direction that needs a gate,
+ *    because it is invisible: the push stays fast while the lane quietly
+ *    covers less. The other direction announces itself by making every push
+ *    slower.
  *
  * 2. LEAF SELF-INCLUSION. A gate that declares `paths` but does not include its
  *    OWN implementation cannot be selected by editing itself. Found live: eight
@@ -126,17 +137,44 @@ const median = (xs: readonly number[]): number => {
   return a.length % 2 === 0 ? (a[m - 1] + a[m]) / 2 : a[m];
 };
 
+/**
+ * `{gate id: CI step p90 MS}`, from `.ci/config/lane-durations.json`'s
+ * `gate_step_p90_seconds` (`budget_report.py --refresh` writes it, SECONDS;
+ * this file's own budget is MS, so the caller converts once on read).
+ */
+type CiDur = Record<string, number>;
+
 function tierFindings(
   specs: readonly GateSpec[],
   dur: Record<string, number>,
   samples: Record<string, number> = {},
-  typical: Record<string, number> = {}
+  typical: Record<string, number> = {},
+  ciDur: CiDur = {}
 ): Finding[] {
   const out: Finding[] = [];
   // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and 132s through `needs: build:www`: the closure oracle says mark it, the tier oracle then says it is too cheap to be marked. Both are right about different costs, so tier defers to closure -- the number that decides lane membership is
   // what the gate costs to RUN, prerequisites included.
   const slowByClosure = slowByClosureSet(specs);
   for (const spec of specs) {
+    const ci = ciDur[spec.id];
+    if (typeof ci === 'number') {
+      // CI wins OUTRIGHT over a contradicting local cache, and judges BOTH directions off the one p90 -- no floor/median split, because this p90 is already a stable statistic over real CI runs, not a number a contended local checkout can skew. `continue` below means a step gate NEVER falls through to `dur`/local cache, even when one happens to hold an entry for it.
+      if (spec.slow === true && ci < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
+        out.push({
+          oracle: 'tier',
+          text: `${spec.id} is marked slow but its CI step measures ${(ci / 1000).toFixed(1)}s — cheap enough for the pre-push lane (source: CI step timing). Drop \`slow: true\`.`,
+        });
+      }
+      if (spec.slow !== true && ci > BUDGET_MS * SLACK) {
+        out.push({
+          oracle: 'tier',
+          text: `${spec.id} is in the pre-push lane but its CI step measures ${(ci / 1000).toFixed(1)}s (source: CI step timing). Mark \`slow: true\` with a one-line reason, or make it faster.`,
+        });
+      }
+      continue;
+    }
+    // A gate that DOES run as its own CI step but has no CI sample yet (freshly added, or `--refresh` has not landed one) is left UNJUDGED here, never silently re-judged from the checkout-dependent local cache -- exactly the contradiction this box exists to close.
+    if (spec.ci.kind === 'step') continue;
     const ms = dur[spec.id];
     if (typeof ms !== 'number') continue;
     // An unjudgeable cost is not a passing one; it is counted and reported below.
@@ -147,13 +185,13 @@ function tierFindings(
     if (spec.slow === true && mid < BUDGET_MS / SLACK && !slowByClosure.has(spec.id)) {
       out.push({
         oracle: 'tier',
-        text: `${spec.id} is marked slow but typically measures ${(mid / 1000).toFixed(1)}s — cheap enough for the pre-push lane. Drop \`slow: true\`.`,
+        text: `${spec.id} is marked slow but typically measures ${(mid / 1000).toFixed(1)}s — cheap enough for the pre-push lane (source: local .ci/cache/gate-durations.json). Drop \`slow: true\`.`,
       });
     }
     if (spec.slow !== true && ms > BUDGET_MS * SLACK) {
       out.push({
         oracle: 'tier',
-        text: `${spec.id} is in the pre-push lane but measures ${(ms / 1000).toFixed(1)}s. Mark \`slow: true\` with a one-line reason, or make it faster.`,
+        text: `${spec.id} is in the pre-push lane but measures ${(ms / 1000).toFixed(1)}s (source: local .ci/cache/gate-durations.json). Mark \`slow: true\` with a one-line reason, or make it faster.`,
       });
     }
   }
@@ -389,6 +427,27 @@ function selftest(tracked: readonly string[]): number {
     tierFindings([spec({ slow: true })], {}).length === 0
   );
 
+  // CI-representative gate-step timing (`budget_report.py --refresh`'s `gate_step_p90_seconds`, read as `.ci/config/lane-durations.json`'s CI source) -- item 1's fix. A `ci.kind === 'step'` gate is judged from THIS source alone, never the local `.ci/cache/gate-durations.json`, which is exactly what stopped the identical code reading "drop slow" in a clean clone and "mark slow" in a tree carrying large gitignored assets.
+  const stepCi: GateSpec['ci'] = { kind: 'step', workflow: 'w.yml', job: 'j', step: 's' };
+  check(
+    'tier: CI source wins over a contradicting local cache (marked slow, local says fine, CI says cheap)',
+    tierFindings([spec({ slow: true, ci: stepCi })], { x: 60_000 }, {}, {}, { x: 100 }).length === 1
+  );
+  check(
+    'tier CONTROL: CI source wins the other direction too (fast lane, local says fine, CI says slow)',
+    tierFindings([spec({ ci: stepCi })], { x: 100 }, {}, {}, { x: 60_000 }).length === 1
+  );
+  check(
+    'tier: the fallback path -- a gate with no CI step (kind: test) still tiers off the local cache',
+    tierFindings([spec({ slow: true, ci: { kind: 'test', test: 't', blocker: 'BLOCKER: x' } })], {
+      x: 100,
+    }).length === 1
+  );
+  check(
+    'tier CONTROL: a step gate absent from BOTH sources is not judged, even when the local cache holds a contradicting entry for its id',
+    tierFindings([spec({ ci: stepCi })], { x: 60_000 }).length === 0
+  );
+
   // Closure, both directions AND transitively -- a one-hop-only check would pass the two-hop case, which is the shape that actually occurs.
   const a = spec({ id: 'a', needs: ['b'] });
   const b = spec({ id: 'b', needs: ['c'] });
@@ -525,8 +584,24 @@ function main(): number {
     process.stdout.write('- tier oracle: no duration cache yet, so cost claims are unjudged\n');
   }
 
+  // CI-representative timing, for every gate the lock runs as its OWN named workflow step -- see the module doc's item 1. Committed (unlike the local cache), so this read almost never throws; a missing/empty `gate_step_p90_seconds` before `budget_report.py --refresh` has landed one is exactly the same "nothing to say yet" case as an empty local cache.
+  const ciDur: CiDur = {};
+  try {
+    const laneDurations: { gate_step_p90_seconds?: Record<string, number> } = JSON.parse(
+      fs.readFileSync(path.join(REPO, '.ci', 'config', 'lane-durations.json'), 'utf-8')
+    );
+    for (const [id, seconds] of Object.entries(laneDurations.gate_step_p90_seconds ?? {})) {
+      if (typeof seconds === 'number') ciDur[id] = seconds * 1000;
+    }
+  } catch {
+    process.stdout.write(
+      '- tier oracle: no CI gate-step timing yet (.ci/config/lane-durations.json), CI-sourced verdicts unjudged\n'
+    );
+  }
+
   const unjudged = Object.entries(samples).filter(
-    ([id, n]) => n < MIN_SAMPLES_TO_TIER && typeof dur[id] === 'number'
+    ([id, n]) =>
+      n < MIN_SAMPLES_TO_TIER && typeof dur[id] === 'number' && typeof ciDur[id] !== 'number'
   );
   if (unjudged.length > 0) {
     process.stdout.write(
@@ -540,7 +615,7 @@ function main(): number {
   }
 
   const findings = [
-    ...tierFindings(GATES, dur, samples, typical),
+    ...tierFindings(GATES, dur, samples, typical, ciDur),
     ...closureFindings(GATES),
     ...leafFindings(GATES),
     ...globFindings(GATES, tracked),
@@ -549,7 +624,7 @@ function main(): number {
 
   if (findings.length === 0) {
     process.stdout.write(
-      `✓ gate manifest: ${GATES.length} entries, ${Object.keys(dur).length} measured; tiers, leaves and globs all agree\n`
+      `✓ gate manifest: ${GATES.length} entries, ${Object.keys(dur).length} locally measured, ${Object.keys(ciDur).length} CI-measured; tiers, leaves and globs all agree\n`
     );
     return 0;
   }

@@ -46,6 +46,7 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
       "defaultUnitMs": {"<lane id>": <ms>},  # optional, hand-authored, --refresh preserves it
       "unitParallelism": {"<lane id>": <workers>},  # optional, hand-authored, --refresh preserves it
       "job_p90_minutes": {"<job DISPLAY name>": <p90, MINUTES>},  # T3.1; see below
+      "gate_step_p90_seconds": {"<gate id>": <p90, SECONDS>},  # CI-representative tiers; see below
       "job_max_seconds": {
         "refreshed_at": "..." | null,        # OWN timestamp -- see WHY TWO refreshed_at BELOW
         "jobs": {"<job display name>": {"observed_max_seconds": <int>, "samples": <int>}}
@@ -56,6 +57,8 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
 
 `job_p90_minutes` is T3.1's own addition, for check 2's 63 unpriced non-lane jobs (the gate's own `LaneDurations.job_p90_minutes` field exists and says "nothing writes it yet"). Keyed by Actions API DISPLAY NAME, not a lane id: unlike `jobs`/`units`, most of these jobs have no YAML-key alias to look one up by without re-walking `ci.yml`'s own `needs:`/`uses:` graph a second time. The CONSUMER maps names back to job ids: `check-lane-budget.ts`'s `displayNamePattern` walks `ci.yml` and its callees per call site and matches these keys, judging a priced lane's matrix legs in their lane and every other job in check 2. `--refresh` writes it from success-only wall-time samples over the SAME PR-full runs `jobs`/`units` already sample.
 A "unit id" is keyed exactly as `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` name it (`e2e-workers:<file>`, `account-e2e:<file>`, a bare Go import path, `renet-integration:<file>`, `pytest:<file>`, `battery:<name>`, `tutorial:<slug>`) -- read-only there too.
+
+`gate_step_p90_seconds` is CI-representative timing for `scripts/gates/check-gate-manifest.ts`'s slow/pre-push tier verdict, keyed by a `scripts/ci-runner/gates.lock.json` gate `id`, SECONDS not minutes. A gate the lock marks `"ci": {"kind": "step", ...}` runs as its own named workflow step (`ci.job` a YAML job key, `ci.step` that job's own step `name`), and `--refresh` times it the same way `job_p90_minutes` times a whole job: success-only, over the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk (`load_gate_ci_steps` reads the lock, `lane_display_patterns` -- already general over every job inside a reusable workflow, not only the seven test lanes -- maps `ci.job` to the display-name pattern its own job matches, and the step is found by exact-name match inside that job's `steps` array, already present in `fetch_jobs`'s payload with no extra network call). A gate whose `ci.kind` is not `"step"` (`local-only`, a gate a `test` drives) carries no entry, matching WHY `units` stays scoped above: this is a different instrument for a different set of gates, not a gap. Nor does a gate whose step is a COMPOSITE shared with other gates (`ci-quality.yml`'s `i18n` step alone chains 27 gates' npm scripts into one hand-written `npm run check:i18n`): its wall time is their SUM, not any one gate's own cost, so `_exclusive_ci_steps` excludes every id sharing a `(job, step)` pair with another rather than mis-attributing the whole step's time to each. This is what lets `check-gate-manifest.ts` judge a gate's tier from CI's own timing instead of the local, checkout-dependent `.ci/cache/gate-durations.json` (large gitignored assets present in one checkout and not another used to give the identical gate contradictory verdicts, since CI itself keeps no such cache and never judged a tier at all).
 
 WHY `units` STAYS SCOPED TO THE SEVEN T2.7/T2.8 TEST LANES, NOT `quality-code`'s OWN CHECK IDS. T1.6, whose artifacts feed `units` here, names exactly five sources -- Playwright JSON, pytest junit, gotestsum junit, the battery's own per-test timings, and an OPS tutorial JSON summary -- and every one of them is a TEST-RUNNER'S OWN report. `quality-code` has no such report: its "units" are individual `npm run check:*` invocations, each its OWN named workflow step, and T2.9's existing control
 ("`shardPlan(durations: {})` is byte-identical to `shardPlan()` with no durations
@@ -118,6 +121,7 @@ DEFAULT_REFRESH_LIMIT = 10
 # EVERY READ HERE RETRIES, because one report makes dozens of calls and a single transient failure used to abort all of them: on 2026-09-27 a `--refresh --dry-run` died on `stream error: stream ID 1; CANCEL; received from peer` for one run's jobs, and the identical rerun succeeded. `ghx.gh` defaults to one attempt on purpose (an auth failure should not cost backoff); a report over many runs is the caller that wants three.
 GH_ATTEMPTS = 3
 LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
+GATES_LOCK_REL_PATH = "scripts/ci-runner/gates.lock.json"
 PER_LEG_BUDGET_MINUTES = 12.0
 DRIFT_THRESHOLD = 0.25
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
@@ -890,6 +894,86 @@ def _e2e_shard_bucket_titles(root: Path, workflow_script: str = "run-e2e.sh") ->
     return titles
 
 
+# CI-representative gate-step timing (see the module docstring's `gate_step_p90_seconds` paragraph): judging `check-gate-manifest.ts`'s slow/pre-push tier from CI's own step timing rather than the local, checkout-dependent `.ci/cache/gate-durations.json`.
+
+
+def load_gate_ci_steps(root: Path) -> dict[str, tuple[str, str]]:
+    """`{gate id: (job id, step name)}` for every `"ci": {"kind": "step", ...}` gate in `scripts/ci-runner/gates.lock.json` -- the lock's own `ci.job`/`ci.step`, read-only here (this module writes `lane-durations.json`, never the lock). A gate whose `ci.kind` is `"local-only"` or `"test"`, or that carries no `ci` block at all, names no single CI step to time and is simply absent -- the same "thinner rather than wrong" choice `lane_display_patterns` already makes for a lane not split out yet. A lock that fails to parse yields an empty map rather than raising, because this feeds a REPORT/refresh, not a gate that must fail loudly on a malformed lock (`check:ci-parity` already owns that)."""
+    try:
+        data = json.loads((root / GATES_LOCK_REL_PATH).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(data, list):
+        return {}
+    out: dict[str, tuple[str, str]] = {}
+    for gate in data:
+        if not isinstance(gate, dict):
+            continue
+        ci = gate.get("ci")
+        if not isinstance(ci, dict) or ci.get("kind") != "step":
+            continue
+        gate_id, job_id, step_name = gate.get("id"), ci.get("job"), ci.get("step")
+        if isinstance(gate_id, str) and isinstance(job_id, str) and isinstance(step_name, str):
+            out[gate_id] = (job_id, step_name)
+    return out
+
+
+def _exclusive_ci_steps(root: Path) -> dict[str, tuple[str, str]]:
+    """`load_gate_ci_steps`, MINUS any gate id whose `(job, step)` pair is shared by more than one gate id.
+
+    A SHARED PAIR IS A COMPOSITE STEP, and its wall time is the SUM of every gate chained into it, not any one gate's own cost.
+    MEASURED 2026-09-28: `ci-quality.yml`'s `quality-i18n` job runs 27 gates' npm scripts through one hand-written `npm run check:i18n` step (its own comment: "composite npm chains with no gate file to carry a header") that measured 36.1s in CI, while five of those 27 ids' OWN standalone local costs (`.ci/cache/gate-durations.json`) were 2-9s each.
+    Attributing the WHOLE step's time to each of them would have told every fast one to mark `slow: true`, pulling it out of the default pre-push lane for a cost it does not actually have.
+    Six other (job, step) pairs share the same shape (`quality-code`'s `Lint`, `quality-i18n`'s `i18n cross-locale`, `quality-www-build`'s `SEO` and `Redirects`, `quality-content`'s `Dead CSS`, `quality-gate-tests`'s `Quality-gate unit tests`).
+    A pair occupied by exactly one gate has no such ambiguity: its own wall time IS that gate's cost, which is the premise `gate_step_seconds` needs to hold.
+    """
+    all_steps = load_gate_ci_steps(root)
+    occupancy: dict[tuple[str, str], int] = {}
+    for job_step in all_steps.values():
+        occupancy[job_step] = occupancy.get(job_step, 0) + 1
+    return {
+        gate_id: job_step for gate_id, job_step in all_steps.items() if occupancy[job_step] == 1
+    }
+
+
+def gate_step_seconds(
+    root: Path,
+    patterns: Mapping[str, re.Pattern[str]],
+    jobs_by_run: Sequence[list[dict[str, Any]]],
+) -> dict[str, float]:
+    """`{gate id: p90 seconds}`, each gate's OWN step (`_exclusive_ci_steps` -- see there for why a step SHARED by several gates is excluded rather than mis-attributed), timed by `completed_at - started_at`, success-only (both the job and the step), over `jobs_by_run` -- the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk, so this costs no extra network call and inherits the same 14-day sample-age refusal `refresh_lane_durations` already applies to that sample.
+    `patterns` is `lane_display_patterns`'s own map (already general over every job inside a reusable workflow, not only the seven test lanes), keyed by the job's YAML id -- the same key `ci.job` names.
+    A gate whose job has no pattern yet, or whose named step never appears success-only in the sample, contributes no entry -- never a guessed number."""
+    samples: dict[str, list[float]] = {}
+    for gate_id, (job_id, step_name) in _exclusive_ci_steps(root).items():
+        pattern = patterns.get(job_id)
+        if pattern is None:
+            continue
+        for run_jobs in jobs_by_run:
+            for job in run_jobs:
+                if job.get("conclusion") != "success" or not pattern.match(job.get("name") or ""):
+                    continue
+                for step in job.get("steps") or []:
+                    if step.get("name") != step_name or step.get("conclusion") != "success":
+                        continue
+                    start = _iso_to_epoch(step.get("started_at"))
+                    end = _iso_to_epoch(step.get("completed_at"))
+                    if start is not None and end is not None:
+                        samples.setdefault(gate_id, []).append(max(0.0, end - start))
+    result: dict[str, float] = {}
+    for gate_id, secs in samples.items():
+        s = stats(secs)
+        if s is not None:
+            result[gate_id] = s["p90"]
+    return result
+
+
+def prune_gate_steps_to_lock(gate_steps: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Drop a gate id no longer eligible for a CI-sourced p90 in the committed lock -- retired, retyped, renamed-step, OR moved into a step now SHARED with another gate (`_exclusive_ci_steps`) -- the same reasoning as `prune_units_to_manifests`: an ADD-only merge would keep a stale, or now-mis-attributed, entry forever."""
+    valid = set(_exclusive_ci_steps(root))
+    return {gate_id: value for gate_id, value in gate_steps.items() if gate_id in valid}
+
+
 # T3.2: assembling `.ci/config/lane-durations.json`'s three measured sections.
 
 
@@ -903,7 +987,7 @@ def compute_lane_durations(
     list_artifacts: Callable[[str, int], list[dict[str, Any]]] = fetch_artifacts,
     download: Callable[[str, Any], bytes] = download_artifact_zip,
 ) -> dict[str, Any]:
-    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "missing_artifact_lanes"}`. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
+    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "missing_artifact_lanes"}`. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
     pr_runs = fetch_runs(repo, workflow, "pull_request", None, REFRESH_PR_STATUS, limit)
@@ -981,6 +1065,8 @@ def compute_lane_durations(
         "units": units_ms,
         "job_max_seconds": job_max_seconds,
         "job_p90_minutes": job_p90_minutes,
+        # CI-representative gate-step timing for check-gate-manifest.ts's tier verdict; see gate_step_seconds.
+        "gate_step_p90_seconds": gate_step_seconds(tree_root, patterns, pr_jobs_by_run),
         "missing_artifact_lanes": missing_lanes,
         # T3.1: the PR sample's own age findings, carried out so `--refresh` can REFUSE to stamp a fresh `refreshed_at` on them (see refresh_lane_durations).
         "stale_sample": stale_sample_findings(pr_runs),
@@ -1063,7 +1149,7 @@ def refresh_lane_durations(
     dry_run: bool = False,
     compute: Callable[..., dict[str, Any]] = compute_lane_durations,
 ) -> int:
-    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `job_max_seconds`, `job_p90_minutes` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
+    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `job_max_seconds`, `job_p90_minutes`, `gate_step_p90_seconds` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
     try:
         existing = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1093,12 +1179,16 @@ def refresh_lane_durations(
         and not computed["units"]
         and not computed["job_max_seconds"]
         and not computed["job_p90_minutes"]
+        and not computed["gate_step_p90_seconds"]
     ):
         log.error(
             "budget_report --refresh: matched nothing at all across %d sampled run(s); "
             "refusing to stamp refreshed_at on numbers nothing verified." % limit
         )
         return 1
+
+    # .ci/config/lane-durations.json -> the repo root, three levels up, so a fixture path prunes against its own tree.
+    repo_root_for_pruning = path.resolve().parent.parent.parent
 
     updated: dict[str, Any] = {}
     if "$comment" in existing:
@@ -1107,9 +1197,7 @@ def refresh_lane_durations(
     updated["concurrency"] = existing.get("concurrency", 20)
     updated["jobs"] = {**existing.get("jobs", {}), **computed["jobs"]}
     updated["units"] = prune_units_to_manifests(
-        # the manifests beside THIS file (.ci/config/lane-durations.json -> the repo root three levels up), so a fixture path prunes against its own tree
-        {**existing.get("units", {}), **computed["units"]},
-        path.resolve().parent.parent.parent,
+        {**existing.get("units", {}), **computed["units"]}, repo_root_for_pruning
     )
     if "defaultUnitMs" in existing:
         updated["defaultUnitMs"] = existing["defaultUnitMs"]
@@ -1120,6 +1208,10 @@ def refresh_lane_durations(
         **existing.get("job_p90_minutes", {}),
         **computed["job_p90_minutes"],
     }
+    updated["gate_step_p90_seconds"] = prune_gate_steps_to_lock(
+        {**existing.get("gate_step_p90_seconds", {}), **computed["gate_step_p90_seconds"]},
+        repo_root_for_pruning,
+    )
     if isinstance(existing.get("job_max_seconds"), dict):
         updated["job_max_seconds"] = existing["job_max_seconds"]
     if computed["job_max_seconds"]:
@@ -1135,13 +1227,14 @@ def refresh_lane_durations(
     path.write_text(payload, encoding="utf-8")
     print(
         "lane-durations.json refreshed from %d sampled run(s): %d job(s), %d unit(s), "
-        "%d headroom job(s), %d other job p90(s)."
+        "%d headroom job(s), %d other job p90(s), %d gate step p90(s)."
         % (
             limit,
             len(computed["jobs"]),
             len(computed["units"]),
             len(computed["job_max_seconds"]),
             len(computed["job_p90_minutes"]),
+            len(computed["gate_step_p90_seconds"]),
         )
     )
     return 0
