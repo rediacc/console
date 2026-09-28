@@ -48,13 +48,21 @@ def child(tmp_path):
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": os.environ.get("HOME", "/")},
     )
     # The process must be in the table before anything asks about it. Polling beats a fixed pause: a fixed one is either flaky on a loaded machine or slow on an idle one, and this suite runs on both.
+    # READY MEANS EXEC'D, not forked.
+    # `/proc/<pid>/cmdline` exists from the fork on, while the pid still holds a copy of this Python interpreter, and a read that lands inside the exec reads as "".
+    # Job 108856280214 failed exactly that way with a 600-second child that cannot have exited, so the fixture waits until the script path itself is in the cmdline.
+    cmdline_path = "/proc/%d/cmdline" % popen.pid
     deadline = time.time() + 10
     while time.time() < deadline:
-        if os.path.exists("/proc/%d/cmdline" % popen.pid):
-            break
+        try:
+            with open(cmdline_path, "rb") as fh:
+                if str(script).encode() in fh.read():
+                    break
+        except OSError:
+            pass
         time.sleep(0.02)
     try:
-        yield {"pid": popen.pid, "token": token, "script": str(script)}
+        yield {"pid": popen.pid, "token": token, "script": str(script), "popen": popen}
     finally:
         popen.kill()
         popen.wait()
@@ -126,8 +134,8 @@ def test_cmdline_forms_agree_with_the_shell_pipeline(forced, child, backend):
     live = proc.cmdline(pid)
     assert live, (
         "the fixture's child is not running -- an empty cmdline means it exited "
-        "(zombie) or was reaped. That is a test-lifetime problem, not a "
-        "disagreement between the two cmdline forms"
+        "(zombie) or was reaped (exit status %r). That is a test-lifetime problem, not a "
+        "disagreement between the two cmdline forms" % (child["popen"].poll(),)
     )
     assert proc.cmdline_tr(pid) == live + " "
     assert not live.endswith(" ")
