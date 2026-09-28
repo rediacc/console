@@ -227,6 +227,22 @@ def test_parse_gotestsum_junit_unit_ms_keys_by_bare_package_path():
     assert out == {"github.com/rediacc/renet/pkg/foo": pytest.approx(2250.0)}
 
 
+def test_parse_gotestsum_junit_unit_ms_records_a_package_with_no_tests_at_its_suite_time():
+    text = (
+        "<testsuites>"
+        '<testsuite tests="0" time="0.763" name="github.com/rediacc/renet/pkg/notests"></testsuite>'
+        '<testsuite tests="1" time="9.0" name="github.com/rediacc/renet/pkg/foo">'
+        '<testcase classname="github.com/rediacc/renet/pkg/foo" name="TestA" time="1.5"/>'
+        "</testsuite></testsuites>"
+    )
+    out = br.parse_gotestsum_junit_unit_ms(text)
+    # the no-test package gets its measured compile-and-run time; the tested one keeps the testcase sum, not the suite's 9.0 s
+    assert out == {
+        "github.com/rediacc/renet/pkg/notests": pytest.approx(763.0),
+        "github.com/rediacc/renet/pkg/foo": pytest.approx(1500.0),
+    }
+
+
 def test_parse_battery_summary_unit_ms():
     text = json.dumps({"drivers": [{"name": "W-writer1", "duration_ms": 4200}]})
     assert br.parse_battery_summary_unit_ms(text) == {"battery:W-writer1": 4200.0}
@@ -438,6 +454,28 @@ def _fake_compute(**overrides):
     return compute
 
 
+def test_refresh_lane_durations_refuses_a_stale_sample_and_leaves_the_file_alone(tmp_path):
+    path = tmp_path / "lane-durations.json"
+    original = json.dumps({"refreshed_at": "2026-01-01T00:00:00Z", "concurrency": 20, "jobs": {}})
+    path.write_text(original)
+    compute = _fake_compute(
+        jobs={"quality-code": 1.0},
+        stale_sample=[
+            "run 1 (created 2026-08-30T23:24:50Z) is 28.2 day(s) old, over the 14-day sample limit."
+        ],
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 1
+    assert path.read_text() == original
+
+
+def test_check_lane_durations_reports_a_stale_sample(tmp_path, capsys):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"jobs": {}, "units": {}}))
+    compute = _fake_compute(stale_sample=["run 1 is 28.2 day(s) old"])
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 1
+    assert "stale sample" in capsys.readouterr().err
+
+
 def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
     path = tmp_path / "lane-durations.json"
     path.write_text(
@@ -449,6 +487,7 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
                 "jobs": {"quality-code": 3.0},
                 "units": {"pytest:x.py": 111.0},
                 "defaultUnitMs": {"quality-pytest": 5000},
+                "unitParallelism": {"quality-pytest": 4},
             }
         )
     )
@@ -465,6 +504,7 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
     assert data["jobs"] == {"quality-code": 3.0, "test-e2e-workers": 5.5}
     assert data["units"] == {"pytest:x.py": 111.0, "e2e-workers:a.spec.ts": 2000.0}
     assert data["defaultUnitMs"] == {"quality-pytest": 5000}
+    assert data["unitParallelism"] == {"quality-pytest": 4}
     assert data["refreshed_at"] != "2026-01-01T00:00:00Z"
     assert data["job_max_seconds"]["jobs"]["Validate Promotion"]["observed_max_seconds"] == 300
 

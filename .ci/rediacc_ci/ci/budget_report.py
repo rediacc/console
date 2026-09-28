@@ -44,6 +44,7 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
       "jobs": {"<lane id>": <fixed-cost p90, MINUTES>},
       "units": {"<unit id>": <p90, MILLISECONDS>},
       "defaultUnitMs": {"<lane id>": <ms>},  # optional, hand-authored, --refresh preserves it
+      "unitParallelism": {"<lane id>": <workers>},  # optional, hand-authored, --refresh preserves it
       "job_p90_minutes": {"<job DISPLAY name>": <p90, MINUTES>},  # T3.1; see below
       "job_max_seconds": {
         "refreshed_at": "..." | null,        # OWN timestamp -- see WHY TWO refreshed_at BELOW
@@ -53,7 +54,7 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
 
 `jobs` and `units` (plus `concurrency` and `defaultUnitMs`) are `scripts/gates/check-lane-budget.ts`'s `LaneDurations` interface EXACTLY -- that file is the consumer, already written and NOT owned by this box, so its existing `Record<string, number>` shapes are the contract this module writes TO rather than a schema invented here. A "lane id" is a job's YAML KEY (`quality-code`, `test-e2e-workers`, ...), the same string `scripts/ci-runner/lanes.ts`'s `laneCapabilities`/`TEST_LANE_WORKFLOWS` and `gates.lock.json`'s `ci.job` use -- NOT the Actions API's own job display name (`"Quality / Code (1)"`). `lane_display_patterns` below is what bridges the two.
 
-`job_p90_minutes` is T3.1's own addition, for check 2's 63 unpriced non-lane jobs (the gate's own `LaneDurations.job_p90_minutes` field exists and says "nothing writes it yet"). Keyed by Actions API DISPLAY NAME, not a lane id: unlike `jobs`/`units`, most of these jobs have no YAML-key alias to look one up by without re-walking `ci.yml`'s own `needs:`/`uses:` graph a second time, which is the consumer's own box (see `compute_lane_durations`'s comment at the call site), not this producer's. `--refresh` writes it from success-only wall-time samples over the SAME PR-full runs `jobs`/`units` already sample.
+`job_p90_minutes` is T3.1's own addition, for check 2's 63 unpriced non-lane jobs (the gate's own `LaneDurations.job_p90_minutes` field exists and says "nothing writes it yet"). Keyed by Actions API DISPLAY NAME, not a lane id: unlike `jobs`/`units`, most of these jobs have no YAML-key alias to look one up by without re-walking `ci.yml`'s own `needs:`/`uses:` graph a second time. The CONSUMER maps names back to job ids: `check-lane-budget.ts`'s `displayNamePattern` walks `ci.yml` and its callees per call site and matches these keys, judging a priced lane's matrix legs in their lane and every other job in check 2. `--refresh` writes it from success-only wall-time samples over the SAME PR-full runs `jobs`/`units` already sample.
 A "unit id" is keyed exactly as `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` name it (`e2e-workers:<file>`, `account-e2e:<file>`, a bare Go import path, `renet-integration:<file>`, `pytest:<file>`, `battery:<name>`, `tutorial:<slug>`) -- read-only there too.
 
 WHY `units` STAYS SCOPED TO THE SEVEN T2.7/T2.8 TEST LANES, NOT `quality-code`'s OWN CHECK IDS. T1.6, whose artifacts feed `units` here, names exactly five sources -- Playwright JSON, pytest junit, gotestsum junit, the battery's own per-test timings, and an OPS tutorial JSON summary -- and every one of them is a TEST-RUNNER'S OWN report. `quality-code` has no such report: its "units" are individual `npm run check:*` invocations, each its OWN named workflow step, and T2.9's existing control
@@ -672,12 +673,23 @@ def parse_pytest_junit_unit_ms(text: str, lane: str) -> dict[str, float]:
 
 
 def parse_gotestsum_junit_unit_ms(text: str) -> dict[str, float]:
-    """`gotestsum --junitfile`: per-`<testcase>` `time` (seconds -> ms), aggregated by the BARE `classname` -- gotestsum writes the Go package import path there, the exact id `renetGoUnits` (`go list`) already uses, so no prefix is added."""
+    """`gotestsum --junitfile`: per-`<testcase>` `time` (seconds -> ms), aggregated by the BARE `classname` -- gotestsum writes the Go package import path there, the exact id `renetGoUnits` (`go list`) already uses, so no prefix is added.
+
+    A PACKAGE WITH NO TEST FUNCTIONS STILL COSTS SOMETHING, and gotestsum measures it. `go test ./pkg/... ./cmd/...` compiles every package `go list` names, and one with no `_test.go` reports as `<testsuite tests="0" name="<import path>" time="0.763">` with no `<testcase>` at all (measured on run 36366933791's `unit-durations-test-renet-go-s1-*`: 7 such suites, 0.000-0.763 s). Keyed by `testcase` alone, those packages never got a sample and `check-lane-budget.ts` reported 12 enumerated units as unmeasured. The suite's own `time` is that package's real cost, so a suite with no testcase contributes it under its `name`; a suite WITH testcases keeps the per-testcase sum, unchanged."""
     try:
         root = ET.fromstring(text)  # noqa: S314 -- this repo's own gotestsum --junitfile artifact, not third-party input
     except ET.ParseError as exc:
         raise ValueError("gotestsum junit artifact is not XML: %s" % exc) from exc
     totals: dict[str, float] = {}
+    for suite in root.iter("testsuite"):
+        name = suite.get("name")
+        suite_time = suite.get("time")
+        if not name or suite_time is None or suite.find("testcase") is not None:
+            continue
+        try:
+            totals[name] = totals.get(name, 0.0) + float(suite_time) * 1000.0
+        except ValueError:
+            continue
     for case in root.iter("testcase"):
         classname = case.get("classname")
         time_attr = case.get("time")
@@ -917,7 +929,7 @@ def compute_lane_durations(
         if s is not None:
             jobs_minutes[lane] = s["p90"]
 
-    # T3.1: check 2's own gap -- a whole-job p90 (success-only wall time, MINUTES) by Actions API DISPLAY NAME (e.g. "Tests + Infra / E2E K8s Ceph"), for every job seen in the same PR-full sample `jobs_minutes` above already walks. `check-lane-budget.ts`'s own `LaneDurations` interface has no key for this yet (its `job_p90_minutes` docstring says so: "nothing writes it yet"), and it is keyed by the workflow's job ID there, not this display name. Wiring that lookup (display name to job id, the same aliasing `build_display_graph` already does) is the consumer's own follow-up box, not this producer's; this box's job is only to write the number under the one name `--refresh` can actually derive without re-parsing `ci.yml` a second time.
+    # T3.1: check 2's own gap -- a whole-job p90 (success-only wall time, MINUTES) by Actions API DISPLAY NAME (e.g. "Tests + Infra / E2E K8s Ceph"), for every job seen in the same PR-full sample `jobs_minutes` above already walks. `check-lane-budget.ts` reads it by display name (`displayNamePattern`, one pattern per call site), so this writes the number under the one name `--refresh` can derive without re-parsing `ci.yml` a second time.
     job_wall_by_name: dict[str, list[float]] = {}
     for run_jobs in pr_jobs_by_run:
         for job in run_jobs:
@@ -970,6 +982,8 @@ def compute_lane_durations(
         "job_max_seconds": job_max_seconds,
         "job_p90_minutes": job_p90_minutes,
         "missing_artifact_lanes": missing_lanes,
+        # T3.1: the PR sample's own age findings, carried out so `--refresh` can REFUSE to stamp a fresh `refreshed_at` on them (see refresh_lane_durations).
+        "stale_sample": stale_sample_findings(pr_runs),
     }
 
 
@@ -1058,6 +1072,17 @@ def refresh_lane_durations(
         existing = {}
 
     computed = compute(repo, workflow, branch, limit)
+    # A STALE SAMPLE IS REFUSED HERE, NOT WARNED. MEASURED 2026-09-28: one `--refresh` drew a sample whose Quality / Security p90 read 9.9m (1.8m the minute before) and whose lanes all had NO unit-duration artifacts, then stamped `refreshed_at` = now over it. check-lane-budget.ts's check 5 reads that stamp as "measured today", so a fresh stamp on old runs silently defeats it. A report may warn and carry on; the one writer of the stamp may not.
+    stale = computed.get("stale_sample") or []
+    if stale:
+        for finding in stale:
+            log.error("budget_report --refresh: %s" % finding)
+        log.error(
+            "budget_report --refresh: %d sampled run(s) are older than %d days; refusing to stamp "
+            "refreshed_at on them. Re-run: the Actions API has served a stale page before."
+            % (len(stale), SAMPLE_MAX_AGE_DAYS)
+        )
+        return 1
     for lane in computed["missing_artifact_lanes"]:
         log.warn(
             "budget_report --refresh: lane %r has NO unit-duration artifacts in the last "
@@ -1088,6 +1113,9 @@ def refresh_lane_durations(
     )
     if "defaultUnitMs" in existing:
         updated["defaultUnitMs"] = existing["defaultUnitMs"]
+    # T3.1: how many units a lane's leg runs at once (quality-pytest's `-n`), hand-authored beside defaultUnitMs and preserved the same way; dropping it would silently turn a parallel lane back into a serial estimate.
+    if "unitParallelism" in existing:
+        updated["unitParallelism"] = existing["unitParallelism"]
     updated["job_p90_minutes"] = {
         **existing.get("job_p90_minutes", {}),
         **computed["job_p90_minutes"],
@@ -1143,6 +1171,7 @@ def check_lane_durations(
         "lane %r has NO unit-duration artifacts in the last %d sampled run(s)." % (lane, limit)
         for lane in computed["missing_artifact_lanes"]
     ]
+    findings.extend("stale sample: %s" % f for f in computed.get("stale_sample") or [])
 
     committed_jobs = committed.get("jobs") or {}
     for lane, minutes in sorted(computed["jobs"].items()):

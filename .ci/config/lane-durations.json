@@ -46,9 +46,16 @@
     "'renet-integration:TestX.py') where the committed manifests say 'pytest:.ci/...' and",
     "'renet-integration:test_x.py', so none of them match; a lane default there would bury",
     "that keying defect instead of surfacing it. These figures are not refreshed by any",
-    "tool yet: re-derive them by the recipe above when refreshed_at moves."
+    "tool yet: re-derive them by the recipe above when refreshed_at moves.",
+    "'unitParallelism' (hand-authored 2026-09-28, T3.1; --refresh preserves it): how many units",
+    "one leg runs at once. quality-pytest: 4. check_pytest.py's jobs() passes `-n",
+    "min(PYTEST_JOBS_CAP=8, os.cpu_count())` with `--dist loadgroup` (.ci/rediacc_ci/check_pytest.py",
+    "jobs(), used at the -n argv sites), ci-quality.yml sets no PYTEST_JOBS, and the leg's own",
+    "profiler notice on job 108765034481 (Quality / Pytest (3/3)) reads 'peak 4.00 cores'. Unit",
+    "p90s stay per-file SERIAL times; the gate divides by the workers and floors the leg at its",
+    "largest xdist group (a group runs on one worker)."
   ],
-  "refreshed_at": "2026-09-28T04:03:16Z",
+  "refreshed_at": "2026-09-28T04:30:00Z",
   "concurrency": 20,
   "jobs": {
     "quality-pytest": 1.6,
@@ -189,7 +196,7 @@
     "github.com/rediacc/renet/pkg/health": 0.0,
     "github.com/rediacc/renet/pkg/i18n": 71797.0,
     "github.com/rediacc/renet/pkg/infra/docker": 693.0,
-    "github.com/rediacc/renet/pkg/infra/mesh": 396.0,
+    "github.com/rediacc/renet/pkg/infra/mesh": 393.0,
     "github.com/rediacc/renet/pkg/infra/vm/kvm": 0.0,
     "github.com/rediacc/renet/pkg/ipam": 346.0,
     "github.com/rediacc/renet/pkg/kernel": 0.0,
@@ -227,7 +234,7 @@
     "github.com/rediacc/renet/pkg/infra/image": 0.0,
     "github.com/rediacc/renet/pkg/infra/opsconfig": 366.0,
     "github.com/rediacc/renet/pkg/infra/vm/imagedl": 1203.0,
-    "github.com/rediacc/renet/pkg/infra/worker": 0.0,
+    "github.com/rediacc/renet/pkg/infra/worker": 100.2,
     "github.com/rediacc/renet/pkg/jobs": 6482.0,
     "github.com/rediacc/renet/pkg/kube": 0.0,
     "github.com/rediacc/renet/pkg/kube/distro": 480.0,
@@ -804,7 +811,19 @@
     "pytest:.claude/rediacc_hooks/tests/test_wl_state_document.py": 10101.0,
     "pytest:.claude/rediacc_hooks/tests/test_wl_submodule_decision.py": 3849.0,
     "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py": 6648.0,
-    "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py": 13606.0
+    "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py": 13606.0,
+    "github.com/rediacc/renet/pkg/functions/compatibility": 763.3,
+    "github.com/rediacc/renet/pkg/infra/bridgesvc": 123.3,
+    "github.com/rediacc/renet/pkg/infra/vm": 176.2,
+    "github.com/rediacc/renet/pkg/infra/vm/hyperv": 163.3,
+    "github.com/rediacc/renet/pkg/infra/vm/terraform": 127.3,
+    "github.com/rediacc/renet/pkg/license/keys": 0.0,
+    "github.com/rediacc/renet/pkg/testutil": 188.5,
+    "github.com/rediacc/renet/pkg/functions/vault": 997.7,
+    "github.com/rediacc/renet/pkg/infra/vm/cloudinit": 131.2,
+    "github.com/rediacc/renet/pkg/infra/vm/qemu": 107.6,
+    "github.com/rediacc/renet/pkg/loop": 113.3,
+    "github.com/rediacc/renet/pkg/telemetry": 191.3
   },
   "defaultUnitMs": {
     "quality-branch": 56667,
@@ -818,6 +837,9 @@
     "quality-static": 4219,
     "quality-wiring": 30000,
     "quality-www-build": 13500
+  },
+  "unitParallelism": {
+    "quality-pytest": 4
   },
   "job_p90_minutes": {
     "Initialize": 2.7,
@@ -946,7 +968,6 @@
     "Tests + Infra / Update Flow / Update flow (Linux x64)": 1.2,
     "Build (Renet) / Renet (Full)": 3.5,
     "Build (Renet) / Procwalk (windows-latest)": 1.4,
-    "Quality / Pytest": 24.4,
     "Build (Docker Fast) / Server Docker (cached)": 0.1,
     "Build (Docker) / Server Docker (cached)": 0.1
   },

@@ -4791,7 +4791,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: the real run is red on producer gaps in .ci/rediacc_ci/ci/budget_report.py, not on this gate: quality-pytest and test-renet-integration unit p90s are keyed by junit classname and match no committed manifest id (532 units), 12 renet-go packages and 3 e2e-workers #partN units have no sample, and no whole-job p90 exists for check 2 over the 63 non-lane jobs (fetch_jobs also reads only the first 100 of 112-165 jobs per run). It moves to the quality-code lane ("Lane budget" step) once the producer lands and the P2 exit holds (2026-09-28).',
+        'BLOCKER: spec W P2 exit not met yet: over the 10-run sample the gate reports measured overruns (E2E Workers legs 14.5-27.1m, E2E Ceph 17.2, Ceph Workers 20.3, K8s 14.6, OPS Provision 2/4 14.2; K8s Ceph 22.6 over its 20 cap, K8s Multinode 27.4 over 25) and 19 jobs with no successful sample; the producer gaps are fixed (239b0c210, cd9656f2e). Flip to a CI gate once the P2 levers land and the P2 exit holds (agent/plans/PLAN-ci-time-budget.md T3.1).',
     },
   },
   {

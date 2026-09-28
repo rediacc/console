@@ -22,8 +22,10 @@
  *      the test lanes), whether or not `SHARD_COUNTS` names it.
  *   2. Unsharded job: a quality lane with no manifest is a shard of one over its lock
  *      entries. Every OTHER runner job in `ci.yml` and its callees is judged on its whole-job
- *      p90 (`job_p90_minutes`), against 12 or against its `JOB_BUDGET_CAPS` ceiling (the
- *      2026-09-28 ruling), and a job with no p90 is UNCHECKED, which is a finding.
+ *      p90 (`job_p90_minutes`, keyed by Actions display name and mapped back per call site
+ *      by `displayNamePattern`), against 12 or against its `JOB_BUDGET_CAPS` ceiling (the
+ *      2026-09-28 ruling); a job with no p90 is UNCHECKED, which is a finding. A priced
+ *      lane's matrix legs are judged in the lane and skipped here.
  *   3. Single unit: a unit whose own cost plus the lane's fixed cost exceeds 12 minutes
  *      is red even alone, "indivisible", unless `LANE_BUDGET_EXEMPTIONS` names it (D-W3).
  *      An exemption whose test file or job has gone is itself a finding.
@@ -44,14 +46,21 @@
  * carries a real `timeout-minutes: 15` would red the pipeline for a policy nothing has
  * adopted yet. The two capped jobs are read against their ruling timeouts (25, 30).
  *
- * WHY THE REAL RUN IS RED TODAY (2026-09-28), AND NONE OF IT IS THIS GATE'S LOGIC.
- * `budget_report.py --refresh` keys quality-pytest and test-renet-integration unit p90s by
- * junit classname ("pytest:/ci/...", "renet-integration:TestX.py") where the committed
- * manifests say "pytest:.ci/..." and "renet-integration:test_x.py", so 532 enumerated units
- * match nothing; 12 renet-go packages and the three `13-postgres-fork-isolation#partN`
- * units have no sample at all; and it writes no whole-job p90, so check 2 has no number
- * for 63 jobs. `--selftest` proves the LOGIC against fixtures and the real exemption and
- * cap tables; the real run reports the data gaps honestly rather than pricing them at 0.
+ * WHY THE REAL RUN IS RED, AND WHY THAT IS THE POINT. Since budget_report.py writes
+ * manifest-shaped unit ids and `job_p90_minutes` (2026-09-28), what the real run reports is
+ * MEASURED overrun: E2E Workers legs, the E2E Ceph/K8s jobs, OPS Provision legs, and jobs no
+ * sampled run completed successfully (UNCHECKED). Those are spec W's P2 exit, not defects
+ * here. `--selftest` proves the logic against fixtures and the real exemption and cap
+ * tables.
+ *
+ * PARALLEL LANES (`unitParallelism`). quality-pytest runs `pytest -n 4 --dist loadgroup` per
+ * leg, so its per-file serial p90s are divided by the workers and floored at the largest
+ * xdist group (enumerator `mutex`, plus a module-level `XDIST_GROUP`). Serial arithmetic
+ * put those legs at 30-41m against a measured 8-12m.
+ *
+ * MEASURED LEGS. A priced lane's legs are judged twice: the unit-sum estimate (checks 1/4)
+ * and the leg's own measured p90 by display name. The estimate alone missed E2E Workers,
+ * whose runner step spends most of its time on VM setup no unit is charged for.
  *
  * Usage:
  *   npx tsx scripts/gates/check-lane-budget.ts             the real run, against committed data
@@ -63,7 +72,7 @@
  * needs: node
  * selftest: true
  * emit: false
- * blocker: the real run is red on producer gaps in .ci/rediacc_ci/ci/budget_report.py, not on this gate: quality-pytest and test-renet-integration unit p90s are keyed by junit classname and match no committed manifest id (532 units), 12 renet-go packages and 3 e2e-workers #partN units have no sample, and no whole-job p90 exists for check 2's 63 non-lane jobs (fetch_jobs also reads only the first 100 of 112-165 jobs per run). It runs by hand until the producer lands and the P2 exit holds (2026-09-28).
+ * blocker: the real run is red on MEASURED overrun, not on this gate or its data: E2E Workers legs, E2E Ceph, Ceph Workers, K8s and Migrate over 12, K8s Ceph and K8s Multinode over their 2026-09-28 caps, OPS Provision legs, and jobs no sampled PR run completed successfully (UNCHECKED). It runs by hand until spec W's P2 exit holds (2026-09-28).
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
  *   whole misses its 35-minute target (D-W1); this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner
@@ -88,6 +97,7 @@ import {
   parseShardManifest,
   shardManifestPath,
 } from '../ci-runner/shard-manifest.js';
+import { LANE_ENUMERATORS } from '../ci-runner/unit-enumerators.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -202,12 +212,18 @@ export interface LaneDurations {
    */
   defaultUnitMs?: Record<string, number>;
   /**
-   * MINUTES: a job's whole-job p90, keyed by job id, for check 2 over every job that is not
-   * a priced lane. Optional: nothing writes it yet (`budget_report.py --refresh` produces
-   * fixed costs only, and drops keys it does not know), so every such job is reported
-   * UNCHECKED until the producer lands.
+   * MINUTES: a job's whole-job p90 (success-only), keyed by its Actions DISPLAY NAME
+   * ("Tests + Infra / E2E K8s Ceph", "Quality / Pytest (2/3)"), written by
+   * `budget_report.py --refresh`. `displayNamePattern` maps each key back to a job id: a
+   * priced lane's matrix legs are judged in the lane, every other job in check 2, and a job
+   * no key matches is UNCHECKED.
    */
   job_p90_minutes?: Record<string, number>;
+  /**
+   * How many units a lane's leg runs AT ONCE (T3.1, 2026-09-28). A lane absent here runs its
+   * units one after another. Each value's source is cited in the file's `$comment`.
+   */
+  unitParallelism?: Record<string, number>;
 }
 
 export function readDurations(root: string): LaneDurations {
@@ -221,6 +237,7 @@ export function readDurations(root: string): LaneDurations {
     units: parsed.units ?? {},
     defaultUnitMs: parsed.defaultUnitMs,
     job_p90_minutes: parsed.job_p90_minutes,
+    unitParallelism: parsed.unitParallelism,
   };
 }
 
@@ -291,6 +308,47 @@ export function legCostMs(
   return { totalMs, unknown, perUnit };
 }
 
+/**
+ * A lane whose leg runs several units at once (quality-pytest: `pytest -n <workers> --dist
+ * loadgroup`). Every unit in one mutex group runs on ONE worker, one after another, so
+ * whichever group is largest is a floor the other workers cannot help with.
+ */
+export interface LegParallelism {
+  workers: number;
+  /** The mutex group a unit belongs to, or undefined when it distributes freely. */
+  groupOf: (id: string) => string | undefined;
+}
+
+/**
+ * A leg's unit time under parallelism: the larger of (every known unit's cost / workers)
+ * and the largest mutex group's serial cost. With no parallelism, or one worker, it is the
+ * plain serial sum `legCostMs` returns. `bound` names which of the two decided it.
+ */
+export function parallelLegMs(
+  perUnit: readonly UnitCost[],
+  parallel: LegParallelism | undefined
+): { ms: number; bound: string } {
+  let serial = 0;
+  for (const u of perUnit) serial += u.ms ?? 0;
+  if (parallel === undefined || parallel.workers <= 1) return { ms: serial, bound: 'serial' };
+  const groups = new Map<string, number>();
+  for (const u of perUnit) {
+    const g = parallel.groupOf(u.id);
+    if (g !== undefined) groups.set(g, (groups.get(g) ?? 0) + (u.ms ?? 0));
+  }
+  const spread = serial / parallel.workers;
+  let worstGroup: [string, number] | undefined;
+  for (const entry of groups)
+    if (worstGroup === undefined || entry[1] > worstGroup[1]) worstGroup = entry;
+  if (worstGroup !== undefined && worstGroup[1] > spread) {
+    return {
+      ms: worstGroup[1],
+      bound: `mutex group ${worstGroup[0]} runs serially on one of ${parallel.workers} workers`,
+    };
+  }
+  return { ms: spread, bound: `${parallel.workers} workers` };
+}
+
 /** Checks 1 (sharded) and 2 (unsharded, `of: 1`): identical arithmetic either way. */
 export function legFindings(
   lane: string,
@@ -299,10 +357,12 @@ export function legFindings(
   ids: readonly string[],
   fixedMinutes: number,
   units: Readonly<Record<string, number>>,
-  defaultUnitMs: number | undefined
+  defaultUnitMs: number | undefined,
+  parallel?: LegParallelism
 ): string[] {
   const findings: string[] = [];
-  const { totalMs, unknown, perUnit } = legCostMs(ids, units, defaultUnitMs);
+  const { unknown, perUnit } = legCostMs(ids, units, defaultUnitMs);
+  const { ms: totalMs, bound } = parallelLegMs(perUnit, parallel);
   if (unknown.length > 0) {
     const shown = [...unknown].sort().slice(0, 3);
     findings.push(
@@ -321,7 +381,8 @@ export function legFindings(
       .map((u) => `${u.id} (${(u.ms / 60_000).toFixed(1)}m)`);
     findings.push(
       `${lane} leg ${index}/${of}: estimated ${totalMinutes.toFixed(1)}m ` +
-        `(${fixedMinutes.toFixed(1)}m fixed + ${(totalMs / 60_000).toFixed(1)}m units), over the ` +
+        `(${fixedMinutes.toFixed(1)}m fixed + ${(totalMs / 60_000).toFixed(1)}m units` +
+        `${parallel !== undefined && parallel.workers > 1 ? `, ${bound}` : ''}), over the ` +
         `${PER_LEG_BUDGET_MIN}m budget. Top unit(s): ${top3.join(', ') || 'none measured'}.`
     );
   }
@@ -334,9 +395,32 @@ export function indivisibleFindings(
   laneIds: readonly string[],
   fixedMinutes: number,
   units: Readonly<Record<string, number>>,
-  exemptions: readonly UnitExemption[] = LANE_BUDGET_EXEMPTIONS
+  exemptions: readonly UnitExemption[] = LANE_BUDGET_EXEMPTIONS,
+  parallel?: LegParallelism
 ): string[] {
   const findings: string[] = [];
+  // Under parallelism the indivisible thing is a MUTEX GROUP (one worker, serially); an ungrouped file's items spread, so its floor is its cost over the workers.
+  if (parallel !== undefined && parallel.workers > 1) {
+    const groups = new Map<string, number>();
+    for (const id of laneIds) {
+      const ms = units[id];
+      if (ms === undefined) continue;
+      const g = parallel.groupOf(id);
+      const key = g === undefined ? id : `mutex group ${g}`;
+      groups.set(key, (groups.get(key) ?? 0) + (g === undefined ? ms / parallel.workers : ms));
+    }
+    for (const [key, ms] of groups) {
+      const minutes = fixedMinutes + ms / 60_000;
+      if (minutes > PER_LEG_BUDGET_MIN && unitExemption(key, exemptions) === undefined) {
+        findings.push(
+          `${lane}: ${key} alone costs ${minutes.toFixed(1)}m even across ${parallel.workers} ` +
+            `workers, over the ${PER_LEG_BUDGET_MIN}m budget. Indivisible: split it, or record ` +
+            'an approved exemption (LANE_BUDGET_EXEMPTIONS, D-W3).'
+        );
+      }
+    }
+    return findings;
+  }
   for (const id of laneIds) {
     const ms = units[id];
     if (ms === undefined) continue;
@@ -362,18 +446,35 @@ export function jobBudgetFindings(
   jobP90Minutes: Readonly<Record<string, number>>,
   caps: readonly JobCap[] = JOB_BUDGET_CAPS
 ): string[] {
+  return judgeJobSamples(
+    Object.entries(jobP90Minutes).map(([job, minutes]) => ({ job, label: job, minutes })),
+    caps
+  );
+}
+
+/** One measured p90 for one job: `label` is the Actions display name it was measured under (a matrix job has one per combination). */
+export interface JobSample {
+  job: string;
+  label: string;
+  minutes: number;
+}
+
+export function judgeJobSamples(
+  samples: readonly JobSample[],
+  caps: readonly JobCap[] = JOB_BUDGET_CAPS
+): string[] {
   const findings: string[] = [];
-  for (const [job, minutes] of Object.entries(jobP90Minutes).sort(([a], [b]) =>
-    a.localeCompare(b)
+  for (const { job, label, minutes } of [...samples].sort((a, b) =>
+    a.label.localeCompare(b.label)
   )) {
     const cap = caps.find((c) => c.job === job);
     const limit = cap?.p90Minutes ?? PER_LEG_BUDGET_MIN;
     if (minutes > limit) {
       findings.push(
         cap === undefined
-          ? `job ${job}: p90 ${minutes.toFixed(1)}m, over the ${PER_LEG_BUDGET_MIN}m budget. ` +
+          ? `job ${job}${label === job ? '' : ` ("${label}")`}: p90 ${minutes.toFixed(1)}m, over the ${PER_LEG_BUDGET_MIN}m budget. ` +
               'Shard it, cut its fixed cost, or get an operator ruling into JOB_BUDGET_CAPS.'
-          : `job ${job}: p90 ${minutes.toFixed(1)}m, over its exemption cap of ${limit}m ` +
+          : `job ${job}${label === job ? '' : ` ("${label}")`}: p90 ${minutes.toFixed(1)}m, over its exemption cap of ${limit}m ` +
               `(${cap.ruling}).`
       );
     }
@@ -381,10 +482,20 @@ export function jobBudgetFindings(
   return findings;
 }
 
-/** A workflow's jobs, in order, each with the reusable workflow it calls (`uses:`), if any. Hand-parsed for the same reason `laneCapabilities` is. */
-export function workflowJobs(text: string): { id: string; uses: string | null }[] {
-  const out: { id: string; uses: string | null }[] = [];
+export interface WorkflowJob {
+  id: string;
+  /** The reusable workflow this job calls, or null for a job that runs on a runner itself. */
+  uses: string | null;
+  /** Its `name:`, quotes stripped; the id when it declares none (the Actions default). */
+  name: string;
+  hasMatrix: boolean;
+}
+
+/** A workflow's jobs, in order, each with its `name:`, its `uses:` and whether it has a matrix. Hand-parsed for the same reason `laneCapabilities` is. */
+export function workflowJobs(text: string): WorkflowJob[] {
+  const out: WorkflowJob[] = [];
   let inJobs = false;
+  let inStrategy = false;
   for (const raw of text.split('\n')) {
     if (/^jobs:\s*$/.test(raw)) {
       inJobs = true;
@@ -394,14 +505,89 @@ export function workflowJobs(text: string): { id: string; uses: string | null }[
     if (raw !== '' && !/^\s/.test(raw) && !raw.startsWith('#')) break;
     const job = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
     if (job) {
-      out.push({ id: job[1] as string, uses: null });
+      out.push({ id: job[1] as string, uses: null, name: job[1] as string, hasMatrix: false });
+      inStrategy = false;
       continue;
     }
-    const uses = /^ {4}uses:\s*\.\/(\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml)/.exec(raw);
     const last = out[out.length - 1];
-    if (uses && last !== undefined) last.uses = uses[1] as string;
+    if (last === undefined) continue;
+    const uses = /^ {4}uses:\s*\.\/(\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml)/.exec(raw);
+    if (uses) last.uses = uses[1] as string;
+    const name = /^ {4}name:\s*(.+?)\s*$/.exec(raw);
+    if (name) last.name = (name[1] as string).replace(/^(['"])(.*)\1$/, '$2');
+    if (/^ {4}\S/.test(raw)) inStrategy = /^ {4}strategy:\s*$/.test(raw);
+    else if (inStrategy && /^ {6}matrix:/.test(raw)) last.hasMatrix = true;
   }
   return out;
+}
+
+/**
+ * The Actions API's display name for a job, as a pattern: every caller's `name:` joined by
+ * " / " (a called workflow's job reports as "<caller name> / <its own name>"), each
+ * `${{ ... }}` template matching any text, and a matrix job whose `name:` carries no template
+ * allowed the " (<values>)" suffix Actions appends itself ("Code (1)"). The TypeScript twin of
+ * `budget_report.py`'s `_display_name_pattern`, which writes `job_p90_minutes` under exactly
+ * these names; this end maps them back to job ids rather than making the producer guess ids.
+ */
+export function displayNamePattern(
+  chain: readonly string[],
+  name: string,
+  hasMatrix: boolean
+): RegExp {
+  const esc = (t: string): string => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const TEMPLATE = /\$\{\{[^}]*\}\}/;
+  const own = TEMPLATE.test(name)
+    ? name.split(new RegExp(TEMPLATE.source, 'g')).map(esc).join('[^,()]+')
+    : esc(name) + (hasMatrix ? '(?: \\([^)]*\\))?' : '');
+  return new RegExp(`^${[...chain.map(esc), own].join(' / ')}$`);
+}
+
+/** Every measured display name one job id reports under, across all of its call sites. */
+export function samplesForJob(
+  sites: readonly { id: string; pattern: RegExp }[],
+  measured: Readonly<Record<string, number>>,
+  job: string
+): JobSample[] {
+  const out: JobSample[] = [];
+  for (const site of sites) {
+    if (site.id !== job) continue;
+    for (const [label, minutes] of Object.entries(measured)) {
+      if (site.pattern.test(label)) out.push({ job, label, minutes });
+    }
+  }
+  return out;
+}
+
+/**
+ * Which runner jobs check 2 judges: not a priced lane (its matrix legs are judged per leg in
+ * the lane), not a D-W2 headroom job; every other job by each display-name sample it has, and
+ * a job with none is UNCHECKED.
+ */
+export function checkTwoPartition(
+  runnerJobs: readonly string[],
+  priced: ReadonlySet<string>,
+  samplesFor: (job: string) => JobSample[]
+): { judged: JobSample[]; unchecked: string[]; headroom: string[] } {
+  const judged: JobSample[] = [];
+  const unchecked: string[] = [];
+  const headroom: string[] = [];
+  for (const job of runnerJobs) {
+    if (priced.has(job)) continue;
+    if (HEADROOM_GATE_JOBS.includes(job)) {
+      headroom.push(job);
+      continue;
+    }
+    const samples = samplesFor(job);
+    if (samples.length === 0) unchecked.push(job);
+    else judged.push(...samples);
+  }
+  return { judged, unchecked, headroom };
+}
+
+/** The matrix leg index a display name carries: "(3/3)", "(ubuntu-24.04, 2/8)", "(1)". 1 when there is none (an unsharded job is a leg of one). */
+export function legIndexOf(label: string): number {
+  const m = /(?:\(|, )(\d+)(?:\/\d+)?\)$/.exec(label);
+  return m === null ? 1 : Number(m[1]);
 }
 
 // --------------------------------------------------------------------------- Check 6: pipeline (advisory) ---------------------------------------------------------------------------
@@ -451,7 +637,45 @@ function readOr(root: string, file: string, what: string): string | null {
   }
 }
 
-function main(): number {
+const XDIST_DECL_RE = /^XDIST_GROUP\s*=\s*(?:["']([^"']+)["']|xdist_groups\.REAL_TREE_GROUP)/m;
+
+/**
+ * A lane's `LegParallelism`, or undefined when `unitParallelism` does not name it. Mutex
+ * groups come from two places, both read-only and offline:
+ *   - the lane's own enumerator (`unit-enumerators.ts`), whose `mutex` carries every group
+ *     that spans more than one file (quality-pytest's `PYTEST_XDIST_MUTEX_GROUPS`);
+ *   - for `pytest:` units, a module-level `XDIST_GROUP = ...` in the file itself, which pins
+ *     the whole module to one worker (`.ci/rediacc_ci/xdist_groups.py`, "THE ESCAPE HATCH")
+ *     even when no other file shares the group.
+ * The enumerator's name wins for a file in both, so one resource is never two groups.
+ */
+async function laneParallelism(
+  lane: string,
+  durations: LaneDurations
+): Promise<LegParallelism | undefined> {
+  const workers = durations.unitParallelism?.[lane];
+  if (workers === undefined) return undefined;
+  const groups = new Map<string, string>();
+  const enumerator = LANE_ENUMERATORS[lane];
+  if (enumerator !== undefined) {
+    for (const u of await enumerator(ROOT)) if (u.mutex !== undefined) groups.set(u.id, u.mutex);
+  }
+  const declared = new Map<string, string | null>();
+  const groupOf = (id: string): string | undefined => {
+    const known = groups.get(id);
+    if (known !== undefined) return known;
+    if (!id.startsWith('pytest:')) return undefined;
+    if (!declared.has(id)) {
+      const file = path.join(ROOT, id.slice('pytest:'.length));
+      const m = existsSync(file) ? XDIST_DECL_RE.exec(readFileSync(file, 'utf-8')) : null;
+      declared.set(id, m === null ? null : `xdist:${m[1] ?? 'real-tree'}`);
+    }
+    return declared.get(id) ?? undefined;
+  };
+  return { workers, groupOf };
+}
+
+async function main(): Promise<number> {
   const qualityText = readOr(ROOT, QUALITY_WORKFLOW, 'the quality workflow');
   const lockText = readOr(ROOT, LOCK_PATH, 'the gate lock');
   const ciText = readOr(ROOT, CI_WORKFLOW, 'the top-level CI workflow');
@@ -488,24 +712,39 @@ function main(): number {
 
   // Every job that occupies a runner: ci.yml's own, plus every job of every reusable
   // workflow it calls, transitively. A caller job (`uses:`) is not a runner itself.
+  // Walked PER CALL SITE, not per file: ci-build-docker.yml is called three times under three caller names, and each call reports under its own display name.
   const runnerJobSet = new Set<string>();
-  const seenFiles = new Set<string>();
-  const walk = (file: string, text: string): boolean => {
-    seenFiles.add(file);
+  const sites: { id: string; pattern: RegExp }[] = [];
+  const walk = (
+    file: string,
+    text: string,
+    chain: readonly string[],
+    stack: readonly string[]
+  ): boolean => {
     for (const j of workflowJobs(text)) {
       if (j.uses === null) {
         runnerJobSet.add(j.id);
+        sites.push({ id: j.id, pattern: displayNamePattern(chain, j.name, j.hasMatrix) });
         continue;
       }
-      if (seenFiles.has(j.uses)) continue;
+      if (stack.includes(j.uses)) continue;
       const callee = workflows[j.uses] ?? readOr(ROOT, j.uses, `the ${j.uses} workflow`);
-      if (callee === null || !walk(j.uses, callee)) return false;
+      if (callee === null) return false;
+      workflows[j.uses] = callee;
+      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file])) return false;
     }
     return true;
   };
-  if (!walk(CI_WORKFLOW, ciText)) return 1;
-  // A job id two callees both define (test-linux-x64: ct-install-methods.yml and ct-update-flow.yml) is judged once under that id; job_p90_minutes is keyed by id, so the two cannot be told apart there either.
+  if (!walk(CI_WORKFLOW, ciText, [], [])) return 1;
+  // A job id two callees both define (test-linux-x64: ct-install-methods.yml and ct-update-flow.yml) is one id with two call sites; each site's display name is its own sample.
   const runnerJobs = [...runnerJobSet];
+  const measured = durations.job_p90_minutes ?? {};
+  const matchedLabels = new Set<string>();
+  const samplesFor = (job: string): JobSample[] => {
+    const out = samplesForJob(sites, measured, job);
+    for (const x of out) matchedLabels.add(x.label);
+    return out;
+  };
   if (runnerJobs.length === 0) {
     console.error(
       `${RED}✗${NC} ${CI_WORKFLOW} and its callees parsed to zero jobs; the gate is not seeing the ` +
@@ -521,6 +760,7 @@ function main(): number {
   const worstLegPerLane: number[] = [];
   const priced = new Set<string>();
   const inert: string[] = [];
+  const parallelLanes: string[] = [];
   let legCount = 0;
   let unitCount = 0;
   let measuredCount = 0;
@@ -532,19 +772,49 @@ function main(): number {
     of: number,
     ids: readonly string[],
     fixedMinutes: number,
-    defaultUnitMs: number | undefined
+    defaultUnitMs: number | undefined,
+    parallel: LegParallelism | undefined
   ): number => {
     findings.push(
-      ...legFindings(lane, index, of, ids, fixedMinutes, durations.units, defaultUnitMs)
+      ...legFindings(lane, index, of, ids, fixedMinutes, durations.units, defaultUnitMs, parallel)
     );
-    const { totalMs, perUnit } = legCostMs(ids, durations.units, defaultUnitMs);
+    const { perUnit } = legCostMs(ids, durations.units, defaultUnitMs);
     legCount += 1;
     unitCount += ids.length;
     for (const u of perUnit) {
       if (durations.units[u.id] !== undefined) measuredCount += 1;
       else if (u.ms !== null) defaultedCount += 1;
     }
-    return fixedMinutes + totalMs / 60_000;
+    return fixedMinutes + parallelLegMs(perUnit, parallel).ms / 60_000;
+  };
+
+  // A priced lane's legs are ALSO judged on what they measured (job_p90_minutes, one sample per matrix combination), so an estimate that misses real cost (VM setup inside the runner step) cannot hide a leg that is over. Grouped per leg: the worst combination is named, with how many were over.
+  const measuredLegFindings = (lane: string, of: number): number => {
+    const byLeg = new Map<number, JobSample[]>();
+    for (const sample of samplesFor(lane)) {
+      const ofIn = /\/(\d+)\)$/.exec(sample.label);
+      // A sample from before the lane's current shard count ("Pytest (1/2)" once it is 3 legs) describes a plan that no longer ships.
+      if (ofIn !== null && Number(ofIn[1]) !== of) continue;
+      const idx = legIndexOf(sample.label);
+      byLeg.set(idx, [...(byLeg.get(idx) ?? []), sample]);
+    }
+    let worst = 0;
+    for (const [idx, list] of [...byLeg].sort(([x], [y]) => x - y)) {
+      const over = list.filter((x) => x.minutes > PER_LEG_BUDGET_MIN);
+      const top = [...list].sort((x, y) => y.minutes - x.minutes)[0] as JobSample;
+      worst = Math.max(worst, top.minutes);
+      if (over.length > 0) {
+        findings.push(
+          `${lane} leg ${idx}/${of}: MEASURED p90 ${top.minutes.toFixed(1)}m ("${top.label}"), ` +
+            `over the ${PER_LEG_BUDGET_MIN}m budget` +
+            (list.length > 1
+              ? ` (${over.length} of ${list.length} matrix combination(s) over)`
+              : '') +
+            '.'
+        );
+      }
+    }
+    return worst;
   };
 
   for (const lane of [...allLanes].sort()) {
@@ -557,6 +827,16 @@ function main(): number {
     const fixedMinutes = durations.jobs[lane] ?? 0;
     const defaultUnitMs = durations.defaultUnitMs?.[lane];
     const manifestFile = path.join(ROOT, shardManifestPath(lane));
+    let parallel: LegParallelism | undefined;
+    try {
+      parallel = await laneParallelism(lane, durations);
+    } catch (e) {
+      findings.push(
+        `${lane}: its mutex groups could not be read, so its parallel estimate would be a guess: ${String(e)}`
+      );
+      continue;
+    }
+    if (parallel !== undefined) parallelLanes.push(`${lane} x${parallel.workers}`);
 
     // A committed manifest IS the shipped plan, whether or not the lane is in SHARD_COUNTS: the test lanes are sharded from theirs (T2.12-T2.15), so pricing them by lock entries would price nothing.
     if (existsSync(manifestFile)) {
@@ -566,13 +846,15 @@ function main(): number {
       for (const leg of manifest.legs) {
         worst = Math.max(
           worst,
-          priceLeg(lane, leg.index, manifest.of, leg.ids, fixedMinutes, defaultUnitMs)
+          priceLeg(lane, leg.index, manifest.of, leg.ids, fixedMinutes, defaultUnitMs, parallel)
         );
         allIds.push(...leg.ids);
       }
       priced.add(lane);
-      worstLegPerLane.push(worst);
-      findings.push(...indivisibleFindings(lane, allIds, fixedMinutes, durations.units));
+      worstLegPerLane.push(Math.max(worst, measuredLegFindings(lane, manifest.of)));
+      findings.push(
+        ...indivisibleFindings(lane, allIds, fixedMinutes, durations.units, undefined, parallel)
+      );
       continue;
     }
     if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {
@@ -586,8 +868,15 @@ function main(): number {
     // A lane with zero lock entries and no manifest (quality-submodule-branches) has no units to price; it falls through to check 2's job-level set below rather than vanishing.
     if (laneIds.length === 0) continue;
     priced.add(lane);
-    worstLegPerLane.push(priceLeg(lane, 1, 1, laneIds, fixedMinutes, defaultUnitMs));
-    findings.push(...indivisibleFindings(lane, laneIds, fixedMinutes, durations.units));
+    worstLegPerLane.push(
+      Math.max(
+        priceLeg(lane, 1, 1, laneIds, fixedMinutes, defaultUnitMs, parallel),
+        measuredLegFindings(lane, 1)
+      )
+    );
+    findings.push(
+      ...indivisibleFindings(lane, laneIds, fixedMinutes, durations.units, undefined, parallel)
+    );
   }
 
   if (priced.size === 0 || unitCount === 0) {
@@ -598,29 +887,24 @@ function main(): number {
     return 1;
   }
 
-  // Check 2 over every runner job that is not a priced lane.
-  const judged: Record<string, number> = {};
-  const unchecked: string[] = [];
-  const headroom: string[] = [];
-  for (const job of runnerJobs) {
-    if (priced.has(job)) continue;
-    if (HEADROOM_GATE_JOBS.includes(job)) {
-      headroom.push(job);
-      continue;
-    }
-    const p90 = durations.job_p90_minutes?.[job];
-    if (p90 === undefined) unchecked.push(job);
-    else judged[job] = p90;
-  }
-  findings.push(...jobBudgetFindings(judged));
+  // Check 2 over every runner job that is not a priced lane, by the display names budget_report measured it under. A priced lane's matrix legs were judged above, per leg, and are skipped here.
+  const {
+    judged: judgedSamples,
+    unchecked,
+    headroom,
+  } = checkTwoPartition(runnerJobs, priced, samplesFor);
+  const judgedJobs = new Set(judgedSamples.map((x) => x.job));
+  findings.push(...judgeJobSamples(judgedSamples));
   if (unchecked.length > 0) {
     const shown = [...unchecked].sort();
     findings.push(
       `check 2: ${unchecked.length} job(s) in ${CI_WORKFLOW} and its callees are UNCHECKED: no ` +
-        `job_p90_minutes entry in ${DURATIONS_PATH}, and budget_report.py --refresh does not ` +
-        `produce one. Unknown is not within budget: ${shown.join(', ')}.`
+        `job_p90_minutes entry in ${DURATIONS_PATH} matches their display name. A job that ` +
+        'never ran successfully in the sampled runs has no p90, and unknown is not within ' +
+        `budget: ${shown.join(', ')}.`
     );
   }
+  const unmatched = Object.keys(measured).filter((l) => !matchedLabels.has(l));
 
   // Exemption liveness: an entry whose test file or job is gone is a hole, not an approval.
   const jobSet = runnerJobSet;
@@ -646,7 +930,7 @@ function main(): number {
   if (CHECK7_ENABLED) findings.push(...timeoutFindings(caps));
 
   const pipelineMinutes = pipelineEstimateMinutes(
-    [...worstLegPerLane, ...Object.values(judged)],
+    [...worstLegPerLane, ...judgedSamples.map((x) => x.minutes)],
     durations.concurrency
   );
   const pipelineNote =
@@ -659,7 +943,9 @@ function main(): number {
   const shape =
     `${priced.size} lane(s), ${legCount} leg(s), ${unitCount} unit(s) ` +
     `(${measuredCount} measured, ${defaultedCount} by defaultUnitMs), ` +
-    `${Object.keys(judged).length}/${runnerJobs.length - priced.size - headroom.length} other job(s) judged, ` +
+    `parallel: ${parallelLanes.join(', ') || 'none'}, ` +
+    `${judgedJobs.size}/${runnerJobs.length - priced.size - headroom.length} other job(s) judged ` +
+    `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s); ` +
     `left to check_job_timeout_headroom.py (D-W2): ${headroom.join(', ') || 'none'}; ` +
     `inert: ${inert.join(', ') || 'none'}`;
@@ -805,17 +1091,165 @@ function selftest(): number {
         jobBudgetFindings({ 'test-e2e-k8s': 11.9 }).length === 0,
     },
     {
-      name: 'workflowJobs: a caller job is marked by its uses:, a runner job is not',
+      name: 'workflowJobs: a caller job is marked by its uses:, a runner job is not; name and matrix are read',
       ok: (() => {
         const jobs = workflowJobs(
-          'on: push\njobs:\n  a:\n    uses: ./.github/workflows/x.yml\n  b:\n    runs-on: ubuntu-latest\n'
+          "on: push\njobs:\n  a:\n    name: 'Tests + Infra'\n    uses: ./.github/workflows/x.yml\n  b:\n    runs-on: ubuntu-latest\n    strategy:\n      matrix:\n        shard: [1, 2]\n  c:\n    name: C\n    env:\n      matrix: no\n"
         );
         return (
           JSON.stringify(jobs) ===
           JSON.stringify([
-            { id: 'a', uses: '.github/workflows/x.yml' },
-            { id: 'b', uses: null },
+            { id: 'a', uses: '.github/workflows/x.yml', name: 'Tests + Infra', hasMatrix: false },
+            { id: 'b', uses: null, name: 'b', hasMatrix: true },
+            { id: 'c', uses: null, name: 'C', hasMatrix: false },
           ])
+        );
+      })(),
+    },
+    // --- parallelism: a leg with N workers, and a mutex group bounding it ---------
+    {
+      name: 'MATCH: 8 units of 10m on 8 workers is 10m (+1m fixed = 11m), no finding',
+      ok:
+        legFindings(
+          'lane-p',
+          1,
+          1,
+          ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+          1,
+          Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => [k, 10 * 60_000])),
+          undefined,
+          { workers: 8, groupOf: () => undefined }
+        ).length === 0,
+    },
+    {
+      name: 'FIRES: the same leg on 4 workers is 20m + 1m, and the finding names the workers',
+      ok: legFindings(
+        'lane-p',
+        1,
+        1,
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        1,
+        Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => [k, 10 * 60_000])),
+        undefined,
+        { workers: 4, groupOf: () => undefined }
+      ).some((f) => f.includes('estimated 21.0m') && f.includes('4 workers')),
+    },
+    {
+      name: 'CONTROL: with no parallelism the same leg is the serial 81m',
+      ok: legFindings(
+        'lane-p',
+        1,
+        1,
+        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        1,
+        Object.fromEntries(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((k) => [k, 10 * 60_000])),
+        undefined
+      ).some((f) => f.includes('estimated 81.0m')),
+    },
+    {
+      name: 'FIRES: a mutex group (2 x 6m on one worker) bounds a 4-worker leg at 12m + 0.5m fixed',
+      ok: (() => {
+        const units = { g1: 6 * 60_000, g2: 6 * 60_000, f1: 60_000, f2: 60_000, f3: 60_000 };
+        const groupOf = (id: string): string | undefined => (id.startsWith('g') ? 'G' : undefined);
+        const bounded = legFindings('lane-p', 1, 1, Object.keys(units), 0.5, units, undefined, {
+          workers: 4,
+          groupOf,
+        });
+        const free = legFindings('lane-p', 1, 1, Object.keys(units), 0.5, units, undefined, {
+          workers: 4,
+          groupOf: () => undefined,
+        });
+        return (
+          bounded.some((f) => f.includes('estimated 12.5m') && f.includes('mutex group G')) &&
+          free.length === 0
+        );
+      })(),
+    },
+    {
+      name: 'FIRES: check 3 under parallelism judges the GROUP as the indivisible thing',
+      ok:
+        indivisibleFindings('lane-p', ['g1', 'g2'], 1, { g1: 6 * 60_000, g2: 6 * 60_000 }, [], {
+          workers: 4,
+          groupOf: () => 'G',
+        }).some((f) => f.includes('mutex group G')) &&
+        indivisibleFindings('lane-p', ['g1', 'g2'], 1, { g1: 6 * 60_000, g2: 6 * 60_000 }, [], {
+          workers: 4,
+          groupOf: () => undefined,
+        }).length === 0,
+    },
+    // --- display names: Actions API name back to job id --------------------------
+    {
+      name: 'display name: a called job is "<caller> / <name>", exact, not a prefix',
+      ok: (() => {
+        const re = displayNamePattern(['Tests + Infra'], 'E2E K8s Ceph', false);
+        return (
+          re.test('Tests + Infra / E2E K8s Ceph') &&
+          !re.test('Tests + Infra / E2E K8s Ceph Workers') &&
+          !re.test('E2E K8s Ceph')
+        );
+      })(),
+    },
+    {
+      name: 'display name: a matrix job with no template takes the " (<values>)" suffix, and its leg index is read',
+      ok: (() => {
+        const re = displayNamePattern(['Quality'], 'Code', true);
+        return (
+          re.test('Quality / Code (3)') &&
+          re.test('Quality / Code') &&
+          legIndexOf('Quality / Code (3)') === 3 &&
+          legIndexOf('Tests + Infra / E2E Workers (fedora-43, 6/8)') === 6 &&
+          legIndexOf('OPS Tests / OPS Check (linux-arm64)') === 1
+        );
+      })(),
+    },
+    {
+      name: 'display name: one template value never swallows another job\'s two ("(linux-amd64, 2/4)" is not "(${{ matrix.name }})")',
+      ok: (() => {
+        const qemu = displayNamePattern(['OPS Tests'], 'OPS Provision (${{ matrix.name }})', true);
+        const vm = displayNamePattern(
+          ['OPS Tests'],
+          'OPS Provision (${{ matrix.name }}, ${{ matrix.shard }}/${{ matrix.shard_of }})',
+          true
+        );
+        const label = 'OPS Tests / OPS Provision (linux-amd64, 2/4)';
+        return (
+          !qemu.test(label) &&
+          vm.test(label) &&
+          qemu.test('OPS Tests / OPS Provision (macos-intel)')
+        );
+      })(),
+    },
+    {
+      name: 'check 2: a capped job is judged through its display name; a priced matrix lane is skipped; an unmatched job is UNCHECKED',
+      ok: (() => {
+        const sites = [
+          {
+            id: 'test-e2e-k8s-ceph',
+            pattern: displayNamePattern(['Tests + Infra'], 'E2E K8s Ceph', false),
+          },
+          { id: 'quality-code', pattern: displayNamePattern(['Quality'], 'Code', true) },
+          {
+            id: 'test-e2e-ceph',
+            pattern: displayNamePattern(['Tests + Infra'], 'E2E Ceph', false),
+          },
+          { id: 'never-ran', pattern: displayNamePattern([], 'Never Ran', false) },
+        ];
+        const measured = {
+          'Tests + Infra / E2E K8s Ceph': 19.8,
+          'Quality / Code (1)': 30,
+          'Tests + Infra / E2E Ceph': 14.3,
+        };
+        const part = checkTwoPartition(
+          sites.map((x) => x.id),
+          new Set(['quality-code']),
+          (job) => samplesForJob(sites, measured, job)
+        );
+        const f = judgeJobSamples(part.judged);
+        return (
+          part.judged.every((x) => x.job !== 'quality-code') &&
+          JSON.stringify(part.unchecked) === JSON.stringify(['never-ran']) &&
+          f.length === 1 &&
+          (f[0] ?? '').includes('test-e2e-ceph ("Tests + Infra / E2E Ceph")')
         );
       })(),
     },
@@ -934,4 +1368,5 @@ function selftest(): number {
   return summarizeControls(cases);
 }
 
-process.exit(process.argv.includes('--selftest') ? selftest() : main());
+if (process.argv.includes('--selftest')) process.exit(selftest());
+else process.exit(await main());
