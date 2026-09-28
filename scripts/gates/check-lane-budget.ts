@@ -74,10 +74,16 @@
  * the contiguous slices `run-sequence.sh` cuts (`CONTIGUOUS_LANES`). `--table` prints each
  * variant leg's prediction beside its measured p90, which is how the model is validated.
  *
+ * REBALANCE (`--rebalance <lane>`, 2026-09-28). The three hand-packed test lanes drift back over budget as their tests change, so `--rebalance` re-plans one on this gate's own pricing (`legMinutes`, per variant), which is what keeps the balance and the verdict from disagreeing: quality-pytest by LPT over indivisible blocks (a mutex group is one block), test-e2e-workers by exact branch and bound on the worst leg over every distro, ops-tutorials exhaustively over contiguous slice sizes.
+ * The placement rules are data, `lane-durations.json`'s `rebalanceConstraints` (together, onLeg, notOnLeg, each with its reason). Local search then evens the other legs, and the committed plan is kept unless some leg, compared worst first, improves by more than REBALANCE_WRITE_EPS_MIN, so a second run over a written plan is a no-op.
+ * It prints the before/after table and the diff, writes only with `--write`, and refuses a rule no plan can meet or a unit with no measured cost, naming them. The real run reds a committed plan that breaks a rule and prints "rebalance available" when the worst leg would gain more than REBALANCE_ADVISORY_MIN; that line is advisory, not a finding.
+ *
  * Usage:
  *   npx tsx scripts/gates/check-lane-budget.ts             the real run, against committed data
  *   npx tsx scripts/gates/check-lane-budget.ts --table     the same, plus predicted vs measured per variant leg
  *   npx tsx scripts/gates/check-lane-budget.ts --selftest  prove the logic can fail
+ *   npx tsx scripts/gates/check-lane-budget.ts --rebalance <lane> [--write]
+ *       re-plan quality-pytest, test-e2e-workers or ops-tutorials on this model; dry run unless --write
  *
  * ---- gate ----
  * step: Lane budget
@@ -92,7 +98,7 @@
  * ---- end gate ----
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -107,6 +113,7 @@ import {
 } from '../ci-runner/lanes.js';
 import {
   legIds as _legIds,
+  buildShardManifest,
   parseShardManifest,
   shardManifestPath,
 } from '../ci-runner/shard-manifest.js';
@@ -239,6 +246,8 @@ export interface LaneDurations {
   unitParallelism?: Record<string, number>;
   /** Per-matrix-variant leg pricing, `{lane: {variant: VariantCost}}` (see the file header and the JSON's `$comment`). */
   variantCosts?: Record<string, Record<string, VariantCost>>;
+  /** The placement rules `--rebalance` honours and the real run enforces on the committed plan, `{lane: RebalanceConstraints}` (hand-authored; `budget_report.py --refresh` preserves it). */
+  rebalanceConstraints?: Record<string, RebalanceConstraints>;
 }
 
 /** One matrix variant's measured costs: `fixedMinutes` every leg pays, `legExtraMinutes` keyed by leg index, and `units` in ms, which override the top-level `units` for this variant. */
@@ -322,6 +331,7 @@ export function readDurations(root: string): LaneDurations {
     job_p90_minutes: parsed.job_p90_minutes,
     unitParallelism: parsed.unitParallelism,
     variantCosts: parsed.variantCosts,
+    rebalanceConstraints: parsed.rebalanceConstraints,
   };
 }
 
@@ -431,6 +441,19 @@ export function parallelLegMs(
     };
   }
   return { ms: spread, bound: `${parallel.workers} workers` };
+}
+
+/** One leg's predicted minutes: its fixed cost plus its units under the lane's parallelism. The single formula the verdict (`priceLeg`) and `--rebalance` both price with. */
+export function legMinutes(
+  ids: readonly string[],
+  fixedMinutes: number,
+  units: Readonly<Record<string, number>>,
+  defaultUnitMs: number | undefined,
+  parallel: LegParallelism | undefined
+): number {
+  return (
+    fixedMinutes + parallelLegMs(legCostMs(ids, units, defaultUnitMs).perUnit, parallel).ms / 60_000
+  );
 }
 
 /** Checks 1 (sharded) and 2 (unsharded, `of: 1`): identical arithmetic either way. */
@@ -710,6 +733,978 @@ export function timeoutFindings(
   return findings;
 }
 
+// --------------------------------------------------------------------------- Rebalance: the committed split against the best one this model finds ---------------------------------------------------------------------------
+
+/** The placement rules a rebalanced plan must honour, read from `lane-durations.json`'s `rebalanceConstraints` (each entry carries its reason in `why`). `together` puts its units on one leg, `onLeg` pins a unit to a leg, `notOnLeg` keeps a unit off one; legs are 1-based. */
+export interface RebalanceConstraints {
+  together?: { units: string[]; why?: string }[];
+  onLeg?: { unit: string; leg: number; why?: string }[];
+  notOnLeg?: { unit: string; leg: number; why?: string }[];
+}
+
+/** How each rebalanced lane is searched and where its unit set comes from. `assign` places indivisible blocks on any allowed leg; `contiguous` picks slice sizes over the enumerator's order, the way `run-sequence.sh` cuts them. `unitSource: 'manifest'` is for E2E Workers, whose enumerator lists the `--also` suites and not the `#part` buckets the manifest runs (check-shard-manifest-coverage.ts reconciles the two). */
+export const REBALANCE_LANES: Readonly<
+  Record<string, { shape: 'assign' | 'contiguous'; unitSource: 'enumerator' | 'manifest' }>
+> = {
+  'quality-pytest': { shape: 'assign', unitSource: 'enumerator' },
+  'test-e2e-workers': { shape: 'assign', unitSource: 'manifest' },
+  'ops-tutorials': { shape: 'contiguous', unitSource: 'enumerator' },
+};
+
+/** The normal run prints "rebalance available" only past this many minutes of gain on the worst leg. Advisory: PLAN-ci-time-budget makes no finding of it. */
+export const REBALANCE_ADVISORY_MIN = 0.5;
+/** A rebalanced plan replaces the committed one only when some leg, compared worst first, improves by more than this many minutes; a smaller gain is diff noise, and holding the committed plan below it is what keeps a second run a no-op. */
+export const REBALANCE_WRITE_EPS_MIN = 0.01;
+const SEARCH_EPS_MIN = 1e-6;
+/** Exact branch and bound runs only up to this many blocks (E2E Workers has 20); quality-pytest's ~500 get LPT plus local search. */
+const BNB_MAX_BLOCKS = 40;
+const BNB_NODE_LIMIT = 1_000_000;
+const LOCAL_SEARCH_MAX_STEPS = 20_000;
+
+/** One lane's pricing inputs, per variant and leg, built from exactly what `priceLegs` reads, so a plan's minutes here are the verdict's minutes. A lane with no `variantCosts` has one variant named ''. */
+export interface LaneModel {
+  lane: string;
+  of: number;
+  variants: { name: string; fixedByLeg: number[]; units: Record<string, number> }[];
+  defaultUnitMs: number | undefined;
+  parallel: LegParallelism | undefined;
+}
+
+export function laneModel(
+  lane: string,
+  of: number,
+  durations: Pick<LaneDurations, 'jobs' | 'units' | 'defaultUnitMs' | 'variantCosts'>,
+  parallel: LegParallelism | undefined
+): LaneModel {
+  const legs = Array.from({ length: of }, (_, i) => i + 1);
+  const cost = durations.variantCosts?.[lane];
+  const variants =
+    cost === undefined
+      ? [
+          {
+            name: '',
+            fixedByLeg: legs.map(() => durations.jobs[lane] ?? 0),
+            units: durations.units,
+          },
+        ]
+      : Object.entries(cost)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([name, c]) => ({
+            name,
+            fixedByLeg: legs.map((i) => variantLegInputs(c, i, durations.units).fixedMinutes),
+            units: variantLegInputs(c, 1, durations.units).units,
+          }));
+  return { lane, of, variants, defaultUnitMs: durations.defaultUnitMs?.[lane], parallel };
+}
+
+/** Every leg's minutes under every variant, `[variant][leg]`, each from `legMinutes`. */
+export function planMinutes(model: LaneModel, legs: readonly (readonly string[])[]): number[][] {
+  return model.variants.map((v) =>
+    legs.map((ids, i) =>
+      legMinutes(ids, v.fixedByLeg[i] ?? 0, v.units, model.defaultUnitMs, model.parallel)
+    )
+  );
+}
+
+/** Negative when `a` is the better plan: both leg-cost lists sorted worst first, and the first pair differing by more than `eps` decides. */
+export function compareCosts(a: readonly number[], b: readonly number[], eps: number): number {
+  const x = [...a].sort((p, q) => q - p);
+  const y = [...b].sort((p, q) => q - p);
+  for (let i = 0; i < Math.min(x.length, y.length); i++) {
+    const d = (x[i] as number) - (y[i] as number);
+    if (Math.abs(d) > eps) return d;
+  }
+  return 0;
+}
+
+/** `kind: 'unknown'` is a unit with no measured cost (check 4 names it too); `'unsatisfiable'` is a constraint no plan can meet. */
+export class RebalanceError extends Error {
+  constructor(
+    readonly kind: 'unknown' | 'unsatisfiable',
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+/** The rules a plan breaks, one line each; an empty list is a plan the runner can run. */
+export function constraintViolations(
+  c: RebalanceConstraints,
+  legs: readonly (readonly string[])[]
+): string[] {
+  const legOf = new Map<string, number>();
+  legs.forEach((ids, i) => {
+    for (const id of ids) legOf.set(id, i + 1);
+  });
+  const out: string[] = [];
+  for (const t of c.together ?? []) {
+    const at = t.units.map((u) => legOf.get(u));
+    if (new Set(at).size > 1)
+      out.push(
+        `together (${t.why ?? 'no reason given'}): ${t.units.map((u, i) => `${u} on leg ${at[i] ?? 'none'}`).join(', ')}`
+      );
+  }
+  for (const p of c.onLeg ?? []) {
+    const at = legOf.get(p.unit);
+    if (at !== p.leg)
+      out.push(
+        `onLeg (${p.why ?? 'no reason given'}): ${p.unit} must be on leg ${p.leg}, is on leg ${at ?? 'none'}`
+      );
+  }
+  for (const p of c.notOnLeg ?? []) {
+    if (legOf.get(p.unit) === p.leg)
+      out.push(`notOnLeg (${p.why ?? 'no reason given'}): ${p.unit} must not be on leg ${p.leg}`);
+  }
+  return out;
+}
+
+/** Refuses rules that name a unit the lane does not hold or a leg it does not have: a stale rule is not a satisfied one. */
+function staticConstraintProblems(
+  c: RebalanceConstraints,
+  ids: ReadonlySet<string>,
+  of: number
+): string[] {
+  const out: string[] = [];
+  const named = [
+    ...(c.together ?? []).flatMap((t) => t.units.map((u) => ({ rule: 'together', unit: u }))),
+    ...(c.onLeg ?? []).map((p) => ({ rule: 'onLeg', unit: p.unit })),
+    ...(c.notOnLeg ?? []).map((p) => ({ rule: 'notOnLeg', unit: p.unit })),
+  ];
+  for (const n of named)
+    if (!ids.has(n.unit)) out.push(`${n.rule} names ${n.unit}, which the lane does not hold`);
+  for (const p of [...(c.onLeg ?? []), ...(c.notOnLeg ?? [])])
+    if (!Number.isInteger(p.leg) || p.leg < 1 || p.leg > of)
+      out.push(`${p.unit}: leg ${p.leg} is outside 1..${of}`);
+  return out;
+}
+
+/** Each unit's cost per variant, or a refusal naming every unit (and variant) with none. */
+function unitCostsOrThrow(model: LaneModel, ids: readonly string[]): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  const unknown: string[] = [];
+  for (const id of ids) {
+    const per = model.variants.map(
+      (v) => legCostMs([id], v.units, model.defaultUnitMs).perUnit[0]?.ms ?? null
+    );
+    const missing = model.variants.filter((_, i) => per[i] === null).map((v) => v.name || 'all');
+    if (missing.length > 0)
+      unknown.push(model.variants.length > 1 ? `${id} (${missing.join(', ')})` : id);
+    out.set(
+      id,
+      per.map((x) => x ?? 0)
+    );
+  }
+  if (unknown.length > 0)
+    throw new RebalanceError(
+      'unknown',
+      `${model.lane}: ${unknown.length} unit(s) have no measured cost and the lane declares no defaultUnitMs, so no plan can be priced: ${unknown.sort().join(', ')}`
+    );
+  return out;
+}
+
+export interface RebalanceResult {
+  lane: string;
+  shape: 'assign' | 'contiguous';
+  variants: string[];
+  /** The committed plan, or null when it cannot be priced as a candidate (see `coverage`). */
+  committed: string[][] | null;
+  committedMinutes: number[][] | null;
+  /** Rules the committed plan breaks. */
+  violations: string[];
+  /** Units the committed plan misses or names beyond the lane's set. */
+  coverage: string[];
+  rebalanced: string[][];
+  rebalancedMinutes: number[][];
+  /** False when the committed plan is kept: nothing beats it by more than REBALANCE_WRITE_EPS_MIN. */
+  changed: boolean;
+  /** Committed worst leg minus rebalanced worst leg, in minutes; null when there is no valid committed plan. */
+  gainMinutes: number | null;
+  search: string;
+}
+
+interface Block {
+  ids: string[];
+  /** Serial ms per variant. */
+  ms: number[];
+  /** Largest mutex group's serial ms inside the block, per variant (0 when none). */
+  groupMs: number[];
+  /** Per 0-based leg: may this block sit there. */
+  allowed: boolean[];
+}
+
+/** The indivisible blocks: every unit of one mutex group (the model's own `groupOf`) plus every `together` rule, merged by union-find, each with its allowed legs. */
+function buildBlocks(model: LaneModel, ids: readonly string[], c: RebalanceConstraints): Block[] {
+  const costs = unitCostsOrThrow(model, ids);
+  const parent = new Map<string, string>(ids.map((id) => [id, id]));
+  const find = (x: string): string => {
+    let r = x;
+    while (parent.get(r) !== r) r = parent.get(r) as string;
+    parent.set(x, r);
+    return r;
+  };
+  const union = (a: string, b: string): void => {
+    const [ra, rb] = [find(a), find(b)].sort();
+    if (ra !== rb) parent.set(rb as string, ra as string);
+  };
+  const grouped = model.parallel !== undefined && model.parallel.workers > 1;
+  const groupOf = (id: string): string | undefined =>
+    grouped ? model.parallel?.groupOf(id) : undefined;
+  const firstInGroup = new Map<string, string>();
+  for (const id of ids) {
+    const g = groupOf(id);
+    if (g === undefined) continue;
+    const first = firstInGroup.get(g);
+    if (first === undefined) firstInGroup.set(g, id);
+    else union(first, id);
+  }
+  for (const t of c.together ?? [])
+    for (const u of t.units.slice(1)) union(t.units[0] as string, u);
+  const byRoot = new Map<string, string[]>();
+  for (const id of [...ids].sort()) byRoot.set(find(id), [...(byRoot.get(find(id)) ?? []), id]);
+  const blocks: Block[] = [];
+  for (const members of byRoot.values()) {
+    const allowed = Array.from({ length: model.of }, () => true);
+    for (const p of c.onLeg ?? [])
+      if (members.includes(p.unit))
+        allowed.forEach((_, i) => (allowed[i] = allowed[i] && i === p.leg - 1));
+    for (const p of c.notOnLeg ?? []) if (members.includes(p.unit)) allowed[p.leg - 1] = false;
+    if (!allowed.some(Boolean))
+      throw new RebalanceError(
+        'unsatisfiable',
+        `${model.lane}: no leg can hold ${members.join(' + ')}: its onLeg/notOnLeg/together rules exclude every leg of ${model.of}`
+      );
+    const ms = model.variants.map((_, v) =>
+      members.reduce((a, id) => a + (costs.get(id)?.[v] ?? 0), 0)
+    );
+    const groupMs = model.variants.map((_, v) => {
+      const sums = new Map<string, number>();
+      for (const id of members) {
+        const g = groupOf(id);
+        if (g !== undefined) sums.set(g, (sums.get(g) ?? 0) + (costs.get(id)?.[v] ?? 0));
+      }
+      return Math.max(0, ...sums.values());
+    });
+    blocks.push({ ids: members, ms, groupMs, allowed });
+  }
+  return blocks;
+}
+
+/**
+ * The search state for an `assign` lane: which leg each block is on, and per leg and variant its serial ms and largest group, priced by the same `max(serial / workers, largest group)` rule `parallelLegMs` applies. The search only steers by these numbers; every figure reported or compared against the committed plan is re-priced by `planMinutes`, and a disagreement between the two throws.
+ */
+class AssignState {
+  readonly assign: number[];
+  private readonly serial: number[][];
+  private readonly grouped: number[];
+  constructor(
+    private readonly model: LaneModel,
+    private readonly blocks: readonly Block[],
+    assign: readonly number[]
+  ) {
+    this.assign = [...assign];
+    this.serial = Array.from({ length: model.of }, () => model.variants.map(() => 0));
+    blocks.forEach((b, i) => {
+      const leg = this.serial[assign[i] as number] as number[];
+      b.ms.forEach((ms, v) => (leg[v] = (leg[v] as number) + ms));
+    });
+    this.grouped = blocks.flatMap((b, i) => (b.groupMs.some((x) => x > 0) ? [i] : []));
+  }
+  legCost(leg: number, v: number): number {
+    const serial = this.serial[leg]?.[v] ?? 0;
+    const p = this.model.parallel;
+    let ms = serial;
+    if (p !== undefined && p.workers > 1) {
+      let worst = 0;
+      for (const b of this.grouped)
+        if (this.assign[b] === leg) worst = Math.max(worst, this.blocks[b]?.groupMs[v] ?? 0);
+      ms = Math.max(serial / p.workers, worst);
+    }
+    return (this.model.variants[v]?.fixedByLeg[leg] ?? 0) + ms / 60_000;
+  }
+  costs(): number[] {
+    const out: number[] = [];
+    for (let leg = 0; leg < this.model.of; leg++)
+      for (let v = 0; v < this.model.variants.length; v++) out.push(this.legCost(leg, v));
+    return out;
+  }
+  count(leg: number): number {
+    return this.assign.filter((l) => l === leg).length;
+  }
+  move(block: number, to: number): void {
+    const from = this.assign[block] as number;
+    const b = this.blocks[block] as Block;
+    b.ms.forEach((ms, v) => {
+      (this.serial[from] as number[])[v] = ((this.serial[from] as number[])[v] as number) - ms;
+      (this.serial[to] as number[])[v] = ((this.serial[to] as number[])[v] as number) + ms;
+    });
+    this.assign[block] = to;
+  }
+}
+
+/** Steepest-descent over single moves and pairwise swaps, on the worst-first cost list; a local optimum is a fixed point, which is what makes a second run reproduce the first. No move empties a leg. */
+function localSearch(
+  model: LaneModel,
+  blocks: readonly Block[],
+  start: readonly number[]
+): number[] {
+  const s = new AssignState(model, blocks, start);
+  const counts = Array.from({ length: model.of }, (_, l) => s.count(l));
+  for (let step = 0; step < LOCAL_SEARCH_MAX_STEPS; step++) {
+    let best = s.costs();
+    let pick:
+      | { kind: 'move'; b: number; to: number }
+      | { kind: 'swap'; a: number; b: number }
+      | undefined;
+    for (let b = 0; b < blocks.length; b++) {
+      const from = s.assign[b] as number;
+      if ((counts[from] as number) <= 1) continue;
+      for (let to = 0; to < model.of; to++) {
+        if (to === from || !(blocks[b] as Block).allowed[to]) continue;
+        s.move(b, to);
+        const c = s.costs();
+        if (compareCosts(c, best, SEARCH_EPS_MIN) < 0) {
+          best = c;
+          pick = { kind: 'move', b, to };
+        }
+        s.move(b, from);
+      }
+    }
+    for (let a = 0; a < blocks.length; a++) {
+      for (let b = a + 1; b < blocks.length; b++) {
+        const la = s.assign[a] as number;
+        const lb = s.assign[b] as number;
+        if (la === lb || !(blocks[a] as Block).allowed[lb] || !(blocks[b] as Block).allowed[la])
+          continue;
+        s.move(a, lb);
+        s.move(b, la);
+        const c = s.costs();
+        if (compareCosts(c, best, SEARCH_EPS_MIN) < 0) {
+          best = c;
+          pick = { kind: 'swap', a, b };
+        }
+        s.move(a, la);
+        s.move(b, lb);
+      }
+    }
+    if (pick === undefined) break;
+    if (pick.kind === 'move') {
+      counts[s.assign[pick.b] as number] = (counts[s.assign[pick.b] as number] as number) - 1;
+      counts[pick.to] = (counts[pick.to] as number) + 1;
+      s.move(pick.b, pick.to);
+    } else {
+      const la = s.assign[pick.a] as number;
+      s.move(pick.a, s.assign[pick.b] as number);
+      s.move(pick.b, la);
+    }
+  }
+  return [...s.assign];
+}
+
+/** Longest-processing-time first: blocks by descending worst-variant cost, each onto the allowed leg whose worst variant stays cheapest; then every still-empty leg takes the smallest block a leg with two or more can spare. */
+function lpt(model: LaneModel, blocks: readonly Block[]): number[] {
+  const order = blocks
+    .map((b, i) => ({ i, key: Math.max(...b.ms) }))
+    .sort((x, y) => y.key - x.key || x.i - y.i)
+    .map((x) => x.i);
+  const s = new AssignState(
+    model,
+    blocks,
+    blocks.map((b) => b.allowed.indexOf(true))
+  );
+  const placed = new Set<number>();
+  // AssignState starts with every block placed; LPT re-places them one by one onto whichever leg is cheapest among those holding only already-placed blocks.
+  const loads = Array.from({ length: model.of }, () => model.variants.map(() => 0));
+  const cost = (leg: number, extra: Block): number =>
+    Math.max(
+      ...model.variants.map((v, vi) => {
+        const serial = (loads[leg]?.[vi] ?? 0) + (extra.ms[vi] ?? 0);
+        let worst = extra.groupMs[vi] ?? 0;
+        for (const p of placed)
+          if (s.assign[p] === leg) worst = Math.max(worst, blocks[p]?.groupMs[vi] ?? 0);
+        const w =
+          model.parallel !== undefined && model.parallel.workers > 1 ? model.parallel.workers : 1;
+        return (v.fixedByLeg[leg] ?? 0) + (w > 1 ? Math.max(serial / w, worst) : serial) / 60_000;
+      })
+    );
+  for (const i of order) {
+    const b = blocks[i] as Block;
+    let bestLeg = -1;
+    let bestCost = Number.POSITIVE_INFINITY;
+    for (let leg = 0; leg < model.of; leg++) {
+      if (!b.allowed[leg]) continue;
+      const c = cost(leg, b);
+      if (c < bestCost - SEARCH_EPS_MIN) {
+        bestCost = c;
+        bestLeg = leg;
+      }
+    }
+    s.move(i, bestLeg);
+    placed.add(i);
+    b.ms.forEach(
+      (ms, v) =>
+        ((loads[bestLeg] as number[])[v] = ((loads[bestLeg] as number[])[v] as number) + ms)
+    );
+  }
+  for (let leg = 0; leg < model.of; leg++) {
+    if (s.count(leg) > 0) continue;
+    const donor = order
+      .slice()
+      .reverse()
+      .find((i) => (blocks[i] as Block).allowed[leg] && s.count(s.assign[i] as number) > 1);
+    if (donor === undefined)
+      throw new RebalanceError(
+        'unsatisfiable',
+        `${model.lane}: leg ${leg + 1} can hold no block without emptying another; the lane has too few placeable blocks for ${model.of} legs`
+      );
+    s.move(donor, leg);
+  }
+  return [...s.assign];
+}
+
+/** Legs no rule tells apart (same fixed cost under every variant, same allowed blocks): the search tries only the first empty one of a class, and the relabel keeps each new leg on the old index it overlaps most. */
+function legClasses(model: LaneModel, blocks: readonly Block[]): string[] {
+  return Array.from({ length: model.of }, (_, leg) =>
+    JSON.stringify([
+      model.variants.map((v) => v.fixedByLeg[leg]),
+      blocks.map((b) => b.allowed[leg]),
+    ])
+  );
+}
+
+/** Exact min-max by branch and bound: blocks by descending cost, a branch pruned once any leg reaches the incumbent, empty interchangeable legs tried once. Returns a strictly better assignment than `incumbentMax`, or null, and whether the node limit cut the search short. */
+function branchAndBound(
+  model: LaneModel,
+  blocks: readonly Block[],
+  incumbentMax: number
+): { assign: number[] | null; nodes: number; capped: boolean } {
+  const order = blocks
+    .map((b, i) => ({ i, key: Math.max(...b.ms) }))
+    .sort((x, y) => y.key - x.key || x.i - y.i)
+    .map((x) => x.i);
+  const classes = legClasses(model, blocks);
+  const V = model.variants.length;
+  const w = model.parallel !== undefined && model.parallel.workers > 1 ? model.parallel.workers : 1;
+  const serial = Array.from({ length: model.of }, () => new Array<number>(V).fill(0));
+  const worst = Array.from({ length: model.of }, () => new Array<number>(V).fill(0));
+  const count = new Array<number>(model.of).fill(0);
+  const assign = new Array<number>(blocks.length).fill(-1);
+  const legMax = (leg: number): number => {
+    let m = 0;
+    for (let v = 0; v < V; v++) {
+      const s = (serial[leg] as number[])[v] as number;
+      const g = (worst[leg] as number[])[v] as number;
+      m = Math.max(
+        m,
+        (model.variants[v]?.fixedByLeg[leg] ?? 0) + (w > 1 ? Math.max(s / w, g) : s) / 60_000
+      );
+    }
+    return m;
+  };
+  // A floor no plan beats: per variant, the average leg once all fixed cost and all unit cost is spread evenly.
+  let floor = 0;
+  for (let v = 0; v < V; v++) {
+    const fixed = (model.variants[v]?.fixedByLeg ?? []).reduce((a, b) => a + b, 0);
+    const units = blocks.reduce((a, b) => a + (b.ms[v] ?? 0), 0) / w;
+    floor = Math.max(floor, (fixed + units / 60_000) / model.of);
+  }
+  let bestMax = incumbentMax;
+  let best: number[] | null = null;
+  let nodes = 0;
+  let capped = false;
+  // Unit ms per variant still to place, for the capacity bound below.
+  const remaining = model.variants.map((_, v) => blocks.reduce((a, b) => a + (b.ms[v] ?? 0), 0));
+  // The capacity bound: under the incumbent every leg has room for (bestMax - fixed) x workers minutes of serial work, since a leg costs at least fixed + serial / workers; when the room left across all legs is less than the work left, no completion beats the incumbent.
+  const roomShort = (): boolean => {
+    for (let v = 0; v < V; v++) {
+      let room = 0;
+      for (let leg = 0; leg < model.of; leg++) {
+        const cap =
+          (bestMax - SEARCH_EPS_MIN - (model.variants[v]?.fixedByLeg[leg] ?? 0)) * 60_000 * w;
+        room += Math.max(0, cap - ((serial[leg] as number[])[v] as number));
+      }
+      if (room < (remaining[v] as number)) return true;
+    }
+    return false;
+  };
+  const dfs = (depth: number, empty: number): void => {
+    if (capped || bestMax <= floor + SEARCH_EPS_MIN || roomShort()) return;
+    if (++nodes > BNB_NODE_LIMIT) {
+      capped = true;
+      return;
+    }
+    if (depth === order.length) {
+      if (empty > 0) return;
+      let m = 0;
+      for (let leg = 0; leg < model.of; leg++) m = Math.max(m, legMax(leg));
+      if (m < bestMax - SEARCH_EPS_MIN) {
+        bestMax = m;
+        best = [...assign];
+      }
+      return;
+    }
+    if (order.length - depth < empty) return;
+    const i = order[depth] as number;
+    const b = blocks[i] as Block;
+    const triedEmpty = new Set<string>();
+    const options: { leg: number; cost: number }[] = [];
+    for (let leg = 0; leg < model.of; leg++) {
+      if (!b.allowed[leg]) continue;
+      if (count[leg] === 0) {
+        if (triedEmpty.has(classes[leg] as string)) continue;
+        triedEmpty.add(classes[leg] as string);
+      }
+      const saveS = [...(serial[leg] as number[])];
+      const saveW = [...(worst[leg] as number[])];
+      for (let v = 0; v < V; v++) {
+        (serial[leg] as number[])[v] = (saveS[v] as number) + (b.ms[v] as number);
+        (worst[leg] as number[])[v] = Math.max(saveW[v] as number, b.groupMs[v] as number);
+      }
+      const cost = legMax(leg);
+      serial[leg] = saveS;
+      worst[leg] = saveW;
+      if (cost < bestMax - SEARCH_EPS_MIN) options.push({ leg, cost });
+    }
+    options.sort((x, y) => x.cost - y.cost || x.leg - y.leg);
+    for (const { leg } of options) {
+      const saveS = [...(serial[leg] as number[])];
+      const saveW = [...(worst[leg] as number[])];
+      for (let v = 0; v < V; v++) {
+        (serial[leg] as number[])[v] = (saveS[v] as number) + (b.ms[v] as number);
+        (worst[leg] as number[])[v] = Math.max(saveW[v] as number, b.groupMs[v] as number);
+      }
+      const wasEmpty = count[leg] === 0;
+      count[leg] = (count[leg] as number) + 1;
+      assign[i] = leg;
+      b.ms.forEach((ms, v) => (remaining[v] = (remaining[v] as number) - ms));
+      dfs(depth + 1, empty - (wasEmpty ? 1 : 0));
+      b.ms.forEach((ms, v) => (remaining[v] = (remaining[v] as number) + ms));
+      assign[i] = -1;
+      count[leg] = (count[leg] as number) - 1;
+      serial[leg] = saveS;
+      worst[leg] = saveW;
+      if (capped) return;
+    }
+  };
+  dfs(0, model.of);
+  return { assign: best, nodes, capped };
+}
+
+/** The committed plan as one leg per block, or null when a block is split across legs, placed on a leg it may not use, or missing. */
+function committedAssign(
+  blocks: readonly Block[],
+  legs: readonly (readonly string[])[]
+): number[] | null {
+  const legOf = new Map<string, number>();
+  legs.forEach((ids, i) => {
+    for (const id of ids) legOf.set(id, i);
+  });
+  const out: number[] = [];
+  for (const b of blocks) {
+    const at = new Set(b.ids.map((id) => legOf.get(id)));
+    const leg = [...at][0];
+    if (at.size !== 1 || leg === undefined || !b.allowed[leg]) return null;
+    out.push(leg);
+  }
+  return out;
+}
+
+function coverageProblems(ids: readonly string[], legs: readonly (readonly string[])[]): string[] {
+  const want = new Set(ids);
+  const have = legs.flat();
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of have) {
+    if (!want.has(id)) out.push(`${id} is committed but not in the lane's unit set`);
+    if (seen.has(id)) out.push(`${id} is committed on more than one leg`);
+    seen.add(id);
+  }
+  for (const id of ids)
+    if (!seen.has(id)) out.push(`${id} is in the lane's unit set but on no committed leg`);
+  legs.forEach((l, i) => {
+    if (l.length === 0) out.push(`committed leg ${i + 1} is empty`);
+  });
+  return out;
+}
+
+/** Picks the rebalanced plan over the committed one only when it is better by more than REBALANCE_WRITE_EPS_MIN on some leg (worst first), and fills in the result. */
+function settle(
+  model: LaneModel,
+  shape: 'assign' | 'contiguous',
+  committed: string[][] | null,
+  violations: string[],
+  coverage: string[],
+  candidate: string[][],
+  search: string
+): RebalanceResult {
+  const valid = committed !== null && violations.length === 0 && coverage.length === 0;
+  const committedMinutes =
+    committed === null || coverage.length > 0 ? null : planMinutes(model, committed);
+  const candidateMinutes = planMinutes(model, candidate);
+  const keep =
+    valid &&
+    committedMinutes !== null &&
+    compareCosts(candidateMinutes.flat(), committedMinutes.flat(), REBALANCE_WRITE_EPS_MIN) >= 0;
+  const rebalanced = keep ? (committed as string[][]) : candidate;
+  const rebalancedMinutes = keep ? (committedMinutes as number[][]) : candidateMinutes;
+  const worst = (m: number[][]): number => Math.max(...m.flat());
+  return {
+    lane: model.lane,
+    shape,
+    variants: model.variants.map((v) => v.name),
+    committed: coverage.length > 0 ? null : committed,
+    committedMinutes,
+    violations,
+    coverage,
+    rebalanced,
+    rebalancedMinutes,
+    changed: !keep,
+    gainMinutes:
+      valid && committedMinutes !== null
+        ? worst(committedMinutes) - worst(rebalancedMinutes)
+        : null,
+    search,
+  };
+}
+
+/** An `assign` lane: LPT, then exact branch and bound when the lane is small, then local search from both that and the committed plan; the better survivor is kept only if it beats the committed plan (see `settle`). */
+export function rebalanceAssign(
+  model: LaneModel,
+  ids: readonly string[],
+  c: RebalanceConstraints,
+  committed: string[][] | null
+): RebalanceResult {
+  const problems = staticConstraintProblems(c, new Set(ids), model.of);
+  if (problems.length > 0)
+    throw new RebalanceError('unsatisfiable', `${model.lane}: ${problems.join('; ')}`);
+  const blocks = buildBlocks(model, ids, c);
+  if (blocks.length < model.of)
+    throw new RebalanceError(
+      'unsatisfiable',
+      `${model.lane}: ${blocks.length} indivisible block(s) cannot fill ${model.of} legs`
+    );
+  const coverage = committed === null ? ['no committed plan'] : coverageProblems(ids, committed);
+  const violations = committed === null ? [] : constraintViolations(c, committed);
+  const toLegs = (assign: readonly number[]): string[][] =>
+    Array.from({ length: model.of }, (_, leg) =>
+      blocks.flatMap((b, i) => (assign[i] === leg ? b.ids : [])).sort()
+    );
+  const fastMax = (assign: readonly number[]): number =>
+    Math.max(...new AssignState(model, blocks, assign).costs());
+
+  let start = lpt(model, blocks);
+  let search = `LPT over ${blocks.length} block(s)`;
+  if (blocks.length <= BNB_MAX_BLOCKS) {
+    const bnb = branchAndBound(model, blocks, fastMax(start) + SEARCH_EPS_MIN * 2);
+    if (bnb.assign !== null) start = bnb.assign;
+    search = `branch and bound over ${blocks.length} block(s), ${bnb.nodes} node(s), ${bnb.capped ? `CAPPED at ${BNB_NODE_LIMIT}: best found, not proven optimal` : 'min-max proven'}`;
+  }
+  const candidates = [localSearch(model, blocks, start)];
+  const fromCommitted =
+    committed !== null && coverage.length === 0 ? committedAssign(blocks, committed) : null;
+  if (fromCommitted !== null) candidates.unshift(localSearch(model, blocks, fromCommitted));
+  let pick = candidates[0] as number[];
+  for (const cand of candidates.slice(1)) {
+    const a = new AssignState(model, blocks, cand).costs();
+    const b = new AssignState(model, blocks, pick).costs();
+    if (compareCosts(a, b, SEARCH_EPS_MIN) < 0) pick = cand;
+  }
+  search += ', then local search (moves and swaps)';
+
+  // The search priced by its own aggregates; the exact model must agree to the millisecond, or the two have diverged and no number here can be trusted.
+  const fast = new AssignState(model, blocks, pick).costs();
+  const exact = planMinutes(model, toLegs(pick));
+  for (let leg = 0; leg < model.of; leg++)
+    for (let v = 0; v < model.variants.length; v++) {
+      const f = fast[leg * model.variants.length + v] as number;
+      const e = (exact[v] as number[])[leg] as number;
+      if (Math.abs(f - e) > 1e-6)
+        throw new Error(
+          `${model.lane}: the search priced leg ${leg + 1} at ${f} and legMinutes at ${e}; they must agree`
+        );
+    }
+  return settle(
+    model,
+    'assign',
+    committed,
+    violations,
+    coverage,
+    relabel(model, blocks, toLegs(pick), committed),
+    search
+  );
+}
+
+/** Renumbers interchangeable legs so each new leg keeps the committed index it shares most units with; the costs do not change, only the diff shrinks. */
+function relabel(
+  model: LaneModel,
+  blocks: readonly Block[],
+  legs: string[][],
+  committed: string[][] | null
+): string[][] {
+  if (committed === null) return legs;
+  const classes = legClasses(model, blocks);
+  const out = legs.map((l) => [...l]);
+  for (const cls of new Set(classes)) {
+    const members = classes.flatMap((c, i) => (c === cls ? [i] : []));
+    const pairs: { n: number; o: number; overlap: number }[] = [];
+    for (const n of members)
+      for (const o of members) {
+        const old = new Set(committed[o] ?? []);
+        pairs.push({ n, o, overlap: (legs[n] ?? []).filter((id) => old.has(id)).length });
+      }
+    pairs.sort((a, b) => b.overlap - a.overlap || a.o - b.o || a.n - b.n);
+    const usedN = new Set<number>();
+    const usedO = new Set<number>();
+    for (const p of pairs) {
+      if (usedN.has(p.n) || usedO.has(p.o)) continue;
+      usedN.add(p.n);
+      usedO.add(p.o);
+      out[p.o] = [...(legs[p.n] ?? [])];
+    }
+  }
+  return out;
+}
+
+/** A `contiguous` lane: every split of the ordered units into `of` non-empty slices (C(n-1, of-1) of them; 680 for 18 tutorials in 4), the rule-abiding one with the best worst-first cost list, kept only if it beats the committed split. */
+export function rebalanceContiguous(
+  model: LaneModel,
+  ids: readonly string[],
+  c: RebalanceConstraints,
+  committed: string[][] | null
+): RebalanceResult {
+  const problems = staticConstraintProblems(c, new Set(ids), model.of);
+  if (problems.length > 0)
+    throw new RebalanceError('unsatisfiable', `${model.lane}: ${problems.join('; ')}`);
+  unitCostsOrThrow(model, ids);
+  const coverage = committed === null ? ['no committed plan'] : coverageProblems(ids, committed);
+  const violations = committed === null ? [] : constraintViolations(c, committed);
+  let best: { legs: string[][]; costs: number[] } | undefined;
+  let tried = 0;
+  const sizes: number[] = [];
+  const walk = (left: number, legsLeft: number): void => {
+    if (legsLeft === 1) {
+      sizes.push(left);
+      const legs = contiguousLegs(ids, sizes, model.of).map((l) => l.ids);
+      tried++;
+      if (constraintViolations(c, legs).length === 0) {
+        const costs = planMinutes(model, legs).flat();
+        if (best === undefined || compareCosts(costs, best.costs, SEARCH_EPS_MIN) < 0)
+          best = { legs, costs };
+      }
+      sizes.pop();
+      return;
+    }
+    for (let n = 1; n <= left - (legsLeft - 1); n++) {
+      sizes.push(n);
+      walk(left - n, legsLeft - 1);
+      sizes.pop();
+    }
+  };
+  if (ids.length >= model.of) walk(ids.length, model.of);
+  if (best === undefined)
+    throw new RebalanceError(
+      'unsatisfiable',
+      `${model.lane}: none of the ${tried} contiguous split(s) of ${ids.length} unit(s) into ${model.of} slices meets the rules (${[
+        ...(c.together ?? []).map((t) => `together ${t.units.join(' + ')}`),
+        ...(c.onLeg ?? []).map((p) => `${p.unit} on leg ${p.leg}`),
+        ...(c.notOnLeg ?? []).map((p) => `${p.unit} off leg ${p.leg}`),
+      ].join('; ')})`
+    );
+  const found: { legs: string[][] } = best;
+  return settle(
+    model,
+    'contiguous',
+    committed,
+    violations,
+    coverage,
+    found.legs,
+    `exhaustive over ${tried} contiguous split(s)`
+  );
+}
+
+interface RebalanceInput {
+  model: LaneModel;
+  ids: string[];
+  constraints: RebalanceConstraints;
+  committed: string[][] | null;
+  /** Writes a plan to the file the runner reads and returns its path. */
+  write: (legs: string[][]) => string;
+}
+
+async function loadRebalanceInput(lane: string, durations: LaneDurations): Promise<RebalanceInput> {
+  const spec = REBALANCE_LANES[lane];
+  if (spec === undefined)
+    throw new Error(
+      `--rebalance: ${lane} is not a rebalanced lane (${Object.keys(REBALANCE_LANES).join(', ')})`
+    );
+  const parallel = await laneParallelism(lane, durations);
+  const constraints = durations.rebalanceConstraints?.[lane] ?? {};
+  const enumerate = async (): Promise<string[]> => {
+    const enumerator = LANE_ENUMERATORS[lane];
+    if (enumerator === undefined) throw new Error(`--rebalance: ${lane} has no unit enumerator`);
+    return (await enumerator(ROOT)).map((u) => u.id);
+  };
+  if (spec.shape === 'contiguous') {
+    const contiguous = CONTIGUOUS_LANES[lane];
+    if (contiguous === undefined)
+      throw new Error(`--rebalance: ${lane} is not in CONTIGUOUS_LANES`);
+    const file = path.join(ROOT, contiguous.sizesFile);
+    const text = readFileSync(file, 'utf-8');
+    const sizes = parseShardSizes(text);
+    if (sizes === null)
+      throw new Error(`--rebalance: no MEASURED_SHARD_SIZES in ${contiguous.sizesFile}`);
+    const ids = await enumerate();
+    return {
+      model: laneModel(lane, sizes.length, durations, parallel),
+      ids,
+      constraints,
+      committed: contiguousLegs(ids, sizes, sizes.length).map((l) => l.ids),
+      write: (legs) => {
+        const line = `MEASURED_SHARD_SIZES=(${legs.map((l) => l.length).join(' ')})`;
+        writeFileSync(file, text.replace(/MEASURED_SHARD_SIZES=\([\d\s]+\)/, line));
+        return contiguous.sizesFile;
+      },
+    };
+  }
+  const manifestFile = path.join(ROOT, shardManifestPath(lane));
+  const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), lane);
+  const committed = [...manifest.legs].sort((a, b) => a.index - b.index).map((l) => [...l.ids]);
+  const ids =
+    spec.unitSource === 'enumerator' ? await enumerate() : [...new Set(committed.flat())].sort();
+  return {
+    model: laneModel(lane, manifest.of, durations, parallel),
+    ids,
+    constraints,
+    committed,
+    write: (legs) => {
+      const file = buildShardManifest(
+        lane,
+        legs.map((l, i) => ({ index: i + 1, of: manifest.of, ids: l }))
+      );
+      writeFileSync(manifestFile, `${JSON.stringify(file, null, 2)}\n`);
+      return shardManifestPath(lane);
+    },
+  };
+}
+
+async function rebalanceLane(
+  lane: string,
+  durations: LaneDurations
+): Promise<{ result: RebalanceResult; input: RebalanceInput }> {
+  const input = await loadRebalanceInput(lane, durations);
+  const shape = REBALANCE_LANES[lane]?.shape;
+  const result =
+    shape === 'contiguous'
+      ? rebalanceContiguous(input.model, input.ids, input.constraints, input.committed)
+      : rebalanceAssign(input.model, input.ids, input.constraints, input.committed);
+  return { result, input };
+}
+
+/** The dry-run report: per leg and variant the committed and rebalanced minutes, the worst leg of each, and which units move. */
+export function formatRebalance(r: RebalanceResult): string[] {
+  const out: string[] = [];
+  const n = r.rebalanced.length;
+  out.push(
+    `rebalance ${r.lane} (${r.shape}, ${n} legs, ${r.variants.length} variant(s)): ${r.search}`
+  );
+  out.push(
+    `${'leg'.padEnd(5)}${'variant'.padEnd(16)}${'units'.padStart(11)}  ${'committed'.padStart(9)}  ${'rebalanced'.padStart(10)}  delta`
+  );
+  r.variants.forEach((variant, v) => {
+    for (let leg = 0; leg < n; leg++) {
+      const before = r.committedMinutes?.[v]?.[leg];
+      const after = r.rebalancedMinutes[v]?.[leg] as number;
+      const units = `${r.committed?.[leg]?.length ?? '-'}->${r.rebalanced[leg]?.length ?? 0}`;
+      out.push(
+        `${`${leg + 1}/${n}`.padEnd(5)}${(variant || '-').padEnd(16)}${units.padStart(11)}  ` +
+          `${before === undefined ? '-'.padStart(9) : before.toFixed(2).padStart(9)}  ${after.toFixed(2).padStart(10)}  ` +
+          `${before === undefined ? '' : `${after - before >= 0 ? '+' : ''}${(after - before).toFixed(2)}`}${after > PER_LEG_BUDGET_MIN ? '  OVER' : ''}`
+      );
+    }
+  });
+  const worstAfter = Math.max(...r.rebalancedMinutes.flat());
+  const worstBefore = r.committedMinutes === null ? null : Math.max(...r.committedMinutes.flat());
+  out.push(
+    `worst leg: committed ${worstBefore === null ? '-' : `${worstBefore.toFixed(2)}m`}, rebalanced ${worstAfter.toFixed(2)}m` +
+      (r.gainMinutes === null ? '' : `, gain ${r.gainMinutes.toFixed(2)}m`)
+  );
+  for (const v of r.violations) out.push(`committed plan breaks a rule: ${v}`);
+  for (const c of r.coverage) out.push(`committed plan coverage: ${c}`);
+  if (!r.changed) {
+    out.push(
+      `no change: nothing beats the committed plan by more than ${REBALANCE_WRITE_EPS_MIN}m on any leg`
+    );
+    return out;
+  }
+  if (r.shape === 'contiguous') {
+    out.push(
+      `diff: MEASURED_SHARD_SIZES (${r.committed?.map((l) => l.length).join(' ') ?? '-'}) -> (${r.rebalanced.map((l) => l.length).join(' ')})`
+    );
+  }
+  const before = new Map<string, number>();
+  r.committed?.forEach((l, i) => {
+    for (const id of l) before.set(id, i + 1);
+  });
+  const moves: string[] = [];
+  r.rebalanced.forEach((l, i) => {
+    for (const id of l)
+      if (before.get(id) !== i + 1)
+        moves.push(`  ${id}: leg ${before.get(id) ?? 'none'} -> ${i + 1}`);
+  });
+  out.push(`diff: ${moves.length} unit(s) move`, ...moves.sort());
+  return out;
+}
+
+async function rebalanceMain(lane: string, write: boolean): Promise<number> {
+  let durations: LaneDurations;
+  try {
+    durations = readDurations(ROOT);
+  } catch (e) {
+    console.error(`${RED}✗${NC} ${DURATIONS_PATH} could not be read: ${String(e)}`);
+    return 1;
+  }
+  if (REBALANCE_LANES[lane] === undefined) {
+    console.error(
+      `${RED}✗${NC} --rebalance: ${lane} is not a rebalanced lane; one of ${Object.keys(REBALANCE_LANES).join(', ')}`
+    );
+    return 2;
+  }
+  let outcome: { result: RebalanceResult; input: RebalanceInput };
+  try {
+    outcome = await rebalanceLane(lane, durations);
+  } catch (e) {
+    console.error(
+      `${RED}✗${NC} --rebalance ${lane}: ${e instanceof Error ? e.message : String(e)}`
+    );
+    return 1;
+  }
+  const { result, input } = outcome;
+  for (const line of formatRebalance(result)) console.log(line);
+  if (!write) {
+    console.log(
+      result.changed
+        ? 'DRY RUN: nothing written; --write applies the plan above.'
+        : 'DRY RUN: nothing to write.'
+    );
+    return 0;
+  }
+  if (!result.changed) {
+    console.log(`${GREEN}✓${NC} --write: the committed plan stands; nothing written.`);
+    return 0;
+  }
+  const after = constraintViolations(input.constraints, result.rebalanced);
+  if (after.length > 0) {
+    console.error(`${RED}✗${NC} --write refused: the rebalanced plan breaks ${after.join('; ')}`);
+    return 1;
+  }
+  const file = input.write(result.rebalanced);
+  console.log(`${GREEN}✓${NC} wrote ${file}`);
+  if (result.shape === 'contiguous')
+    console.log(
+      `note: the comment above MEASURED_SHARD_SIZES in ${file} cites the old split's predictions; revise it to the table above.`
+    );
+  return 0;
+}
+
 // --------------------------------------------------------------------------- The real run ---------------------------------------------------------------------------
 
 function readOr(root: string, file: string, what: string): string | null {
@@ -794,8 +1789,7 @@ async function main(): Promise<number> {
   }
   const caps = mergeLaneCapabilities(workflows);
 
-  // Every job that occupies a runner: ci.yml's own, plus every job of every reusable
-  // workflow it calls, transitively. A caller job (`uses:`) is not a runner itself.
+  // Every job that occupies a runner: ci.yml's own, plus every job of every reusable workflow it calls, transitively. A caller job (`uses:`) is not a runner itself.
   // Walked PER CALL SITE, not per file: ci-build-docker.yml is called three times under three caller names, and each call reports under its own display name.
   const runnerJobSet = new Set<string>();
   const sites: { id: string; pattern: RegExp }[] = [];
@@ -870,7 +1864,7 @@ async function main(): Promise<number> {
       if (units[u.id] !== undefined) measuredCount += 1;
       else if (u.ms !== null) defaultedCount += 1;
     }
-    return fixedMinutes + parallelLegMs(perUnit, parallel).ms / 60_000;
+    return legMinutes(ids, fixedMinutes, units, defaultUnitMs, parallel);
   };
 
   // Every variant leg's prediction, kept for the model-vs-measured comparison (`--table`, and the drift figure in the summary line).
@@ -1055,6 +2049,26 @@ async function main(): Promise<number> {
     );
   }
 
+  // The committed plan against the rebalanced one, per rebalanced lane: a broken rule is a finding, a gain over REBALANCE_ADVISORY_MIN is an advisory line, a unit with no cost is left to check 4, which already names it.
+  const rebalanceNotes: string[] = [];
+  for (const lane of Object.keys(REBALANCE_LANES).sort()) {
+    if (inert.includes(lane)) continue;
+    try {
+      const { result } = await rebalanceLane(lane, durations);
+      for (const v of result.violations)
+        findings.push(`${lane}: the committed plan breaks a rebalanceConstraints rule: ${v}`);
+      if (result.gainMinutes !== null && result.gainMinutes > REBALANCE_ADVISORY_MIN)
+        rebalanceNotes.push(
+          `rebalance available: ${lane}, ${result.gainMinutes.toFixed(2)} min (npx tsx scripts/gates/check-lane-budget.ts --rebalance ${lane})`
+        );
+    } catch (e) {
+      if (e instanceof RebalanceError && e.kind === 'unknown') continue;
+      findings.push(
+        `${lane}: --rebalance cannot plan it: ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  }
+
   if (priced.size === 0 || unitCount === 0) {
     console.error(
       `${RED}✗${NC} lane-budget priced ${priced.size} lane(s) and ${unitCount} unit(s); the gate is ` +
@@ -1152,7 +2166,9 @@ async function main(): Promise<number> {
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s); ` +
     `left to check_job_timeout_headroom.py (D-W2): ${headroom.join(', ') || 'none'}; ` +
-    `inert: ${inert.join(', ') || 'none'}; ${driftNote}`;
+    `inert: ${inert.join(', ') || 'none'}; ${driftNote}; ` +
+    `rebalance: ${rebalanceNotes.length} lane(s) over the ${REBALANCE_ADVISORY_MIN}m advisory`;
+  for (const note of rebalanceNotes) console.log(`advisory: ${note}`);
   if (findings.length === 0) {
     console.log(`${GREEN}✓${NC} lane-budget: ${shape}. ${pipelineNote}`);
     return 0;
@@ -1165,6 +2181,57 @@ async function main(): Promise<number> {
 }
 
 // --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
+
+/** A one-variant fixture lane, `fx`, with no fixed cost: a and b cost 10 minutes, c and d 1, e and f 2, unless `minutes` says otherwise. */
+function rbModel(
+  of: number,
+  minutes: Record<string, number> = { a: 10, b: 10, c: 1, d: 1, e: 2, f: 2 }
+): LaneModel {
+  const units = Object.fromEntries(Object.entries(minutes).map(([k, m]) => [k, m * 60_000]));
+  return laneModel('fx', of, { jobs: {}, units, variantCosts: undefined }, undefined);
+}
+
+/** `<kind>: <message>` of the RebalanceError a call throws, or '' when it returns. */
+function rebalanceRefusal(call: () => unknown): string {
+  try {
+    call();
+    return '';
+  } catch (e) {
+    return e instanceof RebalanceError ? `${e.kind}: ${e.message}` : `other: ${String(e)}`;
+  }
+}
+
+/** Per live rebalanced lane: the committed plan breaks no rule, the rebalanced plan is never worse than it, and feeding the rebalanced plan back in as committed changes nothing. */
+async function liveRebalanceControls(
+  durations: LaneDurations
+): Promise<{ name: string; ok: boolean; detail?: string }[]> {
+  const out: { name: string; ok: boolean; detail?: string }[] = [];
+  for (const lane of Object.keys(REBALANCE_LANES).sort()) {
+    try {
+      const { result, input } = await rebalanceLane(lane, durations);
+      const again =
+        REBALANCE_LANES[lane]?.shape === 'contiguous'
+          ? rebalanceContiguous(input.model, input.ids, input.constraints, result.rebalanced)
+          : rebalanceAssign(input.model, input.ids, input.constraints, result.rebalanced);
+      out.push({
+        name: `STABLE (live ${lane}): the committed plan breaks no rule, the rebalanced one is no worse, and a second run over it changes nothing`,
+        ok:
+          result.violations.length === 0 &&
+          (result.gainMinutes ?? -1) >= 0 &&
+          !again.changed &&
+          JSON.stringify(again.rebalanced) === JSON.stringify(result.rebalanced),
+        detail: JSON.stringify({
+          violations: result.violations,
+          gain: result.gainMinutes,
+          secondChanged: again.changed,
+        }),
+      });
+    } catch (e) {
+      out.push({ name: `STABLE (live ${lane})`, ok: false, detail: String(e) });
+    }
+  }
+  return out;
+}
 
 async function selftest(): Promise<number> {
   // The live OPS Provision slicing, read the way main() reads it, for the RustFS-shard control below.
@@ -1639,6 +2706,216 @@ async function selftest(): Promise<number> {
         (lane) => Object.keys(liveDurations.variantCosts?.[lane] ?? {}).length > 0
       ),
     },
+    // --- --rebalance: a planted imbalance, a refused rule, and a second run that changes nothing ---
+    {
+      name: 'FIRES: a planted imbalance (both 10m units on one leg) is rebalanced, and the gain is past the advisory line',
+      ok: (() => {
+        const r = rebalanceAssign(rbModel(2), ['a', 'b', 'c', 'd'], {}, [
+          ['a', 'b'],
+          ['c', 'd'],
+        ]);
+        return (
+          r.changed &&
+          (r.gainMinutes ?? 0) > REBALANCE_ADVISORY_MIN &&
+          Math.max(...r.rebalancedMinutes.flat()) === 11
+        );
+      })(),
+    },
+    {
+      name: 'MATCH: an already balanced plan is kept as committed, gain 0',
+      ok: (() => {
+        const r = rebalanceAssign(rbModel(2), ['a', 'b', 'c', 'd'], {}, [
+          ['a', 'c'],
+          ['b', 'd'],
+        ]);
+        return (
+          !r.changed &&
+          r.gainMinutes === 0 &&
+          JSON.stringify(r.rebalanced) ===
+            JSON.stringify([
+              ['a', 'c'],
+              ['b', 'd'],
+            ])
+        );
+      })(),
+    },
+    {
+      name: 'STABLE: a rebalanced fixture plan, fed back as the committed one, comes back unchanged',
+      ok: (() => {
+        const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
+        const first = rebalanceAssign(rbModel(3), ids, {}, [ids.slice(0, 4), ['e'], ['f']]);
+        const second = rebalanceAssign(rbModel(3), ids, {}, first.rebalanced);
+        return (
+          first.changed &&
+          !second.changed &&
+          JSON.stringify(second.rebalanced) === JSON.stringify(first.rebalanced)
+        );
+      })(),
+    },
+    {
+      name: 'REFUSED: together(a, b) with a pinned to leg 1 and b to leg 2 is unsatisfiable',
+      ok: rebalanceRefusal(() =>
+        rebalanceAssign(
+          rbModel(2),
+          ['a', 'b', 'c', 'd'],
+          {
+            together: [{ units: ['a', 'b'] }],
+            onLeg: [
+              { unit: 'a', leg: 1 },
+              { unit: 'b', leg: 2 },
+            ],
+          },
+          null
+        )
+      ).startsWith('unsatisfiable: fx: no leg can hold a + b'),
+    },
+    {
+      name: 'REFUSED: a rule naming a leg the lane does not have, or a unit it does not hold',
+      ok:
+        rebalanceRefusal(() =>
+          rebalanceAssign(
+            rbModel(2),
+            ['a', 'b', 'c', 'd'],
+            { onLeg: [{ unit: 'a', leg: 3 }] },
+            null
+          )
+        ).includes('leg 3 is outside 1..2') &&
+        rebalanceRefusal(() =>
+          rebalanceAssign(
+            rbModel(2),
+            ['a', 'b', 'c', 'd'],
+            { notOnLeg: [{ unit: 'zz', leg: 1 }] },
+            null
+          )
+        ).includes('names zz, which the lane does not hold'),
+    },
+    {
+      name: 'REFUSED: a contiguous pin no slice can meet (the first unit pinned to leg 2)',
+      ok: rebalanceRefusal(() =>
+        rebalanceContiguous(rbModel(3), ['a', 'b', 'c'], { onLeg: [{ unit: 'a', leg: 2 }] }, null)
+      ).startsWith('unsatisfiable: fx: none of the 1 contiguous split(s)'),
+    },
+    {
+      name: 'REFUSED: a unit with no measured cost, named, and the lane declares no defaultUnitMs',
+      ok: rebalanceRefusal(() =>
+        rebalanceAssign(rbModel(2), ['a', 'b', 'c', 'new-unit'], {}, null)
+      ).startsWith(
+        'unknown: fx: 1 unit(s) have no measured cost and the lane declares no defaultUnitMs, so no plan can be priced: new-unit'
+      ),
+    },
+    {
+      name: 'FIRES: a committed plan breaking notOnLeg is reported, and the rebalanced plan obeys the rule even at a cost',
+      ok: (() => {
+        const c: RebalanceConstraints = {
+          notOnLeg: [
+            { unit: 'a', leg: 1 },
+            { unit: 'b', leg: 1 },
+          ],
+        };
+        const r = rebalanceAssign(rbModel(2), ['a', 'b', 'c', 'd'], c, [
+          ['a', 'c'],
+          ['b', 'd'],
+        ]);
+        return (
+          r.violations.length === 1 &&
+          r.changed &&
+          r.gainMinutes === null &&
+          constraintViolations(c, r.rebalanced).length === 0 &&
+          JSON.stringify(r.rebalanced) ===
+            JSON.stringify([
+              ['c', 'd'],
+              ['a', 'b'],
+            ])
+        );
+      })(),
+    },
+    {
+      name: 'a mutex group is indivisible under parallelism: g1 and g2 share a leg even when splitting them would balance better',
+      ok: (() => {
+        const units = { g1: 6 * 60_000, g2: 6 * 60_000, f1: 6 * 60_000, f2: 6 * 60_000 };
+        const model = laneModel(
+          'fx',
+          2,
+          { jobs: {}, units, variantCosts: undefined },
+          { workers: 2, groupOf: (id) => (id.startsWith('g') ? 'G' : undefined) }
+        );
+        const r = rebalanceAssign(model, Object.keys(units), {}, null);
+        return r.rebalanced.some((l) => l.includes('g1') && l.includes('g2'));
+      })(),
+    },
+    {
+      name: 'branch and bound finds the brute-force min-max over two variants with a leg-1 extra',
+      ok: (() => {
+        const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+        const ms = (xs: number[]): Record<string, number> =>
+          Object.fromEntries(ids.map((id, i) => [id, (xs[i] as number) * 60_000]));
+        const durations = {
+          jobs: {},
+          units: {},
+          variantCosts: {
+            fx: {
+              v1: {
+                fixedMinutes: 1,
+                legExtraMinutes: { '1': 2 },
+                units: ms([5, 4, 3, 3, 2, 2, 1]),
+              },
+              v2: { fixedMinutes: 2, units: ms([1, 2, 5, 4, 3, 1, 2]) },
+            },
+          },
+        };
+        const model = laneModel('fx', 3, durations, undefined);
+        let brute = Number.POSITIVE_INFINITY;
+        for (let code = 0; code < 3 ** ids.length; code++) {
+          const legs: string[][] = [[], [], []];
+          let x = code;
+          for (const id of ids) {
+            (legs[x % 3] as string[]).push(id);
+            x = Math.floor(x / 3);
+          }
+          if (legs.some((l) => l.length === 0)) continue;
+          brute = Math.min(brute, Math.max(...planMinutes(model, legs).flat()));
+        }
+        const r = rebalanceAssign(model, ids, {}, null);
+        return Math.abs(Math.max(...r.rebalancedMinutes.flat()) - brute) < 1e-9;
+      })(),
+    },
+    {
+      name: 'a contiguous pin costs what it must: pinning c to leg 1 forces the worse (3 1) split over the free (2 2)',
+      ok: (() => {
+        const ids = ['a', 'b', 'c', 'd'];
+        const free = rebalanceContiguous(rbModel(2, { a: 1, b: 1, c: 1, d: 1 }), ids, {}, null);
+        const pinned = rebalanceContiguous(
+          rbModel(2, { a: 1, b: 1, c: 1, d: 1 }),
+          ids,
+          { onLeg: [{ unit: 'c', leg: 1 }] },
+          null
+        );
+        return (
+          JSON.stringify(free.rebalanced.map((l) => l.length)) === '[2,2]' &&
+          JSON.stringify(pinned.rebalanced.map((l) => l.length)) === '[3,1]'
+        );
+      })(),
+    },
+    {
+      name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 06 off leg 1) and the RustFS pin',
+      ok: (() => {
+        const c = liveDurations.rebalanceConstraints ?? {};
+        return (
+          (c['test-e2e-workers']?.together ?? []).some(
+            (t) =>
+              t.units.some((u) => u.includes('18-ops')) &&
+              t.units.some((u) => u.includes('19-rustfs'))
+          ) &&
+          (c['test-e2e-workers']?.notOnLeg ?? []).some(
+            (p) => p.unit.includes('06-daemon') && p.leg === 1
+          ) &&
+          (c['ops-tutorials']?.onLeg ?? []).some(
+            (p) => p.unit === 'tutorial:backup-restore' && p.leg === 3
+          )
+        );
+      })(),
+    },
+    ...(await liveRebalanceControls(liveDurations)),
     {
       name: "CONTROL: the live OPS Provision split keeps backup-restore in shard 3, the only shard the workflow's RustFS step runs on",
       ok:
@@ -1654,5 +2931,13 @@ async function selftest(): Promise<number> {
   return summarizeControls(cases);
 }
 
+const rebalanceAt = process.argv.indexOf('--rebalance');
 if (process.argv.includes('--selftest')) process.exit(await selftest());
-else process.exit(await main());
+else if (rebalanceAt !== -1) {
+  const lane = process.argv[rebalanceAt + 1];
+  if (lane === undefined || lane.startsWith('--')) {
+    console.error(`--rebalance needs a lane: ${Object.keys(REBALANCE_LANES).join(', ')}`);
+    process.exit(2);
+  }
+  process.exit(await rebalanceMain(lane, process.argv.includes('--write')));
+} else process.exit(await main());

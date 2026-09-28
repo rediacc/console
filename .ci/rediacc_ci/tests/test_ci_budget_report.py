@@ -490,6 +490,7 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
                 "units": {"pytest:x.py": 111.0},
                 "defaultUnitMs": {"quality-pytest": 5000},
                 "unitParallelism": {"quality-pytest": 4},
+                "rebalanceConstraints": {"ops-tutorials": {"onLeg": [{"unit": "u", "leg": 3}]}},
             }
         )
     )
@@ -507,6 +508,7 @@ def test_refresh_lane_durations_merges_and_preserves_untouched_fields(tmp_path):
     assert data["units"] == {"pytest:x.py": 111.0, "e2e-workers:a.spec.ts": 2000.0}
     assert data["defaultUnitMs"] == {"quality-pytest": 5000}
     assert data["unitParallelism"] == {"quality-pytest": 4}
+    assert data["rebalanceConstraints"] == {"ops-tutorials": {"onLeg": [{"unit": "u", "leg": 3}]}}
     assert data["refreshed_at"] != "2026-01-01T00:00:00Z"
     assert data["job_max_seconds"]["jobs"]["Validate Promotion"]["observed_max_seconds"] == 300
 

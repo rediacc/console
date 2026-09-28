@@ -1627,6 +1627,9 @@ def refresh_lane_durations(
     # T3.1: how many units a lane's leg runs at once (quality-pytest's `-n`), hand-authored beside defaultUnitMs and preserved the same way; dropping it would silently turn a parallel lane back into a serial estimate.
     if "unitParallelism" in existing:
         updated["unitParallelism"] = existing["unitParallelism"]
+    # The declared placement rules `check-lane-budget.ts --rebalance` honours (18/19 on one leg, backup-restore on OPS shard 3), hand-authored and preserved the same way; dropping them would let a rebalance write a plan the runner cannot run.
+    if "rebalanceConstraints" in existing:
+        updated["rebalanceConstraints"] = existing["rebalanceConstraints"]
     # variantCosts is MEASURED (collect_variant_costs) and merged so nothing the sample missed is dropped: an unmeasured lane, variant, leg extra or unit keeps its prior value, and every such keep is printed.
     variant_costs, variant_notes = merge_variant_costs(
         existing.get("variantCosts") or {}, computed.get("variant_costs") or {}
