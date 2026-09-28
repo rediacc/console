@@ -98,6 +98,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -1011,6 +1012,357 @@ def prune_gate_steps_to_lock(gate_steps: dict[str, Any], root: Path) -> dict[str
     return {gate_id: value for gate_id, value in gate_steps.items() if gate_id in valid}
 
 
+# `variantCosts`: per-matrix-variant leg pricing, MEASURED from job logs rather than hand-derived (6a94a96a9 derived it by hand from 386 logs of 9 runs, and a `--refresh` that did not write it dropped it, which reds check-lane-budget.ts).
+# Shape, read by check-lane-budget.ts's `VariantCost`: `{lane: {variant: {fixedMinutes, legExtraMinutes?: {leg index: minutes}, units: {unit id: ms}}}}`, the variant being the first matrix value in the job's display name ("fedora-43" in "E2E Workers (fedora-43, 1/8)", the same `(<variant>, i/N)` suffix `variantOf` reads). A leg costs fixedMinutes + its legExtraMinutes entry + the sum of its units, each read from the variant's `units` first and the top-level `units` second.
+# test-e2e-workers: a unit's cost is its WALL span in the log (its first test's start to the next unit's first test, the last unit to the reporter's `E2E_SKIPPED=` line), not the artifact's summed test durations, which leave out beforeAll/afterAll work. A span whose file the committed shard manifest does not name is a `--also` suite (ct-tests.yml's 12a/12b/12d/13b on leg 1 of the full-integration distros) and goes to that leg's legExtraMinutes. fixedMinutes = job wall - every span: the steps before the runner step, the globalSetup VM reset, the setup after it, and the post steps.
+# ops-tutorials (job ops-vm-provision): fixedMinutes = job wall - the run-sequence.sh `TOTAL <n>s` line - the RustFS prep step, and legExtraMinutes is that step on the leg(s) it ran on; the tutorials' own costs stay the top-level `tutorial:*` units, so the variant's `units` is empty.
+# Every figure is a p90 by linear interpolation over success-only jobs of the same PR-full sample every other section uses.
+VARIANT_E2E_LANE = "test-e2e-workers"
+VARIANT_OPS_LANE = "ops-tutorials"
+# The lane id `check-lane-budget.ts` prices under -> the ci.yml callee job id `lane_display_patterns` keys it by.
+VARIANT_LANE_JOBS: dict[str, str] = {
+    VARIANT_E2E_LANE: "test-e2e-workers",
+    VARIANT_OPS_LANE: "ops-vm-provision",
+}
+# ci-ops-test.yml's step that only one shard runs (the one hosting backup-restore); its duration is that leg's extra, not everyone's fixed cost.
+OPS_LEG_EXTRA_STEP_RE = re.compile(r"(?i)^tutorial prep: start rustfs s3\b")
+# BOUNDED: 9-10 runs x (40 E2E Workers + 4 OPS Provision legs) is ~440 logs; the cap stops a mis-scoped sample from fetching thousands, and says so when it bites.
+VARIANT_LOG_MAX_JOBS = 600
+VARIANT_LOG_WORKERS = 8
+# CACHED: a completed job's log never changes, so each is fetched once per machine. Only the lines the derivation reads are kept (a few KB instead of ~200 KB), under the untracked `.ci/cache`.
+VARIANT_LOG_CACHE_REL_PATH = ".ci/cache/budget-report/job-logs"
+
+_LEG_SUFFIX_RE = re.compile(r"\(([^,()]+), (\d+)/(\d+)\)$")
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_LOG_TS = r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)"
+# `2026-09-28T14:01:24.9305467Z [2026-09-28T14:01:24.061Z]  > test-01 > 01-system-checks.test.ts > <describe> > <test> (0.8s, passed)`: the bracketed stamp is the test's START (the line's own stamp is when it printed, at its end).
+_E2E_TEST_LINE_RE = re.compile(
+    r"^" + _LOG_TS + r" \[" + _LOG_TS + r"\]\s+> [^>]*?> ([^\s>]+\.test\.ts) > (.*)$"
+)
+_E2E_END_LINE_RE = re.compile(r"^" + _LOG_TS + r" .*\bE2E_SKIPPED=\d+")
+_OPS_TOTAL_LINE_RE = re.compile(r"^" + _LOG_TS + r" TOTAL (\d+)s\s*$")
+
+
+def job_leg(name: str) -> tuple[str, int] | None:
+    """`("fedora-43", 1)` from "... E2E Workers (fedora-43, 1/8)"; None for a job with no `(<variant>, i/N)` suffix -- the same shape check-lane-budget.ts's `variantOf` reads."""
+    m = _LEG_SUFFIX_RE.search(name)
+    if m is None:
+        return None
+    return m.group(1).strip(), int(m.group(2))
+
+
+def filter_variant_log(text: str) -> str:
+    """The only lines the variantCosts derivation reads, ANSI-stripped: E2E test lines, the reporter's `E2E_SKIPPED=` line, and run-sequence.sh's `TOTAL <n>s` line. What the cache stores."""
+    kept = []
+    for raw in text.splitlines():
+        line = _ANSI_RE.sub("", raw)
+        if (
+            _E2E_TEST_LINE_RE.match(line)
+            or _E2E_END_LINE_RE.match(line)
+            or _OPS_TOTAL_LINE_RE.match(line)
+        ):
+            kept.append(line)
+    return "\n".join(kept) + ("\n" if kept else "")
+
+
+def parse_e2e_log_spans(
+    text: str, bucket_titles: Mapping[str, str] | None = None
+) -> dict[str, float] | None:
+    """`{unit key: wall ms}` from one E2E Workers log, the key being the test file, or `<file>#<bucket>` when the test's top-level describe title is in `bucket_titles` (the `#partN` split `parse_playwright_unit_ms` makes). A unit's span runs from its first test's start to the next unit's first test's start; the last unit's to the `E2E_SKIPPED=` line. A key that recurs later sums its spans. None when the log has no test line or no end line: a truncated log prices nothing rather than a short last unit."""
+    titles = bucket_titles or {}
+    segments: list[tuple[str, float]] = []
+    end: float | None = None
+    for raw in text.splitlines():
+        line = _ANSI_RE.sub("", raw)
+        m = _E2E_TEST_LINE_RE.match(line)
+        if m is not None:
+            file, rest = m.group(3), m.group(4)
+            bucket = titles.get(rest.split(" > ", 1)[0].strip())
+            key = "%s#%s" % (file, bucket) if bucket else file
+            if not segments or segments[-1][0] != key:
+                start = _iso_to_epoch(m.group(2))
+                if start is None:  # pragma: no cover - the regex guarantees a stamp
+                    continue
+                segments.append((key, start))
+            continue
+        e = _E2E_END_LINE_RE.match(line)
+        if e is not None:
+            end = _iso_to_epoch(e.group(1))
+    if not segments or end is None:
+        return None
+    spans: dict[str, float] = {}
+    for i, (key, start) in enumerate(segments):
+        stop = segments[i + 1][1] if i + 1 < len(segments) else end
+        spans[key] = spans.get(key, 0.0) + max(0.0, stop - start) * 1000.0
+    return spans
+
+
+def parse_ops_tutorial_total_seconds(text: str) -> float | None:
+    """run-sequence.sh's `TOTAL <n>s` (the sum of the leg's tutorial durations), or None when the log has none."""
+    total: float | None = None
+    for raw in text.splitlines():
+        m = _OPS_TOTAL_LINE_RE.match(_ANSI_RE.sub("", raw))
+        if m is not None:
+            total = float(m.group(2))
+    return total
+
+
+def _step_seconds(job: dict[str, Any], step_re: re.Pattern[str]) -> float | None:
+    """Seconds of the job's first SUCCESSFUL step matching `step_re`; None when it did not run (skipped) or is absent."""
+    for step in job.get("steps") or []:
+        if not step_re.match(step.get("name") or "") or step.get("conclusion") != "success":
+            continue
+        start = _iso_to_epoch(step.get("started_at"))
+        end = _iso_to_epoch(step.get("completed_at"))
+        if start is not None and end is not None:
+            return max(0.0, end - start)
+    return None
+
+
+def e2e_variant_measurement(
+    job: dict[str, Any],
+    log_text: str,
+    manifest_ids: set[str],
+    bucket_titles: Mapping[str, str] | None = None,
+) -> dict[str, Any] | None:
+    """One E2E Workers leg's `{variant, leg, fixed_minutes, extra_minutes, units: {unit id: ms}}`, or None when its name, wall time or log cannot price it. A span whose `e2e-workers:<key>` id the manifest does not name is an `--also` suite, counted as the leg's extra."""
+    leg = job_leg(job.get("name") or "")
+    wall = job_wall_minutes(job)
+    spans = parse_e2e_log_spans(log_text, bucket_titles)
+    if leg is None or wall is None or spans is None:
+        return None
+    units: dict[str, float] = {}
+    extra_ms = 0.0
+    for key, ms in spans.items():
+        unit_id = "e2e-workers:%s" % key
+        if unit_id in manifest_ids:
+            units[unit_id] = ms
+        else:
+            extra_ms += ms
+    return {
+        "variant": leg[0],
+        "leg": leg[1],
+        "fixed_minutes": wall - sum(spans.values()) / 60000.0,
+        "extra_minutes": extra_ms / 60000.0 if extra_ms > 0 else None,
+        "units": units,
+    }
+
+
+def ops_variant_measurement(job: dict[str, Any], log_text: str) -> dict[str, Any] | None:
+    """One OPS Provision leg's `{variant, leg, fixed_minutes, extra_minutes, units: {}}`, or None when its name, wall time or `TOTAL` line is missing."""
+    leg = job_leg(job.get("name") or "")
+    wall = job_wall_minutes(job)
+    total = parse_ops_tutorial_total_seconds(log_text)
+    if leg is None or wall is None or total is None:
+        return None
+    extra = _step_seconds(job, OPS_LEG_EXTRA_STEP_RE)
+    return {
+        "variant": leg[0],
+        "leg": leg[1],
+        "fixed_minutes": wall - total / 60.0 - (extra or 0.0) / 60.0,
+        "extra_minutes": extra / 60.0 if extra else None,
+        "units": {},
+    }
+
+
+def aggregate_variant_costs(
+    measurements: Mapping[str, Sequence[Mapping[str, Any]]],
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """`{lane: [per-leg measurement]}` -> the `variantCosts` shape, each figure the p90 over that variant's legs (minutes to 2 places, units to whole ms). legExtraMinutes carries only the leg indexes that measured an extra."""
+    out: dict[str, dict[str, dict[str, Any]]] = {}
+    for lane, rows in measurements.items():
+        by_variant: dict[str, list[Mapping[str, Any]]] = {}
+        for row in rows:
+            by_variant.setdefault(row["variant"], []).append(row)
+        lane_out: dict[str, dict[str, Any]] = {}
+        for variant, vrows in sorted(by_variant.items()):
+            cost: dict[str, Any] = {
+                "fixedMinutes": round(_percentile([r["fixed_minutes"] for r in vrows], 90), 2)
+            }
+            extras: dict[int, list[float]] = {}
+            unit_samples: dict[str, list[float]] = {}
+            for r in vrows:
+                if r.get("extra_minutes"):
+                    extras.setdefault(int(r["leg"]), []).append(float(r["extra_minutes"]))
+                for unit_id, ms in (r.get("units") or {}).items():
+                    unit_samples.setdefault(unit_id, []).append(float(ms))
+            if extras:
+                cost["legExtraMinutes"] = {
+                    str(leg): round(_percentile(vals, 90), 2)
+                    for leg, vals in sorted(extras.items())
+                }
+            cost["units"] = {
+                unit_id: round(_percentile(vals, 90))
+                for unit_id, vals in sorted(unit_samples.items())
+            }
+            lane_out[variant] = cost
+        if lane_out:
+            out[lane] = lane_out
+    return out
+
+
+def fetch_job_log(repo: str, job_id: int) -> str:
+    """One job's raw log text through `ghx.gh` (a failed call raises on `.stdout`). `--allow-escape-sequences`: gh 2.98 REFUSES a response carrying terminal escapes without it ("the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway", measured 2026-09-28 on job 108948938590), and every E2E log carries colour codes."""
+    return ghx.gh(
+        ["api", "--allow-escape-sequences", "repos/%s/actions/jobs/%s/logs" % (repo, job_id)],
+        attempts=GH_ATTEMPTS,
+    ).stdout
+
+
+def cached_variant_log(
+    repo: str,
+    job_id: int,
+    cache_dir: Path | None,
+    fetch: Callable[[str, int], str] = fetch_job_log,
+) -> str:
+    """The filtered log for `job_id`, from `cache_dir` when present, else fetched, filtered and cached. A fetch failure raises and caches nothing."""
+    cache_file = cache_dir / ("%s.txt" % job_id) if cache_dir is not None else None
+    if cache_file is not None:
+        try:
+            return cache_file.read_text(encoding="utf-8")
+        except OSError:
+            pass
+    filtered = filter_variant_log(fetch(repo, job_id))
+    if cache_file is not None:
+        try:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            cache_file.write_text(filtered, encoding="utf-8")
+        except OSError as exc:
+            log.warn("budget_report: could not cache job %s's log: %s" % (job_id, exc))
+    return filtered
+
+
+def _manifest_unit_ids(root: Path, lane: str) -> set[str]:
+    try:
+        data = json.loads(
+            (root / ".ci" / "config" / "shards" / ("%s.json" % lane)).read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError):
+        return set()
+    return {i for leg in data.get("legs", []) for i in leg.get("ids", [])}
+
+
+def collect_variant_costs(
+    repo: str,
+    jobs_by_run: Sequence[list[dict[str, Any]]],
+    patterns: Mapping[str, re.Pattern[str]],
+    root: Path,
+    *,
+    bucket_titles: Mapping[str, str] | None = None,
+    fetch_log: Callable[[str, int], str] = fetch_job_log,
+    cache_dir: Path | None = None,
+    max_jobs: int = VARIANT_LOG_MAX_JOBS,
+) -> tuple[dict[str, dict[str, dict[str, Any]]], dict[str, int]]:
+    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one."""
+    manifest_ids = _manifest_unit_ids(root, VARIANT_E2E_LANE)
+    candidates: list[tuple[str, dict[str, Any]]] = []
+    for lane, job_id in VARIANT_LANE_JOBS.items():
+        pattern = patterns.get(job_id)
+        if pattern is None:
+            log.warn(
+                "budget_report: no display pattern for job %r; variantCosts[%r] is not measured"
+                % (job_id, lane)
+            )
+            continue
+        for run_jobs in jobs_by_run:
+            for job in run_jobs:
+                name = job.get("name") or ""
+                if job.get("conclusion") == "success" and pattern.match(name) and job_leg(name):
+                    candidates.append((lane, job))
+    if len(candidates) > max_jobs:
+        log.warn(
+            "budget_report: %d variant legs in the sample; reading the logs of the first %d only"
+            % (len(candidates), max_jobs)
+        )
+        candidates = candidates[:max_jobs]
+
+    def read(item: tuple[str, dict[str, Any]]) -> tuple[str, dict[str, Any], str | None]:
+        lane, job = item
+        try:
+            return lane, job, cached_variant_log(repo, job["id"], cache_dir, fetch_log)
+        except (ghx.GhError, OSError) as exc:
+            log.warn(
+                "budget_report: could not read the log of job %s (%s): %s"
+                % (job.get("id"), job.get("name"), exc)
+            )
+            return lane, job, None
+
+    with ThreadPoolExecutor(max_workers=VARIANT_LOG_WORKERS) as pool:
+        results = list(pool.map(read, candidates))
+
+    measurements: dict[str, list[dict[str, Any]]] = {}
+    unpriced = 0
+    for lane, job, text in results:
+        if text is None:
+            continue
+        row = (
+            e2e_variant_measurement(job, text, manifest_ids, bucket_titles)
+            if lane == VARIANT_E2E_LANE
+            else ops_variant_measurement(job, text)
+        )
+        if row is None:
+            unpriced += 1
+            continue
+        measurements.setdefault(lane, []).append(row)
+    if unpriced:
+        log.warn(
+            "budget_report: %d variant leg log(s) carried no parseable timing; skipped" % unpriced
+        )
+    return aggregate_variant_costs(measurements), {
+        lane: len(rows) for lane, rows in measurements.items()
+    }
+
+
+def merge_variant_costs(
+    existing: Mapping[str, Any], computed: Mapping[str, Any]
+) -> tuple[dict[str, Any], list[str]]:
+    """`(merged variantCosts, [one note per value KEPT from `existing` because this sample did not measure it])`. NEVER A SILENT DROP: a lane, a variant, a leg extra or a unit the sample did not measure keeps its prior value and is named in the notes; a measured one replaces it."""
+    merged: dict[str, Any] = {}
+    notes: list[str] = []
+    for lane in sorted(set(existing) | set(computed)):
+        old_lane = existing.get(lane) or {}
+        new_lane = computed.get(lane) or {}
+        if not new_lane:
+            merged[lane] = old_lane
+            notes.append(
+                "variantCosts[%s]: no leg measured; every variant KEPT from the prior file" % lane
+            )
+            continue
+        lane_out: dict[str, Any] = {}
+        for variant in sorted(set(old_lane) | set(new_lane)):
+            old = old_lane.get(variant) or {}
+            new = new_lane.get(variant)
+            if new is None:
+                lane_out[variant] = old
+                notes.append(
+                    "variantCosts[%s][%s]: not measured; KEPT from the prior file" % (lane, variant)
+                )
+                continue
+            cost: dict[str, Any] = {"fixedMinutes": new["fixedMinutes"]}
+            extras = {**(old.get("legExtraMinutes") or {}), **(new.get("legExtraMinutes") or {})}
+            notes.extend(
+                "variantCosts[%s][%s].legExtraMinutes[%s]: not measured; KEPT %s from the prior file"
+                % (lane, variant, leg, extras[leg])
+                for leg in sorted(
+                    set(old.get("legExtraMinutes") or {}) - set(new.get("legExtraMinutes") or {})
+                )
+            )
+            if extras:
+                cost["legExtraMinutes"] = dict(sorted(extras.items()))
+            old_units = old.get("units") or {}
+            new_units = new.get("units") or {}
+            kept_units = sorted(set(old_units) - set(new_units))
+            if kept_units:
+                notes.append(
+                    "variantCosts[%s][%s]: %d unit(s) not measured, KEPT from the prior file: %s"
+                    % (lane, variant, len(kept_units), ", ".join(kept_units))
+                )
+            cost["units"] = dict(sorted({**old_units, **new_units}.items()))
+            lane_out[variant] = cost
+        merged[lane] = lane_out
+    return merged, notes
+
+
 # T3.2: assembling `.ci/config/lane-durations.json`'s three measured sections.
 
 
@@ -1023,8 +1375,10 @@ def compute_lane_durations(
     root: Path | None = None,
     list_artifacts: Callable[[str, int], list[dict[str, Any]]] = fetch_artifacts,
     download: Callable[[str, Any], bytes] = download_artifact_zip,
+    fetch_log: Callable[[str, int], str] = fetch_job_log,
+    log_cache_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "missing_artifact_lanes"}`. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
+    """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root). Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
     # THE PR SAMPLE HONOURS `--branch`, AS THE REPORT'S DOES SINCE 34ac34c13. `--refresh --branch 0923-1` still sampled PR runs with NO branch filter, so the durations it wrote came from whichever branches' runs the listing served, not the branch named. `class_branch_filter` keeps a default-branch refresh repo-wide.
@@ -1082,6 +1436,17 @@ def compute_lane_durations(
         download=download,
         bucket_titles=bucket_titles,
     )
+    variant_costs, variant_legs = collect_variant_costs(
+        repo,
+        pr_jobs_by_run,
+        patterns,
+        tree_root,
+        bucket_titles=bucket_titles,
+        fetch_log=fetch_log,
+        cache_dir=log_cache_dir
+        if log_cache_dir is not None
+        else tree_root / VARIANT_LOG_CACHE_REL_PATH,
+    )
     units_ms: dict[str, float] = {}
     for per_unit in unit_samples.values():
         for unit_id, ms_list in per_unit.items():
@@ -1113,6 +1478,9 @@ def compute_lane_durations(
         "job_p90_minutes": job_p90_minutes,
         # CI-representative gate-step timing for check-gate-manifest.ts's tier verdict; see gate_step_seconds.
         "gate_step_p90_seconds": gate_step_seconds(tree_root, patterns, pr_jobs_by_run),
+        # Per-matrix-variant leg pricing measured from the same sample's job logs; see `collect_variant_costs`.
+        "variant_costs": variant_costs,
+        "variant_legs": variant_legs,
         "missing_artifact_lanes": missing_lanes,
         # T3.1: the PR sample's own age findings, carried out so `--refresh` can REFUSE to stamp a fresh `refreshed_at` on them (see refresh_lane_durations).
         "stale_sample": stale_sample_findings(pr_runs),
@@ -1197,7 +1565,7 @@ def refresh_lane_durations(
     dry_run: bool = False,
     compute: Callable[..., dict[str, Any]] = compute_lane_durations,
 ) -> int:
-    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `job_max_seconds`, `job_p90_minutes`, `gate_step_p90_seconds` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
+    """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `variantCosts` (measured from job logs, merged so an unmeasured entry keeps its prior value, named on stderr), `job_max_seconds`, `job_p90_minutes`, `gate_step_p90_seconds` and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
     try:
         existing = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1234,6 +1602,7 @@ def refresh_lane_durations(
         and not computed["job_max_seconds"]
         and not computed["job_p90_minutes"]
         and not computed["gate_step_p90_seconds"]
+        and not computed.get("variant_costs")
     ):
         log.error(
             "budget_report --refresh: matched nothing at all across %d sampled run(s); "
@@ -1258,6 +1627,30 @@ def refresh_lane_durations(
     # T3.1: how many units a lane's leg runs at once (quality-pytest's `-n`), hand-authored beside defaultUnitMs and preserved the same way; dropping it would silently turn a parallel lane back into a serial estimate.
     if "unitParallelism" in existing:
         updated["unitParallelism"] = existing["unitParallelism"]
+    # variantCosts is MEASURED (collect_variant_costs) and merged so nothing the sample missed is dropped: an unmeasured lane, variant, leg extra or unit keeps its prior value, and every such keep is printed.
+    variant_costs, variant_notes = merge_variant_costs(
+        existing.get("variantCosts") or {}, computed.get("variant_costs") or {}
+    )
+    for note in variant_notes:
+        log.warn("budget_report --refresh: %s" % note)
+    for lane, legs in sorted((computed.get("variant_legs") or {}).items()):
+        print(
+            "budget_report --refresh: variantCosts[%s] measured from %d leg log(s)" % (lane, legs),
+            file=sys.stderr,
+        )
+    if variant_costs:
+        updated["variantCosts"] = {
+            lane: {
+                variant: {
+                    **cost,
+                    "units": prune_units_to_manifests(
+                        cost.get("units") or {}, repo_root_for_pruning
+                    ),
+                }
+                for variant, cost in variants.items()
+            }
+            for lane, variants in variant_costs.items()
+        }
     updated["job_p90_minutes"] = {
         **existing.get("job_p90_minutes", {}),
         **computed["job_p90_minutes"],

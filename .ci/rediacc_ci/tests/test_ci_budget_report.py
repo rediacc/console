@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import zipfile
 
 import pytest
@@ -1664,3 +1665,321 @@ def test_compute_lane_durations_reports_gate_step_p90_seconds(tmp_path, monkeypa
         root=root, list_artifacts=lambda *_a: [], download=lambda *_a: b""
     )
     assert computed["gate_step_p90_seconds"] == {"check:lint": pytest.approx(30.0)}
+
+
+# --------------------------------------------------------------------------- variantCosts: measured from job logs ---------------------------------------------------------------------------
+
+# A trimmed E2E Workers (fedora-43, 1/8) log in the shape MEASURED on job 108948938590 (run 36427771349): colour codes, the log's own stamp, then the reporter's bracketed START stamp and the title path. 01 is a manifest unit, 13-postgres's first describe is bucket part1, 12a is a `--also` suite.
+_E2E_FIXTURE_LINES = (
+    '2026-09-28T13:57:12.2806208Z   ALSO=(--also "12a-full-integration-repository.test.ts")',
+    "2026-09-28T14:00:42.4365025Z \x1b[32m  ✓ VM reset completed in 204.4s\x1b[0m",
+    "2026-09-28T14:01:24.9305467Z [2026-09-28T14:01:24.000Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > ping should return pong (0.8s, passed)",
+    "2026-09-28T14:01:26.0642838Z [2026-09-28T14:01:25.000Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > hello (0.7s, passed)",
+    "2026-09-28T14:01:40.0000000Z \x1b[2m[2026-09-28T14:01:34.000Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 1.1 ping (0.5s, passed)\x1b[0m",
+    "2026-09-28T14:03:00.0000000Z [2026-09-28T14:02:04.000Z]  > test-13 > 13-postgres-fork-isolation.test.ts > PostgreSQL Data Persistence @bridge @integration > writes (5.0s, passed)",
+    "2026-09-28T14:05:00.0000000Z [2026-09-28T14:04:00.000Z]  > test-13 > 13-postgres-fork-isolation.test.ts > Repository Fork Data Inheritance @bridge @integration > forks (5.0s, passed)",
+    "2026-09-28T14:05:30.0000000Z Bridge Test Teardown",
+    "2026-09-28T14:05:34.0000000Z [TextFileReporter] E2E_SKIPPED=0",
+    "2026-09-28T14:05:34.1000000Z ✓ E2E tests passed",
+)
+_E2E_FIXTURE_LOG = "\n".join(_E2E_FIXTURE_LINES)
+_BUCKETS = {
+    "PostgreSQL Data Persistence @bridge @integration": "part1",
+    "Repository Fork Data Inheritance @bridge @integration": "part1",
+}
+_MANIFEST_IDS = {
+    "e2e-workers:01-system-checks.test.ts",
+    "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
+}
+
+
+def _job(name, started, completed, steps=(), job_id=1, conclusion="success"):
+    return {
+        "id": job_id,
+        "name": name,
+        "conclusion": conclusion,
+        "started_at": started,
+        "completed_at": completed,
+        "steps": list(steps),
+    }
+
+
+def test_parse_e2e_log_spans_measures_wall_spans_start_to_next_start_and_last_to_e2e_skipped():
+    spans = br.parse_e2e_log_spans(_E2E_FIXTURE_LOG, _BUCKETS)
+    assert (
+        spans
+        == {
+            "01-system-checks.test.ts": 10_000.0,  # 14:01:24 -> 14:01:34, not the 1.5s of test time
+            "12a-full-integration-repository.test.ts": 30_000.0,
+            "13-postgres-fork-isolation.test.ts#part1": 210_000.0,  # 14:02:04 -> the E2E_SKIPPED line at 14:05:34
+        }
+    )
+
+
+def test_parse_e2e_log_spans_is_none_for_a_truncated_log_with_no_end_line():
+    truncated = "\n".join(
+        line for line in _E2E_FIXTURE_LOG.splitlines() if "E2E_SKIPPED" not in line
+    )
+    assert br.parse_e2e_log_spans(truncated, _BUCKETS) is None
+    assert br.parse_e2e_log_spans("2026-09-28T14:05:34.0000000Z E2E_SKIPPED=0", _BUCKETS) is None
+
+
+def test_parse_e2e_log_spans_without_bucket_titles_keeps_the_file_whole():
+    spans = br.parse_e2e_log_spans(_E2E_FIXTURE_LOG, None)
+    assert spans is not None
+    assert spans["13-postgres-fork-isolation.test.ts"] == 210_000.0
+
+
+def test_filter_variant_log_keeps_only_the_lines_the_derivation_reads():
+    filtered = br.filter_variant_log(_E2E_FIXTURE_LOG + "\n2026-09-28T13:42:11.1852855Z TOTAL 372s")
+    assert "\x1b[" not in filtered
+    assert "VM reset" not in filtered
+    assert "ALSO=" not in filtered
+    assert filtered.count(".test.ts >") == 5
+    assert "E2E_SKIPPED=0" in filtered
+    assert "TOTAL 372s" in filtered
+    assert br.parse_e2e_log_spans(filtered, _BUCKETS) == br.parse_e2e_log_spans(
+        _E2E_FIXTURE_LOG, _BUCKETS
+    )
+
+
+def test_e2e_variant_measurement_counts_an_also_suite_as_the_legs_extra_and_the_rest_as_fixed():
+    job = _job(
+        "Tests + Infra / E2E Workers (fedora-43, 1/8)",
+        "2026-09-28T13:53:34Z",
+        "2026-09-28T14:07:34Z",
+    )  # 14.0 min wall
+    m = br.e2e_variant_measurement(job, _E2E_FIXTURE_LOG, _MANIFEST_IDS, _BUCKETS)
+    assert m is not None
+    assert (m["variant"], m["leg"]) == ("fedora-43", 1)
+    assert m["units"] == {
+        "e2e-workers:01-system-checks.test.ts": 10_000.0,
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 210_000.0,
+    }
+    assert m["extra_minutes"] == pytest.approx(0.5)
+    # fixed = wall - EVERY span (the also suite included): 14.0 - 250s/60
+    assert m["fixed_minutes"] == pytest.approx(14.0 - 250 / 60)
+
+
+def test_e2e_variant_measurement_is_none_without_a_leg_suffix_or_a_parseable_log():
+    job = _job("Tests + Infra / E2E Ceph", "2026-09-28T13:53:34Z", "2026-09-28T14:07:34Z")
+    assert br.e2e_variant_measurement(job, _E2E_FIXTURE_LOG, _MANIFEST_IDS, _BUCKETS) is None
+    leg = _job(
+        "Tests + Infra / E2E Workers (debian-13, 2/8)",
+        "2026-09-28T13:53:34Z",
+        "2026-09-28T14:07:34Z",
+    )
+    assert br.e2e_variant_measurement(leg, "no tests here", _MANIFEST_IDS, _BUCKETS) is None
+
+
+_RUSTFS_STEP = {
+    "name": "Tutorial prep: start RustFS S3 on bridge",
+    "conclusion": "success",
+    "started_at": "2026-09-28T13:34:58Z",
+    "completed_at": "2026-09-28T13:35:58Z",
+}
+
+
+def test_ops_variant_measurement_subtracts_the_tutorials_and_the_rustfs_step():
+    # MEASURED shape: OPS Provision (linux-amd64, 3/4) on run 36427771349, 10:16 wall, TOTAL 372s, RustFS step 60s.
+    job = _job(
+        "OPS Tests / OPS Provision (linux-amd64, 3/4)",
+        "2026-09-28T13:32:03Z",
+        "2026-09-28T13:42:19Z",
+        steps=[_RUSTFS_STEP],
+    )
+    m = br.ops_variant_measurement(job, "2026-09-28T13:42:11.1852855Z TOTAL 372s\n")
+    assert m is not None
+    assert (m["variant"], m["leg"]) == ("linux-amd64", 3)
+    assert m["extra_minutes"] == pytest.approx(1.0)
+    assert m["fixed_minutes"] == pytest.approx(616 / 60 - 372 / 60 - 1.0)
+    skipped = dict(_RUSTFS_STEP, conclusion="skipped")
+    job1 = _job(
+        "OPS Tests / OPS Provision (linux-amd64, 1/4)",
+        "2026-09-28T13:32:07Z",
+        "2026-09-28T13:37:56Z",
+        steps=[skipped],
+    )
+    m1 = br.ops_variant_measurement(job1, "2026-09-28T13:37:00.0Z TOTAL 100s\n")
+    assert m1 is not None
+    assert m1["extra_minutes"] is None
+    assert br.ops_variant_measurement(job1, "no total line") is None
+
+
+def test_aggregate_variant_costs_is_p90_per_variant_with_extras_only_on_legs_that_measured_one():
+    rows = [
+        {
+            "variant": "debian-13",
+            "leg": 1,
+            "fixed_minutes": f,
+            "extra_minutes": None,
+            "units": {"u": u},
+        }
+        for f, u in ((5.0, 1000.0), (6.0, 2000.0), (7.0, 3000.0))
+    ] + [
+        {"variant": "fedora-43", "leg": 1, "fixed_minutes": 8.0, "extra_minutes": 3.0, "units": {}}
+    ]
+    out = br.aggregate_variant_costs({"test-e2e-workers": rows})
+    assert out["test-e2e-workers"]["debian-13"] == {"fixedMinutes": 6.8, "units": {"u": 2800}}
+    assert out["test-e2e-workers"]["fedora-43"] == {
+        "fixedMinutes": 8.0,
+        "legExtraMinutes": {"1": 3.0},
+        "units": {},
+    }
+
+
+def test_merge_variant_costs_never_drops_an_unmeasured_value_and_names_every_keep():
+    existing = {
+        "test-e2e-workers": {
+            "debian-13": {
+                "fixedMinutes": 5.0,
+                "legExtraMinutes": {"1": 2.0},
+                "units": {"a": 1, "b": 2},
+            },
+            "oracle-10": {"fixedMinutes": 8.0, "units": {"a": 9}},
+        },
+        "ops-tutorials": {
+            "linux-amd64": {"fixedMinutes": 4.0, "legExtraMinutes": {"3": 1.5}, "units": {}}
+        },
+    }
+    computed = {"test-e2e-workers": {"debian-13": {"fixedMinutes": 5.5, "units": {"a": 10}}}}
+    merged, notes = br.merge_variant_costs(existing, computed)
+    assert merged["test-e2e-workers"]["debian-13"] == {
+        "fixedMinutes": 5.5,
+        "legExtraMinutes": {"1": 2.0},
+        "units": {"a": 10, "b": 2},
+    }
+    assert merged["test-e2e-workers"]["oracle-10"] == existing["test-e2e-workers"]["oracle-10"]
+    assert merged["ops-tutorials"] == existing["ops-tutorials"]
+    joined = "\n".join(notes)
+    for fragment in ("[ops-tutorials]", "[oracle-10]", "legExtraMinutes[1]", ": b"):
+        assert fragment in joined
+
+
+def test_refresh_keeps_the_prior_variant_costs_when_nothing_measured_them_and_says_so(
+    tmp_path, capsys
+):
+    path = tmp_path / "lane-durations.json"
+    prior = {"test-e2e-workers": {"debian-13": {"fixedMinutes": 5.71, "units": {}}}}
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": None,
+                "concurrency": 20,
+                "jobs": {},
+                "units": {},
+                "variantCosts": prior,
+            }
+        )
+    )
+    rc = br.refresh_lane_durations(
+        path, limit=10, compute=_fake_compute(jobs={"quality-code": 1.0})
+    )
+    assert rc == 0
+    assert json.loads(path.read_text())["variantCosts"] == prior
+    assert "variantCosts[test-e2e-workers]: no leg measured" in capsys.readouterr().err
+
+
+def test_refresh_writes_measured_variant_costs(tmp_path):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
+    measured = {
+        "ops-tutorials": {
+            "linux-amd64": {"fixedMinutes": 4.1, "legExtraMinutes": {"3": 1.0}, "units": {}}
+        }
+    }
+    rc = br.refresh_lane_durations(
+        path,
+        limit=10,
+        compute=_fake_compute(variant_costs=measured, variant_legs={"ops-tutorials": 4}),
+    )
+    assert rc == 0
+    assert json.loads(path.read_text())["variantCosts"] == measured
+
+
+def test_cached_variant_log_fetches_once_and_caches_only_the_filtered_lines(tmp_path):
+    calls = []
+
+    def fetch(_repo, job_id):
+        calls.append(job_id)
+        return _E2E_FIXTURE_LOG
+
+    first = br.cached_variant_log("o/r", 7, tmp_path, fetch)
+    second = br.cached_variant_log("o/r", 7, tmp_path, fetch)
+    assert calls == [7]
+    assert first == second == br.filter_variant_log(_E2E_FIXTURE_LOG)
+
+
+def test_cached_variant_log_caches_nothing_when_the_fetch_fails(tmp_path):
+    def fetch(_repo, _job_id):
+        raise br.ghx.GhBadOutputError([], 1, "boom", br.ghx.FAILURE_FAILED)
+
+    with pytest.raises(br.ghx.GhError):
+        br.cached_variant_log("o/r", 8, tmp_path, fetch)
+    assert not (tmp_path / "8.txt").exists()
+
+
+def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_path):
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "test-e2e-workers.json").write_text(
+        json.dumps(
+            {
+                "lane": "test-e2e-workers",
+                "of": 8,
+                "legs": [{"index": 1, "ids": sorted(_MANIFEST_IDS)}],
+            }
+        )
+    )
+    e2e = _job(
+        "Tests + Infra / E2E Workers (fedora-43, 1/8)",
+        "2026-09-28T13:53:34Z",
+        "2026-09-28T14:07:34Z",
+        job_id=11,
+    )
+    ops = _job(
+        "OPS Tests / OPS Provision (linux-amd64, 3/4)",
+        "2026-09-28T13:32:03Z",
+        "2026-09-28T13:42:19Z",
+        [_RUSTFS_STEP],
+        job_id=12,
+    )
+    failed = _job(
+        "Tests + Infra / E2E Workers (debian-13, 1/8)",
+        "2026-09-28T13:53:34Z",
+        "2026-09-28T14:07:34Z",
+        job_id=13,
+        conclusion="failure",
+    )
+    logs = {11: _E2E_FIXTURE_LOG, 12: "2026-09-28T13:42:11.1Z TOTAL 372s\n"}
+    fetched = []
+
+    def fetch(_repo, job_id):
+        fetched.append(job_id)
+        return logs[job_id]
+
+    pats = {
+        "test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/8\)$"),
+        "ops-vm-provision": re.compile(r"^OPS Tests / OPS Provision \(.+?, .+?/.+?\)$"),
+    }
+    costs, legs = br.collect_variant_costs(
+        "o/r",
+        [[e2e, ops, failed]],
+        pats,
+        tmp_path,
+        bucket_titles=_BUCKETS,
+        fetch_log=fetch,
+        cache_dir=tmp_path / "cache",
+    )
+    assert sorted(fetched) == [11, 12]  # the failed leg is never read
+    assert legs == {"test-e2e-workers": 1, "ops-tutorials": 1}
+    assert costs["test-e2e-workers"]["fedora-43"]["legExtraMinutes"] == {"1": 0.5}
+    assert costs["test-e2e-workers"]["fedora-43"]["units"] == {
+        "e2e-workers:01-system-checks.test.ts": 10000,
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 210000,
+    }
+    assert costs["ops-tutorials"]["linux-amd64"] == {
+        "fixedMinutes": round(616 / 60 - 372 / 60 - 1.0, 2),
+        "legExtraMinutes": {"3": 1.0},
+        "units": {},
+    }

@@ -68,8 +68,8 @@
  * oracle, and budget_report's unit p90s sum test durations, which leave out beforeAll and
  * afterAll work. A lane named in `variantCosts` is priced once per matrix variant, with that
  * variant's own fixed cost, per-leg extras and per-unit wall costs; `VARIANT_PRICED_LANES` must
- * have an entry, because `budget_report.py --refresh` does not preserve the field yet and a
- * silent fall back to the single fixed cost would under-price every leg by 3-5 minutes. The
+ * have an entry, because a lane that loses its entry (a hand edit, a refresh that measured
+ * nothing and had no prior value) would otherwise fall back to the single fixed cost and under-price every leg by 3-5 minutes. The
  * OPS Provision lane (`ops-tutorials`, job `ops-vm-provision`) is priced the same way, its legs
  * the contiguous slices `run-sequence.sh` cuts (`CONTIGUOUS_LANES`). `--table` prints each
  * variant leg's prediction beside its measured p90, which is how the model is validated.

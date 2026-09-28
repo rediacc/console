@@ -54,7 +54,7 @@
     "profiler notice on job 108765034481 (Quality / Pytest (3/3)) reads 'peak 4.00 cores'. Unit",
     "p90s stay per-file SERIAL times; the gate divides by the workers and floors the leg at its",
     "largest xdist group (a group runs on one worker).",
-    "'variantCosts' (hand-authored 2026-09-28, T3.1; --refresh does NOT preserve it yet, and the gate reds when it is gone):",
+    "'variantCosts' (T3.1; budget_report --refresh measures it from job logs and keeps the prior value for anything a sample did not measure; the gate reds when it is gone):",
     "per-matrix-variant leg pricing for the lanes whose legs pay a cost no unit carries. Shape: {lane: {variant: {fixedMinutes,",
     "legExtraMinutes?: {leg index: minutes}, units: {unit id: ms}}}}, where the variant is the first matrix value in the job's",
     "display name ('fedora-43' in 'E2E Workers (fedora-43, 1/8)'). A leg costs fixedMinutes + its legExtraMinutes entry + the",
