@@ -196,7 +196,9 @@ export class BridgeTestRunner {
       case 'worker1': {
         const workers = this.opsManager.getWorkerVMIps();
         if (workers.length === 0) {
-          throw new Error('No worker VMs configured - cannot target worker1 in a Ceph-only topology');
+          throw new Error(
+            'No worker VMs configured - cannot target worker1 in a Ceph-only topology'
+          );
         }
         return workers[0];
       }
