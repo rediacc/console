@@ -7,7 +7,7 @@ W7P6 wave 28, cut over since. THIS MODULE IS THE LIVE REGISTERED GATE (`check:ci
 
 WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain` (the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
 verdict if fewer than `${SHFMT_MIN_FILES:-200}` shell scripts are visible, then
-runs `shfmt -i 4 -ci -d` over four deliberately-asymmetric scopes: all of `.ci`, all of `.claude`, `./run.sh` alone, and `scripts/dev` plus `scripts/ops`.
+runs `shfmt -i 4 -ci -d` over five deliberately-asymmetric scopes: all of `.ci`, all of `.claude`, `./run.sh` alone, `scripts/dev` plus `scripts/ops`, and `.github`.
 
 REAL RUNS OR STUBS: BOTH.
 
@@ -96,8 +96,8 @@ DEFAULT_MIN_FILES = "200"
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")
 
-# The two optional scopes at the end of main, in the twin's `for dir in` order. `scripts/docker` became `scripts/ops` on 2026-09-20 with W9 P2's move; the `is_dir()` guard below skips a scope that has stopped existing, so a stale name here would leave the whole scope unformatted and still report success.
-OPTIONAL_SCOPES = ("scripts/dev", "scripts/ops")
+# The optional scopes at the end of main: the twin's two, in its `for dir in` order, then `.github`, added 2026-09-28 because .github/actions/app-token/probe-repos.sh was the first script there and nothing formatted it. `scripts/docker` became `scripts/ops` on 2026-09-20 with W9 P2's move; the `is_dir()` guard below skips a scope that has stopped existing, so a stale name here would leave the whole scope unformatted and still report success.
+OPTIONAL_SCOPES = ("scripts/dev", "scripts/ops", ".github")
 
 # GITIGNORED WORKING DIRECTORIES THAT SIT INSIDE A SCANNED SCOPE, as repo-relative paths. Pruned here rather than in `paths.walk_tree` because only this gate's corpus is being decided; every other caller of that helper keeps the behaviour it has.
 #

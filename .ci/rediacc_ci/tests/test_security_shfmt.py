@@ -635,7 +635,7 @@ def test_shell_files_does_not_follow_a_symlinked_directory(tmp_path: pathlib.Pat
 def test_the_scope_list_and_flags_are_the_twins() -> None:
     """The twin's literals are gone from the tree, so what is asserted is that the port still carries them and that the RECORDED argv agrees with the flags it claims."""
     assert port.SHFMT_OPTS == ("-i", "4", "-ci", "-d")
-    assert port.OPTIONAL_SCOPES == ("scripts/dev", "scripts/ops")
+    assert port.OPTIONAL_SCOPES == ("scripts/dev", "scripts/ops", ".github")
     assert port.DEFAULT_MIN_FILES == "200"
     assert port.FLOOR_ROOTS == (".ci", ".claude", "scripts")
     first = recorded("a-clean-fixture")[3][0]
