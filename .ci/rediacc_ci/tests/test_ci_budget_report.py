@@ -1119,3 +1119,37 @@ def test_refresh_lane_durations_still_refuses_when_only_job_p90_minutes_would_be
     rc = br.refresh_lane_durations(path, limit=10, compute=_fake_compute())
     assert rc == 1
     assert json.loads(path.read_text())["refreshed_at"] is None
+
+
+def test_prune_units_to_manifests_drops_ids_no_manifest_names(tmp_path):
+    """A merged-in id its lane's manifest no longer names is dropped; a named one, and one from a lane with no manifest, are kept."""
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "quality-pytest.json").write_text(
+        json.dumps(
+            {"lane": "quality-pytest", "of": 1, "legs": [{"index": 1, "ids": ["pytest:.ci/a.py"]}]}
+        )
+    )
+    (shards / "test-renet-go.json").write_text(
+        json.dumps(
+            {"lane": "test-renet-go", "of": 1, "legs": [{"index": 1, "ids": ["example.com/p"]}]}
+        )
+    )
+    units = {
+        "pytest:.ci/a.py": 1,
+        "pytest:/ci/a.py": 2,
+        "example.com/p": 3,
+        "example.com/gone": 4,
+        "battery:x": 5,
+    }
+    assert br.prune_units_to_manifests(units, tmp_path) == {
+        "pytest:.ci/a.py": 1,
+        "example.com/p": 3,
+        "battery:x": 5,
+    }
+
+
+def test_prune_units_to_manifests_keeps_everything_without_manifests(tmp_path):
+    """Inverse control: with no manifests on disk nothing can be judged stale, so nothing is dropped."""
+    units = {"pytest:/ci/a.py": 2, "example.com/gone": 4}
+    assert br.prune_units_to_manifests(units, tmp_path) == units

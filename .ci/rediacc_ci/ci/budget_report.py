@@ -1007,6 +1007,38 @@ def drift_finding(label: str, committed: float | None, measured: float | None) -
     return None
 
 
+# Unit-id prefix -> the lane whose committed shard manifest owns it. A bare id (no ":") is a Go import path of test-renet-go.
+UNIT_PREFIX_MANIFEST = {
+    "pytest": "quality-pytest",
+    "account-e2e": "test-account-e2e",
+    "e2e-workers": "test-e2e-workers",
+    "renet-integration": "test-renet-integration",
+    "": "test-renet-go",
+}
+
+
+def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Drop a unit id its lane's committed manifest no longer names.
+
+    The merge keeps every earlier unit so a lane missing from one sample is not zeroed, but that also kept ids nothing produces any more: on 2026-09-28 572 junit-classname keys (`pytest:/ci/...`, `renet-integration:TestX.py`) sat beside their corrected twins, and a deleted Go package (pkg/infra/vmsnapshot) kept its p90. A lane with no manifest (battery, tutorial) is left as it is.
+    """
+    owned: dict[str, set[str]] = {}
+    for prefix, lane in UNIT_PREFIX_MANIFEST.items():
+        manifest = root / ".ci" / "config" / "shards" / ("%s.json" % lane)
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        owned[prefix] = {i for leg in data.get("legs", []) for i in leg.get("ids", [])}
+    kept: dict[str, Any] = {}
+    for unit_id, value in units.items():
+        prefix = unit_id.split(":", 1)[0] if ":" in unit_id else ""
+        if prefix in owned and unit_id not in owned[prefix]:
+            continue
+        kept[unit_id] = value
+    return kept
+
+
 def refresh_lane_durations(
     path: Path,
     repo: str = DEFAULT_REPO,
@@ -1049,7 +1081,11 @@ def refresh_lane_durations(
     updated["refreshed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated["concurrency"] = existing.get("concurrency", 20)
     updated["jobs"] = {**existing.get("jobs", {}), **computed["jobs"]}
-    updated["units"] = {**existing.get("units", {}), **computed["units"]}
+    updated["units"] = prune_units_to_manifests(
+        # the manifests beside THIS file (.ci/config/lane-durations.json -> the repo root three levels up), so a fixture path prunes against its own tree
+        {**existing.get("units", {}), **computed["units"]},
+        path.resolve().parent.parent.parent,
+    )
     if "defaultUnitMs" in existing:
         updated["defaultUnitMs"] = existing["defaultUnitMs"]
     updated["job_p90_minutes"] = {
