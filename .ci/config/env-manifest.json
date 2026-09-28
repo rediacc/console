@@ -145,7 +145,6 @@
       "GITHUB_TOKEN",
       "GIT_BOT_EMAIL",
       "GIT_BOT_NAME",
-      "INPUT_ACCESS_TOKEN",
       "MATRIX_SECRET_SUFFIX",
       "NFPM_APK_KEY_FILE",
       "NFPM_DEB_KEY_FILE",

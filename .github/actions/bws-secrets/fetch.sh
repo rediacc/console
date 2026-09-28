@@ -2,7 +2,7 @@
 # Runs the pre-placed bitwarden/sm-action binary directly, retrying a transient Bitwarden failure, and classifies a final failure as either an outage or a credential problem.
 #
 # Usage: fetch.sh <path-to-sm-action-binary>
-# Environment: INPUT_ACCESS_TOKEN, INPUT_SECRETS (one `UUID > ENV_NAME` per line), GITHUB_ENV, GITHUB_OUTPUT.
+# Environment: BWS_ACCESS_TOKEN (handed to the binary as its INPUT_ACCESS_TOKEN, the spelling sm-action reads), INPUT_SECRETS (one `UUID > ENV_NAME` per line), GITHUB_ENV, GITHUB_OUTPUT.
 #
 # THE CONTRACT IS sm-action's OWN, pinned at v3.0.1 (1238aae8). The binary reads its inputs from `INPUT_<NAME>` (src/ci.rs get_input, where an empty value counts as unset), so this passes exactly what the node runner would derive from action.yml's `with:` and defaults.
 # INPUT_SET_ENV must be set explicitly: src/config.rs reads it as `is_some_and(!= "false")`, so an unset value means NO env export, and only action.yml's `default: "true"` made the `uses:` path export.
@@ -56,7 +56,7 @@ attempts=$((${#delays[@]} + 1))
 
 for ((i = 1; i <= attempts; i++)); do
     : >"$errf"
-    "$bin" 2>"$errf"
+    INPUT_ACCESS_TOKEN="${BWS_ACCESS_TOKEN:-}" "$bin" 2>"$errf"
     rc=$?
     # Replaying stderr keeps the log showing what the `uses:` path showed. It carries sm-action's error text and never a secret value, which the binary writes only to stdout as a mask command and to the two files.
     cat "$errf" >&2

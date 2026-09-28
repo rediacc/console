@@ -220,7 +220,7 @@ runs:
       if: ${{ steps.prewarm.outputs.binary != '' }}
       shell: bash
       env:
-        INPUT_ACCESS_TOKEN: ${{ inputs.access-token }}
+        BWS_ACCESS_TOKEN: ${{ inputs.access-token }}
         INPUT_SECRETS: ${{ steps.resolve.outputs.mapping }}
         BWS_FETCH: ${{ github.action_path }}/fetch.sh
         SM_ACTION_BIN: ${{ steps.prewarm.outputs.binary }}
