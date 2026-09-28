@@ -30,6 +30,9 @@ fi
 
 delays=(1 2 4 8 15 15 15)
 export GIT_TERMINAL_PROMPT=0
+# Probe from outside any checkout. actions/checkout persists an Authorization extraheader for the job's GITHUB_TOKEN into the repository's local config, and inside that repository it wins over the app token in the global insteadOf URL: run 36455077278 read console and homebrew-tap but got "not found" for every private repository in each job whose first checkout kept its credentials.
+probe_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/app-token-probe.XXXXXX")"
+cd "$probe_dir" || exit 2
 
 failed=()
 for repo in "${repos[@]}"; do
