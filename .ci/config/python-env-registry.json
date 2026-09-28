@@ -404,6 +404,15 @@
       "RUNNER_TEMP",
       "TMPDIR"
     ],
+    ".ci/rediacc_ci/diagnostics/collect_vm_diagnostics.py": [
+      "CI",
+      "RENET_DATA_DIR",
+      "RUNNER_TEMP",
+      "SSH_USER",
+      "SUDO_USER",
+      "USER",
+      "VM_NET_OFFSET"
+    ],
     ".ci/rediacc_ci/docker/cleanup_staging.py": [
       "DRY_RUN",
       "PUBLISH_DOCKER_REGISTRY"

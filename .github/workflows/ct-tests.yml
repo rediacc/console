@@ -436,6 +436,12 @@ jobs:
             --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "${{ matrix.shard }}/8" \
             "${ALSO[@]}"
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}" --status ${{ job.status }}
 
@@ -445,6 +451,7 @@ jobs:
           name: test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             packages/e2e-tests/reports/bridge/
             packages/e2e-tests/reports/bridge-logs/
           retention-days: 3
@@ -607,6 +614,12 @@ jobs:
       - name: Run E2E Tests (Ceph)
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph.config.ts --fail-on-skip
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph" --status ${{ job.status }}
 
@@ -616,6 +629,7 @@ jobs:
           name: test-e2e-ceph-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             packages/e2e-tests/reports/bridge-ceph/
             packages/e2e-tests/reports/bridge-logs/
           retention-days: 3
@@ -780,6 +794,12 @@ jobs:
       - name: Run E2E Tests (Ceph Workers)
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph-workers" --status ${{ job.status }}
 
@@ -789,6 +809,7 @@ jobs:
           name: test-e2e-ceph-workers-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             packages/e2e-tests/reports/bridge-ceph-workers/
             packages/e2e-tests/reports/bridge-ceph-workers-logs/
           retention-days: 3
@@ -939,6 +960,12 @@ jobs:
       - name: Run E2E Tests (K8s)
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s.config.ts --fail-on-skip
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s" --status ${{ job.status }}
 
@@ -948,6 +975,7 @@ jobs:
           name: test-e2e-k8s-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             packages/e2e-tests/reports/bridge-k8s/
             packages/e2e-tests/reports/bridge-k8s-logs/
           retention-days: 3
@@ -1104,6 +1132,12 @@ jobs:
       - name: Run E2E Tests (K8s Ceph)
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-ceph.config.ts --fail-on-skip
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s-ceph" --status ${{ job.status }}
 
@@ -1113,6 +1147,7 @@ jobs:
           name: test-e2e-k8s-ceph-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             packages/e2e-tests/reports/bridge-k8s-ceph/
             packages/e2e-tests/reports/bridge-k8s-ceph-logs/
           retention-days: 3
@@ -1326,6 +1361,12 @@ jobs:
         # .config.ts is in LIVE_CONFIG_REGISTRY but NO workflow runs it".
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-multinode.config.ts --grep-invert "licensing on the fleet" --fail-on-skip
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s-multinode" --status ${{ job.status }}
 
@@ -1335,6 +1376,7 @@ jobs:
           name: test-e2e-k8s-multinode-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             ${{ runner.temp }}/account-for-e2e.log
             packages/e2e-tests/reports/bridge-k8s-multinode/
             packages/e2e-tests/reports/bridge-k8s-multinode-logs/
@@ -1514,6 +1556,12 @@ jobs:
       - name: Run E2E Tests (Dual-group migrate)
         run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.migrate.config.ts --fail-on-skip
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-migrate" --status ${{ job.status }}
 
@@ -1523,6 +1571,7 @@ jobs:
           name: test-e2e-migrate-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
             packages/e2e-tests/reports/bridge-migrate/
             packages/e2e-tests/reports/bridge-migrate-logs/
           retention-days: 3
@@ -1698,6 +1747,12 @@ jobs:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
 
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "fork-isolation" --status ${{ job.status }}
 
@@ -1707,6 +1762,7 @@ jobs:
           name: test-fork-isolation-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
           retention-days: 3
           if-no-files-found: ignore
 
