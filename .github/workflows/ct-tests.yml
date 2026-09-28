@@ -426,7 +426,7 @@ jobs:
         # Leg 1, not 7: on leg 7 (run for b45276a49) 12a's "new: create
         # repository" failed right after 06-daemon-operations on both
         # full-integration distros, while beside 13-postgres-fork-isolation and
-        # 14 on leg 6 it had passed; leg 1 holds 13 part 1 + 01 (8.8 avg).
+        # 14 on leg 6 it had passed; leg 1 holds 01, 15 and 25 (.ci/config/shards/test-e2e-workers.json), kept free of 06.
         run: |
           ALSO=()
           if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '1' ]]; then

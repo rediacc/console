@@ -8,11 +8,13 @@
  * (`.ci/scripts/quality/check_job_timeout_headroom.py`). This must run offline and
  * deterministically -- `npm run ci` has no network and no CI token -- so every number it
  * judges is COMMITTED: `.ci/config/lane-durations.json` (T2.9/T3.2, `budget_report.py
- * --refresh` rewrites it from real green runs) and `.ci/config/shards/<lane>.json`
- * (T2.10, `gate-bind --write` regenerates it from the same `shardPlan` the matrix emitter
- * uses). Nothing here re-derives a plan or shells out to a runner; a sharded lane's legs
- * come from the COMMITTED manifest, exactly as review saw it, not from a fresh
- * `shardPlan` call that could silently disagree with what actually shipped.
+ * --refresh` rewrites it from real green runs), the `.ci/config/shards/<lane>.json` manifests
+ * and `.ci/tutorials/run-sequence.sh`'s `MEASURED_SHARD_SIZES`. Only quality-code's manifest is
+ * generated (`gate-bind --write`, from `shardPlan` over `SHARD_COUNTS`, which names no other
+ * lane); every test-lane manifest is packed by hand, and so is the OPS Provision split. Nothing
+ * here re-derives a plan or shells out to a runner; a lane's legs come from what is COMMITTED,
+ * exactly as review saw it, not from a fresh `shardPlan` call that could silently disagree
+ * with what actually shipped.
  *
  * SIX CHECKS LIVE, ONE DOES NOT YET.
  *
@@ -59,11 +61,22 @@
  * put those legs at 30-41m against a measured 8-12m.
  *
  * MEASURED LEGS. A priced lane's legs are judged twice: the unit-sum estimate (checks 1/4)
- * and the leg's own measured p90 by display name. The estimate alone missed E2E Workers,
- * whose runner step spends most of its time on VM setup no unit is charged for.
+ * and the leg's own measured p90 by display name.
+ *
+ * VARIANT LEGS (`variantCosts`, 2026-09-28). One fixed cost per lane cannot price E2E Workers:
+ * its globalSetup VM reset alone runs 1.5 minutes on debian and 3-4 on fedora, opensuse and
+ * oracle, and budget_report's unit p90s sum test durations, which leave out beforeAll and
+ * afterAll work. A lane named in `variantCosts` is priced once per matrix variant, with that
+ * variant's own fixed cost, per-leg extras and per-unit wall costs; `VARIANT_PRICED_LANES` must
+ * have an entry, because `budget_report.py --refresh` does not preserve the field yet and a
+ * silent fall back to the single fixed cost would under-price every leg by 3-5 minutes. The
+ * OPS Provision lane (`ops-tutorials`, job `ops-vm-provision`) is priced the same way, its legs
+ * the contiguous slices `run-sequence.sh` cuts (`CONTIGUOUS_LANES`). `--table` prints each
+ * variant leg's prediction beside its measured p90, which is how the model is validated.
  *
  * Usage:
  *   npx tsx scripts/gates/check-lane-budget.ts             the real run, against committed data
+ *   npx tsx scripts/gates/check-lane-budget.ts --table     the same, plus predicted vs measured per variant leg
  *   npx tsx scripts/gates/check-lane-budget.ts --selftest  prove the logic can fail
  *
  * ---- gate ----
@@ -224,6 +237,76 @@ export interface LaneDurations {
    * units one after another. Each value's source is cited in the file's `$comment`.
    */
   unitParallelism?: Record<string, number>;
+  /** Per-matrix-variant leg pricing, `{lane: {variant: VariantCost}}` (see the file header and the JSON's `$comment`). */
+  variantCosts?: Record<string, Record<string, VariantCost>>;
+}
+
+/** One matrix variant's measured costs: `fixedMinutes` every leg pays, `legExtraMinutes` keyed by leg index, and `units` in ms, which override the top-level `units` for this variant. */
+export interface VariantCost {
+  fixedMinutes: number;
+  legExtraMinutes?: Record<string, number>;
+  units?: Record<string, number>;
+}
+
+/** The lanes whose legs are priced per variant; a missing `variantCosts` entry for one is a finding, not a fall back. */
+export const VARIANT_PRICED_LANES: readonly string[] = ['test-e2e-workers', 'ops-tutorials'];
+
+/**
+ * A lane whose legs are contiguous slices of its enumerator's ordered units rather than a
+ * committed manifest, and the job that runs it. `run-sequence.sh` slices by
+ * `MEASURED_SHARD_SIZES` only while the sizes sum to the unit count, and by ceil(total / N)
+ * otherwise; `contiguousLegs` mirrors both branches.
+ */
+export interface ContiguousLane {
+  job: string;
+  sizesFile: string;
+}
+export const CONTIGUOUS_LANES: Readonly<Record<string, ContiguousLane>> = {
+  'ops-tutorials': { job: 'ops-vm-provision', sizesFile: '.ci/tutorials/run-sequence.sh' },
+};
+
+/** `MEASURED_SHARD_SIZES=(7 3 5 3)` from a shell script, or null when the array is absent. */
+export function parseShardSizes(text: string): number[] | null {
+  const m = /^\s*MEASURED_SHARD_SIZES=\(([\d\s]+)\)/m.exec(text);
+  if (m === null) return null;
+  const sizes = (m[1] as string).trim().split(/\s+/).map(Number);
+  return sizes.length > 0 && sizes.every((n) => Number.isInteger(n) && n > 0) ? sizes : null;
+}
+
+/** `run-sequence.sh`'s slicing, both branches: the measured sizes when they cover every unit, else ceil(total / of) per leg. */
+export function contiguousLegs(
+  ids: readonly string[],
+  sizes: readonly number[],
+  of: number
+): { index: number; ids: string[] }[] {
+  const measured = sizes.length === of && sizes.reduce((a, b) => a + b, 0) === ids.length;
+  const legs: { index: number; ids: string[] }[] = [];
+  let start = 0;
+  for (let i = 1; i <= of; i++) {
+    const chunk = measured ? (sizes[i - 1] as number) : Math.ceil(ids.length / of);
+    const from = measured ? start : (i - 1) * chunk;
+    legs.push({ index: i, ids: ids.slice(from, from + chunk) });
+    start += chunk;
+  }
+  return legs;
+}
+
+/** The matrix variant a display name carries before its leg: "fedora-43" in "(fedora-43, 1/8)"; null for "(3/3)" or no suffix. */
+export function variantOf(label: string): string | null {
+  const m = /\(([^,()]+), \d+\/\d+\)$/.exec(label);
+  return m === null ? null : (m[1] as string).trim();
+}
+
+/** A leg's fixed minutes and unit table under one variant: its own fixed cost plus the leg's extra, its own unit costs over the lane's. */
+export function variantLegInputs(
+  variant: VariantCost,
+  legIndex: number,
+  units: Readonly<Record<string, number>>
+): { fixedMinutes: number; units: Record<string, number> } {
+  return {
+    fixedMinutes: variant.fixedMinutes + (variant.legExtraMinutes?.[String(legIndex)] ?? 0),
+    units: { ...units, ...(variant.units ?? {}) },
+  };
 }
 
 export function readDurations(root: string): LaneDurations {
@@ -238,6 +321,7 @@ export function readDurations(root: string): LaneDurations {
     defaultUnitMs: parsed.defaultUnitMs,
     job_p90_minutes: parsed.job_p90_minutes,
     unitParallelism: parsed.unitParallelism,
+    variantCosts: parsed.variantCosts,
   };
 }
 
@@ -773,19 +857,94 @@ async function main(): Promise<number> {
     ids: readonly string[],
     fixedMinutes: number,
     defaultUnitMs: number | undefined,
-    parallel: LegParallelism | undefined
+    parallel: LegParallelism | undefined,
+    units: Readonly<Record<string, number>> = durations.units
   ): number => {
     findings.push(
-      ...legFindings(lane, index, of, ids, fixedMinutes, durations.units, defaultUnitMs, parallel)
+      ...legFindings(lane, index, of, ids, fixedMinutes, units, defaultUnitMs, parallel)
     );
-    const { perUnit } = legCostMs(ids, durations.units, defaultUnitMs);
+    const { perUnit } = legCostMs(ids, units, defaultUnitMs);
     legCount += 1;
     unitCount += ids.length;
     for (const u of perUnit) {
-      if (durations.units[u.id] !== undefined) measuredCount += 1;
+      if (units[u.id] !== undefined) measuredCount += 1;
       else if (u.ms !== null) defaultedCount += 1;
     }
     return fixedMinutes + parallelLegMs(perUnit, parallel).ms / 60_000;
+  };
+
+  // Every variant leg's prediction, kept for the model-vs-measured comparison (`--table`, and the drift figure in the summary line).
+  const predictions: {
+    lane: string;
+    job: string;
+    variant: string;
+    index: number;
+    of: number;
+    minutes: number;
+  }[] = [];
+
+  // Prices every leg of a lane, once per variant when `variantCosts` names the lane, and returns the worst estimate; check 3 runs per variant too, against that variant's own fixed cost.
+  const priceLegs = (
+    lane: string,
+    job: string,
+    legs: readonly { index: number; ids: readonly string[] }[],
+    of: number,
+    fixedMinutes: number,
+    defaultUnitMs: number | undefined,
+    parallel: LegParallelism | undefined
+  ): number => {
+    const allIds = legs.flatMap((l) => [...l.ids]);
+    const variants = durations.variantCosts?.[lane];
+    if (variants === undefined) {
+      if (VARIANT_PRICED_LANES.includes(lane)) {
+        findings.push(
+          `${lane}: ${DURATIONS_PATH} has no variantCosts entry, so its legs are priced with one ` +
+            `${fixedMinutes.toFixed(1)}m fixed cost that leaves out the per-variant VM setup. ` +
+            'budget_report.py --refresh drops the hand-authored field; restore it from git history ' +
+            "or re-derive it by the recipe in the file's $comment."
+        );
+      }
+      let worst = 0;
+      for (const leg of legs) {
+        worst = Math.max(
+          worst,
+          priceLeg(lane, leg.index, of, leg.ids, fixedMinutes, defaultUnitMs, parallel)
+        );
+      }
+      findings.push(
+        ...indivisibleFindings(lane, allIds, fixedMinutes, durations.units, undefined, parallel)
+      );
+      return worst;
+    }
+    let worst = 0;
+    for (const [variant, cost] of Object.entries(variants).sort(([a], [b]) => a.localeCompare(b))) {
+      for (const leg of legs) {
+        const inputs = variantLegInputs(cost, leg.index, durations.units);
+        const minutes = priceLeg(
+          `${lane} (${variant})`,
+          leg.index,
+          of,
+          leg.ids,
+          inputs.fixedMinutes,
+          defaultUnitMs,
+          parallel,
+          inputs.units
+        );
+        predictions.push({ lane, job, variant, index: leg.index, of, minutes });
+        worst = Math.max(worst, minutes);
+      }
+      findings.push(
+        ...indivisibleFindings(
+          `${lane} (${variant})`,
+          allIds,
+          cost.fixedMinutes,
+          variantLegInputs(cost, 0, durations.units).units,
+          undefined,
+          parallel
+        )
+      );
+    }
+    return worst;
   };
 
   // A priced lane's legs are ALSO judged on what they measured (job_p90_minutes, one sample per matrix combination), so an estimate that misses real cost (VM setup inside the runner step) cannot hide a leg that is over. Grouped per leg: the worst combination is named, with how many were over.
@@ -818,8 +977,10 @@ async function main(): Promise<number> {
   };
 
   for (const lane of [...allLanes].sort()) {
-    // A lane named in TEST_LANE_WORKFLOWS whose job does not exist yet (ops-tutorials, T2.16) is inert by that table's own docstring; it is printed below, never silently dropped.
-    if (!caps.has(lane)) {
+    const contiguous = CONTIGUOUS_LANES[lane];
+    const job = contiguous?.job ?? lane;
+    // A lane named in TEST_LANE_WORKFLOWS whose job does not exist is inert by that table's own docstring; it is printed below, never silently dropped.
+    if (!caps.has(job)) {
       inert.push(lane);
       continue;
     }
@@ -841,20 +1002,35 @@ async function main(): Promise<number> {
     // A committed manifest IS the shipped plan, whether or not the lane is in SHARD_COUNTS: the test lanes are sharded from theirs (T2.12-T2.15), so pricing them by lock entries would price nothing.
     if (existsSync(manifestFile)) {
       const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), lane);
-      let worst = 0;
-      const allIds: string[] = [];
-      for (const leg of manifest.legs) {
-        worst = Math.max(
-          worst,
-          priceLeg(lane, leg.index, manifest.of, leg.ids, fixedMinutes, defaultUnitMs, parallel)
-        );
-        allIds.push(...leg.ids);
-      }
-      priced.add(lane);
-      worstLegPerLane.push(Math.max(worst, measuredLegFindings(lane, manifest.of)));
-      findings.push(
-        ...indivisibleFindings(lane, allIds, fixedMinutes, durations.units, undefined, parallel)
+      const worst = priceLegs(
+        lane,
+        job,
+        manifest.legs,
+        manifest.of,
+        fixedMinutes,
+        defaultUnitMs,
+        parallel
       );
+      priced.add(job);
+      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, manifest.of)));
+      continue;
+    }
+    // A contiguous lane's legs are the slices its runner cuts from the enumerator's order, read from the committed sizes.
+    if (contiguous !== undefined) {
+      const enumerator = LANE_ENUMERATORS[lane];
+      const sizesText = readOr(ROOT, contiguous.sizesFile, `${lane}'s shard sizes`);
+      const sizes = sizesText === null ? null : parseShardSizes(sizesText);
+      if (enumerator === undefined || sizes === null) {
+        findings.push(
+          `${lane}: its legs cannot be read (${enumerator === undefined ? 'no unit enumerator' : `no MEASURED_SHARD_SIZES in ${contiguous.sizesFile}`}), so job ${job} is priced by nothing.`
+        );
+        continue;
+      }
+      const ids = (await enumerator(ROOT)).map((u) => u.id);
+      const legs = contiguousLegs(ids, sizes, sizes.length);
+      const worst = priceLegs(lane, job, legs, sizes.length, fixedMinutes, defaultUnitMs, parallel);
+      priced.add(job);
+      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, sizes.length)));
       continue;
     }
     if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {
@@ -929,6 +1105,34 @@ async function main(): Promise<number> {
 
   if (CHECK7_ENABLED) findings.push(...timeoutFindings(caps));
 
+  // The model against reality: each variant leg's prediction beside the p90 measured under the same variant, leg and leg count. Advisory; `--table` prints every row.
+  const compared = predictions.map((p) => {
+    const sample = samplesForJob(sites, measured, p.job).find(
+      (x) =>
+        variantOf(x.label) === p.variant &&
+        legIndexOf(x.label) === p.index &&
+        x.label.endsWith(`/${p.of})`)
+    );
+    return { ...p, measured: sample?.minutes ?? null };
+  });
+  const deltas = compared.flatMap((c) => (c.measured === null ? [] : [c.minutes - c.measured]));
+  const driftNote =
+    deltas.length === 0
+      ? 'model vs measured: no variant leg has a measured p90'
+      : `model vs measured: max |delta| ${Math.max(...deltas.map(Math.abs)).toFixed(2)}m over ` +
+        `${deltas.length} variant leg(s)`;
+  if (process.argv.includes('--table')) {
+    console.log('lane                 variant         leg   predicted  measured p90  delta');
+    for (const c of compared) {
+      console.log(
+        `${c.lane.padEnd(20)} ${c.variant.padEnd(15)} ${`${c.index}/${c.of}`.padEnd(5)} ` +
+          `${c.minutes.toFixed(2).padStart(9)}  ${(c.measured === null ? '-' : c.measured.toFixed(1)).padStart(12)}  ` +
+          `${c.measured === null ? '' : (c.minutes - c.measured >= 0 ? '+' : '') + (c.minutes - c.measured).toFixed(2)}` +
+          `${c.minutes > PER_LEG_BUDGET_MIN ? '  OVER' : ''}`
+      );
+    }
+  }
+
   const pipelineMinutes = pipelineEstimateMinutes(
     [...worstLegPerLane, ...judgedSamples.map((x) => x.minutes)],
     durations.concurrency
@@ -948,7 +1152,7 @@ async function main(): Promise<number> {
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s); ` +
     `left to check_job_timeout_headroom.py (D-W2): ${headroom.join(', ') || 'none'}; ` +
-    `inert: ${inert.join(', ') || 'none'}`;
+    `inert: ${inert.join(', ') || 'none'}; ${driftNote}`;
   if (findings.length === 0) {
     console.log(`${GREEN}✓${NC} lane-budget: ${shape}. ${pipelineNote}`);
     return 0;
@@ -962,7 +1166,13 @@ async function main(): Promise<number> {
 
 // --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
-function selftest(): number {
+async function selftest(): Promise<number> {
+  // The live OPS Provision slicing, read the way main() reads it, for the RustFS-shard control below.
+  const opsIds = (await LANE_ENUMERATORS['ops-tutorials']?.(ROOT))?.map((u) => u.id) ?? [];
+  const opsSizes = parseShardSizes(
+    readFileSync(path.join(ROOT, CONTIGUOUS_LANES['ops-tutorials']?.sizesFile ?? ''), 'utf-8')
+  );
+  const liveDurations = readDurations(ROOT);
   const cases = [
     // --- check 1/2: the 12-minute per-leg budget, right at the boundary ---------
     {
@@ -1363,10 +1573,86 @@ function selftest(): number {
         return true;
       })(),
     },
+    // --- variant legs: per-variant fixed cost, leg extras and unit overrides -------
+    {
+      name: 'variantOf reads the matrix variant before the leg, and nothing from a plain leg label',
+      ok:
+        variantOf('Tests + Infra / E2E Workers (fedora-43, 1/8)') === 'fedora-43' &&
+        variantOf('OPS Tests / OPS Provision (linux-amd64, 2/4)') === 'linux-amd64' &&
+        variantOf('Quality / Pytest (3/3)') === null &&
+        variantOf('Tests + Infra / E2E Ceph') === null,
+    },
+    {
+      name: "variantLegInputs adds the leg's extra to the variant's fixed cost, and its units override the lane's",
+      ok: (() => {
+        const cost: VariantCost = {
+          fixedMinutes: 7,
+          legExtraMinutes: { '1': 3 },
+          units: { a: 120_000 },
+        };
+        const leg1 = variantLegInputs(cost, 1, { a: 60_000, b: 30_000 });
+        const leg2 = variantLegInputs(cost, 2, { a: 60_000, b: 30_000 });
+        return (
+          leg1.fixedMinutes === 10 &&
+          leg2.fixedMinutes === 7 &&
+          leg1.units.a === 120_000 &&
+          leg1.units.b === 30_000
+        );
+      })(),
+    },
+    {
+      name: 'FIRES: a leg under 12 on the lane-wide fixed cost is over 12 on its slow variant (the VM reset the old model left out)',
+      ok: (() => {
+        const units = { u: 5 * 60_000 };
+        const slow = variantLegInputs({ fixedMinutes: 7.6 }, 1, units);
+        return (
+          legFindings('lane-v', 1, 8, ['u'], 3.2, units, undefined).length === 0 &&
+          legFindings('lane-v (slow)', 1, 8, ['u'], slow.fixedMinutes, slow.units, undefined).some(
+            (f) => f.includes('estimated 12.6m')
+          )
+        );
+      })(),
+    },
+    {
+      name: 'parseShardSizes reads the bash array, and refuses a missing or non-numeric one',
+      ok:
+        JSON.stringify(parseShardSizes('    MEASURED_SHARD_SIZES=(7 3 5 3)\n')) ===
+          JSON.stringify([7, 3, 5, 3]) &&
+        parseShardSizes('SIZES=(1 2)') === null &&
+        parseShardSizes('MEASURED_SHARD_SIZES=(a b)') === null,
+    },
+    {
+      name: "contiguousLegs slices by the sizes when they cover every unit, and by ceil(total / N) otherwise (run-sequence.sh's two branches)",
+      ok: (() => {
+        const ids = ['a', 'b', 'c', 'd', 'e'];
+        const sized = contiguousLegs(ids, [3, 1, 1], 3).map((l) => l.ids.join(''));
+        const fallback = contiguousLegs(ids, [3, 1], 3).map((l) => l.ids.join(''));
+        return (
+          JSON.stringify(sized) === JSON.stringify(['abc', 'd', 'e']) &&
+          JSON.stringify(fallback) === JSON.stringify(['ab', 'cd', 'e'])
+        );
+      })(),
+    },
+    {
+      name: 'CONTROL: the live variantCosts prices every VARIANT_PRICED_LANES lane (budget_report --refresh drops the field)',
+      ok: VARIANT_PRICED_LANES.every(
+        (lane) => Object.keys(liveDurations.variantCosts?.[lane] ?? {}).length > 0
+      ),
+    },
+    {
+      name: "CONTROL: the live OPS Provision split keeps backup-restore in shard 3, the only shard the workflow's RustFS step runs on",
+      ok:
+        opsSizes !== null &&
+        (
+          contiguousLegs(opsIds, opsSizes, opsSizes.length).find((l) =>
+            l.ids.includes('tutorial:backup-restore')
+          ) ?? { index: 0 }
+        ).index === 3,
+    },
   ];
 
   return summarizeControls(cases);
 }
 
-if (process.argv.includes('--selftest')) process.exit(selftest());
+if (process.argv.includes('--selftest')) process.exit(await selftest());
 else process.exit(await main());

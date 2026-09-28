@@ -53,7 +53,25 @@
     "jobs(), used at the -n argv sites), ci-quality.yml sets no PYTEST_JOBS, and the leg's own",
     "profiler notice on job 108765034481 (Quality / Pytest (3/3)) reads 'peak 4.00 cores'. Unit",
     "p90s stay per-file SERIAL times; the gate divides by the workers and floors the leg at its",
-    "largest xdist group (a group runs on one worker)."
+    "largest xdist group (a group runs on one worker).",
+    "'variantCosts' (hand-authored 2026-09-28, T3.1; --refresh does NOT preserve it yet, and the gate reds when it is gone):",
+    "per-matrix-variant leg pricing for the lanes whose legs pay a cost no unit carries. Shape: {lane: {variant: {fixedMinutes,",
+    "legExtraMinutes?: {leg index: minutes}, units: {unit id: ms}}}}, where the variant is the first matrix value in the job's",
+    "display name ('fedora-43' in 'E2E Workers (fedora-43, 1/8)'). A leg costs fixedMinutes + its legExtraMinutes entry + the",
+    "sum of its units, each read from the variant's own 'units' first and the top-level 'units' second.",
+    "Source: the Actions jobs API and every success job's log for the 9 of the 10 newest 0923-1 ci.yml runs that ran the",
+    "lanes, 36366933791..36427771349 (2026-09-28T01:41Z to 13:19Z; 36370123947 ran neither), 350 E2E Workers and 36 OPS",
+    "Provision linux-amd64 jobs, all p90 by linear interpolation. test-e2e-workers: a unit's cost is its WALL span in the",
+    "log (its first test's start to the next file's first test, the last file to the E2E_SKIPPED line), not budget_report's",
+    "summed test durations, which leave out beforeAll/afterAll work (07-container-operations: 0.77m of tests, 3.23m of wall",
+    "on opensuse); fixedMinutes is the job wall minus every file's span, which is the steps before 'Run E2E Tests', the",
+    "globalSetup VM reset (renet ops up --force: 1.5m median on debian, 3.1-4.1m on fedora, opensuse and oracle), the renet,",
+    "RustFS and datastore setup after it, and the post steps; legExtraMinutes '1' is the span of 12a/12b/12d/13b, which",
+    "ct-tests.yml adds to leg 1 of the two full-integration distros. ops-tutorials: fixedMinutes is the job wall minus the",
+    "tutorial durations minus the 'Tutorial prep: start RustFS S3 on bridge' step (every step outside the tutorials, from",
+    "runner setup through ops up and the post steps), legExtraMinutes '3' is that RustFS step, which runs on shard 3 only,",
+    "and the tutorials' own costs are the top-level units. Checked against job_p90_minutes: every E2E Workers leg within",
+    "0.83m and every OPS Provision leg within 0.8m (npx tsx scripts/gates/check-lane-budget.ts --table)."
   ],
   "refreshed_at": "2026-09-28T15:14:48Z",
   "concurrency": 20,
@@ -840,6 +858,155 @@
   },
   "unitParallelism": {
     "quality-pytest": 4
+  },
+  "variantCosts": {
+    "test-e2e-workers": {
+      "debian-13": {
+        "fixedMinutes": 5.71,
+        "units": {
+          "e2e-workers:01-system-checks.test.ts": 8313,
+          "e2e-workers:02-machine-setup.test.ts": 7546,
+          "e2e-workers:03-datastore-lifecycle.test.ts": 27726,
+          "e2e-workers:04-repository-lifecycle.test.ts": 94968,
+          "e2e-workers:05-rediaccfiles-updown.test.ts": 70579,
+          "e2e-workers:06-daemon-operations.test.ts": 72487,
+          "e2e-workers:07-container-operations.test.ts": 99646,
+          "e2e-workers:10-backup-checkpoint.test.ts": 144952,
+          "e2e-workers:11-multi-machine.test.ts": 38844,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 128086,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part2": 172193,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part3": 137646,
+          "e2e-workers:14-vault-builder.test.ts": 10551,
+          "e2e-workers:15-storage-backup.test.ts": 11272,
+          "e2e-workers:16-setup-installation-params.test.ts": 7802,
+          "e2e-workers:17-repo-branching.test.ts": 110534,
+          "e2e-workers:18-ops-workflow.test.ts": 938,
+          "e2e-workers:19-rustfs-operations.test.ts": 17946,
+          "e2e-workers:21-local-executor.test.ts": 2434,
+          "e2e-workers:22-setup-command.test.ts": 3488,
+          "e2e-workers:25-backup-chunk-store.test.ts": 33618
+        }
+      },
+      "fedora-43": {
+        "fixedMinutes": 7.63,
+        "legExtraMinutes": {
+          "1": 2.95
+        },
+        "units": {
+          "e2e-workers:01-system-checks.test.ts": 10744,
+          "e2e-workers:02-machine-setup.test.ts": 12552,
+          "e2e-workers:03-datastore-lifecycle.test.ts": 34637,
+          "e2e-workers:04-repository-lifecycle.test.ts": 115293,
+          "e2e-workers:05-rediaccfiles-updown.test.ts": 85516,
+          "e2e-workers:06-daemon-operations.test.ts": 83965,
+          "e2e-workers:07-container-operations.test.ts": 115496,
+          "e2e-workers:10-backup-checkpoint.test.ts": 147528,
+          "e2e-workers:11-multi-machine.test.ts": 50658,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 144912,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part2": 175745,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part3": 158345,
+          "e2e-workers:14-vault-builder.test.ts": 12562,
+          "e2e-workers:15-storage-backup.test.ts": 13152,
+          "e2e-workers:16-setup-installation-params.test.ts": 14257,
+          "e2e-workers:17-repo-branching.test.ts": 129603,
+          "e2e-workers:18-ops-workflow.test.ts": 1007,
+          "e2e-workers:19-rustfs-operations.test.ts": 19913,
+          "e2e-workers:21-local-executor.test.ts": 2825,
+          "e2e-workers:22-setup-command.test.ts": 6595,
+          "e2e-workers:25-backup-chunk-store.test.ts": 40480
+        }
+      },
+      "opensuse-16.0": {
+        "fixedMinutes": 7.6,
+        "units": {
+          "e2e-workers:01-system-checks.test.ts": 17904,
+          "e2e-workers:02-machine-setup.test.ts": 16225,
+          "e2e-workers:03-datastore-lifecycle.test.ts": 54931,
+          "e2e-workers:04-repository-lifecycle.test.ts": 157788,
+          "e2e-workers:05-rediaccfiles-updown.test.ts": 119013,
+          "e2e-workers:06-daemon-operations.test.ts": 122378,
+          "e2e-workers:07-container-operations.test.ts": 192005,
+          "e2e-workers:10-backup-checkpoint.test.ts": 157891,
+          "e2e-workers:11-multi-machine.test.ts": 59286,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 176282,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part2": 208231,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part3": 188215,
+          "e2e-workers:14-vault-builder.test.ts": 50462,
+          "e2e-workers:15-storage-backup.test.ts": 34430,
+          "e2e-workers:16-setup-installation-params.test.ts": 19430,
+          "e2e-workers:17-repo-branching.test.ts": 194283,
+          "e2e-workers:18-ops-workflow.test.ts": 1207,
+          "e2e-workers:19-rustfs-operations.test.ts": 31615,
+          "e2e-workers:21-local-executor.test.ts": 5290,
+          "e2e-workers:22-setup-command.test.ts": 8969,
+          "e2e-workers:25-backup-chunk-store.test.ts": 63502
+        }
+      },
+      "oracle-10": {
+        "fixedMinutes": 8.47,
+        "units": {
+          "e2e-workers:01-system-checks.test.ts": 9640,
+          "e2e-workers:02-machine-setup.test.ts": 10923,
+          "e2e-workers:03-datastore-lifecycle.test.ts": 30233,
+          "e2e-workers:04-repository-lifecycle.test.ts": 100476,
+          "e2e-workers:05-rediaccfiles-updown.test.ts": 77270,
+          "e2e-workers:06-daemon-operations.test.ts": 79136,
+          "e2e-workers:07-container-operations.test.ts": 106870,
+          "e2e-workers:10-backup-checkpoint.test.ts": 146261,
+          "e2e-workers:11-multi-machine.test.ts": 45433,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 136674,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part2": 165835,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part3": 148066,
+          "e2e-workers:14-vault-builder.test.ts": 11562,
+          "e2e-workers:15-storage-backup.test.ts": 11862,
+          "e2e-workers:16-setup-installation-params.test.ts": 11868,
+          "e2e-workers:17-repo-branching.test.ts": 121812,
+          "e2e-workers:18-ops-workflow.test.ts": 970,
+          "e2e-workers:19-rustfs-operations.test.ts": 17098,
+          "e2e-workers:21-local-executor.test.ts": 2635,
+          "e2e-workers:22-setup-command.test.ts": 5454,
+          "e2e-workers:25-backup-chunk-store.test.ts": 34770
+        }
+      },
+      "ubuntu-24.04": {
+        "fixedMinutes": 6.36,
+        "legExtraMinutes": {
+          "1": 2.9
+        },
+        "units": {
+          "e2e-workers:01-system-checks.test.ts": 11926,
+          "e2e-workers:02-machine-setup.test.ts": 33338,
+          "e2e-workers:03-datastore-lifecycle.test.ts": 36659,
+          "e2e-workers:04-repository-lifecycle.test.ts": 117888,
+          "e2e-workers:05-rediaccfiles-updown.test.ts": 88270,
+          "e2e-workers:06-daemon-operations.test.ts": 89632,
+          "e2e-workers:07-container-operations.test.ts": 145619,
+          "e2e-workers:10-backup-checkpoint.test.ts": 149315,
+          "e2e-workers:11-multi-machine.test.ts": 48417,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 148451,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part2": 174421,
+          "e2e-workers:13-postgres-fork-isolation.test.ts#part3": 158150,
+          "e2e-workers:14-vault-builder.test.ts": 15092,
+          "e2e-workers:15-storage-backup.test.ts": 15266,
+          "e2e-workers:16-setup-installation-params.test.ts": 52182,
+          "e2e-workers:17-repo-branching.test.ts": 136674,
+          "e2e-workers:18-ops-workflow.test.ts": 1016,
+          "e2e-workers:19-rustfs-operations.test.ts": 21053,
+          "e2e-workers:21-local-executor.test.ts": 3549,
+          "e2e-workers:22-setup-command.test.ts": 18189,
+          "e2e-workers:25-backup-chunk-store.test.ts": 40548
+        }
+      }
+    },
+    "ops-tutorials": {
+      "linux-amd64": {
+        "fixedMinutes": 4.08,
+        "legExtraMinutes": {
+          "3": 1.5
+        },
+        "units": {}
+      }
+    }
   },
   "job_p90_minutes": {
     "Initialize": 2.9,

@@ -33,9 +33,9 @@
 #   TUTORIAL_ONLY         space-separated slugs: run just these, sequence order
 #   TUTORIAL_SHARD        "i/N" (1-based): run only the i-th of N contiguous
 #                          slices of the full sequence, in order. Mutually
-#                          exclusive with TUTORIAL_ONLY. Balances by COUNT,
-#                          not measured duration (T2.9's approach), since this
-#                          lane has no recorded per-tutorial durations yet.
+#                          exclusive with TUTORIAL_ONLY. Sliced by
+#                          MEASURED_SHARD_SIZES below, sized from measured
+#                          per-tutorial durations; by COUNT only as a fallback.
 #
 # Exit codes: 0 all green; 1 at least one tutorial failed; 2 drift/precheck/
 # bad TUTORIAL_SHARD.
@@ -103,20 +103,24 @@ if [[ -n "${TUTORIAL_SHARD:-}" ]]; then
         exit 2
     fi
     # T2.9 (PLAN-ci-time-budget, spec W L10): contiguous chunks sized by MEASURED
-    # duration, not by count. CI run 36366933791 (4 equal-count chunks over the
-    # current 18-tutorial sequence) measured shard totals 144/487/362/337s --
-    # shard 2's work-with-repo alone (~108s) made it the long pole. MEASURED_SHARD_SIZES
-    # below moves work-with-repo into shard 1 (6/4/5/3 tutorials), giving an
-    # estimated 252/379/362/337s: still uneven, but shard 2 no longer dominates.
-    # Still by COUNT within each hand-tuned chunk (D-W4: no per-tutorial duration
-    # file exists yet for T2.9's general case) -- this is a one-time correction
-    # of the worst imbalance the 4-way equal split produced, not a durable
-    # duration model. Only applies when the sequence still has exactly the
-    # tutorial count these sizes were measured against AND shard_of matches;
-    # anything else (a tutorial added/removed/reordered by editing the docs, or
-    # a different TUTORIAL_SHARD width) falls back to the old ceil(total/N)
-    # equal-count split rather than silently mis-slicing a changed sequence.
-    MEASURED_SHARD_SIZES=(6 4 5 3)
+    # duration, not by count. The per-tutorial p90s are lane-durations.json's
+    # `tutorial:<slug>` units, and every shard also pays about 4.1 min outside the
+    # tutorials (runner setup, ops up, the second worker) plus 1.5 min for the
+    # RustFS step on shard 3; scripts/gates/check-lane-budget.ts prices the slices
+    # below from exactly those numbers (`--table` shows them beside measured p90s).
+    # backup-restore must stay in shard 3, the one shard the workflow's RustFS step
+    # runs on. With shard 4 fixed at live-migration..storage-management (a shard 4
+    # that also took branching would cost 13.2 min) and shard 3 at
+    # backup-restore..branching, (7 3 5 3) is the best split of the first ten:
+    # predicted 10.7 / 9.6 / 12.3 / 12.0 min, against 7.9 / 12.4 / 12.3 / 12.0 for
+    # the (6 4 5 3) it replaces, whose shard 2 measured a 12.2-min p90 over the runs
+    # that used it. Shard 3 cannot get cheaper in four contiguous slices.
+    # The sizes apply only while the sequence has exactly the tutorial count they
+    # sum to AND shard_of matches; anything else (a tutorial added, removed or
+    # reordered by editing the docs, or a different TUTORIAL_SHARD width) falls
+    # back to the ceil(total/N) equal-count split rather than silently mis-slicing
+    # a changed sequence.
+    MEASURED_SHARD_SIZES=(7 3 5 3)
     measured_total=0
     for _sz in "${MEASURED_SHARD_SIZES[@]}"; do
         measured_total=$((measured_total + _sz))
