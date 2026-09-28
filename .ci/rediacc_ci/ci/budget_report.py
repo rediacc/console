@@ -259,11 +259,32 @@ def stale_sample_findings(runs: list[dict[str, Any]], now: float | None = None) 
     return findings
 
 
+def sample_window_param(now: float | None = None) -> str:
+    """`created=>=<date>` (URL-encoded) bounding a runs query to the last `SAMPLE_MAX_AGE_DAYS` days.
+
+    WHY THE QUERY CARRIES A DATE AND NOT ONLY A POST-HOC WARNING. MEASURED 2026-09-28: `workflows/ci.yml/runs?event=pull_request&status=completed&per_page=10` (no `branch`) answered `total_count` 102 and ten runs from 2026-08-28..30 while the same repo had PR runs from that very morning; `...&status=success` answered 17 runs from August. The identical query with `created=>=2026-09-14` added answered 120 runs, newest first, from today -- on every retry. GitHub serves an `event`/`status`-only listing from a stale index; a `created` bound forces the fresh one. Sorting and `stale_sample_findings` cannot repair a page that never contained a fresh run, so the window goes INTO the request."""
+    now_epoch = time.time() if now is None else now
+    since = datetime.fromtimestamp(now_epoch - SAMPLE_MAX_AGE_DAYS * 86_400.0, tz=UTC)
+    return "created=%%3E%%3D%s" % since.strftime("%Y-%m-%d")
+
+
 def fetch_runs(
-    repo: str, workflow: str, event: str, branch: str | None, status: str, limit: int
+    repo: str,
+    workflow: str,
+    event: str,
+    branch: str | None,
+    status: str,
+    limit: int,
+    *,
+    now: float | None = None,
 ) -> list[dict[str, Any]]:
-    """The `limit` newest runs of `event`, by `created_at` DESCENDING -- explicitly, never the API's own order. MEASURED 2026-09-27: the identical query returned an August-dated page and then, a minute later, a September-dated one, so "the API's own default order" is not trustworthy enough to slice on directly. A run older than `SAMPLE_MAX_AGE_DAYS` is warned about loudly (never refused: this is a report, and a thin or stale sample is still evidence), via `stale_sample_findings`."""
-    query = "event=%s&status=%s&per_page=%d" % (event, status, min(limit, _PAGE_SIZE))
+    """The `limit` newest runs of `event` created inside the `SAMPLE_MAX_AGE_DAYS` window (`sample_window_param`), by `created_at` DESCENDING -- explicitly, never the API's own order. MEASURED 2026-09-27: the identical query returned an August-dated page and then, a minute later, a September-dated one, so "the API's own default order" is not trustworthy enough to slice on directly. A run older than `SAMPLE_MAX_AGE_DAYS` is still warned about loudly (never refused: this is a report, and a thin or stale sample is still evidence), via `stale_sample_findings` -- with the window in the query that warning now means the API ignored the bound, not that the sample drifted."""
+    query = "event=%s&status=%s&per_page=%d&%s" % (
+        event,
+        status,
+        min(limit, _PAGE_SIZE),
+        sample_window_param(now),
+    )
     if branch:
         query += "&branch=%s" % branch
     data = ghx.api_json(
@@ -278,7 +299,7 @@ def fetch_runs(
         return []
     ordered = sorted(runs, key=lambda r: r.get("created_at") or "", reverse=True)
     selected = ordered[:limit]
-    for finding in stale_sample_findings(selected):
+    for finding in stale_sample_findings(selected, now):
         log.warn("budget_report: %s" % finding)
     return selected
 
@@ -1317,10 +1338,29 @@ def check_lane_durations(
 # Assembling the report.
 
 
+def class_branch_filter(run_class: str, branch: str) -> str | None:
+    """The `branch=` filter one run class is sampled with, given the report's `--branch`.
+
+    MEASURED 2026-09-28: `--branch 0923-1 --limit 10 --status completed` printed a `pr-full` table with no E2E job at all, because `pr-full` was sampled with NO branch (only `main-push` got one) and so drew ten other branches' runs from August (13 over-age warnings). A PR run's `head_branch` IS its PR branch, so a `--branch` naming a PR branch scopes `pr-full` to it. `--branch` left at the default branch keeps `pr-full` repo-wide (no PR is ever opened FROM `main`), and `schedule` is never branch-filtered: the nightly only ever runs on the default branch, whatever `--branch` names."""
+    if run_class == "main-push":
+        return branch
+    if run_class == "pr-full" and branch != DEFAULT_BRANCH:
+        return branch
+    return None
+
+
+def _run_summary(run: dict[str, Any]) -> dict[str, Any]:
+    """The identity of one sampled run, so the report says WHICH runs it measured, not only how many."""
+    return {
+        key: run.get(key)
+        for key in ("id", "created_at", "head_branch", "event", "conclusion", "run_attempt")
+    }
+
+
 def collect_class(
     repo: str, workflow: str, event: str, branch: str | None, status: str, limit: int
 ) -> dict[str, Any]:
-    """One run class's full measurement: per-job stats, queue, runner-minutes, peak concurrency."""
+    """One run class's full measurement: the sampled runs themselves, per-job stats, queue, runner-minutes, peak concurrency."""
     runs = fetch_runs(repo, workflow, event, branch, status, limit)
     per_job: dict[str, list[float]] = {}
     queue_values: list[float] = []
@@ -1343,6 +1383,8 @@ def collect_class(
         peak_values.append(peak_concurrency(jobs))
     return {
         "runs_sampled": len(runs),
+        "branch_filter": branch,
+        "runs": [_run_summary(run) for run in runs],
         "jobs": {name: stats(vals) for name, vals in per_job.items()},
         "queue": stats(queue_values),
         "runner_minutes": stats(runner_values),
@@ -1366,8 +1408,9 @@ def build_report(
 
     report: dict[str, Any] = {"repo": repo, "workflow": workflow, "branch": branch, "classes": {}}
     for run_class, event in RUN_CLASS_EVENTS.items():
-        branch_filter = branch if run_class == "main-push" else None
-        data = collect_class(repo, workflow, event, branch_filter, status, limit)
+        data = collect_class(
+            repo, workflow, event, class_branch_filter(run_class, branch), status, limit
+        )
         jobs = data.pop("representative_jobs")
         data["critical_path"] = critical_path(graph, jobs) if jobs else []
         report["classes"][run_class] = data
@@ -1386,6 +1429,18 @@ def render_markdown(report: dict[str, Any]) -> str:
         if not data:
             continue
         lines.append("## %s (%d run(s) sampled)" % (run_class, data["runs_sampled"]))
+        lines.append("")
+        lines.append("Branch filter: `%s`" % (data.get("branch_filter") or "(any)"))
+        sampled = data.get("runs") or []
+        if sampled:
+            lines.append(
+                "Runs: %s"
+                % ", ".join(
+                    "%s (%s, %s)"
+                    % (r.get("id"), (r.get("created_at") or "?")[:10], r.get("conclusion"))
+                    for r in sampled
+                )
+            )
         lines.append("")
         if data["jobs"]:
             lines.append("| Job | median | p90 | max | n |")

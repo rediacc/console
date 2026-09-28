@@ -2,7 +2,7 @@
 
 FIXTURE-DRIVEN, NO NETWORK. Every test here drives a pure function directly, or a network-touching one (`compute_lane_durations`, `collect_unit_durations`) through its injectable `compute`/`list_artifacts`/`download` parameters -- the same seam the module's own docstring names as the reason those parameters exist: T1.6 has not landed, so there is no live artifact to record a fixture FROM, only the contract this module's own docstring defines. `refresh_lane_durations`/`check_lane_durations` are driven the same way, through their own `compute` parameter, so neither test calls `gh` or the real Actions API.
 
-T1.1's `build_report`/`collect_class` machinery already exists and is unchanged by this box; it is not retested here. `fetch_runs`/`fetch_jobs`/`fetch_artifacts` ARE part of T3.1's own fix set (pagination, explicit sort, staleness) and are retested below, against `br.ghx.api_json` monkeypatched -- still no real `gh` call.
+T1.1's `build_report`/`collect_class` machinery is retested only for its sample selection (the per-class branch scope and the sampled-run record, P2's 2026-09-28 fix). `fetch_runs`/`fetch_jobs`/`fetch_artifacts` ARE part of T3.1's own fix set (pagination, explicit sort, staleness) and are retested below, against `br.ghx.api_json` monkeypatched -- still no real `gh` call.
 
 T3.1 ALSO CLOSES `scripts/gates/check-lane-budget.ts`'s own BLOCKER, so several tests below drive the real parser against classnames and describe titles MEASURED live from a real downloaded artifact (cited by run id in each test's own docstring) and check the produced ids against the ACTUALLY COMMITTED shard manifest (`.ci/config/shards/*.json`, read via `rediacc_ci.paths.repo_root()`) rather than a copy of it -- the same "prove it against the real committed file" shape `check-lane-budget.ts`'s own selftest uses for `quality-code`'s manifest.
 """
@@ -809,6 +809,87 @@ def test_fetch_runs_silent_on_a_fresh_sample(monkeypatch, capsys):
     monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: {"workflow_runs": [fresh_run]})
     br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 1)
     assert capsys.readouterr().err == ""
+
+
+# --------------------------------------------------------------------------- P2 sample: the date window, per-class branch scope, and the sampled-run record ---------------------------------------------------------------------------
+
+
+def test_sample_window_param_bounds_the_query_to_the_age_limit():
+    now = br._iso_to_epoch("2026-09-28T12:00:00Z")
+    assert br.sample_window_param(now) == "created=%3E%3D2026-09-14"
+
+
+def test_fetch_runs_puts_the_date_window_into_the_request(monkeypatch):
+    """FIRES-if-unfixed: MEASURED 2026-09-28 -- `event=pull_request&status=completed` with no `created` bound answered ten August runs while that morning's PR runs existed; the same query with `created=>=` answered today's. Sorting a page that holds no fresh run cannot fix it, so the bound must be in the request."""
+    seen: list[str] = []
+
+    def fake_api_json(path, **_kw):
+        seen.append(path)
+        return {"workflow_runs": []}
+
+    monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
+    now = br._iso_to_epoch("2026-09-28T12:00:00Z")
+    br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10, now=now)
+    assert len(seen) == 1
+    assert "created=%3E%3D2026-09-14" in seen[0]
+    assert "branch=0923-1" in seen[0]
+    assert "status=completed" in seen[0]
+
+
+def test_class_branch_filter_scopes_pr_full_to_a_pr_branch():
+    """FIRES-if-unfixed: `--branch 0923-1` used to filter only `main-push`, so `pr-full` sampled every branch's runs and its table carried no E2E job of 0923-1."""
+    assert br.class_branch_filter("pr-full", "0923-1") == "0923-1"
+    assert br.class_branch_filter("main-push", "0923-1") == "0923-1"
+    assert br.class_branch_filter("schedule", "0923-1") is None
+
+
+def test_class_branch_filter_keeps_pr_full_repo_wide_on_the_default_branch():
+    assert br.class_branch_filter("pr-full", br.DEFAULT_BRANCH) is None
+    assert br.class_branch_filter("main-push", br.DEFAULT_BRANCH) == br.DEFAULT_BRANCH
+
+
+def test_build_report_samples_pr_full_on_the_requested_branch(monkeypatch):
+    calls: list[tuple[str, str | None]] = []
+
+    def fake_fetch_runs(_repo, _wf, event, branch, _status, _limit, **_kw):
+        calls.append((event, branch))
+        return []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "build_display_graph", lambda *_a: {})
+    br.build_report("o/r", "ci.yml", "0923-1", 10, "completed")
+    assert ("pull_request", "0923-1") in calls
+    assert ("push", "0923-1") in calls
+    assert ("schedule", None) in calls
+
+
+def test_collect_class_records_which_runs_it_sampled(monkeypatch):
+    """FIRES-if-unfixed: the JSON carried only a `runs_sampled` COUNT, so a report drawn from the wrong runs could not be told apart from a right one."""
+    runs = [
+        {
+            "id": 36427771349,
+            "created_at": "2026-09-28T13:19:13Z",
+            "head_branch": "0923-1",
+            "event": "pull_request",
+            "conclusion": "failure",
+            "run_attempt": 1,
+            "other": "dropped",
+        }
+    ]
+    job = {
+        "name": "Tests + Infra / E2E Ceph",
+        "conclusion": "success",
+        "created_at": "2026-09-28T13:30:00Z",
+        "started_at": "2026-09-28T13:34:44Z",
+        "completed_at": "2026-09-28T13:46:17Z",
+    }
+    monkeypatch.setattr(br, "fetch_runs", lambda *_a, **_k: runs)
+    monkeypatch.setattr(br, "fetch_jobs", lambda *_a: [job])
+    data = br.collect_class("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10)
+    assert data["runs_sampled"] == 1
+    assert data["branch_filter"] == "0923-1"
+    assert data["runs"] == [{k: v for k, v in runs[0].items() if k != "other"}]
+    assert data["jobs"]["Tests + Infra / E2E Ceph"]["max"] == 11.6
 
 
 # --------------------------------------------------------------------------- T3.1: pytest/renet-integration classname keying (BLOCKER item 2) ---------------------------------------------------------------------------
