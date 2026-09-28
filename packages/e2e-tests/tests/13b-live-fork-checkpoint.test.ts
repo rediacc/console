@@ -73,6 +73,8 @@ test.describe
 
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
+      // Defense in depth alongside the resetWorkerState()+datastoreInitPool(force) below: if CRIU turns out to be unavailable this beforeAll returns before either of those run, and whichever suite ran before this one in project order (fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) may already have wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
+      await runner.ensureDatastoreReady(datastorePath);
       const criuCheck = await runner.checkCriu();
       criuAvailable = runner.isSuccess(criuCheck);
       // Prove-the-instrument: on the FULL_INTEGRATION CI legs (ct-tests.yml sets

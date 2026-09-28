@@ -1,7 +1,12 @@
 // BridgeTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B } from '../../constants';
+import {
+  DEFAULT_NETWORK_ID,
+  FORK_NETWORK_ID_A,
+  FORK_NETWORK_ID_B,
+  RENET_SETUP_TIMEOUT_MS,
+} from '../../constants';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
 import type { VaultBuilder } from '../vault/VaultBuilder';
 import { RepositoryHelpers } from './helpers/RepositoryHelpers';
@@ -968,6 +973,59 @@ export class BridgeTestRunner {
 
     // eslint-disable-next-line no-console
     console.log('[Reset] Worker state cleaned');
+  }
+
+  /**
+   * Ensures the worker's datastore is actually initialized before a suite
+   * that needs it runs, without depending on which file ran before it.
+   *
+   * The datastore-centric self-heal added to renet (console worklist
+   * ea76a8c5) only repairs a datastore that is still genuinely initialized:
+   * it refuses to fabricate one where `.immovable` (the marker
+   * CreateDatastoreDirectories writes once, at format time) is missing,
+   * because building that skeleton on the root filesystem underneath an
+   * unmounted mount point is worse than the bug it fixes -- every repository
+   * "created" there vanishes the moment the real volume is remounted (the
+   * "BTRFS filesystem required for snapshots" symptom this investigation
+   * also found on `repository resize`).
+   *
+   * resetWorkerState's unmount-then-wipe removes `.immovable` along with
+   * everything else, so any suite that shares a worker VM with one that
+   * calls resetWorkerState (bridge-global-setup runs `renet setup` exactly
+   * ONCE, at the start of the whole Playwright invocation) can find the
+   * datastore uninitialized purely because of file/project execution order,
+   * not because of anything that suite itself did. Call this in the
+   * top-level `beforeAll` of any suite that needs the datastore but does NOT
+   * itself call resetWorkerState.
+   *
+   * Cheap when already ready: one `test -e` round trip, no `renet setup` at
+   * all. Deliberately does NOT run unconditionally -- 03-datastore-lifecycle
+   * relies on resetWorkerState leaving a bare, uninitialized datastore behind
+   * for its own setup tests, and unconditionally healing it here would
+   * undermine that.
+   */
+  async ensureDatastoreReady(datastorePath = DEFAULT_DATASTORE_PATH): Promise<void> {
+    const marker = `${datastorePath}/.immovable`;
+    const check = await this.executeViaBridge(`test -e ${marker}`);
+    if (check.code === 0) {
+      console.warn(`[EnsureDatastoreReady] ${marker} present, datastore already initialized`);
+      return;
+    }
+
+    console.warn(
+      `[EnsureDatastoreReady] ${marker} missing (datastore was wiped by an earlier suite's resetWorkerState) -- running 'sudo renet setup --datastore ${datastorePath}' to reinitialize it`
+    );
+    // --datastore is NOT optional here: on a machine whose setup already completed once (every worker, after bridge-global-setup's one-time pass), `renet setup` takes its idempotent "already completed" fast path, and that path only touches the datastore/sandbox directories when --datastore is non-empty (cmd/renet/setup_command.go's runSetup reads the --datastore FLAG, no fallback default). A bare `sudo renet setup` -- 22-setup-command.test.ts's "missing datastore-path" case, tested there on purpose -- is a complete no-op for exactly the state this function exists to repair.
+    const result = await this.executeViaBridge(
+      `sudo renet setup --datastore ${datastorePath}`,
+      RENET_SETUP_TIMEOUT_MS
+    );
+    if (result.code !== 0) {
+      throw new Error(
+        `ensureDatastoreReady: 'sudo renet setup --datastore ${datastorePath}' failed (exit ${result.code}): ${result.stderr || result.stdout}`
+      );
+    }
+    console.warn('[EnsureDatastoreReady] renet setup completed, datastore reinitialized');
   }
 
   // ===========================================================================

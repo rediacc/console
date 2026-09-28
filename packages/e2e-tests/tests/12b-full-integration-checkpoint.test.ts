@@ -19,6 +19,8 @@ test.describe
 
     test.beforeAll(async () => {
       runner = BridgeTestRunner.forWorker();
+      // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
+      await runner.ensureDatastoreReady(datastorePath);
       // Check if CRIU is available - checkpoint tests require it
       const criuCheck = await runner.checkCriu();
       criuAvailable = runner.isSuccess(criuCheck);

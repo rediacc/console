@@ -703,6 +703,8 @@ test.describe
       test.beforeAll(async () => {
         w1 = BridgeTestRunner.forWorker(1);
         cli = await loginCli();
+        // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe. ensureDatastore below is a DIFFERENT check (registers the named datastore pool with the CLI), not a substitute for this.
+        await w1.ensureDatastoreReady(DS);
         await ensureDatastore(w1, M1);
         await registerMachines(cli);
         repo = await provisionRepo(cli, w1, REPO_NAME, M1);
@@ -925,6 +927,9 @@ test.describe
         w1 = BridgeTestRunner.forWorker(1);
         w2 = BridgeTestRunner.forWorker(2);
         cli = await loginCli();
+        // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped either shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
+        await w1.ensureDatastoreReady(DS);
+        await w2.ensureDatastoreReady(DS);
         // BOTH workers: the restore lands on w2, and a w2 with no datastore has nowhere to assemble the image. This tier used to init only w1 and then restore onto w2.
         await ensureDatastore(w1, M1);
         await ensureDatastore(w2, M2);
