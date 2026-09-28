@@ -124,3 +124,14 @@ runs:
         TOKEN: ${{ steps.token.outputs.token }}
       run: |
         git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+
+    # A token that mints successfully is not yet readable for every repository in its scope: jobs 108876231507 and 109010480668 cloned elite, homebrew-tap and renet with it while account answered "Repository not found" twice within 6 seconds of the mint.
+    # This step reads each scoped repository through the credential written above, with up to 60 seconds of backoff, so every caller's checkout starts only once the token works, and a repository that never becomes readable fails here by name.
+    # The script lives beside this action rather than under .ci/scripts because several callers sparse-check-out only .github/actions before minting.
+    - name: Wait until the token can read every scoped repository
+      shell: bash
+      env:
+        OWNER: ${{ github.repository_owner }}
+        REPOS: ${{ inputs.repositories }}
+        PROBE: ${{ github.action_path }}/probe-repos.sh
+      run: bash "$PROBE" "$OWNER" "$REPOS"
