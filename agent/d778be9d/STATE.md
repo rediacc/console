@@ -33,3 +33,9 @@ Writer running: #f5dd5092 (tests stop writing the real tree; drop REAL_TREE_TWIN
   - #78a8573d T3.1: budget_report --refresh running (bm3y0u03f), then wire job_p90_minutes into check-lane-budget check 2; gate stays local-only until P2 exit.
 - W: P4 (T4.1-4) needs P2 exit (non-exempt p90<=12 over 10 runs) + 5 green runs.
 - Flakes fixed today: tsx AF_UNIX pipe truncation (f79ce8533 wl_proc, 3ddf2150d runtmp), Plausible blocking load (1d5244241), ssh-copy-id first-boot retry (renet 493a0af).
+
+## 2026-09-28T07:20Z update (compaction imminent)
+- Pushed through console 562a4d5b8 / renet bdc2678; CI watch #f9cb5aa9 (b64kqw265). 0082f64ed run: all test jobs green; only non-exempt job over 12m was E2E Ceph 12.7.
+- W: lane-budget gate modelled (98ed7697c), stays local-only until P2 exit (10 runs, non-exempt p90<=12). Caps: K8s Ceph 20/25, Multinode 25/30 (5fe271760).
+- Operator question answered: GitHub Free caps 20 concurrent jobs; measured DEMAND (ready+running, created_at=needs-satisfied) peaks 87-88 on full runs, >60 for 12-15 min, >40 for 22-24 min, >20 for 32-35 min; macOS demand peak 4.
+- No writers running. Open items: e412d363/78a8573d/9c92f68f (W, wait on runs), f9cb5aa9 (CI watch).
