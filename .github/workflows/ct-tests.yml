@@ -417,15 +417,17 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Workers)
-        # T2.12: shard 7 also carries the FULL_INTEGRATION-only composition
+        # T2.12: shard 1 also carries the FULL_INTEGRATION-only composition
         # suites (12a/12b/12d/13b) on the two distros that set full-integration
         # -- they stay off the sharded plan (their own cost is unmeasured) and
         # ride whichever leg has the most headroom instead of a leg of their own.
-        # Leg 7 since run 36358238015 (legs 6 11.0 avg / fedora 12.8 max with
-        # them, 7 the lightest at 8.8 avg).
+        # Leg 1, not 7: on leg 7 (run for b45276a49) 12a's "new: create
+        # repository" failed right after 06-daemon-operations on both
+        # full-integration distros, while beside 13-postgres-fork-isolation and
+        # 14 on leg 6 it had passed; leg 1 holds 13 part 1 + 01 (8.8 avg).
         run: |
           ALSO=()
-          if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '7' ]]; then
+          if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '1' ]]; then
             ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts")
           fi
           .ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip \
