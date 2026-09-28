@@ -16,44 +16,42 @@
  *
  * SIX CHECKS LIVE, ONE DOES NOT YET.
  *
- *   1. Per-leg estimate (sharded lanes): each committed leg's fixed job cost plus the
- *      p90 of its own units, red over 12 minutes, naming the top 3 units.
- *   2. Unsharded job: the same arithmetic over a single leg holding every lock entry
- *      the lane owns -- an unsharded lane IS a shard of one.
+ *   1. Per-leg estimate: each committed leg's fixed job cost plus the p90 of its own
+ *      units, red over 12 minutes, naming the top 3 units. Every lane with a committed
+ *      `.ci/config/shards/<lane>.json` is priced from it (quality-code, quality-pytest and
+ *      the test lanes), whether or not `SHARD_COUNTS` names it.
+ *   2. Unsharded job: a quality lane with no manifest is a shard of one over its lock
+ *      entries. Every OTHER runner job in `ci.yml` and its callees is judged on its whole-job
+ *      p90 (`job_p90_minutes`), against 12 or against its `JOB_BUDGET_CAPS` ceiling (the
+ *      2026-09-28 ruling), and a job with no p90 is UNCHECKED, which is a finding.
  *   3. Single unit: a unit whose own cost plus the lane's fixed cost exceeds 12 minutes
- *      is red even alone, "indivisible", unless `LANE_BUDGET_EXEMPTIONS` names it
- *      (D-W3: every entry there is an operator approval, and the list starts empty).
+ *      is red even alone, "indivisible", unless `LANE_BUDGET_EXEMPTIONS` names it (D-W3).
+ *      An exemption whose test file or job has gone is itself a finding.
  *   4. Unknown units: an id with no measured cost is red unless the lane declares
- *      `defaultUnitMs` (T3.1's own addition to the schema, additive and optional --
- *      `lane-durations.json` names none today). A new unit cannot enter unmeasured.
+ *      `defaultUnitMs`. A new unit cannot enter unmeasured.
  *   5. Freshness: red when `refreshed_at` is missing, unparseable, or older than 14
  *      days -- the same "missing counts as infinitely stale" rule
  *      `check_job_timeout_headroom.py` already applies to its own baseline.
- *   6. Pipeline: a critical-path-plus-queueing estimate against a 20-minute target,
- *      printed always and asserted only once `PIPELINE_ENFORCED` flips (D-W1 is not yet
- *      decided). THE ESTIMATE IS A DELIBERATE SIMPLIFICATION: a real critical path needs
- *      the full `needs:` graph of every job in `ci.yml` and its callees, most of which
- *      carry no lane-budget data at all; this uses the worst measured leg per lane as a
- *      stand-in, which is sound as an advisory upper bound (no lane's real critical-path
- *      contribution exceeds its own worst leg) but is NOT the graph-weighted figure the
- *      box asks for. Naming that gap here rather than quietly shipping the approximation
- *      as the real thing.
+ *   6. Pipeline: a critical-path-plus-queueing estimate against D-W1's 35-minute target,
+ *      printed always and never a finding (`PIPELINE_ENFORCED`). THE ESTIMATE IS A
+ *      DELIBERATE SIMPLIFICATION: it uses the worst leg per lane (plus each judged job) as
+ *      a stand-in for the full `needs:` graph, which is a sound advisory upper bound on
+ *      any one lane's critical-path contribution but NOT the graph-weighted figure the box
+ *      eventually wants.
  *
  * CHECK 7 EXISTS AND IS SELFTESTED, AND MUST STAY OUT OF `main()`'S FINDINGS. T4.4 is
  * the box that turns it on; flipping `CHECK7_ENABLED` here before every job in `ci.yml`
  * carries a real `timeout-minutes: 15` would red the pipeline for a policy nothing has
- * adopted yet.
+ * adopted yet. The two capped jobs are read against their ruling timeouts (25, 30).
  *
- * WHAT THIS READS AND WHY EACH FAILS LOUDLY TODAY IF THE DATA IS NOT THERE.
- * `.ci/config/lane-durations.json` was seeded 2026-09-26 with `refreshed_at: null` and
- * empty `jobs`/`units` (T2.9's own comment says so), because `budget_report.py --refresh`
- * (T3.2) has not run yet. Check 5 therefore reds on a real invocation today, and checks
- * 1/2/4 report every measured lane's units as unknown for the same reason. That is NOT a
- * bug in this gate: it is the honest state of "the box that produces the numbers has not
- * landed yet", read exactly the same way `check_job_timeout_headroom.py` reads a baseline
- * nobody has ever refreshed. `--selftest` proves the LOGIC against a fixture root
- * (`LANE_BUDGET_ROOT`) rather than against that seeded file, and is what CI and `npm run
- * ci` actually gate on before a `--write` regenerates the workflow around this entry.
+ * WHY THE REAL RUN IS RED TODAY (2026-09-28), AND NONE OF IT IS THIS GATE'S LOGIC.
+ * `budget_report.py --refresh` keys quality-pytest and test-renet-integration unit p90s by
+ * junit classname ("pytest:/ci/...", "renet-integration:TestX.py") where the committed
+ * manifests say "pytest:.ci/..." and "renet-integration:test_x.py", so 532 enumerated units
+ * match nothing; 12 renet-go packages and the three `13-postgres-fork-isolation#partN`
+ * units have no sample at all; and it writes no whole-job p90, so check 2 has no number
+ * for 63 jobs. `--selftest` proves the LOGIC against fixtures and the real exemption and
+ * cap tables; the real run reports the data gaps honestly rather than pricing them at 0.
  *
  * Usage:
  *   npx tsx scripts/gates/check-lane-budget.ts             the real run, against committed data
@@ -65,9 +63,9 @@
  * needs: node
  * selftest: true
  * emit: false
- * blocker: .ci/config/lane-durations.json holds no measurements until PLAN-ci-time-budget T3.2 (budget_report.py --refresh) and T1.6 (unit-duration artifacts) land, and checks 4 and 5 red on missing data rather than a real overrun; it runs by hand until then (2026-09-26).
+ * blocker: the real run is red on producer gaps in .ci/rediacc_ci/ci/budget_report.py, not on this gate: quality-pytest and test-renet-integration unit p90s are keyed by junit classname and match no committed manifest id (532 units), 12 renet-go packages and 3 e2e-workers #partN units have no sample, and no whole-job p90 exists for check 2's 63 non-lane jobs (fetch_jobs also reads only the first 100 of 112-165 jobs per run). It runs by hand until the producer lands and the P2 exit holds (2026-09-28).
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
- *   whole misses its 20-minute target; this asserts the committed duration estimates
+ *   whole misses its 35-minute target (D-W1); this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner
  * ---- end gate ----
  */
@@ -101,25 +99,92 @@ const ROOT = envRoot('LANE_BUDGET_ROOT');
 const DURATIONS_PATH = '.ci/config/lane-durations.json';
 const LOCK_PATH = 'scripts/ci-runner/gates.lock.json';
 const QUALITY_WORKFLOW = '.github/workflows/ci-quality.yml';
+const CI_WORKFLOW = '.github/workflows/ci.yml';
 
 export const PER_LEG_BUDGET_MIN = 12;
-export const PIPELINE_BUDGET_MIN = 20;
+/** D-W1 as revised 2026-09-25 (Operator rulings): GitHub Free, 20 concurrent jobs, a pipeline target of about 35 minutes, not 20. */
+export const PIPELINE_BUDGET_MIN = 35;
 export const MAX_STALENESS_DAYS = 14;
 export const CHECK7_TIMEOUT_MAX_MIN = 15;
 
 /** T4.4 flips this on. See the file header: check 7 must exist and be selftested first. */
 export const CHECK7_ENABLED = false;
 
-/** D-W1 decides whether check 6 is enforced. Advisory (printed, never a finding) until then. */
+/** Check 6 stays advisory: D-W1's text makes it red only once the P4 run-level cancel lands. Printed always, never a finding. */
 export const PIPELINE_ENFORCED = false;
 
 /**
- * D-W3-approved exemptions: a unit id whose own cost exceeds the per-leg budget even in
- * a shard of one. Empty today -- every entry here needs an operator approval recorded
- * beside it, the same discipline `SHARD_REPLICATED_MAX` and the other declared ceilings
- * in `lanes.ts` are held to.
+ * Check 3's operator-approved exemptions: a unit whose own cost exceeds the per-leg budget
+ * even in a shard of one. Every entry names the ruling that approved it, and nothing else
+ * may be added without one. `unit` is the spec path under `packages/e2e-tests/tests/`,
+ * matched against a unit id either exactly or as its `<lane>:` suffix; `job` is the job that
+ * runs it. The liveness check in `main()` reds an entry whose file or job no longer exists,
+ * so a deleted test cannot leave a silent hole behind it.
  */
-export const LANE_BUDGET_EXEMPTIONS: readonly string[] = [];
+export interface UnitExemption {
+  unit: string;
+  job: string;
+  ruling: string;
+}
+export const LANE_BUDGET_EXEMPTIONS: readonly UnitExemption[] = [
+  {
+    unit: 'kube/17-multinode-cluster.test.ts',
+    job: 'test-e2e-k8s-multinode',
+    ruling:
+      'D-W3 (operator, 2026-09-25): one 10.9-min test stays whole; T2.18 dropped (PLAN-ci-time-budget, Operator rulings)',
+  },
+  {
+    unit: 'kube/15-k8s-repo.test.ts',
+    job: 'test-e2e-k8s',
+    ruling:
+      'D-W3 (operator, 2026-09-25): one 7.3-min test stays whole; T2.18 dropped (PLAN-ci-time-budget, Operator rulings)',
+  },
+];
+
+export function unitExemption(
+  id: string,
+  exemptions: readonly UnitExemption[] = LANE_BUDGET_EXEMPTIONS
+): UnitExemption | undefined {
+  return exemptions.find((e) => id === e.unit || id.endsWith(`:${e.unit}`));
+}
+
+/**
+ * Check 2's job-level caps: a named job judged against its own p90 ceiling instead of the
+ * 12-minute budget. Exactly the two jobs the 2026-09-28 ruling kept exempt; E2E Ceph, E2E
+ * Ceph Workers and E2E K8s LEFT the list that day and are judged at 12 like every other job.
+ * `timeoutMinutes` is the ruling's `timeout-minutes` for the job, read by check 7 once T4.4
+ * turns it on.
+ */
+export interface JobCap {
+  job: string;
+  p90Minutes: number;
+  timeoutMinutes: number;
+  ruling: string;
+}
+export const JOB_BUDGET_CAPS: readonly JobCap[] = [
+  {
+    job: 'test-e2e-k8s-ceph',
+    p90Minutes: 20,
+    timeoutMinutes: 25,
+    ruling:
+      'Exemption caps 2026-09-28 (#d5ba825c DEFAULT executed): p90 20 / timeout 25, revisited after 10 runs',
+  },
+  {
+    job: 'test-e2e-k8s-multinode',
+    p90Minutes: 25,
+    timeoutMinutes: 30,
+    ruling:
+      'Exemption caps 2026-09-28 (#d5ba825c DEFAULT executed): p90 25 / timeout 30, revisited after 10 runs',
+  },
+];
+
+/**
+ * D-W2: "Stage Artifacts" (`cd-stage.yml`'s `stage`, called from `ci.yml`'s `stage-artifacts`)
+ * and "Validate Promotion" (`ci.yml`'s `validate-promote`) are budgeted by
+ * `check_job_timeout_headroom.py` against `lane-durations.json`'s `job_max_seconds`, not by
+ * this gate. Named here so the split is printed every run rather than being a silent gap.
+ */
+export const HEADROOM_GATE_JOBS: readonly string[] = ['stage', 'validate-promote'];
 
 export interface LaneDurations {
   refreshed_at: string | null;
@@ -130,12 +195,19 @@ export interface LaneDurations {
   units: Record<string, number>;
   /**
    * T3.1's own addition to the schema: a lane that opts a not-yet-measured unit out of
-   * check 4 by naming a per-unit fallback cost, in milliseconds. Optional and additive --
-   * `lane-durations.json` declares none today, so every unit lacking a `units` entry is
-   * unknown, full stop. That is the safe default: a silently-assumed cost hides a slow
-   * new test exactly as effectively as no check at all.
+   * check 4 by naming a per-unit fallback cost, in milliseconds. Hand-authored and preserved
+   * by `budget_report.py --refresh`; each value's derivation is in the file's `$comment`.
+   * A lane NOT named here keeps the safe default: every unit lacking a `units` entry is
+   * unknown, full stop.
    */
   defaultUnitMs?: Record<string, number>;
+  /**
+   * MINUTES: a job's whole-job p90, keyed by job id, for check 2 over every job that is not
+   * a priced lane. Optional: nothing writes it yet (`budget_report.py --refresh` produces
+   * fixed costs only, and drops keys it does not know), so every such job is reported
+   * UNCHECKED until the producer lands.
+   */
+  job_p90_minutes?: Record<string, number>;
 }
 
 export function readDurations(root: string): LaneDurations {
@@ -148,6 +220,7 @@ export function readDurations(root: string): LaneDurations {
     jobs: parsed.jobs ?? {},
     units: parsed.units ?? {},
     defaultUnitMs: parsed.defaultUnitMs,
+    job_p90_minutes: parsed.job_p90_minutes,
   };
 }
 
@@ -260,14 +333,15 @@ export function indivisibleFindings(
   lane: string,
   laneIds: readonly string[],
   fixedMinutes: number,
-  units: Readonly<Record<string, number>>
+  units: Readonly<Record<string, number>>,
+  exemptions: readonly UnitExemption[] = LANE_BUDGET_EXEMPTIONS
 ): string[] {
   const findings: string[] = [];
   for (const id of laneIds) {
     const ms = units[id];
     if (ms === undefined) continue;
     const minutes = fixedMinutes + ms / 60_000;
-    if (minutes > PER_LEG_BUDGET_MIN && !LANE_BUDGET_EXEMPTIONS.includes(id)) {
+    if (minutes > PER_LEG_BUDGET_MIN && unitExemption(id, exemptions) === undefined) {
       findings.push(
         `${lane}: unit ${id} alone costs ${minutes.toFixed(1)}m (${fixedMinutes.toFixed(1)}m fixed ` +
           `+ ${(ms / 60_000).toFixed(1)}m), over the ${PER_LEG_BUDGET_MIN}m budget even in a shard of ` +
@@ -277,6 +351,57 @@ export function indivisibleFindings(
     }
   }
   return findings;
+}
+
+/**
+ * Check 2 over a job that is not a priced lane: its whole-job p90 against 12 minutes, or
+ * against its own cap when `JOB_BUDGET_CAPS` names it. A capped job over its CAP is red too:
+ * the ruling is a ceiling, not a waiver.
+ */
+export function jobBudgetFindings(
+  jobP90Minutes: Readonly<Record<string, number>>,
+  caps: readonly JobCap[] = JOB_BUDGET_CAPS
+): string[] {
+  const findings: string[] = [];
+  for (const [job, minutes] of Object.entries(jobP90Minutes).sort(([a], [b]) =>
+    a.localeCompare(b)
+  )) {
+    const cap = caps.find((c) => c.job === job);
+    const limit = cap?.p90Minutes ?? PER_LEG_BUDGET_MIN;
+    if (minutes > limit) {
+      findings.push(
+        cap === undefined
+          ? `job ${job}: p90 ${minutes.toFixed(1)}m, over the ${PER_LEG_BUDGET_MIN}m budget. ` +
+              'Shard it, cut its fixed cost, or get an operator ruling into JOB_BUDGET_CAPS.'
+          : `job ${job}: p90 ${minutes.toFixed(1)}m, over its exemption cap of ${limit}m ` +
+              `(${cap.ruling}).`
+      );
+    }
+  }
+  return findings;
+}
+
+/** A workflow's jobs, in order, each with the reusable workflow it calls (`uses:`), if any. Hand-parsed for the same reason `laneCapabilities` is. */
+export function workflowJobs(text: string): { id: string; uses: string | null }[] {
+  const out: { id: string; uses: string | null }[] = [];
+  let inJobs = false;
+  for (const raw of text.split('\n')) {
+    if (/^jobs:\s*$/.test(raw)) {
+      inJobs = true;
+      continue;
+    }
+    if (!inJobs) continue;
+    if (raw !== '' && !/^\s/.test(raw) && !raw.startsWith('#')) break;
+    const job = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
+    if (job) {
+      out.push({ id: job[1] as string, uses: null });
+      continue;
+    }
+    const uses = /^ {4}uses:\s*\.\/(\.github\/workflows\/[A-Za-z0-9_.-]+\.ya?ml)/.exec(raw);
+    const last = out[out.length - 1];
+    if (uses && last !== undefined) last.uses = uses[1] as string;
+  }
+  return out;
 }
 
 // --------------------------------------------------------------------------- Check 6: pipeline (advisory) ---------------------------------------------------------------------------
@@ -299,14 +424,16 @@ export function pipelineEstimateMinutes(
 // --------------------------------------------------------------------------- Check 7: present, wired off until T4.4 ---------------------------------------------------------------------------
 
 export function timeoutFindings(
-  caps: ReadonlyMap<string, Pick<LaneCapabilities, 'timeoutMinutes'>>
+  caps: ReadonlyMap<string, Pick<LaneCapabilities, 'timeoutMinutes'>>,
+  jobCaps: readonly JobCap[] = JOB_BUDGET_CAPS
 ): string[] {
   const findings: string[] = [];
   for (const [job, cap] of caps) {
-    if (cap.timeoutMinutes === null || cap.timeoutMinutes > CHECK7_TIMEOUT_MAX_MIN) {
+    const ceiling = jobCaps.find((c) => c.job === job)?.timeoutMinutes ?? CHECK7_TIMEOUT_MAX_MIN;
+    if (cap.timeoutMinutes === null || cap.timeoutMinutes > ceiling) {
       findings.push(
         `${job}: timeout-minutes is ${cap.timeoutMinutes ?? 'unset'}, over the ` +
-          `${CHECK7_TIMEOUT_MAX_MIN}m ceiling T4.4 will enforce.`
+          `${ceiling}m ceiling T4.4 will enforce.`
       );
     }
   }
@@ -327,7 +454,8 @@ function readOr(root: string, file: string, what: string): string | null {
 function main(): number {
   const qualityText = readOr(ROOT, QUALITY_WORKFLOW, 'the quality workflow');
   const lockText = readOr(ROOT, LOCK_PATH, 'the gate lock');
-  if (qualityText === null || lockText === null) return 1;
+  const ciText = readOr(ROOT, CI_WORKFLOW, 'the top-level CI workflow');
+  if (qualityText === null || lockText === null || ciText === null) return 1;
 
   let lock: ShardInput[];
   try {
@@ -353,71 +481,174 @@ function main(): number {
   for (const wf of new Set(Object.values(TEST_LANE_WORKFLOWS))) {
     if (workflows[wf] !== undefined) continue;
     const text = readOr(ROOT, wf, `the ${wf} workflow`);
-    if (text !== null) workflows[wf] = text;
+    if (text === null) return 1;
+    workflows[wf] = text;
   }
   const caps = mergeLaneCapabilities(workflows);
+
+  // Every job that occupies a runner: ci.yml's own, plus every job of every reusable
+  // workflow it calls, transitively. A caller job (`uses:`) is not a runner itself.
+  const runnerJobSet = new Set<string>();
+  const seenFiles = new Set<string>();
+  const walk = (file: string, text: string): boolean => {
+    seenFiles.add(file);
+    for (const j of workflowJobs(text)) {
+      if (j.uses === null) {
+        runnerJobSet.add(j.id);
+        continue;
+      }
+      if (seenFiles.has(j.uses)) continue;
+      const callee = workflows[j.uses] ?? readOr(ROOT, j.uses, `the ${j.uses} workflow`);
+      if (callee === null || !walk(j.uses, callee)) return false;
+    }
+    return true;
+  };
+  if (!walk(CI_WORKFLOW, ciText)) return 1;
+  // A job id two callees both define (test-linux-x64: ct-install-methods.yml and ct-update-flow.yml) is judged once under that id; job_p90_minutes is keyed by id, so the two cannot be told apart there either.
+  const runnerJobs = [...runnerJobSet];
+  if (runnerJobs.length === 0) {
+    console.error(
+      `${RED}✗${NC} ${CI_WORKFLOW} and its callees parsed to zero jobs; the gate is not seeing the ` +
+        'workflows, and its green would mean nothing.'
+    );
+    return 1;
+  }
 
   const qualityLanes = [...laneCapabilities(qualityText).keys()];
   const allLanes = new Set<string>([...qualityLanes, ...Object.keys(TEST_LANE_WORKFLOWS)]);
 
   const findings: string[] = [...freshnessFindings(durations, new Date())];
   const worstLegPerLane: number[] = [];
+  const priced = new Set<string>();
+  const inert: string[] = [];
+  let legCount = 0;
+  let unitCount = 0;
+  let measuredCount = 0;
+  let defaultedCount = 0;
+
+  const priceLeg = (
+    lane: string,
+    index: number,
+    of: number,
+    ids: readonly string[],
+    fixedMinutes: number,
+    defaultUnitMs: number | undefined
+  ): number => {
+    findings.push(
+      ...legFindings(lane, index, of, ids, fixedMinutes, durations.units, defaultUnitMs)
+    );
+    const { totalMs, perUnit } = legCostMs(ids, durations.units, defaultUnitMs);
+    legCount += 1;
+    unitCount += ids.length;
+    for (const u of perUnit) {
+      if (durations.units[u.id] !== undefined) measuredCount += 1;
+      else if (u.ms !== null) defaultedCount += 1;
+    }
+    return fixedMinutes + totalMs / 60_000;
+  };
 
   for (const lane of [...allLanes].sort()) {
-    // A test lane not yet split out into its own job (T2.12-T2.16) is not an error at this layer -- TEST_LANE_WORKFLOWS's own docstring calls this state "inert", and `laneCapabilities` simply has no entry for it yet.
-    if (!caps.has(lane)) continue;
+    // A lane named in TEST_LANE_WORKFLOWS whose job does not exist yet (ops-tutorials, T2.16) is inert by that table's own docstring; it is printed below, never silently dropped.
+    if (!caps.has(lane)) {
+      inert.push(lane);
+      continue;
+    }
 
     const fixedMinutes = durations.jobs[lane] ?? 0;
     const defaultUnitMs = durations.defaultUnitMs?.[lane];
+    const manifestFile = path.join(ROOT, shardManifestPath(lane));
 
-    if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {
-      const manifestFile = path.join(ROOT, shardManifestPath(lane));
-      if (!existsSync(manifestFile)) {
-        findings.push(
-          `${lane} is sharded (SHARD_COUNTS) but has no committed manifest at ` +
-            `${shardManifestPath(lane)}. Run \`npx tsx scripts/gate-bind.ts --write\` first.`
-        );
-        continue;
-      }
+    // A committed manifest IS the shipped plan, whether or not the lane is in SHARD_COUNTS: the test lanes are sharded from theirs (T2.12-T2.15), so pricing them by lock entries would price nothing.
+    if (existsSync(manifestFile)) {
       const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), lane);
       let worst = 0;
       const allIds: string[] = [];
       for (const leg of manifest.legs) {
-        findings.push(
-          ...legFindings(
-            lane,
-            leg.index,
-            manifest.of,
-            leg.ids,
-            fixedMinutes,
-            durations.units,
-            defaultUnitMs
-          )
+        worst = Math.max(
+          worst,
+          priceLeg(lane, leg.index, manifest.of, leg.ids, fixedMinutes, defaultUnitMs)
         );
-        const { totalMs } = legCostMs(leg.ids, durations.units, defaultUnitMs);
-        worst = Math.max(worst, fixedMinutes + totalMs / 60_000);
         allIds.push(...leg.ids);
       }
+      priced.add(lane);
       worstLegPerLane.push(worst);
       findings.push(...indivisibleFindings(lane, allIds, fixedMinutes, durations.units));
-    } else {
-      const laneIds = lock
-        .filter((e) => e.ci.kind === 'step' && e.ci.job === lane)
-        .map((e) => e.id);
-      // A lane with zero lock-id entries (quality-submodule-branches: hand-written by invariant 11, no step ever pinned there) has nothing this gate can price by this method; not a finding, just nothing to add.
-      if (laneIds.length === 0) continue;
+      continue;
+    }
+    if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {
       findings.push(
-        ...legFindings(lane, 1, 1, laneIds, fixedMinutes, durations.units, defaultUnitMs)
+        `${lane} is sharded (SHARD_COUNTS) but has no committed manifest at ` +
+          `${shardManifestPath(lane)}. Run \`npx tsx scripts/gate-bind.ts --write\` first.`
       );
-      const { totalMs } = legCostMs(laneIds, durations.units, defaultUnitMs);
-      worstLegPerLane.push(fixedMinutes + totalMs / 60_000);
-      findings.push(...indivisibleFindings(lane, laneIds, fixedMinutes, durations.units));
+      continue;
+    }
+    const laneIds = lock.filter((e) => e.ci.kind === 'step' && e.ci.job === lane).map((e) => e.id);
+    // A lane with zero lock entries and no manifest (quality-submodule-branches) has no units to price; it falls through to check 2's job-level set below rather than vanishing.
+    if (laneIds.length === 0) continue;
+    priced.add(lane);
+    worstLegPerLane.push(priceLeg(lane, 1, 1, laneIds, fixedMinutes, defaultUnitMs));
+    findings.push(...indivisibleFindings(lane, laneIds, fixedMinutes, durations.units));
+  }
+
+  if (priced.size === 0 || unitCount === 0) {
+    console.error(
+      `${RED}✗${NC} lane-budget priced ${priced.size} lane(s) and ${unitCount} unit(s); the gate is ` +
+        'not seeing the lanes, and its green would mean nothing.'
+    );
+    return 1;
+  }
+
+  // Check 2 over every runner job that is not a priced lane.
+  const judged: Record<string, number> = {};
+  const unchecked: string[] = [];
+  const headroom: string[] = [];
+  for (const job of runnerJobs) {
+    if (priced.has(job)) continue;
+    if (HEADROOM_GATE_JOBS.includes(job)) {
+      headroom.push(job);
+      continue;
+    }
+    const p90 = durations.job_p90_minutes?.[job];
+    if (p90 === undefined) unchecked.push(job);
+    else judged[job] = p90;
+  }
+  findings.push(...jobBudgetFindings(judged));
+  if (unchecked.length > 0) {
+    const shown = [...unchecked].sort();
+    findings.push(
+      `check 2: ${unchecked.length} job(s) in ${CI_WORKFLOW} and its callees are UNCHECKED: no ` +
+        `job_p90_minutes entry in ${DURATIONS_PATH}, and budget_report.py --refresh does not ` +
+        `produce one. Unknown is not within budget: ${shown.join(', ')}.`
+    );
+  }
+
+  // Exemption liveness: an entry whose test file or job is gone is a hole, not an approval.
+  const jobSet = runnerJobSet;
+  for (const e of LANE_BUDGET_EXEMPTIONS) {
+    if (!existsSync(path.join(ROOT, 'packages', 'e2e-tests', 'tests', e.unit))) {
+      findings.push(
+        `LANE_BUDGET_EXEMPTIONS names ${e.unit}, which no longer exists under ` +
+          'packages/e2e-tests/tests. Delete the entry.'
+      );
+    }
+    if (!jobSet.has(e.job)) {
+      findings.push(
+        `LANE_BUDGET_EXEMPTIONS places ${e.unit} in job ${e.job}, which no workflow defines.`
+      );
+    }
+  }
+  for (const c of JOB_BUDGET_CAPS) {
+    if (!jobSet.has(c.job)) {
+      findings.push(`JOB_BUDGET_CAPS names job ${c.job}, which no workflow defines. Delete it.`);
     }
   }
 
   if (CHECK7_ENABLED) findings.push(...timeoutFindings(caps));
 
-  const pipelineMinutes = pipelineEstimateMinutes(worstLegPerLane, durations.concurrency);
+  const pipelineMinutes = pipelineEstimateMinutes(
+    [...worstLegPerLane, ...Object.values(judged)],
+    durations.concurrency
+  );
   const pipelineNote =
     `pipeline estimate (advisory, worst-leg-per-lane approximation -- see file header): ` +
     `${pipelineMinutes.toFixed(1)}m against a ${PIPELINE_BUDGET_MIN}m target`;
@@ -425,13 +656,20 @@ function main(): number {
     findings.push(`${pipelineNote}, over budget`);
   }
 
+  const shape =
+    `${priced.size} lane(s), ${legCount} leg(s), ${unitCount} unit(s) ` +
+    `(${measuredCount} measured, ${defaultedCount} by defaultUnitMs), ` +
+    `${Object.keys(judged).length}/${runnerJobs.length - priced.size - headroom.length} other job(s) judged, ` +
+    `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s); ` +
+    `left to check_job_timeout_headroom.py (D-W2): ${headroom.join(', ') || 'none'}; ` +
+    `inert: ${inert.join(', ') || 'none'}`;
   if (findings.length === 0) {
-    console.log(
-      `${GREEN}✓${NC} lane-budget: ${worstLegPerLane.length} lane(s) checked. ${pipelineNote}`
-    );
+    console.log(`${GREEN}✓${NC} lane-budget: ${shape}. ${pipelineNote}`);
     return 0;
   }
-  console.error(`${RED}✗${NC} lane-budget: ${findings.length} finding(s). ${pipelineNote}`);
+  console.error(
+    `${RED}✗${NC} lane-budget: ${findings.length} finding(s); ${shape}. ${pipelineNote}`
+  );
   for (const f of findings) console.error(`  ${f}`);
   return 1;
 }
@@ -520,15 +758,64 @@ function selftest(): number {
       ),
     },
     {
-      name: 'the exemption branch: an id present in the exemption list is silent even over budget',
+      name: 'MATCH: a D-W3-exempt unit over budget alone is silent (the real exemption list)',
+      ok:
+        indivisibleFindings(
+          'test-e2e-k8s-multinode',
+          ['e2e-k8s:kube/17-multinode-cluster.test.ts'],
+          2,
+          { 'e2e-k8s:kube/17-multinode-cluster.test.ts': 10.9 * 60_000 }
+        ).length === 0,
+    },
+    {
+      name: 'FIRES: the same cost on a unit the exemption list does not name',
+      ok: indivisibleFindings('test-e2e-k8s', ['e2e-k8s:kube/99-other.test.ts'], 2, {
+        'e2e-k8s:kube/99-other.test.ts': 10.9 * 60_000,
+      }).some((f) => f.includes('Indivisible')),
+    },
+    {
+      name: 'CONTROL: every unit exemption and job cap names its ruling',
+      ok:
+        LANE_BUDGET_EXEMPTIONS.every((e) => /D-W3/.test(e.ruling)) &&
+        JOB_BUDGET_CAPS.every((c) => /2026-09-28/.test(c.ruling)),
+    },
+    // --- check 2: job-level p90 and the 2026-09-28 exemption caps ----------------
+    {
+      name: 'MATCH: an exempt job (E2E K8s Ceph) at 19.8m is under its 20m cap',
+      ok: jobBudgetFindings({ 'test-e2e-k8s-ceph': 19.8 }).length === 0,
+    },
+    {
+      name: 'MATCH: an exempt job (E2E K8s Multinode) at 23.0m is under its 25m cap',
+      ok: jobBudgetFindings({ 'test-e2e-k8s-multinode': 23.0 }).length === 0,
+    },
+    {
+      name: 'FIRES: an exempt job over its OWN cap (K8s Ceph at 20.1m) is red, naming the ruling',
+      ok: jobBudgetFindings({ 'test-e2e-k8s-ceph': 20.1 }).some(
+        (f) => f.includes('exemption cap of 20m') && f.includes('2026-09-28')
+      ),
+    },
+    {
+      name: 'FIRES: a NON-exempt job over 12 (E2E Ceph at 14.3m; it left the list 2026-09-28)',
+      ok: jobBudgetFindings({ 'test-e2e-ceph': 14.3 }).some((f) => f.includes('over the 12m')),
+    },
+    {
+      name: 'FIRES: a non-exempt job at 12.1m, and MATCH: the same job at 11.9m',
+      ok:
+        jobBudgetFindings({ 'test-e2e-k8s': 12.1 }).length === 1 &&
+        jobBudgetFindings({ 'test-e2e-k8s': 11.9 }).length === 0,
+    },
+    {
+      name: 'workflowJobs: a caller job is marked by its uses:, a runner job is not',
       ok: (() => {
-        const exempted = 'already-exempt';
-        // LANE_BUDGET_EXEMPTIONS ships empty (every entry needs a real operator approval), so the guard is exercised directly here rather than by mutating the exported list.
-        const stub = [exempted];
-        const guarded = (id: string, ms: number): string[] =>
-          ms > PER_LEG_BUDGET_MIN * 60_000 && !stub.includes(id) ? [`${id} indivisible`] : [];
+        const jobs = workflowJobs(
+          'on: push\njobs:\n  a:\n    uses: ./.github/workflows/x.yml\n  b:\n    runs-on: ubuntu-latest\n'
+        );
         return (
-          guarded(exempted, 20 * 60_000).length === 0 && guarded('other', 20 * 60_000).length === 1
+          JSON.stringify(jobs) ===
+          JSON.stringify([
+            { id: 'a', uses: '.github/workflows/x.yml' },
+            { id: 'b', uses: null },
+          ])
         );
       })(),
     },
@@ -591,6 +878,17 @@ function selftest(): number {
     {
       name: 'MATCH: a job at exactly 15 minutes is fine',
       ok: timeoutFindings(new Map([['job-a', { timeoutMinutes: 15 }]])).length === 0,
+    },
+    {
+      name: 'check 7 reads a capped job against its ruling timeout (K8s Multinode 30), not 15',
+      ok:
+        timeoutFindings(new Map([['test-e2e-k8s-multinode', { timeoutMinutes: 30 }]])).length ===
+          0 &&
+        timeoutFindings(new Map([['test-e2e-k8s-multinode', { timeoutMinutes: 31 }]])).length === 1,
+    },
+    {
+      name: 'CHECK 6 IS ADVISORY: the flag stays false (D-W1 text)',
+      ok: PIPELINE_ENFORCED === false,
     },
     {
       name: 'CHECK 7 IS OFF: the exported flag T4.4 will flip is false today',

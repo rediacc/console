@@ -5114,7 +5114,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: .ci/config/lane-durations.json holds no measurements yet: PLAN-ci-time-budget T3.2 (budget_report.py --refresh) and T1.6 (unit-duration artifacts) supply them, and until then checks 4 and 5 red on missing data, not on a real overrun. It moves to the quality-code lane (\"Lane budget\" step) when both land (2026-09-26)."
+      "blocker": "BLOCKER: the real run is red on producer gaps in .ci/rediacc_ci/ci/budget_report.py, not on this gate: quality-pytest and test-renet-integration unit p90s are keyed by junit classname and match no committed manifest id (532 units), 12 renet-go packages and 3 e2e-workers #partN units have no sample, and no whole-job p90 exists for check 2 over the 63 non-lane jobs (fetch_jobs also reads only the first 100 of 112-165 jobs per run). It moves to the quality-code lane (\"Lane budget\" step) once the producer lands and the P2 exit holds (2026-09-28)."
     }
   },
   {
