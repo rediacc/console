@@ -522,6 +522,9 @@ jobs:
 
       - name: "Test: rdc ops up --basic"
         shell: bash
+        # This step takes 3-7 min on macos-intel; twice it hung for 35-50 min until the watchdog cancelled the job, and a cancelled job keeps no log.
+        # A step limit fails it instead, so the log of where ops up stopped survives.
+        timeout-minutes: 15
         run: |
           node packages/cli/dist/cli-bundle.cjs ops up \
             --basic --skip-orchestration -o json
