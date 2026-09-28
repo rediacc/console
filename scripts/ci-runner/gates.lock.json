@@ -1128,7 +1128,6 @@
   {
     "id": "check:ci-toolchain-pins",
     "run": "npm run check:ci-toolchain-pins",
-    "slow": true,
     "gate": true,
     "paths": [
       ".devcontainer/**",
@@ -1383,7 +1382,6 @@
   {
     "id": "check:ci-pipefail-grep-q",
     "run": "npm run check:ci-pipefail-grep-q",
-    "slow": true,
     "gate": true,
     "paths": [
       ".ci/scripts/**",
@@ -2993,7 +2991,6 @@
   {
     "id": "check:ci-workflows",
     "run": "npm run check:ci-workflows",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_workflows.py"
@@ -3106,7 +3103,6 @@
   {
     "id": "check:ci-agent-browser-exit",
     "run": "npm run check:ci-agent-browser-exit",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_agent_browser_exit.py"
@@ -3900,7 +3896,6 @@
     "id": "check:ci-embed-asset-versions",
     "run": "npm run check:ci-embed-asset-versions",
     "gate": true,
-    "slow": true,
     "leaves": [
       "scripts/gates/check-embed-asset-versions.ts"
     ],
@@ -3928,7 +3923,6 @@
   {
     "id": "check:ci-no-otlp-creds",
     "run": "npm run check:ci-no-otlp-creds",
-    "slow": true,
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_no_otlp_creds.py"

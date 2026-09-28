@@ -40,7 +40,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-actionlint | quality-code / Workflow lint (actionlint) | yes | no | no |
 | check:ci-actions-allowlist | quality-static / Actions allowlist | yes | no | no |
 | check:ci-actions-vars | quality-security / GitHub Actions variables | yes | no | no |
-| check:ci-agent-browser-exit | quality-static / agent-browser exit status | yes | yes | no |
+| check:ci-agent-browser-exit | quality-static / agent-browser exit status | yes | no | no |
 | check:ci-agent-hint-liveness | quality-content / Agent hints can actually fire | yes | no | no |
 | check:ci-agent-model-roster | quality-content / Agent model roster matches its documented reasons | yes | no | no |
 | check:ci-agent-session-archival | quality-branch / Agent session archival | yes | no | no |
@@ -110,7 +110,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-em-dash-surfaces | quality-i18n / i18n | yes | no | no |
 | check:ci-embed-arch-parity | quality-go / Check embed arch parity | yes | no | no |
 | check:ci-embed-asset-freshness | quality-go / Check embed-asset upstream freshness | yes | no | no |
-| check:ci-embed-asset-versions | quality-go / Check embedded asset versions match their pins | yes | yes | no |
+| check:ci-embed-asset-versions | quality-go / Check embedded asset versions match their pins | yes | no | no |
 | check:ci-embed-credits | quality-go / Check embed credits consistency | yes | no | no |
 | check:ci-enumeration-vacuity | quality-code / Enumeration vacuity | yes | no | no |
 | check:ci-env-file-adoption | quality-static / Env file adoption | yes | no | no |
@@ -206,7 +206,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-nis2-quotes | quality-content / Verify NIS2 directive quotations match the official source | yes | no | no |
 | check:ci-no-client-key-composition | quality-code / No client-side key composition | yes | no | no |
 | check:ci-no-inline-python | quality-static / No inline Python in JS/TS | yes | no | no |
-| check:ci-no-otlp-creds | build-renet / Assert no OTLP credentials baked into the built binaries | yes | yes | no |
+| check:ci-no-otlp-creds | build-renet / Assert no OTLP credentials baked into the built binaries | yes | no | no |
 | check:ci-npmrc | quality-code / Block legacy-peer-deps workarounds | yes | no | no |
 | check:ci-overrides-reasons | quality-security / BLOCKER validator — package.json overrides | yes | no | no |
 | check:ci-package-key-budget | quality-code / Package key budget | yes | no | no |
@@ -216,7 +216,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-paths-origin | quality-code / Paths-origin provenance | yes | no | no |
 | check:ci-pathspec-scope | quality-static / Pathspec scope | yes | no | no |
 | check:ci-peer-deps | quality-code / Verify no peer dependency conflicts | yes | no | no |
-| check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | yes | no |
+| check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | no | no |
 | check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | no | no |
 | check:ci-plan-citations | quality-branch / Plan citations | yes | yes | no |
 | check:ci-plan-deps | quality-branch / Plan dependencies | yes | no | no |
@@ -321,7 +321,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-timeout-headroom | quality-static / CI job timeout headroom | yes | no | no |
 | check:ci-tmpfs-health | quality-code / Tmpfs health | yes | no | no |
 | check:ci-toolchain-env-dockerfile-sync | quality-code / Toolchain env/Dockerfile sync | yes | no | no |
-| check:ci-toolchain-pins | quality-code / Toolchain pins | yes | yes | no |
+| check:ci-toolchain-pins | quality-code / Toolchain pins | yes | no | no |
 | check:ci-tracked-credentials | quality-security / Tracked credentials | yes | no | no |
 | check:ci-tracked-sidecars | quality-static / Tracked runtime sidecars | yes | no | no |
 | check:ci-trap-registry | quality-code / Trap registry dispositions | yes | no | no |
@@ -350,7 +350,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-workflow-invariants | test: .ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py | yes | no | no |
 | check:ci-workflow-orphan-step-keys | quality-code / Workflow orphan step keys | yes | no | no |
 | check:ci-workflow-submodule-deps | quality-static / Workflow submodule deps | yes | no | no |
-| check:ci-workflows | quality-code / Workflow banned patterns | yes | yes | no |
+| check:ci-workflows | quality-code / Workflow banned patterns | yes | no | no |
 | check:ci-worklist-env-registry | quality-static / Worklist env registry | yes | yes | no |
 | check:ci-worklist-event-builders | quality-code / Worklist event builders | yes | no | no |
 | check:ci-worklist-path-resolution | quality-code / Worklist path resolution | yes | no | no |

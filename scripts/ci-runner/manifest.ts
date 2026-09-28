@@ -1088,7 +1088,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-toolchain-pins',
     run: 'npm run check:ci-toolchain-pins',
-    slow: true, // 26.7s measured
     gate: true,
     // Triggers on every surface that could restate a pin or acquire a tool unpinned, so a version added back into a workflow or the Dockerfile cannot slip past on an unrelated path filter.
     paths: [
@@ -1336,7 +1335,6 @@ export const GATES: readonly GateSpec[] = [
     // A detector built as `producer | grep -q` under pipefail cannot reliably fail: grep -q exits at its first match, SIGPIPEs the producer, and pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped exactly that in both detectors and certified 124 files clean over a real offender for as long as it existed.
     id: 'check:ci-pipefail-grep-q',
     run: 'npm run check:ci-pipefail-grep-q',
-    slow: true, // 13.5s standalone / 37.0s contended: it greps every shell file twice
     gate: true,
     // `.ci/lib/**`, `.devcontainer/**` and `.ci/media/**` joined the corpus with the printf/echo widening, and this list is what decides whether CI RUNS the gate when one of them changes. It was expanded in gates.lock.json alone, which is generated from here -- so regenerating the lock would have quietly narrowed the gate back and left it not watching the very directories the
     // sweep just converted sites in. A green gate with less coverage than yesterday.
@@ -2853,7 +2851,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-workflows',
     run: 'npm run check:ci-workflows',
-    slow: true, // 12.0s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check_workflows.py'],
     ci: {
@@ -2957,7 +2954,6 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-agent-browser-exit',
     run: 'npm run check:ci-agent-browser-exit',
     // 20.8s measured serially on an idle machine, so this is the gate's own cost and not the 17x parallel load the pre-push lane runs under. The oracle judges the FLOOR of recent samples for exactly that reason, and the floor is over the line too.
-    slow: true,
     gate: true,
     leaves: ['.ci/scripts/quality/check_agent_browser_exit.py'],
     ci: {
@@ -3664,7 +3660,6 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-embed-asset-versions',
     gate: true,
     // 46s by the FLOOR of its last five measurements (46.4, 47.1, 47.9, 48.9, 51.7) -- not load noise, which is what the floor rule filters out. It unpacks and hashes embedded assets, so the cost is real work.
-    slow: true,
     leaves: ['scripts/gates/check-embed-asset-versions.ts'],
     ci: {
       kind: 'step',
@@ -3690,7 +3685,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
-    slow: true, // 21.2s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check_no_otlp_creds.py'],
     ci: {
