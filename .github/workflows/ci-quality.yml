@@ -2293,11 +2293,11 @@ jobs:
   # (`scripts/ci-runner/unit-enumerators.ts`), the enumerator T2.7/T2.8 already
   # named for this lane, lists one unit per `test_*.py` file (520 today); the
   # committed `.ci/config/shards/quality-pytest.json` balances them into 3 legs
-  # by LONGEST-PROCESSING-TIME-FIRST over each file's `pytest --collect-only`
-  # item count (48/238/234 files, but 6290/6290/6290 tests EXACTLY -- a plain
-  # file-count round-robin measured 172/176/172 files landing at a lopsided
-  # 4321/10376/4173 tests, because a handful of heavily parametrised
-  # differentials dominate the corpus far more than file count alone shows), with
+  # by LONGEST-PROCESSING-TIME-FIRST over each file's measured duration: the
+  # mean of its lane-durations.json p90 and its median over recent runs, both
+  # from the per-leg junit XML the legs upload (rebalanced 2026-09-28; the
+  # earlier balance by `--collect-only` item count left leg 3 at 9.5-12 min
+  # while legs 1 and 2 ran about 7), with
   # three cross-file xdist groups kept whole on one leg each so `--dist
   # loadgroup` (pyproject.toml addopts) never has to serialise two of a group's
   # files across two SEPARATE runners' checkouts --
@@ -2340,7 +2340,7 @@ jobs:
       fail-fast: false
       matrix:
         # 3 legs from the committed .ci/config/shards/quality-pytest.json (520
-        # test_*.py files balanced by collected-test-count, not file count --
+        # test_*.py files balanced by measured per-file duration, not count --
         # see the block comment above this job for the numbers, the method and
         # which three xdist groups are kept whole). This is a hand-written
         # matrix, not a `gate-bind --write` shard-strategy region:
