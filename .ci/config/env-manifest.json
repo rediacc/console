@@ -204,6 +204,9 @@
     "ci-runner": [
       "ACCOUNT_ENTRY",
       "ALLOW_STALE",
+      "APP_TOKEN_OWNER",
+      "APP_TOKEN_PROBE",
+      "APP_TOKEN_REPOS",
       "APP_VERSION",
       "ARG_BUNDLE",
       "ARG_CONNECT_TIMEOUT",

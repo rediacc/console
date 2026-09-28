@@ -131,7 +131,7 @@ runs:
     - name: Wait until the token can read every scoped repository
       shell: bash
       env:
-        OWNER: ${{ github.repository_owner }}
-        REPOS: ${{ inputs.repositories }}
-        PROBE: ${{ github.action_path }}/probe-repos.sh
-      run: bash "$PROBE" "$OWNER" "$REPOS"
+        APP_TOKEN_OWNER: ${{ github.repository_owner }}
+        APP_TOKEN_REPOS: ${{ inputs.repositories }}
+        APP_TOKEN_PROBE: ${{ github.action_path }}/probe-repos.sh
+      run: bash "$APP_TOKEN_PROBE" "$APP_TOKEN_OWNER" "$APP_TOKEN_REPOS"
