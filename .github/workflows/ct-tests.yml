@@ -417,13 +417,15 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Workers)
-        # T2.12: shard 6 also carries the FULL_INTEGRATION-only composition
+        # T2.12: shard 7 also carries the FULL_INTEGRATION-only composition
         # suites (12a/12b/12d/13b) on the two distros that set full-integration
         # -- they stay off the sharded plan (their own cost is unmeasured) and
         # ride whichever leg has the most headroom instead of a leg of their own.
+        # Leg 7 since run 36358238015 (legs 6 11.0 avg / fedora 12.8 max with
+        # them, 7 the lightest at 8.8 avg).
         run: |
           ALSO=()
-          if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '6' ]]; then
+          if [[ "${{ matrix.full-integration }}" == '1' && "${{ matrix.shard }}" == '7' ]]; then
             ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts")
           fi
           .ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip \
