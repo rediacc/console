@@ -581,11 +581,14 @@ def test_no_sha256_tool_degrades_the_same_way_on_both_sides(tmp_path) -> None:
             "the port raised instead of answering: %s" % port.stderr
         )
         assert "sha=1" in port.stdout, port.stdout
-        assert "walk=%d out=[]" % twin_walk_code in port.stdout, (
-            "the port answered %r where the twin answered walk=%d with an empty hash"
-            % (port.stdout.strip(), twin_walk_code)
+        # THE TWIN'S EXIT CODE IS A RACE, THE EMPTY HASH IS NOT.
+        # With no sha256 tool the pipeline's second hasher exits at once, and whether xargs' child is still writing (SIGPIPE, xargs 125) or already done depends on scheduling: CI run 36488748933's Pytest (3/3) saw the twin answer walk=0 where it usually answers 125.
+        # The contract both sides must share is that no hash is printed; the port models the SIGPIPE outcome, the one the twin produces nearly always.
+        assert twin_walk_code in (0, local_common.XARGS_KILLED_BY_SIGNAL), walk_line
+        assert "walk=%d out=[]" % local_common.XARGS_KILLED_BY_SIGNAL in port.stdout, (
+            "the port answered %r; it must refuse with walk=%d and an empty hash (the twin answered walk=%d)"
+            % (port.stdout.strip(), local_common.XARGS_KILLED_BY_SIGNAL, twin_walk_code)
         )
-        assert twin_walk_code == local_common.XARGS_KILLED_BY_SIGNAL
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
