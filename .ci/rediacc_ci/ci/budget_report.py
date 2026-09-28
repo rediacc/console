@@ -120,6 +120,9 @@ DEFAULT_REFRESH_LIMIT = 10
 
 # EVERY READ HERE RETRIES, because one report makes dozens of calls and a single transient failure used to abort all of them: on 2026-09-27 a `--refresh --dry-run` died on `stream error: stream ID 1; CANCEL; received from peer` for one run's jobs, and the identical rerun succeeded. `ghx.gh` defaults to one attempt on purpose (an auth failure should not cost backoff); a report over many runs is the caller that wants three.
 GH_ATTEMPTS = 3
+
+# How many times `fetch_runs` reads the run list before sampling the union of what came back (see there).
+RUN_LIST_READS = 3
 LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 GATES_LOCK_REL_PATH = "scripts/ci-runner/gates.lock.json"
 PER_LEG_BUDGET_MINUTES = 12.0
@@ -287,16 +290,29 @@ def fetch_runs(
     )
     if branch:
         query += "&branch=%s" % branch
-    data = ghx.api_json(
-        "repos/%s/actions/workflows/%s/runs?%s" % (repo, workflow, query), attempts=GH_ATTEMPTS
-    )
-    if not isinstance(data, dict):
-        raise ghx.GhBadOutputError(
-            [], 0, "expected a JSON object from the workflow-runs endpoint", ghx.FAILURE_FAILED
+    # ONE READ IS NOT A SAMPLE. MEASURED 2026-09-28, after the date window landed: the identical `branch=0923-1` query that answered ten runs from that day, 25 times in a row, answered once with six runs from 2026-09-23/24. Those sit inside the 14-day window, so `stale_sample_findings` stayed silent, and a `--refresh` built on them rewrote nothing for E2E Workers or OPS Provision while stamping `refreshed_at`. `RUN_LIST_READS` reads are merged by run id, so one stale page cannot hide the fresh runs another read returns, and pages that disagree are named.
+    path = "repos/%s/actions/workflows/%s/runs?%s" % (repo, workflow, query)
+    by_id: dict[Any, dict[str, Any]] = {}
+    page_ids: list[tuple[Any, ...]] = []
+    for _ in range(RUN_LIST_READS):
+        data = ghx.api_json(path, attempts=GH_ATTEMPTS)
+        if not isinstance(data, dict):
+            raise ghx.GhBadOutputError(
+                [], 0, "expected a JSON object from the workflow-runs endpoint", ghx.FAILURE_FAILED
+            )
+        page = data.get("workflow_runs")
+        if not isinstance(page, list):
+            page = []
+        page_ids.append(tuple(sorted(r.get("id") for r in page if isinstance(r, dict))))
+        for run in page:
+            if isinstance(run, dict):
+                by_id.setdefault(run.get("id"), run)
+    if len(set(page_ids)) > 1:
+        log.warn(
+            "budget_report: %d reads of the %s run list disagreed (%s run(s) each); sampling their union."
+            % (len(page_ids), event, "/".join(str(len(ids)) for ids in page_ids))
         )
-    runs = data.get("workflow_runs")
-    if not isinstance(runs, list):
-        return []
+    runs = list(by_id.values())
     ordered = sorted(runs, key=lambda r: r.get("created_at") or "", reverse=True)
     selected = ordered[:limit]
     for finding in stale_sample_findings(selected, now):
@@ -1011,7 +1027,15 @@ def compute_lane_durations(
     """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "missing_artifact_lanes"}`. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
-    pr_runs = fetch_runs(repo, workflow, "pull_request", None, REFRESH_PR_STATUS, limit)
+    # THE PR SAMPLE HONOURS `--branch`, AS THE REPORT'S DOES SINCE 34ac34c13. `--refresh --branch 0923-1` still sampled PR runs with NO branch filter, so the durations it wrote came from whichever branches' runs the listing served, not the branch named. `class_branch_filter` keeps a default-branch refresh repo-wide.
+    pr_runs = fetch_runs(
+        repo,
+        workflow,
+        "pull_request",
+        class_branch_filter("pr-full", branch),
+        REFRESH_PR_STATUS,
+        limit,
+    )
     pr_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in pr_runs]
 
     patterns = lane_display_patterns(tree_root, workflow)
@@ -1065,7 +1089,8 @@ def compute_lane_durations(
             if s is not None:
                 units_ms[unit_id] = s["p90"]
 
-    main_runs = fetch_runs(repo, workflow, "push", branch, DEFAULT_STATUS, limit)
+    # THE HEADROOM SAMPLE IS ALWAYS THE DEFAULT BRANCH: `ci.yml` runs on `push` to `main` only, so a `--branch` naming a PR branch would sample zero push runs and leave `job_max_seconds` unmeasured.
+    main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit)
     main_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in main_runs]
     job_max_seconds: dict[str, dict[str, Any]] = {}
     for name in HEADROOM_JOBS:
@@ -1091,6 +1116,8 @@ def compute_lane_durations(
         "missing_artifact_lanes": missing_lanes,
         # T3.1: the PR sample's own age findings, carried out so `--refresh` can REFUSE to stamp a fresh `refreshed_at` on them (see refresh_lane_durations).
         "stale_sample": stale_sample_findings(pr_runs),
+        # Which PR runs the numbers came from, so a refresh names its sample rather than only its size.
+        "sampled_runs": [_run_summary(run) for run in pr_runs],
     }
 
 
@@ -1180,6 +1207,12 @@ def refresh_lane_durations(
 
     computed = compute(repo, workflow, branch, limit)
     # A STALE SAMPLE IS REFUSED HERE, NOT WARNED. MEASURED 2026-09-28: one `--refresh` drew a sample whose Quality / Security p90 read 9.9m (1.8m the minute before) and whose lanes all had NO unit-duration artifacts, then stamped `refreshed_at` = now over it. check-lane-budget.ts's check 5 reads that stamp as "measured today", so a fresh stamp on old runs silently defeats it. A report may warn and carry on; the one writer of the stamp may not.
+    for run in computed.get("sampled_runs") or []:
+        print(
+            "budget_report --refresh: sampled run %s (%s, %s, %s)"
+            % (run.get("id"), run.get("created_at"), run.get("head_branch"), run.get("conclusion")),
+            file=sys.stderr,
+        )
     stale = computed.get("stale_sample") or []
     if stale:
         for finding in stale:

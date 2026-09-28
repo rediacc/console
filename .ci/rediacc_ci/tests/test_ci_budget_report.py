@@ -656,7 +656,7 @@ def test_every_read_asks_ghx_for_the_retrying_attempt_count(monkeypatch):
     br.fetch_jobs("o/r", 1)
     br.fetch_artifacts("o/r", 1)
     assert br.GH_ATTEMPTS > 1
-    assert seen == [br.GH_ATTEMPTS] * 3
+    assert seen == [br.GH_ATTEMPTS] * (br.RUN_LIST_READS + 2)
 
 
 class _Proc:
@@ -830,7 +830,8 @@ def test_fetch_runs_puts_the_date_window_into_the_request(monkeypatch):
     monkeypatch.setattr(br.ghx, "api_json", fake_api_json)
     now = br._iso_to_epoch("2026-09-28T12:00:00Z")
     br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10, now=now)
-    assert len(seen) == 1
+    assert len(seen) == br.RUN_LIST_READS
+    assert len(set(seen)) == 1
     assert "created=%3E%3D2026-09-14" in seen[0]
     assert "branch=0923-1" in seen[0]
     assert "status=completed" in seen[0]
@@ -861,6 +862,88 @@ def test_build_report_samples_pr_full_on_the_requested_branch(monkeypatch):
     assert ("pull_request", "0923-1") in calls
     assert ("push", "0923-1") in calls
     assert ("schedule", None) in calls
+
+
+def test_compute_lane_durations_samples_pr_runs_on_the_requested_branch(monkeypatch, tmp_path):
+    """FIRES-if-unfixed: `--refresh --branch 0923-1` sampled PR runs with NO branch filter, and push runs on 0923-1, where `ci.yml` never runs on push."""
+    calls: list[tuple[str, str | None]] = []
+
+    def fake_fetch_runs(_repo, _wf, event, branch, _status, _limit, **_kw):
+        calls.append((event, branch))
+        return []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "lane_display_patterns", lambda *_a: {})
+    monkeypatch.setattr(br, "collect_unit_durations", lambda *_a, **_k: ({}, []))
+    br.compute_lane_durations(
+        "o/r",
+        "ci.yml",
+        "0923-1",
+        10,
+        root=tmp_path,
+        list_artifacts=lambda *_a: [],
+        download=lambda *_a: b"",
+    )
+    assert calls == [("pull_request", "0923-1"), ("push", br.DEFAULT_BRANCH)]
+
+
+def test_fetch_runs_merges_reads_so_one_stale_page_cannot_hide_fresh_runs(monkeypatch, capsys):
+    """FIRES-if-unfixed: one read of the run list answered six 2026-09-23/24 runs where every other read answered ten from 2026-09-28; sampled alone, that page hid every fresh run."""
+    stale = {"workflow_runs": [{"id": 1, "created_at": "2026-09-23T09:45:26Z"}]}
+    fresh = {
+        "workflow_runs": [
+            {"id": 3, "created_at": "2026-09-28T13:19:13Z"},
+            {"id": 2, "created_at": "2026-09-28T12:12:45Z"},
+        ]
+    }
+    pages = iter([stale, fresh, fresh])
+    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: next(pages))
+    now = br._iso_to_epoch("2026-09-28T15:00:00Z")
+    result = br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 2, now=now)
+    assert [r["id"] for r in result] == [3, 2]
+    assert "disagreed" in capsys.readouterr().err
+
+
+def test_fetch_runs_is_silent_when_every_read_agrees(monkeypatch, capsys):
+    """CONTROL: identical pages give the same sample and no disagreement warning."""
+    page = {"workflow_runs": [{"id": 3, "created_at": "2026-09-28T13:19:13Z"}]}
+    monkeypatch.setattr(br.ghx, "api_json", lambda *_a, **_k: page)
+    now = br._iso_to_epoch("2026-09-28T15:00:00Z")
+    result = br.fetch_runs("o/r", "ci.yml", "pull_request", "0923-1", "completed", 10, now=now)
+    assert [r["id"] for r in result] == [3]
+    assert "disagreed" not in capsys.readouterr().err
+
+
+def test_refresh_names_the_runs_it_sampled(tmp_path, capsys):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 5.0})))
+
+    def compute(*_a, **_k):
+        computed = _fake_compute(jobs={"test-e2e-workers": 5.0})(*_a, **_k)
+        computed["sampled_runs"] = [
+            {"id": 36427771349, "created_at": "2026-09-28T13:19:13Z", "head_branch": "0923-1"}
+        ]
+        return computed
+
+    br.refresh_lane_durations(path, limit=1, dry_run=True, compute=compute)
+    assert "sampled run 36427771349 (2026-09-28T13:19:13Z, 0923-1" in capsys.readouterr().err
+
+
+def test_compute_lane_durations_stays_repo_wide_on_the_default_branch(monkeypatch, tmp_path):
+    """CONTROL: a refresh left at the default branch keeps sampling every branch's PR runs."""
+    calls: list[tuple[str, str | None]] = []
+
+    def fake_fetch_runs(_repo, _wf, event, branch, _status, _limit, **_kw):
+        calls.append((event, branch))
+        return []
+
+    monkeypatch.setattr(br, "fetch_runs", fake_fetch_runs)
+    monkeypatch.setattr(br, "lane_display_patterns", lambda *_a: {})
+    monkeypatch.setattr(br, "collect_unit_durations", lambda *_a, **_k: ({}, []))
+    br.compute_lane_durations(
+        root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert calls == [("pull_request", None), ("push", br.DEFAULT_BRANCH)]
 
 
 def test_collect_class_records_which_runs_it_sampled(monkeypatch):
