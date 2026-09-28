@@ -2202,6 +2202,16 @@ function main(argv: string[]): void {
   // Added after the workflow was written twice by accident. There was no way to ask this binder what it would emit without emitting it, so a look at the hold-out set rewrote three regions and left 124 duplicate steps behind, twice. A destructive generator whose only inspection mode is running it teaches its users to run it.
   const dryRun = argv.includes('--dry-run');
   const write = argv.includes('--write') || dryRun;
+  // `--dry-run --fail-on-drift` is the FRESHNESS check the plain run never was: it passed on 2026-09-28 while the committed quality-code shard manifest and six ci-quality.yml regions no longer matched what `--write` emits, and only CI's shard-receipt aggregator ("ran 16 gate(s) but the plan gives it 18") caught the drift, after the push.
+  const failOnDriftFlag = argv.includes('--fail-on-drift');
+  const drift: string[] = [];
+  const failOnDrift = (found: readonly string[]): void => {
+    if (!failOnDriftFlag || found.length === 0) return;
+    console.error(
+      `✗ gate-bind: ${found.length} generated file(s) are stale against the lock: ${found.join(', ')}. Run \`npx tsx scripts/gate-bind.ts --write\` and commit the result.`
+    );
+    process.exit(1);
+  };
   // `--lane <job>` STAGES THE CUTOVER ONE LANE AT A TIME, and without it the cutover
   // cannot be staged at all.
   //
@@ -2470,9 +2480,15 @@ function main(argv: string[]): void {
       const manifestFile = buildShardManifest(job, freshLegs, keptAt);
       const manifestText = `${JSON.stringify(manifestFile, null, 2)}\n`;
       if (dryRun) {
-        console.log(
-          `gate-bind --dry-run: WOULD write ${shardManifestPath(job)} (${manifestFile.legs.length} leg(s))`
-        );
+        const onDisk = fs.existsSync(manifestPath)
+          ? fs.readFileSync(manifestPath, 'utf8')
+          : undefined;
+        if (onDisk !== manifestText) {
+          drift.push(shardManifestPath(job));
+          console.log(
+            `gate-bind --dry-run: WOULD write ${shardManifestPath(job)} (${manifestFile.legs.length} leg(s))`
+          );
+        }
       } else {
         fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
         fs.writeFileSync(manifestPath, manifestText);
@@ -2560,9 +2576,11 @@ function main(argv: string[]): void {
     }
     if (text === workflow) {
       console.log(`gate-bind --write: ${WORKFLOW} already matches (${declared.length} gate(s))`);
+      failOnDrift(drift);
       return;
     }
     if (dryRun) {
+      drift.push(WORKFLOW);
       const before = workflow.split('\n').length;
       const after = text.split('\n').length;
       console.log(
@@ -2574,6 +2592,7 @@ function main(argv: string[]): void {
       );
       console.log('  Any of those whose hand-written copy still exists becomes a DUPLICATE until');
       console.log('  that copy is deleted. Run `check:ci-gate-bind` after writing.');
+      failOnDrift(drift);
       return;
     }
     fs.writeFileSync(path.join(ROOT, WORKFLOW), text);
@@ -2704,6 +2723,21 @@ function main(argv: string[]): void {
   console.log(
     '  Blind spot: this checks the gates that DECLARE a header. The rest are still ' +
       'registered by hand and are check:ci-parity’s business until the drain reaches them.'
+  );
+  // FRESHNESS, which the binding check above never covered: re-run this binder as `--dry-run --fail-on-drift`, the same computation `--write` performs, so a committed shard manifest or region that no longer matches the lock fails here instead of in CI's shard-receipt aggregator (2026-09-28: quality-code's manifest and six ci-quality.yml regions were stale and this check still printed ✓).
+  try {
+    execFileSync(
+      process.execPath,
+      [...process.execArgv, fileURLToPath(import.meta.url), '--dry-run', '--fail-on-drift'],
+      {
+        stdio: ['ignore', 'ignore', 'inherit'],
+      }
+    );
+  } catch {
+    process.exit(1);
+  }
+  console.log(
+    '✓ gate-bind freshness: every generated region and shard manifest matches what --write would emit'
   );
 }
 
