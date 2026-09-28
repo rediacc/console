@@ -85,9 +85,9 @@ The setup_command.go lines move when those land, and B1 re-checks them.
 ## 3. Operator decisions
 
 - D1. Where the baked images live: a GHCR package pushed with oras (outside the 10 GB Actions quota; the E2E job already has `packages: read` and a GHCR login, .github/workflows/ct-tests.yml:236-238, :321-326), or the Actions cache replacing each distro's stock entry (the 5 stock legs then download upstream every run, and the cache grows by about 1.6 GB over a quota it already exceeds).
-  Tracked as a worklist [?].
+  Decided 2026-09-28T18:38Z by the #fa91780e DEFAULT, no operator answer in 130 min: a private GHCR package.
 - D2. Visibility: a baked image carries no renet binary (removed at :467) and B2 removes /opt/rediacc/proxy; what remains is distro packages, Docker, CRIU, rsync-renet (GPL, pinned), the rediacc user and sudoers, and the markers.
-  Whether the GHCR package may be public is the operator's call after B2's content audit; tracked as a worklist [?].
+  Whether the GHCR package may be public is the operator's call after B2's content audit; until then it stays private (the #fa91780e DEFAULT).
 - D3. Nightly on stock for all legs: recommended, and part of the design unless vetoed.
 
 ## 4. Savings against cost (estimates, replaced by B7's measurements)
