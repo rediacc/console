@@ -246,8 +246,19 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
     <!-- Custom head content from pages -->
     <slot name="head" />
 
-    <!-- Privacy-friendly analytics by Plausible -->
-    <script is:inline async src="https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js"></script>
+    <!-- Privacy-friendly analytics by Plausible, on rediacc.com hosts only: a dev server, a CI gate's
+         served dist or a preview would otherwise count its own visits, and a slow answer from
+         plausible.rediacc.com held the page's load event past agent-browser's 25s open timeout in the
+         tutorial player gate (CI runs for 6fa186b89 and ca272d26b). The queue stub below keeps
+         window.plausible callable either way. -->
+    <script is:inline>
+      if (/(^|\.)rediacc\.com$/.test(location.hostname)) {
+        var pa = document.createElement('script');
+        pa.async = true;
+        pa.src = 'https://plausible.rediacc.com/js/pa-QD2nMPajNQtoHBoHdMBpP.js';
+        document.head.appendChild(pa);
+      }
+    </script>
     <script is:inline>
       window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
       plausible.init({ outboundLinks: true, fileDownloads: true, formSubmissions: true })
