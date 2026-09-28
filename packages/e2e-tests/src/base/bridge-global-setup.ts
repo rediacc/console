@@ -106,6 +106,9 @@ async function verifyVMsWithRetry(
 ) {
   console.warn('');
   console.warn('Step 4: Verifying all VMs are ready...');
+  // `renet setup` (Step 3) restarts each VM's sshd, and Step 3 now runs on every VM at once, so a VM can still be mid-restart here: opensuse failed "VMs not ready: 192.168.111.1 (SSH not ready)" on two attempts (CI for da85f78ea), where the old serial loop left the bridge time to come back.
+  // Wait, bounded, for SSH on every VM before the one-shot verification.
+  await Promise.all(opsManager.getAllVMIps().map((ip) => opsManager.waitForVM(ip, 120000)));
   try {
     await opsManager.verifyAllVMsReady();
   } catch (err) {
