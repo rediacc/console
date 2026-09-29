@@ -1155,26 +1155,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-renet-ceph-gpu-non-apt.md": {
-      "status": "active",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 2,
-      "done": 6,
-      "open_sigs": [
-        "bf0e3d72",
-        "db93a038"
-      ],
-      "done_sigs": [
-        "35d03d22",
-        "6f0ca538",
-        "75f73789",
-        "86f54cb3",
-        "c93ea196",
-        "d0988b5f"
-      ]
-    },
     "agent/plans/PLAN-renet-fetch-hardening.md": {
       "status": "parked",
       "owner": "unowned",
@@ -3020,6 +3000,27 @@
         "930f003b",
         "9f2c95b0"
       ]
+    },
+    "agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md": {
+      "status": "closed",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-29",
+      "open": 1,
+      "done": 7,
+      "open_sigs": [
+        "db93a038"
+      ],
+      "done_sigs": [
+        "35d03d22",
+        "6f0ca538",
+        "75f73789",
+        "86f54cb3",
+        "bf0e3d72",
+        "c93ea196",
+        "d0988b5f"
+      ],
+      "ruling": "#c3a46b36"
     },
     "agent/plans/_done/PLAN-rotation-gh-removal.md": {
       "status": "done",
