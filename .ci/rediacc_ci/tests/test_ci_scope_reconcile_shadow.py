@@ -235,7 +235,10 @@ def test_jobs_pages_merge_into_one_document(tmp_path: pathlib.Path) -> None:
     """A run over 100 jobs spans two Jobs API pages; the reconciler must receive ONE document holding both."""
     root = _fixture(tmp_path)
     log = tmp_path / "gh.log"
-    pages = [{"total_count": 3, "jobs": [{"name": "a"}, {"name": "b"}]}, {"total_count": 3, "jobs": [{"name": "c"}]}]
+    pages = [
+        {"total_count": 3, "jobs": [{"name": "a"}, {"name": "b"}]},
+        {"total_count": 3, "jobs": [{"name": "c"}]},
+    ]
     result, _ = run_port(
         root, tmp_path, "jobs-pages", FAKE_GH_JOBS_JSON=json.dumps(pages), FAKE_GH_LOG=str(log)
     )

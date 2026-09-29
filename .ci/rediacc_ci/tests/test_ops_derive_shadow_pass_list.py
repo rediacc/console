@@ -146,6 +146,7 @@ LOG_ALL_MATCH = (
 LOG_WITH_MISMATCH = "2026-01-01T00:00:00Z compare\tshadow ALPHA MISMATCH\nshadow BETA match\n"
 LOG_WITH_EMPTY = "shadow ALPHA EMPTY\nshadow DELTA match\n"
 
+
 def secret_pages(*names: str) -> str:
     """`gh api <secrets> --paginate --slurp` as the port reads it: a list of secrets-API pages. Split across two pages whenever there are two names, so every case drives the page merge the twin never had."""
     half = (len(names) + 1) // 2
