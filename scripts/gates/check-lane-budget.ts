@@ -759,7 +759,10 @@ const SEARCH_EPS_MIN = 1e-6;
 /** Exact branch and bound runs only up to this many blocks (E2E Workers has 20); quality-pytest's ~500 get LPT plus local search. */
 const BNB_MAX_BLOCKS = 40;
 const BNB_NODE_LIMIT = 1_000_000;
-const LOCAL_SEARCH_MAX_STEPS = 20_000;
+/** Local search stops after the step that takes its candidate count past this, and says so (`capped`). A count, not a clock, so a capped result is reproducible; quality-pytest converges in under 1.5M per run. */
+const LOCAL_SEARCH_MAX_EVALUATIONS = 10_000_000;
+/** The work the live quality-pytest rebalance may spend, both local-search runs together; the BUDGET control holds it. Measured 1,795,571 on 2026-09-29 (516 blocks, 16 + 2 steps). */
+export const QUALITY_PYTEST_EVALUATION_BUDGET = 4_000_000;
 
 /** One lane's pricing inputs, per variant and leg, built from exactly what `priceLegs` reads, so a plan's minutes here are the verdict's minutes. A lane with no `variantCosts` has one variant named ''. */
 export interface LaneModel {
@@ -920,6 +923,8 @@ export interface RebalanceResult {
   /** Committed worst leg minus rebalanced worst leg, in minutes; null when there is no valid committed plan. */
   gainMinutes: number | null;
   search: string;
+  /** Candidate plans the search priced: local-search candidates for `assign`, splits for `contiguous`. A count, not a clock, so the budget control over it is reproducible. */
+  evaluations: number;
 }
 
 interface Block {
@@ -1041,63 +1046,140 @@ class AssignState {
   }
 }
 
-/** Steepest-descent over single moves and pairwise swaps, on the worst-first cost list; a local optimum is a fixed point, which is what makes a second run reproduce the first. No move empties a leg. */
+/** The search's order on plans: the `[leg x variant]` costs sorted worst first, each rounded to a whole number of SEARCH_EPS_MIN, compared exactly. Unlike `compareCosts` with an eps, which skips near-equal pairs and so is not transitive, this is a total order, so a descent on it cannot cycle: with three legs balanced to within 2e-6 minutes, the eps comparison once let one swap beat the plan it undid, and the search flipped that pair until the step cap, about 90 ms a step. */
+function searchKey(costs: readonly number[]): number[] {
+  return costs.map((c) => Math.round(c / SEARCH_EPS_MIN)).sort((p, q) => q - p);
+}
+
+function keyLess(a: readonly number[], b: readonly number[]): boolean {
+  for (let i = 0; i < a.length; i++) {
+    const d = (a[i] as number) - (b[i] as number);
+    if (d !== 0) return d < 0;
+  }
+  return false;
+}
+
+interface LocalSearchResult {
+  assign: number[];
+  steps: number;
+  /** Candidate plans priced: the deterministic work measure the budget control holds. */
+  evaluations: number;
+  capped: boolean;
+}
+
+/**
+ * Steepest descent over single moves and pairwise swaps on `searchKey`; a local optimum is a fixed point, which is what makes a second run reproduce the first. No move empties a leg. Each step re-sums every leg from scratch (no drift across steps), then prices each candidate by its delta on the two legs it touches, O(variants) apiece: per leg and variant the serial ms and the two largest group ms, so taking a block out and putting another in needs no rescan. A swap of two blocks with identical costs changes nothing and is not priced.
+ */
 function localSearch(
   model: LaneModel,
   blocks: readonly Block[],
-  start: readonly number[]
-): number[] {
-  const s = new AssignState(model, blocks, start);
-  const counts = Array.from({ length: model.of }, (_, l) => s.count(l));
-  for (let step = 0; step < LOCAL_SEARCH_MAX_STEPS; step++) {
-    let best = s.costs();
-    let pick:
-      | { kind: 'move'; b: number; to: number }
-      | { kind: 'swap'; a: number; b: number }
-      | undefined;
-    for (let b = 0; b < blocks.length; b++) {
-      const from = s.assign[b] as number;
-      if ((counts[from] as number) <= 1) continue;
-      for (let to = 0; to < model.of; to++) {
-        if (to === from || !(blocks[b] as Block).allowed[to]) continue;
-        s.move(b, to);
-        const c = s.costs();
-        if (compareCosts(c, best, SEARCH_EPS_MIN) < 0) {
-          best = c;
-          pick = { kind: 'move', b, to };
-        }
-        s.move(b, from);
+  start: readonly number[],
+  maxEvaluations: number
+): LocalSearchResult {
+  const L = model.of;
+  const V = model.variants.length;
+  const w = model.parallel !== undefined && model.parallel.workers > 1 ? model.parallel.workers : 1;
+  const assign = [...start];
+  const counts = new Array<number>(L).fill(0);
+  for (const leg of assign) counts[leg] = (counts[leg] as number) + 1;
+  const serial = Array.from({ length: L }, () => new Array<number>(V).fill(0));
+  const top1 = Array.from({ length: L }, () => new Array<number>(V).fill(0));
+  const top1Of = Array.from({ length: L }, () => new Array<number>(V).fill(-1));
+  const top2 = Array.from({ length: L }, () => new Array<number>(V).fill(0));
+  const legCost = (leg: number, v: number, s: number, g: number): number =>
+    (model.variants[v]?.fixedByLeg[leg] ?? 0) + (w > 1 ? Math.max(s / w, g) : s) / 60_000;
+  /** Leg `leg`, variant `v`, with block `out` taken off it and block `into` put on it (-1 for neither). */
+  const priced = (leg: number, v: number, out: number, into: number): number => {
+    let s = (serial[leg] as number[])[v] as number;
+    let g =
+      (top1Of[leg] as number[])[v] === out && out >= 0
+        ? ((top2[leg] as number[])[v] as number)
+        : ((top1[leg] as number[])[v] as number);
+    if (out >= 0) s -= (blocks[out] as Block).ms[v] as number;
+    if (into >= 0) {
+      s += (blocks[into] as Block).ms[v] as number;
+      g = Math.max(g, (blocks[into] as Block).groupMs[v] as number);
+    }
+    return legCost(leg, v, s, g);
+  };
+  const cand = new Array<number>(L * V).fill(0);
+  let evaluations = 0;
+  let steps = 0;
+  let capped = false;
+  for (;;) {
+    for (let leg = 0; leg < L; leg++)
+      for (let v = 0; v < V; v++) {
+        (serial[leg] as number[])[v] = 0;
+        (top1[leg] as number[])[v] = 0;
+        (top1Of[leg] as number[])[v] = -1;
+        (top2[leg] as number[])[v] = 0;
       }
+    blocks.forEach((b, i) => {
+      const leg = assign[i] as number;
+      for (let v = 0; v < V; v++) {
+        (serial[leg] as number[])[v] =
+          ((serial[leg] as number[])[v] as number) + (b.ms[v] as number);
+        const g = b.groupMs[v] as number;
+        if (g > ((top1[leg] as number[])[v] as number)) {
+          (top2[leg] as number[])[v] = (top1[leg] as number[])[v] as number;
+          (top1[leg] as number[])[v] = g;
+          (top1Of[leg] as number[])[v] = i;
+        } else if (g > ((top2[leg] as number[])[v] as number)) (top2[leg] as number[])[v] = g;
+      }
+    });
+    const base: number[] = [];
+    for (let leg = 0; leg < L; leg++) for (let v = 0; v < V; v++) base.push(priced(leg, v, -1, -1));
+    const startKey = searchKey(base);
+    let bestKey = startKey;
+    let pick: { a: number; to: number; b: number } | undefined;
+    const consider = (a: number, to: number, b: number): void => {
+      const from = assign[a] as number;
+      for (let i = 0; i < base.length; i++) cand[i] = base[i] as number;
+      for (let v = 0; v < V; v++) {
+        cand[from * V + v] = priced(from, v, a, b);
+        cand[to * V + v] = priced(to, v, b, a);
+      }
+      evaluations++;
+      const key = searchKey(cand);
+      if (keyLess(key, bestKey)) {
+        bestKey = key;
+        pick = { a, to, b };
+      }
+    };
+    for (let a = 0; a < blocks.length; a++) {
+      const from = assign[a] as number;
+      if ((counts[from] as number) <= 1) continue;
+      for (let to = 0; to < L; to++)
+        if (to !== from && (blocks[a] as Block).allowed[to]) consider(a, to, -1);
     }
     for (let a = 0; a < blocks.length; a++) {
+      const ba = blocks[a] as Block;
       for (let b = a + 1; b < blocks.length; b++) {
-        const la = s.assign[a] as number;
-        const lb = s.assign[b] as number;
-        if (la === lb || !(blocks[a] as Block).allowed[lb] || !(blocks[b] as Block).allowed[la])
-          continue;
-        s.move(a, lb);
-        s.move(b, la);
-        const c = s.costs();
-        if (compareCosts(c, best, SEARCH_EPS_MIN) < 0) {
-          best = c;
-          pick = { kind: 'swap', a, b };
-        }
-        s.move(a, la);
-        s.move(b, lb);
+        const la = assign[a] as number;
+        const lb = assign[b] as number;
+        const bb = blocks[b] as Block;
+        if (la === lb || !ba.allowed[lb] || !bb.allowed[la]) continue;
+        let same = true;
+        for (let v = 0; v < V && same; v++)
+          same = ba.ms[v] === bb.ms[v] && ba.groupMs[v] === bb.groupMs[v];
+        if (!same) consider(a, lb, b);
       }
     }
     if (pick === undefined) break;
-    if (pick.kind === 'move') {
-      counts[s.assign[pick.b] as number] = (counts[s.assign[pick.b] as number] as number) - 1;
+    steps++;
+    const from = assign[pick.a] as number;
+    assign[pick.a] = pick.to;
+    if (pick.b >= 0) assign[pick.b] = from;
+    else {
+      counts[from] = (counts[from] as number) - 1;
       counts[pick.to] = (counts[pick.to] as number) + 1;
-      s.move(pick.b, pick.to);
-    } else {
-      const la = s.assign[pick.a] as number;
-      s.move(pick.a, s.assign[pick.b] as number);
-      s.move(pick.b, la);
+    }
+    if (evaluations >= maxEvaluations) {
+      capped = true;
+      break;
     }
   }
-  return [...s.assign];
+  return { assign, steps, evaluations, capped };
 }
 
 /** Longest-processing-time first: blocks by descending worst-variant cost, each onto the allowed leg whose worst variant stays cheapest; then every still-empty leg takes the smallest block a leg with two or more can spare. */
@@ -1334,7 +1416,8 @@ function settle(
   violations: string[],
   coverage: string[],
   candidate: string[][],
-  search: string
+  search: string,
+  evaluations: number
 ): RebalanceResult {
   const valid = committed !== null && violations.length === 0 && coverage.length === 0;
   const committedMinutes =
@@ -1363,6 +1446,7 @@ function settle(
         ? worst(committedMinutes) - worst(rebalancedMinutes)
         : null,
     search,
+    evaluations,
   };
 }
 
@@ -1371,7 +1455,8 @@ export function rebalanceAssign(
   model: LaneModel,
   ids: readonly string[],
   c: RebalanceConstraints,
-  committed: string[][] | null
+  committed: string[][] | null,
+  maxEvaluations = LOCAL_SEARCH_MAX_EVALUATIONS
 ): RebalanceResult {
   const problems = staticConstraintProblems(c, new Set(ids), model.of);
   if (problems.length > 0)
@@ -1398,17 +1483,20 @@ export function rebalanceAssign(
     if (bnb.assign !== null) start = bnb.assign;
     search = `branch and bound over ${blocks.length} block(s), ${bnb.nodes} node(s), ${bnb.capped ? `CAPPED at ${BNB_NODE_LIMIT}: best found, not proven optimal` : 'min-max proven'}`;
   }
-  const candidates = [localSearch(model, blocks, start)];
+  const runs = [localSearch(model, blocks, start, maxEvaluations)];
   const fromCommitted =
     committed !== null && coverage.length === 0 ? committedAssign(blocks, committed) : null;
-  if (fromCommitted !== null) candidates.unshift(localSearch(model, blocks, fromCommitted));
-  let pick = candidates[0] as number[];
-  for (const cand of candidates.slice(1)) {
-    const a = new AssignState(model, blocks, cand).costs();
-    const b = new AssignState(model, blocks, pick).costs();
-    if (compareCosts(a, b, SEARCH_EPS_MIN) < 0) pick = cand;
+  if (fromCommitted !== null)
+    runs.unshift(localSearch(model, blocks, fromCommitted, maxEvaluations));
+  let pick = (runs[0] as LocalSearchResult).assign;
+  for (const run of runs.slice(1)) {
+    const a = searchKey(new AssignState(model, blocks, run.assign).costs());
+    const b = searchKey(new AssignState(model, blocks, pick).costs());
+    if (keyLess(a, b)) pick = run.assign;
   }
-  search += ', then local search (moves and swaps)';
+  const evaluations = runs.reduce((n, r) => n + r.evaluations, 0);
+  const cappedRuns = runs.filter((r) => r.capped).length;
+  search += `, then local search (moves and swaps): ${runs.map((r) => r.steps).join(' + ')} step(s), ${evaluations} evaluation(s)${cappedRuns > 0 ? `, CAPPED at ${maxEvaluations} evaluations in ${cappedRuns} run(s): best found, not a local optimum` : ''}`;
 
   // The search priced by its own aggregates; the exact model must agree to the millisecond, or the two have diverged and no number here can be trusted.
   const fast = new AssignState(model, blocks, pick).costs();
@@ -1429,7 +1517,8 @@ export function rebalanceAssign(
     violations,
     coverage,
     relabel(model, blocks, toLegs(pick), committed),
-    search
+    search,
+    evaluations
   );
 }
 
@@ -1517,7 +1606,8 @@ export function rebalanceContiguous(
     violations,
     coverage,
     found.legs,
-    `exhaustive over ${tried} contiguous split(s)`
+    `exhaustive over ${tried} contiguous split(s)`,
+    tried
   );
 }
 
@@ -2226,6 +2316,29 @@ async function liveRebalanceControls(
           secondChanged: again.changed,
         }),
       });
+      if (lane === 'quality-pytest') {
+        // The cap the BUDGET control relies on, shown to fire: one evaluation allowed, so each run stops after its first step and says so.
+        const tight = rebalanceAssign(
+          input.model,
+          input.ids,
+          input.constraints,
+          input.committed,
+          1
+        );
+        out.push({
+          name: `FIRES (live ${lane}): a local search held to 1 evaluation stops after one step and reports CAPPED, not a local optimum`,
+          ok: tight.search.includes('CAPPED') && tight.evaluations < result.evaluations,
+          detail: `${tight.evaluations} evaluation(s); ${tight.search}`,
+        });
+        out.push({
+          name: `BUDGET (live ${lane}): the rebalance reaches a local optimum within ${QUALITY_PYTEST_EVALUATION_BUDGET} candidate evaluations, so a search that stops converging is a red control, not a hang`,
+          ok:
+            result.evaluations > 0 &&
+            result.evaluations <= QUALITY_PYTEST_EVALUATION_BUDGET &&
+            !result.search.includes('CAPPED'),
+          detail: `${result.evaluations} evaluation(s); ${result.search}`,
+        });
+      }
     } catch (e) {
       out.push({ name: `STABLE (live ${lane})`, ok: false, detail: String(e) });
     }
