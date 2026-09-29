@@ -363,6 +363,9 @@ async function bridgeGlobalSetup(_config: FullConfig) {
       await opsManager.verifyCephClientsReady();
     }
 
+    // A baked leg must run on the image its key names; Step 3's skip rule trusts the setup marker that image carries.
+    await infra.assertBakedImageOnVMs();
+
     // Step 2: Build renet and deploy to all VMs
     // eslint-disable-next-line no-console
     console.log('');

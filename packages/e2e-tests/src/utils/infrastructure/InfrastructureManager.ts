@@ -33,6 +33,11 @@ const OPS_UP_RENET_MD5_COMMAND = `md5sum ${OPS_UP_RENET_PATH} 2>/dev/null | cut 
 const RENET_SETUP_MARKER_PATH = '/var/lib/rediacc/setup_7111_completed';
 
 /**
+ * The marker the image builder writes into a baked VM image right after `renet setup`, holding `<bake-key>|<distro>|<renet Version>` (PLAN-ci-prebaked-vm-images 2d).
+ */
+const BAKED_IMAGE_MARKER_PATH = '/var/lib/rediacc/baked-image';
+
+/**
  * Finds a working CRIU as root, with an explicit PATH.
  * `renet setup` installs CRIU to /usr/sbin/criu, and the copy fallback below installs it to /usr/local/bin/criu.
  * A bare `which criu` over SSH runs as the login user, whose PATH on debian and opensuse has no /usr/sbin, so it reported an installed CRIU as missing and sent the harness into a source build that then failed with "criu: command not found".
@@ -476,7 +481,8 @@ export class InfrastructureManager {
   /**
    * True when `renet setup` already completed on this VM with the local renet binary.
    * Requires ensureRenetOnVMs({ freshReset: true }) to have proven the ops-up binary identical to the local one first.
-   * The VM was then just recreated from its base image, so the marker can only come from the setup ops up ran with that binary.
+   * The VM was then just recreated from its base image, so the marker has one of two sources: the setup ops up ran with that binary, or a baked base image (BAKED_IMAGE_KEY set), whose builder ran `renet setup` before the image was saved.
+   * A baked marker was written by the renet the image was baked with, not necessarily the local one; assertBakedImageOnVMs (bridge-global-setup, before Step 2) pins every VM to the bake key the workflow resolved, and that key hashes renet's setup sources (PLAN-ci-prebaked-vm-images 2a).
    * The rule holds for the bridge and for every worker: ops up runs `renet setup --skip-datastore` on the bridge (setupBridge) and plain `sudo renet setup` on each worker in its cluster (worker.Service.Setup in private/renet/pkg/infra/worker/service.go), and both are the run the harness would repeat.
    * When ops up skipped a VM's setup (a base image that already carries Docker, or a worker outside the `--basic` cluster), the marker is absent and this returns false.
    */
@@ -486,6 +492,42 @@ export class InfrastructureManager {
     }
     const marker = await this.opsManager.executeOnVM(ip, `sudo test -f ${RENET_SETUP_MARKER_PATH}`);
     return marker.code === 0;
+  }
+
+  /**
+   * When BAKED_IMAGE_KEY is set, fail unless every VM booted from the baked image with exactly that key.
+   * The marker's first `|` field is the bake key; a VM with no marker, an unreadable one or a different key is named with what was found, and all such VMs are reported together.
+   * With BAKED_IMAGE_KEY unset or empty (a stock-image leg or a local run) nothing is read.
+   */
+  async assertBakedImageOnVMs(): Promise<void> {
+    const expectedKey = process.env.BAKED_IMAGE_KEY?.trim();
+    if (!expectedKey) {
+      return;
+    }
+    const ips = this.opsManager.getAllVMIps();
+    const problems = await Promise.all(
+      ips.map(async (ip) => {
+        const result = await this.opsManager.executeOnVM(ip, `sudo cat ${BAKED_IMAGE_MARKER_PATH}`);
+        if (result.code !== 0) {
+          const detail = result.stderr.trim() || `exit code ${result.code}`;
+          return `${ip}: no readable ${BAKED_IMAGE_MARKER_PATH} (${detail})`;
+        }
+        const content = result.stdout.trim();
+        const foundKey = content.split('|')[0]?.trim() ?? '';
+        if (foundKey !== expectedKey) {
+          return `${ip}: ${BAKED_IMAGE_MARKER_PATH} holds key '${foundKey}' (marker '${content}'), expected '${expectedKey}'`;
+        }
+        return null;
+      })
+    );
+    const failures = problems.filter((problem): problem is string => problem !== null);
+    if (failures.length > 0) {
+      throw new Error(
+        `Baked image check failed on ${failures.length} of ${ips.length} VM(s), BAKED_IMAGE_KEY=${expectedKey}:\n${failures.join('\n')}`
+      );
+    }
+    // eslint-disable-next-line no-console
+    console.log(`  ✓ All ${ips.length} VM(s) booted from baked image ${expectedKey}`);
   }
 
   /**
