@@ -7,16 +7,22 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
 
   * cmd/renet: setup_command.go, pkg_install_retry.go, image_build_command.go, and the
     same-package files they call into (literals.go, system_commands.go for getOSInfo,
-    ceph_root.go for DefaultFilesystem, pkg_install_procgroup_unix.go);
+    ceph_root.go for DefaultFilesystem, pkg_install_procgroup_unix.go, gpu_drivers.go for
+    the GPU driver installs of setup, ceph_host_runner.go for the runner those installs
+    use);
   * pkg/config, pkg/infra/pkgset (the package registry), pkg/embed (its Go files only,
     so pkg/embed/proxy/** and the staged assets are out), pkg/infra/image;
+  * pkg/infra/cephpkg/fingerprint.go, the OpenPGP fingerprint check gpu_drivers.go runs on
+    NVIDIA's signing keys before it imports one;
   * pkg/infra/opsconfig/images.go, the base image pins;
-  * embed-assets.lock.json, the pinned embedded binaries;
+  * embed-assets.lock.json, the pinned embedded binaries, and the three NVIDIA signing keys
+    under cmd/renet/gpu_keys/ (EXTRA_FILES), which the GPU install trusts and so decide
+    what a `--install-nvidia-driver` setup does;
   * this module's own bytes and the v1 salt, so a change to the rules rebakes.
 
 Test files (`*_test.go`) are never hashed: they do not reach the image.
 
-WHAT IS EXCLUDED, BY NAME, and why each one does not shape the guest disk: pkg/datastore (the bake runs no datastore work that the quick path does not redo), pkg/i18n (message text), pkg/infra/vm, vm/kvm and vm/imagedl (they drive the builder VM and fetch the pinned base image; the pin itself is hashed), opsconfig's config.go and parallel.go (fleet plumbing), cmd/renet/main.go and version.go (entry wiring and the build-time version), datastore_readme.go, backup_pull.go (system_commands.go names its methodRsync constant only in the `system check tools` list), and the Windows-only process-group file.
+WHAT IS EXCLUDED, BY NAME, and why each one does not shape the guest disk: pkg/datastore (the bake runs no datastore work that the quick path does not redo), pkg/i18n (message text), pkg/infra/vm, vm/kvm and vm/imagedl (they drive the builder VM and fetch the pinned base image; the pin itself is hashed), opsconfig's config.go and parallel.go (fleet plumbing), cmd/renet/main.go and version.go (entry wiring and the build-time version), datastore_readme.go, backup_pull.go (system_commands.go names its methodRsync constant only in the `system check tools` list), pkg/infra/cephpkg/cephpkg.go (gpu_drivers.go uses only that package's fingerprint.go; the Ceph pins and plans reach no image), and the Windows-only process-group file.
 
 COMPLETENESS IS COMPUTED, NOT TRUSTED. `findings()` walks every hashed Go file and follows two kinds of edge: an internal import (and the `pkg.Ident` references through it), and an unqualified reference to a top-level name another file of the same package declares. Every file or package the walk reaches must be classified HASH or EXCLUDE, or it is a finding, and `compute_key()` refuses to produce a key while any finding stands. A new internal import in setup_command.go therefore fails the key rather than silently leaving the new package out of it. The walk is lexical, not type-checked: a method reached only through a value is not followed, and a local variable that shares a top-level name makes the walk reach further than it needs to, never less far.
 """
@@ -50,6 +56,9 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "system_commands.go": HASH,
         "ceph_root.go": HASH,
         "pkg_install_procgroup_unix.go": HASH,
+        # GPU driver installs are part of setup (--install-amd-driver, --install-nvidia-driver); hostRunner is the runner they use.
+        "gpu_drivers.go": HASH,
+        "ceph_host_runner.go": HASH,
         "pkg_install_procgroup_windows.go": EXCLUDE,
         "main.go": EXCLUDE,
         "version.go": EXCLUDE,
@@ -59,6 +68,12 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     },
     "pkg/config": HASH,
     "pkg/infra/pkgset": HASH,
+    # gpu_drivers.go uses only KeyFingerprint and NormalizeFingerprint. The pins, plans and embedded Ceph keys of cephpkg.go shape
+    # no image, so a Ceph pin bump must not rebake every VM image.
+    "pkg/infra/cephpkg": {
+        "fingerprint.go": HASH,
+        "cephpkg.go": EXCLUDE,
+    },
     "pkg/embed": HASH,
     "pkg/infra/image": HASH,
     "pkg/infra/opsconfig": {
@@ -73,8 +88,13 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     "pkg/infra/vm/imagedl": EXCLUDE,
 }
 
-# Non-Go inputs, relative to the renet root.
-EXTRA_FILES = ("embed-assets.lock.json",)
+# Non-Go inputs, relative to the renet root: the pinned embedded binaries and the NVIDIA repository signing keys gpu_drivers.go embeds.
+EXTRA_FILES = (
+    "embed-assets.lock.json",
+    "cmd/renet/gpu_keys/1940C73E.pub",
+    "cmd/renet/gpu_keys/3A8B5622.pub",
+    "cmd/renet/gpu_keys/CDF6BA43.pub",
+)
 
 KEY_RE = re.compile(r"^vm-bake-v1-[a-z0-9][a-z0-9.-]*-\d{4}-\d{2}-[0-9a-f]{16}$")
 _MONTH_RE = re.compile(r"^\d{4}-(0[1-9]|1[0-2])$")

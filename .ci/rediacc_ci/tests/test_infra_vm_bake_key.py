@@ -39,6 +39,7 @@ NEW_IMPORT = '\t"github.com/rediacc/renet/pkg/nodeteardown"\n'
 def _copy_inputs(dest: pathlib.Path) -> pathlib.Path:
     dest.mkdir(parents=True)
     for name in ("go.mod", *vbk.EXTRA_FILES):
+        (dest / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REAL_RENET / name, dest / name)
     dirs = set(vbk.PACKAGES) | {"cmd/renet", "pkg/embed/proxy"}
     for pkg in sorted(dirs):
@@ -128,6 +129,28 @@ def test_a_qualified_ref_into_an_unclassified_file_of_a_partial_package_fails(
     assert any("opsconfig.BakeProbe" in p for p in problems), problems
 
 
+def test_every_embedded_gpu_key_is_a_hashed_input() -> None:
+    """A fourth key added under cmd/renet/gpu_keys/ without a line in EXTRA_FILES would change what setup trusts and not the key."""
+    on_disk = {
+        p.relative_to(REAL_RENET).as_posix()
+        for p in (REAL_RENET / "cmd" / "renet" / "gpu_keys").iterdir()
+        if p.is_file()
+    }
+    assert on_disk, "no GPU keys found: the directory moved?"
+    hashed = {p.relative_to(REAL_RENET).as_posix() for p in vbk.hashed_files(REAL_RENET)}
+    assert on_disk <= hashed, sorted(on_disk - hashed)
+
+
+def test_a_new_gpu_key_file_is_not_hashed_until_it_is_listed(renet: pathlib.Path) -> None:
+    """Control for the test above: an unlisted key file changes nothing, so listing it is what makes it an input."""
+    before = _key(renet)
+    (renet / "cmd" / "renet" / "gpu_keys" / "NEWKEY.pub").write_text("key\n", encoding="utf-8")
+    assert _key(renet) == before
+    assert "cmd/renet/gpu_keys/NEWKEY.pub" not in {
+        p.relative_to(renet).as_posix() for p in vbk.hashed_files(renet)
+    }
+
+
 def test_a_classified_file_that_disappears_is_a_finding(renet: pathlib.Path) -> None:
     (renet / "cmd" / "renet" / "literals.go").unlink()
     problems = vbk.findings(renet)
@@ -145,6 +168,9 @@ def test_a_classified_file_that_disappears_is_a_finding(renet: pathlib.Path) -> 
         "pkg/infra/opsconfig/config.go",
         "pkg/config/config_test.go",
         "pkg/config/VAULT_PARSING.md",
+        # cephpkg's pins, plans and embedded Ceph keys shape no image; only fingerprint.go is an input.
+        "pkg/infra/cephpkg/cephpkg.go",
+        "pkg/infra/cephpkg/keys/RPM-GPG-KEY-CentOS-SIG-Storage",
         "cmd/renet/main.go",
         "cmd/renet/repository_up.go",
         "cmd/renet/setup_command_test.go",
@@ -164,6 +190,13 @@ def test_touching_an_excluded_path_leaves_the_key_unchanged(renet: pathlib.Path,
         "cmd/renet/pkg_install_retry.go",
         "cmd/renet/image_build_command.go",
         "cmd/renet/system_commands.go",
+        # the GPU driver installs of setup: the flow, its runner, the fingerprint check and every embedded NVIDIA key
+        "cmd/renet/gpu_drivers.go",
+        "cmd/renet/ceph_host_runner.go",
+        "pkg/infra/cephpkg/fingerprint.go",
+        "cmd/renet/gpu_keys/CDF6BA43.pub",
+        "cmd/renet/gpu_keys/1940C73E.pub",
+        "cmd/renet/gpu_keys/3A8B5622.pub",
         "pkg/infra/pkgset/pkgset.go",
         "pkg/infra/opsconfig/images.go",
         "pkg/infra/image/one_shot_builder.go",
@@ -226,4 +259,6 @@ def test_cli_lists_the_inputs(renet: pathlib.Path, capsys: pytest.CaptureFixture
     listed = capsys.readouterr().out.split()
     assert "cmd/renet/setup_command.go" in listed
     assert "embed-assets.lock.json" in listed
+    assert "cmd/renet/gpu_drivers.go" in listed
+    assert "cmd/renet/gpu_keys/CDF6BA43.pub" in listed
     assert not any(p.startswith("pkg/embed/proxy/") or p.endswith("_test.go") for p in listed)
