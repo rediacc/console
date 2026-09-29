@@ -278,6 +278,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_pull_images.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_stop.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_wait_for_vm_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",

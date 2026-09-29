@@ -78,6 +78,7 @@
     "--rebalance refuses one it cannot satisfy.",
     "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py is SEEDED from one local run (37 tests, 9.10 s, 2026-09-29, box B3),",
     "not a CI p90: 8a0fdc995 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control.",
+    "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py is SEEDED the same way (17 tests, 0.28 s, 2026-09-29, boxes B4/B5).",
     "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} are SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts."
   ],
   "refreshed_at": "2026-09-28T15:14:48Z",
@@ -592,6 +593,7 @@
     "pytest:.ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": 2111.5,
     "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py": 1707.7,
     "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py": 9100.0,
+    "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py": 280.0,
     "pytest:.ci/rediacc_ci/tests/test_main.py": 730.8,
     "pytest:.ci/rediacc_ci/tests/test_private_run_account.py": 2630.4,
     "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": 7654.0,

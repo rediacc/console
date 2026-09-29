@@ -287,11 +287,20 @@ jobs:
           - os-image: fedora-43
             full-integration: '1'
             cli-suite: ''
+          # Fresh-install coverage (PLAN-ci-prebaked-vm-images 2c): shard 2 of
+          # every distro boots the STOCK image on every run and so still runs a
+          # full `renet setup`; it holds 02-machine-setup. This entry names only
+          # `shard`, so GitHub merges `stock-image` onto the five shard-2 legs.
+          - shard: 2
+            stock-image: '1'
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
       VM_BRIDGE: '1'
       VM_WORKERS: '11 12'
+      # Kill switch for the baked images: 'off' sends every leg to the stock
+      # image. A committed value, because GitHub variables are ruled out.
+      VM_BAKE: 'on'
       VM_CEPH_NODES: ''
       VM_IMAGE: ${{ matrix.os-image }}
       FULL_INTEGRATION: ${{ matrix.full-integration }}
@@ -391,16 +400,45 @@ jobs:
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
-      # VM base-image cache, one entry per matrix distro. The disks dir is
-      # cached whole; since renet e599aa3 it holds only the VM_IMAGE distro
+      # Pre-baked image (PLAN-ci-prebaked-vm-images 2b): pull the image for
+      # this tree's bake key from ghcr.io/rediacc/ci-vm-bake into its own
+      # disks dir. A hit exports REDIACC_OPS_DISKS_PATH, BAKED_IMAGE_KEY and
+      # RENET_SETUP_OFFLINE=1, which the harness and the renet it spawns
+      # inherit. Any miss (no package for the key, as on a PR that changes a
+      # key input, or a failed pull) leaves hit != 'true' and the stock steps
+      # below run exactly as before. Skipped on shard 2 (stock-image), on the
+      # nightly schedule (all 40 legs on stock) and with VM_BAKE=off.
+      # The fetch installs its pinned oras itself and exits 0 on every miss,
+      # its own pull timeout (8 min) included, so no failure here ends the leg.
+      # ghcr.io/rediacc/ci-vm-bake is private: without this login every pull
+      # answers "unauthorized", a miss, and the leg silently runs stock forever.
+      # oras reads the docker credential store the action writes.
+      - name: Login to GHCR for the baked image
+        if: matrix.stock-image != '1' && github.event_name != 'schedule' && env.VM_BAKE != 'off'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Fetch baked VM image
+        id: bake
+        if: matrix.stock-image != '1' && github.event_name != 'schedule' && env.VM_BAKE != 'off'
+        timeout-minutes: 12
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image fetch --distro "${{ matrix.os-image }}" --dest "$RUNNER_TEMP/renet/disks-baked"
+
+      # VM base-image cache, one entry per matrix distro, used only when no
+      # baked image was fetched. The disks dir is cached whole; since renet
+      # e599aa3 it holds only the VM_IMAGE distro
       # (EnsureBaseImage used to fetch the Ubuntu default on every leg).
       # Monthly key: several of these URLs are moving
       # pointers. Restored before any sudo step touches $RUNNER_TEMP/renet so
       # extraction happens as the runner user.
       - name: Compute VM image cache key
+        if: steps.bake.outputs.hit != 'true'
         id: vm-image-key
         run: echo "key=vm-base-image-e2e-${{ matrix.os-image }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
       - name: Restore VM base image cache
+        if: steps.bake.outputs.hit != 'true'
         id: vm-image-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -477,11 +515,14 @@ jobs:
       # the chown is normally a no-op — kept for parity with the other cached
       # jobs and as a guard should the harness ever run under sudo.
       - name: Fix VM image ownership for cache save
-        if: always()
+        if: always() && steps.bake.outputs.hit != 'true'
         run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
 
+      # The save guard: a baked leg never saves. Its restore step was skipped,
+      # so cache-hit is empty, and without the hit test it would save an empty
+      # $RUNNER_TEMP/renet/disks under the stock key.
       - name: Save VM base image cache
-        if: always() && steps.vm-image-cache.outputs.cache-hit != 'true'
+        if: always() && steps.bake.outputs.hit != 'true' && steps.vm-image-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ runner.temp }}/renet/disks
