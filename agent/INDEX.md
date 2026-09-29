@@ -461,7 +461,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 172 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 173 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -486,7 +486,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | held | 147 | 11 | 0 | 30845 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-gate-write-taint-scanners.md` | active | 338 | 0 | 19 | 51100 |
-| `agent/plans/PLAN-ci-prebaked-vm-images.md` | proposed | 151 | 3 | 5 | 19212 |
+| `agent/plans/PLAN-ci-prebaked-vm-images.md` | proposed | 156 | 3 | 5 | 19975 |
 | `agent/plans/PLAN-ci-time-budget.md` | draft | 376 | 5 | 27 | 45357 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | held | 214 | 6 | 0 | 19704 |
@@ -538,6 +538,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-remove-cross-session-messaging.md` | draft | 349 | 0 | 0 | 36585 |
+| `agent/plans/PLAN-renet-ceph-gpu-non-apt.md` | active | 221 | 8 | 0 | 25019 |
 | `agent/plans/PLAN-renet-fetch-hardening.md` | parked | 38 | 0 | 0 | 1191 |
 | `agent/plans/PLAN-repair-prose-style-findings.md` | held | 51 | 1 | 5 | 5718 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
@@ -638,4 +639,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-172 plan(s), 100 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+173 plan(s), 101 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
