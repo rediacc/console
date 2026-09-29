@@ -673,7 +673,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
 | .ci/policy/.audit-allowlist | 1 | prose only (no live entry) |
-| .ci/policy/.audit-prod-allowlist | 6 | # comment |
+| .ci/policy/.audit-prod-allowlist | 5 | # comment |
 | .ci/policy/.ci-parity-exempt | 10 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
 | .ci/policy/.dead-bash-allowlist | 13 | # comment |
@@ -699,7 +699,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .syncpackrc-reasons.json | 8 | JSON value |
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
 | knip.jsonc | 26 | // comment |
-| package.json | 28 | JSON value |
+| package.json | 29 | JSON value |
 | scripts/ci-runner/gates.lock.json | 26 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 52 | JSON value |
 | scripts/data/shape-duplication-seed.json | 10 | JSON value |

@@ -57,14 +57,3 @@
 1139376
 1139377
 1139378
-
-# sharp inherits four libvips CVEs (2026-33327, 2026-33328, 2026-35590, 2026-35591).
-# npm reports fixAvailable as astro@7.2.2 — sharp reaches us only through astro's
-# image optimization, so the fix is gated behind the SAME major migration as the
-# astro group above, not behind anything sharp ships.
-# BLOCKER: reaching libvips requires DECODING AN ATTACKER-SUPPLIED IMAGE. sharp runs
-# only at build time inside @rediacc/www's static export, over images committed to
-# this repo; no runtime path accepts an uploaded or remote image (www is
-# output: 'static', astro.config.mjs:144, so no server decodes anything at request
-# time). Drop together with the astro group when the site migrates to astro v7.
-1124066
