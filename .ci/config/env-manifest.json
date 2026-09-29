@@ -764,6 +764,7 @@
     "harness": [
       "ASTRO_PORT",
       "BACKUP_STORAGE_SUITE",
+      "BAKED_IMAGE_KEY",
       "BP_ACCESS_EMAILS",
       "BP_ACTOR",
       "BP_DESKTOP",
