@@ -235,9 +235,14 @@ def main():
 
         # THE RETRO ORDER (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.11). A crossing only records `retro_due`; the order waits for the first tool call after STATE.md was rewritten past that crossing, so the recovery document is written before any retro work starts. The ledger, not this state file, is the dedupe record: this file is reset on every epoch.
         texts = []
+        # A crossing that arrives while an earlier order is still unfired queues behind it instead of replacing it (usage can climb from under "early" to past "late" before STATE.md is rewritten once), so each band keeps its own order and they fire one per rewrite, oldest first.
+        queued = st.get("retro_queue") or []
         due = st.get("retro_due")
         if due and mtime is not None and mtime > float(due.get("at") or 0):
             st.pop("retro_due", None)
+            if queued:
+                st["retro_due"] = queued.pop(0)
+                st["retro_queue"] = queued
             me8 = B.session_slug(session_id)
             if not B.retro_ordered(B.retro_rows(project), me8, due.get("band")):
                 state_at = B.utc_stamp(mtime)
@@ -264,7 +269,11 @@ def main():
         if band > int(st.get("band", -1)):
             st["band"] = band
             st["band_name"] = B.BANDS[band][0]
-            st["retro_due"] = {"band": B.BANDS[band][0], "at": time.time(), "usage": usage}
+            order = {"band": B.BANDS[band][0], "at": time.time(), "usage": usage}
+            if st.get("retro_due"):
+                st["retro_queue"] = [*(st.get("retro_queue") or []), order]
+            else:
+                st["retro_due"] = order
             texts.append(build_text(B.BANDS[band][0], usage, res, st, state_md))
 
         B.save_state(session_id, st)

@@ -598,6 +598,31 @@ def test_retro(hooks_dir):
     finally:
         sb.cleanup()
 
+    # Review finding on PR #590 (band-notice.py:267): usage climbing past "early" and then past "late" before STATE.md is rewritten once used to overwrite the unfired early order with the late one. Both must survive, one per rewrite, oldest first.
+    jump = Sandbox(hooks_dir)
+    try:
+        jump.write_state_md()
+        jump.write_transcript(400_000)
+        jump.post_tool()
+        jump.write_transcript(670_000)
+        jump.post_tool()
+        jump.write_transcript(852_000)
+        jump.post_tool()
+        touch_state_md(jump, 5)
+        first = fired(jump.post_tool()) or ""
+        touch_state_md(jump, 10)
+        second = fired(jump.post_tool()) or ""
+        bands = [r.get("band") for r in retro_rows(jump) if r.get("ev") == "ordered"]
+        check(
+            "retro: a late crossing before any STATE.md write queues behind the unfired early order, and both fire",
+            "--retro-brief %s early" % SLUG in first
+            and "--retro-brief %s late" % SLUG in second
+            and bands == ["early", "late"],
+            "first=%r second=%r bands=%s" % (first[:160], second[:160], bands),
+        )
+    finally:
+        jump.cleanup()
+
     sub = Sandbox(hooks_dir)
     try:
         sub.write_state_md()
