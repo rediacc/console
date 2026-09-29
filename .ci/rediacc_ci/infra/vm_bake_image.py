@@ -84,7 +84,11 @@ def image_ref(key: str) -> str:
 
 def _emit(kind: str, pairs: dict[str, str]) -> None:
     """Append KEY=value lines to $GITHUB_OUTPUT (kind 'output') or $GITHUB_ENV ('env'), else print them."""
-    target = os.environ.get("GITHUB_OUTPUT" if kind == "output" else "GITHUB_ENV", "")
+    target = (
+        os.environ.get("GITHUB_OUTPUT", "")
+        if kind == "output"
+        else os.environ.get("GITHUB_ENV", "")
+    )
     lines = "".join("%s=%s\n" % (k, v) for k, v in pairs.items())
     if target:
         with open(target, "a", encoding="utf-8") as handle:

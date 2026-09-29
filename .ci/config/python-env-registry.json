@@ -473,6 +473,13 @@
       "SSH_KEY",
       "SSH_USER"
     ],
+    ".ci/rediacc_ci/infra/vm_bake_image.py": [
+      "GITHUB_ENV",
+      "GITHUB_OUTPUT",
+      "GITHUB_PATH",
+      "PATH",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/infra/wait_for_vm_ssh.py": [
       "SSH_USER",
       "USER",
