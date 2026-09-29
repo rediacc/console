@@ -2,7 +2,7 @@
 
 Status: active
 Depends-On: PLAN-ci-prebaked-vm-images.md, PLAN-ci-time-budget.md
-Owner: (lead)
+Owner: d778be9d
 Updated: 2026-09-29
 Priority: P2 (operator) -- ruling 2026-09-29: full port rather than keeping these flows apt-only
 Concurrency: exclusive -- operator ruling 2026-09-26

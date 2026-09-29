@@ -538,7 +538,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-remove-cross-session-messaging.md` | draft | 349 | 0 | 0 | 36585 |
-| `agent/plans/PLAN-renet-ceph-gpu-non-apt.md` | active | 221 | 8 | 0 | 25019 |
+| `agent/plans/PLAN-renet-ceph-gpu-non-apt.md` | active | 221 | 8 | 0 | 25021 |
 | `agent/plans/PLAN-renet-fetch-hardening.md` | parked | 38 | 0 | 0 | 1191 |
 | `agent/plans/PLAN-repair-prose-style-findings.md` | held | 51 | 1 | 5 | 5718 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |

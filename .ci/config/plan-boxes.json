@@ -1221,7 +1221,7 @@
     },
     "agent/plans/PLAN-renet-ceph-gpu-non-apt.md": {
       "status": "active",
-      "owner": "unowned",
+      "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
       "open": 8,
