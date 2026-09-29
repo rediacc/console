@@ -29,7 +29,8 @@
 #   TUTORIAL_RDC_CMD      rdc invocation (never the bare string "rdc")
 #   TUTORIAL_MACHINE_IP/_USER/_NAME, TUTORIAL_SSH_KEY
 #   TUTORIAL_BACKUP_HOST/_USER        second worker (ssh-keys, delta, migration)
-#   TUTORIAL_LOG_DIR      per-tutorial logs (default: mktemp -d)
+#   TUTORIAL_LOG_DIR      per-tutorial logs, <slug>.log and <slug>.setup.log
+#                          (default: mktemp -d)
 #   TUTORIAL_ONLY         space-separated slugs: run just these, sequence order
 #   TUTORIAL_SHARD        "i/N" (1-based): run only the i-th of N contiguous
 #                          slices of the full sequence, in order. Mutually
@@ -183,6 +184,8 @@ declare -a json_entries=()
 failed=0
 for slug in "${sequence[@]}"; do
     log="$LOG_DIR/$slug.log"
+    # The silenced pre-recording setup goes beside the cast log, so the uploaded artifact carries it. In /tmp, its default, a slow setup left no trace: run 36476055403's backup-restore spent about 164 s longer outside its push than run 36498407473's, and no file said where.
+    export TUTORIAL_SETUP_LOG="$LOG_DIR/$slug.setup.log"
     start=$(date +%s)
     bash "$SCRIPT_DIR/tutorial-$slug.sh" >"$log" 2>&1
     rc=$?
@@ -206,6 +209,8 @@ for slug in "${sequence[@]}"; do
         echo "──── $slug failed; last 40 lines of $log ────"
         # Strip ANSI/OSC control sequences so CI logs stay readable.
         tail -40 "$log" | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g'
+        echo "──── last 40 lines of $TUTORIAL_SETUP_LOG ────"
+        tail -40 "$TUTORIAL_SETUP_LOG" 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\][^\x07]*\x07//g'
         echo "──── end of $slug output ────"
     fi
 done

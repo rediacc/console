@@ -61,8 +61,14 @@ for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
         sleep 2
     done
 done
-rdc machine setup "$M"
-rdc machine setup "$M2"
+# Both workers start as bare cloud images, so each setup is a cold apt install of the essentials, Docker and CRIU, and as the first tutorial in its shard this one pays both. They share nothing, so they run side by side: one setup's time instead of two.
+# The time is the apt mirror's to choose. The bridge's identical install in the same jobs took 101 s on run 36476055403 against 34 s on run 36498407473, and this tutorial spent about 164 s longer outside its push there, near twice that 67 s gap.
+rdc machine setup "$M" &
+setup_m1=$!
+rdc machine setup "$M2" &
+setup_m2=$!
+wait "$setup_m1"
+wait "$setup_m2"
 # Reap any orphaned repo state from previous tutorial runs, on both machines:
 # the restored repo lives on $M2 and carries the SOURCE repo's GUID, so a
 # half-finished earlier run leaves an image there that no config row addresses.
