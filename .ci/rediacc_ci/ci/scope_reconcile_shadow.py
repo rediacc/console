@@ -45,11 +45,31 @@ calls this module. Every case in this port's test file therefore sets `GITHUB_ST
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import shutil
 import subprocess
 import sys
+
+
+def _merge_job_pages(jobs_json: pathlib.Path, jobs_err: pathlib.Path) -> bool:
+    """Rewrite `gh api --paginate --slurp` output (a list of page objects) as ONE `{"jobs": [...]}` document.
+
+    Without `--slurp`, `--paginate` writes one JSON document per page back to back, and the reconciler's single `JSON.parse` threw the first time a run crossed 100 jobs (run on f3652faee: `Unexpected non-whitespace character after JSON at position 320464`). A payload that is not a list of pages carrying `jobs` arrays is a failed read, so the caller retries and then reports the gap."""
+    try:
+        pages = json.loads(jobs_json.read_text(encoding="utf-8"))
+        if not isinstance(pages, list) or not all(
+            isinstance(p, dict) and isinstance(p.get("jobs"), list) for p in pages
+        ):
+            raise ValueError("expected a list of Jobs API pages, each with a jobs array")
+    except (OSError, ValueError) as exc:
+        with open(jobs_err, "a", encoding="utf-8") as err_fh:
+            err_fh.write(f"unusable Jobs API payload: {exc}\n")
+        return False
+    merged = [job for page in pages for job in page["jobs"]]
+    jobs_json.write_text(json.dumps({"jobs": merged}), encoding="utf-8")
+    return True
 
 
 def _console_root() -> pathlib.Path:
@@ -194,11 +214,12 @@ def main(argv: list[str]) -> int:
                         "api",
                         f"repos/{repository}/actions/runs/{run_id}/jobs?per_page=100",
                         "--paginate",
+                        "--slurp",
                     ],
                     stdout=out_fh,
                     stderr=err_fh,
                 )
-            if result.returncode == 0:
+            if result.returncode == 0 and _merge_job_pages(jobs_json, jobs_err):
                 return True
             if attempt == 1:
                 emit("_(the jobs API call failed; retrying once)_")

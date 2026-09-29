@@ -14,6 +14,7 @@ it went with it. The twin's own kernel-file-offset corruption on the unset-summa
 from __future__ import annotations
 
 import itertools
+import json
 import os
 import pathlib
 import shutil
@@ -228,6 +229,35 @@ def test_jobs_api_failure_is_a_gap(tmp_path: pathlib.Path) -> None:
     result, _ = run_port(root, tmp_path, "jobs-fail", FAKE_GH_JOBS_RC="2")
     assert result.returncode == 0
     assert "could not read the jobs API" in result.stdout
+
+
+def test_jobs_pages_merge_into_one_document(tmp_path: pathlib.Path) -> None:
+    """A run over 100 jobs spans two Jobs API pages; the reconciler must receive ONE document holding both."""
+    root = _fixture(tmp_path)
+    log = tmp_path / "gh.log"
+    pages = [{"total_count": 3, "jobs": [{"name": "a"}, {"name": "b"}]}, {"total_count": 3, "jobs": [{"name": "c"}]}]
+    result, _ = run_port(
+        root, tmp_path, "jobs-pages", FAKE_GH_JOBS_JSON=json.dumps(pages), FAKE_GH_LOG=str(log)
+    )
+    assert result.returncode == 0
+    assert "--slurp" in log.read_text(encoding="utf-8").split()
+    merged = json.loads((tmp_path / "out-jobs-pages" / "jobs.json").read_text(encoding="utf-8"))
+    assert [j["name"] for j in merged["jobs"]] == ["a", "b", "c"]
+
+
+def test_concatenated_pages_are_a_failed_read(tmp_path: pathlib.Path) -> None:
+    """The pre-fix shape (pages back to back, not a list) is unusable evidence: a gap, red under a reduced scope."""
+    root = _fixture(tmp_path)
+    result, _ = run_port(
+        root,
+        tmp_path,
+        "jobs-concat",
+        FAKE_GH_JOBS_JSON='{"jobs":[{"name":"a"}]}{"jobs":[{"name":"b"}]}',
+        SCOPE_MODE="reduced",
+    )
+    assert result.returncode == 1
+    assert "could not read the jobs API" in result.stdout
+    assert "unusable Jobs API payload" in result.stdout
 
 
 def test_reconciler_failure_is_reported(tmp_path: pathlib.Path) -> None:
