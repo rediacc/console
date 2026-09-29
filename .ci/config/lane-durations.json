@@ -79,7 +79,8 @@
     "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py is SEEDED from one local run (37 tests, 9.10 s, 2026-09-29, box B3),",
     "not a CI p90: 8a0fdc995 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control.",
     "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py is SEEDED the same way (17 tests, 0.28 s, 2026-09-29, boxes B4/B5).",
-    "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} are SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts."
+    "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} are SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts.",
+    "'units' github.com/rediacc/renet/pkg/infra/cephpkg is SEEDED the same way (0.026 s on one local run, 2026-09-29; renet b7e55e6)."
   ],
   "refreshed_at": "2026-09-29T10:14:33Z",
   "concurrency": 20,
@@ -853,7 +854,8 @@
     "github.com/rediacc/renet/pkg/loop": 115.9,
     "github.com/rediacc/renet/pkg/telemetry": 175.0,
     "github.com/rediacc/renet/pkg/infra/aptretry": 15245.0,
-    "github.com/rediacc/renet/pkg/infra/pkgset": 0.0
+    "github.com/rediacc/renet/pkg/infra/pkgset": 0.0,
+    "github.com/rediacc/renet/pkg/infra/cephpkg": 26.0
   },
   "defaultUnitMs": {
     "quality-branch": 56667,

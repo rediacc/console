@@ -68,6 +68,7 @@
         "github.com/rediacc/renet/pkg/i18n/locales",
         "github.com/rediacc/renet/pkg/infra/aptretry",
         "github.com/rediacc/renet/pkg/infra/ceph",
+        "github.com/rediacc/renet/pkg/infra/cephpkg",
         "github.com/rediacc/renet/pkg/infra/image",
         "github.com/rediacc/renet/pkg/infra/opsconfig",
         "github.com/rediacc/renet/pkg/infra/pkgset",
