@@ -220,7 +220,7 @@ explicitly because `npm rebuild` otherwise silently respects the global flag and
 
 ### npm 11 is the only npm
 
-npm 11, at the exact `NPM_VERSION` in `.devcontainer/toolchain.env`, is the only supported npm, locally and in CI. `.github/actions/setup-node-npm` installs it in every workflow and is the only permitted `actions/setup-node` site; the devcontainer and every Dockerfile stage that runs `npm ci` install it too. `check:ci-lockfile` resolves each lockfile under that npm and refuses one the pinned npm would rewrite, so after any lockfile change `npx -y npm@<NPM_VERSION> install --package-lock-only --ignore-scripts` in the lockfile's directory writes the form to commit.
+npm 11, at the exact `NPM_VERSION` in `.devcontainer/toolchain.env`, is the only supported npm, locally and in CI. `.github/actions/setup-node-npm` installs it in every workflow and is the only permitted `actions/setup-node` site; the devcontainer and every Dockerfile stage that runs `npm ci` install it too. `check:ci-lockfile` resolves each lockfile under that npm and refuses one the pinned npm would rewrite, so after any lockfile change `npx -y npm@<NPM_VERSION> install --package-lock-only --ignore-scripts` in the lockfile's directory writes the form to commit. That command exits 0 without applying a changed `overrides` entry; run `npm update <pkg> --package-lock-only --ignore-scripts` for the overridden packages first (measured 2026-09-28 on npm 11.20.0).
 
 ```bash
 # Install dependencies
