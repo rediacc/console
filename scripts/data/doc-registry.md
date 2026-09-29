@@ -751,7 +751,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/docker | 6 | .py 6 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/housekeeping | 7 | .py 7 |
-| .ci/rediacc_ci/infra | 13 | .py 13 |
+| .ci/rediacc_ci/infra | 14 | .py 14 |
 | .ci/rediacc_ci/ops | 4 | .py 4 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 9 | .py 9 |
@@ -761,7 +761,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
-| .ci/rediacc_ci/tests | 298 | .py 298 |
+| .ci/rediacc_ci/tests | 299 | .py 299 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 176 | .py 175, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
