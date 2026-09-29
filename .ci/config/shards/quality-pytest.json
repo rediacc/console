@@ -451,6 +451,7 @@
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_retry_failed_runs.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_bounded_run.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_env.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_start_account.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_start_elite.py",
