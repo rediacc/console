@@ -879,6 +879,7 @@ def collect_unit_durations(
     """
     per_lane: dict[str, dict[str, list[float]]] = {lane: {} for lane in lanes}
     hits: dict[str, int] = dict.fromkeys(lanes, 0)
+    wanted: list[tuple[int, str, str, Any]] = []
     for run_id in run_ids:
         try:
             artifacts = list_artifacts(repo, run_id)
@@ -889,21 +890,37 @@ def collect_unit_durations(
             prefix = "unit-durations-%s-" % lane
             for artifact in artifacts:
                 name = artifact.get("name")
-                if not isinstance(name, str) or not name.startswith(prefix):
-                    continue
-                try:
-                    parsed = parse_unit_duration_artifact(
-                        lane, download(repo, artifact.get("id")), bucket_titles=bucket_titles
-                    )
-                except (ghx.GhError, ValueError, TypeError, OSError) as exc:
-                    log.warn(
-                        "budget_report: could not read artifact %r on run %s: %s"
-                        % (name, run_id, exc)
-                    )
-                    continue
-                hits[lane] += 1
-                for unit_id, ms in parsed.items():
-                    per_lane[lane].setdefault(unit_id, []).append(ms)
+                if isinstance(name, str) and name.startswith(prefix):
+                    wanted.append((run_id, lane, name, artifact.get("id")))
+
+    def read(item: tuple[int, str, str, Any]) -> tuple[dict[str, float] | None, Exception | None]:
+        _run_id, lane, _name, artifact_id = item
+        try:
+            return (
+                parse_unit_duration_artifact(
+                    lane, download(repo, artifact_id), bucket_titles=bucket_titles
+                ),
+                None,
+            )
+        except (ghx.GhError, ValueError, TypeError, OSError) as exc:
+            return None, exc
+
+    log.info(
+        "budget_report: reading %d unit-duration artifact(s) from %d run(s), %d at a time"
+        % (len(wanted), len(run_ids), ARTIFACT_DOWNLOAD_WORKERS)
+    )
+    # `map` yields in submission order, so the merge below is the same walk the serial loop made: run, then lane, then artifact.
+    with ThreadPoolExecutor(max_workers=ARTIFACT_DOWNLOAD_WORKERS) as pool:
+        results = list(pool.map(read, wanted))
+    for (run_id, lane, name, _artifact_id), (parsed, failure) in zip(wanted, results, strict=True):
+        if parsed is None:
+            log.warn(
+                "budget_report: could not read artifact %r on run %s: %s" % (name, run_id, failure)
+            )
+            continue
+        hits[lane] += 1
+        for unit_id, ms in parsed.items():
+            per_lane[lane].setdefault(unit_id, []).append(ms)
     missing = [lane for lane in lanes if hits[lane] == 0]
     return per_lane, missing
 
@@ -1027,6 +1044,8 @@ VARIANT_LANE_JOBS: dict[str, str] = {
 # BOUNDED: 9-10 runs x (40 E2E Workers + 4 OPS Provision legs) is ~440 logs; the cap stops a mis-scoped sample from fetching thousands, and says so when it bites.
 VARIANT_LOG_MAX_JOBS = 600
 VARIANT_LOG_WORKERS = 8
+# The unit-duration artifacts of a 10-run sample are several hundred zips; fetched one after another with no output, a `--refresh` ran past 15 minutes (2026-09-29, interrupted inside download_artifact_zip). The pool matches VARIANT_LOG_WORKERS.
+ARTIFACT_DOWNLOAD_WORKERS = 8
 # CACHED: a completed job's log never changes, so each is fetched once per machine. Only the lines the derivation reads are kept (a few KB instead of ~200 KB), under the untracked `.ci/cache`.
 VARIANT_LOG_CACHE_REL_PATH = ".ci/cache/budget-report/job-logs"
 

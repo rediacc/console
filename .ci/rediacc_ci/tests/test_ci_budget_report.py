@@ -12,6 +12,8 @@ from __future__ import annotations
 import io
 import json
 import re
+import threading
+import time
 import zipfile
 
 import pytest
@@ -407,6 +409,92 @@ def test_collect_unit_durations_survives_a_download_failure_and_still_reports_mi
     )
     assert per_lane["test-e2e-workers"] == {}
     assert missing == ["test-e2e-workers"]
+
+
+def _duration_blob(ms: int) -> bytes:
+    return _zip_with(
+        "results.json",
+        json.dumps(
+            {
+                "suites": [
+                    {"specs": [{"file": "a.spec.ts", "tests": [{"results": [{"duration": ms}]}]}]}
+                ]
+            }
+        ),
+    )
+
+
+def test_collect_unit_durations_downloads_artifacts_concurrently():
+    """A 10-run sample is several hundred zips, and one-at-a-time with no output ran past 15 minutes. Four downloads that only return once all four are inside `download` at the same moment can finish only if the reads overlap; a serial loop leaves the first one alone at the barrier, which breaks it."""
+    barrier = threading.Barrier(4, timeout=10)
+    blob = _duration_blob(500)
+
+    def fake_list(_repo, _run_id):
+        return [
+            {"id": str(i), "name": "unit-durations-test-e2e-workers-x%d-sha" % i} for i in range(4)
+        ]
+
+    def gated_download(_repo, _artifact_id):
+        barrier.wait()
+        return blob
+
+    per_lane, missing = br.collect_unit_durations(
+        "rediacc/console",
+        [1],
+        ["test-e2e-workers"],
+        list_artifacts=fake_list,
+        download=gated_download,
+    )
+    assert per_lane["test-e2e-workers"] == {"e2e-workers:a.spec.ts": [500.0] * 4}
+    assert missing == []
+
+
+def test_collect_unit_durations_merges_in_run_then_artifact_order_whatever_finishes_first():
+    """Completion order is the scheduler's; the result must be the walk the serial loop made (run, then lane, then artifact). Later artifacts finish first here, so a merge in completion order would come out reversed."""
+    by_id = {"1": 100, "2": 200, "3": 300, "4": 400}
+
+    def fake_list(_repo, run_id):
+        ids = ("1", "2") if run_id == 1 else ("3", "4")
+        return [{"id": i, "name": "unit-durations-test-e2e-workers-x%s-sha" % i} for i in ids]
+
+    def reverse_finishing_download(_repo, artifact_id):
+        time.sleep((5 - int(artifact_id)) * 0.02)
+        return _duration_blob(by_id[artifact_id])
+
+    per_lane, _missing = br.collect_unit_durations(
+        "rediacc/console",
+        [1, 2],
+        ["test-e2e-workers"],
+        list_artifacts=fake_list,
+        download=reverse_finishing_download,
+    )
+    assert per_lane["test-e2e-workers"] == {"e2e-workers:a.spec.ts": [100.0, 200.0, 300.0, 400.0]}
+
+
+def test_collect_unit_durations_one_failed_download_does_not_lose_the_others():
+    blob = _duration_blob(700)
+
+    def fake_list(_repo, _run_id):
+        return [
+            {"id": "ok-1", "name": "unit-durations-test-e2e-workers-a-sha"},
+            {"id": "bad", "name": "unit-durations-test-e2e-workers-b-sha"},
+            {"id": "ok-2", "name": "unit-durations-test-e2e-workers-c-sha"},
+        ]
+
+    def flaky_download(_repo, artifact_id):
+        if artifact_id == "bad":
+            raise OSError("network hiccup")
+        return blob
+
+    per_lane, missing = br.collect_unit_durations(
+        "rediacc/console",
+        [1],
+        ["test-e2e-workers"],
+        list_artifacts=fake_list,
+        download=flaky_download,
+    )
+    assert per_lane["test-e2e-workers"] == {"e2e-workers:a.spec.ts": [700.0, 700.0]}
+    assert missing == []
 
 
 # --------------------------------------------------------------------------- T3.3: leg_over_budget_finding / drift_finding ---------------------------------------------------------------------------
