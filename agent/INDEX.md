@@ -486,7 +486,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | held | 147 | 11 | 0 | 30845 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-gate-write-taint-scanners.md` | active | 338 | 0 | 19 | 51100 |
-| `agent/plans/PLAN-ci-prebaked-vm-images.md` | proposed | 151 | 5 | 3 | 18570 |
+| `agent/plans/PLAN-ci-prebaked-vm-images.md` | proposed | 151 | 3 | 5 | 19212 |
 | `agent/plans/PLAN-ci-time-budget.md` | draft | 376 | 5 | 27 | 45357 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | held | 214 | 6 | 0 | 19704 |
