@@ -328,19 +328,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 7,
+      "done": 1,
       "open_sigs": [
         "0352e5e4",
         "25afa53a",
         "3343dd87",
         "53977b5c",
-        "6db74aaa",
         "d3461f95",
         "f33eebb6",
         "f708aafa"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "6db74aaa"
+      ]
     },
     "agent/plans/PLAN-ci-time-budget.md": {
       "status": "draft",

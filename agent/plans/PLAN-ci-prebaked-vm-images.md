@@ -40,8 +40,20 @@ The setup_command.go lines move when those land, and B1 re-checks them.
 | oracle-10 | 1217 MB | 9-12 |
 
 - The Actions cache holds 10,848,291,195 bytes in 22 entries against a 10 GB repository limit, and the storage-limit API returns HTTP 402, so eviction is already happening (the fedora and opensuse stock entries now live under refs/pull/590/merge, not main).
-- The setup phase costs 52 s (debian) to 224 s (oracle) on the bridge per leg, and similar on the workers (an estimate from run 36427771349, not re-measured).
+- B0, measured 2026-09-29 on run 36528227779 (fa737eb91, renet e474204), 5 green E2E Workers legs per distro, 3 VMs per leg, from renet's `[setup] <phase> end` markers.
   Bridge and workers set up concurrently (private/renet/pkg/infra/worker/service.go:166-169), so a leg saves the slowest VM's setup, not the sum.
+  Per VM, median/max seconds:
+
+| Distro | essentials | docker-repo | docker-install | criu | total | slowest VM per leg |
+|---|---|---|---|---|---|---|
+| debian-13 | 24/50 | 1/2 | 14/18 | 3/4 | 51/73 | 65/73 |
+| fedora-43 | 31/35 | 0/0 | 32/36 | 1/2 | 69/76 | 71/76 |
+| opensuse-16.0 | 17/18 | - | 35/38 | 2/3 | 59/62 | 60/62 |
+| oracle-10 | 24/34 | 0/0 | 34/43 | 2/2 | 62/83 | 66/83 |
+| ubuntu-24.04 | 37/47 | 5/33 | 17/28 | 16/53 | 75/148 | 78/148 |
+
+  Jobs: debian 109276479400/495/510/528/548; fedora 109276479410/444/451/465/519; opensuse 109276479460/468/476/505/521; oracle 109276479450/471/474/512/525; ubuntu 109276479414/492/506/520/523.
+  The pre-fix estimate (52 s debian to 224 s oracle, run 36427771349) no longer holds: the bounded apt, one-call installs and concurrent setup brought every distro to 60-78 s for the slowest VM. Every distro stays above the 30 s go/no-go bar.
 - 9 renet commits since 2026-07-28 touched setup_command.go, pkg_install_retry.go, opsconfig/images.go or pkg/infra/image.
 
 ## 2. Design
@@ -90,25 +102,27 @@ The setup_command.go lines move when those land, and B1 re-checks them.
   Whether the GHCR package may be public is the operator's call after B2's content audit; until then it stays private (the #fa91780e DEFAULT).
 - D3. Nightly on stock for all legs: recommended, and part of the design unless vetoed.
 
-## 4. Savings against cost (estimates, replaced by B7's measurements)
+## 4. Savings against cost (B0 measurements; B7 replaces them with baked-run numbers)
 
-| Distro | Setup saved per baked leg (s) | Baked legs per run | Runner-s saved per run |
+| Distro | Setup saved per baked leg (s), slowest VM median | Baked legs per run | Runner-s saved per run |
 |---|---|---|---|
-| debian-13 | 45 | 7 | 315 |
-| fedora-43 | 150 | 7 | 1050 |
-| opensuse-16.0 | 60+ | 7 | 420+ |
-| oracle-10 | 215 (upper bound; the in-flight dnf edits cut it) | 7 | 1505 |
-| ubuntu-24.04 | not measured | 7 | not counted |
+| debian-13 | 65 | 7 | 455 |
+| fedora-43 | 71 | 7 | 497 |
+| opensuse-16.0 | 60 | 7 | 420 |
+| oracle-10 | 66 | 7 | 462 |
+| ubuntu-24.04 | 78 | 7 | 546 |
 
-- The total is about 3290 runner-s (54.8 runner-min) per run; the added fetch and key cost is about 7 runner-min, for a net of about 48 runner-min per run.
-- The E2E stage shortens by the saving on its slowest leg, up to about 3.6 min (oracle) and 2.5 min (fedora).
-- A bake costs 40-70 runner-min; about 3 bakes a month cost 120-210 runner-min, covered by 3-5 PR runs.
+- The total is about 2380 runner-s (39.7 runner-min) per run, down from the 54.8 estimated before the setup fixes; after the added fetch and key cost (about 7 runner-min) the net is about 33 runner-min per run, above B7's 20 runner-min floor.
+- The E2E stage shortens by the saving on its slowest leg, about 1.1-1.3 min (up to 2.5 min on ubuntu's 148 s outlier).
+- Bake cost: the local timing B0 asked for could not run on the devbox (it has /dev/kvm but no libvirt, qemu-img, virt-install or xorrisofs, and installing a hypervisor stack is a host change), so B4's first dispatch measures it per leg instead.
+  The only local data is the uncached base-image download: 8 s (ubuntu, 252 MiB) to 38 s (opensuse, 322 MiB), 34 s for oracle's 996 MiB.
+  The 40-70 runner-min per bake estimate stands until B4 replaces it.
 
 ## 5. Boxes
 
-- [ ] B0 Measure first: after the in-flight setup edits land, collect the `[setup]` phase lines for bridge and workers from 5 green runs per distro including ubuntu, and time one local `renet ops image build` per distro (duration and output size). Verification: sections 1 and 4 regenerated with run ids; if every distro's per-leg saving is under 30 s, close this plan as not worth it.
+- [x] B0 Measure first: after the in-flight setup edits land, collect the `[setup]` phase lines for bridge and workers from 5 green runs per distro including ubuntu, and time one local `renet ops image build` per distro (duration and output size). Verification: sections 1 and 4 regenerated with run ids; if every distro's per-leg saving is under 30 s, close this plan as not worth it. Done 2026-09-29: sections 1 and 4 from run 36528227779 (every distro 60-78 s, above the 30 s bar); the local bake timing moves to B4 (no libvirt on the devbox).
 - [ ] B1 renet offline quick path and `pkg-calls` counter (2d), in setup_command.go and pkg_install_retry.go. Verification: Go tests with a package-manager seam (runnable CRIU gives 0 calls, missing CRIU gives 1, offline mode with the bake marker and missing CRIU errors), and a control that removing the health check fails the first test.
-- [ ] B2 renet builder bake marker, `--bake-key` flag and hygiene cleanup (2d), in one_shot_builder.go and image_build_command.go. Verification: a unit test on the rendered cleanup script, and one local bake per distro booted with `ops up`: no builder user, a distinct machine-id on each VM, no /opt/rediacc/proxy before setup, and the bake marker holding the key.
+- [ ] B2 renet builder bake marker, `--bake-key` flag and hygiene cleanup (2d), in one_shot_builder.go and image_build_command.go. Verification: a unit test on the rendered cleanup script, and one local bake per distro booted with `ops up`: no builder user, a distinct machine-id on each VM, no /opt/rediacc/proxy before setup, and the bake marker holding the key. B0's failed local runs found five more builder defects, fixed here too: the build dir `one-shot.<pid>` (one_shot_builder.go:107) is never removed and keeps the base image, which is re-downloaded on every build instead of coming from the ops disk cache; `ops image cleanup` matches `custom-image-builder-` (builder.go:126) while the builder names its VM `renet-image-builder-<pid>` (one_shot_builder.go:156), and `os.RemoveAll("/tmp/rediacc-build*")` (builder.go:95) treats `*` literally and ignores REDIACC_TEMP_DIR; missing qemu-img, virsh, virt-install or xorrisofs is found only after the download, and the `virsh net-start` error is discarded (one_shot_builder.go:117); the build command lacks SilenceUsage, so a runtime error prints the usage block and the error twice.
 - [ ] B3 console vm_bake_key.py and its completeness test (2a). Verification: pytest, where a fixture adding an internal import to setup_command.go fails and touching an excluded path leaves the key unchanged.
 - [ ] B4 console ci-vm-bake.yml (2a, D1). Verification: one workflow_dispatch publishes 5 artifacts named by key, a second exits at the key check within 1 min on every leg, and no leg exceeds 20 min.
 - [ ] B5 console E2E Workers consumption, fallback, save guard and the shard-2 stock include (2b, 2c). Verification: one PR run where 35 legs report a baked hit and every worker logs `[setup] pkg-calls 0`, 5 shard-2 legs log full setup, and no baked leg saves the stock cache; control: a PR changing setup_command.go runs all 40 legs on stock.
