@@ -323,70 +323,6 @@
         "ec86975c"
       ]
     },
-    "agent/plans/PLAN-ci-prebaked-vm-images.md": {
-      "status": "proposed",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 3,
-      "done": 5,
-      "open_sigs": [
-        "0352e5e4",
-        "25afa53a",
-        "d3461f95"
-      ],
-      "done_sigs": [
-        "3343dd87",
-        "53977b5c",
-        "6db74aaa",
-        "f33eebb6",
-        "f708aafa"
-      ]
-    },
-    "agent/plans/PLAN-ci-time-budget.md": {
-      "status": "draft",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 5,
-      "done": 27,
-      "open_sigs": [
-        "20920628",
-        "3f2a10d5",
-        "652eaace",
-        "8cada800",
-        "ceca68dc"
-      ],
-      "done_sigs": [
-        "03ced1ab",
-        "0c3fb9c2",
-        "0d4328d2",
-        "0ffa40af",
-        "1adbac43",
-        "228ebe52",
-        "2cab8701",
-        "40d018af",
-        "528d80bd",
-        "58f16ba1",
-        "5f91d28e",
-        "6181b233",
-        "63b346b7",
-        "65800f04",
-        "6b325073",
-        "6b5b7280",
-        "75f5093f",
-        "76200590",
-        "8dafb211",
-        "91c5eb91",
-        "badc1662",
-        "c194e3bd",
-        "dccc2911",
-        "e3d401b7",
-        "f70025df",
-        "fc245953",
-        "fd8a0f0c"
-      ]
-    },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
       "status": "compacted",
       "owner": "854ac1c6",
@@ -2271,6 +2207,27 @@
         "d644a19c"
       ]
     },
+    "agent/plans/_done/PLAN-ci-prebaked-vm-images.md": {
+      "status": "closed",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-29",
+      "open": 3,
+      "done": 5,
+      "open_sigs": [
+        "0352e5e4",
+        "25afa53a",
+        "d3461f95"
+      ],
+      "done_sigs": [
+        "3343dd87",
+        "53977b5c",
+        "6db74aaa",
+        "f33eebb6",
+        "f708aafa"
+      ],
+      "ruling": "#c3a46b36"
+    },
     "agent/plans/_done/PLAN-ci-stale-plan-citations-repair.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2289,6 +2246,51 @@
         "f0475c45",
         "f62b61c2"
       ]
+    },
+    "agent/plans/_done/PLAN-ci-time-budget.md": {
+      "status": "closed",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-29",
+      "open": 5,
+      "done": 27,
+      "open_sigs": [
+        "20920628",
+        "3f2a10d5",
+        "652eaace",
+        "8cada800",
+        "ceca68dc"
+      ],
+      "done_sigs": [
+        "03ced1ab",
+        "0c3fb9c2",
+        "0d4328d2",
+        "0ffa40af",
+        "1adbac43",
+        "228ebe52",
+        "2cab8701",
+        "40d018af",
+        "528d80bd",
+        "58f16ba1",
+        "5f91d28e",
+        "6181b233",
+        "63b346b7",
+        "65800f04",
+        "6b325073",
+        "6b5b7280",
+        "75f5093f",
+        "76200590",
+        "8dafb211",
+        "91c5eb91",
+        "badc1662",
+        "c194e3bd",
+        "dccc2911",
+        "e3d401b7",
+        "f70025df",
+        "fc245953",
+        "fd8a0f0c"
+      ],
+      "ruling": "#c3a46b36"
     },
     "agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md": {
       "status": "done",

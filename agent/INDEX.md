@@ -486,8 +486,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-toc-and-remote.md` | held | 147 | 11 | 0 | 30845 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-gate-write-taint-scanners.md` | active | 338 | 0 | 19 | 51100 |
-| `agent/plans/PLAN-ci-prebaked-vm-images.md` | proposed | 157 | 3 | 5 | 20501 |
-| `agent/plans/PLAN-ci-time-budget.md` | draft | 377 | 5 | 27 | 46960 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | held | 214 | 6 | 0 | 19704 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
@@ -592,7 +590,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-bws-rotation-on-failure.md` | done | 149 | 0 | 18 | 22652 |
 | `agent/plans/_done/PLAN-calibrate-judge-rules-live.md` | done | 117 | 0 | 7 | 18227 |
 | `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` | done | 269 | 0 | 15 | 29674 |
+| `agent/plans/_done/PLAN-ci-prebaked-vm-images.md` | closed | 159 | 3 | 5 | 20762 |
 | `agent/plans/_done/PLAN-ci-stale-plan-citations-repair.md` | done | 60 | 0 | 8 | 8026 |
+| `agent/plans/_done/PLAN-ci-time-budget.md` | closed | 378 | 5 | 27 | 47239 |
 | `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` | done | 187 | 0 | 15 | 21605 |
 | `agent/plans/_done/PLAN-cleanup-context-state-files.md` | done | 35 | 0 | 4 | 6016 |
 | `agent/plans/_done/PLAN-commit-author-identity.md` | done | 196 | 0 | 13 | 22007 |
