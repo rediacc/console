@@ -522,11 +522,15 @@ jobs:
 
       - name: "Test: rdc ops up --basic"
         shell: bash
-        # This step takes 3-7 min on macos-intel; twice it hung for 35-50 min until the watchdog cancelled the job, and a cancelled job keeps no log.
-        # A step limit fails it instead, so the log of where ops up stopped survives.
+        # This step takes 2-4 min on macos-intel. Twice it hung for 50+ min with a renet binary that had just passed four times, and neither this step limit nor the job's fired, so the runner stopped enforcing them; the watchdog cancelled the job, and a cancelled job keeps no log.
+        # bounded_run enforces a 12-minute limit from inside the job, kills the guests QEMU daemonized out of the process group through their pid files, and prints load, memory and the busiest processes every 30s, so the log shows the host's state before a freeze.
+        # The step limit stays above that inner limit as the outer guard.
         timeout-minutes: 15
         run: |
-          node packages/cli/dist/cli-bundle.cjs ops up \
+          PYTHONPATH=.ci python3 -m rediacc_ci.infra.bounded_run \
+            --limit 720 --heartbeat 30 \
+            --reap-pidfiles "$RUNNER_TEMP/renet/disks/vm-*/qemu.pid" \
+            -- node packages/cli/dist/cli-bundle.cjs ops up \
             --basic --skip-orchestration -o json
 
       - name: "Test: rdc ops status"

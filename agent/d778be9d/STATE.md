@@ -11,7 +11,7 @@ Spec W (agent/plans/PLAN-ci-time-budget.md): every non-exempt CI job p90 <= 12 m
 - Unpushed on top of 957a2d05b: 61922befc (app-token probe on macOS), fa17cd84a (plan D1/D2), 234be20ed (bws-secrets retry and classification). Receipt for 234be20ed running (task bpp5rapav).
 
 ## Push recipe
-1. Receipt in /home/developer/pushclone-0923 (fetch, checkout -f FETCH_HEAD, submodule update, npm run -s build, check:ci-doc-region-parity, ci:quick --receipt-out ...). Only check:ci-plan-implementation may fail (carried).
+1. Receipt in /home/developer/pushclone-0923 (fetch, checkout -f FETCH_HEAD, submodule update, `npx -y npm@<NPM_VERSION> ci` and `npm run install:natives` whenever a lockfile changed, npm run -s build, check:ci-doc-region-parity, ci:quick --receipt-out ...). Only check:ci-plan-implementation may fail (carried).
 2. Push renet FIRST as its own command: `git -C private/renet push origin <sha>:refs/heads/0923-1` (the guard block_unpushed_submodule_pin refuses otherwise; guards judge a whole command before any clause runs).
 3. Then `git push origin 0923-1` (no -q), poll the PR head, arm `.ci/scripts/ci/ci-trace.py --wait --until-final --timeout 3h` in the background.
 
