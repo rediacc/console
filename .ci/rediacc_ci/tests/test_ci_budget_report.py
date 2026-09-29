@@ -1774,33 +1774,32 @@ def test_e2e_variant_measurement_is_none_without_a_leg_suffix_or_a_parseable_log
     assert br.e2e_variant_measurement(leg, "no tests here", _MANIFEST_IDS, _BUCKETS) is None
 
 
-_RUSTFS_STEP = {
-    "name": "Tutorial prep: start RustFS S3 on bridge",
+_PREP_STEP = {
+    "name": "Tutorial prep: add second worker",
     "conclusion": "success",
     "started_at": "2026-09-28T13:34:58Z",
     "completed_at": "2026-09-28T13:35:58Z",
 }
 
 
-def test_ops_variant_measurement_subtracts_the_tutorials_and_the_rustfs_step():
-    # MEASURED shape: OPS Provision (linux-amd64, 3/4) on run 36427771349, 10:16 wall, TOTAL 372s, RustFS step 60s.
+def test_ops_variant_measurement_is_the_job_wall_minus_the_tutorials_and_no_leg_extra():
+    # MEASURED shape: OPS Provision (linux-amd64, 3/4) on run 36427771349, 10:16 wall, TOTAL 372s. Every prep step outside the sequence is fixed cost on every leg, so none is subtracted.
     job = _job(
         "OPS Tests / OPS Provision (linux-amd64, 3/4)",
         "2026-09-28T13:32:03Z",
         "2026-09-28T13:42:19Z",
-        steps=[_RUSTFS_STEP],
+        steps=[_PREP_STEP],
     )
     m = br.ops_variant_measurement(job, "2026-09-28T13:42:11.1852855Z TOTAL 372s\n")
     assert m is not None
     assert (m["variant"], m["leg"]) == ("linux-amd64", 3)
-    assert m["extra_minutes"] == pytest.approx(1.0)
-    assert m["fixed_minutes"] == pytest.approx(616 / 60 - 372 / 60 - 1.0)
-    skipped = dict(_RUSTFS_STEP, conclusion="skipped")
+    assert m["extra_minutes"] is None
+    assert m["fixed_minutes"] == pytest.approx(616 / 60 - 372 / 60)
     job1 = _job(
         "OPS Tests / OPS Provision (linux-amd64, 1/4)",
         "2026-09-28T13:32:07Z",
         "2026-09-28T13:37:56Z",
-        steps=[skipped],
+        steps=[_PREP_STEP],
     )
     m1 = br.ops_variant_measurement(job1, "2026-09-28T13:37:00.0Z TOTAL 100s\n")
     assert m1 is not None
@@ -1840,9 +1839,7 @@ def test_merge_variant_costs_never_drops_an_unmeasured_value_and_names_every_kee
             },
             "oracle-10": {"fixedMinutes": 8.0, "units": {"a": 9}},
         },
-        "ops-tutorials": {
-            "linux-amd64": {"fixedMinutes": 4.0, "legExtraMinutes": {"3": 1.5}, "units": {}}
-        },
+        "ops-tutorials": {"linux-amd64": {"fixedMinutes": 4.0, "units": {}}},
     }
     computed = {"test-e2e-workers": {"debian-13": {"fixedMinutes": 5.5, "units": {"a": 10}}}}
     merged, notes = br.merge_variant_costs(existing, computed)
@@ -1887,7 +1884,7 @@ def test_refresh_writes_measured_variant_costs(tmp_path):
     path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
     measured = {
         "ops-tutorials": {
-            "linux-amd64": {"fixedMinutes": 4.1, "legExtraMinutes": {"3": 1.0}, "units": {}}
+            "linux-amd64": {"fixedMinutes": 4.1, "units": {}}
         }
     }
     rc = br.refresh_lane_durations(
@@ -1943,7 +1940,7 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         "OPS Tests / OPS Provision (linux-amd64, 3/4)",
         "2026-09-28T13:32:03Z",
         "2026-09-28T13:42:19Z",
-        [_RUSTFS_STEP],
+        [_PREP_STEP],
         job_id=12,
     )
     failed = _job(
@@ -1981,7 +1978,6 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         "e2e-workers:13-postgres-fork-isolation.test.ts#part1": 210000,
     }
     assert costs["ops-tutorials"]["linux-amd64"] == {
-        "fixedMinutes": round(616 / 60 - 372 / 60 - 1.0, 2),
-        "legExtraMinutes": {"3": 1.0},
+        "fixedMinutes": round(616 / 60 - 372 / 60, 2),
         "units": {},
     }

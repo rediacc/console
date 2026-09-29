@@ -106,16 +106,10 @@ if [[ -n "${TUTORIAL_SHARD:-}" ]]; then
     # T2.9 (PLAN-ci-time-budget, spec W L10): contiguous chunks sized by MEASURED
     # duration, not by count. The per-tutorial p90s are lane-durations.json's
     # `tutorial:<slug>` units, and every shard also pays about 4.1 min outside the
-    # tutorials (runner setup, ops up, the second worker) plus 1.5 min for the
-    # RustFS step on shard 3; scripts/gates/check-lane-budget.ts prices the slices
-    # below from exactly those numbers (`--table` shows them beside measured p90s).
-    # backup-restore must stay in shard 3, the one shard the workflow's RustFS step
-    # runs on. With shard 4 fixed at live-migration..storage-management (a shard 4
-    # that also took branching would cost 13.2 min) and shard 3 at
-    # backup-restore..branching, (7 3 5 3) is the best split of the first ten:
-    # predicted 10.7 / 9.6 / 12.3 / 12.0 min, against 7.9 / 12.4 / 12.3 / 12.0 for
-    # the (6 4 5 3) it replaces, whose shard 2 measured a 12.2-min p90 over the runs
-    # that used it. Shard 3 cannot get cheaper in four contiguous slices.
+    # tutorials (runner setup, ops up, the second worker).
+    # scripts/gates/check-lane-budget.ts prices the slices from exactly those numbers (`--table` shows them beside measured p90s), and `--rebalance ops-tutorials` searches every contiguous split.
+    # (7 3 5 3) is its best: nothing beat it once the dead RustFS step, and the shard-3 pin it forced on backup-restore, were removed.
+    # Regenerate with `npx tsx scripts/gates/check-lane-budget.ts --rebalance ops-tutorials --write` rather than editing the sizes by hand.
     # The sizes apply only while the sequence has exactly the tutorial count they
     # sum to AND shard_of matches; anything else (a tutorial added, removed or
     # reordered by editing the docs, or a different TUTORIAL_SHARD width) falls

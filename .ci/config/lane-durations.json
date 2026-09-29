@@ -68,15 +68,16 @@
     "globalSetup VM reset (renet ops up --force: 1.5m median on debian, 3.1-4.1m on fedora, opensuse and oracle), the renet,",
     "RustFS and datastore setup after it, and the post steps; legExtraMinutes '1' is the span of 12a/12b/12d/13b, which",
     "ct-tests.yml adds to leg 1 of the two full-integration distros. ops-tutorials: fixedMinutes is the job wall minus the",
-    "tutorial durations minus the 'Tutorial prep: start RustFS S3 on bridge' step (every step outside the tutorials, from",
-    "runner setup through ops up and the post steps), legExtraMinutes '3' is that RustFS step, which runs on shard 3 only,",
-    "and the tutorials' own costs are the top-level units. Checked against job_p90_minutes: every E2E Workers leg within",
+    "tutorial durations (every step outside the tutorials, from runner setup through ops up and the post steps, the same on",
+    "every shard, so no legExtraMinutes), and the tutorials' own costs are the top-level units. Checked against job_p90_minutes: every E2E Workers leg within",
     "0.83m and every OPS Provision leg within 0.8m (npx tsx scripts/gates/check-lane-budget.ts --table).",
     "'rebalanceConstraints' (hand-authored 2026-09-28; --refresh preserves it verbatim): the placement rules",
     "`check-lane-budget.ts --rebalance <lane>` must honour, each with the reason it exists. 'together' puts its units on one",
     "leg, 'onLeg' pins a unit to a leg, 'notOnLeg' keeps a unit off one. quality-pytest needs no entry: its xdist groups come",
     "from the gate's own mutex model and are indivisible there. The gate reds a committed plan that breaks a rule, and",
-    "--rebalance refuses one it cannot satisfy."
+    "--rebalance refuses one it cannot satisfy.",
+    "'units' pytest:.ci/rediacc_ci/tests/test_infra_bounded_run.py is SEEDED from one local run (7 tests, 8.52 s, 2026-09-29),",
+    "not a CI p90: ec1c922d2 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control."
   ],
   "refreshed_at": "2026-09-28T15:14:48Z",
   "concurrency": 20,
@@ -589,6 +590,7 @@
     "pytest:.ci/rediacc_ci/tests/test_infra_ci_stop_elite.py": 1688.0,
     "pytest:.ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": 2111.5,
     "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py": 1707.7,
+    "pytest:.ci/rediacc_ci/tests/test_infra_bounded_run.py": 8520.0,
     "pytest:.ci/rediacc_ci/tests/test_main.py": 730.8,
     "pytest:.ci/rediacc_ci/tests/test_private_run_account.py": 2630.4,
     "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": 7654.0,
@@ -1006,9 +1008,6 @@
     "ops-tutorials": {
       "linux-amd64": {
         "fixedMinutes": 4.08,
-        "legExtraMinutes": {
-          "3": 1.5
-        },
         "units": {}
       }
     }
@@ -1029,15 +1028,6 @@
           "unit": "e2e-workers:06-daemon-operations.test.ts",
           "leg": 1,
           "why": "leg 1 carries 12a/12b/12d/13b on the full-integration distros, and 12a failed right after 06 on both (ct-tests.yml, Run E2E Tests)"
-        }
-      ]
-    },
-    "ops-tutorials": {
-      "onLeg": [
-        {
-          "unit": "tutorial:backup-restore",
-          "leg": 3,
-          "why": "shard 3 is the only one the workflow's RustFS step runs on"
         }
       ]
     }

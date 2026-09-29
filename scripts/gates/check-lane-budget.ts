@@ -2234,7 +2234,7 @@ async function liveRebalanceControls(
 }
 
 async function selftest(): Promise<number> {
-  // The live OPS Provision slicing, read the way main() reads it, for the RustFS-shard control below.
+  // The live OPS Provision slicing, read the way main() reads it, for the measured-branch control below.
   const opsIds = (await LANE_ENUMERATORS['ops-tutorials']?.(ROOT))?.map((u) => u.id) ?? [];
   const opsSizes = parseShardSizes(
     readFileSync(path.join(ROOT, CONTIGUOUS_LANES['ops-tutorials']?.sizesFile ?? ''), 'utf-8')
@@ -2897,7 +2897,7 @@ async function selftest(): Promise<number> {
       })(),
     },
     {
-      name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 06 off leg 1) and the RustFS pin',
+      name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 06 off leg 1)',
       ok: (() => {
         const c = liveDurations.rebalanceConstraints ?? {};
         return (
@@ -2908,23 +2908,19 @@ async function selftest(): Promise<number> {
           ) &&
           (c['test-e2e-workers']?.notOnLeg ?? []).some(
             (p) => p.unit.includes('06-daemon') && p.leg === 1
-          ) &&
-          (c['ops-tutorials']?.onLeg ?? []).some(
-            (p) => p.unit === 'tutorial:backup-restore' && p.leg === 3
           )
         );
       })(),
     },
     ...(await liveRebalanceControls(liveDurations)),
     {
-      name: "CONTROL: the live OPS Provision split keeps backup-restore in shard 3, the only shard the workflow's RustFS step runs on",
+      // run-sequence.sh falls back to the equal-count split when MEASURED_SHARD_SIZES stops summing to the tutorial count, and the gate prices that fallback without a finding, so this is where a stale split shows.
+      name: 'CONTROL: the live OPS Provision sizes cover every tutorial, so run-sequence.sh takes its measured branch and not the ceil(total / N) fallback',
       ok:
         opsSizes !== null &&
-        (
-          contiguousLegs(opsIds, opsSizes, opsSizes.length).find((l) =>
-            l.ids.includes('tutorial:backup-restore')
-          ) ?? { index: 0 }
-        ).index === 3,
+        opsIds.length > 0 &&
+        opsSizes.reduce((a, b) => a + b, 0) === opsIds.length,
+      detail: `sizes ${JSON.stringify(opsSizes)} over ${opsIds.length} tutorials`,
     },
   ];
 

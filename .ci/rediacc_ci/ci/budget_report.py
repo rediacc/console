@@ -1015,7 +1015,7 @@ def prune_gate_steps_to_lock(gate_steps: dict[str, Any], root: Path) -> dict[str
 # `variantCosts`: per-matrix-variant leg pricing, MEASURED from job logs rather than hand-derived (6a94a96a9 derived it by hand from 386 logs of 9 runs, and a `--refresh` that did not write it dropped it, which reds check-lane-budget.ts).
 # Shape, read by check-lane-budget.ts's `VariantCost`: `{lane: {variant: {fixedMinutes, legExtraMinutes?: {leg index: minutes}, units: {unit id: ms}}}}`, the variant being the first matrix value in the job's display name ("fedora-43" in "E2E Workers (fedora-43, 1/8)", the same `(<variant>, i/N)` suffix `variantOf` reads). A leg costs fixedMinutes + its legExtraMinutes entry + the sum of its units, each read from the variant's `units` first and the top-level `units` second.
 # test-e2e-workers: a unit's cost is its WALL span in the log (its first test's start to the next unit's first test, the last unit to the reporter's `E2E_SKIPPED=` line), not the artifact's summed test durations, which leave out beforeAll/afterAll work. A span whose file the committed shard manifest does not name is a `--also` suite (ct-tests.yml's 12a/12b/12d/13b on leg 1 of the full-integration distros) and goes to that leg's legExtraMinutes. fixedMinutes = job wall - every span: the steps before the runner step, the globalSetup VM reset, the setup after it, and the post steps.
-# ops-tutorials (job ops-vm-provision): fixedMinutes = job wall - the run-sequence.sh `TOTAL <n>s` line - the RustFS prep step, and legExtraMinutes is that step on the leg(s) it ran on; the tutorials' own costs stay the top-level `tutorial:*` units, so the variant's `units` is empty.
+# ops-tutorials (job ops-vm-provision): fixedMinutes = job wall - the run-sequence.sh `TOTAL <n>s` line, the same on every leg, so the variant carries no legExtraMinutes; the tutorials' own costs stay the top-level `tutorial:*` units, so the variant's `units` is empty.
 # Every figure is a p90 by linear interpolation over success-only jobs of the same PR-full sample every other section uses.
 VARIANT_E2E_LANE = "test-e2e-workers"
 VARIANT_OPS_LANE = "ops-tutorials"
@@ -1024,8 +1024,6 @@ VARIANT_LANE_JOBS: dict[str, str] = {
     VARIANT_E2E_LANE: "test-e2e-workers",
     VARIANT_OPS_LANE: "ops-vm-provision",
 }
-# ci-ops-test.yml's step that only one shard runs (the one hosting backup-restore); its duration is that leg's extra, not everyone's fixed cost.
-OPS_LEG_EXTRA_STEP_RE = re.compile(r"(?i)^tutorial prep: start rustfs s3\b")
 # BOUNDED: 9-10 runs x (40 E2E Workers + 4 OPS Provision legs) is ~440 logs; the cap stops a mis-scoped sample from fetching thousands, and says so when it bites.
 VARIANT_LOG_MAX_JOBS = 600
 VARIANT_LOG_WORKERS = 8
@@ -1107,18 +1105,6 @@ def parse_ops_tutorial_total_seconds(text: str) -> float | None:
     return total
 
 
-def _step_seconds(job: dict[str, Any], step_re: re.Pattern[str]) -> float | None:
-    """Seconds of the job's first SUCCESSFUL step matching `step_re`; None when it did not run (skipped) or is absent."""
-    for step in job.get("steps") or []:
-        if not step_re.match(step.get("name") or "") or step.get("conclusion") != "success":
-            continue
-        start = _iso_to_epoch(step.get("started_at"))
-        end = _iso_to_epoch(step.get("completed_at"))
-        if start is not None and end is not None:
-            return max(0.0, end - start)
-    return None
-
-
 def e2e_variant_measurement(
     job: dict[str, Any],
     log_text: str,
@@ -1155,12 +1141,11 @@ def ops_variant_measurement(job: dict[str, Any], log_text: str) -> dict[str, Any
     total = parse_ops_tutorial_total_seconds(log_text)
     if leg is None or wall is None or total is None:
         return None
-    extra = _step_seconds(job, OPS_LEG_EXTRA_STEP_RE)
     return {
         "variant": leg[0],
         "leg": leg[1],
-        "fixed_minutes": wall - total / 60.0 - (extra or 0.0) / 60.0,
-        "extra_minutes": extra / 60.0 if extra else None,
+        "fixed_minutes": wall - total / 60.0,
+        "extra_minutes": None,
         "units": {},
     }
 

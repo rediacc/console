@@ -874,7 +874,6 @@
       "TUTORIAL_LOG_DIR",
       "TUTORIAL_MACHINE_IP",
       "TUTORIAL_RDC_CMD",
-      "TUTORIAL_S3_ENDPOINT",
       "VITE_PORT",
       "VM_BRIDGE",
       "VM_CEPH_NODES",
