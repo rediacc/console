@@ -414,7 +414,7 @@ def main(argv=None):
             )
             return EXIT_HEAD_MOVED
 
-        if payload["verdict"] == "red" and not (args.wait and args.until_final and payload["live"]):
+        if payload["verdict"] == "red" and _red_is_final(payload, args.wait, args.until_final):
             _emit(payload, args.json)
             return EXIT_RED
         if payload["verdict"] == "green":
@@ -428,6 +428,16 @@ def main(argv=None):
             print("no-verdict: still running after %ds" % args.timeout, file=sys.stderr)
             return EXIT_NO_VERDICT
         time.sleep(POLL_SECONDS)
+
+
+def _red_is_final(payload, wait, until_final):
+    """Whether a red verdict ends the watch now.
+
+    --until-final promises to wait "until nothing is in flight", so it keys on `waiting` (every context not yet completed) as well as `live`
+    (the blocking ones ci_classify keeps). Keyed on `live` alone it returned on run 36520331675 while Quality / Branch's retry and the
+    non-blocking macOS OPS leg were still running (waiting=2), which ended a watch armed to collect those jobs' durations.
+    """
+    return not (wait and until_final and (payload["live"] or payload["waiting"]))
 
 
 def _selftest():
@@ -487,6 +497,19 @@ def _selftest():
         "even though its only completed job is the filtered-out one",
         rc == EXIT_NO_VERDICT,
         "rc=%r out=%r" % (rc, out),
+    )
+
+    check(
+        "--until-final keeps waiting on a red run while a non-blocking context is still running (live empty, waiting 1)",
+        not _red_is_final({"live": [], "waiting": 1}, True, True),
+    )
+    check(
+        "CONTROL: --until-final returns on a red run once nothing is in flight",
+        _red_is_final({"live": [], "waiting": 0}, True, True),
+    )
+    check(
+        "CONTROL: --wait alone returns on the first red even with contexts still running",
+        _red_is_final({"live": ["x"], "waiting": 3}, True, False),
     )
 
     # THE UNIT SUFFIX, paired with its control. Refusing the bare form is worth nothing unless the suffixed form still works, so both are asserted.
