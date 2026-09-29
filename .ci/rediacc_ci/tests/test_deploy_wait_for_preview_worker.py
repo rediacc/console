@@ -15,6 +15,10 @@ from __future__ import annotations
 import http.server
 import pathlib
 import threading
+import urllib.error
+import urllib.request
+
+import pytest
 
 from rediacc_ci.tests import differential as diff
 
@@ -33,6 +37,15 @@ class _Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         mode = self.server.mode  # type: ignore[attr-defined]
+        # "cf1010" answers the way the rediacc.workers.dev Cloudflare zone does: urllib's default "Python-urllib/3.x" gets a
+        # 403 "error code: 1010" (a banned browser signature), anything else is served as "steady".
+        if mode == "cf1010":
+            if self.headers.get("User-Agent", "").startswith("Python-urllib"):
+                self.send_response(403)
+                self.end_headers()
+                self.wfile.write(b"error code: 1010\n")
+                return
+            mode = "steady"
         if self.path.endswith("/health"):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -212,3 +225,23 @@ def test_ci_defaults_are_still_strict() -> None:
     assert 'MAX_ATTEMPTS", "60"' in py_src
     assert 'PROBE_INTERVAL_SECONDS="${PROBE_INTERVAL_SECONDS:-2}"' in bash_src
     assert 'PROBE_INTERVAL_SECONDS", "2"' in py_src
+
+
+def test_python_port_is_not_refused_by_a_zone_that_bans_urllibs_default_user_agent():
+    """Smoke Test Preview timed out against a serving worker (run for 37e6ba453, job 109606175587) because Cloudflare answered
+    the port's default "Python-urllib" User-Agent with 403 "error code: 1010"; the bash twin used curl and passed."""
+    rc, out, err = probe_new("cf1010")
+    assert rc == 0, (out, err)
+    assert "ready" in (out + err)
+
+
+def test_control_the_cf1010_stub_really_refuses_urllibs_default_user_agent():
+    server, thread = _start_stub("cf1010")
+    try:
+        url = f"http://127.0.0.1:{server.server_address[1]}/account/api/v1/health"
+        with pytest.raises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(url, timeout=5)
+        caught.value.close()
+        assert caught.value.code == 403
+    finally:
+        _stop_stub(server, thread)
