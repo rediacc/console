@@ -1224,19 +1224,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 2,
+      "open": 4,
+      "done": 4,
       "open_sigs": [
-        "35d03d22",
         "86f54cb3",
         "bf0e3d72",
         "c93ea196",
-        "d0988b5f",
         "db93a038"
       ],
       "done_sigs": [
+        "35d03d22",
         "6f0ca538",
-        "75f73789"
+        "75f73789",
+        "d0988b5f"
       ]
     },
     "agent/plans/PLAN-renet-fetch-hardening.md": {
