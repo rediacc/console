@@ -77,7 +77,9 @@
     "from the gate's own mutex model and are indivisible there. The gate reds a committed plan that breaks a rule, and",
     "--rebalance refuses one it cannot satisfy.",
     "'units' pytest:.ci/rediacc_ci/tests/test_infra_bounded_run.py is SEEDED from one local run (7 tests, 8.52 s, 2026-09-29),",
-    "not a CI p90: ec1c922d2 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control."
+    "not a CI p90: ec1c922d2 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control.",
+    "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py is SEEDED the same way (37 tests, 9.10 s, 2026-09-29, box B3).",
+    "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} are SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts."
   ],
   "refreshed_at": "2026-09-28T15:14:48Z",
   "concurrency": 20,
@@ -591,6 +593,7 @@
     "pytest:.ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": 2111.5,
     "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py": 1707.7,
     "pytest:.ci/rediacc_ci/tests/test_infra_bounded_run.py": 8520.0,
+    "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py": 9100.0,
     "pytest:.ci/rediacc_ci/tests/test_main.py": 730.8,
     "pytest:.ci/rediacc_ci/tests/test_private_run_account.py": 2630.4,
     "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": 7654.0,
@@ -848,7 +851,9 @@
     "github.com/rediacc/renet/pkg/infra/vm/cloudinit": 112.2,
     "github.com/rediacc/renet/pkg/infra/vm/qemu": 95.4,
     "github.com/rediacc/renet/pkg/loop": 112.0,
-    "github.com/rediacc/renet/pkg/telemetry": 182.0
+    "github.com/rediacc/renet/pkg/telemetry": 182.0,
+    "github.com/rediacc/renet/pkg/infra/aptretry": 19149.0,
+    "github.com/rediacc/renet/pkg/infra/pkgset": 4.0
   },
   "defaultUnitMs": {
     "quality-branch": 56667,
