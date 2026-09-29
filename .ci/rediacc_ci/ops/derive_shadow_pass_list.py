@@ -164,13 +164,14 @@ def github_names_by_shadow() -> dict[str, set[str]]:
 
 
 def secret_names(endpoint: str) -> set[str]:
+    # --slurp, not -q: the secrets endpoint answers an OBJECT, so `--paginate -q` prints one array per page and json.loads fails "Extra data" past the first page.
     proc = subprocess.run(
-        ["gh", "api", endpoint, "--paginate", "-q", "[.secrets[].name]"],
+        ["gh", "api", endpoint, "--paginate", "--slurp"],
         capture_output=True,
         text=True,
         check=True,
     )
-    return set(json.loads(proc.stdout))
+    return {secret["name"] for page in json.loads(proc.stdout) for secret in page["secrets"]}
 
 
 def emit_delete_commands(passed: set[str]) -> None:

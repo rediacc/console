@@ -146,8 +146,15 @@ LOG_ALL_MATCH = (
 LOG_WITH_MISMATCH = "2026-01-01T00:00:00Z compare\tshadow ALPHA MISMATCH\nshadow BETA match\n"
 LOG_WITH_EMPTY = "shadow ALPHA EMPTY\nshadow DELTA match\n"
 
-ORG_JSON = '["ALPHA", "BETA_RENAMED", "GAMMA", "GAMMA_OTHER"]\n'
-REPO_JSON = '["GAMMA"]\n'
+def secret_pages(*names: str) -> str:
+    """`gh api <secrets> --paginate --slurp` as the port reads it: a list of secrets-API pages. Split across two pages whenever there are two names, so every case drives the page merge the twin never had."""
+    half = (len(names) + 1) // 2
+    chunks = [names[:half], names[half:]] if len(names) > 1 else [names]
+    return json.dumps([{"secrets": [{"name": n} for n in chunk]} for chunk in chunks]) + "\n"
+
+
+ORG_JSON = secret_pages("ALPHA", "BETA_RENAMED", "GAMMA", "GAMMA_OTHER")
+REPO_JSON = secret_pages("GAMMA")
 
 
 def fixture(
@@ -318,7 +325,7 @@ def build(tmp_path: pathlib.Path, name: str, *, port_source: str | None = None):
         workflows["shadow-b.yml"] = WORKFLOW_SECOND_BINDING
         gh_files["log-101"] = "shadow GAMMA match\nshadow ALPHA match\n"
     elif name == "a-name-that-is-not-an-org-secret":
-        gh_files["org.json"] = '["ALPHA"]\n'
+        gh_files["org.json"] = secret_pages("ALPHA")
     elif name == "runs-and-branch-are-passed-through":
         args = ["--branch", "release-x", "--runs", "2"]
         gh_files["runs-shadow-a.yml"] = "101\n102\n"
@@ -331,8 +338,17 @@ def build(tmp_path: pathlib.Path, name: str, *, port_source: str | None = None):
     return root, args, kw
 
 
+# The ONE deliberate divergence from the twin: it read the secrets endpoint with `--paginate -q '[.secrets[].name]'`, which prints one array per page and breaks json.loads past the first page. The port slurps the pages instead, so its argv is mapped back to the recorded spelling in the call log and in a traceback's command line; every other byte is still compared verbatim.
+SLURP_ARGV = (
+    ("\t--paginate\t--slurp", "\t--paginate\t-q\t[.secrets[].name]"),
+    ("'--paginate', '--slurp']", "'--paginate', '-q', '[.secrets[].name]']"),
+)
+
+
 def mask(text: str, root: pathlib.Path) -> str:
-    """`$0`, bash's location prefix, a traceback's frames, and the fixture root. Nothing else."""
+    """`$0`, bash's location prefix, a traceback's frames, the fixture root, and the declared `SLURP_ARGV` divergence. Nothing else."""
+    for new, recorded in SLURP_ARGV:
+        text = text.replace(new, recorded)
     text = LOCATION_RE.sub("", SELF_RE.sub("<SELF>", text))
     return frozen.mask_root(TRACEBACK_RE.sub(r"\1<frames>\n", text), root)
 
@@ -545,5 +561,8 @@ def test_a_planted_repo_level_relaxation_is_caught(tmp_path: pathlib.Path) -> No
 
 def test_the_fixture_org_list_really_is_json() -> None:
     """A guard on the fixture rather than on the subject: a malformed `org.json` would make every case take the unreachable-api path and agree trivially."""
-    assert json.loads(ORG_JSON) == ["ALPHA", "BETA_RENAMED", "GAMMA", "GAMMA_OTHER"]
-    assert json.loads(REPO_JSON) == ["GAMMA"]
+    assert json.loads(ORG_JSON) == [
+        {"secrets": [{"name": "ALPHA"}, {"name": "BETA_RENAMED"}]},
+        {"secrets": [{"name": "GAMMA"}, {"name": "GAMMA_OTHER"}]},
+    ], "the org answer must span two pages, or the page merge goes undriven"
+    assert json.loads(REPO_JSON) == [{"secrets": [{"name": "GAMMA"}]}]
