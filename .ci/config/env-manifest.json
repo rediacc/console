@@ -343,6 +343,7 @@
       "PR_BASE_REF",
       "PR_HEAD_REF",
       "PR_HEAD_SHA",
+      "PR_LABELS",
       "PR_NUMBER",
       "PUBLISH_DOCKER_REGISTRY",
       "RDC_RENET_LICENSE",

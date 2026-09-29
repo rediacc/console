@@ -277,6 +277,7 @@
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_pull_images.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_stop.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py",

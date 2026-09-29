@@ -106,7 +106,8 @@ jobs:
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
   # Jobs: migration-test, test-unit, test-e2e-workers, test-e2e-ceph,
-  #       test-e2e-ceph-workers, test-e2e-k8s, test-e2e-k8s-ceph,
+  #       test-e2e-ceph-workers, renet-pkg-scope, renet-pkg-matrix,
+  #       test-e2e-ceph-workers-rpm, test-e2e-k8s, test-e2e-k8s-ceph,
   #       test-e2e-k8s-multinode, test-e2e-migrate, test-fork-isolation,
   #       test-renet-go, test-renet-integration, test-account-e2e, test-drills
   # ============================================================================
@@ -866,6 +867,285 @@ jobs:
         with:
           path: ${{ runner.temp }}/renet/disks
           key: ${{ steps.vm-image-key.outputs.key }}
+
+  # ============================================================================
+  # NON-APT CEPH AND GPU (PLAN-renet-ceph-gpu-non-apt.md, box P6, decision D6)
+  # renet installs the pinned Ceph client with dnf and zypper too. Three jobs
+  # prove it, and they run on the nightly schedule (and its rehearsal dispatch)
+  # and on a pull request only when it touches a watched path: the Ceph/GPU
+  # renet files, the pin, or the matrix script (renet_pkg_matrix.py's
+  # CONSOLE_PATHS and RENET_PATHS), or when the PR carries the `full-ci` label.
+  # They do not read the scope engine's run_* inputs: their own path filter is
+  # narrower than any of its surfaces, and keeping the ubuntu E2E Ceph Workers
+  # key's greenlight evidence to that one job is what lets it still greenlight.
+  # ============================================================================
+
+  # One cheap decision for both jobs below. On a pull request it diffs the
+  # merge commit against its first parent and, when the private/renet pointer
+  # moved, the submodule between the two pointers; every other event is a hit.
+  renet-pkg-scope:
+    name: Renet pkg scope
+    permissions:
+      contents: read
+    if: inputs.full_suite == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      hit: ${{ steps.scope.outputs.hit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+      - name: Fetch secrets from Bitwarden
+        if: github.event_name == 'pull_request'
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        if: github.event_name == 'pull_request'
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      # Depth 2: the merge commit and its base parent. The token stays in the
+      # submodule's config so the scope step can fetch the base's renet pointer.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 2
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Decide the Renet pkg scope
+        id: scope
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix scope --event "$EVENT_NAME" --labels "$PR_LABELS"
+
+  # One container per distro: the renet built here is mounted into it and
+  # renet_pkg_matrix.py runs `renet ceph install` for three profiles, the
+  # installed-version, podman and lock checks, the drift check (the pinned
+  # build still resolves from its repository: OBS keeps only its latest build,
+  # plan D2) and the GPU resolve-only installs. Rocky 10 and CentOS Stream 10
+  # have no btrfs, so this is the only CI proof they get.
+  renet-pkg-matrix:
+    name: Renet pkg matrix (${{ matrix.distro }})
+    # Docker Hub only (Bitwarden credentials), never ghcr, so no packages
+    # scope. Submodules ride the readonly-preset App token.
+    permissions:
+      contents: read
+    needs: [renet-pkg-scope]
+    if: needs.renet-pkg-scope.outputs.hit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - fedora-43
+          - oracle-10
+          - rocky-10
+          - centos-stream-10
+          - opensuse-16.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      # Three of the five images come from Docker Hub.
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      # A plain static `go build`, not build_renet: these flows need no
+      # embedded assets, and a static binary runs in every container's libc.
+      # Never uploaded (console is public).
+      - name: Build renet
+        working-directory: private/renet
+        run: CGO_ENABLED=0 go build -o "$RUNNER_TEMP/renet" ./cmd/renet
+      - name: Run the package matrix
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix run --distro "${{ matrix.distro }}" --renet "$RUNNER_TEMP/renet"
+
+  # E2E Ceph Workers on the three non-apt distros with btrfs kernels: Ceph-only
+  # node prep, Docker CE on the Ceph-only nodes, the client install on the
+  # workers and the full suite. A SIBLING of test-e2e-ceph-workers rather than
+  # a matrix on it, so the ubuntu job keeps its exact display name and steps
+  # (budget samples and the greenlight closure key on "E2E Ceph Workers").
+  # "non-apt" keeps the name off skip-plan-reconcile.cjs's e2e_ceph_workers
+  # match (the exact name, or the name followed by " ("): these legs follow
+  # the path filter, not that scope key, and a planned-run key whose matching
+  # leg skipped is a hard reconcile failure.
+  # The VM base image cache is RESTORE-ONLY here, the same per-distro key E2E
+  # Workers saves: the cache is over quota, and a miss downloads the stock
+  # image rather than writing a new entry.
+  test-e2e-ceph-workers-rpm:
+    name: E2E Ceph Workers non-apt (${{ matrix.os-image }})
+    # Logs into ghcr with github.token and PULLS only (the credential is then
+    # copied to the root docker config so the test`s root-run rdc/renet pull
+    # through it). Never pushes, so read rather than write.
+    permissions:
+      contents: read
+      packages: read
+    needs: [renet-pkg-scope]
+    if: needs.renet-pkg-scope.outputs.hit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os-image:
+          - fedora-43
+          - oracle-10
+          - opensuse-16.0
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      VM_CEPH_NODES: '21 22'
+      VM_IMAGE: ${{ matrix.os-image }}
+      CEPH_MODE: 'true'
+      VM_RAM_WORKER: '2560'
+      VM_RAM_CEPH: '2560'
+      CEPH_OSD_MEMORY_TARGET: '1717986918'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Free Disk Space (start)
+        uses: ./.github/actions/free-disk-space
+      - uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+      - name: Install CLI Globally
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
+      # Restore-only, same key as ci-build-renet.yml and the other VM jobs.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+      - name: Install renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
+      # The stock image cache E2E Workers saves for this distro
+      # (vm-base-image-e2e-<distro>-YYYY-MM). Restore only, never saved here.
+      - name: Compute VM image cache key
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-${{ matrix.os-image }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+      - name: Free Disk Space (wait)
+        uses: ./.github/actions/free-disk-space
+        with:
+          mode: wait
+      - name: Setup KVM Host
+        run: sudo "$RENET_BINARY" ops host setup
+      - name: Create E2E Test Environment
+        run: |
+          PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env \
+            --renet-path /usr/bin/renet \
+            --output packages/e2e-tests/.env \
+            --vm-workers "11 12" \
+            --vm-ceph-nodes "21 22" \
+            --vm-ram-worker "$VM_RAM_WORKER" \
+            --vm-ram-ceph "$VM_RAM_CEPH" \
+            --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
+      - name: Run E2E Tests (Ceph Workers)
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+      - if: always()
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph-workers-${{ matrix.os-image }}" --status ${{ job.status }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: always()
+        with:
+          name: test-e2e-ceph-workers-${{ matrix.os-image }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
+            packages/e2e-tests/reports/bridge-ceph-workers/
+            packages/e2e-tests/reports/bridge-ceph-workers-logs/
+          retention-days: 3
+          if-no-files-found: ignore
 
   test-e2e-k8s:
     name: E2E K8s

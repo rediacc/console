@@ -45,6 +45,77 @@ export async function runSetupStepsConcurrently(steps: readonly SetupStep[]): Pr
 }
 
 /**
+ * renet's pin file: host-version is the Ceph release every host must run (PLAN-renet-ceph-gpu-non-apt.md 2a).
+ */
+export const CEPH_IMAGE_PIN_PATH = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  '..',
+  'private',
+  'renet',
+  '.ceph-image-pin'
+);
+
+/**
+ * The `host-version=` value of a .ceph-image-pin text; throws when the line is absent.
+ */
+export function readCephHostVersion(pinText: string): string {
+  const line = pinText.split('\n').find((l) => l.trim().startsWith('host-version='));
+  const value = line?.trim().slice('host-version='.length).trim() ?? '';
+  if (!value) {
+    throw new Error('no host-version line in the Ceph image pin file');
+  }
+  return value;
+}
+
+/**
+ * The release a `ceph --version` line reports ("ceph version 19.2.3 (sha) squid (stable)"), or '' when unparseable.
+ */
+export function parseCephVersion(stdout: string): string {
+  return /ceph version (\S+)/.exec(stdout)?.[1] ?? '';
+}
+
+interface CephVersionProbe {
+  executeOnVM: (
+    ip: string,
+    command: string
+  ) => Promise<{ stdout: string; stderr: string; code: number }>;
+}
+
+/**
+ * Fail unless `ceph --version` on every given VM reports `expected`, naming each VM and what it found.
+ * A client of another patch level than the cluster image can reject the admin key it mints (.ceph-image-pin), and on a dnf or zypper host the version comes from a per-distro pin renet installs, so this is where a drifted pin shows as a named failure.
+ * `matches` is the comparison, injectable only so the tests can prove the rejection depends on it.
+ */
+export async function assertCephHostVersion(
+  probe: CephVersionProbe,
+  ips: readonly string[],
+  expected: string,
+  matches: (found: string, want: string) => boolean = (found, want) => found === want
+): Promise<void> {
+  const problems = await Promise.all(
+    ips.map(async (ip) => {
+      const result = await probe.executeOnVM(ip, 'ceph --version');
+      const found = parseCephVersion(result.stdout);
+      if (result.code !== 0 || !found) {
+        const detail = result.stderr.trim() || result.stdout.trim() || `exit code ${result.code}`;
+        return `${ip}: ceph --version gave no version (${detail})`;
+      }
+      return matches(found, expected) ? null : `${ip}: ceph ${found}, expected ${expected}`;
+    })
+  );
+  const failures = problems.filter((problem): problem is string => problem !== null);
+  if (failures.length > 0) {
+    throw new Error(
+      `Ceph host version check failed on ${failures.length} of ${ips.length} VM(s), host-version=${expected} (${CEPH_IMAGE_PIN_PATH}):\n${failures.join('\n')}`
+    );
+  }
+  console.warn(`  ✓ ceph ${expected} on all ${ips.length} Ceph node(s) and worker(s)`);
+}
+
+/**
  * Run one setup step and print its wall time, so a CI log shows where global setup spends its budget.
  */
 async function timed<T>(label: string, run: () => Promise<T>): Promise<T> {
@@ -361,6 +432,11 @@ async function bridgeGlobalSetup(_config: FullConfig) {
       // Cluster health is NOT the whole precondition. HEALTH_OK is silent about whether the workers were configured as clients, and on 2026-08-16 a SIGKILLed ceph-common install left worker 12 without /etc/ceph while the cluster reported HEALTH_OK and the recorded failure was erased. The suite ran anyway and failed 6 minutes later with "can't open ceph.conf". Asking the workers
       // directly turns that into a named failure here.
       await opsManager.verifyCephClientsReady();
+      await assertCephHostVersion(
+        opsManager,
+        [...cephNodes, ...opsManager.getWorkerVMIps()],
+        readCephHostVersion(fs.readFileSync(CEPH_IMAGE_PIN_PATH, 'utf8'))
+      );
     }
 
     // A baked leg must run on the image its key names; Step 3's skip rule trusts the setup marker that image carries.

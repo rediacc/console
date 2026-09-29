@@ -467,6 +467,9 @@
       "CI_DOCKER_DIR",
       "GITHUB_OUTPUT"
     ],
+    ".ci/rediacc_ci/infra/renet_pkg_matrix.py": [
+      "GITHUB_OUTPUT"
+    ],
     ".ci/rediacc_ci/infra/verify_ssh.py": [
       "ATTEMPTS",
       "CHOWN_PATH",
