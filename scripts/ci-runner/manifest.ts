@@ -1674,6 +1674,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-plan-housekeeping',
     run: 'npm run check:ci-plan-housekeeping',
+    slow: true, // 20.2s measured in CI (run 36545832497)
     gate: true,
     paths: [
       'agent/plans/**',
@@ -4210,6 +4211,7 @@ export const GATES: readonly GateSpec[] = [
     // The sibling gate to locale-tutorial-assets: that one proves the five files EXIST, this one proves the text inside them is drawable. Both were green while eighteen Arabic tutorials shipped with detached letters.
     id: 'check:ci-tutorial-card-fonts',
     run: 'npm run check:ci-tutorial-card-fonts',
+    slow: true, // 20.7s measured in CI (run 36545832497)
     gate: true,
     // Leaves are the scripts the npm key RUNS, not everything it imports. card-fonts.ts is a module this gate reads; listing it here made check:ci-parity red on a leaves-vs-package.json mismatch.
     leaves: ['packages/www/scripts/check-tutorial-card-fonts.ts'],

@@ -221,7 +221,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-plan-citations | quality-branch / Plan citations | yes | yes | no |
 | check:ci-plan-deps | quality-branch / Plan dependencies | yes | no | no |
 | check:ci-plan-folders | quality-branch / Plan folders and retention | yes | no | no |
-| check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | no | no |
+| check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes | no |
 | check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | no | no |
 | check:ci-plan-record | quality-branch / Plan records | yes | yes | no |
 | check:ci-plant-proofs | quality-static / Control plant proofs | yes | no | no |
@@ -328,7 +328,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-tree-shape | quality-static / Tree shape | yes | no | no |
 | check:ci-turnstile-drift | quality-static / Turnstile widget drift | yes | no | no |
 | check:ci-tutorial-caption-sync | quality-content / Validate published tutorial word-timing sync (real ASR alignment, not estimated) | yes | no | no |
-| check:ci-tutorial-card-fonts | quality-content / Validate tutorial card fonts cover every locale | yes | no | no |
+| check:ci-tutorial-card-fonts | quality-content / Validate tutorial card fonts cover every locale | yes | yes | no |
 | check:ci-tutorial-casts | quality-content / Block fallback hacks and error output in tutorial recordings | yes | no | no |
 | check:ci-tutorial-cli-validity | quality-content / Tutorial CLI validity | yes | no | no |
 | check:ci-tutorial-commands | quality-content / Validate tutorial storyboard commands against the live CLI | yes | no | no |

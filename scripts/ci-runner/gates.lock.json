@@ -1742,6 +1742,7 @@
   {
     "id": "check:ci-plan-housekeeping",
     "run": "npm run check:ci-plan-housekeeping",
+    "slow": true,
     "gate": true,
     "paths": [
       "agent/plans/**",
@@ -4507,6 +4508,7 @@
   {
     "id": "check:ci-tutorial-card-fonts",
     "run": "npm run check:ci-tutorial-card-fonts",
+    "slow": true,
     "gate": true,
     "leaves": [
       "packages/www/scripts/check-tutorial-card-fonts.ts"
