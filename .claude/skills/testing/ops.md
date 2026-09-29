@@ -5,7 +5,7 @@ For `rdc ops`, KVM/qemu provisioning, the base-image cache, eBPF socket isolatio
 ## Two places, and they are not interchangeable
 
 - **`.github/workflows/ci-ops-test.yml`** — `ops-vm-provision` (matrix, real
-KVM), `ops-qemu-provision`, `ops-platform-check`. Steps named `"Test: <what>"`, invoking the built CLI bundle directly because the job has already built it. This is where a PROVISIONING behaviour is asserted: does the fleet come up, is the image cache honoured, does eBPF isolation hold.
+KVM), `ops-platform-check`. Steps named `"Test: <what>"`, invoking the built CLI bundle directly because the job has already built it. This is where a PROVISIONING behaviour is asserted: does the fleet come up, is the image cache honoured, does eBPF isolation hold.
 - **The E2E suites (Tests + Infra)** — the same VMs, exercised by
 `packages/e2e-tests/tests/`. Anything that happens ON a provisioned machine is covered here, not in the ops workflow, and `check_e2e_coverage.py` enforces it in both directions. See [e2e.md](e2e.md).
 

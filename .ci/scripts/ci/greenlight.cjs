@@ -222,7 +222,7 @@ const CLOSURES = {
       '.github/workflows/ct-tests.yml',
     ],
   },
-  // ci-ops-test.yml, called from ci.yml:864. FIVE leaf jobs across three job blocks and two matrices; the rendered names are disjoint, verified against ci-ops-test.yml:16 + :31-34, :329 + :344-347, :467 + :482-493.
+  // ci-ops-test.yml, called from ci.yml:864. SEVEN leaf jobs across two job blocks (ops-vm-provision's four linux shards, ops-platform-check's three platforms; the macos-intel qemu job was dropped 2026-09-29 by operator ruling); the rendered names are disjoint, verified against ci-ops-test.yml:16 + :31-34, :329 + :344-347, :467 + :482-493.
   ops: {
     jobNames: [
       // PLAN-ci-time-budget T2.16 shards the linux leg four ways; each shard is its own check name.
@@ -230,7 +230,6 @@ const CLOSURES = {
       'OPS Provision (linux-amd64, 2/4)',
       'OPS Provision (linux-amd64, 3/4)',
       'OPS Provision (linux-amd64, 4/4)',
-      'OPS Provision (macos-intel)',
       'OPS Check (linux-arm64)',
       'OPS Check (macos-arm64)',
       'OPS Check (windows-amd64)',

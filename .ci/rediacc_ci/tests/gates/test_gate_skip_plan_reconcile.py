@@ -49,7 +49,6 @@ HEALTHY_SUCCESS = [
     "Tests + Infra / Drills",
     "Tests + Infra / Migration Test",
     "OPS Tests / OPS Provision (linux-amd64)",
-    "OPS Tests / OPS Provision (macos-intel)",
     "OPS Tests / OPS Check (linux-arm64)",
     "Elite Run",
     "Tests + Infra / Update Flow / Update flow (Linux x64)",
@@ -745,8 +744,8 @@ def test_full_suite_exempts_seventeen_but_never_install_methods(gate, tmp_path):
     push = world.write_jobs("jobs-push.json", jobs)
     gate.assert_eq(
         skipped_count(jobs),
-        33,
-        "the push fixture skips all 33 non-install jobs and leaves the four install legs",
+        32,
+        "the push fixture skips all 32 non-install jobs and leaves the four install legs",
     )
     gate.assert_eq(
         world.reconcile(push_plan, push),
