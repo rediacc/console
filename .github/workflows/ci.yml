@@ -1541,6 +1541,9 @@ jobs:
             tsconfig.json
             .ci/config
             .ci/rediacc_ci
+            # .devcontainer, because setup-node-npm reads NPM_VERSION from .devcontainer/toolchain.env; without it the job died
+            # at "pins file missing or unreadable" (run for 7ffb61e90, job 109582783038). Its siblings get the file from their second, full checkout.
+            .devcontainer
 
       - name: Fetch secrets from Bitwarden
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
