@@ -1882,11 +1882,7 @@ def test_refresh_keeps_the_prior_variant_costs_when_nothing_measured_them_and_sa
 def test_refresh_writes_measured_variant_costs(tmp_path):
     path = tmp_path / "lane-durations.json"
     path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20, "jobs": {}, "units": {}}))
-    measured = {
-        "ops-tutorials": {
-            "linux-amd64": {"fixedMinutes": 4.1, "units": {}}
-        }
-    }
+    measured = {"ops-tutorials": {"linux-amd64": {"fixedMinutes": 4.1, "units": {}}}}
     rc = br.refresh_lane_durations(
         path,
         limit=10,
