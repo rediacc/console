@@ -1224,19 +1224,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 7,
+      "done": 1,
       "open_sigs": [
         "35d03d22",
         "6f0ca538",
-        "75f73789",
         "86f54cb3",
         "bf0e3d72",
         "c93ea196",
         "d0988b5f",
         "db93a038"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "75f73789"
+      ]
     },
     "agent/plans/PLAN-renet-fetch-hardening.md": {
       "status": "parked",

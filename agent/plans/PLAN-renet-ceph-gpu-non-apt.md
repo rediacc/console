@@ -25,24 +25,24 @@ Line numbers refer to console ff26e55f5 and renet 5a3a984; ct-tests.yml moved si
   - `KernelModulesExtra` has no zypper entry: :189-192
   - `DistroDocker` Dnf is `docker`, which "may resolve to podman-docker" on EL: :151-159
 - **Retry helpers.**
-  - `aptretry.Shell` (aptretry.go:43-85) renders apt-only bounded shell for the remote scripts.
-  - On the Go side, `runPkgInstall`/`runPkgInstallN`/`runPkgInstallCaptured` (pkg_install_retry.go:250-283) and `pkgIndexRefresh` (:96) already handle dnf and zypper.
+  - `aptretry.Shell` (private/renet/pkg/infra/aptretry/aptretry.go:43-85) renders apt-only bounded shell for the remote scripts.
+  - On the Go side, `runPkgInstall`/`runPkgInstallN`/`runPkgInstallCaptured` (private/renet/cmd/renet/pkg_install_retry.go:250-283) and `pkgIndexRefresh` (:96) already handle dnf and zypper.
   - dnf and zypper installs are deliberately left without an outer deadline (policy comment :35-46). Only apt splits into a bounded download (`pkgInstallAttempt`, :285-295; `runStreamedBounded`, :297).
-- **`renet ceph install`.** It is hand-rolled apt (`sudoBoundedApt`, ceph_install.go:131-138; install at :51-65). It runs `cephadm bootstrap` with no `--image` (:110-113). It has no E2E coverage.
+- **`renet ceph install`.** It is hand-rolled apt (`sudoBoundedApt`, private/renet/cmd/renet/ceph_install.go:131-138; install at :51-65). It runs `cephadm bootstrap` with no `--image` (:110-113). It has no E2E coverage.
 - **Ceph node prep.**
-  - `prepareNodeSSH` (provisioner.go:428-459) first installs renet on every Ceph node (:429).
+  - `prepareNodeSSH` (private/renet/pkg/infra/ceph/provisioner.go:428-459) first installs renet on every Ceph node (:429).
   - Worker+Ceph nodes get the full Docker install (:432-437). Ceph-only nodes get `cephPrereqScript(true)` (:515-561): apt update, `docker.io`, a background `docker pull` of `CephImagePin`, then `CephNode` packages.
   - `CleanupState` uses `docker ps` (:578-579).
   - Bootstrap runs `cephadm --image CephImagePin bootstrap` (:667-670).
-- **Client install.** `configureClientSSH` installs `CephClient` on workers over SSH, 2 attempts (provisioner.go:1886-1889).
-- **fork-dest-prep.** It runs as function `kube_fork_dest_prep` (private/renet/pkg/functions/commands/kube.go:205, :565-573). E2E covers it only in tests/kube/16-datastore-cluster.test.ts:301 and tests/kube/17-multinode-cluster.test.ts:483.
+- **Client install.** `configureClientSSH` installs `CephClient` on workers over SSH, 2 attempts (private/renet/pkg/infra/ceph/provisioner.go:1886-1889).
+- **fork-dest-prep.** It runs as function `kube_fork_dest_prep` (private/renet/pkg/functions/commands/kube.go:205, :565-573). E2E covers it only in packages/e2e-tests/tests/kube/16-datastore-cluster.test.ts:301 and packages/e2e-tests/tests/kube/17-multinode-cluster.test.ts:483.
 - **The pin.**
-  - `CephImagePin = quay.io/ceph/ceph:v19.2.3-20250717` (provisioner.go:31-46) must equal noble's ceph-common exactly. The reason is recorded there: a 19.2.6 cluster's key is rejected by a 19.2.3 client.
+  - `CephImagePin = quay.io/ceph/ceph:v19.2.3-20250717` (private/renet/pkg/infra/ceph/provisioner.go:31-46) must equal noble's ceph-common exactly. The reason is recorded there: a 19.2.6 cluster's key is rejected by a 19.2.3 client.
   - private/renet/.ceph-image-pin holds `host-version=19.2.3` and `review=2026-11-18`.
   - scripts/gates/check-ceph-image-pin.ts:43-48 checks the image and review date only. It does not check host-version.
-- **Bug in the Nvidia path today:** `ubuntu-drivers autoinstall` is retried with an apt index refresh (setup_command.go:1683-1686).
-- **The AMD flow is not ROCm.** Despite its comment (setup_command.go:1638), it installs only mesa-utils and vulkan-tools (pkgset.go:195-197), plus a best-effort `linux-modules-extra-<release>` (:1646-1651).
-- **Existing repo-trust pattern.** dnf Docker uses a fetched .repo (setup_command.go:1383-1395). SUSE uses `zypper addrepo` plus `--gpg-auto-import-keys` (:1537-1541), which trusts the key on first use. Nothing verifies a fingerprint.
+- **Bug in the Nvidia path today:** `ubuntu-drivers autoinstall` is retried with an apt index refresh (private/renet/cmd/renet/setup_command.go:1683-1686).
+- **The AMD flow is not ROCm.** Despite its comment (private/renet/cmd/renet/setup_command.go:1638), it installs only mesa-utils and vulkan-tools (private/renet/pkg/infra/pkgset/pkgset.go:195-197), plus a best-effort `linux-modules-extra-<release>` (:1646-1651).
+- **Existing repo-trust pattern.** dnf Docker uses a fetched .repo (private/renet/cmd/renet/setup_command.go:1383-1395). SUSE uses `zypper addrepo` plus `--gpg-auto-import-keys` (:1537-1541), which trusts the key on first use. Nothing verifies a fingerprint.
 - **Distro limits.** rocky-10 and centos-10-stream are "KNOWN-BROKEN" as workers because their kernels have no btrfs (private/renet/pkg/infra/opsconfig/images.go:28-37, :90-121). `VMImage` is one value for every VM (private/renet/pkg/infra/opsconfig/config.go:57, :221, :430), so a Ceph-node-only distro cannot be set.
 - **CI.**
   - All four Ceph jobs set no `VM_IMAGE` and so run on ubuntu-24.04 (`DEFAULT_VM_IMAGE`, .ci/rediacc_ci/env/create_e2e_env.py:110; the cache key is hard-coded to ubuntu in each job).
@@ -62,9 +62,9 @@ Line numbers refer to console ff26e55f5 and renet 5a3a984; ct-tests.yml moved si
 | Debian 13 | none (18.2.7 only) | none | no |
 
 - **One upstream release everywhere is impossible today.** The only release download.ceph.com builds for both noble and el10 is 20.2.4 (tentacle). It has no Fedora or SUSE builds, F43 and Leap 16 have no 20.x, and 20.x would also need noble moved off its distro package.
-- **The container engine.** The cephadm RPM `Recommends: podman` (ceph.spec.in v19.2.3:535-544). cephadm prefers podman over docker (`CONTAINER_PREFERENCE = (Podman, Docker)`, src/cephadm/cephadmlib/container_engines.py:111-122), and `--docker` is a per-invocation flag that the mgr does not carry to other hosts. So:
+- **The container engine.** The cephadm RPM `Recommends: podman` (ceph.spec.in v19.2.3:535-544). cephadm prefers podman over docker (`CONTAINER_PREFERENCE = (Podman, Docker)`, ceph v19.2.3 src/cephadm/cephadmlib/container_engines.py, lines 111-122), and `--docker` is a per-invocation flag that the mgr does not carry to other hosts. So:
   - A non-apt node must install without weak dependencies and have no podman.
-  - The EL `docker` package (podman-docker) is unusable for this. Ceph-only nodes must use Docker CE (`installDockerRHEL`, setup_command.go:1381-1415).
+  - The EL `docker` package (podman-docker) is unusable for this. Ceph-only nodes must use Docker CE (`installDockerRHEL`, private/renet/cmd/renet/setup_command.go:1381-1415).
 - **Nvidia (developer.download.nvidia.com/compute/cuda/repos).**
 
   | Repo dir | Repo file | Signing key | Driver package |
@@ -94,6 +94,28 @@ Line numbers refer to console ff26e55f5 and renet 5a3a984; ct-tests.yml moved si
   - Nvidia: developer.download.nvidia.com/compute/cuda/repos/{rhel10,fedora43,suse16}/x86_64/
   - AMD: repo.radeon.com/amdgpu-install/latest/{rhel,sle}/
 
+### 1a. P0 measured (2026-09-29, local Docker, one run each, x86_64)
+
+The pinned 19.2.3 installs on all five distros with weak dependencies off; podman never came in, and `rbd --version` reports 19.2.3 squid everywhere.
+
+| Distro | Repos needed | Setup s | Install s | Download | Lock holds |
+|---|---|---|---|---|---|
+| Fedora 43 | GA + an `updates` exclude (repos.override.d) | 12 | 24 | 93 MiB | yes; unlocked it offers 19.2.6-1.fc43 |
+| OL 10.2 | SIG + EPEL (oracle-epel-release-el10) + CRB (ol10_codeready_builder) | 33 | 25 | 71 MiB | yes (dnf4 versionlock); unlocked it offers 19.2.6-2 |
+| Rocky 10.2 | SIG + EPEL + CRB | 34 | 26 | 76 MiB | yes |
+| CentOS Stream 10 | SIG + EPEL (lttng-ust is in appstream there) | 27 | 28 | 77 MiB | yes |
+| Leap 16.0 | OBS filesystems:ceph:squid, `--no-recommends` | 16 | 23-41 | 94 MiB | `addlock` registered; untestable until OBS offers a newer build |
+
+Corrections to the section above, each measured:
+
+- OL10 and Rocky 10 need CRB as well as EPEL: with the SIG alone ceph-common lacks libtcmalloc, libarrow, libparquet and liboath (EPEL), and with EPEL added librbd1 still lacks liblttng-ust.so.1, which only CRB carries there (1 package from CRB, 12 from EPEL). EPEL is always needed, not "if the dry run needs it".
+- `centos-release-ceph-squid` writes `gpgcheck=0` into CentOS-Ceph-Squid.repo; renet must set `gpgcheck=1` (the install passes with it).
+- Leap 16 OSS does carry ceph: ceph-common and cephadm 18.2.7-160000.1.2 (reef), which the OBS pin must outrank.
+- `--repo=fedora` for the whole transaction downgrades six base packages (util-linux-core family, systemd-libs); writing the `updates` exclude first and installing the exact NEVRs with every repo on gives the same NEVRs and no downgrade.
+- dnf4 `versionlock add` on a package not yet installed locks every available version, so the lock step runs after the install, over the installed names.
+- Keys: CentOS SIG Storage `7412 9C0B 173B 071A 3775 951A D4A2 E50B E451 E5B5` (https://www.centos.org/keys/RPM-GPG-KEY-CentOS-SIG-Storage, no expiry); OBS filesystems `B1FB 5374 8720 4722 05FA 6019 98C9 7FE7 324E 6311`, which EXPIRES 2027-05-07 (a review item for D2).
+- Package names: `sqlite` on dnf, `sqlite3` on zypper; `btrfs-progs` on dnf (present on OL10, Rocky 10, Stream 10, F43), `btrfsprogs` on zypper; sshpass, xfsprogs, lvm2 identical and in base repos.
+
 ## 2. Design
 
 ### 2a. Pinning: one Ceph version, each distro from its own repo (recommended, D1)
@@ -104,7 +126,7 @@ Every host installs exactly `host-version` (19.2.3), and the cluster image stays
 |---|---|---|---|
 | ubuntu | noble archive | distro key | `=19.2.3-0ubuntu0.24.04.3` (D4) |
 | fedora 43 | `--repo=fedora` for the ceph packages | distro key | 19.2.3-8.fc43 |
-| ol / rocky / centos 10 | SIG `ceph-squid`. On CentOS: `dnf install centos-release-ceph-squid` (extras, distro-signed). On OL and Rocky: renet writes `rediacc-ceph-squid.repo` pointing at mirror.stream.centos.org/SIGs/10-stream/storage/$basearch/ceph-squid/ | `gpgcheck=1`; RPM-GPG-KEY-CentOS-SIG-Storage embedded in renet with its fingerprint; EPEL from `oracle-epel-release-el10` or `epel-release` (pkgset.go:242-248) if the dry run needs it | 19.2.3-1.el10s |
+| ol / rocky / centos 10 | SIG `ceph-squid`. On CentOS: `dnf install centos-release-ceph-squid` (extras, distro-signed). On OL and Rocky: renet writes `rediacc-ceph-squid.repo` pointing at mirror.stream.centos.org/SIGs/10-stream/storage/$basearch/ceph-squid/ | `gpgcheck=1`; RPM-GPG-KEY-CentOS-SIG-Storage embedded in renet with its fingerprint; EPEL from `oracle-epel-release-el10` or `epel-release` (private/renet/pkg/infra/pkgset/pkgset.go:242-248) if the dry run needs it | 19.2.3-1.el10s |
 | opensuse 16.0 | OBS `filesystems:ceph:squid/16.0` | the project's `repomd.xml.key`, embedded with its fingerprint and imported by `rpm --import`. Never `--gpg-auto-import-keys` | 19.2.3-lp160.2.96, or the mirror from D2 |
 
 - Every non-apt install uses exact versions (`ceph-common-<V>`, `cephadm-<V>`) with weak dependencies off (`--setopt=install_weak_deps=False`, zypper `--no-recommends`).
@@ -118,10 +140,10 @@ Every host installs exactly `host-version` (19.2.3), and the cluster image stays
 
 ### 2b. One implementation, run on the node
 
-- `renet ceph install` gains `--profile admin|node|client|fork-dest`, which maps to the CephAdmin, CephNode, CephClient and ClusterForkDest sets. It runs `cephpkg.EnsureRepo(osID)` and then `runPkgInstall` on the detected manager. On apt, behaviour is unchanged: 3 attempts with a bounded 120 s download (pkg_install_retry.go:23-55 equals `cephAptBounds`, provisioner.go:480).
+- `renet ceph install` gains `--profile admin|node|client|fork-dest`, which maps to the CephAdmin, CephNode, CephClient and ClusterForkDest sets. It runs `cephpkg.EnsureRepo(osID)` and then `runPkgInstall` on the detected manager. On apt, behaviour is unchanged: 3 attempts with a bounded 120 s download (private/renet/cmd/renet/pkg_install_retry.go:23-55 equals `cephAptBounds`, private/renet/pkg/infra/ceph/provisioner.go:480).
 - The provisioner stops rendering apt:
   - `cephPrereqScript` keeps the background image pull and the prep markers.
-  - It replaces the apt lines with `sudo renet ceph install --profile node --prep-markers`. renet is already on the node (provisioner.go:429).
+  - It replaces the apt lines with `sudo renet ceph install --profile node --prep-markers`. renet is already on the node (private/renet/pkg/infra/ceph/provisioner.go:429).
   - `configureClientSSH` sends `sudo renet ceph install --profile client`.
   - `KubeForkDestPrepCommand` calls `--profile fork-dest`. `renet kube fork-dest-prep` becomes an alias for it.
 - On a dnf Ceph-only node, Docker comes from `renet install-docker` (Docker CE, `--allowerasing`) instead of the `docker` package. zypper keeps `docker`.
@@ -182,7 +204,8 @@ Every host installs exactly `host-version` (19.2.3), and the cluster image stays
 
 ## 5. Boxes
 
-- [ ] P0 Measure first. Dispatch the existing E2E Ceph Workers job once each with `VM_IMAGE` = fedora-43, oracle-10 and opensuse-16.0, with the guards patched out on a scratch branch so the phase times can be seen. Record where each fails and how long the steps before the failure take. Hand-run the SIG and OBS installs in the 5 containers. Owned: none (scratch). Verification: a table of run ids, prep phases and minutes per distro, written into sections 1 and 4. If the SIG 19.2.3 RPMs fail to install on OL10 or Rocky 10, stop and put D1 back to the operator.
+- [x] P0 Measure first. Dispatch the existing E2E Ceph Workers job once each with `VM_IMAGE` = fedora-43, oracle-10 and opensuse-16.0, with the guards patched out on a scratch branch so the phase times can be seen. Record where each fails and how long the steps before the failure take. Hand-run the SIG and OBS installs in the 5 containers. Owned: none (scratch). Verification: a table of run ids, prep phases and minutes per distro, written into sections 1 and 4. If the SIG 19.2.3 RPMs fail to install on OL10 or Rocky 10, stop and put D1 back to the operator. The E2E dispatch half cannot run on a scratch branch (one branch per repo, CLAUDE.md rule 1), so it moves to P6's first PR run of the non-apt legs; the container half is section 1a.
+    (ticked) 2026-09-29T09:03:42Z by d778be9d: section 1a (agent/plans/PLAN-renet-ceph-gpu-non-apt.md:97), local Docker runs 2026-09-29, 5/5 distros install 19.2.3 rc=0
 - [ ] P1 pkgset: Dnf and Zypper entries for CephClient, CephAdmin, CephNode, ClusterForkDest, AMDGPU and the Nvidia sets, plus the zypper KernelModulesExtra decision. Owned: private/renet/pkg/infra/pkgset/pkgset.go and its tests. Verification: `go test ./pkg/infra/pkgset/...`, and a table test that every set a ported flow uses is non-empty for all three managers.
 - [ ] P2 `pkg/infra/cephpkg`: the per-distro repo, key and version table, the embedded keys with fingerprint check, the lock step and EnsureRepo. Also .ceph-image-pin `host.*` lines and check-ceph-image-pin.ts. Owned: private/renet/pkg/infra/cephpkg/**, private/renet/.ceph-image-pin, scripts/gates/check-ceph-image-pin.ts. Verification: Go tests on the rendered repo files; the gate's `--selftest` fails when one `host.*` line's version differs from `host-version` or the Go table.
 - [ ] P3 `renet ceph install --profile`, fork-dest-prep as its alias, `requireSupportedManager` in place of both guards, and i18n. Owned: private/renet/cmd/renet/{ceph_install.go,kube_fork_dest_prep.go,pkg_install_retry.go}, private/renet/pkg/infra/aptretry/**, private/renet/pkg/functions/commands/kube.go, private/renet/pkg/i18n/locales/*.go. Verification: Go tests with a package-manager seam covering exact NEVRs, weak dependencies off and the lock per manager; a control that dropping the version pin fails the test.
@@ -200,15 +223,15 @@ Every host installs exactly `host-version` (19.2.3), and the cluster image stays
 |---|---|---|
 | The SIG c10s builds need newer libraries than OL10U1 or Rocky 10 provide | section 1, EL10 row | P0 stop condition; fallback is a joint move to 20.2.4 later |
 | OBS rebuild removes the 19.2.3 RPMs | filesystems:ceph:squid/16.0 | D2 mirror, nightly drift check |
-| cephadm picks podman, so the pre-pull, `CleanupState` and the other hosts disagree on the engine | container_engines.py:111; provisioner.go:578 | weak dependencies off, podman refusal, Docker CE, `--docker` |
+| cephadm picks podman, so the pre-pull, `CleanupState` and the other hosts disagree on the engine | ceph container_engines.py line 111; private/renet/pkg/infra/ceph/provisioner.go:578 | weak dependencies off, podman refusal, Docker CE, `--docker` |
 | `updates`, the SIG or OBS pushes ceph past the pin | 2a | per-manager lock; matrix `upgrade --assumeno` check |
-| The apt node prep regresses while moving into renet | provisioner.go:515-561 | same bounds (pkg_install_retry.go:23-55); the ubuntu Ceph jobs unchanged in P6 |
-| Non-apt Ceph Workers legs break the 15-minute cap | lane-durations.json:1097 | P0 measurement, D6, nightly-only fallback |
-| Rocky and CentOS never get E2E proof | images.go:28-37 | container matrix proves install and client tools; stated in the docs |
+| The apt node prep regresses while moving into renet | private/renet/pkg/infra/ceph/provisioner.go:515-561 | same bounds (private/renet/cmd/renet/pkg_install_retry.go:23-55); the ubuntu Ceph jobs unchanged in P6 |
+| Non-apt Ceph Workers legs break the 15-minute cap | .ci/config/lane-durations.json:1097 | P0 measurement, D6, nightly-only fallback |
+| Rocky and CentOS never get E2E proof | private/renet/pkg/infra/opsconfig/images.go:28-37 | container matrix proves install and client tools; stated in the docs |
 | GPU proof is resolution only | 1, GPU in CI | D7 DKMS leg; release notes say "not tested on hardware" |
 | Leap Minimal's kernel-default-base lacks GPU modules | 2c | warning plus documented kernel-default swap |
 | UEK needs kernel-uek-devel; Nvidia kmods target the RHEL kernel | 1, Nvidia | DKMS path; D7 on oracle-10 |
-| A key fetch without a fingerprint check trusts the key on first use (today's zypper pattern) | setup_command.go:1541 | embedded keys and fingerprint asserts in P2 and P5 |
+| A key fetch without a fingerprint check trusts the key on first use (today's zypper pattern) | private/renet/cmd/renet/setup_command.go:1541 | embedded keys and fingerprint asserts in P2 and P5 |
 | A new cmd/renet file escapes the bake key | vm_bake_key.py completeness walk | P5 updates the inputs |
 | F43 reaches EOL and F44 has only 20.x | D8 | pins move together at the image review (.ceph-image-pin review=2026-11-18) |
 | ct-tests.yml is contended by the bake plan and the time-budget plan | Depends-On | sequence after bake B5 |
