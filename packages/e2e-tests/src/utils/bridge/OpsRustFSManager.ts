@@ -1,6 +1,19 @@
 import type { OpsVMExecutor } from '@rediacc/provisioning/ops';
 
 /**
+ * Budget for one `renet ops rustfs configure-worker`, above renet's own worst case for installing rclone on a VM.
+ * renet cuts each apt network step off at 30 s and retries 3 times (rcloneAptStepTimeout and rcloneAptAttempts in private/renet/pkg/infra/docker/service.go), about 4 minutes at worst.
+ * The old 60 s budget was shorter than a single stalled attempt, so renet's retry never got its turn: console run 36514306445 (E2E Workers ubuntu-24.04 5/8) killed configure-worker at 60 s while `apt-get install -y rclone` hung on both workers.
+ */
+export const RUSTFS_CONFIGURE_WORKER_TIMEOUT_MS = 300_000;
+
+/**
+ * Budget for `renet ops rustfs start`: the same rclone install as configure-worker, plus up to 5 RustFS image pulls 15 s apart, a 60 s readiness wait and the bucket creation.
+ * The old 120 s budget failed global setup in the same run, with the bridge's `apt-get install -y rclone` still hanging.
+ */
+export const RUSTFS_START_TIMEOUT_MS = 480_000;
+
+/**
  * OpsRustFSManager - Manages RustFS S3-compatible storage operations
  *
  * Extracted from OpsManager to reduce file size.
@@ -40,7 +53,7 @@ export class OpsRustFSManager {
     }
 
     // Start RustFS using renet ops command
-    const result = await this.runOpsCommand(['rustfs', 'start'], [], 120000); // 2 minute timeout
+    const result = await this.runOpsCommand(['rustfs', 'start'], [], RUSTFS_START_TIMEOUT_MS);
 
     if (result.code !== 0) {
       console.error('[OpsRustFSManager] Failed to start RustFS:', result.stderr);
@@ -145,7 +158,7 @@ export class OpsRustFSManager {
     const result = await this.runOpsCommand(
       ['rustfs', 'configure-worker'],
       [vmId.toString()],
-      60000
+      RUSTFS_CONFIGURE_WORKER_TIMEOUT_MS
     );
 
     if (result.code !== 0) {
@@ -162,7 +175,12 @@ export class OpsRustFSManager {
   async configureAllWorkers(): Promise<{ success: boolean; message: string }> {
     console.warn('[OpsRustFSManager] Configuring RustFS access on all worker VMs...');
 
-    const result = await this.runOpsCommand(['rustfs', 'configure-workers'], [], 120000);
+    // configure-workers configures the workers one after another.
+    const result = await this.runOpsCommand(
+      ['rustfs', 'configure-workers'],
+      [],
+      2 * RUSTFS_CONFIGURE_WORKER_TIMEOUT_MS
+    );
 
     if (result.code !== 0) {
       return { success: false, message: `Failed to configure workers: ${result.stderr}` };
