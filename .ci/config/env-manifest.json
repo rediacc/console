@@ -313,6 +313,7 @@
       "MAX_ATTEMPTS",
       "MAX_DELETES_PER_RUN",
       "MERGE_SHA",
+      "MIRROR_URL",
       "MODE",
       "NEXT_VERSION",
       "NFPM_ARCH",
