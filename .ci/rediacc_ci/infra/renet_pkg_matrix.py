@@ -17,8 +17,16 @@ Subcommands, one per workflow step, so each `run:` stays one line:
 WHAT `run` PROVES, per distro:
 
   * `renet ceph install --profile admin`, `--profile client` and `--profile fork-dest` exit 0;
-  * DRIFT (plan section 2a, D2): the pinned ceph-common and cephadm still resolve from the repository renet
-    configured (Fedora `fedora`, the SIG and OBS `rediacc-ceph-squid`);
+  * MIRROR SERVES THE PIN (plan section 2a, D2): the pinned ceph-common and cephadm resolve from the repository
+    renet configured (Fedora `fedora`, the SIG and OBS `rediacc-ceph-squid`). With `--obs-mirror` (the Leap
+    leg in CI) that repository is the captured OBS mirror, so this proves the artifact lists the pin;
+  * OBS MIRROR (`--obs-mirror`, zypper legs; PLAN-renet-obs-mirror.md section 4 item 4): before the container
+    starts, the `obs-mirror-v1-opensuse-16.0-<pin>` tag for the host.opensuse-16.0 pin is pulled and verified
+    (obs_mirror's `fetch`), bind-mounted read-only at /srv/obs-mirror, and /etc/rediacc/ceph-zypper-mirror is
+    written as `dir:/srv/obs-mirror`, the same file a customer would write. OBS keeps only its latest build, so
+    the mirror is what keeps the pinned build installable. A fetch miss is a FAIL naming the pin and the fix
+    (dispatch ci-obs-mirror while OBS still serves it), and no other check runs: against OBS they would prove
+    nothing about the mirror;
   * UPSTREAM (zypper legs, SCHEDULED RUNS ONLY; PLAN-renet-obs-mirror.md section 5): the ceph-common/cephadm
     EVR the OBS origin's gpg-verified `primary` lists (obs_mirror's `upstream` logic, imported) equals the
     host.opensuse-16.0 pin. OBS keeps only its latest build, so a mismatch means the pinned build is gone and
@@ -53,6 +61,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log
 from rediacc_ci.infra import obs_mirror
+from rediacc_ci.infra.vm_bake_image import BakeImageError
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -315,8 +324,8 @@ def check_command(
 def check_drift(
     distro_name: str, d: Distro, pin: str, run: Callable[[Sequence[str]], Result]
 ) -> Verdict:
-    """The pinned build still resolves from the repository renet configured (the nightly OBS/SIG drift check)."""
-    name = "drift: pinned build resolves"
+    """The pinned build resolves from the repository renet configured: the OBS mirror under --obs-mirror, else OBS or the SIG."""
+    name = "mirror serves the pin"
     if d.manager == "dnf":
         specs = [f"ceph-common-{pin}", f"cephadm-{pin}"]
         res = run(
@@ -565,6 +574,75 @@ def report(distro_name: str, verdicts: Sequence[Verdict]) -> int:
 # ---------------------------------------------------------------------------
 
 
+# The fix for a missing mirror, named in the FAIL (plan section 5, "mirror present").
+MIRROR_FIX = "dispatch ci-obs-mirror while OBS still serves it"
+MIRROR_WORKFLOW = ".github/workflows/ci-obs-mirror.yml"
+
+
+def fetch_obs_mirror(pin: str, dest: pathlib.Path) -> None:
+    """Pull the obs-mirror tag for pin into dest and verify it, as `obs_mirror fetch` does. Every failure raises."""
+    obs_mirror._ensure_oras()
+    fingerprint = obs_mirror.obs_fingerprint(obs_mirror.CEPHPKG_GO.read_text(encoding="utf-8"))
+    obs_mirror.fetch(pin, dest, fingerprint)
+
+
+def prepare_mirror(
+    pin: str, dest: pathlib.Path, fetch: Callable[[str, pathlib.Path], None]
+) -> Verdict:
+    """The `mirror present` check: the tag for the pin pulls and verifies into dest."""
+    name = "obs mirror present"
+    try:
+        ref = obs_mirror.image_ref(pin)
+        fetch(pin, dest)
+    except (obs_mirror.MirrorError, BakeImageError, OSError, ValueError) as exc:
+        return Verdict(
+            name,
+            False,
+            f"no usable OBS mirror for the pin host.opensuse-16.0={pin}; {MIRROR_FIX} "
+            f"({MIRROR_WORKFLOW}, evr={pin}), or move the pin to a captured build. obs_mirror: {exc}",
+        )
+    return Verdict(name, True, f"{ref} at {dest}")
+
+
+def configure_mirror(run: Callable[[Sequence[str]], Result]) -> Verdict:
+    """Write /etc/rediacc/ceph-zypper-mirror = dir:/srv/obs-mirror in the container and read it back."""
+    name = "obs mirror configured"
+    conf = obs_mirror.MIRROR_CONFIG
+    write = run(
+        [
+            "sh",
+            "-c",
+            f"mkdir -p {pathlib.PurePosixPath(conf).parent} && printf '%s\\n' '{obs_mirror.MIRROR_URL}' > {conf}",
+        ]
+    )
+    back = run(["cat", conf])
+    if write.rc == 0 and back.stdout.strip() == obs_mirror.MIRROR_URL:
+        return Verdict(name, True, f"{conf} = {obs_mirror.MIRROR_URL}")
+    return Verdict(
+        name,
+        False,
+        f"could not write {conf} (rc={write.rc}; reads back {back.stdout.strip()!r})\n{_tail(write)}",
+    )
+
+
+def container_argv(
+    container: str, image: str, renet: pathlib.Path, mirror: pathlib.Path | None
+) -> list[str]:
+    """`docker run` for one leg: renet mounted, and the mirror tree read-only at /srv/obs-mirror when given."""
+    mounts = ["-v", f"{renet}:/usr/local/bin/renet:ro"]
+    if mirror is not None:
+        mounts += ["-v", f"{mirror}:{obs_mirror.MIRROR_MOUNT}:ro"]
+    return ["docker", "run", "-d", "--name", container, *mounts, image, "sleep", "infinity"]
+
+
+def _docker(argv: Sequence[str]) -> int:
+    return subprocess.run(list(argv), check=False).returncode
+
+
+def _docker_rm(container: str) -> None:
+    subprocess.run(["docker", "rm", "-f", container], capture_output=True, check=False)
+
+
 def docker_exec(container: str) -> Callable[[Sequence[str]], Result]:
     def run(argv: Sequence[str]) -> Result:
         log.step(" ".join(argv))
@@ -576,38 +654,50 @@ def docker_exec(container: str) -> Callable[[Sequence[str]], Result]:
     return run
 
 
-def cmd_run(args: argparse.Namespace) -> int:
+def cmd_run(
+    args: argparse.Namespace,
+    *,
+    fetch: Callable[[str, pathlib.Path], None] = fetch_obs_mirror,
+    start: Callable[[Sequence[str]], int] = _docker,
+    exec_factory: Callable[[str], Callable[[Sequence[str]], Result]] = docker_exec,
+    stop: Callable[[str], None] = _docker_rm,
+) -> int:
     d = DISTROS[args.distro]
     renet = pathlib.Path(args.renet).resolve()
     if not renet.is_file():
         log.error(f"renet binary not found: {renet}")
         return 2
+    if args.obs_mirror and d.manager != "zypper":
+        log.error(f"--obs-mirror is for the zypper legs only, not {args.distro}")
+        return 2
     pins = read_pins(pathlib.Path(args.pin_file).read_text(encoding="utf-8"))
+    mirror: pathlib.Path | None = None
+    pre: list[Verdict] = []
+    if args.obs_mirror:
+        pin = pins.hosts.get(d.target, "")
+        name = f"obs-mirror-{pin}"
+        mirror = (
+            pathlib.Path(args.mirror_dir) / name
+            if args.mirror_dir
+            else obs_mirror._default_dir(name)
+        ).resolve()
+        pre.append(prepare_mirror(pin, mirror, fetch))
+        if not pre[-1].ok:
+            return report(args.distro, pre)
     container = f"renet-pkg-matrix-{args.distro}-{uuid.uuid4().hex[:8]}"
-    start = subprocess.run(
-        [
-            "docker",
-            "run",
-            "-d",
-            "--name",
-            container,
-            "-v",
-            f"{renet}:/usr/local/bin/renet:ro",
-            d.image,
-            "sleep",
-            "infinity",
-        ],
-        check=False,
-    )
-    if start.returncode != 0:
-        log.error(f"could not start {d.image} (rc={start.returncode})")
+    rc = start(container_argv(container, d.image, renet, mirror))
+    if rc != 0:
+        log.error(f"could not start {d.image} (rc={rc})")
         return 1
     try:
-        return report(
-            args.distro, run_checks(args.distro, d, pins, docker_exec(container), event=args.event)
-        )
+        run = exec_factory(container)
+        if mirror is not None:
+            pre.append(configure_mirror(run))
+            if not pre[-1].ok:
+                return report(args.distro, pre)
+        return report(args.distro, [*pre, *run_checks(args.distro, d, pins, run, event=args.event)])
     finally:
-        subprocess.run(["docker", "rm", "-f", container], capture_output=True, check=False)
+        stop(container)
 
 
 # ---------------------------------------------------------------------------
@@ -674,6 +764,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--event",
         default="",
         help="github.event_name; the zypper upstream check runs only on `schedule`",
+    )
+    p_run.add_argument(
+        "--obs-mirror",
+        action="store_true",
+        help="zypper legs: pull the obs-mirror tag for the pin, mount it at /srv/obs-mirror and point renet at it",
+    )
+    p_run.add_argument(
+        "--mirror-dir",
+        default="",
+        help="where --obs-mirror unpacks the tree (default $RUNNER_TEMP, else the system temp dir)",
     )
     p_scope = sub.add_parser("scope", help="decide whether this event runs the matrix")
     p_scope.add_argument("--event", required=True)

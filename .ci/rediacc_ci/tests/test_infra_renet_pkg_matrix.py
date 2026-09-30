@@ -7,17 +7,21 @@ Every case drives the module with captured command output (dnf5, dnf4 and zypper
   * the drift check names the distro and the version when the pinned build is gone from its repository;
   * the pin comparison ignores an epoch the pin does not state (Fedora) and enforces one it does (el10);
   * scope runs every non-PR event, and on a PR only a watched console path, a watched path inside the renet submodule, or the full-ci label.
+  * `run --obs-mirror` mounts the fetched tree read-only at /srv/obs-mirror and writes /etc/rediacc/ceph-zypper-mirror before any check, a fetch miss is a FAIL naming the pin and the dispatch that fixes it (no container starts), and without the flag nothing is fetched, mounted or written (the control).
 """
 
 from __future__ import annotations
 
+import argparse
 from typing import TYPE_CHECKING
 
 import pytest
 
+from rediacc_ci.infra import obs_mirror
 from rediacc_ci.infra import renet_pkg_matrix as m
 
 if TYPE_CHECKING:
+    import pathlib
     from collections.abc import Sequence
 
 DNF5_LOCKED = """Updating and loading repositories:
@@ -480,7 +484,7 @@ def test_upstream_rides_the_zypper_leg_only() -> None:
     assert "upstream: OBS still serves the pin" in names
     assert (
         names.index("upstream: OBS still serves the pin")
-        == names.index("drift: pinned build resolves") + 1
+        == names.index("mirror serves the pin") + 1
     )
     assert moved.calls == 1
     # Control: a dnf leg on the same schedule never calls it.
@@ -504,3 +508,136 @@ def test_run_cli_passes_the_event_through() -> None:
     ]
     # A missing renet stops before any container or network: rc 2, and the parser accepted --event.
     assert m.main(parser_args) == 2
+
+
+# ---------------------------------------------------------------------------
+# run --obs-mirror (PLAN-renet-obs-mirror.md section 4 item 4)
+# ---------------------------------------------------------------------------
+
+LEAP_PIN_TEXT = PIN_TEXT  # host.opensuse-16.0=19.2.3-lp160.2.96
+MIRROR_WRITE = "mkdir -p /etc/rediacc && printf '%s\\n' 'dir:/srv/obs-mirror' > /etc/rediacc/ceph-zypper-mirror"
+
+
+class FakeDocker:
+    """The container seams of cmd_run: records the `docker run` argv, the exec calls and the removal."""
+
+    def __init__(self, exec_rules: list[tuple[tuple[str, ...], m.Result]] | None = None) -> None:
+        self.started: list[list[str]] = []
+        self.stopped: list[str] = []
+        self.exec = FakeExec(
+            exec_rules
+            if exec_rules is not None
+            else [(("cat", obs_mirror.MIRROR_CONFIG), m.Result(0, "dir:/srv/obs-mirror\n", ""))]
+        )
+
+    def start(self, argv: Sequence[str]) -> int:
+        self.started.append(list(argv))
+        return 0
+
+    def factory(self, _container: str) -> FakeExec:
+        return self.exec
+
+    def stop(self, container: str) -> None:
+        self.stopped.append(container)
+
+
+class FakeFetch:
+    def __init__(self, exc: BaseException | None = None) -> None:
+        self.exc = exc
+        self.calls: list[tuple[str, pathlib.Path]] = []
+
+    def __call__(self, pin: str, dest: pathlib.Path) -> None:
+        self.calls.append((pin, dest))
+        if self.exc is not None:
+            raise self.exc
+        dest.mkdir(parents=True, exist_ok=True)
+
+
+def _run_args(tmp_path: pathlib.Path, distro: str, *, obs_mirror_flag: bool) -> argparse.Namespace:
+    renet = tmp_path / "renet"
+    renet.write_text("#!/bin/sh\n", encoding="utf-8")
+    pin_file = tmp_path / ".ceph-image-pin"
+    pin_file.write_text(LEAP_PIN_TEXT, encoding="utf-8")
+    return argparse.Namespace(
+        distro=distro,
+        renet=str(renet),
+        pin_file=str(pin_file),
+        event="pull_request",
+        obs_mirror=obs_mirror_flag,
+        mirror_dir=str(tmp_path / "mirror-base"),
+    )
+
+
+def _drive(args: argparse.Namespace, fetch: FakeFetch, docker: FakeDocker) -> int:
+    return m.cmd_run(
+        args, fetch=fetch, start=docker.start, exec_factory=docker.factory, stop=docker.stop
+    )
+
+
+def test_obs_mirror_mounts_the_tree_and_writes_the_mirror_file(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fetch, docker = FakeFetch(), FakeDocker()
+    _drive(_run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=True), fetch, docker)
+    tree = (tmp_path / "mirror-base" / "obs-mirror-19.2.3-lp160.2.96").resolve()
+    assert fetch.calls == [("19.2.3-lp160.2.96", tree)]
+    argv = docker.started[0]
+    assert f"{tree}:/srv/obs-mirror:ro" in argv
+    assert argv[argv.index(f"{tree}:/srv/obs-mirror:ro") - 1] == "-v"
+    # The mirror file is written first, before `renet ceph install` runs.
+    assert docker.exec.calls[0] == ["sh", "-c", MIRROR_WRITE]
+    first_install = docker.exec.calls.index(["renet", "ceph", "install", "--profile", "admin"])
+    assert first_install > docker.exec.calls.index(["cat", obs_mirror.MIRROR_CONFIG])
+    out = capsys.readouterr().out
+    assert "[PASS] opensuse-16.0: obs mirror present" in out
+    assert "[PASS] opensuse-16.0: obs mirror configured" in out
+    assert "mirror serves the pin" in out
+    assert docker.stopped
+
+
+def test_obs_mirror_fetch_miss_is_a_fail_naming_the_pin_and_the_fix(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    miss = obs_mirror.MirrorError("oras pull ...: not found")
+    fetch, docker = FakeFetch(miss), FakeDocker()
+    rc = _drive(_run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=True), fetch, docker)
+    assert rc == 1
+    assert docker.started == []  # nothing runs against OBS in the mirror's place
+    out = capsys.readouterr().out
+    assert "[FAIL] opensuse-16.0: obs mirror present" in out
+    error = next(line for line in out.splitlines() if line.startswith("::error::"))
+    assert "19.2.3-lp160.2.96" in error
+    assert "dispatch ci-obs-mirror while OBS still serves it" in error
+    assert "not found" in error
+
+
+def test_obs_mirror_unwritable_config_stops_before_the_checks(tmp_path: pathlib.Path) -> None:
+    docker = FakeDocker([(("cat",), m.Result(1, "", "No such file"))])
+    rc = _drive(_run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=True), FakeFetch(), docker)
+    assert rc == 1
+    assert ["renet", "ceph", "install", "--profile", "admin"] not in docker.exec.calls
+    assert docker.stopped
+
+
+def test_without_obs_mirror_nothing_is_fetched_mounted_or_written(tmp_path: pathlib.Path) -> None:
+    fetch, docker = FakeFetch(), FakeDocker()
+    _drive(_run_args(tmp_path, "opensuse-16.0", obs_mirror_flag=False), fetch, docker)
+    assert fetch.calls == []
+    argv = docker.started[0]
+    assert not any("/srv/obs-mirror" in a for a in argv)
+    assert argv.count("-v") == 1
+    assert ["sh", "-c", MIRROR_WRITE] not in docker.exec.calls
+    assert docker.exec.calls[0] == ["renet", "ceph", "install", "--profile", "admin"]
+
+
+def test_obs_mirror_is_refused_on_a_dnf_leg(tmp_path: pathlib.Path) -> None:
+    fetch, docker = FakeFetch(), FakeDocker()
+    assert _drive(_run_args(tmp_path, "fedora-43", obs_mirror_flag=True), fetch, docker) == 2
+    assert fetch.calls == []
+    assert docker.started == []
+
+
+def test_run_cli_accepts_obs_mirror() -> None:
+    args = ["run", "--distro", "opensuse-16.0", "--renet", "/nonexistent/renet", "--obs-mirror"]
+    # The missing renet stops first (rc 2), so the parser accepted the flag and nothing was pulled.
+    assert m.main(args) == 2
