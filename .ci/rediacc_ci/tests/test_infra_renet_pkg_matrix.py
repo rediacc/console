@@ -382,3 +382,125 @@ def test_a_failed_command_leads_with_renets_error_not_the_usage_text() -> None:
         "(Error: failed to install the Nvidia driver: exit status 1)"
     )
     assert "kernel headers install" in v.detail
+
+
+# --- check_upstream: OBS origin primary vs the Leap pin, scheduled runs only ---
+
+LEAP_PIN = "19.2.3-lp160.2.97"
+
+
+class FakeUpstream:
+    """Stands in for obs_upstream_evr: returns an EVR or raises, and counts the calls."""
+
+    def __init__(self, evr: str = "", exc: BaseException | None = None) -> None:
+        self.evr = evr
+        self.exc = exc
+        self.calls = 0
+
+    def __call__(self) -> str:
+        self.calls += 1
+        if self.exc is not None:
+            raise self.exc
+        return self.evr
+
+
+def test_upstream_is_red_when_obs_moved_past_the_pin() -> None:
+    up = FakeUpstream("19.2.3-lp160.2.98")
+    v = m.check_upstream(LEAP_PIN, "schedule", up)
+    assert up.calls == 1
+    assert not v.ok
+    assert not v.skipped
+    assert "19.2.3-lp160.2.98" in v.detail
+    assert f"the pin is {LEAP_PIN}" in v.detail
+    assert "one-line pin bump" in v.detail
+    for site in (
+        'cephpkg.go hostPins["opensuse-16.0"]',
+        ".ceph-image-pin",
+        "ceph_install_profile_test.go",
+    ):
+        assert site in v.detail
+
+
+def test_upstream_is_green_when_obs_serves_the_pin() -> None:
+    # Control for the red case: the same call with an equal EVR passes.
+    up = FakeUpstream(LEAP_PIN)
+    v = m.check_upstream(LEAP_PIN, "schedule", up)
+    assert up.calls == 1
+    assert v.ok
+    assert not v.skipped
+
+
+@pytest.mark.parametrize("event", ["pull_request", "push", "workflow_dispatch", ""])
+def test_upstream_is_skipped_off_schedule_with_an_explicit_line(
+    event: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # A moved OBS off schedule must not even be fetched, let alone red the run.
+    up = FakeUpstream("19.2.3-lp160.2.98")
+    v = m.check_upstream(LEAP_PIN, event, up)
+    assert up.calls == 0
+    assert v.ok
+    assert v.skipped
+    assert v.detail.startswith("skipped: nightly-only")
+    assert m.report("opensuse-16.0", [v]) == 0
+    out = capsys.readouterr().out
+    assert "[SKIP] opensuse-16.0: upstream: OBS still serves the pin: skipped: nightly-only" in out
+    assert "[PASS]" not in out
+    assert "0/1 checks passed, 1 skipped" in out
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        OSError("urlopen error [Errno -3] Temporary failure in name resolution"),
+        m.obs_mirror.MirrorError("gpgv refused repomd.xml (rc=1): BAD signature"),
+        m.obs_mirror.ChecksumMismatchError("primary.xml.zst: sha256 mismatch"),
+    ],
+)
+def test_upstream_failure_to_read_obs_is_a_failure_not_a_pass(exc: BaseException) -> None:
+    v = m.check_upstream(LEAP_PIN, "schedule", FakeUpstream(exc=exc))
+    assert not v.ok
+    assert not v.skipped
+    assert "could not read the OBS origin" in v.detail
+    assert str(exc) in v.detail
+    assert m.report("opensuse-16.0", [v]) == 1
+
+
+def test_upstream_rides_the_zypper_leg_only() -> None:
+    pins = m.read_pins(PIN_TEXT)
+    moved = FakeUpstream("19.2.3-lp160.2.98")
+    leap = m.run_checks(
+        "opensuse-16.0",
+        _distro("opensuse-16.0"),
+        pins,
+        FakeExec([]),
+        event="schedule",
+        upstream=moved,
+    )
+    names = [v.name for v in leap]
+    assert "upstream: OBS still serves the pin" in names
+    assert (
+        names.index("upstream: OBS still serves the pin")
+        == names.index("drift: pinned build resolves") + 1
+    )
+    assert moved.calls == 1
+    # Control: a dnf leg on the same schedule never calls it.
+    other = FakeUpstream("x")
+    fedora = m.run_checks(
+        "fedora-43", _distro("fedora-43"), pins, FakeExec([]), event="schedule", upstream=other
+    )
+    assert other.calls == 0
+    assert "upstream: OBS still serves the pin" not in [v.name for v in fedora]
+
+
+def test_run_cli_passes_the_event_through() -> None:
+    parser_args = [
+        "run",
+        "--distro",
+        "opensuse-16.0",
+        "--renet",
+        "/nonexistent/renet",
+        "--event",
+        "schedule",
+    ]
+    # A missing renet stops before any container or network: rc 2, and the parser accepted --event.
+    assert m.main(parser_args) == 2

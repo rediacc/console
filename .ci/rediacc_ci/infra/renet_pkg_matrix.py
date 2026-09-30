@@ -18,8 +18,13 @@ WHAT `run` PROVES, per distro:
 
   * `renet ceph install --profile admin`, `--profile client` and `--profile fork-dest` exit 0;
   * DRIFT (plan section 2a, D2): the pinned ceph-common and cephadm still resolve from the repository renet
-    configured (Fedora `fedora`, the SIG and OBS `rediacc-ceph-squid`). OBS keeps only its latest build, so
-    this is the check that reds the nightly with the distro and the version before an install breaks;
+    configured (Fedora `fedora`, the SIG and OBS `rediacc-ceph-squid`);
+  * UPSTREAM (zypper legs, SCHEDULED RUNS ONLY; PLAN-renet-obs-mirror.md section 5): the ceph-common/cephadm
+    EVR the OBS origin's gpg-verified `primary` lists (obs_mirror's `upstream` logic, imported) equals the
+    host.opensuse-16.0 pin. OBS keeps only its latest build, so a mismatch means the pinned build is gone and
+    customer Leap installs fail until the one-line pin bump ships. The check runs from the runner, not the
+    container, and only when `--event schedule`: an OBS rebuild must never redden an unrelated pull request.
+    Every other event prints `[SKIP] ... skipped: nightly-only` instead of passing silently;
   * `rpm -q ceph-common cephadm` equals the host.<target> pin in private/renet/.ceph-image-pin, and
     `rbd --version` reports its host-version;
   * the sqlite CLI answers `sqlite3 --version`, and podman is neither installed nor on PATH (cephadm prefers
@@ -47,6 +52,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
+from rediacc_ci.infra import obs_mirror
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -81,6 +87,7 @@ CONSOLE_PATHS = (
     ".ci/rediacc_ci/infra/renet_pkg_matrix.py",
     ".ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py",
     "scripts/gates/check-ceph-image-pin.ts",
+    ".ci/rediacc_ci/infra/obs_mirror.py",
 )
 RENET_PATHS = (
     ".ceph-image-pin",
@@ -153,6 +160,7 @@ class Verdict:
     ok: bool
     detail: str
     warning: str = ""
+    skipped: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -344,6 +352,64 @@ def check_drift(
     )
 
 
+# The only event that runs check_upstream (plan section 5, Q5: red on the nightly only).
+UPSTREAM_EVENT = "schedule"
+# The three places a Leap pin bump touches, all in the renet submodule.
+PIN_SITES = (
+    'pkg/infra/cephpkg/cephpkg.go hostPins["opensuse-16.0"]',
+    ".ceph-image-pin host.opensuse-16.0",
+    "cmd/renet/ceph_install_profile_test.go",
+)
+
+
+def obs_upstream_evr() -> str:
+    """The ceph-common EVR the OBS origin serves, cephadm required at the same EVR (obs_mirror's `upstream`).
+
+    repomd.xml is gpgv-verified against renet's embedded OBS key after its fingerprint is asserted, and
+    `primary` is checksummed against repomd before it is read. Any failure raises.
+    """
+    fingerprint = obs_mirror.obs_fingerprint(obs_mirror.CEPHPKG_GO.read_text(encoding="utf-8"))
+    md = obs_mirror.fetch_metadata(obs_mirror.OBS_ORIGIN, obs_mirror.KEY_FILE, fingerprint)
+    evr = obs_mirror.newest_evr(md.packages, "ceph-common")
+    obs_mirror.pinned_packages(md.packages, evr)
+    return evr
+
+
+def check_upstream(pin: str, event: str, upstream: Callable[[], str]) -> Verdict:
+    """OBS origin `primary` still serves the pinned build (zypper legs, scheduled runs only).
+
+    Off schedule it is an explicit skip, never a silent pass. A network, gpg or parse failure is a FAIL:
+    an unreadable upstream proves nothing about the pin.
+    """
+    name = "upstream: OBS still serves the pin"
+    if event != UPSTREAM_EVENT:
+        return Verdict(
+            name,
+            True,
+            f"skipped: nightly-only (event {event or '(none)'}; runs only on {UPSTREAM_EVENT})",
+            skipped=True,
+        )
+    try:
+        obs_evr = upstream()
+    except (obs_mirror.MirrorError, OSError, ValueError, SyntaxError) as exc:
+        return Verdict(
+            name,
+            False,
+            f"could not read the OBS origin {obs_mirror.OBS_ORIGIN}, so the pin {pin} is unverified: "
+            f"{type(exc).__name__}: {exc}",
+        )
+    if evr_matches(pin, obs_evr):
+        return Verdict(name, True, f"OBS serves {obs_evr}, equal to the pin")
+    return Verdict(
+        name,
+        False,
+        f"OBS REBUILT: {obs_mirror.OBS_ORIGIN} now serves ceph-common/cephadm {obs_evr}, the pin is {pin}. "
+        "OBS keeps only its latest build, so `renet ceph install` on Leap fails (zypper 104) until the pin "
+        f"moves. The fix is a one-line pin bump to {obs_evr} in private/renet: "
+        + "; ".join(PIN_SITES),
+    )
+
+
 def check_versions(
     d: Distro, pin: str, host_version: str, run: Callable[[Sequence[str]], Result]
 ) -> list[Verdict]:
@@ -433,7 +499,12 @@ def check_lock(d: Distro, run: Callable[[Sequence[str]], Result]) -> Verdict:
 
 
 def run_checks(
-    distro_name: str, d: Distro, pins: Pins, run: Callable[[Sequence[str]], Result]
+    distro_name: str,
+    d: Distro,
+    pins: Pins,
+    run: Callable[[Sequence[str]], Result],
+    event: str = "",
+    upstream: Callable[[], str] = obs_upstream_evr,
 ) -> list[Verdict]:
     pin = pins.hosts.get(d.target)
     if not pin:
@@ -444,6 +515,8 @@ def run_checks(
         )
     ]
     out.append(check_drift(distro_name, d, pin, run))
+    if d.manager == "zypper":
+        out.append(check_upstream(pin, event, upstream))
     out.extend(
         check_command(
             f"ceph install --profile {profile}",
@@ -466,7 +539,7 @@ def run_checks(
 def report(distro_name: str, verdicts: Sequence[Verdict]) -> int:
     failed = [v for v in verdicts if not v.ok]
     for v in verdicts:
-        mark = "PASS" if v.ok else "FAIL"
+        mark = "SKIP" if v.skipped else "PASS" if v.ok else "FAIL"
         print(
             f"[{mark}] {distro_name}: {v.name}: {v.detail.splitlines()[0] if v.detail else ''}",
             flush=True,
@@ -478,7 +551,12 @@ def report(distro_name: str, verdicts: Sequence[Verdict]) -> int:
         print(f"::error::{distro_name}: {v.name}: {first}", flush=True)
         if rest:
             print(rest, flush=True)
-    print(f"{distro_name}: {len(verdicts) - len(failed)}/{len(verdicts)} checks passed", flush=True)
+    skipped = sum(v.skipped for v in verdicts)
+    print(
+        f"{distro_name}: {len(verdicts) - len(failed) - skipped}/{len(verdicts)} checks passed"
+        + (f", {skipped} skipped" if skipped else ""),
+        flush=True,
+    )
     return 1 if failed else 0
 
 
@@ -525,7 +603,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         log.error(f"could not start {d.image} (rc={start.returncode})")
         return 1
     try:
-        return report(args.distro, run_checks(args.distro, d, pins, docker_exec(container)))
+        return report(
+            args.distro, run_checks(args.distro, d, pins, docker_exec(container), event=args.event)
+        )
     finally:
         subprocess.run(["docker", "rm", "-f", container], capture_output=True, check=False)
 
@@ -590,6 +670,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     p_run.add_argument("--distro", required=True, choices=sorted(DISTROS))
     p_run.add_argument("--renet", required=True, help="path of the renet binary to mount")
     p_run.add_argument("--pin-file", default=str(PIN_FILE))
+    p_run.add_argument(
+        "--event",
+        default="",
+        help="github.event_name; the zypper upstream check runs only on `schedule`",
+    )
     p_scope = sub.add_parser("scope", help="decide whether this event runs the matrix")
     p_scope.add_argument("--event", required=True)
     p_scope.add_argument("--labels", default="", help="comma-separated PR labels")

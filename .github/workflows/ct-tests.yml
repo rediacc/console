@@ -931,8 +931,9 @@ jobs:
   # renet_pkg_matrix.py runs `renet ceph install` for three profiles, the
   # installed-version, podman and lock checks, the drift check (the pinned
   # build still resolves from its repository: OBS keeps only its latest build,
-  # plan D2) and the GPU resolve-only installs. Rocky 10 and CentOS Stream 10
-  # have no btrfs, so this is the only CI proof they get.
+  # plan D2), on the nightly the OBS upstream check (opensuse-16.0 only), and
+  # the GPU resolve-only installs. Rocky 10 and CentOS Stream 10 have no btrfs,
+  # so this is the only CI proof they get.
   renet-pkg-matrix:
     name: Renet pkg matrix (${{ matrix.distro }})
     # Docker Hub only (Bitwarden credentials), never ghcr, so no packages
@@ -993,8 +994,14 @@ jobs:
       - name: Build renet
         working-directory: private/renet
         run: CGO_ENABLED=0 go build -o "$RUNNER_TEMP/renet" ./cmd/renet
+      # EVENT_NAME is the CALLER's event (a reusable workflow inherits ci.yml's
+      # github context). The zypper leg's upstream check (OBS origin primary vs
+      # the Leap pin) runs only on `schedule`, so an OBS rebuild reddens the
+      # nightly and never an unrelated PR; every other event prints a SKIP line.
       - name: Run the package matrix
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix run --distro "${{ matrix.distro }}" --renet "$RUNNER_TEMP/renet"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_pkg_matrix run --distro "${{ matrix.distro }}" --renet "$RUNNER_TEMP/renet" --event "$EVENT_NAME"
 
   # E2E Ceph Workers on the three non-apt distros with btrfs kernels: Ceph-only
   # node prep, Docker CE on the Ceph-only nodes, the client install on the
