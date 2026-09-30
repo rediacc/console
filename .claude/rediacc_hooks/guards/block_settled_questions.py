@@ -5,7 +5,7 @@ THE PROBLEM, in the operator's words: "I don't know why you ask this question on
 They are right that the document is not enough. Anthropic's own guidance says so: "CLAUDE.md content is delivered as a user message after the system prompt, not as part of the system prompt itself... there's no guarantee of strict compliance", and "If the instruction is something that must run at a specific point... write it as a hook instead. Hooks execute as shell commands at
 fixed lifecycle events and apply regardless of what Claude decides to do." So this is a hook.
 
-WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about committing, branching, pushing, opening a PR or merging, OR a routing question about where a task's work should happen (new worktree vs. the current checkout). CLAUDE.md settles all of those the same way -- "the default deliverable is an uncommitted working tree", "ask for the big-bang, not for permission to
+WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about committing, branching, pushing, opening a PR or merging, OR a routing question about where a task's work should happen (new worktree vs. the current checkout). CLAUDE.md settles all of those the same way -- "verified work is committed right away, in small reviewable commits on the single current branch" (session default 1, 2026-09-25), "ask for the big-bang, not for permission to
 patch one thing", and (2026-09-16, live) "[a worktree/branch routing question] shouldn't have asked ... it has big-bang answering usually" -- so asking costs the operator a round trip to repeat a rule they already wrote down.
 
 THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook that swallows legitimate questions is worse than the nagging it replaces, because the operator never learns what was suppressed. Two independent conditions must BOTH hold:
@@ -13,6 +13,7 @@ THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook t
   1. a permission-seeking shape  (should I / shall I / do you want / may I /
      would you like / is it ok / can I / want me to)
   2. a git-workflow object       (commit / branch / push / PR / merge)
+     in the SAME SENTENCE, not used as a noun ("the main push")
 
 So "Should I commit this?" is refused, while "Which branch strategy fits this repo?" and "Did the rebase drop a commit?" pass untouched: they are questions about DESIGN and FACT, not requests for permission this repo already granted.
 
@@ -37,6 +38,7 @@ given, which is
 
 import datetime
 import json
+import re
 
 from rediacc_hooks import hookio
 
@@ -45,17 +47,20 @@ ORDER = 3
 
 # The clause anchor. Without it a sentence ABOUT the rule is refused as if it were the rule being broken -- "Should I explain in the report why we never commit unasked?" -- which is the mention-vs-target class reaching the pre-ask chain, where check_guard_mention_anchoring.py cannot see it because it globs pre-bash only.
 DEFECT = (
-    "if hookio.grep_q(CLAUSE, between):\n            return hookio.ALLOW",
-    "if False:\n            return hookio.ALLOW",
+    "if re.search(CLAUSE, between):\n            return None",
+    "if False:\n            return None",
 )
 
 PERMISSION = (
     r"(should|shall|may|can) (i|we)|do you want|would you like|want me to|"
     r"is it (ok|okay|fine)|are you happy for|should it be|"
     r"where should|new worktree or|worktree or (the )?current|"
-    r"should (a |the )?(new )?worktree"
+    r"should (a |the )?(new )?worktree|"
+    # 2026-09-30: the branch/worktree ROUTING ask in its "which ... should" spelling, which the forms above never reached ("which branch should this go on?" passed). `branch` must be followed by a space, so "which branching strategy should ..." stays a design question.
+    r"(which|what) (branch|worktree|checkout) (should|shall|do you want|would you like)"
 )
-OBJECT = r"commit|branch|push|pull request|open a pr|[^a-z]pr[^a-z]|merge|worktree"
+# `pr` may end the text: a sentence or question is no longer followed by the joined header that used to supply the trailing character.
+OBJECT = r"commit|branch|push|pull request|open a pr|[^a-z]pr([^a-z]|$)|merge|worktree"
 
 # ---- ANCHOR: the permission must GOVERN the object, not merely precede it ---- Both regexes hit anywhere in the question, so a sentence ABOUT the rule was refused as if it were the rule being broken:
 #
@@ -70,6 +75,26 @@ CLAUSE = (
     r"([^a-z]|$)|,"
 )
 
+# ---- SCOPE: the permission and the object must share a SENTENCE ---- Measured false positive, 2026-09-30 (#a1f111d6). A CI-budget question was refused as a commit/branch permission ask:
+#
+# "Renet (Full) build-renet took 16.7 min on the main push (...). It's on the release path, ... How should it be budgeted?" OBJECT `push` in sentence one, PERMISSION `should it be` in sentence three -> exit 2
+#
+# The object sat BEFORE the permission phrase, which the old code refused on purpose, but across the whole joined payload: every question of a multi-question ask and every header in one string. So the object could come from a different sentence, or a different question, than the permission. A sentence end (`.`, `?`, `!` or `;` followed by whitespace, or a newline) now bounds both
+# conditions. "The commit is staged, should i proceed?" is ONE sentence and still refuses; "~3.7" is not a sentence end.
+# The split keeps the terminator on its sentence (a lookbehind), so `[^a-z]pr[^a-z]` still sees the "?" after "open the pr".
+SENTENCE_END = r"(?<=[.?!;])\s+|\n"
+
+# ---- NOUN USE: "the main push" is an event, not an action ---- The same measurement's sibling: "Should we cap the main push job at 18?" has both conditions in one clause, and `push` there names a CI trigger, not something the assistant is asking leave to do. An object occurrence directly after one of these event modifiers is skipped. The list is closed and short on purpose: `the`/`a`
+# are NOT in it, so the lowercased `should i open the pr?` still refuses.
+NOUN_MODIFIER = r"(^|[^a-z])(main|nightly|ci|edge|stable|every|each|per|on)[ -]$"
+
+# ---- A HEADER CARRIES THE OBJECT only when it IS the object ---- The bash original joined headers into the same string so a question whose header named the action ("Commit" over a bare go-ahead question) still refused. That join is also what let one question's object meet another question's permission. A header now counts only when it is essentially just the git action (an
+# optional verb and article, then the object), so a topic chip like "Push strategy" or "Renet budget" never supplies an object.
+HEADER_OBJECT = (
+    r"^[^a-z]*((create|open|new|make|cut) )?((a|the) )?"
+    r"(commit|branch|push|pull request|pr|merge|worktree)[^a-z]*$"
+)
+
 # `tr '[:upper:]' '[:lower:]'` under LC_ALL=C: the 26 ASCII letters, nothing
 # else. See the port note in the module docstring.
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
@@ -82,9 +107,11 @@ NO_JQ = (
 MESSAGE = """BLOCKED: CLAUDE.md already answers this, so asking spends a round trip repeating
 a rule the operator has written down twice.
 
-  Session default 1: "The default deliverable is an uncommitted working tree.
-  Do not git commit, create a branch, push, or open a PR unless the operator
-  asks for it in that task."
+  Session default 1: "Verified work is committed right away, in small
+  reviewable commits on the single current branch." Pushes run on a cadence
+  ("at an epic milestone, at least every 2 hours of committed work, and before
+  a stop that leaves unpushed commits"), and "a second branch or PR is the
+  operator's own `!` command; there is nothing to ask for."
 
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
   put the whole cluster into a single plan and ask to run it."
@@ -93,9 +120,10 @@ a rule the operator has written down twice.
   `git worktree add` stays hook-blocked from the assistant's own Bash tool
   regardless, so a new one only ever comes from the operator's own `!` prefix.
 
-Proceed with the documented default: leave the work uncommitted, and if a
-decision genuinely needs the operator, park it as a worklist [?] carrying its
-own DEFAULT rather than blocking the turn on a question.
+Proceed with the documented default: commit each verified unit on the current
+branch, push on the documented cadence, and if a decision genuinely needs the
+operator, park it as a worklist [?] carrying its own DEFAULT rather than
+blocking the turn on a question.
 
 If you are NOT asking for permission -- a design question that happens to
 mention branching, or a factual question about a merge -- rephrase it as the
@@ -129,6 +157,55 @@ EDGE_CASES = [
     ),
     ("should a new worktree be created", "Should a new worktree be created for this task?"),
     ("new worktree or continue", "New worktree or continue in the current checkout?"),
+    ("which branch should this go on", "Which branch should this go on?"),
+    ("which worktree should", "Which worktree should I use for this?"),
+    ("can I push", "Can I push?"),
+    ("should I open the pr", "Should I open the PR?"),
+    ("push to main is still an action", "Should I push to main now?"),
+    (
+        "a header that is the object",
+        {"tool_input": {"questions": [{"question": "Should I go ahead?", "header": "Commit"}]}},
+    ),
+    # 2026-09-30 (#a1f111d6), MEASURED: a CI job-budget ask refused as a commit/branch permission question. Object (`push`) and permission (`should it be`) sat three sentences apart, across two questions.
+    (
+        "a budget question naming the main push (measured)",
+        {
+            "tool_input": {
+                "questions": [
+                    {
+                        "question": "Renet (Full) build-renet took 16.7 min on the main push "
+                        "(cold build; ~3.7 on PRs). It's on the release path, and a 15-min "
+                        "timeout would cancel a release. How should it be budgeted?",
+                        "header": "Renet budget",
+                        "options": [
+                            {"label": "Cap at 20 (Recommended)"},
+                            {"label": "Keep 15, fix the cold build"},
+                        ],
+                    },
+                    {
+                        "question": "E2E Workers jobs ran past 15 min on the main push. "
+                        "Should both be capped at 18, or kept at 15?",
+                        "header": "E2E budget",
+                        "options": [
+                            {"label": "Cap both at 18 (Recommended)"},
+                            {"label": "Keep 15"},
+                        ],
+                    },
+                ]
+            }
+        },
+    ),
+    ("the main push as a noun", "Should we cap the main push job at 18 minutes?"),
+    ("on push as a trigger", "Should we run the lane on push or nightly?"),
+    (
+        "a topic header is not an object",
+        {
+            "tool_input": {
+                "questions": [{"question": "Should it be capped at 20?", "header": "Push timeout"}]
+            }
+        },
+    ),
+    ("which branching strategy should", "Which branching strategy should this repo use?"),
     # CONTROL: mentioning worktrees is not itself permission-seeking.
     ("a design question about worktrees", "How are worktrees organized across the repos?"),
     # A payload shaped as the single-question form rather than the array.
@@ -184,6 +261,70 @@ def _record(ev, question, perm_hit, obj_hit):
         pass
 
 
+def _text(node):
+    """A field as `jq -r` would print it: nothing for null, JSON for a non-string."""
+    if node is None:
+        return ""
+    if isinstance(node, str):
+        return node
+    return json.dumps(node, separators=(",", ":"))
+
+
+def _entries(doc):
+    """(question, header) per asked question, ASCII-lowercased.
+
+    Per QUESTION rather than one joined string: the join is what let the first question's object meet the second question's permission (see SCOPE).
+    """
+    tool_input = doc.get("tool_input") if isinstance(doc, dict) else None
+    if not isinstance(tool_input, dict):
+        return []
+    out = []
+    if tool_input.get("question") is not None:
+        out.append((_text(tool_input.get("question")), ""))
+    questions = tool_input.get("questions")
+    if isinstance(questions, list):
+        out.extend(
+            (_text(item.get("question")), _text(item.get("header")))
+            for item in questions
+            if isinstance(item, dict)
+        )
+    return [(q.translate(_ASCII_LOWER), h.translate(_ASCII_LOWER)) for q, h in out]
+
+
+def _objects(sentence):
+    """Every OBJECT occurrence that is an action, as (start, end, text); noun uses skipped."""
+    found = []
+    for m in re.finditer(OBJECT, sentence):
+        # Every OBJECT alternative contains a letter; `[^a-z]pr...` starts on the non-letter before it.
+        core = m.start() + (0 if m.group(0)[0].isalpha() else 1)
+        if re.search(NOUN_MODIFIER, sentence[:core]):
+            continue
+        found.append((m.start(), m.end(), m.group(0)))
+    return found
+
+
+def _judge(sentence, header_object):
+    """(permission, object) when this sentence asks leave for a settled action, else None."""
+    perm = re.search(PERMISSION, sentence)
+    if perm is None:
+        return None
+    objects = _objects(sentence)
+    if not objects:
+        # The header IS the git action ("Commit" over a bare go-ahead question): it supplies the object, and the clause anchor still applies to what follows the permission.
+        if header_object and not re.search(CLAUSE, sentence[perm.end() :]):
+            return perm.group(0), header_object
+        return None
+    obj = objects[0][2]
+    after = [o for o in objects if o[0] >= perm.end()]
+    if any(o[2] == obj for o in after):
+        start = next(o[0] for o in after if o[2] == obj)
+        between = sentence[perm.end() : start]
+        if re.search(CLAUSE, between):
+            return None
+    # else: the object sits BEFORE the permission phrase, in the same sentence ("The commit is staged, should i proceed?"). Left refusing, deliberately.
+    return perm.group(0), obj
+
+
 def run(ev):
     # jq IS NOT GUARANTEED HERE, and this comment used to claim it was: "jq is guaranteed here: require-jq.sh runs first in this same chain and fails closed without it." That is false. The AskUserQuestion matcher in .claude/settings.json contains exactly ONE hook -- this one -- so nothing runs ahead of it. Without jq the command substitution below produced an empty QUESTION and the
     # `[ -z ... ]` guard passed the question through SILENTLY: a gate that cannot fire, wearing a comment that promised it could.
@@ -201,29 +342,20 @@ def run(ev):
         ("tool_input", "questions", "[]?", "header"),
     ):
         parts.extend(hookio._jq_collect(ev.doc, path))
+    # The joined text is what the ledger records, unchanged; the MATCH runs per question and per sentence below.
     question = hookio._command_substitution(" ".join(parts)).translate(_ASCII_LOWER)
     if question == "":
         return hookio.ALLOW
 
-    perm_hit = _first_match(PERMISSION, question)
-    if perm_hit == "":
-        return hookio.ALLOW
-    obj_hit = _first_match(OBJECT, question)
-    if obj_hit == "":
-        return hookio.ALLOW
-
-    # `AFTER_PERM="${QUESTION#*"$PERM_HIT"}"` -- the shortest prefix, so the
-    # FIRST occurrence of the permission phrase.
-    cut = question.find(perm_hit)
-    after_perm = question[cut + len(perm_hit) :] if cut >= 0 else question
-    if obj_hit in after_perm:
-        # `BETWEEN="${AFTER_PERM%%"$OBJ_HIT"*}"` -- up to the first occurrence.
-        between = after_perm[: after_perm.find(obj_hit)]
-        if hookio.grep_q(CLAUSE, between):
-            return hookio.ALLOW
-    # else: the object sits BEFORE the permission phrase. Left refusing,
-    # deliberately: this anchor exists to stop a false positive, and guessing at an unmeasured word order is how anchoring turns into narrowing.
-
-    _record(ev, question, perm_hit, obj_hit)
-    ev.warn_raw(MESSAGE)
-    return hookio.DENY
+    for text, header in _entries(ev.doc):
+        header_hit = re.search(HEADER_OBJECT, header)
+        header_object = header_hit.group(5) if header_hit else ""
+        for sentence in [*re.split(SENTENCE_END, text), header]:
+            if sentence.strip() == "":
+                continue
+            verdict = _judge(sentence, header_object)
+            if verdict is not None:
+                _record(ev, question, verdict[0], verdict[1])
+                ev.warn_raw(MESSAGE)
+                return hookio.DENY
+    return hookio.ALLOW
