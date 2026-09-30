@@ -172,6 +172,8 @@ PORTED_FUNCTIONS = (
     ("has_npm_script", "has_npm_script"),
     # The machine-mutating half, 2026-09-24, proved by `core/local_common_actions_shadow_driver.py`.
     ("ensure_cpu_features_gypi", "ensure_cpu_features_gypi"),
+    ("_deps_hash", "deps_hash"),
+    ("deps_are_current", "deps_are_current"),
     ("ensure_deps", "ensure_deps"),
     ("ensure_packages_built", "ensure_packages_built"),
     ("ensure_cli_built", "ensure_cli_built"),
@@ -184,6 +186,7 @@ PORTED_FUNCTIONS = (
     ("ensure_bashcov_sup", "ensure_bashcov_sup"),
     ("ensure_host_tools", "ensure_host_tools"),
     ("reexec_with_docker_group", "reexec_with_docker_group"),
+    ("_reset_docker_memo", "reset_docker_memo"),
     ("ensure_docker_installed", "ensure_docker_installed"),
     ("_ensure_docker_group", "ensure_docker_group"),
     ("_renet_source_hash", "renet_source_hash"),
@@ -199,13 +202,13 @@ NOT_PORTED_FUNCTIONS: tuple[str, ...] = ()
 
 
 def test_the_twin_still_defines_every_function_this_slice_names() -> None:
-    """Thirty, measured rather than remembered."""
+    """Thirty-three, measured rather than remembered."""
     text = twin_text()
     for name, _ in PORTED_FUNCTIONS:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
     for name in NOT_PORTED_FUNCTIONS:
         assert "\n%s() {" % name in text, "%s is gone from %s" % (name, TWIN)
-    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 30
+    assert len(PORTED_FUNCTIONS) + len(NOT_PORTED_FUNCTIONS) == 33
     # And the twin defines NOTHING ELSE, so a function added later cannot slip past the classification above unnoticed.
     defined = [line.split("(")[0] for line in text.split("\n") if line.endswith("() {")]
     named = {name for name, _ in PORTED_FUNCTIONS} | set(NOT_PORTED_FUNCTIONS)

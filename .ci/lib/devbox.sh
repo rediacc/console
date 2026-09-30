@@ -739,7 +739,7 @@ devbox_autostart_dispatch() {
         ${db_port:+-e DEVBOX_DB_PORT="$db_port"} \
         ${term_port:+-e DEVBOX_TERM_PORT="$term_port"} \
         "$cid" bash "$script" 2>&1 |
-        while IFS= read -r _l; do [[ -n "$_l" ]] && log_info "  $_l"; done
+        while IFS= read -r _l; do [[ -n "$_l" ]] && log_info "  $_l"; done || true
     return 0
 }
 

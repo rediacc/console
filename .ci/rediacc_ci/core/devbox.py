@@ -1,6 +1,6 @@
-"""`.ci/lib/devbox.sh`, ported function for function: all forty-six of them.
+"""`.ci/lib/devbox.sh`, ported function for function: all fifty-four of them.
 
-PORTED FROM `.ci/lib/devbox.sh` (1270 lines, 46 functions).
+PORTED FROM `.ci/lib/devbox.sh` (1606 lines, 54 functions).
 The twin still exists, is untouched by this file, and is still sourced at `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35` (inside the bridged `bash -c` prelude), `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090`. Those five are the real `source` sites; nothing is cut over here.
 This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/rediacc_ci/core/local_common.py` is the worked precedent: its twin `.ci/lib/local-common.sh` is still sourced at five sites while the port carries a K=5 ledger.
 
@@ -11,8 +11,8 @@ EVERY FUNCTION THE TWIN DEFINES HAS A COUNTERPART, in two shapes.
 
   THE THREE PURE ONES are module-level functions, exactly as the first slice (2026-09-23) shipped them: `slugify` (`devbox_slugify:186`), `slug_drift` (`devbox_slug_drift:242`) and `route_label` (`devbox_route_label:902`). Their whole answer is computation over their own arguments, and they stay importable without constructing anything.
 
-  THE OTHER FORTY-THREE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
-  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all forty-six through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
+  THE OTHER FIFTY-ONE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
+  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-four through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
 
 EACH METHOD TAKES ITS ARGUMENTS AS BASH DOES, as strings in `*argv`, and RETURNS AN EXIT STATUS. What the function prints goes to the instance's `stdout` and `stderr` streams, never to a return value, because every caller of the twin reads a function's answer by capturing what it PRINTED (`d="$(devbox_docker)"`) and its verdict by its STATUS (`devbox_container_running || ...`).
 A port that returned values instead would have to restate, at every call site, which of the two channels the twin's caller really read.
@@ -59,7 +59,7 @@ TWIN DEFECTS REPRODUCED ON PURPOSE, NOT FIXED
   6. A ZERO-PADDED `base_port` IS OCTAL. `$((base_port + DEVBOX_OFFSET_VSCODE))` is shell arithmetic, which reads `017000` as octal 7680, so a hand-edited state file moves every route to a port nothing listens on. `bash_int()` reproduces it. Pinned by `up-create`.
   7. `docker ps` FAILING KILLS A DIRECTLY CALLED FUNCTION, SILENTLY, WHEREVER `cid="$(devbox_container_id)"` IS A BARE ASSIGNMENT: `./run.sh devbox stop` exits with `docker ps`'s status and prints nothing, and `devbox_slug_active`, `devbox_container_running`, `devbox_router_hosts`, `devbox_missing_binds`, `devbox_remove`, `devbox_logs`, `devbox_shell` and `devbox_exec` share the shape. Pinned by `docker-query` and `lifecycle`.
      A caller that reaches the same function THROUGH a command substitution survives, because errexit is not inherited into `$(...)`. That was measured, not assumed, and it corrected this port's first draft: `devbox_url` with no slug keeps going through `slug="$(devbox_slug_active)"` and prints the recomputed slug (`identity`'s `url-ps-fails`).
-  8. `devbox_status` DIES IF THE LABEL INSPECT FAILS AFTER THE RUNNING CHECK SUCCEEDED, because `_hosts="$(devbox_router_hosts)"` carries the inspect's status through pipefail into a bare assignment. It is a race in production (a container removed between two `docker inspect` calls); the stub farm makes it deterministic. Pinned by `status`.
+  8. RETIRED. `devbox_status` used to DIE IF THE LABEL INSPECT FAILED AFTER THE RUNNING CHECK SUCCEEDED, because `_hosts="$(devbox_router_hosts)"` carried the inspect's status through pipefail into a bare assignment. The labels are now fetched once by `devbox_container_labels`, whose inspect is `|| true`, so the table prints under the basename slug instead. `status`'s `hosts-fail` step pins the new behaviour.
   9. `devbox_up`'s "Starting existing devbox container" PATH DIES ON A FAILED `docker start` WITH NO MESSAGE: `$d start "$cid" >/dev/null` is a bare statement under errexit and its stderr is the only explanation. Pinned by `up-existing`.
  10. THE BASENAME FALLBACK HOSTNAME DEPENDS ON THE CALLER'S LOCALE. `devbox_slug_basename` runs `tr` and `sed` WITHOUT the `LC_ALL=C` its sibling `devbox_slugify` forces, so a multibyte character in a worktree directory name becomes one dash per BYTE under `LC_ALL=C` and one dash per CHARACTER under a UTF-8 locale.
      The same checkout gets two different hostnames depending on who runs `./run.sh devbox up`. The port follows the locale the same way (`locale_is_utf8()`), and `identity-detached` and `identity-utf8` pin the two answers side by side.
@@ -101,6 +101,7 @@ import re
 import stat
 import subprocess
 import sys
+import time
 from typing import Any
 
 from rediacc_ci import log
@@ -126,6 +127,8 @@ ROUTE_NO_BACKEND = "no backend yet"
 ROUTE_NO_ROUTER = "no such router -- nothing serves this hostname"
 ROUTE_AMBIGUOUS_404 = "no matching route, or a backend 404 (HTTP %s)"
 ROUTE_LIVE = "live (HTTP %s)"
+# A 502 whose backend process is ALIVE: coming up or wedged, and the probe cannot tell which, so the row names the command that settles both rather than promising "starting".
+ROUTE_NOT_SERVING_YET = "not serving yet -- ./run.sh devbox up re-dispatches it"
 
 # What `${3:-unknown}` supplies for a missing OR EMPTY third argument. Reproduced behaviour 5.
 ROUTED_UNKNOWN = "unknown"
@@ -186,12 +189,28 @@ HOME_BINDS = (
 
 # `devbox_status`'s four routes, `.ci/lib/devbox.sh:986-989`, already split the way `IFS=: read -r _ _label _suffix _hint` splits them: (label, suffix, hint). The driver's `status` scenario is what proves the split, because a mis-split hint would move the 502 row.
 # The Terminal row carries NO hint on purpose: ttyd is started by devbox-autostart.sh, so there is no command an operator could run to fix a 502 there -- the answer is the container's ttyd.log, not a verb.
-STATUS_ROUTES = (
-    ("VS Code", "", ""),
-    ("Account", "account", "./run.sh account dev (INSIDE the devbox)"),
-    ("Database", "db", "./run.sh account db (INSIDE the devbox)"),
-    ("Terminal", "term", ""),
+# `_devbox_route_specs`: key, label, suffix, hint, and the pgrep pattern that tells a starting backend from an absent one. The single table `status` prints and `await_ready` waits on.
+ROUTE_SPECS = (
+    ("code", "VS Code", "", "", ""),
+    (
+        "account",
+        "Account",
+        "account",
+        "./run.sh account dev (INSIDE the devbox)",
+        "run.sh account dev",
+    ),
+    ("db", "Database", "db", "./run.sh account db (INSIDE the devbox)", "run.sh account db"),
+    ("term", "Terminal", "term", "", "ttyd"),
 )
+# Every label as `key=value`, one per line, in ONE inspect; `devbox_container_labels`.
+LABELS_FORMAT = '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\\n"}}{{end}}'
+# The container's environment, one variable per line; `devbox_autostart_dispatch`.
+ENV_FORMAT = "{{range .Config.Env}}{{println .}}{{end}}"
+# `devbox_docker_init`'s memo. EXPORTED, so children inherit it; a `$(...)` cannot write it back.
+DOCKER_MEMO = "_DEVBOX_DOCKER"
+READY_NOMINAL_S = 90
+READY_CEILING_S = 300
+SPINNER = "|/-\\"
 
 # The environment `devbox_exec` forwards by NAME with `-e`, `.ci/lib/devbox.sh:1085`.
 EXEC_FORWARDED_ENV = ("CI", "NO_COLOR", "TERM", "GH_TOKEN", "GITHUB_TOKEN")
@@ -321,7 +340,9 @@ def slug_drift(want: str | None = None, baked: str = "", recorded: str = "") -> 
     return Outcome("".join(out), 0)
 
 
-def route_label(code: str | None = None, hint: str = "", routed: str = ROUTED_UNKNOWN) -> Outcome:
+def route_label(
+    code: str | None = None, hint: str = "", routed: str = ROUTED_UNKNOWN, starting: str = "no"
+) -> Outcome:
     """`devbox_route_label`, `.ci/lib/devbox.sh:902-916`.
 
     THE INVARIANT IT CARRIES IS THAT THE WORD NEVER CONTRADICTS THE CODE, and the twin's own comment records "OK (404)" shipping for one commit as the failure that motivated it.
@@ -336,6 +357,8 @@ def route_label(code: str | None = None, hint: str = "", routed: str = ROUTED_UN
     if code == "000":
         return Outcome(ROUTE_PROXY_UNREACHABLE + "\n", 0)
     if code == "502":
+        if starting == "yes":
+            return Outcome(ROUTE_NOT_SERVING_YET + "\n", 0)
         suffix = " -- %s" % hint if hint else ""
         return Outcome(ROUTE_NO_BACKEND + suffix + "\n", 0)
     if code == "404":
@@ -657,7 +680,7 @@ def repo_root_default() -> str:
 
 
 class Devbox:
-    """The forty-three side-effecting functions, over one environment and one pair of streams.
+    """The fifty-one side-effecting functions, over one environment and one pair of streams.
 
     CONSTRUCT ONE PER TOP-LEVEL CALL. The instance carries the shell state bash would carry across one invocation (errexit, the current streams) and the configuration bash resolves at SOURCE time (`CONSOLE_ROOT_DIR`, the state file, `DEVBOX_LIB_DIR`, `DEVBOX_CI_DIR`, whether stderr gets colour). A long-lived instance would freeze the source-time answers across calls, which is also what a long-lived shell does, and is fine; it is the per-call mutable part that must not leak.
 
@@ -737,6 +760,8 @@ class Devbox:
         """
         buffer = io.BytesIO()
         saved = (self.stdout, self.stderr, self.errexit)
+        # A SUBSHELL'S ENVIRONMENT DIES WITH IT. `d="$(devbox_docker)"` may seed the docker memo inside the substitution, and bash drops that on the way out; only `devbox_docker_init` called from the parent persists it.
+        saved_env = dict(self.env)
         self.stdout = buffer
         if err == NULL:
             self.stderr = open(os.devnull, "wb")  # noqa: SIM115 -- closed in the finally below
@@ -751,6 +776,7 @@ class Devbox:
             if err == NULL:
                 self.stderr.close()
             self.stdout, self.stderr, self.errexit = saved
+            self.env = saved_env
         text = buffer.getvalue().replace(b"\0", b"").decode("utf-8", "surrogateescape")
         return status, text.rstrip("\n")
 
@@ -905,7 +931,14 @@ class Devbox:
     def route_label(self, *argv: str) -> int:
         """`devbox_route_label`: prints `route_label`'s one line, status 0, or the nounset death."""
         code = self._req(argv, 0)
-        self.write(route_label(code, self._opt(argv, 1), self._opt(argv, 2, ROUTED_UNKNOWN)).out)
+        self.write(
+            route_label(
+                code,
+                self._opt(argv, 1),
+                self._opt(argv, 2, ROUTED_UNKNOWN),
+                self._opt(argv, 3, "no"),
+            ).out
+        )
         return 0
 
     # ------------------------------------------------------------------ IDENTITY
@@ -965,20 +998,36 @@ class Devbox:
         """`d="$(devbox_docker)"` then `$d` unquoted: the one or two words every docker call starts with."""
         return self.sub(self.docker)[1].split()
 
-    def docker(self, *_argv: str) -> int:
-        """`devbox_docker`, `.ci/lib/devbox.sh:93-101`: docker, or sudo docker when the group is not active in this shell yet.
+    def docker_init(self, *_argv: str) -> int:
+        """`devbox_docker_init`: resolve docker vs sudo docker ONCE and export it as `_DEVBOX_DOCKER`.
 
-        Three probes in order, each silenced: `docker version`, then `sudo -n docker version`, then `sudo docker version` (which may prompt). The answer is `docker` again when all three fail, so the caller's next command fails with docker's own message rather than this function's. It is asked AGAIN by every helper that needs it, and the port asks as often: the transcript counts the calls.
+        Three probes in order, each silenced: `docker version`, then `sudo -n docker version`, then `sudo docker version` (which may prompt). The answer is `docker` again when all three fail, so the caller's next command fails with docker's own message. An already-set memo returns at once.
+        THE MEMO IS THE ENVIRONMENT, not an attribute: every twin call site is `d="$(devbox_docker)"`, a subshell, so only a value exported from the parent (here, `self.env` outside any `sub`) survives to the next call, and children inherit it the same way.
         """
+        if self.env.get(DOCKER_MEMO):
+            return 0
         if self.run(["docker", "version"], out=NULL, err=NULL)[0] == 0:
-            self.write("docker\n")
+            answer = "docker"
         elif (
             self.run(["sudo", "-n", "docker", "version"], out=NULL, err=NULL)[0] == 0
             or self.run(["sudo", "docker", "version"], out=NULL, err=NULL)[0] == 0
         ):
-            self.write("sudo docker\n")
+            answer = "sudo docker"
         else:
-            self.write("docker\n")
+            answer = "docker"
+        self.env[DOCKER_MEMO] = answer
+        return 0
+
+    def docker(self, *_argv: str) -> int:
+        """`devbox_docker`: the memo, seeding it first when nothing did. Seeded inside a `sub`, the seed dies with the substitution, exactly as the twin's does."""
+        if not self.env.get(DOCKER_MEMO):
+            self.docker_init()
+        self.write(self.env[DOCKER_MEMO] + "\n")
+        return 0
+
+    def docker_reset(self, *_argv: str) -> int:
+        """`devbox_docker_reset`: drop the memo after anything that changes whether docker is usable."""
+        self.env.pop(DOCKER_MEMO, None)
         return 0
 
     # ------------------------------------------------------------------ STATE
@@ -1100,26 +1149,48 @@ class Devbox:
         self.write(s + "\n")
         return 0
 
-    def slug_active(self, *_argv: str) -> int:
-        """`devbox_slug_active`, `.ci/lib/devbox.sh:224-238`: what the RUNNING container was built with.
+    def container_labels(self, *argv: str) -> int:
+        """`devbox_container_labels [cid]`: every label on the devbox container as `key=value` lines, in ONE inspect.
 
-        Everything the operator is shown, and every probe, must use this and not a freshly computed slug: after a branch rename the two disagree, and a probe against the recomputed name reaches no router at all. No container is `devbox_slug`; a container with no slug label (`<no value>` or empty) predates the label and is hosted under the old basename rule, which is exactly what it was created with.
+        `devbox_slug_active` and `devbox_router_hosts` each used to run their own inspect for a subset of this, plus a `docker ps` each to find the container. A caller that already holds the id passes it. The inspect is `|| true`, so the status is 0 whatever docker says.
         """
-        status, cid = self.sub(self.container_id)
-        self.checked(status)
+        cid = self._opt(argv, 0)
         if not cid:
-            self.checked(self.slug())
+            status, cid = self.sub(self.container_id)
+            self.checked(status)
+        if not cid:
             return 0
         d = self.docker_words()
-        _, s = self.value(
-            [*d, "inspect", "-f", '{{index .Config.Labels "%s"}}' % DEVBOX_SLUG_LABEL_KEY, cid],
-            err=NULL,
-        )
-        if s == "<no value>":
-            s = ""
-        if not s:
-            s = self.sub(self.slug_basename)[1]
-        self.write(s + "\n")
+        self.run([*d, "inspect", "-f", LABELS_FORMAT, cid], err=NULL)
+        return 0
+
+    def slug_active(self, *argv: str) -> int:
+        """`devbox_slug_active [labels]`: what the RUNNING container was built with.
+
+        Everything the operator is shown, and every probe, must use this and not a freshly computed slug: after a branch rename the two disagree, and a probe against the recomputed name reaches no router at all. No container is `devbox_slug`; a container with no slug label predates the label and is hosted under the old basename rule, which is exactly what it was created with.
+        The slug is read out of `labels` (fetched here when the caller has none) through `sed -n "s/^${KEY}=//p" | head -1`, whose key is a BRE: see `bre_prefix`.
+        """
+        labels = self._opt(argv, 0)
+        if not labels:
+            status, cid = self.sub(self.container_id)
+            self.checked(status)
+            if not cid:
+                self.checked(self.slug())
+                return 0
+            status, labels = self.sub(self.container_labels, cid)
+            self.checked(status)
+        pattern = bre_prefix(DEVBOX_SLUG_LABEL_KEY)
+        found = ""
+        for line in (labels + "\n").encode("utf-8", "surrogateescape").split(b"\n")[:-1]:
+            match = pattern.match(line)
+            if match:
+                found = line[match.end() :].decode("utf-8", "surrogateescape")
+                break
+        if found == "<no value>":
+            found = ""
+        if not found:
+            found = self.sub(self.slug_basename)[1]
+        self.write(found + "\n")
         return 0
 
     def slug_conflicts(self, *argv: str) -> int:
@@ -1154,31 +1225,22 @@ class Devbox:
                 self.write(other + "\n")
         return 0
 
-    def router_hosts(self, *_argv: str) -> int:
-        """`devbox_router_hosts`, `.ci/lib/devbox.sh:274-281`: every hostname the running container declares a router for.
+    def router_hosts(self, *argv: str) -> int:
+        """`devbox_router_hosts [labels]`: every hostname the running container declares a router for.
 
-        The authority for "is this 404 traefik saying no-such-router, or the backend saying not-found?", a question the status code alone cannot answer. Every label VALUE, one per line, through `sed -n 's/.*Host(`\\([^`]*\\)`).*/\\1/p'`: the LAST `Host(` on a line wins because the leading `.*` is greedy. The status is the inspect's, through pipefail (twin defect 8 rides on it).
+        The authority for "is this 404 traefik saying no-such-router, or the backend saying not-found?", a question the status code alone cannot answer. Every label line through `sed -n 's/.*Host(`\\([^`]*\\)`).*/\\1/p'`: the LAST `Host(` on a line wins because the leading `.*` is greedy. The labels arrive through `printf '%s\\n'`, so every line is terminated and the status is sed's, 0.
         """
-        status, cid = self.sub(self.container_id)
-        self.checked(status)
-        if not cid:
+        labels = self._opt(argv, 0)
+        if not labels:
+            status, labels = self.sub(self.container_labels)
+            self.checked(status)
+        if not labels:
             return 0
-        d = self.docker_words()
-        inspect_status, labels = self.run(
-            [*d, "inspect", "-f", '{{range $k, $v := .Config.Labels}}{{$v}}{{"\\n"}}{{end}}', cid],
-            out=CAPTURE,
-            err=NULL,
-        )
-        raw = labels.encode("utf-8", "surrogateescape")
-        chunks = raw.split(b"\n")
-        for position, line in enumerate(chunks):
-            if position == len(chunks) - 1 and line == b"":
-                break
+        for line in (labels + "\n").encode("utf-8", "surrogateescape").split(b"\n")[:-1]:
             match = re.match(rb".*Host\(`([^`]*)`\)", line, re.DOTALL)
             if match:
-                terminated = position < len(chunks) - 1
-                self.write(match.group(1) + (b"\n" if terminated else b""))
-        return inspect_status
+                self.write(match.group(1) + b"\n")
+        return 0
 
     def url(self, *argv: str) -> int:
         """`devbox_url`, `.ci/lib/devbox.sh:283-291`: `http://<slug>[-<suffix>].localhost:8090`.
@@ -1487,11 +1549,13 @@ class Devbox:
         self.write(listing if cut < 0 else listing[: cut + 1])
         return status
 
-    def container_running(self, *_argv: str) -> int:
-        """`devbox_container_running`, `.ci/lib/devbox.sh:444-450`."""
+    def container_running(self, *argv: str) -> int:
+        """`devbox_container_running [cid]`: a caller that already resolved the id passes it, saving the `docker ps`."""
         d = self.docker_words()
-        status, cid = self.sub(self.container_id)
-        self.checked(status)
+        cid = self._opt(argv, 0)
+        if not cid:
+            status, cid = self.sub(self.container_id)
+            self.checked(status)
         if not cid:
             return 1
         _, running = self.value([*d, "inspect", "-f", "{{.State.Running}}", cid], err=NULL)
@@ -1551,6 +1615,192 @@ class Devbox:
                 self.write(dest + "\n")
         return 0
 
+    def service_process_alive(self, *argv: str) -> int:
+        """`devbox_service_process_alive <pattern>`: a process matching it is alive INSIDE the devbox.
+
+        Used only to word a 502 and to decide whether a 502 is worth waiting on; never to call a service healthy, which is the port probe's job.
+        """
+        pattern = self._req(argv, 0)
+        if not pattern:
+            return 1
+        status, cid = self.sub(self.container_id)
+        self.checked(status)
+        if not cid:
+            return 1
+        d = self.docker_words()
+        return self.run([*d, "exec", cid, "pgrep", "-f", pattern], out=NULL, err=NULL)[0]
+
+    def route_specs(self, *_argv: str) -> int:
+        """`_devbox_route_specs`: the four routed services, one `key:label:suffix:hint:pattern` line each."""
+        for spec in ROUTE_SPECS:
+            self.write(":".join(spec) + "\n")
+        return 0
+
+    def probe_services(self, *argv: str) -> int:
+        """`_devbox_probe_services <slug> <hosts>`: one probe round, one `key:label:suffix:hint:pattern:code:routed:starting` line per service.
+
+        The twin fires the four curls CONCURRENTLY (background subshells writing to a `mktemp -d`), so their order in a transcript is not fixed; this port fires them in table order and the differential driver sorts that one run of probe calls on both sides. Everything after the curls is sequential in both: the `pgrep` behind a 502 is asked in table order.
+        A probe that cannot reach a route reports `000` (`|| true` inside the substitution), never an abort.
+        """
+        slug = self._req(argv, 0)
+        hosts = self._req(argv, 1)
+        codes: dict[str, str] = {}
+        for key, _label, suffix, _hint, _pattern in ROUTE_SPECS:
+            host = "%s%s.%s" % (slug, "-" + suffix if suffix else "", DEVBOX_DOMAIN)
+            _, code = self.value(
+                [
+                    "curl",
+                    "-s",
+                    "-o",
+                    "/dev/null",
+                    "-w",
+                    "%{http_code}",
+                    "--max-time",
+                    "3",
+                    "-H",
+                    "Host: %s" % host,
+                    "http://127.0.0.1:%d/" % DEVBOX_PROXY_PORT,
+                ],
+                err=NULL,
+            )
+            codes[key] = code or "000"
+        routers = hosts.split("\n")
+        for key, label, suffix, hint, pattern in ROUTE_SPECS:
+            host = "%s%s.%s" % (slug, "-" + suffix if suffix else "", DEVBOX_DOMAIN)
+            code = codes[key]
+            routed = "yes" if host in routers else "no"
+            starting = "no"
+            if code == "502" and self.cond(self.service_process_alive, pattern) == 0:
+                starting = "yes"
+            self.write(
+                "%s:%s:%s:%s:%s:%s:%s:%s\n"
+                % (key, label, suffix, hint, pattern, code, routed, starting)
+            )
+        return 0
+
+    def clock(self) -> int:
+        """Bash `SECONDS`: whole seconds on a monotonic clock. A method so a test can replace it."""
+        return int(time.monotonic())
+
+    def await_ready(self, *argv: str) -> int:
+        """`devbox_await_ready [cid]`: wait, with an on-screen cycle, until no route is a 502 in front of a live backend.
+
+        That is exactly the state `route_label` words as "not serving yet", and the one `devbox_up` used to report the instant it (re)dispatched a container, though Astro's content sync alone measured 114.8s on an arm64 Crostini box. VS Code and the terminal never sit in it, so in practice this waits on Account and Database.
+        NEVER FAILS: it returns 0 whether the routes converge, the container stops, or the ceiling passes, because a slow but healthy service must not turn `devbox_up` into a failure. Past `DEVBOX_READY_NOMINAL_S` (90) it says so once and keeps going; at `DEVBOX_READY_CEILING_S` (300) it stops waiting.
+        A spinner on a terminal (stderr a tty, NO_COLOR unset, not CI); otherwise one plain line every ten seconds. `sleep 1` is the external the transcript records.
+        """
+        from rediacc_ci.core.common import is_ci  # noqa: PLC0415 -- only this method needs it
+
+        cid = self._opt(argv, 0)
+        if not cid:
+            status, cid = self.sub(self.container_id)
+            self.checked(status)
+        if not cid:
+            return 0
+        status, labels = self.sub(self.container_labels, cid)
+        self.checked(status)
+        status, slug = self.sub(self.slug_active, labels)
+        self.checked(status)
+        status, hosts = self.sub(self.router_hosts, labels)
+        self.checked(status)
+        nominal_text = self.env.get("DEVBOX_READY_NOMINAL_S") or str(READY_NOMINAL_S)
+        ceiling_text = self.env.get("DEVBOX_READY_CEILING_S") or str(READY_CEILING_S)
+        nominal = bash_int(nominal_text)
+        ceiling = bash_int(ceiling_text)
+        start = self.clock()
+        announced = False
+        last_plain = -10
+        frame = 0
+        interactive = _isatty(self.stderr) and not self.env.get("NO_COLOR") and not is_ci(self.env)
+        clear = "\r%s\r" % (" " * 60)
+        while True:
+            pending: list[str] = []
+            _, listing = self.sub(self.probe_services, slug, hosts)
+            for line in listing.split("\n"):
+                key, label, _suffix, _hint, _pattern, code, _routed, starting = (
+                    line.split(":", 7) + [""] * 8
+                )[:8]
+                if key and code == "502" and starting == "yes":
+                    pending.append(label)
+            if not pending:
+                if interactive:
+                    self.write(clear, self.stderr)
+                return 0
+            if self.cond(self.container_running, cid) != 0:
+                if interactive:
+                    self.write(clear, self.stderr)
+                self.log(
+                    "warn", "Devbox container stopped while waiting for: %s" % " ".join(pending)
+                )
+                return 0
+            elapsed = self.clock() - start
+            if elapsed >= ceiling:
+                if interactive:
+                    self.write(clear, self.stderr)
+                self.log(
+                    "warn",
+                    "%s still not serving after %ss; giving up waiting (not failing)"
+                    % (" ".join(pending), ceiling_text),
+                )
+                return 0
+            if elapsed >= nominal and not announced:
+                self.log(
+                    "warn",
+                    "%s is slower than %ss on this machine; still starting"
+                    % (" ".join(pending), nominal_text),
+                )
+                self.log("info", "Set DEVBOX_READY_NOMINAL_S to raise the initial budget")
+                announced = True
+            if interactive:
+                frame = (frame + 1) % len(SPINNER)
+                self.write(
+                    "\r%s waiting for: %s (%ss)  " % (SPINNER[frame], ",".join(pending), elapsed),
+                    self.stderr,
+                )
+            elif elapsed - last_plain >= 10:
+                self.log("step", "Still waiting for: %s (%ss)" % (",".join(pending), elapsed))
+                last_plain = elapsed
+            self.checked(self.run(["sleep", "1"])[0])
+
+    def autostart_dispatch(self, *_argv: str) -> int:
+        """`devbox_autostart_dispatch`: re-run the service autostart inside a container that is ALREADY UP.
+
+        Autostart used to run only on a container-lifecycle event, so a service that died mid-life stayed dead and `devbox up` could only print a hint. Safe unconditionally: the script no-ops for every service already answering on its port and honours DEVBOX_AUTOSTART=0.
+        THE CONTAINER'S OWN workspace (its `DEVBOX_WORKSPACE`), not this shell's, and the WORKSPACE copy of the script rather than the single-file bind, which docker pins to a stale inode. `-u vscode` by name. Never fatal; every output line is logged indented.
+        """
+        status, cid = self.sub(self.container_id)
+        self.checked(status)
+        if not cid:
+            return 0
+        d = self.docker_words()
+        _, environment = self.run(
+            [*d, "inspect", cid, "--format", ENV_FORMAT], out=CAPTURE, err=NULL
+        )
+        picked = [
+            line.split("=", 1)[1]
+            for line in environment.split("\n")
+            if line.startswith("DEVBOX_WORKSPACE=")
+        ]
+        workspace = "\n".join(picked).rstrip("\n")
+        if not workspace:
+            status, workspace = self.sub(self.worktree)
+            self.checked(status)
+        status, base_port = self.sub(self.base_port, err=NULL)
+        self.checked(status)
+        script = workspace + "/.devcontainer/devbox-autostart.sh"
+        forwarded = ["-e", "DEVBOX_WORKSPACE=%s" % workspace]
+        if base_port:
+            base = bash_int(base_port)
+            forwarded += ["-e", "DEVBOX_DB_PORT=%d" % (base + DEVBOX_OFFSET_STUDIO)]
+            forwarded += ["-e", "DEVBOX_TERM_PORT=%d" % (base + DEVBOX_OFFSET_TERM)]
+        _, output = self.run(
+            [*d, "exec", "-u", "vscode", *forwarded, cid, "bash", script], out=CAPTURE, err=TO_OUT
+        )
+        for line in complete_lines(output):
+            if line:
+                self.log("info", "  %s" % line)
+        return 0
+
     def _destroy_banner(self, closing: str) -> None:
         """The four lines `devbox_up` prints before it destroys a container, `.ci/lib/devbox.sh:547-551` and `:573-577`."""
         self.log("info", "  container:  %s" % self.sub(self.container_name)[1])
@@ -1587,6 +1837,8 @@ class Devbox:
 
         Twin defects 1 (the docker group), 6 (octal base port) and 9 (the silent start failure) all live in this function.
         """
+        # One `docker version` for the whole run, seeded in the PARENT so every `d="$(devbox_docker)"` below inherits it.
+        self.docker_init()
         force_pull = self._opt(argv, 0, "false")
         rehost = self._opt(argv, 1) not in ("--no-rehost", "false", "no")
         if self.env.get("DEVBOX_NO_REHOST", "") in ("1", "true"):
@@ -1650,6 +1902,9 @@ class Devbox:
 
         if self.cond(self.container_running) == 0:
             self.log("info", "Devbox already running for this worktree")
+            # CONVERGE ON "EVERY ROUTE ANSWERS", not on "a container exists": revive a dead service, then wait for the routes before the snapshot.
+            self.checked(self.autostart_dispatch())
+            self.checked(self.await_ready())
             self.checked(self.status())
             return 0
 
@@ -1658,6 +1913,7 @@ class Devbox:
         if cid:
             self.log("step", "Starting existing devbox container")
             self.checked(self.run([*d, "start", cid], out=NULL)[0])
+            self.checked(self.await_ready(cid))
             self.checked(self.status())
             return 0
 
@@ -1817,6 +2073,8 @@ class Devbox:
             "-e",
             "DEVBOX_TERM_PORT=%d" % term_port,
             "-e",
+            "DEVBOX_DB_PORT=%d" % studio_port,
+            "-e",
             "DEVBOX_WORKSPACE=%s" % workspace,
             "-e",
             "REDIACC_NPM_RUNTIME=devbox",
@@ -1850,6 +2108,7 @@ class Devbox:
                 "http://127.0.0.1:%d/" % DEVBOX_PROXY_PORT,
             ]
             if self.run(probe, err=NULL)[0] == 0:
+                self.checked(self.await_ready())
                 self.checked(self.status())
                 return 0
             if self.cond(self.container_running) != 0:
@@ -1869,18 +2128,24 @@ class Devbox:
 
         PROBE each route rather than listing URLs and hoping. Traefik answers a bare 502 when a router matches but nothing is listening behind it, and that page names neither the service nor the reason, so an operator reads "Bad Gateway" for a backend that was simply never started, or was started on the HOST instead of inside the devbox.
         The CONTAINER's name is computed once: every URL and every probe Host must be the name its routers actually carry. `|| true` on the probe is load-bearing under `set -e`: curl exits non-zero on a timeout (28) or a refused connection (7), and a probe that cannot reach a route must report "000", not abort the status command (observed as `setup --check` exiting 28).
-        Two containers defining one router make every reachability claim dishonest, so a conflict turns every row into "ambiguous". The row is `printf '  %-9s %-46s %s\\n'`, padded by BYTES. Twin defect 8 lives in the `_hosts` assignment.
+        Two containers defining one router make every reachability claim dishonest, so a conflict turns every row into "ambiguous". The row is `printf '  %-9s %-46s %s\\n'`, padded by BYTES. Twin defect 8 (a failing label inspect killing the command) is retired: the labels are fetched once, `|| true`.
         """
+        self.docker_init()
         status, _ = self.sub(self.base_port, err=NULL)
         self.checked(status)
-        if self.cond(self.container_running) == 0:
+        # The container is resolved ONCE and handed to every helper that would otherwise `docker ps` for it again, and its labels are fetched once for the same reason.
+        status, cid0 = self.sub(self.container_id)
+        self.checked(status)
+        if self.cond(self.container_running, cid0) == 0:
             self.log("info", "Devbox running: %s" % self.sub(self.container_name)[1])
-            status, active = self.sub(self.slug_active)
+            status, labels = self.sub(self.container_labels, cid0)
+            self.checked(status)
+            status, active = self.sub(self.slug_active, labels)
             self.checked(status)
             status, wanted = self.sub(self.slug)
             self.checked(status)
             _, recorded = self.sub(self.state_get, "slug", err=NULL)
-            status, hosts = self.sub(self.router_hosts)
+            status, hosts = self.sub(self.router_hosts, labels)
             self.checked(status)
             status, conflicts = self.sub(self.slug_conflicts, active)
             self.checked(status)
@@ -1905,33 +2170,18 @@ class Devbox:
                     "Which container answers is not knowable from here. Give one of them DEVBOX_SLUG=<name>.",
                 )
             self.write("\n")
-            routers = hosts.split("\n")
-            for label, suffix, hint in STATUS_ROUTES:
-                host = "%s%s.%s" % (active, "-" + suffix if suffix else "", DEVBOX_DOMAIN)
-                _, code = self.value(
-                    [
-                        "curl",
-                        "-s",
-                        "-o",
-                        "/dev/null",
-                        "-w",
-                        "%{http_code}",
-                        "--max-time",
-                        "3",
-                        "-H",
-                        "Host: %s" % host,
-                        "http://127.0.0.1:%d/" % DEVBOX_PROXY_PORT,
-                    ],
-                    err=NULL,
-                )
-                if not code:
-                    code = "000"
-                routed = "yes" if host in routers else "no"
+            _, listing = self.sub(self.probe_services, active, hosts)
+            for line in listing.split("\n"):
+                key, label, suffix, hint, _pattern, code, routed, starting = (
+                    line.split(":", 7) + [""] * 8
+                )[:8]
+                if not key:
+                    continue
                 link = self.sub(self.url, suffix, active)[1]
                 verdict = (
                     "ambiguous -- two checkouts claim this hostname"
                     if conflicts
-                    else self.sub(self.route_label, code, hint, routed)[1]
+                    else self.sub(self.route_label, code, hint, routed, starting)[1]
                 )
                 self.write(
                     b"  "
@@ -1953,7 +2203,7 @@ class Devbox:
             self.write("  so every worktree and service is reachable through it.\n")
             self.write("\n")
             return 0
-        if self.sub(self.container_id)[1]:
+        if cid0:
             self.log(
                 "warn", "Devbox container exists but is stopped. Start it with: ./run.sh devbox up"
             )
@@ -2140,7 +2390,7 @@ class Devbox:
             self.log("info", "devbox is usable: mount, identity and writability all verified")
         return status
 
-    # ------------------------------------------------------------------ one entry point for all forty-six
+    # ------------------------------------------------------------------ one entry point for all fifty-four
 
     def invoke(self, name: str, argv: list[str] | tuple[str, ...] = ()) -> int:
         """`( set -e; <name> "$@" )`: call a twin function by its BASH name, and return the subshell's status.
@@ -2171,12 +2421,20 @@ def _pad(text: str, width: int) -> bytes:
     return data + b" " * max(0, width - len(data))
 
 
-# The forty-six, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
+# The fifty-four, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
 BASH_NAMES = {
     "devbox_worktree": "worktree",
     "devbox_mount_root": "mount_root",
     "devbox_container_name": "container_name",
     "devbox_docker": "docker",
+    "devbox_docker_init": "docker_init",
+    "devbox_docker_reset": "docker_reset",
+    "devbox_container_labels": "container_labels",
+    "devbox_service_process_alive": "service_process_alive",
+    "_devbox_route_specs": "route_specs",
+    "_devbox_probe_services": "probe_services",
+    "devbox_await_ready": "await_ready",
+    "devbox_autostart_dispatch": "autostart_dispatch",
     "devbox_state_write": "state_write",
     "devbox_state_get": "state_get",
     "devbox_base_port": "base_port",

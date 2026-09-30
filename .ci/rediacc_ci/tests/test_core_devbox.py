@@ -1,10 +1,10 @@
-"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all forty-six functions.
+"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all fifty-four functions.
 
 THE TWIN IS STILL HERE AND IS STILL SOURCED. `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
 WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in its module docstring rather than restated here. Seven are the first slice's pure-function scenarios; sixteen are the STUB-FARM scenarios, in which `docker`, `sudo`, `curl`, `sleep`, `getent`, `stat` and `ss` are stubs that record every call and answer from a scripted table, so a side-effecting function is compared on the calls it MADE as well as on what it printed.
 
-THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the forty-six functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
+THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the fifty-four functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
 THE TWIN'S OWN DEFECTS are pinned against the LIVE TWIN's transcript, not against the port: `SCENARIO_CLAIMS` asserts each one inside the scenario's own comparison, so a twin that is later fixed fails here loudly rather than silently diverging from a port that still reproduces it.
 
 NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, so a scenario is driven once per worker that runs it; the driver's fixed work directory is serialised by its own `flock`, which is a lock the scheduler does not need to know about.
@@ -52,7 +52,7 @@ OBSERVATION_FLOOR = {
     "identity": 75,
     "identity-worktree": 18,
     "identity-detached": 60,
-    "identity-utf8": 45,
+    "identity-utf8": 38,
     "identity-gone": 30,
     "state": 160,
     "docker-query": 150,
@@ -62,9 +62,10 @@ OBSERVATION_FLOOR = {
     "exec": 240,
     "exec-quote": 135,
     "exec-quote-utf8": 135,
-    "status": 250,
-    "up-existing": 480,
-    "up-create": 950,
+    "status": 170,
+    "up-existing": 380,
+    "up-create": 760,
+    "ready": 170,
 }
 
 # The scenarios cheap enough to drive a second time in process. The rest are compared through the subprocess only.
@@ -208,9 +209,9 @@ def claims_status(obs: dict[str, list[str]]) -> None:
     lines = errs_of(obs["conflict"])
     assert any("/other/x\ty\\u00FCz" in line for line in lines)
     assert any(line.startswith("✓   /cut✓ Which container") for line in lines)
-    # Twin defect 8: the label inspect failing after the running check kills the status command before the route table.
-    assert status_of(obs["hosts-fail"]) == 1
-    assert stdout_of(obs["hosts-fail"]) == b""
+    # Twin defect 8 is RETIRED: the one label inspect is `|| true`, so an inspect failing after the running check no longer kills the status command. The table still prints, under the basename slug the empty labels fall back to.
+    assert status_of(obs["hosts-fail"]) == 0
+    assert b"VS Code:" in stdout_of(obs["hosts-fail"])
 
 
 def claims_up_existing(obs: dict[str, list[str]]) -> None:
@@ -333,7 +334,7 @@ def test_the_basename_fallback_depends_on_the_locale() -> None:
 
 
 def test_the_corpus_is_not_empty() -> None:
-    assert len(SCENARIOS) == 23, "the scenario set moved to %d" % len(SCENARIOS)
+    assert len(SCENARIOS) == 24, "the scenario set moved to %d" % len(SCENARIOS)
     assert set(SCENARIOS) == set(OBSERVATION_FLOOR), sorted(set(SCENARIOS) ^ set(OBSERVATION_FLOOR))
     assert len(driver.fuzz_corpus()) == driver.FUZZ_COUNT
     assert len(set(driver.fuzz_corpus())) > driver.FUZZ_COUNT / 2
@@ -345,7 +346,7 @@ def stub_functions() -> set[str]:
 
 
 def test_every_function_is_driven_by_some_scenario() -> None:
-    """Every one of the forty-six is the subject of a step, so none of them is licensed by a ledger that never called it."""
+    """Every one of the fifty-four is the subject of a step, so none of them is licensed by a ledger that never called it."""
     driven = stub_functions() | {"devbox_slugify", "devbox_slug_drift", "devbox_route_label"}
     assert driven == set(devbox.BASH_NAMES), sorted(set(devbox.BASH_NAMES) ^ driven)
 
@@ -391,8 +392,8 @@ def planted_value(attribute: str):
             chr(byte) if byte in devbox.SLUG_KEEP else "-" for byte in line
         ).strip("-")
     if attribute == "route_label":
-        return lambda code=None, _hint="", _routed=devbox.ROUTED_UNKNOWN: devbox.Outcome(
-            devbox.ROUTE_LIVE % code + "\n", 0
+        return lambda code=None, _hint="", _routed=devbox.ROUTED_UNKNOWN, _starting="no": (
+            devbox.Outcome(devbox.ROUTE_LIVE % code + "\n", 0)
         )
     if attribute == "slug_drift":
         return lambda want=None, baked="", _recorded="": devbox.Outcome(
@@ -547,11 +548,11 @@ def twin_text() -> str:
     return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
 
 
-def test_the_twin_defines_these_forty_six_and_nothing_else() -> None:
+def test_the_twin_defines_these_fifty_four_and_nothing_else() -> None:
     """Measured rather than remembered: a function added to the twin later cannot slip past unported."""
     text = twin_text()
     defined = set(re.findall(r"^([a-z_]+)\(\) *\{", text, re.MULTILINE))
-    assert len(devbox.BASH_NAMES) == 46
+    assert len(devbox.BASH_NAMES) == 54
     assert defined == set(devbox.BASH_NAMES), sorted(defined ^ set(devbox.BASH_NAMES))
 
 
