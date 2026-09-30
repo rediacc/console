@@ -1027,7 +1027,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/deps-major-allow.json` | .ci/config | code: `scripts/gates/check-deps.ts` | no -- hardcoded in `scripts/gates/check-deps.ts` |
 | `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_allowlist_key_matching.py` | no -- hardcoded in `.ci/scripts/quality/check_allowlist_key_matching.py` |
 | `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_vars.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_vars.py` |
-| `.ci/config/lane-durations.json` | .ci/config | code: `.ci/rediacc_ci/ci/budget_report.py` | no -- hardcoded in `.ci/rediacc_ci/ci/budget_report.py` |
+| `.ci/config/lane-durations.json` | .ci/config | wiring: `.github/workflows/ci.yml` | yes -- repoint in `.github/workflows/ci.yml` |
 | `.ci/config/language-policy-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
 | `.ci/config/plan-boxes.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_lifecycle.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_lifecycle.py` |
 | `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/scripts/quality/check_plan_implementation.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_implementation.py` |

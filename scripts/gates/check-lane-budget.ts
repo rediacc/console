@@ -92,6 +92,8 @@
  * lane: quality-code
  * needs: node
  * selftest: true
+ * emit: false
+ * blocker: the live run's one remaining finding is check 2 on the three E2E Probe jobs (aggregate, list-files, probe-file), which run only on a PR labelled e2e-dependency-probe and have no measured p90 yet; #591 carries the label, and the budget_report --refresh after its run lets this line, the manifest's gate: true and the quality-code step land together (worklist #eaddeba0)
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
  *   whole misses its 35-minute target (D-W1); this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner

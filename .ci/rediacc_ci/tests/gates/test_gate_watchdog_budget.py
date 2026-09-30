@@ -417,8 +417,10 @@ def test_a_cap_matches_the_full_segment_before_the_base_name(gate):
         [
             "node",
             "-e",
-            "const m=require(process.argv[1]);"
-            "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((n)=>m.jobBudgetFor(n,15))))",
+            (
+                "const m=require(process.argv[1]);"
+                "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((n)=>m.jobBudgetFor(n,15))))"
+            ),
             str(subject(gate)),
             json.dumps(list(names)),
         ]
