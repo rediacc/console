@@ -168,15 +168,33 @@ jobs:
           # job once triggered.
           WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation,Migration Test'
           WATCHDOG_WAIT_PATTERNS: 'Migration Test'
-          # CI time budget (operator spec W, P1: measurement and report-only, no
-          # behaviour change). MODE STAYS 'report' here: nothing calls
-          # force-cancel over a budget violation yet, only evaluateBudget's
-          # 'enforce' branch exists for a later phase to opt into deliberately
-          # (D-W5). Violations are warned, written to the step summary and
-          # uploaded as JSON by the step below.
-          WATCHDOG_BUDGET_MODE: 'report'
+          # CI time budget (operator spec W, PLAN-ci-time-budget P4). Two
+          # switches, ruled apart (#a631eaf1: "keep 35, enforce per-job budgets
+          # first, run-level cancel report-only until wall-time p90 is at or
+          # under 35"):
+          #  - WATCHDOG_BUDGET_MODE is the PER-JOB switch, 'enforce' (T4.2): a
+          #    job still running past 15m, or past its ruled cap (E2E K8s Ceph
+          #    25, E2E K8s Multinode 30, E2E Ceph Workers non-apt 20;
+          #    JOB_BUDGET_CAPS in watchdog-monitor.cjs),
+          #    force-cancels the run with "CI BUDGET VIOLATION: '<job>' ran <m>m
+          #    (budget <b>m)". PR and main push alike (D-W5: one switch, an
+          #    over-budget main push cancels that release). schedule and
+          #    workflow_dispatch runs are recorded, never cancelled: forceCancel's
+          #    CANCEL_EXEMPT_EVENTS check applies to every cancel.
+          #  - WATCHDOG_RUN_BUDGET_MODE is the WHOLE-PIPELINE switch, 'report'
+          #    until the measured wall-time p90 is at or under the 35-minute D-W1
+          #    target. It is warned and recorded, never cancelled.
+          # Rollback of either: that one value back to 'report'.
+          # Violations are annotated, written to the step summary and uploaded as
+          # budget-violations.json by the step below.
+          WATCHDOG_BUDGET_MODE: 'enforce'
+          WATCHDOG_RUN_BUDGET_MODE: 'report'
           WATCHDOG_JOB_BUDGET_MIN: '15'
-          WATCHDOG_RUN_BUDGET_MIN: '20'
+          WATCHDOG_RUN_BUDGET_MIN: '35'
+          # T4.3: a job cancelled at or past its budget was killed by its own
+          # timeout-minutes -- a budget violation, never auto-retried (at the old
+          # default of 60 a 15-minute timeout kill read as a retryable flake).
+          STUCK_THRESHOLD_MIN: '15'
           WATCHDOG_BUDGET_DIR: ${{ runner.temp }}/watchdog-budget
           # Where the monitor writes failed jobs' COMPLETE logs before anything
           # reruns them. A rerun makes attempt 1's logs unreachable, so without

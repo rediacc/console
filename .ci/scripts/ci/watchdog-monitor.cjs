@@ -53,6 +53,33 @@ const NO_DRAIN_PATTERNS = ['Review Gate'];
 // run is still re-run; only the conclusion-rewriting cancel is withheld.
 const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
 
+// A cancelled job that ran this long or longer is classified as killed by its timeout (a budget violation) and is never auto-retried. The per-job budget (PLAN-ci-time-budget T4.3); STUCK_THRESHOLD_MIN overrides it.
+const DEFAULT_STUCK_THRESHOLD_MIN = 15;
+
+// Per-job budget exemption caps, in minutes (PLAN-ci-time-budget "Exemption caps 2026-09-28", #d5ba825c, and ruling #fc4f34f8): the jobs whose fixed VM preparation keeps them over the ordinary per-job budget are judged against their ruled `timeout-minutes` instead. Keyed by the job's own display name (the segment after the last " / ", without a " (matrix)" suffix), so "Tests + Infra / E2E K8s Ceph" matches
+// and "E2E K8s" does not. The same numbers live in `JOB_BUDGET_CAPS[].timeoutMinutes` of scripts/gates/check-lane-budget.ts; test_gate_watchdog_budget.py reds when the two disagree.
+const JOB_BUDGET_CAPS = [
+  { job: 'E2E K8s Ceph', budgetMin: 25 },
+  { job: 'E2E K8s Multinode', budgetMin: 30 },
+  // Operator ruling #fc4f34f8 (2026-09-30): the non-apt Ceph Workers matrix, one leg per distro ("... / E2E Ceph Workers non-apt (fedora-43)").
+  { job: 'E2E Ceph Workers non-apt', budgetMin: 20 },
+];
+
+/** The job's own display name: the segment after the last " / " (a reusable-workflow caller prefix), with any trailing " (matrix, leg)" suffix removed. */
+function jobBaseName(name) {
+  const segment = String(name || '')
+    .split(' / ')
+    .pop();
+  return segment.replace(/ \([^()]*\)$/, '');
+}
+
+/** The per-job budget for one job: its ruled exemption cap when JOB_BUDGET_CAPS names it, else the ordinary budget. */
+function jobBudgetFor(name, defaultMin, caps = JOB_BUDGET_CAPS) {
+  const base = jobBaseName(name);
+  const cap = caps.find((c) => c.job === base);
+  return cap ? cap.budgetMin : defaultMin;
+}
+
 /**
  * May the watchdog cancel this run at all?
  *
@@ -321,17 +348,36 @@ function evaluateRetryEligibility({
 
 /**
  * Job-level and run-level CI TIME BUDGET violations (operator spec W: every
- * CI job finishes in 15 minutes or less, the whole pipeline in 20 minutes or
- * less). Meant to be called every poll, right after the job fetch, exactly
- * like the other `evaluate*` functions in this file.
+ * CI job finishes in 15 minutes or less, except the JOB_BUDGET_CAPS
+ * exemptions; the whole pipeline in ~35 minutes, ruling D-W1). Meant to be
+ * called every poll, right after the job fetch, exactly like the other
+ * `evaluate*` functions in this file.
  *
- * REPORT-ONLY BY CONSTRUCTION, NOT BY CALLER DISCIPLINE. `forceCancelRequested`
- * is the one output a caller could act on, and it can only be true when
- * `mode: 'enforce'` is passed explicitly -- the default, and the only mode
- * the workflow sets today (`WATCHDOG_BUDGET_MODE: report`, T1.3), does not
- * produce it. That mirrors evaluateCancelExemption's own shape: the
- * destructive action requires a positive, explicit signal, and everything
- * else fails toward not acting.
+ * TWO SWITCHES, NOT ONE (T4.2, worklist #a631eaf1). `jobMode` governs the
+ * per-job budget and `runMode` the whole-pipeline budget, because the
+ * operator ruled them apart: per-job budgets are enforced first, and the
+ * run-level cancel stays report-only until the measured wall-time p90 is at
+ * or under the D-W1 target. One shared switch could only flip both.
+ *
+ * ENFORCEMENT NEEDS A POSITIVE SIGNAL, NOT CALLER DISCIPLINE.
+ * `forceCancelRequested` is the one output a caller acts on, and it is only
+ * true when the matching mode is passed as 'enforce' explicitly -- the
+ * default for both is 'report'. That mirrors evaluateCancelExemption's own
+ * shape: the destructive action requires a positive, explicit signal, and
+ * everything else fails toward not acting.
+ *
+ * ONLY A LIVE JOB IS ENFORCED. A job still running over its budget is what a
+ * cancel can reclaim time from. One that already COMPLETED over budget is
+ * reported (below) but never cancels the run: there is nothing left of it to
+ * stop, and one killed by its own `timeout-minutes` is the stuck-cancellation
+ * path's to classify (T4.3), not this function's.
+ *
+ * PER-JOB BUDGET. `jobBudgetMin`, or the job's JOB_BUDGET_CAPS entry when it
+ * has one (K8s Ceph 25, K8s Multinode 30, Ceph Workers non-apt 20).
+ *
+ * The CANCEL_EXEMPT_EVENTS exemption (schedule, workflow_dispatch) is NOT
+ * re-implemented here: every requested cancel goes through forceCancel, the
+ * single chokepoint, which already refuses to cancel those runs.
  *
  * JOB CLOCK. `now - started_at` for a job still running, so a slow leg is
  * caught while it is still slow. `completed_at - started_at` for one that
@@ -361,7 +407,9 @@ function evaluateBudget({
   jobBudgetMin,
   runBudgetMin,
   excludePatterns = [],
-  mode = 'report',
+  jobCaps = JOB_BUDGET_CAPS,
+  jobMode = 'report',
+  runMode = 'report',
 }) {
   const minutesElapsed = (job) => {
     if (!job.started_at) return null;
@@ -377,11 +425,18 @@ function evaluateBudget({
     for (const job of jobs || []) {
       if (matchesPatterns(job.name, excludePatterns)) continue;
       const minutes = minutesElapsed(job);
-      if (minutes !== null && minutes > jobBudgetMin) {
-        jobViolations.push({ name: job.name, minutes, budgetMin: jobBudgetMin });
+      const budgetMin = jobBudgetFor(job.name, jobBudgetMin, jobCaps);
+      if (minutes !== null && minutes > budgetMin) {
+        jobViolations.push({
+          name: job.name,
+          minutes,
+          budgetMin,
+          live: job.status !== 'completed',
+        });
       }
     }
   }
+  const enforcedJobViolations = jobMode === 'enforce' ? jobViolations.filter((v) => v.live) : [];
 
   let runViolation = null;
   if (run && run.run_started_at && runBudgetMin !== null && runBudgetMin !== undefined) {
@@ -391,12 +446,15 @@ function evaluateBudget({
     }
   }
 
+  const runCancelRequested = runMode === 'enforce' && runViolation !== null;
   const hasViolation = jobViolations.length > 0 || runViolation !== null;
   return {
     jobViolations,
     runViolation,
     hasViolation,
-    forceCancelRequested: mode === 'enforce' && hasViolation,
+    enforcedJobViolations,
+    runCancelRequested,
+    forceCancelRequested: enforcedJobViolations.length > 0 || runCancelRequested,
   };
 }
 
@@ -602,8 +660,11 @@ const monitor = async ({ github, context, core }) => {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  // CI time budget (operator spec W, T1.2/T1.3, see evaluateBudget). Every knob is optional so an un-migrated caller (the gate tests' own ad-hoc invocations, or a stripped-down env) sees no budget behaviour at all -- absent minutes disable that half of the check rather than defaulting to a number nobody chose here. BUDGET MODE STAYS 'report': nothing in this generation calls forceCancel over a budget violation; only evaluateBudget itself knows about 'enforce', for a later phase to opt into deliberately.
-  const budgetMode = process.env.WATCHDOG_BUDGET_MODE === 'enforce' ? 'enforce' : 'report';
+  // CI time budget (operator spec W, T1.2/T1.3, see evaluateBudget). Every knob is optional so an un-migrated caller (the gate tests' own ad-hoc invocations, or a stripped-down env) sees no budget behaviour at all -- absent minutes disable that half of the check rather than defaulting to a number nobody chose here.
+  //
+  // TWO MODES (T4.2, #a631eaf1). WATCHDOG_BUDGET_MODE is the PER-JOB switch; WATCHDOG_RUN_BUDGET_MODE is the whole-pipeline switch, kept at 'report' until the wall-time p90 is at or under the D-W1 target. Anything but the literal 'enforce' reads as 'report', so a typo or an absent value fails toward not cancelling. Rollback of either is that one env value back to 'report'.
+  const budgetJobMode = process.env.WATCHDOG_BUDGET_MODE === 'enforce' ? 'enforce' : 'report';
+  const budgetRunMode = process.env.WATCHDOG_RUN_BUDGET_MODE === 'enforce' ? 'enforce' : 'report';
   const jobBudgetMin = process.env.WATCHDOG_JOB_BUDGET_MIN
     ? Number(process.env.WATCHDOG_JOB_BUDGET_MIN)
     : null;
@@ -626,7 +687,14 @@ const monitor = async ({ github, context, core }) => {
       fs.writeFileSync(
         path.join(BUDGET_REPORT_DIR, 'budget-violations.json'),
         JSON.stringify(
-          { mode: budgetMode, jobBudgetMin, runBudgetMin, violations: budgetViolationLog },
+          {
+            jobMode: budgetJobMode,
+            runMode: budgetRunMode,
+            jobBudgetMin,
+            runBudgetMin,
+            jobCaps: JOB_BUDGET_CAPS,
+            violations: budgetViolationLog,
+          },
           null,
           2
         )
@@ -637,49 +705,83 @@ const monitor = async ({ github, context, core }) => {
   }
 
   // Record and surface newly-seen violations from one evaluateBudget() call. `core.warning` is per-job/per-run so a human scanning the run's annotations sees each offender once; the step summary and the uploaded JSON both accumulate the full log seen so far this generation.
-  function reportBudget(budget) {
-    let sawNew = false;
-    for (const v of budget.jobViolations) {
-      if (warnedBudgetJobs.has(v.name)) continue;
-      warnedBudgetJobs.add(v.name);
-      sawNew = true;
-      budgetViolationLog.push({
-        kind: 'job',
-        name: v.name,
-        minutes: Number(v.minutes.toFixed(1)),
-        budgetMin: v.budgetMin,
-      });
-      core.warning(
-        `CI BUDGET VIOLATION (report-only): '${v.name}' at ${v.minutes.toFixed(1)}m, budget ${v.budgetMin}m`
-      );
-    }
-    if (budget.runViolation && !warnedBudgetRun) {
-      warnedBudgetRun = true;
-      sawNew = true;
-      budgetViolationLog.push({
-        kind: 'run',
-        name: 'whole pipeline',
-        minutes: Number(budget.runViolation.minutes.toFixed(1)),
-        budgetMin: budget.runViolation.budgetMin,
-      });
-      core.warning(
-        `CI BUDGET VIOLATION (report-only): 'whole pipeline' at ${budget.runViolation.minutes.toFixed(1)}m, budget ${budget.runViolation.budgetMin}m`
-      );
-    }
-    if (!sawNew) return;
+  // The ENFORCED annotation text is the one T4.2 names: `CI BUDGET VIOLATION: '<job>' ran <m>m (budget <b>m)`. The report-only text keeps its "(report-only)" marker so the two are never confused in an annotation list.
+  const budgetEnforcedText = (name, minutes, budgetMin) =>
+    `CI BUDGET VIOLATION: '${name}' ran ${minutes.toFixed(1)}m (budget ${budgetMin}m)`;
+  const budgetReportText = (name, minutes, budgetMin) =>
+    `CI BUDGET VIOLATION (report-only): '${name}' at ${minutes.toFixed(1)}m, budget ${budgetMin}m`;
+
+  // Rewrite the step summary table and budget-violations.json from the full log seen so far this generation. Called once per batch of new entries, not per entry: each core.summary write appends, so a per-entry call would stack one table per violation.
+  function flushBudgetReport() {
     try {
       const rows = budgetViolationLog
-        .map((v) => `| ${v.name} | ${v.minutes}m | ${v.budgetMin}m |`)
+        .map(
+          (v) =>
+            `| ${v.name} | ${v.minutes}m | ${v.budgetMin}m | ${v.enforced ? 'enforced' : 'report-only'} |`
+        )
         .join('\n');
       core.summary
         .addRaw(
-          `### CI time budget violations (report-only)\n\n| Job | Elapsed | Budget |\n| --- | --- | --- |\n${rows}\n`
+          `### CI time budget violations\n\n| Job | Elapsed | Budget | Action |\n| --- | --- | --- | --- |\n${rows}\n`
         )
         .write();
     } catch (e) {
       console.log(`[budget] could not write the step summary (${e.message}).`);
     }
     writeBudgetArtifact();
+  }
+
+  // Record and surface newly-seen violations from one evaluateBudget() call. An ENFORCED violation (a live job over its budget under jobMode 'enforce', or the run under runMode 'enforce') is recorded with the T4.2 text and returned, for the caller to hand to forceCancel; everything else is a report-only warning. Returns the enforced messages, empty when nothing is to be cancelled.
+  function reportBudget(budget) {
+    const enforcedNames = new Set(budget.enforcedJobViolations.map((v) => v.name));
+    const enforcedMessages = [];
+    const logLengthBefore = budgetViolationLog.length;
+    for (const v of budget.jobViolations) {
+      if (warnedBudgetJobs.has(v.name)) continue;
+      warnedBudgetJobs.add(v.name);
+      const enforced = enforcedNames.has(v.name);
+      const text = enforced
+        ? budgetEnforcedText(v.name, v.minutes, v.budgetMin)
+        : budgetReportText(v.name, v.minutes, v.budgetMin);
+      if (enforced) {
+        core.error(text);
+        enforcedMessages.push(text);
+      } else {
+        core.warning(text);
+      }
+      budgetViolationLog.push({
+        kind: 'job',
+        name: v.name,
+        minutes: Number(v.minutes.toFixed(1)),
+        budgetMin: v.budgetMin,
+        enforced,
+        message: text,
+      });
+    }
+    if (budget.runViolation && !warnedBudgetRun) {
+      warnedBudgetRun = true;
+      const enforced = budget.runCancelRequested;
+      const { minutes, budgetMin } = budget.runViolation;
+      const text = enforced
+        ? budgetEnforcedText('whole pipeline', minutes, budgetMin)
+        : budgetReportText('whole pipeline', minutes, budgetMin);
+      if (enforced) {
+        core.error(text);
+        enforcedMessages.push(text);
+      } else {
+        core.warning(text);
+      }
+      budgetViolationLog.push({
+        kind: 'run',
+        name: 'whole pipeline',
+        minutes: Number(minutes.toFixed(1)),
+        budgetMin,
+        enforced,
+        message: text,
+      });
+    }
+    if (budgetViolationLog.length > logLengthBefore) flushBudgetReport();
+    return enforcedMessages;
   }
 
   // Track jobs already handled to avoid re-logging the same failure every poll
@@ -1071,7 +1173,9 @@ const monitor = async ({ github, context, core }) => {
   //
   // RETURNS true when the run was actually cancelled, false when the cancel was suppressed by the event exemption. Callers use it to decide whether to end the generation: a real cancel is terminal, a suppressed one is not, and the watchdog must keep monitoring an exempt run so later failures still get their logs captured. `await forceCancel(...)` without checking the result would
   // end the chain at the first failure on the nightly, which is precisely the under-diagnosis this wave exists to fix.
-  async function forceCancel(failureMsg) {
+  //
+  // `preamble` is text that must survive the roster rebuild below: a budget cancel (T4.2) has no failed job of its own to name, and without it a run that also carries an unrelated failure would lose the CI BUDGET VIOLATION line from its roster annotation.
+  async function forceCancel(failureMsg, { preamble = '' } = {}) {
     // Re-fetch the job list so the cancellation names EVERY job that has failed by now, not only the one that drove the decision. Between the poll that detected the first failure and this call (AI classification + the critical-job wait below both take time) sibling jobs can also flip to failure; without this an operator or agent reading the cancelled run re-scans every job to find
     // failures the watchdog already saw. Best-effort:
     // if the refetch fails we fall back to the driving job's message.
@@ -1092,7 +1196,7 @@ const monitor = async ({ github, context, core }) => {
         });
         console.log('');
         for (const line of lines) console.log(line);
-        failureMsg = summary;
+        failureMsg = preamble ? `${preamble}; ${summary}` : summary;
       }
     } catch (e) {
       console.log(
@@ -1230,13 +1334,20 @@ const monitor = async ({ github, context, core }) => {
   console.log(`Max runtime: ${maxRuntime / 3600000} hours`);
 
   // Loop-invariant: parse env var once. Cancelled jobs with elapsed runtime at or above this threshold are treated as "stuck" (likely hit their declared timeout-minutes) and bypass the AI / retry path -- a hung job will hang again on retry.
-  const STUCK_THRESHOLD_MIN = Number.parseInt(process.env.STUCK_THRESHOLD_MIN || '60', 10);
+  //
+  // 15, not 60 (PLAN-ci-time-budget T4.3). Every job's `timeout-minutes` is now the per-job budget (T4.1), so a leg the platform killed at its timeout is a BUDGET VIOLATION, not a flake: at 60 a 15-minute timeout read as a "normal cancellation" and went down the retry path, re-running a job that had already blown its budget. A JOB_BUDGET_CAPS job (K8s Ceph 25, K8s Multinode 30) is judged
+  // against its own cap instead, so an infra cancel of one at, say, 20 minutes is still a retryable cancellation, and its timeout kill at 25 is not.
+  const STUCK_THRESHOLD_MIN = Number.parseInt(
+    process.env.STUCK_THRESHOLD_MIN || String(DEFAULT_STUCK_THRESHOLD_MIN),
+    10
+  );
+  const stuckThresholdFor = (j) => jobBudgetFor(j.name, STUCK_THRESHOLD_MIN);
   const jobElapsedMin = (j) => {
     if (!j.started_at || !j.completed_at) return 0;
     return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
   };
   console.log(
-    `Stuck-threshold: ${STUCK_THRESHOLD_MIN}m (cancellations after this are not retried)`
+    `Stuck-threshold: ${STUCK_THRESHOLD_MIN}m, or the job's budget cap (cancellations at or after this are budget violations and are not retried)`
   );
 
   while (Date.now() - startTime < maxRuntime) {
@@ -1288,8 +1399,11 @@ const monitor = async ({ github, context, core }) => {
     }
 
     // Budget check, right after the job fetch and before anything else reads `allJobs` -- evaluateBudget already excludes WATCHDOG_EXCLUDE_PATTERNS itself, so this runs on the unfiltered list. A no-op (both minutes null) when the workflow has not set either budget env var.
+    //
+    // ENFORCEMENT (T4.2). A live job over its budget under WATCHDOG_BUDGET_MODE=enforce (or the run over its budget under WATCHDOG_RUN_BUDGET_MODE=enforce) goes through forceCancel, the single chokepoint, so the CANCEL_EXEMPT_EVENTS and no-auto-cancel exemptions apply to it exactly as to every other cancel: a nightly or a dispatch is recorded, never rewritten to `cancelled`. Not
+    // in pending-rerun mode, where the retry decision is already made and nothing is cancelled. reportBudget dedupes per job, so an exempt run is not re-asked every poll.
     if (jobBudgetMin !== null || runBudgetMin !== null) {
-      reportBudget(
+      const budgetMessages = reportBudget(
         evaluateBudget({
           jobs: allJobs,
           run,
@@ -1297,9 +1411,17 @@ const monitor = async ({ github, context, core }) => {
           jobBudgetMin,
           runBudgetMin,
           excludePatterns,
-          mode: budgetMode,
+          jobMode: budgetJobMode,
+          runMode: budgetRunMode,
         })
       );
+      if (budgetMessages.length > 0 && !pendingRerun) {
+        const budgetMsg = budgetMessages.join('; ');
+        console.log('#'.repeat(70));
+        console.log(`Budget enforcement: ${budgetMsg}`);
+        console.log('#'.repeat(70));
+        if (await forceCancel(budgetMsg, { preamble: budgetMsg })) return;
+      }
     }
 
     // Filter out excluded jobs
@@ -1357,8 +1479,8 @@ const monitor = async ({ github, context, core }) => {
 
     // Distinguish stuck-job timeouts from normal cancellations. A cancelled job that ran longer than STUCK_THRESHOLD_MIN almost certainly hit its declared timeout-minutes (or GitHub's 6h default), not a manual / supersession / watchdog cancel -- those happen within minutes of the job starting. The classifier path treats all cancellations as potentially transient and auto-retries;
     // that's how we ended up with a 4-hour debian-13 hang retried automatically before any human noticed. Stuck jobs go straight to force-cancel with no retry. (STUCK_THRESHOLD_MIN + jobElapsedMin hoisted above the loop as loop-invariants.)
-    const stuckCancellations = cancelled.filter((j) => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
-    const normalCancellations = cancelled.filter((j) => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
+    const stuckCancellations = cancelled.filter((j) => jobElapsedMin(j) >= stuckThresholdFor(j));
+    const normalCancellations = cancelled.filter((j) => jobElapsedMin(j) < stuckThresholdFor(j));
 
     // Supersession check, and it must come BEFORE the classification below. Once a cancelled job reaches classifyFailure the damage is already done: a billed Workers AI request is spent and core.setFailed marks the step red, and nothing downstream un-marks it. See evaluateSupersession.
     //
@@ -1437,13 +1559,24 @@ const monitor = async ({ github, context, core }) => {
 
       // 0. Stuck cancellations bypass AI + retry entirely -- the job hung once, retrying would just hang again. Force-cancel and surface a loud annotation so the operator investigates the root cause.
       if (isStuck) {
+        const threshold = stuckThresholdFor(job);
         console.log(
-          `"${job.name}" exceeded ${STUCK_THRESHOLD_MIN}m cancellation threshold -- treating as stuck, no retry`
+          `"${job.name}" reached its ${threshold}m budget before cancellation -- a budget violation (timeout kill), no retry`
         );
+        const budgetText = budgetEnforcedText(job.name, jobMin, threshold);
         core.error(
-          `Job '${job.name}' ran ${jobMin}m before cancellation, exceeding the ${STUCK_THRESHOLD_MIN}m stuck-threshold. The job's declared timeout-minutes (or GitHub's 6h default) likely expired. Investigate the underlying step before re-running.`
+          `${budgetText}. Cancelled after ${jobMin}m, at or past the ${threshold}m stuck-threshold: its declared timeout-minutes likely expired. Not retried; investigate the slow step before re-running.`
         );
-        if (await forceCancel(failureMsg)) return;
+        budgetViolationLog.push({
+          kind: 'timeout',
+          name: job.name,
+          minutes: jobMin,
+          budgetMin: threshold,
+          enforced: true,
+          message: budgetText,
+        });
+        flushBudgetReport();
+        if (await forceCancel(failureMsg, { preamble: budgetText })) return;
 
         // Cancel-exempt run (the nightly): the failure is recorded but the run is left to conclude on its own, so forceCancel returned false and did NOT end this generation. The job is nonetheless TERMINAL AND STUCK, so it must not fall through into the branches below.
         //
@@ -1647,6 +1780,9 @@ module.exports.pendingNoRetryJobs = pendingNoRetryJobs;
 module.exports.NO_DRAIN_PATTERNS = NO_DRAIN_PATTERNS;
 module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
+module.exports.JOB_BUDGET_CAPS = JOB_BUDGET_CAPS;
+module.exports.DEFAULT_STUCK_THRESHOLD_MIN = DEFAULT_STUCK_THRESHOLD_MIN;
+module.exports.jobBudgetFor = jobBudgetFor;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
 module.exports.evaluateSupersession = evaluateSupersession;
 module.exports.evaluatePendingRerun = evaluatePendingRerun;
