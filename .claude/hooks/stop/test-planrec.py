@@ -924,6 +924,28 @@ try:
 except Exception as _exc:  # noqa: BLE001
     truthy("the gate's own scan() could be loaded for the equality control: %r" % _exc, False)
 
+# THE TICK REFRESHES agent/INDEX.md (worklist #f4d0bc57). The census carries each plan's byte size, so a tick that left the index alone was check:ci-plan-record R8 red until a manual --update. After refresh_index, the hook's own freshness reading (wl_planindex.index_census) must call the census fresh; before it, stale.
+import wl_planindex as PI  # noqa: E402
+
+(ROOT / REL).write_text(PLAN, encoding="utf-8")
+truthy(
+    "CONTROL: the first refresh writes an index",
+    R.refresh_index(ROOT, K.plan_records, K.plan_box_census),
+)
+control("...and a fresh index reads fresh", PI.index_census(ROOT)[1], PI.CENSUS_FRESH)
+(ROOT / REL).write_text(_ticked, encoding="utf-8")
+control("CONTROL: a tick alone leaves the census stale", PI.index_census(ROOT)[1], PI.CENSUS_STALE)
+truthy(
+    "refresh_index rewrites it after the tick",
+    R.refresh_index(ROOT, K.plan_records, K.plan_box_census),
+)
+control("...so the census reads fresh again", PI.index_census(ROOT)[1], PI.CENSUS_FRESH)
+falsy(
+    "...and a second refresh has nothing to write",
+    R.refresh_index(ROOT, K.plan_records, K.plan_box_census),
+)
+(ROOT / R.INDEX_REL).unlink()
+
 # A RULED, CLOSED PLAN (worklist #b70eae96). ledger_row dropped the `ruling` key the gate's scan() emits, so a --plan-tick on `agent/plans/_done/PLAN-ci-time-budget.md` (Status: closed, Ruling: #c3a46b36) rewrote its row as `ruling: None` and G-A0 went red on the next run. Driven through the real plan_tick and judged by the gate's own diff_problems, so the comparison is CI's and not a restated one.
 _RULED = PLAN.replace("Status: executing\n", "Status: closed\nRuling: #c3a46b36\n", 1)
 truthy("CONTROL: the ruled fixture really carries a header Ruling", F.ruling_line(_RULED))

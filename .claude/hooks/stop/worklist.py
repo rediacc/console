@@ -569,6 +569,7 @@ def _planrec_cli(argv):
             sys.stdout.write(M.CLI_PLANREC_DRY % body)
             return
         R.write_atomic(pathlib.Path(root) / rel, body)
+        R.refresh_index(root, CK.plan_records, CK.plan_box_census)
         print(
             M.CLI_PLANREC_REVIVED
             % {"rel": rel, "blob": note.split()[-1], "bytes": len(body.encode("utf-8"))}
@@ -589,6 +590,7 @@ def _planrec_cli(argv):
         sys.stdout.write(M.CLI_PLANREC_DRY % text)
         return
     R.write_atomic(pathlib.Path(root) / rel, text)
+    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
     rec = R.parse(text)
     print(
         M.CLI_PLANREC_WROTE
@@ -762,11 +764,13 @@ def _plantick_cli(argv):
     # THE PLAN FIRST, THEN THE LEDGER. The ledger is a reading OF the plan, so this order leaves the recoverable state at every instant: a crash between them leaves a ticked plan and a stale ledger, which check:ci-plan-boxes reports with the exact regenerate command. The other order leaves a ledger attesting a tick no file carries, which reads as a box that vanished.
     R.write_atomic(pathlib.Path(root) / rel, text)
     R.write_atomic(pathlib.Path(root) / R.LEDGER_REL, json.dumps(doc, indent=2) + "\n")
+    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
     print(
         M.CLI_PLANTICK_WROTE
         % {
             "rel": rel,
             "ledger": R.LEDGER_REL,
+            "index": R.INDEX_REL,
             "investigation": "/".join(R.INVESTIGATION_REL),
             "note": note,
             "me": me,
@@ -888,9 +892,10 @@ CLI_PLANBACKFILL_WROTE = (
     "  evidence line: %(evidence)s\n"
     "%(table)s\n"
     "\n"
-    "NOT COMMITTED. The plan and the ledger must land in the SAME commit.\n"
+    "NOT COMMITTED. The plan, the ledger and agent/INDEX.md (whose plan census\n"
+    "this run rewrote) must land in the SAME commit.\n"
     "\n"
-    "  git add %(rel)s %(ledger)s\n"
+    "  git add %(rel)s %(ledger)s agent/INDEX.md\n"
 )
 
 
@@ -969,6 +974,7 @@ def _planbackfill_cli(argv):
     # THE PLAN FIRST, THEN THE LEDGER, the same ordering --plan-tick uses and for the same reason: a crash between them leaves a plan with an evidence line and a ledger without its row, which one more run of this verb finishes.
     R.write_atomic(pathlib.Path(root) / rel, text)
     R.append_investigation(root, row)
+    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
     print(CLI_PLANBACKFILL_WROTE % payload)
 
 

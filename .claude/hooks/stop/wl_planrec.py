@@ -1219,6 +1219,30 @@ def write_atomic(path, text):
         raise
 
 
+def refresh_index(root, plan_records, plan_box_census):
+    """Rewrite `agent/INDEX.md` after a verb changed a plan's bytes; True when it changed.
+
+    The index carries every plan's byte size in its census, and check:ci-plan-record's R8 compares the file for EQUALITY with `render_index` plus `wl_planindex.render_census`, so every plan write left that gate red until someone remembered `check:ci-plan-record -- --update` (seen 2026-09-30 on #591 after three --plan-tick runs). This is that gate's own render over one `plan_records` read. An empty render writes nothing, for the reason R8 gives: an update never truncates a committed document.
+
+    `plan_records` and `plan_box_census` are injected for the reason `index_rows` gives.
+    """
+    import wl_planindex as PI  # noqa: PLC0415 -- wl_store imports wl_planindex lazily; keep this module's import light
+
+    recs = plan_records(root)
+    want = render_index(index_rows(root, recs)) + PI.render_census(
+        PI.census_rows(root, plan_records=lambda _r: recs, plan_box_census=plan_box_census)
+    )
+    path = pathlib.Path(root) / INDEX_REL
+    try:
+        got = path.read_text(encoding="utf-8")
+    except OSError:
+        got = ""
+    if not want or got == want:
+        return False
+    write_atomic(path, want)
+    return True
+
+
 # --------------------------------------------------------------------------- P2.6 Pointer stamps: the same idiom, applied to the two OTHER things in this repo that replace a document with a smaller one.
 #
 # Compaction of a plan is not the only place bytes are overwritten. Two more do it routinely, and until now neither said where the replaced bytes went:

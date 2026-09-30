@@ -2306,9 +2306,8 @@ CLI_PLANREC_WROTE = (
     "committed before it was compacted -- which is exactly why a dirty path is\n"
     "refused. Committing the record is the operator's call. Two things must\n"
     "land in the SAME commit as this file, or two gates disagree with each\n"
-    "other:\n"
+    "other: agent/INDEX.md, which this run already rewrote, and the box ledger:\n"
     "  npm run check:ci-plan-boxes -- --update      # the box ledger\n"
-    "  npm run check:ci-plan-record -- --update     # agent/INDEX.md\n"
 )
 
 CLI_PLANREC_DRY = "%s\n---- the record above is NOT on disk. Re-run with --write to save it. ----\n"
@@ -2386,15 +2385,16 @@ CLI_PLANTICK_WROTE = (
     "ticked one box in %(rel)s and updated %(ledger)s\n"
     "  %(note)s\n"
     "\n"
-    "NOT COMMITTED. THREE files must land in the SAME commit -- the plan, the box\n"
-    "ledger, and the investigation ledger that licensed this tick. The box ledger\n"
-    "is a reading OF the plan, so a commit carrying one without the other is read\n"
-    "by check:ci-plan-boxes as a box that vanished rather than one that was\n"
-    "ticked; and check:ci-plan-implementation re-resolves the investigation row's\n"
-    "pointers for every box this branch moved open -> done, so a tick that lands\n"
-    "without its row reds there instead.\n"
+    "NOT COMMITTED. FOUR files must land in the SAME commit -- the plan, the box\n"
+    "ledger, the investigation ledger that licensed this tick, and %(index)s,\n"
+    "whose plan census this run rewrote. The box ledger is a reading OF the plan,\n"
+    "so a commit carrying one without the other is read by check:ci-plan-boxes as\n"
+    "a box that vanished rather than one that was ticked; check:ci-plan-implementation\n"
+    "re-resolves the investigation row's pointers for every box this branch moved\n"
+    "open -> done, so a tick that lands without its row reds there instead; and\n"
+    "check:ci-plan-record compares the index byte for byte.\n"
     "\n"
-    "  git add %(rel)s %(ledger)s %(investigation)s\n"
+    "  git add %(rel)s %(ledger)s %(investigation)s %(index)s\n"
 )
 
 CLI_PLANINV_USAGE = (
