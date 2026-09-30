@@ -210,11 +210,106 @@ def ci_branch_query(owner, name, ref, cursor):
     `main` after a merge has no open PR, so ci_query's pullRequests(...) selector returns zero nodes and the reader goes blind at exactly the point /pr-merge step 5 needs it. The context selection set below matches ci_query's plus TWO fields, `checkSuite.branch.name` and `workflowRun.event`, which branch_owns_context needs: a commit's rollup is per-SHA, not per-branch (see there).
     """
     after = ',after:"%s"' % cursor if cursor else ""
+    # `pushedAt` (the repository's LAST PUSH, to any branch) bounds the head's age from below, which is what lets ci-trace tell a [skip ci] head from a just-pushed one whose runs have not registered yet (see ci-trace's _noci_settled).
     return (
-        '{repository(owner:"%s",name:"%s"){ref(qualifiedName:"refs/heads/%s")'
-        "{target{... on Commit{oid statusCheckRollup{state "
-        "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename ... on CheckRun{name status conclusion databaseId detailsUrl checkSuite{branch{name} workflowRun{databaseId event}}} ... on StatusContext{context state targetUrl}}}}}}}}}"
+        '{repository(owner:"%s",name:"%s"){pushedAt ref(qualifiedName:"refs/heads/%s")'
+        "{target{... on Commit{oid statusCheckRollup{state " + _BRANCH_CONTEXTS + "}}}}}}"
     ) % (owner, name, ref, after)
+
+
+# The context selection shared by the branch read and the per-commit read (ci_commit_query), so the ownership fields cannot be present in one and missing in the other.
+_BRANCH_CONTEXTS = (
+    "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename"
+    " ... on CheckRun{name status conclusion databaseId detailsUrl"
+    " checkSuite{branch{name} workflowRun{databaseId event}}}"
+    " ... on StatusContext{context state targetUrl}}}"
+)
+
+
+def ci_commit_query(owner, name, oid, cursor):
+    """The branch read's rollup, for ONE commit by oid (a no-CI head's nearest checked ancestor)."""
+    after = ',after:"%s"' % cursor if cursor else ""
+    return (
+        '{repository(owner:"%s",name:"%s"){object(oid:"%s")'
+        "{... on Commit{oid statusCheckRollup{state " + _BRANCH_CONTEXTS + "}}}}}"
+    ) % (owner, name, oid, after)
+
+
+def ci_commit_rollup(root, owner, name, oid, ref):
+    """(state, info) for one commit, contexts filtered to runs OF `ref` exactly as a branch read is."""
+
+    def extract(data):
+        try:
+            node = data["data"]["repository"]["object"]
+        except (KeyError, TypeError):
+            return "unreadable", "graphql response had no repository.object", None
+        if not node or not node.get("oid"):
+            return "unreadable", "commit %s not found" % oid[:8], None
+        return None, node, None
+
+    return _rollup_pages(
+        root,
+        owner,
+        name,
+        ref,
+        lambda c: ci_commit_query(owner, name, oid, c),
+        extract,
+        "commit",
+        keep=lambda c: branch_owns_context(c, ref),
+    )
+
+
+# Runs of these events never feed a commit's statusCheckRollup (measured 2026-08-26 for workflow_dispatch: Release run 32968110599 was absent from the rollup), so they cannot be what a null rollup is waiting for. main's head routinely carries Watchdog and VM Bake dispatch runs on a [skip ci] commit.
+CI_ROLLUP_BLIND_EVENTS = {"workflow_dispatch", "workflow_run", "repository_dispatch"}
+
+
+def commit_ci_runs(root, owner, name, sha):
+    """(runs, error) -- the Actions runs on `sha` that CAN report into its rollup.
+
+    Each run is (id, workflow name, event, status). An empty list with no error is the [skip ci] / path-filtered answer: nothing is coming.
+    """
+    data, err = _gh_json(
+        root,
+        ["api", "repos/%s/%s/actions/runs?head_sha=%s&per_page=100" % (owner, name, sha)],
+    )
+    if data is None:
+        return None, err
+    runs = data.get("workflow_runs")
+    if not isinstance(runs, list):
+        return None, "actions/runs response had no workflow_runs list"
+    return [
+        (r.get("id"), r.get("name") or "?", r.get("event") or "?", r.get("status") or "?")
+        for r in runs
+        if (r.get("event") or "") not in CI_ROLLUP_BLIND_EVENTS
+    ], ""
+
+
+def nearest_checked_ancestor(root, owner, name, sha, depth=10):
+    """(oid, error) -- the closest strict ancestor of `sha` whose rollup is non-null, within `depth` commits of first-parent history; (None, "") when none is."""
+    data, err = _gh_json(
+        root,
+        [
+            "api",
+            "graphql",
+            "-f",
+            "query="
+            + (
+                '{repository(owner:"%s",name:"%s"){object(oid:"%s"){... on Commit'
+                "{history(first:%d){nodes{oid statusCheckRollup{state}}}}}}}"
+            )
+            % (owner, name, sha, depth + 1),
+        ],
+    )
+    if data is None:
+        return None, err
+    try:
+        nodes = data["data"]["repository"]["object"]["history"]["nodes"]
+    except (KeyError, TypeError):
+        return None, "graphql response had no commit history"
+    for node in nodes or []:
+        if node.get("oid") and node["oid"] != sha and node.get("statusCheckRollup"):
+            return node["oid"], ""
+    return None, ""
 
 
 def branch_owns_context(ctx, ref):
@@ -318,6 +413,8 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source, keep=Non
         "contexts": contexts,
         # Contexts on this SHA dropped because they belong to another branch's run (branch source only; always 0 for a PR read).
         "foreign": foreign,
+        # False when the commit carries no statusCheckRollup at all (nothing ever reported on it).
+        "has_rollup": bool(roll),
         "truncated": truncated,
     }
 
@@ -347,10 +444,13 @@ def _rollup_pr(root, owner, name, ref):
 
 
 def _rollup_branch(root, owner, name, ref):
+    meta = {}
+
     def extract(data):
         try:
             node = data["data"]["repository"]["ref"]
-        except (KeyError, TypeError):
+            meta["pushed_at"] = data["data"]["repository"].get("pushedAt")
+        except (KeyError, TypeError, AttributeError):
             return "unreadable", "graphql response had no repository.ref", None
         if not node:
             # A ref that does not exist is NOT the same answer as a ref with no checks, and conflating them is how a typo reads as a clean run.
@@ -360,7 +460,7 @@ def _rollup_branch(root, owner, name, ref):
             return "unreadable", "ref %r resolved to a non-commit target" % ref, None
         return None, target, None
 
-    return _rollup_pages(
+    state, info = _rollup_pages(
         root,
         owner,
         name,
@@ -370,6 +470,9 @@ def _rollup_branch(root, owner, name, ref):
         "branch",
         keep=lambda c: branch_owns_context(c, ref),
     )
+    if state == "ok":
+        info["pushed_at"] = meta.get("pushed_at") or ""
+    return state, info
 
 
 def ci_classify(info):

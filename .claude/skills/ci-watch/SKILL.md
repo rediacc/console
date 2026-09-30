@@ -15,7 +15,7 @@ self-improving: true
 .ci/scripts/ci/ci-trace.py --wait --until-final  # babysitting: wait past the first red
 ```
 
-`--wait` goes in a background task (`run_in_background: true`). It owns its polling interval, so no loop is ever hand-written; the process exit is the wake-up. Exits: **0** green, **1** red *or superseded*, **2** no verdict (in flight, no open PR, unreadable), **3** head moved by a push (`--json` for machine-readable output).
+`--wait` goes in a background task (`run_in_background: true`). It owns its polling interval, so no loop is ever hand-written; the process exit is the wake-up. Exits: **0** green, **1** red *or superseded*, **2** no verdict (in flight, no open PR, unreadable), **3** head moved by a push, **4** no CI for a `--ref` head (a `[skip ci]` commit; the line names and judges the nearest ancestor with checks) (`--json` for machine-readable output).
 
 **`--timeout` requires a unit suffix**: `90m`, `5400s` or `1h`, default `5400s`. A bare number is refused, because its unit would have to be guessed.
 

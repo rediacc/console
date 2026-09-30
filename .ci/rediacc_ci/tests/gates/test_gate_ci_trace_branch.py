@@ -46,13 +46,28 @@ case "$q" in
 {"data":{"repository":{"pullRequests":{"nodes":%(pr_nodes)s}}}}
 JSON
   ;;
+  *history\\(*) cat <<'JSON'
+{"data":{"repository":{"object":{"history":{"nodes":%(history_json)s}}}}}
+JSON
+  ;;
   *qualifiedName*) cat <<'JSON'
-{"data":{"repository":{"ref":%(ref_json)s}}}
+{"data":{"repository":{"pushedAt":%(pushed_at)s,"ref":%(ref_json)s}}}
+JSON
+  ;;
+  *object\\(oid*) cat <<'JSON'
+{"data":{"repository":{"object":%(object_json)s}}}
+JSON
+  ;;
+  *actions/runs*) cat <<'JSON'
+{"workflow_runs":%(runs_json)s}
 JSON
   ;;
   *) echo '{"data":{}}' ;;
 esac
 """
+
+# The default runs answer: one registered push run, so a head with no owned contexts reads as still running rather than as no-CI.
+RUNS_ONE_PUSH = '[{"id":1,"name":"Console CI","event":"push","status":"queued"}]'
 
 ROLLUP_OK = (
     '{"target":{"oid":"b4b5797e00000000000000000000000000000000",'
@@ -187,10 +202,29 @@ def require_subjects(gate) -> None:
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(path))
 
 
-def make_fake_gh(directory: pathlib.Path, pr_nodes: str, ref_json: str) -> pathlib.Path:
+def make_fake_gh(
+    directory: pathlib.Path,
+    pr_nodes: str,
+    ref_json: str,
+    runs_json: str = RUNS_ONE_PUSH,
+    pushed_at: str = "null",
+    history_json: str = "[]",
+    object_json: str = "null",
+) -> pathlib.Path:
     directory.mkdir(parents=True, exist_ok=True)
     shim = directory / "gh"
-    shim.write_text(FAKE_GH % {"pr_nodes": pr_nodes, "ref_json": ref_json}, encoding="utf-8")
+    shim.write_text(
+        FAKE_GH
+        % {
+            "pr_nodes": pr_nodes,
+            "ref_json": ref_json,
+            "runs_json": runs_json,
+            "pushed_at": pushed_at,
+            "history_json": history_json,
+            "object_json": object_json,
+        },
+        encoding="utf-8",
+    )
     shim.chmod(0o755)
     return directory
 
@@ -337,6 +371,131 @@ def test_branch_read_with_only_foreign_runs_is_not_green(gate, tmp_path):
     result = harness.run([sys.executable, str(TRACE), "--ref", "main"], env=with_path(bindir))
     gate.assert_exit(2, result, "nothing owned must be no-verdict (2), not green")
     gate.log_pass("only-foreign SHA is no-verdict")
+
+
+SKIP_CI_SHA = "0dfd4a046e5e765b61490731e7f4ebda4cfd3ad8"
+# THE 2026-09-30 SHAPE: main's head 0dfd4a04 is a [skip ci] release-state commit. Its rollup is null, and the only runs on it are dispatched ones (Watchdog, VM Bake), which never feed a rollup. Its nearest checked ancestor 49e61a1a carries a red foreign PR run beside main's green push run.
+SKIP_CI_REF = '{"target":{"oid":"%s","statusCheckRollup":null}}' % SKIP_CI_SHA
+DISPATCH_ONLY_RUNS = (
+    '[{"id":2,"name":"Watchdog: run 1 (gen 2)","event":"workflow_dispatch","status":"in_progress"},'
+    '{"id":3,"name":"CI - VM Bake","event":"workflow_dispatch","status":"queued"}]'
+)
+SKIP_CI_HISTORY = (
+    '[{"oid":"%s","statusCheckRollup":null},'
+    '{"oid":"bd314dd000000000000000000000000000000000","statusCheckRollup":null},'
+    '{"oid":"49e61a1a5c2242e0fb563c065f4bec9f84f13837","statusCheckRollup":{"state":"FAILURE"}}]'
+    % SKIP_CI_SHA
+)
+# The ancestor's object answer: the mixed-SHA rollup, whose `target` wrapper is dropped.
+ANCESTOR_OBJECT = MIXED_SHA[len('{"target":') : -1]
+LONG_AGO = '"2020-01-01T00:00:00Z"'
+
+
+def skip_ci_gh(tmp_path, pushed_at, runs_json=DISPATCH_ONLY_RUNS):
+    return make_fake_gh(
+        tmp_path / "bin",
+        "[]",
+        SKIP_CI_REF,
+        runs_json=runs_json,
+        pushed_at=pushed_at,
+        history_json=SKIP_CI_HISTORY,
+        object_json=ANCESTOR_OBJECT,
+    )
+
+
+def now_iso():
+    import datetime  # noqa: PLC0415
+
+    return '"%s"' % datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_skip_ci_head_is_no_ci_not_running(gate, tmp_path):
+    gate.log_test("a [skip ci] branch head reads NO-CI (exit 4), and --wait returns")
+    # THE 2026-09-30 DEFECT: `--wait --ref main` on 0dfd4a04 printed RUNNING with 0 contexts and polled to the timeout.
+    require_subjects(gate)
+    bindir = skip_ci_gh(tmp_path, LONG_AGO)
+    result = harness.run(
+        [sys.executable, str(TRACE), "--wait", "--timeout", "60s", "--ref", "main"],
+        env={**with_path(bindir), "CI_TRACE_POLL_S": "1"},
+    )
+    gate.assert_exit(4, result, "a [skip ci] head must exit 4 (no CI), promptly, under --wait")
+    want = (
+        "NO-CI  branch main @ 0dfd4a04: no run exists for this commit ([skip ci] or"
+        " path-filtered); nearest judged ancestor: 49e61a1a green"
+    )
+    if want not in result.out:
+        gate.log_fail("the NO-CI line did not render as expected: %r" % result.out)
+    gate.log_pass("NO-CI, exit 4, ancestor 49e61a1a judged green through the ownership filter")
+
+
+def test_just_pushed_head_stays_running(gate, tmp_path):
+    gate.log_test("a JUST-PUSHED head with no runs yet is RUNNING, not NO-CI")
+    # The one false-verdict risk: a head whose runs GitHub has not registered yet looks exactly like a [skip ci] head. pushedAt is now, so the grace has not elapsed.
+    require_subjects(gate)
+    bindir = skip_ci_gh(tmp_path, now_iso())
+    result = harness.run([sys.executable, str(TRACE), "--ref", "main"], env=with_path(bindir))
+    gate.assert_exit(2, result, "a just-pushed head must be no-verdict (2), not no-CI (4)")
+    if "registration grace" not in result.out:
+        gate.log_fail("RUNNING must say it is waiting out the grace: %r" % result.out)
+    gate.log_pass("just-pushed head: RUNNING, naming the grace")
+
+
+def test_control_grace_is_what_holds_the_just_pushed_head(gate, tmp_path):
+    gate.log_test("CONTROL: with the grace at 0, the same just-pushed fixture reads NO-CI")
+    # If this stops flipping, the test above passes for some reason other than the grace and proves nothing.
+    require_subjects(gate)
+    bindir = skip_ci_gh(tmp_path, now_iso())
+    result = harness.run(
+        [sys.executable, str(TRACE), "--ref", "main"],
+        env={**with_path(bindir), "CI_TRACE_NOCI_GRACE_S": "0"},
+    )
+    gate.assert_exit(4, result, "grace 0 must let the same fixture read NO-CI")
+    gate.log_pass("control fires: removing the grace turns the just-pushed head into NO-CI")
+
+
+def test_head_with_a_registered_run_stays_running(gate, tmp_path):
+    gate.log_test(
+        "CONTROL: a null rollup WITH a rollup-feeding run is RUNNING, even long after push"
+    )
+    # Measured live on 0dfd4a04 later the same morning: a scheduled Console CI run queued on it. Queued runs report no checks yet; that is in flight, not no-CI.
+    require_subjects(gate)
+    runs = (
+        DISPATCH_ONLY_RUNS[:-1]
+        + ',{"id":4,"name":"Console CI","event":"schedule","status":"queued"}]'
+    )
+    bindir = skip_ci_gh(tmp_path, LONG_AGO, runs_json=runs)
+    result = harness.run([sys.executable, str(TRACE), "--ref", "main"], env=with_path(bindir))
+    gate.assert_exit(2, result, "a queued rollup-feeding run must keep the head RUNNING")
+    if "Console CI (schedule, queued)" not in result.out:
+        gate.log_fail("RUNNING must name the registered run: %r" % result.out)
+    gate.log_pass("registered schedule run: RUNNING, named; dispatch runs not counted")
+
+
+def test_noci_settled_bounds(gate):
+    gate.log_test(
+        "_noci_settled: either lower bound on the head's age settles it, neither alone fakes it"
+    )
+    require_subjects(gate)
+    import importlib.util  # noqa: PLC0415
+
+    spec = importlib.util.spec_from_file_location("ci_trace_under_test", TRACE)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    t0 = 1_900_000_000.0
+    iso = "2030-03-17T17:46:40Z"  # == t0
+    rows = [
+        ({"pushed_at": iso, "first_seen": t0 + 170, "now": t0 + 179, "grace": 180}, False),
+        ({"pushed_at": iso, "first_seen": t0 + 170, "now": t0 + 180, "grace": 180}, True),
+        # A busy repo: pushedAt keeps moving, so only this process's own observation settles it.
+        ({"pushed_at": iso, "first_seen": t0 - 400, "now": t0 + 10, "grace": 180}, True),
+        ({"pushed_at": iso, "first_seen": t0 - 100, "now": t0 + 10, "grace": 180}, False),
+        ({"pushed_at": None, "first_seen": t0, "now": t0 + 10, "grace": 180}, False),
+        ({"pushed_at": "garbage", "first_seen": t0, "now": t0 + 180, "grace": 180}, True),
+    ]
+    bad = [(k, w) for k, w in rows if mod._noci_settled(**k) != w]
+    if bad:
+        gate.log_fail("_noci_settled mismatches: %r" % bad)
+    gate.log_pass("all %d grace rows decided as expected" % len(rows))
 
 
 def test_branch_owns_context_table(gate):

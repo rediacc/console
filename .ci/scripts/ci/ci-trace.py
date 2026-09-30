@@ -23,6 +23,7 @@ ONE IMPLEMENTATION. Every rule here already existed inside the Stop hook's wl_ci
 
 import argparse
 import contextlib
+import datetime
 import io
 import json
 import os
@@ -44,6 +45,10 @@ EXIT_GREEN = 0
 EXIT_RED = 1
 EXIT_NO_VERDICT = 2
 EXIT_HEAD_MOVED = 3
+EXIT_NO_CI = 4
+
+# How long a branch head must have gone with no rollup-feeding run before it reads NO-CI rather than RUNNING. GitHub registers a push's runs asynchronously, normally within seconds; the grace absorbs a slow registration so a just-pushed head is never called NO-CI.
+NOCI_GRACE_S = int(os.environ.get("CI_TRACE_NOCI_GRACE_S", "180"))
 
 # `--timeout` TAKES A MANDATORY UNIT SUFFIX. A bare number is the one spelling a reader has to guess the unit of, and a long-lived background process with a guessed timeout is relaunched or abandoned on the wrong schedule. The suffix makes the unit part of the token, so nothing is read off a convention. The CI_TRACE_TIMEOUT_S environment default keeps its bare number: its
 # name carries the unit.
@@ -193,6 +198,9 @@ def _emit(payload, as_json):
     v = payload["verdict"]
     head = (payload.get("head") or "")[:8]
     pr = payload.get("pr")
+    if v == "no-ci":
+        print("NO-CI  branch %s @ %s: %s" % (payload.get("ref", "?"), head, payload["detail"]))
+        return
     # Two SOURCES, never one undifferentiated channel. A branch read and a PR read answer different questions, and a reader who cannot tell which one arrived will draw the wrong conclusion from an identical-looking line.
     if pr:
         where = "PR #%s @ %s" % (pr, head)
@@ -242,7 +250,84 @@ def _emit(payload, as_json):
         )
 
 
-def _snapshot(root, ref, cache, allow_branch=False):
+def _parse_iso(text):
+    try:
+        return datetime.datetime.fromisoformat(text or "").timestamp()
+    except ValueError:
+        return None
+
+
+def _noci_settled(pushed_at, first_seen, now, grace):
+    """Whether a head with no rollup-feeding run has waited out the grace, so NO-CI is safe to say.
+
+    THE ONE FALSE-VERDICT RISK here is a head pushed seconds ago whose runs GitHub has not registered yet: it looks exactly like a [skip ci] head. Two independent lower bounds on the head's age, either one sufficient:
+
+      * the repository's `pushedAt` is its LAST push to ANY branch, so the ref's head has existed on the remote at least that long;
+      * this process has seen the no-run state continuously since `first_seen` (a --wait on a busy repo, where pushedAt keeps moving).
+
+    The commit's own date is deliberately NOT one of them: pushing an old local commit keeps its old committer date.
+    """
+    pushed = _parse_iso(pushed_at)
+    if pushed is not None and now - pushed >= grace:
+        return True
+    return first_seen is not None and now - first_seen >= grace
+
+
+def _judge_ancestor(root, info, ref):
+    """ "<sha8> <verdict>" for the nearest ancestor with checks, judged with the same ownership filter, or a short reason it was not."""
+    owner, name, sha = info.get("owner"), info.get("name"), info.get("sha") or ""
+    anc, err = wl_ci.nearest_checked_ancestor(root, owner, name, sha)
+    if err:
+        return "unreadable (%s)" % err
+    if not anc:
+        return "none within 10 commits"
+    state, ainfo = wl_ci.ci_commit_rollup(root, owner, name, anc, ref)
+    if state != "ok":
+        return "%s unreadable (%s)" % (anc[:8], ainfo)
+    live, hard, _soft = wl_ci.ci_classify(ainfo)
+    if hard:
+        verdict = "red (%d job(s) failed)" % len(hard)
+    elif live:
+        verdict = "running"
+    elif not ainfo.get("contexts"):
+        verdict = "no checks from %s's own runs" % ref
+    elif any(
+        (c.get("conclusion") or "").upper() == "CANCELLED" for c in ainfo.get("contexts") or []
+    ):
+        verdict = "red (cancelled context)"
+    else:
+        verdict = "green"
+    return "%s %s" % (anc[:8], verdict)
+
+
+def _no_ci_check(root, ref, info, seen):
+    """For a branch head with NO context from its own runs: ("no-ci" | "running", detail).
+
+    Without this, a [skip ci] head read RUNNING with 0 contexts forever, and `--wait --ref main` polled it to the timeout (measured 2026-09-30 on main 0dfd4a04, a release-state commit).
+    """
+    sha = info.get("sha") or ""
+    runs, err = wl_ci.commit_ci_runs(root, info.get("owner"), info.get("name"), sha)
+    if runs is None:
+        return "running", "no checks on this head yet, and its runs could not be listed: %s" % err
+    if runs:
+        return "running", "%d run(s) on this commit have not reported checks yet: %s" % (
+            len(runs),
+            ", ".join("%s (%s, %s)" % (r[1], r[2], r[3]) for r in runs[:3]),
+        )
+    now = time.time()
+    first_seen = seen.setdefault(sha, now) if seen is not None else now
+    if not _noci_settled(info.get("pushed_at"), first_seen, now, NOCI_GRACE_S):
+        return "running", (
+            "no run registered for this commit yet; waiting out the %ds registration grace"
+            " before calling it NO-CI" % NOCI_GRACE_S
+        )
+    return "no-ci", (
+        "no run exists for this commit ([skip ci] or path-filtered); nearest judged ancestor: %s"
+        % _judge_ancestor(root, info, ref)
+    )
+
+
+def _snapshot(root, ref, cache, allow_branch=False, seen=None):
     """One read -> a payload dict, or None with a reason when unreadable."""
     state, info = wl_ci.ci_rollup(root, ref, allow_branch=allow_branch)
     if state == "no-pr":
@@ -296,6 +381,10 @@ def _snapshot(root, ref, cache, allow_branch=False):
     else:
         verdict, detail = "green", "every context succeeded or was skipped"
 
+    # A BRANCH HEAD WITH NOTHING OF ITS OWN is either still registering or never going to run. PR heads are excluded: a PR's head always runs.
+    if info.get("source") == "branch" and not info.get("contexts"):
+        verdict, detail = _no_ci_check(root, ref, info, seen)
+
     # A branch read judges only the runs OF that branch (wl_ci.branch_owns_context). Saying how many contexts on the SHA were set aside keeps a foreign PR run's failures visible as a count rather than silently absent.
     if info.get("foreign"):
         detail += "; %d context(s) on this SHA from another branch's run ignored" % info["foreign"]
@@ -331,6 +420,9 @@ def main(argv=None):
             "  1  red         at least one job failed, or the run was superseded\n"
             "  2  no verdict  still in flight (without --wait), no open PR, or unreadable\n"
             "  3  head moved  --wait only: a push replaced the head being watched\n"
+            "  4  no CI       --ref only: no run exists for the branch head ([skip ci] or\n"
+            "                 path-filtered), after a registration grace; the nearest\n"
+            "                 ancestor with checks is named and judged\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -391,11 +483,11 @@ def main(argv=None):
         print("no-verdict: could not determine the current branch", file=sys.stderr)
         return EXIT_NO_VERDICT
 
-    cache, read_failures, pinned_head = {}, 0, None
+    cache, read_failures, pinned_head, seen = {}, 0, None, {}
     deadline = time.time() + args.timeout
 
     while True:
-        payload, err = _snapshot(root, ref, cache, allow_branch=allow_branch)
+        payload, err = _snapshot(root, ref, cache, allow_branch=allow_branch, seen=seen)
 
         if payload is None:
             # A read that cannot complete is NEVER green. Failure 4 was a `network is unreachable` blip; a bounded retry absorbs that without ever letting silence read as success.
@@ -425,6 +517,9 @@ def main(argv=None):
         if payload["verdict"] == "green":
             _emit(payload, args.json)
             return EXIT_GREEN
+        if payload["verdict"] == "no-ci":
+            _emit(payload, args.json)
+            return EXIT_NO_CI
 
         if not args.wait:
             _emit(payload, args.json)
