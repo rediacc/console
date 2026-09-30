@@ -104,7 +104,25 @@ def shard_min_tests(of: int) -> int:
 #
 # 600 -> 900 THE SAME DAY, on that measurement: a leg needs just over 600s and comfortably fits under 900s with real margin, matching the roughly 1.3-1.5x ratio this file has kept between a measured floor and its kill timer at every prior sizing (810s/1080s, 1389s/1800s). `timeout-minutes` on the `quality-pytest` job moves with it, 15 -> 20 (1200s), keeping the same 1.33x job-ceiling-over-kill-timer ratio the un-split value held (2400s/1800s). The exact per-leg number is still a projection from an incomplete run (98-99%, not a finished one) rather than a clean pass; `budget_report.py --refresh` (T3.2) reads each leg's own `unit-durations-quality-pytest-s<N>-<sha>` artifact once a green CI run lands, and this comment is due for a correction against that measurement rather than against a second guess.
 # 840 s, a minute under the Quality / Pytest job's timeout-minutes: 15 (W T4.1), so this timer fires with a verdict before CI cancels the job without one.
+#
+# THIS NUMBER BOUNDS ONE LEG, NOT THE CORPUS. The 1800 -> 600 paragraph above said the unsharded invocation "inherits whatever the corpus measures on the day it is run". It did not: until 2026-09-30 the whole-corpus path read this same constant, so `npm run check:ci-pytest` with no `--shard` gave the ENTIRE corpus a one-leg budget.
+# Measured 2026-09-30 on this 24-core host at `-n 8 --dist loadgroup`, load average 7-27 from concurrent sessions: 19,487 items, 7,335 test-seconds, 1014.06s wall, 90% of the progress bar at 775s. 7,335 / 8 workers is 917s of pure work, so no packing fits 840s: two runs that day ended "did not finish within 840s" with no verdict.
+# The floor is throughput, not one pinned fixture: the 294.65s guards fixture `PYTEST_JOBS_CAP` below cites is 233s of test time now, and the largest module is test_core_devbox.py at 1,006 test-seconds spread over all eight workers (its stub farm starts a Python interpreter per stubbed call).
+# So the whole-corpus run gets `whole_corpus_timeout_s()` instead: this leg budget times the committed manifest's leg count. The legs are balanced by measured duration, so N legs' budget is the model of the whole, and it moves with this constant rather than drifting from it. 840 x 3 = 2520s, 2.5x the measured 1014s, with room for a host capping `-n` below 8.
+# CI never takes that path (ci-quality.yml passes `--shard` on every leg), which is why the whole-corpus bound is a derivation and not a second declared timer: `check:ci-inner-timeout-reachable` compares declared timers against the job ceiling, and no job ceiling applies to a run CI does not make.
 RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 840)
+
+# The `of` of `.ci/config/shards/quality-pytest.json`, pinned by a selftest control against the committed manifest so the two cannot drift apart silently.
+WHOLE_CORPUS_LEGS = 3
+QUALITY_PYTEST_MANIFEST = ".ci/config/shards/quality-pytest.json"
+
+
+def whole_corpus_timeout_s() -> int:
+    """The kill timer for an unsharded run. An explicit PYTEST_RUN_TIMEOUT_S is the caller's own number and is honoured as given; otherwise the leg budget times the leg count."""
+    if os.environ.get("PYTEST_RUN_TIMEOUT_S"):
+        return RUN_TIMEOUT_S
+    return RUN_TIMEOUT_S * WHOLE_CORPUS_LEGS
+
 
 # T1.6 (PLAN-ci-time-budget): per-test durations, so budget_report.py --refresh (T3.2) has a real per-unit p90 for this lane instead of falling back to `weight`. `reports/` is gitignored at the repo root, and `ci-quality.yml`'s `quality-pytest` job uploads this exact directory as `unit-durations-quality-pytest-<sha>`, `if: always()` so a red run's partial durations are captured too -- T3.2 only reads GREEN runs, but a red run is not this constant's business to guess at.
 JUNIT_XML_RELPATH = pathlib.PurePosixPath("reports/quality-pytest/junit.xml")
@@ -124,6 +142,8 @@ def junit_xml_path(root: pathlib.Path, shard_index: int | None = None) -> pathli
 # `-n` AND `weight` MOVE TOGETHER. `pool.ts:242` caps effective weight at the pool size, so `weight: 8` reads as "the whole pool" on a 2-slot CI runner and as 8 of 22 locally. An `-n` larger than the declared weight is an undeclared claim on the machine, which is how a parallel gate makes a lane SLOWER.
 #
 # WHY 8 AND NOT MORE, measured on the full corpus: serial 823.93s; `-n 8` with working groups 381.41s (2.16x); `-n 16` 377.18s. Sixteen buys nothing, because the floor is now the 294.65s guards fixture pinned to a single worker. Raising this number is pointless until that driver is parallelised internally.
+#
+# THAT FLOOR IS GONE as of 2026-09-30: the guards differential is 233s of test time, and the whole corpus is 7,335 test-seconds for 1014.06s wall (see RUN_TIMEOUT_S). The run is now throughput-bound, so more workers would shorten it, but `-n` still moves only with the lock's `weight: 8` for the reason above, and that trade is the ci-runner pool's to make, not this constant's.
 PYTEST_JOBS_CAP = 8
 
 
@@ -307,6 +327,7 @@ def verdict(
     returncode: int,
     contract_skips: int = 0,
     min_tests: int = MIN_TESTS,
+    timeout_s: int = RUN_TIMEOUT_S,
 ) -> str:
     """The whole decision, as a pure function of four numbers. "" means green.
 
@@ -339,9 +360,9 @@ def verdict(
         if sig:
             return (
                 "pytest was KILLED by signal %d (exit %d), so no test verdict was "
-                "reached. Something terminated the run -- usually RUN_TIMEOUT_S "
-                "(%ds) or an outer deadline shorter than it. Do not read this as a "
-                "failing test." % (sig, returncode, RUN_TIMEOUT_S)
+                "reached. Something terminated the run -- usually this gate's kill "
+                "timer (%ds) or an outer deadline shorter than it. Do not read this as a "
+                "failing test." % (sig, returncode, timeout_s)
             )
         return "pytest exited %d." % returncode
     if (passed or 0) + contract_skips != collected:
@@ -427,7 +448,12 @@ def cannot_run(reason: str) -> int:
     return EXIT_CANNOT_RUN
 
 
-def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None):
+def run_pytest(
+    pytest_bin: str,
+    cwd: pathlib.Path,
+    args: list[str] | None = None,
+    timeout_s: int = RUN_TIMEOUT_S,
+):
     """(returncode, combined output). Args default to none, so `testpaths` applies.
 
     STDERR IS FOLDED INTO STDOUT deliberately. pytest writes its summary to stdout and its internal errors to stderr, and this function's caller needs to parse one text for both; splitting them here would mean a collection error that never reached the summary was parsed out of the wrong stream and read as "no collection line", which is a true statement about the wrong reason.
@@ -440,7 +466,7 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
     result = proc.run(
         [pytest_bin, *(args or [])],
         cwd=cwd,
-        timeout=RUN_TIMEOUT_S,
+        timeout=timeout_s,
     )
     if result.timed_out:
         # A TIMEOUT IS A VERDICT, NOT A TRACEBACK. Until 2026-09-07 this call had a
@@ -454,7 +480,7 @@ def run_pytest(pytest_bin: str, cwd: pathlib.Path, args: list[str] | None = None
             "gate refusing, not pytest failing: no verdict was reached, so nothing "
             "here says the tests pass. Re-run on a quiesced tree; if it is genuinely "
             "this slow now, raise RUN_TIMEOUT_S against a measured floor rather than "
-            "guessing.\n" % (partial, RUN_TIMEOUT_S)
+            "guessing.\n" % (partial, timeout_s)
         )
     return result.returncode, result.stdout + result.stderr
 
@@ -470,7 +496,8 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     # FLOOR RAISED WITH THE SUITE, 16 -> 25 -> 29 -> 35 (six corpus-counter controls, then two more for class methods). It was 16 against 19 controls; the parallel-header work adds nine (six string fixtures and three against a real two-worker run), so 19 -> 28. A floor left at 16 would keep passing with the entire parallel block deleted, which is precisely the "the file is not
     # being executed as written" failure the floor exists for. Slack is kept at three, the same margin the previous pair carried.
     # 46 -> 80 on 2026-09-27 (spec W, quality-pytest sharding): new controls for the shard-support functions (`junit_xml_path`'s shard_index, `shard_min_tests`, `parse_shard_args`, `parse_shard_spec`, `shard_leg_ids`, `shard_file_relpaths`, `corpus_test_count_files`, and `verdict`'s `min_tests` parameter), against 81 controls actually run. Same one-control slack as the previous pair carried in ratio.
-    c = Controls("check_pytest", floor=80, verbose=verbose)
+    # 80 -> 85 on 2026-09-30: five BUDGET controls for the whole-corpus kill timer, against 86 run, keeping the same one-control slack.
+    c = Controls("check_pytest", floor=85, verbose=verbose)
 
     # -- T1.6: junit_xml_path, pure and root-relative
     c.check(
@@ -929,6 +956,43 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     )
     c.truthy("HANG: the usage text names the kill timer", "PYTEST_RUN_TIMEOUT_S" in USAGE)
 
+    # THE WHOLE-CORPUS BUDGET. Until 2026-09-30 the unsharded run read the one-leg timer and could not finish (1014.06s measured against 840s), so these pin that the two paths get different budgets and that the multiplier is the committed manifest's own leg count.
+    manifest_of = json.loads(
+        (paths.repo_root() / QUALITY_PYTEST_MANIFEST).read_text(encoding="utf-8")
+    )["of"]
+    c.check(
+        "BUDGET: WHOLE_CORPUS_LEGS is the committed quality-pytest manifest's `of`",
+        WHOLE_CORPUS_LEGS,
+        manifest_of,
+    )
+    saved_override = os.environ.pop("PYTEST_RUN_TIMEOUT_S", None)
+    try:
+        c.check(
+            "BUDGET: with no override the whole-corpus timer is the leg timer times the leg count",
+            whole_corpus_timeout_s(),
+            RUN_TIMEOUT_S * WHOLE_CORPUS_LEGS,
+        )
+        # Judged only on the DEFAULTS: a caller's own PYTEST_RUN_TIMEOUT_S moves RUN_TIMEOUT_S at import, and this control is about the committed number, not theirs.
+        c.truthy(
+            "BUDGET: the default whole-corpus timer exceeds the 1014.06s measured on 2026-09-30, which the default leg timer alone did not",
+            saved_override is not None or whole_corpus_timeout_s() > 1014 >= RUN_TIMEOUT_S,
+        )
+        os.environ["PYTEST_RUN_TIMEOUT_S"] = "77"
+        c.check(
+            "BUDGET: an explicit PYTEST_RUN_TIMEOUT_S is honoured as given for the whole corpus too",
+            whole_corpus_timeout_s(),
+            RUN_TIMEOUT_S,
+        )
+    finally:
+        os.environ.pop("PYTEST_RUN_TIMEOUT_S", None)
+        if saved_override is not None:
+            os.environ["PYTEST_RUN_TIMEOUT_S"] = saved_override
+    c.truthy(
+        "BUDGET: a killed run names the timer it was given, not the leg constant",
+        "(4321s)"
+        in verdict(corpus=MIN_TESTS, collected=MIN_TESTS, passed=0, returncode=-9, timeout_s=4321),
+    )
+
     # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever here; `proc.run` kills the GROUP, so it returns. Driven through the shared runner rather than a local copy, because the copy was the first mistake.
     t0 = time.monotonic()
     blocked = proc.run(
@@ -1042,10 +1106,12 @@ check:ci-pytest -- run the Python test corpus and refuse a partial pass.
   check_pytest.py --help       this text
 
 Environment:
-  PYTEST_RUN_TIMEOUT_S   kill timer for the suite (default %d seconds, and it
-                         must stay BELOW the job's timeout-minutes or it can
-                         never fire -- check:ci-inner-timeout-reachable
-                         enforces exactly that)
+  PYTEST_RUN_TIMEOUT_S   kill timer, for a leg or the whole suite alike when
+                         set (default %d seconds per --shard leg, which must
+                         stay BELOW the job's timeout-minutes or it can never
+                         fire -- check:ci-inner-timeout-reachable enforces
+                         exactly that; an unsharded run defaults to %d, the
+                         leg budget times the manifest's leg count)
   PYTEST_BIN             pytest to use, ahead of the bootstrap ladder
 """
 
@@ -1094,7 +1160,7 @@ def help_precedes_resolution() -> bool:
 def main(argv: list[str]) -> int:
     # ANSWERED BEFORE ANY RESOLUTION. `--help` used to fall straight through to `resolve_pytest`, so on a host where the bootstrap hangs, asking this gate how to use it hung too, with no output on either stream. A usage message that depends on a subprocess is not a usage message.
     if wants_help(argv):
-        print(USAGE % RUN_TIMEOUT_S)
+        print(USAGE % (RUN_TIMEOUT_S, whole_corpus_timeout_s()))
         return EXIT_OK
 
     root = paths.repo_root()
@@ -1210,6 +1276,7 @@ def main(argv: list[str]) -> int:
         pytest_bin,
         root,
         ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path)],
+        timeout_s=whole_corpus_timeout_s(),
     )
     collected, passed = parse_counts(out)
     # pytest exit 4 is a USAGE error: this repo's own ini table is wrong. That is a defect in the tree, not an absent tool, so it is a 1 and never a 77.
@@ -1224,6 +1291,7 @@ def main(argv: list[str]) -> int:
         passed=passed,
         returncode=returncode,
         contract_skips=contract_skips,
+        timeout_s=whole_corpus_timeout_s(),
     )
     if problem:
         print(out, file=sys.stderr)
