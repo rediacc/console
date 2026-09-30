@@ -37,7 +37,8 @@ export const WWW_PUBLIC_DIR = path.resolve(
  * own `baseUrl` applies, so a plain checkout points at media.rediacc.com with no setup.
  */
 export function cdnBaseUrl(manifestBaseUrl: string): string {
-  const base = process.env.PUBLIC_VIDEO_CDN_BASE_URL || manifestBaseUrl;
+  const override = process.env.PUBLIC_VIDEO_CDN_BASE_URL;
+  const base = override !== undefined && override !== '' ? override : manifestBaseUrl;
   return base.replace(/\/+$/, '');
 }
 
@@ -53,7 +54,9 @@ export function cdnBaseUrl(manifestBaseUrl: string): string {
  * gate scripts, and `astro.config.mjs` when Node imports it natively for the remark
  * plugin) the check stays live, which costs a stat per lookup and is never wrong.
  */
-const existsMemo = import.meta.env?.PROD === true ? new Map<string, boolean>() : null;
+// Widened on purpose: Vite types env as always present, which is false under tsx and a native Node import. The literal `import.meta.env` stays, since that is the expression Vite rewrites.
+const viteEnv = import.meta.env as { PROD?: boolean } | undefined;
+const existsMemo = viteEnv?.PROD === true ? new Map<string, boolean>() : null;
 
 /** Does `/assets/...` (a site-root path) exist as a file under `publicDir`? */
 export function publicFileExists(publicPath: string, publicDir: string = WWW_PUBLIC_DIR): boolean {
