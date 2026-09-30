@@ -7,11 +7,12 @@ WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in 
 THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the fifty-four functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
 THE TWIN'S OWN DEFECTS are pinned against the LIVE TWIN's transcript, not against the port: `SCENARIO_CLAIMS` asserts each one inside the scenario's own comparison, so a twin that is later fixed fails here loudly rather than silently diverging from a port that still reproduces it.
 
-NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, so a scenario is driven once per worker that runs it; the driver's fixed work directory is serialised by its own `flock`, which is a lock the scheduler does not need to know about.
+NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, and each side of a scenario is driven once per pytest RUN: `drive` keeps the transcript in the run's shared directory under a `flock`, so a worker that needs a side another worker already drove reads it instead of driving it again. The driver's fixed work directory is serialised by its own `flock`, which is a lock the scheduler does not need to know about.
 """
 
 import ast
 import contextlib
+import fcntl
 import hashlib
 import io
 import json
@@ -87,35 +88,75 @@ SOURCE_SITES = (
 NOT_PORTED_FUNCTIONS: tuple[str, ...] = ()
 
 _CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
+# The run's directory every xdist worker shares (`<basetemp>/..`), set by `_shared_run_dir`. None outside a session.
+_RUN_DIR: list[pathlib.Path] = []
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _shared_run_dir(tmp_path_factory) -> None:
+    """One cache directory per pytest RUN, shared by its workers: a worker's basetemp is `<run>/popen-gwN`, and a run's `<run>` is fresh."""
+    base = tmp_path_factory.getbasetemp()
+    root = base.parent if base.name.startswith("popen-gw") else base
+    run_dir = root / "devbox-shadow-transcripts"
+    run_dir.mkdir(exist_ok=True)
+    _RUN_DIR[:] = [run_dir]
+
+
+def inputs_digest() -> str:
+    """The twin, the port and the driver as bytes: a transcript is reused only while all three are the ones that produced it."""
+    digest = hashlib.sha256()
+    for relative in (TWIN, PORT, DRIVER):
+        digest.update((paths.repo_root() / relative).read_bytes())
+    return digest.hexdigest()[:16]
 
 
 def drive(side: str, scenario: str) -> tuple[int, str, str]:
-    """One side of one scenario, run once per worker and remembered."""
+    """One side of one scenario, run ONCE PER PYTEST RUN and remembered.
+
+    Shared across xdist workers through a file in the run's own directory, under an exclusive `flock`, so the `image` twin three tests read is driven once rather than once per worker that happens to run one of them. Every transcript is still a live run of this run's files: the directory is new per run, and the key carries `inputs_digest()`.
+    """
     key = (side, scenario)
     if key not in _CACHE:
-        proc = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                DRIVER_MODULE,
-                "--side",
-                side,
-                "--twin",
-                TWIN,
-                "--port",
-                PORT,
-                scenario,
-            ],
-            cwd=str(paths.repo_root()),
-            env={**os.environ, "PYTHONPATH": ".ci"},
-            capture_output=True,
-            text=True,
-            errors="surrogateescape",
-            check=False,
-            timeout=1800,
-        )
-        _CACHE[key] = (proc.returncode, proc.stdout, proc.stderr)
+        if not _RUN_DIR:
+            _CACHE[key] = run_driver(side, scenario)
+            return _CACHE[key]
+        stem = _RUN_DIR[0] / ("%s-%s-%s" % (side, scenario, inputs_digest()))
+        with open(str(stem) + ".lock", "w", encoding="utf-8") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            stored = pathlib.Path(str(stem) + ".json")
+            if stored.is_file():
+                rc, out, err = json.loads(stored.read_text(encoding="utf-8"))
+                _CACHE[key] = (rc, out, err)
+            else:
+                _CACHE[key] = run_driver(side, scenario)
+                stored.write_text(json.dumps(list(_CACHE[key])), encoding="utf-8")
     return _CACHE[key]
+
+
+def run_driver(side: str, scenario: str) -> tuple[int, str, str]:
+    """The driver as a subprocess, which is how the ledger runs it."""
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            DRIVER_MODULE,
+            "--side",
+            side,
+            "--twin",
+            TWIN,
+            "--port",
+            PORT,
+            scenario,
+        ],
+        cwd=str(paths.repo_root()),
+        env={**os.environ, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        errors="surrogateescape",
+        check=False,
+        timeout=1800,
+    )
+    return (proc.returncode, proc.stdout, proc.stderr)
 
 
 def new_transcript(scenario: str) -> str:
@@ -489,17 +530,18 @@ def test_the_locale_scenario_answers_exactly_what_the_c_locale_does() -> None:
 
 def test_the_stub_farm_really_shadows_docker(tmp_path: pathlib.Path) -> None:
     """No scenario may reach the host's docker. Resolved through the SAME PATH string both sides are given, `docker` must be the stub, and calling it must land on the transcript."""
-    bin_dir = driver.build_stub_farm(tmp_path, paths.repo_root())
+    bin_dir = driver.build_stub_farm(tmp_path)
     search = str(bin_dir) + ":" + os.environ.get("PATH", "")
     for name in driver.STUBBED:
         assert shutil.which(name, path=search) == str(bin_dir / name), "%s is not shadowed" % name
-    proc = subprocess.run(
-        ["docker", "run", "--rm", "never-pulled"],
-        env={**os.environ, "PATH": search},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    with driver.StubServer(tmp_path / "stub"):
+        proc = subprocess.run(
+            ["docker", "run", "--rm", "never-pulled"],
+            env={**os.environ, "PATH": search},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
     assert proc.returncode == 0
     assert proc.stdout == ""
     assert json.loads((tmp_path / "stub" / "transcript.jsonl").read_text()) == [

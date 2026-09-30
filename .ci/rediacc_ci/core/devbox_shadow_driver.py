@@ -13,14 +13,14 @@ RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invoca
 
 WHY THIS IS A THIRD DRIVER AND NOT A SCENARIO INSIDE `core/local_common_shadow_driver.py`. That file is the `core.local_common` differential and its ledger rows name it; a pair is one twin against one port, and folding a second twin into it would make `dead_python.py`'s shadow route admit both ports off either ledger.
 ONE FILE AND NOT TWO: `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is named in a `.ci/shadow/*.jsonl` record, so a separate old-side module would be reported dead the day it landed. `--twin` and `--port` carry the two paths for the same reason, and BOTH are checked to exist before anything runs.
-The STUBS are this module too (`main(["stub", ...])`): a stub is a three-line bash script in a temporary directory that execs this module, so there is no tracked stub file for `dead_python.py` or `check:ci-no-inline-python` to judge, and the answer table is data the scenario builds.
+The STUBS are this module too (`StubServer`): a stub is a short bash script in a temporary directory that hands its argv to a server thread of this driver, so there is no tracked stub file for `dead_python.py` or `check:ci-no-inline-python` to judge, and the answer table is data the scenario builds.
 
 -----------------------------------------------------------------------------
 THE STUB-FARM TRANSCRIPT DIFFERENTIAL, which is the technique this ledger licenses
 -----------------------------------------------------------------------------
 The pure three need no sandbox and get none. Every other function reaches docker, the network, the filesystem, git or the port allocator, and the earlier slice refused them for want of a way to compare a side effect. The way is this:
 
-  ONE STUB FARM, BUILT IN PYTHON, USED BY BOTH SIDES. `build_stub_farm()` writes one executable per name in `STUBBED` into `<work>/stub/bin`. Each one appends its argv to `<work>/stub/transcript.jsonl` as ONE JSON array per call, BEFORE it answers, and then answers from `<work>/stub/table.json`: an ordered list of rules, the first match wins, each rule an argv pattern (a positional `fnmatch` prefix) and an answer (stdout, stderr, status).
+  ONE STUB FARM, BUILT IN PYTHON, USED BY BOTH SIDES. `build_stub_farm()` writes one executable per name in `STUBBED` into `<work>/stub/bin`, and `StubServer` answers them one call at a time from a thread of this driver. Each call appends its argv to `<work>/stub/transcript.jsonl` as ONE JSON array per call, BEFORE it answers, and then answers from `<work>/stub/table.json`: an ordered list of rules, the first match wins, each rule an argv pattern (a positional `fnmatch` prefix) and an answer (stdout, stderr, status).
   A rule may also require an ordinal (`nth`: this is the Nth call matching the rule's pattern) or a history (`after` / `before`: some earlier call did or did not match another pattern). An unmatched call answers status 0 with no output. The same table file drives both sides because the SAME stub executable answers both sides.
 
   THE STUBS SHADOW THE REAL TOOLS, AND THAT IS PROVED, NOT ASSUMED. The bash side prepends the farm to PATH only AFTER the prelude is sourced (so `run-legacy.sh`'s own load-time probes stay real), and the port side is handed the identical PATH string. `test_core_devbox.py::test_the_stub_farm_really_shadows_docker` resolves `docker` through that PATH and requires the stub. No real `docker` mutation is ever issued: `docker run`, `rm`, `stop`, `start`, `network create`, `build` and `pull` are all argv in a transcript.
@@ -82,7 +82,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any, cast
+import threading
+from typing import Any, Self, cast
 
 from rediacc_ci.core import devbox
 
@@ -665,15 +666,26 @@ def run_new(scenario: str, printer: Printer) -> int:
 # Every external a stub-farm scenario may reach that is not safe or not deterministic to run for real. `docker` and `sudo` mutate the host; `curl` and `ss` read the network; `sleep` costs wall time; `getent` and `stat` read host facts a scenario must be able to choose.
 STUBBED = ("curl", "docker", "getent", "sleep", "ss", "stat", "sudo")
 
-# The stub itself. `${0##*/}` rather than `basename "$0"`, so a stub never runs an external before it has recorded itself. PYTHONPATH and the interpreter are ABSOLUTE, baked in when the farm is built, because a stub runs under whatever cwd the caller has.
+# How long a stub waits for `StubServer` before it gives up with `EXIT_STUB_UNANSWERED`. The server answers in milliseconds; the bound exists so a stub that outlives its server fails loudly instead of hanging the scenario.
+STUB_ANSWER_TIMEOUT_S = 120
+EXIT_STUB_UNANSWERED = 97
+
+# The stub itself, bash with no interpreter start on its path: a Python process per call was 80 ms, and `up-create` alone makes 735 calls per side. It writes its argv NUL-separated to `<stub>/calls/<pid>.argv`, names that call on the server's request FIFO, and reads `<rc> <has-out> <has-err>` back on its own FIFO; only a non-empty answer costs a `cat`.
+# `${0##*/}` rather than `basename "$0"`, so a stub never runs an external before it has recorded itself. Every path and tool is ABSOLUTE, baked in when the farm is built, because a stub runs under whatever cwd and PATH the caller has. Both FIFOs are opened read-write, which never blocks, so a stub whose server is gone times out rather than hanging.
+# The request line is `<kind> <call path>`, far under PIPE_BUF, so two concurrent stubs (the twin's background route probes) never interleave one. The same script with kind `canonical` is the old side's transcript sorter: its transcript goes through `canonical_lines` on the server, and the new side's through `canonical_lines` directly, so both are ordered by one function.
 STUB_SCRIPT = """#!/bin/bash
-PYTHONPATH=%(ci)s exec %(python)s -m rediacc_ci.core.devbox_shadow_driver stub %(stub)s "${0##*/}" "$@"
-"""
-
-
-# The old side's transcript goes through this before it is emitted, and the new side's through `canonical_lines` directly, so both are ordered by one function.
-CANONICAL_SCRIPT = """#!/bin/bash
-PYTHONPATH=%(ci)s exec %(python)s -m rediacc_ci.core.devbox_shadow_driver canonical "$1"
+c=%(calls)s/$$
+%(mkfifo)s -- "$c.fifo" || exit %(unanswered)d
+exec 3<>"$c.fifo" 4<>%(req)s
+printf '%%s\\0' %(argv)s >"$c.argv"
+printf '%(kind)s %%s\\n' "$c" >&4
+if ! read -t %(timeout)d -r rc has_out has_err <&3; then
+    printf 'devbox stub: no answer from the stub server for %%s\\n' "${0##*/}" >&2
+    exit %(unanswered)d
+fi
+[[ $has_out == 1 ]] && %(cat)s -- "$c.out"
+[[ $has_err == 1 ]] && %(cat)s -- "$c.err" >&2
+exit "$rc"
 """
 
 
@@ -704,35 +716,38 @@ def canonical_lines(lines: list[str]) -> list[str]:
     return out
 
 
-def canonical_main(path: str) -> int:
-    for line in canonical_lines(text_lines(pathlib.Path(path).read_text(encoding="utf-8"))):
-        print(line)
-    return 0
-
-
-def build_stub_farm(work: pathlib.Path, repo: pathlib.Path) -> pathlib.Path:
-    """`<work>/stub/bin/<name>` for every name in `STUBBED`, plus an empty table and transcript. Returns the bin directory."""
+def build_stub_farm(work: pathlib.Path) -> pathlib.Path:
+    """`<work>/stub/bin/<name>` for every name in `STUBBED`, the canonical sorter, the request FIFO, and an empty table and transcript. Returns the bin directory; nothing answers until a `StubServer` serves `<work>/stub`."""
     stub = work / "stub"
     bin_dir = stub / "bin"
     bin_dir.mkdir(parents=True)
-    text = STUB_SCRIPT % {
-        "ci": shlex.quote(str(repo / ".ci")),
-        "python": shlex.quote(sys.executable),
-        "stub": shlex.quote(str(stub)),
+    (stub / "calls").mkdir()
+    tools = {}
+    for tool in ("mkfifo", "cat"):
+        found = shutil.which(tool)
+        if found is None:
+            raise RefusalError("%s is not installed, so no stub could answer" % tool)
+        tools[tool] = shlex.quote(found)
+    common = {
+        **tools,
+        "calls": shlex.quote(str(stub / "calls")),
+        "req": shlex.quote(str(stub / "req")),
+        "timeout": STUB_ANSWER_TIMEOUT_S,
+        "unanswered": EXIT_STUB_UNANSWERED,
     }
+    text = STUB_SCRIPT % {**common, "kind": "stub", "argv": '"${0##*/}" "$@"'}
     for name in STUBBED:
         path = bin_dir / name
         path.write_text(text, encoding="utf-8")
         path.chmod(0o755)
     canonical = stub / "canonical"
     canonical.write_text(
-        CANONICAL_SCRIPT
-        % {"ci": shlex.quote(str(repo / ".ci")), "python": shlex.quote(sys.executable)},
-        encoding="utf-8",
+        STUB_SCRIPT % {**common, "kind": "canonical", "argv": '"$1"'}, encoding="utf-8"
     )
     canonical.chmod(0o755)
     (stub / "table.json").write_text("[]", encoding="utf-8")
     (stub / "transcript.jsonl").write_text("", encoding="utf-8")
+    os.mkfifo(stub / "req")
     return bin_dir
 
 
@@ -762,10 +777,8 @@ def pick_rule(table: list[dict], argv: list[str], previous: list[list[str]]) -> 
     return None
 
 
-def stub_main(stub_dir: str, name: str, args: list[str]) -> int:
+def stub_answer(stub: pathlib.Path, argv: list[str]) -> tuple[int, str, str]:
     """One stub call: record it, THEN answer it. Recording first is what keeps a concurrent reader (a process substitution) from seeing an answer before its call is on the transcript."""
-    stub = pathlib.Path(stub_dir)
-    argv = [name, *args]
     transcript = stub / "transcript.jsonl"
     previous = [
         json.loads(line) for line in transcript.read_text(encoding="utf-8").splitlines() if line
@@ -777,11 +790,74 @@ def stub_main(stub_dir: str, name: str, args: list[str]) -> int:
         os.close(handle)
     table = json.loads((stub / "table.json").read_text(encoding="utf-8"))
     entry = pick_rule(table, argv, previous) or {}
-    sys.stdout.buffer.write(entry.get("out", "").encode("utf-8", "surrogateescape"))
-    sys.stdout.buffer.flush()
-    sys.stderr.buffer.write(entry.get("err", "").encode("utf-8", "surrogateescape"))
-    sys.stderr.buffer.flush()
-    return int(entry.get("rc", 0))
+    return int(entry.get("rc", 0)), entry.get("out", ""), entry.get("err", "")
+
+
+class StubServer:
+    """Answers every stub in `<stub>` from ONE thread of the driver, for as long as the `with` lasts.
+
+    SERIAL BY CONSTRUCTION. Requests are handled one at a time in arrival order, so a call's `previous` is exactly the transcript before it, which the per-process stub could only promise up to the scheduler. The argv is decoded as `sys.argv` was for the per-process stub (UTF-8, `surrogateescape`), so the transcript line and the rule picked are the same bytes as before.
+    """
+
+    def __init__(self, stub: pathlib.Path) -> None:
+        self.stub = stub
+        self.fd = -1
+        self.thread = threading.Thread(target=self.serve, daemon=True)
+
+    def __enter__(self) -> Self:
+        self.fd = os.open(str(self.stub / "req"), os.O_RDWR)
+        self.thread.start()
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        os.write(self.fd, b"quit -\n")
+        self.thread.join()
+        os.close(self.fd)
+
+    def serve(self) -> None:
+        pending = b""
+        while True:
+            pending += os.read(self.fd, 65536)
+            while b"\n" in pending:
+                line, _, pending = pending.partition(b"\n")
+                kind, _, call = line.decode("utf-8", "surrogateescape").partition(" ")
+                if kind == "quit":
+                    return
+                self.answer(kind, call)
+
+    def reply(self, kind: str, words: list[str]) -> tuple[int, str, str]:
+        if kind == "stub":
+            return stub_answer(self.stub, words)
+        if kind == "canonical":
+            text = pathlib.Path(words[0]).read_text(encoding="utf-8")
+            return 0, "".join(line + "\n" for line in canonical_lines(text_lines(text))), ""
+        raise RefusalError("unknown stub request %r" % kind)
+
+    def answer(self, kind: str, call: str) -> None:
+        try:
+            raw = pathlib.Path(call + ".argv").read_bytes()
+            words = [word.decode("utf-8", "surrogateescape") for word in raw.split(b"\0")[:-1]]
+            rc, out, err = self.reply(kind, words)
+        except (OSError, ValueError, KeyError, IndexError, TypeError, RefusalError) as exc:
+            # An answer the stub can read, never silence: a stub left waiting would cost the scenario its whole timeout.
+            rc, out, err = EXIT_STUB_UNANSWERED, "", "devbox stub server: %s\n" % exc
+        out_bytes = out.encode("utf-8", "surrogateescape")
+        err_bytes = err.encode("utf-8", "surrogateescape")
+        if out_bytes:
+            pathlib.Path(call + ".out").write_bytes(out_bytes)
+        if err_bytes:
+            pathlib.Path(call + ".err").write_bytes(err_bytes)
+        try:
+            handle = os.open(call + ".fifo", os.O_WRONLY | os.O_NONBLOCK)
+        except OSError:
+            return  # the stub is gone (ENXIO: no reader), so there is nobody to answer
+        try:
+            os.write(handle, b"%d %d %d\n" % (rc, bool(out_bytes), bool(err_bytes)))
+        finally:
+            os.close(handle)
+        for suffix in (".fifo", ".argv"):
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(call + suffix)
 
 
 # --------------------------------------------------------------------------- scenario vocabulary ---------------------------------------------------------------------------
@@ -2066,7 +2142,7 @@ def prepare_stub(
     work: pathlib.Path, repo: pathlib.Path, scenario: str
 ) -> tuple[dict[str, str], list[Step]]:
     """Build the farm, the fixture, and every per-step table and state file. Both sides call this and nothing else to set up."""
-    bin_dir = build_stub_farm(work, repo)
+    bin_dir = build_stub_farm(work)
     fixture = STUB_SCENARIOS[scenario][0]
     git_env = {
         **os.environ,
@@ -2209,9 +2285,10 @@ def run_side(side: str, scenario: str, repo: pathlib.Path) -> int:
     with work_dir(scenario) as work:
         if scenario in STUB_SCENARIOS:
             env, steps = prepare_stub(work, repo, scenario)
-            if side == "old":
-                return run_old(work, repo, env, "%s\n%s" % (PRELUDE, stub_body(steps)))
-            return run_stub_new(work, repo, env, steps, Printer(work, repo, env["HOME"]))
+            with StubServer(work / "stub"):
+                if side == "old":
+                    return run_old(work, repo, env, "%s\n%s" % (PRELUDE, stub_body(steps)))
+                return run_stub_new(work, repo, env, steps, Printer(work, repo, env["HOME"]))
         env = sandbox_env(work, repo, scenario)
         build_fixtures(work, scenario)
         if side == "old":
@@ -2223,10 +2300,6 @@ def run_side(side: str, scenario: str, repo: pathlib.Path) -> int:
 
 
 def main(argv: list[str]) -> int:
-    if argv[:1] == ["canonical"]:
-        return canonical_main(argv[1])
-    if argv[:1] == ["stub"]:
-        return stub_main(argv[1], argv[2], argv[3:])
     parser = argparse.ArgumentParser(description="one side of the core.devbox differential")
     parser.add_argument("--side", choices=("old", "new"), required=True)
     parser.add_argument("--twin", required=True, help="the bash file under comparison")
