@@ -42,7 +42,7 @@ jobs:
   test-linux-x64:
     name: Linux (x64)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     # The docker install method pulls ghcr.io/rediacc/rdc through a
     # github.token ghcr login. Pull only.
     permissions:
@@ -107,7 +107,7 @@ jobs:
   test-linux-arm64:
     name: Linux (arm64)
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 30
+    timeout-minutes: 15
     # The docker install method pulls ghcr.io/rediacc/rdc through a
     # github.token ghcr login. Pull only.
     permissions:
@@ -147,7 +147,7 @@ jobs:
   test-macos-arm64:
     name: macOS (ARM64)
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     # Binary-download install tests only: no ghcr login on this platform, so
     # no packages scope.
     permissions:
@@ -168,7 +168,7 @@ jobs:
   test-macos-x64:
     name: macOS (x64)
     runs-on: macos-15-intel
-    timeout-minutes: 30
+    timeout-minutes: 15
     # Binary-download install tests only: no ghcr login on this platform, so
     # no packages scope.
     permissions:
@@ -189,9 +189,10 @@ jobs:
   test-windows-x64:
     name: Windows (x64)
     runs-on: windows-latest
-    # 30 min (was 15) to match macOS/Linux: the SEA binary is ~800 MB, and 15 min
-    # was too tight to download it on the Windows runner (job hit the cap mid-download).
-    timeout-minutes: 30
+    # 30 -> 15 (T4.1, PLAN-ci-time-budget, 2026-09-30). 15 once hit the cap
+    # mid-download of the ~800 MB SEA binary; the measured max is now 0.7 min
+    # over 4 main-push samples.
+    timeout-minutes: 15
     # Binary-download install tests only: no ghcr login on this platform, so
     # no packages scope.
     permissions:
@@ -213,8 +214,8 @@ jobs:
   test-windows-arm64:
     name: Windows (arm64)
     runs-on: windows-11-arm
-    # 30 min (was 15): same ~800 MB SEA-binary download as Windows x64.
-    timeout-minutes: 30
+    # 30 -> 15 (T4.1): same history as Windows x64; measured max 1.1 min.
+    timeout-minutes: 15
     # Binary-download install tests only: no ghcr login on this platform, so
     # no packages scope.
     permissions:

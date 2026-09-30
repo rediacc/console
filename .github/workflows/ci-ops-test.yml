@@ -15,7 +15,7 @@ permissions: {}
 jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:
-    # T2.16 (PLAN-ci-time-budget, D-W4): 4 shards, each a full independent
+    # T2.16 (PLAN-ci-time-budget, D-W4): 5 shards, each a full independent
     # leg -- its own runner, its own `ops up` cluster, its own tutorial
     # slice (`.ci/tutorials/run-sequence.sh`'s `TUTORIAL_SHARD`). D-W4
     # replaces the earlier "4 contiguous segments with a `needs` chain"
@@ -32,7 +32,7 @@ jobs:
     # placement is `.ci/tutorials/tutorial-*.sh` work, outside this file.
     name: OPS Provision (${{ matrix.name }}, ${{ matrix.shard }}/${{ matrix.shard_of }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
+    timeout-minutes: 15
     # packages: read is REQUIRED and had no local declaration at all before
     # this: the ghcr login uses github.token and the credential is then copied
     # into the VM root docker config so `rdc repo up` pulls through it. This
@@ -58,25 +58,31 @@ jobs:
             arch: x86_64
             full_test: true
             shard: 1
-            shard_of: 4
+            shard_of: 5
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 2
-            shard_of: 4
+            shard_of: 5
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 3
-            shard_of: 4
+            shard_of: 5
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 4
-            shard_of: 4
+            shard_of: 5
+          - runner: ubuntu-latest
+            name: linux-amd64
+            arch: x86_64
+            full_test: true
+            shard: 5
+            shard_of: 5
     steps:
       # Same preinstalled-bloat removal ct-tests.yml uses (5 sites): this job
       # (VM images + renet artifacts + 18 tutorials of casts) crashed the
@@ -275,7 +281,7 @@ jobs:
       # on the first failing command).
       #
       # T2.16 (D-W4): cross-tutorial machine state is no longer exercised
-      # ACROSS a shard boundary -- 4 shards means 4 independently provisioned
+      # ACROSS a shard boundary -- 5 shards means 5 independently provisioned
       # clusters, each running only its own slice. It is still incidentally
       # exercised BETWEEN two tutorials the shard's contiguous slice happens
       # to keep adjacent, same as before (renet#60 escaped exactly there:
@@ -289,8 +295,8 @@ jobs:
       # `TUTORIAL_SHARD`, so adding/removing/reordering a tutorial updates
       # every shard automatically. Deliberately INSIDE ops-vm-provision: a
       # separate job means a second runner reprovisioning the cluster
-      # (~14 min); sharding this job already pays that cost 4 times over for
-      # the parallelism, and a further split would only add a 5th.
+      # (~14 min); sharding this job already pays that cost 5 times over for
+      # the parallelism, and a further split would only add a 6th.
       - name: "Tutorial prep: add second worker"
         # ssh-keys, delta-transfer, and live-migration use a second machine.
         # Idempotent over the --basic cluster: existing VMs are left alone,

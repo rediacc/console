@@ -55,7 +55,7 @@ jobs:
     permissions:
       contents: read
     if: ${{ !inputs.skip_build }}
-    timeout-minutes: 45
+    timeout-minutes: 20 # budget cap, deferral #2847e1b3 DEFAULT (cold main-push build 16.7)
     outputs:
       artifact_name: renet-binaries-${{ github.sha }}
     steps:
@@ -202,6 +202,7 @@ jobs:
   extract-renet-linux:
     name: Renet (cached, linux)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # The ONLY thing this leg needs from the image: `docker cp` of two
     # already-built binaries. No renet source, no Go.
     permissions:
@@ -235,6 +236,7 @@ jobs:
   extract-renet-cross:
     name: Renet (cached, cross-compile)
     runs-on: ubuntu-latest
+    timeout-minutes: 9
     # The ONLY job in this file that touches a registry, and it PULLS:
     # extract_renet_from_image.py does `docker create` against ghcr.io/rediacc.
     # read, not write - the top-level packages: write this replaces was
@@ -304,6 +306,7 @@ jobs:
   extract-renet:
     name: Renet (cached)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [extract-renet-linux, extract-renet-cross]
     permissions:
       contents: read
@@ -354,7 +357,7 @@ jobs:
     permissions:
       contents: read
     if: ${{ !inputs.skip_build }}
-    timeout-minutes: 20
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:

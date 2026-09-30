@@ -121,6 +121,7 @@ jobs:
     # the dist/ artifact ~5.6GB, and the slim runner was cancelled mid-upload. A
     # standard runner has the disk/network headroom to build and upload it reliably.
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Builds an artifact, never touches a registry. build-www holds a
     # github.token only so the Astro latest-release fetch is not anonymous.
     permissions:
@@ -215,7 +216,7 @@ jobs:
   build-server-docker-amd64:
     name: Server Docker (${{ matrix.variant }} amd64)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 8
     # Pushes to ghcr: rediacc_ci.build.buildx_push_web runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
@@ -315,7 +316,7 @@ jobs:
   build-server-docker-arm64:
     name: Server Docker (${{ matrix.variant }} arm64)
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
+    timeout-minutes: 7
     # Pushes to ghcr: rediacc_ci.build.buildx_push_web runs `--push`, and create_manifest.py
     # runs `docker buildx imagetools create`, which is a registry write. The
     # ghcr login uses github.token, so this is a real packages: write.
@@ -460,6 +461,7 @@ jobs:
   build-server-docker-skip:
     name: Server Docker (cached)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # A single echo. No checkout, no registry, no API: it needs nothing at all.
     permissions: {}
     if: inputs.web_exists == 'true' && !inputs.devcontainer_only
@@ -533,6 +535,7 @@ jobs:
   build-cli-docker-skip:
     name: CLI Docker (cached)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # A single echo. No checkout, no registry, no API: it needs nothing at all.
     permissions: {}
     if: "!inputs.test_images_only && inputs.rdc_exists == 'true' && !inputs.devcontainer_only"
@@ -629,6 +632,7 @@ jobs:
   build-renet-skip:
     name: Renet (cached)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # A single echo. No checkout, no registry, no API: it needs nothing at all.
     permissions: {}
     if: inputs.renet_exists == 'true' && !inputs.devcontainer_only
@@ -642,7 +646,7 @@ jobs:
   build-devcontainer-amd64:
     name: Devcontainer (amd64)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 11
     # docker/build-push-action with `push: github.event_name == 'push'`, i.e. it
     # pushes on push-to-main and builds only on a PR. A job-level permission
     # cannot be conditional, so packages: write is declared unconditionally.
@@ -681,7 +685,7 @@ jobs:
   build-devcontainer-arm64:
     name: Devcontainer (arm64)
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
+    timeout-minutes: 11
     # docker/build-push-action with `push: github.event_name == 'push'`, i.e. it
     # pushes on push-to-main and builds only on a PR. A job-level permission
     # cannot be conditional, so packages: write is declared unconditionally.
@@ -720,6 +724,7 @@ jobs:
   build-devcontainer-manifest:
     name: Devcontainer Manifest
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # imagetools create against ghcr, i.e. a manifest push. No checkout in this
     # job, but contents: read is kept for the composite action resolution.
     permissions:

@@ -63,6 +63,11 @@ const JOB_BUDGET_CAPS = [
   { job: 'E2E K8s Multinode', budgetMin: 30 },
   // Operator ruling #fc4f34f8 (2026-09-30): the non-apt Ceph Workers matrix, one leg per distro ("... / E2E Ceph Workers non-apt (fedora-43)").
   { job: 'E2E Ceph Workers non-apt', budgetMin: 20 },
+  // Deferrals #153aace7 and #2847e1b3 (2026-09-30), their DEFAULTs applied pending the operator: measured maxima sit at or over 15.
+  { job: 'E2E Workers', budgetMin: 18 },
+  { job: 'E2E Ceph Workers', budgetMin: 18 },
+  // Keyed by the full segment: "Renet (Full)" must not reduce to "Renet", which other Renet jobs share.
+  { job: 'Renet (Full)', budgetMin: 20 },
 ];
 
 /** The job's own display name: the segment after the last " / " (a reusable-workflow caller prefix), with any trailing " (matrix, leg)" suffix removed. */
@@ -75,8 +80,12 @@ function jobBaseName(name) {
 
 /** The per-job budget for one job: its ruled exemption cap when JOB_BUDGET_CAPS names it, else the ordinary budget. */
 function jobBudgetFor(name, defaultMin, caps = JOB_BUDGET_CAPS) {
+  // The full segment first ("Renet (Full)"), then the base name without a matrix suffix ("E2E Workers").
+  const segment = String(name || '')
+    .split(' / ')
+    .pop();
   const base = jobBaseName(name);
-  const cap = caps.find((c) => c.job === base);
+  const cap = caps.find((c) => c.job === segment) || caps.find((c) => c.job === base);
   return cap ? cap.budgetMin : defaultMin;
 }
 

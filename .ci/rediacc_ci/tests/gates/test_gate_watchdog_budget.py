@@ -84,7 +84,7 @@ def test_job_just_under_budget_does_not_fire(gate):
         gate,
         jobs=[
             {
-                "name": "Tests + Infra / E2E Workers (fedora-43)",
+                "name": "Tests + Infra / E2E Migrate (fedora-43)",
                 "status": "in_progress",
                 "started_at": T0,
             }
@@ -103,7 +103,7 @@ def test_job_just_over_budget_fires(gate):
         gate,
         jobs=[
             {
-                "name": "Tests + Infra / E2E Workers (fedora-43)",
+                "name": "Tests + Infra / E2E Migrate (fedora-43)",
                 "status": "in_progress",
                 "started_at": T0,
             }
@@ -118,7 +118,7 @@ def test_job_just_over_budget_fires(gate):
     )
     gate.assert_eq(
         verdict["jobViolations"][0]["name"],
-        "Tests + Infra / E2E Workers (fedora-43)",
+        "Tests + Infra / E2E Migrate (fedora-43)",
         "the violation names the offending job",
     )
     gate.log_pass("a job at 15:01 against a 15m budget fires (%s)" % verdict["jobViolations"])
@@ -130,7 +130,7 @@ def test_a_job_that_already_completed_over_budget_still_fires(gate):
         gate,
         jobs=[
             {
-                "name": "Tests + Infra / E2E Ceph Workers",
+                "name": "Tests + Infra / Concurrent Fork Isolation",
                 "status": "completed",
                 "started_at": T0,
                 "completed_at": _iso(22.0),
@@ -363,7 +363,7 @@ def test_a_completed_over_budget_job_is_reported_but_never_enforced(gate):
         gate,
         jobs=[
             {
-                "name": "Tests + Infra / E2E Workers (fedora-43, 1/8)",
+                "name": "Tests + Infra / E2E Migrate (fedora-43, 1/8)",
                 "status": "completed",
                 "started_at": T0,
                 "completed_at": _iso(16.0),
@@ -402,6 +402,32 @@ def test_run_level_stays_report_only_while_job_level_enforces(gate):
     gate.log_pass("the run-level budget reports only; its own switch (not the job one) enforces")
 
 
+def test_a_cap_matches_the_full_segment_before_the_base_name(gate):
+    """`Renet (Full)` is capped by its whole segment: dropping its literal parenthesis would give `Renet`, and every other Renet job would inherit the 20. Matrix jobs still match by base name."""
+    names = {
+        "Build (Renet) / Renet (Full)": 20,
+        "Tests + Infra / Renet (go, 1/2)": 15,
+        "Build (Renet) / Renet (cross-compile smoke)": 15,
+        "Tests + Infra / E2E Workers (fedora-43, 1/8)": 18,
+        "Tests + Infra / E2E Ceph Workers": 18,
+        "Tests + Infra / E2E Ceph Workers non-apt (oracle-10)": 20,
+        "Tests + Infra / E2E Migrate (fedora-43)": 15,
+    }
+    result = harness.run(
+        [
+            "node",
+            "-e",
+            "const m=require(process.argv[1]);"
+            "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map((n)=>m.jobBudgetFor(n,15))))",
+            str(subject(gate)),
+            json.dumps(list(names)),
+        ]
+    )
+    gate.assert_exit(0, result, "jobBudgetFor must be exported")
+    gate.assert_eq(json.loads(result.out), list(names.values()), "each job's budget")
+    gate.log_pass("segment-first cap lookup: %s" % names)
+
+
 def test_watchdog_caps_agree_with_the_lane_budget_gate(gate):
     """One ruling, two copies: `JOB_BUDGET_CAPS` in the watchdog (by display name) and `JOB_BUDGET_CAPS[].timeoutMinutes` in scripts/gates/check-lane-budget.ts (by job id). Map the ids to display names through ct-tests.yml and require the numbers to agree, so a revised cap cannot land in one copy only."""
     result = harness.run(
@@ -421,18 +447,17 @@ def test_watchdog_caps_agree_with_the_lane_budget_gate(gate):
     pairs = re.findall(r"job:\s*'([^']+)'.*?timeoutMinutes:\s*(\d+)", block, re.DOTALL)
     if not pairs:
         gate.log_fail("no JOB_BUDGET_CAPS entries parsed from %s" % LANE_BUDGET)
-    # A job's display name is the `name:` line directly under its two-space-indented id in ct-tests.yml (no YAML parser in the gate-test interpreter).
-    ct_text = CT_TESTS.read_text(encoding="utf-8")
+    # A job's display name is the `name:` line directly under its two-space-indented id, in whichever workflow defines it (build-renet lives in ci-build-renet.yml; no YAML parser in the gate-test interpreter).
+    workflow_texts = [p.read_text(encoding="utf-8") for p in sorted(CT_TESTS.parent.glob("*.yml"))]
     gate_caps = {}
     for job_id, minutes in pairs:
-        match = re.search(r"^  %s:\n    name: (.+)$" % re.escape(job_id), ct_text, re.MULTILINE)
+        pattern = re.compile(r"^  %s:\n    name: (.+)$" % re.escape(job_id), re.MULTILINE)
+        match = next((m for m in (pattern.search(t) for t in workflow_texts) if m), None)
         if match is None:
-            gate.log_fail(
-                "check-lane-budget.ts caps job %s, which ct-tests.yml does not define" % job_id
-            )
+            gate.log_fail("check-lane-budget.ts caps job %s, which no workflow defines" % job_id)
             continue
-        # The watchdog keys by the base name: a matrix job's " (${{ matrix.x }})" suffix is dropped.
-        gate_caps[re.sub(r" \([^()]*\)$", "", match.group(1).strip())] = int(minutes)
+        # The watchdog keys a matrix job by its base name, so only a " (${{ matrix.x }})" suffix is dropped; a literal one such as "Renet (Full)" is part of the name.
+        gate_caps[re.sub(r" \([^()]*\$\{\{[^()]*\)$", "", match.group(1).strip())] = int(minutes)
     gate.assert_eq(
         watchdog_caps, gate_caps, "the watchdog caps equal the lane gate's ruled timeouts"
     )
@@ -510,7 +535,7 @@ MONITOR_ENV = {
     "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN": "",
 }
 
-LEG = "Tests + Infra / E2E Workers (fedora-43, 1/8)"
+LEG = "Tests + Infra / E2E Migrate (fedora-43, 1/8)"
 # Healthy siblings, so a single cancelled job never trips the mass-cancellation guard (`cancelled >= completed / 2`).
 SIBLINGS = [
     {

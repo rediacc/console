@@ -239,7 +239,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 18 # budget cap, deferral #153aace7 DEFAULT (measured max 15.0)
     strategy:
       fail-fast: false
       matrix:
@@ -539,7 +539,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -705,7 +705,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 18 # budget cap, deferral #153aace7 DEFAULT (measured max 15.1)
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -1026,7 +1026,10 @@ jobs:
     needs: [renet-pkg-scope]
     if: needs.renet-pkg-scope.outputs.hit == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # A named exemption from the 15-minute job budget, every matrix leg: p90 16
+    # / timeout-minutes 20 (operator ruling #fc4f34f8, 2026-09-30). Measured
+    # max 16.4 min.
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -1164,7 +1167,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -1330,7 +1333,10 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_ceph != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # A named exemption from the 15-minute job budget: p90 20 / timeout-minutes
+    # 25 (Exemption caps 2026-09-28, #d5ba825c). Measured max 20.2 min since
+    # 2026-09-28.
+    timeout-minutes: 25
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -1502,9 +1508,10 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
     runs-on: ubuntu-latest
-    # 90 -> 100: the cluster-licensing suite's account server start plus its
-    # five ACCOUNT-tier assertions ride on the end of an already-long job.
-    timeout-minutes: 100
+    # 100 -> 30: a named exemption from the 15-minute job budget, p90 25 /
+    # timeout-minutes 30 (Exemption caps 2026-09-28, #d5ba825c; D-W3 keeps
+    # kube/17-multinode-cluster whole). Measured max 27.1 min since 2026-09-28.
+    timeout-minutes: 30
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -1732,7 +1739,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_migrate != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -1926,9 +1933,9 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_fork_isolation != 'false'
     runs-on: ubuntu-latest
-    # 30 min covered the bind-isolation phases; the console#440 checkpoint
-    # phase (counter warm-up + fork --checkpoint + restore) adds ~3 min.
-    timeout-minutes: 35
+    # 35 -> 15 (T4.1, PLAN-ci-time-budget): measured max 9.7 min since
+    # 2026-09-28, the console#440 checkpoint phase included.
+    timeout-minutes: 15
     env:
       CI: 'true'
       VM_NET_BASE: '192.168.111'
@@ -2135,7 +2142,7 @@ jobs:
       contents: read
     if: inputs.full_suite == 'true' && inputs.run_renet != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -2286,7 +2293,7 @@ jobs:
       contents: read
     if: inputs.full_suite == 'true' && inputs.run_renet != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -2414,7 +2421,7 @@ jobs:
       contents: read
     if: inputs.full_suite == 'true' && inputs.run_license_enforcement != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -2471,7 +2478,7 @@ jobs:
       contents: read
     if: inputs.full_suite == 'true' && inputs.run_account_e2e != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -2643,7 +2650,7 @@ jobs:
       contents: read
     if: inputs.full_suite == 'true' && inputs.run_drills != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

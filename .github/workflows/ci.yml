@@ -679,7 +679,7 @@ jobs:
     # failure, so the exposure is a burned runner, not a bad deploy.
     needs: [initialize, review-gate]
     runs-on: ubuntu-latest  # Needs Docker for account server
-    timeout-minutes: 30
+    timeout-minutes: 15
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
@@ -907,7 +907,7 @@ jobs:
       contents: read
     needs: [initialize, quality]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.run_package_tests != 'false'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1304,7 +1304,7 @@ jobs:
     # push-to-main plus a release channel.
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
@@ -1685,12 +1685,13 @@ jobs:
     # NotImplemented on every object of run 32465461193. s3api sends only the
     # parameters named, so no tagging header is ever produced.
     #
-    # 60 is KEPT deliberately. The growth is now off the critical path, but this
-    # job also runs apt/dnf/apk/pacman installs after the copy, and a ceiling
-    # that has twice been the thing that broke a release is not the place to
-    # shave minutes. If it ever approaches 60 again, the copy is no longer the
-    # suspect and the install steps are.
-    timeout-minutes: 60
+    # 60 -> 15 (T4.1, PLAN-ci-time-budget, 2026-09-30). The server-side copy
+    # took the growth off this job: its measured max is 11.2 min over 7 main
+    # pushes (lane-durations.json job_max_seconds). Under D-W2 the lane gate's
+    # 15-minute ceiling supersedes the 1.5x headroom rule for this budgeted
+    # job. If it nears 15 again, the install steps after the copy are the
+    # suspect, not the copy.
+    timeout-minutes: 15
     # THIRD INSTANCE OF THE EMPTY-CHANNEL CLASS, and the gate is copied verbatim
     # from how cd-stage.yml already solved it (see its "Build package
     # repositories" step). `initialize` derives channel="" for anything that is

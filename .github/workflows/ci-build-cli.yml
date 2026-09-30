@@ -40,37 +40,37 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-            timeout: 15
+            timeout: 5
           - os: ubuntu-24.04-arm
             platform: linux
             arch: arm64
-            timeout: 15
+            timeout: 6
           - os: macos-latest
             platform: mac
             arch: arm64
-            timeout: 15
+            timeout: 5
           - os: macos-15-intel
             platform: mac
             arch: x64
-            timeout: 15
+            timeout: 10
           - os: windows-latest
             platform: win
             arch: x64
-            timeout: 20
+            timeout: 6
           - os: windows-11-arm
             platform: win
             arch: arm64
-            timeout: 30
+            timeout: 15
           # Musl-linked Linux binaries (for Alpine/musl distros)
           # Built inside node:22-alpine Docker container on Ubuntu runners
           - os: ubuntu-latest
             platform: linux-musl
             arch: x64
-            timeout: 20
+            timeout: 7
           - os: ubuntu-24.04-arm
             platform: linux-musl
             arch: arm64
-            timeout: 20
+            timeout: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

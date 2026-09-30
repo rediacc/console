@@ -67,9 +67,10 @@ jobs:
     # ci.yml, which cannot carry one because it `uses:` this reusable workflow.
     # It was therefore free to run to GitHub's 360-minute default while holding
     # the release path, and it is the job that uploads to R2. Observed real
-    # durations are around 11 minutes; 45 is generous headroom that still fails
-    # fast instead of burning six hours of runner time on a wedged sync.
-    timeout-minutes: 45
+    # durations are around 11 minutes (max 11.1 over 7 samples). 45 -> 15 by
+    # T4.1 (PLAN-ci-time-budget, 2026-09-30): under D-W2 the lane gate's
+    # 15-minute ceiling supersedes the 1.5x headroom rule for this job.
+    timeout-minutes: 15
     # All four are load-bearing and none is obtainable from any default:
     # packages: write for the ghcr retag (buildx imagetools create pushes),
     # and id-token + attestations: write for the two attest-build-provenance
