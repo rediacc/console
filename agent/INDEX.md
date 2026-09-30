@@ -480,7 +480,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-biome-only-lint.md` | held | 297 | 19 | 10 | 49645 |
 | `agent/plans/PLAN-breakpoint-secret-shape.md` | design | 51 | 0 | 0 | 3628 |
 | `agent/plans/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 35 | 0 | 0 | 2420 |
-| `agent/plans/PLAN-carried-red-finding-keys.md` | done | 102 | 0 | 7 | 11811 |
 | `agent/plans/PLAN-chunk-store-browse-DECISION.md` | compacted | 37 | 0 | 0 | 2572 |
 | `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4897 |
@@ -589,6 +588,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-bgsweep-orphan-shells.md` | done | 186 | 0 | 6 | 26092 |
 | `agent/plans/_done/PLAN-bws-rotation-on-failure.md` | done | 149 | 0 | 18 | 22652 |
 | `agent/plans/_done/PLAN-calibrate-judge-rules-live.md` | done | 117 | 0 | 7 | 18227 |
+| `agent/plans/_done/PLAN-carried-red-finding-keys.md` | done | 103 | 0 | 7 | 11834 |
 | `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` | done | 269 | 0 | 15 | 29674 |
 | `agent/plans/_done/PLAN-ci-prebaked-vm-images.md` | closed | 159 | 3 | 5 | 20762 |
 | `agent/plans/_done/PLAN-ci-stale-plan-citations-repair.md` | done | 60 | 0 | 8 | 8026 |

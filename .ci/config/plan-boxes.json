@@ -231,24 +231,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-carried-red-finding-keys.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "1c30a477",
-        "83e1bb4b",
-        "a1bffc58",
-        "ac33af2e",
-        "ad32ef87",
-        "b3624895",
-        "d87cd336"
-      ]
-    },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
@@ -2177,6 +2159,24 @@
         "bc40b973",
         "bcd0c044",
         "d09e7d40"
+      ]
+    },
+    "agent/plans/_done/PLAN-carried-red-finding-keys.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-30",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "1c30a477",
+        "83e1bb4b",
+        "a1bffc58",
+        "ac33af2e",
+        "ad32ef87",
+        "b3624895",
+        "d87cd336"
       ]
     },
     "agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md": {
