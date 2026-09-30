@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 
+// Shared with the video theater, which is a plain script and cannot import this component. See utils/overlay-lock.ts for why they live there rather than here.
+import { FOCUSABLE, lockScroll } from '../utils/overlay-lock';
+
 /**
  * The one overlay.
  *
@@ -15,40 +18,6 @@ import React, { useCallback, useEffect, useRef } from 'react';
  * focus trap, focus restore, scroll lock and the ARIA contract. A consumer
  * supplies content and nothing else.
  */
-
-const FOCUSABLE = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(', ');
-
-/**
- * Scroll lock is REFERENCE COUNTED. Five separate implementations each wrote
- * `overflow: hidden` on open and `''` on close, so the newsletter popup
- * closing behind an open contact modal unlocked the page underneath a live
- * dialog. Counting means the last one out restores it, and it restores what
- * was actually there rather than the empty string.
- */
-let lockCount = 0;
-let lockedOverflow = '';
-
-function lockScroll(): () => void {
-  if (lockCount === 0) {
-    lockedOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-  }
-  lockCount += 1;
-  let released = false;
-  return () => {
-    if (released) return;
-    released = true;
-    lockCount -= 1;
-    if (lockCount === 0) document.body.style.overflow = lockedOverflow;
-  };
-}
 
 interface OverlayProps {
   open: boolean;

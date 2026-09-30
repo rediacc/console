@@ -82,7 +82,7 @@
   font-size: var(--font-size-xl);
   color: var(--color-text-secondary);
   margin-bottom: var(--space-10);
-  line-height: var(--leading-loose);
+  line-height: var(--leading-relaxed);
   max-width: var(--container-md);
   margin-inline: auto;
 }

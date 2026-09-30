@@ -28,7 +28,7 @@
 
 .article-content p {
   margin: var(--space-4) 0;
-  line-height: var(--leading-loose);
+  line-height: var(--leading-relaxed);
 }
 
 .article-content code {
@@ -75,7 +75,7 @@
 
 .article-content li {
   margin: var(--space-2) 0;
-  line-height: var(--leading-loose);
+  line-height: var(--leading-relaxed);
 }
 
 .article-content table {

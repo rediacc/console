@@ -5,12 +5,8 @@
 .pricing-hero,
 .ps-teaser-section {
   --text-muted: rgba(255, 255, 255, var(--opacity-80));
-  --text-subtle: rgba(255, 255, 255, var(--opacity-65));
   --border-subtle: rgba(255, 255, 255, var(--opacity-10));
   --border-hover: rgba(255, 255, 255, var(--opacity-20));
-  --bg-card: rgba(0, 0, 0, var(--opacity-45));
-  --bg-card-hover: rgba(255, 255, 255, var(--opacity-05));
-  --accent-glow: rgba(127, 160, 63, var(--opacity-20));
 }
 
 /* Button Overrides for Dark Sections */
@@ -329,9 +325,6 @@
 
 .pricing-card.popular,
 .pricing-card.badge-popular {
-  --badge-color: var(--color-text);
-  --badge-text-color: white;
-  --badge-border-width: 2px;
   box-shadow: var(--shadow);
 }
 
@@ -352,7 +345,7 @@
   display: block;
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
-  line-height: var(--leading-snug);
+  line-height: var(--leading-normal);
 }
 
 .pre-cta-section .value-note,

@@ -1,14 +1,6 @@
-import process from 'node:process';
 import { SITE_LOCALES } from '@rediacc/locales';
 import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
-
-/**
- * CDN base URL for published videos (Cloudflare R2 + media.rediacc.com).
- * Read via process.env, not import.meta.env: this module is imported by
- * plain-tsx CI gate scripts (check-solution-videos.ts) as well as Astro
- * components, and import.meta.env is only populated under Vite.
- */
-const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
+import { cdnBaseUrl, resolveMediaUrl } from './media-url.ts';
 
 /**
  * Resolve a solution-page video to the right per-language files.
@@ -26,9 +18,10 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  *   by the hard-fail CI gate `packages/www/scripts/check-solution-videos.ts`, so the
  *   resolver can assume presence and doesn't need to derive the set dynamically.
  *
- * URL base: `VIDEO_CDN_BASE_URL` (from `PUBLIC_VIDEO_CDN_BASE_URL`, see config/constants.ts).
- * Empty (unset) falls back to the local `/assets/videos/solutions/...` path so a
- * developer previewing a freshly-generated-but-not-yet-published local file still works.
+ * URL choice is LOCAL FIRST (see `media-url.ts`): a file checked out under
+ * `public/assets/videos/solutions/...` wins, so a developer previewing a
+ * freshly-generated-but-not-yet-published render sees it; anything else is served from
+ * the CDN named by the manifest's `baseUrl` (`PUBLIC_VIDEO_CDN_BASE_URL` overrides it).
  */
 export const VIDEO_LANGS = SITE_LOCALES;
 
@@ -54,12 +47,14 @@ function manifest(): ReturnType<typeof loadManifest> {
 }
 
 function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | 'poster'): string {
-  const localFallback: Record<typeof field, string> = {
-    mp4: `/assets/videos/solutions/${lang}/${slug}.mp4`,
-    vertical: `/assets/videos/solutions/${lang}/${slug}.vertical.mp4`,
-    poster: `/assets/videos/solutions/${lang}/${slug}.poster.jpg`,
+  // The bucket key is the local path minus `/assets/`: generate-video-manifest.ts writes `videos/solutions/<lang>/<file>` and the pipeline mirrors that layout into `public/`. Deriving the key by convention keeps a slug the manifest has not recorded yet on the URL it WILL have once published, instead of a local path that 404s.
+  const fileName: Record<typeof field, string> = {
+    mp4: `${slug}.mp4`,
+    vertical: `${slug}.vertical.mp4`,
+    poster: `${slug}.poster.jpg`,
   };
-  if (!VIDEO_CDN_BASE_URL) return localFallback[field];
+  const conventionalKey = `videos/solutions/${lang}/${fileName[field]}`;
+  const localPath = `/assets/${conventionalKey}`;
 
   // VideoManifest types every level as Record<string, …>, so without noUncheckedIndexedAccess TypeScript believes each index access always resolves. It does not: a slug absent from the manifest yields undefined and used to throw here ("Cannot read properties of undefined"), failing the whole CDN build rather than degrading one player. Widening to admit undefined (a plain
   // assignment — Record<string, T> is assignable to Record<string, T | undefined>, no cast needed) makes the lookup honest and the optional chaining below genuinely load-bearing.
@@ -69,10 +64,13 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
     string,
     Record<string, Record<string, { path?: string } | undefined> | undefined> | undefined
   > = manifest().solutions;
-  const path = solutions[slug]?.[lang]?.[field]?.path;
-  if (!path) return localFallback[field];
+  const manifestKey = solutions[slug]?.[lang]?.[field]?.path;
 
-  return `${VIDEO_CDN_BASE_URL}/${path}`;
+  return resolveMediaUrl({
+    localPath,
+    cdnKey: manifestKey ?? conventionalKey,
+    cdnBase: cdnBaseUrl(manifest().baseUrl),
+  });
 }
 
 /**
@@ -83,8 +81,8 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
  * needs 13 x 3 URLs for its own video and nothing else.
  *
  * The set is read off the manifest rather than assumed, so a slug published in nine locales
- * offers nine. An empty manifest (fresh checkout, no publish yet) falls back to VIDEO_LANGS,
- * which is what the local `/assets/videos/solutions/<lang>/...` paths serve.
+ * offers nine. An empty manifest (fresh checkout, no publish yet) falls back to VIDEO_LANGS;
+ * each of those then resolves local-first, CDN otherwise, like every other language.
  */
 export function resolveSolutionVideoSources(slug: string): Record<string, SolutionVideoUrls> {
   const solutions: Record<string, Record<string, unknown> | undefined> = manifest().solutions;

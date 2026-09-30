@@ -57,7 +57,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
   margin-bottom: var(--space-4);
 }
 

@@ -1,0 +1,126 @@
+/* The video theater overlay. See scripts/video-theater.ts for why it exists at all
+   rather than a call to requestFullscreen().
+
+   A NEW FILE rather than more rules in solution-video.css: that stylesheet, along with
+   tutorial-video.css and solution-pages.css, was carrying another session's uncommitted
+   work when this landed, and this is the kind of change that wants its own blast radius.
+   It is imported by SPSolutionVideo.astro, so it reaches exactly the 26 marketing pages
+   per locale that carry a mount, and no docs page. */
+
+.video-theater {
+  position: fixed;
+  inset: 0;
+  /* --z-toast, not the similarly named --z-modal. Both .image-modal and .overlay-backdrop
+     sit at --z-toast, and a dialog that renders under the sticky nav is not a dialog. */
+  z-index: var(--z-toast);
+  display: grid;
+  place-items: center;
+  /* The darker end of the site's two backdrop precedents (ImageModal's 85%, Overlay's
+     40%): this one exists to make a video readable, and a lit page behind it competes. */
+  background: rgba(0, 0, 0, var(--opacity-85));
+  padding: var(--space-4);
+}
+
+/* THE CLOSED STATE, and it is not redundant with the `hidden` attribute.
+   `display: grid` above is an author rule on a class; `[hidden] { display: none }` comes
+   only from the UA sheet, which every author declaration outranks. Without this line the
+   attribute the script toggles would do nothing at all and a closed theater would sit over
+   the page. docs-browse.css hit exactly this and carries the same note. */
+.video-theater[hidden] {
+  display: none;
+}
+
+/* Both children share one grid cell so the poster stand-in sits exactly where the player
+   will land, rather than pushing it down while the chunk is in flight. */
+.video-theater-frame {
+  display: grid;
+  place-items: center;
+}
+
+.video-theater-frame > * {
+  grid-area: 1 / 1;
+}
+
+/* HEIGHT-FIRST SIZING, which the player's own stylesheet cannot do for us.
+   `.tvp-root` is width-driven (`aspect-ratio: 16/9; max-width: 100%`, tutorial-video.css),
+   which is correct in a narrow in-flow column and wrong in a full-viewport overlay: on a
+   1920x900 window a 90vw box would want to be 972px tall inside 810px of room. Deriving
+   the width from the height instead is what keeps the frame whole at every window shape. */
+.video-theater-stage {
+  width: min(90vw, calc(90vh * 16 / 9));
+}
+
+.video-theater .tvp-shell,
+.video-theater .tvp-shell .tvp-root {
+  /* The player's default is a docs-article margin. Nothing is above or below it here. */
+  margin: 0;
+}
+
+.video-theater .tvp-root {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+}
+
+/* THE PORTRAIT CUT IS NO LONGER CLAMPED TO 420px. That cap (tutorial-video.css) exists so
+   a 9:16 file cannot grow taller than the phone it is meant to fit, which is the right
+   rule for a player in a scrolling page and the wrong one here: the theater IS the
+   viewport, so the height is the constraint and the width follows from it.
+   The breakpoint mirrors the player's own `matchMedia('(max-width: 768px)')`; if one
+   moves the other must, or the stage is the wrong shape for the cut that loads. */
+@media (max-width: 768px) {
+  .video-theater-stage {
+    width: min(90vw, calc(90vh * 9 / 16));
+  }
+
+  .video-theater .tvp-root--portrait {
+    max-width: 100%;
+  }
+}
+
+/* The stand-in, removed the moment a <video> exists. It keeps its own 16:9 shape rather
+   than filling the stage: there is one poster per language and it is landscape only (see
+   resolveSolutionVideoSources), so stretching it to a portrait stage would crop about two
+   thirds of the width off a frame whose captions are baked in. A small honest strip for
+   a few hundred milliseconds beats a mangled one. */
+.video-theater-poster {
+  /* No `max-width: 100%`: this is a grid ITEM, so a percentage would resolve against a
+     cell whose own width this element is one of the two inputs to. The viewport caps
+     already bound it. */
+  width: min(90vw, calc(90vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+.video-theater-close {
+  position: absolute;
+  inset-block-start: var(--space-4);
+  inset-inline-end: var(--space-4);
+  inline-size: var(--touch-target-preferred, 44px);
+  block-size: var(--touch-target-preferred, 44px);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  cursor: pointer;
+  /* Fixed colours, not theme tokens. This button is on a near-black scrim in both
+     themes, and the light-theme surface tokens are near-white on near-black. */
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  transition: background-color var(--transition-duration-fast) var(--ease-standard);
+}
+
+.video-theater-close:hover,
+.video-theater-close:focus-visible {
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.video-theater-close svg {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}

@@ -1,12 +1,4 @@
 [
-  "pages.solutionPages.downloadGated.title",
-  "pages.solutionPages.downloadGated.description",
-  "pages.solutionPages.downloadGated.emailPlaceholder",
-  "pages.solutionPages.downloadGated.submitLabel",
-  "pages.solutionPages.downloadGated.successMessage",
-  "pages.solutionPages.downloadGated.errorMessage",
-  "pages.solutionPages.downloadGated.disclaimer",
-  "pages.solutionPages.downloadGated.dismissLabel",
   "pages.solutionPages.environmentCloning.socialProof.quote",
   "pages.solutionPages.environmentCloning.socialProof.author",
   "pages.solutionPages.environmentCloning.socialProof.company",

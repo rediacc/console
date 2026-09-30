@@ -7,6 +7,9 @@ import { resolveSolutionVideoSources } from '../../utils/solution-video';
 // stylesheet, and the language trigger went straight back to a white pill on the dark
 // hero -- measured at rgb(26,26,26) on rgb(255,255,255) before this import was added.
 import '../../styles/solution-video.css';
+// The overlay the poster click opens; see scripts/video-theater.ts. Imported here so it
+// reaches exactly the pages that carry a mount, and no docs page.
+import '../../styles/video-theater.css';
 
 interface Props {
   lang: Language;
@@ -53,16 +56,21 @@ const here = localized[lang] ?? localized.en;
       data-poster-src={here.poster}
       data-vertical-src={here.vertical}
       data-title={t('video.playVideo')}
+      data-close-label={t('common.buttons.close')}
       data-lang={lang}
       data-sources={JSON.stringify(localized)}
       data-click-to-load
     >
       {/* SERVER-RENDERED POSTER, so the visitor sees the frame immediately instead of an
           empty box until 122 KB of player JS downloads and runs. `data-click-to-load`
-          tells tutorial-video-hydrate.ts to build the player on the first click here
-          rather than on load: an IntersectionObserver cannot help, because every mount
+          tells tutorial-video-hydrate.ts to defer the player to the first click rather
+          than build it on load: an IntersectionObserver cannot help, because every mount
           on the site is above the fold (measured across 44 pages at two viewports).
-          The hydrator removes this element when it mounts, so nothing is left behind. */}
+
+          THE POSTER IS PERMANENT NOW. It used to be removed on that click, because the
+          player was built here. The player is built in the theater overlay instead
+          (scripts/video-theater.ts), which this box is too small to substitute for at
+          576px, and the poster is what the visitor comes back to when they close it. */}
       <img class="video-poster-preview" src={here.poster} alt="" loading="eager" decoding="async" />
       <button class="video-poster-play" type="button" aria-label={t('video.playVideo')}>
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z" /></svg>

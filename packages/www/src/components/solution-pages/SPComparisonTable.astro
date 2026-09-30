@@ -18,7 +18,6 @@ interface Props {
   /** Unique per mount: two popovers on one page must not share an id. */
   popId: string;
   comparison: {
-    overline: string;
     title: string;
     description: string;
     capabilityLabel: string;
@@ -68,7 +67,6 @@ function renderValue(val: string, ref?: number) {
 
 <section class="sp-comparison-section">
   <div class="sp-comparison-section-inner">
-    <div class="sp-overline">{comparison.overline}</div>
     <h2>{comparison.title}</h2>
     <p>{comparison.description}</p>
 

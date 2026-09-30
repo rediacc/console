@@ -12,6 +12,10 @@ const ICONS: Record<string, string> = {
     '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   'ticket-x':
     '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><line x1="9" y1="4" x2="9" y2="20"/><line x1="8" y1="14" x2="16" y2="14" stroke-width="2.5"/></svg>',
+  // `tag` and `users` were referenced by for-ceos before they existed here, so `stats[0]` ("$204/mo"), `stats[2]` ("0 per-seat fees") and `benefits.items[0]` ("Predictable costs") rendered an empty tinted square. resolveIcon returns '' for an unknown name, and an empty icon box looks deliberate rather than broken, which is why this survived: only a screenshot shows it.
+  tag: '<svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+  users:
+    '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
 
   // Step icons
   terminal:

@@ -148,26 +148,21 @@ export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_K
 .ci/scripts/deploy/sync-media-to-r2.sh --solutions-only # just videos/solutions/
 ```
 
-The URL builders (`src/utils/solution-video.ts`, `src/plugins/remark-tutorial-embed.ts`) read from `video-manifest.json` and emit `https://media.rediacc.com/...` URLs when `PUBLIC_VIDEO_CDN_BASE_URL` is set at build time, falling back to the local `/assets/...` path when it's unset (e.g. local dev without the env var). That env var is wired into the "Build pages" step of
-`.github/workflows/cd-deploy-worker.yml`. Once an edge/stable deploy with that path has been verified serving real traffic, the local `public/assets/{tutorials/video,videos/solutions,tutorials/audio}` copies are removed from git entirely (gitignored) — see root `CLAUDE.md`'s "Media Assets" section for current status.
+The URL builders (`src/utils/solution-video.ts`,
+`src/plugins/remark-tutorial-embed.ts`, through `src/utils/media-url.ts`)
+resolve every video LOCAL FIRST: a file present under `public/assets/...` is
+emitted as that local path, and anything absent is emitted as
+`<baseUrl>/<key>` with the key from `video-manifest.json` and the base from
+the manifest's `baseUrl` (`https://media.rediacc.com`). `PUBLIC_VIDEO_CDN_BASE_URL`
+overrides the base when set (the "Build pages" step of
+`.github/workflows/cd-deploy-worker.yml` sets it); it is no longer required
+for local dev, which plays from the CDN until a local render exists. Once an
+edge/stable deploy with that path has been verified serving real traffic,
+the local `public/assets/{tutorials/video,videos/solutions,tutorials/audio}`
+copies are removed from git entirely (gitignored) — see root `CLAUDE.md`'s
+"Media Assets" section for current status.
 
-There is a **fourth** media tree that this document historically omitted and that no sync script covers: `packages/www/public/media/founder/` (narration audio, captions, photos, posters). It was untracked in #512 alongside the three above, but unlike them it was never mirrored to R2 and never added to `packages/www/.gitignore`, so git history is still the only copy of it that
-exists anywhere: it is absent from the working tree and `git ls-files packages/www/public/media/` returns nothing.
-
-Nothing in `HEAD` can regenerate it. Its generators (`packages/www/scripts/generate-team-video-audio.ts` plus `extract-team-video-transcripts.ts`, `scaffold-team-video-transcript-locales.js` and `validate-team-video-transcripts.js`) were deleted together with `src/components/TeamVideoPlayer.tsx` and `src/config/team-videos.ts`.
-
-**Do not quote a commit SHA for that deletion from memory.** This paragraph used to name 8a537a367 (written without backticks here on purpose, see below), which the 2026-08-23 history rewrite invalidated: that object still resolves in an old local clone but is an ancestor of nothing and appears on no branch, so the citation read as precise while pointing at a commit that is not in
-this repository's history. Re-derive it instead:
-
-```bash
-git log --diff-filter=D --oneline -- packages/www/scripts/generate-team-video-audio.ts
-```
-
-which answers `c482e6246` on the current graph. If the team-video feature is ever restored, restore the R2 coverage with it rather than letting it land back in git.
-
-**The backtick convention in this file is load-bearing.** A commit SHA inside backticks is a claim that this repository can resolve it and that it is an ancestor of `HEAD`; `.ci/rediacc_ci/tests/gates/test_gate_media_docs.py` checks every one of them and reds when a rewrite invalidates one. A SHA written WITHOUT backticks is prose about a commit that is gone, which is the only
-way this
-section can record its own correction without the gate refusing the sentence that explains it.
+There is a **fourth** media tree that this document historically omitted and that no sync script covers: `packages/www/public/media/founder/` (narration audio, captions, photos, posters, 138 files). It was untracked in #512 alongside the three above, but unlike them it was never mirrored to R2 and never added to `packages/www/.gitignore`, so for a while git history was the only copy of it that existed anywhere. Nothing in `HEAD` can regenerate it today: its generators (`packages/www/scripts/generate-team-video-audio.ts` and three siblings) were deleted in `8a537a367`. If the team-video feature is ever restored, restore the R2 coverage with it rather than letting it land back in git.
 
 ## 7. Restoring media after a fresh clone
 

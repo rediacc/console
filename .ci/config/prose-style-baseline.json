@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2891,
- "files": 715,
+ "count": 2890,
+ "files": 714,
  "by_rule": {
-  "R1": 1578,
+  "R1": 1577,
   "R11": 150,
   "R14": 1,
   "R18": 13,
@@ -4870,11 +4870,6 @@
   "packages/www/src/components/DocsSearchMount.tsx": {
    "R7": [
     "164ae3cf93fb11fc"
-   ]
-  },
-  "packages/www/src/components/TutorialVideoPlayer.tsx": {
-   "R1": [
-    "fb71d958fb9b449a"
    ]
   },
   "packages/www/src/content/blog/en/fork-a-running-kubernetes-cluster.md": {

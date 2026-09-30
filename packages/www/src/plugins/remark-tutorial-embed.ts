@@ -11,7 +11,6 @@
  */
 
 import path from 'node:path';
-import process from 'node:process';
 import { SITE_LOCALES } from '@rediacc/locales';
 import { DEFAULTS_EXTENDED } from '@rediacc/shared/config/defaults';
 import type { Image, Paragraph, Root } from 'mdast';
@@ -19,15 +18,9 @@ import type { Node, Parent } from 'unist';
 import { SKIP, visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';
 import { asSparse, loadManifest } from '../../scripts/lib/update-video-manifest.ts';
+import { cdnBaseUrl, resolveMediaUrl } from '../utils/media-url.ts';
 
 type TutorialField = 'mp4' | 'poster' | 'vtt' | 'chaptersVtt' | 'wordsJson';
-
-/**
- * CDN base URL for published videos (Cloudflare R2 + media.rediacc.com).
- * Read via process.env, not import.meta.env: this remark plugin runs at
- * build time and import.meta.env is only populated under Vite.
- */
-const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
 
 function isCastUrl(url: string): boolean {
   return path.extname(url).toLowerCase() === '.cast';
@@ -65,9 +58,8 @@ function manifest(): ReturnType<typeof asSparse> {
  * The locales this cast is actually published in, in SITE_LOCALES order.
  *
  * Derived from the manifest rather than assumed, so a cast that is mid-publish offers only
- * the languages that exist. An empty manifest (no CDN configured, or a fresh checkout
- * before the first publish) falls back to the full site set, which is what the local
- * `/assets/tutorials/video/<lang>/...` paths below serve.
+ * the languages that exist. An empty manifest (a fresh checkout before the first publish)
+ * falls back to the full site set; each locale then resolves local-first, CDN otherwise.
  */
 function localesFor(castKey: string): string[] {
   const published = manifest().tutorials?.[castKey];
@@ -77,24 +69,29 @@ function localesFor(castKey: string): string[] {
 }
 
 function resolveUrl(castKey: string, lang: string, field: TutorialField): string {
-  const localFallback: Record<TutorialField, string> = {
-    mp4: `/assets/tutorials/video/${lang}/${castKey}.mp4`,
-    poster: `/assets/tutorials/video/${lang}/${castKey}.${lang}.poster.jpg`,
-    vtt: `/assets/tutorials/video/${lang}/${castKey}.${lang}.vtt`,
-    chaptersVtt: `/assets/tutorials/video/${lang}/${castKey}.${lang}.chapters.vtt`,
-    wordsJson: `/assets/tutorials/video/${lang}/${castKey}.${lang}.words.json`,
+  // Bucket key by convention (`tutorials/video/<lang>/<file>`, the same layout generate-video-manifest.ts records); the local path is that key under `/assets/`. See src/utils/media-url.ts for the local-first rule.
+  const fileName: Record<TutorialField, string> = {
+    mp4: `${castKey}.mp4`,
+    poster: `${castKey}.${lang}.poster.jpg`,
+    vtt: `${castKey}.${lang}.vtt`,
+    chaptersVtt: `${castKey}.${lang}.chapters.vtt`,
+    wordsJson: `${castKey}.${lang}.words.json`,
   };
-  if (!VIDEO_CDN_BASE_URL) return localFallback[field];
+  const conventionalKey = `tutorials/video/${lang}/${fileName[field]}`;
+  const localPath = `/assets/${conventionalKey}`;
 
   // asSparse + optional chaining, because every level here is SPARSE at read time: a cast key, a locale under it, or a single field can each be absent
   // while that locale is still being published. VideoManifest describes what a
   // WRITER produces, so its levels are total, and trusting that made all three index accesses look infallible to TypeScript while the runtime still returned undefined -- so `if (!assetPath)` could never run, because the expression above it threw first.
   //
   // src/utils/solution-video.ts already carries a comment saying this exact crash "failed the whole CDN build rather than degrading one player". The fix was applied there and never swept to here.
-  const assetPath = manifest().tutorials?.[castKey]?.[lang]?.[field]?.path;
-  if (!assetPath) return localFallback[field];
+  const manifestKey = manifest().tutorials?.[castKey]?.[lang]?.[field]?.path;
 
-  return `${VIDEO_CDN_BASE_URL}/${assetPath}`;
+  return resolveMediaUrl({
+    localPath,
+    cdnKey: manifestKey ?? conventionalKey,
+    cdnBase: cdnBaseUrl(manifest().baseUrl),
+  });
 }
 
 /**

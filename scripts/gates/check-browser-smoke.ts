@@ -55,10 +55,11 @@ interface Finding {
  * A 404 for media this repo DELIBERATELY does not check out.
  *
  * `packages/www/public/assets/{videos,tutorials}` is gitignored and lives in Cloudflare R2
- * (see the media section of CLAUDE.md and `.github/workflows/ci.yml`, which states that the
- * videos users see are served from media.rediacc.com via PUBLIC_VIDEO_CDN_BASE_URL). A CI
- * build has neither the files nor that variable, so a solution page emits a local poster
- * path that cannot resolve. Production emits a CDN URL and no visitor ever sees this.
+ * (see the media section of CLAUDE.md). The URL builders resolve LOCAL FIRST
+ * (`packages/www/src/utils/media-url.ts`): a build with no local media emits CDN URLs, so
+ * a same-origin 404 under these roots can only come from a developer checkout holding a
+ * partial local render (a poster without its mp4, say) -- never from production, which
+ * has no local files at all and therefore never emits these paths.
  *
  * So this is a scope correction, not a suppression: the gate asserts "things a visitor
  * sees", and asserting on a path that only exists in a media-less build asserts something

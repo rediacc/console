@@ -2,9 +2,21 @@
 import type { Language } from '../../i18n/types';
 import type { PersonaType } from '../../config/persona-pages';
 
+// THE OVERLINE AND THE ARROW ARE GONE, and this is the only component on the four
+// persona pages that still carried either.
+//
+// The overline shouted twice over: the catalog value was literally "SHARE WITH THE TEAM"
+// / "NEXT STEP" in capitals AND persona-pages.css re-applied text-transform: uppercase on
+// top of it. A tracked all-caps eyebrow above every heading is template chrome that shows
+// up whatever the subject; SPHero.astro:11-18 already removed its own for the same reason.
+// The heading below says "Share with the CTO" -- the eyebrow was announcing what the
+// sentence underneath it already said.
+//
+// The arrow was an inline SVG appended after the link text. The button is a link; the
+// browser already says so. Both English values and their 24 locale values were deleted
+// with this markup rather than reworded, so the naturalization ledger stays clean.
 interface Props {
   content: {
-    overline: string;
     title: string;
     description: string;
     ctaText: string;
@@ -20,12 +32,8 @@ const href = `/${lang}/${content.ctaSlug}`;
 
 <section class="sp-share-with-team">
   <div class="sp-share-with-team-inner">
-    <span class="sp-share-overline">{content.overline}</span>
     <h2>{content.title}</h2>
     <p>{content.description}</p>
-    <a href={href} class="sp-btn-primary sp-share-cta">
-      {content.ctaText}
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4L9 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
+    <a href={href} class="sp-btn-primary">{content.ctaText}</a>
   </div>
 </section>

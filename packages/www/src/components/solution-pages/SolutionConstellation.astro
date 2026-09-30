@@ -25,6 +25,12 @@
  *   >=1200px, no JS: constellation renders (static HTML/CSS); clicks navigate.
  *   <1200px / noCSS: the same markup reflows into a grouped list of links.
  *
+ * The >=1200px geometry is gated on `.cx--geo`, which the `geometry` prop emits and
+ * which defaults ON. Callers that pass geometry={false} (the four persona pages) hold
+ * the third presentation at every width. Every selector inside the two 1200px blocks
+ * carries that class; if you add a rule there, prefix it too or persona pages will
+ * inherit a stray piece of the scatter.
+ *
  * Motion: reveal only (edges draw in, nodes fade in), all over by ~1.4s, and
  * NO idle loop - a target that drifts under the cursor is a Fitts's-law tax.
  * The hidden state is authored ONLY under `html.js-anim` +
@@ -54,6 +60,24 @@ interface Props {
   heading?: string;
   /** Ink overrides for the dark hero band. */
   onDark?: boolean;
+  /**
+   * The >=1200px scatter geometry. Default true, so the homepage and all 21 solution
+   * pages render exactly as before.
+   *
+   * Set false and the component keeps its BASE presentation at every width: the role
+   * groups as a plain list, which is what every viewport under 1200px already shows.
+   * The four persona pages opt out because the figure did not survive being small.
+   * Measured at 1440 on /en/for-ctos: a 443px-tall band carrying 10.5px labels in
+   * rgb(94,94,99) and 1px rgb(210,210,215) edges (~1.5:1 on white), which at page
+   * scale scans as an empty gap between two sections rather than as a diagram. The
+   * same content at 390px, as the list, is legible -- the mobile layout was the
+   * better one all along, and it is the layout the fragment ids already scroll to.
+   *
+   * This is not the compact preset made lesser (L9): the node set is unfiltered and
+   * every link is still here. It is the presentation the component already ships,
+   * held at all widths instead of only small ones.
+   */
+  geometry?: boolean;
 }
 
 const {
@@ -64,6 +88,7 @@ const {
   currentSlug,
   heading,
   onDark = false,
+  geometry = true,
 } = Astro.props as Props;
 
 const { t, to } = createTranslator(lang);
@@ -151,14 +176,27 @@ const groups = (['copy', 'test', 'recover', 'property'] as const)
       };
     }),
   }))
-  .filter((g) => g.anchor !== null || g.nodes.length > 0);
+  // An anchor with no nodes earns its place ON THE FIGURE: it is a labelled arm, and the
+  // label is the information. As a LIST it is a heading with nothing under it. Measured on
+  // /en/for-ctos, whose six related slugs all sit in recover/property: "Copy" and "Test"
+  // rendered as two bare words above empty space. So the anchor-only group survives only
+  // while the geometry that gives it meaning is on.
+  //
+  // This drops an outbound link to /<lang>#copy from those pages and nothing else. The
+  // fragment ids themselves live on the homepage's `full` mount, which is where
+  // `solutionsHref` points and where they actually resolve.
+  .filter((g) => (geometry ? g.anchor !== null || g.nodes.length > 0 : g.nodes.length > 0));
 
 const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
 ---
 
 <div
   id={id}
-  class:list={['cx', `cx--${preset}`, { 'cx--on-dark': onDark, 'cx--boxed': Boolean(heading) }]}
+  class:list={[
+    'cx',
+    `cx--${preset}`,
+    { 'cx--on-dark': onDark, 'cx--boxed': Boolean(heading), 'cx--geo': geometry },
+  ]}
   data-cx
 >
   {heading && <h2 class="cx-heading">{heading}</h2>}
@@ -223,6 +261,14 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
                 label had one. A sighted user saw three labels and a screen-reader user
                 heard a different one. Naming all four makes the views agree.
               */}
+              {/* No anchor and no geometry: still show the label. The anchor is what
+                  carries a role name ON the figure, so a group without one is simply an
+                  unlabelled arm there. As a LIST that becomes a column of links with no
+                  heading sitting beside columns that have one, while `aria-label` above
+                  still names it -- the same sighted/screen-reader split the note above
+                  describes, inverted. Rendered as a plain span, not a link: there is no
+                  anchor, so there is no fragment to send anyone to. */}
+              {!g.anchor && !geometry && <span class="cx-anchor">{g.label}</span>}
               {g.anchor &&
                 (full ? (
                   <span
@@ -292,7 +338,6 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
       <p class="cx-pop-blurb"></p>
       <a class="cx-pop-go" href="#">
         <span>{t('common.buttons.learnMore')}</span>
-        <span class="cx-pop-arrow" aria-hidden="true">&rarr;</span>
       </a>
     </div>
   </div>
@@ -307,7 +352,6 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
     --cx-ink: var(--color-text);
     --cx-muted: var(--color-text-secondary);
     --cx-line: var(--color-border);
-    --cx-surface: var(--color-surface);
     /* The six category colours, same values the solution pages use. */
     --cx-cat-dev-env: var(--color-brand-primary);
     --cx-cat-ransomware: #c05050;
@@ -349,7 +393,7 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
     font-size: var(--font-size-2xl);
     font-weight: 700;
     line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: var(--tracking-tight);
     margin: 0 0 32px;
   }
   .cx-net {
@@ -389,8 +433,6 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
     display: block;
     font-size: var(--font-size-sm);
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     color: var(--cx-ink);
     text-decoration: none;
     margin: 20px 0 8px;
@@ -458,7 +500,7 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
 
   /* ===== The constellation, >=1200px ===== */
   @media (min-width: 1200px) {
-    .cx-stage {
+    .cx--geo .cx-stage {
       position: relative;
       aspect-ratio: var(--cx-ar);
       max-width: 1360px;
@@ -467,7 +509,7 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
          is percentages, so the whole figure scales as one unit. */
       container-type: inline-size;
     }
-    .cx-net {
+    .cx--geo .cx-net {
       display: block;
       position: absolute;
       inset: 0;
@@ -475,16 +517,16 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
       height: 100%;
       pointer-events: none;
     }
-    .cx-net line {
+    .cx--geo .cx-net line {
       stroke: var(--cx-line);
       stroke-width: 1;
       vector-effect: non-scaling-stroke;
     }
     /* In the constellation the groups are not boxes: nodes position against
        the stage directly. */
-    .cx-nav .cx-groups,
-    .cx-nav .cx-group ul,
-    .cx-nav .cx-group li {
+    .cx--geo .cx-nav .cx-groups,
+    .cx--geo .cx-nav .cx-group ul,
+    .cx--geo .cx-nav .cx-group li {
       display: contents;
     }
     /* .cx-group is the EXCEPTION, and the reason is the fragment ids it carries.
@@ -499,41 +541,41 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
        .cx-stage and the figure is pixel-identical; it just has a scroll
        position now. All four land at the top of the stage, which at this width
        is correct: the arms are one figure, not four stacked sections. */
-    .cx-nav .cx-group {
+    .cx--geo .cx-nav .cx-group {
       display: block;
     }
     /* Node positions are physical left/top with PRE-MIRRORED coordinates
        (RTL is applied once, at build time, in constellation.ts). Do not
        change these to inset-inline-start: the mirror would apply twice and
        Arabic would silently flip back to LTR. */
-    .cx-nav .cx-centre,
-    .cx-nav .cx-anchor,
-    .cx-nav .cx-n {
+    .cx--geo .cx-nav .cx-centre,
+    .cx--geo .cx-nav .cx-anchor,
+    .cx--geo .cx-nav .cx-n {
       position: absolute;
       left: var(--x);
       top: var(--y);
       transform: translate(-50%, -50%);
       margin: 0;
     }
-    .cx-nav .cx-centre {
+    .cx--geo .cx-nav .cx-centre {
       text-align: center;
       text-wrap: balance;
       font-size: clamp(14px, 1.33cqw, 18px);
       max-width: clamp(300px, 26.5cqw, 360px);
       width: max-content;
     }
-    .cx-nav .cx-anchor {
+    .cx--geo .cx-nav .cx-anchor {
       font-size: clamp(13px, 1.18cqw, 16px);
       justify-content: center;
       min-width: var(--touch-target-min, 44px);
     }
-    .cx-nav .cx-anchor,
-    .cx-nav a.cx-centre--link {
+    .cx--geo .cx-nav .cx-anchor,
+    .cx--geo .cx-nav a.cx-centre--link {
       display: inline-flex;
       align-items: center;
       min-height: var(--touch-target-min, 44px);
     }
-    .cx-nav .cx-n {
+    .cx--geo .cx-nav .cx-n {
       flex-direction: column;
       justify-content: center;
       gap: 6px;
@@ -546,18 +588,18 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
       line-height: 1.25;
     }
     /* Bottom-half nodes carry the label ABOVE the dot so it stays in frame. */
-    .cx-nav .cx-n[data-flip] {
+    .cx--geo .cx-nav .cx-n[data-flip] {
       flex-direction: column-reverse;
     }
-    .cx-nav .cx-lbl {
+    .cx--geo .cx-nav .cx-lbl {
       color: var(--cx-muted);
       transition: color 0.2s ease;
     }
-    .cx-nav .cx-n:hover .cx-lbl,
-    .cx-nav .cx-n:focus-visible .cx-lbl {
+    .cx--geo .cx-nav .cx-n:hover .cx-lbl,
+    .cx--geo .cx-nav .cx-n:focus-visible .cx-lbl {
       color: var(--cx-ink);
     }
-    .cx-nav .cx-n--current .cx-dot {
+    .cx--geo .cx-nav .cx-n--current .cx-dot {
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--cx-cat, var(--cx-ink)) 30%, transparent);
     }
   }
@@ -567,29 +609,29 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
      no-JS, broken-JS, or reduced-motion visit renders everything at full
      opacity with zero rules to undo. All motion ends by ~1.4s; no idle loop. */
   @media (prefers-reduced-motion: no-preference) and (min-width: 1200px) {
-    html.js-anim .cx:not(.cx-in) .cx-net line {
+    html.js-anim .cx--geo:not(.cx-in) .cx-net line {
       stroke-dasharray: var(--l);
       stroke-dashoffset: var(--l);
     }
-    html.js-anim .cx .cx-net line {
+    html.js-anim .cx--geo .cx-net line {
       stroke-dasharray: var(--l);
       transition: stroke-dashoffset 0.7s cubic-bezier(0.16, 1, 0.3, 1);
       transition-delay: calc(var(--d, 0) * 1ms);
     }
-    html.js-anim .cx.cx-in .cx-net line {
+    html.js-anim .cx--geo.cx-in .cx-net line {
       stroke-dashoffset: 0;
     }
-    html.js-anim .cx:not(.cx-in) .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
+    html.js-anim .cx--geo:not(.cx-in) .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
       opacity: 0;
       transform: translate(-50%, -50%) scale(0.94);
     }
-    html.js-anim .cx .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
+    html.js-anim .cx--geo .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
       transition:
         opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
         transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
       transition-delay: calc(var(--d, 0) * 1ms);
     }
-    html.js-anim .cx.cx-in .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
+    html.js-anim .cx--geo.cx-in .cx-nav :is(.cx-n, .cx-anchor, .cx-centre) {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
     }
@@ -611,9 +653,7 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
   .cx-pop-cat {
     margin: 0 0 6px;
     font-size: var(--font-size-xs);
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-weight: 600;
     color: var(--color-text-secondary);
   }
   .cx-pop-t {
@@ -644,12 +684,6 @@ const popTitleId = `cx-pop-t-${preset}-${currentSlug ?? slugs.length}`;
     outline: 2px solid currentColor;
     outline-offset: 3px;
     border-radius: var(--radius-sm);
-  }
-  .cx-pop-arrow {
-    display: inline-block;
-  }
-  [dir='rtl'] .cx-pop-arrow {
-    transform: scaleX(-1);
   }
 </style>
 

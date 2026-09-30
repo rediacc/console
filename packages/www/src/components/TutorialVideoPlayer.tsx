@@ -59,7 +59,7 @@ interface TutorialVideoPlayerProps {
   sources?: Record<string, TutorialSourceSet | undefined>;
 }
 
-// Shape mirrors the `.words.json` sidecar emitted by `packages/www/scripts/lib/vtt-emit.ts::emitWordTimingsJson`, keep in sync when extending either side.
+// Shape mirrors the `.words.json` sidecar emitted by `packages/www/scripts/lib/vtt-emit.ts::emitWordTimingsJson` — keep in sync when extending either side.
 interface WordEntry {
   start: number;
   end: number;
@@ -78,7 +78,7 @@ interface WordsDoc {
   cues: CueEntry[];
 }
 
-// HTMLVideoElement.currentTime tracks the displayed-frame clock, which trails audio output by ~30-50 ms in most browsers, and our RAF tick adds one more vsync interval (~16 ms) of jitter on top. A small constant look-ahead keeps the active word aligned with what the viewer hears. Leading the audio is worse than trailing, don't push this higher than ~80 ms.
+// HTMLVideoElement.currentTime tracks the displayed-frame clock, which trails audio output by ~30-50 ms in most browsers, and our RAF tick adds one more vsync interval (~16 ms) of jitter on top. A small constant look-ahead keeps the active word aligned with what the viewer hears. Leading the audio is worse than trailing — don't push this higher than ~80 ms.
 const HIGHLIGHT_LEAD_SEC = 0.06;
 
 function paintChapterOverlay(
@@ -227,8 +227,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const restoreRef = useRef<PlaybackSnapshot | null>(null);
   // Did the in-menu language pane build? False means the in-frame overlay stays up.
   const [menuMounted, setMenuMounted] = useState(false);
-  // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language change would mean calling setState from an effect body (react-hooks/set-state-in-effect, and a cascading render); carrying the source instead lets the consumer below simply ignore a document that does not belong to the video currently loaded, which also closes the window where the overlay
-  // painted the old language's words against the new clock.
+  // The fetched sidecar is stored WITH the URL it came from. Clearing it on a language change would mean calling setState from an effect body (react-hooks/set-state-in-effect, and a cascading render); carrying the source instead lets the consumer below simply ignore a document that does not belong to the video currently loaded, which also closes the window where the overlay painted the old language's words against the new clock.
   const [words, setWords] = useState<{ src: string; doc: WordsDoc } | null>(null);
   const [activeLang, setActiveLang] = useState<string>(lang);
   // Chrome around the video stays in the PAGE's language; only the media follows the picker.
@@ -241,14 +240,44 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   );
 
   // PORTRAIT BELOW 768px, and chosen in JS rather than by rendering both cuts and hiding one in CSS. Two <video> elements was how the solution player did it; with Plyr that would mean two player instances, two sets of listeners and two caption overlays, only one of them reachable. `matchMedia` gives the same breakpoint with one element.
+  /**
+   * Snapshot playback BEFORE the state change that remounts the player.
+   *
+   * React commits DOM mutations before it runs effects, so by the time a cleanup reads
+   * `video.currentTime` the new `src` attribute has already been written and the media
+   * element load algorithm has already reset the clock to 0. Capturing here is what makes
+   * "resume where the viewer was" work at all. Both callers below rebuild the whole subtree, because
+   * `activeLang` and `usePortrait` are the React `key`.
+   */
+  const capturePlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    restoreRef.current = {
+      time: video.currentTime,
+      paused: video.paused,
+      volume: video.volume,
+      muted: video.muted,
+      rate: video.playbackRate,
+    };
+  }, []);
+
   const [isNarrow, setIsNarrow] = useState(false);
+  /** Read inside the listener, which must know the PREVIOUS value without re-subscribing. */
+  const isNarrowRef = useRef(false);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
-    const apply = () => setIsNarrow(mq.matches);
+    const apply = () => {
+      const next = mq.matches;
+      // ROTATING A PHONE USED TO RESTART THE VIDEO. `usePortrait` is part of the React `key`, so crossing this breakpoint tears the whole subtree down and builds a new Plyr on the other cut -- and nothing captured the clock on the way through, unlike the language switch. Turning a phone sideways to watch something is the most natural gesture there is, and it sent the viewer back to 00:00.
+      if (next === isNarrowRef.current) return;
+      isNarrowRef.current = next;
+      capturePlayback();
+      setIsNarrow(next);
+    };
     apply();
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, []);
+  }, [capturePlayback]);
 
   // The URLs in play. `sources` is the whole truth once present; the individual props stay the fallback so a page built before the attribute existed still plays.
   const active = sources?.[activeLang];
@@ -262,32 +291,18 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const activeChapters = active?.chapters ?? chaptersSrc;
   const activeWords = active?.words ?? wordsSrc;
 
-  /**
-   * Snapshot playback BEFORE the state change, not in the Plyr effect's cleanup.
-   *
-   * React commits DOM mutations before it runs effects, so by the time cleanup reads
-   * `video.currentTime` the new `src` attribute has already been written and the media
-   * element load algorithm has already reset the clock to 0. Capturing here is what makes
-   * "switch language, keep your place" work at all.
-   */
   // THE IN-PLAYER PICKER, built on Plyr's FORCED-QUALITY path rather than on a custom menu. `config.quality.forced` makes `getQualityOptions()` return our own list verbatim (plyr.mjs:980) and `quality.onChange` takes the switch over entirely, without touching any <source> (plyr.mjs:1016). Both are supported config, not a repurposing hack.
   //
   // NORMALISE BEFORE COMPARING. `activeLang` is whatever the mount was given, which can be a full tag like `en-GB`, while `pickerLangs` holds bare site locales. Comparing the raw value marked the wrong entry as current and made every later comparison wrong.
   const activeBase = baseLocale(activeLang);
 
-  const handleLanguageChange = useCallback((next: Language) => {
-    const video = videoRef.current;
-    if (video) {
-      restoreRef.current = {
-        time: video.currentTime,
-        paused: video.paused,
-        volume: video.volume,
-        muted: video.muted,
-        rate: video.playbackRate,
-      };
-    }
-    setActiveLang(next);
-  }, []);
+  const handleLanguageChange = useCallback(
+    (next: Language) => {
+      capturePlayback();
+      setActiveLang(next);
+    },
+    [capturePlayback]
+  );
 
   // Fetch words.json once per source change.
   useEffect(() => {
@@ -328,8 +343,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
 
     // A CC BUTTON WITH NO TRACK IS DEAD UI, so the captions control and the captions settings pane are dropped when there is no subtitles file. The solution videos burn their captions into the media, so this is their normal state, not a degraded one.
     const player = new Plyr(video, {
-      // THE RATIO HAS TO BE TOLD TO PLYR, not just to the outer box. `.tvp-root--portrait` sets `aspect-ratio: 9 / 16` on the container, but Plyr builds its own wrapper and defaults it to 16:9, so the portrait cut was letterboxed inside it: measured at 390px the mount was a correct 327x581 while the <video> inside was 327x184 with `object-fit: contain`, leaving 397px of dead black
-      // under a sliver of picture. The file was right (1080x1920) and the container was right; only Plyr's wrapper disagreed.
+      // THE RATIO HAS TO BE TOLD TO PLYR, not just to the outer box. `.tvp-root--portrait` sets `aspect-ratio: 9 / 16` on the container, but Plyr builds its own wrapper and defaults it to 16:9, so the portrait cut was letterboxed inside it: measured at 390px the mount was a correct 327x581 while the <video> inside was 327x184 with `object-fit: contain`, leaving 397px of dead black under a sliver of picture. The file was right (1080x1920) and the container was right; only Plyr's wrapper disagreed.
       ratio: usePortrait ? '9:16' : '16:9',
       controls: [
         'play-large',
@@ -344,11 +358,9 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
         'pip',
         'fullscreen',
       ],
-      // THE LANGUAGE PICKER IS NOT IN THIS MENU, and that was measured, not assumed. Plyr's `quality` pane is the only extension point its settings menu offers and it is numeric by nature: with `forced` options plus an `onChange`, every click came back as min(options). Clicking the radio whose DOM value was "4" delivered 0, and after moving to 1-based values, clicking "5"
-      // delivered 1. `setQuality` snaps through `closest()` (plyr.mjs:8460) because its `options.includes()` disagrees
+      // THE LANGUAGE PICKER IS NOT IN THIS MENU, and that was measured, not assumed. Plyr's `quality` pane is the only extension point its settings menu offers and it is numeric by nature: with `forced` options plus an `onChange`, every click came back as min(options). Clicking the radio whose DOM value was "4" delivered 0, and after moving to 1-based values, clicking "5" delivered 1. `setQuality` snaps through `closest()` (plyr.mjs:8460) because its `options.includes()` disagrees
       // with the very list `setQualityMenu` rendered the rows from (plyr.mjs:2154). A
-      // control that plays a different language than the one clicked is worse than none, so the picker is rendered INSIDE the player frame instead, over the video, using the switch that already works. `language` IS NOT A PLYR TYPE, and it does not have to be. `config.settings` is iterated verbatim with no allowlist (plyr.mjs:2645): every entry gets a home row, a back-buttoned
-      // pane, keyboard shortcuts and the height animation for free. Only POPULATING the pane is Plyr's job for its own three types, so that is the part we do, in `ready` below. The label must come from `i18n`, because `i18n.get` returns '' for an unknown key and the row would render blank.
+      // control that plays a different language than the one clicked is worse than none, so the picker is rendered INSIDE the player frame instead, over the video, using the switch that already works. `language` IS NOT A PLYR TYPE, and it does not have to be. `config.settings` is iterated verbatim with no allowlist (plyr.mjs:2645): every entry gets a home row, a back-buttoned pane, keyboard shortcuts and the height animation for free. Only POPULATING the pane is Plyr's job for its own three types, so that is the part we do, in `ready` below. The label must come from `i18n`, because `i18n.get` returns '' for an unknown key and the row would render blank.
       settings: [
         ...(activeSubtitles ? ['captions'] : []),
         'speed',
@@ -406,7 +418,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       host?.appendChild(caption);
     };
 
-    // Put the viewer back where they were. The snapshot is taken in handleLanguageChange; `readyState` is 0 here because the src attribute changed in the same commit, so the restore waits for metadata of the NEW file.
+    // Put the viewer back where they were. The snapshot is taken by capturePlayback, on a language switch or a portrait/landscape flip; `readyState` is 0 here because the src attribute changed in the same commit, so the restore waits for metadata of the NEW file.
     const pending = restoreRef.current;
     restoreRef.current = null;
     const applyRestore = () => {
@@ -464,8 +476,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       }
       playerRef.current = null;
     };
-    // Every added dep is STABLE, so this still rebuilds Plyr only on a real source or language change: `pickerLangs` is a useMemo over `sources`, `t` is memoised on the page locale, `handleLanguageChange` is a useCallback with no deps, and `activeBase` and `activeSubtitles` are primitives derived from `activeLang`, which is already here. They arrived with the in-menu picker and
-    // were left out; CI lints with `--max-warnings 0`, so an exhaustive-deps warning is a failing build, and calling it pre-existing was wrong -- it is on lines written this session.
+    // Every added dep is STABLE, so this still rebuilds Plyr only on a real source or language change: `pickerLangs` is a useMemo over `sources`, `t` is memoised on the page locale, `handleLanguageChange` is a useCallback with no deps, and `activeBase` and `activeSubtitles` are primitives derived from `activeLang`, which is already here. They arrived with the in-menu picker and were left out; CI lints with `--max-warnings 0`, so an exhaustive-deps warning is a failing build, and calling it pre-existing was wrong -- it is on lines written this session.
   }, [
     activeSrc,
     activeLang,
