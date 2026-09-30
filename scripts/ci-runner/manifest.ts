@@ -3664,7 +3664,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
     gate: true,
-    // 46s by the FLOOR of its last five measurements (46.4, 47.1, 47.9, 48.9, 51.7) -- not load noise, which is what the floor rule filters out. It unpacks and hashes embedded assets, so the cost is real work.
+    // About 3 s idle since 2026-09-30 (was 24 s idle, 46-52 s under ci:quick load, the run's critical path). The cost was a char-by-char strings(1) emulation over ~900 MB of decompressed binaries; it is now a native Buffer.indexOf with whole-run boundary checks, and the 14 probes decompress four at a time.
     leaves: ['scripts/gates/check-embed-asset-versions.ts'],
     ci: {
       kind: 'step',
