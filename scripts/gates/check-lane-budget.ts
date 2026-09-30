@@ -16,7 +16,7 @@
  * exactly as review saw it, not from a fresh `shardPlan` call that could silently disagree
  * with what actually shipped.
  *
- * SIX CHECKS LIVE, ONE DOES NOT YET.
+ * SEVEN CHECKS, ALL LIVE (check 7 since T4.4, 2026-09-30).
  *
  *   1. Per-leg estimate: each committed leg's fixed job cost plus the p90 of its own
  *      units, red over 12 minutes, naming the top 3 units. Every lane with a committed
@@ -43,17 +43,19 @@
  *      any one lane's critical-path contribution but NOT the graph-weighted figure the box
  *      eventually wants.
  *
- * CHECK 7 EXISTS AND IS SELFTESTED, AND MUST STAY OUT OF `main()`'S FINDINGS. T4.4 is
- * the box that turns it on; flipping `CHECK7_ENABLED` here before every job in `ci.yml`
- * carries a real `timeout-minutes: 15` would red the pipeline for a policy nothing has
- * adopted yet. The two capped jobs are read against their ruling timeouts (25, 30).
+ *   7. Timeouts (T4.1/T4.4): every runner job in `ci.yml` and its callees, read once per
+ *      defining workflow, declares a job-level `timeout-minutes` of 15 or less; the two
+ *      `JOB_BUDGET_CAPS` jobs are read against their ruling timeouts (K8s Ceph 25, K8s
+ *      Multinode 30). Unset, or a value that resolves to no number, is red. A
+ *      `${{ matrix.<key> }}` value resolves to the largest `<key>:` the job's strategy sets.
  *
- * WHY THE REAL RUN IS RED, AND WHY THAT IS THE POINT. Since budget_report.py writes
+ * A RED REAL RUN IS MEASURED OVERRUN, NOT A GATE DEFECT. Since budget_report.py writes
  * manifest-shaped unit ids and `job_p90_minutes` (2026-09-28), what the real run reports is
- * MEASURED overrun: E2E Workers legs, the E2E Ceph/K8s jobs, OPS Provision legs, and jobs no
- * sampled run completed successfully (UNCHECKED). Those are spec W's P2 exit, not defects
- * here. `--selftest` proves the logic against fixtures and the real exemption and cap
- * tables.
+ * a leg or job whose measured cost is over its ceiling, a job no sampled run completed
+ * successfully (UNCHECKED; operator ruling 2026-09-29 on #5a954657: unknown stays red), or
+ * a job whose `timeout-minutes` is over 15. The fix is in the lane, the workflow or an
+ * operator ruling, never here. `--selftest` proves the logic against fixtures and the real
+ * exemption and cap tables.
  *
  * PARALLEL LANES (`unitParallelism`). quality-pytest runs `pytest -n 4 --dist loadgroup` per
  * leg, so its per-file serial p90s are divided by the workers and floored at the largest
@@ -90,8 +92,6 @@
  * lane: quality-code
  * needs: node
  * selftest: true
- * emit: false
- * blocker: the real run is red on MEASURED overrun, not on this gate or its data: E2E Workers legs, E2E Ceph, Ceph Workers, K8s and Migrate over 12, K8s Ceph and K8s Multinode over their 2026-09-28 caps, OPS Provision legs, and jobs no sampled PR run completed successfully (UNCHECKED). It runs by hand until spec W's P2 exit holds (2026-09-28).
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
  *   whole misses its 35-minute target (D-W1); this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner
@@ -103,7 +103,6 @@ import path from 'node:path';
 import process from 'node:process';
 
 import {
-  type LaneCapabilities,
   laneCapabilities,
   mergeLaneCapabilities,
   SHARD_COUNTS,
@@ -137,8 +136,8 @@ export const PIPELINE_BUDGET_MIN = 35;
 export const MAX_STALENESS_DAYS = 14;
 export const CHECK7_TIMEOUT_MAX_MIN = 15;
 
-/** T4.4 flips this on. See the file header: check 7 must exist and be selftested first. */
-export const CHECK7_ENABLED = false;
+/** T4.4 (2026-09-30): check 7 is on. The selftest pins it on, so turning it off is a visible edit, not a drift. */
+export const CHECK7_ENABLED = true;
 
 /** Check 6 stays advisory: D-W1's text makes it red only once the P4 run-level cancel lands. Printed always, never a finding. */
 export const PIPELINE_ENFORCED = false;
@@ -180,10 +179,10 @@ export function unitExemption(
 
 /**
  * Check 2's job-level caps: a named job judged against its own p90 ceiling instead of the
- * 12-minute budget. Exactly the two jobs the 2026-09-28 ruling kept exempt; E2E Ceph, E2E
- * Ceph Workers and E2E K8s LEFT the list that day and are judged at 12 like every other job.
- * `timeoutMinutes` is the ruling's `timeout-minutes` for the job, read by check 7 once T4.4
- * turns it on.
+ * 12-minute budget. The two jobs the 2026-09-28 ruling kept exempt (E2E Ceph, E2E Ceph
+ * Workers and E2E K8s LEFT the list that day and are judged at 12 like every other job),
+ * plus E2E Ceph Workers non-apt by ruling #fc4f34f8 (2026-09-30). Nothing is added without a
+ * ruling. `timeoutMinutes` is the ruling's `timeout-minutes` for the job, read by check 7.
  */
 export interface JobCap {
   job: string;
@@ -206,15 +205,20 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
     ruling:
       'Exemption caps 2026-09-28 (#d5ba825c DEFAULT executed): p90 25 / timeout 30, revisited after 10 runs',
   },
+  {
+    job: 'test-e2e-ceph-workers-rpm',
+    p90Minutes: 16,
+    timeoutMinutes: 20,
+    ruling:
+      'Operator ruling #fc4f34f8 (ASKED 2026-09-30T10:38Z): E2E Ceph Workers non-apt p90 16 / timeout 20 (measured p90 fedora 13.6, opensuse 12.5, oracle 15.5)',
+  },
 ];
 
-/**
- * D-W2: "Stage Artifacts" (`cd-stage.yml`'s `stage`, called from `ci.yml`'s `stage-artifacts`)
- * and "Validate Promotion" (`ci.yml`'s `validate-promote`) are budgeted by
- * `check_job_timeout_headroom.py` against `lane-durations.json`'s `job_max_seconds`, not by
- * this gate. Named here so the split is printed every run rather than being a silent gap.
+/*
+ * D-W2 (2026-09-30): every job of ci.yml and its callees is budgeted HERE, "Stage Artifacts"
+ * and "Validate Promotion" included. `check_job_timeout_headroom.py` skips a job this graph
+ * reaches (its `lane_budgeted_names`) and keeps the 1.5x rule only for jobs outside it.
  */
-export const HEADROOM_GATE_JOBS: readonly string[] = ['stage', 'validate-promote'];
 
 export interface LaneDurations {
   refreshed_at: string | null;
@@ -596,11 +600,25 @@ export interface WorkflowJob {
   /** Its `name:`, quotes stripped; the id when it declares none (the Actions default). */
   name: string;
   hasMatrix: boolean;
+  /**
+   * Check 7: the job-level `timeout-minutes:` as written (comment stripped), or null when the
+   * job declares none. A step-level timeout is not a job's and is never read here.
+   */
+  timeoutRaw: string | null;
+  /**
+   * `timeoutRaw` as minutes: a literal number, or `${{ matrix.<key> }}` resolved to the LARGEST
+   * `<key>: <n>` the job's own `strategy:` block declares (every leg must fit, so the worst leg
+   * is the job's timeout). Null when unset or when it resolves to no number, which check 7
+   * reds either way: a timeout nobody can read is not a timeout under 15.
+   */
+  timeoutMinutes: number | null;
 }
 
-/** A workflow's jobs, in order, each with its `name:`, its `uses:` and whether it has a matrix. Hand-parsed for the same reason `laneCapabilities` is. */
+/** A workflow's jobs, in order, each with its `name:`, its `uses:`, whether it has a matrix, and its job-level `timeout-minutes`. Hand-parsed for the same reason `laneCapabilities` is. */
 export function workflowJobs(text: string): WorkflowJob[] {
   const out: WorkflowJob[] = [];
+  // Per job (same index as `out`): every numeric `<key>: <n>` inside its strategy block, for a `${{ matrix.<key> }}` timeout.
+  const strategyNumbers: Map<string, number[]>[] = [];
   let inJobs = false;
   let inStrategy = false;
   for (const raw of text.split('\n')) {
@@ -612,7 +630,15 @@ export function workflowJobs(text: string): WorkflowJob[] {
     if (raw !== '' && !/^\s/.test(raw) && !raw.startsWith('#')) break;
     const job = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
     if (job) {
-      out.push({ id: job[1] as string, uses: null, name: job[1] as string, hasMatrix: false });
+      out.push({
+        id: job[1] as string,
+        uses: null,
+        name: job[1] as string,
+        hasMatrix: false,
+        timeoutRaw: null,
+        timeoutMinutes: null,
+      });
+      strategyNumbers.push(new Map());
       inStrategy = false;
       continue;
     }
@@ -622,10 +648,34 @@ export function workflowJobs(text: string): WorkflowJob[] {
     if (uses) last.uses = uses[1] as string;
     const name = /^ {4}name:\s*(.+?)\s*$/.exec(raw);
     if (name) last.name = (name[1] as string).replace(/^(['"])(.*)\1$/, '$2');
+    const timeout = /^ {4}timeout-minutes:\s*(.*?)\s*(?:#.*)?$/.exec(raw);
+    if (timeout) last.timeoutRaw = (timeout[1] as string).replace(/^(['"])(.*)\1$/, '$2');
     if (/^ {4}\S/.test(raw)) inStrategy = /^ {4}strategy:\s*$/.test(raw);
-    else if (inStrategy && /^ {6}matrix:/.test(raw)) last.hasMatrix = true;
+    else if (inStrategy) {
+      if (/^ {6}matrix:/.test(raw)) last.hasMatrix = true;
+      const kv = /^\s+(?:-\s+)?([A-Za-z0-9_-]+):\s*['"]?(\d+(?:\.\d+)?)['"]?\s*(?:#.*)?$/.exec(raw);
+      if (kv) {
+        const nums = strategyNumbers[strategyNumbers.length - 1] as Map<string, number[]>;
+        nums.set(kv[1] as string, [...(nums.get(kv[1] as string) ?? []), Number(kv[2])]);
+      }
+    }
   }
+  out.forEach((j, i) => {
+    j.timeoutMinutes = resolveTimeoutMinutes(j.timeoutRaw, strategyNumbers[i] ?? new Map());
+  });
   return out;
+}
+
+/** `timeoutRaw` to minutes (see `WorkflowJob.timeoutMinutes`). */
+export function resolveTimeoutMinutes(
+  rawValue: string | null,
+  strategyNumbers: ReadonlyMap<string, readonly number[]>
+): number | null {
+  if (rawValue === null) return null;
+  if (/^\d+(?:\.\d+)?$/.test(rawValue)) return Number(rawValue);
+  const m = /^\$\{\{\s*matrix\.([A-Za-z0-9_-]+)\s*\}\}$/.exec(rawValue);
+  const values = m === null ? undefined : strategyNumbers.get(m[1] as string);
+  return values === undefined || values.length === 0 ? null : Math.max(...values);
 }
 
 /**
@@ -667,28 +717,23 @@ export function samplesForJob(
 
 /**
  * Which runner jobs check 2 judges: not a priced lane (its matrix legs are judged per leg in
- * the lane), not a D-W2 headroom job; every other job by each display-name sample it has, and
- * a job with none is UNCHECKED.
+ * the lane); every other job by each display-name sample it has, and a job with none is
+ * UNCHECKED.
  */
 export function checkTwoPartition(
   runnerJobs: readonly string[],
   priced: ReadonlySet<string>,
   samplesFor: (job: string) => JobSample[]
-): { judged: JobSample[]; unchecked: string[]; headroom: string[] } {
+): { judged: JobSample[]; unchecked: string[] } {
   const judged: JobSample[] = [];
   const unchecked: string[] = [];
-  const headroom: string[] = [];
   for (const job of runnerJobs) {
     if (priced.has(job)) continue;
-    if (HEADROOM_GATE_JOBS.includes(job)) {
-      headroom.push(job);
-      continue;
-    }
     const samples = samplesFor(job);
     if (samples.length === 0) unchecked.push(job);
     else judged.push(...samples);
   }
-  return { judged, unchecked, headroom };
+  return { judged, unchecked };
 }
 
 /** The matrix leg index a display name carries: "(3/3)", "(ubuntu-24.04, 2/8)", "(1)". 1 when there is none (an unsharded job is a leg of one). */
@@ -714,19 +759,46 @@ export function pipelineEstimateMinutes(
   return criticalPath + queue;
 }
 
-// --------------------------------------------------------------------------- Check 7: present, wired off until T4.4 ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- Check 7: every runner job's timeout-minutes (T4.4) ---------------------------------------------------------------------------
 
+/** One runner job as check 7 reads it: `file` is the workflow that defines it (a job id two callees share is two entries). */
+export interface TimeoutSite {
+  file: string;
+  job: string;
+  timeoutRaw: string | null;
+  timeoutMinutes: number | null;
+}
+
+/**
+ * Check 7 (T4.1/T4.4): every runner job in `ci.yml` and its callees declares a job-level
+ * `timeout-minutes` of 15 or less, or of its `JOB_BUDGET_CAPS` ruling timeout (K8s Ceph 25,
+ * K8s Multinode 30). `timeout-minutes` is the only per-job kill Actions has, so a job without
+ * one runs to the 360-minute platform default: unset is red, and so is a value no reader can
+ * resolve to a number.
+ */
 export function timeoutFindings(
-  caps: ReadonlyMap<string, Pick<LaneCapabilities, 'timeoutMinutes'>>,
+  sites: readonly TimeoutSite[],
   jobCaps: readonly JobCap[] = JOB_BUDGET_CAPS
 ): string[] {
   const findings: string[] = [];
-  for (const [job, cap] of caps) {
-    const ceiling = jobCaps.find((c) => c.job === job)?.timeoutMinutes ?? CHECK7_TIMEOUT_MAX_MIN;
-    if (cap.timeoutMinutes === null || cap.timeoutMinutes > ceiling) {
+  for (const s of sites) {
+    const cap = jobCaps.find((c) => c.job === s.job);
+    const ceiling = cap?.timeoutMinutes ?? CHECK7_TIMEOUT_MAX_MIN;
+    const why = cap === undefined ? '' : ` (${cap.ruling})`;
+    if (s.timeoutRaw === null) {
       findings.push(
-        `${job}: timeout-minutes is ${cap.timeoutMinutes ?? 'unset'}, over the ` +
-          `${ceiling}m ceiling T4.4 will enforce.`
+        `check 7: ${s.file} job ${s.job} declares no timeout-minutes, so nothing kills it before ` +
+          `the 360m platform default; set one of ${ceiling} or less${why}.`
+      );
+    } else if (s.timeoutMinutes === null) {
+      findings.push(
+        `check 7: ${s.file} job ${s.job} has timeout-minutes "${s.timeoutRaw}", which resolves to no ` +
+          `number; write a literal of ${ceiling} or less, or a matrix key every leg sets${why}.`
+      );
+    } else if (s.timeoutMinutes > ceiling) {
+      findings.push(
+        `check 7: ${s.file} job ${s.job} has timeout-minutes ${s.timeoutMinutes}, over the ` +
+          `${ceiling}m ceiling${why}.`
       );
     }
   }
@@ -1883,6 +1955,8 @@ async function main(): Promise<number> {
   // Walked PER CALL SITE, not per file: ci-build-docker.yml is called three times under three caller names, and each call reports under its own display name.
   const runnerJobSet = new Set<string>();
   const sites: { id: string; pattern: RegExp }[] = [];
+  // Check 7 reads each runner job once per DEFINING file, not per call site: ci-build-docker.yml's three callers share one timeout-minutes line.
+  const timeoutSites = new Map<string, TimeoutSite>();
   const walk = (
     file: string,
     text: string,
@@ -1893,6 +1967,12 @@ async function main(): Promise<number> {
       if (j.uses === null) {
         runnerJobSet.add(j.id);
         sites.push({ id: j.id, pattern: displayNamePattern(chain, j.name, j.hasMatrix) });
+        timeoutSites.set(`${file}\0${j.id}`, {
+          file,
+          job: j.id,
+          timeoutRaw: j.timeoutRaw,
+          timeoutMinutes: j.timeoutMinutes,
+        });
         continue;
       }
       if (stack.includes(j.uses)) continue;
@@ -2168,11 +2248,7 @@ async function main(): Promise<number> {
   }
 
   // Check 2 over every runner job that is not a priced lane, by the display names budget_report measured it under. A priced lane's matrix legs were judged above, per leg, and are skipped here.
-  const {
-    judged: judgedSamples,
-    unchecked,
-    headroom,
-  } = checkTwoPartition(runnerJobs, priced, samplesFor);
+  const { judged: judgedSamples, unchecked } = checkTwoPartition(runnerJobs, priced, samplesFor);
   const judgedJobs = new Set(judgedSamples.map((x) => x.job));
   findings.push(...judgeJobSamples(judgedSamples));
   if (unchecked.length > 0) {
@@ -2207,7 +2283,8 @@ async function main(): Promise<number> {
     }
   }
 
-  if (CHECK7_ENABLED) findings.push(...timeoutFindings(caps));
+  const timeoutList = [...timeoutSites.values()];
+  if (CHECK7_ENABLED) findings.push(...timeoutFindings(timeoutList));
 
   // The model against reality: each variant leg's prediction beside the p90 measured under the same variant, leg and leg count. Advisory; `--table` prints every row.
   const compared = predictions.map((p) => {
@@ -2252,10 +2329,10 @@ async function main(): Promise<number> {
     `${priced.size} lane(s), ${legCount} leg(s), ${unitCount} unit(s) ` +
     `(${measuredCount} measured, ${defaultedCount} by defaultUnitMs), ` +
     `parallel: ${parallelLanes.join(', ') || 'none'}, ` +
-    `${judgedJobs.size}/${runnerJobs.length - priced.size - headroom.length} other job(s) judged ` +
+    `${judgedJobs.size}/${runnerJobs.length - priced.size} other job(s) judged ` +
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
-    `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s); ` +
-    `left to check_job_timeout_headroom.py (D-W2): ${headroom.join(', ') || 'none'}; ` +
+    `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s), ` +
+    `${timeoutList.length} job timeout-minutes read (check 7); ` +
     `inert: ${inert.join(', ') || 'none'}; ${driftNote}; ` +
     `rebalance: ${rebalanceNotes.length} lane(s) over the ${REBALANCE_ADVISORY_MIN}m advisory`;
   for (const note of rebalanceNotes) console.log(`advisory: ${note}`);
@@ -2271,6 +2348,16 @@ async function main(): Promise<number> {
 }
 
 // --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
+
+/** A check-7 fixture site in `wf.yml`, its minutes resolved the way `workflowJobs` resolves a literal. */
+function t7(job: string, timeoutRaw: string | null): TimeoutSite {
+  return {
+    file: 'wf.yml',
+    job,
+    timeoutRaw,
+    timeoutMinutes: resolveTimeoutMinutes(timeoutRaw, new Map()),
+  };
+}
 
 /** A one-variant fixture lane, `fx`, with no fixed cost: a and b cost 10 minutes, c and d 1, e and f 2, unless `minutes` says otherwise. */
 function rbModel(
@@ -2453,7 +2540,7 @@ async function selftest(): Promise<number> {
       name: 'CONTROL: every unit exemption and job cap names its ruling',
       ok:
         LANE_BUDGET_EXEMPTIONS.every((e) => /D-W3/.test(e.ruling)) &&
-        JOB_BUDGET_CAPS.every((c) => /2026-09-28/.test(c.ruling)),
+        JOB_BUDGET_CAPS.every((c) => /2026-09-28|#[0-9a-f]{8}/.test(c.ruling)),
     },
     // --- check 2: job-level p90 and the 2026-09-28 exemption caps ----------------
     {
@@ -2489,9 +2576,30 @@ async function selftest(): Promise<number> {
         return (
           JSON.stringify(jobs) ===
           JSON.stringify([
-            { id: 'a', uses: '.github/workflows/x.yml', name: 'Tests + Infra', hasMatrix: false },
-            { id: 'b', uses: null, name: 'b', hasMatrix: true },
-            { id: 'c', uses: null, name: 'C', hasMatrix: false },
+            {
+              id: 'a',
+              uses: '.github/workflows/x.yml',
+              name: 'Tests + Infra',
+              hasMatrix: false,
+              timeoutRaw: null,
+              timeoutMinutes: null,
+            },
+            {
+              id: 'b',
+              uses: null,
+              name: 'b',
+              hasMatrix: true,
+              timeoutRaw: null,
+              timeoutMinutes: null,
+            },
+            {
+              id: 'c',
+              uses: null,
+              name: 'C',
+              hasMatrix: false,
+              timeoutRaw: null,
+              timeoutMinutes: null,
+            },
           ])
         );
       })(),
@@ -2686,37 +2794,97 @@ async function selftest(): Promise<number> {
       name: 'CONTROL: an empty pipeline is zero, not NaN or a crash',
       ok: pipelineEstimateMinutes([], 20) === 0,
     },
-    // --- check 7: present, selftested, and NOT wired into main() yet -------------
+    // --- check 7: every runner job's timeout-minutes, read from the workflow text ---
     {
       name: 'FIRES (the function itself): a job over the 15-minute ceiling',
-      ok: timeoutFindings(new Map([['job-a', { timeoutMinutes: 90 }]])).some((f) =>
-        f.includes('over the 15m')
-      ),
+      ok: timeoutFindings([t7('job-a', '90')]).some((f) => f.includes('over the 15m')),
     },
     {
       name: 'FIRES (the function itself): a job with no timeout-minutes at all',
-      ok: timeoutFindings(new Map([['job-a', { timeoutMinutes: null }]])).some((f) =>
-        f.includes('unset')
+      ok: timeoutFindings([t7('job-a', null)]).some((f) =>
+        f.includes('declares no timeout-minutes')
       ),
     },
     {
       name: 'MATCH: a job at exactly 15 minutes is fine',
-      ok: timeoutFindings(new Map([['job-a', { timeoutMinutes: 15 }]])).length === 0,
+      ok: timeoutFindings([t7('job-a', '15')]).length === 0,
     },
     {
-      name: 'check 7 reads a capped job against its ruling timeout (K8s Multinode 30), not 15',
+      name: 'check 7 reads a capped job against its ruling timeout (K8s Ceph 25, K8s Multinode 30), not 15',
       ok:
-        timeoutFindings(new Map([['test-e2e-k8s-multinode', { timeoutMinutes: 30 }]])).length ===
-          0 &&
-        timeoutFindings(new Map([['test-e2e-k8s-multinode', { timeoutMinutes: 31 }]])).length === 1,
+        timeoutFindings([t7('test-e2e-k8s-multinode', '30'), t7('test-e2e-k8s-ceph', '25')])
+          .length === 0 &&
+        timeoutFindings([t7('test-e2e-k8s-multinode', '31')]).some((f) =>
+          f.includes('over the 30m ceiling')
+        ) &&
+        timeoutFindings([t7('test-e2e-k8s-ceph', '26')]).some((f) =>
+          f.includes('over the 25m ceiling')
+        ),
+    },
+    {
+      name: 'E2E Ceph Workers non-apt (#fc4f34f8): p90 16.1 is red naming the ruling, 16.0 is not; timeout 20 accepted, 21 red',
+      ok:
+        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 16.1 }).some(
+          (f) => f.includes('exemption cap of 16m') && f.includes('#fc4f34f8')
+        ) &&
+        jobBudgetFindings({ 'test-e2e-ceph-workers-rpm': 16.0 }).length === 0 &&
+        timeoutFindings([t7('test-e2e-ceph-workers-rpm', '20')]).length === 0 &&
+        timeoutFindings([t7('test-e2e-ceph-workers-rpm', '21')]).some(
+          (f) => f.includes('over the 20m ceiling') && f.includes('#fc4f34f8')
+        ),
+    },
+    {
+      name: 'FIRES (from workflow text): a job with no timeout-minutes and a job at 16 are red; a job at 15 and a step-level 90 are not',
+      ok: (() => {
+        const wf =
+          'on: push\njobs:\n' +
+          '  bare:\n    runs-on: ubuntu-latest\n    steps:\n      - run: x\n        timeout-minutes: 5\n' +
+          '  over:\n    runs-on: ubuntu-latest\n    timeout-minutes: 16\n' +
+          '  ok:\n    runs-on: ubuntu-latest\n    timeout-minutes: 15 # the T4.1 ceiling\n    steps:\n      - run: y\n        timeout-minutes: 90\n';
+        const f = timeoutFindings(
+          workflowJobs(wf).map((j) => ({
+            file: 'wf.yml',
+            job: j.id,
+            timeoutRaw: j.timeoutRaw,
+            timeoutMinutes: j.timeoutMinutes,
+          }))
+        );
+        return (
+          f.length === 2 &&
+          f.some((x) => x.includes('job bare declares no timeout-minutes')) &&
+          f.some((x) => x.includes('job over has timeout-minutes 16'))
+        );
+      })(),
+    },
+    {
+      name: 'a ${{ matrix.timeout }} timeout resolves to the LARGEST leg (ci-build-cli shape), and one naming no matrix key is red',
+      ok: (() => {
+        const wf =
+          'on: push\njobs:\n  cli:\n    runs-on: x\n    timeout-minutes: ${{ matrix.timeout }}\n    strategy:\n      matrix:\n        include:\n          - os: a\n            timeout: 15\n          - os: b\n            timeout: 20\n' +
+          '  odd:\n    runs-on: x\n    timeout-minutes: ${{ inputs.t }}\n';
+        const jobs = workflowJobs(wf);
+        const f = timeoutFindings(
+          jobs.map((j) => ({
+            file: 'wf.yml',
+            job: j.id,
+            timeoutRaw: j.timeoutRaw,
+            timeoutMinutes: j.timeoutMinutes,
+          }))
+        );
+        return (
+          jobs[0]?.timeoutMinutes === 20 &&
+          f.some((x) => x.includes('job cli has timeout-minutes 20')) &&
+          f.some((x) => x.includes('job odd') && x.includes('resolves to no number'))
+        );
+      })(),
     },
     {
       name: 'CHECK 6 IS ADVISORY: the flag stays false (D-W1 text)',
       ok: PIPELINE_ENFORCED === false,
     },
     {
-      name: 'CHECK 7 IS OFF: the exported flag T4.4 will flip is false today',
-      ok: CHECK7_ENABLED === false,
+      name: 'CHECK 7 IS ON (T4.4): the flag is true',
+      ok: CHECK7_ENABLED === true,
     },
     // --- legCostMs itself ----------------------------------------------------------
     {
