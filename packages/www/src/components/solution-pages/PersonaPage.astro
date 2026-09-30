@@ -20,7 +20,6 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../StructuredData.astro';
 import SPHero from './SPHero.astro';
 import SPSolutionVideo from './SPSolutionVideo.astro';
-import SPStatsBar from './SPStatsBar.astro';
 import SPProblem from './SPProblem.astro';
 import SPCostCalculator from './SPCostCalculator';
 import { resolveDisclosureThumb } from '../../utils/disclosure-thumb';
@@ -124,10 +123,6 @@ const breadcrumbItems = [
         problem={(content as any).problem} slug={config.illustrationSlug} />
     )}
 
-    {has('stats') && (
-      <SPStatsBar stats={(content as any).stats} />
-    )}
-
     {has('costCalculator') && config.calculatorPreset && (
       <SPCostCalculator
         client:visible
@@ -169,10 +164,17 @@ const breadcrumbItems = [
     {/* B3: last content section, above the black zone. See SolutionPage.astro. */}
     <SPSources items={(content as any).references?.items} title={sourcesTitle} />
 
+    {/* geometry={false}: the scatter is the one thing on these pages that did not
+        survive being read at page scale. Measured at 1440 on /en/for-ctos it was a
+        443px band of 10.5px labels and ~1.5:1 edges that scans as a gap between two
+        sections. The same links as the grouped list -- what every viewport under
+        1200px already gets -- read as content. Node set unfiltered, so this is a
+        presentation choice, not the lesser variant L9 rules out. */}
     {has('relatedSolutions') && config.relatedSolutions && (
       <SolutionConstellation
         lang={lang}
         preset="compact"
+        geometry={false}
         slugs={config.relatedSolutions}
         heading={(content as any).relatedSolutions?.title}
       />

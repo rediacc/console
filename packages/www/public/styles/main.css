@@ -130,8 +130,8 @@
        page    --color-bg / --color-bg-light   #f7f7f8  the default sheet
        raised  --color-bg-alt / --color-surface #ffffff most cards, alternated
                                                         light sections
-       accent  --color-brand-tint               #eef3ea the sp-stats band and
-                                                        the two emphasis bands
+       accent  --color-brand-tint               #eef3ea the why-now cards band
+                                                        and the two emphasis bands
        band    --color-bg-dark                  #111113 the TERMINATOR dark:
                                                         the footer,
                                                         section-dark,
@@ -217,18 +217,28 @@
   --color-border-on-dark: rgba(255, 255, 255, 0.1);
 
   /* ---- 6. Status ---- */
-  --color-success: #28a745;
-  --color-success-light: rgba(40, 167, 69, var(--opacity-10));
+  /* #28a745 was 2.93:1 as TEXT on --color-bg (#f7f7f8) and 3.13:1 on white --
+     it failed AA everywhere it was used as a colour rather than a fill, which
+     is every one of its six call sites. #1f7a34 is 5.04:1 and 5.40:1. */
+  --color-success: #1f7a34;
+  --color-success-light: rgba(31, 122, 52, var(--opacity-10));
   --color-error: #c41e3a;
+  /* The CLONE accent on the two-card clone visual (SPHowItWorks). It is information,
+     not decoration: green card = the original, blue card = the copy, and the pair is the
+     whole point of the figure. It was two raw hexes in solution-pages.css with NO dark
+     variant, so the one value had to serve both themes and was tuned for the dark one --
+     measured on /en/for-devops in light mode, the title read 2.18:1 and the status pill
+     2.88:1, both failing AA at 14px/700 and 12px/600 (neither is large text). These are
+     the light values; the dark block restores the brighter blue that already worked
+     there. -ink is darker than -text because it sits on the 12% blue pill, not the band. */
+  --color-accent-clone-text: #2f6f96; /* 5.11:1 on --color-bg-alt #f7f7f8 */
+  --color-accent-clone-ink: #2a6285; /* 5.66:1 on the 12% clone tint over #f7f7f8 */
   --color-error-light: rgba(196, 30, 58, var(--opacity-10));
   /* Solid borders for the status colours. The scale had base + a 10% wash and nothing
      between, so every surface needing a visible status border hand-mixed its own; the
      solution pages alone had four (#e0d0d0, #e0b8b8, #c5e0be, #cdd8c8). */
   --color-error-border: #e8b4bc;
   --color-success-border: #b9dfc2;
-  --color-warning-bg: #fff3cd;
-  --color-warning-border: #ffc107;
-  --color-warning-text: #856404;
   --color-info-bg: #d1ecf1;
   --color-info-border: #bee5eb;
   --color-info-text: #0f5c8a;
@@ -244,9 +254,6 @@
      paint from these; they flip with the theme, which the 573 file-based
      SVGs cannot do. `--icon-stroke-width` is the one icon thickness. ---- */
   --icon-stroke-width: 1.5;
-  --illustration-ink: var(--gray-900);
-  --illustration-ink-soft: var(--gray-600);
-  --illustration-surface: var(--gray-0);
   --illustration-accent: var(--color-brand-primary);
 
   /* ---- 9. Typography ---- */
@@ -283,16 +290,23 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
+  /* FOUR leadings, down from six. `snug` (1.375) and `loose` (1.75) each sat
+     0.125 from a neighbour -- a difference nothing on the page was choosing
+     deliberately -- and folded into `normal` and `relaxed`. `none` survives
+     because 1.0 is a different KIND of value: single-line badges, the 404
+     numeral and icon boxes, where any leading at all adds a phantom half-line. */
   --leading-none: 1;
   --leading-tight: 1.25;
-  --leading-snug: 1.375;
   --leading-normal: 1.5;
   --leading-relaxed: 1.625;
-  --leading-loose: 1.75;
 
-  --tracking-wide: 0.025em;
-  --tracking-wider: 0.05em;
-  --tracking-widest: 0.1em;
+  /* TWO tracking values, not twelve. The site had 0.01/0.02/0.04/0.05/0.06/
+     0.08/0.1/0.12em positive and -0.01/-0.02/-0.03em negative, hand-written at
+     44 sites, which is variety nobody chose: they read as one tight and one
+     wide. Negative is display tightening on large headings; positive is the
+     label/uppercase widening. */
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.08em;
 
   /* ---- 10. Spacing ---- */
   --space-1: 0.25rem;
@@ -366,7 +380,6 @@
   --focus-ring: 0 0 0 3px rgba(74, 124, 63, var(--opacity-15));
   --focus-ring-error: 0 0 0 3px rgba(196, 30, 58, var(--opacity-15));
   --focus-ring-success: 0 0 0 3px var(--color-success-light);
-  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, var(--opacity-20));
   --shadow-md: var(--shadow);
   --shadow-lg: var(--shadow);
   --shadow-xl: var(--shadow);
@@ -470,7 +483,6 @@
   /* ---- 17. Gradients ---- */
   --gradient-dark: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-darker) 100%);
   --gradient-dark-alt: linear-gradient(135deg, var(--color-bg-darker) 0%, var(--gray-950) 100%);
-  --gradient-dark-green: linear-gradient(135deg, var(--color-bg-darker) 0%, var(--gray-950) 100%);
 
   /* ---- 18. Solution-page namespace. Was a parallel palette declared on
      .sp-page (solution-pages.css:8-39) with three separate dark copies.
@@ -479,7 +491,6 @@
   --sp-brand-secondary: var(--color-brand-secondary);
   --sp-brand-dark: var(--color-brand-dark);
   --sp-brand-light: var(--color-brand-tint);
-  --sp-brand-glow: var(--color-brand-glow);
   /* --sp-bg-hero no longer paints a hero. Operator decision A7 moved the
      solution-page opener, the benefits band and the closing CTA onto
      --color-bg-band / --color-bg-band-accent in section 3b, and the surfaces
@@ -506,7 +517,6 @@
   --sp-page-max: var(--max-width);
   --sp-content-max: 720px;
   --sp-hero-max: 800px;
-  --sp-stats-max: 1000px;
   --sp-cards-max: 1100px;
 
   /* ---- 19. Sidebar namespace. Was a sixth `:root`, in
@@ -611,29 +621,28 @@
   --color-brand-tint: #1a2118;
   --color-brand-glow: rgba(127, 160, 63, 0.25);
   --color-error: #f87171; /* was #c41e3a at 2.98:1, now 6.29:1 */
+  /* The clone accent was ALREADY correct for dark -- 7.89:1 and 5.97:1 measured on
+     #141416 -- because the single hardcoded value was tuned here and simply left to
+     fend for itself in light mode. These restore exactly what dark rendered before. */
+  --color-accent-clone-text: #7ab0d6;
+  --color-accent-clone-ink: #5a9abf;
   --color-link-blue: #60a5fa; /* was #0066cc at 3.12:1, now 6.84:1 */
   --color-info-text: #7ec4f0; /* was #0f5c8a at 2.42:1, now 9.14:1 */
-  --color-warning-text: #ffc107; /* 10.67:1 */
 
   /* Status washes */
   --color-info-bg: rgba(96, 165, 250, 0.1);
   --color-info-border: rgba(96, 165, 250, 0.2);
-  --color-warning-bg: rgba(255, 193, 7, 0.1);
-  --color-warning-border: rgba(255, 193, 7, 0.2);
   --color-error-light: rgba(248, 113, 113, 0.1);
   --color-error-border: rgba(248, 113, 113, 0.35);
   --color-success-border: rgba(40, 167, 69, 0.35);
   /* --color-success had no dark value at all, so every dark rule that needed a legible
-     green mixed one (the solution pages used #86c87a). #28a745 on the dark surface is
-     3.4:1; this is 8.1:1. */
+     green mixed one (the solution pages used #86c87a). The light token is far too
+     dark to reuse here; this is 9.63:1 on --color-bg. */
   --color-success: #86c87a;
-  --color-success-light: rgba(40, 167, 69, 0.15);
+  --color-success-light: rgba(134, 200, 122, 0.15);
 
   /* Illustration ink flips with the theme; the 573 file-based SVGs cannot,
      which is w8's problem, not this layer's. */
-  --illustration-ink: #e4e4e7;
-  --illustration-ink-soft: #a1a1aa;
-  --illustration-surface: #1a1a1b;
 
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 
@@ -641,7 +650,6 @@
      var()-based, so it resolves through this block's surface tokens on its
      own, and with one band surface it computes flat #111113 in both themes. */
   --gradient-dark-alt: linear-gradient(135deg, #111113 0%, #0f0f11 100%);
-  --gradient-dark-green: linear-gradient(135deg, #111113 0%, #131613 100%);
 
   /* Every --sp-* alias follows from the semantic tokens above, which is what
      retired the three duplicate --sp-* dark blocks in solution-pages.css and
@@ -1598,7 +1606,7 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
   margin-bottom: var(--space-2);
 }
 
@@ -2157,7 +2165,7 @@ body[data-nav-collapsed='true'] .nav-breadcrumb {
   color: var(--color-brand-primary);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--tracking-widest);
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 

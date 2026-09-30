@@ -226,7 +226,7 @@
         "windows": "Windows"
       }
     },
-    "subtitle": "Rediacc kendi sunucularında çalışan yazılım. Canlı sisteminizin tamamını saniyeler içinde klonluyor: uygulamalar, veritabanları, ayarlar.",
+    "subtitle": "Rediacc <span class=\"sp-emphasis\">kendi sunucularında</span> çalışan yazılım. Canlı sisteminizin tamamını <span class=\"sp-emphasis\">saniyeler içinde</span> klonluyor: uygulamalar, veritabanları, ayarlar.",
     "title": "Canlı Ortamı Klonla.",
     "titleHighlight": " Hiçbir Şey Bozma."
   },
@@ -319,32 +319,6 @@
     "title": "Haberler",
     "unsubscribed": "Aboneliğiniz iptal edildi. Gittiğinizi görmek üzücü.",
     "errorRequiredEmail": "Lütfen e-posta adresinizi girin."
-  },
-  "notASlice": {
-    "overline": "Bir araç. Her şey.",
-    "slices": [
-      {
-        "description": "Verinizi kopyalarlar. Uygulamanız veriden çok daha fazlasıdır.",
-        "title": "Veritabanı araçları"
-      },
-      {
-        "description": "Kodunuzu kopyalarlar. Kod tek başına test değildir.",
-        "title": "Dev-box araçları"
-      },
-      {
-        "description": "Her şeyi saklarlar. Kurtarma saatler sürer, dakika değil.",
-        "title": "Backup araçları"
-      },
-      {
-        "description": "Manifest'lerinizi kopyalarlar. Cluster, YAML'dan çok daha fazlasıdır.",
-        "title": "Kubernetes araçları"
-      }
-    ],
-    "title": "Çoğu araç bir parçasını kopyalar. Biz tamamını.",
-    "winner": {
-      "description": "Her takım kendi yazılabilir kopyasını alır. Veri, uygulamalar, ayarlar, hepsi. 60 saniyede hazır. Buna Kubernetes cluster'larının tamamı da dahildir. Sadece değişikliklerin depolama ücretini ödersiniz.",
-      "label": "Rediacc"
-    }
   },
   "pages": {
     "blog": {
@@ -1086,22 +1060,21 @@
         "benefits": {
           "items": [
             {
-              "description": "AGENTS.md'yi projeye ekleyin. AI asistanı tüm komutları, bayrakları ve iş akışlarını anında biliyor.",
+              "description": "Ajan, proje kökündeki tek bir dosyayı okur ve tüm komut setini öğrenir. Kurulacak bir SDK, elle yazılacak bir şema ya da yönetilecek kimlik bilgisi yoktur.",
               "icon": "zap",
-              "title": "Sıfır entegrasyon çabası"
+              "title": "Entegre edilecek hiçbir şey yok"
             },
             {
-              "description": "JSON yanıtları ortalama ~200 token. --fields bayrağı ajanların sadece ihtiyaç duydukları veriyi talep etmesini sağlar. Hiç bağlam israfı yok.",
+              "description": "Yanıtlar yapılandırılmış döner; bu yüzden ajan her seferinde aynı şekilde ayrıştırır ve bağlamını bir gösterge panelini kazımak yerine göreve harcar.",
               "icon": "terminal",
-              "title": "Bağlam penceresi dostu"
+              "title": "Yanıtlar küçük kalır"
             },
             {
-              "description": "--dry-run yıkıcı işlemleri önizler. --yes otomasyonu etkinleştirir. Ajanlar yerleşik koruma mekanizmalarıyla güvenle dağıtım yapabilir. Bir cluster'ın tamamını fork'lamak bile aynı kurallara tabidir.",
+              "description": "Bir şeyi kaldıran her işlem, uygulamadan önce önizleme gösterir ve otomasyonun buna açıkça izin vermesi gerekir. Ajan hızlı hareket edebilir, tek bir kötü çalıştırma geri dönüşü imkânsız hale getirmez.",
               "icon": "shield",
-              "title": "Varsayılan olarak güvenli"
+              "title": "Yıkıcı işlemler önce sorar"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Otonom altyapı yönetimi için tasarlandı"
         },
         "bottomCta": {
@@ -1111,8 +1084,8 @@
           "title": "AI ajan altyapıyı yönetsin"
         },
         "hero": {
-          "ctaLabel": "Bir Ajana Sunucu Verin",
-          "subtitle": "CLI-first. SSH tabanlı. Varsayılan olarak JSON. Her rdc komutu otonom ajanlar için tasarlandı — GUI yok, tarayıcı otomasyonu yok, entegrasyon gerekmiyor.",
+          "ctaLabel": "Ücretsiz Başlayın",
+          "subtitle": "CLI-first. SSH tabanlı. Varsayılan olarak JSON. Her rdc komutu <span class=\"sp-emphasis\">otonom ajanlar için tasarlandı</span> — GUI yok, tarayıcı otomasyonu yok, entegrasyon gerekmiyor.",
           "title": "AI ajanın zaten bildiği altyapı"
         },
         "howItWorks": {
@@ -1170,7 +1143,6 @@
               "title": "AI Agent"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Proje köküne AGENTS.md şablonunu koyun. AI asistanı başlangıçta bunu okuyor ve her rdc komutunu biliyor.",
@@ -1197,7 +1169,6 @@
         },
         "problem": {
           "description": "Kodlama asistanınız kodu yazabilir, test edebilir, hata ayıklayabilir. Ama dağıtım, durum kontrolü, altyapı yönetimi gerektiğinde duvarla karşılaşır: GUI-only paneller, OAuth tarayıcı akışları, tutarsız API'ler, bağlamı tıkayan cevaplar.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "73%",
@@ -1247,26 +1218,8 @@
         "relatedSolutions": {
           "title": "İlgili Çözümler"
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "CLI-Native İşlemler",
-            "number": "100%"
-          },
-          {
-            "icon": "zap",
-            "label": "Ort. Token/Yanıt",
-            "number": "~200"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "Tarayıcı Otomasyon İhtiyacı",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc'taki her tasarım kararı makine-uyumlu arayüzleri ön planda tutar. TTY olmayan ortamlarda otomatik olarak JSON'a geçilir. Tutarlı yanıt formatı ajanların her yanıtı aynı şekilde ayrıştırmasını sağlar. SSH tabanlı kimlik doğrulaması OAuth akışlarına veya token yönetimine gerek bırakmaz.",
-          "overline": "AJAN UYUMLU TASARIM",
+          "description": "Rediacc'taki her tasarım kararı <span class=\"sp-emphasis\">makine-uyumlu arayüzleri</span> ön planda tutar. TTY olmayan ortamlarda otomatik olarak JSON'a geçilir. Tutarlı yanıt formatı ajanların her yanıtı aynı şekilde ayrıştırmasını sağlar. SSH tabanlı kimlik doğrulaması OAuth akışlarına veya token yönetimine gerek bırakmaz.",
           "rediaccLabel": "Rediacc (rdc CLI)",
           "rows": [
             {
@@ -1298,22 +1251,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Sunucu başına tek sabit fiyat. Personel sayısına göre ücret yok, sürpriz fatura yok, çıkış ücreti yok. Büyüdükçe bütçeniz öngörülebilir kalır.",
+              "description": "Fiyat makinelere göre belirlenir; bu yüzden gelecek yılki faturanız, bu yılkine eklediğiniz donanımın maliyetinden ibarettir. Şirket büyüdü diye hiçbir şeyin fiyatı kendiliğinden artmaz.",
               "icon": "tag",
-              "title": "Öngörülebilir maliyetler"
+              "title": "Önceden kestirebileceğiniz bir fatura"
             },
             {
-              "description": "Verileriniz açık formatlarda kendi donanımda kalır. Hiçbir satıcı verilerinizi tutamaz veya erişim için ücret talep edemez.",
+              "description": "Veriler, herhangi bir Linux makinesinin okuyabileceği formatlarda, sahip olduğunuz donanımda durur. Hiçbir tedarikçi, kendi kayıtlarınıza erişim konusunda sizinle pazarlık edecek konumda olamaz.",
               "icon": "lock",
-              "title": "Verileriniz Sizin, Tam Kontrol"
+              "title": "Verilerinizi elinde tutan başka kimse yok"
             },
             {
-              "description": "5 dakikada tam kurtarma. Fidye yazılımı değiştiremez: yedekler kilitli ve değişmezdir. İşletmeniz hiç durmaz. Bir sağlayıcı sizi bırakırsa, Kubernetes'le birlikte tüm sistem taşınabilir.",
+              "description": "Yedekler dosya sistemi düzeyinde tek seferlik yazılır; bu yüzden fidye yazılımının üzerine yazabileceği hiçbir şey yoktur. Sistemleri geri getirmek, müşterilerin beklediği bir geri yükleme penceresi değil, bir anahtar çevirme işlemidir.",
               "icon": "shield",
-              "title": "İş sürekliliği"
+              "title": "İşletme durmadan çalışmaya devam eder"
             }
           ],
-          "overline": "İŞ DEĞERİ",
           "title": "Pakette neler var?"
         },
         "bottomCta": {
@@ -1326,7 +1278,6 @@
           "description": "Kaydırıcıları işletmenize göre ayarlayın. Bulut maliyeti ile kendi altyapınızın maliyeti arasındaki gerçek farkı hemen görün.",
           "footnote": "Sayılar yaygın maliyet modellerine dayanan tahminler. Gerçek tasarruf altyapınıza ve ölçeğinize bağlıdır.",
           "headerTitle": "Tasarrufu hesapla",
-          "overline": "RAKAMLAR",
           "results": {
             "blockedTime": "Yıllık altyapı maliyeti",
             "contextSwitching": "Kurtarma süresi",
@@ -1339,7 +1290,7 @@
             "wait": "Yıllık kesinti saatleri"
           },
           "title": "Ne kadar tasarruf edeceğiniz?",
-          "withAnnual": "Hesapla →",
+          "withAnnual": "Hesapla",
           "withoutTag": "Mevcut bulut maliyetleri",
           "withResults": {
             "blockedTime": "60% daha az",
@@ -1350,8 +1301,8 @@
           "withTag": "Rediacc ile"
         },
         "hero": {
-          "ctaLabel": "Tek Sabit Fiyatla Başlayın",
-          "subtitle": "İşletme verilerinizi kendi donanımda koruyun. Sunucu başına tek fiyat — personel sayısına göre ücret yok, sürpriz fatura yok, satıcıya bağımlılık yok.",
+          "ctaLabel": "Ücretsiz Başlayın",
+          "subtitle": "İşletme verilerinizi kendi donanımda koruyun. <span class=\"sp-emphasis\">Sunucu başına tek fiyat</span> — personel sayısına göre ücret yok, sürpriz fatura yok, satıcıya bağımlılık yok.",
           "title": "Sunucu başına tek sabit fiyat. Verileriniz sizde."
         },
         "meta": {
@@ -1361,7 +1312,6 @@
         },
         "problem": {
           "description": "Küçük bir bulut faturasıyla başlamıştı. Şimdi üçüncü en büyük maliyetiniz — yıllık %20 artıyor. Her işe alma kişi sayısı arttıkça masraflar katlanıyor. Verileriniz başkasının veri merkezinde, onların formatında duruyor. Çıkmak istediğinizde çıkış ücreti ödemeniz gerekiyor.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "20%",
@@ -1408,14 +1358,10 @@
           },
           "title": "Bulut faturaları patlamaya devam ediyor. Verileriniz başka birinin elinde."
         },
-        "relatedSolutions": {
-          "title": "Nasıl çalışır"
-        },
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
-          "ctaText": "CTO İncelemesini Paylaş",
+          "ctaText": "CTO Derinlemesini Aç",
           "description": "Teknik ekipiniz nasıl uyacağını kontrol etmek isteyecek. CTO derinlemesini gönderin — sorulacak tüm detaylar var.",
-          "overline": "SONRAKİ ADIM",
           "title": "CTO'nuza Gönder"
         },
         "socialProof": {
@@ -1429,45 +1375,27 @@
             "improvement": "62% maliyet azalması, anında kurtarma"
           },
           "quote": "47 iş yükü için ayda $18,000'i bulut altyapısına harcıyorduk. Kendi sunucularımızda Rediacc'a geçtikten sonra faturamız $6,800. düştü. Kurtarma süresi 4 saatten 3 min'e indi. İlk ay ROI açıktı."
-        },
-        "stats": [
-          {
-            "icon": "tag",
-            "label": "Her şey dahil fiyat",
-            "number": "$204/ay"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Çalışma süresi garantisi",
-            "number": "%99,99"
-          },
-          {
-            "icon": "users",
-            "label": "Kişi başı ücret",
-            "number": "0"
-          }
-        ]
+        }
       },
       "forCtos": {
         "benefits": {
           "items": [
             {
-              "description": "Bulut markup'ı, koltuk başı lisans, çıkış ücretlerini ortadan kaldır. Sahip olduğun donanımda çalış.",
+              "description": "Lisanslama insanlara değil makinelere göre işler. Ekibi ondan kırka çıkarmak bordroyu değiştirir, ama altyapı faturasını olduğu yerde bırakır.",
               "icon": "trend-up",
-              "title": "60% daha düşük TCO"
+              "title": "İşe alımlarla sarsılmayan bir bütçe"
             },
             {
-              "description": "5 dakikada tam felaket kurtarma. btrfs snapshots'ları ile kurtarma basit bir switch — restore işi değil.",
+              "description": "Geri yükleme bir işaretçi değişimi olduğu için test etmek bir hafta sonu değil, birkaç dakika sürer. Kurtarmayı prova edebilen ekipler, yedeklerinin bozuk olduğunu olay anında değil, önceden öğrenir.",
               "icon": "zap",
-              "title": "Dakikalar, Saatler Değil"
+              "title": "Prova edebileceğin bir kurtarma"
             },
             {
-              "description": "Veriler açık formatlarda kendi altyapında kalır. Sağlayıcı değiştir, kendin yönet, ya da yarın taşı. Karar senin. Artık buna Kubernetes cluster'ları da dahil.",
+              "description": "Veriler kendi dosya sisteminde, açık formatlarda durur; bu yüzden ayrılmak bir göç projesi değil, sadece bir kopyalama işlemidir ve bu kararın bir çıkış faturası yoktur.",
               "icon": "lock",
-              "title": "Satıcı Bağımlılığı Yok"
+              "title": "Zaten çalışan bir çıkış yolu"
             }
           ],
-          "overline": "STRATEJİK DEĞER",
           "title": "Rediacc'nin Stack'iniz İçin Anlamı"
         },
         "bottomCta": {
@@ -1480,7 +1408,6 @@
           "description": "Kaydırıcıları kurulumunuza göre ayarla. Rediacc'nin mevcut faturanla nasıl karşılaştığını gör.",
           "footnote": "Hesaplamalar endüstri TCO modellerine dayanmaktadır (kendi barındırmalı altyapı vs. bulut hizmetleri). Tasarruflar iş yükü, yapılandırma ve ölçeğe göre değişir.",
           "headerTitle": "Altyapı tasarrufunu hesapla",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "blockedTime": "Yıllık altyapı maliyeti",
             "contextSwitching": "Kurtarma süresi (MTTR)",
@@ -1493,7 +1420,7 @@
             "wait": "Yıllık toplam kesinti saati"
           },
           "title": "Altyapın sana ne mal oluyor?",
-          "withAnnual": "Hesapla →",
+          "withAnnual": "Hesapla",
           "withoutTag": "Mevcut harcama",
           "withResults": {
             "blockedTime": "60% daha az",
@@ -1536,12 +1463,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "REKABET ORTAMI",
           "title": "Rediacc Nasıl Duruyor"
         },
         "hero": {
-          "ctaLabel": "TCO'yu Azaltmaya Başlayın",
-          "subtitle": "Kendi barındırmalı altyapı koruması. Bulut artırımı yok, koltuk başı fiyatlandırma yok, saatler değil dakikalar içinde kurtarma.",
+          "ctaLabel": "Ücretsiz Başlayın",
+          "subtitle": "Kendi barındırmalı altyapı koruması. Bulut artırımı yok, koltuk başı fiyatlandırma yok, saatler değil <span class=\"sp-emphasis\">dakikalar içinde kurtarma</span>.",
           "title": "Altyapı TCO'nu %60 azalt. Kendi donanımında ölçekle."
         },
         "meta": {
@@ -1551,7 +1477,6 @@
         },
         "problem": {
           "description": "Bulut faturalarınız yıllık %15-20 artar. Koltuk başı lisanslama ekip büyümesini cezalandırıyor. Sorun çıktığında 'anında kurtarma' söylemi saatler sürüyor, çünkü dakikalık RPO vaat eden araç aslında günlük RPO veriyor. Her yenileme döneminde satıcı ekosistemi daha pahalı hale geliyor ve sen kilitlenmiş kalırsın.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "17%",
@@ -1603,9 +1528,8 @@
         },
         "shareWithTeam": {
           "ctaSlug": "for-devops",
-          "ctaText": "DevOps Deep-Dive'ı Paylaş",
+          "ctaText": "DevOps Derinlemesini Aç",
           "description": "Mühendisler CLI-öncelikli akışları ve anında ortamları sever. Onlara teknik detayları göster.",
-          "overline": "EKİBİNLE PAYLAŞ",
           "title": "DevOps Ekibini Harekete Geçir"
         },
         "socialProof": {
@@ -1620,26 +1544,8 @@
           },
           "quote": "47 üretim iş yükünü büyük bir bulut sağlayıcısından kendi donanımımızda Rediacc'a taşıdık. Altyapı maliyetleri ilk çeyrekte 62% düştü. İlk olayımızda kurtarma, önceki aracımızın belirttiği 4 saat yerine 3 min sürdü."
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Buluttan Daha Düşük TCO",
-            "number": "60%"
-          },
-          {
-            "icon": "clock",
-            "label": "Tam Felaket Kurtarma",
-            "number": "<5 dk"
-          },
-          {
-            "icon": "lock",
-            "label": "Satıcı Bağımlılığı Yok",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc kendi donanımında çalışır, anında yedekleme ve kurtarma için btrfs copy-on-write snapshot'larını kullanır. Her snapshot dosya sistemi düzeyinde değiştirilmez. Fidye yazılımı çekirdeğin koruduğunu şifreleyemez. Kurtarma, terabayt geri yüklemek değil, bir işaretçiyi değiştirmek demektir.",
-          "overline": "MİMARİ",
+          "description": "Rediacc kendi donanımında çalışır, anında yedekleme ve kurtarma için btrfs copy-on-write snapshot'larını kullanır. Her snapshot dosya sistemi düzeyinde değiştirilmez. Fidye yazılımı çekirdeğin koruduğunu şifreleyemez. Kurtarma, <span class=\"sp-emphasis\">terabayt geri yüklemek değil, bir işaretçiyi değiştirmek</span> demektir.",
           "rediaccLabel": "Rediacc (kendi barındırma)",
           "rows": [
             {
@@ -1671,22 +1577,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Talepten çalışan ortama bir dakikadan kısa. Tam yığın: işletim sistemi, konteynerler, veritabanları, yapılandırma.",
+              "description": "Ortam almak artık başkasının sprint görevi değil. Ne zaman ihtiyacın olursa o kadar sık, kurup atmak senin elinde.",
               "icon": "zap",
-              "title": "60 saniyelik ortamlar"
+              "title": "Talep yok, sıra yok"
             },
             {
-              "description": "Her şey bir komut. CI/CD, Git hook, ya da kendi otomasyonunla entegre et. GUI gerekmez. Kubernetes dahil: namespace de depo gibi fork'lanır.",
+              "description": "Her işlem bir çıkış kodu döndüren komuttur, bu yüzden wrapper'a, tarayıcıya ya da servis hesabına gerek kalmadan bir pipeline'a, Git hook'una ya da Makefile'a eklenir.",
               "icon": "terminal",
-              "title": "CLI-öncelikli, betiklenebilir"
+              "title": "Diğer her şey gibi betiklenir"
             },
             {
-              "description": "Btrfs snapshot'ları her ortamı saniyeler içinde geri alır. Veri kaybı yok, downtime yok.",
+              "description": "Başarısız bir migration ya da hatalı bir DROP, snapshot'a geri dönülerek geri alınır. Bu da ekiplerin gerçek veri üzerinde denemeler yapmaya ne kadar gönüllü olduğunu değiştirir.",
               "icon": "shield",
-              "title": "Anında geri alma"
+              "title": "Hatalar artık pahalıya mal olmaz"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Her şeyi otomatikleştiren mühendisler için tasarlandı"
         },
         "bottomCta": {
@@ -1696,8 +1601,8 @@
           "title": "Hemen deneyin"
         },
         "hero": {
-          "ctaLabel": "Prod'u Klonlamaya Başlayın",
-          "subtitle": "CLI-first altyapı: 60 saniyede prod klonlama, 5 dakika içinde geri alma, kendi donanımında çalışma. Talep yok, bekleme yok, veri çıkmaz.",
+          "ctaLabel": "Ücretsiz Başlayın",
+          "subtitle": "CLI-first altyapı: <span class=\"sp-emphasis\">60 saniyede</span> prod klonlama, 5 dakika içinde geri alma, kendi donanımında çalışma. Talep yok, bekleme yok, veri çıkmaz.",
           "title": "Bir dakikada klonla. Beş dakikada kurtar. Talep yazmayı bitir."
         },
         "howItWorks": {
@@ -1755,7 +1660,6 @@
               "title": "Üretim"
             }
           },
-          "overline": "NASIL ÇALIŞIYOR",
           "steps": [
             {
               "description": "rdc ceph snapshot create production çalıştır. Btrfs CoW saniyenin altında her şeyin snapshot'ını alır: app, veritabanı, config.",
@@ -1782,7 +1686,6 @@
         },
         "problem": {
           "description": "CI/CD dakikalar, IaC saniyeler. Ama test ortamında gerçek veri? Talep aç, üç gün bekle. Arada staging paylaşılı ve kararsız, prod'dan hiç farklı.",
-          "overline": "SORUN NE?",
           "statCallouts": [
             {
               "number": "69%",
@@ -1844,26 +1747,8 @@
           },
           "quote": "3 günlük ortam sağlama sürecinden bir dakikaya indirdik. Geliştiriciler talep yazmayı bırakıp ürün yayınlamaya başladı. btrfs snapshot'ları harika çalışıyor: 380 GB neredeyse sıfır ek depolamayla 52 saniyede klonlandı."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Klon oluşturma süresi",
-            "number": "60s"
-          },
-          {
-            "icon": "zap",
-            "label": "Tam felaket kurtarma",
-            "number": "<5 min"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "Gerekli ops talebi",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc, dosya sistemi düzeyinde btrfs copy-on-write anlık görüntülerini kullanır. 380 GB'lık bir üretim ortamının anlık görüntüsü milisaniyeler içinde tamamlanır ve başlangıçta sıfır ek depolama tüketir. Klon farklılaştıkça, yalnızca değişen bloklar yeni alan kullanır.",
-          "overline": "PERDENİN ARKASINDA",
+          "description": "Rediacc, dosya sistemi düzeyinde btrfs copy-on-write anlık görüntülerini kullanır. 380 GB'lık bir üretim ortamının anlık görüntüsü <span class=\"sp-emphasis\">milisaniyeler içinde</span> tamamlanır ve başlangıçta sıfır ek depolama tüketir. Klon farklılaştıkça, yalnızca değişen bloklar yeni alan kullanır.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -3042,7 +2927,6 @@
               "title": "Yıllık değil, sürekli"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Üretimi klonlayın. Yapay zekanın saldırmasına izin verin.",
@@ -3057,7 +2941,6 @@
           "description": "Bir güvenlik açığının yamasız kaldığı her gün altyapınızın maruz kaldığı bir gündür. Risk pencerenizi hesaplayın.",
           "footnote": "Model: Geleneksel sızma testi maliyeti ~$15K/test/~10 sunucu. Kör nokta = aktif tarama olmayan yılın yüzdesi. Rediacc maliyeti sürekli otomatik test için $20/sunucu/ay baz alınmıştır.",
           "headerTitle": "Güvenlik maruziyeti hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "blindspot": "Kör nokta",
             "exposure": "Açık başına maruz kalma",
@@ -3084,7 +2967,6 @@
           "title": "Üretim ortamını klonlayın. AI'nın saldırmasına izin verin."
         },
         "howItWorks": {
-          "overline": "NASIL ÇALIŞIR",
           "pipelineVisual": {
             "arrows": [
               {
@@ -3159,7 +3041,6 @@
         },
         "problem": {
           "description": "Canlı sistemlerde sızma testi tehlikelidir. Hizmetleri çökertebilir, verileri bozabilir veya yanlış alarmları tetikleyebilir. Bu yüzden çoğu ekip ya atlar ya da gerçekliği yansıtmayan eski staging ortamlarında test eder. Sonuç: güvenlik açıkları aylarca yamasız kalır — veya bir saldırgan onları ilk bulana kadar.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "194 gün",
@@ -3237,26 +3118,8 @@
           },
           "quote": "Bir üretim klonunda ilk otomatik sızma testimizi çalıştırdık ve 23 güvenlik açığı bulduk — üç manuel denetimden sağ çıkmış 2 kritik SQL enjeksiyon vektörü dahil. Bir sonraki uyumluluk incelememizden önce hepsini yamaladık ve artık yılda bir yerine haftalık sızma testi yapıyoruz."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone for testing",
-            "number": "47s"
-          },
-          {
-            "icon": "shield",
-            "label": "Production risk",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "CVE signatures scanned",
-            "number": "2,847"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel sızma testi oluşturulmasından günler içinde üretim ortamından sapan staging ortamlarını hedef alır. Rediacc, gerçek üretim altyapınızın — aynı veri, aynı yapılandırmalar, aynı güvenlik açıkları — btrfs copy-on-write anlık görüntüsünü oluşturur ve buna karşı otomatik saldırı simülasyonları çalıştırır. Klon test sonrası yok edilir. Üretim ortamına asla dokunulmaz.",
-          "overline": "KAPUTUN ALTINDA",
           "traditionalLabel": "Geleneksel sızma testi",
           "rediaccLabel": "Rediacc (üretim klonuna saldırır)",
           "rows": [
@@ -3307,7 +3170,6 @@
               "title": "Anında raporlar"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Her eylem kayıt altında. Gizli bir şey yok.",
@@ -3322,7 +3184,6 @@
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. Eksik denetim izlerinin gerçek maliyetini görün.",
           "footnote": "Günlük derlemesi: denetimler x denetim başına saat, $200/saat. Denetim açıkları: merkezi günlük kaydı olmayan her 5 sunucu başına tahmini 1. Soruşturma gecikmesi: açıklar x $12,000 (uzatılmış ihlal soruşturması). Uyumsuzluk: denetim başına açık başına $5,000. Rediacc ile tek bir CLI komutu saniyeler içinde eksiksiz, SHA-256 doğrulanmış bir rapor oluşturur.",
           "headerTitle": "Denetim izi risk hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "compileHours": "Yıllık günlük derleme saatleri",
             "delayCost": "Soruşturma gecikme maliyeti",
@@ -3385,7 +3246,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Denetim izi karşılaştırması"
         },
         "hero": {
@@ -3450,7 +3310,6 @@
               "title": "İşlemler"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Her yedekleme, geri yükleme, erişim, anahtar rotasyonu ve yapılandırma değişikliği otomatik olarak kaydedilir. Katılım yok, kurulum yok.",
@@ -3478,7 +3337,6 @@
         },
         "problem": {
           "description": "Bir şeyler ters gittiğinde ilk soru \"ne oldu?\" dur. Eksiksiz günlükler olmadan tahmin yürütüyorsunuz. Eksik denetim izleri kör noktalar demektir. Kör noktalar risk demektir. Denetçiler \"biz sanıyoruz ki\" ifadesini cevap olarak kabul etmez.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "204 gün",
@@ -3600,26 +3458,8 @@
           },
           "quote": "SOC 2 Tip II denetimimiz sırasında denetçi 28 sunucu genelinde 6 aylık yedekleme erişim günlükleri istedi. Önceki aracımızla bu 2 haftalık manuel günlük toplama olurdu — geçen yıl eksik kayıtlardan 4 bulgumuz vardı. Tek bir Rediacc komutu çalıştırdım ve 30 saniyede eksiksiz, kriptografik olarak doğrulanmış bir rapor aldım. Denetçi 15 yıldaki en temiz denetim izi olduğunu söyledi. Sıfır bulgu."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Actions Logged",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Log Integrity",
-            "number": "Kurcalamaya dayanıklı"
-          },
-          {
-            "icon": "zap",
-            "label": "Report Generation",
-            "number": "Anında"
-          }
-        ],
         "techDiff": {
           "description": "Uygulama günlükleri hata ayıklama için tasarlanmıştır — değiştirilebilir, eksik ve sistemler arasında dağınıktır. Rediacc'ın denetim izi uyumluluk için tasarlanmıştır: her işlem kriptografik olarak imzalanır, kronolojik olarak zincirlenir ve tek bir rapor olarak dışa aktarılabilir.",
-          "overline": "KAPUTUN ALTINDA",
           "traditionalLabel": "Değiştirilebilir uygulama günlükleri",
           "rediaccLabel": "Rediacc denetim günlüğü",
           "rows": [
@@ -3649,7 +3489,6 @@
           "command": "rdc backup verify my-app",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yedeklemenizi bir dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "Kredi kartı gerekmez",
           "title": "Doğrulanmamış yedeklemeye asla güvenmeyin"
         },
         "calculator": {
@@ -3657,7 +3496,6 @@
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. \"Yedekleme tamamlandı\"ya güvenmenin gerçek maliyetini görün.",
           "footnote": "Bozuk yedeklemeler: haftalık işler x 52 x bozulma oranı. Kurtarma başarısızlığı: bozuk yedeklemeler x kurtarma saatleri x $100/saat (personel + kayıp verimlilik). Veri kaybı: bozuk yedeklemeler x olay başına risk altındaki 8 kayıt x $173/kayıt (IBM Cost of a Data Breach Report 2024). Günlük otomatik doğrulamayla bozulma 24 saat içinde yakalanır — birikmeden önce.",
           "headerTitle": "Yedekleme risk maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "corrupted": "Yıllık bozuk yedekleme sayısı",
             "dataLoss": "Veri kaybı riski (kayıt)",
@@ -3720,7 +3558,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Yedekleme doğrulaması karşılaştırması"
         },
         "hero": {
@@ -3785,7 +3622,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc repo push production komutunu çalıştırın. Btrfs anlık görüntüsü tüm yığınınızı atomik olarak yakalar.",
@@ -3813,7 +3649,6 @@
         },
         "problem": {
           "description": "Korunduğunuzu düşünüyorsunuz. Her gece yedeklemeler çalışıyor. Ama gerçekten iyi mi? Çoğu ekip geri yükleme gerekene kadar kontrol etmez. O zaman çok geçtir. Bozuk bir yedekleme size yanlış güven verir — başka hiçbir şey değil.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "58%",
@@ -3918,7 +3753,6 @@
         },
         "techDiff": {
           "description": "Geleneksel yedekleme araçları dosyaların yazıldığını kontrol eder. Rediacc daha ileri gider: yedeklemeyi klonlar, her konteyneri başlatır, her hizmete karşı sağlık kontrolleri çalıştırır ve başarılı/başarısız raporu verir. Dosya sağlama toplamı değil — tam bir geri yükleme testi.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc Doğrulaması",
           "rows": [
             {
@@ -3961,7 +3795,6 @@
               "title": "Tedarikçi bağımlılığı yok"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "AWS çökünce siz çökmezsiniz",
@@ -3969,7 +3802,6 @@
           "command": "rdc repo push production --to secondary-dc",
           "description": "Ücretsiz Community sürümüyle başlayın. Konumlar arasında ücretsiz çoğaltın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
           "title": "İşletmenizi tek bir buluta bağlamayın"
         },
         "calculator": {
@@ -3977,7 +3809,6 @@
           "description": "Kaydırıcıları işletmenize göre ayarlayın. Tek bulut bağımlılığının gerçek maliyetini görün.",
           "footnote": "Gelir kaybı: saatlik gelir x kesinti saatleri. Yük devretme işçiliği: 3 mühendis x yük devretme saatleri x $200/saat x olaylar. Müşteri kaybı: doğrudan gelir kaybının %20'si (muhafazakâr tahmin). SLA cezası: kaybedilen gelirin %10'u. ITIC 2024, işletmelerin %41'inin saatlik kesinti maliyetlerini $1M–$5M olarak bildirdiğini bulmuştur. Rediacc'ın <30 saniye otomatik yük devretmesi uzun kesinti pencerelerini ortadan kaldırır.",
           "headerTitle": "Kesinti maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "churn": "Müşteri kaybı (tahmini)",
             "labor": "Yük devretme işçilik maliyeti",
@@ -4040,7 +3871,6 @@
               "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başka hiçbir araç bulutlar arası saniyeler içinde yük devretmez"
         },
         "hero": {
@@ -4106,7 +3936,6 @@
               "title": "Birincil (us-east-1)"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc replicate production --target secondary komutunu çalıştırın. Artımlı senkronizasyon — yalnızca değişen bloklar aktarılır.",
@@ -4134,7 +3963,6 @@
         },
         "problem": {
           "description": "Kritik bulut kesinti olayları 2024'te yıllık bazda %18 arttı, %18,7 daha uzun sürdü ve %68'ine insan hatası neden oldu. Tek bulutunuz çökünce, her şey çöker. Müşterileriniz, geliriniz, itibarınız. Hepsi başkasının altyapısına rehin.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "$300K+",
@@ -4260,26 +4088,8 @@
           },
           "quote": "Geçen Mart ayındaki AWS us-east-1 kesintisinde 12 üretim hizmetimiz 22 saniyede ikincil veri merkezimize devredildi. Müşterilerimiz fark etmedi. Rakiplerimiz 6 saat kapalı kaldı. O hafta onların müşterilerinden üç yeni kurumsal sözleşme aldık."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Failover Time",
-            "number": "<30s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Data Integrity",
-            "number": "%99,99"
-          },
-          {
-            "icon": "cloud",
-            "label": "Cloud Providers Supported",
-            "number": "3+"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc, dosya sistemi seviyesinde artımlı farkları hesaplamak için btrfs send/receive kullanır. Tam imajlar yerine yalnızca değişen bloklar siteler arasında taşınır. 2,4 GB günlük değişikliğe sahip 380 GB'lık bir ortam 2,4 GB transfer eder — 380 GB değil. Bu %98 bant genişliği tasarrufu demektir. Replikasyon sürekli veya zamanlı olarak çalışır.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -4322,7 +4132,6 @@
               "title": "Ölçülebilir iyileşme"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Güvenliği yılda bir değil, sürekli test edin",
@@ -4337,7 +4146,6 @@
           "description": "Yıllık sızma testleri arasındaki boşluk, saldırganların güvendiği penceredir. Ne kadar risk taşıdığınızı hesaplayın.",
           "footnote": "Model: Geleneksel sızma testi ~$15K/test/~10 sunucu. Kör nokta = aktif tarama olmayan yılın yüzdesi. Rediacc günlük otomatik test için $20/sunucu/ay. Maruz kalma = keşif döngüleri arası boşluk + düzeltme süresi.",
           "headerTitle": "Maruz kalma penceresi hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "blindspot": "Kör nokta penceresi",
             "exposure": "Açık başına maruz gün",
@@ -4364,7 +4172,6 @@
           "title": "Güvenliği sürekli test edin. Yılda bir değil."
         },
         "howItWorks": {
-          "overline": "NASIL ÇALIŞIR",
           "pipelineVisual": {
             "arrows": [
               {
@@ -4434,7 +4241,6 @@
         },
         "problem": {
           "description": "Yılda bir sızma testi yapıyorsunuz. Sorunlar buluyor. Düzeltiyorsunuz. Peki gelecek hafta tanıtılan güvenlik açıkları? Ya da gelecek ay? Yıllık test, yıllık kör noktalar demektir. Saldırganlar sizin takviminizi beklemez. Sızma testleri arasındaki her gün altyapınızın maruz kaldığı bir gündür.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "364 gün",
@@ -4512,26 +4318,8 @@
           },
           "quote": "Yıllık sızma testlerinden günlük otomatik taramalara geçtik. Güvenlik açıklarını tespit etme ortalama süremiz 180 günden 1 güne düştü. İlk ayda, bir sonraki yıllık incelememize kadar tespit edilemeyecek 14 güvenlik açığını bulduk ve yamaladık."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Test frequency",
-            "number": "Günlük"
-          },
-          {
-            "icon": "shield",
-            "label": "Production downtime",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Vuln reduction in 4 weeks",
-            "number": "87%"
-          }
-        ],
         "techDiff": {
           "description": "Her zamanlanmış tarama üretim altyapınızın taze bir btrfs copy-on-write anlık görüntüsünü oluşturur, tam AI sızma testi paketini buna karşı çalıştırır, trend karşılaştırmalı önceliklendirilmiş bir rapor oluşturur ve klonu yok eder. Bakım yapılacak staging ortamı yok. Sapma yok. Eski veri yok. Her tarama, şu anda üretimde gerçekten çalışanı test eder.",
-          "overline": "KAPUTUN ALTINDA",
           "traditionalLabel": "Planlı yıllık test",
           "rediaccLabel": "Rediacc (sürekli)",
           "rows": [
@@ -4582,7 +4370,6 @@
               "title": "SecNumCloud ve C5:2026 uyumlu"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Sunucularınız, anahtarlarınız, yargı yetkiniz.",
@@ -4597,7 +4384,6 @@
           "description": "Ortamınıza uygun değerleri ayarlayın. Egemenlik açıklarının gerçek maliyetini görün.",
           "footnote": "Aktarım riski: kayıt sayısı x €0,04 x %10 düzenleyici inceleme olasılığı. Çıkış cezası: Veri Yasası Madde 25 uyarınca tahmini geçiş maliyeti tavanı olarak büyük bulut harcamasının %10'u (sıfır ücret son tarihi 12 Ocak 2027). DORA testi: saat x €200/saat mühendis maliyeti. Rediacc ile: kendi barındırma aktarım riskini ortadan kaldırır; açık format çıkış cezasını sıfırlar; sabit zamanlı çatal, DORA kurtarma testini depo boyutundan bağımsız olarak dakikalara indirir.",
           "headerTitle": "Egemenlik maruziyeti hesaplayıcısı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "doraTesting": "DORA Madde 12 test maliyeti",
             "exitPenalty": "Veri Yasası 2027 çıkış cezası riski",
@@ -4658,7 +4444,6 @@
               "values": ["cross", "cross", "check", "check", "check", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Egemenlik karşılaştırması"
         },
         "hero": {
@@ -4723,7 +4508,6 @@
               "title": "ABD Büyük Bulut Sağlayıcısı"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Kendi donanımınızda, AB IaaS sağlayıcınızda veya her ikisinin kombinasyonunda dağıtım yapın. Rediacc OE, Estonya'da kurulmuştur; ABD ana şirketi yok, ABD kontrol düzlemi yok, CLOUD Act yüzeyi yok.",
@@ -4751,7 +4535,6 @@
         },
         "problem": {
           "description": "ABD yargı yetkisindeki bulut sağlayıcıları, veriler AB veri merkezlerinde depolanmış olsa bile CLOUD Act kararlarına uymak zorundadır. Sözleşmeden doğan taahhütler ABD mevzuatının önüne geçemez. Soru, sağlayıcınızın bunu yapıp yapmayacağı değildir. Soru, bunu yasal olarak yapıp yapamayacağıdır.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "\"Hayır, garanti edemem\"",
@@ -4877,26 +4660,8 @@
           },
           "quote": "Haziran 2025'teki Carniaux Senato ifadesinin ardından SecNumCloud denetim komitemiz tek bir soru sordu: yedekleme sağlayıcınızın hasta verilerini ABD makamlarına açıklamaya zorlanamayacağını kanıtlayabilir misiniz? Microsoft Azure Backup ile bu soruyu yanıtlayamıyorduk. Rediacc ile yanıt mimariseldir: anahtarlar hiçbir zaman HSM'imizden çıkmaz, operatörün ABD ana şirketi yoktur ve otuz saniyede imzalı bir saklama raporu oluşturabiliriz. Bu, ANSSI'yi tatmin eden tek yanıttır."
         },
-        "stats": [
-          {
-            "icon": "key",
-            "label": "Herhangi bir sağlayıcıya emanet edilen anahtar",
-            "number": "0"
-          },
-          {
-            "icon": "lock",
-            "label": "Müşteri anahtar saklaması",
-            "number": "%100"
-          },
-          {
-            "icon": "globe",
-            "label": "Operatör yargı yetkisi",
-            "number": "Yalnızca AB"
-          }
-        ],
         "techDiff": {
           "description": "ABD yargı yetkisindeki bir sağlayıcı, verilerinizi Frankfurt'ta depolayabilir ve yine de ABD mahkemeleri tarafından bunları ifşa etmeye zorlanabilir. Rediacc'ın mimarisi, zorlama vektörünü tamamen ortadan kaldırır: teslim edilecek anahtar yoktur ve izlenecek geri arama kanalı yoktur.",
-          "overline": "ARKA PLANDA",
           "traditionalLabel": "ABD sahipli sağlayıcı",
           "rediaccLabel": "Rediacc (teslim edilecek anahtar yok)",
           "rows": [
@@ -4924,16 +4689,6 @@
           "title": "Veri yerleşimi neden veri egemenliği değildir"
         }
       },
-      "downloadGated": {
-        "description": "CISO'lar, CTO'lar ve kıdemli mühendisler için yazılmış, gereksiz ayrıntılardan arındırılmış bir PDF. E-posta adresinizi bırakın, indirme bağlantısını ve tek sayfalık özeti posta kutunuza gönderelim.",
-        "disclaimer": "Tek e-posta. Pazarlama listesi yok. Tek tıkla abonelik iptali.",
-        "dismissLabel": "Kapat",
-        "emailPlaceholder": "you@company.com",
-        "errorMessage": "Bir sorun oluştu. Lütfen tekrar deneyin ya da support@rediacc.com adresinden bize ulaşın.",
-        "submitLabel": "Özeti bana gönder",
-        "successMessage": "Onaylamak için gelen kutunuzu kontrol edin. PDF'yi ayrıca yeni bir sekmede de açtık.",
-        "title": "Teknik özeti edinin"
-      },
       "downloadShort": {
         "buttonLabel": "Kısa özeti indir (PDF)",
         "description": "Derinlemesine okumayı atlayın. Ekibinizin ayakta toplantıda okuyabileceği beş dakikalık versiyonu indirin.",
@@ -4952,7 +4707,6 @@
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. Sağlayıcı tarafından yönetilen şifrelemenin gerçek maliyetini görün.",
           "footnote": "Denetim hazırlığı: denetimler x denetim başına saat. Uyumluluk açıkları: 5 TB sağlayıcı yönetimli veri başına 1. İhlal riski primi: $4,880/TB x risk faktörü (IBM sektör ortalaması). Müşteri tutumlu anahtarlar ve sıfır bilgi mimarisiyle, anahtar erişim denetimi tek bir CLI komutuyla yapılır.",
           "headerTitle": "Şifreleme yönetimi hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "exposure": "Yıllık maruz kalma pencereleri",
             "gaps": "Uyumluluk açıkları (anahtar erişimi)",
@@ -5015,7 +4769,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Şifreleme kontrolü karşılaştırması"
         },
         "hero": {
@@ -5080,7 +4833,6 @@
               "title": "Yedekleme Verisi"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc keygen production komutunu çalıştırın. Yalnızca sizin tuttuğunuz 4096-bit RSA anahtar çifti oluşturun.",
@@ -5108,7 +4860,6 @@
         },
         "problem": {
           "description": "Çoğu yedekleme aracı verilerinizi şifreler — kendi anahtarlarıyla. Bu onların erişebileceği anlamına gelir. Çalışanları erişebilir. Onlar tarafında bir ihlal verilerinizi açığa çıkarır. Anahtarları siz kontrol etmiyorsanız, verilerinizi kontrol etmiyorsunuzdur.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "Yalnızca %8",
@@ -5237,7 +4988,6 @@
         },
         "techDiff": {
           "description": "Sağlayıcı tarafından yönetilen şifreleme, sağlayıcınızın anahtarları tutması anlamına gelir. Verilerinizin şifresini çözebilirler. Çalışanları erişebilir. Onlar tarafında bir ihlal her şeyi açığa çıkarır. Rediacc, sıfır bilgi mimarisiyle müşteri tutumlu anahtarlar kullanır — düz metninizi veya anahtarınızı asla görmeyiz.",
-          "overline": "KAPUTUN ALTINDA",
           "traditionalLabel": "Tedarikçide tutulan anahtarlar",
           "rediaccLabel": "Rediacc (müşteride tutulan anahtarlar)",
           "rows": [
@@ -5280,7 +5030,6 @@
               "title": "Uygulama + veritabanı + yapılandırma"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Üretimi 60 saniyede klonlayın",
@@ -5288,7 +5037,6 @@
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz klonlayın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
           "title": "Geliştiricilerinize zamanlarını geri verin"
         },
         "calculator": {
@@ -5296,7 +5044,6 @@
           "description": "Kaydırıcıları ekibinize göre ayarlayın. Rakamlar sizi şaşırtabilir.",
           "footnote": "Ort. toplam $160K maaş ($92/saat tam yüklü) baz alınmıştır. Ortam bekleme maliyeti: bloke süre x %60 verimlilik etkisi. Bağlam değiştirme: geliştirici başına yıllık $24K-$50K. Geliştiricilerin %69'u haftada 8+ saat verimsizliklere kaybediyor (Atlassian 2024). Geliştiriciler beklerken tamamen boş değildir — ancak bağımlılık zincirleri sprintler boyunca büyür. Muhafazakâr tahminler — gerçek tasarruflar genellikle daha yüksektir.",
           "headerTitle": "Ortam bekleme maliyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "blockedTime": "Sprint başına bloke süre",
             "contextSwitching": "Bağlam değiştirme maliyeti",
@@ -5354,7 +5101,6 @@
               "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başka hiçbir araç tam yığınınızı klonlamaz"
         },
         "hero": {
@@ -5425,7 +5171,6 @@
               "title": "Üretim"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Geliştirici rdc ceph snapshot create production komutunu çalıştırır. Bilet yok. Onay yok.",
@@ -5453,7 +5198,6 @@
         },
         "problem": {
           "description": "Geliştiricinizin bir test ortamına ihtiyacı var. Talep açıyor. Operasyon ekibi sunucu hazırlıyor. Birisi yapılandırıyor. Üç gün sonra, yine de üretim ortamıyla eşleşmiyor. Bu arada geliştiriciniz Pazartesi'den beri bloke — ve her kesinti 23 dakikalık toparlanma süresine mal oluyor.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "69%",
@@ -5579,26 +5323,8 @@
           },
           "quote": "10 dakikadan kısa sürede 12 adet üretim ortamıyla birebir test ortamı oluşturduk — her biri tam 241 GB PostgreSQL veritabanıyla. Önceki sürecimiz staging'e manuel veritabanı dökümleriydi. Her ortam için 3 mühendis ve 2 gün gerekiyordu."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone Creation Time",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Production Identical",
-            "number": "100%"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "DevOps Tickets Needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc, dosya sistemi seviyesinde btrfs copy-on-write anlık görüntüleri kullanır. 241 GB'lık bir üretim ortamının anlık görüntüsü saniyenin altında tamamlanır ve başlangıçta sıfır ek depolama tüketir. Klon geliştirme sürecinde farklılaştıkça, yalnızca değişen bloklar yeni alan kullanır. 241 GB'lık bir veritabanının on klonu, 12 GB'tan az ek depolama kullanabilir.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5645,7 +5371,6 @@
               "title": "Kaostan önce güven"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Yük devretmenizi ihtiyaç duymadan önce test edin",
@@ -5653,7 +5378,6 @@
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk felaket kurtarma testinizi 5 dakikadan kısa sürede çalıştırın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "Kredi kartı gerekmez",
           "title": "Yük devretme planınızı bugün test edin"
         },
         "calculator": {
@@ -5661,7 +5385,6 @@
           "description": "Kaydırıcıları işletmenize göre ayarlayın. Felaket kurtarma planınızın çalıştığını ummanın gerçek maliyetini görün.",
           "footnote": "Gelir riski: saatlik gelir x beklenen kesinti saatleri. Kurtarma işçiliği: 3 mühendis x kesinti saatleri x $200/saat x her biri 3 hizmet. Kayıp: risk altındaki gelirin %20'si (muhafazakâr tahmin). Uyumluluk: kaybedilen gelirin %10'u. Kuruluşların yalnızca %13'ü orkestre felaket kurtarma iş akışları kullanır (Veeam 2024). Aylık otomatik testle, açıklar önemli olmadan yakalanır ve düzeltilir.",
           "headerTitle": "Felaket kurtarma test açığı maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "churn": "Müşteri kaybı (tahmini)",
             "compliance": "Uyumluluk ceza riski",
@@ -5724,7 +5447,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Felaket kurtarma test araçları karşılaştırması"
         },
         "hero": {
@@ -5789,7 +5511,6 @@
               "title": "Birincil (us-east-1)"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc failover test --simulate komutunu çalıştırın. Klona karşı kontrollü arıza. Üretime sıfır risk.",
@@ -5817,7 +5538,6 @@
         },
         "problem": {
           "description": "Bir felaket kurtarma planınız var. Ama en son ne zaman test ettiniz? Çoğu ekip etmemiştir. Çalıştığını varsayarlar. Sonra felaket gelir ve çalışmadığını öğrenirler. Test edilmemiş bir plan, plan değildir. Sadece bir umuttur.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "Yalnızca %13",
@@ -5931,26 +5651,8 @@
           },
           "quote": "İlk otomatik yük devretme testimizi bir Salı sabahı çalıştırdık. 3 kritik açık buldu — eski bir DNS kaydı, ikincilde eksik bir SSL sertifikası ve 4 dakikalık veritabanı replikasyon gecikmesi. Üçü de gerçek bir kesintiye neden olurdu. Bir öğleden sonrada hepsini düzelttik. Artık aylık test yapıyoruz ve daha rahat uyuyoruz."
         },
-        "stats": [
-          {
-            "icon": "refresh",
-            "label": "Recommended Test Frequency",
-            "number": "Aylık"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Full-Stack Test Coverage",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Production Impact",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel felaket kurtarma testleri üretim kesintisi, bir mühendis ekibi ve haftalarca planlama gerektirir. Rediacc, saniyeler içinde tüm altyapınızın izole bir klonunu oluşturmak için btrfs copy-on-write anlık görüntüleri kullanır. Test klona karşı çalışır — üretim asla durmaz.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc Felaket Kurtarma Testi",
           "rows": [
             {
@@ -5984,7 +5686,6 @@
           "command": "rdc repo push production --to backup-vault",
           "description": "Ücretsiz Community sürümüyle başlayın. 10 iş yüküne kadar ücretsiz koruyun. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
           "title": "Fidye yazılımı konusunda endişelenmeyi bırakın"
         },
         "calculator": {
@@ -5992,7 +5693,6 @@
           "description": "Kaydırıcıları altyapınıza göre ayarlayın. Rakamlar hızla büyür.",
           "footnote": "Risk altındaki gelir, $9,000/dk ortalama kesinti maliyetine (Splunk/Oxford Economics 2024) dayanmaktadır. Kurtarma işçiliği: 6 mühendis x kurtarma saatleri x $200/saat karma oran. İtibar maliyeti doğrudan maliyetlerin yüzdesi olarak tahmin edilmiştir (sektör tahmini). Rediacc ile: değiştirilemez anlık görüntüler 5 dakikadan kısa sürede geri yüklenir — kesinti süresi sıfıra yaklaşır.",
           "headerTitle": "Fidye yazılımı maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "downtime": "Olay başına kesinti süresi",
             "labor": "Kurtarma işçilik maliyeti",
@@ -6055,7 +5755,6 @@
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Dosya sistemi seviyesinde değiştirilemezliğe sahip tek yedekleme"
         },
         "hero": {
@@ -6120,7 +5819,6 @@
               "title": "Üretim"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc repo push production --immutable komutunu çalıştırın. Verileriniz anında yakalanır ve mühürlenir.",
@@ -6148,7 +5846,6 @@
         },
         "problem": {
           "description": "Modern saldırganlar dosyalarınızı şifrelemeden önce yedeklemelerinizi bulur. Yedeklemeleriniz değiştirilebiliyorsa, değiştirilecektir. Geleneksel yedekleme araçları kapıyı açık bırakır — ve fidye yazılımı kurbanlarının %94'ünde saldırı sırasında yedeklemeler hedef alınmıştır. Oluşturuldukları anda kilitlenen yedeklemelere ihtiyacınız var.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "94%",
@@ -6281,7 +5978,6 @@
         },
         "techDiff": {
           "description": "Rediacc, dosya sistemi seviyesinde btrfs salt okunur anlık görüntüler kullanır. Bir anlık görüntü mühürlendikten sonra, çekirdeğin kendisi değişikliği engeller — kötü amaçlı yazılımın atlayabileceği yazılım kilitleri değil, dosya sistemi seviyesinde değiştirilemezlik. Root erişimiyle bile fidye yazılımı mühürlü bir btrfs anlık görüntüsünü şifreleyemez, değiştiremez veya silemez.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc (btrfs değiştirilemez)",
           "rows": [
             {
@@ -6311,7 +6007,6 @@
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Ücretsiz Community sürümüyle başlayın. İsteğe bağlı klonlama dahil.",
           "primaryCta": "Ücretsiz Başlayın",
-          "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
           "title": "Altyapı maliyetlerinizi bugün düşürün"
         },
         "calculator": {
@@ -6319,7 +6014,6 @@
           "description": "Gece boyu çalışan her sunucu, hiçbir karşılığı olmadan hesabınızdan çıkan paradır.",
           "footnote": "Rediacc btrfs copy-on-write kullanır: klonlar üretim ortamıyla depolama bloklarını paylaşır ve yalnızca ~%1 ek disk alanı kullanır. Ortamlar <60 saniyede ayağa kalkar ve yapılandırılabilir TTL ile otomatik yok edilir. 15 kopya yerine tek bir üretim sunucusu için ödeme yaparsınız.",
           "headerTitle": "Altyapı İsrafı Hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "idle": "Boşta yanan para",
             "monthly": "Aylık sunucu maliyeti",
@@ -6379,7 +6073,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başkalarının boşta kapasite için ne aldığı"
         },
         "hero": {
@@ -6442,7 +6135,6 @@
               "title": "Her Zaman Açık"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "İsteğe bağlı üretimle birebir aynı klon oluşturun. 52 saniye. Copy-on-write ile maliyeti kuruşlar.",
@@ -6470,7 +6162,6 @@
         },
         "problem": {
           "description": "7/24 çalışan 15 geliştirme ortamınız var. Geliştiriciler bunları günde 8 saat, haftada 5 gün kullanıyor. Bu %33 kullanım oranı. Geri kalan %67 için ödeme yapıyorsunuz — geceler, hafta sonları ve tatillerde boşta bekleyen sunucular.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "%60–80",
@@ -6547,7 +6238,6 @@
         },
         "techDiff": {
           "description": "Geleneksel geliştirme ortamları sunucuların tamamını kopyalar — her bayt veri, her yapılandırma dosyası, her kütüphane. Rediacc btrfs copy-on-write kullanır: klonlar değişmeyen blokları üretim ortamıyla paylaşır ve 380 GB'lık bir ortam için yalnızca %1 ek depolama kullanır.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc (Copy-on-Write)",
           "rows": [
             {
@@ -6594,7 +6284,6 @@
               "title": "Doğrulanmış kurtarma"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Dakikalar içinde tam ortam kurtarma",
@@ -6602,7 +6291,6 @@
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk ortamınızı 5 dakikadan kısa sürede geri yükleyin.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "Kredi kartı gerekmez",
           "title": "Günler değil dakikalar içinde tekrar çevrimiçi olun"
         },
         "calculator": {
@@ -6610,7 +6298,6 @@
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. Dosya seviyesinde kurtarmanın gerçek maliyetini görün.",
           "footnote": "Dosya seviyesinde kurtarma: hizmet başına 2 saat hazırlama + yeniden yapılandırma. Kaybedilen gelir: kesinti saatleri x saatlik gelir. Personel işçiliği: 2 mühendis x kurtarma saatleri x $200/saat. Kayıp: SLA ihlallerinden kaynaklanan gelir kaybının %20'si. Rediacc: btrfs klonu tam ortamı 5 dakikadan kısa sürede geri yükler — tek komut, yeniden oluşturma yok.",
           "headerTitle": "Kesinti maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "churn": "Müşteri kaybı etkisi",
             "labor": "Personel işçiliği (yeniden oluşturma)",
@@ -6675,7 +6362,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Kurtarma yeteneği karşılaştırması"
         },
         "hero": {
@@ -6740,7 +6426,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc repo snapshot list production komutunu çalıştırın. Yedek zaman çizelgenizde herhangi bir noktayı seçin.",
@@ -6768,7 +6453,6 @@
         },
         "problem": {
           "description": "Tek tek dosyaları geri yüklemek saatler alır. Tüm ortamları yeniden oluşturmak günler alır. Üretim sunucunuz çöktüğünde sadece dosyaların geri gelmesine ihtiyacınız yok — her şeyin geri gelmesine ihtiyacınız var. Sunucu, yapılandırma, veritabanı, ağ ayarları. Hepsi.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6894,26 +6578,8 @@
           },
           "quote": "Ana veritabanı sunucumuz bir Cumartesi sabahı saat 2:14'te arıza yaptı — bozuk disk denetleyicisi. Eski kurulumumuzla bu, 11 hizmeti hazırlama, geri yükleme ve yeniden yapılandırma ile dolu bir hafta sonu olurdu. Bunun yerine telefonumdan tek bir komut çalıştırdım. Saat 2:18'de her şey geri geldi — MariaDB, API, Nginx, Redis, hepsi. Aynı yapılandırmalar, aynı durum, aynı veri. Nöbetçi mühendis tekrar uyumaya gitti."
         },
-        "stats": [
-          {
-            "icon": "zap",
-            "label": "Full Recovery Time",
-            "number": "<5dk"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Environment Fidelity",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "In Time",
-            "number": "Herhangi bir nokta"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel kurtarma yeni bir sunucu hazırlamak, paketleri yüklemek, dosyaları tek tek geri yüklemek, hizmetleri yeniden yapılandırmak ve hiçbir şeyin atlanmadığını ummak anlamına gelir. Rediacc btrfs anlık görüntülerini kullanarak tüm ortamı klonlar — birimler, yapılandırmalar, konteynerler, ağ ayarları — tek bir atomik işlemde.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -6943,7 +6609,6 @@
           "command": "rdc repo fork production --tag ci-build",
           "description": "Ücretsiz Community sürümüyle başlayın. Git entegrasyonu dahil.",
           "primaryCta": "Ücretsiz Başlayın",
-          "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
           "title": "CI/CD pipeline'ınızı basitleştirin"
         },
         "calculator": {
@@ -6951,7 +6616,6 @@
           "description": "Sentetik veride geçip üretimde başarısız olan her test, size yalan söyleyen bir CI pipeline'dır.",
           "footnote": "Geliştirici maliyeti $75/saat varsayılmıştır. Bloke saatler: CI hatası başına bağlam değiştirme nedeniyle geliştirici başına 1 saat olarak tahmin edilmiştir. Test verisi uyumsuzluğundan kaynaklanan üretim hataları: çeyrek başına aylık hata oranının 1,5 katı olarak tahmin edilmiştir.",
           "headerTitle": "CI/CD Bakım Hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "blocked": "Aylık bloke geliştirici-saati",
             "bugs": "Kötü test verisinden kaynaklanan üretim hataları",
@@ -7007,7 +6671,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Test fikstürleri vs. üretim klonları"
         },
         "hero": {
@@ -7016,7 +6679,6 @@
           "title": "Mevcut iş akışınıza bağlanın"
         },
         "howItWorks": {
-          "overline": "NASIL ÇALIŞIR",
           "pipelineVisual": {
             "arrows": [
               {
@@ -7076,7 +6738,6 @@
         },
         "problem": {
           "description": "Birisi pipeline'ınızda test ortamları hazırlamak için 200 satırlık bir bash betiği yazdı. Şirketten ayrıldı. Betik her ay bozuluyor. Kimse anlamıyor. CI/CD pipeline'ınız bant ve umutla ayakta duruyor.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "69%",
@@ -7165,7 +6826,6 @@
         },
         "techDiff": {
           "description": "Geleneksel CI/CD boş konteynerler hazırlar ve sentetik veri yükler. Rediacc altyapı seviyesinde entegre olur — her push gerçek verili, gerçek yapılandırmalı ve gerçek hizmetli tam bir üretim klonu alır.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7208,7 +6868,6 @@
               "title": "Her şey için tek bir yaklaşım"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Kubernetes'i koru, taşınabilirlik kazan"
         },
         "blurb": "Çalışan kümeyi fork'la veya taşı, verileriyle birlikte",
@@ -7259,12 +6918,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başka hiç kimse çalışan bir cluster'ı verisiyle birlikte taşımaz"
         },
         "hero": {
           "ctaLabel": "Cluster'ları Fork'lamaya Başlayın",
-          "subtitle": "Kümeniz bir bütün olarak hareket eder: node'lar, ayarlar ve veriler hepsi beraber. Başka bir sunucuya ya da veri merkezine. Geçiş saniyelerle ölçülür, hafta sonlarıyla değil.",
+          "subtitle": "Kümeniz bir bütün olarak hareket eder: node'lar, ayarlar ve veriler hepsi beraber. Başka bir sunucuya ya da veri merkezine. Geçiş <span class=\"sp-emphasis\">saniyelerle ölçülür</span>, hafta sonlarıyla değil.",
           "title": "Çalışan bir Kubernetes cluster'ını fork'layın veya taşıyın"
         },
         "howItWorks": {
@@ -7324,7 +6982,6 @@
               "title": "prod (Veri Merkezi A)"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Her node bir imaj dosyasından çalışır. Her volume bir Ceph RBD imajıdır. Birlikte cluster'ın tamamını oluştururlar: uygulamalar, yapılandırma ve veri.",
@@ -7352,7 +7009,6 @@
         },
         "problem": {
           "description": "Kubernetes uygulamalarınızı taşınabilir yaptı. Kümeyi değil. Veriler tek bir veri merkezinde kalır. Onu taşımak yeniden kurmak demektir: yeni node'lar, yeni depolama, yedekten geri yükleme, hepsi test. Çoğu ekip taşınmıyor hiç. Ve sağlayıcıları bunu iyi bilirler.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "27%",
@@ -7446,26 +7102,8 @@
             }
           ]
         },
-        "stats": [
-          {
-            "icon": "layers",
-            "label": "Tam 2 node'lu küme fork'u",
-            "number": "46s"
-          },
-          {
-            "icon": "clock",
-            "label": "Kesinti süresi ölçüldü",
-            "number": "16s"
-          },
-          {
-            "icon": "zap",
-            "label": "Namespace fork'u",
-            "number": "1-5s"
-          }
-        ],
         "techDiff": {
-          "description": "Her node, btrfs üzerinde bir imaj dosyasından çalışır. Her volume bir Ceph RBD imajıdır. Bir cluster'ı kopyalamak, bu imajları copy-on-write olarak klonlamak demektir. Dışa aktarma yok, dönüştürme yok, geri yükleme adımı yok. Bir fork'un aylar değil saniyeler sürmesinin nedeni budur.",
-          "overline": "KAPUTUN ALTINDA",
+          "description": "Her node, btrfs üzerinde bir imaj dosyasından çalışır. Her volume bir Ceph RBD imajıdır. Bir cluster'ı kopyalamak, bu imajları copy-on-write olarak klonlamak demektir. Dışa aktarma yok, dönüştürme yok, geri yükleme adımı yok. Bir fork'un <span class=\"sp-emphasis\">aylar değil saniyeler</span> sürmesinin nedeni budur.",
           "traditionalLabel": "Yedekleme ve geri yükleme ile geçiş",
           "rediaccLabel": "Rediacc (copy-on-write klon)",
           "rows": [
@@ -7531,7 +7169,6 @@
               "title": "Sıfır güven transferi"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Neler Alırsınız"
         },
         "blurb": "Veri kaybı riskine girmeden göç yapın",
@@ -7539,7 +7176,6 @@
           "command": "rdc repo push production --to secondary",
           "description": "Şifreli göç yerleşiktir. 14 günlük ücretsiz denemeyi başlayın.",
           "primaryCta": "Ücretsiz Başlayın",
-          "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
           "title": "Her seferinde güvenle göç edin"
         },
         "calculator": {
@@ -7547,7 +7183,6 @@
           "description": "Uçtan uca şifreleme olmayan her göç, gerçekleşmeyi bekleyen bir uyumluluk olayıdır.",
           "footnote": "Yeniden şifreleme yapılandırması için saat başına 200 dolar işçilik, TB başına 4.880 dolar ihlal primi (IBM 2024) ve maruz kalma penceresi başına %1 ihlal olasılığı varsayılmıştır. Rediacc şifrelemeyi baştan sona sürdürür — sıfır maruz kalma pencereleri, sıfır yeniden şifreleme ihtiyacı.",
           "headerTitle": "Göç Risk Hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "labor": "Yeniden şifreleme işçiliği",
             "risk": "Göç başına risk altındaki veri",
@@ -7608,12 +7243,11 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başkalarının göç sırasında yapamadığı şey"
         },
         "hero": {
           "ctaLabel": "Güvenle Taşımaya Başlayın",
-          "subtitle": "Sunucu, bulut veya sağlayıcılar arasında geçiş yapıyor musunuz? Yedeklemeler baştan sona şifreli kalır. Maruziyet yok. Veri kaybı yok.",
+          "subtitle": "Sunucu, bulut veya sağlayıcılar arasında geçiş yapıyor musunuz? Yedeklemeler <span class=\"sp-emphasis\">baştan sona şifreli kalır</span>. Maruziyet yok. Veri kaybı yok.",
           "title": "Veri kaybı riskine girmeden göç yapın"
         },
         "howItWorks": {
@@ -7673,7 +7307,6 @@
               "title": "Kaynak"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Kaydedilen kopyalar şifreli kalır. Anahtarlar, ayarlar ve kurallar onlarla birlikte taşınır. Hiçbir şey çözülmez.",
@@ -7701,7 +7334,6 @@
         },
         "problem": {
           "description": "Her göçün korkutucu yönü budur. Çoğu araç önce veriyi şifre çözer, sonra kopyalar. Böylece dosyalar transfer sırasında açık bulunur. Bir hata yeterli ve sızıntı olur. Göç bittiğinde eski şifreleme ayarı silinir — diğer tarafta el ile yeniden yapılmayı bekler.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "89%",
@@ -7823,26 +7455,8 @@
           },
           "quote": "Bir hafta sonu boyunca 42 sunucuyu Hetzner'den OVH'ye göç ettirdik. 350 TB şifreli veri, tek bir bayt bile maruz kalmadan transfer edildi. Önceki göçümüz — sadece 8 sunucu — üç hafta sürdü ve verinin tamamını staging alanında şifresini çözmüştü. O riski kabul ettiğimiz son sefer oldu."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Göç Sırasında Maruz Kalan Veri",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Şifreleme Korundu",
-            "number": "100%"
-          },
-          {
-            "icon": "arrow-right-circle",
-            "label": "Tüm Hedefler Desteklenir",
-            "number": "Any"
-          }
-        ],
         "techDiff": {
-          "description": "Eski araçlar veriyi göndermeden önce şifre çözerler. Bu, dosyaların korumasız kaldığı bir pencere oluşturur. Biz hiçbir zaman şifre çözmeyiz. Şifreli kopyalar baştan sona mühürlü bloklar olarak taşınır.",
-          "overline": "KAPUTUN ALTINDA",
+          "description": "Eski araçlar veriyi göndermeden önce şifre çözerler. Bu, dosyaların korumasız kaldığı bir pencere oluşturur. Biz hiçbir zaman şifre çözmeyiz. Şifreli kopyalar baştan sona <span class=\"sp-emphasis\">mühürlü bloklar</span> olarak taşınır.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7889,7 +7503,6 @@
               "title": "Daha az üretim hatası"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Üretimle birebir eşleşen geliştirme ortamları",
@@ -7897,7 +7510,6 @@
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Ücretsiz Community sürümüyle başlayın. Üretim eşliği dahil.",
           "primaryCta": "Ücretsiz Başlayın",
-          "tierBadge": "5 depoya kadar ücretsiz · Kredi kartı gerekmez",
           "title": "Ortam uyumsuzluğuna sonsuza dek son verin"
         },
         "calculator": {
@@ -7905,7 +7517,6 @@
           "description": "Ortam kaymasından kaynaklanan her üretim hatası, hiç var olmaması gereken bir hatadır.",
           "footnote": "Ortalama geliştirici maliyeti $600/gün, 10 günlük sprintler, yılda 26 sprint varsayılmıştır. Ortam kaynaklı hatalar, btrfs copy-on-write klonlama ile %100 üretim eşliği sayesinde ortadan kaldırılır.",
           "headerTitle": "Eşlik Açığı Hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "capacity": "Kaybedilen sprint kapasitesi",
             "debug": "Sprint başına hata ayıklama saati",
@@ -7966,7 +7577,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Kod klonlama vs. ortam klonlama"
         },
         "hero": {
@@ -8029,7 +7639,6 @@
               "title": "Üretim"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "btrfs copy-on-write ile birebir üretim anlık görüntüsünden başlayın. Aynı işletim sistemi, aynı yapılandırmalar, aynı veriler.",
@@ -8057,7 +7666,6 @@
         },
         "problem": {
           "description": "Geliştirme ortamınız farklı bir işletim sistemi sürümü çalıştırıyor. Farklı kütüphane sürümleri. Farklı yapılandırmalar. Kod geliştirme ortamında her testi geçiyor, sonra üretimde bozuluyor. Bu hatalar bulunması zor ve düzeltmesi pahalıdır. Geliştirme ortamının üretim ortamıyla eşleşmemesinden kaynaklanır.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "182x",
@@ -8155,26 +7763,8 @@
           },
           "quote": "Rediacc klonlarına geçtikten sonra altı ay boyunca her üretim olayını takip ettik. Ortam kaynaklı hatalar çeyrek başına 14'ten tam anlamıyla sıfıra düştü. QA liderimiz takip sisteminin bozulduğunu düşündü — daha önce hiç sıfır görmemişti."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Config match",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Environment drift",
-            "number": "0"
-          },
-          {
-            "icon": "x",
-            "label": "“Works on my machine” incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel geliştirme ortamları sıfırdan oluşturulan yaklaşıklıklardır — manuel olarak hazırlanır, ayrı yapılandırılır, sentetik test verileriyle doldurulur. Rediacc, gerçek üretim dosya sistemini btrfs copy-on-write ile blok seviyesinde klonlar.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8215,7 +7805,6 @@
           "description": "Kaydırıcıları durumunuza göre ayarlayın. Hasar her dakika büyür.",
           "footnote": "Gelir kaybı saatlik ücretiniz x kurtarma saatlerine dayanır. Kurtarma işçiliği: 6 mühendis x $200/saat karma oran. Müşteri kaybı: doğrudan gelir kaybının tahmini %20'si. Düzenleyici: $50K taban + ciddiyete göre ölçeklenir. Rediacc ile: değiştirilemez anlık görüntüden <5 dk geri yükleme uzun kesinti süresini ortadan kaldırır.",
           "headerTitle": "Kesinti maliyeti hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "churn": "Müşteri kaybı maliyeti",
             "labor": "Kurtarma işçiliği",
@@ -8273,7 +7862,6 @@
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başka hiçbir araç bu kadar hızlı kurtarmaz"
         },
         "hero": {
@@ -8339,7 +7927,6 @@
               "title": "Üretim (Çökmüş)"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc backup list komutunu çalıştırarak son temiz anlık görüntünüzü bulun.",
@@ -8367,7 +7954,6 @@
         },
         "problem": {
           "description": "Çoğu ekip fidye yazılımından sonra günlerce yeniden oluşturmayla geçirir. Bu arada müşteriler size ulaşamaz. Gelir durur. Güven kırılır. Saldırı bir saat sürer. Kurtarma bir hafta alır. Asıl hasar budur — ve ortalama fidye yazılımı kurtarması 24 gün sürer.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "24 gün",
@@ -8484,7 +8070,6 @@
         },
         "techDiff": {
           "description": "Geleneksel kurtarma sıfırdan yeniden oluşturur — işletim sistemini yeniden kurun, dosyaları geri yükleyin, hizmetleri yeniden yapılandırın. Rediacc btrfs anlık görüntülerinden geri yükler: dosya sistemi basitçe kaydedilmiş duruma geçer. Yeniden kurulum yok, yeniden yapılandırma yok, veri transferi yok. Anlık görüntü zaten diskte — sadece aktif hale gelir.",
-          "overline": "KAPUTUN ALTINDA",
           "traditionalLabel": "Geleneksel yeniden kurulum",
           "rediaccLabel": "Rediacc (anlık btrfs kopyaları)",
           "rows": [
@@ -8514,7 +8099,6 @@
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk saklama politikanızı 30 saniyede ayarlayın.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "Kredi kartı gerekmez",
           "title": "Uyumluluğu zahmetsiz hale getirin"
         },
         "calculator": {
@@ -8522,7 +8106,6 @@
           "description": "Kaydırıcıları ortamınıza göre ayarlayın. Manuel saklama yönetiminin gerçek maliyetini görün.",
           "footnote": "Hazırlık saatleri: denetimler x denetim başına saat. Açıklar: 5 TB elle yönetilen veri başına 1 açık (muhafazakâr tahmin). Ceza: açık başına $50K (KOBİ için medyan GDPR cezası). İşçilik: hazırlık saatleri x $200/saat (kıdemli mühendis). Ortalama veri ihlali maliyeti $4,88M'dir (IBM 2024). Rediacc anında denetim hazır raporlar oluşturur — denetim başına 2 saat, otomatik politika uygulaması.",
           "headerTitle": "Uyumluluk maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "gaps": "Uyumluluk açıkları (tahmini)",
             "labor": "Manuel saklama işçiliği",
@@ -8585,7 +8168,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Saklama uyumluluğu karşılaştırması"
         },
         "hero": {
@@ -8651,7 +8233,6 @@
               "title": "Saklama Politikaları"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc config backup-strategy set --cron '0 2 * * *' komutunu çalıştırın. Çerçeve veya veri türü başına saklama tanımlayın.",
@@ -8679,7 +8260,6 @@
         },
         "problem": {
           "description": "Düzenlemeler belirli süreler boyunca veri saklamanızı gerektirir. Hedefi kaçırırsanız para cezaları, denetimler ve hukuki sorunlarla karşılaşırsınız. Çoğu yedekleme aracı saklamayı sonradan düşünür. Sonunda bunu elektronik tablolar ve umutla yönetirsiniz.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "$4,88M",
@@ -8812,7 +8392,6 @@
         },
         "techDiff": {
           "description": "Geleneksel saklama yönetimi, yedekleme tarihlerini elektronik tablolarda takip etmek, manuel temizlik betikleri çalıştırmak ve denetçi gelmeden önce hiçbir şeyin atlanmadığını ummak anlamına gelir. Rediacc, otomatik politika uygulamasıyla btrfs anlık görüntü yaşam döngüsü yönetimi kullanır — yedeklemeler insan müdahalesi olmadan saklanır, doğrulanır ve temizlenir.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc Saklama",
           "rows": [
             {
@@ -8855,7 +8434,6 @@
               "title": "Anında geri alma"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "İşletim sistemi güncellemelerini risksiz test edin",
@@ -8863,7 +8441,6 @@
           "command": "rdc repo fork production --tag patch-test",
           "description": "Ücretsiz Community sürümüyle başlayın. Ücretsiz klonlayın, test edin ve doğrulayın. Kredi kartı gerekmez.",
           "primaryCta": "Community ile Ücretsiz Başlayın",
-          "tierBadge": "10 iş yüküne kadar sonsuza dek ücretsiz",
           "title": "Güvenle yama yapın"
         },
         "calculator": {
@@ -8871,7 +8448,6 @@
           "description": "Kaydırıcıları altyapınıza göre ayarlayın. Test edilmemiş güncellemelerin riskini görün.",
           "footnote": "Maruz kalma günleri: ertelenen yamalar x yamalar arası ortalama 30 gün. Başarısız güncelleme kesintisi: kurtarma saatleri x $9,000/dk (Splunk/Oxford Economics 2024) x %10 başarısızlık oranı. Kurtarma işçiliği: 3 mühendis x kurtarma saatleri x $200/saat. İhlal riski: $4,88M ort. ihlal (IBM 2024) x sunucu sayısına göre ölçeklenmiş yamasız olasılık. Tüm rakamlar muhafazakâr tahminlerdir.",
           "headerTitle": "Yama risk maruziyetinizi hesaplayın",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "breach": "İhlal riski (yamasız)",
             "downtime": "Başarısız güncelleme kesintisi",
@@ -8934,7 +8510,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başka hiçbir araç yamaları gerçek üretim verisi üzerinde test etmez"
         },
         "hero": {
@@ -8999,7 +8574,6 @@
               "title": "Üretim"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "rdc ceph snapshot create production komutunu çalıştırın. Birebir kopya 60 saniyede ayağa kalkar.",
@@ -9027,7 +8601,6 @@
         },
         "problem": {
           "description": "Yama yapmanız gerekiyor. Ama her güncelleme bir kumar. Bir şeyi bozacak mı? Canlıya alana kadar bilemezsiniz. Çoğu ekip ya yamaları atlar (riskli) ya da üretim ortamıyla eşleşmeyen ortamlarda test eder (işe yaramaz). İkisi de yeterli değil.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "3x",
@@ -9153,26 +8726,8 @@
           },
           "quote": "Geçen çeyrekte kritik bir OpenSSL yamağı vardı. Normalde bir bakım penceresi planlayıp dua ederdik. Bunun yerine 22 üretim sunucusunun tamamını klonladık, yamayı uyguladık, tam test paketimizi çalıştırdık ve sıfır regresyon doğruladık — hepsi 18 dakikada. Aynı gün tam güvenle üretim ortamını yamaladık."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone Creation Time",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Production Identical",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Production Downtime",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc, tüm üretim ortamınızı — işletim sistemi, konteynerler, veritabanları, yapılandırma — saniyenin altında klonlamak için btrfs copy-on-write anlık görüntüleri kullanır. Klon, kendi Docker daemon'ıyla izole bir ağda çalışır. Klona uygulanan yamalar üretim ortamına asla dokunmaz. Klon bozulursa, silin. Çalışırsa, aynı yamayı üretim ortamına uygulayın.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9215,7 +8770,6 @@
               "title": "Fiyat gücü"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Sizin altyapınız. Sizin seçiminiz. Her zaman.",
@@ -9230,7 +8784,6 @@
           "description": "Kaydırıcıları harcamanıza göre ayarlayın. Bağımlılığın bütçenizi sessizce nasıl erittiğini görün.",
           "footnote": "Sağlayıcı farkı: yıllık harcama x (fiyat artışı x yıllar / 2) — geçiş yapmamın bileşik etkisi. Göç maliyeti: 2 mühendis x 6 ay x $200/saat (geleneksel göç projesi). Çıkış: tahmini veri hacmi x $0,09/GB. Rediacc ile göç btrfs artımlı transfer ile <1 saat sürer.",
           "headerTitle": "Bağımlılık vergisi hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "egress": "Çıkış veri transfer ücretleri",
             "leverage": "Yeniden müzakere gücü",
@@ -9293,7 +8846,6 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "FARK",
           "title": "Başka hiçbir araç tam yığınınızı dakikalar içinde göç ettirmez"
         },
         "hero": {
@@ -9359,7 +8911,6 @@
               "title": "AWS (us-east-1)"
             }
           },
-          "overline": "NASIL ÇALIŞIR",
           "steps": [
             {
               "description": "Verileriniz standart btrfs alt birimlerinde yaşar. Tescilli formatlar yok. Tedarikçi ajanları yok. Sadece Linux.",
@@ -9387,7 +8938,6 @@
         },
         "problem": {
           "description": "Fiyat iyiyken kaydoldunuz. Şimdi takıldınız. Taşınmak aylar alacaktı. Verileriniz onların formatında. Araçlarınız onların API'lerine bağlı. Ayrılamayacağınızı biliyorlar. Bu yüzden fiyat artıyor.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "27%",
@@ -9501,26 +9051,8 @@
           },
           "quote": "AWS faturamız aylık $33K'ya ulaştı ve yılda %20 artıyordu. 14 üretim hizmetini — GitLab, Nextcloud, 3 veritabanı, izleme, hepsini — 45 dakikada Hetzner'e göç ettirdik. Aylık maliyet $4,200'a düştü. Aynı performans. Göç 8 günde kendini amorti etti."
         },
-        "stats": [
-          {
-            "icon": "x",
-            "label": "Proprietary Formats",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Portable Data",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Migration Time",
-            "number": "<1hr"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc tüm verileri standart btrfs alt birimlerinde saklar — tescilli format yok, sağlayıcıya özel ajan yok. Göç, herhangi bir Linux makinesine artımlı bir anlık görüntü aktarmak için btrfs send/receive kullanır. Son senkronizasyondan bu yana 3,8 GB değişikliğe sahip 420 GB'lık bir ortam 3,8 GB transfer eder — 420 GB değil.",
-          "overline": "KAPUTUN ALTINDA",
           "traditionalLabel": "Tescilli format bağımlılığı",
           "rediaccLabel": "Rediacc (standart Linux depolama)",
           "rows": [
@@ -9567,7 +9099,6 @@
               "title": "Tam doğrulama"
             }
           ],
-          "overline": "NEDEN ÖNEMLİ",
           "title": "Ne elde edersiniz"
         },
         "blurb": "Saldırganlar gelmeden güvenlik açıklarını düzeltin",
@@ -9575,7 +9106,6 @@
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Ücretsiz Community sürümüyle başlayın. İlk yamanızı 4 dakikadan kısa sürede doğrulayın.",
           "primaryCta": "Ücretsiz Başlayın",
-          "tierBadge": "Kredi kartı gerekmez",
           "title": "Daha hızlı yamalayın. Daha güvenli yamalayın."
         },
         "calculator": {
@@ -9583,7 +9113,6 @@
           "description": "Bir güvenlik açığının yamasız kaldığı her gün, maruz kaldığınız bir gündür. Her acele yama bir üretim olayı riski taşır.",
           "footnote": "Model: Geleneksel iyileştirme işçiliği ort. $150/saat (güvenlik mühendisi süresi — etki değerlendirmesi, staging kurulumu, test, geri alma). Başarısız yamalar sektör deneyimine göre %25 olarak tahmin edilmiştir. Rediacc, klon tabanlı doğrulamayla düzeltme süresini <1 güne düşürür ve yama başarısızlıklarını ortadan kaldırır.",
           "headerTitle": "İyileştirme maliyet hesaplayıcı",
-          "overline": "GERÇEK MALİYET",
           "results": {
             "exposure": "Açık başına maruz kalma",
             "failedPatches": "Yıllık başarısız yama sayısı",
@@ -9605,7 +9134,6 @@
           "title": "Saldırganlar gelmeden güvenlik açıklarını düzeltin"
         },
         "howItWorks": {
-          "overline": "NASIL ÇALIŞIR",
           "pipelineVisual": {
             "arrows": [
               {
@@ -9680,7 +9208,6 @@
         },
         "problem": {
           "description": "Bir güvenlik açığı buldunuz. Şimdi yamanız gerekiyor. Ama yama bir şeyi bozacak mı? Üretimde test edemezsiniz. Ve staging ortamınız 3 hafta geride. Ya yamayı aceleyle yapıp umarsınız, ya da bekleyip maruz kalırsınız. İkisi de iyi bir seçenek değil — ve ikisi de para kaybettirir.",
-          "overline": "SORUN",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9762,26 +9289,8 @@
           },
           "quote": "Bir Cuma öğleden sonra kritik bir CVE yayınlandı. Cumartesi sabahına kadar üretim ortamını klonladık, yamayı uyguladık, etkilenen 4 hizmetin tamamında doğruladık ve dağıttık — sıfır kesinti. Önceki sürecimiz 3 hafta ve bir değişiklik yönetimi toplantısı alırdı."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Patch + verify time",
-            "number": "<4dk"
-          },
-          {
-            "icon": "shield",
-            "label": "Test before deploy",
-            "number": "Safe"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Unverified patches",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Geleneksel yamalama, üretim ortamıyla eşleşen bir staging ortamı gerektirir — ama staging günler içinde sapma gösterir. Rediacc, gerçek üretim altyapınızın btrfs copy-on-write anlık görüntüsünü saniyeler içinde oluşturur, yamayı gerçek veri ve gerçek yapılandırmalara karşı uygulamanıza ve doğrulamanıza izin verir, sonra doğrulanmış düzeltmeyi üretime dağıtır. Yama doğrulamayı geçemezse klonu silin. Üretim dokunulmaz kalır.",
-          "overline": "KAPUTUN ALTINDA",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

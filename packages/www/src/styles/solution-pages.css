@@ -122,7 +122,7 @@
   font-weight: 700;
   color: var(--color-heading);
   line-height: 1.15;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--tracking-tight);
   margin-bottom: 20px;
 }
 .sp-hero-sub {
@@ -224,55 +224,16 @@
   box-shadow: var(--shadow);
 }
 
-/* ========== STATS BAR ========== */
-.sp-stats {
-  background: var(--sp-bg-stats);
-  padding: 48px;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-.sp-stats-inner {
-  max-width: var(--sp-stats-max);
-  margin: 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0;
-}
-.sp-stat {
-  flex: 1;
-  text-align: center;
-  padding: 0 40px;
-}
-.sp-stat + .sp-stat {
-  border-left: 1px solid var(--color-border-subtle);
-}
-.sp-stat-icon {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-.sp-stat-icon svg {
-  width: 22px;
-  height: 22px;
-  stroke: var(--sp-brand-primary);
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.7;
-}
-.sp-stat-number {
-  font-size: var(--font-size-4xl);
-  font-weight: 700;
-  color: var(--sp-brand-primary);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-.sp-stat-label {
-  font-size: var(--font-size-base);
-  color: var(--sp-text-body);
-  margin-top: 4px;
-  font-weight: 500;
+/* ========== EMPHASIS (unique-feature phrases in hero/techDiff copy) ==========
+   A branded underline, not the default text-decoration: the phrase should read as
+   marked, not merely styled. Colour and thickness come from the same brand tokens
+   `.sp-clone-arrow-bolt` uses, so it reads as the same visual language as the rest
+   of the "this is the fast/unique part" cues on the page. */
+.sp-emphasis {
+  text-decoration-line: underline;
+  text-decoration-color: var(--sp-brand-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 /* ========== PROBLEM SECTION ========== */
@@ -372,7 +333,7 @@
 .sp-overline {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--sp-brand-primary);
   margin-bottom: 16px;
@@ -382,7 +343,7 @@
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   margin-bottom: 24px;
 }
 .sp-problem p {
@@ -491,7 +452,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-stat-callout-number {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--sp-text-primary);
@@ -504,7 +465,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-stat-ref {
   align-self: flex-start;
   margin-inline-start: 2px;
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--font-size-xs);
   line-height: 1;
   color: var(--sp-brand-primary);
@@ -529,7 +490,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-timeline-label {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   margin-bottom: 12px;
 }
@@ -575,7 +536,7 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   color: var(--color-text-secondary);
   margin-bottom: 3px;
 }
@@ -643,8 +604,9 @@ button.sp-illustration-trigger:focus-visible {
      a 1.00:1 boundary and read as one enormous section. A sibling selector cannot do it:
      SPCostCalculator is a `client:visible` island, so the built HTML puts .sp-cost-section
      inside an <astro-island> and .sp-how-it-works is a sibling of the WRAPPER, not of it.
-     Carried by the band that ends, matching `.sp-stats` above; on the pages that have no
-     howItWorks the next band is --sp-bg-light and a hairline there is still correct. */
+     Carried by the band that ends, same pattern as the other `border-bottom` seams in
+     this file; on the pages that have no howItWorks the next band is --sp-bg-light and
+     a hairline there is still correct. */
   border-bottom: 1px solid var(--color-border-subtle);
 }
 .sp-cost-section-inner {
@@ -656,7 +618,7 @@ button.sp-illustration-trigger:focus-visible {
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   margin-bottom: 12px;
 }
 .sp-cost-section > .sp-cost-section-inner > p {
@@ -709,7 +671,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-calc-trigger-label {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--sp-text-muted-light);
 }
@@ -759,7 +721,7 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--sp-text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-tight);
 }
 .sp-calc-header svg {
   width: 18px;
@@ -786,7 +748,7 @@ button.sp-illustration-trigger:focus-visible {
   font-weight: 500;
 }
 .sp-calc-input-value {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--sp-text-primary);
@@ -842,7 +804,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-calc-result-tag {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   margin-bottom: 16px;
   display: inline-block;
@@ -869,7 +831,7 @@ button.sp-illustration-trigger:focus-visible {
   border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 .sp-calc-result-num {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: var(--font-size-base);
   text-align: right;
@@ -889,14 +851,14 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   color: var(--sp-text-muted-light);
   margin-bottom: 4px;
 }
 .sp-calc-result-big-value {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   line-height: 1.2;
 }
 .sp-calc-result-col.without .sp-calc-result-big-value {
@@ -923,15 +885,12 @@ button.sp-illustration-trigger:focus-visible {
   max-width: var(--sp-page-max);
   margin: 0 auto;
 }
-.sp-how-it-works .sp-overline {
-  text-align: center;
-}
 .sp-how-it-works h2 {
   font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   text-align: center;
   margin-bottom: 64px;
 }
@@ -980,19 +939,53 @@ button.sp-illustration-trigger:focus-visible {
   stroke-linejoin: round;
   opacity: 0.6;
 }
-.sp-step-number {
+/* The icon stays the flat, unshadowed treatment `.sp-step-icon` already has (no
+   gradient/shadow, for the same reason as the old `.sp-step-number` comment this
+   replaced: those circles were the only gradient-AND-shadow objects on the page).
+   The wrapper only exists to anchor the number badge to the icon's corner. */
+.sp-step-icon-wrap {
+  position: relative;
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, var(--color-brand-fill), var(--color-brand-secondary));
-  color: var(--color-on-brand);
-  font-size: var(--font-size-xl);
-  font-weight: 700;
+  margin: 0 auto 20px;
+}
+.sp-step-icon-wrap .sp-step-icon {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--color-brand-fill);
   border-radius: var(--radius-full);
+}
+.sp-step-icon-wrap .sp-step-icon svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--color-on-brand);
+  opacity: 1;
+}
+.sp-step-number-badge {
+  position: absolute;
+  bottom: -4px;
+  inset-inline-end: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  background: var(--sp-bg-white);
+  color: var(--color-brand-fill);
+  border: 2px solid var(--color-brand-fill);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 20px;
-  box-shadow: var(--shadow);
+}
+
+/* `property` pages render an unnumbered list (SPHowItWorks.astro): their steps
+   are facets, not an order, so the connector between them would assert a
+   sequence the content does not have. */
+.sp-steps--plain .sp-step:not(:last-child)::after {
+  content: none;
 }
 .sp-step h3 {
   font-size: var(--font-size-xl);
@@ -1034,14 +1027,14 @@ button.sp-illustration-trigger:focus-visible {
 .sp-server-card-title {
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 .sp-server-card.production .sp-server-card-title {
   color: var(--sp-brand-primary);
 }
 .sp-server-card.clone .sp-server-card-title {
-  color: #7ab0d6;
+  color: var(--color-accent-clone-text);
 }
 .sp-server-card.sealed .sp-server-card-title {
   color: var(--color-error);
@@ -1052,7 +1045,7 @@ button.sp-illustration-trigger:focus-visible {
   padding: 3px 10px;
   border-radius: var(--radius-full);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
 }
 .sp-server-card.production .sp-server-card-status {
   background: rgba(74, 124, 63, 0.12);
@@ -1060,7 +1053,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 .sp-server-card.clone .sp-server-card-status {
   background: rgba(122, 176, 214, 0.12);
-  color: #5a9abf;
+  color: var(--color-accent-clone-ink);
 }
 .sp-server-card.sealed .sp-server-card-status {
   background: rgba(192, 80, 80, 0.12);
@@ -1205,10 +1198,82 @@ button.sp-illustration-trigger:focus-visible {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* The "this is fast" cue (SPCloneSpark + the destination card it clones/costs/pipes
+   into). ONE-SHOT, fired by the shared scroll-reveal observer
+   (public/scripts/scroll-reveal.js) the moment the visual scrolls into view --
+   not an idle loop. `.sp-clone-visual`/`.sp-cost-visual`/`.sp-pipeline-visual`
+   carry `class="reveal"` purely to get that observer's one-shot `.visible`
+   toggle; the rule below cancels the generic reveal fade/slide for them (the
+   production/source card is "already there" and shouldn't animate in -- only
+   the clone side tells a story), and defines its own sequence instead:
+     1. the bolt flashes (sharp, not a slow pulse -- reads as electric)
+     2. the destination card wipes in (clip-path), staggered slightly after
+     3. its counter (SPHowItWorks.astro's inline <script>) ticks up in sync,
+        listening for the SAME `sp-spark-flash` animation via `animationstart`
+        rather than a second observer.
+   `--sp-flow-delay` staggers multiple arrows in pipelineVisual (set inline per
+   arrow in SPHowItWorks.astro); it is unset (0s) for the single-arrow
+   clone/cost variants. */
+@media (prefers-reduced-motion: no-preference) {
+  html.js-anim .sp-clone-visual.reveal,
+  html.js-anim .sp-cost-visual.reveal,
+  html.js-anim .sp-pipeline-visual.reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .reveal.visible .sp-clone-spark svg {
+    animation: sp-spark-flash 0.5s ease-out both;
+    animation-delay: var(--sp-flow-delay, 0s);
+  }
+  /* The hidden state lives in the SAME positive query as its reveal (the
+     double-guard main.css's scroll-reveal section documents): without
+     `html.js-anim` -- no JS, or JS failed before this ran -- `.visible` never
+     arrives, so the card must never be clipped in the first place. */
+  html.js-anim .sp-clone-spark-target {
+    clip-path: inset(0 100% 0 0);
+  }
+  html.js-anim[dir='rtl'] .sp-clone-spark-target {
+    clip-path: inset(0 0 0 100%);
+  }
+  html.js-anim .reveal.visible .sp-clone-spark-target {
+    animation: sp-wipe-reveal 0.6s ease-out both;
+    animation-delay: calc(var(--sp-flow-delay, 0s) + 0.3s);
+  }
+  html.js-anim[dir='rtl'] .reveal.visible .sp-clone-spark-target {
+    animation-name: sp-wipe-reveal-rtl;
+  }
+}
+@keyframes sp-spark-flash {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  35% {
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.95));
+  }
+}
+@keyframes sp-wipe-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes sp-wipe-reveal-rtl {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
 .sp-clone-arrow-label {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--sp-brand-primary);
 }
@@ -1216,7 +1281,7 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-lg);
   font-weight: 700;
   color: var(--sp-brand-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
 }
 
 /* Cost visual (wasteful vs efficient variant) */
@@ -1245,7 +1310,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-cost-card-title {
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 .sp-cost-card.wasteful .sp-cost-card-title {
@@ -1260,7 +1325,7 @@ button.sp-illustration-trigger:focus-visible {
   padding: 3px 10px;
   border-radius: var(--radius-full);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
 }
 .sp-cost-card.wasteful .sp-cost-card-status {
   background: rgba(176, 69, 69, 0.12);
@@ -1279,7 +1344,7 @@ button.sp-illustration-trigger:focus-visible {
   gap: 12px;
   padding: 10px 20px;
   font-size: var(--font-size-sm);
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
 }
 .sp-cost-card-dot {
   width: 8px;
@@ -1310,7 +1375,7 @@ button.sp-illustration-trigger:focus-visible {
   color: var(--sp-text-muted-light);
 }
 .sp-cost-card-footer span {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
 }
 .sp-cost-card.wasteful .sp-cost-card-footer span:last-child {
   color: var(--color-error);
@@ -1347,7 +1412,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-pipeline-card-title {
   font-size: var(--font-size-sm);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 .sp-pipeline-card.trigger .sp-pipeline-card-title {
@@ -1365,7 +1430,7 @@ button.sp-illustration-trigger:focus-visible {
   padding: 3px 10px;
   border-radius: var(--radius-full);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
 }
 .sp-pipeline-card.trigger .sp-pipeline-card-status {
   background: rgba(138, 138, 143, 0.12);
@@ -1405,15 +1470,12 @@ button.sp-illustration-trigger:focus-visible {
   max-width: var(--sp-content-max);
   margin: 0 auto;
 }
-.sp-tech-detail .sp-overline {
-  margin-bottom: 12px;
-}
 .sp-tech-detail h2 {
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   margin-bottom: 16px;
 }
 .sp-tech-detail p {
@@ -1446,7 +1508,7 @@ button.sp-illustration-trigger:focus-visible {
   text-align: start;
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   border-bottom: 1px solid var(--sp-border-light);
 }
@@ -1495,8 +1557,8 @@ button.sp-illustration-trigger:focus-visible {
      --color-text-secondary   5.72:1 /  7.36:1
      --color-brand-on-band    5.78:1 /  6.29:1
    The overline is --font-size-xs, so it needs 4.5:1 and NOT the 3:1 large-text
-   allowance --sp-stat-number leans on one band up the page. That is exactly
-   why it cannot use --color-brand-primary, which is 4.39:1 here. */
+   allowance a big number would get. That is exactly why it cannot use
+   --color-brand-primary, which is 4.39:1 here. */
 .sp-benefits {
   background: var(--color-bg-band-accent);
   padding: 96px 48px;
@@ -1505,16 +1567,12 @@ button.sp-illustration-trigger:focus-visible {
   max-width: var(--sp-page-max);
   margin: 0 auto;
 }
-.sp-benefits .sp-overline {
-  text-align: center;
-  color: var(--color-brand-on-band);
-}
 .sp-benefits h2 {
   font-size: var(--font-size-3xl);
   font-weight: 700;
   color: var(--color-heading);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   text-align: center;
   margin-bottom: 64px;
 }
@@ -1585,15 +1643,12 @@ button.sp-illustration-trigger:focus-visible {
      which is what made it visible. Scroll the table, not the document. */
   overflow-x: auto;
 }
-.sp-comparison-section .sp-overline {
-  text-align: center;
-}
 .sp-comparison-section h2 {
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-text-primary);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   text-align: center;
   margin-bottom: 12px;
 }
@@ -1649,7 +1704,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-comparison-table th {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--sp-text-muted-light);
   background: var(--sp-bg-light);
@@ -1770,7 +1825,7 @@ button.sp-illustration-trigger:focus-visible {
 .sp-impact-label {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   margin-bottom: 6px;
 }
@@ -1784,14 +1839,14 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--color-error);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   line-height: 1.1;
 }
 .sp-impact-after .sp-impact-value {
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--sp-brand-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   line-height: 1.1;
 }
 .sp-impact-arrow {
@@ -1870,7 +1925,7 @@ button.sp-illustration-trigger:focus-visible {
   font-weight: 700;
   color: var(--color-heading);
   line-height: 1.2;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
   margin-bottom: 16px;
 }
 .sp-bottom-cta p {
@@ -1889,16 +1944,10 @@ button.sp-illustration-trigger:focus-visible {
      rgba(255,255,255,0.25) -> #4c4c4e, 2.20:1  now --color-text-tertiary  5.89:1
      rgba(74,124,63,0.5)    -> #2e4629, 1.82:1  now --color-brand-on-band  6.29:1
    Two of the three failed AA on the surface they were authored for, so this is
-   a legibility fix riding the flip, not only a re-token. The hierarchy between
-   the badge and the command line is preserved: the badge is still the louder
-   of the two, both are still quieter than the paragraph above them. */
-.sp-cta-tier-badge {
-  display: block;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-top: 8px;
-  font-weight: 400;
-}
+   a legibility fix riding the flip, not only a re-token. The tier badge that
+   used to sit here was deleted with its 13 i18n keys: it named the free trial
+   a third time in one band, after the description and the button. The command
+   line stays quieter than the paragraph above it. */
 .sp-cta-command {
   margin-top: 24px;
   font-family: var(--sp-font-mono);
@@ -1986,18 +2035,6 @@ button.sp-illustration-trigger:focus-visible {
   .sp-hero-sub {
     font-size: var(--font-size-base);
   }
-  .sp-stats {
-    padding: 32px 24px;
-  }
-  .sp-stats-inner {
-    flex-direction: column;
-    gap: 24px;
-  }
-  .sp-stat + .sp-stat {
-    border-left: none;
-    border-top: 1px solid var(--color-border-subtle);
-    padding-top: 24px;
-  }
   .sp-problem,
   .sp-cost-section,
   .sp-how-it-works,
@@ -2057,7 +2094,7 @@ button.sp-illustration-trigger:focus-visible {
     margin-bottom: 4px;
     font-size: var(--font-size-xs);
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     color: var(--sp-text-muted-light);
   }
@@ -2153,7 +2190,7 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   color: var(--sp-text-muted-light);
   margin-bottom: 12px;
 }
@@ -2220,7 +2257,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-roi-slider-value {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--sp-text-primary);
   font-size: var(--font-size-sm);
@@ -2324,12 +2361,12 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   color: var(--sp-text-muted-dark);
 }
 
 .sp-roi-summary-value {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--sp-text-white);
@@ -2362,7 +2399,7 @@ button.sp-illustration-trigger:focus-visible {
   font-size: var(--font-size-sm);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
   color: var(--sp-text-primary);
   margin: 0 0 14px;
   padding-bottom: 10px;
@@ -2379,7 +2416,7 @@ button.sp-illustration-trigger:focus-visible {
 }
 
 .sp-roi-card-row span:last-child {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--sp-text-primary);
   white-space: nowrap;
@@ -2512,38 +2549,24 @@ button.sp-illustration-trigger:focus-visible {
 /* The --sp-* dark redefinitions that were scoped here so these components
    worked outside .sp-page are unnecessary now: the aliases are global. */
 
-/* Section wrapper: full-width light/dark band. The gated wrapper only renders
-   the LeadMagnetButton trigger; the actual form lives in LeadMagnetModal.tsx
-   and is styled by lead-magnet-modal.css. */
-.sp-download-gated-wrapper,
+/* Section wrapper: full-width light/dark band. */
 .sp-download-short {
   padding: 56px 20px 56px;
   background: var(--sp-bg-light, var(--color-bg-light));
 }
 
-/* B2: the two download CTAs share one row. `auto-fit` rather than a fixed
-   `1fr 1fr`, because the row must degrade to ONE column, and that is not an edge
-   case: LeadMagnetButton.tsx:88 returns null while `!visible`, and it starts
-   invisible whenever the scroll gate is on, and its dismissal persists in
-   sessionStorage. So the ABSENT gated column is the normal first-paint state and
-   the permanent state after any dismissal. */
+/* One card since the gated variant was deleted. `auto-fit` is kept rather than
+   collapsed to a single column: it already degraded to one column (that was the
+   normal first-paint state whenever the gated button was invisible), so this is
+   the layout the row has actually been rendering. */
 .sp-downloads-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(28rem, 100%), 1fr));
   background: var(--sp-bg-light, var(--color-bg-light));
 }
 
-/* The gated wrapper is always in the DOM even when its button renders nothing, so
-   the grid would otherwise hold an empty 56px-tall column beside a real card.
-   `:has()` collapses it from the CSS side, which keeps the whole thing zero-JS:
-   no wrapper, no column. */
-.sp-downloads-row > .sp-download-gated-wrapper:not(:has(.sp-lead-magnet-button)) {
-  display: none;
-}
-
 /* Inside the row the children are columns, not full-width bands, so their own
    band background and horizontal padding would double up. */
-.sp-downloads-row > .sp-download-gated-wrapper,
 .sp-downloads-row > .sp-download-short {
   background: none;
   padding-block: 56px;
@@ -2554,7 +2577,7 @@ button.sp-illustration-trigger:focus-visible {
   position: relative;
   max-width: 560px;
   margin: 0 auto;
-  background: var(--sp-bg-white, var(--gray-0));
+  background: var(--sp-bg-white);
   border: 1px solid var(--sp-border-light);
   border-radius: var(--radius-md);
   padding: 32px 28px;
@@ -2622,7 +2645,7 @@ button.sp-illustration-trigger:focus-visible {
   cursor: pointer;
   font-size: var(--font-size-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--sp-text-body);
   padding: 6px 0;
@@ -2650,7 +2673,7 @@ button.sp-illustration-trigger:focus-visible {
   color: var(--sp-brand-primary);
 }
 .sp-sources-count {
-  font-family: var(--sp-font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 400;
   text-transform: none;
 }
@@ -2681,7 +2704,6 @@ button.sp-illustration-trigger:focus-visible {
 
 /* Mobile breakpoint. */
 @media (max-width: 600px) {
-  .sp-download-gated-wrapper,
   .sp-download-short {
     padding: 40px 16px;
   }

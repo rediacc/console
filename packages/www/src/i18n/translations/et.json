@@ -226,7 +226,7 @@
         "windows": "Windows"
       }
     },
-    "subtitle": "Rediacc on tarkvara, mille paigaldad oma serveritesse. See kopeerib sinu terve tootmiskeskkonda sekundites: rakendused, andmebaasid, seaded.",
+    "subtitle": "Rediacc on tarkvara, mille paigaldad <span class=\"sp-emphasis\">oma serveritesse</span>. See kopeerib sinu terve tootmiskeskkonda <span class=\"sp-emphasis\">sekundites</span>: rakendused, andmebaasid, seaded.",
     "title": "Klooni tootmine.",
     "titleHighlight": " Ei riku midagi."
   },
@@ -319,32 +319,6 @@
     "title": "Uudiskiri",
     "unsubscribed": "Oled tellimusest loobunud. Kahju, et lahkud.",
     "errorRequiredEmail": "Palun sisestage oma e-posti aadress."
-  },
-  "notASlice": {
-    "overline": "Üks tööriist. Kogu pinu.",
-    "slices": [
-      {
-        "description": "Nad kopeerivad sinu andmeid. Sinu rakendus on rohkem kui andmed.",
-        "title": "Andmebaasi tööriistad"
-      },
-      {
-        "description": "Nad kopeerivad sinu koodi. Kood üksi ei ole test.",
-        "title": "Arenduskeskkonna tööriistad"
-      },
-      {
-        "description": "Nad salvestavad kõik. Taastamine võtab tunde, mitte minuti.",
-        "title": "Varundamise tööriistad"
-      },
-      {
-        "description": "Nad kopeerivad sinu manifestid. Klaster on midagi enamat kui YAML.",
-        "title": "Kubernetese tööriistad"
-      }
-    ],
-    "title": "Enamik tööriistu kopeerib ühe osa. Me kopeerime kõike.",
-    "winner": {
-      "description": "Iga meeskond saab oma kirjutatava koopia. Andmed, rakendused, seaded, kõik. Valmis 60 sekundiga. See hõlmab ka terveid Kubernetes klastreid. Sa maksad salvestuse eest ainult siis, kui midagi muutub.",
-      "label": "Rediacc"
-    }
   },
   "pages": {
     "blog": {
@@ -1093,22 +1067,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Pane AGENTS.md projekti. AI-abistaja näeb kohe kõiki käske, lippe ja töövoogusid.",
+              "description": "Agent loeb projekti juurkaustast ühte faili ja teab kohe kõiki käske. Ei ole vaja paigaldada SDK-d, käsitsi kirjutada skeemi ega hallata mandaate.",
               "icon": "zap",
-              "title": "Integratsioon: null kulusid"
+              "title": "Midagi ei pea liidestama"
             },
             {
-              "description": "JSON vastused keskmiselt ~200 märki. --fields lipp võimaldab agentidel taotleda vaid vajalikke andmeid. Konteksti ei raiskita.",
+              "description": "Vastused tulevad struktureeritult, nii et agent töötleb neid iga kord samamoodi ja kulutab oma konteksti ülesandele, mitte juhtpaneelilt andmete kokkukraapimisele.",
               "icon": "terminal",
-              "title": "Kontekstiakna sõbralik"
+              "title": "Vastused püsivad kompaktsed"
             },
             {
-              "description": "--dry-run näitab hävitavate toimingute eelvaate. --yes lubab automatiseerimist. Agendid saavad kindlalt juurutada sisseehitatud turvameetmete abil. Isegi terve klastri fork järgib samu reegleid.",
+              "description": "Kõik, mis midagi kustutab, näitab enne eelvaadet, ja automatiseerimine tuleb sisse lülitada teadlikult. Agent saab liikuda kiiresti, ilma et üks ebaõnnestunud käik oleks parandamatu.",
               "icon": "shield",
-              "title": "Vaikimisi turvaline"
+              "title": "Hävitav toiming küsib enne luba"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Ehitatud autonoomseks infrastruktuuri haldamiseks"
         },
         "bottomCta": {
@@ -1118,8 +1091,8 @@
           "title": "Lase AI-agendil hallata infrastruktuuri"
         },
         "hero": {
-          "ctaLabel": "Anna agendile server",
-          "subtitle": "CLI-esimene. SSH-põhine. JSON vaikimisi. Iga rdc käsk on kavandatud autonoomsetele agentidele: GUI-ta, brauseri automatiseerimiseta, kohandatud integratsioonideta.",
+          "ctaLabel": "Proovi tasuta",
+          "subtitle": "CLI-esimene. SSH-põhine. JSON vaikimisi. Iga rdc käsk on <span class=\"sp-emphasis\">kavandatud autonoomsetele agentidele</span>: GUI-ta, brauseri automatiseerimiseta, kohandatud integratsioonideta.",
           "title": "Infrastruktuur, mida iga AI-agent juba tunneb"
         },
         "howItWorks": {
@@ -1177,7 +1150,6 @@
               "title": "Tehisintellekti agent"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Pane AGENTS.md mall projekti juurkausta. AI-abistaja loeb selle käivitamisel ja tunneb kõiki rdc käske.",
@@ -1204,7 +1176,6 @@
         },
         "problem": {
           "description": "Teie AI-abistaja kirjutab, testib ja silutseb koodi täiesti ise. Aga infrastruktuuriga tegelda? Satub ta vastu müüri: GUI-d, brauseri OAuth, viletsad API-d, vastused, mis paisutavad konteksti.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "73%",
@@ -1254,26 +1225,8 @@
         "relatedSolutions": {
           "title": "Tutvu seotud lahendustega"
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "CLI-põhised toimingud",
-            "number": "100%"
-          },
-          {
-            "icon": "zap",
-            "label": "Keskmised märgid vastuse kohta",
-            "number": "~200"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "Brauseri automatiseerimist vajalik",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Iga disainiotsus Rediaccs prioriteerib masinloetavaid liidesi. Mitte-TTY tuvastus lülitub automaatselt JSON-iks. Ühtne vastusevorm tagab, et agendid parsivad kõik vastused ühtemoodi. SSH-autentimine tähendab – OAuth sisselogimist ja märgiste haldust pole.",
-          "overline": "AGENDILE EHITATUD DISAIN",
+          "description": "Iga disainiotsus Rediaccs prioriteerib <span class=\"sp-emphasis\">masinloetavaid liidesi</span>. Mitte-TTY tuvastus lülitub automaatselt JSON-iks. Ühtne vastusevorm tagab, et agendid parsivad kõik vastused ühtemoodi. SSH-autentimine tähendab – OAuth sisselogimist ja märgiste haldust pole.",
           "rediaccLabel": "Rediacc (rdc CLI)",
           "rows": [
             {
@@ -1305,22 +1258,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Ühtne hind masina kohta. Pole kasutajapõhiseid tasusid, pole üllatusarveid, pole väljumistasusid. Eelarve jääb ennustatavaks isegi kiire kasvuga.",
+              "description": "Hind käib masinate järgi, nii et järgmise aasta arve on selle aasta oma pluss riistvara, mille otsustasid juurde lisada. Miski ei muutu kallimaks lihtsalt sellepärast, et ettevõte kasvas.",
               "icon": "tag",
-              "title": "Kindlad kulud"
+              "title": "Arve, mida saab ette näha"
             },
             {
-              "description": "Andmed jäävad oma riisvara peal, avatud vormingutes. Ükski pakkuja ei saa neid pantvangis hoida ega juurdepääsu eest tasu võtta.",
+              "description": "Andmed asuvad riistvaral, mis kuulub sulle, vormingutes, mida oskab lugeda iga Linux masin. Ükski tarnija ei saa kunagi sinu enda andmetele juurdepääsu üle kaubelda.",
               "icon": "lock",
-              "title": "Omad andmed, täielik kontroll"
+              "title": "Andmed ei ole kellegi teise käes"
             },
             {
-              "description": "Täielik taastamine viis minutit. Kaitstud varukopiad, mida lunavara ei muuda. Äri jätkab tööd. Kui teenusepakkuja langeb, saab kogu süsteemi teisaldada - Kubernetes kaasa arvatud.",
+              "description": "Varukoopiad kirjutatakse failisüsteemi tasemel ainult üks kord, nii et lunavaral pole midagi ümber kirjutada, ja süsteemide taastoomine on lihtsalt ümberlülitus, mitte pikk taasteaken, mida kliendid peavad ootama.",
               "icon": "shield",
-              "title": "Äri järjepidevus"
+              "title": "Äri jätkub katkematult"
             }
           ],
-          "overline": "ÄRIVÄÄRTUS",
           "title": "Mida see tegelikult sisaldab."
         },
         "bottomCta": {
@@ -1333,7 +1285,6 @@
           "description": "Koonda liugureid oma äri järgi. Näed pilve tegelikke kulusid võrrelduna ise majutatud lahendusega.",
           "footnote": "Need numbrid on hinnangud, mis põhinevad tavalistel TCO mudelitel. Tegelikud säästud sõltuvad sinu infrastruktuuri seadistusest ja suurusest.",
           "headerTitle": "Arvuta säästud",
-          "overline": "NUMBRID",
           "results": {
             "blockedTime": "Aastane infrastruktuuri kulu",
             "contextSwitching": "Taastumisaeg",
@@ -1346,7 +1297,7 @@
             "wait": "Seisaku tunde aastas"
           },
           "title": "Kui palju raha saaksite säästa?",
-          "withAnnual": "Arvuta →",
+          "withAnnual": "Arvuta",
           "withoutTag": "Praegused pilvekulud",
           "withResults": {
             "blockedTime": "60% vähem",
@@ -1357,8 +1308,8 @@
           "withTag": "Rediacciga"
         },
         "hero": {
-          "ctaLabel": "Alusta fikseeritud hinnaga",
-          "subtitle": "Kaitse äriandmeid oma riistvara peal. Ühtne hind masina kohta - pole kasutajakaupa tasusid, pole üllatusarveid, pole teenusepakkujat, kes andmeid lukustaaks.",
+          "ctaLabel": "Alusta tasuta prooviga",
+          "subtitle": "Kaitse äriandmeid oma riistvara peal. <span class=\"sp-emphasis\">Ühtne hind masina kohta</span> - pole kasutajakaupa tasusid, pole üllatusarveid, pole teenusepakkujat, kes andmeid lukustaaks.",
           "title": "Ühtne hind serveri kohta. Andmed jäävad sinu juures."
         },
         "meta": {
@@ -1368,7 +1319,6 @@
         },
         "problem": {
           "description": "Algas väikese pilvearve pealt. Nüüd on see juba suuruselt kolmas kulu ja kasvab 20% aastas. Kasutajakaupa hinnakujundus karistab iga uut palkamist. Andmed seisavad teise andmekeskuses nende proprieetarses vormingus. Lahkumine tähendab väljumistasude maksmist andmete tagasi saamiseks.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "20%",
@@ -1415,14 +1365,10 @@
           },
           "title": "Pilvearved kasvavad. Andmed on teist käes."
         },
-        "relatedSolutions": {
-          "title": "Kuidas see toimib"
-        },
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
-          "ctaText": "Jaga CTO süvaanalüüsi",
+          "ctaText": "Ava CTO süvaanalüüs",
           "description": "Tehniline meeskond kontrollib, kuidas see sobib teie arhitektuuriga. Saada neile CTO süvaanalüüs - seal on kõik, mida nad küsivad.",
-          "overline": "JÄRGMINE SAMM",
           "title": "Jaga oma CTO-ga"
         },
         "socialProof": {
@@ -1436,45 +1382,27 @@
             "improvement": "62% kulude vähenemine, kohene taastamine"
           },
           "quote": "Kulutasime 18 000 dollarit kuus 47 töökoormuse pilvinfrastruktuurile. Pärast Rediaccile oma serveritele migreerumist langes arve 6 800 dollarile – taastumisaeg läks 4 tunnilt 3 minutile. Esimesel kuul oli ROI ilmselge."
-        },
-        "stats": [
-          {
-            "icon": "tag",
-            "label": "Kõikekaasav hind",
-            "number": "204 $/kuus"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Tööaja garantii",
-            "number": "99,99%"
-          },
-          {
-            "icon": "users",
-            "label": "Isikupõhiseid tasusid",
-            "number": "0"
-          }
-        ]
+        }
       },
       "forCtos": {
         "benefits": {
           "items": [
             {
-              "description": "Vabane pilvejuurdehindlusest, isikupõhisest maksimisest ja väljaminekutasudest. Kasuta oma juba olemasolevat riistvara.",
+              "description": "Litsentsimine käib masinate, mitte inimeste järgi. Kui meeskond kasvab kümnest neljakümneni, muutub palgakulu, aga infrastruktuuri arve jääb samaks.",
               "icon": "trend-up",
-              "title": "60% madalam TCO"
+              "title": "Eelarve, mis peab palkamisele vastu"
             },
             {
-              "description": "Täielik taastamine alla 5 minutiga. btrfs hetktõmmised teevad taastamisest osundi vahetus – mitte pikad taastetööd.",
+              "description": "Kuna taastamine on lihtsalt osuti vahetus, võtab selle testimine minuteid, mitte tervet nädalavahetust. Meeskonnad, kes saavad taastamist harjutada, ei avasta enam intsidendi keskel, et nende varukoopiad olid katki.",
               "icon": "zap",
-              "title": "Minutid, mitte tunnid"
+              "title": "Taastamine, mida saab harjutada"
             },
             {
-              "description": "Andmed jäävad oma riistvarale avatud vormingutes. Vahetad pakkujat, haldasid ise või liigutad mujale – valik on sinu käes. Nüüd kehtib see ka Kubernetes klastrite kohta.",
+              "description": "Andmed asuvad sinu enda failisüsteemis avatud vormingutes, nii et lahkumine tähendab kopeerimist, mitte migratsiooniprojekti, ja sellele otsusele ei ole lisatud väljumisliikluse arvet.",
               "icon": "lock",
-              "title": "Tarnijast vaba"
+              "title": "Väljapääs, mis juba töötab"
             }
           ],
-          "overline": "STRATEEGILINE VÄÄRTUS",
           "title": "Mida Rediacc sinu infrastruktuurile tähendab"
         },
         "bottomCta": {
@@ -1487,7 +1415,6 @@
           "description": "Liiguta liugureid oma seadistuse järgi. Näe, kuidas Rediacc sinu hetkekuludega võrreldes välja näeb.",
           "footnote": "Hinnangud põhinevad tööstuse TCO mudelitel, mis võrdlevad omahosting infrastruktuuri samaväärsete pilveteenustega. Tegelikud säästud sõltuvad töökoormuse, seadistuse ja skaala.",
           "headerTitle": "Arvuta oma kulusäästud",
-          "overline": "TEGELIK KULU",
           "results": {
             "blockedTime": "Aastane infrastruktuuri kulu",
             "contextSwitching": "Taastumisaeg (MTTR)",
@@ -1500,7 +1427,7 @@
             "wait": "Seisakutunde aastas"
           },
           "title": "Kui palju teie infrastruktuur tegelikult maksab?",
-          "withAnnual": "Arvuta →",
+          "withAnnual": "Arvuta",
           "withoutTag": "Praegused kulud",
           "withResults": {
             "blockedTime": "60% vähem",
@@ -1543,12 +1470,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "KONKURENTSISITUATSIOON",
           "title": "Kuidas Rediacc konkurentidega võrdleb"
         },
         "hero": {
-          "ctaLabel": "Kärbi TCO-d",
-          "subtitle": "Enda riistvaral jooksev infrastruktuuri kaitse. Pole pilve juurdehindlust, pole isikupõhist hinnakujundust, taastamine minutites, mitte tundides.",
+          "ctaLabel": "Alusta tasuta prooviga",
+          "subtitle": "Enda riistvaral jooksev infrastruktuuri kaitse. Pole pilve juurdehindlust, pole isikupõhist hinnakujundust, <span class=\"sp-emphasis\">taastamine minutites</span>, mitte tundides.",
           "title": "Vähenda infrastruktuuri TCO-d 60%. Skaleeri oma riistvaral."
         },
         "meta": {
@@ -1558,7 +1484,6 @@
         },
         "problem": {
           "description": "Pilvekulud kasvavad 15–20% aastas. Kasutaja-põhine litsentsimiskorraldus muudab meeskonna kasvu kalliks. Kui midagi katkeb, võtab teie \"kohene taastamine\" ikkagi tunde – sest varundustööriistad, mis lubavad minutilise RPO, annavad tegelikult päevaseid viivitusi. Iga uuendusega muutub tarnija ökosüsteem kallimaks.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "17%",
@@ -1610,9 +1535,8 @@
         },
         "shareWithTeam": {
           "ctaSlug": "for-devops",
-          "ctaText": "Jaga DevOpsi materjale",
+          "ctaText": "Ava DevOpsi süvaanalüüs",
           "description": "Insenerid armstavad käsurea-esmast töövooge ja kiirvalmis keskkondi. Jaga neile tehnilist süvaaset.",
-          "overline": "JAGA MEESKONNAGA",
           "title": "Kaasage DevOps-tiim"
         },
         "socialProof": {
@@ -1627,26 +1551,8 @@
           },
           "quote": "Kolisime 47 tootmistöökoormust suure pilve pakkuja juurest Rediaccile oma riistvarale. Infrastruktuuri kulud langesid 62% esimese kvartaliga. Esimene intsident taastati 3 minutiga, mitte 4 tunniga nagu eelmine lahendus lubas."
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "TCO madalam kui pilveles",
-            "number": "60%"
-          },
-          {
-            "icon": "clock",
-            "label": "Taastamine minutites",
-            "number": "<5 min"
-          },
-          {
-            "icon": "lock",
-            "label": "Pole tarnijasõltuvust",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc töötab sinu riistvaral, kasutades btrfs copy-on-write hetktõmmiseid koheste varukoopiate ja taaste jaoks. Iga hetktõmmis on failisüsteemi tasemel muutmatu – lunavara ei suuda krüpteerida seda, mida kernel kaitseb. Taastamine on lihtsalt osuti vahetus, mitte terabaidi kaupa andmete taastamine.",
-          "overline": "ARHITEKTUUR",
+          "description": "Rediacc töötab sinu riistvaral, kasutades btrfs copy-on-write hetktõmmiseid koheste varukoopiate ja taaste jaoks. Iga hetktõmmis on failisüsteemi tasemel muutmatu – lunavara ei suuda krüpteerida seda, mida kernel kaitseb. Taastamine on lihtsalt <span class=\"sp-emphasis\">osuti vahetus, mitte terabaidi kaupa andmete taastamine</span>.",
           "rediaccLabel": "Rediacc (omahosting)",
           "rows": [
             {
@@ -1678,22 +1584,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Päringust toimiva keskkonnani alla minuti. Kogu stekk: OS, konteinerid, andmebaasid, konfiguratsioon.",
+              "description": "Keskkonna saamine ei ole enam kellegi teise sprindiülesanne. See on sinu oma: loo ja kustuta seda nii tihti, kui töö tegelikult vajab.",
               "icon": "zap",
-              "title": "60-sekundilised keskkonnad"
+              "title": "Ei piletit ega järjekorda"
             },
             {
-              "description": "Kõik käsk. Integreeri CI/CD-ga, Git hookidega või automaatikaga. GUI pole vajamatu. Kubernetes kaasas: nimeruum forgitakse nagu repo.",
+              "description": "Iga toiming on käsk koos väljumiskoodiga, nii et see sobib otse pipeline'i, Git hooki või Makefile'i sisse, ilma eraldi kestata, brauserita või teenusekontota.",
               "icon": "terminal",
-              "title": "CLI-esimene, skriptitav"
+              "title": "Skriptitav nagu kõik muu"
             },
             {
-              "description": "Btrfsi hetktõmmised tastavad keskkonna sekunditega. Andmekadu pole, seisak pole.",
+              "description": "Ebaõnnestunud migratsiooni või vale DROP-käsu tühistab lihtne tagasilülitumine hetktõmmisele, ja see muudab, kui julgelt inimesed on nõus päris andmetega katsetama.",
               "icon": "shield",
-              "title": "Kohene tagasipööramine"
+              "title": "Vead ei lähe enam kalliks"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Ehitatud inseneridele, kes kõike automatiseerivad"
         },
         "bottomCta": {
@@ -1703,8 +1608,8 @@
           "title": "Proovi"
         },
         "hero": {
-          "ctaLabel": "Klooni prod",
-          "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist 60 sekundiga, taastab alla viie minutiga ja töötab oma riistvaral. Pileteid pole, ootamist pole. Andmed jäävad sinulle.",
+          "ctaLabel": "Alusta tasuta katset",
+          "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist <span class=\"sp-emphasis\">60 sekundiga</span>, taastab alla viie minutiga ja töötab oma riistvaral. Pileteid pole, ootamist pole. Andmed jäävad sinulle.",
           "title": "Kloonige prod minutiga. Taastage viies. Ära esitage pileteid."
         },
         "howItWorks": {
@@ -1762,7 +1667,6 @@
               "title": "Tootmine"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Käivita rdc ceph snapshot create production. Btrfs CoW loob hetktõmmise hetkeliselt: rakendus, andmebaas, konfiguratsioon, kõik.",
@@ -1789,7 +1693,6 @@
         },
         "problem": {
           "description": "CI/CD juurutab minutitega, IaC sekunditega. Aga testimiskeskkond päris andmetega? Pead pileti esitama ja kolm päeva ootama. Etapp on jagatud, ebastabiilne ja täiesti teistsugune kui tootmine.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "69%",
@@ -1851,26 +1754,8 @@
           },
           "quote": "Läksime 3-päevaselt keskkonna ettevalmistamise tsüklilt alla minuti. Arendajad lõpetasid piletite esitamise ja alustasid tarnimist. btrfs hetktõmmised toimivad lihtsalt: 380 GB kloonitud 52 sekundiga praktiliselt ilma lisasalvestuseta."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Klooni loomise aeg",
-            "number": "60 s"
-          },
-          {
-            "icon": "zap",
-            "label": "Täielik katastroofitaaste",
-            "number": "<5 min"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "Vajalikud op-pileteid",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc kasutab btrfs copy-on-write hetktõmmiseid failisüsteemi tasemel. 380 GB tootmiskeskkonna hetktõmmis valmib alam-sekunditega ja ei kasuta algselt täiendavat salvestust. Kui kloon erineb, kasutavad ainult muutunud plokid uut ruumi.",
-          "overline": "KAPOTI ALL",
+          "description": "Rediacc kasutab btrfs copy-on-write hetktõmmiseid failisüsteemi tasemel. 380 GB tootmiskeskkonna hetktõmmis valmib <span class=\"sp-emphasis\">alam-sekunditega</span> ja ei kasuta algselt täiendavat salvestust. Kui kloon erineb, kasutavad ainult muutunud plokid uut ruumi.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -3065,7 +2950,6 @@
               "title": "Pidev, mitte iga-aastane"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata.",
@@ -3080,7 +2964,6 @@
           "description": "Iga päev, mil haavatavus jääb parandamata, on teie infrastruktuur avatud. Arvutage oma riskiaken.",
           "footnote": "Mudel: Traditsiooniline pentesti maksumus ~15 000 $ kaasamise kohta ~10 serveri puhul. Pimeala = % aastast ilma aktiivse skaneerimiseta. Rediacc maksumus põhineb 20 $/server/kuus pideva automatiseeritud testimise eest.",
           "headerTitle": "Turvakokkupuute kalkulaator",
-          "overline": "TEGELIKUD KULUD",
           "results": {
             "blindspot": "Pimeala",
             "exposure": "Kokkupuude haavatavuse kohta",
@@ -3107,7 +2990,6 @@
           "title": "Klooni tootmiskeskkond. Lase tehisintellektil seda rünnata."
         },
         "howItWorks": {
-          "overline": "KUIDAS SEE TÖÖTAB",
           "pipelineVisual": {
             "arrows": [
               {
@@ -3182,7 +3064,6 @@
         },
         "problem": {
           "description": "Läbitungimistestimine reaalsüsteemides on ohtlik. See võib teenuseid kokku jooksutada, andmeid rikkuda või valehäireid käivitada. Seetõttu enamik meeskondi jätab selle vahele või testib vananenud lavastuskeskkondi, mis tegelikkust ei peegelda. Tulemus: haavatavused jäävad kuude kaupa parandamata - kuni ründaja need esmalt avastab.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "194 päeva",
@@ -3260,26 +3141,8 @@
           },
           "quote": "Käivitasime oma esimese automatiseeritud pentesti tootmiskloonil ja leidsime 23 haavatavust - sealhulgas 2 kriitilist SQL-süste vektorit, mis olid läbinud kolm manuaalset auditit. Paikendasime need kõik enne järgmist vastavusülevaatust ja nüüd korraldame penteste iganädalaselt, mitte aastase ajavahemiku tagant."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Kloonimine testimiseks",
-            "number": "47s"
-          },
-          {
-            "icon": "shield",
-            "label": "Tootmisrisk",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "CVE allkirja skaneeritud",
-            "number": "2 847"
-          }
-        ],
         "techDiff": {
           "description": "Traditsiooniline läbitungimistestimine suunab lavastuskeskkondadele, mis kalduvad tootmisest kõrvale juba päevade jooksul pärast loomist. Rediacc loob btrfs copy-on-write hetktõmmise teie tegelikust tootmisinfrastruktuurist - samad andmed, samad konfiguratsioonid, samad haavatavused - ja käivitab selle vastu automatiseeritud rünnakusimulatsioonid. Kloon hävitatakse pärast testimist. Tootmiskeskkond jääb puutumata.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "Traditsiooniline pentest",
           "rediaccLabel": "Rediacc (ründab tootmiklooni)",
           "rows": [
@@ -3330,7 +3193,6 @@
               "title": "Kohesed aruanded"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Iga tegevus logitud. Mitte midagi peidetud.",
@@ -3345,7 +3207,6 @@
           "description": "Liigutage liugureid, et vastata oma keskkonnale. Vaadake puudulike auditiradade tegelikku kulu.",
           "footnote": "Logide koostamine: auditid x tunnid auditi kohta hinnaga 200 $/tund. Auditiaugud: hinnanguliselt 1 iga 5 serveri kohta ilma tsentraliseeritud logimiseta. Uurimise viivitus: augud x 12 000 $ (pikendatud rikkumise uurimine). Mittevastavus: 5 000 $ augu kohta auditi kohta. Rediacciga genereerib üks CLI-käsk täieliku, SHA-256 kontrollitud aruande sekunditega.",
           "headerTitle": "Auditirajad riski kalkulaator",
-          "overline": "TEGELIKUD KULUD",
           "results": {
             "compileHours": "Logide kogumiseks kulutatud tunnid / aastas",
             "delayCost": "Uurimise viivituse kulu",
@@ -3408,7 +3269,6 @@
               "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "VAHE",
           "title": "Auditirada võrdlus"
         },
         "hero": {
@@ -3473,7 +3333,6 @@
               "title": "Operatsioonid"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Iga varukoopia, taastamine, juurdepääs, võtmevahetus ja konfiguratsionimuutus salvestatakse automaatselt. Ei nõua seadistamist ega sisselülitamist.",
@@ -3501,7 +3360,6 @@
         },
         "problem": {
           "description": "Kui midagi läheb valesti, on esimene küsimus: \"mis juhtus?\" Ilma täielike logideta arvate lihtsalt. Puudulikud auditirajad tähendavad pimedaid alasid. Pimedad alad tähendavad riski. Audiitorid ei aktsepteeri vastust \"me arvame\".",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "204 päeva",
@@ -3623,26 +3481,8 @@
           },
           "quote": "SOC 2 Type II auditi ajal küsis audiitor 6 kuu varukoopiate juurdepääsulogisid kõigi 28 serveri kohta. Eelmise tööriistaga oleks see nõudnud 2 nädalat manuaalset log-agregeerimist - eelmisel aastal oli meil puudulike andmete tõttu 4 auditileiду. Käivitasin ühe Rediacc käsu ja sain täieliku, krüptograafiliselt kontrollitud aruande 30 sekundiga. Audiitor ütles, et see oli puhtaim auditirada, mida ta 15 aasta jooksul näinud oli. Null leidu."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Tegevused logitud",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Logi terviklikkus",
-            "number": "Rikkumiskindel"
-          },
-          {
-            "icon": "zap",
-            "label": "Aruande genereerimine",
-            "number": "Kohene"
-          }
-        ],
         "techDiff": {
           "description": "Rakenduse logid on mõeldud silumiseks - need on muudetavad, puudulikud ja hajutatud üle süsteemide. Rediacci auditirada on mõeldud vastavuseks: iga operatsioon on krüptograafiliselt allkirjastatud, kronoloogiliselt aheldatud ja eksporditav ühe aruandena.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "Muudetavad rakenduslogid",
           "rediaccLabel": "Rediacc auditirada",
           "rows": [
@@ -3672,7 +3512,6 @@
           "command": "rdc backup verify my-app",
           "description": "Alustage tasuta Community väljaandega. Kontrollige esimene varukoopia alla minutiga.",
           "primaryCta": "Alusta tasuta Community väljaandega",
-          "tierBadge": "Krediitkaart ei ole vajalik",
           "title": "Ärge kunagi usaldage kontrollimata varukoopiat"
         },
         "calculator": {
@@ -3680,7 +3519,6 @@
           "description": "Liigutage liugureid, et vastata oma keskkonnale. Vaadake \"varukoopia lõpetatud\" usaldamise tegelikku kulu.",
           "footnote": "Rikutud varukoopiad: nädalatööd × 52 × rikutuse määr. Taastamise ebaõnnestumine: rikutud varukoopiad × taastamistunnid × 100 $/tund (personal + kaotatud tootlikkus). Andmekadu: rikutud varukoopiad × 8 riskiridadega juhtumi kohta × 173 $/kirje (IBM Cost of a Data Breach Report 2024). Igapäevase automatiseeritud kontrollimisega tuvastatakse rikutus 24 tunni jooksul - enne kui see kuhjub.",
           "headerTitle": "Varukoopia riskikokkupuute kalkulaator",
-          "overline": "TEGELIKUD KULUD",
           "results": {
             "corrupted": "Rikutud varukoopiad / aastas",
             "dataLoss": "Andmekao risk (kirjed)",
@@ -3743,7 +3581,6 @@
               "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "VAHE",
           "title": "Varukoopiate kontrollimine võrdluses"
         },
         "hero": {
@@ -3808,7 +3645,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Käivitage rdc repo push production. Btrfs-hetktõmmis jäädvustab kogu teie virna aatomiliselt.",
@@ -3836,7 +3672,6 @@
         },
         "problem": {
           "description": "Arvate, et olete kaitstud. Varukoopiad tehakse iga öö. Kuid kas need on tegelikult korras? Enamik meeskondi ei kontrolli seda enne taastamise vajadust. Siis on juba hilja. Rikutud varukoopia annab vale turvatunde - ja mitte midagi muud.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "58%",
@@ -3941,7 +3776,6 @@
         },
         "techDiff": {
           "description": "Traditsioonilised varukoopiatööriistad kontrollivad, et failid kirjutati. Rediacc läheb kaugemale: kloonib varukoopia, käivitab iga konteineri, käivitab tervisekontrolle iga teenuse vastu ja raporteerib läbitud/ebaõnnestunud. Mitte faili kontrollsumma - täielik taastetest.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc kontrollimine",
           "rows": [
             {
@@ -3984,7 +3818,6 @@
               "title": "Hankijast sõltumatus"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Kui AWS läheb alla, teie ei lähe",
@@ -3992,7 +3825,6 @@
           "command": "rdc repo push production --to secondary-dc",
           "description": "Alustage tasuta Community väljaandega. Replitseerige asukohtade vahel tasuta. Krediitkaart pole vajalik.",
           "primaryCta": "Alusta tasuta Community väljaandega",
-          "tierBadge": "Kuni 10 töökoormuse jaoks tasuta igaveseks",
           "title": "Ärge panustage oma äri ühele pilve"
         },
         "calculator": {
@@ -4000,7 +3832,6 @@
           "description": "Liigutage liugureid, et vastata oma ärile. Vaadake ühe pilvesõltuvuse tegelikku kulu.",
           "footnote": "Tulukadu: tunnine tulu × katkestustunnid. Tõrkesiirde tööjõud: 3 inseneri × tõrkesiirde tunnid × 200 $/tund × juhtumid. Klientide lahkumine: 20% otsesest tulust (konservatiivne hinnang). SLA trahv: 10% kaotatud tulust. ITIC 2024 leidis, et 41% ettevõtetest teatab tunni seisakuajakuludest 1-5 miljonit dollari vahemikus. Rediacci alla 30 sekundi automaatne tõrkesiire kõrvaldab pikenenud katkestusaknaid.",
           "headerTitle": "Katkestuskokkupuute kalkulaator",
-          "overline": "TEGELIKUD KULUD",
           "results": {
             "churn": "Klientide lahkumine (hinnang)",
             "labor": "Tõrkesiirde tööjõukulu",
@@ -4063,7 +3894,6 @@
               "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "VAHE",
           "title": "Ükski muu tööriist ei tee tõrkesiiret pilvede vahel sekunditega"
         },
         "hero": {
@@ -4129,7 +3959,6 @@
               "title": "Primaarne (us-east-1)"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Käivitage rdc replicate production --target secondary. Inkrementaalne sünkroonimine - edastatakse ainult muutunud plokid.",
@@ -4157,7 +3986,6 @@
         },
         "problem": {
           "description": "Kriitilised pilve katkestuste sündmused kasvasid 2024. aastal aastaga 18%, kestsid 18,7% kauem ja inimviga põhjustas 68% neist. Kui teie ainus pilv läheb alla, läheb kõik alla. Teie kliendid, teie tulu, teie maine. Kõik kellegi teise infrastruktuuri pantvangis.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "$300K+",
@@ -4283,26 +4111,8 @@
           },
           "quote": "AWS us-east-1 katkestuse ajal märtsis tegid meie 12 tootmisteenust tõrkesiirde sekundaarsesse andmekeskusesse 22 sekundiga. Meie kliendid ei märganud midagi. Meie konkurendid olid 6 tundi maas. Saime sel nädalal kolm uut ettevõtete lepingut nende klientidelt."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Tõrkesiirde aeg",
-            "number": "<30s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Andmete terviklikkus",
-            "number": "99,99%"
-          },
-          {
-            "icon": "cloud",
-            "label": "Toetatud pilvepakkujat",
-            "number": "3+"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc kasutab btrfs send/receive inkrementaalsete erinevuste arvutamiseks failisüsteemi tasemel. Selle asemel, et edastada täismahtuseid, liiguvad saitide vahel ainult muutunud plokid. 380 GB keskkond, millel on 2,4 GB päevaseid muutusi, edastab 2,4 GB - mitte 380 GB. See on 98% ribalaiuse kokkuhoid. Replikatsioon töötab pidevalt või ajakava järgi.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -4345,7 +4155,6 @@
               "title": "Mõõdetav paranemine"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Testa turvalisust pidevalt, mitte aastase intervalliga",
@@ -4360,7 +4169,6 @@
           "description": "Aastaste pentestide vahe on aken, millele ründajad loodavad. Arvutage, kui suurt riski te kannate.",
           "footnote": "Mudel: Traditsiooniline pentest ~15 000 $ kaasamise kohta ~10 serveri puhul. Pimeala = % aastast ilma aktiivse skaneerimiseta. Rediacc 20 $/server/kuus igapäevase automatiseeritud testimise eest. Kokkupuude = vahe avastamistsüklite vahel + parandustähtaeg.",
           "headerTitle": "Kokkupuuteakna kalkulaator",
-          "overline": "TEGELIKUD KULUD",
           "results": {
             "blindspot": "Pimealaaken",
             "exposure": "Kokkupuutepäevad haavatavuse kohta",
@@ -4387,7 +4195,6 @@
           "title": "Testa turvalisust pidevalt. Mitte aastase intervalliga."
         },
         "howItWorks": {
-          "overline": "KUIDAS SEE TÖÖTAB",
           "pipelineVisual": {
             "arrows": [
               {
@@ -4457,7 +4264,6 @@
         },
         "problem": {
           "description": "Käivitate läbitungimistesti kord aastas. See leiab probleeme. Parandate need. Kuid mis on haavatavustega, mis ilmnevad järgmisel nädalal? Või järgmisel kuul? Aastane testimine tähendab aastaseid pimedaid alasid. Ründajad ei oota teie ajakava. Iga päev pentestide vahel on päev, mil teie infrastruktuur on avatud.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "364 päeva",
@@ -4535,26 +4341,8 @@
           },
           "quote": "Läksime aastaselt pentestimiselt igapäevastele automatiseeritud skaneerimistele. Meie haavatavuste tuvastamise keskmine aeg langes 180 päevalt 1 päevale. Esimesel kuul leidsime ja paigaldasime 14 haavatavust, mis oleksid jäänud avastamata kuni järgmise aastauditi hetkeni."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Testimissagedus",
-            "number": "Iga päev"
-          },
-          {
-            "icon": "shield",
-            "label": "Tootmisseisakut",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Haavatavuste vähenemine 4 nädalaga",
-            "number": "87%"
-          }
-        ],
         "techDiff": {
           "description": "Iga ajakava järgi käivitatud skaneerimine loob värske btrfs copy-on-write hetktõmmise teie tootmisinfrastruktuurist, käivitab selle vastu täieliku tehisintellekti pentesti komplekti, genereerib prioritiseeritud aruande koos trendianalüüsiga ja hävitab klooni. Lavastuskeskkonda pole vaja hallata. Kaldumist pole. Vananenud andmeid pole. Iga skaneerimine testib seda, mis tegelikult tootmises praegu töötab.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "Planeeritud iga-aastane testimine",
           "rediaccLabel": "Rediacc (pidev)",
           "rows": [
@@ -4605,7 +4393,6 @@
               "title": "SecNumCloud ja C5:2026-ga kooskõlas"
             }
           ],
-          "overline": "MIKS SEE LOEB",
           "title": "Mida saate"
         },
         "blurb": "Teie serverid, teie võtmed, teie jurisdiktsioon.",
@@ -4620,7 +4407,6 @@
           "description": "Lohistage liugureid oma keskkonnale vastavaks. Vaadake suveräänsuse lünkade tegelikku kulu.",
           "footnote": "Edastusrisk: kirjed × 0,04 € × 10% regulatiivse kontrolli tõenäosus. Lahkumistrahv: 10% hyperscaleri kulutusest andmemääruse artikli 25 hinnangulise üleminekukulude ülemmäärana (tasuta ülemineku tähtaeg 12. jaanuar 2027). DORA testimine: tunnid × 200 €/tund insenerikulud. Rediacciga: ise hostimine kõrvaldab edastusriski; avatud formaat kõrvaldab lahkumistrahvi; konstantse ajaga fork vähendab DORA taastetestimise minutiteks sõltumata repositooriumi suurusest.",
           "headerTitle": "Suveräänsuse kokkupuute kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "doraTesting": "DORA artikli 12 testimiskulu",
             "exitPenalty": "Andmemääruse 2027 lahkumistrahvi risk",
@@ -4681,7 +4467,6 @@
               "values": ["cross", "cross", "check", "check", "check", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Suveräänsuse võrdlus"
         },
         "hero": {
@@ -4746,7 +4531,6 @@
               "title": "USA Hyperscaler"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc OÜ on asutatud Eestis; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
@@ -4774,7 +4558,6 @@
         },
         "problem": {
           "description": "USA jurisdiktsiooni all olevad pilveteenuse pakkujad on seaduslikult kohustatud täitma CLOUD Act-i korraldusi, isegi EL-i andmekeskustes hoitavate andmete puhul. Lepingulised kohustused ei saa USA seadust tühistada. Küsimus pole selles, kas teie teenusepakkuja seda teeks. Küsimus on selles, kas ta seaduslikult saaks seda teha.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "\"Ei, ma ei saa seda garanteerida\"",
@@ -4900,26 +4683,8 @@
           },
           "quote": "Pärast Carniaux' senaadi tunnistust juunis 2025 esitas meie SecNumCloud audiitikomitee ühe küsimuse: kas suudate tõestada, et teie varukoopia teenusepakkujat ei saa kohustada avaldama patsiendi andmeid USA ametiasutustele? Microsoft Azure Backup-iga ei suutnud me sellele vastata. Rediacciga on vastus arhitektuuriline: võtmed ei lahku kunagi meie HSM-ist, operaatoril puudub USA emaettevõte ja saame genereerida allkirjastatud haldusaruande kolmekümnne sekundiga. See on ainus vastus, mis rahuldab ANSSI-d."
         },
-        "stats": [
-          {
-            "icon": "key",
-            "label": "Võtmeid ühelegi teenusepakkujale escrow-s",
-            "number": "0"
-          },
-          {
-            "icon": "lock",
-            "label": "Kliendi võtmehaldus",
-            "number": "100%"
-          },
-          {
-            "icon": "globe",
-            "label": "Operaatori jurisdiktsioon",
-            "number": "Ainult EL"
-          }
-        ],
         "techDiff": {
           "description": "USA jurisdiktsiooni all olev teenusepakkuja saab teie andmeid hoida Frankfurdis ja USA kohtud saavad siiski kohustada neid andmeid avaldama. Rediacc-i arhitektuur eemaldab sunnivektori täielikult: pole võtmeid, mida üle anda, ja pole call-home kanalit, mida pealt kuulata.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "USA-omanduses pakkuja",
           "rediaccLabel": "Rediacc (pole võtmeid üle anda)",
           "rows": [
@@ -4947,16 +4712,6 @@
           "title": "Miks andmete asukoht ei ole andmesuveräänsus"
         }
       },
-      "downloadGated": {
-        "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Sisesta oma e-posti aadress ja saadame sulle allalaadimislingi koos üheleheküljelise kokkuvõttega.",
-        "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
-        "dismissLabel": "Sulge",
-        "emailPlaceholder": "you@company.com",
-        "errorMessage": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
-        "submitLabel": "Saada mulle ülevaade",
-        "successMessage": "Kontrolli oma postkasti kinnituse saamiseks. Avasime PDF-i ka uuel vahekaardil.",
-        "title": "Hangi tehniline ülevaade"
-      },
       "downloadShort": {
         "buttonLabel": "Laadi lühiülevaade alla (PDF)",
         "description": "Jäta süvitsi minek vahele. Võta viie minuti versioon, mida su meeskond saab koosolekul läbi lugeda.",
@@ -4975,7 +4730,6 @@
           "description": "Liigutage liugureid vastavalt oma keskkonnale. Vaadake tarnijahaldusega krüpteerimise tegelikku kulu.",
           "footnote": "Auditi ettevalmistus: auditeid × tunde auditi kohta. Vastavuslüngad: 1 iga 5 TB tarnijahaldusega andmete kohta. Turvarikkumise riskipreemia: $4 880/TB × riskitegur (tööstuse keskmine IBM-i põhjal). Kliendi omavõtmete ja nullteadlikkuse arhitektuuriga on võtmejuurdepääsu audit üks CLI-käsk.",
           "headerTitle": "Krüpteerimishalduse kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "exposure": "Riskiaknad aastas",
             "gaps": "Vastavuslüngad (võtme juurdepääs)",
@@ -5038,7 +4792,6 @@
               "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Krüpteerimiskontrolli võrdlus"
         },
         "hero": {
@@ -5103,7 +4856,6 @@
               "title": "Varukoopia andmed"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Käivitage rdc keygen production. Looge 4096-bitine RSA võtmepaar, mida hoiate ainult teie.",
@@ -5131,7 +4883,6 @@
         },
         "problem": {
           "description": "Enamik varukoopiatööriistu krüpteerib teie andmed oma võtmetega. See tähendab, et neil on juurdepääs andmetele. Nende töötajatel on juurdepääs. Nendepoolne turvamurd paljastab teie andmed. Kui te ei kontrolli võtmeid, ei kontrolli te oma andmeid.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "Ainult 8%",
@@ -5260,7 +5011,6 @@
         },
         "techDiff": {
           "description": "Tarnijahaldusega krüpteerimine tähendab, et tarnija hoiab võtmeid. Nad saavad teie andmeid dekrüpteerida. Nende töötajatel on juurdepääs. Nendepoolne turvarikkumine paljastab kõik. Rediacc kasutab kliendi omavõtmeid nullteadlikkuse arhitektuuriga — me ei näe kunagi teie selgeteksti ega teie võtit.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "Võtmed tarnija käes",
           "rediaccLabel": "Rediacc (võtmed kliendi käes)",
           "rows": [
@@ -5303,7 +5053,6 @@
               "title": "Rakendus + andmebaas + konfiguratsioon"
             }
           ],
-          "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
         "blurb": "Klooni tootmiskeskkond 60 sekundiga",
@@ -5311,7 +5060,6 @@
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Alustage tasuta Community versiooniga. Kloonige kuni 10 töökoormust tasuta. Ilma krediitkaardita.",
           "primaryCta": "Alusta tasuta Community versiooniga",
-          "tierBadge": "Tasuta igavesti kuni 10 töökoormuse jaoks",
           "title": "Anna oma arendajatele nende aeg tagasi"
         },
         "calculator": {
@@ -5319,7 +5067,6 @@
           "description": "Liigutage liugureid vastavalt oma meeskonnale. Numbrid võivad teid üllatada.",
           "footnote": "Põhineb $160K keskmise kogu töötasutel ($92/h täielikult arvestatud). Keskkonna ooteaja kulu: blokeeritud aeg × 60% tootlikkuse mõju. Kontekstivahetus: $24K–$50K/arendaja/aastas. 69% arendajatest kaotab 8+ tundi nädalas ebaefektiivsusele (Atlassian 2024). Arendajad ei ole ootamise ajal täielikult jõude, kuid ahelad sõltuvused intensiivistuvad sprinditi. Konservatiivsed hinnangud — tegelikud säästud on sageli suuremad.",
           "headerTitle": "Keskkonna ooteaja kulu kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "blockedTime": "Blokeeritud aeg / sprint",
             "contextSwitching": "Kontekstivahetuse kulu",
@@ -5377,7 +5124,6 @@
               "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Ükski teine tööriist ei klooni teie kogu virna"
         },
         "hero": {
@@ -5448,7 +5194,6 @@
               "title": "Tootmine"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Arendaja käivitab rdc ceph snapshot create production. Ilma piletiteta. Ilma kinnitusteta.",
@@ -5476,7 +5221,6 @@
         },
         "problem": {
           "description": "Teie arendaja vajab testkeskkonda. Ta esitab pileti. Ops seadistab serveri. Keegi konfigureerib selle. Kolm päeva hiljem ei vasta see tootmisele. Vahepeal on arendaja alates esmaspäevast blokeeritud ja iga katkemine maksab 23 minutit taastumisaega.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "69%",
@@ -5602,26 +5346,8 @@
           },
           "quote": "Käivitasime 12 tootmisidentset testkeskkonda alla 10 minutiga — igaühes täielik 241 GB PostgreSQL andmebaas. Meie eelmine protsess põhines käsitsi andmebaasi dumpidel lavastuskeskkonda. See nõudis 3 insenerit ja 2 päeva keskkonna kohta."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Klooni loomise aeg",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Tootmisega identne",
-            "number": "100%"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "DevOpsi pileteid vaja",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc kasutab btrfs copy-on-write hetktõmmiseid failisüsteemi tasandil. 241 GB tootmiskeskkonna hetktõmmis valmib allsekundiliselt ja tarbib algul null lisaruumi. Kuna kloon arengu käigus erinema hakkab, kasutavad ainult muutunud plokid uut ruumi. Kümme klooni 241 GB andmebaasist võib kasutada vähem kui 12 GB lisaruumi.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5668,7 +5394,6 @@
               "title": "Kindlustunne enne kaost"
             }
           ],
-          "overline": "MIKS SEE OLULINE ON",
           "title": "Mida saate"
         },
         "blurb": "Testi oma tõrkeüleminek enne, kui seda vajad",
@@ -5676,7 +5401,6 @@
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Alustage tasuta Community versiooniga. Käivitage oma esimene KT-test alla 5 minutiga.",
           "primaryCta": "Alusta tasuta Community versiooniga",
-          "tierBadge": "Krediitkaart pole vajalik",
           "title": "Testi oma tõrkeplaani täna"
         },
         "calculator": {
@@ -5684,7 +5408,6 @@
           "description": "Liigutage liugureid vastavalt oma ärile. Vaadake KT-plaani lootmise tegelikku kulu.",
           "footnote": "Tulurisk: tunnitulu × eeldatavad seisakutunnid. Taastamise tööjõukulu: 3 insenerit × seisakutunnid × $200/h × 3 teenust igaühe kohta. Voolavus: 20% ohualdisest tulust (konservatiivne hinnang). Vastavus: 10% kaotatud tulust. Ainult 13% organisatsioonidest kasutab orkestreeritud KT-töövoogusid (Veeam 2024). Igakuise automatiseeritud testimisega avastatakse lüngad ja parandatakse enne, kui need loevad.",
           "headerTitle": "KT-testilünkade riski kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "churn": "Kliendivoolavus (hinnang)",
             "compliance": "Vastavustrahvi risk",
@@ -5747,7 +5470,6 @@
               "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "KT-testimistööriistad võrdluses"
         },
         "hero": {
@@ -5812,7 +5534,6 @@
               "title": "Esmane (us-east-1)"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Käivitage rdc failover test --simulate. Kontrollitud tõrge klooni vastu. Null riski tootmisele.",
@@ -5840,7 +5561,6 @@
         },
         "problem": {
           "description": "Teil on katastroofitaaste plaan. Aga millal viimati seda testite? Enamik meeskondi pole seda teinud. Nad eeldavad, et see töötab. Siis katastroofis selgub, et see ei tööta. Testimata plaan ei ole plaan. See on lootus.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "Ainult 13%",
@@ -5954,26 +5674,8 @@
           },
           "quote": "Käivitasime oma esimese automatiseeritud tõrkesiire testi teisipäeva hommikul. See leidis 3 kriitilist lünka — aegunud DNS-kirje, puuduv SSL-sertifikaat teisel serveril ja andmebaasi replikatsiooni viivitus 4 minutit. Kõik kolm oleksid põhjustanud tõelise katkestuse. Parandasime need pärastlõunal. Nüüd testime igakuiselt ja magame rahulikumalt."
         },
-        "stats": [
-          {
-            "icon": "refresh",
-            "label": "Soovitatav testisagedus",
-            "number": "Igakuine"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Kogu virna testimise katvus",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Mõju tootmisele",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditsioonilised KT-testid nõuavad tootmise seisakuakent, inseneride meeskonda ja nädala planeerimist. Rediacc kasutab btrfs copy-on-write hetktõmmiseid, et luua sekunditega isoleeritud kloon kogu teie infrastruktuurist. Test käivitatakse klooni vastu — tootmine ei peatu kunagi.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc KT-testimine",
           "rows": [
             {
@@ -6007,7 +5709,6 @@
           "command": "rdc repo push production --to backup-vault",
           "description": "Alustage tasuta Community versiooniga. Kaitske kuni 10 töökoormust tasuta. Ilma krediitkaardita.",
           "primaryCta": "Alusta tasuta Community versiooniga",
-          "tierBadge": "Tasuta igavesti kuni 10 töökoormuse jaoks",
           "title": "Lõpeta muretsemist lunavara pärast"
         },
         "calculator": {
@@ -6015,7 +5716,6 @@
           "description": "Liigutage liugureid vastavalt oma infrastruktuurile. Numbrid kasvavad kiiresti.",
           "footnote": "Tulurisk põhineb keskmistel seisakukuludel $9 000/min (Splunk/Oxford Economics 2024). Taastamise tööjõu: 6 insenerit × taastamistunnid × $200/h segamäär. Mainerisk hinnatud protsendina otsestest kuludest (tööstuse hinnang). Rediacc-iga: muutumatud hetktõmmised taastatakse alla 5 minutiga — seisakuaeg läheneb nullile.",
           "headerTitle": "Lunavara riskikokkupuute kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "downtime": "Seisakuaeg juhtumi kohta",
             "labor": "Taastamise tööjõukulu",
@@ -6078,7 +5778,6 @@
               "values": ["check", "check", "check", "cross", "check", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Ainus varukoopia failisüsteemi tasandi muutumatusega"
         },
         "hero": {
@@ -6143,7 +5842,6 @@
               "title": "Tootmine"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Käivitage rdc repo push production --immutable. Teie andmed salvestatakse ja suletakse koheselt.",
@@ -6171,7 +5869,6 @@
         },
         "problem": {
           "description": "Tänapäeva ründajad leiavad teie varukoopiad enne, kui nad teie faile krüpteerivad. Kui teie varukoopiad on muudetavad, siis neid muudetakse. Traditsioonilised varukoopiatööriistad jätavad ukse lahti ja 94% lunavararünnakute ohvrite varukoopiad sihiti rünnaku ajal. Teil on vaja varukoopiad, mis lukustuvad kohe pärast loomist.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "94%",
@@ -6304,7 +6001,6 @@
         },
         "techDiff": {
           "description": "Rediacc kasutab btrfs kirjutuskaitstud hetktõmmiseid failisüsteemi tasandil. Kui hetktõmmis on suletud, takistab kernel ise muutmist — mitte tarkvara lukud, mida pahavara saab mööda minna, vaid failisüsteemi tasandi muutumatus. Isegi root-juurdepääsuga ei suuda lunavara suletud btrfs hetktõmmist krüpteerida, muuta ega kustutada.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc (btrfs muutumatu)",
           "rows": [
             {
@@ -6334,7 +6030,6 @@
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Alustage tasuta Community versiooniga. Nõudmisel kloonimine on kaasas.",
           "primaryCta": "Alusta tasuta",
-          "tierBadge": "Tasuta kuni 5 hoidla jaoks · Krediitkaart pole vajalik",
           "title": "Vähenda oma infrastruktuuri kulusid täna"
         },
         "calculator": {
@@ -6342,7 +6037,6 @@
           "description": "Iga üleöö töötav server on raha, mis lahkub teie pangakontolt tühja.",
           "footnote": "Rediacc kasutab btrfs copy-on-write: kloonid jagavad salvestusplokke tootmisega, kasutades ~1% lisaruumi. Keskkonnad käivituvad alla 60s ja hävitatakse automaatselt seadistatava TTL kaudu. Maksate ühe tootmisserveri eest, mitte 15 koopia eest.",
           "headerTitle": "Infrastruktuuri raiskamise kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "idle": "Raha põletatud jõudeolekul",
             "monthly": "Igakuine serveri kulu",
@@ -6402,7 +6096,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Mida teised küsivad jõudeolekus mahu eest"
         },
         "hero": {
@@ -6465,7 +6158,6 @@
               "title": "Alati-töötav"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Loo tootmisidentne kloon nõudmisel. 52 sekundit. Maksab sente copy-on-write kaudu.",
@@ -6493,7 +6185,6 @@
         },
         "problem": {
           "description": "Teil töötab 24/7 15 arenduskeskkonda. Arendajad kasutavad neid 8 tundi päevas, 5 päeva nädalas. See on 33% kasutus. Maksate ülejäänud 67% eest — serverid seisavad jõude öösiti, nädalavahetustel ja pühade ajal.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "60–80%",
@@ -6570,7 +6261,6 @@
         },
         "techDiff": {
           "description": "Traditsioonilised arenduskeskkonnad dubleerivad terveid servereid — iga bait andmeid, iga konfiguratsioonifail, iga teek. Rediacc kasutab btrfs copy-on-write: kloonid jagavad muutumatuid plokke tootmisega, kasutades ainult 1% lisaruumi 380 GB keskkonna jaoks.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc (Copy-on-Write)",
           "rows": [
             {
@@ -6617,7 +6307,6 @@
               "title": "Tõendatud taastamine"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Täieliku keskkonna taastamine minutitega",
@@ -6625,7 +6314,6 @@
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Alusta tasuta Community versiooniga. Taasta oma esimene keskkond alla 5 minutiga.",
           "primaryCta": "Alusta tasuta Community-ga",
-          "tierBadge": "Krediitkaarti ei nõuta",
           "title": "Ole jälle võrgus minutitega, mitte päevadega"
         },
         "calculator": {
@@ -6633,7 +6321,6 @@
           "description": "Lohista liugureid vastavalt oma keskkonnale. Vaata failipõhise taastamise tegelikku kulu.",
           "footnote": "Failipõhine taastamine: 2 tundi/teenus seadistamine ja uuesti konfigureerimine. Kaotatud tulu: seisakutundide arv × tunnitulu. Tööjõukulu: 2 insenerit × taastamistunnid × $200/h. Kliendikadu: 20% kaotatud tulust SLA rikkumiste tõttu. Rediacc: btrfs kloon taastab täieliku keskkonna alla 5 minutiga - ühe käsuga, ilma ülesehitamiseta.",
           "headerTitle": "Arvuta oma seisaku riskid",
-          "overline": "TEGELIK KULU",
           "results": {
             "churn": "Kliendikao mõju",
             "labor": "Töötajate tööjõukulu (ülesehitamine)",
@@ -6698,7 +6385,6 @@
               "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Taastamisvõimekuse võrdlus"
         },
         "hero": {
@@ -6763,7 +6449,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Käivita rdc repo snapshot list production. Vali suvaline punkt oma varunduse ajajoonel.",
@@ -6791,7 +6476,6 @@
         },
         "problem": {
           "description": "Üksikute failide taastamine võtab tunde. Tervete keskkondade ülesehitamine võtab päevi. Kui tootmisserver läheb alla, ei vaja te ainult faile tagasi - vajate kõike tagasi. Serverit, konfiguratsiooni, andmebaasi, võrguseadeid. Kõike.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "3,4 nädalat",
@@ -6917,26 +6601,8 @@
           },
           "quote": "Meie peamine andmebaasiserver ebaõnnestus laupäeval kell 2:14 - rikutud kettakontroller. Vana süsteemiga oleks see tähendanud tervet nädalavahetust 11 teenuse seadistamise, taastamise ja uuesti konfigureerimisega. Selle asemel käivitasin ühe käsu telefonist. Kell 2:18 oli kõik tagasi - MariaDB, API, Nginx, Redis, kõik. Samad konfiguratsioonid, sama olek, samad andmed. Valveinseneer läks tagasi magama."
         },
-        "stats": [
-          {
-            "icon": "zap",
-            "label": "Täielik taastamisaeg",
-            "number": "<5min"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Keskkonna täpsus",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Ajas",
-            "number": "Igal hetkel"
-          }
-        ],
         "techDiff": {
           "description": "Traditsiooniline taastamine tähendab uue serveri seadistamist, pakettide installimist, failide ükshaaval taastamist, teenuste uuesti konfigureerimist ja lootmist, et midagi ei jäänud vahele. Rediacc kasutab btrfs-hetktõmmiseid, et kloonida kogu keskkond - mahud, konfiguratsioonid, konteinerid, võrguseaded - ühes aatomioperatsioonis.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -6966,7 +6632,6 @@
           "command": "rdc repo fork production --tag ci-build",
           "description": "Alusta tasuta Community versiooniga. Git-integratsioon on kaasas.",
           "primaryCta": "Alusta tasuta",
-          "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
           "title": "Lihtsusta oma CI/CD torujuhet"
         },
         "calculator": {
@@ -6974,7 +6639,6 @@
           "description": "Iga test, mis läbib sünteetiliste andmetega, kuid ebaõnnestub tootmises, on CI torujuhe, mis valetas teile.",
           "footnote": "Eeldab $75/h arendajakulu. Blokeeritud tunnid hinnanguliselt 1 tund arendaja kohta CI ebaõnnestumise kohta kontekstilülituse tõttu. Tootmisvead testiaime lahknevusest hinnanguliselt 1,5x kuine ebaõnnestumise määr kvartalis.",
           "headerTitle": "CI/CD hoolduskulude kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "blocked": "Blokeeritud arendajatunde / kuus",
             "bugs": "Tootmisvead halbadest testiaimetest",
@@ -7030,7 +6694,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Testkomplektid vs. tootmiskloonid"
         },
         "hero": {
@@ -7039,7 +6702,6 @@
           "title": "Ühenda oma olemasoleva töövooguga"
         },
         "howItWorks": {
-          "overline": "KUIDAS SEE TOIMIB",
           "pipelineVisual": {
             "arrows": [
               {
@@ -7099,7 +6761,6 @@
         },
         "problem": {
           "description": "Keegi kirjutas 200-realise bash-skripti testkeskkondade seadistamiseks torujuhtmes. Ta lahkus ettevõttest. Skript läheb iga kuu katki. Keegi ei mõista seda. Teie CI/CD torujuhe hoitakse koos teibiga ja lootusega.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "69%",
@@ -7188,7 +6849,6 @@
         },
         "techDiff": {
           "description": "Traditsiooniline CI/CD seadistab tühjad konteinerid ja täidab need sünteetiliste andmetega. Rediacc integreerib infrastruktuuri tasemel - iga push saab täieliku tootmisklooni pärisandmete, pärisconfiguratsioonide ja päristeenustega.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7231,7 +6891,6 @@
               "title": "Üks mõtteviis kõige jaoks"
             }
           ],
-          "overline": "MIKS SEE OLULINE ON",
           "title": "Pea Kubernetesest kinni. Võida liikuvus."
         },
         "blurb": "Kloonida või teisaldada töötava klastri andmed kaasas",
@@ -7282,12 +6941,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Keegi teine ei vii töötavat klastrit üle koos selle andmetega"
         },
         "hero": {
           "ctaLabel": "Forgi klastreid",
-          "subtitle": "Klaster liigub tervelt – sõlmed, seaded, andmed koos. Teise masinasse või andmekeskusesse. Ümberlülitus toimub sekundites, mitte nädalapikkusel üleminekul.",
+          "subtitle": "Klaster liigub tervelt – sõlmed, seaded, andmed koos. Teise masinasse või andmekeskusesse. Ümberlülitus toimub <span class=\"sp-emphasis\">sekundites</span>, mitte nädalapikkusel üleminekul.",
           "title": "Forki või vii üle töötav Kubernetese klaster"
         },
         "howItWorks": {
@@ -7347,7 +7005,6 @@
               "title": "prod (Andmekeskus A)"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Iga sõlm töötab tõmmisfailist. Iga maht on Ceph RBD tõmmis. Koos moodustavad need terve klastri: rakendused, seaded ja andmed.",
@@ -7375,7 +7032,6 @@
         },
         "problem": {
           "description": "Kubernetes muutis sinu rakendused kaasaskantavaks. Klaster ise ei ole. Andmed on lukus ühes andmekeskuses. Selle liigutamine tähendab tervet uuestiehitamist: uued sõlmed, uus salvestus, varukoopiast taastumine, kõik uuesti testida. Seepärast enamik meeskondi kunagi minna ei hakka. Ja nende teenusepakkuja seda teab.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "27%",
@@ -7469,26 +7125,8 @@
             }
           ]
         },
-        "stats": [
-          {
-            "icon": "layers",
-            "label": "2-sõlmelise klastri täielik fork",
-            "number": "46s"
-          },
-          {
-            "icon": "clock",
-            "label": "Migratsiooni ümberlülitus sekundites",
-            "number": "16s"
-          },
-          {
-            "icon": "zap",
-            "label": "Nimeruu fork",
-            "number": "1-5s"
-          }
-        ],
         "techDiff": {
-          "description": "Iga sõlm töötab btrfs-il asuvast tõmmisfailist. Iga maht on Ceph RBD tõmmis. Klastri kopeerimine tähendab nende tõmmiste kloonimist, copy-on-write põhimõttel. Ei mingit eksporti, teisendust ega taastamissammu. Sellepärast võtab fork aega sekundeid, mitte kuid.",
-          "overline": "KAPOTI ALL",
+          "description": "Iga sõlm töötab btrfs-il asuvast tõmmisfailist. Iga maht on Ceph RBD tõmmis. Klastri kopeerimine tähendab nende tõmmiste kloonimist, copy-on-write põhimõttel. Ei mingit eksporti, teisendust ega taastamissammu. Sellepärast võtab fork aega <span class=\"sp-emphasis\">sekundeid, mitte kuid</span>.",
           "traditionalLabel": "Varundus- ja taastemigratsioon",
           "rediaccLabel": "Rediacc (copy-on-write kloon)",
           "rows": [
@@ -7554,7 +7192,6 @@
               "title": "Keegi ei näe andmeid"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Migreeri turvaliselt – andmeid ei paljastuks",
@@ -7562,7 +7199,6 @@
           "command": "rdc repo push production --to secondary",
           "description": "Turvaline migreerimine on kaasas. Alusta 14-päevast tasuta prooviga.",
           "primaryCta": "Alusta tasuta",
-          "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
           "title": "Migreeri turvaliselt, alati"
         },
         "calculator": {
@@ -7570,7 +7206,6 @@
           "description": "Iga migreerimine ilma otsast lõpuni krüpteerimiseta on vastavusintsidenti ootav tulevikuprobleem.",
           "footnote": "Arvestab $200/h töökulusid ümberkribteerimiseks, $4,880/TB andmerikkumise kulusid (IBM 2024) ja 1% rikkumise tõenäosust migreerimise ajal. Rediacc säilitab andmete krüpteerimise kogu protsessis – riskiperioode ei ole, ümberkribteerimist ei ole.",
           "headerTitle": "Migratsiooni riskikalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "labor": "Uuesti krüpteerimise tööjõukulu",
             "risk": "Ohustatud andmed migreerimise kohta",
@@ -7631,12 +7266,11 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Mida teised migreerimise ajal ei suuda"
         },
         "hero": {
           "ctaLabel": "Rända turvaliselt",
-          "subtitle": "Vahetad servereid, pilvi või pakkujat? Krüpteerimine jääb paigale kogu tee. Andmed jäävad suletuks.",
+          "subtitle": "Vahetad servereid, pilvi või pakkujat? Krüpteerimine <span class=\"sp-emphasis\">jääb paigale kogu tee</span>. Andmed jäävad suletuks.",
           "title": "Migreeri turvaliselt – andmeid ei paljastuks"
         },
         "howItWorks": {
@@ -7696,7 +7330,6 @@
               "title": "Allikas"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Krüpteeritud hetktõmmised jäävad lukuks. Võtmed, seaded ja reeglid kaasas. Midagi ei dekrüpteerita.",
@@ -7724,7 +7357,6 @@
         },
         "problem": {
           "description": "Migreerimiseks tuleb sageli andmeid ajutiselt dekrüpteerida, kopeerida, siis uuesti krüpteerida. Sel ajal istuvad failid lahti ja haavatavad. Ning kui migreerimine lõpeb, jääb krüpteerimisseade ümber ehitada käsitsi.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "89%",
@@ -7846,26 +7478,8 @@
           },
           "quote": "Migreesime 42 serverit Hetzner-st OVH-le ühe nädalavahetusel. 350 TB krüpteeritud andmeid – ükski bait ei jäänud avastamata. Eelmise migreerimise ajal käis 8 serveriga kolm nädalat ja andmeid tuli dekrüpteerida vahekeskkonda. Nii suurt riski me enam ei võta."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Paljastunud andmeid migreerimise ajal",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Krüpteerimine säilinud",
-            "number": "100%"
-          },
-          {
-            "icon": "arrow-right-circle",
-            "label": "Sihtkoht toetatud",
-            "number": "Iga"
-          }
-        ],
         "techDiff": {
-          "description": "Tavapärased tööristad dekrüpteerivad enne saatmist – sellest tulevad kokkupuute aknakesed, kus andmed on avatud. Rediacc ei dekrüpteeri kunagi. Krüpteeritud hetktõmmised liiguvad suletud plokkidena.",
-          "overline": "KAPOTI ALL",
+          "description": "Tavapärased tööristad dekrüpteerivad enne saatmist – sellest tulevad kokkupuute aknakesed, kus andmed on avatud. Rediacc ei dekrüpteeri kunagi. Krüpteeritud hetktõmmised liiguvad <span class=\"sp-emphasis\">suletud plokkidena</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7912,7 +7526,6 @@
               "title": "Vähem tootmisvigu"
             }
           ],
-          "overline": "MIKS SEE ON OLULINE",
           "title": "Mida saate"
         },
         "blurb": "Arenduskeskkonnad, mis vastavad tootmisele täpselt",
@@ -7920,7 +7533,6 @@
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Alusta tasuta Community versiooniga. Tootmispariteetsus on kaasas.",
           "primaryCta": "Alusta tasuta",
-          "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
           "title": "Lõpeta keskkondade mittevastavus igaveseks"
         },
         "calculator": {
@@ -7928,7 +7540,6 @@
           "description": "Iga tootmisviga, mille põhjustab keskkonnakõrvalekalle, on viga, mida poleks pidanud olema.",
           "footnote": "Eeldab $600/päev keskmist arendajakulu, 10-päevaseid sprinte, 26 sprinti aastas. Keskkonnaga seotud vead on kõrvaldatud 100% tootmispariteetsuse kaudu btrfs copy-on-write kloonimisega.",
           "headerTitle": "Pariteetsuse lõhe kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "capacity": "Sprindi mahukadu",
             "debug": "Silumistunde / sprint",
@@ -7989,7 +7600,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Koodi kloonimine vs. keskkonna kloonimine"
         },
         "hero": {
@@ -8052,7 +7662,6 @@
               "title": "Tootmine"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Alusta täpsest tootmishetktõmmisest btrfs copy-on-write kaudu. Sama OS, samad konfiguratsioonid, samad andmed.",
@@ -8080,7 +7689,6 @@
         },
         "problem": {
           "description": "Teie arenduskeskkond töötab erineval OS-i versioonil. Erinevad teegiversioonid. Erinevad konfiguratsioonid. Kood läbib kõik testid arenduses, seejärel läheb tootmises katki. Neid vigu on raske leida ja kallis parandada. Need juhtuvad, kuna arendus ei vasta tootmisele.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "182x",
@@ -8178,26 +7786,8 @@
           },
           "quote": "Jälgisime iga tootmisintsiidenti kuue kuu jooksul pärast Rediacc kloonidele üleminekut. Keskkonnaga seotud vead läksid 14-lt kvartalis sõna otseses mõttes nullile. Meie QA juht arvas, et jälgimissüsteem on katki - ta polnud varem nulli näinud."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Konfiguratsiooni vastavus",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Keskkonnakõrvalekalle",
-            "number": "0"
-          },
-          {
-            "icon": "x",
-            "label": "\"Töötab minu masinal\" intsidendid",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditsioonilised arenduskeskkonnad on nullist üles ehitatud ligikaudsed koopiad - käsitsi seadistatud, eraldi konfigureeritud, sünteetiliste testaimedega. Rediacc kloonib tegeliku tootmise failisüsteemi ploki tasemel btrfs copy-on-write kaudu.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8238,7 +7828,6 @@
           "description": "Lohista liugureid vastavalt oma olukorrale. Kahju lisandub iga minutiga.",
           "footnote": "Tulukadu põhineb teie tunnimääral × taastamistundidel. Tööjõukulu: 6 insenerit × $200/h kombineeritud määr. Kliendikadu: hinnanguliselt 20% otsesest tulust. Regulatiivne: $50K alus + kasvab raskuse järgi. Rediacciga: alla 5-minutiline taastamine muutumatust hetktõmmisest kõrvaldab pikaajalise seisaku.",
           "headerTitle": "Seisakukulude kalkulaator",
-          "overline": "TEGELIK KULU",
           "results": {
             "churn": "Kliendikao kulu",
             "labor": "Taastamise tööjõukulu",
@@ -8296,7 +7885,6 @@
               "values": ["check", "check", "check", "cross", "check", "rediacc"]
             }
           ],
-          "overline": "LÕHE",
           "title": "Ükski teine tööriist ei taastu nii kiiresti"
         },
         "hero": {
@@ -8362,7 +7950,6 @@
               "title": "Tootmine (maas)"
             }
           },
-          "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
               "description": "Käivita rdc backup list, et leida viimane puhas hetktõmmis.",
@@ -8390,7 +7977,6 @@
         },
         "problem": {
           "description": "Enamik meeskondi veedab päevi lunavara järel ülesehitamisel. Vahepeal ei pääse kliendid teieni. Tulu peatub. Usaldus puruneb. Rünnak kestab tunni. Taastamine võtab nädala. See on tegelik kahju - ja lunavara taastamise keskmine aeg on 24 päeva.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "24 päeva",
@@ -8507,7 +8093,6 @@
         },
         "techDiff": {
           "description": "Traditsiooniline taastamine ehitab nullist - installi OS uuesti, taasta failid, konfigureeri teenused uuesti. Rediacc taastab btrfs-hetktõmmistest: failisüsteem lülitub lihtsalt salvestatud olekule. Uuesti installimist pole, uuesti konfigureerimist pole, andmeedastust pole. Hetktõmmis on juba kettal - see lihtsalt muutub aktiivseks.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "Traditsiooniline taasülesehitus",
           "rediaccLabel": "Rediacc (hetkelised btrfs-koopiad)",
           "rows": [
@@ -8537,7 +8122,6 @@
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Alustage tasuta Community väljaandega. Seadistage oma esimene säilituspoliitika 30 sekundiga.",
           "primaryCta": "Alusta tasuta Community-ga",
-          "tierBadge": "Krediitkaarti ei nõuta",
           "title": "Muutke vastavus automaatseks"
         },
         "calculator": {
@@ -8545,7 +8129,6 @@
           "description": "Liigutage liugureid oma keskkonna järgi. Näha käsitsi säilitushalduse tegelikku kulu.",
           "footnote": "Ettevalmistustunnid: auditid × tunde auditi kohta. Lüngad: 1 lünk iga 5 TB käsitsi hallatava andmemahu kohta (konservatiivne hinnang). Trahv: $50 000 lünga kohta (GDPR trahvi mediaan väikeettevõtete puhul). Töökulu: ettevalmistustunnid × $200/t (vaneminsener). Andmemurde keskmine maksumus on $4,88M (IBM 2024). Rediacc genereerib auditireadeid koheselt - 2 tundi auditi kohta, automatiseeritud poliitikatäitmine.",
           "headerTitle": "Arvutage oma vastavusrisk",
-          "overline": "TEGELIK MAKSUMUS",
           "results": {
             "gaps": "Vastavuslünki (hinnang)",
             "labor": "Käsitsi säilitustöö kulu",
@@ -8608,7 +8191,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "ERINEVUS",
           "title": "Säilitusvastavuse võrdlus"
         },
         "hero": {
@@ -8674,7 +8256,6 @@
               "title": "Säilituspoliitikad"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Käivitage rdc config backup-strategy set --cron '0 2 * * *'. Määrake säilitusperiood raamistiku või andmetüübi järgi.",
@@ -8702,7 +8283,6 @@
         },
         "problem": {
           "description": "Regulatsioonid nõuavad andmete teatud perioodiks hoidmist. Nõuete täitmata jätmine toob kaasa trahvid, auditid ja juriidilisi probleeme. Enamik varukoopiatööriistu käsitleb säilitamist järelmõtena. Jääb üle hallata seda käsitsi tabelarvutuste ja lootuse abil.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "$4,88M",
@@ -8835,7 +8415,6 @@
         },
         "techDiff": {
           "description": "Traditsiooniline säilitushaldus tähendab varukoopiakuupäevade jälgimist tabelarvutustes, käsitsi puhastamisskriptide käivitamist ja lootmist, et midagi pole enne audiitorit jäänud kahe silma vahele. Rediacc kasutab btrfs-i snapshotide elutsüklihaldust koos automatiseeritud poliitikajõustamisega - varukoopiad säilitatakse, kontrollitakse ja puhastatakse ilma inimese sekkumiseta.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc säilitamine",
           "rows": [
             {
@@ -8878,7 +8457,6 @@
               "title": "Kohene tagasipööramine"
             }
           ],
-          "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
         "blurb": "Testige OS-i uuendusi riskivabalt",
@@ -8886,7 +8464,6 @@
           "command": "rdc repo fork production --tag patch-test",
           "description": "Alustage tasuta Community väljaandega. Kloonige, testige ja kontrollige tasuta. Krediitkaarti ei nõuta.",
           "primaryCta": "Alusta tasuta Community-ga",
-          "tierBadge": "Tasuta igavesti kuni 10 töökoormuse jaoks",
           "title": "Paigaldage kindlalt"
         },
         "calculator": {
@@ -8894,7 +8471,6 @@
           "description": "Liigutage liugureid oma taristu järgi. Vaadake testimata uuenduste riski.",
           "footnote": "Riskipäevad: edasi lükatud paigad × 30 keskmist päeva paikade vahel. Nurjunud uuenduse seisakuaeg: taastamistunnid × $9 000/min (Splunk/Oxford Economics 2024) × 10% nurjumismäär. Taastamistöö: 3 insenerit × taastamistunnid × $200/t. Murderisk: $4,88M keskmine murd (IBM 2024) × paikamata tõenäosus serveriarvuga. Kõik näitajad on konservatiivsed hinnangud.",
           "headerTitle": "Arvutage oma paikamise riskid",
-          "overline": "TEGELIK MAKSUMUS",
           "results": {
             "breach": "Murderisk (paikamata)",
             "downtime": "Nurjunud uuenduse seisakuaeg",
@@ -8957,7 +8533,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "ERINEVUS",
           "title": "Ükski muu tööriist ei testi paikasid reaalsetel tootmisandmetel"
         },
         "hero": {
@@ -9022,7 +8597,6 @@
               "title": "Tootmine"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Käivitage rdc ceph snapshot create production. Täpne koopia käivitub 60 sekundiga.",
@@ -9050,7 +8624,6 @@
         },
         "problem": {
           "description": "Paikamine on vajalik. Kuid iga uuendus on hasartmäng. Kas see läheb midagi katki? Te ei tea seda enne, kui see on elus. Enamik meeskondi kas jätab paikad vahele (riskantne) või testib keskkondades, mis ei vasta tootmisele (kasutu). Kumbki ei ole piisavalt hea.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "3x",
@@ -9176,26 +8749,8 @@
           },
           "quote": "Meil oli eelmisel kvartalil kriitiline OpenSSL-i paik. Tavaliselt oleksime kavandanud hooldusaken ja palvetanud. Selle asemel kloonisime kõik 22 tootmisserverit, rakendasime paiga, käivitasime täieliku testikomplekti ja kinnitasime nulli regressiooni - kõik 18 minutiga. Paigaldasime tootmise samal päeval täieliku kindlusega."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Klooni loomise aeg",
-            "number": "60 s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Tootmisega identne",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Tootmisseisak",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc kasutab btrfs copy-on-write snapshoote, et kloonida kogu tootmiskeskkond - OS, konteinerid, andmebaasid, konfiguratsioon - alaosekundi jooksul. Kloon töötab isoleeritud võrgus koos oma Docker-deemoniga. Kloonile rakendatud paigad ei puutu tootmist. Kui kloon puruneb, kustutate selle. Kui see toimib, rakendate sama paiga tootmises.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9238,7 +8793,6 @@
               "title": "Hinnavõim"
             }
           ],
-          "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
         "blurb": "Teie taristu. Teie valik. Alati.",
@@ -9253,7 +8807,6 @@
           "description": "Liigutage liugureid oma kulutuste järgi. Vaadake, kuidas lukustus teie eelarvet vaikselt tühjendab.",
           "footnote": "Tarnija juurdehindlus: aastakulu × (hinnatõus × aastad / 2) - ümberlülitamata jätmise kumulatiivne efekt. Migratsioonikulu: 2 insenerit × 6 kuud × $200/t (traditsiooniline migratsiooniprojekt). Väljumistasud: hinnanguline andmemaht × $0,09/GB. Rediacciga kestab migratsioon alla 1 tunni btrfs inkrementaalse ülekande kaudu.",
           "headerTitle": "Lukustuse maksude kalkulaator",
-          "overline": "TEGELIK MAKSUMUS",
           "results": {
             "egress": "Väljamineva andmeedastuse tasud",
             "leverage": "Hinnaläbirääkimiste mõjujõud",
@@ -9316,7 +8869,6 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "ERINEVUS",
           "title": "Ükski muu tööriist ei migreeri teie täispinu minutitega"
         },
         "hero": {
@@ -9382,7 +8934,6 @@
               "title": "AWS (us-east-1)"
             }
           },
-          "overline": "KUIDAS SEE TÖÖTAB",
           "steps": [
             {
               "description": "Teie andmed elavad standardsetes btrfs alamköidetes. Esialgseid vorminguid pole. Tarnija agente pole. Ainult Linux.",
@@ -9410,7 +8961,6 @@
         },
         "problem": {
           "description": "Registreerisite end, kui hind oli soodne. Nüüd olete lõksus. Lahkumine võtaks kuid. Teie andmed on nende vormingus. Teie tööriistad sõltuvad nende API-dest. Nad teavad, et te ei saa lahkuda. Nii hind tõuseb.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "27%",
@@ -9524,26 +9074,8 @@
           },
           "quote": "Meie AWS arve jõudis $33K kuus ja kasvas 20% aastas. Migreerisime 14 tootmisteenust - GitLab, Nextcloud, 3 andmebaasi, monitooring ja muu - Hetznerisse 45 minutiga. Kuine kulu langes $4 200-le. Sama jõudlus. Migratsioon tasus end ära 8 päevaga."
         },
-        "stats": [
-          {
-            "icon": "x",
-            "label": "Esialgseid vorminguid",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Kaasaskantavad andmed",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Täielik migratsiooniaeg",
-            "number": "<1 t"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc salvestab kõik andmed standardsetesse btrfs alamköidetesse - esialgseid vorminguid pole, tarnija-spetsiifilist agenti pole. Migratsioon kasutab btrfs send/receive inkrementaalse snapshot ülekandmiseks mis tahes Linuxi masinasse. 420 GB keskkond, mille viimase sünkimise ajast on muutunud 3,8 GB, kannab üle 3,8 GB - mitte 420 GB.",
-          "overline": "KAPOTI ALL",
           "traditionalLabel": "Patenteeritud vormingu lukustus",
           "rediaccLabel": "Rediacc (standardne Linuxi salvestus)",
           "rows": [
@@ -9590,7 +9122,6 @@
               "title": "Täielik kontrollimine"
             }
           ],
-          "overline": "MIKS SEE OLULINE ON",
           "title": "Mida te saate"
         },
         "blurb": "Paigake haavatavused enne ründajate saabumist",
@@ -9598,7 +9129,6 @@
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Alustage tasuta Community väljaandega. Kontrollige oma esimest paika alla 4 minutiga.",
           "primaryCta": "Alusta tasuta",
-          "tierBadge": "Krediitkaarti ei nõuta",
           "title": "Paigake kiiremini. Paigake turvalisemalt."
         },
         "calculator": {
@@ -9606,7 +9136,6 @@
           "description": "Iga päev, mil haavatavus on paigamata, olete avatud. Iga kiirustades rakendatud paik riskib tootmisincidentiga.",
           "footnote": "Mudel: Traditsiooniline kõrvaldamistöö $150/t (turvainseneeri aeg mõjuanalüüsiks, lava seadistamiseks, testimiseks, tagasipööramiseks). Nurjunud paigad hinnanguliselt 25% tööstuskogemusel põhinevalt. Rediacc vähendab parandusaja alla 1 päeva kloonipõhise kontrollimisega, kõrvaldades paikamise nurjumised.",
           "headerTitle": "Kõrvaldamiskulude kalkulaator",
-          "overline": "TEGELIK MAKSUMUS",
           "results": {
             "exposure": "Kokkupuude haavatavuse kohta",
             "failedPatches": "Nurjunud paiku / aastas",
@@ -9628,7 +9157,6 @@
           "title": "Paigake haavatavused enne ründajate saabumist"
         },
         "howItWorks": {
-          "overline": "KUIDAS SEE TÖÖTAB",
           "pipelineVisual": {
             "arrows": [
               {
@@ -9703,7 +9231,6 @@
         },
         "problem": {
           "description": "Leidsite haavatavuse. Nüüd peate seda paigama. Kuid kas paik läheb midagi katki? Tootmises ei saa testida. Ja teie lavakeskkond on 3 nädalat maas. Nii läheb kas kiirustades paika ja loodetakse, või oodatakse ja ollakse avatud. Kumbki valik ei ole hea - ja mõlemad maksavad raha.",
-          "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "30,6 päeva",
@@ -9785,26 +9312,8 @@
           },
           "quote": "Kriitiline CVE ilmus reedel pärastlõunal. Laupäeva hommikuks olime klooninud tootmise, rakendanud paiga, kontrollinud seda kõigi 4 mõjutatud teenuse vastu ja paigaldanud - null seisakut. Meie varasem protsess oleks võtnud 3 nädalat ja muudatuste haldamise koosoleku."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Paigamise ja kontrollimise aeg",
-            "number": "<4 min"
-          },
-          {
-            "icon": "shield",
-            "label": "Testige enne paigaldamist",
-            "number": "Ohutu"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Kontrollimata paikasid",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditsiooniline paikamine nõuab lavakeskkonda, mis vastab tootmisele - kuid lava kaldub kõrvale päevade jooksul. Rediacc loob sekunditega btrfs copy-on-write snapshooti teie tegelikust tootmistaristust, laseb rakendada ja kontrollida paika reaalsete andmete ja konfiguratsioonide vastu, seejärel paigaldab kontrollitud paranduse tootmises. Kui paik läbib kontrolli ebaõnnestunult, kustutage kloon. Tootmine jääb puutumatuks.",
-          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

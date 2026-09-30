@@ -226,7 +226,7 @@
         "windows": "Windows"
       }
     },
-    "subtitle": "Rediacc 是部署在您服务器上的软件，能在几秒内克隆您的整个生产环境——应用、数据库、配置一应俱全。",
+    "subtitle": "Rediacc 是部署在<span class=\"sp-emphasis\">您服务器</span>上的软件，能在<span class=\"sp-emphasis\">几秒内</span>克隆您的整个生产环境——应用、数据库、配置一应俱全。",
     "title": "克隆生产环境。",
     "titleHighlight": " 万无一失。"
   },
@@ -319,32 +319,6 @@
     "title": "通讯",
     "unsubscribed": "已取消订阅，期待你的回归。",
     "errorRequiredEmail": "请填写您的电子邮箱。"
-  },
-  "notASlice": {
-    "overline": "一个工具。全栈搞定。",
-    "slices": [
-      {
-        "description": "只复制数据。应用远不止这些。",
-        "title": "数据库工具"
-      },
-      {
-        "description": "只复制代码。代码测不了应用。",
-        "title": "开发工具"
-      },
-      {
-        "description": "保存全部了。恢复却要等好几小时。",
-        "title": "备份工具"
-      },
-      {
-        "description": "只复制配置文件。集群远不止 YAML。",
-        "title": "Kubernetes 工具"
-      }
-    ],
-    "title": "别的工具只敢复制一部分。我们全要。",
-    "winner": {
-      "description": "每个团队都拥有自己可写的完整副本，数据、应用、配置一样不少，60 秒就绪，连整个 Kubernetes 集群也是如此。只有发生变化时才需要为存储付费。",
-      "label": "Rediacc"
-    }
   },
   "pages": {
     "blog": {
@@ -1078,22 +1052,21 @@
         "benefits": {
           "items": [
             {
-              "description": "项目里加个 AGENTS.md，AI 助手立刻就会所有可用的命令、参数和工作流。",
+              "description": "Agent 只需读取项目根目录下的一个文件，就能掌握全部命令。不用安装 SDK，不用手写 schema，也不用中转任何凭证。",
               "icon": "zap",
-              "title": "零集成工作"
+              "title": "无需任何集成"
             },
             {
-              "description": "JSON 响应平均约 200 个 token。--fields 标志让 Agent 只请求所需的数据。没有浪费上下文。",
+              "description": "返回的内容是结构化的，Agent 每次都能用同样的方式解析，把上下文花在任务本身，而不是拿去抓取仪表盘。",
               "icon": "terminal",
-              "title": "上下文窗口友好"
+              "title": "回复始终精简"
             },
             {
-              "description": "--dry-run 预览破坏性操作，--yes 启用自动化，Agent 可以在内置防护机制下放心部署。即使是整个集群的复刻，也遵循同样的规则。",
+              "description": "凡是会删除内容的操作，执行前都会先预览，自动化必须显式开启才能生效。这样 Agent 可以放手快跑，也不用担心一次失误就无法挽回。",
               "icon": "shield",
-              "title": "默认安全"
+              "title": "破坏性操作先问一句"
             }
           ],
-          "overline": "为何重要",
           "title": "为自主基础设施管理而构建"
         },
         "bottomCta": {
@@ -1103,8 +1076,8 @@
           "title": "让 AI Agent 替你搞定基础设施"
         },
         "hero": {
-          "ctaLabel": "为智能体提供服务器",
-          "subtitle": "CLI 优先、SSH 直连、JSON 原生。rdc 的每条命令都为自主 Agent 量身打造——没有 GUI、没有浏览器自动化、没有自定义集成。",
+          "ctaLabel": "开始免费试用",
+          "subtitle": "CLI 优先、SSH 直连、JSON 原生。rdc 的每条命令都<span class=\"sp-emphasis\">为自主 Agent 量身打造</span>——没有 GUI、没有浏览器自动化、没有自定义集成。",
           "title": "AI Agent 天生就会用的基础设施"
         },
         "howItWorks": {
@@ -1162,7 +1135,6 @@
               "title": "AI 代理"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "把 AGENTS.md 模板放在项目根目录里。AI 助手启动时自动读取，立刻就懂所有的 rdc 命令。",
@@ -1189,7 +1161,6 @@
         },
         "problem": {
           "description": "你的 AI 编程助手能独立编写、测试和调试代码。但一涉及部署、查看状态、管理基础设施时，就彻底卡壳了：只能用 GUI 仪表盘、OAuth 浏览器跳转、不稳定的 API，还有那些轻易就撑爆上下文窗口的响应。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "73%",
@@ -1239,26 +1210,8 @@
         "relatedSolutions": {
           "title": "查看相关方案"
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "CLI 原生操作",
-            "number": "100%"
-          },
-          {
-            "icon": "zap",
-            "label": "平均响应 Token 数",
-            "number": "~200"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "需要浏览器自动化",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc 的每一项设计都优先考虑机器可读的接口。非 TTY 环境自动切换到 JSON 输出。一致的信封格式让 Agent 能以同样方式解析任何响应。基于 SSH 的认证意味着没有 OAuth 流程和令牌管理的烦恼。",
-          "overline": "原生 Agent 设计",
+          "description": "Rediacc 的每一项设计都优先考虑<span class=\"sp-emphasis\">机器可读的接口</span>。非 TTY 环境自动切换到 JSON 输出。一致的信封格式让 Agent 能以同样方式解析任何响应。基于 SSH 的认证意味着没有 OAuth 流程和令牌管理的烦恼。",
           "rediaccLabel": "Rediacc（rdc CLI）",
           "rows": [
             {
@@ -1290,22 +1243,21 @@
         "benefits": {
           "items": [
             {
-              "description": "每台机器一个价格。无按席位费，无意外账单，无流出费。即便业务扩展，成本也始终可控。",
+              "description": "价格跟着机器走，明年的账单就是今年的金额，加上你自己选择添置的硬件。不会因为公司规模变大，账单就自动涨价。",
               "icon": "tag",
-              "title": "可预测的成本"
+              "title": "可以预判的账单"
             },
             {
-              "description": "数据就在您自有的硬件上，采用开放格式。没有厂商能绑架您的数据，也不能向您收取访问费。",
+              "description": "数据放在你自己拥有的硬件上，格式是任何 Linux 机器都能读的。没有哪家供应商能拿你自己的记录来跟你谈条件。",
               "icon": "lock",
-              "title": "您的数据，您做主"
+              "title": "数据不在别人手里"
             },
             {
-              "description": "5 分钟内完全恢复。备份一旦锁定即不可改写，勒索软件无可奈何。您的业务不中断。即便服务商掉链子，整套系统连 Kubernetes 都能无缝迁移。",
+              "description": "备份在文件系统层面一次写入、不可更改，勒索软件无从下手。系统恢复只是切换一下，不需要让客户干等一段恢复窗口期。",
               "icon": "shield",
-              "title": "业务连续性"
+              "title": "生意照常运转"
             }
           ],
-          "overline": "商业价值",
           "title": "您真正能获得什么"
         },
         "bottomCta": {
@@ -1318,7 +1270,6 @@
           "description": "根据您的业务调整参数，对比云和自建方案的真实成本。",
           "footnote": "数据基于常见成本模型估算。实际能省多少，取决于您的业务规模和现有设施。",
           "headerTitle": "计算您的节省",
-          "overline": "数字说话",
           "results": {
             "blockedTime": "年度基础设施费用",
             "contextSwitching": "恢复时间",
@@ -1331,7 +1282,7 @@
             "wait": "每年停机小时数"
           },
           "title": "能省多少？",
-          "withAnnual": "计算 →",
+          "withAnnual": "计算",
           "withoutTag": "云服务成本",
           "withResults": {
             "blockedTime": "降低60%",
@@ -1342,8 +1293,8 @@
           "withTag": "使用 Rediacc"
         },
         "hero": {
-          "ctaLabel": "一口价开始",
-          "subtitle": "在自有硬件上保护业务数据。每台机器一个价格 — 无按席位费，无意外账单，厂商无法绑架您的数据。",
+          "ctaLabel": "开始免费试用",
+          "subtitle": "在自有硬件上保护业务数据。<span class=\"sp-emphasis\">每台机器一个价格</span> — 无按席位费，无意外账单，厂商无法绑架您的数据。",
           "title": "每台服务器一个价格。数据永远是您的。"
         },
         "meta": {
@@ -1353,7 +1304,6 @@
         },
         "problem": {
           "description": "刚开始，云账单微不足道。现在却成了第三大开支，每年还在增长 20%。按席位收费意味着招人就要多付钱。最糟的是，您的数据躺在别人的数据中心，用的还是他们的专有格式。想迁出去？他们还得收您一笔迁移费才能拿回数据。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "20%",
@@ -1400,14 +1350,10 @@
           },
           "title": "云账单年年猛增。数据却掌握在别人手里。"
         },
-        "relatedSolutions": {
-          "title": "工作原理"
-        },
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
-          "ctaText": "分享CTO深度分析",
+          "ctaText": "打开CTO深度分析",
           "description": "技术团队需要验证兼容性。把 CTO 深度分析转发给他们，他们想问的所有技术细节都在里面。",
-          "overline": "下一步",
           "title": "分享给您的 CTO"
         },
         "socialProof": {
@@ -1421,45 +1367,27 @@
             "improvement": "成本削减 62%，恢复时间秒级"
           },
           "quote": "我们原来每月要花 $18,000 在云基础设施上，部署 47 个工作负载。迁到 Rediacc 自建后，月费降到 $6,800。最关键的是恢复时间从 4 小时变成 3 分钟。第一个月投资回报就看得见。"
-        },
-        "stats": [
-          {
-            "icon": "tag",
-            "label": "全包价格",
-            "number": "$204/月"
-          },
-          {
-            "icon": "check-circle",
-            "label": "运行时间保证",
-            "number": "99.99%"
-          },
-          {
-            "icon": "users",
-            "label": "按席位费用",
-            "number": "0"
-          }
-        ]
+        }
       },
       "forCtos": {
         "benefits": {
           "items": [
             {
-              "description": "消除云端溢价、按席位许可和出站费。在自有硬件上运行。",
+              "description": "许可证按机器数计费，而不是按人头。团队从10人扩到40人，变的是工资单，基础设施账单纹丝不动。",
               "icon": "trend-up",
-              "title": "TCO降低60%"
+              "title": "招人也不会打乱的预算"
             },
             {
-              "description": "5分钟内完成完整灾难恢复。Btrfs快照意味着恢复是指针切换，而非恢复作业。",
+              "description": "恢复本质上就是切换指针，测试一次只需几分钟，不用搭上一个周末。能提前演练的团队，不会等到出事那一刻才发现备份早就坏了。",
               "icon": "zap",
-              "title": "分钟级，而非小时级"
+              "title": "可以提前演练的恢复"
             },
             {
-              "description": "数据保存在本地，开放格式，随时可搬迁。包括Kubernetes集群。",
+              "description": "数据以开放格式保存在你自己的文件系统上，离开时只是复制一份，不是一场迁移项目，这个决定也不会附带一张出站流量账单。",
               "icon": "lock",
-              "title": "零厂商锁定"
+              "title": "早就备好的退路"
             }
           ],
-          "overline": "战略价值",
           "title": "Rediacc 对您的基础设施意味着什么"
         },
         "bottomCta": {
@@ -1472,7 +1400,6 @@
           "description": "调整滑块配置您的环境，看 Rediacc 如何降低成本。",
           "footnote": "估算基于行业 TCO 模型，对比自托管基础设施与等效云服务。实际节省因工作负载、配置和规模而异。",
           "headerTitle": "计算基础设施成本节省",
-          "overline": "真实成本",
           "results": {
             "blockedTime": "年度基础设施成本",
             "contextSwitching": "恢复时间 (MTTR)",
@@ -1485,7 +1412,7 @@
             "wait": "每年停机小时数"
           },
           "title": "基础设施真实成本是多少？",
-          "withAnnual": "计算 →",
+          "withAnnual": "计算",
           "withoutTag": "当前支出",
           "withResults": {
             "blockedTime": "降低 60%",
@@ -1528,12 +1455,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "竞争格局",
           "title": "Rediacc的对比优势"
         },
         "hero": {
-          "ctaLabel": "降低TCO",
-          "subtitle": "自托管基础设施保护，消除云端加价，无按席位定价即可扩展，几分钟内从任何灾难中恢复 — 而非数小时。",
+          "ctaLabel": "开始免费试用",
+          "subtitle": "自托管基础设施保护，消除云端加价，无按席位定价即可扩展，<span class=\"sp-emphasis\">几分钟内从任何灾难中恢复</span> — 而非数小时。",
           "title": "基础设施成本削减60%。自有硬件自由扩展。"
         },
         "meta": {
@@ -1543,7 +1469,6 @@
         },
         "problem": {
           "description": "云账单年年涨15～20%。按席位付费，招人就亏钱。系统挂掉时，那个'秒级恢复'其实要等好几小时——因为承诺分钟级RPO的工具，实际交付的是天级RPO。每次续费，被锁定的生态成本又长了。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "17%",
@@ -1595,9 +1520,8 @@
         },
         "shareWithTeam": {
           "ctaSlug": "for-devops",
-          "ctaText": "分享DevOps深度分析",
+          "ctaText": "打开DevOps深度分析",
           "description": "工程师看重CLI优先工作流和即时环境。分享这份技术深度分析。",
-          "overline": "分享给团队",
           "title": "让DevOps团队快速上手"
         },
         "socialProof": {
@@ -1612,26 +1536,8 @@
           },
           "quote": "我们将47个生产工作负载从一家大型云提供商迁移到了自有硬件上的Rediacc。基础设施成本在第一个季度下降了62%。当我们遇到第一次事故时，恢复用了3分钟，而我们之前的工具报价是4小时。"
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "相比云端更低的TCO",
-            "number": "60%"
-          },
-          {
-            "icon": "clock",
-            "label": "完整灾难恢复",
-            "number": "<5 min"
-          },
-          {
-            "icon": "lock",
-            "label": "厂商锁定",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc 运行在您的硬件上，用 btrfs 写时复制快照实现秒级备份和恢复。每个快照在文件系统层都不可变——勒索软件根本加密不了内核保护的数据。恢复就是切个指针，不用等 TB 级数据还原。",
-          "overline": "架构",
+          "description": "Rediacc 运行在您的硬件上，用 btrfs 写时复制快照实现秒级备份和恢复。每个快照在文件系统层都不可变——勒索软件根本加密不了内核保护的数据。恢复就是<span class=\"sp-emphasis\">切个指针，不用等 TB 级数据还原</span>。",
           "rediaccLabel": "Rediacc（自托管）",
           "rows": [
             {
@@ -1663,22 +1569,21 @@
         "benefits": {
           "items": [
             {
-              "description": "从请求到可用环境，不到一分钟搞定。涵盖全栈：操作系统、容器、数据库、配置。",
+              "description": "要用环境，不用再等别人的冲刺排期。想建就建，想丢就丢，工作需要多少次就用多少次。",
               "icon": "zap",
-              "title": "环境秒级创建"
+              "title": "不用工单，不用排队"
             },
             {
-              "description": "全命令行。集成 CI/CD、Git hooks 或任何自动化工具，不用 GUI。Kubernetes 也支持：命名空间像仓库一样 fork。",
+              "description": "每个操作都是一条带退出码的命令，不需要封装、不需要浏览器、不需要服务账号，直接接入流水线、Git hook 或 Makefile。",
               "icon": "terminal",
-              "title": "命令行优先，完全可脚本"
+              "title": "跟其他工具一样能脚本化"
             },
             {
-              "description": "Btrfs 不可变快照秒速回滚任何环境，数据不丢、不停机。",
+              "description": "迁移出错，或者不小心 DROP 错了表，切回快照就能撤销。大家面对真实数据时，也就敢放手去试了。",
               "icon": "shield",
-              "title": "秒级回滚"
+              "title": "犯错也不再代价高昂"
             }
           ],
-          "overline": "核心优势",
           "title": "专为自动化一切的工程师打造"
         },
         "bottomCta": {
@@ -1688,8 +1593,8 @@
           "title": "动手一试"
         },
         "hero": {
-          "ctaLabel": "克隆生产环境",
-          "subtitle": "CLI 优先设计，60 秒克隆生产、5 分钟恢复、跑在自己硬件上。无工单、无等待，数据始终是你的。",
+          "ctaLabel": "开始免费试用",
+          "subtitle": "CLI 优先设计，<span class=\"sp-emphasis\">60 秒</span>克隆生产、5 分钟恢复、跑在自己硬件上。无工单、无等待，数据始终是你的。",
           "title": "一分钟内克隆。五分钟内恢复。永别工单地狱。"
         },
         "howItWorks": {
@@ -1747,7 +1652,6 @@
               "title": "生产环境"
             }
           },
-          "overline": "运作方式",
           "steps": [
             {
               "description": "执行 rdc ceph snapshot create production，Btrfs CoW 毫秒级快照整个环境：应用、数据库、配置。",
@@ -1774,7 +1678,6 @@
         },
         "problem": {
           "description": "CI/CD 分钟内部署，IaC 秒内配置。可一旦需要真实数据的测试环境，就得提工单等三天。再看看预发布环境：共享、不稳定，根本不像生产。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "69%",
@@ -1836,26 +1739,8 @@
           },
           "quote": "我们的环境配置周期从 3 天缩短到了 1 分钟以内。开发者不再写工单，开始真正交付代码。btrfs 的快照就是可靠：380 GB 在 52 秒内完成克隆，几乎没有额外存储开销。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "环境克隆耗时",
-            "number": "60s"
-          },
-          {
-            "icon": "zap",
-            "label": "灾难恢复耗时",
-            "number": "<5 min"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "需要的工单数",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc 在文件系统层使用 btrfs 写时复制快照。380 GB 生产环境亚秒级快照完成，初期零额外存储，仅改变的块占用新空间。",
-          "overline": "技术原理",
+          "description": "Rediacc 在文件系统层使用 btrfs 写时复制快照。380 GB 生产环境<span class=\"sp-emphasis\">亚秒级</span>快照完成，初期零额外存储，仅改变的块占用新空间。",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -3017,7 +2902,6 @@
               "title": "持续测试，而非年度"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "克隆生产环境，让 AI 发起攻击。",
@@ -3032,7 +2916,6 @@
           "description": "每多一天漏洞未修补，就多一天基础设施暴露。计算你的风险窗口。",
           "footnote": "模型：传统渗透测试约 $15K/次/约 10 台服务器。盲区 = 没有主动扫描的年度百分比。Rediacc 成本基于 $20/服务器/月的持续自动化测试。",
           "headerTitle": "安全风险敞口计算器",
-          "overline": "真实成本",
           "results": {
             "blindspot": "盲区",
             "exposure": "每个漏洞的暴露时间",
@@ -3059,7 +2942,6 @@
           "title": "克隆生产环境，让 AI 攻击它。"
         },
         "howItWorks": {
-          "overline": "工作原理",
           "pipelineVisual": {
             "arrows": [
               {
@@ -3134,7 +3016,6 @@
         },
         "problem": {
           "description": "对生产系统进行渗透测试是危险的。它可能导致服务崩溃、数据损坏或触发误报。所以大多数团队要么跳过它，要么在不反映现实的过时预发布环境上测试。结果：漏洞数月未修补——或者直到攻击者先发现它们。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "194 days",
@@ -3212,26 +3093,8 @@
           },
           "quote": "我们在生产克隆上运行了第一次自动化渗透测试，发现了 23 个漏洞——包括 2 个经过三次手动审计仍未发现的关键 SQL 注入向量。我们在下次合规审查之前修补了所有漏洞，现在每周而非每年运行渗透测试。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone for testing",
-            "number": "47s"
-          },
-          {
-            "icon": "shield",
-            "label": "Production risk",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "CVE signatures scanned",
-            "number": "2,847"
-          }
-        ],
         "techDiff": {
           "description": "传统渗透测试针对的是在创建几天内就与生产环境偏差的预发布环境。Rediacc 创建实际生产基础设施的 btrfs 写时复制快照——相同的数据、相同的配置、相同的漏洞——并对其运行自动化攻击模拟。测试后克隆被销毁。生产环境永远不会被触及。",
-          "overline": "底层技术",
           "traditionalLabel": "传统渗透测试",
           "rediaccLabel": "Rediacc（攻击生产克隆）",
           "rows": [
@@ -3282,7 +3145,6 @@
               "title": "即时报告"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "每项操作都有记录，无任何隐藏。",
@@ -3297,7 +3159,6 @@
           "description": "拖动滑块以匹配你的环境。查看不完整审计追踪的真实成本。",
           "footnote": "日志编译：审计次数 × 每次审计小时数 × $200/小时。审计差距：没有集中日志记录时每 5 台服务器预估 1 个。调查延迟：差距 × $12,000（泄露调查延长费用）。不合规：每个差距每次审计 $5,000。使用 Rediacc，一条 CLI 命令即可在数秒内生成完整的 SHA-256 验证报告。",
           "headerTitle": "审计追踪风险计算器",
-          "overline": "真实成本",
           "results": {
             "compileHours": "每年日志编译小时数",
             "delayCost": "调查延迟成本",
@@ -3360,7 +3221,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "审计追踪对比"
         },
         "hero": {
@@ -3425,7 +3285,6 @@
               "title": "操作"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "每次备份、恢复、访问、密钥轮换和配置变更都会自动记录。无需启用，无需设置。",
@@ -3453,7 +3312,6 @@
         },
         "problem": {
           "description": "当出问题时，第一个问题是“发生了什么？”没有完整的日志，你只能猜测。不完整的审计追踪意味着盲区。盲区意味着风险。审计员不接受“我们认为”作为答案。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "204 days",
@@ -3575,26 +3433,8 @@
           },
           "quote": "在 SOC 2 Type II 审计期间，审计员要求所有 28 台服务器 6 个月的备份访问日志。使用之前的工具，那将是 2 周的手动日志汇总——去年我们因记录不完整有 4 项发现。我运行了一条 Rediacc 命令，30 秒内就有了一份完整的、加密验证的报告。审计员说这是她 15 年来见过的最干净的审计追踪。零发现。"
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Actions Logged",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Log Integrity",
-            "number": "防篡改"
-          },
-          {
-            "icon": "zap",
-            "label": "Report Generation",
-            "number": "即时"
-          }
-        ],
         "techDiff": {
           "description": "应用日志用于调试——它们是可变的、不完整的，分散在各个系统中。Rediacc 的审计追踪专为合规设计：每项操作都经过加密签名、按时间链式记录，并可导出为单一报告。",
-          "overline": "底层技术",
           "traditionalLabel": "可变的应用日志",
           "rediaccLabel": "Rediacc 审计日志",
           "rows": [
@@ -3624,7 +3464,6 @@
           "command": "rdc backup verify my-app",
           "description": "从免费的社区版开始。一分钟内验证你的第一个备份。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "无需信用卡",
           "title": "永远不要信任未验证的备份"
         },
         "calculator": {
@@ -3632,7 +3471,6 @@
           "description": "拖动滑块以匹配你的环境。查看信任“备份完成”的真实成本。",
           "footnote": "损坏备份数：每周任务数 × 52 × 损坏率。恢复失败：损坏备份数 × 恢复小时数 × $100/小时（人员 + 生产力损失）。数据丢失：损坏备份数 × 每次事故 8 条面临风险的记录 × $173/记录（IBM Cost of a Data Breach Report 2024）。通过每日自动验证，损坏在 24 小时内被发现——在其累积之前。",
           "headerTitle": "计算你的备份风险敞口",
-          "overline": "真实成本",
           "results": {
             "corrupted": "每年损坏的备份数",
             "dataLoss": "数据丢失风险（记录数）",
@@ -3695,7 +3533,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "备份验证对比"
         },
         "hero": {
@@ -3760,7 +3597,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc repo push production。btrfs 快照原子性捕获您的整个技术栈。",
@@ -3788,7 +3624,6 @@
         },
         "problem": {
           "description": "你以为你受到了保护。你每晚都在运行备份。但它们真的可用吗？大多数团队直到需要恢复时才检查。到那时已经太晚了。损坏的备份给你的是虚假信心——除此之外什么都没有。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "58%",
@@ -3893,7 +3728,6 @@
         },
         "techDiff": {
           "description": "传统备份工具检查文件是否已写入。Rediacc 更进一步：它克隆备份、启动每个容器、对每个服务运行健康检查并报告通过/失败。不是文件校验和——而是完整的恢复测试。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc 验证",
           "rows": [
             {
@@ -3936,7 +3770,6 @@
               "title": "无供应商锁定"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "AWS 宕机时，您不受影响",
@@ -3944,7 +3777,6 @@
           "command": "rdc repo push production --to secondary-dc",
           "description": "从免费的社区版开始。免费跨地域复制。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "最多 10 个工作负载永久免费",
           "title": "不要把业务押注在一朵云上"
         },
         "calculator": {
@@ -3952,7 +3784,6 @@
           "description": "拖动滑块以匹配你的业务。查看单云依赖的真实成本。",
           "footnote": "收入损失：小时收入 × 故障小时数。故障转移人力：3 名工程师 × 故障转移小时数 × $200/小时 × 事故次数。客户流失：直接收入损失的 20%（保守估计）。SLA 罚款：收入损失的 10%。ITIC 2024 发现 41% 的企业报告每小时停机成本为 $1M-$5M。Rediacc 的 <30 秒自动故障转移消除了长时间停机窗口。",
           "headerTitle": "计算你的故障风险敞口",
-          "overline": "真实成本",
           "results": {
             "churn": "客户流失（预估）",
             "labor": "故障转移人力成本",
@@ -4015,7 +3846,6 @@
               "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "没有其他工具能在数秒内完成跨云故障转移"
         },
         "hero": {
@@ -4081,7 +3911,6 @@
               "title": "主节点 (us-east-1)"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc replicate production --target secondary。增量同步——仅传输变更的块。",
@@ -4109,7 +3938,6 @@
         },
         "problem": {
           "description": "2024 年关键云故障事件同比增长 18%，持续时间延长 18.7%，其中 68% 由人为错误导致。当你唯一的云宕机时，一切都宕机了。你的客户、你的收入、你的声誉——全部沦为他人基础设施的人质。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "$300K+",
@@ -4235,26 +4063,8 @@
           },
           "quote": "在去年三月的 AWS us-east-1 故障期间，我们的 12 个生产服务在 22 秒内故障转移到了备用数据中心。我们的客户毫无察觉。我们的竞争对手宕机了 6 小时。那周我们从他们的客户那里获得了三个新的企业合同。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Failover Time",
-            "number": "<30s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Data Integrity",
-            "number": "99.99%"
-          },
-          {
-            "icon": "cloud",
-            "label": "Cloud Providers Supported",
-            "number": "3+"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc 使用 btrfs send/receive 在文件系统层面计算增量差异。不是传输完整镜像，只有变更的数据块在站点之间移动。一个 380 GB 的环境如果每天有 2.4 GB 的变更，就只传输 2.4 GB——而非 380 GB。这意味着 98% 的带宽节省。复制可以持续运行或按计划执行。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -4297,7 +4107,6 @@
               "title": "可量化的改进"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "持续测试安全性，而非每年一次",
@@ -4312,7 +4121,6 @@
           "description": "年度渗透测试之间的间隔是攻击者依赖的窗口。计算你承担了多少风险。",
           "footnote": "模型：传统渗透测试约 $15K/次/约 10 台服务器。盲区 = 没有主动扫描的年度百分比。Rediacc 每日自动化测试 $20/服务器/月。暴露 = 发现周期间隔 + 修复时间。",
           "headerTitle": "暴露窗口计算器",
-          "overline": "真实成本",
           "results": {
             "blindspot": "盲区窗口",
             "exposure": "每个漏洞的暴露天数",
@@ -4339,7 +4147,6 @@
           "title": "持续测试安全性，而非每年一次。"
         },
         "howItWorks": {
-          "overline": "工作原理",
           "pipelineVisual": {
             "arrows": [
               {
@@ -4409,7 +4216,6 @@
         },
         "problem": {
           "description": "你每年运行一次渗透测试。它发现问题。你修复它们。但下周或下个月引入的漏洞怎么办？年度测试意味着年度盲区。攻击者不会等你的安排。两次渗透测试之间的每一天都是基础设施暴露的一天。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "364 days",
@@ -4487,26 +4293,8 @@
           },
           "quote": "我们从年度渗透测试转为每日自动化扫描。我们的平均漏洞检测时间从 180 天降至 1 天。第一个月，我们发现并修补了 14 个在下次年度审查之前本会未被检测到的漏洞。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Test frequency",
-            "number": "每日"
-          },
-          {
-            "icon": "shield",
-            "label": "Production downtime",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Vuln reduction in 4 weeks",
-            "number": "87%"
-          }
-        ],
         "techDiff": {
           "description": "每次计划扫描都创建一个生产基础设施的全新 btrfs 写时复制快照，对其运行完整的 AI 渗透测试套件，生成带有趋势比较的优先级报告，然后销毁克隆。无需维护预发布环境。无偏差。无过时数据。每次扫描测试的是生产环境当前实际运行的内容。",
-          "overline": "底层技术",
           "traditionalLabel": "计划性年度测试",
           "rediaccLabel": "Rediacc（持续）",
           "rows": [
@@ -4557,7 +4345,6 @@
               "title": "与SecNumCloud及C5:2026对齐"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "您的服务器，您的密钥，您的司法管辖。",
@@ -4572,7 +4359,6 @@
           "description": "拖动滑块以匹配您的环境。查看主权差距的真实成本。",
           "footnote": "传输风险：记录数 x €0.04 x 10%监管审查概率。退出罚款：超大规模云支出的10%作为数据法第25条估算转换成本上限（2027年1月12日零费用截止日期）。DORA测试：小时数 x €200/小时工程师成本。使用Rediacc：自托管消除传输风险，开放格式消除退出罚款，恒定时间分叉将DORA恢复测试缩减至几分钟，与存储库大小无关。",
           "headerTitle": "主权风险敞口计算器",
-          "overline": "真实成本",
           "results": {
             "doraTesting": "DORA第12条测试成本",
             "exitPenalty": "数据法2027退出罚款风险",
@@ -4633,7 +4419,6 @@
               "values": ["cross", "cross", "check", "check", "check", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "主权对比"
         },
         "hero": {
@@ -4698,7 +4483,6 @@
               "title": "美国超大规模云"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "在您自己的硬件、EU IaaS提供商或任意组合上部署。Rediacc OE在爱沙尼亚注册成立，无美国母公司，无美国控制平面，无CLOUD Act暴露面。",
@@ -4726,7 +4510,6 @@
         },
         "problem": {
           "description": "美国司法管辖的云提供商在法律上必须遵守CLOUD Act命令，即使数据存储在EU数据中心。合同承诺无法凌驾于美国法规之上。问题不在于您的提供商是否愿意这样做，而在于他们是否在法律上可以这样做。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "\"不，我无法保证\" (Non, je ne peux pas le garantir)",
@@ -4848,26 +4631,8 @@
           },
           "quote": "2025年6月Carniaux参议院证词之后，我们的SecNumCloud审计委员会提出了一个问题：您能否证明您的备份提供商不会被强制向美国当局披露患者数据？使用Microsoft Azure Backup时，我们无法回答这个问题。使用Rediacc，答案是架构层面的：密钥永远不会离开我们的HSM，运营商没有美国母公司，我们可以在三十秒内生成签名的托管报告。这是唯一能令ANSSI满意的答案。"
         },
-        "stats": [
-          {
-            "icon": "key",
-            "label": "托管给任何提供商的密钥",
-            "number": "0"
-          },
-          {
-            "icon": "lock",
-            "label": "客户密钥托管",
-            "number": "100%"
-          },
-          {
-            "icon": "globe",
-            "label": "运营商司法管辖",
-            "number": "EU-only"
-          }
-        ],
         "techDiff": {
           "description": "美国司法管辖的提供商可以将您的数据存储在法兰克福，仍然可能被美国法院强制要求披露。Rediacc的架构从根本上消除了强制向量：没有密钥可以交出，没有回传通道可以拦截。",
-          "overline": "底层技术",
           "traditionalLabel": "美资供应商",
           "rediaccLabel": "Rediacc（无密钥可交出）",
           "rows": [
@@ -4895,16 +4660,6 @@
           "title": "为何数据驻留不等于数据主权"
         }
       },
-      "downloadGated": {
-        "description": "这份简明扼要的 PDF 专为 CISO、CTO 及高级工程师撰写。填写您的邮箱，我们将通过邮件发送下载链接及一页摘要。",
-        "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
-        "dismissLabel": "关闭",
-        "emailPlaceholder": "you@company.com",
-        "errorMessage": "出现错误，请重试或联系 support@rediacc.com。",
-        "submitLabel": "发送简报",
-        "successMessage": "请查收邮件确认。PDF 已在新标签页中打开。",
-        "title": "获取技术简报"
-      },
       "downloadShort": {
         "buttonLabel": "下载简版简报（PDF）",
         "description": "跳过深度解读，直接获取五分钟速览版，供团队站会阅读。",
@@ -4923,7 +4678,6 @@
           "description": "拖动滑块以匹配你的环境。查看厂商管理加密的真实成本。",
           "footnote": "审计准备：审计次数 × 每次审计小时数。合规差距：每 5 TB 厂商管理数据 1 个。泄露风险溢价：$4,880/TB × 风险因子（IBM 行业平均值）。使用客户持有密钥和零知识架构，密钥访问审计只需一条 CLI 命令。",
           "headerTitle": "加密治理计算器",
-          "overline": "真实成本",
           "results": {
             "exposure": "每年暴露窗口",
             "gaps": "合规差距（密钥访问）",
@@ -4986,7 +4740,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "加密控制对比"
         },
         "hero": {
@@ -5051,7 +4804,6 @@
               "title": "备份数据"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc keygen production。创建仅由您持有的 4096 位 RSA 密钥对。",
@@ -5079,7 +4831,6 @@
         },
         "problem": {
           "description": "大多数备份工具加密你的数据——用他们的密钥。这意味着他们可以访问它。他们的员工可以访问它。他们端的泄露会暴露你的数据。如果你不控制密钥，你就不控制你的数据。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "Only 8%",
@@ -5208,7 +4959,6 @@
         },
         "techDiff": {
           "description": "厂商管理加密意味着你的厂商持有密钥。他们可以解密你的数据。他们的员工可以访问它。他们端的泄露会暴露一切。Rediacc 使用客户持有密钥和零知识架构——我们永远看不到你的明文或你的密钥。",
-          "overline": "底层技术",
           "traditionalLabel": "供应商持有密钥",
           "rediaccLabel": "Rediacc（客户持有密钥）",
           "rows": [
@@ -5251,7 +5001,6 @@
               "title": "应用 + 数据库 + 配置"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "60 秒克隆生产环境",
@@ -5259,7 +5008,6 @@
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "从免费的社区版开始。免费克隆最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "最多 10 个工作负载永久免费",
           "title": "把时间还给你的开发人员"
         },
         "calculator": {
@@ -5267,7 +5015,6 @@
           "description": "拖动滑块以匹配你的团队。结果可能会让你吃惊。",
           "footnote": "基于 $160K 平均总薪酬（$92/小时全额成本）。环境等待成本：阻塞时间 × 60% 生产力影响。上下文切换：每位开发人员每年 $24K-$50K。69% 的开发人员每周因低效损失 8 小时以上（Atlassian 2024）。开发人员在等待期间并非完全闲置——但级联依赖会在多个迭代周期中累积。保守估计——实际节省往往更高。",
           "headerTitle": "计算你的环境等待成本",
-          "overline": "真实成本",
           "results": {
             "blockedTime": "每迭代周期的阻塞时间",
             "contextSwitching": "上下文切换成本",
@@ -5325,7 +5072,6 @@
               "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "没有其他工具能克隆你的完整技术栈"
         },
         "hero": {
@@ -5396,7 +5142,6 @@
               "title": "生产环境"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "开发者运行 rdc ceph snapshot create production。无需工单，无需审批。",
@@ -5424,7 +5169,6 @@
         },
         "problem": {
           "description": "你的开发人员需要一个测试环境。他们提交工单。运维团队配置服务器。有人负责配置它。三天后，它仍然与生产环境不一致。与此同时，你的开发人员从周一起就被阻塞了——而每次中断都需要 23 分钟的恢复时间。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "69%",
@@ -5550,26 +5294,8 @@
           },
           "quote": "我们在不到 10 分钟内创建了 12 个与生产环境完全相同的测试环境——每个都包含完整的 241 GB PostgreSQL 数据库。我们之前的流程是手动将数据库导出到预发布环境，需要 3 名工程师和每个环境 2 天的时间。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone Creation Time",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Production Identical",
-            "number": "100%"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "DevOps Tickets Needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc 使用 btrfs 写时复制快照技术在文件系统层面运行。对 241 GB 生产环境的快照在亚秒级完成，且初始不占用额外存储空间。随着克隆在开发过程中产生差异，只有变更的数据块使用新空间。十个 241 GB 数据库的克隆可能仅使用不到 12 GB 的额外存储。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5616,7 +5342,6 @@
               "title": "混乱来临前的信心"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "在需要之前测试您的故障转移",
@@ -5624,7 +5349,6 @@
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "从免费的社区版开始。5 分钟内运行你的第一次 DR 测试。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "无需信用卡",
           "title": "今天就测试你的故障转移计划"
         },
         "calculator": {
@@ -5632,7 +5356,6 @@
           "description": "拖动滑块以匹配你的业务。查看寄希望于 DR 计划有效的真实成本。",
           "footnote": "收入风险：小时收入 × 预期停机小时数。恢复人力：3 名工程师 × 停机小时数 × $200/小时 × 每人 3 个服务。流失：风险收入的 20%（保守估计）。合规：收入损失的 10%。只有 13% 的组织使用编排化 DR 工作流（Veeam 2024）。通过每月自动化测试，差距在造成影响之前就被发现和修复。",
           "headerTitle": "计算你的 DR 测试差距风险敞口",
-          "overline": "真实成本",
           "results": {
             "churn": "客户流失（预估）",
             "compliance": "合规罚款风险",
@@ -5695,7 +5418,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "DR 测试工具对比"
         },
         "hero": {
@@ -5760,7 +5482,6 @@
               "title": "主节点 (us-east-1)"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc failover test --simulate。针对克隆的受控故障。对生产零风险。",
@@ -5788,7 +5509,6 @@
         },
         "problem": {
           "description": "你有灾难恢复计划。但你上次测试是什么时候？大多数团队没有。他们假设它能工作。然后灾难来临，他们发现它不能。未经测试的计划不是计划。它只是一个希望。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "Only 13%",
@@ -5902,26 +5622,8 @@
           },
           "quote": "我们在一个周二上午运行了第一次自动化故障转移测试。它发现了 3 个关键差距——一条过期的 DNS 记录、备用系统上缺失的 SSL 证书、以及 4 分钟的数据库复制延迟。这三个问题在真实故障时都会导致宕机。我们在一个下午就修复了它们。现在我们每月测试一次，睡得更安心。"
         },
-        "stats": [
-          {
-            "icon": "refresh",
-            "label": "Recommended Test Frequency",
-            "number": "每月"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Full-Stack Test Coverage",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Production Impact",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "传统 DR 测试需要生产停机、一个工程师团队和数周的规划。Rediacc 使用 btrfs 写时复制快照在数秒内创建整个基础设施的隔离克隆。测试在克隆上运行——生产永不停止。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc DR 测试",
           "rows": [
             {
@@ -5955,7 +5657,6 @@
           "command": "rdc repo push production --to backup-vault",
           "description": "从免费的社区版开始。免费保护最多 10 个工作负载。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "最多 10 个工作负载永久免费",
           "title": "不再担心勒索软件"
         },
         "calculator": {
@@ -5963,7 +5664,6 @@
           "description": "拖动滑块以匹配你的基础设施。数字累加得很快。",
           "footnote": "面临风险的收入基于平均每分钟停机成本 $9,000（Splunk/Oxford Economics 2024）。恢复人力：6 名工程师 × 恢复小时数 × $200/小时混合费率。声誉成本按直接成本的百分比估算（行业估计）。使用 Rediacc：不可变快照在 5 分钟内恢复——停机时间趋近于零。",
           "headerTitle": "计算你的勒索软件风险敞口",
-          "overline": "真实成本",
           "results": {
             "downtime": "每次事故的停机时间",
             "labor": "恢复人力成本",
@@ -6026,7 +5726,6 @@
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "唯一具备文件系统级不可变性的备份"
         },
         "hero": {
@@ -6091,7 +5790,6 @@
               "title": "生产环境"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc repo push production --immutable。您的数据被即时捕获并封存。",
@@ -6119,7 +5817,6 @@
         },
         "problem": {
           "description": "现代攻击者在加密文件之前会先找到你的备份。如果你的备份可以被修改，它们就会被修改。传统备份工具留下了后门——94% 的勒索软件受害者的备份在攻击期间被针对性攻击。你需要在创建的瞬间就锁定的备份。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "94%",
@@ -6252,7 +5949,6 @@
         },
         "techDiff": {
           "description": "Rediacc 使用 btrfs 只读快照在文件系统层面运行。一旦快照被封存，内核本身就会阻止修改——不是恶意软件可以绕过的软件锁，而是文件系统级别的不可变性。即使拥有 root 权限，勒索软件也无法加密、修改或删除封存的 btrfs 快照。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc（btrfs 不可变）",
           "rows": [
             {
@@ -6282,7 +5978,6 @@
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "从免费的社区版开始。包含按需克隆功能。",
           "primaryCta": "免费开始",
-          "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
           "title": "立即削减基础设施成本"
         },
         "calculator": {
@@ -6290,7 +5985,6 @@
           "description": "每台通宵运行的服务器都是白白花掉的钱。",
           "footnote": "Rediacc 使用 btrfs 写时复制：克隆与生产环境共享存储块，仅使用约 1% 的额外磁盘空间。环境在 60 秒内启动，并通过可配置的 TTL 自动销毁。你只需为一台生产服务器付费，而非 15 个副本。",
           "headerTitle": "基础设施浪费计算器",
-          "overline": "真实成本",
           "results": {
             "idle": "闲置浪费的资金",
             "monthly": "每月服务器成本",
@@ -6350,7 +6044,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "其他厂商如何为闲置容量收费"
         },
         "hero": {
@@ -6413,7 +6106,6 @@
               "title": "始终在线"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "按需创建与生产一致的克隆。52 秒，通过写时复制成本极低。",
@@ -6441,7 +6133,6 @@
         },
         "problem": {
           "description": "你有 15 个全天候运行的开发环境。开发人员每天使用 8 小时，每周 5 天。利用率只有 33%。剩下的 67%——服务器在夜间、周末和假期闲置——你都在为此付费。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "60–80%",
@@ -6518,7 +6209,6 @@
         },
         "techDiff": {
           "description": "传统开发环境复制整个服务器——每个字节的数据、每个配置文件、每个库。Rediacc 使用 btrfs 写时复制：克隆与生产环境共享未更改的数据块，380 GB 环境仅使用 1% 的额外存储。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc（写时复制）",
           "rows": [
             {
@@ -6565,7 +6255,6 @@
               "title": "经验证的恢复"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "分钟级完整环境恢复",
@@ -6573,7 +6262,6 @@
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "从免费的社区版开始。5 分钟内恢复你的第一个环境。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "无需信用卡",
           "title": "几分钟内恢复上线，而非数天"
         },
         "calculator": {
@@ -6581,7 +6269,6 @@
           "description": "拖动滑块以匹配你的环境。查看文件级恢复的真实成本。",
           "footnote": "文件级恢复：每个服务 2 小时配置 + 重新配置。收入损失：停机小时数 × 小时收入。人员人力：2 名工程师 × 恢复小时数 × $200/小时。流失：因 SLA 违规导致的收入损失的 20%。Rediacc：btrfs 克隆在 5 分钟内恢复完整环境——一条命令，无需重建。",
           "headerTitle": "计算你的停机风险敞口",
-          "overline": "真实成本",
           "results": {
             "churn": "客户流失影响",
             "labor": "人员人力（重建）",
@@ -6646,7 +6333,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "恢复能力对比"
         },
         "hero": {
@@ -6711,7 +6397,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc repo snapshot list production。从备份时间线中选择任意时间点。",
@@ -6739,7 +6424,6 @@
         },
         "problem": {
           "description": "恢复单个文件需要数小时。重建整个环境需要数天。当你的生产服务器宕机时，你不仅需要恢复文件——你需要恢复一切。服务器、配置、数据库、网络设置，全部。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6865,26 +6549,8 @@
           },
           "quote": "我们的主数据库服务器在周六凌晨 2:14 故障了——磁盘控制器损坏。按照旧方案，这将是整个周末的配置、恢复和重新设置 11 个服务。取而代之的是，我在手机上运行了一条命令。到凌晨 2:18，一切都恢复了——MariaDB、API、Nginx、Redis，全部。相同的配置、相同的状态、相同的数据。值班工程师回去继续睡觉了。"
         },
-        "stats": [
-          {
-            "icon": "zap",
-            "label": "Full Recovery Time",
-            "number": "<5min"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Environment Fidelity",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "In Time",
-            "number": "任意时间点"
-          }
-        ],
         "techDiff": {
           "description": "传统恢复意味着配置新服务器、安装软件包、逐一恢复文件、重新配置服务，并祈祷没有遗漏。Rediacc 使用 btrfs 快照克隆整个环境——卷、配置、容器、网络设置——在一个原子操作中完成。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -6914,7 +6580,6 @@
           "command": "rdc repo fork production --tag ci-build",
           "description": "从免费的社区版开始。包含 Git 集成。",
           "primaryCta": "免费开始",
-          "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
           "title": "简化你的 CI/CD 流水线"
         },
         "calculator": {
@@ -6922,7 +6587,6 @@
           "description": "每个在合成数据上通过但在生产环境失败的测试，都意味着 CI 流水线在欺骗你。",
           "footnote": "假设开发人员成本 $75/小时。每次 CI 失败导致每位开发人员约 1 小时的上下文切换阻塞。测试数据不匹配导致的生产 Bug 预估为月失败率的 1.5 倍/季度。",
           "headerTitle": "CI/CD 维护计算器",
-          "overline": "真实成本",
           "results": {
             "blocked": "每月被阻塞的开发小时数",
             "bugs": "因测试数据不准确导致的生产 Bug",
@@ -6978,7 +6642,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "测试夹具 vs. 生产克隆"
         },
         "hero": {
@@ -6987,7 +6650,6 @@
           "title": "无缝融入您的现有工作流"
         },
         "howItWorks": {
-          "overline": "工作原理",
           "pipelineVisual": {
             "arrows": [
               {
@@ -7047,7 +6709,6 @@
         },
         "problem": {
           "description": "有人写了一个 200 行的 bash 脚本来在你的流水线中配置测试环境。他们离开了公司。脚本每月崩溃一次。没人理解它。你的 CI/CD 流水线靠胶带和运气维持。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "69%",
@@ -7136,7 +6797,6 @@
         },
         "techDiff": {
           "description": "传统 CI/CD 配置空容器并填充合成数据。Rediacc 在基础设施层面集成——每次推送都获得一个包含真实数据、真实配置和真实服务的完整生产克隆。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7179,7 +6839,6 @@
               "title": "一套思路，管理一切"
             }
           ],
-          "overline": "重要意义",
           "title": "保持 Kubernetes，获得集群流动性"
         },
         "blurb": "克隆或迁移正在运行的集群，数据完整保留",
@@ -7224,12 +6883,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "没有别的工具能带着数据迁移运行中的集群"
         },
         "hero": {
           "ctaLabel": "分叉集群",
-          "subtitle": "集群整体搬走：节点、配置、数据全部带走。可以搬到另一台机器或另一个数据中心。整个切换过程只需几秒，而不是等上一整个周末。",
+          "subtitle": "集群整体搬走：节点、配置、数据全部带走。可以搬到另一台机器或另一个数据中心。整个切换过程<span class=\"sp-emphasis\">只需几秒</span>，而不是等上一整个周末。",
           "title": "克隆或迁移正在运行的 Kubernetes 集群"
         },
         "howItWorks": {
@@ -7289,7 +6947,6 @@
               "title": "生产环境（数据中心 A）"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "每个节点都从一个镜像文件启动。每个存储卷都是一个 Ceph RBD 镜像。合在一起，就是整个集群：应用、配置和数据。",
@@ -7317,7 +6974,6 @@
         },
         "problem": {
           "description": "Kubernetes 让应用随处运行，但集群本身做不到。数据始终存储在一个数据中心。想要迁移，就意味着一个重建项目：新节点、新存储、从备份恢复、重新测试。所以大多数团队从不迁移，而供应商对此心知肚明。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "27%",
@@ -7411,26 +7067,8 @@
             }
           ]
         },
-        "stats": [
-          {
-            "icon": "layers",
-            "label": "2 节点集群完整克隆",
-            "number": "46s"
-          },
-          {
-            "icon": "clock",
-            "label": "迁移切换耗时（可精确测量）",
-            "number": "16s"
-          },
-          {
-            "icon": "zap",
-            "label": "命名空间克隆",
-            "number": "1-5s"
-          }
-        ],
         "techDiff": {
-          "description": "每个节点都从 btrfs 上的一个镜像文件启动。每个存储卷都是一个 Ceph RBD 镜像。复制集群，就是对这些镜像做写时复制克隆。没有导出，没有格式转换，没有恢复步骤。这就是为什么克隆只需几秒，而不是几个月。",
-          "overline": "底层技术",
+          "description": "每个节点都从 btrfs 上的一个镜像文件启动。每个存储卷都是一个 Ceph RBD 镜像。复制集群，就是对这些镜像做写时复制克隆。没有导出，没有格式转换，没有恢复步骤。这就是为什么克隆<span class=\"sp-emphasis\">只需几秒，而不是几个月</span>。",
           "traditionalLabel": "备份恢复式迁移",
           "rediaccLabel": "Rediacc（写时复制克隆）",
           "rows": [
@@ -7496,7 +7134,6 @@
               "title": "零信任传输"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "迁移数据，零风险",
@@ -7504,7 +7141,6 @@
           "command": "rdc repo push production --to secondary",
           "description": "内置加密迁移功能。开始 14 天免费试用。",
           "primaryCta": "免费开始",
-          "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
           "title": "每次都安全迁移"
         },
         "calculator": {
@@ -7512,7 +7148,6 @@
           "description": "每次没有端到端加密的迁移都是一个等待发生的合规事故。",
           "footnote": "假设重新加密配置人力成本 $200/小时，每 TB 数据泄露溢价 $4,880（IBM 2024），以及每个暴露窗口 1% 的泄露概率。Rediacc 全程保持加密——零暴露窗口，零重新加密需求。",
           "headerTitle": "迁移风险计算器",
-          "overline": "真实成本",
           "results": {
             "labor": "重新加密人力成本",
             "risk": "每次迁移的风险数据",
@@ -7573,12 +7208,11 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "其他厂商在迁移过程中无法做到的"
         },
         "hero": {
           "ctaLabel": "安全迁移",
-          "subtitle": "跨服务器、云或供应商迁移？加密备份全程保护。零暴露，零丢失。",
+          "subtitle": "跨服务器、云或供应商迁移？加密备份<span class=\"sp-emphasis\">全程保护</span>。零暴露，零丢失。",
           "title": "迁移数据，零风险"
         },
         "howItWorks": {
@@ -7638,7 +7272,6 @@
               "title": "源端"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "您的加密 btrfs 快照连同密钥、配置和策略一起打包。不进行任何解密。",
@@ -7666,7 +7299,6 @@
         },
         "problem": {
           "description": "迁移数据时最危险。大多数工具先解密数据再复制，导致文件在传输过程中暴露。一个疏漏就会泄露。更糟的是，迁移结束后原有加密配置也会丢失，必须在另一端手动重新设置。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "89%",
@@ -7788,26 +7420,8 @@
           },
           "quote": "我们在一个周末将 42 台服务器从 Hetzner 迁移到 OVH。350 TB 的加密数据传输过程中没有一个字节暴露。我们之前的迁移——仅 8 台服务器——花了三周，且需要将所有数据解密到暂存区。那是我们最后一次接受这种风险。"
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "迁移中的数据暴露",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "全程加密",
-            "number": "100%"
-          },
-          {
-            "icon": "arrow-right-circle",
-            "label": "覆盖所有目标",
-            "number": "Any"
-          }
-        ],
         "techDiff": {
-          "description": "传统工具在传输前解密数据，产生数据未受保护的暴露窗口。我们从不解密——加密的 btrfs 快照作为封存块从头到尾传输。",
-          "overline": "底层技术",
+          "description": "传统工具在传输前解密数据，产生数据未受保护的暴露窗口。我们从不解密——加密的 btrfs 快照作为<span class=\"sp-emphasis\">封存块</span>从头到尾传输。",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7854,7 +7468,6 @@
               "title": "更少的生产 Bug"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "与生产完全一致的开发环境",
@@ -7862,7 +7475,6 @@
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "从免费的社区版开始。包含生产一致性功能。",
           "primaryCta": "免费开始",
-          "tierBadge": "最多 5 个仓库免费 · 无需信用卡",
           "title": "永远终结环境不一致"
         },
         "calculator": {
@@ -7870,7 +7482,6 @@
           "description": "每个因环境偏差导致的生产环境 Bug 都是一个本不应存在的 Bug。",
           "footnote": "假设每位开发人员日均成本 $600，10 天迭代周期，每年 26 个迭代周期。通过 btrfs 写时复制克隆实现 100% 的生产一致性，环境相关 Bug 被彻底消除。",
           "headerTitle": "一致性差距计算器",
-          "overline": "真实成本",
           "results": {
             "capacity": "迭代周期产能损失",
             "debug": "每迭代周期的调试小时数",
@@ -7931,7 +7542,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "代码克隆 vs. 环境克隆"
         },
         "hero": {
@@ -7994,7 +7604,6 @@
               "title": "生产环境"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "从 btrfs 写时复制的精确生产快照开始。相同的操作系统、配置和数据。",
@@ -8022,7 +7631,6 @@
         },
         "problem": {
           "description": "你的开发环境运行着不同的操作系统版本、不同的库版本、不同的配置。代码在开发环境通过了所有测试，然后在生产环境崩溃了。这些 Bug 难以发现且修复成本高昂。它们的发生正是因为开发环境与生产环境不一致。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "182x",
@@ -8120,26 +7728,8 @@
           },
           "quote": "我们在切换到 Rediacc 克隆后跟踪了六个月的每一次生产事故。环境相关 Bug 从每季度 14 个降为零。我们的 QA 负责人以为跟踪系统坏了——她从未见过零的情况。"
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Config match",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Environment drift",
-            "number": "0"
-          },
-          {
-            "icon": "x",
-            "label": "“Works on my machine” incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "传统开发环境是从零构建的近似模拟——手动配置、单独设置、使用合成测试数据。Rediacc 通过 btrfs 写时复制在数据块层面克隆实际的生产文件系统。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8180,7 +7770,6 @@
           "description": "拖动滑块以匹配你的情况。每分钟损害都在累积。",
           "footnote": "收入损失基于你的小时费率 × 恢复小时数。恢复人力：6 名工程师 × $200/小时混合费率。客户流失：预估为直接收入损失的 20%。监管：$50K 基础 + 按严重程度缩放。使用 Rediacc：<5 分钟从不可变快照恢复，消除长时间停机。",
           "headerTitle": "停机成本计算器",
-          "overline": "真实成本",
           "results": {
             "churn": "客户流失成本",
             "labor": "恢复人力",
@@ -8238,7 +7827,6 @@
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "没有其他工具能如此快速恢复"
         },
         "hero": {
@@ -8304,7 +7892,6 @@
               "title": "生产环境（宕机）"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc backup list 找到最后一个干净快照。",
@@ -8332,7 +7919,6 @@
         },
         "problem": {
           "description": "大多数团队在勒索软件后花数天重建。与此同时，客户无法联系你。收入停止。信任崩塌。攻击持续一小时，恢复花一周。那才是真正的损害——而勒索软件的平均恢复时间是 24 天。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "24 days",
@@ -8449,7 +8035,6 @@
         },
         "techDiff": {
           "description": "传统恢复从头重建——重装操作系统、恢复文件、重新配置服务。Rediacc 从 btrfs 快照恢复：文件系统只需切换到保存的状态。无需重装，无需重新配置，无需数据传输。快照已经在磁盘上——它只是变为活跃状态。",
-          "overline": "底层技术",
           "traditionalLabel": "传统重建",
           "rediaccLabel": "Rediacc（btrfs 即时副本）",
           "rows": [
@@ -8479,7 +8064,6 @@
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "从免费的社区版开始。30 秒内设置你的第一个保留策略。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "无需信用卡",
           "title": "让合规变得轻而易举"
         },
         "calculator": {
@@ -8487,7 +8071,6 @@
           "description": "拖动滑块以匹配你的环境。查看手动保留管理的真实成本。",
           "footnote": "准备小时数：审计次数 × 每次审计小时数。差距：每 5 TB 手动管理数据 1 个差距（保守估计）。罚款：每个差距 $50K（中小企业 GDPR 罚款中位数）。人力：准备小时数 × $200/小时（高级工程师）。平均数据泄露成本 $4.88M（IBM 2024）。Rediacc 即时生成审计报告——每次审计 2 小时，自动化策略执行。",
           "headerTitle": "计算你的合规风险敞口",
-          "overline": "真实成本",
           "results": {
             "gaps": "合规差距（预估）",
             "labor": "手动保留人力成本",
@@ -8550,7 +8133,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "保留合规对比"
         },
         "hero": {
@@ -8616,7 +8198,6 @@
               "title": "保留策略"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc config backup-strategy set --cron '0 2 * * *'。按框架或数据类型定义留存期。",
@@ -8644,7 +8225,6 @@
         },
         "problem": {
           "description": "法规要求你在特定期限内保留数据。未达标就面临罚款、审计和法律纠纷。大多数备份工具将保留作为附属功能。你最终只能用电子表格和运气来管理它。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "$4.88M",
@@ -8777,7 +8357,6 @@
         },
         "techDiff": {
           "description": "传统保留管理意味着在电子表格中跟踪备份日期，运行手动清理脚本，并祈祷在审计员到来前没有遗漏。Rediacc 使用 btrfs 快照生命周期管理和自动化策略执行——备份被保留、验证和清理，无需人工干预。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc 保留",
           "rows": [
             {
@@ -8820,7 +8399,6 @@
               "title": "即时回滚"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "无风险测试操作系统更新",
@@ -8828,7 +8406,6 @@
           "command": "rdc repo fork production --tag patch-test",
           "description": "从免费的社区版开始。免费克隆、测试和验证。无需信用卡。",
           "primaryCta": "免费开始使用社区版",
-          "tierBadge": "最多 10 个工作负载永久免费",
           "title": "满怀信心地打补丁"
         },
         "calculator": {
@@ -8836,7 +8413,6 @@
           "description": "拖动滑块以匹配你的基础设施。查看未测试更新的风险。",
           "footnote": "暴露天数：推迟补丁数 × 补丁间平均 30 天。失败更新停机时间：恢复小时数 × $9,000/分钟（Splunk/Oxford Economics 2024） × 10% 失败率。恢复人力：3 名工程师 × 恢复小时数 × $200/小时。泄露风险：$4.88M 平均泄露成本（IBM 2024） × 按服务器数量缩放的未打补丁概率。所有数据为保守估计。",
           "headerTitle": "计算你的补丁风险敞口",
-          "overline": "真实成本",
           "results": {
             "breach": "泄露风险（未打补丁）",
             "downtime": "失败更新的停机时间",
@@ -8899,7 +8475,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "没有其他工具能在真实生产数据上测试补丁"
         },
         "hero": {
@@ -8964,7 +8539,6 @@
               "title": "生产环境"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "运行 rdc ceph snapshot create production。精确副本在 60 秒内启动。",
@@ -8992,7 +8566,6 @@
         },
         "problem": {
           "description": "你需要打补丁。但每次更新都是一场赌博。它会导致故障吗？只有上线后才能知道。大多数团队要么跳过补丁（有风险），要么在与生产环境不匹配的环境中测试（无意义）。两者都不够好。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "3x",
@@ -9118,26 +8691,8 @@
           },
           "quote": "上个季度我们需要紧急修补一个关键的 OpenSSL 补丁。通常我们会安排一个维护窗口然后祈祷。相反，我们克隆了所有 22 台生产服务器，应用了补丁，运行了完整的测试套件，确认零回归——全部在 18 分钟内完成。我们当天就满怀信心地打了生产补丁。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone Creation Time",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Production Identical",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Production Downtime",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc 使用 btrfs 写时复制快照在亚秒级克隆整个生产环境——操作系统、容器、数据库、配置。克隆在隔离网络上运行，拥有自己的 Docker 守护进程。对克隆应用的补丁永远不会触及生产环境。如果克隆崩溃了，删除它。如果成功了，将相同的补丁应用到生产环境。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9180,7 +8735,6 @@
               "title": "价格话语权"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "您的基础设施，您的选择，始终如此。",
@@ -9195,7 +8749,6 @@
           "description": "拖动滑块以匹配你的支出。看看锁定如何悄悄消耗你的预算。",
           "footnote": "厂商加价：年度支出 ×（涨价 × 年数 / 2）——不切换的复合效应。迁移成本：2 名工程师 × 6 个月 × $200/小时（传统迁移项目）。出口费：预估数据量 × $0.09/GB。使用 Rediacc，迁移通过 btrfs 增量传输在 1 小时内完成。",
           "headerTitle": "锁定税计算器",
-          "overline": "真实成本",
           "results": {
             "egress": "出口数据传输费",
             "leverage": "重新谈判筹码",
@@ -9258,7 +8811,6 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "差距对比",
           "title": "没有其他工具能在几分钟内迁移你的完整技术栈"
         },
         "hero": {
@@ -9324,7 +8876,6 @@
               "title": "AWS (us-east-1)"
             }
           },
-          "overline": "工作原理",
           "steps": [
             {
               "description": "您的数据存储在标准 btrfs 子卷中。没有专有格式，没有供应商代理，只有 Linux。",
@@ -9352,7 +8903,6 @@
         },
         "problem": {
           "description": "你在价格合理时注册了。现在你被困住了。迁移需要数月。你的数据在他们的格式中。你的工具依赖他们的 API。他们知道你走不了。所以价格一直涨。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "27%",
@@ -9466,26 +9016,8 @@
           },
           "quote": "我们的 AWS 账单达到了 $33K/月且每年涨 20%。我们在 45 分钟内迁移了 14 个生产服务——GitLab、Nextcloud、3 个数据库、监控等全部——到 Hetzner。月度成本降至 $4,200。相同性能。迁移在 8 天内收回成本。"
         },
-        "stats": [
-          {
-            "icon": "x",
-            "label": "Proprietary Formats",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Portable Data",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Migration Time",
-            "number": "<1hr"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc 将所有数据存储在标准 btrfs 子卷中——没有专有格式，没有厂商特定代理。迁移使用 btrfs send/receive 将增量快照传输到任何 Linux 机器。一个 420 GB 的环境如果自上次同步以来有 3.8 GB 的变更，就只传输 3.8 GB——而非 420 GB。",
-          "overline": "底层技术",
           "traditionalLabel": "专有格式锁定",
           "rediaccLabel": "Rediacc（标准 Linux 存储）",
           "rows": [
@@ -9532,7 +9064,6 @@
               "title": "完整验证"
             }
           ],
-          "overline": "重要意义",
           "title": "您将获得什么"
         },
         "blurb": "在攻击者到来之前修复漏洞",
@@ -9540,7 +9071,6 @@
           "command": "rdc term production cve-2026-1234-fix",
           "description": "从免费的社区版开始。4 分钟内验证你的第一个补丁。",
           "primaryCta": "免费开始",
-          "tierBadge": "无需信用卡",
           "title": "更快打补丁，更安全打补丁。"
         },
         "calculator": {
@@ -9548,7 +9078,6 @@
           "description": "每多一天漏洞未修补，就多一天暴露。每次匆忙打补丁都有引发生产事故的风险。",
           "footnote": "模型：传统修复人力成本 $150/小时（安全工程师进行影响评估、预发布搭建、测试、回滚的时间）。基于行业经验，预估 25% 的补丁会失败。Rediacc 通过基于克隆的验证将修复时间缩短到 1 天以内，消除补丁失败。",
           "headerTitle": "修复成本计算器",
-          "overline": "真实成本",
           "results": {
             "exposure": "每个漏洞的暴露时间",
             "failedPatches": "每年失败的补丁数",
@@ -9570,7 +9099,6 @@
           "title": "在攻击者到来之前修复漏洞"
         },
         "howItWorks": {
-          "overline": "工作原理",
           "pipelineVisual": {
             "arrows": [
               {
@@ -9645,7 +9173,6 @@
         },
         "problem": {
           "description": "你发现了一个漏洞。现在需要修补它。但补丁会破坏什么吗？你无法在生产环境测试。而你的预发布环境已经落后 3 周了。所以你要么匆忙打补丁并祈祷，要么等待并保持暴露。两个选择都不好——而且都要花钱。",
-          "overline": "问题所在",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9727,26 +9254,8 @@
           },
           "quote": "一个关键 CVE 在周五下午发布。到周六上午，我们已经克隆了生产环境、应用了补丁、在所有 4 个受影响的服务上验证了它，并完成了部署——零停机。我们之前的流程需要 3 周和一次变更管理会议。"
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Patch + verify time",
-            "number": "<4min"
-          },
-          {
-            "icon": "shield",
-            "label": "Test before deploy",
-            "number": "Safe"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Unverified patches",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "传统打补丁需要一个与生产环境匹配的预发布环境——但预发布在几天内就会偏差。Rediacc 在数秒内创建实际生产基础设施的 btrfs 写时复制快照，让你在真实数据和真实配置上应用和验证补丁，然后将经过验证的修复部署到生产环境。如果补丁未通过验证，丢弃克隆。生产环境保持不变。",
-          "overline": "底层技术",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

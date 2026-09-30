@@ -7,14 +7,12 @@ import { ACCOUNT_PATH } from './constants';
 
 export type SectionType =
   | 'hero'
-  | 'stats'
   | 'problem'
   | 'video'
   | 'costCalculator'
   | 'howItWorks'
   | 'techDiff'
   | 'benefits'
-  | 'downloadGated'
   | 'competitorComparison'
   | 'bottomCta'
   | 'downloadShort'
@@ -67,14 +65,12 @@ export const CATEGORY_CTA_MAP: Record<SolutionCategory, string> = {
 
 const ALL_SECTIONS = [
   'hero',
-  'stats',
   'problem',
   'video',
   'costCalculator',
   'howItWorks',
   'techDiff',
   'benefits',
-  'downloadGated',
   'competitorComparison',
   'bottomCta',
   'downloadShort',
@@ -96,7 +92,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'infrastructureCosts',
     role: 'copy',
     category: 'dev-env',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'infrastructure-costs',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
   },
@@ -112,7 +108,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'integrations',
     role: 'property',
     category: 'dev-env',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'integrations',
     competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
   },
@@ -120,7 +116,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'immutableBackups',
     role: 'recover',
     category: 'ransomware',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'immutable-backups',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
   },
@@ -152,7 +148,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'retentionCompliance',
     role: 'recover',
     category: 'backups',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'retention-compliance',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
   },
@@ -176,7 +172,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'backupVerification',
     role: 'test',
     category: 'backups',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'backup-verification',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
   },
@@ -198,7 +194,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'encryption',
     role: 'property',
     category: 'encryption',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'encryption',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],
   },
@@ -221,7 +217,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'rapidRecovery',
     role: 'recover',
     category: 'ransomware',
-    sections: ALL_SECTIONS.filter((s) => s !== 'stats' && s !== 'benefits'),
+    sections: ALL_SECTIONS.filter((s) => s !== 'benefits'),
     calculatorPreset: 'rapid-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva', 'Zerto'],
   },
@@ -239,13 +235,11 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     category: 'multi-cloud',
     sections: [
       'hero',
-      'stats',
       'problem',
       'video',
       'howItWorks',
       'techDiff',
       'benefits',
-      'downloadGated',
       'competitorComparison',
       'bottomCta',
       'downloadShort',

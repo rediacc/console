@@ -24,7 +24,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../StructuredData.astro';
 import SPHero from './SPHero.astro';
-import SPStatsBar from './SPStatsBar.astro';
 import SPProblem from './SPProblem.astro';
 import SPSolutionVideo from './SPSolutionVideo.astro';
 import SPCostCalculator from './SPCostCalculator';
@@ -34,7 +33,6 @@ import SPTechDiff from './SPTechDiff.astro';
 import SPBenefits from './SPBenefits.astro';
 import SPComparisonTable from './SPComparisonTable.astro';
 import SPBottomCta from './SPBottomCta.astro';
-import SPDownloadGated from './SPDownloadGated.astro';
 import SPDownloadShort from './SPDownloadShort.astro';
 import SPSources from './SPSources.astro';
 import SolutionConstellation from './SolutionConstellation.astro';
@@ -133,12 +131,6 @@ const breadcrumbItems = [
         problem={(content as any).problem} referenceItems={(content as any).references?.items} slug={slug} />
     )}
 
-    {/* Operator item n5: the three-stat panel reads as the ANSWER to the problem
-        section, so it renders directly after it, not between hero and problem. */}
-    {has('stats') && (
-      <SPStatsBar stats={(content as any).stats} />
-    )}
-
     {has('costCalculator') && config.calculatorPreset && (
       <SPCostCalculator
         client:visible
@@ -150,7 +142,7 @@ const breadcrumbItems = [
     )}
 
     {has('howItWorks') && (
-      <SPHowItWorks howItWorks={(content as any).howItWorks} />
+      <SPHowItWorks howItWorks={(content as any).howItWorks} role={config.role} />
     )}
 
     {has('techDiff') && (
@@ -166,19 +158,17 @@ const breadcrumbItems = [
       <SPBenefits benefits={(content as any).benefits} />
     )}
 
-    {/* B1+B2: the two download CTAs used to sit FOUR sections apart, with the comparison
-        table and the black bottom CTA between them. They ask for the same thing in two
-        registers, so they share one row. Render order is fixed JSX here, NOT data: `has()`
-        at :63 is a membership test, so reordering ALL_SECTIONS in the config changes
-        nothing on the page. */}
-    {(has('downloadGated') || has('downloadShort')) && (
+    {/* B1+B2 put the two download CTAs in one row; this is the step after that.
+        ONE card, not two. Both asked for the same PDF pair -- one behind an email
+        gate, one direct -- so the gated variant is gone along with its scroll
+        sentinel, its dismiss button and its client:idle island. The direct link
+        is the one that always rendered: LeadMagnetButton returned null while
+        invisible, so the ABSENT gated column was already the normal first-paint
+        state and the permanent state after any dismissal. LeadMagnetButton.tsx
+        itself stays -- ResourceBriefPage.astro still uses it. */}
+    {has('downloadShort') && (
       <div class="sp-downloads-row">
-        {has('downloadGated') && (
-          <SPDownloadGated lang={lang} slug={slug} category={config.category} />
-        )}
-        {has('downloadShort') && (
-          <SPDownloadShort lang={lang} slug={slug} category={config.category} />
-        )}
+        <SPDownloadShort lang={lang} slug={slug} category={config.category} />
       </div>
     )}
 
