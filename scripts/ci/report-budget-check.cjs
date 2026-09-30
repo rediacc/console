@@ -8,7 +8,13 @@
 //   script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
 
 const fs = require('node:fs');
-const { ISSUE_LABEL, ISSUE_TITLE, ISSUE_LABELS } = require('../../.ci/scripts/ci/report-nightly-status.cjs');
+const {
+  ISSUE_LABEL,
+  ISSUE_TITLE,
+  ISSUE_LABELS,
+  loadMentions,
+  withMentions,
+} = require('../../.ci/scripts/ci/report-nightly-status.cjs');
 
 const readSummary = (path) => {
   if (!path) return '(no summary captured)';
@@ -30,17 +36,22 @@ const reportBudgetCheck = async ({ github, context, core }) => {
   // Anchored on the markdown link's closing bracket, the same dedupe technique report-nightly-status.cjs uses for its own `run <id>]` marker: a bare substring match would also hit a LONGER run id that happens to start with these digits.
   const marker = `budget-check run ${runId}]`;
 
-  const body = [
-    `### ${today} -- CI time budget check failed ([budget-check run ${runId}](${url}))`,
-    '',
-    '```',
-    summary,
-    '```',
-    '',
-    "<sub>Posted automatically by PLAN-ci-time-budget T3.3 (housekeeping.yml, daily 03:00 UTC).",
-    'A leg over 12 minutes, or a committed estimate drifting more than 25% from measured,',
-    'means .ci/config/lane-durations.json needs `budget_report.py --refresh`.</sub>',
-  ].join('\n');
+  // This module posts only on failure, so every post mentions the handles in .ci/config/ci-alerts.json: a comment with no @mention notifies nobody.
+  const body = withMentions(
+    loadMentions(core),
+    'the CI time budget check failed.',
+    [
+      `### ${today} -- CI time budget check failed ([budget-check run ${runId}](${url}))`,
+      '',
+      '```',
+      summary,
+      '```',
+      '',
+      '<sub>Posted automatically by PLAN-ci-time-budget T3.3 (housekeeping.yml, daily 03:00 UTC).',
+      'A leg over 12 minutes, or a committed estimate drifting more than 25% from measured,',
+      'means .ci/config/lane-durations.json needs `budget_report.py --refresh`.</sub>',
+    ].join('\n')
+  );
 
   const open = (
     await github.paginate(github.rest.issues.listForRepo, {

@@ -1,0 +1,10 @@
+{
+  "$comment": [
+    "Who is @mentioned when a CI health report lands on the rolling nightly-red issue.",
+    "Read by .ci/scripts/ci/report-nightly-status.cjs (loadMentions) and, through that export, by scripts/ci/report-budget-check.cjs.",
+    "A comment with no @mention and no assignee notifies nobody: Console CI's nightly was red every night 2026-09-22..09-30 and each report went unseen.",
+    "The nightly report mentions on every red night and once on the first green after a red streak; the budget check posts only on failure, so it mentions on every post.",
+    "Entries are GitHub logins or org/team slugs, without the leading @. A missing file or an empty list mentions nobody and logs a warning."
+  ],
+  "mention": ["mfbayraktar"]
+}

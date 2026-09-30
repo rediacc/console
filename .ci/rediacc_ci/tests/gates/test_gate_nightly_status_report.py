@@ -24,6 +24,8 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 REPORTER = paths.from_root(".ci", "scripts", "ci", "report-nightly-status.cjs")
+BUDGET_REPORTER = paths.from_root("scripts", "ci", "report-budget-check.cjs")
+ALERTS_CONFIG = paths.from_root(".ci", "config", "ci-alerts.json")
 WORKFLOW = paths.from_root(".github", "workflows", "nightly-status.yml")
 
 RUN_ID = "30237524399"
@@ -86,16 +88,30 @@ report({ github, context, core })
 
 
 class Reporter:
-    """The scratch harness plus a driver for one `report(...)` invocation."""
+    """The scratch harness plus a driver for one `report(...)` invocation.
 
-    def __init__(self, gate, tmp_path: pathlib.Path) -> None:
+    `subject` defaults to the nightly reporter; the budget-check poster shares
+    its `({github, context, core})` signature and its issue calls, so the same
+    harness drives it. `alerts_config` points CI_ALERTS_CONFIG at a fixture;
+    None leaves the real `.ci/config/ci-alerts.json` in force.
+    """
+
+    def __init__(
+        self,
+        gate,
+        tmp_path: pathlib.Path,
+        subject: pathlib.Path = REPORTER,
+        alerts_config: pathlib.Path | None = None,
+    ) -> None:
         self.gate = gate
+        self.subject = subject
+        self.alerts_config = alerts_config
         self.node = harness.require_tool(
             "node",
             "install Node 22 (the lane's setup-workspace step does this in CI)",
         )
-        if not REPORTER.is_file():
-            gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(REPORTER))
+        if not subject.is_file():
+            gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
         self.script = tmp_path / "harness.cjs"
         self.script.write_text(HARNESS_CJS, encoding="utf-8")
 
@@ -114,22 +130,27 @@ class Reporter:
         or `BODY=` line off STDOUT, which is where the harness prints them, so
         stderr is available when something explodes instead of vanishing.
         """
+        env = {
+            "NIGHTLY_RUN_ID": RUN_ID,
+            "NIGHTLY_CONCLUSION": conclusion,
+            "NIGHTLY_EVENT": event,
+            "NIGHTLY_URL": RUN_URL,
+            "GITHUB_RUN_ID": RUN_ID,
+            "BUDGET_CHECK_SUMMARY_PATH": "",
+        }
+        if self.alerts_config is not None:
+            env["CI_ALERTS_CONFIG"] = str(self.alerts_config)
         return harness.run(
             [
                 self.node,
                 str(self.script),
-                str(REPORTER),
+                str(self.subject),
                 open_issues,
                 label_exists,
                 comments,
                 jobs_shape,
             ],
-            env={
-                "NIGHTLY_RUN_ID": RUN_ID,
-                "NIGHTLY_CONCLUSION": conclusion,
-                "NIGHTLY_EVENT": event,
-                "NIGHTLY_URL": RUN_URL,
-            },
+            env=env,
         )
 
     def _line(self, result: harness.RunResult, prefix: str) -> str:
@@ -348,3 +369,124 @@ def test_a_pull_request_carrying_the_label_is_ignored(gate, tmp_path):
     )
     gate.assert_not_contains(trace, "comment:42", "and never commented on")
     gate.log_pass("a pull request carrying the label is filtered out")
+
+
+# --- @mention on the rolling issue (worklist #7466f4ad) ---------------------
+#
+# WHAT BROKE. The nightly was red every night 2026-09-22..09-30 and each report landed on #586 as a comment with no @mention and no assignee, so GitHub notified nobody for nine days. The ruling (2026-09-30): mention on every red night and on the first green after a red streak, and on every budget-check post; a green after a green mentions nobody.
+
+PROBE = "ci-alerts-probe"
+RED_HEADER = "### 2026-09-29 -- nightly [run 30100000001](x) concluded `%s`"
+
+
+def _alerts(tmp_path: pathlib.Path, content: str | None) -> pathlib.Path:
+    """A CI_ALERTS_CONFIG fixture; `None` leaves the path absent."""
+    cfg = tmp_path / "ci-alerts.json"
+    if content is not None:
+        cfg.write_text(content, encoding="utf-8")
+    return cfg
+
+
+def _probe_reporter(gate, tmp_path, subject=REPORTER) -> Reporter:
+    cfg = _alerts(tmp_path, json.dumps({"mention": [PROBE]}))
+    return Reporter(gate, tmp_path, subject=subject, alerts_config=cfg)
+
+
+def test_real_alerts_config_names_someone(gate):
+    # Anti-vacuity for every case below: the fixtures prove the mechanism, this proves the shipped file actually feeds it a handle.
+    data = json.loads(ALERTS_CONFIG.read_text(encoding="utf-8"))
+    handles = [h for h in data.get("mention", []) if isinstance(h, str) and h.strip()]
+    gate.assert_eq(bool(handles), True, "ci-alerts.json must list at least one handle")
+    gate.log_pass("ci-alerts.json mentions %s" % handles)
+
+
+def test_red_night_mentions(gate, tmp_path):
+    body = _probe_reporter(gate, tmp_path).body_of("failure", "schedule", '[{"number":7}]')
+    gate.assert_contains(body, "@" + PROBE, "a red night mentions the configured handle")
+    gate.log_pass("a red nightly comment mentions the operator")
+
+
+def test_first_red_night_issue_body_mentions(gate, tmp_path):
+    body = _probe_reporter(gate, tmp_path).body_of("cancelled", "schedule", "[]")
+    gate.assert_contains(body, "@" + PROBE, "the issue opened on the first red night mentions")
+    gate.log_pass("the opening issue body mentions the operator")
+
+
+def test_green_after_red_mentions_once_as_recovery(gate, tmp_path):
+    comments = json.dumps([{"body": RED_HEADER % "failure"}])
+    body = _probe_reporter(gate, tmp_path).body_of(
+        "success", "schedule", '[{"number":7}]', "1", comments
+    )
+    gate.assert_contains(body, "green again", "the recovery comment is the one posted")
+    gate.assert_contains(body, "@" + PROBE, "the first green after red mentions")
+    gate.log_pass("the recovery green mentions the operator")
+
+
+def test_green_after_red_in_issue_body_mentions(gate, tmp_path):
+    # The first red night lives in the ISSUE BODY, not a comment: a one-night streak has no nightly comment at all.
+    issues = json.dumps([{"number": 7, "body": RED_HEADER % "cancelled"}])
+    body = _probe_reporter(gate, tmp_path).body_of("success", "schedule", issues)
+    gate.assert_contains(body, "@" + PROBE, "a red recorded in the issue body counts")
+    gate.log_pass("a one-night streak's recovery still mentions")
+
+
+def test_green_after_green_mentions_nobody(gate, tmp_path):
+    # Control for the recovery case. The issue is open only because the budget check opened it; the last NIGHTLY report on it was green.
+    comments = json.dumps(
+        [
+            {"body": RED_HEADER % "success"},
+            {"body": "### 2026-09-30 -- CI time budget check failed ([budget-check run 1](x))"},
+        ]
+    )
+    body = _probe_reporter(gate, tmp_path).body_of(
+        "success", "schedule", '[{"number":7}]', "1", comments
+    )
+    gate.assert_contains(body, "green again", "the issue is still closed with a note")
+    gate.assert_not_contains(body, "@", "a green after green mentions nobody")
+    gate.log_pass("green after green is silent")
+
+
+def test_green_with_no_nightly_report_mentions_nobody(gate, tmp_path):
+    body = _probe_reporter(gate, tmp_path).body_of("success", "schedule", '[{"number":7}]')
+    gate.assert_not_contains(body, "@", "no recorded red means no recovery ping")
+    gate.log_pass("closing an issue with no nightly red on it mentions nobody")
+
+
+def test_budget_failure_mentions(gate, tmp_path):
+    reporter = _probe_reporter(gate, tmp_path, subject=BUDGET_REPORTER)
+    body = reporter.body_of("failure", "schedule", '[{"number":7}]')
+    gate.assert_contains(body, "budget check failed", "the budget-check comment is the one posted")
+    gate.assert_contains(body, "@" + PROBE, "every budget-check post mentions")
+    body = reporter.body_of("failure", "schedule", "[]")
+    gate.assert_contains(body, "@" + PROBE, "the issue the budget check opens mentions too")
+    gate.log_pass("the budget check mentions the operator on every post")
+
+
+def _assert_degrades_loudly(gate, reporter, what):
+    result = reporter.run("failure", "schedule", '[{"number":7}]')
+    gate.assert_exit(0, result, "a %s config must not crash the reporter" % what)
+    gate.assert_not_contains(result.out, "THREW:", "the reporter must not throw")
+    trace = reporter._line(result, "TRACE=")
+    body = reporter._line(result, "BODY=")
+    gate.assert_contains(trace, "comment:7", "the report still posts with a %s config" % what)
+    gate.assert_not_contains(body, "@", "a %s config mentions nobody" % what)
+    gate.assert_contains(result.out, "WARNING ci-alerts:", "a %s config is logged" % what)
+    gate.assert_contains(trace, "warning:ci-alerts:", "and raised as a workflow warning")
+
+
+def test_missing_alerts_config_warns_and_mentions_nobody(gate, tmp_path):
+    cfg = _alerts(tmp_path, None)
+    for subject in (REPORTER, BUDGET_REPORTER):
+        _assert_degrades_loudly(
+            gate, Reporter(gate, tmp_path, subject=subject, alerts_config=cfg), "missing"
+        )
+    gate.log_pass("a missing ci-alerts.json posts unmentioned and warns")
+
+
+def test_empty_alerts_config_warns_and_mentions_nobody(gate, tmp_path):
+    cfg = _alerts(tmp_path, '{"mention": []}')
+    for subject in (REPORTER, BUDGET_REPORTER):
+        _assert_degrades_loudly(
+            gate, Reporter(gate, tmp_path, subject=subject, alerts_config=cfg), "empty"
+        )
+    gate.log_pass("an empty mention list posts unmentioned and warns")
