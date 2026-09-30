@@ -56,6 +56,29 @@ const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
 // A cancelled job that ran this long or longer is classified as killed by its timeout (a budget violation) and is never auto-retried. The per-job budget (PLAN-ci-time-budget T4.3); STUCK_THRESHOLD_MIN overrides it.
 const DEFAULT_STUCK_THRESHOLD_MIN = 15;
 
+// The failure annotation GitHub writes on a job it killed for exceeding its `timeout-minutes`. Measured 2026-09-30 with `gh api repos/rediacc/console/check-runs/106268923515/annotations` (Quality / Branch, run 35571489498, conclusion `cancelled`): "The job has exceeded the maximum execution time of 12m0s", followed by "The operation was canceled.". The
+// same wording was found at 15m0s, 20m0s, 45m0s and 6h0m0s. A cancel by a person, a newer push or this watchdog reads "The run was canceled forcefully by @<actor>" instead. The job conclusion alone cannot tell the two apart: both are `cancelled`. Matched from "has exceeded" so an older "The job running on runner <x> has exceeded ..." spelling still counts.
+const TIMEOUT_KILL_ANNOTATION_RE =
+  /has exceeded the maximum execution time of (?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:(\d+)s)?(?:\s*(\d+) minutes)?/i;
+
+/**
+ * Was this job killed by its own `timeout-minutes`? Reads the check run's annotations (a job id is its check-run id). Returns `{ message, timeoutMin }` for the timeout annotation, `timeoutMin` null when the duration cannot be parsed, or null when no annotation says so. Pure, so the gate tests drive it directly.
+ */
+function findTimeoutKillAnnotation(annotations) {
+  for (const a of annotations || []) {
+    const message = String((a && a.message) || '');
+    const m = TIMEOUT_KILL_ANNOTATION_RE.exec(message);
+    if (!m) continue;
+    const [, h, min, s, legacyMin] = m;
+    let timeoutMin = null;
+    if (legacyMin !== undefined) timeoutMin = Number(legacyMin);
+    else if (h !== undefined || min !== undefined || s !== undefined)
+      timeoutMin = Number(h || 0) * 60 + Number(min || 0) + Number(s || 0) / 60;
+    return { message: message.trim(), timeoutMin };
+  }
+  return null;
+}
+
 // Per-job budget exemption caps, in minutes (PLAN-ci-time-budget "Exemption caps 2026-09-28", #d5ba825c, and ruling #fc4f34f8): the jobs whose fixed VM preparation keeps them over the ordinary per-job budget are judged against their ruled `timeout-minutes` instead. Keyed by the job's own display name (the segment after the last " / ", without a " (matrix)" suffix), so "Tests + Infra / E2E K8s Ceph" matches
 // and "E2E K8s" does not. The same numbers live in `JOB_BUDGET_CAPS[].timeoutMinutes` of scripts/gates/check-lane-budget.ts; test_gate_watchdog_budget.py reds when the two disagree.
 const JOB_BUDGET_CAPS = [
@@ -63,9 +86,9 @@ const JOB_BUDGET_CAPS = [
   { job: 'E2E K8s Multinode', budgetMin: 30 },
   // Operator ruling #fc4f34f8 (2026-09-30): the non-apt Ceph Workers matrix, one leg per distro ("... / E2E Ceph Workers non-apt (fedora-43)").
   { job: 'E2E Ceph Workers non-apt', budgetMin: 20 },
-  // Deferrals #153aace7 and #2847e1b3 (2026-09-30), their DEFAULTs applied pending the operator: measured maxima sit at or over 15.
-  { job: 'E2E Workers', budgetMin: 18 },
-  { job: 'E2E Ceph Workers', budgetMin: 18 },
+  // Operator ruling #153aace7 (2026-09-30): measured maxima sit at or over 15.
+  { job: 'E2E Workers', budgetMin: 20 },
+  { job: 'E2E Ceph Workers', budgetMin: 20 },
   // Keyed by the full segment: "Renet (Full)" must not reduce to "Renet", which other Renet jobs share.
   { job: 'Renet (Full)', budgetMin: 20 },
 ];
@@ -1359,6 +1382,30 @@ const monitor = async ({ github, context, core }) => {
     `Stuck-threshold: ${STUCK_THRESHOLD_MIN}m, or the job's budget cap (cancellations at or after this are budget violations and are not retried)`
   );
 
+  // The threshold alone misses most timeout kills: since ce8ac0ad5 many jobs declare a `timeout-minutes` well under 15 (build-www 5, gate-tests 5, extract-renet-cross 9), and one killed at 5 read as a retryable cancellation. So a cancelled job under the threshold has its check-run annotations read, and GitHub's own "has exceeded the maximum execution time" line
+  // (TIMEOUT_KILL_ANNOTATION_RE) marks it a timeout kill whatever its minutes. Needs `checks: read` on the watchdog job. A failed read falls back to the threshold, logged, and is not cached, so the next poll asks again. Keyed by job id: a rerun attempt's job is a new check run.
+  const timeoutKills = new Map();
+  async function readTimeoutKill(job) {
+    if (timeoutKills.has(job.id)) return timeoutKills.get(job.id);
+    try {
+      const { data } = await github.rest.checks.listAnnotations({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        check_run_id: job.id,
+        per_page: 50,
+      });
+      const kill = findTimeoutKillAnnotation(data);
+      timeoutKills.set(job.id, kill);
+      if (kill) console.log(`[timeout] "${job.name}" was killed by its timeout: ${kill.message}`);
+      return kill;
+    } catch (e) {
+      console.log(
+        `[timeout] could not read "${job.name}"'s check-run annotations (${e.message}); falling back to the ${stuckThresholdFor(job)}m stuck-threshold`
+      );
+      return null;
+    }
+  }
+
   while (Date.now() - startTime < maxRuntime) {
     const elapsed = Date.now() - startTime;
     const elapsedMin = Math.round(elapsed / 60000);
@@ -1488,8 +1535,16 @@ const monitor = async ({ github, context, core }) => {
 
     // Distinguish stuck-job timeouts from normal cancellations. A cancelled job that ran longer than STUCK_THRESHOLD_MIN almost certainly hit its declared timeout-minutes (or GitHub's 6h default), not a manual / supersession / watchdog cancel -- those happen within minutes of the job starting. The classifier path treats all cancellations as potentially transient and auto-retries;
     // that's how we ended up with a 4-hour debian-13 hang retried automatically before any human noticed. Stuck jobs go straight to force-cancel with no retry. (STUCK_THRESHOLD_MIN + jobElapsedMin hoisted above the loop as loop-invariants.)
-    const stuckCancellations = cancelled.filter((j) => jobElapsedMin(j) >= stuckThresholdFor(j));
-    const normalCancellations = cancelled.filter((j) => jobElapsedMin(j) < stuckThresholdFor(j));
+    // Under the threshold, GitHub's own timeout annotation decides (see readTimeoutKill). Not in pending-rerun mode, which classifies nothing, and not for a job already handled.
+    for (const j of cancelled) {
+      if (pendingRerun || handledJobs.has(j.name) || jobElapsedMin(j) >= stuckThresholdFor(j))
+        continue;
+      await readTimeoutKill(j);
+    }
+    const isTimeoutKill = (j) =>
+      jobElapsedMin(j) >= stuckThresholdFor(j) || Boolean(timeoutKills.get(j.id));
+    const stuckCancellations = cancelled.filter(isTimeoutKill);
+    const normalCancellations = cancelled.filter((j) => !isTimeoutKill(j));
 
     // Supersession check, and it must come BEFORE the classification below. Once a cancelled job reaches classifyFailure the damage is already done: a billed Workers AI request is spent and core.setFailed marks the step red, and nothing downstream un-marks it. See evaluateSupersession.
     //
@@ -1548,11 +1603,14 @@ const monitor = async ({ github, context, core }) => {
     if (job) {
       const jobMin = jobElapsedMin(job);
       const isStuck = stuckCancellations.includes(job);
+      const timeoutKill = isStuck ? timeoutKills.get(job.id) || null : null;
       const reason = failed.includes(job)
         ? 'Job failed'
-        : isStuck
-          ? `Job stuck (ran ${jobMin}m before cancellation -- likely timeout-minutes expiry)`
-          : 'Job cancelled (likely manual / supersession)';
+        : timeoutKill
+          ? `Job killed by its timeout-minutes after ${jobMin}m (${timeoutKill.message})`
+          : isStuck
+            ? `Job stuck (ran ${jobMin}m before cancellation -- likely timeout-minutes expiry)`
+            : 'Job cancelled (likely manual / supersession)';
       // let, not const: the transient branch below widens the message to the
       // full failure roster before recording it.
       let failureMsg = logFailure(job, reason, run.run_attempt);
@@ -1568,13 +1626,19 @@ const monitor = async ({ github, context, core }) => {
 
       // 0. Stuck cancellations bypass AI + retry entirely -- the job hung once, retrying would just hang again. Force-cancel and surface a loud annotation so the operator investigates the root cause.
       if (isStuck) {
-        const threshold = stuckThresholdFor(job);
+        // A job GitHub's annotation names as timed out is judged against its declared timeout-minutes (rounded, "5m0s" -> 5); one caught by the threshold alone against the threshold.
+        const threshold =
+          timeoutKill && timeoutKill.timeoutMin !== null
+            ? Math.round(timeoutKill.timeoutMin)
+            : stuckThresholdFor(job);
         console.log(
           `"${job.name}" reached its ${threshold}m budget before cancellation -- a budget violation (timeout kill), no retry`
         );
         const budgetText = budgetEnforcedText(job.name, jobMin, threshold);
         core.error(
-          `${budgetText}. Cancelled after ${jobMin}m, at or past the ${threshold}m stuck-threshold: its declared timeout-minutes likely expired. Not retried; investigate the slow step before re-running.`
+          timeoutKill
+            ? `${budgetText}. GitHub killed it after ${jobMin}m: "${timeoutKill.message}". Not retried; investigate the slow step before re-running.`
+            : `${budgetText}. Cancelled after ${jobMin}m, at or past the ${threshold}m stuck-threshold: its declared timeout-minutes likely expired. Not retried; investigate the slow step before re-running.`
         );
         budgetViolationLog.push({
           kind: 'timeout',
@@ -1792,6 +1856,8 @@ module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
 module.exports.JOB_BUDGET_CAPS = JOB_BUDGET_CAPS;
 module.exports.DEFAULT_STUCK_THRESHOLD_MIN = DEFAULT_STUCK_THRESHOLD_MIN;
 module.exports.jobBudgetFor = jobBudgetFor;
+module.exports.findTimeoutKillAnnotation = findTimeoutKillAnnotation;
+module.exports.TIMEOUT_KILL_ANNOTATION_RE = TIMEOUT_KILL_ANNOTATION_RE;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
 module.exports.evaluateSupersession = evaluateSupersession;
 module.exports.evaluatePendingRerun = evaluatePendingRerun;

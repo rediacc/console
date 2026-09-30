@@ -55,7 +55,7 @@ jobs:
     permissions:
       contents: read
     if: ${{ !inputs.skip_build }}
-    timeout-minutes: 20 # budget cap, deferral #2847e1b3 DEFAULT (cold main-push build 16.7)
+    timeout-minutes: 20 # budget cap, operator ruling #2847e1b3 (cold main-push build 16.7)
     outputs:
       artifact_name: renet-binaries-${{ github.sha }}
     steps:

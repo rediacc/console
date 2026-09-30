@@ -71,9 +71,15 @@ jobs:
     # pull-requests: read is ADDED - cjs listLabelsOnIssue reads the live
     # no-auto-retry label and has been failing into its own try/catch, silently
     # falling back to stale event-payload labels.
+    # checks: read is for checks.listAnnotations: a cancelled job whose check
+    # run carries GitHub's "The job has exceeded the maximum execution time of
+    # <N>m0s" annotation was killed by its timeout-minutes, a budget violation
+    # that is never retried, whatever its minutes (without the scope the read
+    # fails and the monitor falls back to STUCK_THRESHOLD_MIN, logged).
     permissions:
       contents: read
       actions: write
+      checks: read
       pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -194,6 +200,8 @@ jobs:
           # T4.3: a job cancelled at or past its budget was killed by its own
           # timeout-minutes -- a budget violation, never auto-retried (at the old
           # default of 60 a 15-minute timeout kill read as a retryable flake).
+          # The fallback only: a job under it is a timeout kill when its check
+          # run carries GitHub's timeout annotation (checks: read above).
           STUCK_THRESHOLD_MIN: '15'
           WATCHDOG_BUDGET_DIR: ${{ runner.temp }}/watchdog-budget
           # Where the monitor writes failed jobs' COMPLETE logs before anything

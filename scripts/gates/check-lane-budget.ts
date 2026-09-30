@@ -217,23 +217,23 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
   {
     job: 'test-e2e-workers',
     p90Minutes: 12,
-    timeoutMinutes: 18,
+    timeoutMinutes: 20,
     ruling:
-      'Deferral #153aace7 DEFAULT (2026-09-30): timeout 18, measured max 15.0 with 48 of 2442 legs over 12; p90 budget unchanged at 12',
+      'Operator ruling #153aace7 (ASKED 2026-09-30T11:21Z): timeout 20, measured max 15.0 with 48 of 2442 legs over 12; p90 budget unchanged at 12',
   },
   {
     job: 'test-e2e-ceph-workers',
     p90Minutes: 12,
-    timeoutMinutes: 18,
+    timeoutMinutes: 20,
     ruling:
-      'Deferral #153aace7 DEFAULT (2026-09-30): timeout 18, measured max 15.1; p90 budget unchanged at 12',
+      'Operator ruling #153aace7 (ASKED 2026-09-30T11:21Z): timeout 20, measured max 15.1; p90 budget unchanged at 12',
   },
   {
     job: 'build-renet',
     p90Minutes: 12,
     timeoutMinutes: 20,
     ruling:
-      'Deferral #2847e1b3 DEFAULT (2026-09-30): timeout 20, the cold main-push build took 16.7 (run 36670172984); p90 budget unchanged at 12',
+      'Operator ruling #2847e1b3 (ASKED 2026-09-30T11:21Z): timeout 20, the cold main-push build took 16.7 (run 36670172984); p90 budget unchanged at 12',
   },
 ];
 

@@ -239,7 +239,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 18 # budget cap, deferral #153aace7 DEFAULT (measured max 15.0)
+    timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.0)
     strategy:
       fail-fast: false
       matrix:
@@ -705,7 +705,7 @@ jobs:
       packages: read
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 18 # budget cap, deferral #153aace7 DEFAULT (measured max 15.1)
+    timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.1)
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000

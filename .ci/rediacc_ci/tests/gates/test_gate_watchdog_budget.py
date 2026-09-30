@@ -408,8 +408,8 @@ def test_a_cap_matches_the_full_segment_before_the_base_name(gate):
         "Build (Renet) / Renet (Full)": 20,
         "Tests + Infra / Renet (go, 1/2)": 15,
         "Build (Renet) / Renet (cross-compile smoke)": 15,
-        "Tests + Infra / E2E Workers (fedora-43, 1/8)": 18,
-        "Tests + Infra / E2E Ceph Workers": 18,
+        "Tests + Infra / E2E Workers (fedora-43, 1/8)": 20,
+        "Tests + Infra / E2E Ceph Workers": 20,
         "Tests + Infra / E2E Ceph Workers non-apt (oracle-10)": 20,
         "Tests + Infra / E2E Migrate (fedora-43)": 15,
     }
@@ -481,7 +481,7 @@ const jobs = fx.jobs.map((j, i) => ({
   started_at: ago(j.startedAgoMin),
   completed_at: j.status === 'completed' ? ago(j.startedAgoMin - j.durationMin) : null,
 }));
-const actions = [], outputs = {}, errors = [], warnings = [];
+const actions = [], outputs = {}, errors = [], warnings = [], annotationReads = [];
 const github = {
   hook: { before: () => {} },
   paginate: async () => jobs,
@@ -501,6 +501,15 @@ const github = {
       cancelWorkflowRun: async () => { actions.push('cancel'); return {}; },
     },
     issues: { listLabelsOnIssue: async () => ({ data: [] }) },
+    // A job's check-run annotations: `annotations` (messages) on the fixture job, or `annotationsError` to make the read throw.
+    checks: {
+      listAnnotations: async ({ check_run_id }) => {
+        const j = fx.jobs[check_run_id - 100];
+        annotationReads.push(j.name);
+        if (j.annotationsError) throw new Error(j.annotationsError);
+        return { data: (j.annotations || []).map((message) => ({ annotation_level: 'failure', message })) };
+      },
+    },
   },
 };
 const summary = { addRaw() { return summary; }, write: async () => {} };
@@ -516,7 +525,7 @@ const core = {
 const context = { repo: { owner: 'rediacc', repo: 'console' }, runId: 1, payload: {} };
 Object.assign(process.env, fx.env);
 monitor({ github, context, core })
-  .then(() => console.log(JSON.stringify({ actions, outputs, errors, warnings })))
+  .then(() => console.log(JSON.stringify({ actions, outputs, errors, warnings, annotationReads })))
   .catch((e) => { console.log(JSON.stringify({ threw: e.message })); process.exitCode = 3; });
 """
 
@@ -559,6 +568,7 @@ SIBLINGS = [
 
 def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, **env_overrides) -> dict:
     """Drive the real monitor once; returns its trace plus the budget-violations.json it wrote (or None)."""
+    tmp_path.mkdir(parents=True, exist_ok=True)
     script = tmp_path / "monitor.cjs"
     script.write_text(MONITOR_JS, encoding="utf-8")
     budget_dir = tmp_path / "budget"
@@ -579,6 +589,7 @@ def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, **env_overrides) -> dic
         gate.log_fail("the monitor threw: %s" % trace["threw"])
     report = budget_dir / "budget-violations.json"
     trace["budget"] = json.loads(report.read_text()) if report.is_file() else None
+    trace["stdout"] = result.out
     return trace
 
 
@@ -662,14 +673,27 @@ def test_monitor_scheduled_run_is_recorded_never_cancelled(gate, tmp_path):
     gate.log_pass("a scheduled run over budget is recorded, never cancelled")
 
 
-def _cancelled_leg(minutes: float) -> dict:
+def _cancelled_leg(minutes: float, **extra) -> dict:
     return {
         "name": LEG,
         "status": "completed",
         "conclusion": "cancelled",
         "startedAgoMin": minutes + 1,
         "durationMin": minutes,
+        **extra,
     }
+
+
+# GitHub's real wording, read 2026-09-30 from
+# `gh api repos/rediacc/console/check-runs/106268923515/annotations`
+# (Quality / Branch, run 35571489498, killed at its 12-minute timeout), with the
+# duration swapped for the case at hand. The second line follows it there too.
+TIMEOUT_ANNOTATIONS = [
+    "The job has exceeded the maximum execution time of 5m0s",
+    "The operation was canceled.",
+]
+# What a cancel by a newer push, a person or the watchdog leaves instead (read from job 109841885871 of run 36701282219).
+FORCED_CANCEL_ANNOTATIONS = ["The run was canceled forcefully by @github-actions[bot]."]
 
 
 def test_monitor_timeout_killed_leg_is_not_retried(gate, tmp_path):
@@ -694,6 +718,101 @@ def test_control_an_early_cancellation_is_still_retried(gate, tmp_path):
     gate.assert_contains(" ".join(trace["actions"]), "rerun", "a 5m cancellation is retried")
     gate.assert_not_contains(" ".join(trace["actions"]), "force-cancel", "and nothing cancels")
     gate.log_pass("a leg cancelled at 5m is still retried")
+
+
+def test_the_timeout_annotation_is_recognised_in_every_measured_spelling(gate):
+    """The pure matcher against the durations GitHub actually wrote on this repo's jobs (12m0s, 15m0s, 20m0s, 45m0s, 6h0m0s) plus the older "running on runner" spelling; a forced cancel and an ordinary failure line must not match."""
+    cases = {
+        "The job has exceeded the maximum execution time of 5m0s": 5,
+        "The job has exceeded the maximum execution time of 12m0s": 12,
+        "The job has exceeded the maximum execution time of 45m0s": 45,
+        "The job has exceeded the maximum execution time of 6h0m0s": 360,
+        "The job running on runner GitHub Actions 7 has exceeded the maximum execution time of 30 minutes.": 30,
+        "The run was canceled forcefully by @github-actions[bot].": None,
+        "The operation was canceled.": None,
+        "Process completed with exit code 1.": None,
+    }
+    result = harness.run(
+        [
+            "node",
+            "-e",
+            (
+                "const m=require(process.argv[1]);"
+                "process.stdout.write(JSON.stringify(JSON.parse(process.argv[2]).map("
+                "(message)=>{const k=m.findTimeoutKillAnnotation([{message}]);return k?k.timeoutMin:null;})))"
+            ),
+            str(subject(gate)),
+            json.dumps(list(cases)),
+        ]
+    )
+    gate.assert_exit(0, result, "findTimeoutKillAnnotation must be exported")
+    gate.assert_eq(json.loads(result.out), list(cases.values()), "each message's parsed timeout")
+    gate.log_pass("the timeout annotation matcher: %s" % cases)
+
+
+def test_monitor_a_leg_killed_by_a_short_timeout_is_not_retried(gate, tmp_path):
+    """The gap T4.3's threshold left: since ce8ac0ad5 a job may declare a 5-minute timeout, so a leg GitHub killed at 5 minutes and change (6m here) is under the 15-minute threshold. Its check run's timeout annotation, not its minutes, makes it a budget violation judged against the declared 5."""
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    trace = run_monitor(gate, tmp_path, [_cancelled_leg(6, annotations=TIMEOUT_ANNOTATIONS)], run)
+    gate.assert_eq(trace["annotationReads"], [LEG], "the leg's annotations were read")
+    gate.assert_not_contains(" ".join(trace["actions"]), "rerun", "a timeout kill is never retried")
+    gate.assert_eq(trace["actions"].count("force-cancel"), 1, "it ends the run as a violation")
+    gate.assert_contains(
+        " ".join(trace["errors"]),
+        "CI BUDGET VIOLATION: '%s' ran 6.0m (budget 5m)" % LEG,
+        "annotated against the declared 5-minute timeout",
+    )
+    gate.assert_contains(
+        " ".join(trace["errors"]),
+        "The job has exceeded the maximum execution time of 5m0s",
+        "quoting GitHub's own line",
+    )
+    gate.assert_eq(
+        [(v["kind"], v["budgetMin"]) for v in trace["budget"]["violations"]],
+        [("timeout", 5)],
+        "recorded as a timeout against 5",
+    )
+    gate.log_pass("a 6m leg killed by a 5m timeout is a budget violation, not retried")
+
+
+def test_control_a_short_leg_cancelled_by_a_newer_push_is_still_retried(gate, tmp_path):
+    """The control: the SAME 6-minute leg, its annotations the forced-cancel line a newer push leaves instead of the timeout line, is a cancellation and IS retried. Without it, a monitor that read every annotated cancellation as a timeout would pass the case above."""
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    trace = run_monitor(
+        gate, tmp_path, [_cancelled_leg(6, annotations=FORCED_CANCEL_ANNOTATIONS)], run
+    )
+    gate.assert_eq(trace["annotationReads"], [LEG], "the leg's annotations were read")
+    gate.assert_contains(" ".join(trace["actions"]), "rerun", "a forced cancel is retried")
+    gate.assert_not_contains(" ".join(trace["actions"]), "force-cancel", "and nothing cancels")
+    gate.assert_eq(trace["budget"], None, "no budget violation is recorded")
+    gate.log_pass("a 6m leg cancelled with no timeout annotation is still retried")
+
+
+def test_monitor_a_failed_annotation_read_falls_back_to_the_threshold(gate, tmp_path):
+    """A read that throws (no `checks: read`, an API error) must not become a verdict: the monitor logs it and falls back to STUCK_THRESHOLD_MIN. Driven both ways so the fallback is shown to be the threshold rather than a fixed answer: under the default 15 a 6m leg is retried; with the threshold at 5, the identical leg and failing read is a violation."""
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    leg = _cancelled_leg(
+        6, annotations=TIMEOUT_ANNOTATIONS, annotationsError="Resource not accessible"
+    )
+    under = run_monitor(gate, tmp_path / "under", [leg], run)
+    gate.assert_eq(under["annotationReads"], [LEG], "the read was attempted")
+    gate.assert_contains(
+        under["stdout"],
+        'could not read "%s"\'s check-run annotations (Resource not accessible); '
+        "falling back to the 15m stuck-threshold" % LEG,
+        "the failed read is logged with the fallback it takes",
+    )
+    gate.assert_contains(" ".join(under["actions"]), "rerun", "under the threshold: retried")
+
+    over = run_monitor(gate, tmp_path / "over", [leg], run, STUCK_THRESHOLD_MIN="5")
+    gate.assert_eq(over["annotationReads"], [], "at or over the threshold nothing is read")
+    gate.assert_not_contains(" ".join(over["actions"]), "rerun", "over the threshold: not retried")
+    gate.assert_contains(
+        " ".join(over["errors"]),
+        "CI BUDGET VIOLATION: '%s' ran 6.0m (budget 5m)" % LEG,
+        "the threshold path judges it",
+    )
+    gate.log_pass("a failed annotation read is logged and falls back to the stuck-threshold")
 
 
 def test_watchdog_workflow_wires_the_p4_budget_env(gate):
