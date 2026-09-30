@@ -403,6 +403,176 @@ def test_decide_only_without_github_output_still_prints_the_decision(
     assert old[1].endswith("decision: skip\n")
 
 
+# --------------------------------------------------------------------------- The `release` label: edge AND stable ---------------------------------------------------------------------------
+
+
+def decide_with_output(
+    bindir: pathlib.Path, tmp_path: pathlib.Path, env_extra: dict[str, str]
+) -> tuple[tuple[int, str, str], str, str]:
+    """--decide-only on both sides with a real $GITHUB_OUTPUT each.
+
+    Returns the twin's streams (after asserting the port's are identical) and
+    both output files' text.
+    """
+    path = "%s:%s" % (bindir, os.environ.get("PATH", "/usr/bin:/bin"))
+    results = []
+    for label, cmd in (
+        ("old", "bash %s --decide-only" % TWIN),
+        ("new", "python3 -m %s --decide-only" % MODULE),
+    ):
+        target = tmp_path / ("stable-%s.txt" % label)
+        target.write_text("", encoding="utf-8")
+        env = diff.env_for(
+            **{**BASE, **env_extra},
+            PATH=path,
+            GITHUB_OUTPUT=str(target),
+            PYTHONPATH=".ci",
+            PYTHONDONTWRITEBYTECODE="1",
+        )
+        streams = diff.bash_streams(cmd, env=env, timeout=30)
+        results.append((streams, target.read_text(encoding="utf-8")))
+    (old, old_file), (new, new_file) = results
+    assert new == old, "streams: %r vs %r" % (new, old)
+    assert new_file == old_file
+    return old, old_file, new_file
+
+
+def test_the_release_label_publishes_to_stable(
+    bindir: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    old, old_file, _new_file = decide_with_output(
+        bindir, tmp_path, {"FAKE_GH_STDOUT": "591 feature,release"}
+    )
+    assert old[0] == 0
+    assert old_file == "publish_stable=true\n"
+    assert old[1] == (
+        "::notice title=Release to stable::#591 is labelled release, so abcdef1 publishes "
+        "to edge AND stable, skipping the 7-day soak.\n"
+        "decision: release\n"
+        "publish_stable: true (#591)\n"
+    )
+    assert "#591 carries 'release': publishing to edge AND stable" in old[2]
+
+
+def test_bump_none_beats_release_on_the_same_pr(
+    bindir: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """A skipped release publishes nowhere, stable included."""
+    old, old_file, _ = decide_with_output(
+        bindir, tmp_path, {"FAKE_GH_STDOUT": "591 bump-none,release"}
+    )
+    assert old_file == "skip_release=true\n"
+    assert old[1].endswith("decision: skip\n")
+    assert "publish_stable" not in old[1]
+    assert "stable" not in old[2]
+
+
+def test_a_release_label_on_a_bump_none_pr_does_not_promote_its_sibling(
+    bindir: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """Only a KEPT PR's label counts: #591 is skipped, #592 releases to edge."""
+    old, old_file, _ = decide_with_output(
+        bindir, tmp_path, {"FAKE_GH_STDOUT": "591 bump-none,release\n592 feature"}
+    )
+    assert old_file == ""
+    assert old[1].endswith("decision: release\n")
+
+
+@pytest.mark.parametrize(
+    "labels", ["feature", "prerelease", "release-notes", "no-release", "", "release notes"]
+)
+def test_no_exact_release_label_stays_on_edge(
+    bindir: pathlib.Path, tmp_path: pathlib.Path, labels: str
+) -> None:
+    old, old_file, _ = decide_with_output(bindir, tmp_path, {"FAKE_GH_STDOUT": "591 %s" % labels})
+    assert old_file == ""
+    assert old[1] == "decision: release\n"
+
+
+def test_a_lookup_failure_releases_to_edge_but_never_to_stable(
+    bindir: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """Fail open for the release, fail CLOSED for stable."""
+    old, old_file, _ = decide_with_output(
+        bindir, tmp_path, {"FAKE_GH_RC": "1", "FAKE_GH_STDOUT": "591 release"}
+    )
+    assert old_file == ""
+    assert old[1].endswith("decision: release\n")
+    assert "publish_stable" not in old[1]
+
+
+def test_dispatch_only_with_publish_stable_true_passes_the_input(bindir: pathlib.Path) -> None:
+    old = assert_identical(
+        bindir,
+        "--dispatch-only",
+        expect_exit=0,
+        env_extra={
+            "FAKE_GH_ECHO": "stderr",
+            "GITHUB_RUN_ID": "42",
+            "PUBLISH_STABLE": "true",
+            "DISPATCH_RELEASE_DRY_RUN": "1",
+        },
+    )
+    assert old[1] == (
+        "decision: release\n"
+        "::notice title=Release to stable::abcdef1 publishes to edge AND stable "
+        "(publish_stable=true), skipping the 7-day soak.\n"
+        "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch "
+        "-f ci_run_id=42 -f publish_stable=true\n"
+    )
+    old = assert_identical(
+        bindir,
+        "--dispatch-only",
+        expect_exit=0,
+        env_extra={"FAKE_GH_ECHO": "stderr", "GITHUB_RUN_ID": "42", "PUBLISH_STABLE": "true"},
+    )
+    assert old[2] == (
+        "call: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=42 "
+        "-f publish_stable=true\n"
+    )
+
+
+@pytest.mark.parametrize("value", ["false", "", "TRUE", "1", "true "])
+def test_dispatch_only_without_exactly_true_stays_on_edge(bindir: pathlib.Path, value: str) -> None:
+    old = assert_identical(
+        bindir,
+        "--dispatch-only",
+        expect_exit=0,
+        env_extra={
+            "FAKE_GH_ECHO": "stderr",
+            "GITHUB_RUN_ID": "42",
+            "PUBLISH_STABLE": value,
+            "DISPATCH_RELEASE_DRY_RUN": "1",
+        },
+    )
+    assert old[1] == (
+        "decision: release\n"
+        "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=42\n"
+    )
+
+
+def test_full_mode_passes_stable_from_its_own_decision(bindir: pathlib.Path) -> None:
+    old = assert_identical(
+        bindir,
+        expect_exit=0,
+        env_extra={
+            "FAKE_GH_STDOUT": "591 release",
+            "GITHUB_RUN_ID": "7",
+            "DISPATCH_RELEASE_DRY_RUN": "1",
+        },
+    )
+    assert old[1].endswith("-f ci_run_id=7 -f publish_stable=true\n")
+
+
+def test_the_stable_label_is_the_twins_and_matches_exactly() -> None:
+    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
+        assert "STABLE_LABEL='%s'" % port.STABLE_LABEL in fh.read()
+    assert port.has_stable_label("feature,release") is True
+    assert port.has_stable_label("release") is True
+    for labels in ("prerelease", "release-notes", "releases", "", "bump-none"):
+        assert port.has_stable_label(labels) is False, labels
+
+
 # --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
 
 

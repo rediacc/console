@@ -45,7 +45,7 @@ DIVERGENCES, BOTH IN TEXT ONLY A HUMAN READS
 -----------------------------------------------------------------------------
  1. `gh` NOT ON PATH. The twin has no `require_cmd gh`, so a missing binary
     reaches the lookup as a command-substitution failure and bash's own
-    `bash: line 119: gh: command not found` becomes the `${rows}` interpolated
+    `bash: line 134: gh: command not found` becomes the `${rows}` interpolated
     into the warn line. That message names a bash line number; this port
     interpolates `GH_NOT_FOUND` instead. Same stream, same exit, same
     fail-open branch.
@@ -68,14 +68,20 @@ import sys
 
 from rediacc_ci import log
 
-# `SKIP_LABEL='bump-none'` (twin :76). The label's meaning lives in
+# `SKIP_LABEL='bump-none'` (twin :86). The label's meaning lives in
 # `.github/labels.yml` and the reviewer's pr-labels vocabulary.
 SKIP_LABEL = "bump-none"
 
-# The three accepted invocations, and the MODE each selects (twin :81-89).
+# `STABLE_LABEL='release'` (twin :87). Operator ruling 2026-09-30: a merged PR carrying it (and not bump-none) publishes to edge AND stable, skipping the 7-day soak -- the same cd-v2 run a manual dispatch with `publish_stable: true` starts. Matched exactly like SKIP_LABEL, so `release-notes` and `prerelease` do not count.
+STABLE_LABEL = "release"
+
+# The stdout line --decide-only prints when the release goes to stable too, after its `decision: release` line. initialize.py reads it (with GITHUB_OUTPUT cleared for the child, so stdout is the only channel); the PR list follows.
+STABLE_LINE = "publish_stable: true"
+
+# The three accepted invocations, and the MODE each selects (twin :91-100).
 MODES = {"": "full", "--decide-only": "decide", "--dispatch-only": "dispatch"}
 
-# The two variables the twin refuses without, IN ITS ORDER (twin :91-92). The order is load-bearing: with both unset the twin names GITHUB_REPOSITORY and exits before it ever looks at GITHUB_SHA.
+# The two variables the twin refuses without, IN ITS ORDER (twin :102-103). The order is load-bearing: with both unset the twin names GITHUB_REPOSITORY and exits before it ever looks at GITHUB_SHA.
 REQUIRED_VARS = ("GITHUB_REPOSITORY", "GITHUB_SHA")
 
 # Divergence 1 above. A stand-in for bash's `line N: gh: command not found`, which cannot be reproduced without naming a line of a file this module is not.
@@ -85,18 +91,18 @@ GH_NOT_FOUND = "gh: command not found"
 STDERR_IS_DATA = True
 
 # `--jq '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) |
-# map(.name) | join(","))"'` (twin :120). Identical to detect-bump-type.sh's, deliberately, and passed to `gh` rather than to a separate `jq` process, so a fake `gh` that ignored `--jq` would exercise a path CI never runs.
+# map(.name) | join(","))"'` (twin :135). Identical to detect-bump-type.sh's, deliberately, and passed to `gh` rather than to a separate `jq` process, so a fake `gh` that ignored `--jq` would exercise a path CI never runs.
 PULLS_JQ = (
     '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) | map(.name) | join(","))"'
 )
 
-# `[[:space:]]` under LC_ALL=C, which is what CI runs (twin :127). Spelled out
+# `[[:space:]]` under LC_ALL=C, which is what CI runs (twin :142). Spelled out
 # rather than reached through `str.strip()`, whose default set is Python's and includes \x1c-\x1f.
 POSIX_SPACE = " \t\n\r\v\f"
 
 
 def pulls_url(repository: str, sha: str) -> str:
-    """`repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls` (twin :119).
+    """`repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls` (twin :134).
 
     `commits/{sha}/pulls` and not `pulls?q=`: it follows REBASED commits, which
     this repo needs because it rebase-merges and the PR number is therefore absent from the commit message.
@@ -121,12 +127,22 @@ def parse_row(row: str) -> tuple[str, str]:
     return pr_num, labels
 
 
+def has_label(labels: str, wanted: str) -> bool:
+    """Exact whole-label membership in a comma-joined label field."""
+    return any(label == wanted for label in labels.split(","))
+
+
 def has_skip_label(labels: str) -> bool:
-    """`grep -qx "$SKIP_LABEL" <<<"${labels//,/$'\\n'}"` (twin :138).
+    """`grep -qx "$SKIP_LABEL" <<<"${labels//,/$'\\n'}"` (twin :153).
 
     An EXACT whole-line match after commas become newlines, so `no-bump-none` and `bump-none-really` do not count and neither does an empty label field. `bump-none` holds no regex metacharacter, so grep's BRE and this equality agree on every input.
     """
-    return any(label == SKIP_LABEL for label in labels.split(","))
+    return has_label(labels, SKIP_LABEL)
+
+
+def has_stable_label(labels: str) -> bool:
+    """`grep -qx "$STABLE_LABEL"` (twin :157), the same exact whole-label match as bump-none."""
+    return has_label(labels, STABLE_LABEL)
 
 
 def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
@@ -153,10 +169,15 @@ def run_gh_pulls(repository: str, sha: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout.rstrip("\n")
 
 
-def decide(repository: str, sha: str) -> bool:
-    """Does this commit earn a release? True = yes (the twin's `return 0`).
+def decide(repository: str, sha: str) -> tuple[bool, str]:
+    """Does this commit earn a release, and does it go to stable too?
 
-    Logs its reasoning and emits the same GHA notices in whichever mode it runs. It does NOT touch $GITHUB_OUTPUT; that is `main`'s job, and only for the skip verdict.
+    Returns `(release, stable_prs)`: release is the twin's `return 0`, and
+    stable_prs names the kept PRs carrying STABLE_LABEL (empty = edge only).
+    Stable FAILS CLOSED: every fail-open path returns an empty stable_prs, so
+    only a positive label read promotes past the soak.
+
+    Logs its reasoning and emits the same GHA notices in whichever mode it runs. It does NOT touch $GITHUB_OUTPUT; that is `main`'s job.
     """
     status, rows = run_gh_pulls(repository, sha)
     if status != 0:
@@ -168,17 +189,18 @@ def decide(repository: str, sha: str) -> bool:
             "::notice title=Release::PR lookup failed for %s; releasing rather than "
             "risking a silently withheld release." % short_sha(sha)
         )
-        return True
+        return True, ""
 
     if not rows.strip(POSIX_SPACE):
         log.info(
             "no merged PR contains %s (direct push, or the API knows of none); dispatching"
             % short_sha(sha)
         )
-        return True
+        return True, ""
 
     skip_prs = ""
     keep_prs = ""
+    stable_prs = ""
     for row in rows.split("\n"):
         if not row:
             continue
@@ -187,6 +209,8 @@ def decide(repository: str, sha: str) -> bool:
             skip_prs += "#%s " % pr_num
         else:
             keep_prs += "#%s " % pr_num
+            if has_stable_label(labels):
+                stable_prs += "#%s " % pr_num
 
     if skip_prs and not keep_prs:
         log.info("release SKIPPED: %s carries '%s'" % (skip_prs[:-1], SKIP_LABEL))
@@ -195,7 +219,7 @@ def decide(repository: str, sha: str) -> bool:
             "no tag, no GitHub release, no R2 upload, no edge deploy. Its commits ship "
             "with the next release-worthy merge." % (skip_prs[:-1], SKIP_LABEL, short_sha(sha))
         )
-        return False
+        return False, ""
 
     if skip_prs:
         log.warn(
@@ -210,11 +234,23 @@ def decide(repository: str, sha: str) -> bool:
     # Defect B: `${keep_prs:-no PR}` is NOT `${keep_prs% }`, so the trailing
     # space of the accumulator prints inside the parentheses.
     log.info("dispatching cd-v2 for %s (%s)" % (short_sha(sha), keep_prs or "no PR"))
-    return True
+    if stable_prs:
+        log.info(
+            "%s carries '%s': publishing to edge AND stable, skipping the 7-day soak"
+            % (stable_prs[:-1], STABLE_LABEL)
+        )
+        print(
+            "::notice title=Release to stable::%s is labelled %s, so %s publishes to edge "
+            "AND stable, skipping the 7-day soak." % (stable_prs[:-1], STABLE_LABEL, short_sha(sha))
+        )
+    return True, stable_prs[:-1]
 
 
-def dispatch() -> int:
-    """`gh workflow run cd-v2.yml --ref main -f ...` (twin :94-103).
+def dispatch(stable: bool) -> int:
+    """`gh workflow run cd-v2.yml --ref main -f ...` (twin :106-116).
+
+    `stable` appends `-f publish_stable=true`, which drives cd-v2's stable
+    promote and stable deploys; without it the release is edge only.
 
     DISPATCH_RELEASE_DRY_RUN is a TEST SEAM and is tested for non-emptiness,
     not truth: `DISPATCH_RELEASE_DRY_RUN=false` still dry-runs, on both sides.
@@ -222,28 +258,25 @@ def dispatch() -> int:
     Returns the exit status the twin would propagate through `set -e`.
     """
     run_id = os.environ.get("GITHUB_RUN_ID", "")
+    argv = [
+        "gh",
+        "workflow",
+        "run",
+        "cd-v2.yml",
+        "--ref",
+        "main",
+        "-f",
+        "release_mode=patch",
+        "-f",
+        "ci_run_id=%s" % run_id,
+    ]
+    if stable:
+        argv += ["-f", "publish_stable=true"]
     if os.environ.get("DISPATCH_RELEASE_DRY_RUN", ""):
-        print(
-            "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch "
-            "-f ci_run_id=%s" % run_id
-        )
+        print("DRY-RUN: %s" % " ".join(argv))
         return 0
     try:
-        proc = subprocess.run(
-            [
-                "gh",
-                "workflow",
-                "run",
-                "cd-v2.yml",
-                "--ref",
-                "main",
-                "-f",
-                "release_mode=patch",
-                "-f",
-                "ci_run_id=%s" % run_id,
-            ],
-            check=False,
-        )
+        proc = subprocess.run(argv, check=False)
     except FileNotFoundError:
         # `set -e` on a 127 from the shell's own exec failure.
         print(GH_NOT_FOUND, file=sys.stderr, flush=True)
@@ -274,37 +307,50 @@ def main(argv: list[str]) -> int:
             return 1
 
     skip_release = False
+    stable_prs = ""
     if mode != "dispatch":
-        skip_release = not decide(repository, sha)
+        release, stable_prs = decide(repository, sha)
+        skip_release = not release
 
     if mode == "decide":
+        key = ""
         if skip_release:
             print("decision: skip")
-            github_output = os.environ.get("GITHUB_OUTPUT", "")
-            if github_output:
-                try:
-                    with open(github_output, "a", encoding="utf-8") as fh:
-                        fh.write("skip_release=true\n")
-                except OSError as exc:
-                    # Divergence 3: bash's own redirection error names a line of the twin (`line 170: /no/such: No such file or directory`) and `set -e` turns it into exit 1. Same stream, same exit.
-                    print("%s: %s" % (github_output, exc.strerror), file=sys.stderr, flush=True)
-                    return 1
+            key = "skip_release"
         else:
             print("decision: release")
+            if stable_prs:
+                print("%s (%s)" % (STABLE_LINE, stable_prs))
+                key = "publish_stable"
+        github_output = os.environ.get("GITHUB_OUTPUT", "")
+        if key and github_output:
+            try:
+                with open(github_output, "a", encoding="utf-8") as fh:
+                    fh.write("%s=true\n" % key)
+            except OSError as exc:
+                # Divergence 3: bash's own redirection error names a line of the twin (`line 202: /no/such: No such file or directory`) and `set -e` turns it into exit 1. Same stream, same exit.
+                print("%s: %s" % (github_output, exc.strerror), file=sys.stderr, flush=True)
+                return 1
         return 0
 
     if mode == "dispatch":
-        # No lookup, by design: --decide-only already asked.
+        # No lookup, by design: --decide-only already asked, and passed its stable verdict through ci.yml as PUBLISH_STABLE. Exactly "true" and nothing else promotes, so an absent or mangled value stays edge-only.
+        stable = os.environ.get("PUBLISH_STABLE", "") == "true"
         print("decision: release")
+        if stable:
+            print(
+                "::notice title=Release to stable::%s publishes to edge AND stable "
+                "(publish_stable=true), skipping the 7-day soak." % short_sha(sha)
+            )
         sys.stdout.flush()
-        return dispatch()
+        return dispatch(stable)
 
     if skip_release:
         print("decision: skip")
         return 0
     print("decision: release")
     sys.stdout.flush()
-    return dispatch()
+    return dispatch(bool(stable_prs))
 
 
 if __name__ == "__main__":

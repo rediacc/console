@@ -116,6 +116,9 @@ jobs:
       # test `!= 'true'`, never `== 'false'`: an absent value means the
       # decision did not complete, and that must RELEASE, not skip.
       skip_release: ${{ steps.init.outputs.skip_release }}
+      # 'true' only on a positive `release` label read (never on a fail-open
+      # path): the merge publishes to edge AND stable, skipping the soak.
+      publish_stable: ${{ steps.init.outputs.publish_stable }}
       channel: ${{ steps.staging.outputs.channel }}
       renet_tag: ${{ steps.init.outputs.renet_tag }}
       renet_exists: ${{ steps.init.outputs.renet_exists }}
@@ -1989,10 +1992,14 @@ jobs:
       # silently withheld release is far worse than one extra release.
       # --dispatch-only skips the lookup: `initialize` already did it, and
       # asking twice could get a different answer if a label moved in between.
+      # The same lookup set publish_stable for a `release`-labelled PR; only an
+      # exact 'true' adds `-f publish_stable=true` (edge AND stable, no soak),
+      # so a missing output FAILS CLOSED to an edge-only release.
       - name: Dispatch cd-v2 release
         if: needs.initialize.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          PUBLISH_STABLE: ${{ needs.initialize.outputs.publish_stable }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.dispatch_release --dispatch-only
 
   # (Removed: assert-finalize-sentinel-ran was a single-purpose sentinel
