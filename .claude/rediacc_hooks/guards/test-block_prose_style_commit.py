@@ -12,7 +12,9 @@ IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover e
 
 import atexit
 import json
+import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -186,9 +188,9 @@ CASES = [
         % (pathlib.Path(BODY_FILE_PATH).parent, COMMIT, pathlib.Path(BODY_FILE_PATH).name),
         True,
     ),
-    # A message file the SAME command writes before the verb (#9ec22810). The guard runs before the command, so the file still holds an EARLIER command's bytes -- here, the planted violation. Before the fix this was BLOCKED on bytes that were never the message.
+    # A message file the SAME command writes before the verb (#9ec22810). The guard runs before the command, so the file still holds an EARLIER command's bytes -- here, the planted violation. #9ec22810 stopped judging those bytes and passed the commit unexamined; since #c56b63bd it is REFUSED unread, naming the write (the WRITTEN cases below pin the message and the mutant).
     (
-        "a -F file this command writes first is not judged on its old bytes",
+        "a -F file this command writes first is refused, not judged on its old bytes",
         "D=%s; printf 'fix: the thing\\n' > $D/%s; %s -F $D/%s"
         % (
             pathlib.Path(BODY_FILE_PATH).parent,
@@ -196,13 +198,13 @@ CASES = [
             COMMIT,
             pathlib.Path(BODY_FILE_PATH).name,
         ),
-        False,
+        True,
     ),
     (
         "the same with a literal path and a heredoc cat",
         "cat > %s <<'EOF'\nfix: the thing\nEOF\n%s -F %s"
         % (BODY_FILE_PATH, COMMIT, BODY_FILE_PATH),
-        False,
+        True,
     ),
     (
         "INVERSE: a write to a DIFFERENT file leaves the -F file judged",
@@ -277,14 +279,81 @@ CASES = [
 ]
 
 
-def run(command):
+# #c56b63bd: a `-F <file>` that an earlier clause of the SAME command writes. The guard runs once, before that clause, so the file on disk is an earlier command's; the guard used to skip it and pass the commit unexamined. Each fire case is REFUSED naming the write (`commit_policy.written_message_refusal`), over a stale CLEAN file, so a guard that reads it anyway or skips it ALLOWS, which the MUTANT column proves. The CONTROLs keep a `-F` file nothing in the command writes READ and judged both ways. (name, command, expect_blocked, stderr needle)
+WRITTEN_DIR = pathlib.Path(tempfile.mkdtemp(prefix="prose-written-"))
+atexit.register(shutil.rmtree, WRITTEN_DIR, ignore_errors=True)
+CLEAN_MSG = WRITTEN_DIR / "clean.txt"
+CLEAN_MSG.write_text("fix: the thing\n", encoding="utf-8")
+DIRTY_MSG = WRITTEN_DIR / "dirty.txt"
+DIRTY_MSG.write_text("fix: the thing\n\n%s think this is right.\n" % EYE, encoding="utf-8")
+WRITTEN_NEEDLE = "nothing in this command ran, including"
+WRITTEN = [
+    (
+        "printf writes the violation into a stale clean file",
+        "printf 'fix: x\\n\\n%s think this is right.\\n' > %s && %s -F %s -- p"
+        % (EYE, CLEAN_MSG, COMMIT, CLEAN_MSG),
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "tee writes it, read by --file=",
+        "printf 'Did %s run it?' | tee %s && %s --file=%s -- p" % (Y, CLEAN_MSG, COMMIT, CLEAN_MSG),
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "a cat heredoc writes it on the line before the commit",
+        "cat > %s <<'EOF'\nfix: x\n\n%s think this is right.\nEOF\n%s -F %s -- p"
+        % (CLEAN_MSG, EYE, COMMIT, CLEAN_MSG),
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "CONTROL: an unwritten clean -F file is read",
+        "%s -F %s -- p" % (COMMIT, CLEAN_MSG),
+        False,
+        "",
+    ),
+    (
+        "CONTROL: another file written, the unwritten -F file still read",
+        "printf 'x' > %s/other.txt && %s -F %s -- p" % (WRITTEN_DIR, COMMIT, DIRTY_MSG),
+        True,
+        "house writing style",
+    ),
+]
+
+# THE MUTANT bypasses the shared helper: `written_message_files` answers [] everywhere, so the guard is back to skipping the written file, as it did before #c56b63bd. `PYTHONPATH` puts `.claude` on the path, so the runner needs no hand-written hop.
+MUTANT_RUNNER = (
+    "import sys\n"
+    "from rediacc_hooks import commit_policy, hookio\n"
+    "commit_policy.written_message_files = lambda *a, **k: []\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "ns = {'__name__': 'mutant', '__file__': %r}\n"
+    "exec(compile(src, 'mutant', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+GUARD_PATH = str(pathlib.Path(DISPATCH).parent / "guards" / "block_prose_style_commit.py")
+
+
+def run(command, mutant=False):
+    argv = GUARD_ARGV
+    env = None
+    if mutant:
+        argv = [sys.executable, "-c", MUTANT_RUNNER % (GUARD_PATH, GUARD_PATH)]
+        env = dict(os.environ, PYTHONPATH=str(pathlib.Path(DISPATCH).parents[1]))
     proc = subprocess.run(
-        GUARD_ARGV,
+        argv,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
+    if mutant and proc.returncode not in (0, 2):
+        raise SystemExit("mutant runner crashed: %s" % proc.stderr[-800:])
     return proc.returncode != 0, proc.stderr
 
 
@@ -301,6 +370,27 @@ for name, command, want in CASES:
             name,
             "BLOCKED" if want else "allowed",
             "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+
+print()
+for name, command, want, needle in WRITTEN:
+    got, err = run(command)
+    mut, _ = run(command, mutant=True)
+    # A fire case must flip under the mutant (the stale file is clean, or skipped); a CONTROL must not move.
+    control = name.startswith("CONTROL")
+    ok = got == want and needle in err and (mut == got if control else mut != got)
+    fails += not ok
+    print(
+        "%-62s want=%-9s got=%-9s mutant=%-9s %s"
+        % (
+            "written: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "BLOCKED" if mut else "allowed",
             "ok" if ok else "*** FAIL ***",
         )
     )

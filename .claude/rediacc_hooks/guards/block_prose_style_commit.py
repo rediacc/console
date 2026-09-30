@@ -28,6 +28,8 @@ WHAT IT READS OUT OF A COMMAND LINE
                                  callers to, and it does not look like `gh pr`
                                  at all)
 
+A `git commit -F <file>` that an earlier clause of the same command writes is refused unread (`commit_policy.written_message_refusal`): the guard runs before that clause, so the bytes on disk are an earlier command's.
+
 THE COMMIT SUBJECT IS EXEMPT FROM R11's IMPERATIVE ARM, and that exemption is in the rules file rather than here: R11 lists `ai_output`, `pr` and `markdown` as its scopes and omits `commit` entirely. This repository's subjects are Conventional-Commits-shaped and imperative by house convention -- measured over the last 200 commits, median 71 characters, p90 84, max 98 -- so a guard
 that refused `fix(ci): widen the trigger` would refuse the convention itself. The brief's own text carves this out, and compatibility with what is already in the tree wins.
 
@@ -385,7 +387,16 @@ def run(ev):
         return hookio.ALLOW
 
     # THE PAYLOAD'S OWN `cwd`, not the interpreter's. `-F <relative-path>` has to resolve against where the COMMAND would run. Its sibling guard measured what `os.getcwd()` costs here: run from a foreign directory, every relative path resolved elsewhere and six refusals silently became passes. Falling back to the repository root rather than to the process is the same fix.
-    bodies = messages(command, cwd=ev.default(("cwd",), str(root)))
+    cwd = ev.default(("cwd",), str(root))
+    # A `git commit -F <file>` this same command writes first holds an earlier command's bytes (#c56b63bd): `_read_message_file` skips it, so `printf '<violation>' > m && git commit -F m` went unexamined. Refused naming the writer, as the four commit-policy guards do (#9888de00).
+    for commit in commit_policy.git_runs(command, "commit"):
+        refusal = commit_policy.written_message_refusal(
+            command, commit, cwd, "`block_prose_style_commit`"
+        )
+        if refusal:
+            ev.warn_raw(refusal)
+            return hookio.DENY
+    bodies = messages(command, cwd=cwd)
     if not bodies:
         return hookio.ALLOW
 

@@ -23,7 +23,7 @@ import contextlib
 import pathlib
 import re
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 4
@@ -287,6 +287,13 @@ def run(ev):
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(
         ["rev-parse", "--show-toplevel"], cwd=ev.cwd, want_rc=True
     )
+    # A `git commit -F <file>` this same command writes first holds an earlier command's bytes (#c56b63bd): `_commit_file_bodies` skips it, and INLINE_FOOTER sees only a footer spelled out in the command, so `cat src > m && git commit -F m` passed a trailer unjudged. Refused naming the writer, as the four commit-policy guards do (#9888de00).
+    base = ev.field("cwd") or root or ev.cwd
+    for commit in commit_policy.git_runs(cmd, "commit"):
+        refusal = commit_policy.written_message_refusal(cmd, commit, base, "`block_commit_meta`")
+        if refusal:
+            ev.warn_raw(refusal)
+            return hookio.DENY
     bodies, written = _commit_file_bodies(cmd, root, ev.env)
     for body in bodies:
         if hookio.grep_q(TRAILER_OR_FOOTER, body, ignore_case=True):
