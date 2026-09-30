@@ -480,7 +480,8 @@ def test_noci_settled_bounds(gate):
     import importlib.util  # noqa: PLC0415
 
     spec = importlib.util.spec_from_file_location("ci_trace_under_test", TRACE)
-    assert spec is not None and spec.loader is not None, "cannot load %s" % TRACE
+    assert spec is not None, "cannot load %s" % TRACE
+    assert spec.loader is not None, "no loader for %s" % TRACE
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     t0 = 1_900_000_000.0
