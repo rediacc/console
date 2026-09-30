@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""Control harness for block_untagged_commit's message scoping (#64c3e990).
+
+The guard's EDGE_CASES golden covers its trailer rules; this file covers WHICH TEXT is the message. A heredoc is a commit's message only when it feeds that commit's stdin (attached, or on a `cat` piped into it) and the commit reads `-F -`; a `python3 - <<'EOF'` chained before the commit is not. Each case drives the live guard through the dispatcher against a real repository whose `agent/pr/<branch>.md` declares one epic, under a `rediacc_ci.runtmp` run directory.
+
+THE DEFECT CONTROL plants the guard's own declared `DEFECT` in a copy and requires at least one fire case to flip to allowed.
+"""
+
+import importlib.util
+import json
+import os
+import pathlib
+import subprocess
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+DISPATCH = str(HERE.parent / "dispatch.py")
+STEM = "block_untagged_commit"
+GUARD = HERE / ("%s.py" % STEM)
+
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", HERE.parents[2] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit("%s: .ci/rediacc_ci/runtmp.py is missing" % __file__)
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+RUN_TMP = runtmp.run_dir("guard-untagged-")
+
+GIT_ENV = dict(
+    os.environ,
+    GIT_AUTHOR_NAME="Fixture",
+    GIT_AUTHOR_EMAIL="fixture@example.invalid",
+    GIT_COMMITTER_NAME="Fixture",
+    GIT_COMMITTER_EMAIL="fixture@example.invalid",
+    GIT_CONFIG_GLOBAL="/dev/null",
+    GIT_CONFIG_SYSTEM="/dev/null",
+)
+
+REPO = pathlib.Path(RUN_TMP) / "repo"
+REPO.mkdir(parents=True)
+for argv in (["init", "-q", "--initial-branch=0831-1"],):
+    subprocess.run(["git", *argv], cwd=str(REPO), check=True, capture_output=True, env=GIT_ENV)
+(REPO / "agent" / "pr").mkdir(parents=True)
+(REPO / "agent" / "pr" / "0831-1.md").write_text(
+    "### Port the guards\n\n`PR-TASK: a1b2c3d4`\n", encoding="utf-8"
+)
+(REPO / "good.txt").write_text("feat: x\n\nPR-TASK: a1b2c3d4\n", encoding="utf-8")
+for argv in (["add", "-A"], ["commit", "-q", "-m", "seed"]):
+    subprocess.run(["git", *argv], cwd=str(REPO), check=True, capture_output=True, env=GIT_ENV)
+
+# A python heredoc whose body carries a trailer-shaped line of its own.
+PY = "python3 - <<'EOF'\ndoc = '''\nPR-TASK: %s\n'''\nEOF\n"
+
+CASES = [
+    # (name, command, expect_blocked) ---- fire ----------------------------------------------
+    (
+        "a trailer only in a python heredoc chained before the commit",
+        PY % "a1b2c3d4" + "git commit -F - -- a <<'EOF'\nfeat: x\nEOF",
+        True,
+    ),
+    ("a -F - heredoc with no trailer", "git commit -F - -- a <<'EOF'\nfeat: x\nEOF", True),
+    (
+        "a cat heredoc piped into -F - with no trailer",
+        "cat <<'EOF' | git commit -F -\nfeat: x\nEOF",
+        True,
+    ),
+    # ---- inverse -----------------------------------------------------------------------------
+    (
+        "the commit's own trailer, a python heredoc naming no epic before it",
+        PY % "deadbeef" + "git commit -F - -- a <<'EOF'\nfeat: x\n\nPR-TASK: a1b2c3d4\nEOF",
+        False,
+    ),
+    (
+        "a -m trailer, a python heredoc naming no epic before it",
+        PY % "deadbeef" + 'git commit -m "feat: x\n\nPR-TASK: a1b2c3d4" -- a',
+        False,
+    ),
+    (
+        "a cat heredoc piped into -F - with the trailer",
+        "cat <<'EOF' | git commit -F -\nfeat: x\n\nPR-TASK: a1b2c3d4\nEOF",
+        False,
+    ),
+    (
+        "-F <file> with a heredoc naming no epic earlier",
+        "cat > n.md <<'EOF'\nPR-TASK: deadbeef\nEOF\ngit commit -F good.txt -- a",
+        False,
+    ),
+    (
+        "CONTROL: the plain -F - heredoc shape",
+        "git commit -F - -- a <<'EOF'\nfeat: x\n\nPR-TASK: a1b2c3d4\nEOF",
+        False,
+    ),
+    (
+        "CONTROL: a piped stdin stays opaque, so allowed",
+        "printf 'feat: x' | git commit -F -",
+        False,
+    ),
+]
+
+BROKEN_RUNNER = (
+    "import sys; sys.path.insert(0, %r)\n"
+    "from rediacc_hooks import hookio\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "old, new = %r\n"
+    "assert old in src, 'DEFECT no longer applies'\n"
+    "ns = {'__name__': 'broken', '__file__': %r}\n"
+    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+
+
+def _declared_defect():
+    namespace: dict[str, object] = {}
+    for line in GUARD.read_text(encoding="utf-8").split("\n"):
+        if line.startswith("DEFECT = "):
+            exec(line, namespace)  # noqa: S102 -- the guard's own one-line literal
+    return namespace["DEFECT"]
+
+
+DEFECT = _declared_defect()
+
+
+def run(command, broken=False):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(REPO))
+    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    if broken:
+        code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), DEFECT, str(GUARD))
+        argv = [sys.executable, "-c", code]
+    else:
+        argv = [sys.executable, DISPATCH, STEM]
+    proc = subprocess.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
+    if broken and proc.returncode not in (0, 2):
+        raise SystemExit("broken-copy runner crashed: %s" % proc.stderr[-800:])
+    return proc.returncode != 0, proc.stderr
+
+
+fails = 0
+blocked = 0
+for name, command, want in CASES:
+    got, err = run(command)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-70s want=%-8s got=%-8s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:2])
+
+print()
+# The DEFECT disables id validation, so the fire cases that flip are the ones whose only fault is an unknown id; a missing trailer stays refused. Plant it on a case of that shape.
+PROBE = "git commit -F - -- a <<'EOF'\nfeat: x\n\nPR-TASK: deadbeef\nEOF"
+if run(PROBE)[0] and not run(PROBE, broken=True)[0]:
+    print("DEFECT control: planted %r; the unknown-id probe flipped to allowed" % (DEFECT[0],))
+else:
+    print(
+        "*** FAIL *** DEFECT control: with %r planted, the unknown-id probe did not flip"
+        % (DEFECT,)
+    )
+    fails += 1
+
+if blocked == 0 or blocked == len(CASES):
+    print("*** FAIL *** the guard answered the same way on every case")
+    fails += 1
+print("%d case(s), %d blocked, %d allowed" % (len(CASES), blocked, len(CASES) - blocked))
+print("FAILURES: %d" % fails)
+sys.exit(1 if fails else 0)

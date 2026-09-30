@@ -50,8 +50,6 @@ COMMIT_AT_COMMAND_POS = hookio.rx(
     r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
-HAS_MESSAGE_FLAG = hookio.rx(r"\-m([{S}]|=)|--message([{S}]|=)")
-HAS_FILE_DASH = hookio.rx(r"(-F|--file)([{S}]|=)[{S}]*-([{S}]|$)")
 FILE_ARGS = hookio.rx(r"(-F|--file)([{S}]+|=)[^{S};|&]+")
 SNAPSHOT_ID = hookio.rx(r"^`?PR-TASK:[{S}]*[0-9a-f]{6,32}`?$")
 TRAILER = re.compile(r"(?:^|\\n|\n)[ \t\n\v\f\r]*PR-TASK:[ \t\n\v\f\r]*([0-9a-f]{6,32})")
@@ -228,14 +226,8 @@ def run(ev):
     # ---- what message text can we actually see? ---------------------------- Everything readable is concatenated; the trailer only has to appear once.
     msg = ""
 
-    # 1. -m / --message: the raw command carries it.
-    if hookio.grep_q(HAS_MESSAGE_FLAG, cmd):
-        msg = cmd
-
-    # 2. -F - with a heredoc: the body is in the command string. `scan_target` STRIPS heredocs (they are data, for its purposes), so this reads $CMD. The `<<` is required, not incidental: `-F -` ALONE means the message arrives on a pipe this hook cannot see, and treating the command text as the message then reads a trailer-less command line as a trailer-less COMMIT. Measured: `cat
-    # msg.txt | git commit -F -` was refused for a message it never saw.
-    if hookio.grep_q(HAS_FILE_DASH, cmd) and hookio.grep_q("<<", cmd, fixed=True):
-        msg = msg + "\n" + cmd
+    # 1+2. `-m` values and a `-F -` heredoc or here-string, read per commit by `commit_policy.commit_message_text`. This used to be the WHOLE COMMAND TEXT, so a `python3 - <<'EOF'` chained before the commit put its body's `PR-TASK:` line in front of the commit's own (#64c3e990): a right trailer was refused as "names no epic" and a trailer that sat only in the python heredoc was allowed. A heredoc counts only when it feeds that commit's stdin; a piped stdin or a command-substituted message stays opaque. The `-F <file>` read stays below, where a file this same command writes first is skipped.
+    msg = commit_policy.commit_message_text(cmd, root, files=False)
 
     # 3. -F <file> / --file=<file>: read it off disk.
     msg_files = []

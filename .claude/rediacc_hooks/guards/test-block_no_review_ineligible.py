@@ -69,10 +69,21 @@ CASES = [
     ("a directory hiding code", 'git commit -m "docs: x [no-review]" -- notes/', True),
     ("writing mixed with code", 'git commit -m "docs: x [no-review]" -- docs/y.md a.py', True),
     ("a heredoc message", "git commit -F - -- a.ts <<'EOF'\nfeat: x [no-review]\nEOF", True),
+    # #64c3e990: only the heredoc feeding the commit's own stdin is its message.
+    (
+        "a cat heredoc piped into -F -",
+        "cat <<'EOF' | git commit -F - -- a.ts\nfeat: x [no-review]\nEOF",
+        True,
+    ),
     # ---- inverse -----------------------------------------------------------------------------
     ("writing only", 'git commit -m "docs: x [no-review]" -- agent/plans/x.md docs/y.md', False),
     ("a markdown file outside .claude", 'git commit -m "docs: x [no-review]" -- notes/z.md', False),
     ("an untagged code commit", 'git commit -m "feat: x" -- src/a.ts', False),
+    (
+        "a python heredoc naming the tag before an untagged -F - commit",
+        "python3 - <<'EOF'\nprint('[no-review]')\nEOF\ngit commit -F - -- a.ts <<'EOF'\nfeat: x\nEOF",
+        False,
+    ),
     (
         "a repository outside the checkout",
         'git -C %s commit -m "x [no-review]" -- a.ts' % OUTSIDE,

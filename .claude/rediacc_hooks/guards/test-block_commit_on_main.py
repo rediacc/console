@@ -29,6 +29,8 @@ runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
 RUN_TMP = runtmp.run_dir("guard-commit-main-")
 
+# `commit_message_text` imports `rediacc_hooks.shellscan` inside the function, so the package root has to be importable.
+sys.path.insert(0, str(HERE.parents[1]))
 _POLICY = importlib.util.spec_from_file_location("commit_policy", HERE.parent / "commit_policy.py")
 if _POLICY is None or _POLICY.loader is None:
     raise SystemExit("%s: commit_policy.py is missing" % __file__)
@@ -89,9 +91,30 @@ CASES = [
     ("a heredoc message on main", "git commit -F - -- a <<'EOF'\nfeat: x\nEOF", MAIN, True),
     ("an unreadable message on main", "cat m | git commit -F - -- a", MAIN, True),
     ("a wrapper on main", "sh -c 'git commit -m \"feat: x\" -- a'", MAIN, True),
+    # #64c3e990: only the heredoc feeding the commit's own stdin is its message.
+    (
+        "a hotfix-shaped python heredoc before a plain commit",
+        "python3 - <<'EOF'\nfix: x [hotfix]%s\nEOF\ngit commit -F - -- a <<'EOF'\nfeat: x\nEOF"
+        % EVIDENCE,
+        MAIN,
+        True,
+    ),
     # ---- inverse -----------------------------------------------------------------------------
     ("the same commit on a feature branch", 'git commit -m "feat: x" -- a.ts', FEATURE, False),
     ("a valid hotfix", HOTFIX, MAIN, False),
+    (
+        "a valid -F - hotfix after an unrelated python heredoc",
+        "python3 - <<'EOF'\nfeat: y\nEOF\ngit commit -F - -- a <<'EOF'\nfix: x [hotfix]%s\nEOF"
+        % EVIDENCE,
+        MAIN,
+        False,
+    ),
+    (
+        "a valid hotfix piped from a cat heredoc",
+        "cat <<'EOF' | git commit -F - -- a\nfix: x [hotfix]%s\nEOF" % EVIDENCE,
+        MAIN,
+        False,
+    ),
     (
         "a valid hotfix with ASKED evidence",
         'git commit -m "fix: x [hotfix]\n\nHotfix-Evidence: ASKED:2026-09-25T10:00Z" -- a',
@@ -178,6 +201,61 @@ if flipped:
 else:
     print("*** FAIL *** DEFECT control: with %r planted, every fire case still refused" % (DEFECT,))
     fails += 1
+
+# commit_message_text, driven directly (#64c3e990): a heredoc is a commit's message only when it feeds THAT commit's stdin -- attached to it, or on a `cat` piped into it -- and the commit reads stdin. Before the fix every heredoc in the command was read as the message, so a `python3 - <<EOF` edit chained first became part of it.
+(MAIN / "msgfile").write_text("feat: from the file\n", encoding="utf-8")
+MESSAGE_CASES = [
+    (
+        "a python heredoc chained before -F - yields only the commit's own body",
+        "python3 - <<'EOF'\nprint('PR-TASK: deadbeef')\nEOF\ngit commit -F - -- a <<'EOF'\nfeat: x\nEOF",
+        "feat: x",
+    ),
+    (
+        "a cat heredoc piped into -F - is the message",
+        "cat <<'EOF' | git commit -F -\nfeat: y\nEOF",
+        "feat: y",
+    ),
+    (
+        "-F <file> with an unrelated heredoc earlier yields the file",
+        "cat > other.md <<'EOF'\nnot the message\nEOF\ngit commit -F msgfile -- a",
+        "feat: from the file",
+    ),
+    (
+        "-F /dev/stdin is stdin, never the hook's own",
+        "git commit -F /dev/stdin <<'EOF'\nfeat: d\nEOF",
+        "feat: d",
+    ),
+    ("a here-string on -F -", "git commit -F - <<< 'feat: hs'", "feat: hs"),
+    (
+        "-F <file> ignores its own stray heredoc",
+        "git commit -F msgfile <<'EOF'\nnoise\nEOF",
+        "feat: from the file",
+    ),
+    (
+        "CONTROL: the plain -F - heredoc shape",
+        "git commit -F - -- a <<'EOF'\nfeat: x\nEOF",
+        "feat: x",
+    ),
+    ("CONTROL: a piped stdin stays opaque", "printf 'feat: p' | git commit -F -", ""),
+]
+for name, command, expect in MESSAGE_CASES:
+    text = commit_policy.commit_message_text(command, str(MAIN))
+    ok = text == expect
+    fails += not ok
+    print(
+        "%-72s %s"
+        % ("message: " + name, "ok" if ok else "*** FAIL *** got %r want %r" % (text, expect))
+    )
+TWO = "git commit -F - <<'A'\none\nA\ngit commit -F - <<'B'\ntwo\nB"
+per_run = [
+    commit_policy.commit_message_text(TWO, str(MAIN), run=r)
+    for r in commit_policy.git_runs(TWO, "commit")
+]
+if per_run != ["one", "two"]:
+    print("*** FAIL *** two commits in one command read %r, want ['one', 'two']" % per_run)
+    fails += 1
+else:
+    print("%-72s ok" % "message: two -F - commits each read their own heredoc")
 
 on_disk = commit_policy.load_config(REPO)
 if on_disk != commit_policy.DEFAULTS:

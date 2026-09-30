@@ -42,7 +42,7 @@ import re
 import shlex
 import sys
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -205,20 +205,21 @@ def messages(command, cwd=None):
     RAISES on an unbalanced quote, which is a command the shell would reject too, and the caller treats that as nothing-to-examine rather than as a finding.
     """
     out: list[tuple[str, str]] = []
-    for text, heredocs in _target_segments(command):
+    # THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO (#91c4716c): `commit_policy.target_segments` says why, and the commit guards read their `-F -` message through the same walk. The flag arms are scoped the same way: `tail -F log` or `grep -m 5` chained beside a commit is not a message either, so only the target's own source span is shlex-split.
+    for segment in commit_policy.target_segments(command, _is_target_stage):
         try:
-            tokens = shlex.split(text, comments=False)
+            tokens = shlex.split(segment.text, comments=False)
         except ValueError:
             tokens = []
         if _reads_stdin(tokens):
-            out.extend(("heredoc", body) for body in heredocs["stdin"])
-        out.extend(("heredoc", body) for body in heredocs["words"])
+            out.extend(("heredoc", body) for body in segment.stdin)
+        out.extend(("heredoc", body) for body in segment.inner)
         out.extend(_flag_messages(tokens, command, cwd))
     return [(label, text) for label, text in out if text]
 
 
 # `-F -` / `--body-file -` read the message from stdin; `/dev/stdin` is the same file spelled as a path.
-STDIN_NAMES = frozenset({"-", "/dev/stdin"})
+STDIN_NAMES = commit_policy.STDIN_NAMES
 
 
 def _reads_stdin(tokens):
@@ -245,59 +246,6 @@ def _is_target_stage(words):
         or GH_PR.match(line)
         or (GH_API_PR_PATCH.match(line) and PATCH_METHOD.search(line))
     )
-
-
-def _stdin_bodies(redirs, lexer):
-    """The heredoc and here-string bodies a list of redirects feeds to stdin."""
-    for redir in redirs:
-        hd = redir.heredoc
-        if hd is not None and hd.body_start is not None:
-            yield lexer.src[hd.body_start : hd.body_end].removesuffix("\n")
-        elif redir.op == "<<<" and redir.target is not None:
-            yield shellscan._word_value(redir.target)
-
-
-def _target_segments(command):
-    """`(source text, heredocs)` for every message-carrying command in `command`, found by `shellscan`'s own lexer and parse.
-
-    THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO. Found live 2026-09-26 (#91c4716c): this used to lint EVERY heredoc in the payload as a commit message, so a `python3 - <<'EOF' ... EOF` edit chained before `git commit -F msg -- paths` was refused for R19 on the Python source. A heredoc is the message only when it feeds the target's stdin -- on the target itself or on a `cat` piped into it -- and the target reads `-F -`; `heredocs["stdin"]` holds those, and `messages` checks the flag. `heredocs["words"]` holds a heredoc whose body sits INSIDE the target's own words, the `-m "$(cat <<'EOF' ... EOF)"` shape. The flag arms are scoped the same way: `tail -F log` or `grep -m 5` chained beside a commit is not a message either, so `messages` shlex-splits only the target's own source span.
-    """
-    lexer = shellscan._Lexer(command)
-    out: list[tuple[str, dict[str, list[str]]]] = []
-
-    def walk(items):
-        for item in items:
-            if item[0] != "pipe":
-                continue
-            stages = item[1]
-            for pos, stage in enumerate(stages):
-                if stage[0] in ("sub", "brace"):
-                    walk(stage[1])
-                    continue
-                all_words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
-                words, _ = shellscan._strip_prefixes(all_words)
-                if not words or not _is_target_stage(words):
-                    continue
-                start, end = all_words[0].start, all_words[-1].end
-                redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
-                stdin = list(_stdin_bodies(redirs, lexer))
-                upstream = stages[pos - 1] if pos else None
-                if upstream is not None and upstream[0] == "cmd":
-                    feeder, _ = shellscan._strip_prefixes(
-                        [t for t in upstream[1] if isinstance(t, shellscan._Word)]
-                    )
-                    if feeder and shellscan._word_value(feeder[0]).rsplit("/", 1)[-1] == "cat":
-                        ups = [t for t in upstream[1] if isinstance(t, shellscan._Redir)]
-                        stdin.extend(_stdin_bodies(ups, lexer))
-                inner = [
-                    lexer.src[hd.body_start : hd.body_end].removesuffix("\n")
-                    for hd in lexer.heredocs
-                    if hd.body_start is not None and start <= hd.body_start < end
-                ]
-                out.append((lexer.src[start:end], {"stdin": stdin, "words": inner}))
-
-    walk(shellscan._parse(lexer.tokens()))
-    return out
 
 
 def _flag_messages(tokens, command, cwd):

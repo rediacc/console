@@ -68,6 +68,17 @@ CASES = [
     ("a -F file on disk", "git commit -F msg.txt -- a", True),
     ("a -F - heredoc", "git commit -F - -- a <<'EOF'\nchore: x [skip ci]\nEOF", True),
     ("a cat-heredoc -m", "git commit -m \"$(cat <<'EOF'\nchore: x [skip ci]\nEOF\n)\" -- a", True),
+    # #64c3e990: only the heredoc feeding the commit's own stdin is its message.
+    (
+        "a clean python heredoc before a skipping -F - commit",
+        "python3 - <<'EOF'\nprint(1)\nEOF\ngit commit -F - -- a <<'EOF'\nchore: x [skip ci]\nEOF",
+        True,
+    ),
+    (
+        "a cat heredoc piped into -F -",
+        "cat <<'EOF' | git commit -F - -- a\nchore: x [skip ci]\nEOF",
+        True,
+    ),
     # ---- inverse -----------------------------------------------------------------------------
     ("a clean commit", 'git commit -m "chore: x" -- a', False),
     ("echo naming the token", "echo '[skip ci]'", False),
@@ -78,6 +89,11 @@ CASES = [
         False,
     ),
     ("a heredoc to a file is not a message", "cat > n.md <<'EOF'\n[skip ci]\nEOF", False),
+    (
+        "a python heredoc naming the token before a clean -F - commit",
+        "python3 - <<'EOF'\nprint('[skip ci]')\nEOF\ngit commit -F - -- a <<'EOF'\nchore: x\nEOF",
+        False,
+    ),
     ("an empty command", "", False),
 ]
 

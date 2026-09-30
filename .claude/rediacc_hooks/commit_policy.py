@@ -563,25 +563,109 @@ def _unwrap(value: str) -> str:
     return match.group(2) if match else value
 
 
-def _heredoc_bodies(cmd: str) -> list[str]:
+# `-F -` reads the message from stdin; `/dev/stdin` is the same file spelled as a path, and opened from here it would be the HOOK's stdin, never the command's.
+STDIN_NAMES = frozenset({"-", "/dev/stdin"})
+
+
+class Segment(typing.NamedTuple):
+    """One target command found by `target_segments`: its own source span, its words after quote removal and prefix stripping, the heredoc and here-string bodies fed to its stdin, and the heredoc bodies inside its own words."""
+
+    text: str
+    words: list[str]
+    stdin: list[str]
+    inner: list[str]
+
+
+def stdin_bodies(redirs, lexer):
+    """The heredoc and here-string bodies a list of `shellscan` redirects feeds to stdin."""
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    for redir in redirs:
+        hd = redir.heredoc
+        if hd is not None and hd.body_start is not None:
+            yield lexer.src[hd.body_start : hd.body_end].removesuffix("\n")
+        elif redir.op == "<<<" and redir.target is not None:
+            yield shellscan._word_value(redir.target)
+
+
+def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[Segment]:
+    """A `Segment` for every simple command in `cmd` that `is_target` (given its prefix-stripped `shellscan` words) accepts, found by `shellscan`'s own lexer and parse.
+
+    THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO. Found live 2026-09-26 (#91c4716c) in `block_prose_style_commit`, and again 2026-09-30 (#64c3e990) in `commit_message_text`: reading EVERY heredoc in the payload as the message made a `python3 - <<'EOF' ... EOF` edit chained before a commit into that commit's message. A body counts as stdin only when it sits on the target itself or on a `cat` piped into it (`Segment.stdin`), and the caller still decides whether the target reads stdin at all. `Segment.inner` holds a heredoc whose body sits INSIDE the target's own words, the `-m "$(cat <<'EOF' ... EOF)"` shape. Raises what the lexer raises on an unlexable command.
+    """
     from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
 
     lexer = shellscan._Lexer(cmd)
+    out: list[Segment] = []
+
+    def walk(items):
+        for item in items:
+            if item[0] != "pipe":
+                continue
+            stages = item[1]
+            for pos, stage in enumerate(stages):
+                if stage[0] in ("sub", "brace"):
+                    walk(stage[1])
+                    continue
+                all_words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
+                words, _ = shellscan._strip_prefixes(all_words)
+                if not words or not is_target(words):
+                    continue
+                start, end = all_words[0].start, all_words[-1].end
+                redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
+                stdin = list(stdin_bodies(redirs, lexer))
+                upstream = stages[pos - 1] if pos else None
+                if upstream is not None and upstream[0] == "cmd":
+                    feeder, _ = shellscan._strip_prefixes(
+                        [t for t in upstream[1] if isinstance(t, shellscan._Word)]
+                    )
+                    if feeder and _base(shellscan._word_value(feeder[0])) == "cat":
+                        ups = [t for t in upstream[1] if isinstance(t, shellscan._Redir)]
+                        stdin.extend(stdin_bodies(ups, lexer))
+                inner = [
+                    lexer.src[hd.body_start : hd.body_end].removesuffix("\n")
+                    for hd in lexer.heredocs
+                    if hd.body_start is not None and start <= hd.body_start < end
+                ]
+                values = [shellscan._word_value(w) for w in words]
+                out.append(Segment(lexer.src[start:end], values, stdin, inner))
+
+    walk(shellscan._parse(lexer.tokens()))
+    return out
+
+
+def _is_commit_stage(words: list) -> bool:
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    values = [shellscan._word_value(w) for w in words]
+    return _base(values[0]) == "git" and git_split(values[1:])[1] == "commit"
+
+
+def _stdin_messages(cmd: str, commit) -> list[str]:
+    """The heredoc and here-string bodies that feed THIS walked `git commit` run's stdin, [] when none does.
+
+    Each walked commit run is paired, in order, with the next unpaired commit segment carrying the same words, so two commits in one command each get their own body. A commit the segment walk cannot reach (inside an `sh -c` payload, say) gets [], which every caller already reads as opaque.
+    """
     try:
-        lexer.tokens()
+        segments = target_segments(cmd, _is_commit_stage)
     except Exception:  # noqa: BLE001 -- an unlexable command has no readable heredoc
         return []
-    return [
-        lexer.src[h.body_start : h.body_end]
-        for h in lexer.heredocs
-        if h.body_start is not None and h.body_end is not None
-    ]
+    unpaired = list(segments)
+    for run in git_runs(cmd, "commit"):
+        want = [run.name, *run.argv]
+        match = next((s for s in unpaired if s.words == want), None)
+        if match is not None:
+            unpaired.remove(match)
+        if run is commit:
+            return match.stdin if match is not None else []
+    want = [commit.name, *commit.argv]
+    return next((s.stdin for s in segments if s.words == want), [])
 
 
-def commit_message_text(cmd: str, root: str, run=None) -> str:
+def commit_message_text(cmd: str, root: str, run=None, files: bool = True) -> str:
     """The message a `git commit` in `cmd` would write, "" when it cannot be read.
 
-    The three readable shapes `block_untagged_commit` established: `-m`/`--message` values (a `"$(cat <<'EOF' ... EOF)"` wrapper unwrapped), `-F -` fed by a heredoc, and `-F <file>` read off disk relative to the command's directory. `--trailer` values are appended as trailer lines, because git writes them into the same message. A piped stdin, an editor session or any other command substitution is opaque, and "" says so.
+    The three readable shapes `block_untagged_commit` established: `-m`/`--message` values (a `"$(cat <<'EOF' ... EOF)"` wrapper unwrapped), `-F -` (or `-F /dev/stdin`) fed by a heredoc or here-string attached to that commit or on a `cat` piped into it, and `-F <file>` read off disk relative to the command's directory. `--trailer` values are appended as trailer lines, because git writes them into the same message. A piped stdin, an editor session or any other command substitution is opaque, and "" says so. `files=False` skips the `-F <file>` read, for a caller that reads those files itself (`block_untagged_commit` skips a file the same command writes first).
     """
     commits = [run] if run is not None else git_runs(cmd, "commit")
     parts: list[str] = []
@@ -590,8 +674,10 @@ def commit_message_text(cmd: str, root: str, run=None) -> str:
         parsed = parse_commit_args(args)
         body = [_unwrap(m) for m in parsed.messages]
         for name in parsed.files:
-            if name == "-":
-                body.extend(_heredoc_bodies(cmd))
+            if name in STDIN_NAMES:
+                body.extend(_stdin_messages(cmd, commit))
+                continue
+            if not files:
                 continue
             directory = run_dir(commit, root)
             path = pathlib.Path(name if name.startswith("/") else os.path.join(directory, name))

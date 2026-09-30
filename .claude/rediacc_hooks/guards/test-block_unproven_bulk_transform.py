@@ -123,6 +123,20 @@ case(
     repo,
     False,
 )
+# #64c3e990: only the heredoc feeding the commit's own stdin is its message, so proof quoted in a chained python heredoc proves nothing.
+case(
+    "proof in a python heredoc before an unproven -F - commit is blocked",
+    "python3 - <<'EOF'\n# shape-cluster diff: 0 files lost a shape\nEOF\n"
+    "git commit -F - <<'EOF'\nstyle: reflow the tree\nEOF",
+    repo,
+    True,
+)
+case(
+    "CONTROL: proof in the -F - commit's own heredoc is allowed",
+    "git commit -F - <<'EOF'\nstyle: reflow the tree\n\nshape-cluster diff: 0 files lost a shape\nEOF",
+    repo,
+    False,
+)
 case(
     "a bare file count is NOT proof",
     'git commit -m "style: reflow the tree, %d files changed"' % BULK,
