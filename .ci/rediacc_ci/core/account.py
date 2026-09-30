@@ -873,7 +873,9 @@ def mint_dev_keys(env: dict[str, str] | None = None) -> int:
 
     REFUSES WITH 1, WRITING NOTHING, when any generated value is empty (a missing `node` or `openssl` yields an empty capture, not an error) or carries a line break, which would inject a second assignment into the file.
 
-    Reports the six NAMES and a count on stderr. Never a value, and never anything on stdout.
+    MASKS EVERY VALUE BEFORE WRITING IT. `$GITHUB_ENV` values are not secrets to the runner, so every later step's `env:` block printed all six in clear in this public repository's logs (Drills job, 2026-09-30). Throwaway values leak nothing, but a change that fed real keys through here would leak the same way, so stdout carries exactly one `::add-mask::<value>` workflow command per value, which the runner consumes and never displays. Nothing else ever goes to stdout, and a refusal prints no mask.
+
+    Reports the six NAMES and a count on stderr, never a value.
     """
     environ = os.environ if env is None else env
     target = environ.get("GITHUB_ENV", "")
@@ -902,6 +904,9 @@ def mint_dev_keys(env: dict[str, str] | None = None) -> int:
             % " ".join(bad)
         )
         return 1
+    for value in values:
+        sys.stdout.write("::add-mask::%s\n" % value)
+    sys.stdout.flush()
     with open(target, "a", encoding="utf-8") as handle:
         handle.write("".join("%s=%s\n" % pair for pair in zip(CRYPTO_KEYS, values, strict=True)))
     for name in CRYPTO_KEYS:
