@@ -1035,6 +1035,7 @@
       "WORKLIST_UNREAD_ROTATE_MIN",
       "WORKLIST_WHY_MAX_CHARS",
       "WORKLIST_WHY_MAX_RECORDS",
+      "_DEVBOX_DOCKER",
       "_WL_SITEPROFILE"
     ],
     "tombstone": [

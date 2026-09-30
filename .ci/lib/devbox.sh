@@ -1206,7 +1206,8 @@ devbox_route_label() {
 
 # Single source of truth for the 4 routed services, so devbox_status and
 # devbox_await_ready can never iterate a different set or order.
-# key:label:suffix:hint:pgrep-pattern -- see devbox_status for field meaning.
+# Colon-separated fields: key, label, suffix, hint, pgrep-pattern -- see
+# devbox_status for field meaning.
 _devbox_route_specs() {
     printf '%s\n' \
         "code:VS Code:::" \
@@ -1221,7 +1222,7 @@ _devbox_route_specs() {
 # extracted from devbox_status so devbox_await_ready polls the exact same
 # code path it will later be judged against -- what was waited for and what
 # gets printed can never drift apart. Emits one line per service:
-#   key:label:suffix:hint:pat:code:routed:starting
+#   key, label, suffix, hint, pat, code, routed, starting (colon-separated)
 _devbox_probe_services() {
     local slug="$1" hosts="$2" _probe_dir
     _probe_dir="$(mktemp -d)"
@@ -1331,12 +1332,16 @@ devbox_await_ready() {
             announced=true
         fi
 
+        # Comma-joined without a `$(IFS=,; ...)` subshell per tick.
+        local joined
+        printf -v joined '%s,' "${pending[@]}"
+        joined="${joined%,}"
         if [[ "$interactive" == true ]]; then
             frame=$(((frame + 1) % 4))
             printf '\r%s waiting for: %s (%ss)  ' "${spin:frame:1}" \
-                "$(IFS=,; echo "${pending[*]}")" "$elapsed" >&2
+                "$joined" "$elapsed" >&2
         elif [[ $((elapsed - last_plain)) -ge 10 ]]; then
-            log_step "Still waiting for: $(IFS=,; echo "${pending[*]}") (${elapsed}s)"
+            log_step "Still waiting for: $joined (${elapsed}s)"
             last_plain=$elapsed
         fi
         sleep 1

@@ -1631,13 +1631,13 @@ class Devbox:
         return self.run([*d, "exec", cid, "pgrep", "-f", pattern], out=NULL, err=NULL)[0]
 
     def route_specs(self, *_argv: str) -> int:
-        """`_devbox_route_specs`: the four routed services, one `key:label:suffix:hint:pattern` line each."""
+        """`_devbox_route_specs`: the four routed services, one line each carrying the colon-separated fields key, label, suffix, hint, pattern."""
         for spec in ROUTE_SPECS:
             self.write(":".join(spec) + "\n")
         return 0
 
     def probe_services(self, *argv: str) -> int:
-        """`_devbox_probe_services <slug> <hosts>`: one probe round, one `key:label:suffix:hint:pattern:code:routed:starting` line per service.
+        """`_devbox_probe_services <slug> <hosts>`: one probe round, one line per service carrying the colon-separated fields key, label, suffix, hint, pattern, code, routed, starting.
 
         The twin fires the four curls CONCURRENTLY (background subshells writing to a `mktemp -d`), so their order in a transcript is not fixed; this port fires them in table order and the differential driver sorts that one run of probe calls on both sides. Everything after the curls is sequential in both: the `pgrep` behind a 502 is asked in table order.
         A probe that cannot reach a route reports `000` (`|| true` inside the substitution), never an abort.
