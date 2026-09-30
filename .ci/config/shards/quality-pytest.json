@@ -338,6 +338,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_chained_state.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_wiring.py",
+        "pytest:.claude/rediacc_hooks/tests/test_pr_body_guards_repo_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_proc.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cadence.py",
