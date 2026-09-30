@@ -776,14 +776,50 @@ interface InstallStep {
   args: string[];
   label: string;
   packages: PackageInfo[];
+  /** The workspace path (`packages/<ws>`) for a `-w` step, where npm may resolve a nested copy. */
+  workspace?: string;
+}
+
+/** The ranges a manifest declares for what it installs (dependencies, devDependencies, optionalDependencies). Peer ranges are left out: they say what a consumer must bring, not what this manifest installs. Empty when the manifest is missing or unreadable. */
+function readDeclaredRanges(dir: string): Record<string, string> {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+    };
+    return { ...pkg.optionalDependencies, ...pkg.devDependencies, ...pkg.dependencies };
+  } catch {
+    return {};
+  }
 }
 
 /**
- * Build the `npm install` invocations for the packages cleared to upgrade. Pure apart from reading workspace manifests, so the selftest can assert what WOULD run.
+ * True when `version` satisfies the declared `range`. Only the shapes the scanned manifests use are understood: `^x.y.z`, `~x.y.z`, an exact `x.y.z`, and `*`. Anything else (a `file:` spec, a compound range, a prerelease target) answers false, which keeps the package on the pinned `npm install name@version` path the gate always used.
+ */
+function satisfiesRange(range: string | undefined, version: string): boolean {
+  if (range === undefined) return false;
+  const r = range.trim();
+  const target = parseVersion(version);
+  if (!target || target.prerelease) return false;
+  if (r === '*' || r === 'x') return true;
+  const m = r.match(/^([\^~]?)(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/);
+  if (!m) return false;
+  const [, op, baseText] = m;
+  const base = parseVersion(baseText);
+  if (!base) return false;
+  if (op === '') return compareVersions(version, baseText) === 0 && !base.prerelease;
+  if (compareVersions(version, baseText) < 0) return false;
+  if (op === '~') return target.major === base.major && target.minor === base.minor;
+  return releaseLine(version) === releaseLine(baseText);
+}
+
+/**
+ * Build the npm invocations for the packages cleared to upgrade. Pure apart from reading manifests, so the selftest can assert what WOULD run.
  *
- * Every spec pins the exact `latest` this run judged (`name@1.2.3`), never `name@latest`: the freshness window was checked against that version, and `@latest` would install whatever the registry says at install time, which can be a version published after the check. The input is only ever `mustUpgrade`, which categorizePackages never lets a held major into.
+ * TWO VERBS, chosen per manifest by the range it already declares. A target the declared range already allows (`^8.70.1` -> 8.71.0) is planned as `npm update <names>`: that is the only verb npm resolves a pinned sibling family with (typescript-eslint pins its @typescript-eslint/* siblings exactly, so on 2026-09-30 `npm install typescript-eslint@8.71.0 @typescript-eslint/parser@8.71.0 ...` failed ERESOLVE against the installed 8.70.1 family, while `npm update` of the same names succeeded). `npm update` takes the highest version the range allows, which is the judged `latest` unless a newer in-range version was published after this run's freshness check; executeInstalls therefore verifies every `(update)` step against the lockfile and fails it when npm resolved anything but the exact version judged (see verifyUpdatedVersions). A target outside the declared range (an allow-listed major, an exact pin) still installs as `name@<the exact latest judged>`, never `name@latest`, for the same freshness reason. The input is only ever `mustUpgrade`, which categorizePackages never lets a held major into.
  *
- * Root packages found in child package.json files install per workspace (`-w=packages/<ws>`) so they do not pollute the others; packages only the root declares install without `-w`, so child manifests are not rewritten.
+ * Root packages found in child package.json files upgrade per workspace (`-w=packages/<ws>`), judged against that workspace's own range, so they do not pollute the others; packages only the root declares run without `-w`, so child manifests are not rewritten.
  */
 function planInstalls(
   root: string,
@@ -792,6 +828,37 @@ function planInstalls(
 ): InstallStep[] {
   const steps: InstallStep[] = [];
   const spec = (p: PackageInfo) => `${p.name}@${p.latest}`;
+  /** One manifest's packages as up to two steps: `update` for in-range targets, then `install` for the rest. */
+  const plan = (
+    cwd: string,
+    manifestDir: string,
+    flags: string[],
+    label: string,
+    pkgs: PackageInfo[],
+    workspace?: string
+  ) => {
+    const ranges = readDeclaredRanges(manifestDir);
+    const inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
+    const outOfRange = pkgs.filter((p) => !inRange.includes(p));
+    if (inRange.length > 0) {
+      steps.push({
+        cwd,
+        args: ['update', ...flags, ...inRange.map((p) => p.name)],
+        label: `${label} (update)`,
+        packages: inRange,
+        workspace,
+      });
+    }
+    if (outOfRange.length > 0) {
+      steps.push({
+        cwd,
+        args: ['install', ...flags, ...outOfRange.map(spec)],
+        label: `${label} (install)`,
+        packages: outOfRange,
+        workspace,
+      });
+    }
+  };
 
   const byWorkspace = new Map<string, PackageInfo[]>();
   const rootOnly: PackageInfo[] = [];
@@ -808,44 +875,106 @@ function planInstalls(
     }
   }
   for (const [ws, pkgs] of byWorkspace) {
-    steps.push({
-      cwd: root,
-      args: ['install', `-w=packages/${ws}`, ...pkgs.map(spec)],
-      label: `packages/${ws}`,
-      packages: pkgs,
-    });
+    plan(
+      root,
+      path.join(root, 'packages', ws),
+      [`-w=packages/${ws}`],
+      `packages/${ws}`,
+      pkgs,
+      `packages/${ws}`
+    );
   }
-  if (rootOnly.length > 0) {
-    steps.push({
-      cwd: root,
-      args: ['install', ...rootOnly.map(spec)],
-      label: 'root',
-      packages: rootOnly,
-    });
-  }
+  if (rootOnly.length > 0) plan(root, root, [], 'root', rootOnly);
   for (const { dir, name, packages } of privateGroups) {
     if (packages.length === 0) continue;
-    steps.push({ cwd: dir, args: ['install', ...packages.map(spec)], label: name, packages });
+    plan(dir, dir, [], name, packages);
   }
   return steps;
 }
 
-/** Run the planned installs, printing what each one takes. */
+/**
+ * The environment a planned npm step runs in: this process's, minus any inherited npm loglevel. `npm run -s check:deps -- --upgrade` exports `npm_config_loglevel=silent` to this script, and a child npm that inherits it prints NOTHING when it fails; on 2026-09-30 that turned an ERESOLVE into a bare "Some upgrades failed". Without the variable the child falls back to .npmrc or npm's default level, so its own error reaches the terminal.
+ */
+function upgradeChildEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...base };
+  for (const key of Object.keys(env)) {
+    if (key.toLowerCase() === 'npm_config_loglevel') delete env[key];
+  }
+  return env;
+}
+
+/**
+ * FRESHNESS-WINDOW GUARD for `npm update`. That verb takes the highest version the declared range allows, so a version published after this run's release-age check (.ci/config/release-age.json) could land without ever being judged, which is exactly the smash-and-grab release the window exists to stop. After an `(update)` step, every package in it must resolve in the step's lockfile to the EXACT version the gate judged: the workspace's nested copy (`packages/<ws>/node_modules/<name>`) when npm placed one there, else the hoisted `node_modules/<name>`. Returns one line per package that does not, empty when all match. Pure, so the selftest drives it directly.
+ */
+function verifyUpdatedVersions(
+  step: InstallStep,
+  lock: Record<string, { version?: string }> | null
+): string[] {
+  const problems: string[] = [];
+  for (const pkg of step.packages) {
+    const nested = step.workspace
+      ? lock?.[`${step.workspace}/node_modules/${pkg.name}`]
+      : undefined;
+    const resolved = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
+    if (resolved !== pkg.latest) {
+      problems.push(
+        `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}`
+      );
+    }
+  }
+  return problems;
+}
+
+/** Run the planned steps, printing what each one takes, and name every step that failed with its exact command and exit status. An `(update)` step that exits 0 still fails when verifyUpdatedVersions finds a version the gate did not judge. */
 function executeInstalls(steps: InstallStep[]): boolean {
   if (steps.length === 0) {
     console.log(`${GREEN}No packages to upgrade${NC}`);
     return true;
   }
-  let success = true;
+  const failures: string[] = [];
+  const env = upgradeChildEnv();
   for (const step of steps) {
     console.log(`${BLUE}Upgrading ${step.packages.length} package(s) in ${step.label}...${NC}\n`);
     for (const pkg of step.packages) printPackage(pkg);
     console.log();
-    const result = spawnSync('npm', step.args, { cwd: step.cwd, stdio: 'inherit', shell: true });
-    if (result.status !== 0) success = false;
+    const result = spawnSync('npm', step.args, {
+      cwd: step.cwd,
+      stdio: 'inherit',
+      shell: true,
+      env,
+    });
+    if (result.status !== 0) {
+      const why = result.error
+        ? `could not start: ${result.error.message}`
+        : result.signal
+          ? `killed by ${result.signal}`
+          : `exit status ${result.status}`;
+      failures.push(
+        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} (${why})`
+      );
+      continue;
+    }
+    if (step.args[0] !== 'update') continue;
+    const mismatches = verifyUpdatedVersions(step, readLockPackages(step.cwd));
+    if (mismatches.length > 0) {
+      failures.push(
+        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} ` +
+          'resolved a version the gate did not judge (freshness-window guard, .ci/config/release-age.json):\n' +
+          mismatches.map((m) => `      ${m}`).join('\n') +
+          '\n    package.json and package-lock.json in that directory now hold the unjudged version; revert them there before committing.'
+      );
+    }
   }
-  console.log(success ? `\n${GREEN}Upgrades completed${NC}` : `\n${RED}Some upgrades failed${NC}`);
-  return success;
+  if (failures.length === 0) {
+    console.log(`\n${GREEN}Upgrades completed${NC}`);
+    return true;
+  }
+  console.error(`\n${RED}✗${NC} ${failures.length} of ${steps.length} upgrade step(s) failed:`);
+  for (const f of failures) console.error(f);
+  console.error(
+    '  The npm error for each is printed above its step; re-run that command to see it again.'
+  );
+  return false;
 }
 
 /**
@@ -1108,6 +1237,12 @@ interface FixtureSpec {
   locks: Record<string, Record<string, { version: string }>>;
   allow?: Record<string, string>;
   blocklist?: string;
+  /** package.json content per manifest, same keys; '{}' when absent. */
+  manifests?: Record<string, object>;
+  /** Lockfile `packages` map the stub `npm update` writes per manifest, same keys: what npm "resolved". */
+  updateLocks?: Record<string, Record<string, { version: string }>>;
+  /** Extra environment for the gate process (the npm_config_loglevel control). */
+  env?: NodeJS.ProcessEnv;
 }
 
 // The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
@@ -1141,10 +1276,15 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     JSON.stringify({ leftpad: { current: '1.0.0', latest: '1.0.1' } })
   );
   for (const rel of new Set(['', ...Object.keys(spec.outdated), ...Object.keys(spec.locks)])) {
-    write(path.join(rel, 'package.json'), '{}');
+    write(path.join(rel, 'package.json'), JSON.stringify(spec.manifests?.[rel] ?? {}));
     write(path.join(rel, '.fixture-outdated.json'), JSON.stringify(spec.outdated[rel] ?? {}));
     if (spec.locks[rel])
       write(path.join(rel, 'package-lock.json'), JSON.stringify({ packages: spec.locks[rel] }));
+    if (spec.updateLocks?.[rel])
+      write(
+        path.join(rel, '.fixture-update-lock.json'),
+        JSON.stringify({ packages: spec.updateLocks[rel] })
+      );
   }
   const log = path.join(root, 'npm-install.log');
   write(
@@ -1153,7 +1293,8 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       '#!/bin/sh',
       'case "$1" in',
       '  outdated) if [ -f .fixture-outdated.json ]; then cat .fixture-outdated.json; else echo "{}"; fi; exit 1 ;;',
-      `  install) echo "$(pwd) :: $*" >> "${log}"; exit 0 ;;`,
+      // Every install/update is recorded with the loglevel the child inherited, and a spec naming `fail-me` exits 7, so the selftest can see both the verb chosen and the failure report.
+      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; exit 0 ;;`,
       '  *) echo "fixture npm stub: unexpected: $*" >&2; exit 2 ;;',
       'esac',
       '',
@@ -1163,6 +1304,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
   fs.writeFileSync(log, '');
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    ...spec.env,
     CHECK_DEPS_ROOT: root,
     PATH: `${path.join(root, 'bin')}${path.delimiter}${process.env.PATH ?? ''}`,
   };
@@ -1580,12 +1722,214 @@ function selftest(): void {
     clean.output
   );
 
+  // 9. UPGRADE VERB AND FAILURE REPORTING, the two 2026-09-30 defects. (a) `npm run -s` exported npm_config_loglevel=silent to the child install, so its ERESOLVE printed nothing and the gate said only "Some upgrades failed". (b) an in-range bump of the pinned typescript-eslint family was planned as `npm install name@ver`, which npm refuses; `npm update` resolves it.
+  const ranges: [string | undefined, string, boolean][] = [
+    ['^8.70.1', '8.71.0', true],
+    ['^4.2.1', '4.2.2', true],
+    ['^6.4.2', '8.0.1', false],
+    ['^0.3.270', '0.3.283', true],
+    ['^0.3.270', '0.4.0', false],
+    ['~1.2.3', '1.2.9', true],
+    ['~1.2.3', '1.3.0', false],
+    ['1.0.0', '1.0.1', false],
+    ['*', '9.9.9', true],
+    ['^8.70.1', '8.70.0', false],
+    ['^1.0.0', '1.1.0-beta.1', false],
+    ['file:../shared', '1.0.0', false],
+    [undefined, '1.0.0', false],
+  ];
+  for (const [r, v, want] of ranges) {
+    expect(`satisfiesRange(${r}, ${v}) === ${want}`, satisfiesRange(r, v) === want);
+  }
+
+  const planRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'check-deps-plan-'));
+  try {
+    const w = (rel: string, obj: object) => {
+      fs.mkdirSync(path.dirname(path.join(planRoot, rel)), { recursive: true });
+      fs.writeFileSync(path.join(planRoot, rel), JSON.stringify(obj));
+    };
+    w('package.json', {
+      devDependencies: {
+        'typescript-eslint': '^8.70.1',
+        '@typescript-eslint/parser': '^8.70.1',
+        'eslint-plugin-sonarjs': '^4.2.1',
+        pinned: '1.0.0',
+        vite: '^6.4.2',
+      },
+    });
+    w('packages/cli/package.json', { dependencies: { tsx: '^4.22.1' } });
+    w('packages/www/package.json', { dependencies: { tsx: '4.22.1' } });
+    w('private/account/package.json', { dependencies: { 'react-hook-form': '^7.88.0' } });
+    const pk = (name: string, current: string, latest: string): PackageInfo => ({
+      name,
+      current,
+      latest,
+    });
+    const steps = planInstalls(
+      planRoot,
+      [
+        pk('typescript-eslint', '8.70.1', '8.71.0'),
+        pk('@typescript-eslint/parser', '8.70.1', '8.71.0'),
+        pk('eslint-plugin-sonarjs', '4.2.1', '4.2.2'),
+        pk('pinned', '1.0.0', '1.0.1'),
+        { ...pk('vite', '6.4.2', '8.0.1'), allowKey: 'vite@8' },
+        pk('tsx', '4.22.1', '4.23.15'),
+      ],
+      [
+        {
+          dir: path.join(planRoot, 'private', 'account'),
+          name: 'private/account',
+          packages: [pk('react-hook-form', '7.88.0', '7.89.0')],
+        },
+      ]
+    );
+    const shown = steps.map((s) => `${s.label} :: ${s.args.join(' ')}`).sort();
+    const want = [
+      'packages/cli (update) :: update -w=packages/cli tsx',
+      'packages/www (install) :: install -w=packages/www tsx@4.23.15',
+      'private/account (update) :: update react-hook-form',
+      'root (install) :: install pinned@1.0.1 vite@8.0.1',
+      'root (update) :: update typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs',
+    ];
+    expect(
+      'planner: an in-range bump is `npm update <names>`, an out-of-range one `npm install name@exact`, per manifest range',
+      JSON.stringify(shown) === JSON.stringify(want),
+      `got:\n${shown.join('\n')}\nwant:\n${want.join('\n')}`
+    );
+  } finally {
+    fs.rmSync(planRoot, { recursive: true, force: true });
+  }
+
+  const childEnv = upgradeChildEnv({
+    npm_config_loglevel: 'silent',
+    NPM_CONFIG_LOGLEVEL: 'silent',
+    PATH: '/bin',
+  });
+  expect(
+    'the child npm environment carries no inherited loglevel, and keeps the rest',
+    !Object.keys(childEnv).some((k) => k.toLowerCase() === 'npm_config_loglevel') &&
+      childEnv.PATH === '/bin',
+    JSON.stringify(childEnv)
+  );
+
+  const rootLock = {
+    'node_modules/typescript-eslint': { version: '8.70.1' },
+    'node_modules/fail-me': { version: '1.0.0' },
+  };
+  const verbCase: FixtureSpec = {
+    outdated: {
+      '': {
+        'typescript-eslint': { current: '8.70.1', wanted: '8.71.0', latest: '8.71.0' },
+        'fail-me': { current: '1.0.0', wanted: '1.0.0', latest: '1.0.1' },
+      },
+      'private/account': {},
+    },
+    locks: { '': rootLock, 'private/account': {} },
+    // npm update resolves the version the gate judged: the freshness guard must let it through.
+    updateLocks: {
+      '': { ...rootLock, 'node_modules/typescript-eslint': { version: '8.71.0' } },
+    },
+    manifests: { '': { devDependencies: { 'typescript-eslint': '^8.70.1', 'fail-me': '1.0.0' } } },
+    env: { npm_config_loglevel: 'silent' },
+  };
+  const verb = runFixture(verbCase, 'upgrade');
+  const verbInst = verb.installs.join('\n');
+  const verbDetail = `installs:\n${verbInst}\noutput:\n${verb.output}`;
+  expect(
+    'e2e --upgrade: the in-range bump runs as `npm update`, the pinned one as `npm install name@exact`',
+    verbInst.includes('<root> :: update typescript-eslint ::') &&
+      verbInst.includes('<root> :: install fail-me@1.0.1 ::'),
+    verbDetail
+  );
+  expect(
+    'e2e --upgrade: a child npm under `npm run -s` does not inherit loglevel=silent',
+    verb.installs.length === 2 && verb.installs.every((l) => l.endsWith('loglevel=')),
+    verbDetail
+  );
+  expect(
+    'e2e --upgrade: a failed step is named with its exact command and exit status, and the gate exits 1',
+    verb.status === 1 &&
+      verb.output.includes('1 of 2 upgrade step(s) failed') &&
+      verb.output.includes('root (install): `npm install fail-me@1.0.1` in . (exit status 7)'),
+    verbDetail
+  );
+  expect(
+    'e2e --upgrade: CONTROL: an update that resolves exactly the judged version passes the freshness guard',
+    !verb.output.includes('did not judge') && !verb.output.includes('root (update):'),
+    verbDetail
+  );
+
+  // 10. FRESHNESS-WINDOW GUARD on `npm update`. It takes the highest in-range version, so one published after the release-age check could land unjudged; the step must fail naming it.
+  const upStep = (workspace?: string): InstallStep => ({
+    cwd: '/x',
+    args: ['update', 'a', 'b'],
+    label: 'root (update)',
+    packages: [
+      { name: 'a', current: '1.0.0', latest: '1.1.0' },
+      { name: 'b', current: '2.0.0', latest: '2.0.1' },
+    ],
+    workspace,
+  });
+  expect(
+    'guard: every package at its judged version passes',
+    verifyUpdatedVersions(upStep(), {
+      'node_modules/a': { version: '1.1.0' },
+      'node_modules/b': { version: '2.0.1' },
+    }).length === 0
+  );
+  const newer = verifyUpdatedVersions(upStep(), {
+    'node_modules/a': { version: '1.2.0' },
+    'node_modules/b': { version: '2.0.1' },
+  });
+  expect(
+    'guard: a newer-than-judged version is named with both versions',
+    newer.length === 1 && newer[0] === 'a: judged 1.1.0, installed 1.2.0',
+    newer.join('\n')
+  );
+  expect(
+    'guard: a package missing from the lockfile fails rather than passing unchecked',
+    verifyUpdatedVersions(upStep(), { 'node_modules/b': { version: '2.0.1' } }).join() ===
+      'a: judged 1.1.0, installed <not in package-lock.json>' &&
+      verifyUpdatedVersions(upStep(), null).length === 2
+  );
+  const wsLock = {
+    'node_modules/a': { version: '1.1.0' },
+    'packages/cli/node_modules/a': { version: '1.2.0' },
+    'node_modules/b': { version: '2.0.1' },
+  };
+  expect(
+    'guard: a workspace step judges the copy npm nested in that workspace, not the hoisted one',
+    verifyUpdatedVersions(upStep('packages/cli'), wsLock).join() ===
+      'a: judged 1.1.0, installed 1.2.0',
+    verifyUpdatedVersions(upStep('packages/cli'), wsLock).join()
+  );
+
+  const tooNewCase: FixtureSpec = {
+    ...verbCase,
+    updateLocks: {
+      '': { ...rootLock, 'node_modules/typescript-eslint': { version: '8.72.0' } },
+    },
+  };
+  const tooNewRun = runFixture(tooNewCase, 'upgrade');
+  expect(
+    'e2e --upgrade: an update that resolves a newer-than-judged version fails, naming package, both versions and the guard',
+    tooNewRun.status === 1 &&
+      tooNewRun.output.includes('2 of 2 upgrade step(s) failed') &&
+      tooNewRun.output.includes('root (update): `npm update typescript-eslint`') &&
+      tooNewRun.output.includes('freshness-window guard') &&
+      tooNewRun.output.includes('typescript-eslint: judged 8.71.0, installed 8.72.0'),
+    tooNewRun.output
+  );
+
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
       'every manifest and applied only when allow-listed, while a minor beside it is applied (end to end, CI-shaped ',
       'lockfile input); array and lockfile-only reports are judged, not dropped; dead allow entries and unknown ',
-      'versions fail; the scan set is exactly the checked-out submodules'
+      'versions fail; the scan set is exactly the checked-out submodules; an in-range bump runs as npm update and ',
+      'an out-of-range one as a pinned npm install, and an update that resolves anything but the judged version fails ',
+      '(freshness-window guard); a failed step is named with its command and exit status, and the child npm never ',
+      'inherits a silent loglevel'
     )
   );
   process.exit(0);
