@@ -24,7 +24,13 @@ NOT BLOCKED, deliberately:
     because a guard whose usual outcome is a false positive teaches people to
     route around it;
   - the PostToolUse hook refresh-pr-body.sh and the autopilot scripts, which
-    are not model Bash calls and never reach this chain.
+    are not model Bash calls and never reach this chain;
+  - any body write to a SUBMODULE's PR (the repos `.gitmodules` names:
+    rediacc/renet, rediacc/account, rediacc/elite, rediacc/homebrew-tap). See
+    `_blockless_repos`: no tool writes a generated block into those bodies, so
+    a whole-body write there drops nothing, and refusing it left
+    `gh api repos/rediacc/renet/pulls/113 -X PATCH -F body=@<file>` with no
+    route at all on 2026-09-30.
 
 =============================================================================
 PORT NOTE: A DEAD VARIABLE, REPRODUCED RATHER THAN REPAIRED
@@ -36,6 +42,7 @@ why it is gone is this paragraph. Reported as a finding rather than fixed in the
 """
 
 import pathlib
+import re
 
 from rediacc_hooks import hookio, shellscan
 
@@ -140,11 +147,63 @@ EDGE_CASES = [
     ),
     # Prose about the rule is not the rule being broken.
     ("prose naming the flag", "echo 'never use gh pr edit --body by hand'"),
+    # 2026-09-30: a submodule PR carries no generated block, so there is none to drop.
+    (
+        "a submodule PATCH with a blockless body",
+        "gh api repos/rediacc/renet/pulls/113 -X PATCH -f body='prose only'",
+    ),
+    (
+        "a console PATCH with the same blockless body is still refused",
+        "gh api repos/rediacc/console/pulls/591 -X PATCH -f body='prose only'",
+    ),
+    (
+        "a submodule PATCH beside a console one: the console one is judged",
+        (
+            "gh api repos/rediacc/renet/pulls/113 -X PATCH -f body=x; "
+            "gh api repos/rediacc/console/pulls/591 -X PATCH -f body=y"
+        ),
+    ),
+    ("a submodule edit by --repo", 'gh pr edit 113 --repo rediacc/renet --body "prose only"'),
+    ("a submodule edit by -R", 'gh pr edit 89 -R rediacc/account --body "prose only"'),
+    ("a console edit by --repo", 'gh pr edit 591 --repo rediacc/console --body "prose only"'),
+    ("a submodule create", 'gh pr create --repo rediacc/elite --title t --body "prose only"'),
+    (
+        "a submodule create does not excuse a console edit beside it",
+        'gh pr create --repo rediacc/renet --body "x" && gh pr edit 5 --body "y"',
+    ),
 ]
 
 
 def _root(ev):
     return ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
+
+
+# `https://github.com/<owner>/<repo>.git` or `git@github.com:<owner>/<repo>.git` on a `url =` line.
+GITMODULE_URL = re.compile(
+    r"^\s*url\s*=\s*\S*?github\.com[:/]([^/\s]+/[^/\s]+?)(\.git)?/?\s*$", re.MULTILINE
+)
+
+
+def _slug(repo):
+    """`[HOST/]OWNER/REPO[.git]`, quoted or not, as a lowercase `owner/repo`."""
+    parts = repo.strip().strip("'\"").rstrip("/").split("/")
+    return "/".join(parts[-2:]).lower().removesuffix(".git") if len(parts) >= 2 else ""
+
+
+def _blockless_repos(root):
+    """The repos whose PR bodies carry NO generated block: this checkout's submodules.
+
+    Every generated section is written by console tooling into the CONSOLE PR: `worklist-epics` by sync-epic-block.sh from `agent/pr/<branch>.md`, which only the console tree has, and `pushed-head` by the post-bash refresh hook, which resolves the PR from the project root's own `gh repo view`. The autopilot's `autopilot-submodule-prs` block went with the autopilot (PLAN-remove-autopilot). So a
+    submodule PR's body is ordinary prose, and a whole-body write to it is not the hazard this guard exists for. Measured 2026-09-30: `gh api repos/rediacc/renet/pulls/113 -X PATCH -F body=@<file>` was refused for dropping blocks renet#113 never had.
+
+    A DENY-LIST, NOT AN ALLOW-LIST, and deliberately so: a repo this cannot name (`repos/{owner}/{repo}/...`, a fork, an unreadable `.gitmodules`) keeps the guard, because the failure the other way is a silently destroyed console block. Derived from `.gitmodules` rather than typed here, so a new submodule is covered the day it is added.
+    """
+    text = _read("%s/.gitmodules" % root) if root else ""
+    return {_slug(m.group(1)) for m in GITMODULE_URL.finditer(text)}
+
+
+def _targets_blockless(repo, root):
+    return _slug(repo) in _blockless_repos(root)
 
 
 def _read(path):
@@ -242,6 +301,17 @@ def run(ev):
 
     root = _root(ev)
 
+    # A SUBMODULE PR CARRIES NO GENERATED BLOCK, so neither pr arm applies to one (`_blockless_repos`). The repo is read the way every sibling `gh pr` guard reads it, `shellscan.target_repo`: `--repo`/`-R` in the SAME segment, then a `cd`/`git -C` into private/<submodule>, then the cwd's origin, then rediacc/console. Blanking the segment rather than returning ALLOW keeps the
+    # other arms running, so `gh pr create --repo rediacc/renet ... && gh pr edit 5 --body x` is still judged on its console edit.
+    if edit_seg != "" and _targets_blockless(
+        shellscan.target_repo(edit_seg, scan, ev.cwd or ""), root
+    ):
+        edit_seg = ""
+    if create_seg != "" and _targets_blockless(
+        shellscan.target_repo(create_seg, scan, ev.cwd or ""), root
+    ):
+        create_seg = ""
+
     # THE EDIT ARM CHECKS EVERY GENERATED MARKER, NOT JUST THE EPIC ONE. Corrected 2026-09-03, same day, after the narrowing below was written and its own test refused it. The narrowing said an edit carrying `worklist-epics` "cannot drop the block" and is therefore as safe as a create. That was half the picture: `gh pr edit --body` replaces the WHOLE body, and this repo's PR bodies
     # carry a SECOND generated section, `<!-- pushed-head:begin -->`. A body carrying only the epic block passes the narrowed check and silently destroys the pushed-head section -- which is exactly the class of loss this guard exists to prevent, arriving through the door the narrowing opened.
     #
@@ -266,6 +336,15 @@ def run(ev):
     lines = hookio.grep_lines(API_VERB, split)
     lines = [line for line in lines if hookio.grep_q_line(API_PULLS, line)]
     lines = [line for line in lines if hookio.grep_q_line(API_PATCH, line)]
+    # The endpoint names its own repo, so a PATCH to a submodule PR leaves the arm here, line by line: `repos/rediacc/renet/pulls/113` beside `repos/rediacc/console/pulls/591` on one command still has the console one judged.
+    lines = [
+        line
+        for line in lines
+        if not any(
+            _targets_blockless(ref.split("/")[1] + "/" + ref.split("/")[2], root)
+            for ref in hookio.grep_o(API_PR_REF, line + "\n")
+        )
+    ]
     api_segs = hookio._command_substitution(hookio._grep_out(lines))
     if api_segs and hookio.grep_q(API_BODY_FLAG, api_segs):
         patch_body = cmd

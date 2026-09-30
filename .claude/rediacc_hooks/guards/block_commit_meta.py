@@ -21,6 +21,7 @@ prefix this clause exists for is a single emoji, which is four bytes and one cha
 
 import contextlib
 import pathlib
+import re
 
 from rediacc_hooks import hookio, shellscan
 
@@ -89,6 +90,16 @@ FILE_ARGS = (
     ),
 )
 
+# A BODY FILE WRITTEN BY THIS SAME COMMAND IS NOT ON DISK YET, so its bytes are in the command: `printf '%s\n' 'prose' '' '<emoji> Generated with [Claude Code](...)' > $S/pr.md; gh pr create --repo rediacc/renet --body-file $S/pr.md`. That was the first of the two 2026-09-30 attempts (see `_expand`), and the line-anchored footer above cannot see it: the footer is one `printf` ARGUMENT, so on the
+# command's line it follows `'' '`, never a line start. A shell WORD that begins with the footer is the same footer, so this form also accepts a quote (or a literal `\n` escape) as the start. It is applied ONLY when the command writes one of its own message files, because a quoted "Generated with" in an ordinary `--body` is exactly the prose false positive the anchor was earned against.
+INLINE_FOOTER = hookio.rx(r"(^|['\"]|\\n)[{S}]*([^0-9A-Za-z'\"]{0,4}[{S}]*)?Generated with\b")
+
+# `$NAME` / `${NAME}`: the only expansion `_expand` performs.
+SHELL_VAR = re.compile(r"\$(\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))")
+
+# The verbs whose preceding `NAME=value` statements can spell a message-file path.
+MESSAGE_VERBS = ("git commit", "git tag", "gh pr", "gh api")
+
 MESSAGE = "❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits."
 
 EDGE_CASES = [
@@ -105,6 +116,34 @@ EDGE_CASES = [
     ("a footer at the start of a message line", 'git commit -m "fix\n\nGenerated with a robot"'),
     ("the same footer mid-line is prose", 'git commit -m "regenerated with npm@10"'),
     ("an ordinary commit", "git commit -m 'fix(cli): x'"),
+    # 2026-09-30: a body file this same command writes is judged on the command's own bytes, in any repo and either flag order. The footer is assembled so this source line is not itself one.
+    (
+        "a submodule create whose body file this command writes with the footer",
+        (
+            "S=/tmp/pb; printf '%s\\n' 'prose' '' '\U0001f916 "
+            "Generated with [Claude Code](u)' > $S/pr.md; "
+            "gh pr create --repo rediacc/renet --title t --body-file $S/pr.md"
+        ),
+    ),
+    (
+        "the same with --body-file before --repo",
+        (
+            "S=/tmp/pb; printf '%s\\n' 'prose' '' '\U0001f916 "
+            "Generated with [Claude Code](u)' > $S/pr.md; "
+            "gh pr create --body-file $S/pr.md --repo rediacc/renet --title t"
+        ),
+    ),
+    (
+        "the same written body without the footer passes",
+        (
+            "S=/tmp/pb; printf '%s\\n' 'prose' '' 'Console PR: x.' > $S/pr.md; "
+            "gh pr create --repo rediacc/renet --title t --body-file $S/pr.md"
+        ),
+    ),
+    (
+        "a quoted phrase in an inline --body is prose, not a footer",
+        "gh pr create --repo rediacc/renet --title t --body 'refuses \"Generated with\" lines'",
+    ),
 ]
 
 
@@ -121,20 +160,48 @@ def _commit_file_bodies(cmd, root):
     Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason.
     """
     bodies = []
+    written = False
+    names = {}
+    for verb in MESSAGE_VERBS:
+        names.update(shellscan.assignments_before(cmd, verb))
     for pattern, strip in FILE_ARGS:
-        bodies.extend(_bodies_for(pattern, strip, cmd, root))
-    return bodies
+        found, wrote = _bodies_for(pattern, strip, cmd, root, names)
+        bodies.extend(found)
+        written = written or wrote
+    return bodies, written
 
 
-def _bodies_for(pattern, strip, cmd, root):
-    """One spelling's worth of `grep -oE <pattern> | sed -E 's/<strip>//'`, resolved and read."""
+def _expand(name, names):
+    """`$S/pr.md` with `S=/abs/dir` assigned earlier in the same command, as `/abs/dir/pr.md`.
+
+    MEASURED 2026-09-30, and it is the whole defect behind "renet and account admitted, console refused". The console `gh pr create` named its body file by a literal path, was read and refused; the two submodule ones were `S=<scratchpad>; gh pr create --repo rediacc/renet ... --body-file $S/pr-renet.md`, and a file literally named `$S/pr-renet.md` does not exist, so the read failed OPEN and
+    both PRs were created with the attribution footer live. The repo and the flag order had nothing to do with it; the SPELLING of the path did. `block_prose_style_commit.py` hit the same wall on 2026-09-25 (#09fd19cd) and answered it with the same helper, `shellscan.assignments_before`. A name still carrying `$` or a backtick afterwards is unreadable and fails open as before.
+    """
+
+    def sub(match):
+        key = match.group(2) or match.group(3)
+        return names.get(key, match.group(0))
+
+    return SHELL_VAR.sub(sub, name) if "$" in name else name
+
+
+def _bodies_for(pattern, strip, cmd, root, names):
+    """One spelling's worth of `grep -oE <pattern> | sed -E 's/<strip>//'`, resolved and read.
+
+    Returns `(bodies, written)`, `written` saying that this same command writes one of the named files, so its content is in the command text rather than on disk.
+    """
     bodies = []
+    written = False
     for match in hookio.grep_o(pattern, cmd):
-        name = hookio.sed_sub(strip, "", match).rstrip("\n")
-        if name in {"", "-"}:
+        raw = hookio.sed_sub(strip, "", match).rstrip("\n")
+        if raw in {"", "-"}:
             continue
-        # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810).
-        if shellscan.writes_file(cmd, name):
+        name = _expand(raw, names)
+        # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810). Asked for BOTH spellings, because the redirect is usually spelled the way the flag is (`> $S/pr.md ... --body-file $S/pr.md`) and sometimes not.
+        if shellscan.writes_file(cmd, raw, name):
+            written = True
+            continue
+        if "$" in name or "`" in name:
             continue
         # AN UNRESOLVED ROOT DROPS THE SECOND CANDIDATE RATHER THAN DEGRADING IT. With `root` empty the rooted spelling collapses to the absolute path "/<name>", which is a different file on the filesystem, and reading its bytes as a commit message body is a verdict about the wrong file.
         for cand in (name, "%s/%s" % (root, name)) if root else (name,):
@@ -143,7 +210,7 @@ def _bodies_for(pattern, strip, cmd, root):
                 with contextlib.suppress(OSError):
                     bodies.append(path.read_text(encoding="utf-8", errors="surrogateescape"))
                 break
-    return bodies
+    return bodies, written
 
 
 def run(ev):
@@ -166,9 +233,13 @@ def run(ev):
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(
         ["rev-parse", "--show-toplevel"], cwd=ev.cwd, want_rc=True
     )
-    for body in _commit_file_bodies(cmd, root):
+    bodies, written = _commit_file_bodies(cmd, root)
+    for body in bodies:
         if hookio.grep_q(TRAILER_OR_FOOTER, body, ignore_case=True):
             ev.warn(MESSAGE)
             return hookio.DENY
+    if written and hookio.grep_q(INLINE_FOOTER, cmd, ignore_case=True):
+        ev.warn(MESSAGE)
+        return hookio.DENY
 
     return hookio.ALLOW
