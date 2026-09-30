@@ -1505,6 +1505,7 @@
     ],
     ".ci/scripts/ci/ci-trace.py": [
       "CI_TRACE_MAX_READ_FAILURES",
+      "CI_TRACE_NOCI_GRACE_S",
       "CI_TRACE_POLL_S",
       "CI_TRACE_TIMEOUT_S"
     ],

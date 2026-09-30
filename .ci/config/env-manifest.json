@@ -240,6 +240,7 @@
       "CI_SHA",
       "CI_TEMP",
       "CI_TRACE_MAX_READ_FAILURES",
+      "CI_TRACE_NOCI_GRACE_S",
       "CI_TRACE_POLL_S",
       "CI_TRACE_TIMEOUT_S",
       "CLAUDE_ARGS_SENT",
