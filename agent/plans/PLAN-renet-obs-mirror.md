@@ -94,7 +94,8 @@ D2 as ruled covers CI only: a private GHCR artifact is unreachable from a custom
 
 ## Tasks
 
-- [ ] P1 renet: `cephZypperMirror` (env, then /etc/rediacc/ceph-zypper-mirror; validated; logged) wired into `supportedPlan`; cephpkg comment + `MirrorConfigPath`; opsconfig `CephZypperMirror`; ops up writes the file on every VM; tests with controls
+- [x] P1 renet: `cephZypperMirror` (env, then /etc/rediacc/ceph-zypper-mirror; validated; logged) wired into `supportedPlan`; cephpkg comment + `MirrorConfigPath`; opsconfig `CephZypperMirror`; ops up writes the file on every VM; tests with controls
+    (ticked) 2026-09-30T08:53:34Z by d778be9d: renet 3372cbb + 335ce80: cephZypperMirror wired into supportedPlan (cmd/renet/ceph_install.go:153), ops up writes/removes /etc/rediacc/ceph-zypper-mirror; go test ./cmd/renet/ ./pkg/infra/cephpkg/ ./pkg/infra/opsconfig/ ok, 9 mirror subtests with controls; renet quality rc=0
 - [ ] P2 console: obs_mirror.py (upstream, capture, fetch, serve) with unit tests and the capture-time positive/negative container checks; ci-obs-mirror.yml; merge, then dispatch to capture 2.97 while OBS serves it (branch dispatch if P2 cannot merge first)
 - [ ] P3 renet_pkg_matrix `--obs-mirror` and `check_upstream`; ct-tests matrix login + flag; E2E fetch/serve/env; one full-ci run
 - [ ] P4 rehearsal dispatch with OBS blocked, recorded in the round log

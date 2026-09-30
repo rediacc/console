@@ -1165,6 +1165,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-renet-obs-mirror.md": {
+      "status": "active",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 4,
+      "done": 1,
+      "open_sigs": [
+        "55ffd3c5",
+        "8fd517f8",
+        "9dbe8909",
+        "d1494aea"
+      ],
+      "done_sigs": [
+        "98b94872"
+      ]
+    },
     "agent/plans/PLAN-repair-prose-style-findings.md": {
       "status": "held",
       "owner": "d778be9d",
