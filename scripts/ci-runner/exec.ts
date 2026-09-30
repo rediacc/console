@@ -11,6 +11,7 @@
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 import type { GateSpec } from './manifest';
 
@@ -21,10 +22,48 @@ export interface ExecOutcome {
   stderr: string;
   ms: number;
   /**
+   * User+system CPU of every descendant the gate's shell reaped (bash `times`, second line: RUSAGE_CHILDREN). Absent on Windows-native, where the wrapper is not used, and when the wrapper itself died before reporting (a signal to the outer shell). A descendant that was reparented away (a daemon) is NOT counted; run.ts cross-checks against the /proc sampler for that.
+   */
+  cpuMs?: number;
+  /**
    * Set when the process exited 0 but the runner still counts it a failure.
    * Carries the diagnostic to print in place of an exit code.
    */
   vacuity?: string;
+}
+
+/**
+ * THE RUSAGE WRAPPER (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.1). The gate runs in a SUBSHELL with fd 3 closed, and the outer shell writes `times` to fd 3 after reaping it.
+ *
+ * A subshell, not the plan's `trap "times >&3" EXIT; eval "$1" 3>&-`, measured 2026-09-30 for two reasons: an `exit N` inside the gate runs the EXIT trap while `3>&-` is still in force, so the report is lost for exactly the gates that exit explicitly; and a gate that sets its own EXIT trap replaces the wrapper's (bash has one slot). Closing fd 3 for the gate keeps a daemon that inherits it from holding the pipe open and delaying `close`.
+ *
+ * The positional parameters are cleared and `$0` stays `bash`, so the gate body sees what a bare `bash -c <run>` gave it. Cost: one extra fork per gate, and a signal-killed gate now surfaces as exit 128+n from the outer shell, which settle() maps back to the signal message.
+ */
+const RUSAGE_WRAPPER =
+  '( __ci_run=$1; shift; eval "$__ci_run" ) 3>&-; __ci_rc=$?; times >&3; exit $__ci_rc';
+
+/** Seconds from one `times` field, `1m2.345s`; the decimal mark follows LC_NUMERIC. */
+function timesField(field: string): number {
+  const m = /^(\d+)m([\d.,]+)s$/.exec(field);
+  return m === null ? Number.NaN : Number(m[1]) * 60 + Number(m[2].replace(',', '.'));
+}
+
+/** The children line of `times` output, as ms of user+sys; undefined when the report is missing or malformed. */
+function parseTimes(text: string): number | undefined {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return undefined;
+  const fields = lines[1].trim().split(/\s+/);
+  if (fields.length !== 2) return undefined;
+  const total = timesField(fields[0]) + timesField(fields[1]);
+  return Number.isFinite(total) ? Math.round(total * 1000) : undefined;
+}
+
+/** The signal a shell exit status of 128+n stands for, or undefined when it is an ordinary status. */
+function signalFromStatus(code: number): string | undefined {
+  if (code <= 128 || code > 128 + 64) return undefined;
+  const n = code - 128;
+  const name = Object.entries(os.constants.signals).find(([, v]) => v === n)?.[0];
+  return name ?? `signal ${n}`;
 }
 
 export interface ExecOptions {
@@ -80,11 +119,27 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
 
     // bash, not sh: several gate bodies use bashisms, and npm runs scripts through a shell anyway. stdin is closed so a gate that waits on input fails instead of hanging the whole pool.
     // The gate's declared `env` (the same values its CI step sets) goes into the child. Without it the local run was not the CI run: tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL was declared here and never applied, so the gate failed in every clean clone and passed in CI (2026-09-26).
-    const child = spawn('bash', ['-c', spec.run], {
-      cwd: opts.cwd,
-      env: spec.env ? { ...process.env, ...localEnv(spec.env) } : process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    // Windows-native (Git Bash) keeps the bare spawn and reports wall time only: its `times` reports nothing useful for native children.
+    const wrapped = process.platform !== 'win32';
+    const child = spawn(
+      'bash',
+      wrapped ? ['-c', RUSAGE_WRAPPER, 'bash', spec.run] : ['-c', spec.run],
+      {
+        cwd: opts.cwd,
+        env: spec.env ? { ...process.env, ...localEnv(spec.env) } : process.env,
+        // fd 3 is opened on every platform so the spawn has one shape; unwrapped, nothing writes to it.
+        stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
+      }
+    );
+    const rusage: string[] = [];
+    // Read even when unwrapped: a pipe left paused may never reach EOF, and `close` waits for every stdio stream.
+    const fd3 = child.stdio[3];
+    if (fd3 !== null && fd3 !== undefined && 'setEncoding' in fd3) {
+      fd3.setEncoding('utf8');
+      fd3.on('data', (c: string) => {
+        rusage.push(c);
+      });
+    }
 
     // RECORDS MUST LAND OUTSIDE THE REPO. A relative or in-tree profileDir writes capture files into the working tree -- the ci-runner's own selftest did exactly that and left selftest_pass.jsonl / selftest_fail.jsonl at the repo root. An unusable directory means no profile, never a file in the tree.
     const profileDir =
@@ -123,12 +178,13 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
       }
     }
 
-    child.stdout.setEncoding('utf8');
-    child.stderr.setEncoding('utf8');
-    child.stdout.on('data', (c: string) => {
+    // Optional chains only because a four-entry stdio loses node's typed overload; both are 'pipe' above, so neither is ever null.
+    child.stdout?.setEncoding('utf8');
+    child.stderr?.setEncoding('utf8');
+    child.stdout?.on('data', (c: string) => {
       out.push(c);
     });
-    child.stderr.on('data', (c: string) => {
+    child.stderr?.on('data', (c: string) => {
       (opts.mergeOutput ? out : err).push(c);
     });
 
@@ -141,6 +197,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         stdout,
         stderr,
         ms: Date.now() - started,
+        cpuMs: wrapped ? parseTimes(rusage.join('')) : undefined,
         vacuity: vacuityCheck(spec, code, stdout + stderr),
       });
     };
@@ -149,8 +206,10 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
       settle(127, `ci-runner: could not spawn gate: ${e.message}\n`);
     });
     child.on('close', (code, signal) => {
-      if (signal === null) settle(code);
-      else settle(null, `ci-runner: gate terminated by signal ${signal}\n`);
+      // The wrapper's outer shell reports a killed gate as 128+n (it cannot exec the last command, so the gate is never the spawned process itself). Mapped back to the message a direct kill always produced, so "killed" stays distinguishable from a verdict. Exit 77 is below the range and passes through untouched.
+      const viaStatus = wrapped && code !== null ? signalFromStatus(code) : undefined;
+      if (signal === null && viaStatus === undefined) settle(code);
+      else settle(null, `ci-runner: gate terminated by signal ${signal ?? viaStatus}\n`);
     });
   });
 }

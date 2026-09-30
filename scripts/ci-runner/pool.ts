@@ -103,6 +103,20 @@ export interface GateResult {
   reason?: string;
   /** On a zero-exit gate the runner failed anyway; see exec.ts vacuityCheck. */
   vacuity?: string;
+  /** CPU of the gate's reaped process tree (exec.ts RUSAGE_WRAPPER); run.ts may raise it from the /proc sampler. */
+  cpuMs?: number;
+  /** Peak summed RSS of the gate's tree from the /proc sampler capture, when one exists. */
+  rssMb?: number;
+  /** The sampler's CPU exceeded `times` by more than 20%: descendants escaped the reap, and cpuMs holds the larger value. */
+  undercount?: boolean;
+  /**
+   * Epoch ms: when every `needs` was satisfied (the gate entered the ready queue), when it was launched, and when its process settled. Measurement only (PLAN-ci-quick-cpu-scheduling 2.3); nothing schedules on them.
+   */
+  readyAt?: number;
+  startAt?: number;
+  endAt?: number;
+  /** The last admission check that held a ready gate back before it launched: the slot budget, the heavy limit, or a claim. Absent when it launched on first sight. */
+  blockedBy?: 'slot' | 'heavy' | 'claim';
 }
 
 export interface PoolOptions {
@@ -219,7 +233,11 @@ export async function runPool(
   const position = new Map(specs.map((spec, i) => [spec.id, i]));
   const results = new Map<string, GateResult>();
   const unstarted = new Set(specs.map((spec) => spec.id));
-  const running = new Map<string, Promise<{ id: string; outcome: ExecOutcome }>>();
+  const running = new Map<string, Promise<{ id: string; outcome: ExecOutcome; endAt: number }>>();
+  // Timestamps and the last hold-back reason, recorded on the side so the admission logic below reads exactly as it did before they existed.
+  const readyAt = new Map<string, number>();
+  const startAt = new Map<string, number>();
+  const blockedBy = new Map<string, 'slot' | 'heavy' | 'claim'>();
   // The isolation contract's two claim strengths. Exclusive is a set because a resource has at most one writer at a time; shared is a COUNT because any number of readers may hold one and the last one out has to be the one that releases it. A plain Set here would have the first reader to finish unlock a resource three others were still reading, which is the shape of bug that only
   // ever shows up as an unreproducible mid-enumeration error.
   const heldExclusive = new Set<string>();
@@ -266,10 +284,11 @@ export async function runPool(
     if (spec.heavy === true) heavyRunning += 1;
     for (const r of spec.mutex ?? []) heldExclusive.add(r);
     for (const r of sharedClaims(spec)) heldShared.set(r, (heldShared.get(r) ?? 0) + 1);
+    startAt.set(spec.id, Date.now());
     opts.onStart?.(spec);
     running.set(
       spec.id,
-      opts.exec(spec).then((outcome) => ({ id: spec.id, outcome }))
+      opts.exec(spec).then((outcome) => ({ id: spec.id, outcome, endAt: Date.now() }))
     );
   };
 
@@ -300,10 +319,22 @@ export async function runPool(
       .filter((spec) => (spec.needs ?? []).every((need) => results.get(need)?.status === 'ok'))
       .sort(rank);
 
+    const now = Date.now();
+    for (const spec of ready) if (!readyAt.has(spec.id)) readyAt.set(spec.id, now);
+
     for (const spec of ready) {
-      if (slots + effWeight(spec) > opts.jobs) continue;
-      if (spec.heavy === true && heavyRunning >= opts.heavyLimit) continue;
-      if (blockedByClaim(spec)) continue;
+      if (slots + effWeight(spec) > opts.jobs) {
+        blockedBy.set(spec.id, 'slot');
+        continue;
+      }
+      if (spec.heavy === true && heavyRunning >= opts.heavyLimit) {
+        blockedBy.set(spec.id, 'heavy');
+        continue;
+      }
+      if (blockedByClaim(spec)) {
+        blockedBy.set(spec.id, 'claim');
+        continue;
+      }
       launch(spec);
     }
 
@@ -319,7 +350,7 @@ export async function runPool(
 
     if (running.size === 0) continue;
 
-    const { id, outcome } = await Promise.race(running.values());
+    const { id, outcome, endAt } = await Promise.race(running.values());
     const spec = mustGet(byId, id);
     running.delete(id);
     slots -= effWeight(spec);
@@ -344,6 +375,11 @@ export async function runPool(
       stderr: outcome.stderr,
       rerun: spec.run,
       vacuity: outcome.vacuity,
+      cpuMs: outcome.cpuMs,
+      readyAt: readyAt.get(id),
+      startAt: startAt.get(id),
+      endAt,
+      blockedBy: blockedBy.get(id),
     });
     if (failed && opts.failFast) stopped = true;
   }

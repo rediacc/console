@@ -38,7 +38,13 @@ import { fileURLToPath } from 'node:url';
 import { execGate } from './exec';
 import { GATES, type GateSpec } from './manifest';
 import { buildGraph, type GateResult, runPool } from './pool';
-import { createReporter } from './report';
+import {
+  type CpuTick,
+  createReporter,
+  criticalPath,
+  type Utilisation,
+  utilisation,
+} from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
 import { unitsFrom } from './unit-enumerators';
@@ -479,8 +485,21 @@ function select(
 export interface DurationRecord {
   ewma: number;
   recent: number[];
+  /** CPU ms of the last RECENT_KEEP passing runs that reported one (PLAN-ci-quick-cpu-scheduling 2.1), oldest first. Absent until a wrapped run measures the gate. */
+  cpu?: number[];
+  /** Peak RSS MB of the last RECENT_KEEP passing runs with a sampler capture, oldest first. */
+  rssMb?: number[];
 }
 const RECENT_KEEP = 5;
+
+/** A finite, non-negative number list from an untrusted cache field; undefined when nothing usable is there. */
+function numberList(raw: unknown): number[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const kept = raw.filter(
+    (n): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0
+  );
+  return kept.length > 0 ? kept.slice(-RECENT_KEEP) : undefined;
+}
 
 function loadDurationRecords(cachePath: string | undefined): Map<string, DurationRecord> {
   const records = new Map<string, DurationRecord>();
@@ -492,12 +511,23 @@ function loadDurationRecords(cachePath: string | undefined): Map<string, Duratio
       if (typeof v === 'number' && Number.isFinite(v) && v > 0) {
         records.set(id, { ewma: v, recent: [v] });
       } else if (v !== null && typeof v === 'object') {
-        const { ewma, recent } = v as { ewma?: unknown; recent?: unknown };
+        const { ewma, recent, cpu, rssMb } = v as {
+          ewma?: unknown;
+          recent?: unknown;
+          cpu?: unknown;
+          rssMb?: unknown;
+        };
         if (typeof ewma !== 'number' || !Number.isFinite(ewma) || ewma <= 0) continue;
         const kept = Array.isArray(recent)
           ? recent.filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
           : [];
-        records.set(id, { ewma, recent: kept.length > 0 ? kept : [ewma] });
+        // cpu and rssMb MUST be carried here: saveDurations rebuilds the whole file from this map, so a field this loader drops is erased from every gate on the next run, including gates that run did not touch.
+        const rec: DurationRecord = { ewma, recent: kept.length > 0 ? kept : [ewma] };
+        const cpuKept = numberList(cpu);
+        const rssKept = numberList(rssMb);
+        if (cpuKept !== undefined) rec.cpu = cpuKept;
+        if (rssKept !== undefined) rec.rssMb = rssKept;
+        records.set(id, rec);
       }
     }
   } catch {
@@ -527,14 +557,155 @@ function saveDurations(
       const old = prior.get(r.id);
       const ewma =
         old === undefined ? r.ms : Math.round(old * (1 - EWMA_ALPHA) + r.ms * EWMA_ALPHA);
-      const recent = [...(next[r.id]?.recent ?? []), r.ms].slice(-RECENT_KEEP);
-      next[r.id] = { ewma, recent };
+      const had = next[r.id];
+      const recent = [...(had?.recent ?? []), r.ms].slice(-RECENT_KEEP);
+      const rec: DurationRecord = { ewma, recent };
+      const cpu = r.cpuMs !== undefined ? [...(had?.cpu ?? []), r.cpuMs] : had?.cpu;
+      const rssMb = r.rssMb !== undefined ? [...(had?.rssMb ?? []), r.rssMb] : had?.rssMb;
+      if (cpu !== undefined) rec.cpu = cpu.slice(-RECENT_KEEP);
+      if (rssMb !== undefined) rec.rssMb = rssMb.slice(-RECENT_KEEP);
+      next[r.id] = rec;
     }
     fs.mkdirSync(path.dirname(cachePath), { recursive: true });
     fs.writeFileSync(cachePath, `${JSON.stringify(next, null, 2)}\n`);
   } catch {
     // Same reasoning as loadDurations: a cache write is never load-bearing.
   }
+}
+
+/**
+ * One reading of the machine's aggregate CPU counters: /proc/stat on Linux (the only source with iowait), os.cpus() elsewhere. Undefined when neither answers.
+ */
+function readCpuTick(): { tick: CpuTick; cores: number } | undefined {
+  const t = Date.now();
+  try {
+    const stat = fs.readFileSync('/proc/stat', 'utf-8');
+    const lines = stat.split('\n');
+    const agg = lines.find((l) => l.startsWith('cpu '));
+    if (agg !== undefined) {
+      // user nice system idle iowait irq softirq steal; guest time is already inside user.
+      const [user, nice, system, idle, iowait, irq, softirq, steal] = agg
+        .trim()
+        .split(/\s+/)
+        .slice(1, 9)
+        .map((n) => Number(n) || 0);
+      const busy = user + nice + system + irq + softirq + steal;
+      return {
+        tick: { t, busy, idle, iowait, total: busy + idle + iowait },
+        cores: lines.filter((l) => /^cpu\d+ /.test(l)).length,
+      };
+    }
+  } catch {
+    /* not Linux: fall through to os.cpus() */
+  }
+  const cpus = os.cpus();
+  if (cpus.length === 0) return undefined;
+  let busy = 0;
+  let idle = 0;
+  for (const c of cpus) {
+    busy += c.times.user + c.times.nice + c.times.sys + c.times.irq;
+    idle += c.times.idle;
+  }
+  return { tick: { t, busy, idle, iowait: 0, total: busy + idle }, cores: cpus.length };
+}
+
+/** Machine CPU every 500 ms for the life of the pool (PLAN-ci-quick-cpu-scheduling 2.3). Unreferenced, so it can never keep the runner alive. */
+function startCpuSampler(): { stop: () => { ticks: CpuTick[]; cores: number } } {
+  const ticks: CpuTick[] = [];
+  let cores = 0;
+  const take = (): void => {
+    const r = readCpuTick();
+    if (r === undefined) return;
+    ticks.push(r.tick);
+    cores = r.cores;
+  };
+  take();
+  const timer = setInterval(take, 500);
+  timer.unref();
+  return {
+    stop: () => {
+      clearInterval(timer);
+      take();
+      return { ticks, cores };
+    },
+  };
+}
+
+/** What a gate's /proc sampler capture says: peak summed RSS and the largest summed CPU any one tick saw. */
+function readCapture(file: string, runId: string | undefined): { rssMb?: number; cpuMs?: number } {
+  let text: string;
+  try {
+    text = fs.readFileSync(file, 'utf-8');
+  } catch {
+    return {};
+  }
+  let peakKb = 0;
+  let peakTicks = 0;
+  let clkTck = 100;
+  let sampled = false;
+  for (const line of text.split('\n')) {
+    if (line === '') continue;
+    let rec: {
+      k?: string;
+      run?: string;
+      clk_tck?: number;
+      p?: { rss_kb?: number; utime?: number; stime?: number; cutime?: number; cstime?: number }[];
+    };
+    try {
+      rec = JSON.parse(line) as typeof rec;
+    } catch {
+      continue; // a torn last line from a sampler still writing
+    }
+    // A nested runner writes beside the outer one in the same directory, so only this run's lines count.
+    if (runId !== undefined && rec.run !== runId) continue;
+    if (rec.k === 'RUN' && typeof rec.clk_tck === 'number' && rec.clk_tck > 0) clkTck = rec.clk_tck;
+    if (rec.k !== 'S' || !Array.isArray(rec.p)) continue;
+    sampled = true;
+    let kb = 0;
+    let ticks = 0;
+    // Summing cutime over the LIVE processes of one tick counts each reaped descendant once: it sits in its reaper's cutime and is no longer live itself. RSS double-counts shared pages, which errs conservative.
+    for (const p of rec.p) {
+      kb += p.rss_kb ?? 0;
+      ticks += (p.utime ?? 0) + (p.stime ?? 0) + (p.cutime ?? 0) + (p.cstime ?? 0);
+    }
+    peakKb = Math.max(peakKb, kb);
+    peakTicks = Math.max(peakTicks, ticks);
+  }
+  if (!sampled) return {};
+  return {
+    rssMb: peakKb > 0 ? Math.round(peakKb / 1024) : undefined,
+    cpuMs: Math.round((peakTicks * 1000) / clkTck),
+  };
+}
+
+/** The sampler's file name for a gate id; mirrors exec.ts. */
+function captureFile(profileDir: string, id: string): string {
+  return path.join(profileDir, `${id.replace(/[^A-Za-z0-9_.-]/g, '_')}.jsonl`);
+}
+
+/**
+ * Fold each gate's sampler capture into its result: peak RSS, and the undercount cross-check of PLAN-ci-quick-cpu-scheduling 2.1. `times` sees only descendants the gate's shell reaped; the sampler sees whatever was alive under the gate at each tick, so a sampler total more than 20% above `times` means something escaped the reap, and the larger value stands.
+ */
+function applyCaptures(
+  results: readonly GateResult[],
+  profileDir: string | undefined,
+  runId: string | undefined
+): GateResult[] {
+  if (profileDir === undefined) return [...results];
+  return results.map((r) => {
+    if (r.status === 'skipped') return r;
+    const cap = readCapture(captureFile(profileDir, r.id), runId);
+    const next: GateResult = { ...r };
+    if (cap.rssMb !== undefined) next.rssMb = cap.rssMb;
+    if (cap.cpuMs !== undefined) {
+      if (r.cpuMs === undefined) next.cpuMs = cap.cpuMs;
+      else if (cap.cpuMs > r.cpuMs * 1.2) {
+        next.cpuMs = cap.cpuMs;
+        next.undercount = true;
+      }
+    }
+    return next;
+  });
 }
 
 const SELFTEST_OUT = 'ci-runner-selftest-stdout-marker';
@@ -927,6 +1098,97 @@ async function selftest(): Promise<number> {
     );
   }
 
+  // THE RUSAGE WRAPPER (PLAN-ci-quick-cpu-scheduling 2.1), both directions: a busy gate must read as CPU and a sleeping one must not, or cpuMs is a wall clock under another name. Then the two exit paths the wrapper sits in front of: a signal must still read as a signal, and CANNOT_RUN must still reach the pool as blocked.
+  const wrapOpts = { cwd: REPO_ROOT, mergeOutput: false };
+  if (process.platform !== 'win32') {
+    const busy = await execGate(
+      syntheticSpec('selftest:cpu-busy', 'e=$((SECONDS+2)); while (( SECONDS < e )); do :; done'),
+      wrapOpts
+    );
+    require_(
+      (busy.cpuMs ?? 0) > 500,
+      `a busy gate must report cpuMs > 500, got ${busy.cpuMs} over ${busy.ms} ms wall`
+    );
+    const idle = await execGate(syntheticSpec('selftest:cpu-sleep', 'sleep 1'), wrapOpts);
+    require_(
+      idle.cpuMs !== undefined && idle.cpuMs < 100,
+      `CONTROL: a sleeping gate must report cpuMs < 100, got ${idle.cpuMs} -- or cpuMs is wall time`
+    );
+    const killed = await execGate(syntheticSpec('selftest:kill9', 'kill -9 $$'), wrapOpts);
+    require_(
+      killed.code === null && killed.stderr.includes('terminated by signal'),
+      `kill -9 $$ must still report a signal, got code ${killed.code}`
+    );
+    const termed = await execGate(syntheticSpec('selftest:term', 'kill -TERM $BASHPID'), wrapOpts);
+    require_(
+      termed.code === null && termed.stderr.includes('signal SIGTERM'),
+      `a gate killed by SIGTERM (outer status 143) must report the signal, got code ${termed.code}`
+    );
+  }
+  const cannot = await runPool([syntheticSpec('selftest:cannot-run', 'exit 77')], {
+    jobs: 1,
+    heavyLimit: 1,
+    failFast: false,
+    durations: new Map(),
+    exec: (spec) => execGate(spec, wrapOpts),
+  });
+  require_(cannot[0]?.status === 'blocked', `exit 77 must stay blocked, got ${cannot[0]?.status}`);
+  require_(
+    cannot[0]?.startAt !== undefined &&
+      cannot[0]?.endAt !== undefined &&
+      cannot[0].endAt >= cannot[0].startAt,
+    'the pool must stamp startAt/endAt on a result'
+  );
+
+  // THE DURATION CACHE MUST KEEP cpu AND rssMb ACROSS A RUN THAT DID NOT TOUCH THE GATE. saveDurations rebuilds the file from loadDurationRecords, so a field the loader drops vanishes from every gate on the next write; the second save below names only another gate for exactly that reason.
+  const cpuDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-cpu-'));
+  const cpuCache = path.join(cpuDir, 'gate-durations.json');
+  saveDurations(cpuCache, new Map(), [
+    { ...durResult('selftest:cpu-a', 'ok', 2000), cpuMs: 1500, rssMb: 120 },
+    durResult('selftest:cpu-none', 'ok', 900),
+  ]);
+  saveDurations(cpuCache, loadDurations(cpuCache), [durResult('selftest:cpu-b', 'ok', 700)]);
+  const cpuRecords = loadDurationRecords(cpuCache);
+  fs.rmSync(cpuDir, { recursive: true, force: true });
+  const kept = cpuRecords.get('selftest:cpu-a');
+  require_(
+    kept?.cpu?.[0] === 1500 && kept?.rssMb?.[0] === 120,
+    `cpu/rssMb must survive a cache round trip, got ${JSON.stringify(kept)}`
+  );
+  require_(
+    cpuRecords.get('selftest:cpu-none')?.cpu === undefined,
+    'CONTROL: a gate that reported no cpuMs must not gain a cpu field'
+  );
+
+  // THE SAMPLER CROSS-CHECK: a capture that saw far more CPU than `times` flags undercount and wins; one within 20% leaves `times` alone. Only this run's lines count.
+  const capDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-cap-'));
+  const tick = (run: string, rss: number, cpuTicks: number): string =>
+    `${JSON.stringify({ v: 1, k: 'S', run, p: [{ rss_kb: rss, utime: cpuTicks, stime: 0, cutime: 0, cstime: 0 }] })}\n`;
+  fs.writeFileSync(
+    captureFile(capDir, 'selftest:cap'),
+    tick('r1', 102400, 50) +
+      tick('r1', 204800, 300) +
+      tick('other-run', 9999999, 99999) +
+      `${JSON.stringify({ v: 1, k: 'RUN', run: 'r1', clk_tck: 100 })}\n`
+  );
+  const [under, fine] = applyCaptures(
+    [
+      { ...durResult('selftest:cap', 'ok', 4000), cpuMs: 1000 },
+      { ...durResult('selftest:cap', 'ok', 4000), cpuMs: 2900 },
+    ],
+    capDir,
+    'r1'
+  );
+  fs.rmSync(capDir, { recursive: true, force: true });
+  require_(
+    under.undercount === true && under.cpuMs === 3000 && under.rssMb === 200,
+    `a sampler total 3x times must flag undercount and win, got ${JSON.stringify(under)}`
+  );
+  require_(
+    fine.undercount === undefined && fine.cpuMs === 2900,
+    `CONTROL: a sampler within 20% of times must leave it alone, got ${JSON.stringify(fine)}`
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -934,7 +1196,9 @@ async function selftest(): Promise<number> {
     process.stderr.write(text);
     return 1;
   }
-  process.stdout.write(`ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4 + 12} assertions)\n`);
+  process.stdout.write(
+    `ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6} assertions)\n`
+  );
   return 0;
 }
 
@@ -1011,6 +1275,8 @@ interface Receipt {
   finishedAt: string;
   /** The checkout the gates actually ran in. Differs from the pushing checkout when `--receipt-out` wrote this from a snapshot clone. */
   judgedRoot: string;
+  /** Where the run's CPU went (report.ts Utilisation). Diagnostic; the push guard does not read it. */
+  utilisation: Utilisation | null;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -1215,7 +1481,8 @@ async function main(): Promise<number> {
   const started = Date.now();
   const meta = { jobs, failFast: opts.failFast, selection: selection.description, wallMs: 0 };
   reporter.header(graph.length, meta);
-  const results = await runPool(graph, {
+  const cpuSampler = startCpuSampler();
+  const pooled = await runPool(graph, {
     jobs,
     heavyLimit,
     failFast: opts.failFast,
@@ -1232,9 +1499,18 @@ async function main(): Promise<number> {
     },
   });
   meta.wallMs = Date.now() - started;
+  const cpu = cpuSampler.stop();
+  const results = applyCaptures(pooled, PROFILE_OPTS.profileDir, PROFILE_OPTS.profileRunId);
+  const util: Utilisation | undefined = utilisation(
+    cpu.ticks,
+    cpu.cores,
+    results,
+    criticalPath(graph, results),
+    meta.wallMs
+  );
 
   saveDurations(cachePath, durations, results);
-  const exitCode = reporter.footer(results, meta);
+  const exitCode = reporter.footer(results, { ...meta, util });
 
   // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
   //
@@ -1291,6 +1567,7 @@ async function main(): Promise<number> {
         wallMs: meta.wallMs,
         finishedAt: new Date().toISOString(),
         judgedRoot: REPO_ROOT,
+        utilisation: util ?? null,
       },
       receiptPathFor(opts),
       humanOut

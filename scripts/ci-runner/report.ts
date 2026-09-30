@@ -15,7 +15,143 @@
  *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
+import type { GateSpec } from './manifest';
 import type { GateResult } from './pool';
+
+/** One cumulative reading of the machine's CPU counters (/proc/stat's aggregate line, or os.cpus() off Linux). Units are whatever the source counts in; only ratios are used. */
+export interface CpuTick {
+  /** Epoch ms of the reading. */
+  t: number;
+  busy: number;
+  idle: number;
+  /** Always 0 off Linux, where os.cpus() has no iowait. */
+  iowait: number;
+  total: number;
+}
+
+/**
+ * Where the run's CPU went (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.3). MEASUREMENT ONLY: nothing schedules on it yet. The per-5 s strip is what shows the tail -- the pool full and busy early, then fewer cores as the long gates drain.
+ */
+export interface Utilisation {
+  /** Logical CPUs the counters cover, which is the whole machine, not the pool's slot count. */
+  cores: number;
+  /** Share of all cores' time spent busy between the first and last tick, 0..1. */
+  busyFrac: number;
+  busyCoreS: number;
+  idleCoreS: number;
+  iowaitCoreS: number;
+  /** Sum of the gates' own cpuMs, in core-seconds, and how many gates reported one. */
+  gatesCpuS: number;
+  gatesMeasured: number;
+  /** Gates whose /proc sampler saw more CPU than `times` did (descendants that escaped the reap). */
+  undercount: string[];
+  /** Mean busy cores in each 5 s bucket from the start of the run. */
+  strip: number[];
+  /** The longest `needs` chain by measured ms, and its gates in order. */
+  criticalPathMs: number;
+  criticalPath: string[];
+  /** gatesCpuS / cores, in ms: the wall the gates' CPU cannot beat on this machine. */
+  cpuFloorMs: number;
+  floorMs: number;
+  /** wall / floor. */
+  wallOverFloor: number;
+  /** The five longest waits between ready and launched. */
+  queueDelays: { id: string; ms: number; blockedBy: string }[];
+}
+
+const STRIP_MS = 5000;
+
+/** Longest path over `needs`, weighting each gate by its measured ms; a gate that did not run weighs 0. */
+export function criticalPath(
+  specs: readonly GateSpec[],
+  results: readonly GateResult[]
+): { ms: number; ids: string[] } {
+  const ms = new Map(results.map((r) => [r.id, r.ms]));
+  const byId = new Map(specs.map((s) => [s.id, s]));
+  const memo = new Map<string, { ms: number; ids: string[] }>();
+  const walk = (id: string): { ms: number; ids: string[] } => {
+    const hit = memo.get(id);
+    if (hit !== undefined) return hit;
+    let best = { ms: 0, ids: [] as string[] };
+    for (const need of byId.get(id)?.needs ?? []) {
+      const sub = walk(need);
+      if (sub.ms > best.ms) best = sub;
+    }
+    const own = { ms: best.ms + (ms.get(id) ?? 0), ids: [...best.ids, id] };
+    memo.set(id, own);
+    return own;
+  };
+  let top = { ms: 0, ids: [] as string[] };
+  for (const s of specs) {
+    const p = walk(s.id);
+    if (p.ms > top.ms) top = p;
+  }
+  return top;
+}
+
+/** Fold the CPU ticks and the per-gate timings into the footer's numbers. Undefined when fewer than two ticks exist (a run shorter than one sampling interval says nothing about utilisation). */
+export function utilisation(
+  ticks: readonly CpuTick[],
+  cores: number,
+  results: readonly GateResult[],
+  cp: { ms: number; ids: string[] },
+  wallMs: number
+): Utilisation | undefined {
+  if (ticks.length < 2 || cores < 1) return undefined;
+  const first = ticks[0];
+  const last = ticks[ticks.length - 1];
+  const dTotal = last.total - first.total;
+  const spanS = (last.t - first.t) / 1000;
+  if (dTotal <= 0 || spanS <= 0) return undefined;
+  const coreS = (d: number): number => (d / dTotal) * cores * spanS;
+
+  // Each bucket reads the tick nearest its two edges; a bucket with no tick inside it repeats nothing and reads 0.
+  const strip: number[] = [];
+  for (let edge = first.t; edge < last.t; edge += STRIP_MS) {
+    const inside = ticks.filter((k) => k.t >= edge && k.t <= edge + STRIP_MS);
+    const a = inside[0];
+    const b = inside[inside.length - 1];
+    if (a === undefined || b === undefined || b.total <= a.total) {
+      strip.push(0);
+      continue;
+    }
+    strip.push(((b.busy - a.busy) / (b.total - a.total)) * cores);
+  }
+
+  const measured = results.filter((r) => r.cpuMs !== undefined);
+  const gatesCpuS = measured.reduce((sum, r) => sum + (r.cpuMs ?? 0), 0) / 1000;
+  const cpuFloorMs = (gatesCpuS / cores) * 1000;
+  const floorMs = Math.max(cp.ms, cpuFloorMs);
+  const queueDelays = results
+    .filter((r) => r.readyAt !== undefined && r.startAt !== undefined)
+    .map((r) => ({
+      id: r.id,
+      ms: (r.startAt ?? 0) - (r.readyAt ?? 0),
+      blockedBy: r.blockedBy ?? 'none',
+    }))
+    // Under 100 ms is the spawn cost of the gates launched just before it in the same pass, not a wait.
+    .filter((d) => d.ms >= 100)
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 5);
+
+  return {
+    cores,
+    busyFrac: (last.busy - first.busy) / dTotal,
+    busyCoreS: coreS(last.busy - first.busy),
+    idleCoreS: coreS(last.idle - first.idle),
+    iowaitCoreS: coreS(last.iowait - first.iowait),
+    gatesCpuS,
+    gatesMeasured: measured.length,
+    undercount: results.filter((r) => r.undercount === true).map((r) => r.id),
+    strip,
+    criticalPathMs: cp.ms,
+    criticalPath: cp.ids,
+    cpuFloorMs,
+    floorMs,
+    wallOverFloor: floorMs > 0 ? wallMs / floorMs : 0,
+    queueDelays,
+  };
+}
 
 export interface ReporterOptions {
   /** Column width for gate ids, so the streamed lines align. */
@@ -32,6 +168,8 @@ export interface RunMeta {
   /** Human description of a partial selection, e.g. "--only check:ci-*". */
   selection?: string;
   wallMs: number;
+  /** Absent when no CPU ticks were taken (the selftest, a sub-interval run). */
+  util?: Utilisation;
 }
 
 const RULE = '='.repeat(64);
@@ -128,6 +266,30 @@ export function createReporter(opts: ReporterOptions) {
         }
       }
 
+      const u = meta.util;
+      if (u !== undefined) {
+        const cs = (n: number): string => `${n.toFixed(1)} core-s`;
+        opts.out(
+          `cpu (whole machine, other work included): ${u.cores} cores, busy ${(u.busyFrac * 100).toFixed(1)}% (${cs(u.busyCoreS)}); ` +
+            `idle ${cs(u.idleCoreS)}, iowait ${cs(u.iowaitCoreS)}; ` +
+            `gates' own cpu ${cs(u.gatesCpuS)} over ${gates(u.gatesMeasured)}` +
+            (u.undercount.length > 0 ? `, ${u.undercount.length} undercount` : '') +
+            '\n'
+        );
+        opts.out(`busy cores per 5s: ${u.strip.map((n) => n.toFixed(1)).join(' ')}\n`);
+        opts.out(
+          `floor max(CP ${secs(u.criticalPathMs)}, cpu ${secs(u.cpuFloorMs)}) = ${secs(u.floorMs)}; ` +
+            `wall = ${u.wallOverFloor.toFixed(2)} x floor\n`
+        );
+        if (u.criticalPath.length > 0) opts.out(`  critical path: ${u.criticalPath.join(' > ')}\n`);
+        if (u.queueDelays.length > 0) {
+          opts.out('queue delays (ready to launched):\n');
+          for (const d of u.queueDelays) {
+            opts.out(`  ${secs(d.ms).padStart(7)}  ${d.id} (${d.blockedBy})\n`);
+          }
+        }
+      }
+
       if (failed.length > 0) {
         opts.out('FAILED:\n');
         for (const r of failed) opts.out(`  ${pad(r.id)}  ${r.rerun}\n`);
@@ -165,6 +327,7 @@ export function createReporter(opts: ReporterOptions) {
             blocked: blocked.length,
             skipped: skipped.length,
             exitCode,
+            utilisation: meta.util ?? null,
             gates: results,
           },
           null,
