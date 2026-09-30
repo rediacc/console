@@ -104,6 +104,7 @@ import sys
 from typing import Any
 
 from rediacc_ci import log
+from rediacc_ci.core import release_age
 
 # The DNS-label cap `${s:0:40}` applies. `.ci/lib/devbox.sh:195`. Well under the 63 a label allows, because the slug also gets a `-code` / `-account` / `-db` / `-term` suffix before it becomes a hostname.
 SLUG_MAX = 40
@@ -1340,12 +1341,16 @@ class Devbox:
         if not os.path.isfile(dockerfile_dir + "/Dockerfile"):
             self.log("error", "No Dockerfile at %s" % dockerfile_dir)
             return 1
+        # NPM_BEFORE: the release-age cutoff the Dockerfile's `npm install -g` lines require (an empty one fails the build). `.ci/lib/devbox.sh` asks the same module through its `npm-before` verb.
+        npm_before = release_age.npm_before()
         self.log("step", "Building %s locally (this takes a while)" % DEVBOX_IMAGE)
         build = [
             *d,
             "build",
             "-t",
             DEVBOX_IMAGE,
+            "--build-arg",
+            "NPM_BEFORE=%s" % npm_before,
             "-f",
             dockerfile_dir + "/Dockerfile",
             dockerfile_dir,

@@ -57,6 +57,7 @@ import subprocess
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.core import release_age
 
 # How this program names itself in its own diagnostics. The twins used their own paths; a module has no such path, so the module name stands in.
 SELF = "run_in_image.py"
@@ -88,11 +89,13 @@ class Target:
     name: str
     image: str
     context: tuple[str, ...]
+    # True when the Dockerfile runs `npm install -g` and so refuses an empty `NPM_BEFORE` build-arg (the release-age cutoff). Not a twin behaviour; see `build_argv`.
+    npm_before: bool = False
 
 
 # THE TWO TOKENS THAT DIFFERED BETWEEN THE TWO TWINS, and the whole of what differed. `web` is the Astro plus agent-browser toolchain; `render` is Remotion plus chrome-headless-shell.
 TARGETS = (
-    Target("web", "rediacc/web:local", (".ci", "docker", "web")),
+    Target("web", "rediacc/web:local", (".ci", "docker", "web"), npm_before=True),
     Target("render", "rediacc/render:local", (".ci", "docker", "render")),
 )
 
@@ -174,6 +177,17 @@ def docker_argv(
     ]
 
 
+def build_argv(target: Target, root: str) -> list[str]:
+    """`docker build -t <image> <context>`, plus `--build-arg NPM_BEFORE=<cutoff>` for a target whose Dockerfile needs it.
+
+    THE BUILD-ARG IS NOT IN EITHER TWIN. `.ci/docker/web/Dockerfile` runs `npm install -g`, which resolves live, and refuses an empty `NPM_BEFORE` rather than install past the release-age window; the cutoff comes from `rediacc_ci.core.release_age`, the one implementation.
+    """
+    argv = ["docker", "build", "-t", target.image]
+    if target.npm_before:
+        argv += ["--build-arg", "NPM_BEFORE=%s" % release_age.npm_before()]
+    return [*argv, os.path.join(root, *target.context)]
+
+
 def ensure_image(target: Target, root: str) -> int:
     """`docker image inspect || { echo ...; docker build ...; }`, with its exit code.
 
@@ -197,10 +211,7 @@ def ensure_image(target: Target, root: str) -> int:
     print(BUILDING % target.image, file=sys.stderr)
     sys.stderr.flush()
     try:
-        build = subprocess.run(
-            ["docker", "build", "-t", target.image, os.path.join(root, *target.context)],
-            check=False,
-        )
+        build = subprocess.run(build_argv(target, root), check=False)
     except FileNotFoundError:
         # The same absence, one line later, where the `||` no longer catches it: `set -e` aborts the twin with bash's own 127.
         print("%s: %s" % (SELF, NOT_FOUND % "docker"), file=sys.stderr)

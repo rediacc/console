@@ -94,6 +94,55 @@ def test_a_bare_setup_node_step_is_a_finding(tmp_path: pathlib.Path) -> None:
     assert "ci.yml:5" in findings[0], findings
 
 
+def test_the_real_tree_windows_every_global_install() -> None:
+    """PROPERTY E ON THE REAL TREE, submodules included when checked out: every `npm install -g` carries `--before`, or installs only the pinned npm itself."""
+    findings, seen = lf.global_install_findings(paths.repo_root())
+    assert seen >= 10, "the scan saw %d global installs; it is not reading the tree" % seen
+    assert findings == []
+
+
+def test_the_pinned_npm_installing_itself_is_exempt_and_nothing_else_is(
+    tmp_path: pathlib.Path,
+) -> None:
+    """npm bundles every dependency, so `npm install -g npm@<pin>` resolves nothing live and needs no cutoff. Both directions: the pin alone is silent, the pin plus another package fires."""
+    dockerfile = tmp_path / "Dockerfile"
+    dockerfile.write_text(
+        'FROM node\nARG NPM_VERSION\nRUN npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund\n',
+        encoding="utf-8",
+    )
+    assert lf.unwindowed_installs("Dockerfile", lf.logical_lines(dockerfile)) == []
+    dockerfile.write_text(
+        'FROM node\nARG NPM_VERSION\nRUN npm install -g "npm@${NPM_VERSION}" other-pkg@1\n',
+        encoding="utf-8",
+    )
+    assert len(lf.unwindowed_installs("Dockerfile", lf.logical_lines(dockerfile))) == 1
+
+
+def test_a_planted_unwindowed_global_install_is_a_finding(tmp_path: pathlib.Path) -> None:
+    """Section 3 of PLAN-npm-global-install-release-age.md: a planted `npm install -g foo@1` in a fixture workflow and a fixture Dockerfile both fire; the same lines with `--before` are silent; property D's fixture still passes."""
+    lf.scaffold(tmp_path)
+    assert lf.ci_npm_findings(tmp_path, lf.FIXTURE_PIN) == []
+    assert lf.global_install_findings(tmp_path)[0] == []
+    wf = tmp_path / ".github" / "workflows" / "ci.yml"
+    clean = wf.read_text(encoding="utf-8")
+    dockerfile = tmp_path / "tools" / "Dockerfile"
+    dockerfile.parent.mkdir(parents=True)
+    wf.write_text(clean + "      - run: npm install -g foo@1\n", encoding="utf-8")
+    dockerfile.write_text("FROM node\nRUN npm install -g foo@1\n", encoding="utf-8")
+    findings, _seen = lf.global_install_findings(tmp_path)
+    assert sorted(f.split(": ", 1)[0] for f in findings) == [
+        ".github/workflows/ci.yml:5",
+        "tools/Dockerfile:2",
+    ], findings
+    wf.write_text(clean + '      - run: npm install -g foo@1 --before "$X"\n', encoding="utf-8")
+    dockerfile.write_text(
+        'FROM node\nARG NPM_BEFORE\nRUN npm install -g foo@1 --before "${NPM_BEFORE}"\n',
+        encoding="utf-8",
+    )
+    assert lf.global_install_findings(tmp_path)[0] == []
+    assert lf.ci_npm_findings(tmp_path, lf.FIXTURE_PIN) == []
+
+
 def test_a_venv_lockfile_is_not_discovered(tmp_path: pathlib.Path) -> None:
     """A virtualenv vendors other projects' JavaScript; `private/generative/.venv` carries gradio's lockfile beside a package.json."""
     _make(tmp_path, ["package-lock.json", "tool/.venv/lib/gradio/package-lock.json"])

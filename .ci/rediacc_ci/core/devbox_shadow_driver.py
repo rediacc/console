@@ -103,6 +103,9 @@ norm() {
     s="${s//$W/<work>}"
     s="${s//$R/<repo>}"
     s="${s//$HOME/<home>}"
+    # The release-age cutoff moves with the clock, and the two sides compute it seconds apart. The KEY stays, so a side that dropped the build-arg still diverges.
+    local cutoff='NPM_BEFORE=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'
+    while [[ "$s" =~ $cutoff ]]; do s="${s/"${BASH_REMATCH[0]}"/NPM_BEFORE=<cutoff>}"; done
     printf '%s' "$s"
 }
 
@@ -402,6 +405,9 @@ def text_lines(text: str) -> list[str]:
     return lines
 
 
+NPM_BEFORE_RE = re.compile(r"NPM_BEFORE=\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ")
+
+
 class Printer:
     """The one emitter the new side goes through, matching the bash helpers above."""
 
@@ -413,7 +419,8 @@ class Printer:
 
     def norm(self, text: str) -> str:
         replaced = text.replace(self.work, "<work>").replace(self.repo, "<repo>")
-        return replaced.replace(self.home, "<home>")
+        # The release-age cutoff, as the bash `norm` folds it: the value moves with the clock, the key is compared.
+        return NPM_BEFORE_RE.sub("NPM_BEFORE=<cutoff>", replaced.replace(self.home, "<home>"))
 
     def emit(self, text: str) -> None:
         print("%s %s" % (OBS, self.norm(text)))

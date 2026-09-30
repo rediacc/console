@@ -25,6 +25,7 @@ recorded in full in `rediacc_ci.core.release_age`'s own docstring (DEFECT 1, DEF
 import hashlib
 import importlib.util
 import pathlib
+import re
 import shutil
 
 import pytest
@@ -458,3 +459,63 @@ def test_a_planted_defect_in_the_port_is_caught(tmp_path, ft_ok, ft_broken):
     )
 
     assert _digest(PORT) == before, "a planted defect was written to the real module"
+
+
+# --------------------------------------------------------------------------- npm-before: the one cutoff every `npm install -g` passes as `--before` ---------------------------------------------------------------------------
+
+# 2026-09-30T14:11:00Z, the minute the E2E jobs fetched source-map-js 1.2.2 (published 14:08:09Z).
+INCIDENT_NOW = 1790777460
+# 2026-09-30T00:00:00Z, the start of that UTC day.
+INCIDENT_DAY = 1790726400
+
+
+def test_npm_before_is_the_start_of_the_utc_day_minus_the_window():
+    """A fixed `now` and the live 24h window give midnight UTC one day earlier, ISO-8601 with a `Z`."""
+    assert ra.ReleaseAge().npm_before(INCIDENT_NOW) == "2026-09-29T00:00:00Z"
+    assert ra.ReleaseAge().npm_before(INCIDENT_NOW, 86400) == "2026-09-29T00:00:00Z"
+
+
+def test_npm_before_is_constant_for_a_whole_utc_day():
+    """DAY-STABLE, so an image built twice in one day passes the same build-arg: 00:00:00, 00:00:01, 14:37 and 23:59:59 agree, and the next midnight moves it by exactly 24h."""
+    shim = ra.ReleaseAge()
+    same_day = [
+        INCIDENT_DAY,
+        INCIDENT_DAY + 1,
+        INCIDENT_DAY + 14 * 3600 + 37 * 60,
+        INCIDENT_DAY + 86399,
+    ]
+    assert {shim.npm_before(t, 86400) for t in same_day} == {"2026-09-29T00:00:00Z"}
+    assert shim.npm_before(INCIDENT_DAY + 86400, 86400) == "2026-09-30T00:00:00Z"
+    assert shim.npm_before(INCIDENT_DAY - 1, 86400) == "2026-09-28T00:00:00Z"
+
+
+def test_npm_before_follows_the_window_override(ft_ok):
+    """CONTROL: the window is really consulted. An explicit one moves the answer, and so does a tree whose config says sixty minutes."""
+    assert ra.ReleaseAge().npm_before(INCIDENT_NOW, 3600) == "2026-09-29T23:00:00Z"
+    assert ra.ReleaseAge(ft_ok).npm_before(INCIDENT_NOW) == "2026-09-29T23:00:00Z"
+    assert ra.ReleaseAge(ft_ok).npm_before(INCIDENT_NOW) != ra.ReleaseAge().npm_before(INCIDENT_NOW)
+
+
+def test_npm_before_excludes_the_incident_version():
+    """The property the cutoff exists for: a version published three minutes before the install is AFTER the cutoff, so npm cannot pick it; the lockfile's 1.2.1 (2024-09-08) is before it."""
+    cutoff = ra.ReleaseAge().npm_before(INCIDENT_NOW)
+    assert cutoff < "2026-09-30T14:08:09Z"
+    assert cutoff > "2024-09-08T16:22:55Z"
+
+
+def test_npm_before_never_collapses_when_the_delegate_is_gone(ft_broken):
+    """FAIL-SAFE: an unreachable delegate falls back to the 24h window, never to a zero window that would make `--before` a no-op."""
+    assert ra.ReleaseAge(ft_broken).npm_before(INCIDENT_NOW) == "2026-09-29T00:00:00Z"
+
+
+def test_the_npm_before_verb_prints_the_same_cutoff(ft_ok):
+    assert _run_port(["npm-before", str(INCIDENT_NOW)]) == (0, "2026-09-29T00:00:00Z\n", "")
+    assert _run_port(["npm-before", str(INCIDENT_NOW), "3600"]) == (0, "2026-09-29T23:00:00Z\n", "")
+    assert _run_port(["npm-before", str(INCIDENT_NOW)], root=ft_ok) == (
+        0,
+        "2026-09-29T23:00:00Z\n",
+        "",
+    )
+    code, out, err = _run_port(["npm-before"])
+    assert (code, err) == (0, "")
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT00:00:00Z\n", out), out

@@ -31,11 +31,14 @@ THE LEDGER LINE. `→ ` and `✓ ` are CHATTER to `shadow-gate.ts` before any `-
 
 from __future__ import annotations
 
+import calendar
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import time
 import typing
 
 import pytest
@@ -64,6 +67,7 @@ TREE_FILES = (
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
+    ".ci/rediacc_ci/core/release_age.py",
     ".ci/rediacc_ci/setup/__init__.py",
     PORT_REL,
 )
@@ -255,9 +259,38 @@ def recorded(name: str) -> tuple[int, str, str, list[str], list[str]]:
     )
 
 
+# THE ONE MASK, and it is narrow. The port now passes `--before <cutoff>` to `npm install -g` (the module docstring's ONE BEHAVIOUR CHANGE); the goldens are the twin's bytes and predate it. `unwindowed` strips exactly that pair and REFUSES a shape where an install call lacks it, so the mask cannot hide the flag going missing.
+BEFORE_CALL_RE = re.compile(
+    r"^(npm\tinstall\t-g\t[^\t]+)\t--before\t(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)$"
+)
+BEFORE_STDOUT_RE = re.compile(
+    r"^(call: npm install -g \S+) --before \d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$", re.MULTILINE
+)
+
+
+def unwindowed(
+    got: tuple[int, str, str, list[str], list[str]],
+) -> tuple[int, str, str, list[str], list[str]]:
+    """The shape with every install call's `--before <cutoff>` removed. Asserts each install call carried one."""
+    code, stdout, stderr, calls, tree = got
+    stripped: list[str] = []
+    installs = 0
+    for call in calls:
+        kept = call
+        if call.startswith("npm\tinstall\t"):
+            installs += 1
+            match = BEFORE_CALL_RE.match(call)
+            assert match, "an install call without --before <cutoff>: %r" % call
+            kept = match.group(1)
+        stripped.append(kept)
+    stdout, subs = BEFORE_STDOUT_RE.subn(r"\1", stdout)
+    assert subs == installs, "stdout names %d windowed installs, the call log %d" % (subs, installs)
+    return code, stdout, stderr, stripped, tree
+
+
 def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, list[str], list[str]]:
     want = recorded(name)
-    got = run(tmp_path, name)
+    got = unwindowed(run(tmp_path, name))
     assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (name, want[0], got[0])
     assert got[1] == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
     assert got[2] == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])
@@ -460,10 +493,47 @@ def test_a_planted_skip_of_the_cleanup_is_caught(tmp_path: pathlib.Path) -> None
 
     name = "the-default-run"
     want = recorded(name)
-    got = run(tmp_path / "planted", name, subject=str(mutant))
+    got = unwindowed(run(tmp_path / "planted", name, subject=str(mutant)))
     assert want[4] == [], "the recorded corpus moved"
     assert got[4] == ["packages/cli/" + DEFAULT_TARBALL], "the plant did not change the tree"
     assert got[:4] == want[:4], "only the surviving tree may differ, and it is what catches this"
 
     compare(tmp_path / "good", name)
+    assert source.read_text(encoding="utf-8") == original
+
+
+# --------------------------------------------------------------------------- The release-age window on the global install ---------------------------------------------------------------------------
+
+
+def _cutoff_epoch(call: str) -> int:
+    match = BEFORE_CALL_RE.match(call)
+    assert match, "no --before <cutoff> on %r" % call
+    return calendar.timegm(time.strptime(match.group(2), "%Y-%m-%dT%H:%M:%SZ"))
+
+
+def test_the_global_install_carries_the_release_age_cutoff(tmp_path: pathlib.Path) -> None:
+    """The install argv ends `--before <cutoff>`, and the cutoff is the start of today's UTC day minus the 24h window: the fixture tree has no delegate, so `release_age` takes its 86400-second fallback, which is also the live window."""
+    start = int(time.time())
+    code, _stdout, _stderr, calls, _tree = run(tmp_path, "the-default-run")
+    end = int(time.time())
+    assert code == 0
+    assert calls[1].startswith("npm\tinstall\t-g\t%s\t--before\t" % DEFAULT_TARBALL), calls
+    assert _cutoff_epoch(calls[1]) in {t - t % 86400 - 86400 for t in (start, end)}
+
+
+def test_a_planted_unwindowed_install_is_caught(tmp_path: pathlib.Path) -> None:
+    """CONTROL: drop the flag and both the cutoff assertion and the golden comparison's mask refuse the run."""
+    source = ROOT / PORT_REL
+    original = source.read_text(encoding="utf-8")
+    anchor = 'npm(["install", "-g", tarball, "--before", release_age.npm_before()])'
+    assert original.count(anchor) == 1, "the plant's anchor moved"
+    mutant = tmp_path / "plant" / "mutant.py"
+    mutant.parent.mkdir(parents=True)
+    mutant.write_text(original.replace(anchor, 'npm(["install", "-g", tarball])'), encoding="utf-8")
+    got = run(tmp_path / "planted", "the-default-run", subject=str(mutant))
+    assert got[3][1] == "npm\tinstall\t-g\t" + DEFAULT_TARBALL
+    with pytest.raises(AssertionError, match="without --before"):
+        unwindowed(got)
+    with pytest.raises(AssertionError, match="no --before"):
+        _cutoff_epoch(got[3][1])
     assert source.read_text(encoding="utf-8") == original

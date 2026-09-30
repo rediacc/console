@@ -29,6 +29,11 @@ WHAT THIS GATE PROVES, AND WHAT IT DOES NOT. Three properties per lockfile, and 
 
   D. CI RUNS THAT npm. Node 22 bundles npm 10, so every `actions/setup-node` step installs with npm 10 unless something replaces it. The only permitted setup-node site is `.github/actions/setup-node-npm/action.yml`, which installs and verifies the pin; `NPM_VERSION` must be an exact 11.x; every Dockerfile stage (submodules included) that installs a project tree must first install `npm@${NPM_VERSION}`, every `ARG NPM_VERSION=` must equal the pin, and the devcontainer, where lockfiles get written, must install it too.
 
+  E. EVERY GLOBAL INSTALL IS WINDOWED. `npm install -g <spec>` resolves its whole tree live: no lockfile applies, and npm does not enforce `minimum_release_age_minutes`. On 2026-09-30 (PR #591 run 36724524175) CI fetched source-map-js 1.2.2 three minutes after it was published, where the lockfile pins 1.2.1. So every `npm install -g` / `npm i -g` in a workflow, a composite action, a Dockerfile (submodules
+  included) and a `.ci` shell script must carry `--before`, whose value comes from `rediacc_ci.core.release_age` (the `npm-before` verb, or an `NPM_BEFORE` build-arg in an image). A backslash-continued line is read as one command, so a flag on the next physical line counts. Python call sites build argv lists this text scan cannot read; their own tests assert the flag.
+
+  ONE EXEMPTION: an install whose ONLY package is `npm@<X.Y.Z or $VAR>`, the pinned npm itself (property D's install). npm ships every dependency in `bundleDependencies` (`npm view npm@11.17.0 bundleDependencies` lists all 65), so that install resolves nothing from the registry and a cutoff would add nothing. `npm@<pin> other-pkg` is NOT exempt: the second package resolves live.
+
   WHY ONE npm, since 2026-09-24 (issue #587, operator: "full compatibility with npm 11 everywhere"). Until then this gate resolved every lockfile under npm 11 (the writer) AND npm 10 (CI's bundled installer), because the two disagreed about nested platform entries. Property D removes the disagreement at its source, so the npm 10 probe had nothing left to answer, and property C replaces it with the question that actually matters: did the pinned npm write this file.
 
   HONEST LIMIT: `--dry-run` does NOT run the reify peer check. A lockfile can
@@ -141,6 +146,16 @@ NPM_SELF_INSTALL_RE = re.compile(r"\bnpm\s+(?:install|i)\s+(?:-g|--global)\s+['\
 # `npm ci`, or an `npm install` with no package list and no -g: an install of the project tree itself.
 NPM_INSTALL_RE = re.compile(r"\bnpm\s+(ci|install|i)\b([^&;|\n]*)")
 PIN_SPECS = ("${NPM_VERSION}", "$NPM_VERSION")
+# Property E. A global install, through the end of its own command (the next `&&`, `;`, `|` or line end).
+GLOBAL_INSTALL_RE = re.compile(r"\bnpm\s+(?:install|i)\b[^&;|\n]*")
+GLOBAL_FLAG_RE = re.compile(r"(?:^|\s)(?:-g|--global)(?=\s|$)")
+BEFORE_FLAG_RE = re.compile(r"(?:^|\s)--before(?:=|\s)")
+# The exempt spec: npm itself at an exact version or a variable, in any quoting.
+NPM_SELF_SPEC_RE = re.compile(
+    r"""^['"]?npm@(?:\d+\.\d+\.\d+|\$\{?[A-Za-z_][A-Za-z0-9_]*\}?)['"]?$"""
+)
+# Where a `.ci` shell script can live. `paths.walk_tree` prunes `.ci/cache`.
+SHELL_SUFFIX = ".sh"
 
 
 def discover(root: pathlib.Path) -> list[str]:
@@ -404,6 +419,86 @@ def dockerfile_findings(rel: str, lines: list[tuple[int, str]], pin: str) -> lis
     return out
 
 
+def logical_lines(path: pathlib.Path) -> list[tuple[int, str]]:
+    """(first physical line, joined text) per command, comments dropped and backslash continuations joined.
+
+    A Dockerfile `RUN` split over several lines is ONE command, and `--before` on its second line windows the install on its first; reading physical lines would call that install unwindowed.
+    """
+    out: list[tuple[int, str]] = []
+    pending: tuple[int, str] | None = None
+    for number, line in _code_lines(path):
+        stripped = line.rstrip()
+        start, text = pending if pending is not None else (number, "")
+        if stripped.endswith("\\"):
+            pending = (start, text + stripped[:-1] + " ")
+            continue
+        pending = None
+        out.append((start, text + stripped))
+    if pending is not None:
+        out.append(pending)
+    return out
+
+
+def is_npm_self_install(command: str) -> bool:
+    """True when the command's only package operand is the pinned npm itself. Any flag argument counts as an operand, so the exemption can only be narrower than it looks, never wider."""
+    operands = [t for t in command.split()[2:] if not t.startswith("-")]
+    return len(operands) == 1 and bool(NPM_SELF_SPEC_RE.match(operands[0]))
+
+
+def unwindowed_installs(rel: str, lines: list[tuple[int, str]]) -> list[str]:
+    """Property E for one file's logical lines. Pure, so the selftest drives it on literal text."""
+    out: list[str] = []
+    for number, text in lines:
+        for match in GLOBAL_INSTALL_RE.finditer(text):
+            command = match.group(0)
+            if (
+                GLOBAL_FLAG_RE.search(command)
+                and not BEFORE_FLAG_RE.search(command)
+                and not is_npm_self_install(command)
+            ):
+                out.append(
+                    "%s:%d: `%s` resolves live with no --before; pass --before from "
+                    "`python3 -m rediacc_ci.core.release_age npm-before` (an NPM_BEFORE build-arg in a Dockerfile)"
+                    % (rel, number, " ".join(command.split()))
+                )
+    return out
+
+
+def global_install_corpus(root: pathlib.Path) -> list[str]:
+    """Every file property E reads, repo-relative and sorted: workflows, composite actions, Dockerfiles and `.ci` shell scripts."""
+    files = {
+        os.path.relpath(p, root)
+        for pattern in WORKFLOW_GLOBS
+        for p in glob.glob(str(root / pattern))
+    }
+    files.update(discover_dockerfiles(root))
+    ci_dir = root / ".ci"
+    if ci_dir.is_dir():
+        for dirpath, _dirnames, filenames in paths.walk_tree(ci_dir, exclude_dirs=EXTRA_PRUNED):
+            files.update(
+                os.path.relpath(os.path.join(dirpath, name), root)
+                for name in filenames
+                if name.endswith(SHELL_SUFFIX)
+            )
+    return sorted(files)
+
+
+def global_install_findings(root: pathlib.Path) -> tuple[list[str], int]:
+    """Property E over the tree: (findings, number of global installs seen). The count lets the caller refuse a scan that saw none."""
+    findings: list[str] = []
+    seen = 0
+    for rel in global_install_corpus(root):
+        lines = logical_lines(root / rel)
+        seen += sum(
+            1
+            for _n, text in lines
+            for match in GLOBAL_INSTALL_RE.finditer(text)
+            if GLOBAL_FLAG_RE.search(match.group(0))
+        )
+        findings.extend(unwindowed_installs(rel, lines))
+    return findings, seen
+
+
 def composite_findings(root: pathlib.Path) -> list[str]:
     """The composite must exist, call setup-node, and install and verify the pin."""
     path = root / COMPOSITE
@@ -493,6 +588,17 @@ def main(argv: list[str] | None = None) -> int:
         log.error(finding)
     if ci_findings:
         failed.append("CI npm (%d finding(s))" % len(ci_findings))
+
+    log.step("Every npm install -g carries --before (the release-age window)...")
+    window_findings, global_installs = global_install_findings(root)
+    for finding in window_findings:
+        log.error(finding)
+    if window_findings:
+        failed.append("unwindowed global install (%d finding(s))" % len(window_findings))
+    elif global_installs == 0:
+        # VACUITY: the composite alone installs npm globally, so a scan that saw nothing did not read the tree.
+        log.error("No `npm install -g` found anywhere, so property E checked nothing.")
+        failed.append("global-install scan saw nothing")
 
     for lock in lockfiles:
         directory = (root / lock).parent
@@ -732,6 +838,75 @@ def selftest() -> int:
         1,
     )
 
+    # -- property E on literal text ------------------------------------------
+    def windowed(text: str, rel: str = "x.yml") -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "f"
+            path.write_text(text, encoding="utf-8")
+            return unwindowed_installs(rel, logical_lines(path))
+
+    ctl.check(
+        "E: PLANT a workflow global install without --before reds",
+        len(windowed("      - run: npm install -g foo@1.2.3\n")),
+        1,
+    )
+    ctl.check(
+        "E: CONTROL the same line with --before is clean",
+        windowed('      - run: npm install -g foo@1.2.3 --before "$X"\n'),
+        [],
+    )
+    ctl.check("E: PLANT `npm i -g` reds", len(windowed("npm i -g foo@1\n")), 1)
+    ctl.check("E: PLANT `--global` reds", len(windowed("npm install --global foo@1\n")), 1)
+    ctl.check(
+        "E: MIRROR a project install is not a global one", windowed("npm install foo@1\n"), []
+    )
+    ctl.check(
+        "E: MIRROR a commented-out global install is not an install",
+        windowed("# npm install -g foo@1\n"),
+        [],
+    )
+    ctl.check(
+        "E: PLANT one windowed and one unwindowed command on a line reds once",
+        len(windowed('npm install -g a@1 --before "$X" && npm install -g b@1\n')),
+        1,
+    )
+    ctl.check(
+        "E: CONTROL --before on a continuation line of a Dockerfile RUN counts",
+        windowed(
+            'FROM node\nARG NPM_BEFORE\nRUN npm install -g a@1 \\\n    --before "${NPM_BEFORE}" \\\n    && npm cache clean --force\n',
+            "Dockerfile",
+        ),
+        [],
+    )
+    ctl.check(
+        "E: PLANT the same RUN without it reds, naming its FIRST line",
+        [
+            f.split(": ", 1)[0]
+            for f in windowed("FROM node\nRUN npm install -g a@1 \\\n    && true\n", "Dockerfile")
+        ],
+        ["Dockerfile:2"],
+    )
+    ctl.check(
+        "E: MIRROR the pinned npm installing itself is exempt (npm bundles its dependencies)",
+        windowed('RUN npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund\n', "Dockerfile")
+        + windowed("npm i -g npm@11.20.0\n"),
+        [],
+    )
+    ctl.check(
+        "E: PLANT npm plus a second package is not exempt",
+        len(windowed('npm install -g "npm@${NPM_VERSION}" other-pkg@1\n')),
+        1,
+    )
+    ctl.check(
+        "E: PLANT a moving npm tag is not exempt", len(windowed("npm install -g npm@latest\n")), 1
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        ctl.check(
+            "E: VACUITY an empty tree reads no global install",
+            global_install_findings(pathlib.Path(tmp)),
+            ([], 0),
+        )
+
     # -- argv construction ---------------------------------------------------
     ctl.check(
         "argv: the lint probe names the lockfile with --path",
@@ -844,10 +1019,32 @@ def selftest() -> int:
 
         composite = root / COMPOSITE
         composite.write_text(
-            plant(FIXTURE_COMPOSITE, '        npm install -g "npm@${pin}"\n', ""), encoding="utf-8"
+            plant(FIXTURE_COMPOSITE, '        npm install -g "npm@${pin}"\n', ""),
+            encoding="utf-8",
         )
         ctl.check("PLANT: a composite that stops installing the pin reds", run(), 1)
         composite.write_text(FIXTURE_COMPOSITE, encoding="utf-8")
+
+        # PROPERTY E through the whole gate, once per corpus: a Dockerfile, a workflow and a `.ci` shell script.
+        tool = root / "tools" / "Dockerfile"
+        tool.parent.mkdir(parents=True, exist_ok=True)
+        tool.write_text("FROM node\nRUN npm install -g foo@1.2.3\n", encoding="utf-8")
+        ctl.check("PLANT: an unwindowed global install in a Dockerfile reds", run(), 1)
+        tool.write_text(
+            'FROM node\nARG NPM_BEFORE\nRUN npm install -g foo@1.2.3 --before "${NPM_BEFORE}"\n',
+            encoding="utf-8",
+        )
+        ctl.check("CONTROL: the same install with --before is clean", run(), 0)
+        tool.unlink()
+        wf.write_text(clean_wf + "      - run: npm install -g foo@1.2.3\n", encoding="utf-8")
+        ctl.check("PLANT: an unwindowed global install in a workflow reds", run(), 1)
+        wf.write_text(clean_wf, encoding="utf-8")
+        script = root / ".ci" / "scripts" / "x.sh"
+        script.parent.mkdir(parents=True, exist_ok=True)
+        script.write_text("#!/bin/bash\nnpm i -g foo@1.2.3\n", encoding="utf-8")
+        ctl.check("PLANT: an unwindowed global install in a .ci script reds", run(), 1)
+        script.unlink()
+        ctl.check("CONTROL: the tree is clean again after property E", run(), 0)
 
         scaffold(root, pin="10.9.8")
         ctl.check("PLANT: an npm 10 pin reds", run(), 1)

@@ -670,6 +670,9 @@ jobs:
         run: |
           DATE_TAG=$(date -u +%Y%m%d)
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
+          # The release-age cutoff the Dockerfile's `npm install -g` lines require (it refuses an empty NPM_BEFORE).
+          NPM_BEFORE="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
+          echo "npm_before=${NPM_BEFORE}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -677,6 +680,8 @@ jobs:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
           platforms: linux/amd64
+          build-args: |
+            NPM_BEFORE=${{ steps.tags.outputs.npm_before }}
           push: ${{ github.event_name == 'push' }}
           tags: |
             ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}-amd64
@@ -709,6 +714,9 @@ jobs:
         run: |
           DATE_TAG=$(date -u +%Y%m%d)
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
+          # The release-age cutoff the Dockerfile's `npm install -g` lines require (it refuses an empty NPM_BEFORE).
+          NPM_BEFORE="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
+          echo "npm_before=${NPM_BEFORE}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -716,6 +724,8 @@ jobs:
           context: .devcontainer/
           file: .devcontainer/Dockerfile
           platforms: linux/arm64
+          build-args: |
+            NPM_BEFORE=${{ steps.tags.outputs.npm_before }}
           push: ${{ github.event_name == 'push' }}
           tags: |
             ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}-arm64

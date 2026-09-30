@@ -1006,9 +1006,18 @@ test_npm_install() {
 
     local npm_url="${RELEASES_BASE_URL}/npm${REPO_CHANNEL_SUFFIX}/rediacc-cli-latest.tgz"
 
+    # The CLI's dependencies resolve live inside the container (a global install
+    # has no lockfile), so --before holds them to the release-age window. The
+    # cutoff comes from the checkout's one implementation, on the host.
+    local npm_before
+    npm_before="$(PYTHONPATH="$SCRIPT_DIR/../.." python3 -m rediacc_ci.core.release_age npm-before)" || {
+        log_error "Could not compute the npm --before cutoff (rediacc_ci.core.release_age npm-before)"
+        return 1
+    }
+
     run_container_version_test "npm ($label)" docker run --rm "$distro" bash -c "
         set -e
-        npm install -g '${npm_url}'
+        npm install -g '${npm_url}' --before '${npm_before}'
         # Fenced: npm prints the package version itself while installing, so an
         # unfenced grep over this transcript would match even if the installed
         # binary reported something else.

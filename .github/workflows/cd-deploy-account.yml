@@ -259,7 +259,9 @@ jobs:
       - name: Install wrangler
         run: |
           source .ci/config/constants.sh
-          npm install -g "wrangler@${WRANGLER_VERSION}"
+          # A global install resolves wrangler's whole tree live; --before holds it to the release-age window.
+          before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
+          npm install -g "wrangler@${WRANGLER_VERSION}" --before "${before}"
 
       - name: Resolve deploy config
         id: config

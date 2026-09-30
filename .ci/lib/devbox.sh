@@ -508,8 +508,18 @@ devbox_build_image() {
         return 1
     }
 
+    # NPM_BEFORE: the release-age cutoff. The image's `npm install -g` lines resolve
+    # live and the Dockerfile refuses an empty cutoff, so it comes from the one
+    # implementation, rediacc_ci.core.release_age.
+    local npm_before
+    npm_before="$(PYTHONPATH="$DEVBOX_CI_DIR" python3 -m rediacc_ci.core.release_age npm-before)" || {
+        log_error "Could not compute the npm --before cutoff (rediacc_ci.core.release_age npm-before)"
+        return 1
+    }
+
     log_step "Building $DEVBOX_IMAGE locally (this takes a while)"
-    $d build -t "$DEVBOX_IMAGE" -f "$dockerfile_dir/Dockerfile" "$dockerfile_dir" || {
+    $d build -t "$DEVBOX_IMAGE" --build-arg "NPM_BEFORE=$npm_before" \
+        -f "$dockerfile_dir/Dockerfile" "$dockerfile_dir" || {
         log_error "Local image build failed"
         return 1
     }

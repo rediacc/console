@@ -478,7 +478,17 @@ USER root
 # these two, because a CLI whose version nothing depends on is not worth a red build.
 ARG CODEX_VERSION=0.153.1
 ARG GEMINI_CLI_VERSION=0.58.0
-RUN npm install -g @openai/codex@${CODEX_VERSION} @google/gemini-cli@${GEMINI_CLI_VERSION} \
+#
+# NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
+# npm-before`, passed by every build site as a build-arg). A global install resolves its whole
+# tree live, with no lockfile, so --before holds it to versions at least one window old; an
+# empty value fails the build rather than installing unwindowed. The agent-browser install
+# below uses the same ARG. The pinned-npm install above needs none: npm bundles every
+# dependency, so it resolves nothing from the registry.
+ARG NPM_BEFORE
+RUN : "${NPM_BEFORE:?NPM_BEFORE is empty; build with --build-arg NPM_BEFORE set to the output of: PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before}" \
+    && npm install -g @openai/codex@${CODEX_VERSION} @google/gemini-cli@${GEMINI_CLI_VERSION} \
+        --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
 # awscli — required by the R2 gates, and its absence made them unrunnable.
@@ -644,7 +654,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # this ARG names the same one. They must move together -- a devbox that disagrees
 # with CI is worse than one that is merely behind, because it answers confidently.
 ARG AGENT_BROWSER_VERSION=0.36.0
-RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} \
+RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
 # Pre-pull the matching chromium-headless-shell so the first `agent-browser

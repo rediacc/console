@@ -28,11 +28,13 @@ happen quietly here.
 
 from __future__ import annotations
 
+import calendar
 import hashlib
 import json
 import re
 import subprocess
 import sys
+import time
 from typing import TYPE_CHECKING
 
 import pytest
@@ -135,10 +137,36 @@ def observed(tmp_path_factory) -> dict[str, tuple[int, str, str, list[str]]]:
     return drive("new", tmp_path_factory.mktemp("run-in-image"))
 
 
+# THE ONE TRACE MASK. The port passes `--build-arg NPM_BEFORE=<cutoff>` when it builds the web image (its Dockerfile refuses an empty one); the twin's recordings predate it. This strips exactly that pair and REFUSES a web build line without it, so the mask cannot hide the arg going missing.
+NPM_BEFORE_RE = re.compile(r" --build-arg NPM_BEFORE=(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ)(?= )")
+
+
+def unwindowed(case: str, trace: list[str]) -> list[str]:
+    out = []
+    for line in trace:
+        kept = line
+        if "argv=build " in line:
+            stripped, count = NPM_BEFORE_RE.subn("", line)
+            wanted = 1 if case.startswith("web-") else 0
+            assert count == wanted, (
+                "%s: NPM_BEFORE pairs on the build line: %d, expected %d: %r"
+                % (
+                    case,
+                    count,
+                    wanted,
+                    line,
+                )
+            )
+            kept = stripped
+        out.append(kept)
+    return out
+
+
 @pytest.mark.parametrize("case", CASES)
 def test_the_port_matches_the_twins_recorded_bytes(case: str, observed: dict) -> None:
     want = recorded(case)
-    got = observed[case]
+    code, stdout, stderr, trace = observed[case]
+    got = (code, stdout, stderr, unwindowed(case, trace))
     assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (case, want[0], got[0])
     assert got[1] == want[1], "%s: stdout diverged: %r vs %r" % (case, want[1], got[1])
     assert got[2] == want[2], "%s: stderr diverged: %r vs %r" % (case, want[2], got[2])
@@ -421,3 +449,18 @@ def test_the_baseline_and_the_allowlist_no_longer_describe_the_twins() -> None:
         rel = ".ci/docker/run-in-%s.sh" % target
         assert rel not in baseline["bashFiles"], rel
         assert "manual:%s" % rel not in dead_bash, rel
+
+
+def test_the_web_build_passes_the_release_age_cutoff(observed: dict) -> None:
+    """The web image's Dockerfile runs `npm install -g` and refuses an empty `NPM_BEFORE`, so its build line carries the start of the UTC day minus the 24h window; the render image's does not."""
+    build = next(line for line in observed["web-image-absent"][3] if "argv=build " in line)
+    match = NPM_BEFORE_RE.search(build)
+    assert match, build
+    cutoff = calendar.timegm(time.strptime(match.group(1), "%Y-%m-%dT%H:%M:%SZ"))
+    now = int(time.time())
+    assert cutoff in {t - t % 86400 - 86400 for t in (now - 900, now)}, build
+    render = next(line for line in observed["render-image-absent"][3] if "argv=build " in line)
+    assert "NPM_BEFORE" not in render
+    # CONTROL: the golden comparison's mask refuses a web build line without it.
+    with pytest.raises(AssertionError, match="NPM_BEFORE pairs"):
+        unwindowed("web-image-absent", [NPM_BEFORE_RE.sub("", build)])

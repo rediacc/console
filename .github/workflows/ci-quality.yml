@@ -1708,7 +1708,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
           AGENT_BROWSER_VERSION: '0.36.0'
-        run: cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false
+        # The cutoff is computed BEFORE the cd, from the checkout: --before holds the live resolution to the release-age window.
+        run: |
+          before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
+          cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --before "${before}"
 
       # A silent-install failure (a broken postinstall, a PATH the shell that
       # ran npm install cannot see, a platform binary that never got selected)

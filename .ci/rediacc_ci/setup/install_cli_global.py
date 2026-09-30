@@ -84,6 +84,12 @@ TWO DIVERGENCES, STATED RATHER THAN DISCOVERED LATER
 A `parse_args` KEY THAT IS NOT A VALID IDENTIFIER (`--foo.bar`) makes bash's `printf -v` fail with a message that names `common.sh` and a line number, then `set -e` ends the run with 2. `core.common.parse_args` raises `RefusalError`
 with the message text but no file-and-line prefix, so the exit code matches and
 the stderr bytes do not. That quirk belongs to `core.common` (its QUIRK 3) and is not re-litigated here; no caller of this script passes such a flag.
+
+=============================================================================
+ONE BEHAVIOUR CHANGE, MADE ON PURPOSE (2026-09-30)
+=============================================================================
+`npm install -g <tarball>` now carries `--before <cutoff>`, the cutoff from `rediacc_ci.core.release_age.npm_before()`. A global install resolves every transitive dependency live, since no lockfile applies, and npm does not enforce the release-age window. PR #591 run 36724524175 died here on source-map-js 1.2.2, published three minutes before the fetch while the lockfile pins
+1.2.1; the 404 was CDN lag, and a working CDN would have installed it. The recorded goldens predate the flag, so `test_setup_install_cli_global.py` strips exactly that pair before comparing and asserts its presence separately.
 """
 
 from __future__ import annotations
@@ -95,7 +101,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, release_age
 
 # `PACKAGE_DIR="${ARG_PACKAGE_DIR:-packages/cli}"` (install-cli-global.sh:24).
 # `:-` means an EMPTY value falls back too, so `--package-dir=` behaves as if the
@@ -197,7 +203,8 @@ def main(argv: list[str]) -> int:
         return LS_CANNOT_STAT_EXIT
 
     log.step("Installing %s globally..." % tarball)
-    code = npm(["install", "-g", tarball])
+    # THE ONE DELIBERATE DIVERGENCE FROM THE TWIN. A global install resolves every transitive dependency live (no lockfile applies), so `--before` holds it to versions at least one release-age window old. The twin had no such flag; on 2026-09-30 this step fetched a source-map-js published three minutes earlier.
+    code = npm(["install", "-g", tarball, "--before", release_age.npm_before()])
     if code != 0:
         return code
 

@@ -42,8 +42,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ARG AGENT_BROWSER_VERSION is 0.26.0, ten minors behind this. They are different
 # images with different jobs, and picking one number for both is a behaviour change
 # to whichever loses -- a decision, not a tidy-up.
+#
+# NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
+# npm-before`, passed by every build site as a build-arg). A global install resolves live, with
+# no lockfile, so --before holds it to versions at least one window old; an empty value fails
+# the build rather than installing unwindowed.
 ARG AGENT_BROWSER_VERSION=0.36.0
-RUN npm install -g --allow-scripts=agent-browser agent-browser@${AGENT_BROWSER_VERSION} \
+ARG NPM_BEFORE
+RUN : "${NPM_BEFORE:?NPM_BEFORE is empty; build with --build-arg NPM_BEFORE set to the output of: PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before}" \
+    && npm install -g --allow-scripts=agent-browser agent-browser@${AGENT_BROWSER_VERSION} \
+        --before "${NPM_BEFORE}" \
     && agent-browser --version
 
 # Gotcha 3: the browser is fetched as the RUNTIME user, into a path it owns.

@@ -131,6 +131,9 @@ USAGE = """release_age -- the `release-age.sh` shim verbs.
   eligible-epoch <publish> [window]     the epoch it becomes actionable
   deferred <publish> [now] [window]     prints deferred/eligible; exit 0 when
                                         deferred, 1 when eligible
+  npm-before [now] [window]             the `npm install --before` cutoff: the
+                                        start of now's UTC day minus the window,
+                                        ISO-8601 UTC with Z
 """
 
 
@@ -285,6 +288,23 @@ class ReleaseAge:
             return True
         return moment < eligible
 
+    def npm_before(self, now: int | None = None, window: int | None = None) -> str:
+        """The `npm install --before` cutoff: 00:00:00 UTC of `now`'s day, minus the window, as ISO-8601 UTC ending `Z`.
+
+        WHY NPM NEEDS TELLING. `npm install -g <spec>` resolves every transitive dependency fresh from the registry: no lockfile applies, and npm does not enforce `minimum_release_age_minutes` (`.ci/config/release-age.json` says so). On 2026-09-30 an E2E job fetched source-map-js 1.2.2 three minutes after it was published, where the lockfile pins 1.2.1. `--before <cutoff>` makes npm resolve
+        as the registry stood at the cutoff. Every such site asks THIS method (or the `npm-before` verb) for the value; none computes its own.
+
+        DAY-STABLE ON PURPOSE. The value is the same for a whole UTC day, so an image built twice that day passes the same `NPM_BEFORE` build-arg and keeps its layer cache. It is also never looser than the gates' own rule (`scripts/lib/release-age.ts`: eligible at the next UTC midnight after publish + window): a version the gates call eligible today was published before today's midnight minus the window, so a pin
+        the gates accepted still resolves.
+
+        THE WINDOW NEVER COLLAPSES TO ZERO: `window_seconds()` falls back to 24h when the delegate cannot answer, so an unreachable delegate still yields a windowed cutoff.
+        """
+        moment = int(time.time()) if now is None else int(now)
+        if window is None:
+            window = self.window_seconds()
+        day_start = moment - moment % 86400
+        return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(day_start - window))
+
 
 @functools.cache
 def module_shim() -> ReleaseAge:
@@ -311,6 +331,10 @@ def is_release_deferred(
     publish_epoch: str | int | None, now: int | None = None, window: int | None = None
 ) -> bool:
     return module_shim().is_release_deferred(publish_epoch, now, window)
+
+
+def npm_before(now: int | None = None, window: int | None = None) -> str:
+    return module_shim().npm_before(now, window)
 
 
 def main(argv: list[str]) -> int:
@@ -344,6 +368,12 @@ def main(argv: list[str]) -> int:
         deferred = shim.is_release_deferred(rest[0], now, window)
         print("deferred" if deferred else "eligible")
         return 0 if deferred else 1
+
+    if verb == "npm-before":
+        now = int(rest[0]) if rest and rest[0] else None
+        window = int(rest[1]) if len(rest) > 1 and rest[1] else None
+        print(shim.npm_before(now, window))
+        return 0
 
     print(USAGE, file=sys.stderr)
     return 2
