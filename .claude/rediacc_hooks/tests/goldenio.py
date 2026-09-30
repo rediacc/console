@@ -166,12 +166,25 @@ def diff_and_mark(answers, old_silent, old_records, reason):
         else:
             old = None
         is_changed = old is not None and old != value
-        if is_silent(rc, out, err) and not is_changed:
+        marker = reason if is_changed else carried_marker(key, old_records)
+        if is_silent(rc, out, err) and marker is None:
             silent.add(key)
             continue
         row = {"rc": rc, "out": encode_field(out), "err": encode_field(err)}
+        if marker is not None:
+            row["intentional"] = marker
         if is_changed:
-            row["intentional"] = reason
             changed.append(key)
         records[key] = row
     return silent, records, changed
+
+
+def carried_marker(key, old_records):
+    """The `intentional` marker an UNCHANGED record already carries, or None.
+
+    THE SECOND RUN HAS TO KEEP WHAT THE FIRST ONE WROTE (#84358ce1). Without this a record that flipped carried `intentional: <reason>` after one regolden, and an identical second regolden compared it equal to itself, found nothing changed and rewrote it WITHOUT the marker -- and a record that flipped TO silence moved into `_silent`, where no marker can live. The audit trail of an intentional change vanished on a no-op re-run, which is what the docstring above promises cannot happen. A value that has not moved keeps the row it had, marker and all.
+    """
+    old_row = old_records.get(key)
+    if old_row is None:
+        return None
+    return old_row.get("intentional")

@@ -80,8 +80,11 @@ def _merge_shellscan_record(key, fields, old_records, reason, records, changed):
         }
     is_changed = old is not None and old != fields
     row = {k: goldenio.encode_field(v) for k, v in fields.items()}
+    # An unchanged record keeps the marker an earlier run wrote (#84358ce1, see goldenio.carried_marker).
+    marker = reason if is_changed else goldenio.carried_marker(key, old_records)
+    if marker is not None:
+        row["intentional"] = marker
     if is_changed:
-        row["intentional"] = reason
         changed.append(key)
     records[key] = row
 
@@ -124,8 +127,10 @@ def _record_post_bash(reason):
         if old is not None:
             old_decoded = pd._decode_answer({k: v for k, v in old.items() if k != "intentional"})
             is_changed = old_decoded != answer
+        marker = reason if is_changed else goldenio.carried_marker(key, old_records)
+        if marker is not None:
+            encoded["intentional"] = marker
         if is_changed:
-            encoded["intentional"] = reason
             changed.append(key)
         records[key] = encoded
     header = {

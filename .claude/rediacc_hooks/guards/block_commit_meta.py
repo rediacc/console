@@ -102,6 +102,27 @@ MESSAGE_VERBS = ("git commit", "git tag", "gh pr", "gh api")
 
 MESSAGE = "❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits."
 
+# A body file reached ONLY through an inherited variable (#378c645c). The differential's `_base_env` passes the runner's real HOME, where these files do not exist, so the `home-bodies` variant points HOME at this fixture instead: the same `$HOME/...` payloads are admitted under `default` (no file to read) and judged on their bytes here. The footer is assembled so no source line is itself one.
+HOME_BODIES = ".commit-meta-bodies"
+
+
+def _home_fixture(path):
+    bodies = pathlib.Path(path) / HOME_BODIES
+    bodies.mkdir(parents=True)
+    footer = "\U0001f916 " + "Generated" + " with [Claude Code](u)"
+    (bodies / "footer.md").write_text("prose\n\n%s\n" % footer, encoding="utf-8")
+    (bodies / "clean.md").write_text("prose\n\nConsole PR: x.\n", encoding="utf-8")
+    return path
+
+
+FIXTURES = {"commit-meta-home": _home_fixture}
+
+# `default` first and with no extras, so every record it already froze keeps its key.
+ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
+    ("default", {}, {}),
+    ("home-bodies", {"HOME": "{FIXTURE:commit-meta-home}"}, {}),
+]
+
 EDGE_CASES = [
     ("a tag message carries the same rule", "git tag -a v1 -m Co-Authored-By:bot"),
     # The audit shapes the 2026-08-27 gate exists to let through.
@@ -144,6 +165,30 @@ EDGE_CASES = [
         "a quoted phrase in an inline --body is prose, not a footer",
         "gh pr create --repo rediacc/renet --title t --body 'refuses \"Generated with\" lines'",
     ),
+    # #378c645c: a body file named through a variable the command never assigns. Refused under `home-bodies`, where the file carries the footer; admitted under `default`, where it does not exist.
+    (
+        "an inherited $HOME body file with the footer",
+        "gh pr create --title t --body-file $HOME/%s/footer.md" % HOME_BODIES,
+    ),
+    ("the braced ${HOME} spelling on a commit", "git commit -F ${HOME}/%s/footer.md" % HOME_BODIES),
+    (
+        "the gh api body spelling",
+        "gh api repos/o/r/pulls/7 -X PATCH -F body=@$HOME/%s/footer.md" % HOME_BODIES,
+    ),
+    (
+        "an inherited $HOME body file without the footer",
+        "gh pr create --title t --body-file $HOME/%s/clean.md" % HOME_BODIES,
+    ),
+    # Unset in every environment the differential runs: the name stays unresolved and fails open.
+    (
+        "an unset variable's body file is admitted",
+        "gh pr create --title t --body-file $COMMIT_META_UNSET_VAR/%s/footer.md" % HOME_BODIES,
+    ),
+    # A same-command assignment wins over the environment, as in bash: this HOME has no body file.
+    (
+        "a same-command assignment shadows the inherited value",
+        "HOME=/nonexistent; gh pr create --title t --body-file $HOME/%s/footer.md" % HOME_BODIES,
+    ),
 ]
 
 
@@ -154,10 +199,10 @@ def _authors_a_message(scan):
     return hookio.grep_q(GH_API_PR_PATCH, scan) and hookio.grep_q(PATCH_METHOD, scan)
 
 
-def _commit_file_bodies(cmd, root):
+def _commit_file_bodies(cmd, root, env):
     """Every message-file target's bytes, read off disk: `-F <path>`, `--file[= ]<path>`, `--body-file[= ]<path>`, `-F body=@<path>` and `--input <path>`. `-F -` (stdin) is skipped: stdin at hook time is the hook's OWN payload, not the commit's, so there is nothing here to read.
 
-    Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason.
+    Each name is tried both as given (an absolute path, or one already relative to the caller's cwd) and rooted at `root` -- the same two candidates `block_untagged_commit.py` tries, for the identical reason. `env(name, None)` answers a variable the command does not assign (see `_expand`).
     """
     bodies = []
     written = False
@@ -165,27 +210,36 @@ def _commit_file_bodies(cmd, root):
     for verb in MESSAGE_VERBS:
         names.update(shellscan.assignments_before(cmd, verb))
     for pattern, strip in FILE_ARGS:
-        found, wrote = _bodies_for(pattern, strip, cmd, root, names)
+        found, wrote = _bodies_for(pattern, strip, cmd, root, names, env)
         bodies.extend(found)
         written = written or wrote
     return bodies, written
 
 
-def _expand(name, names):
-    """`$S/pr.md` with `S=/abs/dir` assigned earlier in the same command, as `/abs/dir/pr.md`.
+def _expand(name, names, env):
+    """`$S/pr.md` with `S=/abs/dir` assigned earlier in the same command, as `/abs/dir/pr.md`; an unassigned `$HOME/pr.md` from the environment the command inherits.
 
     MEASURED 2026-09-30, and it is the whole defect behind "renet and account admitted, console refused". The console `gh pr create` named its body file by a literal path, was read and refused; the two submodule ones were `S=<scratchpad>; gh pr create --repo rediacc/renet ... --body-file $S/pr-renet.md`, and a file literally named `$S/pr-renet.md` does not exist, so the read failed OPEN and
-    both PRs were created with the attribution footer live. The repo and the flag order had nothing to do with it; the SPELLING of the path did. `block_prose_style_commit.py` hit the same wall on 2026-09-25 (#09fd19cd) and answered it with the same helper, `shellscan.assignments_before`. A name still carrying `$` or a backtick afterwards is unreadable and fails open as before.
+    both PRs were created with the attribution footer live. The repo and the flag order had nothing to do with it; the SPELLING of the path did. `block_prose_style_commit.py` hit the same wall on 2026-09-25 (#09fd19cd) and answered it with the same helper, `shellscan.assignments_before`.
+
+    THE SAME HOLE, ONE STEP WIDER (#378c645c): `--body-file $HOME/pr.md` names a variable no statement in the command assigns, so the first fix left it unread and a footer in it passed. The hook runs in the SAME environment the command will, so `env` (the event's environment, `os.environ` in production) answers what bash would. A same-command assignment wins over the environment, as it does in bash; a prefix assignment (`S=x gh pr create ... $S/y`) is not one, since bash expands `$S` before it applies, so the environment is right there too. Two passes, so an assigned value that itself names a variable (`S=$HOME/pb`) resolves as well.
+
+    A name still carrying `$` or a backtick afterwards (an UNSET variable, a `$(...)` substitution) is unreadable and FAILS OPEN as before. Refusing it would refuse every command whose body path cannot be resolved statically, and the ordinary one of those writes the file in the same command, which `shellscan.writes_file` already judges on the command's own bytes.
     """
+    if "$" not in name:
+        return name
 
     def sub(match):
         key = match.group(2) or match.group(3)
-        return names.get(key, match.group(0))
+        if key in names:
+            return names[key]
+        value = env(key, None)
+        return match.group(0) if value is None else value
 
-    return SHELL_VAR.sub(sub, name) if "$" in name else name
+    return SHELL_VAR.sub(sub, SHELL_VAR.sub(sub, name))
 
 
-def _bodies_for(pattern, strip, cmd, root, names):
+def _bodies_for(pattern, strip, cmd, root, names, env):
     """One spelling's worth of `grep -oE <pattern> | sed -E 's/<strip>//'`, resolved and read.
 
     Returns `(bodies, written)`, `written` saying that this same command writes one of the named files, so its content is in the command text rather than on disk.
@@ -196,7 +250,7 @@ def _bodies_for(pattern, strip, cmd, root, names):
         raw = hookio.sed_sub(strip, "", match).rstrip("\n")
         if raw in {"", "-"}:
             continue
-        name = _expand(raw, names)
+        name = _expand(raw, names, env)
         # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810). Asked for BOTH spellings, because the redirect is usually spelled the way the flag is (`> $S/pr.md ... --body-file $S/pr.md`) and sometimes not.
         if shellscan.writes_file(cmd, raw, name):
             written = True
@@ -233,7 +287,7 @@ def run(ev):
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(
         ["rev-parse", "--show-toplevel"], cwd=ev.cwd, want_rc=True
     )
-    bodies, written = _commit_file_bodies(cmd, root)
+    bodies, written = _commit_file_bodies(cmd, root, ev.env)
     for body in bodies:
         if hookio.grep_q(TRAILER_OR_FOOTER, body, ignore_case=True):
             ev.warn(MESSAGE)
