@@ -2,7 +2,8 @@
 
 Decides whether an edge release has soaked long enough to promote to stable,
 from the manifest's own `releaseDate` and the workflow's `SOAK_DAYS`. Emits
-`ready=true|false` and a human-readable line to stdout.
+`ready=true|false`, `path=force|nightly|soak` (which rule decided) and a human-readable line to stdout.
+With `PROMOTE_TRIGGER=workflow_run` the soak is waived only when `nightly_tested_edge` proves `EDGE_VERSION`'s tagged commit is contained in `NIGHTLY_HEAD_SHA`; every other outcome falls back to the soak rule.
 
 DATE PARSING IS SHELLED OUT, NOT REIMPLEMENTED. The twin tries GNU `date -d` first, then BSD `date -j -f "%Y-%m-%dT%H:%M:%S"`, so it accepts a wider set of `EDGE_DATE` spellings than a hand-rolled `datetime.fromisoformat` would (GNU `date -d` parses far more than ISO-8601). Re-deriving that parser would be a second implementation of a contract the system `date` binary already owns,
 and would drift from it silently on some future EDGE_DATE this port never saw during review. Running the *exact* twin expression through `bash -c` keeps the two sides looking at the same parse, byte for byte.
@@ -21,6 +22,8 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+
+from rediacc_ci.release.nightly_tested_edge import edge_tested_by_nightly
 
 SELF = "check-soak-period.py"
 
@@ -60,16 +63,31 @@ def main(argv: list[str]) -> int:
 
     print(f"Edge release age: {age_days} days (soak: {soak_days} days)")
 
+    # The nightly waiver (operator ruling 2026-09-30): a green scheduled Console CI run releases edge to stable without the soak, but only when that run's head provably contains the edge version's tagged commit. Anything short of proof falls through to the soak rule below.
+    nightly_proven = False
+    if force != "true" and os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run":
+        nightly_proven, reason = edge_tested_by_nightly(
+            os.environ.get("EDGE_VERSION", ""), os.environ.get("NIGHTLY_HEAD_SHA", "")
+        )
+        print(f"Nightly check: {reason}")
+
     with open(output_path, "a", encoding="utf-8") as fh:
         if force == "true":
             print("Force promotion requested, skipping soak check")
             fh.write("ready=true\n")
+            fh.write("path=force\n")
+        elif nightly_proven:
+            print("Decided by: green nightly contains the edge commit, skipping soak check")
+            fh.write("ready=true\n")
+            fh.write("path=nightly\n")
         elif age_days < int(soak_days):
             print(f"Edge needs {int(soak_days) - age_days} more day(s) of soak")
             fh.write("ready=false\n")
+            fh.write("path=soak\n")
         else:
             print("Soak period complete")
             fh.write("ready=true\n")
+            fh.write("path=soak\n")
     return 0
 
 

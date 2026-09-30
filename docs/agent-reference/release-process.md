@@ -54,6 +54,8 @@ Console CI on main" guard. Only for cherry-picking a specific prior CI run; usin
 
 `ci_run_id` may be left empty to auto-derive the latest green Console CI on `main`.
 
+The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches cd-v2 with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
+
 ## Release to Production (`promote-stable.yml`)
 
 ```
@@ -62,6 +64,7 @@ Manual:     gh workflow run "Release to Production" -f force=true
 ```
 
 Promotes the current edge release to the stable channel (`eu`/`us`/`asia`), serving `www.rediacc.com`. Runs on a daily cron and refuses to promote a version still inside its `SOAK_DAYS` (7) window unless dispatched with `force: true`, which skips the soak check entirely -- there is no partial-skip.
+A green scheduled nightly (`Console CI` on `main`) also triggers it through `workflow_run`, and that run skips the soak only when the edge tag's commit is the nightly's `head_sha` or an ancestor of it (`rediacc_ci.release.nightly_tested_edge`); an edge the nightly did not contain, or any failed lookup, falls back to the soak rule. The rollback-label check and every deploy and verify job run the same on all three triggers, a `promote-stable` concurrency group queues them rather than running two at once, and the summary names the trigger and the rule (`force`, `nightly` or `soak`) that decided.
 
 Both R2 promotes (this one and the `publish_stable` hotfix lane) copy `<dir>/edge/` to `<dir>/stable/` server-side with one `aws s3api copy-object` per object, so no release bytes pass through the runner; only the four channel pointers (`cli/install.sh`, `cli/install.ps1`, `rpm/rediacc.repo`, `archlinux/rediacc.conf`) are fetched, stamped for stable and uploaded after the rest of their tree. `.ci/rediacc_ci/deploy/r2_promote.py` carries the plan and R2's copy limits.
 
