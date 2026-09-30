@@ -467,6 +467,12 @@
       "CI_DOCKER_DIR",
       "GITHUB_OUTPUT"
     ],
+    ".ci/rediacc_ci/infra/obs_mirror.py": [
+      "GITHUB_OUTPUT",
+      "GITHUB_STEP_SUMMARY",
+      "PATH",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/infra/renet_pkg_matrix.py": [
       "GITHUB_OUTPUT"
     ],

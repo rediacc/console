@@ -1,0 +1,124 @@
+name: CI - OBS Mirror
+
+# The openSUSE Leap 16.0 Ceph mirror (agent/plans/PLAN-renet-obs-mirror.md, D2).
+# OBS filesystems:ceph:squid/16.0 keeps only its latest build, and renet pins
+# one exact EVR, so every build is captured while OBS still serves it: the
+# signed OBS repodata unmodified plus the RPMs renet installs from it, one tar
+# in ghcr.io/rediacc/ci-vm-bake tagged obs-mirror-v1-opensuse-16.0-<EVR>.
+# A tag that exists is never rewritten. rediacc_ci.infra.obs_mirror proves
+# each capture in containers with OBS unreachable before it pushes. Main only:
+# pull requests read the package and never write it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - private/renet
+      - .ci/rediacc_ci/infra/obs_mirror.py
+      - .github/workflows/ci-obs-mirror.yml
+  schedule:
+    # OBS replaces a build in the same publish that adds the next; every 6 hours
+    # catches each build while it is still served (plan Q3).
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      evr:
+        description: 'EVR to capture instead of the one OBS serves now (e.g. 19.2.3-lp160.2.97)'
+        required: false
+        default: ''
+
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
+
+concurrency:
+  group: ci-obs-mirror
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: OBS Mirror (opensuse-16.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # packages: write pushes to ghcr.io/rediacc/ci-vm-bake with github.token.
+    # The package is already private (ci-vm-bake.yml, ruling D1), so the mirror
+    # tags inherit that and never publish Ceph binaries.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      # renet alone: the OBS key, the pin, the package names and the binary all come from it.
+      - name: Init renet submodule
+        run: git submodule update --init --depth 1 private/renet
+
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      # opensuse/leap:16.0 comes from Docker Hub.
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Install oras
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image install-oras
+
+      - name: Read the build OBS serves
+        id: upstream
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror upstream
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      # A plain static `go build`, as the pkg matrix does: `renet ceph install`
+      # needs no embedded assets, and the binary runs in the Leap container.
+      # Never uploaded (console is public).
+      - name: Build renet
+        working-directory: private/renet
+        run: CGO_ENABLED=0 go build -o "$RUNNER_TEMP/renet" ./cmd/renet
+
+      # OBS's current build, pinned or not: capturing it before the pin moves is
+      # what lets the pin move at all.
+      - name: Capture the build OBS serves
+        env:
+          OBS_MIRROR_EVR: ${{ inputs.evr || steps.upstream.outputs.obs_evr }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror capture --evr "$OBS_MIRROR_EVR" --renet "$RUNNER_TEMP/renet"
+      # The tree's pin: a no-op once captured, and red when it is neither
+      # captured nor served any more.
+      - name: Capture the pin
+        if: steps.upstream.outputs.pin != (inputs.evr || steps.upstream.outputs.obs_evr)
+        env:
+          OBS_MIRROR_EVR: ${{ steps.upstream.outputs.pin }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror capture --evr "$OBS_MIRROR_EVR" --renet "$RUNNER_TEMP/renet"

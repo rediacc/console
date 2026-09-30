@@ -323,6 +323,7 @@
       "NIGHTLY_URL",
       "NOTICE",
       "NPM_DIR",
+      "OBS_MIRROR_EVR",
       "OUTPUT_FILE",
       "OUT_DIR",
       "PENDING_RERUN",
