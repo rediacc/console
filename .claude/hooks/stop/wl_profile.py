@@ -115,14 +115,16 @@ def load_capture(path: Path) -> Capture | None:
 
 
 def dilate(cap: Capture, k: float) -> Capture:
-    """Stretch WALL by k; leave CPU alone. This is what machine load does."""
+    """Stretch WALL by k; leave CPU alone. This is what machine load does.
+
+    The WHOLE timeline stretches, `t0_ms` included: E4 compares `t0_ms + t_ms` across captures, and stretching only the capture-relative half made lifetimes cross that never did (worklist #0d10395d)."""
     samples = []
     for s in cap.samples:
         s2 = dict(s)
         s2["t_ms"] = int(s["t_ms"] * k)
         samples.append(s2)
     run = dict(cap.run)
-    for key in ("wall_ms", "expected_n"):
+    for key in ("wall_ms", "expected_n", "t0_ms"):
         if key in run:
             run[key] = int(run[key] * k)
     if isinstance(run.get("psi_us"), dict):
@@ -827,6 +829,15 @@ def selftest() -> int:
             [a, Capture(b.samples, {k: v for k, v in b.run.items() if k != "t0_ms"}, "gate-e")]
         ),
     )
+    # D1 ACROSS CAPTURES. E4 reads t0_ms + t_ms, so a dilate that stretched t_ms and left t0_ms alone made gate-a (0-400) reach past gate-f's start (500) at k=2.3 and invented an overlap: check:ci-resprofile's real-tree dilation control went red on exactly that (worklist #0d10395d, check_ci-renet-types vs check_ci-setup-idempotency on .git/index.lock).
+    _f = cap_with_write("gate-f", ".ci/scripts/x.sh", 500)
+    check("CONTROL: gate-a and gate-f do not overlap undilated", not derive([a, _f]))
+    for k in (0.4, 2.3, 7.0):
+        check(
+            "D1: E4 byte-identical under dilate(k=%.1f) across captures" % k,
+            derive([dilate(a, k), dilate(_f, k)]) == derive([a, _f])
+            and derive([dilate(a, k), dilate(b, k)]) == derive([a, b]),
+        )
 
     # ---- admission floor ----
     check(

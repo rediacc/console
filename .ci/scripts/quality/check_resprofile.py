@@ -17,10 +17,8 @@ THE KILL TRIGGER, fixed in advance. `sunset` in the baseline is 30 days after se
 
 ANTI-VACUITY. A captures dir with zero judgeable captures is UNJUDGEABLE, never clean: warn while pristine, fail once seeded. Exit 1 on an enforced finding, 2 on a failed control.
 
-KNOWN OPEN, 2026-09-15 (docs/ci-overhaul/07-tooling-decisions.md O-4). The dilation control fired for real, standalone, twice: "a predicate is reading wall-clock", after a heavily-serialized battery (`npx tsx scripts/ci-runner/run.ts --jobs 4 --heavy-limit 1`,
-3354s wall, k=2.3). It went green again on the next run because the triggering captures
-live outside the tree (`~/.claude/resprofile/<repo>/<day>/<run>/` via `.ci/cache/profiles.prev`) and regenerate every run -- the data that exposed the divergence was already gone by the time anyone looked. NOT fixed: whoever reproduces the triggering run config and diffs `W.derive(caps)` against `W.derive([W.dilate(c, 2.3) for c in caps])` will name the offending predicate; nobody
-has spent the ~56 minutes yet.
+FIXED 2026-09-30 (docs/ci-overhaul/07-tooling-decisions.md O-4, worklist #0d10395d). The dilation control fired for real, "a predicate is reading wall-clock", first on 2026-09-15 after a heavily-serialized battery and again on a 2026-09-30 ci:quick corpus, where it named an E4 overlap on .git/index.lock that appeared only at k=2.3. The predicate was sound; the OPERATOR was
+not: `dilate` stretched each capture's relative t_ms but not its absolute t0_ms, and E4 compares t0_ms + t_ms across captures. wl_profile's selftest now carries a cross-capture D1 control, and the 286-capture corpus derives identically at k 0.4, 2.3 and 7.0.
 
 ---- gate ----
 step: Resource profile (previous run's captures)
