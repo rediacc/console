@@ -1943,6 +1943,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-boxes',
     gate: true,
+    slow: true, // 59.4s measured in CI (lane-durations refresh b9e561ec9)
     paths: [
       'agent/plans/**',
       '.ci/config/plan-boxes.json',
@@ -1968,6 +1969,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-implementation',
     gate: true,
+    slow: true, // 296.6s measured in CI (lane-durations refresh b9e561ec9)
     // ONE LEAF, not two, and the config is deliberately absent. check:ci-parity asserts `leaves` equals what package.json actually RESOLVES to, so naming `.ci/config/plan-implementation.json` here is a hygiene finding rather than extra safety. The config still cannot be edited unnoticed: this entry declares no `paths`, so it is always selected.
     leaves: ['.ci/scripts/quality/check_plan_implementation.py'],
     ci: {

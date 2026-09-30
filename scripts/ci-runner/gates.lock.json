@@ -2012,6 +2012,7 @@
     },
     "run": "npm run check:ci-plan-boxes",
     "gate": true,
+    "slow": true,
     "paths": [
       "agent/plans/**",
       ".ci/config/plan-boxes.json",
@@ -2035,6 +2036,7 @@
     },
     "run": "npm run check:ci-plan-implementation",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_plan_implementation.py"
     ],

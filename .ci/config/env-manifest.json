@@ -225,6 +225,7 @@
       "CHANNEL",
       "CHOWN_PATH",
       "CI",
+      "CI_ALERTS_CONFIG",
       "CI_ARCH",
       "CI_DOCKER_DIR",
       "CI_JOBS",
