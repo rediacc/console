@@ -263,7 +263,7 @@
    size, colour, spacing and leading rather than assume the article defaults do not apply. */
 .docs-browse .docs-card-title {
   font-size: var(--font-size-base);
-  line-height: var(--leading-snug);
+  line-height: var(--leading-normal);
   color: inherit;
   margin: 0;
   display: -webkit-box;

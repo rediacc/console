@@ -90,8 +90,7 @@ function runAgent(args) {
     // binary returning rc=0 on a terminal and rc=1 with stdout redirected, for a page
     // that loaded correctly both ways, and states the invariant as "no script may let that exit status decide control flow". That gate scans SHELL scripts under `set -e`; this is the same defect in JavaScript, where `execFileSync` throws on the same worthless status.
     //
-    // THE RED THIS EXPLAINS: CI run 33430885467, job 99616335703, died on the FIRST navigation of the first scenario with the single line `Error: Command failed: agent-browser --session ... open http://127.0.0.1:4511/en/docs/tutorial-production-mode` -- no status, no output, and the identical command passing locally on the same tree. `String(error)` produces exactly that and drops
-    // `.status`/`.stdout`/`.stderr`.
+    // THE RED THIS EXPLAINS: CI run 33430885467, job 99616335703, died on the FIRST navigation of the first scenario with the single line `Error: Command failed: agent-browser --session ... open http://127.0.0.1:4511/en/docs/tutorial-production-mode` -- no status, no output, and the identical command passing locally on the same tree. `String(error)` produces exactly that and drops `.status`/`.stdout`/`.stderr`.
     //
     // So: the ENVELOPE decides, never the status. agent-browser prints its verdict as JSON on STDOUT even when it exits 1 (verified against the real binary: a failed open exits 1 with an empty stderr and
     // `{"success":false,...,"error":"Navigation failed: net::ERR_UNSAFE_PORT"}` on
@@ -237,8 +236,7 @@ async function startDevServer() {
       '--port',
       String(port),
     ];
-    // `detached: true` makes this its own process group leader. PROVEN NECESSARY, not precautionary: `npm run dev` spawns `astro` as a grandchild, and killing just the npm PID does not propagate to it -- verified live 2026-08-28, a fully successful gate run (exit 0, all 5 scenarios passing) still left `astro` running and holding port 4511 afterward. stopDevServer() below signals
-    // the whole group (`-proc.pid`), which reaches the grandchild too.
+    // `detached: true` makes this its own process group leader. PROVEN NECESSARY, not precautionary: `npm run dev` spawns `astro` as a grandchild, and killing just the npm PID does not propagate to it -- verified live 2026-08-28, a fully successful gate run (exit 0, all 5 scenarios passing) still left `astro` running and holding port 4511 afterward. stopDevServer() below signals the whole group (`-proc.pid`), which reaches the grandchild too.
     serverProc = spawn('npm', args, {
       cwd: repoRoot,
       env: process.env,
@@ -298,8 +296,7 @@ async function stopDevServer() {
   const proc = serverProc;
   serverProc = null;
   intentionalShutdown = true;
-  // `proc`'s own 'exit' event is NOT a reliable signal that the whole group is dead -- PROVEN live 2026-08-28: npm (the direct child, `proc` here) exits fast on SIGTERM while `astro` (its grandchild, still in its own graceful shutdown) keeps running; the old code resolved on npm's exit and `process.exit()` in main()'s finally then killed the whole script before the SIGKILL
-  // safety-net timer (`timer.unref()`'d, so it never survives process.exit()) got a chance to fire. astro was left holding the port on EVERY run, including fully passing ones. Fix: always send an unconditional group-wide SIGKILL after a short grace window, never conditionally.
+  // `proc`'s own 'exit' event is NOT a reliable signal that the whole group is dead -- PROVEN live 2026-08-28: npm (the direct child, `proc` here) exits fast on SIGTERM while `astro` (its grandchild, still in its own graceful shutdown) keeps running; the old code resolved on npm's exit and `process.exit()` in main()'s finally then killed the whole script before the SIGKILL safety-net timer (`timer.unref()`'d, so it never survives process.exit()) got a chance to fire. astro was left holding the port on EVERY run, including fully passing ones. Fix: always send an unconditional group-wide SIGKILL after a short grace window, never conditionally.
   try {
     process.kill(-proc.pid, 'SIGTERM');
   } catch {
@@ -323,8 +320,7 @@ async function stopDevServer() {
 
 // PLAYER SELECTORS, verified against packages/www/src/components/TutorialVideoPlayer.tsx at HEAD (2026-08-28): the player root is `.tvp-shell > .tvp-root`, hydrated by tutorial-video-hydrate.ts onto `.tutorial-video-container[data-video-src]` (docs) or `.video-player-mount[data-video-src]` (solution-page hero). Plyr wraps the real
 // `<video>` and renders standard `[data-plyr="X"]` control buttons (controls list at
-// TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts. This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md
-// for the full trace.
+// TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts. This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/PLAN-fix-tutorial-player-debug-hook-attachment.md for the full trace.
 
 /**
  * A click dispatched via `evalInPage(...).click()` is NOT a trusted user gesture --
@@ -347,6 +343,34 @@ function clickSelector(selector) {
 
 function clickPlaybackButton() {
   return clickSelector('.tvp-root [data-plyr="play"]');
+}
+
+/**
+ * Wait for the player's play control to EXIST, rather than sleeping and hoping.
+ *
+ * WHY THIS REPLACED A FIXED SLEEP. The docs mounts build through an IntersectionObserver
+ * and a dynamic `import()` of 122 KB of player, and on a dev server that import is
+ * unbundled: measured on 2026-09-09, the first route of a run compiled in 18.4s and the
+ * first navigation took 8.4s, after which `wait(1200)` was nowhere near enough. The click
+ * then timed out against an element that did not exist yet -- and the failure did not even
+ * look like a timing problem, because by the time the NEXT assertion ran the player had
+ * appeared and the click had landed, so the whole scenario reported five failures that were
+ * each one step out of phase: "pause did not stop the video" with `paused: false` was the
+ * PLAY click being reported under the pause assertion's name.
+ *
+ * Proven pre-existing and independent of the theater work by running this gate against
+ * HEAD's tutorial-video-hydrate.ts and TutorialVideoPlayer.tsx: identical five failures.
+ *
+ * Only the FIRST navigation of a run is slow enough to hit it, because the module graph is
+ * warm afterwards -- which is exactly why a fixed sleep survived here for so long.
+ */
+function waitForPlayerControl() {
+  try {
+    runAgent(['wait', '.tvp-root [data-plyr="play"]']);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: String(error) };
+  }
 }
 
 function burstPlaybackClicks(count, gapMs) {
@@ -394,7 +418,7 @@ function sampledStates(durationMs, tickMs) {
 function scenarioBasicPlayPauseResume() {
   log('→ scenario: basic play/pause/resume');
   openFirst(`${baseUrl}/en/docs/tutorial-production-mode`);
-  wait(1200);
+  assertCondition(waitForPlayerControl().ok, 'player never appeared on the docs page');
   clearConsole();
 
   assertCondition(clickPlaybackButton().ok, 'play button click failed at start');
@@ -464,8 +488,7 @@ function scenarioSeekNoSnapback() {
 
   assertCondition(clickPlaybackButton().ok, 'play click failed before seek');
   wait(1200);
-  // Direct media-element seek rather than driving a .tvp-chapter-tick click: the chapter overlay only paints once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own
-  // currentTime, not upstream of it.
+  // Direct media-element seek rather than driving a .tvp-chapter-tick click: the chapter overlay only paints once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own currentTime, not upstream of it.
   const seekTarget = 48;
   evalInPage(`(() => {
     const v = document.querySelector('.tvp-root video');
@@ -523,8 +546,7 @@ function scenarioFullscreenAndLayering() {
   const exitState = evalInPage(`(() => ({ fullscreen: Boolean(document.fullscreenElement) }))()`);
   assertCondition(!exitState.fullscreen, 'fullscreen did not exit', exitState);
 
-  // The docs-vs-heading-share layering comparison from the deleted TerminalPlayer era is retired, not adapted: `.heading-share` does not exist anywhere in the current site (verified: grep -rn "heading-share" packages/www/src -> no hits), and the layout it belonged to is gone. See agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, scenario 5, for why no replacement
-  // invariant was invented here.
+  // The docs-vs-heading-share layering comparison from the deleted TerminalPlayer era is retired, not adapted: `.heading-share` does not exist anywhere in the current site (verified: grep -rn "heading-share" packages/www/src -> no hits), and the layout it belonged to is gone. See agent/PLAN-fix-tutorial-player-debug-hook-attachment.md, scenario 5, for why no replacement invariant was invented here.
   const docsZ = evalInPage(`(() => {
     const s = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     return {
@@ -536,17 +558,15 @@ function scenarioFullscreenAndLayering() {
 }
 
 function scenarioMountConsistency() {
-  // The homepage no longer carries a tutorial/video player -- SPHomeHero.astro deliberately removed the old "fake terminal" (operator-approved: it "failed contrast... shipped a disclaimer apologising for being simulated"). The docs route and a solution-page hero are the two mount paths that both go through TutorialVideoPlayer today (tutorial-video-hydrate.ts:25), so THIS is the
-  // pair worth checking for consistency: same component, two different placements.
+  // The homepage no longer carries a tutorial/video player -- SPHomeHero.astro deliberately removed the old "fake terminal" (operator-approved: it "failed contrast... shipped a disclaimer apologising for being simulated"). The docs route and a solution-page hero are the two mount paths that both go through TutorialVideoPlayer today (tutorial-video-hydrate.ts:25), so THIS is the pair worth checking for consistency: same component, two different placements.
   log('→ scenario: docs/solution-page mount consistency');
 
-  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an
-  // IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
+  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
   //
-  // The solution assertions are the REAL contract and strictly stronger than the single `hasPlayer` this used to carry: no player before the click, a poster to click, a player after it, and the poster gone. The old form could not tell a working deferral from a broken mount.
+  // The solution assertions are the REAL contract and strictly stronger than the single `hasPlayer` this used to carry: no player before the click, a poster to click, a player inside the THEATER after it, the poster still there, and Escape putting it all back. The old form could not tell a working deferral from a broken mount.
   const probe = () =>
     evalInPage(
-      `(() => { const q = (s) => document.querySelector(s); const c = q('.tvp-root .tvp-caption'); return { hasPlayer: Boolean(q('.tvp-root video')), hasPoster: Boolean(q('.video-poster-play')), captionZ: c ? getComputedStyle(c).zIndex : null }; })()`
+      `(() => { const q = (s) => document.querySelector(s); const c = q('.tvp-root .tvp-caption'); return { hasPlayer: Boolean(q('.tvp-root video')), hasPoster: Boolean(q('.video-poster-play')), theaterOpen: Boolean(q('.video-theater:not([hidden])')), playerInTheater: Boolean(q('.video-theater .tvp-root video')), captionZ: c ? getComputedStyle(c).zIndex : null }; })()`
     );
 
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
@@ -559,22 +579,42 @@ function scenarioMountConsistency() {
   clickSelector('.video-poster-play');
   wait(2500);
   const after = probe();
-  writeArtifact('scenario-layering-solution.json', { before, after });
+  runAgent(['press', 'Escape']);
+  wait(600);
+  const closed = probe();
+  writeArtifact('scenario-layering-solution.json', { before, after, closed });
 
   assertCondition(docs.hasPlayer, 'docs page tutorial video player not found', docs);
+  assertCondition(
+    !docs.theaterOpen,
+    'docs mounts must keep building in place; no theater belongs on a docs page',
+    docs
+  );
   assertCondition(
     !before.hasPlayer && before.hasPoster,
     'solution page must show a poster and NO player before the click',
     before
   );
+  // THE POSTER SURVIVES THE CLICK, and that reversal is the point of the theater. Until 2026-09-09 this asserted `!after.hasPoster`, because the player was built in place and the poster was removed to make room for it. It is now built inside a full-viewport overlay instead -- the inline box is 576px wide for 1920x1080 footage
+  // with burned-in captions -- and the poster is what the visitor returns to on close.
+  // An assertion that the poster is gone would now be asserting the old defect.
   assertCondition(
-    after.hasPlayer && !after.hasPoster,
-    'clicking the poster must mount the player and remove the poster',
+    after.playerInTheater && after.theaterOpen,
+    'clicking the poster must open the theater with a player inside it',
     after
   );
+  assertCondition(
+    after.hasPoster,
+    'the inline poster must survive the click; closing the theater returns to it',
+    after
+  );
+  assertCondition(
+    !closed.theaterOpen && closed.hasPoster,
+    'Escape must close the theater and leave the poster clickable',
+    closed
+  );
 
-  // NOT a docs-vs-solution caption z-index comparison: solution videos have no `words` manifest entry (verified: packages/www/src/data/video-manifest.json -> solutions.rapid-recovery.en has only mp4/vertical/poster, no words) because their captions are burned into the video pixels, per TutorialVideoPlayer.tsx:713's own `activeWords &&` guard on rendering `.tvp-caption` at all.
-  // Asserting the two mounts' caption z-index MATCH would fail by design, not by defect -- checked instead is the one invariant that is actually guaranteed: a caption element, when present, sits at the CSS-defined z-index (tutorial-video.css:63).
+  // NOT a docs-vs-solution caption z-index comparison: solution videos have no `words` manifest entry (verified: packages/www/src/data/video-manifest.json -> solutions.rapid-recovery.en has only mp4/vertical/poster, no words) because their captions are burned into the video pixels, per TutorialVideoPlayer.tsx:713's own `activeWords &&` guard on rendering `.tvp-caption` at all. Asserting the two mounts' caption z-index MATCH would fail by design, not by defect -- checked instead is the one invariant that is actually guaranteed: a caption element, when present, sits at the CSS-defined z-index (tutorial-video.css:63).
   assertCondition(
     docs.captionZ === '3',
     'docs caption z-index does not match the CSS-defined value',
@@ -698,8 +738,7 @@ async function main() {
       baseUrl,
       resources,
       serverDiedMidRun,
-      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it was the one path that omitted it. `serverLog` was written on the navigation path only, so five boot-timeout artifacts in a row reported that the server "timed out" while discarding the banner proving it had started in 4.7s. The header comment above already claimed this was "written out on
-      // failure"; now it is.
+      // THE BOOT TIMEOUT IS THE ONE FAILURE THAT CANNOT BE READ WITHOUT THIS, and it was the one path that omitted it. `serverLog` was written on the navigation path only, so five boot-timeout artifacts in a row reported that the server "timed out" while discarding the banner proving it had started in 4.7s. The header comment above already claimed this was "written out on failure"; now it is.
       serverLog,
     });
     exitCode = 1;

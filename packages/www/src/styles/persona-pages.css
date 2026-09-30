@@ -15,16 +15,6 @@
   margin: 0 auto;
 }
 
-.sp-share-overline {
-  display: inline-block;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sp-brand-primary);
-  margin-bottom: 16px;
-}
-
 .sp-share-with-team h2 {
   font-size: var(--font-size-2xl);
   font-weight: 700;
@@ -38,12 +28,6 @@
   color: var(--sp-text-body);
   margin: 0 0 32px;
   line-height: 1.6;
-}
-
-.sp-share-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* ========== RESPONSIVE ========== */

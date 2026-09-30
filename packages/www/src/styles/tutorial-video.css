@@ -33,6 +33,13 @@
   background-size: cover;
 }
 
+/* The same damping the pre-hydration poster gets in solution-video.css. Plyr
+   swaps its own .plyr__poster in when the player mounts, so without this the
+   frame snaps back to full brightness the instant someone clicks play. */
+:root[data-theme='dark'] .tvp-root .plyr__poster {
+  filter: brightness(0.55) saturate(0.9);
+}
+
 /* Suppress Plyr's built-in caption box — our .tvp-caption overlay below
  * renders the same text with per-word highlighting. The subtitles track is
  * still loaded so Plyr's CC button + captions menu stay wired. */

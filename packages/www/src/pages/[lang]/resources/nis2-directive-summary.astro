@@ -117,7 +117,7 @@ const faqs = ta(`${ns}.faq.items`) as Array<{ q: string; a: string }>;
   .resource-eyebrow {
     display: inline-block;
     font-size: var(--font-size-xs);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
     color: var(--resource-accent);
     margin-bottom: 16px;
@@ -177,7 +177,7 @@ const faqs = ta(`${ns}.faq.items`) as Array<{ q: string; a: string }>;
   }
   .resource-companion-card:hover { border-color: var(--resource-accent); transform: translateY(-2px); }
   .resource-companion-card h3 { font-size: var(--font-size-lg); margin: 0 0 10px; color: var(--resource-accent); }
-  .resource-companion-card p { font-size: 14px; line-height: 1.55; opacity: 0.85; margin: 0 0 14px; }
+  .resource-companion-card p { font-size: var(--font-size-sm); line-height: 1.55; opacity: 0.85; margin: 0 0 14px; }
   .resource-companion-link { font-size: var(--font-size-xs); color: var(--resource-accent); }
 
   .resource-faq { padding: 64px 0; }
@@ -192,11 +192,11 @@ const faqs = ta(`${ns}.faq.items`) as Array<{ q: string; a: string }>;
   }
   .resource-faq-item summary { cursor: pointer; font-weight: 600; font-size: var(--font-size-sm); }
   .resource-faq-item[open] summary { margin-bottom: 10px; }
-  .resource-faq-item p { font-size: 14px; line-height: 1.65; margin: 0; opacity: 0.85; }
+  .resource-faq-item p { font-size: var(--font-size-sm); line-height: 1.65; margin: 0; opacity: 0.85; }
 
   .resource-about { padding: 64px 0; text-align: center; }
   .resource-about .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
-  .resource-about h2 { font-size: 24px; margin: 0 0 18px; }
+  .resource-about h2 { font-size: var(--font-size-2xl); margin: 0 0 18px; }
   .resource-about p { font-size: var(--font-size-sm); line-height: 1.7; margin: 0 0 18px; opacity: 0.85; }
   .resource-about p a { color: var(--resource-accent); }
   .resource-about-cta { font-style: italic; }

@@ -9,7 +9,6 @@ interface BenefitItem {
 
 interface Props {
   benefits: {
-    overline: string;
     title: string;
     items: BenefitItem[];
   };
@@ -20,7 +19,6 @@ const { benefits } = Astro.props;
 
 <section class="sp-benefits">
   <div class="sp-benefits-inner">
-    <div class="sp-overline">{benefits.overline}</div>
     <h2>{benefits.title}</h2>
     <div class="sp-benefits-grid">
       {benefits.items.map((item) => (

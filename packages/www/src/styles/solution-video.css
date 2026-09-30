@@ -116,6 +116,55 @@
   object-fit: cover;
 }
 
+/* (The mobile poster aspect mismatch is handled on the MOUNT, not here; see the
+   pre-hydration aspect-ratio note further down.) */
+
+/* DARK MODE: the poster is a BAKED LIGHT-MODE JPEG. It is rendered by
+   private/growth/video_pipeline (a separate repo this one cannot see -- see
+   CLAUDE.md "Media Assets"), so its white ground and its large orange numeral
+   cannot be re-authored from here. On #0f0f10 that lands as a bright slab
+   with an accent no token on this site owns.
+
+   What IS ownable here is the frame around it. 0.92 brightness was measured
+   first and was not enough -- the poster still read as a lit panel on #0f0f10
+   in a screenshot. 0.72 was the second try and, measured rather than eyeballed,
+   it did not get there either: sampling the RENDERED 576x324 poster on
+   /en/for-ctos in dark mode put its mean luminance at 174.8 (8.59:1 against
+   #111113) with peaks at a flat 255 (18.88:1). That is brighter on average than
+   the page's own secondary ink (#a1a1aa, ~161) and peaks brighter than its
+   primary ink (#e4e4e7, ~228) -- so the largest object above the fold was also
+   the brightest thing on the page, which is the exact failure 0.92 -> 0.72 was
+   already trying to fix. 0.55 lands the mean near 134 (~5.3:1), below every ink
+   on the page while the frame still reads as a preview. Same treatment, one more
+   step in the direction this comment was already walking.
+
+   The play control on top of it carries its own colour and is unaffected. Hover
+   and focus restore the image to full, so nothing is hidden from anyone actually
+   looking at it, and the restore is what a pointer or a keyboard both get.
+   Duplicated for .plyr__poster in tutorial-video.css -- the hydrator DELETES this
+   element on first click, so treating only this one makes the effect vanish the
+   moment you press play. */
+:root[data-theme='dark'] .video-poster-preview {
+  filter: brightness(0.55) saturate(0.9);
+  transition: filter var(--duration-fast, 150ms) var(--ease-out, ease);
+}
+
+:root[data-theme='dark'] .video-player-mount:hover .video-poster-preview,
+:root[data-theme='dark'] .video-player-mount:focus-within .video-poster-preview {
+  filter: none;
+}
+
+:root[data-theme='dark'] .video-player-mount[data-click-to-load]:not([data-hydrated]) {
+  box-shadow: inset 0 0 0 1px var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme='dark'] .video-poster-preview {
+    transition: none;
+  }
+}
+
 .video-poster-play {
   position: absolute;
   inset-block-start: 50%;
@@ -157,9 +206,26 @@
   background: var(--color-bg-light);
 }
 
+/* RESERVE THE SHAPE OF WHAT IS ACTUALLY ON SCREEN, which before this was the poster's
+   shape nowhere and the video's shape everywhere. This selector only ever styles the
+   PRE-HYDRATION placeholder, and the only thing in it is the poster `img` -- a landscape
+   1920x1080 frame, because resolveSolutionVideoSources ships one poster per language and
+   there is no portrait cut of it, only of the video.
+   Reserving 9/16 here therefore sized the box for a file that was not being shown yet, and
+   `object-fit: cover` paid for it: measured 327x581 at 390px, a 1.78 image in a 0.56 box
+   throws away ~68% of the width and cut the poster's own baked-in caption into fragments
+   ("ndor lock-in you're locked to gets p" on /en/for-ctos). `contain` was the other obvious
+   fix and is worse: measured deadFraction 0.684, a box two thirds empty grey on every
+   mobile visit.
+   16/9 matches the poster exactly, so the frame is whole and nothing is reserved for
+   nothing. The cost is one layout shift when the portrait file loads and `.tvp-root--portrait`
+   (tutorial-video.css) takes over at 9/16 -- and that happens on an explicit press of play,
+   where the content genuinely changes shape, rather than silently on every page load. The
+   hydrated state is what check-page-density measures (it scores only boxes containing a
+   `video`/`iframe`), and that state is unchanged. */
 @media (max-width: 768px) {
   .video-player-mount:not([data-hydrated]) {
-    aspect-ratio: 9 / 16;
+    aspect-ratio: 16 / 9;
     max-width: 420px;
     margin-inline: auto;
   }

@@ -24,7 +24,6 @@ interface Props {
   /** Button label for the timeline disclosure, from `solutions.disclosure.*`. */
   timelineLabel: string;
   problem: {
-    overline: string;
     title: string;
     description: string;
     statCallouts?: StatCallout[];
@@ -98,7 +97,6 @@ function calloutGlyph(value: string): string | null {
   */}
   <div class:list={['sp-problem-inner', illustrationSvg && 'sp-problem-split']}>
     <div class="sp-problem-text">
-      <div class="sp-overline">{problem.overline}</div>
       <h2>{problem.title}</h2>
       <p>{problem.description}</p>
 

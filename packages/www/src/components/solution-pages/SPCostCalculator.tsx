@@ -3,7 +3,6 @@ import Overlay from '../Overlay';
 import { PRESETS, SLIDER_CONFIGS } from './cost-presets';
 
 interface CalculatorContent {
-  overline: string;
   title: string;
   description: string;
   headerTitle: string;
@@ -150,7 +149,6 @@ const SPCostCalculator: React.FC<Props> = ({ content, preset, closeLabel, thumb 
   return (
     <section className="sp-cost-section">
       <div className="sp-cost-section-inner">
-        <div className="sp-overline">{content.overline}</div>
         <h2>{content.title}</h2>
         <p>{content.description}</p>
 

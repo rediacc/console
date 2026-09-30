@@ -1,6 +1,6 @@
 ---
 /**
- * The homepage. Nine body sections became five.
+ * The homepage. Nine body sections became four.
  *
  * Measured at 1440x900 and 390x844 against a built site, scrolled to the
  * bottom and settled first, the page was 7,585px / 14,338px for 658 words:
@@ -22,6 +22,13 @@
  *   - `metrics-bar` deleted. All four of its numbers were already prose in
  *     `home-difference` 2,200px above it, and one of them ("241 GB in under
  *     60 seconds") flatly contradicted the hero's "3.2 TB in 4.7s".
+ *   - `sp-not-a-slice` deleted, with its `SPHomeNotASlice.astro` component and
+ *     its 12-leaf `notASlice.*` i18n namespace. It argued the same point as
+ *     `home-difference` ("partial tools copy one piece, we copy all of it"),
+ *     which was the LAST surviving pair of the "ONE argument four times"
+ *     problem named at the top of this note. `home-difference` states it
+ *     better: four before/after pairs against four bordered cards plus a
+ *     winner card whose description repeated the after-points verbatim.
  *   - `pricing-preview` deleted, with its `PricingPreview.astro` component and
  *     its 3-leaf `pricingPreview.*` i18n namespace. It was a second copy of
  *     `/[lang]/pricing`: the same `buildPlans()` cards, the same billing
@@ -48,7 +55,6 @@ import { createTranslator } from '../../i18n/utils';
 import SPHomeHero from './SPHomeHero.astro';
 import SPHomeVideo from './SPHomeVideo.astro';
 import SolutionConstellation from './SolutionConstellation.astro';
-import SPHomeNotASlice from './SPHomeNotASlice.astro';
 import HomeDifference from '../HomeDifference.astro';
 import SPHomeBottomCta from './SPHomeBottomCta.astro';
 
@@ -62,12 +68,28 @@ const { t } = createTranslator(lang);
 
 <div class="sp-page">
   <SPHomeHero lang={lang} />
-  <SPHomeVideo lang={lang} />
-  {/* `heading` is what makes this render an <h2> and take the .cx--boxed frame.
+  {/* THE CONSTELLATION LEADS, and it is the `full` one, not a compact variant.
+      Decision L9.4 called for "the compact 4-node variant ... dropped into the
+      hero slot L5 vacates". Built and measured, that does not work: the compact
+      GEOMETRY is a 1440x580 ellipse whose arms are sized to hold ONE role's
+      siblings clustered together (constellation.ts GEOMETRY.compact; the
+      solution pages feed it slugsForRole()). Four nodes, one per role, land at
+      the far reach of four different arms, so the figure rendered 1265x510 with
+      its labels flung to the corners and an empty middle. Screenshotted before
+      this note was written.
+
+      The OUTCOME L9.4 wanted -- the page opens on the one figure only this
+      product can show, instead of on a baked video poster whose big-number
+      treatment is the generic default and which cannot follow the theme -- is
+      delivered by moving the FULL figure above the video. It keeps its heading,
+      its #solutions id (linked from the header, drawer, footer, 404 and 24
+      pages) and its role anchors. No CTA is added, so L5 and n6 hold.
+
+      `heading` is what makes this render an <h2> and take the .cx--boxed frame.
       Without it the `full` preset emits no heading at all, and the homepage's
       one <h1> is SPHomeHero's, so a second one here would be wrong anyway. */}
   <SolutionConstellation lang={lang} id="solutions" preset="full" heading={t('solutions.title')} />
-  <SPHomeNotASlice lang={lang} />
+  <SPHomeVideo lang={lang} />
   <HomeDifference lang={lang} />
   <SPHomeBottomCta lang={lang} />
 </div>
