@@ -31,6 +31,7 @@ from __future__ import annotations
 import os
 import shlex
 import sys
+import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -171,7 +172,7 @@ def _port_block_row(facts: dict[str, str], constants: dict[str, str]) -> str:
     )
 
 
-def check(ctx: Ctx, constants: dict[str, str]) -> int:
+def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> int:
     """`setup_check()`, `.ci/legacy/run-legacy.sh:719`. 0 nothing to do, 1 pending.
 
     REPORT ONLY. Nothing here writes, installs, pulls or starts anything, which is the contract `.ci/rediacc_ci/quality/setup_idempotency.py` check B drives against the real command.
@@ -246,6 +247,15 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
         )
         pending += 1
 
+    # THE MOST EXPENSIVE PHASE: `npm install` plus the native rebuild, ~45s. Without this row `--check` said "Nothing to do" in front of a run that would do exactly that.
+    # Asked THROUGH THE BRIDGE, so this is the same `deps_are_current` the real run's `ensure_deps` consults, not a second copy of the rule.
+    # The STALE wording avoids the literal install command on purpose: `check:ci-native-rebuild` reads source text and would pair it with a rebuild.
+    if bridge.call("deps_are_current", ctx.root, ctx.env) == 0:
+        ctx.say("  deps        installed (stamp matches)")
+    else:
+        ctx.say("  deps        STALE (dependencies and native modules pending)")
+        pending += 1
+
     image = constants.get("DEVBOX_IMAGE", "")
     if facts.get("image") == "1":
         ctx.say("  image       present (%s)" % image)
@@ -265,12 +275,20 @@ def check(ctx: Ctx, constants: dict[str, str]) -> int:
         pending += 1
 
     ctx.say()
+    took = _elapsed_suffix(started)
     if pending == 0:
-        ctx.info("Nothing to do; ./run.sh setup would be a no-op")
+        ctx.info("Nothing to do; ./run.sh setup would be a no-op%s" % took)
         bridge.call("devbox_status", ctx.root, ctx.env)
         return 0
-    ctx.warn("%d item(s) would be acted on by ./run.sh setup" % pending)
+    ctx.warn("%d item(s) would be acted on by ./run.sh setup%s" % (pending, took))
     return 1
+
+
+def _elapsed_suffix(started: float | None) -> str:
+    """` (checked in Ns)`, whole seconds as bash `SECONDS` counted them; empty when the caller kept no start time."""
+    if started is None:
+        return ""
+    return " (checked in %ds)" % int(time.monotonic() - started)
 
 
 # --------------------------------------------------------------------------- the verb ---------------------------------------------------------------------------
@@ -489,6 +507,7 @@ def main(argv: list[str] | None = None) -> int:
 
     THE RE-EXEC HAPPENS FIRST, exactly as `.ci/legacy/run-legacy.sh:547` does it, and before argument parsing: a bad flag under a stale docker group should still be reported by the process that can see docker, not by the one that cannot.
     """
+    started = time.monotonic()
     args = list(sys.argv[1:] if argv is None else argv)
     root = paths.repo_root()
     env = dict(os.environ)
@@ -516,8 +535,13 @@ def main(argv: list[str] | None = None) -> int:
     env.update(constants)
 
     if options.check:
-        return check(ctx, constants)
-    return run_setup(ctx, options, constants)
+        return check(ctx, constants, started)
+    rc = run_setup(ctx, options, constants)
+    # A number on screen is what makes the next slowdown noticeable; nobody knew a warm run spent 8s until it was timed by hand. Only on success, after the bookmark block, as the bash printed it.
+    if rc == 0:
+        ctx.say()
+        ctx.info("Setup took %ds." % int(time.monotonic() - started))
+    return rc
 
 
 if __name__ == "__main__":
