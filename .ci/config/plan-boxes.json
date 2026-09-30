@@ -2269,7 +2269,8 @@
         "f70025df",
         "fc245953",
         "fd8a0f0c"
-      ]
+      ],
+      "ruling": "#c3a46b36"
     },
     "agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md": {
       "status": "done",
