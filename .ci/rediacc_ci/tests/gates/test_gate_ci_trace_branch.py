@@ -504,11 +504,8 @@ def test_noci_settled_bounds(gate):
 def test_branch_owns_context_table(gate):
     gate.log_test("branch_owns_context decides by branch name, then by event")
     require_subjects(gate)
-    sys.path.insert(0, str(HOOKS_DIR))
-    try:
-        import wl_ci  # noqa: PLC0415
-    finally:
-        sys.path.remove(str(HOOKS_DIR))
+    paths.on_sys_path(HOOKS_DIR)
+    import wl_ci  # noqa: PLC0415
 
     def run(event, branch):
         return {
@@ -540,11 +537,9 @@ def test_pr_read_is_unchanged(gate):
     gate.log_test("the PR query carries no ownership filter")
     # The fix is scoped to the branch source. A PR head's rollup is read through the PR itself, and its query must not grow the branch-only fields.
     require_subjects(gate)
-    sys.path.insert(0, str(HOOKS_DIR))
-    try:
-        import wl_ci  # noqa: PLC0415
-    finally:
-        sys.path.remove(str(HOOKS_DIR))
+    paths.on_sys_path(HOOKS_DIR)
+    import wl_ci  # noqa: PLC0415
+
     if "branch{name}" in wl_ci.ci_query("o", "n", "r", None):
         gate.log_fail("ci_query grew the branch ownership fields")
     if "branch{name}" not in wl_ci.ci_branch_query("o", "n", "r", None):
