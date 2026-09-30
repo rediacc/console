@@ -861,6 +861,21 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-npm-global-install-release-age.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
+        "76fc6ed3",
+        "ab348c25",
+        "bf9f08ca",
+        "e1112748"
+      ]
+    },
     "agent/plans/PLAN-parallel-writer-roster.md": {
       "status": "ready",
       "owner": "d778be9d",
@@ -1595,21 +1610,21 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 4,
+      "open": 5,
+      "done": 5,
       "open_sigs": [
         "15f901d8",
         "2455ab0e",
         "5abd062b",
         "635422d7",
-        "6e6c3a0b",
-        "bfc9b7cd"
+        "6e6c3a0b"
       ],
       "done_sigs": [
         "121dc28c",
         "2a8b21c4",
         "759c2b51",
-        "bec5a550"
+        "bec5a550",
+        "bfc9b7cd"
       ]
     },
     "agent/plans/PLAN-stop-hook-rulings-campaign.md": {
