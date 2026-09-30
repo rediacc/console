@@ -308,11 +308,10 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   useEffect(() => {
     if (!activeWords) return;
     let cancelled = false;
-    const url = activeWords;
-    fetch(url)
+    fetch(activeWords)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((doc: WordsDoc) => {
-        if (!cancelled) setWords({ src: url, doc });
+        if (!cancelled) setWords({ src: activeWords, doc });
       })
       .catch(() => undefined);
     return () => {
@@ -322,10 +321,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
 
   // Null until the sidecar for the CURRENT video has landed.
   //
-  // `words &&` FIRST, not optional chaining. With no sidecar at all -- a solution video --
-  // `activeWords` is undefined and so is `words?.src`, so `words?.src === activeWords` is
-  // `undefined === undefined`, i.e. TRUE, and the branch then reads `.doc` off null. tsc
-  // caught it; at runtime it would have been a crash on every solution page.
+  // `words &&` FIRST, not optional chaining. With no sidecar at all -- a solution video -- `activeWords` is undefined and so is `words?.src`, so `words?.src === activeWords` is `undefined === undefined`, i.e. TRUE, and the branch then reads `.doc` off null. tsc caught it; at runtime it would have been a crash on every solution page.
   const wordsDoc = words && words.src === activeWords ? words.doc : null;
 
   // Plyr lifecycle + chapter overlay.

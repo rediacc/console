@@ -171,5 +171,5 @@ export function openTheater(mount: HTMLElement): void {
 
 /** The stage's parent, which is where the poster stand-in has to sit to overlap it. */
 function frameOf(el: HTMLElement): HTMLElement {
-  return (el.parentElement as HTMLElement | null) ?? el;
+  return el.parentElement ?? el;
 }
