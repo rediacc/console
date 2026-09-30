@@ -1825,7 +1825,12 @@ def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
         env=R2_ENV,
     )
     err = result[2].decode()
-    assert "8d: pre-contract floor = v1.2.21 (versions below this are grandfathered)" in err
+    # Read, not pinned: every release advances this file (v1.2.21 -> v1.2.22 with v1.4.0 on 2026-09-30 reddened the pinned form).
+    floor = (
+        (ROOT / ".ci" / "config" / "release-contract-floor.txt").read_text(encoding="utf-8").strip()
+    )
+    assert floor.startswith("v"), "release-contract-floor.txt holds no version: %r" % floor
+    assert "8d: pre-contract floor = %s (versions below this are grandfathered)" % floor in err
     assert "drift:" not in err
     assert "found 0 drift finding(s)" in err
 
