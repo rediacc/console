@@ -1,6 +1,6 @@
-"""`.ci/lib/local-common.sh`, ported function for function: all thirty.
+"""`.ci/lib/local-common.sh`, ported function for function: all thirty-three.
 
-PORTED FROM `.ci/lib/local-common.sh` (978 lines, 30 functions at 2026-09-24).
+PORTED FROM `.ci/lib/local-common.sh` (30 functions at 2026-09-24; 33 since 2026-09-30, when `_deps_hash`, `deps_are_current` and `_reset_docker_memo` were split out).
 The twin still exists and is still sourced at `rdc.sh:18`, `.ci/legacy/run-legacy.sh:47`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` (inside a `bash -c`) and `.ci/scripts/test/gates/test-run-sh.sh:116`, and `.ci/rediacc_ci/setup/bridge.py` still runs four of its functions as bash. Nothing is cut over here: this is a pre-cutover port on the sequencing every other lib in W7P5-b used, and the deletion is W7P5-c's.
 
 --------------------------------------------------------------------------
@@ -8,7 +8,7 @@ TWO HALVES, TWO DIFFERENTIALS
 --------------------------------------------------------------------------
 THE PURE HALF (2026-09-23), nine functions whose whole answer is computation over a local file or a local git read: `_sha256sum`, `_sed_i`, `compute_hash_for_package_dirs`, `_git_tree_fingerprint`, `compute_tree_hash`, `read_stamp_hash`, `write_stamp_hash`, `_version_gte` and `has_npm_script`. Proved by `core/local_common_shadow_driver.py`, ledger `w7p5b-local-common`.
 
-THE MACHINE-MUTATING HALF (2026-09-24), the other twenty-one: the installers and builders (`ensure_cpu_features_gypi`, `ensure_deps`, `ensure_packages_built`, `ensure_cli_built`, `run_npm_script`, `ensure_go_installed`, `ensure_bashcov_sup`, `ensure_host_tools`, `ensure_docker_installed`, `_ensure_docker_group`, `ensure_renet_built`), the interactive and session-altering ones (`prompt_continue`, `open_browser`, `reexec_with_docker_group`), the checks (`check_node_version`, `check_go_installed`), renet's two fingerprints (`_renet_source_hash`, `_renet_artifact_fp`) and the three lane functions (`gate_lane_decide`, `gate_lane_should_route`, `gate_lane_run`), which reach devbox through `core.devbox`, the port of `.ci/lib/devbox.sh`.
+THE MACHINE-MUTATING HALF (2026-09-24), the other twenty-four: the installers and builders (`ensure_cpu_features_gypi`, `_deps_hash`, `deps_are_current`, `ensure_deps`, `ensure_packages_built`, `ensure_cli_built`, `run_npm_script`, `ensure_go_installed`, `ensure_bashcov_sup`, `ensure_host_tools`, `ensure_docker_installed`, `_ensure_docker_group`, `ensure_renet_built`), the interactive and session-altering ones (`prompt_continue`, `open_browser`, `reexec_with_docker_group`, `_reset_docker_memo`), the checks (`check_node_version`, `check_go_installed`), renet's two fingerprints (`_renet_source_hash`, `_renet_artifact_fp`) and the three lane functions (`gate_lane_decide`, `gate_lane_should_route`, `gate_lane_run`), which reach devbox through `core.devbox`, the port of `.ci/lib/devbox.sh`.
 Proved by `core/local_common_actions_shadow_driver.py`, ledger `w7p5b-local-common-actions`, by the STUB-FARM TRANSCRIPT technique (`core/stubfarm.py`): every external program the function would run is a stub that logs its argv, and the comparison covers rc, both streams, the ordered call list and the sandbox tree afterwards. See the section note above `ensure_cpu_features_gypi` for what that forces on the code.
 
 `check_node_version` exists TWICE in Python: here, and an older copy in `core/account.py` with its own version compare. `account.py` was under another writer's live rewrite when this landed, so removing its copy is handed over; `test_check_node_version_agrees_with_the_account_copy` pins the two together meanwhile.
@@ -1499,6 +1499,8 @@ USAGE = """rediacc_ci.core.local_common -- .ci/lib/local-common.sh, every functi
   version-gte <a> <b>                _version_gte (exit 0 when a >= b)
   has-npm-script <name>              has_npm_script
   cpu-features-gypi <node_modules>   ensure_cpu_features_gypi
+  deps-hash                          _deps_hash
+  deps-are-current                   deps_are_current (exit 0 when ensure_deps would do nothing)
   ensure-deps                        ensure_deps
   ensure-packages-built              ensure_packages_built
   ensure-cli-built                   ensure_cli_built
@@ -1511,6 +1513,7 @@ USAGE = """rediacc_ci.core.local_common -- .ci/lib/local-common.sh, every functi
   ensure-bashcov-sup                 ensure_bashcov_sup
   ensure-host-tools                  ensure_host_tools
   reexec-docker-group [args...]      reexec_with_docker_group (reads SCRIPT_ENTRYPOINT)
+  reset-docker-memo                  _reset_docker_memo, then the memo a child would inherit
   ensure-docker-installed            ensure_docker_installed
   ensure-docker-group                _ensure_docker_group
   renet-source-hash <dir>            _renet_source_hash
@@ -1526,6 +1529,7 @@ its exit status, an errexit death included."""
 # verb -> (callable taking the argument list, returning the exit status)
 _BOOL_VERBS = {
     "cpu-features-gypi": lambda rest: ensure_cpu_features_gypi(rest[0]),
+    "deps-are-current": lambda _rest: deps_are_current(),
     "ensure-deps": lambda _rest: ensure_deps(),
     "ensure-packages-built": lambda _rest: ensure_packages_built(),
     "ensure-cli-built": lambda _rest: ensure_cli_built(),
@@ -1555,6 +1559,14 @@ def _dispatch_actions(verb: str, rest: list[str]) -> int | None:
         return 0
     if verb == "check-go-installed":
         check_go_installed()
+        return 0
+    if verb == "deps-hash":
+        sys.stdout.write(deps_hash() + "\n")
+        return 0
+    if verb == "reset-docker-memo":
+        reset_docker_memo()
+        memo = os.environ.get("_DEVBOX_DOCKER")
+        sys.stdout.write("_DEVBOX_DOCKER unset\n" if memo is None else "_DEVBOX_DOCKER=%s\n" % memo)
         return 0
     if verb == "lane-decide":
         sys.stdout.write(gate_lane_decide())

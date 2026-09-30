@@ -693,7 +693,7 @@ def test_every_ported_action_is_driven() -> None:
     """ANTI-VACUITY: every machine-mutating function has at least one case."""
     driven = {actions_driver.FN[c.verb] for _, c in ACTION_CASES}
     actions = {name for name, _ in PORTED_FUNCTIONS[9:]}
-    assert len(actions) == 21
+    assert len(actions) == 24
     assert actions <= driven, "not driven: %s" % sorted(actions - driven)
 
 

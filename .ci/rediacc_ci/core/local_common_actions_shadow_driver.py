@@ -19,13 +19,15 @@ STUBBED AND LOGGED: `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker`,
 THE SCENARIOS
 -----------------------------------------------------------------------------
   deps      `ensure_deps` fresh, twice (the second is the stamp hit), with a failing `npm install`, a failing buildcheck, an empty gypi left by a failed run, a missing lockfile, and a runtime-tag change forcing a reinstall; `ensure_cpu_features_gypi` alone.
+            `_deps_hash` over the manifests, without `.npmrc` and the lockfile, and under a `devbox` and an empty runtime tag; `deps_are_current` current, with no stamp, no `node_modules`, a flipped runtime, a non-symlink `@rediacc/cli` and a changed lockfile.
   packages  `ensure_packages_built` fresh, twice, with a failing build, and with `packages/provisioning` missing.
   cli       `ensure_cli_built` with no packages stamp (twin behaviour 7), fresh, twice, and with a build that leaves no bundle.
   misc      `prompt_continue` over a corpus of answers, `open_browser` on four platforms and with no `xdg-open`, `run_npm_script`, `check_node_version`, `check_go_installed`.
   go        (ENVIRONMENT-BOUND: whether `/etc/profile.d/golang.sh` exists is read from the REAL filesystem on both sides, so only the branch this host is on is compared; a planted `if True` there is silent on a host without the file, and that is recorded rather than hidden.)
             `ensure_go_installed` with no go.mod, a current Go, an old Go that gets replaced, a toolchain-less go.mod, a non-Linux host, an unsupported arch, a failed download, an invalid tarball, and a failed unpack.
   host      `ensure_host_tools` complete, missing tools installed, a failing apt, a non-Linux host; `ensure_bashcov_sup` built, up to date, no gcc, and a failing build.
-  docker    `reexec_with_docker_group` at every early return and at the exec, `ensure_docker_installed` usable, sudo-only, non-Linux, and the full renet-installer path, `_ensure_docker_group` in all four states.
+  docker    `reexec_with_docker_group` at every early return and at the exec, `ensure_docker_installed` usable, sudo-only, non-Linux, and the full renet-installer path, `_ensure_docker_group` in all four states, `_reset_docker_memo` with the memo set, unset and empty.
+            (The twin's reset is a no-op when devbox.sh is NOT loaded, and the port's always drops the memo; the harness loads devbox.sh, the only shape any caller has, so that branch is not compared.)
   lane      `gate_lane_decide` down every rule (inside the box, `REDIACC_LANE` valid and not, the sticky state value present and empty, a running and a stopped container, docker only via sudo), `gate_lane_should_route` at all three answers including a broken mount and the dubious-ownership identity, and `gate_lane_run` passing the routed status through and refusing when nothing runs.
   renet     `_renet_source_hash` over a tree with every prune and name rule, an empty tree and a missing one, `_renet_artifact_fp`, and `ensure_renet_built` fresh, twice, license and key variations, a failing build, a build with no binary, and a non-Linux cross-compile.
 """
@@ -45,6 +47,7 @@ import sys
 import tempfile
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core import local_common
 from rediacc_ci.core.stubfarm import Farm
 
 if TYPE_CHECKING:  # annotation-only import
@@ -71,6 +74,8 @@ FIXED_MTIME = 1700000000
 
 FN = {
     "cpu-features-gypi": "ensure_cpu_features_gypi",
+    "deps-hash": "_deps_hash",
+    "deps-are-current": "deps_are_current",
     "ensure-deps": "ensure_deps",
     "ensure-packages-built": "ensure_packages_built",
     "ensure-cli-built": "ensure_cli_built",
@@ -83,6 +88,7 @@ FN = {
     "ensure-bashcov-sup": "ensure_bashcov_sup",
     "ensure-host-tools": "ensure_host_tools",
     "reexec-docker-group": "reexec_with_docker_group",
+    "reset-docker-memo": "_reset_docker_memo",
     "ensure-docker-installed": "ensure_docker_installed",
     "ensure-docker-group": "_ensure_docker_group",
     "renet-source-hash": "_renet_source_hash",
@@ -141,8 +147,25 @@ def fx_modules(root: pathlib.Path) -> None:
     _write(root / "node_modules" / "cpu-features" / "buildcheck.js", "// buildcheck\n")
 
 
+def fx_deps_stamp(root: pathlib.Path) -> None:
+    """A stamp holding the PORT's hash of the sandbox as it stands, under the default `host` runtime.
+
+    Written by the port, read by both sides: a port whose hash drifted from the twin's leaves the twin saying stale where the port says current, which is a divergence, not a silent agreement.
+    """
+    stamp = root / ".ci" / "cache" / "npm-install.stamp"
+    stamp.parent.mkdir(parents=True, exist_ok=True)
+    local_common.write_stamp_hash(
+        str(stamp), local_common.deps_hash({"CONSOLE_ROOT_DIR": str(root)})
+    )
+    os.utime(stamp, (FIXED_MTIME, FIXED_MTIME))
+
+
 def fx_empty_gypi(root: pathlib.Path) -> None:
     _write(root / "node_modules" / "cpu-features" / "buildcheck.gypi", "")
+
+
+def fx_no_npmrc(root: pathlib.Path) -> None:
+    (root / ".npmrc").unlink()
 
 
 def fx_packages(root: pathlib.Path) -> None:
@@ -311,6 +334,38 @@ SCENARIOS: dict[str, list[Case]] = {
             rows=[row("npm", "install", sh=NPM_INSTALL_SH)],
             setup=("manifests", "packages", "modules"),
             env={"REDIACC_NPM_RUNTIME": "devbox"},
+        ),
+        Case("hash", "deps-hash", setup=("manifests",)),
+        Case("hash-no-npmrc-no-lock", "deps-hash", setup=("manifests", "no_lock", "no_npmrc")),
+        Case(
+            "hash-runtime-devbox",
+            "deps-hash",
+            setup=("manifests",),
+            env={"REDIACC_NPM_RUNTIME": "devbox"},
+        ),
+        Case(
+            "hash-runtime-empty", "deps-hash", setup=("manifests",), env={"REDIACC_NPM_RUNTIME": ""}
+        ),
+        Case(
+            "current", "deps-are-current", setup=("manifests", "packages", "modules", "deps_stamp")
+        ),
+        Case("current-no-stamp", "deps-are-current", setup=("manifests", "packages", "modules")),
+        Case("current-no-modules", "deps-are-current", setup=("manifests", "deps_stamp")),
+        Case(
+            "current-runtime-flipped",
+            "deps-are-current",
+            setup=("manifests", "packages", "modules", "deps_stamp"),
+            env={"REDIACC_NPM_RUNTIME": "devbox"},
+        ),
+        Case(
+            "current-cli-not-a-symlink",
+            "deps-are-current",
+            setup=("manifests", "packages", "modules", "deps_stamp", "cli_dir"),
+        ),
+        Case(
+            "current-lock-changed",
+            "deps-are-current",
+            setup=("manifests", "packages", "modules", "deps_stamp", "no_lock"),
         ),
         Case(
             "gypi-alone",
@@ -585,6 +640,9 @@ SCENARIOS: dict[str, list[Case]] = {
             rows=[DOCKER_DOWN, GROUP_MEMBER],
             env={"SCRIPT_ENTRYPOINT": None},
         ),
+        Case("memo-set", "reset-docker-memo", env={"_DEVBOX_DOCKER": "sudo docker"}),
+        Case("memo-unset", "reset-docker-memo"),
+        Case("memo-empty", "reset-docker-memo", env={"_DEVBOX_DOCKER": ""}),
         Case(
             "install-usable",
             "ensure-docker-installed",
@@ -808,6 +866,14 @@ case "$fn" in
     # `gate_lane_run` does not load devbox.sh itself: its only caller (`.ci/legacy/run-legacy.sh`) runs `gate_lane_should_route` first, which does. The harness loads it the same way that call path does.
     gate_lane_run) . "$R/.ci/lib/devbox.sh"; gate_lane_run "$@" ;;
     _renet_source_hash | _renet_artifact_fp) "$fn" "$@" ;;
+    # `_reset_docker_memo` only reaches the memo when devbox.sh is loaded (`declare -F devbox_docker_reset`), and its whole effect is on the environment a child inherits, so the harness loads devbox.sh and prints the memo afterwards.
+    # Both callers of `_deps_hash` read it through `$(...)`, where errexit is off: called BARE under `set -e`, a missing lockfile kills the `{ ...; }` group at its `_sha256sum` line, drops the runtime line from the stream and exits 1, an answer no caller can ever see.
+    _deps_hash) printf '%s\n' "$(_deps_hash)" ;;
+    _reset_docker_memo)
+        . "$R/.ci/lib/devbox.sh"
+        _reset_docker_memo
+        if [[ -v _DEVBOX_DOCKER ]]; then printf '_DEVBOX_DOCKER=%s\n' "$_DEVBOX_DOCKER"; else printf '_DEVBOX_DOCKER unset\n'; fi
+        ;;
     *) "$fn" "$@" ;;
 esac
 """
