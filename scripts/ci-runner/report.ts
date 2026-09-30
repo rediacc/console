@@ -57,6 +57,8 @@ export interface Utilisation {
   wallOverFloor: number;
   /** The five longest waits between ready and launched. */
   queueDelays: { id: string; ms: number; blockedBy: string }[];
+  /** How many gates each admission check last held back (pool.ts HoldReason), so a `cores` run shows whether cpu, memory, the process count or a reservation was the constraint. */
+  heldBack: Record<string, number>;
 }
 
 const STRIP_MS = 5000;
@@ -134,6 +136,11 @@ export function utilisation(
     .sort((a, b) => b.ms - a.ms)
     .slice(0, 5);
 
+  const heldBack: Record<string, number> = {};
+  for (const r of results) {
+    if (r.blockedBy !== undefined) heldBack[r.blockedBy] = (heldBack[r.blockedBy] ?? 0) + 1;
+  }
+
   return {
     cores,
     busyFrac: (last.busy - first.busy) / dTotal,
@@ -150,6 +157,7 @@ export function utilisation(
     floorMs,
     wallOverFloor: floorMs > 0 ? wallMs / floorMs : 0,
     queueDelays,
+    heldBack,
   };
 }
 
@@ -170,6 +178,8 @@ export interface RunMeta {
   wallMs: number;
   /** Absent when no CPU ticks were taken (the selftest, a sub-interval run). */
   util?: Utilisation;
+  /** The core budget, stated in the header under `--sched cores`; absent under `slots`, whose header is unchanged. */
+  sched?: string;
 }
 
 const RULE = '='.repeat(64);
@@ -194,7 +204,11 @@ export function createReporter(opts: ReporterOptions) {
   return {
     header(gateCount: number, meta: RunMeta): void {
       const mode = meta.failFast ? 'fail-fast' : 'keep-going';
-      opts.out(`ci-runner: ${gates(gateCount)}, ${meta.jobs} workers, ${mode}\n`);
+      opts.out(
+        meta.sched === undefined
+          ? `ci-runner: ${gates(gateCount)}, ${meta.jobs} workers, ${mode}\n`
+          : `ci-runner: ${gates(gateCount)}, ${meta.sched}, ${mode}\n`
+      );
       // A partial run reporting green is the vacuity failure this whole design exists to prevent, so the selection is stated loudly at both ends of the output and carried in the JSON as partial:true.
       if (meta.selection !== undefined) {
         opts.out(`ci-runner: PARTIAL RUN, selection: ${meta.selection}\n`);
@@ -282,6 +296,12 @@ export function createReporter(opts: ReporterOptions) {
             `wall = ${u.wallOverFloor.toFixed(2)} x floor\n`
         );
         if (u.criticalPath.length > 0) opts.out(`  critical path: ${u.criticalPath.join(' > ')}\n`);
+        const held = Object.entries(u.heldBack).sort((a, b) => b[1] - a[1]);
+        if (held.length > 0) {
+          opts.out(
+            `held back (last reason): ${held.map(([why, n]) => `${why} ${n}`).join(', ')}\n`
+          );
+        }
         if (u.queueDelays.length > 0) {
           opts.out('queue delays (ready to launched):\n');
           for (const d of u.queueDelays) {
@@ -319,6 +339,7 @@ export function createReporter(opts: ReporterOptions) {
             partial: meta.selection !== undefined,
             selection: meta.selection ?? null,
             jobs: meta.jobs,
+            sched: meta.sched ?? 'slots',
             failFast: meta.failFast,
             wallMs: meta.wallMs,
             serialMs,

@@ -238,6 +238,7 @@
       "CI_RUNNER_CACHE",
       "CI_RUNNER_MANIFEST",
       "CI_RUN_ID",
+      "CI_SCHED",
       "CI_SHA",
       "CI_TEMP",
       "CI_TRACE_MAX_READ_FAILURES",

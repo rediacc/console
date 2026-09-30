@@ -115,8 +115,42 @@ export interface GateResult {
   readyAt?: number;
   startAt?: number;
   endAt?: number;
-  /** The last admission check that held a ready gate back before it launched: the slot budget, the heavy limit, or a claim. Absent when it launched on first sight. */
-  blockedBy?: 'slot' | 'heavy' | 'claim';
+  /** The last admission check that held a ready gate back before it launched (see HoldReason). Absent when it launched on first sight. */
+  blockedBy?: HoldReason;
+}
+
+/**
+ * Which admission rule the pool runs (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2). `slots` is the rule the pool has always had: `jobs` slots, one per gate unless it declares `weight`, longest wall first. `cores` packs against a core budget from each gate's measured CPU, and is kept beside `slots` for A/B and rollback.
+ */
+export type Sched = 'slots' | 'cores';
+
+/**
+ * Why a ready gate was held back. `slot` and `heavy` are the slots rule's; `cpu`, `mem` and `count` are the core budget's three dimensions; `reservation` is a gate that would fit now but would delay the reserved start of a wider gate ahead of it (EASY backfill); `claim` is the isolation contract, the same in both.
+ */
+export type HoldReason = 'slot' | 'heavy' | 'claim' | 'cpu' | 'mem' | 'count' | 'reservation';
+
+/** What the duration cache measured for one gate (run.ts DurationRecord, reduced). */
+export interface GateCost {
+  /** Median CPU ms over the recent passing runs. */
+  cpuMs?: number;
+  /** The least-contended recent wall ms: the floor of `recent`, since load only ever adds time. */
+  wallMs?: number;
+  /** The largest recent peak RSS, MB. */
+  rssMb?: number;
+}
+
+/** The `cores` rule's budget. */
+export interface CoreBudget {
+  /** C: cores the pool may fill, availableParallelism() - 1 by default. */
+  cores: number;
+  /** Over-admission allowed on top of C, since d(g) is a median and gates idle between phases. */
+  epsilon: number;
+  /** K: concurrent gate processes, 2C by default, so a pool of I/O-bound gates cannot fork without bound. */
+  maxProcs: number;
+  /** M: MB of memory the pool may hold, 0.75 x MemAvailable at start by default. */
+  memMb: number;
+  /** EASY-backfill reservations; on unless a simulator control turns them off to show the starvation they prevent. */
+  reserve?: boolean;
 }
 
 export interface PoolOptions {
@@ -128,6 +162,286 @@ export interface PoolOptions {
   exec: (spec: GateSpec) => Promise<ExecOutcome>;
   onStart?: (spec: GateSpec) => void;
   onFinish?: (result: GateResult) => void;
+  /** Default `slots`. `cores` needs `budget`; `costs` feeds it, and a gate missing from it is scheduled on its hand-written `weight`. */
+  sched?: Sched;
+  budget?: CoreBudget;
+  costs?: Map<string, GateCost>;
+}
+
+/** A gate as the admission step sees it: every number it budgets, already derived. */
+export interface Candidate {
+  id: string;
+  /** Slots it takes under `slots` (effWeight). */
+  slots: number;
+  /** d(g) under `cores`. */
+  cores: number;
+  memMb: number;
+  /** Predicted wall, for a reservation's start time. */
+  estMs: number;
+  /** Counts against heavyLimit: every `heavy` gate under `slots`, only an unmeasured one under `cores`. */
+  heavy: boolean;
+  mutex: readonly string[];
+  reads: readonly string[];
+}
+
+export interface RunningGate {
+  gate: Candidate;
+  /** Predicted end, epoch ms (start + estMs). */
+  endsAt: number;
+}
+
+export interface AdmitConfig {
+  sched: Sched;
+  jobs: number;
+  heavyLimit: number;
+  budget?: CoreBudget;
+}
+
+export interface Admission {
+  /** In launch order. */
+  launch: Candidate[];
+  /** Every gate the pass held back, with the check that held it. A gate the idle branch then launched anyway still appears here, as it always has. */
+  held: [string, HoldReason][];
+  /** The EASY reservation this pass made, if any: which gate, and its predicted start. */
+  reservation?: { id: string; at: number };
+}
+
+// Float sums of fractional cores must not turn an exact fit into a refusal.
+const FIT_TOLERANCE = 1e-9;
+
+/**
+ * ONE ADMISSION PASS, pure, shared by runPool and scripts/ci-runner/sim.ts so the simulator tests the rule the pool runs rather than a copy of it. `ready` must already be in priority order; `running` includes nothing launched by this pass.
+ *
+ * `slots` is the pool's original loop moved here verbatim: slot budget, then heavyLimit, then claims, in that order, every gate in rank order.
+ *
+ * `cores` admits g when its claims pass, heavyLimit passes (unmeasured heavy gates only), sum(d) + d(g) <= C(1+epsilon), running < K, sum(m) + m(g) <= M, and no reservation is delayed. The first gate that fails a budget check reserves the moment enough running gates are predicted to end for it to fit; a later gate may then run only if it is predicted to finish before that moment or fits inside what the reserved gate leaves spare at it. Without the reservation a d-8 gate behind a stream of one-core gates never sees 8 free cores at once.
+ *
+ * Both rules end in the same progress guarantee: nothing running and nothing admitted means the head of the queue runs anyway, alone, whatever its size. A gate wider than the whole budget would otherwise hang the pool.
+ */
+export function admit(
+  ready: readonly Candidate[],
+  running: readonly RunningGate[],
+  cfg: AdmitConfig,
+  now: number
+): Admission {
+  const heldExclusive = new Set<string>();
+  const heldShared = new Map<string, number>();
+  const live: RunningGate[] = [];
+  let slots = 0;
+  let heavy = 0;
+  let cores = 0;
+  let mem = 0;
+  const occupy = (r: RunningGate): void => {
+    live.push(r);
+    slots += r.gate.slots;
+    if (r.gate.heavy) heavy += 1;
+    cores += r.gate.cores;
+    mem += r.gate.memMb;
+    for (const res of r.gate.mutex) heldExclusive.add(res);
+    for (const res of r.gate.reads) heldShared.set(res, (heldShared.get(res) ?? 0) + 1);
+  };
+  for (const r of running) occupy(r);
+
+  // THE CONTRACT (header): an exclusive claim conflicts with any claim on the same resource; a shared claim conflicts only with an exclusive one.
+  const blockedByClaim = (g: Candidate): boolean =>
+    g.mutex.some((r) => heldExclusive.has(r) || (heldShared.get(r) ?? 0) > 0) ||
+    g.reads.some((r) => heldExclusive.has(r));
+
+  const launch: Candidate[] = [];
+  const held: [string, HoldReason][] = [];
+  const go = (g: Candidate): void => {
+    occupy({ gate: g, endsAt: now + g.estMs });
+    launch.push(g);
+  };
+  let reservation: Admission['reservation'];
+
+  if (cfg.sched === 'slots') {
+    for (const g of ready) {
+      if (slots + g.slots > cfg.jobs) {
+        held.push([g.id, 'slot']);
+        continue;
+      }
+      if (g.heavy && heavy >= cfg.heavyLimit) {
+        held.push([g.id, 'heavy']);
+        continue;
+      }
+      if (blockedByClaim(g)) {
+        held.push([g.id, 'claim']);
+        continue;
+      }
+      go(g);
+    }
+  } else {
+    const b = cfg.budget;
+    if (b === undefined)
+      throw new Error('ci-runner: internal error, --sched cores without a budget');
+    const cap = b.cores * (1 + b.epsilon);
+    // What the reserved gate leaves spare at its predicted start, in all three dimensions.
+    let spare: { at: number; cores: number; mem: number; procs: number } | undefined;
+    const reserve = (g: Candidate): void => {
+      const ends = live
+        .map((r) => ({ at: Math.max(r.endsAt, now), gate: r.gate }))
+        .sort((x, y) => x.at - y.at);
+      let freeCores = cap - cores;
+      let freeMem = b.memMb - mem;
+      let freeProcs = b.maxProcs - live.length;
+      let at = now;
+      const fits = (): boolean =>
+        freeCores + FIT_TOLERANCE >= g.cores && freeMem >= g.memMb && freeProcs >= 1;
+      // Release predicted ends in order until g fits. A gate wider than the budget never fits and reserves the moment the pool drains, which is where the progress guarantee admits it.
+      for (const e of ends) {
+        if (fits()) break;
+        at = e.at;
+        freeCores += e.gate.cores;
+        freeMem += e.gate.memMb;
+        freeProcs += 1;
+      }
+      spare = {
+        at,
+        cores: freeCores - g.cores,
+        mem: freeMem - g.memMb,
+        procs: freeProcs - 1,
+      };
+      reservation = { id: g.id, at };
+    };
+
+    for (const g of ready) {
+      if (blockedByClaim(g)) {
+        held.push([g.id, 'claim']);
+        continue;
+      }
+      if (g.heavy && heavy >= cfg.heavyLimit) {
+        held.push([g.id, 'heavy']);
+        continue;
+      }
+      const over: HoldReason | undefined =
+        cores + g.cores > cap + FIT_TOLERANCE
+          ? 'cpu'
+          : live.length + 1 > b.maxProcs
+            ? 'count'
+            : mem + g.memMb > b.memMb
+              ? 'mem'
+              : undefined;
+      if (over !== undefined) {
+        held.push([g.id, over]);
+        if (spare === undefined && b.reserve !== false) reserve(g);
+        continue;
+      }
+      if (spare !== undefined && now + g.estMs > spare.at) {
+        // Runs past the reserved start, so it must fit inside what the reserved gate leaves spare there.
+        if (g.cores > spare.cores + FIT_TOLERANCE || g.memMb > spare.mem || spare.procs < 1) {
+          held.push([g.id, 'reservation']);
+          continue;
+        }
+        spare.cores -= g.cores;
+        spare.mem -= g.memMb;
+        spare.procs -= 1;
+      }
+      go(g);
+    }
+  }
+
+  if (running.length === 0 && launch.length === 0) {
+    // Nothing is in flight and nothing was admissible: the budget is smaller than the head of the queue. Admit it anyway rather than spin. No claim can be the blocker here, since nothing holds one -- but the predicate is still consulted rather than assumed, because "cannot happen" is how a stall turns into a silent over-admission that violates the very exclusion this branch is
+    // bypassing.
+    const head = ready.find((g) => !blockedByClaim(g));
+    if (head !== undefined) go(head);
+  }
+  return { launch, held, reservation };
+}
+
+/**
+ * Derive every gate's Candidate and the priority order, for either rule. Shared with sim.ts for the same reason as admit().
+ *
+ * `slots`: longest expected wall first, as it always was; weight clamped to [1, jobs].
+ *
+ * `cores`: d(g) = clamp(median cpu / least-contended wall, 0.25, C) for a measured gate; `weight ?? 1` unclamped for an unmeasured one (a weight above C is still admitted, alone, by the progress guarantee). Memory is the largest measured peak RSS, else 4 GB for `heavy` and 0.5 GB otherwise. Priority is max(bottom level over `needs`, cpu), both in ms: with one-core gates and no edges it reduces to the slots rule's longest-first, and a wide gate like check:test-shared (33.6 cpu-s over 4.8 s) moves to the first wave instead of starting last.
+ */
+export function planAdmission(
+  specs: readonly GateSpec[],
+  opts: Pick<PoolOptions, 'jobs' | 'durations' | 'sched' | 'budget' | 'costs'>
+): { byId: Map<string, Candidate>; rank: (a: GateSpec, b: GateSpec) => number } {
+  const position = new Map(specs.map((spec, i) => [spec.id, i]));
+  // A missing or corrupt duration cache must never fail the run, so an unknown gate is simply assumed cheap-ish and sorts late.
+  const expected = (spec: GateSpec): number =>
+    opts.durations.get(spec.id) ?? (spec.weight ?? 1) * 5000;
+  // Clamped: a gate declaring more weight than the whole budget would never be admissible and would hang the pool at --jobs 1.
+  const effWeight = (spec: GateSpec): number =>
+    Math.min(Math.max(1, spec.weight ?? 1), Math.max(1, opts.jobs));
+  const byPosition = (a: GateSpec, b: GateSpec): number =>
+    (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0);
+  const byId = new Map<string, Candidate>();
+
+  if ((opts.sched ?? 'slots') === 'slots') {
+    for (const spec of specs) {
+      byId.set(spec.id, {
+        id: spec.id,
+        slots: effWeight(spec),
+        cores: effWeight(spec),
+        memMb: 0,
+        estMs: expected(spec),
+        heavy: spec.heavy === true,
+        mutex: spec.mutex ?? [],
+        reads: sharedClaims(spec),
+      });
+    }
+    return {
+      byId,
+      rank: (a, b) => expected(b) - expected(a) || byPosition(a, b),
+    };
+  }
+
+  const c = Math.max(1, opts.budget?.cores ?? opts.jobs);
+  const cpuMs = new Map<string, number>();
+  for (const spec of specs) {
+    const cost = opts.costs?.get(spec.id);
+    const measured = cost?.cpuMs !== undefined && cost.wallMs !== undefined && cost.wallMs > 0;
+    const d = measured
+      ? Math.min(Math.max((cost.cpuMs ?? 0) / (cost.wallMs ?? 1), 0.25), c)
+      : Math.max(0.25, spec.weight ?? 1);
+    const estMs = opts.durations.get(spec.id) ?? cost?.wallMs ?? (spec.weight ?? 1) * 5000;
+    cpuMs.set(spec.id, measured ? (cost.cpuMs ?? 0) : d * estMs);
+    byId.set(spec.id, {
+      id: spec.id,
+      slots: effWeight(spec),
+      cores: d,
+      memMb: cost?.rssMb ?? (spec.heavy === true ? 4096 : 512),
+      estMs,
+      heavy: spec.heavy === true && !measured,
+      mutex: spec.mutex ?? [],
+      reads: sharedClaims(spec),
+    });
+  }
+
+  // Bottom level: a gate's own predicted wall plus the longest chain of dependents behind it, within this pool's specs.
+  const dependents = new Map<string, string[]>();
+  for (const spec of specs) {
+    for (const need of spec.needs ?? []) {
+      if (!byId.has(need)) continue;
+      dependents.set(need, [...(dependents.get(need) ?? []), spec.id]);
+    }
+  }
+  const bottom = new Map<string, number>();
+  const visiting = new Set<string>();
+  const level = (id: string): number => {
+    const hit = bottom.get(id);
+    if (hit !== undefined) return hit;
+    if (visiting.has(id)) throw new Error(`ci-runner: dependency cycle through ${id}`);
+    visiting.add(id);
+    let tail = 0;
+    for (const dep of dependents.get(id) ?? []) tail = Math.max(tail, level(dep));
+    visiting.delete(id);
+    const own = (byId.get(id)?.estMs ?? 0) + tail;
+    bottom.set(id, own);
+    return own;
+  };
+  const priority = new Map(
+    specs.map((spec) => [spec.id, Math.max(level(spec.id), cpuMs.get(spec.id) ?? 0)])
+  );
+  return {
+    byId,
+    rank: (a, b) => (priority.get(b.id) ?? 0) - (priority.get(a.id) ?? 0) || byPosition(a, b),
+  };
 }
 
 function mustGet(byId: Map<string, GateSpec>, id: string): GateSpec {
@@ -230,35 +544,30 @@ export async function runPool(
   opts: PoolOptions
 ): Promise<GateResult[]> {
   const byId = indexById(specs);
-  const position = new Map(specs.map((spec, i) => [spec.id, i]));
   const results = new Map<string, GateResult>();
   const unstarted = new Set(specs.map((spec) => spec.id));
   const running = new Map<string, Promise<{ id: string; outcome: ExecOutcome; endAt: number }>>();
-  // Timestamps and the last hold-back reason, recorded on the side so the admission logic below reads exactly as it did before they existed.
+  // What admit() sees of each running gate. The claims live inside the candidates: admit() rebuilds the held sets from this list on every pass -- exclusive as a set, shared as a COUNT, because any number of readers may hold one and the last one out has to be the one that releases it. Rebuilding rather than incrementing is what makes a plain Set impossible to get wrong here.
+  const inFlight = new Map<string, RunningGate>();
+  // Timestamps and the last hold-back reason, recorded on the side so the admission logic reads exactly as it did before they existed.
   const readyAt = new Map<string, number>();
   const startAt = new Map<string, number>();
-  const blockedBy = new Map<string, 'slot' | 'heavy' | 'claim'>();
-  // The isolation contract's two claim strengths. Exclusive is a set because a resource has at most one writer at a time; shared is a COUNT because any number of readers may hold one and the last one out has to be the one that releases it. A plain Set here would have the first reader to finish unlock a resource three others were still reading, which is the shape of bug that only
-  // ever shows up as an unreproducible mid-enumeration error.
-  const heldExclusive = new Set<string>();
-  const heldShared = new Map<string, number>();
-  let slots = 0;
-  let heavyRunning = 0;
+  const blockedBy = new Map<string, HoldReason>();
   let stopped = false;
 
-  // A missing or corrupt duration cache must never fail the run, so an unknown gate is simply assumed cheap-ish and sorts late.
-  const expected = (spec: GateSpec): number =>
-    opts.durations.get(spec.id) ?? (spec.weight ?? 1) * 5000;
-  // Clamped: a gate declaring more weight than the whole budget would never be admissible and would hang the pool at --jobs 1.
-  const effWeight = (spec: GateSpec): number =>
-    Math.min(Math.max(1, spec.weight ?? 1), Math.max(1, opts.jobs));
-  const rank = (a: GateSpec, b: GateSpec): number =>
-    expected(b) - expected(a) || (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0);
-
-  // THE CONTRACT, and this is the whole of it. An exclusive claim conflicts with any claim on the same resource; a shared claim conflicts only with an exclusive one. Shared against shared is deliberately admissible, which is the asymmetry the header explains and the reason this is not one Set.
-  const blockedByClaim = (spec: GateSpec): boolean =>
-    (spec.mutex ?? []).some((r) => heldExclusive.has(r) || (heldShared.get(r) ?? 0) > 0) ||
-    sharedClaims(spec).some((r) => heldExclusive.has(r));
+  const sched = opts.sched ?? 'slots';
+  const { byId: candidates, rank } = planAdmission(specs, opts);
+  const candidate = (id: string): Candidate => {
+    const c = candidates.get(id);
+    if (c === undefined) throw new Error(`ci-runner: internal error, no candidate for ${id}`);
+    return c;
+  };
+  const cfg: AdmitConfig = {
+    sched,
+    jobs: opts.jobs,
+    heavyLimit: opts.heavyLimit,
+    budget: opts.budget,
+  };
 
   const record = (result: GateResult): void => {
     results.set(result.id, result);
@@ -280,11 +589,10 @@ export async function runPool(
 
   const launch = (spec: GateSpec): void => {
     unstarted.delete(spec.id);
-    slots += effWeight(spec);
-    if (spec.heavy === true) heavyRunning += 1;
-    for (const r of spec.mutex ?? []) heldExclusive.add(r);
-    for (const r of sharedClaims(spec)) heldShared.set(r, (heldShared.get(r) ?? 0) + 1);
-    startAt.set(spec.id, Date.now());
+    const now = Date.now();
+    const gate = candidate(spec.id);
+    inFlight.set(spec.id, { gate, endsAt: now + gate.estMs });
+    startAt.set(spec.id, now);
     opts.onStart?.(spec);
     running.set(
       spec.id,
@@ -322,30 +630,18 @@ export async function runPool(
     const now = Date.now();
     for (const spec of ready) if (!readyAt.has(spec.id)) readyAt.set(spec.id, now);
 
-    for (const spec of ready) {
-      if (slots + effWeight(spec) > opts.jobs) {
-        blockedBy.set(spec.id, 'slot');
-        continue;
-      }
-      if (spec.heavy === true && heavyRunning >= opts.heavyLimit) {
-        blockedBy.set(spec.id, 'heavy');
-        continue;
-      }
-      if (blockedByClaim(spec)) {
-        blockedBy.set(spec.id, 'claim');
-        continue;
-      }
-      launch(spec);
-    }
+    const pass = admit(
+      ready.map((spec) => candidate(spec.id)),
+      [...inFlight.values()],
+      cfg,
+      now
+    );
+    for (const [id, why] of pass.held) blockedBy.set(id, why);
+    for (const gate of pass.launch) launch(mustGet(byId, gate.id));
 
     if (running.size === 0 && unstarted.size > 0) {
-      // Nothing is in flight and nothing was admissible: the budget is smaller than the head of the queue. Admit it anyway rather than spin. No claim can be the blocker here, since nothing holds one -- but the predicate is still consulted rather than assumed, because "cannot happen" is how a stall turns into a silent over-admission that violates the very exclusion this branch is
-      // bypassing.
-      const head = ready.find((spec) => !blockedByClaim(spec));
-      if (head === undefined) {
-        throw new Error('ci-runner: internal error, pool stalled with work outstanding');
-      }
-      launch(head);
+      // admit() already ran the progress guarantee, so work outstanding with nothing in flight means no ready gate was admissible even alone.
+      throw new Error('ci-runner: internal error, pool stalled with work outstanding');
     }
 
     if (running.size === 0) continue;
@@ -353,14 +649,7 @@ export async function runPool(
     const { id, outcome, endAt } = await Promise.race(running.values());
     const spec = mustGet(byId, id);
     running.delete(id);
-    slots -= effWeight(spec);
-    if (spec.heavy === true) heavyRunning -= 1;
-    for (const r of spec.mutex ?? []) heldExclusive.delete(r);
-    for (const r of sharedClaims(spec)) {
-      const remaining = (heldShared.get(r) ?? 1) - 1;
-      if (remaining > 0) heldShared.set(r, remaining);
-      else heldShared.delete(r);
-    }
+    inFlight.delete(id);
 
     // A vacuity finding always means `fail`, even at CANNOT_RUN: a gate that claims it cannot run AND trips the anti-vacuity oracle is not a machine missing a tool, it is a gate lying about what it did.
     const cannotRun = outcome.code === CANNOT_RUN && outcome.vacuity === undefined;

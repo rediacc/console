@@ -45,6 +45,7 @@ the schedule.
 | `npm run ci -- --json` | Machine-readable document on stdout, human stream on stderr |
 | `npm run ci -- --jobs N` | Override the worker budget (`CI_JOBS=N` also works) |
 | `npm run ci -- --heavy-limit N` | Cap concurrent "heavy" gates specifically, separate from `--jobs`. Defaults to `max(2, jobs / 4)` |
+| `npm run ci -- --sched cores` | Pack gates against a CPU budget by each gate's measured cores (the duration cache's `cpu` samples) instead of one slot per gate; `--jobs N` then sets the core budget. `slots` is the default; `CI_SCHED=cores` also works |
 | `npm run ci -- --manifest <path>` | Schedule from an alternate manifest file instead of `scripts/ci-runner/manifest.ts` |
 | `npm run ci -- --list` | List every gate id and its command without running any of them (what `npm run ci:list` wraps) |
 | `npm run ci -- --verbose` | Also print a line when each gate starts. Worth it at `--jobs 1`, where a five-minute gate is otherwise indistinguishable from a hang |

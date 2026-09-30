@@ -18,7 +18,7 @@ import { createHash } from 'node:crypto';
  *     scheduled manifest entries.
  *
  * Usage:
- *   tsx scripts/ci-runner/run.ts [--jobs N] [--heavy-limit N] [--fail-fast]
+ *   tsx scripts/ci-runner/run.ts [--jobs N] [--heavy-limit N] [--sched slots|cores] [--fail-fast]
  *                                [--only <glob,...>] [--skip <glob,...>]
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
@@ -29,6 +29,8 @@ import { createHash } from 'node:crypto';
  * for a gate-backed lane (`quality-code`); a test lane's manifest names test-runner units,
  * which this pool does not execute (see `resolveLaneShard`'s own refusal).
  *
+ * `--sched cores` (env CI_SCHED) packs gates against a core budget from their measured CPU instead of one slot each; `slots`, the default, is the pool's original rule. See agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2 and pool.ts admit().
+ *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.
  */
 import fs from 'node:fs';
@@ -37,7 +39,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execGate } from './exec';
 import { GATES, type GateSpec } from './manifest';
-import { buildGraph, type GateResult, runPool } from './pool';
+import {
+  buildGraph,
+  type CoreBudget,
+  type GateCost,
+  type GateResult,
+  runPool,
+  type Sched,
+} from './pool';
 import {
   type CpuTick,
   createReporter,
@@ -47,6 +56,7 @@ import {
 } from './report';
 import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
+import { schedulerSelftest } from './sim';
 import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -89,6 +99,8 @@ const EWMA_ALPHA = 0.3;
 interface Options {
   jobs?: number;
   heavyLimit?: number;
+  /** `--sched` / CI_SCHED; undefined means the default, `slots`. */
+  sched?: Sched;
   failFast: boolean;
   json: boolean;
   list: boolean;
@@ -120,6 +132,12 @@ const EMPTY_OPTS: Options = {
   selftest: false,
   verbose: false,
 };
+
+/** A scheduler name, refused loudly when misspelt: a typo that silently fell back to the default would make an A/B compare slots with slots. */
+function schedFrom(raw: string, flag: string): Sched {
+  if (raw === 'slots' || raw === 'cores') return raw;
+  throw new Error(`ci-runner: ${flag} needs 'slots' or 'cores', got '${raw}'`);
+}
 
 function parseArgs(argv: readonly string[]): Options {
   const opts: Options = {
@@ -154,6 +172,10 @@ function parseArgs(argv: readonly string[]): Options {
         break;
       case '--heavy-limit':
         opts.heavyLimit = number(value(i, arg), arg);
+        i += 1;
+        break;
+      case '--sched':
+        opts.sched = schedFrom(value(i, arg), arg);
         i += 1;
         break;
       case '--only':
@@ -230,6 +252,13 @@ function parseArgs(argv: readonly string[]): Options {
   }
   if (opts.jobs === undefined && process.env.CI_JOBS !== undefined) {
     opts.jobs = number(process.env.CI_JOBS, 'CI_JOBS');
+  }
+  if (
+    opts.sched === undefined &&
+    process.env.CI_SCHED !== undefined &&
+    process.env.CI_SCHED !== ''
+  ) {
+    opts.sched = schedFrom(process.env.CI_SCHED, 'CI_SCHED');
   }
   if ((opts.lane === undefined) !== (opts.shard === undefined)) {
     throw new Error('ci-runner: --lane and --shard are both required together, or neither.');
@@ -540,6 +569,48 @@ function loadDurations(cachePath: string | undefined): Map<string, number> {
   const durations = new Map<string, number>();
   for (const [id, rec] of loadDurationRecords(cachePath)) durations.set(id, rec.ewma);
   return durations;
+}
+
+function median(xs: readonly number[]): number {
+  const sorted = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * The cores rule's per-gate costs (PLAN-ci-quick-cpu-scheduling 2.2): the median of the recent cpu samples, the FLOOR of recent wall (the least-contended run, the same rule the tier oracle uses, since load only adds wall and would shrink d), and the largest recent peak RSS. A gate the wrapper never measured has no cpu and is scheduled on its hand-written weight.
+ */
+function costsFrom(records: ReadonlyMap<string, DurationRecord>): Map<string, GateCost> {
+  const costs = new Map<string, GateCost>();
+  for (const [id, rec] of records) {
+    const cost: GateCost = { wallMs: Math.min(...rec.recent) };
+    if (rec.cpu !== undefined && rec.cpu.length > 0) cost.cpuMs = median(rec.cpu);
+    if (rec.rssMb !== undefined && rec.rssMb.length > 0) cost.rssMb = Math.max(...rec.rssMb);
+    costs.set(id, cost);
+  }
+  return costs;
+}
+
+/** MB the kernel says can be allocated without swapping (MemAvailable), else os.freemem() off Linux. */
+function memAvailableMb(): number {
+  try {
+    const m = /^MemAvailable:\s+(\d+) kB/m.exec(fs.readFileSync('/proc/meminfo', 'utf-8'));
+    if (m !== null) return Number(m[1]) / 1024;
+  } catch {
+    /* not Linux */
+  }
+  return os.freemem() / (1024 * 1024);
+}
+
+/** C = availableParallelism() - 1 (or --jobs), epsilon 10%, K = 2C, M = 0.75 x MemAvailable now. */
+function coreBudget(jobs: number | undefined): CoreBudget {
+  const cores = jobs ?? Math.max(1, os.availableParallelism() - 1);
+  return {
+    cores,
+    epsilon: 0.1,
+    maxProcs: 2 * cores,
+    memMb: Math.floor(0.75 * memAvailableMb()),
+  };
 }
 
 function saveDurations(
@@ -1189,6 +1260,19 @@ async function selftest(): Promise<number> {
     `CONTROL: a sampler within 20% of times must leave it alone, got ${JSON.stringify(fine)}`
   );
 
+  // THE SCHEDULER (PLAN-ci-quick-cpu-scheduling section 3), through sim.ts, which drives the same admit() runPool does: the synthetic mix under both rules, and a control per claim (epsilon infinite trips the cap check, all-one-core matches slots within 1%, no reservation starves a d-8 gate, d > C runs alone on an idle pool, two 20 GB gates never overlap under M 32 GB).
+  const sim = schedulerSelftest();
+  for (const f of sim.failures) require_(false, `scheduler: ${f}`);
+  // --sched is refused when misspelt rather than quietly falling back, or an A/B would compare slots with slots.
+  require_(parseArgs(['--sched', 'cores']).sched === 'cores', '--sched cores must parse');
+  let badSched = false;
+  try {
+    parseArgs(['--sched', 'core']);
+  } catch {
+    badSched = true;
+  }
+  require_(badSched, "CONTROL: --sched core (a typo) must be refused, not read as 'slots'");
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -1197,7 +1281,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6} assertions)\n`
+    `ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2} assertions)\n`
   );
   return 0;
 }
@@ -1468,6 +1552,9 @@ async function main(): Promise<number> {
   const cachePath =
     process.env.CI_RUNNER_CACHE ?? (opts.manifest === undefined ? DEFAULT_CACHE : undefined);
   const durations = loadDurations(cachePath);
+  const sched: Sched = opts.sched ?? 'slots';
+  // Under `cores`, --jobs names C, the core budget, rather than a slot count.
+  const budget = sched === 'cores' ? coreBudget(opts.jobs) : undefined;
 
   const reporter = createReporter({
     idWidth: Math.min(46, Math.max(...graph.map((spec) => spec.id.length))),
@@ -1479,7 +1566,16 @@ async function main(): Promise<number> {
   const dirtyAtStart = dirtyDigest();
   const headTreeAtStart = headTreeNow();
   const started = Date.now();
-  const meta = { jobs, failFast: opts.failFast, selection: selection.description, wallMs: 0 };
+  const meta = {
+    jobs,
+    failFast: opts.failFast,
+    selection: selection.description,
+    wallMs: 0,
+    sched:
+      budget === undefined
+        ? undefined
+        : `sched cores: C ${budget.cores} +${Math.round(budget.epsilon * 100)}%, K ${budget.maxProcs}, M ${(budget.memMb / 1024).toFixed(1)} GB`,
+  };
   reporter.header(graph.length, meta);
   const cpuSampler = startCpuSampler();
   const pooled = await runPool(graph, {
@@ -1487,6 +1583,9 @@ async function main(): Promise<number> {
     heavyLimit,
     failFast: opts.failFast,
     durations,
+    sched,
+    budget,
+    costs: sched === 'cores' ? costsFrom(loadDurationRecords(cachePath)) : undefined,
     exec: (spec) =>
       execGate(spec, { cwd: REPO_ROOT, mergeOutput: opts.mergeOutput, ...PROFILE_OPTS }),
     onStart: opts.verbose
