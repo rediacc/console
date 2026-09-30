@@ -66,6 +66,55 @@ ROLLUP_OK = (
     '"checkSuite":{"workflowRun":{"databaseId":9}}}]}}}}'
 )
 
+
+def _check_run(name, conclusion, run_id, event, branch, status="COMPLETED"):
+    return (
+        '{"__typename":"CheckRun","name":"%s","status":"%s","conclusion":%s,'
+        '"databaseId":%d,"detailsUrl":"","checkSuite":{"branch":%s,'
+        '"workflowRun":{"databaseId":%d,"event":"%s"}}}'
+        % (
+            name,
+            status,
+            ('"%s"' % conclusion) if conclusion else "null",
+            sum(ord(ch) for ch in name) + run_id % 1000,
+            ('{"name":"%s"}' % branch) if branch else "null",
+            run_id,
+            event,
+        )
+    )
+
+
+def _mixed_rollup(nodes, state="FAILURE"):
+    return (
+        '{"target":{"oid":"49e61a1a5c2242e0fb563c065f4bec9f84f13837",'
+        '"statusCheckRollup":{"state":"%s","contexts":{"totalCount":%d,'
+        '"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":[%s]}}}}'
+        % (state, len(nodes), ",".join(nodes))
+    )
+
+
+# THE 2026-09-30 SHAPE, reduced. 49e61a1a on main carried Console CI run 36669944808 -- a pull_request-event run whose head branch 0923-1 was deleted mid-run when the PR fast-forwarded into main, so its check suite names NO branch -- with 7 failures, beside push run 36670172984 on main, all green. The commit rollup through refs/heads/main returns both runs' check runs.
+FOREIGN_PR_FAILURES = [
+    _check_run("Quality / Code", "FAILURE", 36669944808, "pull_request", None),
+    _check_run("Quality / Branch", "FAILURE", 36669944808, "pull_request", None),
+    # A PR run whose branch still exists names it; it is foreign by name.
+    _check_run("Cleanup PR Channel", "FAILURE", 36670149263, "pull_request", "0923-1"),
+]
+OWNED_GREEN = [
+    _check_run("Build", "SUCCESS", 36670172984, "push", "main"),
+    _check_run("CI Complete", "SUCCESS", 36670172984, "push", "main"),
+]
+MIXED_SHA = _mixed_rollup(FOREIGN_PR_FAILURES + OWNED_GREEN)
+
+VERDICT_PY = """
+import sys, pathlib
+sys.path.insert(0, sys.argv[1])
+import wl_ci
+state, info = wl_ci.ci_rollup(pathlib.Path("."), sys.argv[2], allow_branch=True)
+live, hard, soft = wl_ci.ci_classify(info)
+print("%s %s hard=%d" % (state, "red" if hard else ("live" if live else "green"), len(hard)))
+"""
+
 ROLLUP_PY = """
 import sys, pathlib
 sys.path.insert(0, sys.argv[1])
@@ -218,6 +267,127 @@ def test_control_default_flipped_is_caught(gate, tmp_path):
         "ok branch b4b5797e", out, "mutant should have leaked a branch read, got: %s" % out
     )
     gate.log_pass("control fires: a flipped default is detectable")
+
+
+def test_branch_read_ignores_another_branchs_run_on_the_same_sha(gate, tmp_path):
+    gate.log_test("--ref main judges main's runs, not a PR run that shares the SHA")
+    # THE 2026-09-30 DEFECT, end to end through the real script: `ci-trace --ref main` printed `RED  branch main @ 49e61a1a (no PR)` naming run 36669944808's failures while main's own push run was green.
+    require_subjects(gate)
+    bindir = make_fake_gh(tmp_path / "bin", "[]", MIXED_SHA)
+    result = harness.run([sys.executable, str(TRACE), "--ref", "main"], env=with_path(bindir))
+    gate.assert_exit(0, result, "a green push run beside a red foreign PR run must be GREEN")
+    if "GREEN  branch main @ 49e61a1a (no PR)" not in result.out:
+        gate.log_fail("the green line did not render: %r" % result.out)
+    if "3 context(s) on this SHA from another branch's run ignored" not in result.out:
+        gate.log_fail("the foreign contexts were dropped silently, not counted: %r" % result.out)
+    if "Quality / Code" in result.out:
+        gate.log_fail("a foreign PR-run failure leaked into the verdict: %r" % result.out)
+    gate.log_pass("GREEN on main's own run; 3 foreign contexts named as a count")
+
+
+def test_control_old_logic_reports_the_foreign_red(gate, tmp_path):
+    gate.log_test("CONTROL: without the ownership filter, the same fixture reads RED")
+    # By CONSTRUCTION: a copied module with an APPENDED override that owns every context, which is the pre-fix behaviour. If this stops reading red, the fixture no longer reproduces the defect and the test above proves nothing.
+    require_subjects(gate)
+    moddir = tmp_path / "mutant"
+    moddir.mkdir(parents=True)
+    for module in sorted(HOOKS_DIR.glob("*.py")):
+        (moddir / module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+    mutant = moddir / "wl_ci.py"
+    with open(mutant, "a", encoding="utf-8") as handle:
+        handle.write(
+            "\n\ndef branch_owns_context(ctx, ref):  # noqa: F811\n    return True\n\n\n"
+            "def _branch_rollup_state(contexts):  # noqa: F811\n    return 'FAILURE'\n"
+        )
+    bindir = make_fake_gh(tmp_path / "bin", "[]", MIXED_SHA)
+    fixed = harness.run(
+        [sys.executable, "-c", VERDICT_PY, str(HOOKS_DIR), "main"], env=with_path(bindir)
+    )
+    old = harness.run(
+        [sys.executable, "-c", VERDICT_PY, str(moddir), "main"], env=with_path(bindir)
+    )
+    gate.assert_eq(
+        "ok green hard=0", fixed.out.strip(), "fixed module: %s %s" % (fixed.out, fixed.err)
+    )
+    gate.assert_eq("ok red hard=3", old.out.strip(), "old logic: %s %s" % (old.out, old.err))
+    gate.log_pass("control fires: pre-fix ownership reads the fixture RED with 3 failures")
+
+
+def test_branch_read_still_reports_its_own_failure(gate, tmp_path):
+    gate.log_test("CONTROL: a failure in main's OWN push run is still RED")
+    require_subjects(gate)
+    owned_red = _check_run("Quality / Static", "FAILURE", 36670172984, "push", "main")
+    rollup = _mixed_rollup(FOREIGN_PR_FAILURES + OWNED_GREEN + [owned_red])
+    bindir = make_fake_gh(tmp_path / "bin", "[]", rollup)
+    result = harness.run([sys.executable, str(TRACE), "--ref", "main"], env=with_path(bindir))
+    gate.assert_exit(1, result, "an owned failure must stay RED")
+    if "Quality / Static" not in result.out or "Quality / Code" in result.out:
+        gate.log_fail("the red must name the owned failure and only it: %r" % result.out)
+    gate.log_pass("owned failure is RED and named; foreign failures stay out")
+
+
+def test_branch_read_with_only_foreign_runs_is_not_green(gate, tmp_path):
+    gate.log_test("a SHA carrying ONLY another branch's runs is no verdict, never green")
+    # main's push run has not registered yet; the PR run is finished. The filtered rollup is empty, which must read as still-expected rather than as a clean pass.
+    require_subjects(gate)
+    rollup = _mixed_rollup(
+        [_check_run("Build", "SUCCESS", 36669944808, "pull_request", None)], state="SUCCESS"
+    )
+    bindir = make_fake_gh(tmp_path / "bin", "[]", rollup)
+    result = harness.run([sys.executable, str(TRACE), "--ref", "main"], env=with_path(bindir))
+    gate.assert_exit(2, result, "nothing owned must be no-verdict (2), not green")
+    gate.log_pass("only-foreign SHA is no-verdict")
+
+
+def test_branch_owns_context_table(gate):
+    gate.log_test("branch_owns_context decides by branch name, then by event")
+    require_subjects(gate)
+    sys.path.insert(0, str(HOOKS_DIR))
+    try:
+        import wl_ci  # noqa: PLC0415
+    finally:
+        sys.path.remove(str(HOOKS_DIR))
+
+    def run(event, branch):
+        return {
+            "__typename": "CheckRun",
+            "checkSuite": {
+                "branch": {"name": branch} if branch else None,
+                "workflowRun": {"event": event} if event else None,
+            },
+        }
+
+    table = [
+        (run("push", "main"), True),
+        (run("schedule", "main"), True),
+        (run("workflow_dispatch", None), True),
+        (run("pull_request", None), False),  # the deleted-branch PR run
+        (run("pull_request_target", None), False),
+        (run("pull_request", "0923-1"), False),
+        (run("push", "0923-1"), False),
+        (run(None, None), True),  # unattributable: kept, never a silent drop
+        ({"__typename": "StatusContext", "context": "x", "state": "FAILURE"}, True),
+    ]
+    bad = [(c, w) for c, w in table if wl_ci.branch_owns_context(c, "main") != w]
+    if bad:
+        gate.log_fail("ownership table mismatches: %r" % bad)
+    gate.log_pass("all %d ownership rows decided as expected" % len(table))
+
+
+def test_pr_read_is_unchanged(gate):
+    gate.log_test("the PR query carries no ownership filter")
+    # The fix is scoped to the branch source. A PR head's rollup is read through the PR itself, and its query must not grow the branch-only fields.
+    require_subjects(gate)
+    sys.path.insert(0, str(HOOKS_DIR))
+    try:
+        import wl_ci  # noqa: PLC0415
+    finally:
+        sys.path.remove(str(HOOKS_DIR))
+    if "branch{name}" in wl_ci.ci_query("o", "n", "r", None):
+        gate.log_fail("ci_query grew the branch ownership fields")
+    if "branch{name}" not in wl_ci.ci_branch_query("o", "n", "r", None):
+        gate.log_fail("ci_branch_query lost the branch ownership fields")
+    gate.log_pass("PR query untouched; branch query carries ownership fields")
 
 
 def test_trace_names_its_source(gate):

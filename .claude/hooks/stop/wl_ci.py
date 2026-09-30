@@ -207,14 +207,48 @@ def ci_query(owner, name, ref, cursor):
 def ci_branch_query(owner, name, ref, cursor):
     """The SAME rollup, read from the branch instead of from a PR.
 
-    `main` after a merge has no open PR, so ci_query's pullRequests(...) selector returns zero nodes and the reader goes blind at exactly the point /pr-merge step 5 needs it. The context selection set below is deliberately identical to ci_query's: this is a second SOURCE for one payload, never a second implementation of the reader.
+    `main` after a merge has no open PR, so ci_query's pullRequests(...) selector returns zero nodes and the reader goes blind at exactly the point /pr-merge step 5 needs it. The context selection set below matches ci_query's plus TWO fields, `checkSuite.branch.name` and `workflowRun.event`, which branch_owns_context needs: a commit's rollup is per-SHA, not per-branch (see there).
     """
     after = ',after:"%s"' % cursor if cursor else ""
     return (
         '{repository(owner:"%s",name:"%s"){ref(qualifiedName:"refs/heads/%s")'
         "{target{... on Commit{oid statusCheckRollup{state "
-        "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename ... on CheckRun{name status conclusion databaseId detailsUrl checkSuite{workflowRun{databaseId}}} ... on StatusContext{context state targetUrl}}}}}}}}}"
+        "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename ... on CheckRun{name status conclusion databaseId detailsUrl checkSuite{branch{name} workflowRun{databaseId event}}} ... on StatusContext{context state targetUrl}}}}}}}}}"
     ) % (owner, name, ref, after)
+
+
+def branch_owns_context(ctx, ref):
+    """Whether one rollup context belongs to a run OF BRANCH `ref`.
+
+    A COMMIT'S statusCheckRollup IS PER-SHA, NOT PER-BRANCH. Measured 2026-09-30 on 49e61a1a (main): the rollup read through refs/heads/main carried 63 check runs from Console CI run 36669944808 -- a `pull_request`-event run whose head_branch was 0923-1, the PR branch deleted mid-run when the PR fast-forwarded into main -- beside the 30 from push run 36670172984 on main. The PR run had 7
+    failures, the push run none, and `ci-trace --ref main` printed RED for main.
+
+    A check suite that names its branch is decided by that name. A suite with NO branch (the branch was deleted, which is exactly the fast-forward case) falls back to the run's event: a pull_request-family event belongs to the PR's head branch, never to a pushed ref. A StatusContext, and a check run with neither branch nor workflow run, carries no ownership signal and is kept: dropping an unattributable failure would be a false green.
+    """
+    if ctx.get("__typename") == "StatusContext":
+        return True
+    suite = ctx.get("checkSuite") or {}
+    branch = (suite.get("branch") or {}).get("name")
+    if branch:
+        return branch == ref
+    event = ((suite.get("workflowRun") or {}).get("event") or "").lower()
+    return not event.startswith("pull_request")
+
+
+def _branch_rollup_state(contexts):
+    """The rollup state recomputed over the OWNED contexts only.
+
+    GitHub's own `state` aggregates every context on the SHA, so a foreign PR run still in flight would hold the branch at PENDING and a foreign failure at FAILURE. ci_classify reads this only for liveness (CI_LIVE_ROLLUP). Nothing owned is EXPECTED, never SUCCESS: a branch whose own run has not registered yet is not green.
+    """
+    if not contexts:
+        return "EXPECTED"
+    for c in contexts:
+        if c.get("__typename") == "StatusContext":
+            if (c.get("state") or "").upper() in CI_LIVE_ROLLUP:
+                return "PENDING"
+        elif (c.get("status") or "").upper() != "COMPLETED":
+            return "PENDING"
+    return "SUCCESS"
 
 
 def ci_rollup(root, ref, allow_branch=False):
@@ -233,12 +267,12 @@ def ci_rollup(root, ref, allow_branch=False):
     return state, info
 
 
-def _rollup_pages(root, owner, name, ref, build_query, extract, source):
+def _rollup_pages(root, owner, name, ref, build_query, extract, source, keep=None):
     """Page ONE rollup source into the common payload.
 
     Both sources share this loop so CI_MAX_PAGES and the `truncated` flag cannot drift apart between them -- a partial read that forgot to say it was partial is the vacuity failure this reader exists to avoid.
 
-    `extract(data)` returns (terminal_state, commit, pr) -- terminal_state is None to continue paging.
+    `extract(data)` returns (terminal_state, commit, pr) -- terminal_state is None to continue paging. `keep(ctx)`, when given, drops contexts that do not belong to this source and recomputes the rollup state over the rest (the branch source; see branch_owns_context).
     """
     contexts, cursor, commit, pr, roll = [], None, None, None, None
     truncated = True
@@ -261,6 +295,15 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source):
             truncated = False
             break
         cursor = page.get("endCursor")
+    rollup = (roll or {}).get("state") or "EXPECTED"
+    total = ((roll or {}).get("contexts") or {}).get("totalCount") or len(contexts)
+    foreign = 0
+    if keep is not None:
+        owned = [c for c in contexts if keep(c)]
+        foreign = len(contexts) - len(owned)
+        contexts = owned
+        rollup = _branch_rollup_state(contexts)
+        total = max(total - foreign, len(contexts))
     return "ok", {
         "owner": owner,
         "name": name,
@@ -270,9 +313,11 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source):
         # Carried so a GREEN verdict can name the next action. A reader must not flip the PR itself -- several watches can be armed at once and the ready-flip spends real review budget -- but it CAN stop the finish sequence depending on the agent remembering it exists.
         "draft": bool((pr or {}).get("isDraft")),
         "sha": (commit or {}).get("oid") or "",
-        "rollup": ((roll or {}).get("state") or "EXPECTED"),
-        "total": (((roll or {}).get("contexts") or {}).get("totalCount") or len(contexts)),
+        "rollup": rollup,
+        "total": total,
         "contexts": contexts,
+        # Contexts on this SHA dropped because they belong to another branch's run (branch source only; always 0 for a PR read).
+        "foreign": foreign,
         "truncated": truncated,
     }
 
@@ -323,6 +368,7 @@ def _rollup_branch(root, owner, name, ref):
         lambda c: ci_branch_query(owner, name, ref, c),
         extract,
         "branch",
+        keep=lambda c: branch_owns_context(c, ref),
     )
 
 

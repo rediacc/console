@@ -296,6 +296,10 @@ def _snapshot(root, ref, cache, allow_branch=False):
     else:
         verdict, detail = "green", "every context succeeded or was skipped"
 
+    # A branch read judges only the runs OF that branch (wl_ci.branch_owns_context). Saying how many contexts on the SHA were set aside keeps a foreign PR run's failures visible as a count rather than silently absent.
+    if info.get("foreign"):
+        detail += "; %d context(s) on this SHA from another branch's run ignored" % info["foreign"]
+
     return {
         "verdict": verdict,
         "detail": detail,
@@ -313,6 +317,7 @@ def _snapshot(root, ref, cache, allow_branch=False):
         "soft": soft,
         "cancelled": cancelled,
         "truncated": info.get("truncated"),
+        "foreign": info.get("foreign") or 0,
     }, None
 
 
