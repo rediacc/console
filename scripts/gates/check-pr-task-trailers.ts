@@ -121,12 +121,17 @@ export interface Verdict {
   id?: string;
 }
 
-export const judge = (commits: { sha: string; message: string }[], known: string[]): Verdict[] => {
+export const judge = (
+  commits: { sha: string; message: string }[],
+  known: string[],
+  attributed: ReadonlySet<string> = new Set()
+): Verdict[] => {
   const out: Verdict[] = [];
   for (const c of commits) {
     const subject = c.message.split('\n')[0].slice(0, 72);
     const ids = trailerIds(c.message);
     if (ids.length === 0) {
+      if (attributed.has(c.sha)) continue;
       out.push({ sha: c.sha, subject, problem: 'untagged' });
       continue;
     }
@@ -136,6 +141,122 @@ export const judge = (commits: { sha: string; message: string }[], known: string
   }
   return out;
 };
+
+/**
+ * THE ATTRIBUTION LEDGER, `.ci/config/commit-attributions.json`. Operator ruling 2026-09-30: a commit that reached the branch WITHOUT a trailer (pushed from a machine whose commit-msg hook was not installed) is attributed to its epic here instead of rewriting published history. It is an escape hatch, so every way it could hide a commit is refused by name rather than tolerated:
+ * a STALE entry (the sha is not reachable from the tip, so a rewrite killed it), a REDUNDANT one (the commit carries a trailer after all), a duplicate, a short sha (ambiguous today, possibly wrong tomorrow), an unknown epic, and a reason under 40 characters. An entry for a reachable, untrailered commit OUTSIDE the range (already merged) is inert, not an error. A MISSING file means no
+ * attributions, so the gate stays strict; a file that does not parse is an error, because an unreadable ledger is not evidence of an empty one.
+ */
+export const ATTRIBUTIONS_REL = '.ci/config/commit-attributions.json';
+export const MIN_REASON = 40;
+
+export interface Attribution {
+  sha: string;
+  epic: string;
+  reason: string;
+}
+
+export const parseAttributions = (text: string): { entries: Attribution[]; errors: string[] } => {
+  let doc: unknown;
+  try {
+    doc = JSON.parse(text);
+  } catch (err) {
+    return { entries: [], errors: [`does not parse: ${(err as Error).message}`] };
+  }
+  const list = (doc as { attributions?: unknown } | null)?.attributions;
+  if (!doc || typeof doc !== 'object' || !Array.isArray(list)) {
+    return { entries: [], errors: ['has no "attributions" array'] };
+  }
+  const entries: Attribution[] = [];
+  const errors: string[] = [];
+  list.forEach((e, i) => {
+    const r = e as Partial<Record<keyof Attribution, unknown>> | null;
+    if (
+      !r ||
+      typeof r !== 'object' ||
+      typeof r.sha !== 'string' ||
+      typeof r.epic !== 'string' ||
+      typeof r.reason !== 'string'
+    ) {
+      errors.push(`entry ${i} is not {sha, epic, reason} with string values`);
+      return;
+    }
+    entries.push({ sha: r.sha, epic: r.epic, reason: r.reason });
+  });
+  return { entries, errors };
+};
+
+export interface CommitFacts {
+  reachable: boolean;
+  message: string;
+}
+
+export const checkAttributions = (
+  entries: Attribution[],
+  known: string[],
+  inRange: ReadonlySet<string>,
+  lookup: (sha: string) => CommitFacts
+): { attributed: Set<string>; inert: string[]; stale: string[]; problems: string[] } => {
+  const attributed = new Set<string>();
+  const inert: string[] = [];
+  const stale: string[] = [];
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const e of entries) {
+    const label = e.sha.slice(0, 12) || '(empty sha)';
+    if (!/^[0-9a-f]{40}$/.test(e.sha)) {
+      problems.push(`${label}: not a full 40-hex sha; a short sha is ambiguous`);
+      continue;
+    }
+    if (seen.has(e.sha)) {
+      problems.push(`${label}: DUPLICATE entry`);
+      continue;
+    }
+    seen.add(e.sha);
+    if (!known.includes(e.epic)) {
+      problems.push(`${label}: epic ${e.epic || '(empty)'} is not in agent/worklist/epics.jsonl`);
+      continue;
+    }
+    if (e.reason.trim().length < MIN_REASON) {
+      problems.push(`${label}: reason is under ${MIN_REASON} characters`);
+      continue;
+    }
+    const facts = lookup(e.sha);
+    if (!facts.reachable) {
+      stale.push(e.sha);
+      problems.push(`${label}: STALE, not a commit reachable from the tip (rewritten away?)`);
+      continue;
+    }
+    if (trailerIds(facts.message).length > 0) {
+      problems.push(`${label}: REDUNDANT, the commit carries a PR-TASK trailer`);
+      continue;
+    }
+    if (inRange.has(e.sha)) attributed.add(e.sha);
+    else inert.push(e.sha);
+  }
+  return { attributed, inert, stale, problems };
+};
+
+/** Real-git facts for a ledger sha: does it exist and sit in the tip's ancestry, and what is its message. */
+export const gitCommitFacts =
+  (cwd: string, tip: string) =>
+  (sha: string): CommitFacts => {
+    const ok = (args: string[]): boolean => {
+      try {
+        execFileSync('git', args, { cwd, stdio: 'ignore' });
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (!ok(['cat-file', '-e', `${sha}^{commit}`])) return { reachable: false, message: '' };
+    if (!ok(['merge-base', '--is-ancestor', sha, tip])) return { reachable: false, message: '' };
+    const message = execFileSync('git', ['log', '-1', '--format=%B', sha], {
+      cwd,
+      encoding: 'utf8',
+    });
+    return { reachable: true, message };
+  };
 
 // THE RANGE OUTGROWS NODE'S DEFAULT 1 MiB BUFFER. Measured 2026-09-24 on PR #590: 950 commits whose full bodies total 1,034,459 bytes, and execFileSync died with `spawnSync git ENOBUFS` before a single trailer was read. 64 MiB is the size the other range readers here use (check-changed-selection.ts:124). The selftest drives this against a throwaway repository whose range is larger than 1 MiB.
 export const readRange = (repo: string, base: string, tip: string): string =>
@@ -200,6 +321,91 @@ const selftest = (): number => {
     judge([{ sha: 's1', message: 'x\n\nPR-TASK: abc123\nPR-TASK: bbb111' }], known).length === 1
   );
   check('no commits yields no verdicts', judge([], known).length === 0);
+
+  // THE ATTRIBUTION LEDGER (operator ruling 2026-09-30). Every refusal has a control proving it fires, and the accept path has one proving an attribution is not silently ignored.
+  const S1 = '1'.repeat(40);
+  const S2 = '2'.repeat(40);
+  const S3 = '3'.repeat(40);
+  const why = 'pushed from a machine whose commit-msg hook was not installed';
+  const facts: Record<string, CommitFacts> = {
+    [S1]: { reachable: true, message: 'feat: untagged' },
+    [S2]: { reachable: true, message: 'feat: tagged\n\nPR-TASK: abc123' },
+    [S3]: { reachable: true, message: 'feat: merged already' },
+  };
+  const look = (sha: string): CommitFacts => facts[sha] ?? { reachable: false, message: '' };
+  const range = new Set([S1, S2]);
+  const att = (entries: Attribution[]) => checkAttributions(entries, known, range, look);
+  const good = att([{ sha: S1, epic: 'abc123', reason: why }]);
+  check(
+    'a valid entry attributes its in-range commit',
+    good.problems.length === 0 && good.attributed.has(S1)
+  );
+  check(
+    'an attributed untagged commit is not a verdict',
+    judge([{ sha: S1, message: 'feat: untagged' }], known, good.attributed).length === 0
+  );
+  check(
+    'CONTROL: without the attribution the same commit IS caught',
+    judge([{ sha: S1, message: 'feat: untagged' }], known).length === 1
+  );
+  check(
+    'an attribution for ANOTHER sha does not cover this one',
+    judge([{ sha: S1, message: 'feat: untagged' }], known, new Set([S3])).length === 1
+  );
+  check(
+    'a STALE entry (unreachable sha) is refused',
+    att([{ sha: '4'.repeat(40), epic: 'abc123', reason: why }]).problems.some((p) =>
+      p.includes('STALE')
+    )
+  );
+  check(
+    'a REDUNDANT entry (commit carries a trailer) is refused',
+    att([{ sha: S2, epic: 'abc123', reason: why }]).problems.some((p) => p.includes('REDUNDANT'))
+  );
+  check(
+    'a DUPLICATE sha is refused',
+    att([
+      { sha: S1, epic: 'abc123', reason: why },
+      { sha: S1, epic: 'abc123', reason: why },
+    ]).problems.some((p) => p.includes('DUPLICATE'))
+  );
+  check(
+    'a short sha is refused even when it would resolve',
+    att([{ sha: S1.slice(0, 9), epic: 'abc123', reason: why }]).problems.length === 1
+  );
+  check(
+    'an unknown epic is refused',
+    att([{ sha: S1, epic: 'aaa999', reason: why }]).problems.some((p) => p.includes('aaa999'))
+  );
+  check(
+    'a reason under 40 characters is refused',
+    att([{ sha: S1, epic: 'abc123', reason: 'no hook on that machine' }]).problems.length === 1
+  );
+  const merged = att([{ sha: S3, epic: 'abc123', reason: why }]);
+  check(
+    'a reachable entry OUTSIDE the range is inert, not an error',
+    merged.problems.length === 0 && merged.inert[0] === S3 && merged.attributed.size === 0
+  );
+  check(
+    'a ledger that does not parse is an error, not an empty ledger',
+    parseAttributions('{"attributions": [').errors.length === 1
+  );
+  check(
+    'a ledger with no attributions array is an error',
+    parseAttributions('{"_comment": []}').errors.length === 1
+  );
+  check(
+    'an entry missing a field is an error',
+    parseAttributions('{"attributions": [{"sha": "x", "epic": "y"}]}').errors.length === 1
+  );
+  const realAtt = path.join(REPO, ATTRIBUTIONS_REL);
+  if (fs.existsSync(realAtt)) {
+    const parsed = parseAttributions(fs.readFileSync(realAtt, 'utf8'));
+    check(
+      `the tracked ${ATTRIBUTIONS_REL} parses to ${parsed.entries.length} entr(ies) with no error`,
+      parsed.errors.length === 0 && parsed.entries.length > 0
+    );
+  }
 
   // THE ENOBUFS REGRESSION, 2026-09-24. The CONTROL proves the fixture really exceeds the default buffer; without it, a fixture that shrank would let the second check pass against a reader that still had the bug.
   const big = oversizedRange();
@@ -346,6 +552,20 @@ const selftest = (): number => {
     // A BARE `git fetch origin <branch>` DOES NOT ALWAYS CREATE origin/<branch>. It updates the remote-tracking ref only when the fetched ref matches remote.origin.fetch, and actions/checkout configures a NARROW refspec on a PR. Both directions against real git, because the whole tip fix rests on this: with a narrow refspec the bare form leaves the tracking ref absent, and the
     // explicit form creates it. The scratch repo's commits were built with commit-tree, so no branch points at them yet; the fetch below needs a real refs/heads/main.
     g('branch', '-f', 'main', b);
+
+    // gitCommitFacts against real git: the STALE oracle is ancestry of the tip, not mere existence, so a commit that exists but was rewritten off the branch must read as unreachable.
+    const tagged = g('commit-tree', empty, '-p', b, '-m', 'feat: t\n\nPR-TASK: abc123');
+    const onTip = gitCommitFacts(scratch, tagged);
+    check('an ancestor of the tip is reachable', onTip(a).reachable);
+    check(
+      'CONTROL: an existing commit OFF the tip is NOT reachable (a rewrite leaves this shape)',
+      !onTip(orphan).reachable
+    );
+    check('a sha that does not exist is NOT reachable', !onTip('f'.repeat(40)).reachable);
+    check(
+      'the message is read, so a trailered commit can be refused as redundant',
+      trailerIds(onTip(tagged).message).length === 1
+    );
     const narrow = fs.mkdtempSync(path.join(os.tmpdir(), 'prtask-clone-'));
     try {
       execFileSync('git', ['init', '-q', '-b', 'main', narrow], { stdio: 'ignore' });
@@ -648,7 +868,55 @@ const main = (): number => {
     return 0;
   }
 
-  const bad = judge(commits, known);
+  // THE ATTRIBUTION LEDGER. COMMIT_ATTRIBUTIONS_LEDGER is the test seam, the same shape as WORKLIST_EPICS_LEDGER above, so a plant can be driven through the real invocation without touching the tracked file.
+  const attPath = process.env.COMMIT_ATTRIBUTIONS_LEDGER || path.join(REPO, ATTRIBUTIONS_REL);
+  let attributed = new Set<string>();
+  let inertCount = 0;
+  if (fs.existsSync(attPath)) {
+    const { entries, errors } = parseAttributions(fs.readFileSync(attPath, 'utf8'));
+    if (errors.length > 0) {
+      console.error(`✗ ${ATTRIBUTIONS_REL} is unreadable, so no attribution in it can be trusted:`);
+      for (const e of errors) console.error(`    ${e}`);
+      return 1;
+    }
+    const inRange = new Set(commits.map((c) => c.sha));
+    let res = checkAttributions(entries, known, inRange, gitCommitFacts(REPO, tip));
+    // A SHALLOW CHECKOUT CAN MAKE A MERGED ENTRY LOOK STALE: its commit sits below the fetched window. Unshallow once and re-judge before calling anything dead.
+    if (res.stale.length > 0) {
+      let shallow = false;
+      try {
+        shallow =
+          execFileSync('git', ['rev-parse', '--is-shallow-repository'], {
+            cwd: REPO,
+            encoding: 'utf8',
+          }).trim() === 'true';
+      } catch {
+        shallow = false;
+      }
+      if (shallow) {
+        try {
+          execFileSync('git', ['fetch', '--no-tags', '--unshallow', 'origin'], {
+            cwd: REPO,
+            stdio: 'ignore',
+          });
+        } catch {
+          // The re-judge below decides; a failed unshallow leaves the STALE verdicts standing.
+        }
+        res = checkAttributions(entries, known, inRange, gitCommitFacts(REPO, tip));
+      }
+    }
+    if (res.problems.length > 0) {
+      console.error(`✗ ${res.problems.length} entr(ies) in ${ATTRIBUTIONS_REL} are refused:`);
+      for (const p of res.problems) console.error(`    ${p}`);
+      console.error('  An attribution hides a commit from the trailer check, so a dead, redundant');
+      console.error('  or unverifiable one is removed rather than tolerated.');
+      return 1;
+    }
+    attributed = res.attributed;
+    inertCount = res.inert.length;
+  }
+
+  const bad = judge(commits, known, attributed);
   if (bad.length > 0) {
     console.error(
       `✗ ${bad.length} of ${commits.length} commit(s) are not attributable to an epic:`
@@ -664,12 +932,14 @@ const main = (): number => {
     console.error('  The review runs per epic and selects commits by trailer, so these would be');
     console.error('  reviewed by nobody. Epics recorded in agent/worklist/epics.jsonl:');
     for (const k of known) console.error(`    ${k}`);
+    console.error(`  A commit already pushed is attributed in ${ATTRIBUTIONS_REL}, not rewritten.`);
     return 1;
   }
 
   console.log(
     `✓ all ${commits.length} commit(s) name a known epic ` +
-      `(${known.length} epic(s) in the ledger, ${snapIds.length} in the snapshot, sets equal)`
+      `(${known.length} epic(s) in the ledger, ${snapIds.length} in the snapshot, sets equal; ` +
+      `${attributed.size} attributed by ${ATTRIBUTIONS_REL}, ${inertCount} inert entr(ies) outside the range)`
   );
   return 0;
 };
