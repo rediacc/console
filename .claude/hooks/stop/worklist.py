@@ -1059,8 +1059,24 @@ def _item_cli(argv, worklist):
             if _berr:
                 print("REFUSED: %s" % _berr, file=sys.stderr)
                 sys.exit(2)
+        # A NEAR-DUPLICATE WARNS, and still adds (R20260925.7): on 2026-09-24 #48bc48b4 re-tracked #91224636's finding 49 seconds later. The matcher is the plan-box one, so "similar" means what a box-to-item match means.
+        import wl_planfile as PF  # noqa: PLC0415 -- sibling, only for this verb
+
+        fold = S.load(worklist, sync=True)
+        mine = [
+            (r["id"], r["state"], r.get("text") or "")
+            for r in fold.items
+            if r["state"] not in PF.CLOSED_STATES
+            and C.owned_by_me(r.get("owner"), C.resolve_session_id() or me)
+        ]
+        hit = PF.match_item(text, PF.prepare(mine))
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
+        if hit is not None:
+            print(
+                "WARNING: similar open item: #%s -- tick one if they track the same work" % hit[0],
+                file=sys.stderr,
+            )
         return
     if mode == "--triage":
         # BEFORE the item_id parse below, because like --add this verb takes free text: `--triage <me> <finding...>`, with an optional `--id <item>` to triage a finding that is already tracked.
@@ -1272,11 +1288,15 @@ def _item_cli(argv, worklist):
             ):
                 # A slot held for a writer about to be spawned is taken by SPAWNING that writer, or by the one bounded HOLD_FOR reservation above; an unmarked queue lease with a free slot is still refused.
                 die(
-                    "worker:queue is only for writer work the cap forbids starting, and %s of %d "
+                    "#%s stays OPEN (not leased): worker:queue is only for writer work the cap forbids starting, and %s of %d "
                     "writer slots are busy: start the work instead. If the free slot is meant for "
                     "a writer about to be spawned, spawn that writer first; the cap is then full "
                     "and this lease is accepted"
-                    % ("an unknown number" if busy is None else len(busy), wl_roster.WRITER_CAP)
+                    % (
+                        item_id,
+                        "an unknown number" if busy is None else len(busy),
+                        wl_roster.WRITER_CAP,
+                    )
                 )
         if wm == "worker:" + LH.LEAD_WORKER:
             # worker:lead (P2.1): the lead drives the item inline. Covered at stop time only while a background task of this session is live, and capped, so it cannot become a way to park work.

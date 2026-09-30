@@ -325,6 +325,38 @@ def test_l8b_inverse_an_unheld_item_is_still_refused_with_a_free_slot(wl):  # no
     got = wl.cli("--lease", wlfix.ME, free, "+60", "worker:queue")
     assert got.rc != 0, got.out[:300]
     assert "worker:queue is only for writer work the cap forbids starting" in got.err, got.err[:600]
+    # R20260925.7: the refusal says the item is still open, naming it.
+    assert "#%s stays OPEN (not leased)" % free in got.err, got.err[:600]
+
+
+# R20260925.7: --add warns on an owned near-duplicate, and still adds. The fixture is #91224636 and #48bc48b4 of 2026-09-24.
+FIRST = (
+    "Retro writer A finding: .claude/hooks/stop/wl_checks.py:1521 handle_session_start calls mark_context_fresh "
+    "for source=compact without compaction attribution; if a sub-agent's compaction fires SessionStart with the "
+    "lead's session_id it stamps the lead's ctx_fresh. Gate it on _compaction_owner"
+)
+SECOND = (
+    "handle_session_start (wl_checks.py:1521) marks ctx_fresh for source=compact without compaction attribution "
+    "-- retro writer B abc22ce fixing with the measured-payload test"
+)
+
+
+def test_l9_add_warns_on_an_owned_near_duplicate(wl):  # noqa: F811
+    first = wl.cli("--add", wlfix.ME, FIRST)
+    assert first.rc == 0, first.err[:400]
+    assert "similar open item" not in first.err, first.err[:400]
+    fid = first.out.split("#", 1)[1].split(":", 1)[0]
+    second = wl.cli("--add", wlfix.ME, SECOND)
+    assert second.rc == 0, second.err[:400]
+    assert "added #" in second.out, second.out[:300]
+    assert "similar open item: #%s" % fid in second.err, second.err[:600]
+
+
+def test_l9b_inverse_an_unrelated_add_does_not_warn(wl):  # noqa: F811
+    wl.cli("--add", wlfix.ME, FIRST)
+    got = wl.cli("--add", wlfix.ME, "fix the German translation artifacts in the de catalog")
+    assert got.rc == 0, got.err[:400]
+    assert "similar open item" not in got.err, got.err[:400]
 
 
 def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):  # noqa: F811
