@@ -1165,23 +1165,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-renet-obs-mirror.md": {
-      "status": "active",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 4,
-      "done": 1,
-      "open_sigs": [
-        "55ffd3c5",
-        "8fd517f8",
-        "9dbe8909",
-        "d1494aea"
-      ],
-      "done_sigs": [
-        "98b94872"
-      ]
-    },
     "agent/plans/PLAN-repair-prose-style-findings.md": {
       "status": "held",
       "owner": "d778be9d",
@@ -3038,6 +3021,24 @@
         "d0988b5f"
       ],
       "ruling": "#c3a46b36"
+    },
+    "agent/plans/_done/PLAN-renet-obs-mirror.md": {
+      "status": "closed",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-30",
+      "open": 3,
+      "done": 2,
+      "open_sigs": [
+        "55ffd3c5",
+        "8fd517f8",
+        "d1494aea"
+      ],
+      "done_sigs": [
+        "98b94872",
+        "9dbe8909"
+      ],
+      "ruling": "#39e0011a"
     },
     "agent/plans/_done/PLAN-rotation-gh-removal.md": {
       "status": "done",

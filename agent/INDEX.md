@@ -461,7 +461,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 173 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 174 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -625,6 +625,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-prose-style-under-wrap.md` | done | 249 | 0 | 13 | 24886 |
 | `agent/plans/_done/PLAN-reflow-comments-boundary-wrapping.md` | done | 59 | 0 | 9 | 8213 |
 | `agent/plans/_done/PLAN-renet-ceph-gpu-non-apt.md` | closed | 252 | 1 | 7 | 29843 |
+| `agent/plans/_done/PLAN-renet-obs-mirror.md` | closed | 104 | 3 | 2 | 14522 |
 | `agent/plans/_done/PLAN-rotation-gh-removal.md` | done | 68 | 0 | 0 | 6832 |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | done | 204 | 0 | 10 | 20644 |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | done | 321 | 0 | 20 | 41672 |
@@ -639,4 +640,4 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | done | 203 | 0 | 15 | 29033 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-173 plan(s), 101 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+174 plan(s), 102 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
