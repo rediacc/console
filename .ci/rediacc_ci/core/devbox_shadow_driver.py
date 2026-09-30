@@ -112,7 +112,7 @@ norm() {
 emit() { printf 'obs %s\n' "$(norm "$1")"; }
 
 # `<file>: line <N>: $1: unbound variable` names a line INSIDE the twin. The message is the twin's real behaviour and is compared; the file-and-line stamp in front of it is not reproducible by a port and is dropped on both sides. `[^ ]*` rather than `.*` so a message that itself contained the phrase could not eat the part being compared.
-strip_loc() { printf '%s' "$1" | sed -E 's|^[^ ]*: line [0-9]+: ||'; }
+strip_loc() { printf '%s' "$1" | sed -E 's|^[^ ]*: line [0-9]+: ||; s|^(.*Still waiting for: .*) \([0-9]+s\)$|\1 (Ns)|'; }
 
 # THE ANSWER IS COMPARED AS HEX, never as text. `devbox_slugify` prints a bare newline for an empty answer, and an observation carrying that directly would be indistinguishable from an observation carrying nothing. `-v` so a run of repeated bytes is not abbreviated to `*`.
 hexfile() { LC_ALL=C od -An -v -tx1 <"$1" | LC_ALL=C tr -d ' \n'; }
@@ -135,6 +135,8 @@ probe() {
 
 # The prefix `strip_loc` removes above, applied identically on the port side, where it is a no-op because nothing in Python emits a bash source location.
 BASH_LOCATION_RE = re.compile(r"^[^ ]*: line [0-9]+: ")
+# `devbox_await_ready`'s progress line carries elapsed WALL-CLOCK seconds, and bash `SECONDS` ticks on a second boundary rather than a duration, so one probe round reads "(0s)" or "(1s)" by luck. The count is not the subject; that the line is printed, and for which services, is.
+ELAPSED_RE = re.compile(r"^(.*Still waiting for: .*) \([0-9]+s\)$")
 
 # A 90-character branch name, so the 40-character cut lands ON a dash and the second trim has something to do. `test_gate_devbox_slug.py:46` uses the same string.
 LONG_BRANCH = (
@@ -429,7 +431,9 @@ class Printer:
         """`probe`, in the same order and the same hex."""
         self.emit("%s rc=%d out=%s" % (name, rc, out.encode("utf-8", "surrogateescape").hex()))
         for line in text_lines(err):
-            self.emit("%s err| %s" % (name, BASH_LOCATION_RE.sub("", line)))
+            self.emit(
+                "%s err| %s" % (name, ELAPSED_RE.sub(r"\1 (Ns)", BASH_LOCATION_RE.sub("", line)))
+            )
 
 
 def call(printer: Printer, name: str, fn) -> int:
@@ -478,7 +482,7 @@ def port_slug_drift(argv: list[str]) -> devbox.Outcome:
 
 
 def port_route_label(argv: list[str]) -> devbox.Outcome:
-    """`devbox_route_label "$@"`, binding `$1`, `${2:-}` and `${3:-unknown}`.
+    """`devbox_route_label "$@"`, binding `$1`, `${2:-}`, `${3:-unknown}` and `${4:-no}`.
 
     The third default is applied INSIDE the port as well, because `${3:-unknown}` fires on an empty third argument as well as on a missing one and both callers have to reproduce both.
     """
@@ -486,6 +490,7 @@ def port_route_label(argv: list[str]) -> devbox.Outcome:
         argv[0] if len(argv) > 0 else None,
         argv[1] if len(argv) > 1 else "",
         argv[2] if len(argv) > 2 else devbox.ROUTED_UNKNOWN,
+        argv[3] if len(argv) > 3 and argv[3] else "no",
     )
 
 
@@ -495,7 +500,7 @@ PORT_FUNCTIONS = {
     "devbox_route_label": port_route_label,
 }
 
-# The arguments the `arity` scenario passes, in order. The fourth is here to pin that it is IGNORED: bash binds `$1`, `$2` and `$3` and never looks further, so a port that raised on an unexpected argument would diverge.
+# The arguments the `arity` scenario passes, in order. The fourth pins that an extra argument never raises: `devbox_slugify` and `devbox_slug_drift` ignore it, and `devbox_route_label` binds it as `starting`, which only speaks for a 502.
 ARITY_ARGS = ("one", "two", "three", "four")
 ARITY_MAX = len(ARITY_ARGS)
 
@@ -666,6 +671,45 @@ PYTHONPATH=%(ci)s exec %(python)s -m rediacc_ci.core.devbox_shadow_driver stub %
 """
 
 
+# The old side's transcript goes through this before it is emitted, and the new side's through `canonical_lines` directly, so both are ordered by one function.
+CANONICAL_SCRIPT = """#!/bin/bash
+PYTHONPATH=%(ci)s exec %(python)s -m rediacc_ci.core.devbox_shadow_driver canonical "$1"
+"""
+
+
+def is_route_probe(line: str) -> bool:
+    """A `_devbox_probe_services` curl: the one call the twin makes CONCURRENTLY."""
+    try:
+        argv = json.loads(line)
+    except ValueError:
+        return False
+    return isinstance(argv, list) and argv[:1] == ["curl"] and "%{http_code}" in argv
+
+
+def canonical_lines(lines: list[str]) -> list[str]:
+    """The transcript with each maximal run of route probes SORTED, and nothing else moved.
+
+    THE ONE PLACE ORDER IS NOT COMPARED. The twin fires the four route probes as background subshells, so the order they reach the transcript is the scheduler's, not the program's; the port fires them in table order. Every other call, including the `pgrep` behind a 502 that follows the round, keeps its exact position, so a reordered `docker ps` still diverges.
+    """
+    out: list[str] = []
+    run: list[str] = []
+    for line in lines:
+        if is_route_probe(line):
+            run.append(line)
+            continue
+        out.extend(sorted(run))
+        run = []
+        out.append(line)
+    out.extend(sorted(run))
+    return out
+
+
+def canonical_main(path: str) -> int:
+    for line in canonical_lines(text_lines(pathlib.Path(path).read_text(encoding="utf-8"))):
+        print(line)
+    return 0
+
+
 def build_stub_farm(work: pathlib.Path, repo: pathlib.Path) -> pathlib.Path:
     """`<work>/stub/bin/<name>` for every name in `STUBBED`, plus an empty table and transcript. Returns the bin directory."""
     stub = work / "stub"
@@ -680,6 +724,13 @@ def build_stub_farm(work: pathlib.Path, repo: pathlib.Path) -> pathlib.Path:
         path = bin_dir / name
         path.write_text(text, encoding="utf-8")
         path.chmod(0o755)
+    canonical = stub / "canonical"
+    canonical.write_text(
+        CANONICAL_SCRIPT
+        % {"ci": shlex.quote(str(repo / ".ci")), "python": shlex.quote(sys.executable)},
+        encoding="utf-8",
+    )
+    canonical.chmod(0o755)
     (stub / "table.json").write_text("[]", encoding="utf-8")
     (stub / "transcript.jsonl").write_text("", encoding="utf-8")
     return bin_dir
@@ -774,7 +825,6 @@ CID = "c0ffee000001"
 IMAGE = devbox.DEVBOX_IMAGE
 PROXY = devbox.DEVBOX_PROXY_NAME
 WORKTREE_LABEL = '{{index .Config.Labels "%s"}}' % devbox.DEVBOX_LABEL_KEY
-SLUG_LABEL = '{{index .Config.Labels "%s"}}' % devbox.DEVBOX_SLUG_LABEL_KEY
 SLUG = "feat-box-one"
 # What the base image answers for `getent passwd vscode` and for its image id: the published base, vscode at 7111. A host that is 7111 would take the no-derive arm here; the `run-image-match` step builds its answer from the host's own ids so that arm is driven on every machine.
 BASE_ACCOUNT_LINE = "vscode:x:7111:7111::/home/vscode:/bin/bash\n"
@@ -808,7 +858,10 @@ class Rules:
         return rule(*self.d, "inspect", "-f", "{{.State.Running}}", cid, out=value, **kw)
 
     def slug_label(self, value, cid=CID, **kw):
-        return rule(*self.d, "inspect", "-f", SLUG_LABEL, cid, out=value, **kw)
+        """The slug as the ONE all-labels inspect reports it: a `key=value` line, or no line at all for an empty value."""
+        return self.labels(
+            "%s=%s" % (devbox.DEVBOX_SLUG_LABEL_KEY, value) if value else "", cid=cid, **kw
+        )
 
     def wt_label(self, cid, value, **kw):
         return rule(*self.d, "inspect", "-f", WORKTREE_LABEL, cid, out=value, **kw)
@@ -865,15 +918,19 @@ NO_DOCKER_GROUP = rule("docker", "version", rc=1)
 
 
 def route_labels(slug: str, routes=("code", "account", "db", "term")) -> str:
-    """The label VALUES `docker inspect` would list for a container `devbox_up` created with `slug`, for the routes named."""
+    """The `key=value` label lines `docker inspect` would list for a container `devbox_up` created with `slug`, for the routes named. One inspect carries the routers AND the slug, so a scenario states both at once."""
     host = {"code": slug, "account": slug + "-account", "db": slug + "-db", "term": slug + "-term"}
     lines = ["traefik.enable=true", "traefik.docker.network=%s" % devbox.DEVBOX_NETWORK]
-    lines += ["Host(`%s.%s`)" % (host[route], devbox.DEVBOX_DOMAIN) for route in routes]
-    lines += ["{WT}", slug]
+    lines += [
+        "traefik.http.routers.%s-%s.rule=Host(`%s.%s`)"
+        % (slug, route, host[route], devbox.DEVBOX_DOMAIN)
+        for route in routes
+    ]
+    lines += ["%s={WT}" % devbox.DEVBOX_LABEL_KEY, "%s=%s" % (devbox.DEVBOX_SLUG_LABEL_KEY, slug)]
     return "".join(line + "\n" for line in lines)
 
 
-def status_curl(host: str, code: str, rc: int = 0) -> dict:
+def status_curl(host: str, code: str, rc: int = 0, **kw) -> dict:
     return rule(
         "curl",
         "-s",
@@ -887,6 +944,7 @@ def status_curl(host: str, code: str, rc: int = 0) -> dict:
         "Host: %s.localhost" % host,
         out=code,
         rc=rc,
+        **kw,
     )
 
 
@@ -912,7 +970,6 @@ def create_rules(
         *d.base_answers(),
         d.ps_self(CID + "\n", after=after),
         d.running(running_after, after=after),
-        d.slug_label(SLUG + "\n"),
         d.labels(route_labels(SLUG)),
         d.mounts(ALL_MOUNTS),
         rule(
@@ -1500,7 +1557,7 @@ def exec_steps() -> list[Step]:
 
 def status_steps() -> list[Step]:
     d = DOCKER
-    base = [*d.live(), d.slug_label(SLUG + "\n"), d.labels(route_labels(SLUG)), d.proxy("true\n")]
+    base = [*d.live(), d.labels(route_labels(SLUG)), d.proxy("true\n")]
     codes = [
         status_curl(SLUG, "200"),
         status_curl(SLUG + "-account", "502"),
@@ -1523,7 +1580,6 @@ def status_steps() -> list[Step]:
                 status_curl(SLUG + "-db", "404"),
                 status_curl(SLUG + "-account", "404"),
                 *d.live(),
-                d.slug_label(SLUG + "\n"),
                 d.labels(route_labels(SLUG, ("code",))),
                 d.proxy("true\n"),
             ],
@@ -1534,7 +1590,6 @@ def status_steps() -> list[Step]:
             state=b"base_port=17010\nslug=older\n",
             rules=[
                 *d.live(),
-                d.slug_label("old-name\n"),
                 d.labels(route_labels("old-name")),
                 d.proxy("true\n"),
             ],
@@ -1552,7 +1607,7 @@ def status_steps() -> list[Step]:
         Step(
             "proxy-down",
             "devbox_status",
-            rules=[*d.live(), d.slug_label(SLUG + "\n"), d.labels(route_labels(SLUG))],
+            rules=[*d.live(), d.labels(route_labels(SLUG))],
         ),
         Step("empty-code", "devbox_status", rules=[rule("curl", rc=28), *base]),
         Step(
@@ -1561,7 +1616,6 @@ def status_steps() -> list[Step]:
             rules=[
                 NO_DOCKER_GROUP,
                 *SUDO.live(),
-                SUDO.slug_label(SLUG + "\n"),
                 SUDO.labels(route_labels(SLUG)),
                 SUDO.proxy("true\n"),
             ],
@@ -1569,9 +1623,106 @@ def status_steps() -> list[Step]:
         Step(
             "hosts-fail",
             "devbox_status",
-            rules=[*d.live(), d.slug_label(SLUG + "\n"), d.labels("", rc=1)],
+            rules=[*d.live(), d.labels("", rc=1)],
         ),
         Step("no-state", "devbox_status", state=ABSENT, rules=base),
+    ]
+
+
+def ready_steps() -> list[Step]:
+    """`devbox_await_ready`, `devbox_autostart_dispatch` and `devbox_route_label`'s fourth argument.
+
+    NO STEP MAY DEPEND ON WALL-CLOCK TIME. `sleep` is a stub that returns at once, so a route left pending forever would spin the wait for its real 300-second ceiling. Every waiting step therefore converges through an `nth` answer, or runs with DEVBOX_READY_CEILING_S=0.
+    """
+    d = DOCKER
+    ceiling = ("DEVBOX_READY_CEILING_S",)
+    live_routes = [
+        status_curl(host, "200") for host in (SLUG, SLUG + "-account", SLUG + "-db", SLUG + "-term")
+    ]
+    booting = [
+        status_curl(SLUG, "200"),
+        status_curl(SLUG + "-account", "502"),
+        status_curl(SLUG + "-db", "200"),
+        status_curl(SLUG + "-term", "200"),
+    ]
+    held = [*d.live(), d.labels(route_labels(SLUG))]
+    pgrep = ("docker", "exec", CID, "pgrep", "-f")
+    env_inspect = ("docker", "inspect", CID, "--format")
+    autostart = ("docker", "exec", "-u", "vscode")
+    return [
+        Step("label-4-starting", "devbox_route_label", ("502", "a hint", "yes", "yes")),
+        Step("label-4-not", "devbox_route_label", ("502", "a hint", "yes", "no")),
+        Step("label-4-empty", "devbox_route_label", ("502", "a hint", "yes", "")),
+        Step("label-4-case", "devbox_route_label", ("502", "", "no", "YES")),
+        Step("label-4-live", "devbox_route_label", ("404", "", "yes", "yes")),
+        Step("await-no-container", "devbox_await_ready"),
+        Step("await-all-live", "devbox_await_ready", rules=[*live_routes, *held]),
+        Step(
+            "await-converges",
+            "devbox_await_ready",
+            rules=[status_curl(SLUG + "-account", "502", nth=1), *live_routes, *held],
+        ),
+        Step(
+            "await-dead-backend", "devbox_await_ready", rules=[rule(*pgrep, rc=1), *booting, *held]
+        ),
+        Step(
+            "await-container-stops",
+            "devbox_await_ready",
+            (CID,),
+            rules=[
+                *booting,
+                d.running("false\n"),
+                d.labels(route_labels(SLUG)),
+                d.ps_self(CID + "\n"),
+            ],
+        ),
+        Step("await-ceiling", "devbox_await_ready", env={ceiling[0]: "0"}, rules=[*booting, *held]),
+        Step(
+            "autostart-workspace",
+            "devbox_autostart_dispatch",
+            unset=ceiling,
+            rules=[
+                rule(*env_inspect, out="PATH=/usr/bin\nDEVBOX_WORKSPACE=/ws/other\nX=a=b\n"),
+                rule(*autostart, out="one\n\n  two\nunterminated"),
+                *d.live(),
+            ],
+        ),
+        Step(
+            "autostart-no-workspace",
+            "devbox_autostart_dispatch",
+            rules=[
+                rule(*env_inspect, out="PATH=/usr/bin\n"),
+                rule(*autostart, rc=1, err="no such container\n"),
+                *d.live(),
+            ],
+        ),
+        Step("autostart-no-container", "devbox_autostart_dispatch"),
+        # The helpers the wait is built from, each as the subject of its own step.
+        Step("docker-init", "devbox_docker_init", rules=[NO_DOCKER_GROUP]),
+        Step("docker-init-memo", "devbox_docker_init", env={"_DEVBOX_DOCKER": "sudo docker"}),
+        Step("docker-reset", "devbox_docker_reset", unset=("_DEVBOX_DOCKER",)),
+        Step(
+            "labels-by-id", "devbox_container_labels", (CID,), rules=[d.labels(route_labels(SLUG))]
+        ),
+        Step("labels-found", "devbox_container_labels", rules=[*held]),
+        Step("labels-none", "devbox_container_labels"),
+        Step("alive-yes", "devbox_service_process_alive", ("run.sh account dev",), rules=d.live()),
+        Step(
+            "alive-no",
+            "devbox_service_process_alive",
+            ("ttyd",),
+            rules=[rule(*pgrep, rc=1), *d.live()],
+        ),
+        Step("alive-empty", "devbox_service_process_alive", ("",), rules=d.live()),
+        Step("alive-unbound", "devbox_service_process_alive"),
+        Step("route-specs", "_devbox_route_specs"),
+        Step(
+            "probe-services",
+            "_devbox_probe_services",
+            (SLUG, "%s.localhost\n%s-db.localhost" % (SLUG, SLUG)),
+            rules=[*booting, *d.live()],
+        ),
+        Step("probe-unbound", "_devbox_probe_services", (SLUG,)),
     ]
 
 
@@ -1580,14 +1731,18 @@ def up_existing_steps() -> list[Step]:
     removed = ("docker", "rm")
     started = ("docker", "start")
     settled = [d.running("true\n"), d.labels(route_labels(SLUG)), d.proxy("true\n")]
-    drifted = [d.ps_self(CID + "\n"), d.slug_label("old-name\n"), d.mounts(ALL_MOUNTS), *settled]
+    drifted = [
+        d.ps_self(CID + "\n"),
+        d.labels(route_labels("old-name")),
+        d.mounts(ALL_MOUNTS),
+        *settled,
+    ]
     record = b"base_port=17010\nslug=old-name\n"
     after_run = d.run_pattern()
     rehost = [
         d.ps_self(CID + "\n", before=removed),
         d.ps_self(CID + "\n", after=after_run),
-        d.slug_label("old-name\n", before=removed),
-        d.slug_label(SLUG + "\n"),
+        d.labels(route_labels("old-name"), before=removed),
         d.mounts(ALL_MOUNTS),
         *settled,
         *d.base_answers(),
@@ -1601,7 +1756,6 @@ def up_existing_steps() -> list[Step]:
             state=b"base_port=17010\nslug=%s\n" % SLUG.encode(),
             rules=[
                 d.ps_self(CID + "\n"),
-                d.slug_label(SLUG + "\n"),
                 d.mounts(ALL_MOUNTS),
                 *settled,
             ],
@@ -1618,7 +1772,6 @@ def up_existing_steps() -> list[Step]:
             state=record,
             rules=[
                 d.ps_self(CID + "\n"),
-                d.slug_label(SLUG + "\n"),
                 d.mounts("/usr/local/bin/devbox-entrypoint.sh\n"),
                 *settled,
             ],
@@ -1630,7 +1783,6 @@ def up_existing_steps() -> list[Step]:
             rules=[
                 d.ps_self(CID + "\n", before=removed),
                 d.ps_self(CID + "\n", after=after_run),
-                d.slug_label(SLUG + "\n"),
                 d.mounts("/usr/local/bin/devbox-entrypoint.sh\n", before=removed),
                 d.mounts(ALL_MOUNTS),
                 *settled,
@@ -1645,7 +1797,6 @@ def up_existing_steps() -> list[Step]:
             state=record,
             rules=[
                 d.ps_self(CID + "\n"),
-                d.slug_label(SLUG + "\n"),
                 d.mounts(ALL_MOUNTS),
                 d.running("false\n", before=started),
                 *settled,
@@ -1656,7 +1807,7 @@ def up_existing_steps() -> list[Step]:
             "devbox_up",
             rules=[
                 d.ps_self(CID + "\n"),
-                d.slug_label(SLUG + "\n"),
+                d.labels(route_labels(SLUG)),
                 d.mounts(ALL_MOUNTS),
                 d.running("false\n"),
             ],
@@ -1666,7 +1817,7 @@ def up_existing_steps() -> list[Step]:
             "devbox_up",
             rules=[
                 d.ps_self(CID + "\n"),
-                d.slug_label(SLUG + "\n"),
+                d.labels(route_labels(SLUG)),
                 d.mounts(ALL_MOUNTS),
                 d.running("false\n"),
                 rule("docker", "start", CID, rc=1, err="Error: cannot start\n"),
@@ -1784,6 +1935,7 @@ STUB_SCENARIOS = {
     "exec-quote-utf8": ("main", "C.utf8", exec_quote_steps),
     "status": ("main", "C", status_steps),
     "up-existing": ("main", "C", up_existing_steps),
+    "ready": ("main", "C", ready_steps),
     "up-create": ("main", "C", up_create_steps),
 }
 
@@ -1949,7 +2101,7 @@ sprobe() {
     : >"$T"
     probe "$name" "$@"
     local line
-    while IFS= read -r line || [[ -n "$line" ]]; do emit "$name call| $line"; done <"$T"
+    while IFS= read -r line || [[ -n "$line" ]]; do emit "$name call| $line"; done < <("$W/stub/canonical" "$T")
     if [[ -e "$DEVBOX_STATE_FILE" ]]; then
         emit "$name file| $(hexfile "$DEVBOX_STATE_FILE")"
     else
@@ -2023,7 +2175,7 @@ def run_stub_new(
             out_path.read_bytes().decode("utf-8", "surrogateescape"),
             err_path.read_bytes().decode("utf-8", "surrogateescape"),
         )
-        for line in text_lines(transcript.read_text(encoding="utf-8")):
+        for line in canonical_lines(text_lines(transcript.read_text(encoding="utf-8"))):
             printer.emit("%s call| %s" % (step.label, line))
         if state_file.exists():
             printer.emit("%s file| %s" % (step.label, state_file.read_bytes().hex()))
@@ -2071,6 +2223,8 @@ def run_side(side: str, scenario: str, repo: pathlib.Path) -> int:
 
 
 def main(argv: list[str]) -> int:
+    if argv[:1] == ["canonical"]:
+        return canonical_main(argv[1])
     if argv[:1] == ["stub"]:
         return stub_main(argv[1], argv[2], argv[3:])
     parser = argparse.ArgumentParser(description="one side of the core.devbox differential")

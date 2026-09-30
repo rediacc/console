@@ -758,19 +758,25 @@ def deps_hash(env: dict[str, str] | None = None) -> str:
     return _hex_of(stream)
 
 
+def deps_are_current(env: dict[str, str] | None = None) -> bool:
+    """`deps_are_current`, `.ci/lib/local-common.sh`. The one "is `ensure_deps` done" rule, shared by `ensure_deps` and `setup --check`; it must stay read-only."""
+    root = local_root_dir(env)
+    node_modules = os.path.join(root, "node_modules")
+    stamp = os.path.join(root, ".ci", "cache", "npm-install.stamp")
+    return (
+        os.path.isdir(node_modules)
+        and os.access(os.path.join(node_modules, ".bin", "tsx"), os.X_OK)
+        and os.path.islink(os.path.join(node_modules, "@rediacc", "cli"))
+        and _subst(read_stamp_hash(stamp)) == deps_hash(env)
+    )
+
+
 def ensure_deps(env: dict[str, str] | None = None) -> bool:
     """`ensure_deps`, `.ci/lib/local-common.sh:203`. False where the twin returns 1; errexit deaths raise."""
     root = local_root_dir(env)
     node_modules = os.path.join(root, "node_modules")
     stamp = os.path.join(root, ".ci", "cache", "npm-install.stamp")
-    current = deps_hash(env)
-    saved = _subst(read_stamp_hash(stamp))
-    if (
-        os.path.isdir(node_modules)
-        and os.access(os.path.join(node_modules, ".bin", "tsx"), os.X_OK)
-        and os.path.islink(os.path.join(node_modules, "@rediacc", "cli"))
-        and saved == current
-    ):
+    if deps_are_current(env):
         log.debug("Dependencies are up-to-date (stamp matched)")
         return True
     log.step("Installing dependencies...")
@@ -779,7 +785,8 @@ def ensure_deps(env: dict[str, str] | None = None) -> bool:
         return False
     log.step("Compiling native modules (blocked at install by ignore-scripts)...")
     _must(["npm", "run", "install:natives"], cwd=root)
-    write_stamp_hash(stamp, current)
+    # Hashed AFTER the install, as the twin's `$(_deps_hash)` is: `npm install` may rewrite the lockfile.
+    write_stamp_hash(stamp, deps_hash(env))
     return True
 
 
@@ -1192,6 +1199,13 @@ def reexec_with_docker_group(args: list[str]) -> bool:
     return True  # pragma: no cover -- execvp does not return
 
 
+def reset_docker_memo(env: dict[str, str] | None = None) -> None:
+    """`_reset_docker_memo`, `.ci/lib/local-common.sh`. Drops the devbox `docker` vs `sudo docker` memo after anything that changes which one works."""
+    os.environ.pop("_DEVBOX_DOCKER", None)
+    if env is not None:
+        env.pop("_DEVBOX_DOCKER", None)
+
+
 def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
     """`ensure_docker_installed`, `.ci/lib/local-common.sh:639`."""
     root = local_root_dir(env)
@@ -1208,6 +1222,7 @@ def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
             % _required("USER", os.environ.get("USER"))
         )
         ensure_docker_group()
+        reset_docker_memo()
         return True
     if _uname("-s") != "Linux":
         log.error("Automatic Docker installation is Linux-only")
@@ -1228,6 +1243,7 @@ def ensure_docker_installed(env: dict[str, str] | None = None) -> bool:
         log.error("renet install-docker failed")
         return False
     ensure_docker_group()
+    reset_docker_memo()
     with contextlib.suppress(OSError):
         os.remove(os.path.join(root, ".ci", "cache", "build-renet.stamp"))
     log.info("Cleared the renet build stamp so assets get embedded on the next build")
