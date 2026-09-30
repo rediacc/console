@@ -434,7 +434,9 @@ drill_gateway_port() {
     local state="$DRILL_ROOT_DIR/.account-state"
     [[ -f "$state" ]] || return 1
     local port
-    port=$(grep '^gateway_port=' "$state" 2>/dev/null | cut -d= -f2)
+    # `|| true`: under the drills' `set -euo pipefail` a grep with no match fails the
+    # assignment and errexit kills the drill before the `return 1` below can speak.
+    port=$(grep '^gateway_port=' "$state" 2>/dev/null | cut -d= -f2 || true)
     [[ -n "$port" ]] || return 1
     printf '%s' "$port"
 }
@@ -475,7 +477,10 @@ drill_gateway_wait_started() {
     local since="$1" waited=0 started=""
     while [[ $waited -lt 300 ]]; do
         if [[ -f "$DRILL_ROOT_DIR/.account-state" ]]; then
-            started=$(grep '^started=' "$DRILL_ROOT_DIR/.account-state" 2>/dev/null | cut -d= -f2)
+            # `|| true`: account_dev writes `started=` LAST, so a poll that lands while the
+            # new state file is half-written finds no match; without it errexit ended the
+            # drill silently (Tests + Infra / Drills on 1447171dc, "drill universe").
+            started=$(grep '^started=' "$DRILL_ROOT_DIR/.account-state" 2>/dev/null | cut -d= -f2 || true)
             if [[ -n "$started" ]] && [[ "$started" -ge "$since" ]] && drill_gateway_alive; then
                 DRILL_GATEWAY_PORT=$(drill_gateway_port)
                 drill_note "gateway healthy on port $DRILL_GATEWAY_PORT after ${waited}s"
