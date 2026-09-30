@@ -177,3 +177,97 @@ def test_shadow_driver_refuses_without_its_twin(tmp_path: pathlib.Path) -> None:
     assert proc.returncode == 77
     assert proc.stdout == ""
     assert "CANNOT RUN" in proc.stderr
+
+
+# --------------------------------------------------------------------------- setup --check: the deps row and the timing ---------------------------------------------------------------------------
+
+
+class _RecordingCtx(machine.Ctx):
+    """A `Ctx` with no tools on PATH that records every line instead of printing it."""
+
+    def __init__(self, root: pathlib.Path) -> None:
+        super().__init__(root=root, env={}, stdin_tty=False)
+        self.lines: list[str] = []
+
+    def which(self, _name: str) -> str | None:
+        return None
+
+    def run(self, _argv, **_kwargs):
+        from rediacc_ci.setup.ctx import Result  # noqa: PLC0415
+
+        return Result(1, "", "")
+
+    def say(self, message: str = "") -> None:
+        self.lines.append(message)
+
+    def info(self, message: str) -> None:
+        self.lines.append("INFO " + message)
+
+    def warn(self, message: str) -> None:
+        self.lines.append("WARN " + message)
+
+    def step(self, message: str) -> None:
+        self.lines.append("STEP " + message)
+
+
+@pytest.mark.parametrize(
+    ("current", "row", "counted"),
+    [
+        (True, "  deps        installed (stamp matches)", False),
+        (False, "  deps        STALE (dependencies and native modules pending)", True),
+    ],
+)
+def test_check_reports_deps_through_the_live_rule(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, current: bool, row: str, counted: bool
+) -> None:
+    asked: list[str] = []
+
+    def fake_call(expr: str, *_args: object) -> int:
+        asked.append(expr)
+        if expr == "deps_are_current":
+            return 0 if current else 1
+        return 0
+
+    monkeypatch.setattr(machine.bridge, "call", fake_call)
+    monkeypatch.setattr(
+        machine,
+        "_devbox_facts",
+        lambda *_a: {"worktree": str(tmp_path), "image": "1", "running": "1"},
+    )
+    monkeypatch.setattr(machine, "_port_block_row", lambda *_a: "  port block  1-10")
+    monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
+    monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
+
+    ctx = _RecordingCtx(tmp_path)
+    started = machine.time.monotonic()
+    machine.check(ctx, {"DEVBOX_IMAGE": "img", "NODE_VERSION_MIN": "22"}, started)
+
+    assert "deps_are_current" in asked, (
+        "the row must ask the same rule ensure_deps uses, through the bridge"
+    )
+    assert row in ctx.lines
+    # Between docker and image, where the checkpoint put it.
+    docker = next(i for i, line in enumerate(ctx.lines) if line.startswith("  docker "))
+    image = next(i for i, line in enumerate(ctx.lines) if line.startswith("  image "))
+    assert docker < ctx.lines.index(row) < image
+    closing = ctx.lines[-1]
+    assert closing.endswith("(checked in 0s)"), closing
+    # node, gh and the compiler are MISSING under this Ctx (3), docker is MISSING (1); STALE deps adds one.
+    assert closing.startswith("WARN %d item(s)" % (4 + int(counted))), closing
+
+
+def test_check_without_a_start_time_prints_no_suffix(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    monkeypatch.setattr(machine.bridge, "call", lambda *_a: 0)
+    monkeypatch.setattr(
+        machine,
+        "_devbox_facts",
+        lambda *_a: {"worktree": str(tmp_path), "image": "1", "running": "1"},
+    )
+    monkeypatch.setattr(machine, "_port_block_row", lambda *_a: "  port block  1-10")
+    monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
+    monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
+    ctx = _RecordingCtx(tmp_path)
+    machine.check(ctx, {"DEVBOX_IMAGE": "img"})
+    assert "checked in" not in ctx.lines[-1]

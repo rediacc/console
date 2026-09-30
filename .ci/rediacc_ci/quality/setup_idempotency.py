@@ -133,7 +133,7 @@ _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 FIXTURE_NOISE_RE = re.compile(r"(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$")
 
 # The words a `setup --check` run must actually print. A check that prints nothing is indistinguishable from a check that did not run.
-REQUIRED_ROWS = ("node", "docker", "image", "devbox", "port block")
+REQUIRED_ROWS = ("node", "docker", "deps", "image", "devbox", "port block")
 
 # check E's oracle: any of these next to a 4xx/5xx is a contradiction.
 SUCCESS_WORDS_RE = re.compile(r"\b(ok|OK|healthy|success|succeeded|fine|good|ready)\b")
