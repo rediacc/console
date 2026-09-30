@@ -11,7 +11,7 @@ Owns: .ci/rediacc_ci/core/release_age.py, .ci/rediacc_ci/setup/install_cli_globa
 ## 1. Problem, measured
 - `npm install -g <spec>` resolves every transitive dependency fresh from the registry. The lockfile does not apply, and npm does not enforce `minimum_release_age_minutes` (.ci/config/release-age.json says so itself).
 - PR #591 run 36724524175: E2E probe jobs 109920400852, 109920400971 and 109920400956 died in "Install CLI Globally" (`.ci/rediacc_ci/setup/install_cli_global.py:200`) with `npm error 404 ... source-map-js-1.2.2.tgz`. source-map-js 1.2.2 was published 2026-09-30T14:08:09Z; the jobs fetched at 14:11. package-lock.json pins 1.2.1. The 404 was CDN lag; the exposure is that a working CDN would have installed it.
-- Sites: install_cli_global.py:200; ct-tests.yml:179 and cd-deploy-account.yml:262 (wrangler); ci-quality.yml:1711 (agent-browser); .github/actions/setup-node-npm/action.yml:37 and security/audit.py:1159 (npm itself); Dockerfile:52, workers/proxy/Dockerfile:19, .devcontainer/Dockerfile:313, :481, :647, .ci/docker/web/Dockerfile:46; .ci/scripts/test/test-install-methods.sh.
+- Sites: .ci/rediacc_ci/setup/install_cli_global.py:200; .github/workflows/ct-tests.yml:179 and .github/workflows/cd-deploy-account.yml:262 (wrangler); .github/workflows/ci-quality.yml:1711 (agent-browser); .github/actions/setup-node-npm/action.yml:37 and .ci/rediacc_ci/security/audit.py:1159 (npm itself); Dockerfile:52, workers/proxy/Dockerfile:19, .devcontainer/Dockerfile:313, :481, :647, .ci/docker/web/Dockerfile:46; .ci/scripts/test/test-install-methods.sh.
 
 ## 2. Design
 - `release_age.npm_before(now=None)`: ISO-8601 UTC of now minus the window, and a CLI verb `npm-before` printing it. One implementation; every site asks it.

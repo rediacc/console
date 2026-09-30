@@ -29,8 +29,15 @@ runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
 RUN_TMP = runtmp.run_dir("guard-commit-main-")
 
-# `commit_message_text` imports `rediacc_hooks.shellscan` inside the function, so the package root has to be importable.
-sys.path.insert(0, str(HERE.parents[1]))
+# `commit_message_text` imports `rediacc_hooks.shellscan` inside the function, so the package root has to be importable: the canonical hop, through rediacc_hooks/syspath.py loaded by file.
+_SYSPATH = importlib.util.spec_from_file_location(
+    "rediacc_hooks_syspath", HERE.parent / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
+_syspath.on_sys_path(str(HERE.parents[1]))
 _POLICY = importlib.util.spec_from_file_location("commit_policy", HERE.parent / "commit_policy.py")
 if _POLICY is None or _POLICY.loader is None:
     raise SystemExit("%s: commit_policy.py is missing" % __file__)

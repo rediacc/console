@@ -12,23 +12,23 @@ Worklist #6608cc6e (second half). Designed by a Plan agent 2026-09-30; lead note
 
 ## Problem (measured)
 
-- `.claude/rediacc_hooks/guards/block_unverified_push.py:383-394` turns every entry whose reason is at least 80 characters into a bare gate id. `:401` (unnamed) and `:404` (stale) then compare gate ids only. So while `check:ci-plan-implementation` is carried, a 29th finding of any kind (a new P-A2 box, a P-A3 pointer, a registration or vacuity finding from `check_plan_implementation.py:773-839`) pushes without comment.
-- The receipt cannot tell findings apart. `scripts/ci-runner/run.ts:1709` records `failed` as ids only. The captured streams are in `results` (`run.ts:1647`, `GateResult.stdout/stderr` at `pool.ts:98-99`) and are thrown away.
-- A `✗` line is the wrong unit. 108 of 130 `scripts/gates/*.ts` and 45 of 156 `.ci/scripts/quality/*.py` print `✗`, and in the sample the `✗` line is usually a summary header with a count in it (`✗ ${issues.length} issue(s)`, `✗ docker npm pins (%d problem(s)):`), with the details on indented lines under it. 92 gate files put `${…length|count|size}` inside a `✗` template. The one gate actually carried today prints `x` rather than `✗` (`check_plan_implementation.py:58,861`) and indents all 28 findings under one header (`:863`). Hashing `✗` lines would give one key for 28 findings, and the key would change whenever the count changed.
+- `.claude/rediacc_hooks/guards/block_unverified_push.py:383-394` turns every entry whose reason is at least 80 characters into a bare gate id. `:401` (unnamed) and `:404` (stale) then compare gate ids only. So while `check:ci-plan-implementation` is carried, a 29th finding of any kind (a new P-A2 box, a P-A3 pointer, a registration or vacuity finding from `.ci/scripts/quality/check_plan_implementation.py:773-839`) pushes without comment.
+- The receipt cannot tell findings apart. `scripts/ci-runner/run.ts:1709` records `failed` as ids only. The captured streams are in `results` (`scripts/ci-runner/run.ts:1647`, `GateResult.stdout/stderr` at `scripts/ci-runner/pool.ts:98-99`) and are thrown away.
+- A `✗` line is the wrong unit. 108 of 130 `scripts/gates/*.ts` and 45 of 156 `.ci/scripts/quality/*.py` print `✗`, and in the sample the `✗` line is usually a summary header with a count in it (`✗ ${issues.length} issue(s)`, `✗ docker npm pins (%d problem(s)):`), with the details on indented lines under it. 92 gate files put `${…length|count|size}` inside a `✗` template. The one gate actually carried today prints `x` rather than `✗` (`.ci/scripts/quality/check_plan_implementation.py:58,861`) and indents all 28 findings under one header (`:863`). Hashing `✗` lines would give one key for 28 findings, and the key would change whenever the count changed.
 - A per-entry regex over the output moves the stability problem into carried-reds.json, and a loose regex quietly carries everything.
 
 ## Design
 
 **1. Finding key: an explicit line the gate emits (recommended).** A gate that takes part prints one line per finding, to stdout or stderr:
-`::finding::<key>`, where `<key>` matches `^[A-Za-z0-9._:/@#-]{1,200}$` and ANSI is stripped before matching. The gate builds the key from stable identity, never from counts, line numbers or commit shas. For plan-implementation: `P-A2:no-evidence:<rel>#<sig>` and `P-A2:no-row:<rel>#<sig>`, with `sig` from `check_plan_boxes.sig` (`check_plan_boxes.py:144`), which is a hash of the task text. Findings from the other sources (registration, vacuity, held, P-A3, P-A4) use `<rule>:<sha256(msg with [0-9a-f]{7,40} and \d+ masked)[:12]>`. A gate that emits nothing parsable counts as NOT reporting findings. It is never read as "zero findings".
+`::finding::<key>`, where `<key>` matches `^[A-Za-z0-9._:/@#-]{1,200}$` and ANSI is stripped before matching. The gate builds the key from stable identity, never from counts, line numbers or commit shas. For plan-implementation: `P-A2:no-evidence:<rel>#<sig>` and `P-A2:no-row:<rel>#<sig>`, with `sig` from `check_plan_boxes.sig` (`.ci/scripts/quality/check_plan_boxes.py:144`), which is a hash of the task text. Findings from the other sources (registration, vacuity, held, P-A3, P-A4) use `<rule>:<sha256(msg with [0-9a-f]{7,40} and \d+ masked)[:12]>`. A gate that emits nothing parsable counts as NOT reporting findings. It is never read as "zero findings".
 The helpers are `emit_finding(key)` in `.ci/rediacc_ci/log.py` and `emitFinding()` in a new `scripts/ci-runner/findings.ts`. The parser also lives in `findings.ts`.
 
-**2. What the receipt stores.** Add `findings: Record<gateId, string[] | null>` to `Receipt` (`run.ts:1334`), with one entry per failed gate only:
+**2. What the receipt stores.** Add `findings: Record<gateId, string[] | null>` to `Receipt` (`scripts/ci-runner/run.ts:1334`), with one entry per failed gate only:
 - `string[]` holds the keys, deduped and sorted by plain code-unit order (not `localeCompare`).
 - `null` means the gate emitted no valid `::finding::` line, or went over the cap.
 - The cap is 512 keys per gate (200 chars each, so at most about 100 KB). Over the cap the value becomes `null` and the runner warns loudly.
 
-Object keys are inserted in sorted gate-id order, so `JSON.stringify` output is deterministic for identical gate output. `wallMs`, `finishedAt` and `utilisation` already vary between runs, so the claim is scoped: the `findings` block is byte-stable, the receipt as a whole is not. The value is built at `run.ts:1709` from `results` using `parseFindings(r.stdout + '\n' + r.stderr)`.
+Object keys are inserted in sorted gate-id order, so `JSON.stringify` output is deterministic for identical gate output. `wallMs`, `finishedAt` and `utilisation` already vary between runs, so the claim is scoped: the `findings` block is byte-stable, the receipt as a whole is not. The value is built at `scripts/ci-runner/run.ts:1709` from `results` using `parseFindings(r.stdout + '\n' + r.stderr)`.
 
 **3. carried-reds.json schema (clean break).**
 ```json
@@ -43,7 +43,7 @@ Object keys are inserted in sorted gate-id order, so `JSON.stringify` output is 
 - `"*"` has a stricter bar: reason of at least 160 characters, AND the receipt must show `findings[gate] === null`. Whole-gate carry is only for gates that do not speak the protocol yet. A gate that emits keys must be carried by key.
 - An entry with no `findings`, or with `[]`, or with no `version: 2`, is refused as a schema error. It is not skipped silently.
 
-**4. Guard logic** (replaces `block_unverified_push.py:381-404`). Inputs are the carried map `gate -> set|"*"` (built from entries that clear the bar) and `rf = receipt.get("findings") or {}`.
+**4. Guard logic** (replaces `.claude/rediacc_hooks/guards/block_unverified_push.py:381-404`). Inputs are the carried map `gate -> set|"*"` (built from entries that clear the bar) and `rf = receipt.get("findings") or {}`.
 - **Gate unnamed** (a failed gate not in the map): refuse, with the existing text at `:409`.
 - **Gate stale** (a carried gate not in `failed`): refuse, keeping the "NOT failing" wording, which `tests/test_guard_chained_state.py` asserts.
 - For a failed gate carried by `"*"`: if `rf.get(g)` is not None, refuse ("g emits findings; carry them by key, not '*'").
@@ -55,7 +55,7 @@ Object keys are inserted in sorted gate-id order, so `JSON.stringify` output is 
 
 A receipt with no `findings` field (older run.ts) behaves like `null` for every gate, so keyed carries fail closed.
 
-**5. Other readers.** The only code reader is the guard. Its fixtures (`block_unverified_push.py:142-170`) use the old schema and feed the frozen golden (`tests/goldens/block_unverified_push.jsonl`), and `tests/test_guard_chained_state.py:176` builds an old-schema file. All of these change in the same commit. `scripts/data/doc-registry.md:1024` still names the guard as the only consumer, so no edit is needed there. The `_comment` in carried-reds.json still names `block-unverified-push.sh`, so rewrite it. Mentions in docs and plans are history and are left alone.
+**5. Other readers.** The only code reader is the guard. Its fixtures (`.claude/rediacc_hooks/guards/block_unverified_push.py:142-170`) use the old schema and feed the frozen golden (`tests/goldens/block_unverified_push.jsonl`), and `.claude/rediacc_hooks/tests/test_guard_chained_state.py:176` builds an old-schema file. All of these change in the same commit. `scripts/data/doc-registry.md:1024` still names the guard as the only consumer, so no edit is needed there. The `_comment` in carried-reds.json still names `block-unverified-push.sh`, so rewrite it. Mentions in docs and plans are history and are left alone.
 
 ## Files
 
