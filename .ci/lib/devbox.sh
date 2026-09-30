@@ -90,14 +90,55 @@ devbox_container_name() {
 }
 
 # docker, or sudo docker when the group is not active in this shell yet.
-devbox_docker() {
+#
+# MEMOISED, because this is asked constantly and cannot change under us.
+# Measured 2026-09-09: one read-only `./run.sh setup --check` issued 26 docker
+# invocations, THIRTEEN of them this function's `docker version` probe -- 2.0s of
+# an 8s run spent re-deriving whether the docker group is active. There are 23
+# call sites in this file alone and 32 across the repo, so every devbox function
+# paid it. The answer is a property of the process's credentials, which nothing
+# inside a run changes except an install (see devbox_docker_reset).
+#
+# THE MEMO MUST BE EXPORTED, AND SEEDED FROM THE PARENT SHELL. Every call site
+# spells this `d="$(devbox_docker)"`, and a command substitution runs the function
+# in a SUBSHELL -- so a plain global assigned inside it dies with that subshell and
+# the next call probes again. Measured: memoising without exporting left all
+# thirteen `docker version` calls in place, an unchanged 26-call run. Exporting and
+# seeding once in the parent is what actually makes the subsequent calls free,
+# because a subshell inherits the environment it cannot write back to.
+#
+# Same shape as `_SHA256SUM_CMD` in local-common.sh: resolve the tool once, keep it.
+
+# Seed the memo. Call this ONCE, from the parent shell, before a run that will
+# touch docker repeatedly. Idempotent and safe to call anywhere.
+devbox_docker_init() {
+    [[ -n "${_DEVBOX_DOCKER:-}" ]] && return 0
     if docker version &>/dev/null; then
-        echo docker
+        _DEVBOX_DOCKER="docker"
     elif sudo -n docker version &>/dev/null || sudo docker version &>/dev/null; then
-        echo "sudo docker"
+        _DEVBOX_DOCKER="sudo docker"
     else
-        echo docker
+        _DEVBOX_DOCKER="docker"
     fi
+    export _DEVBOX_DOCKER
+    return 0
+}
+
+devbox_docker() {
+    # Falls back to probing when nothing seeded the memo, so a caller that never
+    # calls devbox_docker_init still gets a correct answer -- just not a cheap one.
+    if [[ -z "${_DEVBOX_DOCKER:-}" ]]; then
+        devbox_docker_init
+    fi
+    echo "$_DEVBOX_DOCKER"
+}
+
+# Drop the memo. MANDATORY after anything that changes whether docker is usable --
+# installing it, or joining the docker group -- because a cached "docker is not
+# reachable, use sudo" that outlives the install is exactly the stale-fact bug the
+# memo above was added to remove, only harder to see.
+devbox_docker_reset() {
+    unset _DEVBOX_DOCKER
 }
 
 # =============================================================================
@@ -221,15 +262,32 @@ devbox_slug() {
 # carry. Everything the operator is shown, and every probe, must use this and
 # not a freshly computed slug: after a branch rename the two disagree, and a
 # probe against the recomputed name reaches no router at all.
-devbox_slug_active() {
-    local d cid s
-    cid="$(devbox_container_id)"
-    if [[ -z "$cid" ]]; then
-        devbox_slug
-        return 0
-    fi
+# Every label on the devbox container, as `key=value` lines, in ONE inspect.
+#
+# devbox_slug_active and devbox_router_hosts each ran their own `docker inspect`
+# for a subset of this, and devbox_container_id ran a `docker ps` for each of
+# them on top. Measured 2026-09-09 on a warm `setup --check`: 6 inspects and 5 ps
+# calls, for data one inspect returns whole. The caller passes the container id it
+# already has, so the ps does not repeat either.
+devbox_container_labels() { # devbox_container_labels [cid]
+    local d cid="${1:-}"
+    [[ -n "$cid" ]] || cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || return 0
     d="$(devbox_docker)"
-    s="$($d inspect -f "{{index .Config.Labels \"$DEVBOX_SLUG_LABEL_KEY\"}}" "$cid" 2>/dev/null || true)"
+    $d inspect -f '{{range $k, $v := .Config.Labels}}{{$k}}={{$v}}{{"\n"}}{{end}}' "$cid" 2>/dev/null || true
+}
+
+devbox_slug_active() { # devbox_slug_active [labels]
+    local d cid s labels="${1:-}"
+    if [[ -z "$labels" ]]; then
+        cid="$(devbox_container_id)"
+        if [[ -z "$cid" ]]; then
+            devbox_slug
+            return 0
+        fi
+        labels="$(devbox_container_labels "$cid")"
+    fi
+    s="$(printf '%s\n' "$labels" | sed -n "s/^${DEVBOX_SLUG_LABEL_KEY}=//p" | head -1)"
     [[ "$s" == "<no value>" ]] && s=""
     # A container created before this label existed is hosted under the old
     # basename rule, which is exactly what it was created with.
@@ -271,13 +329,11 @@ devbox_slug_conflicts() { # devbox_slug_conflicts [slug]
 # Every hostname the running container actually declares a router for. The
 # authority for "is this 404 traefik saying no-such-router, or the backend
 # saying not-found?" -- a question the status code alone cannot answer.
-devbox_router_hosts() {
-    local d cid
-    cid="$(devbox_container_id)"
-    [[ -n "$cid" ]] || return 0
-    d="$(devbox_docker)"
-    $d inspect -f '{{range $k, $v := .Config.Labels}}{{$v}}{{"\n"}}{{end}}' "$cid" 2>/dev/null |
-        sed -n 's/.*Host(`\([^`]*\)`).*/\1/p'
+devbox_router_hosts() { # devbox_router_hosts [labels]
+    local labels="${1:-}"
+    [[ -n "$labels" ]] || labels="$(devbox_container_labels)"
+    [[ -n "$labels" ]] || return 0
+    printf '%s\n' "$labels" | sed -n 's/.*Host(`\([^`]*\)`).*/\1/p'
 }
 
 devbox_url() { # devbox_url [suffix] [slug]
@@ -539,10 +595,14 @@ devbox_container_id() {
     $d ps -aq --filter "label=${DEVBOX_LABEL_KEY}=$(devbox_worktree)" 2>/dev/null | head -1
 }
 
-devbox_container_running() {
-    local d cid
+devbox_container_running() { # devbox_container_running [cid]
+    # Takes an already-resolved id when the caller has one. devbox_status asks
+    # this, then asks for the id again, then asks for the labels -- three
+    # `docker ps`/`inspect` round trips for one container. The id is 275ms of
+    # them, measured 2026-09-09.
+    local d cid="${1:-}"
     d="$(devbox_docker)"
-    cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || cid="$(devbox_container_id)"
     [[ -n "$cid" ]] || return 1
     [[ "$($d inspect -f '{{.State.Running}}' "$cid" 2>/dev/null)" == "true" ]]
 }
@@ -610,7 +670,82 @@ devbox_missing_binds() {
     done < <(devbox_home_binds)
 }
 
+# Re-run the service autostart inside a container that is ALREADY UP.
+#
+# WHY THE HOST NEEDS THIS AT ALL. devbox-autostart.sh was dispatched by the
+# entrypoint and nowhere else, which means services were started by a
+# CONTAINER-LIFECYCLE EVENT and never by anything an operator could invoke. A
+# service that died mid-life therefore stayed dead: `devbox_up` takes its
+# "already running" early return below, probes, and hands back a row reading
+# "no backend yet -- ./run.sh account dev (INSIDE the devbox)". That hint is the
+# shape of answer devbox-autostart.sh's own header exists to abolish, and on
+# 2026-09-09 an operator hit exactly it -- `./run.sh setup` could not restore
+# their own account URL.
+#
+# Safe to call unconditionally: the script no-ops for every service already
+# ANSWERING on its port, and it still honours DEVBOX_AUTOSTART=0 for a devbox
+# somebody wants quiet. Never fatal -- a devbox that will not restart a service
+# is still a devbox with a working editor, which is the same bargain the
+# entrypoint strikes.
+devbox_autostart_dispatch() {
+    local cid
+    cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || return 0
+    local d workspace base_port
+    d="$(devbox_docker)"
+    # THE CONTAINER'S OWN workspace, not this shell's. They differ whenever the
+    # container was created from another checkout -- exactly the drift this file
+    # already warns about a few lines up -- and dispatching a script by a path
+    # the container does not use would run the wrong worktree's services.
+    # Go templates have no string-prefix test worth using here, so the env is
+    # printed one per line and filtered in shell.
+    workspace="$($d inspect "$cid" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null |
+        grep '^DEVBOX_WORKSPACE=' | cut -d= -f2- || true)"
+    [[ -n "$workspace" ]] || workspace="$(devbox_worktree)"
+    base_port="$(devbox_base_port 2>/dev/null)"
+
+    # RUN THE WORKSPACE COPY, NOT /usr/local/bin/devbox-autostart.sh.
+    #
+    # Both are the same file on the host, but the /usr/local/bin one arrives by a
+    # SINGLE-FILE bind mount, and docker pins those to the INODE that existed when
+    # the container was created. Any editor or script that writes the file by
+    # replace-and-rename gives it a new inode, and the container then keeps
+    # serving the old bytes forever -- measured 2026-09-09, host inode 4874047 vs
+    # container inode 3155898, so an edited autostart ran as its pre-edit self and
+    # the test of the edit silently tested the old code. The workspace is a
+    # DIRECTORY mount at an identical path, so the same file reached through it is
+    # always current.
+    local script="$workspace/.devcontainer/devbox-autostart.sh"
+
+    # The ports the container may not know. DEVBOX_DB_PORT postdates containers
+    # that are still running, and without it the db service falls back to a
+    # process test that cannot work (see below), so the host supplies it here
+    # rather than only at creation time.
+    local db_port="" term_port=""
+    if [[ -n "$base_port" ]]; then
+        db_port=$((base_port + DEVBOX_OFFSET_STUDIO))
+        term_port=$((base_port + DEVBOX_OFFSET_TERM))
+    fi
+
+    # -u BY NAME, never `$(id -u)`. devbox-entrypoint.sh renumbers `vscode` to the
+    # host uid/gid at start, so the name already resolves to the right identity on
+    # every platform, while a numeric id taken from THIS shell is wrong wherever
+    # the host uid is not the one the container was built around (macOS and WSL2)
+    # -- and `check:ci-devbox-exec` B2 rejects the numeric form for exactly that.
+    # Running as that user is what keeps anything written into the bind-mounted
+    # repo from landing root-owned.
+    $d exec -u vscode \
+        -e DEVBOX_WORKSPACE="$workspace" \
+        ${db_port:+-e DEVBOX_DB_PORT="$db_port"} \
+        ${term_port:+-e DEVBOX_TERM_PORT="$term_port"} \
+        "$cid" bash "$script" 2>&1 |
+        while IFS= read -r _l; do [[ -n "$_l" ]] && log_info "  $_l"; done
+    return 0
+}
+
 devbox_up() { # devbox_up [force_pull] [--no-rehost]
+    # One `docker version` for the whole run instead of one per helper call.
+    devbox_docker_init
     local force_pull="${1:-false}"
     # The opt-out, honoured from either side: the positional flag for a direct
     # caller, and DEVBOX_NO_REHOST as an env alternative. The dispatch in run.sh
@@ -680,6 +815,11 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
 
     if devbox_container_running; then
         log_info "Devbox already running for this worktree"
+        # CONVERGE ON "EVERY ROUTE ANSWERS", not on "a container exists". Without
+        # this the command that is supposed to make the worktree's URLs work was
+        # the one command that could not revive a dead one.
+        devbox_autostart_dispatch
+        devbox_await_ready
         devbox_status
         return 0
     fi
@@ -688,6 +828,13 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
     if [[ -n "$cid" ]]; then
         log_step "Starting existing devbox container"
         $d start "$cid" >/dev/null
+        # `docker start` re-runs the entrypoint, which dispatches autostart
+        # itself -- but the services need time to bind. Astro alone takes over
+        # 90s on an arm64 Crostini box, so devbox_await_ready waits (with an
+        # on-screen cycle) for the routes to actually answer before the final
+        # devbox_status snapshot is taken; see devbox_route_label for how a
+        # still-booting backend is told apart from a truly dead one.
+        devbox_await_ready "$cid"
         devbox_status
         return 0
     fi
@@ -947,6 +1094,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         -e DOCKER_GID="${docker_gid:-}" \
         -e DEVBOX_PORT="$vscode_port" \
         -e DEVBOX_TERM_PORT="$term_port" \
+        -e DEVBOX_DB_PORT="$studio_port" \
         -e DEVBOX_WORKSPACE="$workspace" \
         -e REDIACC_NPM_RUNTIME=devbox \
         -e REDIACC_DEV_BIND=0.0.0.0 \
@@ -970,6 +1118,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         if curl -fsS -o /dev/null --max-time 2 \
             -H "Host: ${slug}.${DEVBOX_DOMAIN}" \
             "http://127.0.0.1:${DEVBOX_PROXY_PORT}/" 2>/dev/null; then
+            devbox_await_ready
             devbox_status
             return 0
         fi
@@ -1004,11 +1153,46 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
 # asked. (Different context, deliberately untouched: the proxy health probe at
 # devbox_proxy_ensure treats any answer including 404 as a healthy traefik. That
 # is a claim about the PROXY, not about a route.)
+# True when a process matching `pat` is alive INSIDE the devbox. Used only to
+# word a 502 (see devbox_route_label); never to decide that a service is healthy,
+# which is what the port probe is for.
+devbox_service_process_alive() {
+    local pat="$1" cid d
+    [[ -n "$pat" ]] || return 1
+    cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || return 1
+    d="$(devbox_docker)"
+    $d exec "$cid" pgrep -f "$pat" >/dev/null 2>&1
+}
+
+# $4 (`starting`) separates a service that was never started from one whose
+# process is alive but not yet answering. Traefik answers 502 for both, and
+# printing "no backend yet" at a server that is coming up normally is a false
+# alarm -- Astro's content sync
+# alone measured 114.8s on an arm64 Crostini box, and `devbox_up` probes within
+# a second of `docker start`. A row that cries wolf on every cold start is a row
+# the operator learns to skip, which costs the one time it is telling the truth.
+# The caller supplies the fact, as it does for `routed`: the port probe has
+# already decided the route is down, and the process check only chooses the
+# WORDS. That is the same order `account_wait_port` uses -- port first, process
+# only to decide whether to keep waiting.
 devbox_route_label() {
-    local code="$1" hint="${2:-}" routed="${3:-unknown}"
+    local code="$1" hint="${2:-}" routed="${3:-unknown}" starting="${4:-no}"
     case "$code" in
         000) echo "proxy unreachable" ;;
-        502) echo "no backend yet${hint:+ -- $hint}" ;;
+        502)
+            if [[ "$starting" == yes ]]; then
+                # NOT the word "starting". A process that is alive with a dead
+                # port is either coming up or wedged, and this check cannot tell
+                # them apart -- calling it "starting" promises a resolution that
+                # a wedged service will never deliver. So the row states the
+                # fact it actually knows and names the one command that now
+                # settles both cases.
+                echo "not serving yet -- ./run.sh devbox up re-dispatches it"
+            else
+                echo "no backend yet${hint:+ -- $hint}"
+            fi
+            ;;
         404)
             case "$routed" in
                 no) echo "no such router -- nothing serves this hostname" ;;
@@ -1020,20 +1204,170 @@ devbox_route_label() {
     esac
 }
 
-devbox_status() {
-    local base_port
-    base_port="$(devbox_base_port 2>/dev/null)"
+# Single source of truth for the 4 routed services, so devbox_status and
+# devbox_await_ready can never iterate a different set or order.
+# key:label:suffix:hint:pgrep-pattern -- see devbox_status for field meaning.
+_devbox_route_specs() {
+    printf '%s\n' \
+        "code:VS Code:::" \
+        "account:Account:account:./run.sh account dev (INSIDE the devbox):run.sh account dev" \
+        "db:Database:db:./run.sh account db (INSIDE the devbox):run.sh account db" \
+        "term:Terminal:term::ttyd"
+}
 
-    if devbox_container_running; then
+# _devbox_probe_services <slug> <hosts>
+#
+# One concurrent probe round over every service in _devbox_route_specs,
+# extracted from devbox_status so devbox_await_ready polls the exact same
+# code path it will later be judged against -- what was waited for and what
+# gets printed can never drift apart. Emits one line per service:
+#   key:label:suffix:hint:pat:code:routed:starting
+_devbox_probe_services() {
+    local slug="$1" hosts="$2" _probe_dir
+    _probe_dir="$(mktemp -d)"
+    local _svc _key _label _suffix _hint _pat _host
+    while IFS= read -r _svc; do
+        IFS=: read -r _key _label _suffix _hint _pat <<<"$_svc"
+        _host="${slug}${_suffix:+-$_suffix}.${DEVBOX_DOMAIN}"
+        # `|| true` is load-bearing under `set -e`: curl exits non-zero on a
+        # timeout (28) or refused connection (7), and a failing command
+        # substitution makes the ASSIGNMENT fail, which kills the whole
+        # script. A probe that cannot reach a route must report "000", not
+        # abort the caller.
+        (
+            _c="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
+                -H "Host: $_host" \
+                "http://127.0.0.1:${DEVBOX_PROXY_PORT}/" 2>/dev/null || true)"
+            [[ -z "$_c" ]] && _c=000
+            printf '%s' "$_c" >"$_probe_dir/$_key"
+        ) &
+    done < <(_devbox_route_specs)
+    wait
+
+    local _code _routed _starting
+    while IFS= read -r _svc; do
+        IFS=: read -r _key _label _suffix _hint _pat <<<"$_svc"
+        _host="${slug}${_suffix:+-$_suffix}.${DEVBOX_DOMAIN}"
+        _code="$(cat "$_probe_dir/$_key" 2>/dev/null || true)"
+        [[ -z "$_code" ]] && _code=000
+        if printf '%s\n' "$hosts" | grep -Fxq "$_host"; then _routed=yes; else _routed=no; fi
+        _starting=no
+        if [[ "$_code" == 502 ]] && devbox_service_process_alive "$_pat"; then
+            _starting=yes
+        fi
+        printf '%s:%s:%s:%s:%s:%s:%s:%s\n' \
+            "$_key" "$_label" "$_suffix" "$_hint" "$_pat" "$_code" "$_routed" "$_starting"
+    done < <(_devbox_route_specs)
+    rm -rf "$_probe_dir"
+}
+
+# devbox_await_ready [cid]
+#
+# Waits, with an on-screen progress cycle, for every route to leave the
+# state devbox_route_label words as "not serving yet" (HTTP 502 with a live
+# backend process) -- the exact half-booted state that used to be reported
+# the instant `devbox_up` (re)dispatched a container, even though Astro's
+# content sync alone measured 114.8s on an arm64 Crostini box. VS Code and
+# Terminal never meaningfully sit in that state (nothing slow starts on
+# them), so in practice this only ever waits on Account/Database.
+#
+# NEVER FAILS. Returns 0 whether routes converge, the container disappears,
+# or the ceiling is hit -- a slow-but-fine account/db must never turn into a
+# hard failure of devbox_up/setup, which is today's contract and must not
+# regress. The caller always follows this with its own devbox_status call
+# for the authoritative, honestly-labeled report.
+devbox_await_ready() {
+    local cid="${1:-}"
+    [[ -n "$cid" ]] || cid="$(devbox_container_id)"
+    [[ -n "$cid" ]] || return 0
+
+    local labels slug hosts
+    labels="$(devbox_container_labels "$cid")"
+    slug="$(devbox_slug_active "$labels")"
+    hosts="$(devbox_router_hosts "$labels")"
+
+    # Budgets are env-overridable, mirroring REDIACC_STARTUP_TIMEOUT in
+    # account.sh. Nominal is Astro's documented worst case above; the
+    # ceiling gives ~2.6x headroom over the measured 114.8s so a genuinely
+    # wedged service does not hang `setup`/`devbox up` forever.
+    local nominal="${DEVBOX_READY_NOMINAL_S:-90}"
+    local ceiling="${DEVBOX_READY_CEILING_S:-300}"
+    local start=$SECONDS elapsed=0 announced=false last_plain=-10 frame=0
+    local spin='|/-\' interactive=false
+    if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]] && ! is_ci; then
+        interactive=true
+    fi
+
+    while true; do
+        local -a pending=()
+        local _key _label _suffix _hint _pat _code _routed _starting
+        while IFS=: read -r _key _label _suffix _hint _pat _code _routed _starting; do
+            [[ -n "$_key" ]] || continue
+            if [[ "$_code" == 502 && "$_starting" == yes ]]; then
+                pending+=("$_label")
+            fi
+        done < <(_devbox_probe_services "$slug" "$hosts")
+
+        if [[ ${#pending[@]} -eq 0 ]]; then
+            [[ "$interactive" == true ]] && printf '\r%*s\r' 60 '' >&2
+            return 0
+        fi
+
+        if ! devbox_container_running "$cid"; then
+            [[ "$interactive" == true ]] && printf '\r%*s\r' 60 '' >&2
+            log_warn "Devbox container stopped while waiting for: ${pending[*]}"
+            return 0
+        fi
+
+        elapsed=$((SECONDS - start))
+        if [[ $elapsed -ge $ceiling ]]; then
+            [[ "$interactive" == true ]] && printf '\r%*s\r' 60 '' >&2
+            log_warn "${pending[*]} still not serving after ${ceiling}s; giving up waiting (not failing)"
+            return 0
+        fi
+        if [[ $elapsed -ge $nominal && "$announced" == false ]]; then
+            log_warn "${pending[*]} is slower than ${nominal}s on this machine; still starting"
+            log_info "Set DEVBOX_READY_NOMINAL_S to raise the initial budget"
+            announced=true
+        fi
+
+        if [[ "$interactive" == true ]]; then
+            frame=$(((frame + 1) % 4))
+            printf '\r%s waiting for: %s (%ss)  ' "${spin:frame:1}" \
+                "$(IFS=,; echo "${pending[*]}")" "$elapsed" >&2
+        elif [[ $((elapsed - last_plain)) -ge 10 ]]; then
+            log_step "Still waiting for: $(IFS=,; echo "${pending[*]}") (${elapsed}s)"
+            last_plain=$elapsed
+        fi
+        sleep 1
+    done
+}
+
+devbox_status() {
+    # One `docker version` for the whole run instead of one per helper call.
+    devbox_docker_init
+    local base_port _cid0
+    base_port="$(devbox_base_port 2>/dev/null)"
+    # Resolve the container ONCE for the whole of status, and hand it to every
+    # helper that would otherwise re-run `docker ps` to find the same thing.
+    _cid0="$(devbox_container_id)"
+
+    if devbox_container_running "$_cid0"; then
         log_info "Devbox running: $(devbox_container_name)"
 
         # The CONTAINER's name, computed once: every URL and every probe Host
         # below must be the name its routers actually carry.
-        local _slug _wanted _recorded _drift _hosts _conflicts _line
-        _slug="$(devbox_slug_active)"
+        #
+        # The container id and its label set are ALSO fetched once here and handed
+        # down, rather than re-derived inside each helper. Status is a read-only
+        # snapshot, so one fetch is not merely cheaper, it is more coherent: two
+        # inspects a second apart could disagree.
+        local _slug _wanted _recorded _drift _hosts _conflicts _line _labels
+        _labels="$(devbox_container_labels "$_cid0")"
+        _slug="$(devbox_slug_active "$_labels")"
         _wanted="$(devbox_slug)"
         _recorded="$(devbox_state_get slug 2>/dev/null || true)"
-        _hosts="$(devbox_router_hosts)"
+        _hosts="$(devbox_router_hosts "$_labels")"
         _conflicts="$(devbox_slug_conflicts "$_slug")"
 
         _drift="$(devbox_slug_drift "$_wanted" "$_slug" "$_recorded")"
@@ -1056,27 +1390,17 @@ devbox_status() {
         # that page names neither the service nor the reason -- so an operator
         # reads "Bad Gateway" for a backend that was simply never started, or was
         # started on the HOST instead of inside the devbox.
-        local _svc _label _code _host _routed
+        #
         # The Terminal row carries NO hint on purpose: ttyd is started by
         # devbox-autostart.sh, so there is no command an operator could run to
         # fix a 502 here -- the answer is the container's ttyd.log, not a verb.
-        for _svc in "code:VS Code::" \
-            "account:Account:account:./run.sh account dev (INSIDE the devbox)" \
-            "db:Database:db:./run.sh account db (INSIDE the devbox)" \
-            "term:Terminal:term:"; do
-            IFS=: read -r _ _label _suffix _hint <<<"$_svc"
-            # `|| true` is load-bearing under `set -e`: curl exits non-zero on a
-            # timeout (28) or refused connection (7), and a failing command
-            # substitution makes the ASSIGNMENT fail, which kills the whole
-            # script. A probe that cannot reach a route must report "000", not
-            # abort the status command. Observed as `setup --check` exiting 28
-            # when the box was loaded enough for one probe to time out.
-            _host="${_slug}${_suffix:+-$_suffix}.${DEVBOX_DOMAIN}"
-            _code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 \
-                -H "Host: $_host" \
-                "http://127.0.0.1:${DEVBOX_PROXY_PORT}/" 2>/dev/null || true)"
-            [[ -z "$_code" ]] && _code=000
-            if printf '%s\n' "$_hosts" | grep -Fxq "$_host"; then _routed=yes; else _routed=no; fi
+        #
+        # _devbox_probe_services runs the four HTTP probes CONCURRENTLY (shared
+        # with devbox_await_ready, which polls this same function while waiting)
+        # and returns one line per service; this loop only formats them.
+        local _key _label _suffix _hint _pat _code _routed _starting
+        while IFS=: read -r _key _label _suffix _hint _pat _code _routed _starting; do
+            [[ -n "$_key" ]] || continue
             if [[ -n "$_conflicts" ]]; then
                 # Two containers define this router. The probe cannot tell which
                 # one answered, so no reachability claim is honest here.
@@ -1084,9 +1408,9 @@ devbox_status() {
                     "ambiguous -- two checkouts claim this hostname"
             else
                 printf '  %-9s %-46s %s\n' "$_label:" "$(devbox_url "$_suffix" "$_slug")" \
-                    "$(devbox_route_label "$_code" "$_hint" "$_routed")"
+                    "$(devbox_route_label "$_code" "$_hint" "$_routed" "$_starting")"
             fi
-        done
+        done < <(_devbox_probe_services "$_slug" "$_hosts")
         echo ""
         if ! devbox_proxy_running; then
             log_warn "The proxy is not running, so those hostnames will not resolve."
@@ -1098,7 +1422,7 @@ devbox_status() {
         echo ""
         return 0
     fi
-    if [[ -n "$(devbox_container_id)" ]]; then
+    if [[ -n "$_cid0" ]]; then
         log_warn "Devbox container exists but is stopped. Start it with: ./run.sh devbox up"
         return 1
     fi

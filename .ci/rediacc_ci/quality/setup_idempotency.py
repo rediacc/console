@@ -238,6 +238,15 @@ def check_a(report: Report, lib: pathlib.Path) -> bool:
     ok &= assert_guarded(
         report, lib / "local-common.sh", "ensure_host_tools", "apt-get install", "command -v"
     )
+    # The costliest step: `npm install` plus the native rebuild, ~45s measured. It was
+    # missing here, so invariant A promised more than it checked.
+    ok &= assert_guarded(
+        report,
+        lib / "local-common.sh",
+        "ensure_deps",
+        r"npm.*install|install:natives",
+        "deps_are_current",
+    )
     # Creating the container must be skipped when one already runs.
     ok &= assert_guarded(
         report,
