@@ -214,6 +214,66 @@ CASES = [
         "%s -F $NEVER_SET_HERE/%s" % (COMMIT, pathlib.Path(BODY_FILE_PATH).name),
         False,
     ),
+    # A heredoc is the message only when it feeds THIS command's stdin (#91c4716c). On 2026-09-26 a `python3 - <<'EOF'` edit chained before a `-F msg` commit was refused for R19 on the Python source; each ALLOW case below has a BLOCKED twin carrying the same text through the stdin shape.
+    (
+        "a python3 heredoc chained before a -F <file> commit is not the message",
+        "python3 - <<'EOF'\n%s\nEOF\n%s -F /nonexistent/msg -- p" % (R19_VIOLATION, COMMIT),
+        False,
+    ),
+    (
+        "the same python3 heredoc chained with && is not the message either",
+        "python3 - <<'EOF' && %s -F /nonexistent/msg -- p\n%s\nEOF" % (COMMIT, R19_VIOLATION),
+        False,
+    ),
+    (
+        "a cat > file heredoc beside the commit is not the message",
+        "cat > /tmp/notes.txt <<'EOF'\n%s think this is right.\nEOF\n%s -m 'fix: x' -- p"
+        % (EYE, COMMIT),
+        False,
+    ),
+    (
+        "CONTROL: the same R19 text in the commit's own -F - heredoc is refused",
+        "%s -F - <<'EOF'\nfix: the thing\n\n%s\nEOF" % (COMMIT, R19_VIOLATION),
+        True,
+    ),
+    (
+        "CONTROL: -F /dev/stdin fed by a heredoc is the message",
+        "%s -F /dev/stdin -- p <<'EOF'\nfix: the thing\n\n%s think this is right.\nEOF"
+        % (COMMIT, EYE),
+        True,
+    ),
+    (
+        "CONTROL: gh pr create --body-file - with a heredoc is still linted",
+        "gh pr create --title 'fix: x' --body-file - <<EOF\n%s think this is right.\nEOF" % EYE,
+        True,
+    ),
+    (
+        "CONTROL: a cat heredoc piped into commit -F - is the message",
+        "cat <<'EOF' | %s -F -\nfix: the thing\n\n%s think this is right.\nEOF" % (COMMIT, EYE),
+        True,
+    ),
+    (
+        "CONTROL: a -m $(cat <<EOF) body is still linted",
+        "%s -m \"$(cat <<'EOF'\nfix: the thing\n\n%s think this is right.\nEOF\n)\" -- p"
+        % (COMMIT, EYE),
+        True,
+    ),
+    # The -m / -F flag arms are scoped the same way: another command's flags are not the commit's.
+    (
+        "a grep -m chained beside a commit is not a message",
+        "grep -m 1 '%s think' README.md; %s -m 'fix: x' -- p" % (EYE, COMMIT),
+        False,
+    ),
+    (
+        "a tail -F on a file carrying a violation is not a message",
+        "tail -F %s & %s -m 'fix: x' -- p" % (BODY_FILE_PATH, COMMIT),
+        False,
+    ),
+    (
+        "CONTROL: the commit's own -F on that same file still reads it",
+        "tail -n1 README.md; %s -F %s -- p" % (COMMIT, BODY_FILE_PATH),
+        True,
+    ),
 ]
 
 

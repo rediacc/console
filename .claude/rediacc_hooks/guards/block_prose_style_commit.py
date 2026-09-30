@@ -49,10 +49,10 @@ OWN_SUITE = True
 # Re-keyed from 40 to 41 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
 ORDER = 40
 
-# THE HEREDOC ARM, which is the one this repository's commits actually travel through: `git commit -F - <<'EOF' ... EOF` puts the whole body somewhere argv parsing cannot see it, so losing this loop means every multi-paragraph message goes UNEXAMINED while the guard still reports as installed.
+# THE HEREDOC ARM, which is the one this repository's commits actually travel through: `git commit -F - <<'EOF' ... EOF` puts the whole body somewhere argv parsing cannot see it, so losing this branch means every multi-paragraph message goes UNEXAMINED while the guard still reports as installed.
 #
 # THE FIRST DECLARATION HERE WAS `if not _is_target(command):` -> `if False:`, and `test_the_differential_can_fail` reported it UNPROVEN on 2026-09-16: examining every command instead of the commit-shaped ones changed no answer, because none of the non-target cases carries a `-m` or a `--body` for the parser to find. The control was right and the declaration moved.
-DEFECT = ("for _, body in HEREDOC.findall(command):", "for _, body in []:")
+DEFECT = ("        if _reads_stdin(tokens):", "        if False:")
 
 UNEXAMINED = (
     "block-prose-style-commit: the prose-style engine could not be loaded (%s); this "
@@ -80,10 +80,6 @@ GH_PR = re.compile(
 # combined regex, because `gh api`'s flags are order-independent -- `-X PATCH` can precede or follow the endpoint -- and a single sequential pattern would have to duplicate every ordering to stay sound.
 GH_API_PR_PATCH = re.compile(r"gh\b[^;&|\n]*\bapi\b[^;&|\n]*\bpulls/\d+")
 PATCH_METHOD = re.compile(r"(?:-X|--method)[= ]?['\"]?PATCH\b", re.IGNORECASE)
-# A heredoc body: `<<'EOF' ... EOF` or `<<EOF ... EOF`, quoted or not.
-HEREDOC = re.compile(
-    r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?\s*\n(.*?)\n\s*\1\s*(?:\n|$)", re.DOTALL
-)
 
 HEADER = """BLOCKED: this message breaks the house writing style -- make the WORK the subject,
 or use the shared "we". Never "you", never "I".
@@ -158,6 +154,14 @@ EDGE_CASES = [
         "a cat heredoc quoting a commit+pr example as prose is not a target",
         "cat > /tmp/note.md <<'EOF'\nExample: git commit -m \"fix: x\" && gh pr create --title x --body y\nEOF",
     ),
+    (
+        "a python heredoc chained before a commit is not the commit's message",
+        "python3 - <<'EOF'\nI think this is right.\nEOF\ngit commit -F /nonexistent/msg -- p",
+    ),
+    (
+        "a heredoc piped into commit -F - is the message",
+        "cat <<'EOF' | git commit -F -\nI think this is right.\nEOF",
+    ),
 ]
 
 
@@ -180,7 +184,7 @@ def _is_target(command):
 
     RUNS AGAINST `shellscan.scan_target(command)`, NOT the raw string. Found live by review 2026-09-17: a `cat > file <<'EOF' ... EOF` heredoc whose BODY quoted an example (`git commit -m "..." && gh pr create ...`, written as illustrative prose in a reply) tripped this function, because the raw-string regex has no notion of "this text is data being written to a file, not a command
     being executed" -- the literal `&&` immediately before `gh` satisfied the separator class regardless of where it sat. `shellscan.scan_target` already exists to solve exactly this for the `gh`-guard family (`block_admin_merge.py` and siblings): it strips heredoc BODIES (keeping the introducer line, so `git commit -F - <<'EOF'` itself still matches) and quoted spans before a
-    command-position anchor ever runs, which is the shared, tested defense this guard should have used from the start instead of scanning the raw command directly. `messages()` below is unaffected: it re-parses the RAW command on its own (shlex plus its own HEREDOC regex) to extract the actual bodies to LINT, which is a different question from "is this a target" and still needs the
+    command-position anchor ever runs, which is the shared, tested defense this guard should have used from the start instead of scanning the raw command directly. `messages()` below is unaffected: it walks the RAW command with `shellscan`'s lexer and parse, scoped to each target's own segment, to extract the actual bodies to LINT, which is a different question from "is this a target" and still needs the
     real, unstripped text.
     """
     scanned = shellscan._command_substitution(shellscan.scan_target(command))
@@ -200,14 +204,105 @@ def messages(command, cwd=None):
     and `--message=a\\ b`. shlex is the shell's own answer to that question. It
     RAISES on an unbalanced quote, which is a command the shell would reject too, and the caller treats that as nothing-to-examine rather than as a finding.
     """
-    out = []
-    for _, body in HEREDOC.findall(command):
-        out.append(("heredoc", body))
-    try:
-        tokens = shlex.split(command, comments=False)
-    except ValueError:
-        return out
+    out: list[tuple[str, str]] = []
+    for text, heredocs in _target_segments(command):
+        try:
+            tokens = shlex.split(text, comments=False)
+        except ValueError:
+            tokens = []
+        if _reads_stdin(tokens):
+            out.extend(("heredoc", body) for body in heredocs["stdin"])
+        out.extend(("heredoc", body) for body in heredocs["words"])
+        out.extend(_flag_messages(tokens, command, cwd))
+    return [(label, text) for label, text in out if text]
 
+
+# `-F -` / `--body-file -` read the message from stdin; `/dev/stdin` is the same file spelled as a path.
+STDIN_NAMES = frozenset({"-", "/dev/stdin"})
+
+
+def _reads_stdin(tokens):
+    """Whether a target's own tokens take its message from stdin, which is the only way a heredoc on it (or piped into it) becomes the message."""
+    for index, token in enumerate(tokens):
+        following = tokens[index + 1] if index + 1 < len(tokens) else None
+        if token in ("-F", "--file", "--body-file") and following in STDIN_NAMES:
+            return True
+        if token in ("-F", "-f") and following in ("body=@-", "body=@/dev/stdin"):
+            return True
+        for prefix in ("--file=", "--body-file=", "-F"):
+            if token.startswith(prefix) and token[len(prefix) :] in STDIN_NAMES:
+                return True
+    return False
+
+
+def _is_target_stage(words):
+    """Whether one simple command (its words, prefixes already stripped) is `git commit`, a write-shaped `gh pr`, or the sanctioned `gh api` PATCH -- the same three patterns `_is_target` runs, anchored to this command's own start."""
+    values = [shellscan._word_value(w) for w in words]
+    values[0] = values[0].rsplit("/", 1)[-1]
+    line = " ".join(values)
+    return bool(
+        GIT_COMMIT.match(line)
+        or GH_PR.match(line)
+        or (GH_API_PR_PATCH.match(line) and PATCH_METHOD.search(line))
+    )
+
+
+def _stdin_bodies(redirs, lexer):
+    """The heredoc and here-string bodies a list of redirects feeds to stdin."""
+    for redir in redirs:
+        hd = redir.heredoc
+        if hd is not None and hd.body_start is not None:
+            yield lexer.src[hd.body_start : hd.body_end].removesuffix("\n")
+        elif redir.op == "<<<" and redir.target is not None:
+            yield shellscan._word_value(redir.target)
+
+
+def _target_segments(command):
+    """`(source text, heredocs)` for every message-carrying command in `command`, found by `shellscan`'s own lexer and parse.
+
+    THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO. Found live 2026-09-26 (#91c4716c): this used to lint EVERY heredoc in the payload as a commit message, so a `python3 - <<'EOF' ... EOF` edit chained before `git commit -F msg -- paths` was refused for R19 on the Python source. A heredoc is the message only when it feeds the target's stdin -- on the target itself or on a `cat` piped into it -- and the target reads `-F -`; `heredocs["stdin"]` holds those, and `messages` checks the flag. `heredocs["words"]` holds a heredoc whose body sits INSIDE the target's own words, the `-m "$(cat <<'EOF' ... EOF)"` shape. The flag arms are scoped the same way: `tail -F log` or `grep -m 5` chained beside a commit is not a message either, so `messages` shlex-splits only the target's own source span.
+    """
+    lexer = shellscan._Lexer(command)
+    out: list[tuple[str, dict[str, list[str]]]] = []
+
+    def walk(items):
+        for item in items:
+            if item[0] != "pipe":
+                continue
+            stages = item[1]
+            for pos, stage in enumerate(stages):
+                if stage[0] in ("sub", "brace"):
+                    walk(stage[1])
+                    continue
+                all_words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
+                words, _ = shellscan._strip_prefixes(all_words)
+                if not words or not _is_target_stage(words):
+                    continue
+                start, end = all_words[0].start, all_words[-1].end
+                redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
+                stdin = list(_stdin_bodies(redirs, lexer))
+                upstream = stages[pos - 1] if pos else None
+                if upstream is not None and upstream[0] == "cmd":
+                    feeder, _ = shellscan._strip_prefixes(
+                        [t for t in upstream[1] if isinstance(t, shellscan._Word)]
+                    )
+                    if feeder and shellscan._word_value(feeder[0]).rsplit("/", 1)[-1] == "cat":
+                        ups = [t for t in upstream[1] if isinstance(t, shellscan._Redir)]
+                        stdin.extend(_stdin_bodies(ups, lexer))
+                inner = [
+                    lexer.src[hd.body_start : hd.body_end].removesuffix("\n")
+                    for hd in lexer.heredocs
+                    if hd.body_start is not None and start <= hd.body_start < end
+                ]
+                out.append((lexer.src[start:end], {"stdin": stdin, "words": inner}))
+
+    walk(shellscan._parse(lexer.tokens()))
+    return out
+
+
+def _flag_messages(tokens, command, cwd):
+    """The `-m`/`--body`/`-F <file>`/... values in ONE target command's tokens, as `(label, text)`."""
+    out: list[tuple[str, str]] = []
     index = 0
     while index < len(tokens):
         token = tokens[index]
@@ -256,7 +351,7 @@ def messages(command, cwd=None):
             index += 1
             continue
         index += 1
-    return [(label, text) for label, text in out if text]
+    return out
 
 
 # `$NAME` / `${NAME}`, the two spellings a same-command assignment is referenced by.
@@ -306,7 +401,8 @@ def _read_file(name, cwd):
 
     A FAILURE TO READ RETURNS "", which the caller drops. That is the right direction: a path this process cannot see is a message this guard cannot examine, and inventing a finding from a missing file would be worse than missing one. The heredoc arm above already covers `-F -`, which is how this repository actually writes a multi-paragraph message.
     """
-    if name == "-":
+    # `/dev/stdin` is `-` spelled as a path: opened here it would be the HOOK's stdin, never the command's.
+    if name in STDIN_NAMES:
         return ""
     try:
         path = pathlib.Path(name)
