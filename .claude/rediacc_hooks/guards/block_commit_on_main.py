@@ -12,7 +12,7 @@ It needs no `PR-TASK:` trailer (`block_untagged_commit` stops asking on `main`),
 
 OFF `main` THE TAG IS REFUSED, so the audit stays clean: a `[hotfix]` on a feature branch would read as a reviewed-on-main commit to anyone scanning the log for them.
 
-WHAT IS JUDGED. Every `git commit` bash would run in the command (a `sh -c` payload and an `eval` included), each against the branch of the repository it acts on: this checkout, or a submodule inside it through `cd`/`-C` (`git -C private/account commit` on account's `main` is refused like the console's). A repository outside this checkout (a `/tmp` fixture) is not this policy's business. The message is read in the three shapes `block_untagged_commit` established; one this guard cannot read on `main` is refused, because a hotfix it cannot see is not one it can admit.
+WHAT IS JUDGED. Every `git commit` bash would run in the command (a `sh -c` payload and an `eval` included), each against the branch of the repository it acts on: this checkout, or a submodule inside it through `cd`/`-C` (`git -C private/account commit` on account's `main` is refused like the console's). A repository outside this checkout (a `/tmp` fixture) is not this policy's business. The message is read in the three shapes `block_untagged_commit` established; one this guard cannot read on `main` is refused, because a hotfix it cannot see is not one it can admit. A `-F <file>` that an earlier clause of the same command writes is refused unread on any branch (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's, and reading them admitted a stale `[hotfix]` onto `main`.
 
 THE GIT-LEVEL TWIN. `.claude/rediacc_hooks/git/commit-msg` enforces the same rule on every commit in a checkout whose `core.hooksPath` points there, including the operator's own terminal; that layer honours `COMMIT_POLICY_OK=1`, this one never does.
 """
@@ -115,6 +115,11 @@ def run(ev):
         repo = commit_policy.run_repo(commit, base)
         if not repo or not commit_policy.is_inside(repo, root):
             continue
+        # A `-F <file>` this same command writes first holds an earlier command's bytes: judging it admitted a stale `[hotfix]` onto `main` (#9888de00).
+        written = commit_policy.written_message_refusal(cmd, commit, base, "`block_commit_on_main`")
+        if written:
+            ev.warn_raw(written)
+            return hookio.DENY
         branch = commit_policy.current_branch(repo)
         msg = commit_policy.commit_message_text(cmd, base, run=commit)
         is_hotfix = "hotfix" in commit_policy.tags(msg)

@@ -13,7 +13,7 @@ THE `-F` BLIND SPOT WAS WIDER THAN IT NEEDED TO BE, and it mattered: measured 20
 Two of the three unreadable shapes were never unreadable:
   -F -  with a heredoc  -> the BODY is in the command string, right there
   -F <file>             -> the file is on disk, and readable
-Only a piped stdin or a command-substituted message is genuinely opaque, and that case still ALLOWS rather than refusing a commit it cannot judge.
+Only a piped stdin or a command-substituted message is genuinely opaque, and that case still ALLOWS rather than refusing a commit it cannot judge. A `-F <file>` that an earlier clause of the same command writes is NOT opaque in that sense: it becomes readable the moment the write runs as its own call, so it is refused with that instruction (`commit_policy.written_message_refusal`, shared with the three commit-policy guards) instead of being judged on an earlier command's bytes.
 
 A TYPO IS WORSE THAN A MISSING TRAILER, which is why shape is no longer enough. `PR-TASK: f2757831` (one character off) looks tagged, routes to an epic that does not exist, and no review pass ever reads it. The id is checked against agent/pr/<branch>.md -- the COMMITTED snapshot, not the worklist sidecar, because the sidecar lives in TMPDIR and was found empty on this very branch
 while 35 commits carried a live id.
@@ -157,14 +157,6 @@ def _grep_qx(needle, haystack):
     return any(pattern.fullmatch(record) for record in records)
 
 
-def _same_file(target, names, root):
-    """Whether a redirect target is one of the `-F` message files, as written or under `root`."""
-    if not target:
-        return False
-    norm = os.path.normpath
-    return any(norm(target) in (norm(n), norm("%s/%s" % (root, n))) for n in names)
-
-
 def _epic_menu(ev, known, snap, branch_key, branch):
     if known:
         ev.warn("")
@@ -223,21 +215,25 @@ def run(ev):
         if _cwd_root is not None and _cwd_root.strip() not in ("", root):
             return hookio.ALLOW
 
+    # A `-F <file>` this same command writes first holds an earlier command's bytes (shellscan.writes_file, #9ec22810). Skipping it used to leave the message "unreadable", so the commit was ALLOWED unjudged; the four commit-message guards now refuse it alike, naming the write (commit_policy.written_message_refusal, #9888de00).
+    for commit in commit_policy.git_runs(cmd, "commit"):
+        written = commit_policy.written_message_refusal(
+            cmd, commit, _cwd or root, "`block_untagged_commit`"
+        )
+        if written:
+            ev.warn_raw(written)
+            return hookio.DENY
+
     # ---- what message text can we actually see? ---------------------------- Everything readable is concatenated; the trailer only has to appear once.
     msg = ""
 
-    # 1+2. `-m` values and a `-F -` heredoc or here-string, read per commit by `commit_policy.commit_message_text`. This used to be the WHOLE COMMAND TEXT, so a `python3 - <<'EOF'` chained before the commit put its body's `PR-TASK:` line in front of the commit's own (#64c3e990): a right trailer was refused as "names no epic" and a trailer that sat only in the python heredoc was allowed. A heredoc counts only when it feeds that commit's stdin; a piped stdin or a command-substituted message stays opaque. The `-F <file>` read stays below, where a file this same command writes first is skipped.
+    # 1+2. `-m` values and a `-F -` heredoc or here-string, read per commit by `commit_policy.commit_message_text`. This used to be the WHOLE COMMAND TEXT, so a `python3 - <<'EOF'` chained before the commit put its body's `PR-TASK:` line in front of the commit's own (#64c3e990): a right trailer was refused as "names no epic" and a trailer that sat only in the python heredoc was allowed. A heredoc counts only when it feeds that commit's stdin; a piped stdin or a command-substituted message stays opaque. The `-F <file>` read stays below; a file this same command writes first was refused above.
     msg = commit_policy.commit_message_text(cmd, root, files=False)
 
     # 3. -F <file> / --file=<file>: read it off disk.
-    msg_files = []
     for match in hookio.grep_o(FILE_ARGS, cmd):
         name = hookio.sed_sub(hookio.rx(r"^(-F|--file)([{S}]+|=)"), "", match).rstrip("\n")
         if name in {"", "-"}:
-            continue
-        msg_files.append(name)
-        # Written by this same command: the bytes on disk are an earlier command's (shellscan.writes_file, #9ec22810).
-        if shellscan.writes_file(cmd, name):
             continue
         for cand in (name, "%s/%s" % (root, name)):
             path = pathlib.Path(cand)
@@ -303,15 +299,11 @@ def run(ev):
     match = TRAILER.search(msg)
     found = match.group(1) if match else ""
 
-    # AN EARLIER CLAUSE MAY WRITE WHAT WAS JUST READ (R20260924.22): `worklist.py --publish` rewrites the epic snapshot, and a `printf ... > <msg>` rewrites the `-F` file. This guard ran before either, so it says so above its finding rather than leaving the session to discover it (2026-09-24 19:02:10: "names no epic" for an epic the same command's `--publish` was about to write).
+    # AN EARLIER CLAUSE MAY WRITE WHAT WAS JUST READ (R20260924.22): `worklist.py --publish` rewrites the epic snapshot. This guard ran before it, so it says so above its finding rather than leaving the session to discover it (2026-09-24 19:02:10: "names no epic" for an epic the same command's `--publish` was about to write). A `printf ... > <msg>` rewriting the `-F` file was refused before any of this was read.
     split = shellscan.split_refusal(
-        [
-            m
-            for m in shellscan.earlier_mutators(cmd, "git commit", {"publish", "redirect"})
-            if m.kind == "publish" or _same_file(m.target, msg_files, root)
-        ],
+        shellscan.earlier_mutators(cmd, "git commit", {"publish"}),
         "git commit",
-        "agent/pr/%s.md and the commit message file" % branch_key,
+        "agent/pr/%s.md" % branch_key,
     )
 
     if found == "":

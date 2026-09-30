@@ -139,6 +139,70 @@ CASES = [
     ("an empty command", "", MAIN, False),
 ]
 
+# #9888de00: a `-F <file>` that an earlier clause of the SAME command writes. The guard runs once, before that clause, so the file on disk is an earlier command's: a stale well-formed hotfix used to admit a plain commit onto `main`. Each fire case is REFUSED naming the write (`commit_policy.written_message_refusal`); each stale file is shaped so a guard that reads it anyway ALLOWS, which the MUTANT control below proves. The CONTROLs keep a `-F` file nothing in the command writes READ and judged. (name, command, root, expect_blocked, stderr needle)
+(MAIN / "hf.txt").write_text("fix(ci): x [hotfix]%s\n" % EVIDENCE, encoding="utf-8")
+(MAIN / "plain.txt").write_text("feat: x\n", encoding="utf-8")
+(FEATURE / "m").write_text("feat: x\n", encoding="utf-8")
+WRITTEN_NEEDLE = "nothing in this command ran, including"
+WRITTEN = [
+    (
+        "on main, a plain message over a stale hotfix file",
+        "printf 'feat: x' > hf.txt && git commit -F hf.txt -- a",
+        MAIN,
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "on main, written through tee",
+        "printf 'feat: x' | tee hf.txt && git commit -F hf.txt -- a",
+        MAIN,
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "on main, written by absolute path, read relative",
+        "printf 'feat: x' > %s/hf.txt; git commit --file=hf.txt -- a" % MAIN,
+        MAIN,
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "off main, printf 'x [hotfix]' > m && git commit -F m",
+        "printf 'x [hotfix]' > m && git commit -F m",
+        FEATURE,
+        True,
+        WRITTEN_NEEDLE,
+    ),
+    (
+        "CONTROL: an unwritten -F hotfix file is read",
+        "git commit -F hf.txt -- a",
+        MAIN,
+        False,
+        "",
+    ),
+    (
+        "CONTROL: another file written, the -F file still read",
+        "printf 'x' > other.txt && git commit -F plain.txt -- a",
+        MAIN,
+        True,
+        "it is not a `[hotfix]`",
+    ),
+]
+
+# THE MUTANT bypasses the shared helper: `written_message_files` answers [] everywhere, so the guard reads the written file off disk again, as it did before #9888de00.
+MUTANT_RUNNER = (
+    "import sys; sys.path.insert(0, %r)\n"
+    "from rediacc_hooks import commit_policy, hookio\n"
+    "commit_policy.written_message_files = lambda *a, **k: []\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "ns = {'__name__': 'mutant', '__file__': %r}\n"
+    "exec(compile(src, 'mutant', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+
 BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
     "from rediacc_hooks import hookio\n"
@@ -165,16 +229,19 @@ def _declared_defect():
 DEFECT = _declared_defect()
 
 
-def run(command, root, broken=False):
+def run(command, root, broken=False, mutant=False):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
     payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
     if broken:
         code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), DEFECT, str(GUARD))
         argv = [sys.executable, "-c", code]
+    elif mutant:
+        code = MUTANT_RUNNER % (str(HERE.parents[1]), str(GUARD), str(GUARD))
+        argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
     proc = subprocess.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
-    if broken and proc.returncode not in (0, 2):
+    if (broken or mutant) and proc.returncode not in (0, 2):
         raise SystemExit("broken-copy runner crashed: %s" % proc.stderr[-800:])
     return proc.returncode != 0, proc.stderr
 
@@ -208,6 +275,27 @@ if flipped:
 else:
     print("*** FAIL *** DEFECT control: with %r planted, every fire case still refused" % (DEFECT,))
     fails += 1
+
+print()
+for name, command, root, want, needle in WRITTEN:
+    got, err = run(command, root)
+    mut, _ = run(command, root, mutant=True)
+    # A fire case must flip under the mutant (it reads the stale file, which passes); a CONTROL must not move.
+    control = name.startswith("CONTROL")
+    ok = got == want and needle in err and (mut == got if control else mut != got)
+    fails += not ok
+    print(
+        "%-56s want=%-8s got=%-8s mutant=%-8s %s"
+        % (
+            "written: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "BLOCKED" if mut else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
 
 # commit_message_text, driven directly (#64c3e990): a heredoc is a commit's message only when it feeds THAT commit's stdin -- attached to it, or on a `cat` piped into it -- and the commit reads stdin. Before the fix every heredoc in the command was read as the message, so a `python3 - <<EOF` edit chained first became part of it.
 (MAIN / "msgfile").write_text("feat: from the file\n", encoding="utf-8")
@@ -244,6 +332,17 @@ MESSAGE_CASES = [
         "feat: x",
     ),
     ("CONTROL: a piped stdin stays opaque", "printf 'feat: p' | git commit -F -", ""),
+    # #9888de00: the bytes on disk are an earlier command's, so the file is never read.
+    (
+        "-F <file> this same command writes first is not read",
+        "printf 'feat: new' > msgfile && git commit -F msgfile -- a",
+        "",
+    ),
+    (
+        "CONTROL: -F <file> after a write to another file is read",
+        "printf 'x' > other.md && git commit -F msgfile -- a",
+        "feat: from the file",
+    ),
 ]
 for name, command, expect in MESSAGE_CASES:
     text = commit_policy.commit_message_text(command, str(MAIN))

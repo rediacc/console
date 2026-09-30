@@ -4,7 +4,7 @@ WHY (the commit-policy plan in agent/plans, section 4.3, and F7). On a `pull_req
 
 `[no-ci]` IS REFUSED TOO. The operator asked whether a `[no-ci]` tag was wanted; the plan rejected it: it would need a second skip path in `initialize` beside the attested scope-engine skip-plan and the pointer-bump fast path that already make cheap commits cheap, CI runs per push rather than per commit, and the `ci:quick` receipt is required before any push anyway. Refusing the spelling keeps anyone from believing it does something.
 
-WHAT IS READ. The message of every `git commit` bash would run, in the three readable shapes (`-m`, `-F -` with a heredoc, `-F <file>`) plus `--trailer` values, which git writes into the same message. A mention in prose, `git log --grep`, or a commit in a repository outside this checkout is none of this guard's business.
+WHAT IS READ. The message of every `git commit` bash would run, in the three readable shapes (`-m`, `-F -` with a heredoc, `-F <file>`) plus `--trailer` values, which git writes into the same message. A mention in prose, `git log --grep`, or a commit in a repository outside this checkout is none of this guard's business. A `-F <file>` that an earlier clause of the same command writes is refused unread (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's.
 """
 
 from rediacc_hooks import commit_policy, hookio
@@ -48,6 +48,11 @@ def run(ev):
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
         if not repo or not commit_policy.is_inside(repo, root):
             continue
+        # A `-F <file>` this same command writes first holds an earlier command's bytes (#9888de00).
+        written = commit_policy.written_message_refusal(cmd, commit, base, "`block_ci_skip_token`")
+        if written:
+            ev.warn_raw(written)
+            return hookio.DENY
         msg = commit_policy.commit_message_text(cmd, base, run=commit)
         found = commit_policy.skip_tokens(msg, cfg)
         if found:

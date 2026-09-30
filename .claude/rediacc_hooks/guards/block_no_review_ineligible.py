@@ -4,7 +4,7 @@ WHY (the commit-policy plan in agent/plans, section 4.2). The per-commit reviewe
 
 `[hotfix]` IS NEVER `[no-review]` (operator ruling 1, 2026-09-25). A hotfix lands on `main` without a PR, so the per-commit review is the only review it gets.
 
-CHECKED TWICE: here, at commit time, against the pathspec (or the index when there is none, and the worktree too under `-a`); and again by the reviewer, which writes `Verdict: skipped (no-review)` only after re-checking eligibility against `git show --name-only <sha>`. A gitlink-only commit needs no tag at all; the reviewer already skips it.
+CHECKED TWICE: here, at commit time, against the pathspec (or the index when there is none, and the worktree too under `-a`); and again by the reviewer, which writes `Verdict: skipped (no-review)` only after re-checking eligibility against `git show --name-only <sha>`. A gitlink-only commit needs no tag at all; the reviewer already skips it. A `-F <file>` that an earlier clause of the same command writes is refused unread (`commit_policy.written_message_refusal`): its bytes on disk are an earlier command's.
 """
 
 from rediacc_hooks import commit_policy, hookio
@@ -61,6 +61,13 @@ def run(ev):
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
         if not repo or not commit_policy.is_inside(repo, root):
             continue
+        # A `-F <file>` this same command writes first holds an earlier command's bytes (#9888de00).
+        written = commit_policy.written_message_refusal(
+            cmd, commit, base, "`block_no_review_ineligible`"
+        )
+        if written:
+            ev.warn_raw(written)
+            return hookio.DENY
         found = commit_policy.tags(commit_policy.commit_message_text(cmd, base, run=commit))
         if "no-review" not in found:
             continue

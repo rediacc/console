@@ -662,10 +662,73 @@ def _stdin_messages(cmd: str, commit) -> list[str]:
     return next((s.stdin for s in segments if s.words == want), [])
 
 
+def _message_file_path(commit, base: str, name: str) -> str:
+    """Where a walked commit's `-F <name>` sits: absolute, or under the commit's own directory."""
+    return os.path.normpath(
+        name if name.startswith("/") else os.path.join(run_dir(commit, base), name)
+    )
+
+
+def written_message_files(cmd: str, commit, base: str) -> list[tuple[str, typing.Any]]:
+    """`(name, shellscan.Mutator)` for each of THIS walked commit's `-F <file>` messages that `cmd` itself writes, [] when none is.
+
+    A PreToolUse guard runs ONCE, before the first clause, so in `printf 'feat: x' > m && git commit -F m` the file on disk still holds whatever an EARLIER command left there (#9ec22810, and #9888de00 for the three commit-policy guards that read it anyway: `block_commit_on_main` admitted a stale `[hotfix]` message onto `main` for a commit whose real message carried none). Matched two ways: the name as spelled in a redirect or `tee` (`shellscan.writes_file`), and an earlier redirect whose target resolves, from `base`, to the same path as the `-F` name does from the commit's own directory. A `tee`, which `earlier_mutators` does not model, gets a synthetic redirect mutator so the refusal can still name the write.
+    """
+    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+
+    _, _, args = git_split(commit.argv)
+    names = [n for n in parse_commit_args(args).files if n and n not in STDIN_NAMES]
+    if not names:
+        return []
+    redirects = shellscan.earlier_mutators(cmd, "git commit", {"redirect"})
+    out: list[tuple[str, typing.Any]] = []
+    for name in names:
+        path = _message_file_path(commit, base, name)
+        hits = [
+            m
+            for m in redirects
+            if m.target
+            and (
+                m.target == name
+                or os.path.normpath(
+                    m.target if m.target.startswith("/") else os.path.join(base, m.target)
+                )
+                == path
+            )
+        ]
+        if not hits and shellscan.writes_file(cmd, name):
+            hits = [shellscan.Mutator("redirect", "the write to %s" % name, name)]
+        out.extend((name, m) for m in hits)
+    return out
+
+
+WRITTEN_MESSAGE = """BLOCKED: nothing in this command ran, including `%(mutator)s`.
+
+Every pre-bash guard runs ONCE, before the first clause. This commit reads its
+message from `-F %(name)s`, and `%(mutator)s`, an earlier clause of this same
+command, writes that file, so the bytes on disk now are an earlier command's.
+%(guard)s judges the message a commit will carry, and cannot see that one.
+
+Run `%(mutator)s` as its own call, then `git commit -F %(name)s`.
+"""
+
+
+def written_message_refusal(cmd: str, commit, base: str, guard: str) -> str:
+    """The refusal for a commit whose `-F <file>` message `cmd` itself writes first, "" when none is.
+
+    ONE BEHAVIOUR FOR THE FOUR GUARDS THAT READ A COMMIT MESSAGE (`block_untagged_commit`, `block_commit_on_main`, `block_ci_skip_token`, `block_no_review_ineligible`): REFUSE, naming the writing clause. Failing open instead would let the file's real contents (a `[skip ci]`, a `[no-review]`, a non-hotfix on `main`) through unjudged in a checkout where the git-level twin is not wired (`core.hooksPath` unset), and the refusal costs one extra call: the same message, written first, is then read and judged.
+    """
+    written = written_message_files(cmd, commit, base)
+    if not written:
+        return ""
+    name, mutator = written[0]
+    return WRITTEN_MESSAGE % {"mutator": mutator.label, "name": name, "guard": guard}
+
+
 def commit_message_text(cmd: str, root: str, run=None, files: bool = True) -> str:
     """The message a `git commit` in `cmd` would write, "" when it cannot be read.
 
-    The three readable shapes `block_untagged_commit` established: `-m`/`--message` values (a `"$(cat <<'EOF' ... EOF)"` wrapper unwrapped), `-F -` (or `-F /dev/stdin`) fed by a heredoc or here-string attached to that commit or on a `cat` piped into it, and `-F <file>` read off disk relative to the command's directory. `--trailer` values are appended as trailer lines, because git writes them into the same message. A piped stdin, an editor session or any other command substitution is opaque, and "" says so. `files=False` skips the `-F <file>` read, for a caller that reads those files itself (`block_untagged_commit` skips a file the same command writes first).
+    The three readable shapes `block_untagged_commit` established: `-m`/`--message` values (a `"$(cat <<'EOF' ... EOF)"` wrapper unwrapped), `-F -` (or `-F /dev/stdin`) fed by a heredoc or here-string attached to that commit or on a `cat` piped into it, and `-F <file>` read off disk relative to the command's directory. `--trailer` values are appended as trailer lines, because git writes them into the same message. A piped stdin, an editor session or any other command substitution is opaque, and "" says so. A `-F <file>` that `cmd` itself writes first (`written_message_files`) is never read: its bytes are an earlier command's, and a caller refuses it with `written_message_refusal`. `files=False` skips every `-F <file>` read, for a caller that reads those files itself.
     """
     commits = [run] if run is not None else git_runs(cmd, "commit")
     parts: list[str] = []
@@ -673,14 +736,14 @@ def commit_message_text(cmd: str, root: str, run=None, files: bool = True) -> st
         _, _, args = git_split(commit.argv)
         parsed = parse_commit_args(args)
         body = [_unwrap(m) for m in parsed.messages]
+        written = {n for n, _ in written_message_files(cmd, commit, root)} if files else set()
         for name in parsed.files:
             if name in STDIN_NAMES:
                 body.extend(_stdin_messages(cmd, commit))
                 continue
-            if not files:
+            if not files or name in written:
                 continue
-            directory = run_dir(commit, root)
-            path = pathlib.Path(name if name.startswith("/") else os.path.join(directory, name))
+            path = pathlib.Path(_message_file_path(commit, root, name))
             try:
                 body.append(path.read_text(encoding="utf-8", errors="surrogateescape"))
             except OSError:
