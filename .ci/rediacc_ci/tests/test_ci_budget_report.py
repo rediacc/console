@@ -2065,3 +2065,57 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         "fixedMinutes": round(616 / 60 - 372 / 60, 2),
         "units": {},
     }
+
+
+def _wall_job(name: str, minutes: float, conclusion: str = "success") -> dict:
+    return {
+        "name": name,
+        "conclusion": conclusion,
+        "started_at": "2026-09-30T00:00:00Z",
+        "completed_at": "2026-09-30T00:%02d:%02dZ" % (int(minutes), round((minutes % 1) * 60)),
+    }
+
+
+def test_main_push_only_p90_measures_a_job_no_pr_run_ran():
+    """The release chain is skipped on every PR, so check-lane-budget.ts check 2 saw it UNCHECKED forever; it is measured from the main-push sample instead."""
+    pr = [[_wall_job("Pipeline Sentinel", 5, "skipped"), _wall_job("Lint", 4)]]
+    main = [
+        [_wall_job("Pipeline Sentinel", 1), _wall_job("Lint", 9)],
+        [_wall_job("Pipeline Sentinel", 2), _wall_job("Check Release State", 0.5)],
+    ]
+    assert br.main_push_only_p90(pr, main) == {
+        "Pipeline Sentinel": 1.9,  # p90 of 1.0 and 2.0 by linear interpolation
+        "Check Release State": 0.5,
+    }
+
+
+def test_main_push_only_p90_never_replaces_a_job_that_ran_on_a_pr():
+    """CONTROL: a job that RAN on a PR is the PR sample's, even when it never succeeded there (CI Complete fails on every PR run through a carried check). Its main-push number is not used."""
+    pr = [[_wall_job("CI Complete", 1, "failure"), _wall_job("Lint", 4)]]
+    main = [[_wall_job("CI Complete", 2), _wall_job("Lint", 9)]]
+    assert br.main_push_only_p90(pr, main) == {}
+
+
+def test_main_push_only_p90_ignores_a_main_job_with_no_success():
+    """A main-push job that failed or was skipped has no wall sample, so no number is written for it (unknown stays unknown)."""
+    main = [
+        [_wall_job("Finalize Release Sentinel", 3, "failure"), _wall_job("Deploy", 0, "skipped")]
+    ]
+    assert br.main_push_only_p90([], main) == {}
+
+
+def test_the_refresh_writes_main_push_only_jobs_without_touching_pr_numbers(monkeypatch, tmp_path):
+    """End to end through compute_lane_durations: the PR job keeps its PR p90, the main-push-only job takes its main-push p90."""
+    runs = {"pull_request": [{"id": 1}], "push": [{"id": 2}]}
+    jobs = {
+        1: [_wall_job("Lint", 4), _wall_job("Check Release State", 0, "skipped")],
+        2: [_wall_job("Lint", 9), _wall_job("Check Release State", 0.5)],
+    }
+    monkeypatch.setattr(br, "fetch_runs", lambda *a, **_k: runs[a[2]])
+    monkeypatch.setattr(br, "fetch_jobs", lambda _repo, run_id: jobs[run_id])
+    monkeypatch.setattr(br, "lane_display_patterns", lambda *_a: {})
+    monkeypatch.setattr(br, "collect_unit_durations", lambda *_a, **_k: ({}, []))
+    computed = br.compute_lane_durations(
+        root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert computed["job_p90_minutes"] == {"Lint": 4.0, "Check Release State": 0.5}

@@ -55,7 +55,7 @@ T3.2/T3.3/T3.4 (PLAN-ci-time-budget spec W): `.ci/config/lane-durations.json`'s 
 
 `jobs` and `units` (plus `concurrency` and `defaultUnitMs`) are `scripts/gates/check-lane-budget.ts`'s `LaneDurations` interface EXACTLY -- that file is the consumer, already written and NOT owned by this box, so its existing `Record<string, number>` shapes are the contract this module writes TO rather than a schema invented here. A "lane id" is a job's YAML KEY (`quality-code`, `test-e2e-workers`, ...), the same string `scripts/ci-runner/lanes.ts`'s `laneCapabilities`/`TEST_LANE_WORKFLOWS` and `gates.lock.json`'s `ci.job` use -- NOT the Actions API's own job display name (`"Quality / Code (1)"`). `lane_display_patterns` below is what bridges the two.
 
-`job_p90_minutes` is T3.1's own addition, for check 2's 63 unpriced non-lane jobs (the gate's own `LaneDurations.job_p90_minutes` field exists and says "nothing writes it yet"). Keyed by Actions API DISPLAY NAME, not a lane id: unlike `jobs`/`units`, most of these jobs have no YAML-key alias to look one up by without re-walking `ci.yml`'s own `needs:`/`uses:` graph a second time. The CONSUMER maps names back to job ids: `check-lane-budget.ts`'s `displayNamePattern` walks `ci.yml` and its callees per call site and matches these keys, judging a priced lane's matrix legs in their lane and every other job in check 2. `--refresh` writes it from success-only wall-time samples over the SAME PR-full runs `jobs`/`units` already sample.
+`job_p90_minutes` is T3.1's own addition, for check 2's 63 unpriced non-lane jobs (the gate's own `LaneDurations.job_p90_minutes` field exists and says "nothing writes it yet"). Keyed by Actions API DISPLAY NAME, not a lane id: unlike `jobs`/`units`, most of these jobs have no YAML-key alias to look one up by without re-walking `ci.yml`'s own `needs:`/`uses:` graph a second time. The CONSUMER maps names back to job ids: `check-lane-budget.ts`'s `displayNamePattern` walks `ci.yml` and its callees per call site and matches these keys, judging a priced lane's matrix legs in their lane and every other job in check 2. `--refresh` writes it from success-only wall-time samples over the SAME PR-full runs `jobs`/`units` already sample. A job that ran in NO sampled PR run (the main-push-only release chain) takes its p90 from the main-push runs the same refresh already samples for `job_max_seconds` (`main_push_only_p90`); a PR job's number never comes from main.
 A "unit id" is keyed exactly as `scripts/ci-runner/unit-enumerators.ts`'s `LANE_ENUMERATORS` name it (`e2e-workers:<file>`, `account-e2e:<file>`, a bare Go import path, `renet-integration:<file>`, `pytest:<file>`, `battery:<name>`, `tutorial:<slug>`) -- read-only there too.
 
 `gate_step_p90_seconds` is CI-representative timing for `scripts/gates/check-gate-manifest.ts`'s slow/pre-push tier verdict, keyed by a `scripts/ci-runner/gates.lock.json` gate `id`, SECONDS not minutes. A gate the lock marks `"ci": {"kind": "step", ...}` runs as its own named workflow step (`ci.job` a YAML job key, `ci.step` that job's own step `name`), and `--refresh` times it the same way `job_p90_minutes` times a whole job: success-only, over the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk (`load_gate_ci_steps` reads the lock, `lane_display_patterns` -- already general over every job inside a reusable workflow, not only the seven test lanes -- maps `ci.job` to the display-name pattern its own job matches, and the step is found by exact-name match inside that job's `steps` array, already present in `fetch_jobs`'s payload with no extra network call). A gate whose `ci.kind` is not `"step"` (`local-only`, a gate a `test` drives) carries no entry, matching WHY `units` stays scoped above: this is a different instrument for a different set of gates, not a gap. Nor does a gate whose step is a COMPOSITE shared with other gates (`ci-quality.yml`'s `i18n` step alone chains 27 gates' npm scripts into one hand-written `npm run check:i18n`): its wall time is their SUM, not any one gate's own cost, so `_exclusive_ci_steps` excludes every id sharing a `(job, step)` pair with another rather than mis-attributing the whole step's time to each. This is what lets `check-gate-manifest.ts` judge a gate's tier from CI's own timing instead of the local, checkout-dependent `.ci/cache/gate-durations.json` (large gitignored assets present in one checkout and not another used to give the identical gate contradictory verdicts, since CI itself keeps no such cache and never judged a tier at all).
@@ -1370,6 +1370,34 @@ def merge_variant_costs(
 # T3.2: assembling `.ci/config/lane-durations.json`'s three measured sections.
 
 
+def main_push_only_p90(
+    pr_jobs_by_run: list[list[dict[str, Any]]],
+    main_jobs_by_run: list[list[dict[str, Any]]],
+) -> dict[str, float]:
+    """`{display name: p90 wall MINUTES}` for every job that ran successfully in a main-push run and RAN in no sampled PR run (skipped or absent there, `_ran`).
+
+    WHY. `job_p90_minutes` is built from the PR-full sample, and the release chain (`Check Release State`, `Finalize Release Sentinel`, `Pipeline Sentinel`, `Build (Devcontainer) / Devcontainer Manifest`) is skipped on every PR by its own `if:`, so check-lane-budget.ts check 2 reported those four UNCHECKED forever (operator ruling on #5a954657: unknown is red). They are measured where they run. A job that RAN on a PR, whatever its conclusion, is the PR sample's to measure -- even with no success sample -- so this never substitutes a main-push number for a PR job, and the PR measurement is unchanged. Success-only walls (`job_wall_minutes`), the same basis as the PR sample. Pure, so a test can drive it without the network.
+    """
+    ran_on_pr = {
+        job.get("name") or "?" for run_jobs in pr_jobs_by_run for job in run_jobs if _ran(job)
+    }
+    walls: dict[str, list[float]] = {}
+    for run_jobs in main_jobs_by_run:
+        for job in run_jobs:
+            name = job.get("name") or "?"
+            if name in ran_on_pr:
+                continue
+            wall = job_wall_minutes(job)
+            if wall is not None:
+                walls.setdefault(name, []).append(wall)
+    out: dict[str, float] = {}
+    for name, values in walls.items():
+        s = stats(values)
+        if s is not None:
+            out[name] = s["p90"]
+    return out
+
+
 def compute_lane_durations(
     repo: str = DEFAULT_REPO,
     workflow: str = DEFAULT_WORKFLOW,
@@ -1461,6 +1489,14 @@ def compute_lane_durations(
     # THE HEADROOM SAMPLE IS ALWAYS THE DEFAULT BRANCH: `ci.yml` runs on `push` to `main` only, so a `--branch` naming a PR branch would sample zero push runs and leave `job_max_seconds` unmeasured.
     main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit)
     main_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in main_runs]
+    # A job that never runs on a PR (the release chain) takes its p90 from the SAME main-push sample; a job the PR sample ran keeps its PR number, untouched. See `main_push_only_p90`.
+    main_only = main_push_only_p90(pr_jobs_by_run, main_jobs_by_run)
+    for name in sorted(main_only):
+        log.info(
+            "budget_report: job_p90_minutes %r = %.1f from %d main-push run(s) (it ran in no sampled PR run)"
+            % (name, main_only[name], len(main_runs))
+        )
+    job_p90_minutes.update(main_only)
     job_max_seconds: dict[str, dict[str, Any]] = {}
     for name in HEADROOM_JOBS:
         wall_minutes = [

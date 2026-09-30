@@ -41,12 +41,17 @@
     "so it has no success sample), code legs 8.8/6.2/7.5/6.4m / 23/27/27/27, content",
     "3.0m / 45, gate-tests 0.8m - 0.7m fixed / 6, go 7.6m / 17, i18n 5.1m / 40, packages",
     "5.7m / 13, security 1.8m / 18, static 4.5m / 64, wiring 0.5m / 1, www-build 3.6m / 16.",
-    "NOT given one, on purpose: quality-pytest and test-renet-integration HAVE measured unit",
-    "p90s, but budget_report keys them by junit classname ('pytest:/ci/...',",
-    "'renet-integration:TestX.py') where the committed manifests say 'pytest:.ci/...' and",
-    "'renet-integration:test_x.py', so none of them match; a lane default there would bury",
-    "that keying defect instead of surfacing it. These figures are not refreshed by any",
-    "tool yet: re-derive them by the recipe above when refreshed_at moves.",
+    "These quality figures are not refreshed by any tool yet: re-derive them by the recipe above",
+    "when refreshed_at moves.",
+    "The SHARDED test lanes and quality-pytest (added 2026-09-30, T3.1 check 4) price a unit",
+    "with no 'units' entry at the p90 of that lane's own measured unit p90s, rounded UP to",
+    "100 ms, from the 2026-09-30T10:07:24Z refresh: quality-pytest 23385 ms over 526 files,",
+    "test-account-e2e 24293 over 99, test-renet-go 5446 over 86, test-renet-integration",
+    "153581 over 12, ops-tutorials 176960 over 18; test-e2e-workers takes the p90 of its",
+    "variantCosts wall spans (155063 over 105 variant-unit entries), not of the top-level",
+    "summed test durations (146818), because a leg prices from the wall spans. The default",
+    "exists so a NEW file enters priced like a typical unit of its lane instead of blocking",
+    "every plan; the next --refresh measures it and the default stops applying to it.",
     "'unitParallelism' (hand-authored 2026-09-28, T3.1; --refresh preserves it): how many units",
     "one leg runs at once. quality-pytest: 4. check_pytest.py's jobs() passes `-n",
     "min(PYTEST_JOBS_CAP=8, os.cpu_count())` with `--dist loadgroup` (.ci/rediacc_ci/check_pytest.py",
@@ -85,7 +90,7 @@
     "'job_p90_minutes' 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' are SEEDED, not measured (box P6 of PLAN-renet-ceph-gpu-non-apt.md; P7 replaces them with 5 nightly runs):",
     "the matrix legs from one local Docker run of renet_pkg_matrix.py per distro (95-147 s, 2026-09-29) plus about 3 minutes of runner setup and the renet build, the Ceph Workers legs from plan section 4 (ubuntu's 12.5 plus the rpm download and Docker CE on 2 Ceph nodes, 13-15)."
   ],
-  "refreshed_at": "2026-09-30T10:07:24Z",
+  "refreshed_at": "2026-09-30T10:45:47Z",
   "concurrency": 20,
   "jobs": {
     "quality-pytest": 1.3,
@@ -875,7 +880,13 @@
     "quality-security": 6000,
     "quality-static": 4219,
     "quality-wiring": 30000,
-    "quality-www-build": 13500
+    "quality-www-build": 13500,
+    "quality-pytest": 23400,
+    "test-account-e2e": 24300,
+    "test-e2e-workers": 155100,
+    "test-renet-go": 5500,
+    "test-renet-integration": 153600,
+    "ops-tutorials": 177000
   },
   "unitParallelism": {
     "quality-pytest": 4
@@ -1201,7 +1212,11 @@
     "Smoke Test Preview": 0.9,
     "Validate Install Methods / Install Methods Complete": 0.2,
     "CI Complete": 0.3,
-    "Review Complete": 0.0
+    "Review Complete": 0.0,
+    "Check Release State": 0.5,
+    "Build (Devcontainer) / Devcontainer Manifest": 0.3,
+    "Finalize Release Sentinel": 0.3,
+    "Pipeline Sentinel": 0.1
   },
   "gate_step_p90_seconds": {
     "check:version": 1.0,
