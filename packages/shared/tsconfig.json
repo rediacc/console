@@ -10,6 +10,7 @@
     "moduleResolution": "NodeNext",
     "rootDir": "./src",
     "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "declaration": true,
     "declarationMap": true,
     "stripInternal": true,
