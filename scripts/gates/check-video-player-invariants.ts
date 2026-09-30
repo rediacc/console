@@ -18,7 +18,9 @@
  * regression, because it looks like it works.
  *
  * THE SECOND FAMILY, ADDED 2026-09-23, IS ABOUT THE STYLESHEETS AND NOT THE PICKER. The player's CSS moved out of the component and behind `ensurePlayerStyles()` so it would stop being linked on 794 pages that never build a player; what that move bought has to be paid for by two things the compiler cannot state. The sheets must still be imported with `?url`, or they go
- * straight back into the component chunk, and the hydrator must AWAIT them before `createRoot`, or the first frame of player DOM is unstyled. `check:ci-player-css-scope` catches the first from a built `dist`; nothing at all caught the second until now.
+ * straight back into the component chunk, and the mount module must AWAIT them before `createRoot`, or the first frame of player DOM is unstyled. `check:ci-player-css-scope` catches the first from a built `dist`; nothing at all caught the second until now.
+ *
+ * THE MOUNT PATH MOVED ON 2026-09-30. The video theater split the building of a player out of the hydrator into `tutorial-video-mount.ts` (`mountPlayers`), which both the hydrator and `video-theater.ts` call. The ordering check follows it there, and a third check holds the callers to that one path: a hydrator or theater that called `createRoot` itself would build a player the ordering check never reads.
  *
  * WHAT A GREEN HERE DOES NOT MEAN: nothing is rendered, measured or clicked. A picker
  * that is inside the frame in the DOM and invisible, mispositioned or unclickable passes
@@ -43,6 +45,8 @@ const HERO = path.join(REPO, 'packages/www/src/components/solution-pages/SPSolut
 const CSS = path.join(REPO, 'packages/www/src/styles/tutorial-video.css');
 const HYDRATE = path.join(REPO, 'packages/www/src/scripts/tutorial-video-hydrate.ts');
 const STYLES = path.join(REPO, 'packages/www/src/scripts/tutorial-video-styles.ts');
+const MOUNT = path.join(REPO, 'packages/www/src/scripts/tutorial-video-mount.ts');
+const THEATER = path.join(REPO, 'packages/www/src/scripts/video-theater.ts');
 
 /** The broken host must not come back, in any spelling. */
 export const qualityPaneFaults = (player: string): string[] => {
@@ -136,7 +140,7 @@ export const chromeFaults = (css: string): string[] => {
 };
 
 /**
- * THE HYDRATOR MUST AWAIT THE PLAYER'S STYLESHEETS BEFORE IT CREATES A ROOT.
+ * THE MOUNT MODULE MUST AWAIT THE PLAYER'S STYLESHEETS BEFORE IT CREATES A ROOT.
  *
  * `plyr.css` and `tutorial-video.css` are no longer imported by the component. They were
  * being linked on 794 pages that never build a player, so they moved behind
@@ -152,32 +156,56 @@ export const chromeFaults = (css: string): string[] => {
  * Three ways to break it, so three faults: drop the call, stop awaiting it, or move it
  * after the root. The third is the one a refactor produces by accident.
  */
-export const styleOrderFaults = (hydrate: string): string[] => {
+export const styleOrderFaults = (mount: string): string[] => {
   const out: string[] = [];
-  const callAt = hydrate.indexOf('ensurePlayerStyles(');
+  const callAt = mount.indexOf('ensurePlayerStyles(');
   if (callAt < 0) {
     out.push(
-      'nothing calls ensurePlayerStyles() in the hydrator, and the component no longer imports the sheets itself, so the player would mount with no stylesheet at all'
+      'nothing calls ensurePlayerStyles() in tutorial-video-mount.ts, and the component no longer imports the sheets itself, so the player would mount with no stylesheet at all'
     );
     return out;
   }
   // The statement holding the call must be awaited. Bounded at the nearest `;` or `{`
   // before it, so `await Promise.all([ensurePlayerStyles(), ...])` counts while a bare
   // `void ensurePlayerStyles();` sitting beside an awaited import does not.
-  const stmtAt = Math.max(hydrate.lastIndexOf(';', callAt), hydrate.lastIndexOf('{', callAt), 0);
-  if (!/\bawait\b/.test(hydrate.slice(stmtAt, callAt)))
+  const stmtAt = Math.max(mount.lastIndexOf(';', callAt), mount.lastIndexOf('{', callAt), 0);
+  if (!/\bawait\b/.test(mount.slice(stmtAt, callAt)))
     out.push(
       'ensurePlayerStyles() is called but not awaited, so the first frame of player DOM races the stylesheet instead of following it'
     );
-  const rootAt = hydrate.indexOf('createRoot(');
+  const rootAt = mount.indexOf('createRoot(');
   if (rootAt < 0)
     out.push(
-      'the hydrator no longer calls createRoot(), so this invariant has lost its subject and a green here would mean nothing'
+      'tutorial-video-mount.ts no longer calls createRoot(), so this invariant has lost its subject and a green here would mean nothing'
     );
   else if (rootAt < callAt)
     out.push(
       'createRoot( runs ahead of the awaited ensurePlayerStyles(), so React paints the player before its stylesheets are in the document'
     );
+  return out;
+};
+
+/**
+ * EVERY PLAYER IS BUILT THROUGH `mountPlayers`, so the ordering check above covers every one.
+ *
+ * The hydrator schedules mounts and the theater hosts one; neither may create a React root of its own, and each must still reach `mountPlayers` from the mount module. A caller that grew its own `createRoot` would mount a player whose stylesheet ordering nothing reads, and a caller that stopped importing `mountPlayers` has left this gate checking a path the site no longer takes.
+ */
+export const mountRoutingFaults = (callers: Record<string, string>): string[] => {
+  const out: string[] = [];
+  for (const [name, src] of Object.entries(callers)) {
+    if (/\bcreateRoot\s*\(/.test(src))
+      out.push(
+        `${name} calls createRoot() itself, so it builds a player outside mountPlayers and the awaited-stylesheet check never reads that path`
+      );
+    if (!/import\s*\{[^}]*\bmountPlayers\b[^}]*\}\s*from\s*'\.\/tutorial-video-mount'/.test(src))
+      out.push(
+        `${name} no longer imports mountPlayers from ./tutorial-video-mount, so the mount path this gate checks may not be the one the site takes`
+      );
+    else if (!/\bmountPlayers\s*\(/.test(src))
+      out.push(
+        `${name} imports mountPlayers but never calls it, so it builds no player through the checked path`
+      );
+  }
   return out;
 };
 
@@ -209,7 +237,9 @@ const selftest = (
   hero: string,
   css: string,
   hydrate: string,
-  styles: string
+  styles: string,
+  mount: string,
+  theater: string
 ): number => {
   let fail = 0;
   const check = (name: string, ok: boolean, detail = ''): void => {
@@ -220,7 +250,8 @@ const selftest = (
     ...qualityPaneFaults(player),
     ...placementFaults(player, hero),
     ...chromeFaults(css),
-    ...styleOrderFaults(hydrate),
+    ...styleOrderFaults(mount),
+    ...mountRoutingFaults({ hydrator: hydrate, theater }),
     ...styleUrlFaults(styles),
   ];
   check('the tree as it stands is clean', all().length === 0, JSON.stringify(all()));
@@ -263,25 +294,44 @@ const selftest = (
 
   fires(
     'MUTANT (delete): dropping the ensurePlayerStyles() call is caught',
-    mutate(hydrate, 'ensurePlayerStyles(', 'noop('),
+    mutate(mount, 'ensurePlayerStyles(', 'noop('),
     styleOrderFaults
   );
   fires(
     'MUTANT (reorder): moving the awaited styles below createRoot is caught',
-    moveStylesBelowRoot(hydrate),
+    moveStylesBelowRoot(mount),
     styleOrderFaults
   );
   fires(
     'calling ensurePlayerStyles() without awaiting it is caught',
-    mutate(hydrate, 'await Promise.all([', 'Promise.all(['),
+    mutate(mount, 'await Promise.all([', 'Promise.all(['),
     styleOrderFaults
   );
   fires(
     'losing createRoot( altogether is caught, rather than read as an ordering pass',
-    mutate(hydrate, 'createRoot(el)', 'render(el)'),
+    mutate(mount, 'createRoot(el)', 'render(el)'),
     styleOrderFaults
   );
-  // The negative direction: a hydrator that still awaits before the root is NOT reported, even when its spelling changes. Without this the four controls above are satisfied by a function that flags everything.
+  const routing = (name: 'hydrator' | 'theater') => (s: string) =>
+    mountRoutingFaults(
+      name === 'hydrator' ? { hydrator: s, theater } : { hydrator: hydrate, theater: s }
+    );
+  fires(
+    'MUTANT: the hydrator building its own root instead of calling mountPlayers is caught',
+    mutate(hydrate, 'void mountPlayers(observed);', 'createRoot(observed[0]);'),
+    routing('hydrator')
+  );
+  fires(
+    'MUTANT: the theater dropping its mountPlayers import is caught',
+    mutate(theater, "from './tutorial-video-mount'", "from './somewhere-else'"),
+    routing('theater')
+  );
+  fires(
+    'MUTANT: the theater importing mountPlayers but never calling it is caught',
+    mutate(theater, 'void mountPlayers([stage])', 'void Promise.resolve([stage])'),
+    routing('theater')
+  );
+  // The negative direction: a mount module that still awaits before the root is NOT reported, even when its spelling changes. Without this the four controls above are satisfied by a function that flags everything.
   check(
     'CONTROL: an awaited load ahead of the root is not reported, in either spelling',
     styleOrderFaults(
@@ -375,12 +425,16 @@ const main = (): number => {
   const css = fs.readFileSync(CSS, 'utf8');
   const hydrate = fs.readFileSync(HYDRATE, 'utf8');
   const styles = fs.readFileSync(STYLES, 'utf8');
+  const mount = fs.readFileSync(MOUNT, 'utf8');
+  const theater = fs.readFileSync(THEATER, 'utf8');
   // Each subject must still be recognisably itself before any verdict is taken on it. `scheduleHydration` is the hydrator's entry point and the link element is the styles module's whole mechanism; either one gone means this gate is reading a file that has been repurposed, and a fault list computed from it would be arbitrary rather than absent.
   if (
     !/new Plyr\(/.test(player) ||
     !/video-player-mount/.test(hero) ||
     !/scheduleHydration/.test(hydrate) ||
-    !/document\.createElement\('link'\)/.test(styles)
+    !/document\.createElement\('link'\)/.test(styles) ||
+    !/export async function mountPlayers\(/.test(mount) ||
+    !/openTheater/.test(theater)
   ) {
     console.error(
       '✗ the video-player sources do not look like themselves; a green here would mean nothing.'
@@ -388,14 +442,18 @@ const main = (): number => {
     return 1;
   }
   if (process.argv.slice(2).includes('--selftest'))
-    return selftest(player, hero, css, hydrate, styles);
+    return selftest(player, hero, css, hydrate, styles, mount, theater);
 
   const picker = [
     ...qualityPaneFaults(player),
     ...placementFaults(player, hero),
     ...chromeFaults(css),
   ];
-  const stylesheets = [...styleOrderFaults(hydrate), ...styleUrlFaults(styles)];
+  const stylesheets = [
+    ...styleOrderFaults(mount),
+    ...mountRoutingFaults({ hydrator: hydrate, theater }),
+    ...styleUrlFaults(styles),
+  ];
   const faults = [...picker, ...stylesheets];
   if (faults.length) {
     console.error(`✗ ${faults.length} video-player invariant(s) broken:\n`);
@@ -425,7 +483,7 @@ const main = (): number => {
     '✓ video-player invariants hold: no quality pane, the picker is inside the frame and mutually exclusive, and its chrome survives a bright video.'
   );
   console.log(
-    '  5 source(s) read; the hydrator awaits ensurePlayerStyles() before createRoot, and both sheets are still imported with ?url so they stay off the 794 pages with no player.'
+    '  7 source(s) read; mountPlayers awaits ensurePlayerStyles() before createRoot, the hydrator and the theater build only through it, and both sheets are still imported with ?url so they stay off the 794 pages with no player.'
   );
   console.log(
     '  STRUCTURAL ONLY -- nothing was rendered, measured or clicked. A picker that is inside the frame and invisible passes this gate; that is wave D gate 2.'

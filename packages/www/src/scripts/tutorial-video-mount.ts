@@ -22,7 +22,10 @@ import type { TutorialSourceSet } from '../components/TutorialVideoPlayer';
  * Bounded on purpose: a hydration that fails should leave the visitor a still page, not
  * an observer spinning for the life of the tab.
  */
-export function whenVideoAppears(el: HTMLElement, timeoutMs = 4000): Promise<HTMLVideoElement | null> {
+export function whenVideoAppears(
+  el: HTMLElement,
+  timeoutMs = 4000
+): Promise<HTMLVideoElement | null> {
   const found = el.querySelector('video');
   if (found) return Promise.resolve(found);
   return new Promise((resolve) => {

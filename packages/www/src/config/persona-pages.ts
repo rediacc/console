@@ -105,12 +105,8 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     ],
     calculatorPreset: 'rapid-recovery',
     illustrationSlug: 'rapid-recovery',
-    // No `relatedSolutions` here, and that is not an omission to repair. This page's
-    // `sections` above does not list `relatedSolutions`, so PersonaPage never mounted the
-    // constellation for it -- the three slugs that used to sit here, and the
-    // `forCeos.relatedSolutions.title` string behind them in all 13 locales, rendered
-    // nowhere. The title was "How it works", which did not describe a related-solutions
-    // list either. Config and key were deleted together.
+    // No `relatedSolutions` here, and that is not an omission to repair. This page's `sections` above does not list `relatedSolutions`, so PersonaPage never mounted the constellation for it -- the three slugs that used to sit here, and the `forCeos.relatedSolutions.title` string behind them in all 13 locales, rendered nowhere.
+    // The title was "How it works", which did not describe a related-solutions list either. Config and key were deleted together.
   },
   'for-ai-agents': {
     contentKey: 'forAiAgents',
