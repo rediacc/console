@@ -8,8 +8,8 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
   * cmd/renet: setup_command.go, pkg_install_retry.go, image_build_command.go, and the
     same-package files they call into (literals.go, system_commands.go for getOSInfo,
     ceph_root.go for DefaultFilesystem, pkg_install_procgroup_unix.go, gpu_drivers.go for
-    the GPU driver installs of setup, ceph_host_runner.go for the runner those installs
-    use);
+    the GPU driver installs of setup, kernel_modules.go for the kernel swap the AMD install
+    runs on zypper, ceph_host_runner.go for the runner those installs use);
   * pkg/config, pkg/infra/pkgset (the package registry), pkg/embed (its Go files only,
     so pkg/embed/proxy/** and the staged assets are out), pkg/infra/image;
   * pkg/infra/cephpkg/fingerprint.go, the OpenPGP fingerprint check gpu_drivers.go runs on
@@ -58,6 +58,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "pkg_install_procgroup_unix.go": HASH,
         # GPU driver installs are part of setup (--install-amd-driver, --install-nvidia-driver); hostRunner is the runner they use.
         "gpu_drivers.go": HASH,
+        # The kernel-module swap the AMD install runs on a zypper host with kernel-default-base (kernelModuleInstall).
+        "kernel_modules.go": HASH,
         "ceph_host_runner.go": HASH,
         "pkg_install_procgroup_windows.go": EXCLUDE,
         "main.go": EXCLUDE,
