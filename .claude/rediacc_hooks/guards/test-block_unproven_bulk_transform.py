@@ -647,6 +647,196 @@ for label, good in checks:
     Tally.fails += not good
     print("%-70s %s" % ("pure: " + label, "ok" if good else "*** FAIL ***"))
 
+
+# ---- AN INDEX COMMIT COMMITS WHAT ITS OWN `git add` STAGED ------------------
+# Worklist #8333146d: with no pathspec the commit arm counted the index as it stood BEFORE the command, so `node gen.js && git add -A && git commit` over 25 regenerated files counted nothing staged and was refused only at push.
+def seed_gen(repo):
+    for i in range(BULK + 5):
+        write(repo, "gen/g%02d.json" % i, "[%d]\n" % i)
+
+
+def no_pre(repo):
+    """Nothing pending before the command runs."""
+    del repo
+
+
+def run_gen_add_all(repo, msg):
+    for i in range(BULK + 5):  # the generator clause
+        write(repo, "gen/g%02d.json" % i, "[%d, 1]\n" % i)
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-F", msg)
+
+
+both_arms(
+    "a generator, `git add -A`, then an index commit of 25 files: refused on both",
+    seed_gen,
+    no_pre,
+    "node gen.js && git add -A && git commit -F %(msg)s",
+    run_gen_add_all,
+    True,
+)
+
+
+def pre_new_untracked(repo):
+    for i in range(BULK + 5):
+        write(repo, "fresh/n%02d.py" % i, "n = %d\n" % i)
+
+
+def run_add_all(repo, msg):
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-F", msg)
+
+
+both_arms(
+    "`git add -A` of 25 untracked files, then an index commit: refused on both",
+    lambda repo: write(repo, "README.md", "r\n"),
+    pre_new_untracked,
+    "git add -A && git commit -F %(msg)s",
+    run_add_all,
+    True,
+)
+
+
+def run_add_three(repo, msg):
+    git(repo, "add", "src/m00.py", "src/m01.py", "src/m02.py")
+    git(repo, "commit", "-q", "-F", msg)
+
+
+both_arms(
+    "control: `git add` of 3 files beside 25 unstaged edits, allowed on both",
+    seed_many,
+    pre_many,
+    "git add src/m00.py src/m01.py src/m02.py && git commit -F %(msg)s",
+    run_add_three,
+    False,
+)
+
+
+def run_add_update(repo, msg):
+    git(repo, "add", "-u")
+    git(repo, "commit", "-q", "-F", msg)
+
+
+both_arms(
+    "`git add -u` over 25 modified tracked files: refused on both",
+    seed_many,
+    pre_many,
+    "git add -u && git commit -F %(msg)s",
+    run_add_update,
+    True,
+)
+
+
+def pre_three_and_untracked(repo):
+    for i in range(3):
+        write(repo, "src/m%02d.py" % i, "x = %d  # edited\n" % i)
+    pre_new_untracked(repo)
+
+
+both_arms(
+    "control: `git add -u` stages 3 tracked edits, not 25 untracked files",
+    seed_many,
+    pre_three_and_untracked,
+    "git add -u && git commit -F %(msg)s",
+    run_add_update,
+    False,
+)
+
+
+def pre_stage_many(repo):
+    pre_many(repo)
+    git(repo, "add", "-A")
+
+
+both_arms(
+    "control: 25 files ALREADY staged, no add clause, keeps its refusal",
+    seed_many,
+    pre_stage_many,
+    "git commit -F %(msg)s",
+    lambda repo, msg: git(repo, "commit", "-q", "-F", msg),
+    True,
+)
+
+
+def seed_sub(repo):
+    seed_many(repo)
+    for i in range(2):
+        write(repo, "sub/k%d.md" % i, "k\n")
+
+
+def pre_sub(repo):
+    pre_many(repo)
+    for i in range(2):
+        write(repo, "sub/k%d.md" % i, "k edited\n")
+
+
+def run_sub(repo, msg):
+    git(os.path.join(repo, "sub"), "add", ".")
+    git(repo, "commit", "-q", "-F", msg)
+
+
+both_arms(
+    "control: `cd sub && git add .` stages sub's 2 files, not the 25 elsewhere",
+    seed_sub,
+    pre_sub,
+    "cd sub && git add . && cd .. && git commit -F %(msg)s",
+    run_sub,
+    False,
+)
+
+both_arms(
+    "`git commit -a` over 25 modified tracked files: refused on both",
+    seed_many,
+    pre_many,
+    "git commit -a -F %(msg)s",
+    lambda repo, msg: git(repo, "commit", "-q", "-a", "-F", msg),
+    True,
+)
+
+
+def run_rm_dir(repo, msg):
+    git(repo, "rm", "-r", "-q", "src")
+    git(repo, "commit", "-q", "-F", msg)
+
+
+both_arms(
+    "`git rm -r src` of 25 tracked files, then an index commit: refused on both",
+    seed_many,
+    no_pre,
+    "git rm -r -q src && git commit -F %(msg)s",
+    run_rm_dir,
+    True,
+)
+
+# UNREADABLE ARGUMENTS FAIL CLOSED to the repository's pending changes, never to "stages nothing".
+unread_repo = scratch_repo()
+for i in range(BULK + 5):
+    write(unread_repo, "w/u%02d.py" % i, "u = %d\n" % i)
+case(
+    "`git add --pathspec-from-file=list` is judged at the repository's ceiling",
+    'git add --pathspec-from-file=list && git commit -m "fix: a small thing"',
+    unread_repo,
+    True,
+)
+case(
+    "`git add $UNSET_VAR` is judged at the repository's ceiling",
+    'git add $UNSET_VAR && git commit -m "fix: a small thing"',
+    unread_repo,
+    True,
+)
+case(
+    "`git add -n -A` stages nothing, so the empty index is judged",
+    'git add -n -A && git commit -m "fix: a small thing"',
+    unread_repo,
+    False,
+)
+case(
+    '`git commit -m -a` is the message "-a", not --all',
+    "git commit -m -a",
+    unread_repo,
+    False,
+)
+
 # `2>&1` AFTER THE PATHSPEC IS A REDIRECTION, NOT A PATH. The tail used to capture `2`, which no repo knows, so a one-file commit of a path with nothing pending YET fell back to the loaded index.
 fd_repo = scratch_repo()
 write(fd_repo, "one.md", "a\n")

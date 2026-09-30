@@ -6,7 +6,7 @@ This guard is the operator's ruling that the SAME demand also lands here, on a c
 It cannot judge WHETHER a transform is mechanical the way the LLM can and judges SCALE instead, which is the plan's own principle -- batch size scales with proof, not ambition -- applied literally: a diff above the threshold must show proof, regardless of what produced it.
 
 THREE SURFACES, ONE RULE. `git commit` checks the STAGED diff against the message being written. `git push` and `gh pr create` check every commit in the range about to leave the tree, because either one can carry a bulk commit this guard never saw at commit time -- an operator `!`-bypassed commit, a peer's commit merged in, or a commit made before this guard existed.
-ONE RULE IS ONE FUNCTION, `_bulk_unproven`, over ONE way of counting, `_name_only` (renames as a delete plus an add). 3a5f3a188 (28 files, no proof) was allowed at commit and refused at push on 2026-09-26: its command ran `node scripts/generate-search-index.js` BEFORE `git commit -- ... packages/www`, and this guard, which runs once before the first clause, counted the 14 files that generator had not yet written as unchanged. See `_earlier_writers`.
+ONE RULE IS ONE FUNCTION, `_bulk_unproven`, over ONE way of counting, `_name_only` (renames as a delete plus an add). 3a5f3a188 (28 files, no proof) was allowed at commit and refused at push on 2026-09-26: its command ran `node scripts/generate-search-index.js` BEFORE `git commit -- ... packages/www`, and this guard, which runs once before the first clause, counted the 14 files that generator had not yet written as unchanged. See `_earlier_writers`, and `_staged_by_command` for the same timing on an index commit whose own command runs `git add` first.
 
 OWN_SUITE = True, the same sentinel and for the same reason as `block_prose_style_commit`/`block_prose_style_edit`: this is a fresh guard authored directly, with no bash original to port from and no golden to compare against. `test-block_unproven_bulk_transform.py` stands in for that differential, exactly as it does for its siblings.
 
@@ -69,6 +69,12 @@ COUNT_CEILING = (
     "an earlier clause of this command can still write under this commit's pathspec, which\n"
     "covers up to %d file(s), a bulk transform's scale"
 )
+COUNT_STAGING = (
+    "%d file(s) will be in the index when this commit runs, counting what %s earlier in this\n"
+    "command stages%s, a bulk transform's scale"
+)
+# Filled in when an earlier writer put a staging clause at its ceiling.
+COUNT_STAGING_CEILING = " (at its ceiling, every tracked and untracked path in its scope, because\n%s runs first and can still write there)"
 COUNT_UNRESOLVED = (
     "pathspec %s did not resolve; %d is the shared index, not this commit, and it is a bulk\n"
     "transform's scale"
@@ -293,12 +299,8 @@ INERT_TOOLS = frozenset(
 INERT_GIT = frozenset({"status", "log", "diff", "show", "rev-parse", "ls-files"})
 
 
-def _earlier_writers(cmd, cwd, paths):
-    """Labels of the clauses before `git commit` that can change what `paths` cover, in order.
-
-    WHY THIS EXISTS: this guard runs ONCE, before the first clause, so a pathspec commit is counted as the tree stands BEFORE any generator earlier in the same command. 3a5f3a188 ran `node scripts/generate-search-index.js` and then `git commit -- docs/design/06-cli-reshape.md packages/www`: 14 files were counted here, 28 were committed, and the push refused what the commit had
-    allowed. A tool outside `INERT_TOOLS` counts as a writer, and so does an inert tool's redirect that lands under a pathspec path or cannot be expanded.
-    """
+def _runs_before_commit(cmd):
+    """The runs of `cmd` that execute before its first `git commit`, in order, or [] when there is none."""
     runs = shellscan._analyse(cmd).runs
     idx = next(
         (
@@ -308,16 +310,30 @@ def _earlier_writers(cmd, cwd, paths):
         ),
         None,
     )
-    if not idx:
+    return runs[:idx] if idx else []
+
+
+def _earlier_writers(cmd, cwd, paths):
+    """Labels of the clauses before `git commit` that can change what `paths` cover, in order.
+
+    WHY THIS EXISTS: this guard runs ONCE, before the first clause, so a pathspec commit is counted as the tree stands BEFORE any generator earlier in the same command. 3a5f3a188 ran `node scripts/generate-search-index.js` and then `git commit -- docs/design/06-cli-reshape.md packages/www`: 14 files were counted here, 28 were committed, and the push refused what the commit had
+    allowed. A tool outside `INERT_TOOLS` counts as a writer, and so does an inert tool's redirect that lands under a pathspec path or cannot be expanded.
+    """
+    roots = [os.path.normpath(os.path.join(cwd, p)) for p in paths]
+    return _writers_in(_runs_before_commit(cmd), cmd, cwd, roots)
+
+
+def _writers_in(runs, cmd, cwd, roots, inert_git=INERT_GIT):
+    """Labels of the clauses in `runs` that can write under any of the absolute `roots`, in order."""
+    if not runs:
         return []
     names = shellscan.assignments_before(cmd, "git commit")
-    roots = [os.path.normpath(os.path.join(cwd, p)) for p in paths]
     out = []
-    for run in runs[:idx]:
+    for run in runs:
         base = run.name.rsplit("/", 1)[-1]
         label = " ".join([base, *run.argv[:1]])
         if base == "git":
-            writer = run.git_sub is not None and run.git_sub not in INERT_GIT
+            writer = run.git_sub is not None and run.git_sub not in inert_git
         else:
             writer = base not in INERT_TOOLS
         for target in run.writes:
@@ -347,6 +363,232 @@ def _pathspec_ceiling(cwd, paths, files):
             if line.strip() and line not in seen:
                 seen.add(line)
                 out.append(line)
+    return out
+
+
+# `git add` flags that change nothing about WHICH paths a pathspec stages, as far as a count is concerned. `--no-all`/`--ignore-removal` stage a subset of the default and `-p`/`-i`/`-e` a subset of what they are shown, so each is judged as the default, the larger set.
+ADD_PLAIN_FLAGS = frozenset(
+    {
+        "-f",
+        "--force",
+        "-v",
+        "--verbose",
+        "-N",
+        "--intent-to-add",
+        "--ignore-errors",
+        "--ignore-missing",
+        "--renormalize",
+        "--sparse",
+        "--refresh",
+        "--no-all",
+        "--ignore-removal",
+        "-p",
+        "--patch",
+        "-i",
+        "--interactive",
+        "-e",
+        "--edit",
+    }
+)
+ADD_SHORT_PLAIN = frozenset("fvNpie")
+# A pathspec made only of a leading `:` magic word this guard does not read (`:(exclude)x`, `:!x`) is passed to git as written; git itself is the parser.
+
+
+def _parse_stage(run):
+    """`(mode, pathspecs)` for a `git add` / `git rm` run, `None` when it stages nothing, or `("unparsed", None)`.
+
+    `mode` is `all` (tracked changes plus untracked files), `update` (tracked changes only, `add -u` and every `rm`). Empty `pathspecs` under `add -A`/`add -u` is the whole repository, git's own reading since 2.0; empty under a plain `add` stages nothing.
+    """
+    argv = run.argv
+    k = 0
+    while k < len(argv) and argv[k] != run.git_sub:
+        k += 2 if argv[k] in ("-C", "-c", "--git-dir", "--work-tree") else 1
+    args = argv[k + 1 :]
+    mode = "update" if run.git_sub == "rm" else "all"
+    whole = False
+    specs = []
+    options = True
+    for arg in args:
+        if options and arg == "--":
+            options = False
+        elif options and arg.startswith("-") and arg != "-":
+            if run.git_sub == "rm":
+                if arg.startswith("--pathspec-from-file"):
+                    return ("unparsed", None)
+                if arg in ("-n", "--dry-run"):
+                    return None
+                continue
+            if arg in ("-n", "--dry-run"):
+                return None
+            if arg in ("-A", "--all", "--no-ignore-removal"):
+                whole = True
+            elif arg in ("-u", "--update"):
+                whole = True
+                mode = "update"
+            elif arg in ADD_PLAIN_FLAGS or arg.startswith("--chmod="):
+                pass
+            elif not arg.startswith("--") and set(arg[1:]) <= ADD_SHORT_PLAIN | {"A", "u", "n"}:
+                if "n" in arg:
+                    return None
+                whole = whole or "A" in arg or "u" in arg
+                if "u" in arg and "A" not in arg:
+                    mode = "update"
+            else:
+                return ("unparsed", None)
+        else:
+            specs.append(arg)
+    if not specs and not whole:
+        return None
+    return mode, specs
+
+
+def _stage_files(cwd, mode, specs, ceiling):
+    """What a `git add`/`git rm` over `specs` run in `cwd` stages, or None when git cannot answer: every changed path under `specs` (untracked ones too under `all`), and under `ceiling` every tracked path too, since an earlier clause can still change any of them."""
+    tail = ["--", *(specs or [":/"])]
+    status = hookio.git_out(
+        ["status", "--porcelain", "--no-renames", "--untracked-files=all", *tail],
+        cwd=cwd,
+        want_rc=True,
+    )
+    if status is None:
+        return None
+    out = [
+        line[3:]
+        for line in status.splitlines()
+        if len(line) > 3 and not (mode == "update" and line.startswith("??"))
+    ]
+    if ceiling:
+        listings = [["ls-files", "--full-name"]]
+        if mode == "all":
+            listings.append(["ls-files", "--full-name", "--others", "--exclude-standard"])
+        for extra in listings:
+            listed = hookio.git_out([*extra, *tail], cwd=cwd, want_rc=True)
+            if listed is None:
+                return None
+            out.extend(line for line in listed.splitlines() if line.strip())
+    return out
+
+
+def _staged_by_command(cmd, cwd):
+    """`(files, stagers, writers)`: every path the `git add`/`git rm` clauses (and a `git commit -a`) of `cmd` will have staged by the time its commit runs, the labels of those clauses, and the labels of the earlier writers that put one of them at its ceiling.
+
+    WHY THIS EXISTS: an index commit (no pathspec) commits the index as it stands WHEN THE COMMIT RUNS, and this guard reads it before the first clause. `node gen.js && git add -A && git commit -F m` over 25 regenerated files counted the empty index here and was refused only at push (worklist #8333146d).
+    An add after an earlier writer is judged at its ceiling, the same rule `_pathspec_ceiling` applies to a pathspec. An add whose directory or arguments this guard cannot read is judged at the repository's ceiling: failing open here is exactly the gap this closes.
+    """
+    runs = _runs_before_commit(cmd)
+    commit = _commit_run(cmd)
+    top = hookio.git_out(["rev-parse", "--show-toplevel"], cwd=cwd, want_rc=True)
+    files: list[str] = []
+    labels: list[str] = []
+    writer_labels: list[str] = []
+    for i, run in enumerate(runs):
+        if run.name.rsplit("/", 1)[-1] != "git" or run.git_sub not in ("add", "rm"):
+            continue
+        parsed = _parse_stage(run)
+        if parsed is None:
+            continue
+        mode, specs = parsed
+        where = os.path.normpath(os.path.join(cwd, run.git_dir or "."))
+        if (
+            specs is not None
+            and any(UNEXPANDED.search(s) for s in specs)
+            and _expand_pathspecs(specs, cmd, where)[1]
+        ):
+            specs = None
+        elif specs is not None:
+            specs = _expand_pathspecs(specs, cmd, where)[0]
+        here = hookio.git_out(["rev-parse", "--show-toplevel"], cwd=where, want_rc=True)
+        if here is not None and top is not None and here != top:
+            continue  # it stages into another repository's index
+        roots = [os.path.normpath(os.path.join(where, s)) for s in specs or ["."]]
+        if specs is None or (not specs and top):
+            roots = [os.path.normpath(top or cwd)]
+        writers = _writers_in(runs[:i], cmd, cwd, roots, INERT_GIT | {"add", "rm"})
+        # `git rm` deletes clean tracked files too, which no status line shows yet: every tracked path under its pathspec is what it stages.
+        ceiling = bool(writers) or run.git_sub == "rm"
+        writer_labels.extend(label for label in writers if label not in writer_labels)
+        got = None
+        if specs is not None and here is not None:
+            got = _stage_files(where, mode, specs, ceiling)
+        if got is None:
+            got = _stage_files(cwd, "all", [":/"], ceiling) or []
+        files.extend(got)
+        labels.append(" ".join(["git", *run.argv]))
+    if commit is not None and _commit_all(commit):
+        writers = _writers_in(runs, cmd, cwd, [os.path.normpath(top or cwd)])
+        writer_labels.extend(label for label in writers if label not in writer_labels)
+        files.extend(_stage_files(cwd, "update", [":/"], bool(writers)) or [])
+        labels.append("git commit -a")
+    return files, labels, writer_labels
+
+
+def _commit_run(cmd):
+    return next(
+        (
+            r
+            for r in shellscan._analyse(cmd).runs
+            if r.name.rsplit("/", 1)[-1] == "git" and r.git_sub == "commit"
+        ),
+        None,
+    )
+
+
+# `git commit` short options that take a value, so an `a` after one of them in a cluster is that value (`-ma` is the message "a"), not `--all`.
+COMMIT_VALUE_SHORT = frozenset("mFCctSu")
+# The ones whose value may be the NEXT word, which is then skipped: `-m -a` is the message "-a".
+COMMIT_VALUE_NEXT = frozenset(
+    {
+        "-m",
+        "-F",
+        "-C",
+        "-c",
+        "-t",
+        "--message",
+        "--file",
+        "--author",
+        "--date",
+        "--template",
+        "--reuse-message",
+        "--reedit-message",
+        "--fixup",
+        "--squash",
+        "--trailer",
+        "--cleanup",
+    }
+)
+
+
+def _commit_all(run):
+    """Whether this `git commit` runs with `-a`/`--all`, which stages every modified and deleted tracked file first."""
+    args = run.argv[run.argv.index("commit") + 1 :] if "commit" in run.argv else []
+    skip = False
+    for arg in args:
+        if skip:
+            skip = False
+            continue
+        if arg == "--":
+            return False
+        if arg == "--all":
+            return True
+        if arg in COMMIT_VALUE_NEXT:
+            skip = True
+            continue
+        if arg.startswith("-") and not arg.startswith("--"):
+            for ch in arg[1:]:
+                if ch == "a":
+                    return True
+                if ch in COMMIT_VALUE_SHORT:
+                    break
+    return False
+
+
+def _union(first, second):
+    out = list(first)
+    seen = set(out)
+    for path in second:
+        if path not in seen:
+            seen.add(path)
+            out.append(path)
     return out
 
 
@@ -476,6 +718,7 @@ def run(ev):
         paths, unexpanded = _expand_pathspecs(_commit_pathspecs(scan), cmd, cwd)
         files = _pathspec_files(cwd, paths) if paths and not unexpanded else []
         count = COUNT_PATHSPEC
+        index_judged = True
         if unexpanded:
             files = _staged_files(cwd)
             count = COUNT_UNEXPANDED % (", ".join("`%s`" % t for t in unexpanded), len(files))
@@ -487,7 +730,23 @@ def run(ev):
                 else COUNT_INDEX % len(files)
             )
         else:
+            index_judged = False
             count = count % len(files)
+        # AN INDEX COMMIT COMMITS THE INDEX AS IT STANDS WHEN THE COMMIT RUNS, so a `git add`/`git rm`/`commit -a` earlier in this command counts here; see `_staged_by_command`.
+        stagers: list[str] = []
+        before: list[str] = []
+        if index_judged:
+            added, stagers, before = _staged_by_command(cmd, cwd)
+            if stagers:
+                files = _union(files, added)
+                ceiling_note = (
+                    COUNT_STAGING_CEILING % ", ".join("`%s`" % w for w in before) if before else ""
+                )
+                count = COUNT_STAGING % (
+                    len(files),
+                    ", ".join("`%s`" % s for s in stagers),
+                    ceiling_note,
+                )
         # AN EARLIER CLAUSE THAT WRITES makes the pending set a lower bound, so the pathspec's ceiling is what gets judged; a real bulk commit then meets the same rule here that it meets at push. The refusal names the clause to run on its own.
         writers = _earlier_writers(cmd, cwd, paths) if paths and not unexpanded else []
         if writers:
@@ -501,6 +760,14 @@ def run(ev):
                 # The ceiling came from a clause `earlier_mutators` may not know (a generator), so the named clause is this guard's own.
                 mutators = [shellscan.Mutator("writer", label, None) for label in writers]
                 judged = "this commit's pathspec"
+            elif stagers:
+                # `git commit -a` is the verb itself, never a clause to split off.
+                mutators = [shellscan.Mutator("writer", label, None) for label in before] + [
+                    shellscan.Mutator("stage", label, None)
+                    for label in stagers
+                    if label != "git commit -a"
+                ]
+                judged = "the index this commit commits"
             ev.warn_raw(shellscan.split_refusal(mutators, "git commit", judged))
             ev.warn(BLOCK_COMMIT % count)
             return hookio.DENY
