@@ -415,6 +415,251 @@ case(
     False,
 )
 
+# ---- ONE RULE: the commit arm and the push arm agree on the same commit -------
+# 3a5f3a188 (2026-09-26, 28 files, no proof) was ALLOWED at commit and REFUSED at push. Its command was `node scripts/generate-search-index.js ...; git commit -F <msg> -- docs/design/06-cli-reshape.md packages/www 2>&1 | tail -1`: the guard runs before the first clause, so the 14 search indexes the generator had not yet written counted as unchanged, 14 < 20.
+# Each shape below drives BOTH arms through the dispatcher on one repo: the commit command as the guard sees it BEFORE it runs, then the same clauses really run, then `git push` over the commit they made. The two verdicts must match each other and the expected one.
+LOCALES = ["ar", "de", "en", "es", "et", "fr", "it", "ja", "ko", "pt", "ru", "tr", "zh"]
+
+
+def write(repo, rel, text):
+    path = os.path.join(repo, rel)
+    os.makedirs(os.path.dirname(path) or repo, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+
+
+def upstream_repo():
+    repo = scratch_repo()
+    bare = scratch_dir()
+    git(bare, "init", "-q", "--bare")
+    git(repo, "remote", "add", "origin", bare)
+    return repo
+
+
+def both_arms(name, seed, pre, command, really_run, want_blocked):
+    """Commit-arm verdict before `command` runs, push-arm verdict after it ran; both must equal `want_blocked`."""
+    repo = upstream_repo()
+    seed(repo)
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "seed")
+    git(repo, "push", "-q", "-u", "origin", "main")
+    msg = os.path.join(scratch_dir(), "msg.txt")
+    with open(msg, "w", encoding="utf-8") as fh:
+        fh.write("docs(cli): regenerate the reference\n\nEvidence: check exit 0.\n")
+    pre(repo)
+    at_commit, err = run(command % {"msg": msg}, repo)
+    really_run(repo, msg)
+    at_push, _ = run("git push", repo)
+    Tally.total += 2
+    Tally.blocked += at_commit + at_push
+    ok = at_commit == at_push == want_blocked
+    Tally.fails += 2 * (not ok)
+    print(
+        "%-70s want=%-9s commit=%-9s push=%-9s %s"
+        % (
+            name,
+            "BLOCKED" if want_blocked else "allowed",
+            "BLOCKED" if at_commit else "allowed",
+            "BLOCKED" if at_push else "allowed",
+            "ok" if ok else "*** FAIL *** (the arms disagree or both are wrong)",
+        )
+    )
+    if not ok and err:
+        print("    commit stderr: %s" % err.strip().splitlines()[-3:])
+
+
+def seed_3a5f(repo):
+    write(repo, "docs/design/06-cli-reshape.md", "# reshape\n")
+    for loc in LOCALES:
+        write(repo, "packages/www/src/content/docs/%s/cli-application.md" % loc, "# cli\n")
+        write(repo, "packages/www/public/search-index-%s.json" % loc, "[]\n")
+    write(repo, "packages/www/public/search-index.json", "[]\n")
+    write(repo, "packages/www/scripts/generate-search-index.js", "// gen\n")
+
+
+def pre_3a5f(repo):
+    """What the tree held when the guard ran: the design doc and the 13 cli pages edited, the 14 indexes not yet regenerated."""
+    write(repo, "docs/design/06-cli-reshape.md", "# reshape\nversions restore\n")
+    for loc in LOCALES:
+        write(repo, "packages/www/src/content/docs/%s/cli-application.md" % loc, "# cli\nv\n")
+
+
+def run_3a5f(repo, msg):
+    for loc in LOCALES:  # the generator clause
+        write(repo, "packages/www/public/search-index-%s.json" % loc, "[1]\n")
+    write(repo, "packages/www/public/search-index.json", "[1]\n")
+    git(repo, "commit", "-q", "-F", msg, "--", "docs/design/06-cli-reshape.md", "packages/www")
+
+
+both_arms(
+    "3a5f3a188's shape: a generator clause, then 28 files by directory pathspec",
+    seed_3a5f,
+    pre_3a5f,
+    "cd packages/www && node scripts/generate-search-index.js >/dev/null 2>&1; cd ../.. && "
+    "git commit -F %(msg)s -- docs/design/06-cli-reshape.md packages/www 2>&1 | tail -1",
+    run_3a5f,
+    True,
+)
+
+
+def seed_many(repo):
+    for i in range(BULK + 5):
+        write(repo, "src/m%02d.py" % i, "x = %d\n" % i)
+
+
+def pre_many(repo):
+    for i in range(BULK + 5):
+        write(repo, "src/m%02d.py" % i, "x = %d  # edited\n" % i)
+
+
+both_arms(
+    "control: 25 edited files, no earlier clause, no proof, refused on both",
+    seed_many,
+    pre_many,
+    "git commit -F %(msg)s -- src",
+    lambda repo, msg: git(repo, "commit", "-q", "-F", msg, "--", "src"),
+    True,
+)
+
+
+def seed_few(repo):
+    seed_many(repo)
+    for i in range(3):
+        write(repo, "small/s%d.md" % i, "s\n")
+
+
+def pre_few(repo):
+    write(repo, "small/s0.md", "s edited\n")
+
+
+def run_few(repo, msg):
+    write(repo, "small/s1.md", "s regenerated\n")
+    git(repo, "commit", "-q", "-F", msg, "--", "small")
+
+
+both_arms(
+    "control: a generator clause, then a 3-file directory, allowed on both",
+    seed_few,
+    pre_few,
+    "node gen.js > /dev/null; S=/tmp; cat > $S/notes.txt <<'EOF'\nx\nEOF\n"
+    "git commit -F %(msg)s -- small",
+    run_few,
+    False,
+)
+
+
+def seed_renames(repo):
+    for i in range(BULK // 2 + 2):
+        write(repo, "old/r%02d.py" % i, "value = %d\n" % i)
+
+
+def pre_renames(repo):
+    git(repo, "mv", "old", "new")
+
+
+# A RENAME COUNTS AS A DELETE PLUS AN ADD ON BOTH ARMS. 12 renames are 24 paths to `diff-tree`, which the push arm reads; the commit arm's porcelain `git diff` paired them into 12 and let the commit through.
+both_arms(
+    "12 staged renames are 24 paths at commit exactly as at push",
+    seed_renames,
+    pre_renames,
+    "git commit -F %(msg)s -- old new",
+    lambda repo, msg: git(repo, "commit", "-q", "-F", msg, "--", "old", "new"),
+    True,
+)
+
+# THE PURE FUNCTIONS, on 3a5f3a188's own file list and message. Imported in a child with PYTHONPATH rather than a `sys.path` hop in this file (test_canonical_sys_path_hop.py freezes those).
+MSG_3A5F = (
+    "docs(cli): the reshape transcript and the www CLI reference list `config remote versions` "
+    "and `restore`\n\nEvidence: check:ci-design-tree exit 0 (175 leaves, both directions); "
+    "check:ci-i18n-www-cli-docs 0; check:ci-search-index 0.\n\nPR-TASK: e4eaf80b\n"
+)
+PURE = r"""
+import json, sys
+from rediacc_hooks.guards import block_unproven_bulk_transform as G
+repo, stage, cmd, msg = sys.argv[1:5]
+paths = ["docs/design/06-cli-reshape.md", "packages/www"]
+if stage == "pre":
+    pending = G._pathspec_files(repo, paths)
+    out = {"pending": pending, "writers": G._earlier_writers(cmd, repo, paths),
+           "ceiling": G._pathspec_ceiling(repo, paths, pending)}
+else:
+    sha = G.hookio.git_out(["rev-parse", "HEAD"], cwd=repo)
+    out = {"committed": G._commit_files(sha, repo)}
+for key, files in list(out.items()):
+    if key != "writers":
+        out[key + "_unproven"] = G._bulk_unproven(files, msg)
+print(json.dumps(out))
+"""
+
+
+def pure(repo, stage, command):
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(pathlib.Path(__file__).resolve().parents[2])
+    proc = subprocess.run(
+        [sys.executable, "-c", PURE, repo, stage, command, MSG_3A5F],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    if proc.returncode != 0:
+        raise SystemExit("pure-function child failed: %s" % proc.stderr)
+    return json.loads(proc.stdout)
+
+
+pure_repo = upstream_repo()
+seed_3a5f(pure_repo)
+git(pure_repo, "add", "-A")
+git(pure_repo, "commit", "-qm", "seed")
+pre_3a5f(pure_repo)
+CMD_3A5F = (
+    "cd packages/www && node scripts/generate-search-index.js >/dev/null 2>&1; cd ../.. && "
+    "git commit -F m -- docs/design/06-cli-reshape.md packages/www"
+)
+before = pure(pure_repo, "pre", CMD_3A5F)
+msg_path = os.path.join(scratch_dir(), "m.txt")
+with open(msg_path, "w", encoding="utf-8") as fh:
+    fh.write(MSG_3A5F)
+run_3a5f(pure_repo, msg_path)
+after = pure(pure_repo, "post", CMD_3A5F)
+checks = [
+    (
+        "the pending set before the generator is the 14 files 3a5f3a188's commit arm counted",
+        len(before["pending"]) == 14,
+    ),
+    ("the commit the push arm reads is 28 files", len(after["committed"]) == 28),
+    (
+        "the generator clause is named as an earlier writer",
+        before["writers"][:1] == ["node scripts/generate-search-index.js"],
+    ),
+    (
+        "every committed file sits inside the commit arm's ceiling",
+        set(after["committed"]) <= set(before["ceiling"]),
+    ),
+    (
+        "the one rule refuses the ceiling and the committed set alike",
+        before["ceiling_unproven"] and after["committed_unproven"],
+    ),
+    ("the pending set alone is the divergence: the rule allows it", not before["pending_unproven"]),
+]
+for label, good in checks:
+    Tally.total += 1
+    Tally.fails += not good
+    print("%-70s %s" % ("pure: " + label, "ok" if good else "*** FAIL ***"))
+
+# `2>&1` AFTER THE PATHSPEC IS A REDIRECTION, NOT A PATH. The tail used to capture `2`, which no repo knows, so a one-file commit of a path with nothing pending YET fell back to the loaded index.
+fd_repo = scratch_repo()
+write(fd_repo, "one.md", "a\n")
+git(fd_repo, "add", "-A")
+git(fd_repo, "commit", "-qm", "seed one.md")
+stage_files(fd_repo, BULK, prefix="fd")
+case(
+    "`-- one.md 2>&1` is one path, not one path plus a `2` that falls back to the index",
+    'git commit -m "docs: a row" -- one.md 2>&1 | tail -1',
+    fd_repo,
+    False,
+)
+
 print()
 # COUNTED, NOT TYPED. This used to be the literal 16 while 26 cases ran, so the summary misreported the suite and the constant-answer check below compared against a number the suite had outgrown.
 TOTAL_CASES = Tally.total

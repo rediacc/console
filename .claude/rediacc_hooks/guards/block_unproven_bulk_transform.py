@@ -6,6 +6,7 @@ This guard is the operator's ruling that the SAME demand also lands here, on a c
 It cannot judge WHETHER a transform is mechanical the way the LLM can and judges SCALE instead, which is the plan's own principle -- batch size scales with proof, not ambition -- applied literally: a diff above the threshold must show proof, regardless of what produced it.
 
 THREE SURFACES, ONE RULE. `git commit` checks the STAGED diff against the message being written. `git push` and `gh pr create` check every commit in the range about to leave the tree, because either one can carry a bulk commit this guard never saw at commit time -- an operator `!`-bypassed commit, a peer's commit merged in, or a commit made before this guard existed.
+ONE RULE IS ONE FUNCTION, `_bulk_unproven`, over ONE way of counting, `_name_only` (renames as a delete plus an add). 3a5f3a188 (28 files, no proof) was allowed at commit and refused at push on 2026-09-26: its command ran `node scripts/generate-search-index.js` BEFORE `git commit -- ... packages/www`, and this guard, which runs once before the first clause, counted the 14 files that generator had not yet written as unchanged. See `_earlier_writers`.
 
 OWN_SUITE = True, the same sentinel and for the same reason as `block_prose_style_commit`/`block_prose_style_edit`: this is a fresh guard authored directly, with no bash original to port from and no golden to compare against. `test-block_unproven_bulk_transform.py` stands in for that differential, exactly as it does for its siblings.
 
@@ -36,7 +37,7 @@ ORDER = 41
 
 # The one branch the differential must be able to see: a commit at bulk scale whose own message quotes no proof. Planting `if False:` there lets every such commit through, which is the whole failure this guard exists to refuse.
 DEFECT = (
-    "if len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(_commit_message_text(cmd, cwd)):",
+    "if _bulk_unproven(files, _commit_message_text(cmd, cwd)):",
     "if False:",
 )
 
@@ -48,7 +49,8 @@ BULK_FILE_THRESHOLD = int(os.environ.get("WORKLIST_BULK_FILE_THRESHOLD", "20"))
 RANGE_COMMIT_CAP = 200
 
 # The `-- <path>...` tail `block_pathspecless_git_commit.py` requires on every commit here. Its own `DDASH_PATHSPEC` only has to PROVE one is present, so it stops at the first character of the first path; this one has to capture the whole list, and stops at a clause or redirection boundary so a `--` in one clause cannot claim the next clause's words.
-PATHSPEC_TAIL = hookio.rx(r"(^|[{S}])--([{S}]+[^{S};&|<>()]+)+")
+# A word made only of digits and followed by `<`/`>` is a file descriptor (`2>&1`), not a path: `-- a b 2>&1` once captured `2` as a third pathspec.
+PATHSPEC_TAIL = hookio.rx(r"(^|[{S}])--([{S}]+(?![0-9]+[<>])[^{S};&|<>()]+)+")
 
 PROOF_PHRASE = re.compile(
     r"shape[-_ ]cluster[-_ ]diff|shape_cluster_diff\.py|ast[-_ ]equalit|ast[-_ ]diff"
@@ -62,6 +64,10 @@ COUNT_PATHSPEC = "this commit's pathspec covers %d file(s), a bulk transform's s
 COUNT_UNEXPANDED = (
     "pathspec %s could not be expanded; %d is the shared index, not this commit, and it is a bulk\n"
     "transform's scale"
+)
+COUNT_CEILING = (
+    "an earlier clause of this command can still write under this commit's pathspec, which\n"
+    "covers up to %d file(s), a bulk transform's scale"
 )
 COUNT_UNRESOLVED = (
     "pathspec %s did not resolve; %d is the shared index, not this commit, and it is a bulk\n"
@@ -92,13 +98,33 @@ def _proof_shown(text):
     return bool(PROOF_PHRASE.search(text or ""))
 
 
+def _bulk_unproven(files, message):
+    """THE ONE RULE, which the commit arm and the range arm both apply to one commit: bulk scale with no proof in its own message.
+
+    The range arm additionally clears a commit by a follow-up proof or the baseline; neither exists yet at commit time, so they cannot make the commit arm stricter than the push arm, only the push arm more lenient.
+    """
+    return len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(message)
+
+
+def _name_only(args, cwd, want_rc=False):
+    """The paths a diff touches, counted ONE way on every arm, or None under `want_rc` when git fails.
+
+    `--no-renames` because the porcelain `git diff` detects renames by default and prints only the new name, while `diff-tree` does not and prints both: a 15-file rename counted 15 at commit and 30 at push, straddling the threshold.
+    """
+    out = hookio.git_out(
+        [*args[:1], "--no-renames", "--name-only", *args[1:]], cwd=cwd, want_rc=want_rc
+    )
+    if out is None:
+        return None
+    return [line for line in out.splitlines() if line.strip()]
+
+
 def _commit_message_text(cmd, cwd):
     return "\n".join(body for _, body in PSC.messages(cmd, cwd))
 
 
 def _staged_files(cwd):
-    out = hookio.git_out(["diff", "--cached", "--name-only"], cwd=cwd)
-    return [line for line in out.splitlines() if line.strip()]
+    return _name_only(["diff", "--cached"], cwd) or []
 
 
 def _pathspec_files(cwd, paths):
@@ -113,12 +139,14 @@ def _pathspec_files(cwd, paths):
     Reproduced live 2026-09-23: a single brand-new file, `git add`ed then committed as `git commit -m ... -- <that file>`, made `diff HEAD --name-only -- <path>` print nothing (empty string, not None), so the caller's `paths and _pathspec_files(...)` was falsy and fell through to `_staged_files` -- the FULL shared index, 177 unrelated paths, on a one-file commit.
     `git status --porcelain -- <paths>` sees the file (`??`) where `diff` cannot, so it is unioned in below; the file's own new content is what would land in the commit either way.
     """
-    out = hookio.git_out(["diff", "HEAD", "--name-only", "--", *paths], cwd=cwd, want_rc=True)
-    if out is None:
+    tracked = _name_only(["diff", "HEAD", "--", *paths], cwd, want_rc=True)
+    if tracked is None:
         return []
-    tracked = [line for line in out.splitlines() if line.strip()]
 
-    status_out = hookio.git_out(["status", "--porcelain", "--", *paths], cwd=cwd, want_rc=True)
+    # `--untracked-files=all` because the default collapses an untracked DIRECTORY to one `?? dir/` line: thirty new files under it counted as one here and thirty at push.
+    status_out = hookio.git_out(
+        ["status", "--porcelain", "--untracked-files=all", "--", *paths], cwd=cwd, want_rc=True
+    )
     untracked: list[str] = []
     if status_out is not None:
         untracked.extend(
@@ -229,8 +257,97 @@ def _expand_pathspecs(tokens, cmd, cwd):
 
 
 def _commit_files(sha, cwd):
-    out = hookio.git_out(["diff-tree", "--no-commit-id", "--name-only", "-r", sha], cwd=cwd)
-    return [line for line in out.splitlines() if line.strip()]
+    return _name_only(["diff-tree", "--no-commit-id", "-r", "--root", sha], cwd) or []
+
+
+# Tools that write nothing but their own redirects. Anything else run before `git commit` (a generator, a formatter, `npm run`, `git add`) can change what the commit's pathspec covers.
+INERT_TOOLS = frozenset(
+    {
+        "cd",
+        "echo",
+        "printf",
+        "cat",
+        "true",
+        "false",
+        "test",
+        "[",
+        "wc",
+        "grep",
+        "head",
+        "tail",
+        "cut",
+        "sort",
+        "uniq",
+        "tr",
+        "ls",
+        "pwd",
+        "date",
+        "basename",
+        "dirname",
+        "realpath",
+        "readlink",
+        "export",
+        "sleep",
+    }
+)
+INERT_GIT = frozenset({"status", "log", "diff", "show", "rev-parse", "ls-files"})
+
+
+def _earlier_writers(cmd, cwd, paths):
+    """Labels of the clauses before `git commit` that can change what `paths` cover, in order.
+
+    WHY THIS EXISTS: this guard runs ONCE, before the first clause, so a pathspec commit is counted as the tree stands BEFORE any generator earlier in the same command. 3a5f3a188 ran `node scripts/generate-search-index.js` and then `git commit -- docs/design/06-cli-reshape.md packages/www`: 14 files were counted here, 28 were committed, and the push refused what the commit had
+    allowed. A tool outside `INERT_TOOLS` counts as a writer, and so does an inert tool's redirect that lands under a pathspec path or cannot be expanded.
+    """
+    runs = shellscan._analyse(cmd).runs
+    idx = next(
+        (
+            i
+            for i, r in enumerate(runs)
+            if r.name.rsplit("/", 1)[-1] == "git" and r.git_sub == "commit"
+        ),
+        None,
+    )
+    if not idx:
+        return []
+    names = shellscan.assignments_before(cmd, "git commit")
+    roots = [os.path.normpath(os.path.join(cwd, p)) for p in paths]
+    out = []
+    for run in runs[:idx]:
+        base = run.name.rsplit("/", 1)[-1]
+        label = " ".join([base, *run.argv[:1]])
+        if base == "git":
+            writer = run.git_sub is not None and run.git_sub not in INERT_GIT
+        else:
+            writer = base not in INERT_TOOLS
+        for target in run.writes:
+            if writer or target in shellscan._NOT_A_FILE or target.startswith("/dev/fd/"):
+                continue
+            text = PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), target)
+            if UNEXPANDED.search(text):
+                writer = True
+                continue
+            where = os.path.normpath(os.path.join(run.cwd or cwd, text))
+            writer = any(where == r or where.startswith(r + os.sep) for r in roots)
+        if writer and label not in out:
+            out.append(label)
+    return out
+
+
+def _pathspec_ceiling(cwd, paths, files):
+    """Every file `paths` can cover once an earlier clause has written: the pending ones, plus every tracked and every untracked-but-not-ignored path under them."""
+    out = list(files)
+    seen = set(out)
+    for extra in (
+        ["ls-files", "--full-name"],
+        ["ls-files", "--full-name", "--others", "--exclude-standard"],
+    ):
+        listed = hookio.git_out([*extra, "--", *paths], cwd=cwd, want_rc=True) or ""
+        for line in listed.splitlines():
+            if line.strip() and line not in seen:
+                seen.add(line)
+                out.append(line)
+    return out
 
 
 def _commit_message(sha, cwd):
@@ -301,9 +418,7 @@ def _first_unproven(shas, cwd):
         if sha in grandfathered:
             continue
         files = _commit_files(sha, cwd)
-        if len(files) < BULK_FILE_THRESHOLD:
-            continue
-        if _proof_shown(messages[i]):
+        if not _bulk_unproven(files, messages[i]):
             continue
         if _proven_by_a_later_commit(sha, messages[:i]):
             continue
@@ -373,15 +488,20 @@ def run(ev):
             )
         else:
             count = count % len(files)
-        if len(files) >= BULK_FILE_THRESHOLD and not _proof_shown(_commit_message_text(cmd, cwd)):
+        # AN EARLIER CLAUSE THAT WRITES makes the pending set a lower bound, so the pathspec's ceiling is what gets judged; a real bulk commit then meets the same rule here that it meets at push. The refusal names the clause to run on its own.
+        writers = _earlier_writers(cmd, cwd, paths) if paths and not unexpanded else []
+        if writers:
+            files = _pathspec_ceiling(cwd, paths, files)
+            count = COUNT_CEILING % len(files)
+        if _bulk_unproven(files, _commit_message_text(cmd, cwd)):
             # An earlier clause that stages, commits, writes a file or publishes changes what was just counted, or the message file read for proof (R20260924.22).
-            ev.warn_raw(
-                shellscan.split_refusal(
-                    shellscan.earlier_mutators(cmd, "git commit"),
-                    "git commit",
-                    "the index, the worktree and the commit message file",
-                )
-            )
+            mutators = shellscan.earlier_mutators(cmd, "git commit")
+            judged = "the index, the worktree and the commit message file"
+            if writers:
+                # The ceiling came from a clause `earlier_mutators` may not know (a generator), so the named clause is this guard's own.
+                mutators = [shellscan.Mutator("writer", label, None) for label in writers]
+                judged = "this commit's pathspec"
+            ev.warn_raw(shellscan.split_refusal(mutators, "git commit", judged))
             ev.warn(BLOCK_COMMIT % count)
             return hookio.DENY
         return hookio.ALLOW
