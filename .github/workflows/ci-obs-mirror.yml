@@ -16,6 +16,14 @@ on:
       - private/renet
       - .ci/rediacc_ci/infra/obs_mirror.py
       - .github/workflows/ci-obs-mirror.yml
+  # A PR that touches the pin or this tool captures on its own CI, so the pinned
+  # build is mirrored before merge (workflow_dispatch only runs from main).
+  # Same-repo PRs only: the job's `if` skips forks, whose token cannot write.
+  pull_request:
+    paths:
+      - private/renet
+      - .ci/rediacc_ci/infra/obs_mirror.py
+      - .github/workflows/ci-obs-mirror.yml
   schedule:
     # OBS replaces a build in the same publish that adds the next; every 6 hours
     # catches each build while it is still served (plan Q3).
@@ -39,6 +47,7 @@ concurrency:
 jobs:
   capture:
     name: OBS Mirror (opensuse-16.0)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 40
     # packages: write pushes to ghcr.io/rediacc/ci-vm-bake with github.token.
