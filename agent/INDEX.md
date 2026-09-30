@@ -563,7 +563,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-overhaul.md` | ready | 116 | 0 | 9 | 12414 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | held | 370 | 1 | 16 | 49937 |
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | held | 601 | 1 | 22 | 64162 |
-| `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 237 | 7 | 3 | 22685 |
+| `agent/plans/PLAN-stop-hook-retro-20260925.md` | held | 238 | 6 | 4 | 22878 |
 | `agent/plans/PLAN-stop-hook-rulings-campaign.md` | held | 103 | 16 | 1 | 9802 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
