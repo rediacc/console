@@ -61,6 +61,7 @@
  * ---- end gate ----
  */
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -116,6 +117,94 @@ export function parseBucketKeys(runE2eSource: string): string[] {
   const block = /declare -A E2E_SHARD_GREP_BUCKETS=\(([\s\S]*?)\n\s*\)/.exec(runE2eSource);
   if (block === null) return [];
   return [...(block[1] as string).matchAll(/\["([^"]+)"\]=/g)].map((m) => m[1] as string);
+}
+
+/** `E2E_SHARD_GREP_BUCKETS` as name -> the `--grep` pattern `run-e2e.sh` hands Playwright. */
+export function parseBucketPatterns(runE2eSource: string): Record<string, string> {
+  const block = /declare -A E2E_SHARD_GREP_BUCKETS=\(([\s\S]*?)\n\s*\)/.exec(runE2eSource);
+  if (block === null) return {};
+  return Object.fromEntries(
+    [...(block[1] as string).matchAll(/\["([^"]+)"\]="([^"]*)"/g)].map((m) => [
+      m[1] as string,
+      m[2] as string,
+    ])
+  );
+}
+
+/**
+ * THE BUCKETS MUST PARTITION THE FILE EXACTLY, pure. `titles` is every test of one bucketed
+ * file as Playwright's grep sees it (suite titles and the test title joined by spaces);
+ * each must match exactly one bucket's pattern. A test matching none runs in no CI job
+ * (a renamed describe block drops out of every bucket silently); a test matching two runs
+ * twice; a bucket matching nothing is a leg that runs zero tests of its file.
+ */
+export function bucketPartition(
+  lane: string,
+  base: string,
+  titles: readonly string[],
+  patterns: Readonly<Record<string, string>>
+): Finding[] {
+  const out: Finding[] = [];
+  if (titles.length === 0) {
+    out.push({
+      lane,
+      kind: 'bucket',
+      message: `"${base}" listed ZERO tests, so its bucket partition cannot be judged.`,
+    });
+    return out;
+  }
+  const res = Object.entries(patterns).map(([name, p]) => [name, new RegExp(p)] as const);
+  const hits = new Map<string, number>(res.map(([name]) => [name, 0]));
+  for (const t of titles) {
+    const matched = res.filter(([, re]) => re.test(t)).map(([name]) => name);
+    for (const m of matched) hits.set(m, (hits.get(m) ?? 0) + 1);
+    if (matched.length === 0) {
+      out.push({
+        lane,
+        kind: 'bucket',
+        message: `"${base}": test "${t}" matches no bucket's --grep, so it runs in no CI job.`,
+      });
+    } else if (matched.length > 1) {
+      out.push({
+        lane,
+        kind: 'bucket',
+        message: `"${base}": test "${t}" matches buckets ${matched.join(', ')}, so it runs more than once.`,
+      });
+    }
+  }
+  for (const [name, n] of hits) {
+    if (n === 0) {
+      out.push({
+        lane,
+        kind: 'bucket',
+        message: `"${base}#${name}" matches ZERO of the file's ${titles.length} test(s); its leg runs nothing of it.`,
+      });
+    }
+  }
+  return out;
+}
+
+interface ListedSuite {
+  title?: string;
+  suites?: ListedSuite[];
+  specs?: { title?: string }[];
+}
+
+/** Every test of one e2e-workers spec file, as the titles Playwright's --grep matches. */
+function listTestTitles(file: string): string[] {
+  const out = execFileSync('npx', ['playwright', 'test', '--list', '--reporter=json', file], {
+    cwd: path.join(ROOT, 'packages', 'e2e-tests'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const titles: string[] = [];
+  const walk = (s: ListedSuite, chain: string[]): void => {
+    const here = s.title ? [...chain, s.title] : chain;
+    for (const spec of s.specs ?? []) titles.push([...here, spec.title ?? ''].join(' '));
+    for (const c of s.suites ?? []) walk(c, here);
+  };
+  for (const s of (JSON.parse(out) as { suites?: ListedSuite[] }).suites ?? []) walk(s, []);
+  return titles;
 }
 
 /**
@@ -330,7 +419,9 @@ async function main(): Promise<number> {
         .join(' ')} pinned`
   );
 
-  const bucketKeys = parseBucketKeys(fs.readFileSync(RUN_E2E, 'utf8'));
+  const runE2eSource = fs.readFileSync(RUN_E2E, 'utf8');
+  const bucketKeys = parseBucketKeys(runE2eSource);
+  const bucketPatterns = parseBucketPatterns(runE2eSource);
   const findings: Finding[] = [];
   const failures: string[] = [];
   let unitTotal = 0;
@@ -362,6 +453,23 @@ async function main(): Promise<number> {
     }
     const buckets = lane in BUCKET_LANES ? bucketKeys : null;
     const own = compareManifest(file, lu.units, buckets);
+    if (buckets !== null) {
+      const bucketed = new Set(
+        file.legs.flatMap((l) =>
+          l.ids.filter((id) => id.includes('#')).map((id) => splitId(id).base)
+        )
+      );
+      for (const base of bucketed) {
+        const specFile = base.slice(base.indexOf(':') + 1);
+        try {
+          own.push(...bucketPartition(lane, base, listTestTitles(specFile), bucketPatterns));
+        } catch (err) {
+          failures.push(
+            `${where}: cannot list ${specFile}'s tests: ${(err as Error).message.trim()}`
+          );
+        }
+      }
+    }
     const control = liveControls(file, lu.units, buckets);
     if (control !== null) {
       failures.push(
@@ -420,7 +528,72 @@ function selftest(): number {
   const runE2eFixture =
     'declare -A E2E_SHARD_GREP_BUCKETS=(\n    ["part1"]="A|B"\n    ["part2"]="C|D"\n    ["part3"]="E|F"\n)\n';
 
+  const P = { part1: 'A @x|B @x', part2: 'C @x', part3: 'D @x' };
+  const T = (d: string, n: string) => `13.test.ts ${d} @x ${n}`;
+  const exact = [T('A', '1'), T('B', '1'), T('C', '1'), T('D', '1')];
   const cases: { name: string; ok: boolean; detail?: string }[] = [
+    // THE PARTITION: each test in exactly one bucket, every bucket non-empty.
+    (() => {
+      const f = bucketPartition(
+        'test-e2e-workers',
+        `${E}13.test.ts`,
+        [...exact, T('Renamed', '1')],
+        P
+      );
+      return {
+        name: 'FIRES: a test no bucket --grep matches (a renamed describe) reds as runs in no CI job',
+        ok: f.some((x) => x.message.includes('Renamed') && x.message.includes('no CI job')),
+        detail: kinds(f),
+      };
+    })(),
+    (() => {
+      const f = bucketPartition('test-e2e-workers', `${E}13.test.ts`, exact, {
+        ...P,
+        part3: 'D @x|A @x',
+      });
+      return {
+        name: 'FIRES: a test two buckets match reds as running more than once',
+        ok: f.some((x) => x.message.includes('part1, part3')),
+        detail: kinds(f),
+      };
+    })(),
+    (() => {
+      const f = bucketPartition('test-e2e-workers', `${E}13.test.ts`, exact, {
+        ...P,
+        part3: 'Gone @x',
+      });
+      return {
+        name: 'FIRES: a bucket matching zero tests reds, and so does the orphaned test',
+        ok:
+          f.some((x) => x.message.includes('#part3" matches ZERO')) &&
+          f.some((x) => x.message.includes('D @x 1')),
+        detail: kinds(f),
+      };
+    })(),
+    (() => {
+      const f = bucketPartition('test-e2e-workers', `${E}13.test.ts`, [], P);
+      return {
+        name: 'FIRES: zero listed tests is unjudgeable, never a clean partition',
+        ok: f.length === 1,
+        detail: kinds(f),
+      };
+    })(),
+    (() => {
+      const f = bucketPartition('test-e2e-workers', `${E}13.test.ts`, exact, P);
+      return {
+        name: 'CONTROL: an exact partition is silent',
+        ok: f.length === 0,
+        detail: kinds(f),
+      };
+    })(),
+    (() => {
+      const p = parseBucketPatterns(runE2eFixture);
+      return {
+        name: 'parseBucketPatterns reads name -> pattern from the run-e2e.sh block',
+        ok: JSON.stringify(p) === JSON.stringify({ part1: 'A|B', part2: 'C|D', part3: 'E|F' }),
+        detail: JSON.stringify(p),
+      };
+    })(),
     // Controls first: each planted violation must red.
     (() => {
       const f = compareManifest(
