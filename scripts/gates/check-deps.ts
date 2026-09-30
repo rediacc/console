@@ -861,13 +861,12 @@ function planInstalls(
   };
 
   const byWorkspace = new Map<string, PackageInfo[]>();
-  const rootOnly: PackageInfo[] = [];
+  const rootDeclared: PackageInfo[] = [];
+  const rootRanges = readDeclaredRanges(root);
   for (const pkg of rootPackages) {
     const workspaces = findWorkspacesWithPackage(pkg.name, root);
-    if (workspaces.length === 0) {
-      rootOnly.push(pkg);
-      continue;
-    }
+    // EVERY MANIFEST THAT DECLARES IT. A package the root declares AND a workspace declares used to go to the workspaces only: on 2026-09-26 packages/cli's tsx became ^4.23.15 while the root's stayed ^4.21.0 (locked 4.22.1), and the gate stayed red until a hand bump.
+    if (workspaces.length === 0 || rootRanges[pkg.name] !== undefined) rootDeclared.push(pkg);
     for (const ws of workspaces) {
       const existing = byWorkspace.get(ws) ?? [];
       existing.push(pkg);
@@ -884,7 +883,7 @@ function planInstalls(
       `packages/${ws}`
     );
   }
-  if (rootOnly.length > 0) plan(root, root, [], 'root', rootOnly);
+  if (rootDeclared.length > 0) plan(root, root, [], 'root', rootDeclared);
   for (const { dir, name, packages } of privateGroups) {
     if (packages.length === 0) continue;
     plan(dir, dir, [], name, packages);
@@ -1755,6 +1754,7 @@ function selftest(): void {
         'eslint-plugin-sonarjs': '^4.2.1',
         pinned: '1.0.0',
         vite: '^6.4.2',
+        tsx: '^4.21.0',
       },
     });
     w('packages/cli/package.json', { dependencies: { tsx: '^4.22.1' } });
@@ -1789,10 +1789,10 @@ function selftest(): void {
       'packages/www (install) :: install -w=packages/www tsx@4.23.15',
       'private/account (update) :: update react-hook-form',
       'root (install) :: install pinned@1.0.1 vite@8.0.1',
-      'root (update) :: update typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs',
+      'root (update) :: update typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs tsx',
     ];
     expect(
-      'planner: an in-range bump is `npm update <names>`, an out-of-range one `npm install name@exact`, per manifest range',
+      'planner: an in-range bump is `npm update <names>`, an out-of-range one `npm install name@exact`, per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces)',
       JSON.stringify(shown) === JSON.stringify(want),
       `got:\n${shown.join('\n')}\nwant:\n${want.join('\n')}`
     );
