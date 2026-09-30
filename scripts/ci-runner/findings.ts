@@ -13,6 +13,8 @@
 /** One key: the alphabet and the length bound. Matched after ANSI is stripped, so a coloured line still parses. */
 const KEY_RE = /^[A-Za-z0-9._:/@#-]{1,200}$/;
 const PREFIX = '::finding::';
+/** A whole `::finding::<key>` line; the key is judged against KEY_RE after. */
+const FINDING_LINE_RE = /^::finding::(.*)$/;
 /** Keys per gate. 512 x 200 characters is about 100 KB a gate; past it the value is `null` and the runner says so. */
 const FINDINGS_CAP = 512;
 /** The ESC byte built with fromCharCode, the idiom exec.ts PASS_LINE uses, so no control character sits in a regex literal. */
@@ -47,9 +49,8 @@ function parseFindings(output: string): ParsedFindings {
   const keys = new Set<string>();
   for (const raw of output.replace(ANSI_RE, '').split(/\r?\n/)) {
     const line = raw.trim();
-    if (!line.startsWith(PREFIX)) continue;
-    const key = line.slice(PREFIX.length);
-    if (KEY_RE.test(key)) keys.add(key);
+    const m = FINDING_LINE_RE.exec(line);
+    if (m !== null && KEY_RE.test(m[1] as string)) keys.add(m[1] as string);
   }
   if (keys.size === 0) return { keys: null, overCap: false };
   if (keys.size > FINDINGS_CAP) return { keys: null, overCap: true };
