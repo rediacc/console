@@ -2150,7 +2150,7 @@ export const GATES: readonly GateSpec[] = [
     // No `paths:` DELIBERATELY. Its providers read the gates lock, the hook wiring, every tracked file carrying BLOCKER: and the whole .ci tree, so any list short of "the repository" is wrong, and a half-populated one makes --changed drop the gate silently.
     id: 'check:ci-doc-region-parity',
     run: 'npm run check:ci-doc-region-parity',
-    slow: true, // 23.7s measured: regenerates every doc region in memory to compare
+    // In --quick since 2026-09-30 (PLAN-ci-quick-cpu-scheduling 2.4): its 8 s CI step p90 is under the tier line, and joining the pool retires the push recipe's serial pre-step.
     gate: true,
     leaves: ['scripts/gates/check-doc-region-parity.ts'],
     ci: {

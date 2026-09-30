@@ -29,7 +29,7 @@ import { createHash } from 'node:crypto';
  * for a gate-backed lane (`quality-code`); a test lane's manifest names test-runner units,
  * which this pool does not execute (see `resolveLaneShard`'s own refusal).
  *
- * `--sched cores` (env CI_SCHED) packs gates against a core budget from their measured CPU instead of one slot each; `slots`, the default, is the pool's original rule. See agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2 and pool.ts admit().
+ * `--sched cores` (env CI_SCHED), the DEFAULT since 2026-09-30, packs gates against a core budget from their measured CPU instead of one slot each; `slots` is the pool's original rule, kept for A/B and rollback. Five alternating pairs on 24 cores: wall/floor 1.04-1.09 against 1.14-1.16, idle core-seconds median 69 against 89, check:test-shared starting at 13 s against 40 s. See agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.2 and pool.ts admit().
  *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.
  */
@@ -100,7 +100,7 @@ const EWMA_ALPHA = 0.3;
 interface Options {
   jobs?: number;
   heavyLimit?: number;
-  /** `--sched` / CI_SCHED; undefined means the default, `slots`. */
+  /** `--sched` / CI_SCHED; undefined means the default, `cores`. */
   sched?: Sched;
   failFast: boolean;
   json: boolean;
@@ -1609,7 +1609,7 @@ async function main(): Promise<number> {
   const cachePath =
     process.env.CI_RUNNER_CACHE ?? (opts.manifest === undefined ? DEFAULT_CACHE : undefined);
   const durations = loadDurations(cachePath);
-  const sched: Sched = opts.sched ?? 'slots';
+  const sched: Sched = opts.sched ?? 'cores';
   // Under `cores`, --jobs names C, the core budget, rather than a slot count.
   const budget = sched === 'cores' ? coreBudget(opts.jobs) : undefined;
 

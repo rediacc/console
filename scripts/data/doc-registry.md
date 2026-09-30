@@ -93,7 +93,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-devcontainer-pins | quality-go / Check devcontainer pin upstream freshness | yes | no | no |
 | check:ci-devcontainer-scripts | quality-code / Devcontainer script stderr visibility | yes | no | no |
 | check:ci-dkim-notify | quality-content / DKIM notify DNS | yes | no | no |
-| check:ci-doc-region-parity | quality-code / Doc region parity | yes | yes | no |
+| check:ci-doc-region-parity | quality-code / Doc region parity | yes | no | no |
 | check:ci-docker-image-freshness | quality-content / Docker image freshness | yes | no | no |
 | check:ci-docker-npm-pins | quality-code / Dockerfile npm pins | yes | no | no |
 | check:ci-dockerfile-mirror-resilience | quality-static / Dockerfile mirror resilience | yes | no | no |

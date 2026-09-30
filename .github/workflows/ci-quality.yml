@@ -975,7 +975,7 @@ jobs:
         run: npm run check:ci-backup-protocol-conformance
       - name: Bootstrap paths install through the dependency stamp
         id: gate_check_ci_bootstrap_idempotency
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-bootstrap-idempotency
       - name: Builder env contract
         id: gate_check_ci_builder_env_contract
@@ -983,7 +983,7 @@ jobs:
         run: npm run check:ci-builder-env-contract
       - name: Ceph image pin freshness
         id: gate_check_ci_ceph_image_pin
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-ceph-image-pin
       - name: Changed-file selection contract
         id: gate_check_ci_changed_selection
@@ -995,19 +995,19 @@ jobs:
         run: npm run check:ci-fetch-integrity
       - name: CI job aggregation
         id: gate_check_ci_job_aggregation
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_ci_job_aggregation.py
       - name: CI scripts declare the binaries they execute
         id: gate_check_ci_shell_declared_commands
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-shell-declared-commands
       - name: CLI docs stay in sync with their scripts' real flags
         id: gate_check_ci_cli_doc_coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: .ci/scripts/quality/check_cli_doc_coverage.py
       - name: CLI examples
         id: gate_check_cli_examples
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:cli-examples
       - name: Command tree
         id: gate_check_ci_command_tree
@@ -1031,11 +1031,11 @@ jobs:
         run: npm run check:ci-enumeration-vacuity
       - name: Every source file reaches a linter
         id: gate_check_ci_lint_scope_coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_lint_scope_coverage.py
       - name: Fetch retry
         id: gate_check_ci_fetch_retry
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_fetch_retry.py
       - name: Fixture event timestamps
         id: gate_check_ci_fixture_event_timestamps
@@ -1043,7 +1043,7 @@ jobs:
         run: npm run check:ci-fixture-event-timestamps
       - name: Format command covers its config's scope
         id: gate_check_ci_format_scope
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_format_scope.py
       - name: Gate binding
         id: gate_check_ci_gate_bind
@@ -1055,11 +1055,11 @@ jobs:
         run: npm run check:ci-gate-cwd-independence
       - name: Gate-test real-file plants
         id: gate_check_ci_gate_test_real_file_plants
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_gate_test_real_file_plants.py
       - name: Gates that write the real tree declare it
         id: gate_check_ci_gate_tree_writes
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_gate_tree_writes.py
       - name: Generated manifest regions
         id: gate_check_ci_gen_manifest
@@ -1075,7 +1075,7 @@ jobs:
         run: .ci/scripts/quality/check_inner_timeout_reachable.py
       - name: Instruction files do not prescribe a rejected merge method
         id: gate_check_ci_merge_method_prose
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-merge-method-prose
       - name: jq boolean defaults
         id: gate_check_ci_jq_boolean_default
@@ -1083,11 +1083,11 @@ jobs:
         run: npm run check:ci-jq-boolean-default
       - name: Judged rule wiring
         id: gate_check_ci_judged_rule_wiring
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_judged_rule_wiring.py
       - name: knip BLOCKER reasons
         id: gate_check_ci_knip_blockers
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-knip-blockers
       - name: Lint
         id: gate_check_lint
@@ -1099,15 +1099,15 @@ jobs:
         run: .ci/scripts/quality/check_lockfile.py
       - name: Mediated git tool stays lease-only and dry-run by default
         id: gate_check_ci_git_tool_safety
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-git-tool-safety
       - name: Native modules rebuilt after every root install
         id: gate_check_ci_native_rebuild
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-native-rebuild
       - name: Naturalization model policy
         id: gate_check_ci_naturalization_model_policy
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-naturalization-model-policy
       - name: No client-side key composition
         id: gate_check_ci_no_client_key_composition
@@ -1115,7 +1115,7 @@ jobs:
         run: npm run check:ci-no-client-key-composition
       - name: No source file exceeds the line-count budget
         id: gate_check_ci_max_lines
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-max-lines
       - name: Package key budget
         id: gate_check_ci_package_key_budget
@@ -1131,11 +1131,11 @@ jobs:
         run: npm run check:ci-retention-knob-parity
       - name: Review prompt render
         id: gate_check_ci_review_prompt_render
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_review_prompt_render.py
       - name: Rubric calibration
         id: gate_check_ci_rubric_calibration
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_rubric_calibration.py
       - name: Runtime imports are dependencies
         id: gate_check_ci_runtime_imports_are_deps
@@ -1147,11 +1147,11 @@ jobs:
         run: npm run check:ci-schema-coverage
       - name: scripts/ domain partition
         id: gate_check_ci_domain_partition
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-domain-partition
       - name: Shape duplication
         id: gate_check_ci_shape_duplication
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-shape-duplication
       - name: Shared constant duplication
         id: gate_check_ci_shared_constant_duplication
@@ -1159,11 +1159,11 @@ jobs:
         run: npm run check:ci-shared-constant-duplication
       - name: Step env parity
         id: gate_check_ci_step_env_parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-step-env-parity
       - name: Swallowed failures
         id: gate_check_ci_swallowed_failures
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_swallowed_failures.py
       - name: syncpack source coverage
         id: gate_check_ci_syncpack_sources
@@ -1175,7 +1175,7 @@ jobs:
         run: npm run check:ci-test-scripts-reachable
       - name: Tmpfs health
         id: gate_check_ci_tmpfs_health
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_tmpfs_health.py
       - name: Typecheck scope coverage
         id: gate_check_ci_typecheck_scope_coverage
@@ -1187,11 +1187,11 @@ jobs:
         run: npm run lint:unused
       - name: Verify no peer dependency conflicts
         id: gate_check_ci_peer_deps
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: .ci/scripts/quality/check_peer_deps.py
       - name: Versions
         id: gate_check_version
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:version
       - name: Worker secret names
         id: gate_check_ci_worker_secret_names
@@ -1219,7 +1219,7 @@ jobs:
         run: npm run check:ci-worklist-path-resolution
       - name: www build token
         id: gate_check_ci_www_build_token
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_www_build_token.py
       - name: Write shard receipt
         if: always()
