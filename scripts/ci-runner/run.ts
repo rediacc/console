@@ -1050,6 +1050,33 @@ async function selftest(): Promise<number> {
     narrowingFlags(parseArgs(['--quick', '--receipt-out', '/snap/r.json'])).length === 0,
     '--receipt-out must not narrow the lane: it changes where the verdict is written, not which gates run'
   );
+  // A narrowed run keeps an existing whole receipt; a whole run replaces anything.
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-receipt-'));
+    const dest = path.join(dir, 'receipt.json');
+    try {
+      require_(
+        !narrowedWouldReplaceWhole(dest, false),
+        'CONTROL: a narrowed run with no receipt on disk writes one'
+      );
+      fs.writeFileSync(dest, JSON.stringify({ whole: true }));
+      require_(
+        narrowedWouldReplaceWhole(dest, false),
+        'a narrowed run must not replace a whole receipt'
+      );
+      require_(
+        !narrowedWouldReplaceWhole(dest, true),
+        'CONTROL: a whole run replaces a whole receipt'
+      );
+      fs.writeFileSync(dest, JSON.stringify({ whole: false }));
+      require_(
+        !narrowedWouldReplaceWhole(dest, false),
+        'CONTROL: a narrowed run replaces a narrowed receipt'
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
 
   // T2.10: --lane/--shard PARSING. Both required together, or neither -- a lone --lane silently running the WHOLE manifest (because opts.only stayed undefined) would look exactly like a successful, narrower replay.
   const laneShardParseCases: [string[], boolean][] = [
@@ -1422,7 +1449,25 @@ function receiptPathFor(opts: Options): string {
   return opts.receiptOut ?? RECEIPT_PATH;
 }
 
+/**
+ * A narrowed run (`--only`, `--skip`, `--changed`) never replaces a WHOLE receipt. Found 2026-09-30: a one-gate `--quick --only` re-check after a push-clone receipt overwrote `.ci/cache/prepush-receipt.json` with `whole: false`, so the push that the whole lane had just authorised was refused. The whole receipt still names its own tree, so the guard's tree check keeps it honest when HEAD has moved since.
+ */
+function narrowedWouldReplaceWhole(dest: string, whole: boolean): boolean {
+  if (whole) return false;
+  try {
+    return (JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>).whole === true;
+  } catch {
+    return false;
+  }
+}
+
 function writeReceipt(receipt: Receipt, dest: string, warn: (text: string) => void): void {
+  if (narrowedWouldReplaceWhole(dest, receipt.whole)) {
+    warn(
+      `ci-runner: a narrowed run does not replace the whole-lane receipt at ${dest}; that receipt is kept\n`
+    );
+    return;
+  }
   try {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.writeFileSync(dest, `${JSON.stringify(receipt, null, 2)}\n`);
