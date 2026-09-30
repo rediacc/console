@@ -170,6 +170,9 @@ DEFECT = _declared_defect()
 
 def run(command, broken=False, mutant=False):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(REPO))
+    # The guard takes its branch from PR_HEAD_REF / GITHUB_HEAD_REF before asking git, so in a PR run it judged the fixture as `0930-1` (no epic file) and the unknown-id probe could never block: green locally, red in CI (#591 run on e532e4ad5). The fixture's branch must come from the fixture. test_guard_chained_state.py scrubs the same names.
+    for name in ("PR_HEAD_REF", "GITHUB_HEAD_REF", "GIT_INDEX_FILE", "GIT_DIR"):
+        env.pop(name, None)
     payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
     if broken:
         code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), DEFECT, str(GUARD))
