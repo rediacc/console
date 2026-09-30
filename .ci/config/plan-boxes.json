@@ -2232,11 +2232,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-09-29",
-      "open": 3,
-      "done": 29,
+      "open": 2,
+      "done": 30,
       "open_sigs": [
         "3f2a10d5",
-        "652eaace",
         "ceca68dc"
       ],
       "done_sigs": [
@@ -2254,6 +2253,7 @@
         "5f91d28e",
         "6181b233",
         "63b346b7",
+        "652eaace",
         "65800f04",
         "6b325073",
         "6b5b7280",

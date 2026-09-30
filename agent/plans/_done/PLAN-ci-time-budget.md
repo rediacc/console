@@ -296,7 +296,8 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 
 Entry: P2 exit met, plus 5 consecutive full green runs with zero report-only violations.
 
-- [ ] T4.1 [C] Set `timeout-minutes: 15` or less on every job, in ci.yml and in each callee (a `uses:` caller cannot carry one). Today it reaches 90 and 100 (`.github/workflows/ct-tests.yml:241`, `:1091`, `:1667`). **This is the only per-job kill that exists**: the Actions API can cancel a whole run, not one job.
+- [x] T4.1 [C] Set `timeout-minutes: 15` or less on every job, in ci.yml and in each callee (a `uses:` caller cannot carry one). Today it reaches 90 and 100 (`.github/workflows/ct-tests.yml:241`, `:1091`, `:1667`). **This is the only per-job kill that exists**: the Actions API can cancel a whole run, not one job.
+    (ticked) 2026-09-30T11:07:16Z by d778be9d: ce8ac0ad5: timeout-minutes on every job in ci.yml and its ten callees, 15 or the ruled/deferred cap (K8s Ceph 25, Multinode 30, Ceph Workers non-apt 20, E2E Workers/Ceph Workers 18 #153aace7, build-renet 20 #2847e1b3); check-lane-budget check 7 at 0 findings; OPS Provision 5 legs
 - [x] T4.2 [A] Flip `WATCHDOG_BUDGET_MODE: enforce`.
   - A job crossing 15 or a run crossing 20 goes through `forceCancel` (`:888`, the single chokepoint), with `CI BUDGET VIOLATION: '<job>' ran <m>m (budget 15m)` in the roster annotation and `budget-violations.json`.
   - `CANCEL_EXEMPT_EVENTS` (`:54`, schedule and workflow_dispatch) stays report-only for the run-level cancel, so a nightly is never laundered to `cancelled`. `timeout-minutes` still kills its legs.
