@@ -297,11 +297,13 @@ Order matters. The cheap cuts come first, because each one lowers every later sh
 Entry: P2 exit met, plus 5 consecutive full green runs with zero report-only violations.
 
 - [ ] T4.1 [C] Set `timeout-minutes: 15` or less on every job, in ci.yml and in each callee (a `uses:` caller cannot carry one). Today it reaches 90 and 100 (`.github/workflows/ct-tests.yml:241`, `:1091`, `:1667`). **This is the only per-job kill that exists**: the Actions API can cancel a whole run, not one job.
-- [ ] T4.2 [A] Flip `WATCHDOG_BUDGET_MODE: enforce`.
+- [x] T4.2 [A] Flip `WATCHDOG_BUDGET_MODE: enforce`.
   - A job crossing 15 or a run crossing 20 goes through `forceCancel` (`:888`, the single chokepoint), with `CI BUDGET VIOLATION: '<job>' ran <m>m (budget 15m)` in the roster annotation and `budget-violations.json`.
   - `CANCEL_EXEMPT_EVENTS` (`:54`, schedule and workflow_dispatch) stays report-only for the run-level cancel, so a nightly is never laundered to `cancelled`. `timeout-minutes` still kills its legs.
   - Main push follows D-W5.
-- [ ] T4.3 [A] `STUCK_THRESHOLD_MIN` (`:1045`, default 60) becomes 15. A leg killed by its timeout is then classified as a budget violation and not auto-retried (today a 15-min timeout counts as a "normal cancellation", which is retryable).
+    (ticked) 2026-09-30T10:46:35Z by d778be9d: 1d29c3ffb: WATCHDOG_BUDGET_MODE=enforce per job via forceCancel with the CI BUDGET VIOLATION annotation; new WATCHDOG_RUN_BUDGET_MODE=report keeps the run-level cancel report-only (#a631eaf1); 126 watchdog tests pass with HEAD controls
+- [x] T4.3 [A] `STUCK_THRESHOLD_MIN` (`:1045`, default 60) becomes 15. A leg killed by its timeout is then classified as a budget violation and not auto-retried (today a 15-min timeout counts as a "normal cancellation", which is retryable).
+    (ticked) 2026-09-30T10:46:59Z by d778be9d: 1d29c3ffb: STUCK_THRESHOLD_MIN 60 -> 15 (capped jobs use their cap); a leg killed at its 15-minute timeout is not retried (control: HEAD retried it); 126 watchdog tests pass
 - [ ] T4.4 [B] Turn on T3.1 check 7 (timeout of 15 or less on every job).
 - **Rollback:** one env value back to `report`. Timeouts stay.
 
