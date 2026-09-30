@@ -37,8 +37,9 @@ jobs:
     timeout-minutes: 20
     # packages: write pushes the baked image to ghcr.io/rediacc/ci-vm-bake with
     # github.token. The first push (run 36670172753) created the package PUBLIC,
-    # inheriting this public repository's visibility, not private; only the
-    # package settings page changes it, since no API sets package visibility.
+    # inheriting this public repository's visibility; the operator set it private
+    # on 2026-09-30 (ruling D1) through the package settings page, the only place
+    # that changes it, since no API sets package visibility.
     permissions:
       contents: read
       packages: write
