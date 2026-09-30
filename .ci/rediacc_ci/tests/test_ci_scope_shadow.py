@@ -294,9 +294,14 @@ NOT_A_RUN = (CARRIED,)
 
 SHA_RE = re.compile(r"\b[0-9a-f]{40}\b")
 
+# The runner's Node patch version, which a crash trace prints last. Recorded as v22.23.2; PR run 36669944808 got v22.23.3 and two cases went red on a runner image bump, not on the port. Masked on BOTH sides (see `compare`), because the recordings are frozen bytes.
+NODE_RE = re.compile(r"\bNode\.js v\d+\.\d+\.\d+\b")
+
 
 def mask(text: str, fixture: pathlib.Path) -> str:
-    return SHA_RE.sub("<sha>", text.replace(str(fixture), "<root>"))
+    return NODE_RE.sub(
+        "Node.js <version>", SHA_RE.sub("<sha>", text.replace(str(fixture), "<root>"))
+    )
 
 
 def artifacts(fixture: pathlib.Path, side: str) -> str:
@@ -368,7 +373,8 @@ def recorded(name: str) -> tuple[int, str, str, str]:
 
 
 def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str]:
-    want = recorded(name)
+    exit_code, *fields = recorded(name)
+    want = (exit_code, *(NODE_RE.sub("Node.js <version>", field) for field in fields))
     got = run(tmp_path, name)
     for index, field in enumerate(("exit", "stdout", "stderr", "artifacts")):
         assert got[index] == want[index], "%s: %s diverged:\n twin: %r\n port: %r" % (
