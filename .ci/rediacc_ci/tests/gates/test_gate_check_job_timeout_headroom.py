@@ -25,7 +25,17 @@ WORKFLOW_REL = ".github/workflows/ci.yml"
 LANE_DURATIONS_REL = ".ci/config/lane-durations.json"
 REAL_SCRIPT = paths.from_root(SCRIPT_REL)
 
+# D-W2: a job ci.yml (or a workflow it calls) reaches is the lane budget's, not this gate's. The two baseline jobs therefore live in a workflow ci.yml does NOT call, so the tests below exercise the 1.5x rule this gate keeps for non-budgeted jobs; the D-W2 tests move them into the ci.yml graph.
 FIXTURE_WORKFLOW = """name: Fake CI
+
+jobs:
+  lint:
+    name: Lint
+    timeout-minutes: 10
+"""
+
+RELEASE_REL = ".github/workflows/cd-release.yml"
+RELEASE_WORKFLOW = """name: Fake release
 
 jobs:
   validate-promotion:
@@ -56,14 +66,23 @@ exit 0
 """
 
 
-def _tree(tmp: Path, lane_durations: dict, workflow_text: str = FIXTURE_WORKFLOW) -> Path:
-    """A minimal tree at the SAME relative depth the script's own `parents[3]` expects: `<tmp>/.ci/scripts/quality/check_job_timeout_headroom.py`, `<tmp>/.github/workflows/ci.yml`, `<tmp>/.ci/config/lane-durations.json`."""
+def _tree(
+    tmp: Path,
+    lane_durations: dict,
+    workflow_text: str = FIXTURE_WORKFLOW,
+    extra_workflows: dict[str, str] | None = None,
+) -> Path:
+    """A minimal tree at the SAME relative depth the script's own `parents[3]` expects: `<tmp>/.ci/scripts/quality/check_job_timeout_headroom.py`, `<tmp>/.github/workflows/ci.yml` (plus `extra_workflows`, by default the uncalled release workflow holding the baseline jobs), `<tmp>/.ci/config/lane-durations.json`."""
     script_dst = tmp / SCRIPT_REL
     script_dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(REAL_SCRIPT, script_dst)
     workflow_dst = tmp / WORKFLOW_REL
     workflow_dst.parent.mkdir(parents=True, exist_ok=True)
     workflow_dst.write_text(workflow_text, encoding="utf-8")
+    for rel, text in (
+        {RELEASE_REL: RELEASE_WORKFLOW} if extra_workflows is None else extra_workflows
+    ).items():
+        (tmp / rel).write_text(text, encoding="utf-8")
     lane_dst = tmp / LANE_DURATIONS_REL
     lane_dst.parent.mkdir(parents=True, exist_ok=True)
     lane_dst.write_text(json.dumps(lane_durations, indent=2) + "\n", encoding="utf-8")
@@ -114,6 +133,7 @@ def test_reads_job_max_seconds_and_ignores_the_top_level_jobs_map(tmp_path):
     result = _run(tree, [])
     assert result.returncode == 0, result.stderr
     assert "2 job(s) keep at least 1.50x headroom" in result.stdout, result.stdout
+    assert "0 superseded" in result.stdout, result.stdout
 
 
 def test_stale_job_max_seconds_fires_even_with_a_fresh_top_level_refreshed_at():
@@ -262,3 +282,80 @@ def test_refresh_leaves_an_unmatched_job_unchanged_and_warns():
         assert "UNCHANGED" in result.stderr
         after = json.loads((tree / LANE_DURATIONS_REL).read_text())
         assert after["job_max_seconds"]["jobs"]["Stage Artifacts"]["observed_max_seconds"] == 111
+
+
+# --- D-W2: the lane budget supersedes the 1.5x rule for budgeted jobs -----------------
+
+TIGHT_CI = """name: Fake CI
+
+jobs:
+  validate-promotion:
+    name: Validate Promotion
+    timeout-minutes: 10
+  stage:
+    uses: ./.github/workflows/cd-stage.yml
+"""
+
+CALLED_STAGE = """name: Stage
+
+on:
+  workflow_call:
+
+jobs:
+  stage:
+    name: Stage Artifacts
+    timeout-minutes: 10
+"""
+
+
+def _tight_baseline() -> dict:
+    """Both jobs observed at 600 s: under a 10-minute timeout that is 1.00x, far below the 1.5x floor."""
+    data = json.loads(json.dumps(FRESH_HEADROOM_BASELINE))
+    data["job_max_seconds"]["refreshed_at"] = _iso(1)
+    for rec in data["job_max_seconds"]["jobs"].values():
+        rec["observed_max_seconds"] = 600
+    return data
+
+
+def test_budgeted_jobs_are_superseded_directly_and_through_a_called_workflow():
+    """MATCH: a job in ci.yml and a job in a workflow ci.yml calls are the lane budget's (check-lane-budget.ts checks 2 and 7), so 1.00x headroom is not a finding here; each is named as superseded."""
+    with harness.temp_dir() as tmp_path:
+        tree = _tree(
+            tmp_path,
+            _tight_baseline(),
+            workflow_text=TIGHT_CI,
+            extra_workflows={".github/workflows/cd-stage.yml": CALLED_STAGE},
+        )
+        result = _run(tree, [])
+    assert result.returncode == 0, result.stderr
+    assert "0 job(s) keep" in result.stdout, result.stdout
+    assert "2 superseded" in result.stdout, result.stdout
+    assert "Stage Artifacts: superseded by check:ci-lane-budget (D-W2)" in result.stdout
+    assert "Validate Promotion: superseded by check:ci-lane-budget (D-W2)" in result.stdout
+
+
+def test_the_same_tight_jobs_outside_the_ci_graph_still_fire():
+    """CONTROL for the test above: the identical 1.00x numbers in a workflow ci.yml does NOT call are still judged at 1.5x, so the skip is D-W2's partition and not a detector that went quiet."""
+    with harness.temp_dir() as tmp_path:
+        uncalled = TIGHT_CI.replace(
+            "  stage:\n    uses: ./.github/workflows/cd-stage.yml\n",
+            "  stage:\n    name: Stage Artifacts\n    timeout-minutes: 10\n",
+        )
+        tree = _tree(
+            tmp_path,
+            _tight_baseline(),
+            extra_workflows={RELEASE_REL: uncalled},
+        )
+        result = _run(tree, [])
+    assert result.returncode == 1, result.stdout
+    assert "Validate Promotion: timeout-minutes=10" in result.stderr, result.stderr
+    assert "Stage Artifacts: timeout-minutes=10" in result.stderr, result.stderr
+
+
+def test_a_ci_yml_with_no_jobs_is_refused_rather_than_superseding_nothing():
+    """An unreadable ci.yml would make the budgeted set empty and silently hand every job back to this gate; it is refused instead."""
+    with harness.temp_dir() as tmp_path:
+        tree = _tree(tmp_path, _tight_baseline(), workflow_text="name: Fake CI\n")
+        result = _run(tree, [])
+    assert result.returncode == 1
+    assert "parsed to zero jobs" in result.stderr, result.stderr

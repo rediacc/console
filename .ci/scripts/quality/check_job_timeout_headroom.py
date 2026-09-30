@@ -20,7 +20,9 @@ WHY A COMMITTED BASELINE INSTEAD OF A LIVE QUERY. `npm run ci` must work offline
 
 WHAT IT DOES NOT DO. It does not predict duration, and it cannot: promotion cost scales with the `edge` channel, which grows with every release. It only asserts that the margin between measured reality and the declared ceiling has not closed. Catching the creep still requires refreshing the baseline; the `stale baseline` check below is what stops that from being forgotten quietly.
 
-RETIRED INTO `.ci/config/lane-durations.json` (D-W2/T3.4, `agent/plans/PLAN-ci-time-budget.md`). `job-timeout-baseline.json` used to hold this gate's ONLY baseline; it is gone, folded into that file's `job_max_seconds` section, `{"refreshed_at": ..., "jobs": {name: {"observed_max_seconds", "samples"}}}` -- the exact shape `verdicts()`/`controls()` already expected, so neither changed. `job_max_seconds` carries its OWN `refreshed_at`, separate from the file's top-level one: `budget_report.py --refresh` (T3.2) stamps the top-level field for `jobs`/`units`, this script's OWN `--refresh` stamps `job_max_seconds.refreshed_at`, and a shared single timestamp would let either refresh silently un-stale the other half. The two jobs this gate still covers, `Validate Promotion` and `Stage Artifacts`, are direct `ci.yml` jobs (never lane-sharded), which is exactly why `scripts/gates/check-lane-budget.ts`'s lane-budget gate does not already cover them and this one still must.
+RETIRED INTO `.ci/config/lane-durations.json` (D-W2/T3.4, `agent/plans/PLAN-ci-time-budget.md`). `job-timeout-baseline.json` used to hold this gate's ONLY baseline; it is gone, folded into that file's `job_max_seconds` section, `{"refreshed_at": ..., "jobs": {name: {"observed_max_seconds", "samples"}}}` -- the exact shape `verdicts()`/`controls()` already expected, so neither changed. `job_max_seconds` carries its OWN `refreshed_at`, separate from the file's top-level one: `budget_report.py --refresh` (T3.2) stamps the top-level field for `jobs`/`units`, this script's OWN `--refresh` stamps `job_max_seconds.refreshed_at`, and a shared single timestamp would let either refresh silently un-stale the other half.
+
+D-W2: THE LANE BUDGET SUPERSEDES THIS RULE FOR BUDGETED JOBS (2026-09-30). `scripts/gates/check-lane-budget.ts` budgets every job of ci.yml and its callees: its check 2 holds the measured p90 at 12 minutes (or a ruled cap) and its check 7 holds `timeout-minutes` at 15 (or the ruled timeout), which leaves no room for a 1.5x margin over the worst case and makes the two rules contradict. A baseline job whose display name that graph reaches (`lane_budgeted_names`) is printed as superseded and not judged here; a baseline job outside it (a workflow ci.yml does not call) keeps the 1.5x rule and the freshness check. `Validate Promotion` and `Stage Artifacts`, the two jobs the baseline names today, are both inside it.
 
 ---- gate ----
 step: CI job timeout headroom
@@ -89,6 +91,66 @@ def job_timeouts(root):
     return found
 
 
+def lane_budgeted_names(root):
+    """Every job display name `scripts/gates/check-lane-budget.ts` budgets: each job of ci.yml and, transitively, of every reusable workflow it calls (`uses: ./.github/workflows/<file>`), by its `name:` (its id when it has none).
+
+    D-W2 (PLAN-ci-time-budget, Operator rulings): for a budgeted job the lane gate SUPERSEDES the 1.5x headroom rule. That gate walks exactly this graph for its check 2 (measured p90 at 12 minutes or its ruled cap) and check 7 (timeout-minutes at 15 or its ruled cap), so a job it reaches is judged there and skipped here. The walk mirrors its `workflowJobs` parse: jobs at two spaces, `name:`/`uses:` at four. A ci.yml that parses to no job raises, because an empty set would silently put every baseline job back under this gate and hide a broken reader.
+    """
+    names = set()
+    seen = set()
+
+    def walk(rel):
+        if rel in seen:
+            return
+        seen.add(rel)
+        path = root / rel
+        if not path.is_file():
+            return
+        in_jobs = False
+        current = None
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if re.match(r"^jobs:\s*$", line):
+                in_jobs = True
+                continue
+            if not in_jobs:
+                continue
+            if line and not line[0].isspace() and not line.startswith("#"):
+                break
+            m = re.match(r"^  ([A-Za-z0-9_-]+):\s*$", line)
+            if m:
+                if current is not None:
+                    names.add(current["name"] or current["id"])
+                current = {"id": m.group(1), "name": None}
+                continue
+            if current is None:
+                continue
+            m = re.match(r"^    name:\s*(.+?)\s*$", line)
+            if m:
+                current["name"] = m.group(1).strip("\"'")
+                continue
+            m = re.match(r"^    uses:\s*\./(\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml)", line)
+            if m:
+                walk(m.group(1))
+        if current is not None:
+            names.add(current["name"] or current["id"])
+
+    walk(WORKFLOW)
+    if not names:
+        raise WorkflowUnreadableError(
+            "%s parsed to zero jobs, so which jobs check:ci-lane-budget covers cannot be "
+            "told; refusing to hand every baseline job back to this gate on an empty read"
+            % WORKFLOW
+        )
+    return names
+
+
+def split_budgeted(baseline_jobs, budgeted):
+    """(judged here, superseded by the lane budget): D-W2's partition of the baseline. Pure, so the controls can drive it."""
+    judged = {k: v for k, v in baseline_jobs.items() if k not in budgeted}
+    superseded = sorted(k for k in baseline_jobs if k in budgeted)
+    return judged, superseded
+
+
 def verdicts(baseline_jobs, timeouts):
     """Every complaint about this baseline. Pure, so the controls can drive it."""
     out = []
@@ -140,6 +202,11 @@ def controls(timeouts):
     missing = {"a job name that is not in the workflow": {"observed_max_seconds": 1}}
     if not verdicts(missing, timeouts):
         return "planted a baseline job absent from the workflow and the detector stayed silent"
+    # D-W2 in both directions: a budgeted job leaves this gate, a non-budgeted one stays under it.
+    rec = {"observed_max_seconds": 1}
+    judged, superseded = split_budgeted({"budgeted": rec, "not budgeted": rec}, {"budgeted"})
+    if superseded != ["budgeted"] or list(judged) != ["not budgeted"]:
+        return "the D-W2 split did not move exactly the lane-budgeted job out of this gate"
     return None
 
 
@@ -284,6 +351,7 @@ def main(argv=None):
 
     try:
         timeouts = job_timeouts(root)
+        budgeted = lane_budgeted_names(root)
     except WorkflowUnreadableError as exc:
         print("CANNOT READ THE WORKFLOWS, so no verdict is possible:\n  %s" % exc, file=sys.stderr)
         return 1
@@ -299,15 +367,24 @@ def main(argv=None):
         )
         return 1
 
-    stale = None
-    try:
-        age = dt.datetime.now(dt.UTC) - dt.datetime.fromisoformat(baseline["refreshed_at"])
-        if age.days > MAX_BASELINE_AGE_DAYS:
-            stale = age.days
-    except (KeyError, ValueError):
-        stale = -1
+    judged, superseded = split_budgeted(jobs, budgeted)
+    for name in superseded:
+        print(
+            "  %s: superseded by check:ci-lane-budget (D-W2), which budgets its p90 and its "
+            "timeout-minutes; not judged against %.1fx here" % (name, MIN_HEADROOM)
+        )
 
-    problems = verdicts(jobs, timeouts)
+    # Freshness guards the numbers this gate judges; a baseline whose every job the lane budget took over has none left to go stale (that gate's own check 5 guards its data).
+    stale = None
+    if judged:
+        try:
+            age = dt.datetime.now(dt.UTC) - dt.datetime.fromisoformat(baseline["refreshed_at"])
+            if age.days > MAX_BASELINE_AGE_DAYS:
+                stale = age.days
+        except (KeyError, ValueError, TypeError):
+            stale = -1
+
+    problems = verdicts(judged, timeouts)
     if stale is not None:
         problems.append(
             "the baseline itself is stale (%s), so these numbers no longer describe\n"
@@ -326,8 +403,9 @@ def main(argv=None):
         return 1
 
     print(
-        "%d job(s) keep at least %.2fx headroom under their timeout-minutes "
-        "(controls fired in both directions)" % (len(jobs), MIN_HEADROOM)
+        "%d job(s) keep at least %.2fx headroom under their timeout-minutes, "
+        "%d superseded by check:ci-lane-budget (D-W2) "
+        "(controls fired in both directions)" % (len(judged), MIN_HEADROOM, len(superseded))
     )
     return 0
 
