@@ -9,6 +9,22 @@ on:
         description: 'Force promotion (skip 7-day soak period)'
         type: boolean
         default: false
+  # Operator ruling 2026-09-30: a green NIGHTLY also releases edge to stable, in
+  # addition to the 06:00 soak run above. Every Console CI completion on main
+  # fires this; the promote job's `if:` keeps only the scheduled, successful
+  # ones, and check_soak_period waives the soak only when that nightly's head
+  # provably contains the edge tag's commit (rediacc_ci.release.nightly_tested_edge).
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+    branches: [main]
+
+# The 06:00 soak run, a nightly-triggered run and a manual dispatch must never
+# promote at the same time. Queued, never cancelled: a cancelled promotion
+# half-way through the R2/Docker writes is worse than a late one.
+concurrency:
+  group: promote-stable
+  cancel-in-progress: false
 
 # Every job below declares its own permissions, so this workflow-level default
 # is deliberately empty: a job added without a block gets nothing and fails
@@ -22,6 +38,13 @@ jobs:
   promote:
     name: Release to Production
     runs-on: ubuntu-latest
+    # workflow_run fires on EVERY Console CI completion on main (push, rehearsal,
+    # red or green); only a successful scheduled nightly may proceed. The
+    # schedule and workflow_dispatch triggers pass unconditionally, as before.
+    if: >-
+      github.event_name != 'workflow_run'
+      || (github.event.workflow_run.event == 'schedule'
+          && github.event.workflow_run.conclusion == 'success')
     # pull-requests: read for the `gh pr list --search label:rollback` guard,
     # packages: write because the stable retag does `buildx imagetools create`
     # (a push). This job only READS tags and releases, so contents stays read -
@@ -35,6 +58,12 @@ jobs:
       version: ${{ steps.edge.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full commit graph and tags, no blobs: the nightly waiver runs
+          # `git merge-base --is-ancestor v<edge>^{commit} <nightly head_sha>`,
+          # which a depth-1 checkout cannot answer (it would fall back to soak).
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Fetch secrets from Bitwarden
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
@@ -87,6 +116,9 @@ jobs:
         env:
           EDGE_DATE: ${{ steps.edge.outputs.date }}
           FORCE: ${{ inputs.force }}
+          PROMOTE_TRIGGER: ${{ github.event_name }}
+          EDGE_VERSION: ${{ steps.edge.outputs.version }}
+          NIGHTLY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_soak_period
 
       - name: Check for rollback labels
@@ -158,9 +190,8 @@ jobs:
             echo "## Stable Promotion"
             echo "- Edge version: ${{ steps.edge.outputs.version }}"
             echo "- Previous stable: ${{ steps.stable.outputs.version }}"
-            echo "- Soak days: ${{ env.SOAK_DAYS }}"
-            echo "- R2: CLI, APT, RPM, APK, Archlinux promoted"
-            echo "- Docker: all images retagged :edge -> :stable"
+            echo "- Trigger: ${{ github.event_name }}, decided by: ${{ steps.soak.outputs.path }} (soak days: ${{ env.SOAK_DAYS }})"
+            echo "- R2: CLI, APT, RPM, APK, Archlinux promoted; Docker: all images retagged :edge -> :stable"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # Deploy stable Workers from the exact tagged version
