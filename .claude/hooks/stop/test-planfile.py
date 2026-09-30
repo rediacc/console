@@ -151,6 +151,66 @@ control(
 generic = F.prepare([("dd44", " ", "in a single commit on the agreed convention")])
 control("CONTROL: shared filler words alone do not match", F.match_item(TASK_B, generic), None)
 
+# 2b. THE BOX ID FIRST (R20260925.6). The fixture is the four grouped items of 2026-09-24T19:51:08Z..24Z and the eight R20260924.16-.23 box lines they tracked; 0 of 8 may come out untracked.
+control(
+    "box_ids expands + and - shorthand",
+    sorted(F.box_ids("R20260924.20+21+23 and T2.3-5")),
+    ["R20260924.20", "R20260924.21", "R20260924.23", "T2.3", "T2.4", "T2.5"],
+)
+control(
+    "CONTROL: a lowercase version string is not a box id", F.box_ids("v1.4.0 and lp160.2.97"), set()
+)
+GROUPED = F.prepare(
+    [
+        (
+            "f44f5361",
+            " ",
+            "R20260924.16+17 (retro writer A): PostCompact attributes the compaction",
+        ),
+        ("7e168a56", " ", "R20260924.18+19 (retro writer B): sweep/proof discharge reads"),
+        (
+            "1e964aa7",
+            " ",
+            "R20260924.22 (retro writer C): pre-bash guards name a same-command mutator",
+        ),
+        (
+            "92daf4c1",
+            " ",
+            "R20260924.20+21+23 (after writer A): tick evidence resolves sibling-repo shas",
+        ),
+    ]
+)
+BOXES = {
+    16: "f44f5361",
+    17: "f44f5361",
+    18: "7e168a56",
+    19: "7e168a56",
+    20: "92daf4c1",
+    21: "92daf4c1",
+    22: "1e964aa7",
+    23: "92daf4c1",
+}
+control(
+    "all eight R20260924.16-.23 boxes resolve to their grouped item by id",
+    {
+        n: (
+            F.match_item("**R20260924.%d** some box wording nobody quoted" % n, GROUPED) or (None,)
+        )[0]
+        for n in BOXES
+    },
+    BOXES,
+)
+control(
+    "CONTROL: a box id no item names falls back to word matching, and matches nothing here",
+    F.match_item("**R20260924.24** some box wording nobody quoted", GROUPED),
+    None,
+)
+control(
+    "an open item naming the id beats a closed one",
+    F.match_item("**T4.1** x", F.prepare([("old1", "x", "T4.1 done"), ("new1", " ", "T4.1 redo")])),
+    ("new1", " "),
+)
+
 # --------------------------------------------------------------------------- 3. RECONCILE, all three findings and the silence beside each. ---------------------------------------------------------------------------
 un, stale, reop = F.reconcile([TASK_A, TASK_B], [], [])
 control(

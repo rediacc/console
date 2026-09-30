@@ -232,16 +232,39 @@ def _toks(s):
     return set(P._norm(s).split())
 
 
-def prepare(rows):
-    """[(id, state, tokens)] -- the item side tokenised ONCE.
+# A box id: `R20260924.16`, `W7P5.3`, `T4.1` -- a letter-led prefix, a dot, a number -- then the grouped shorthand an item uses for several boxes at once: `+17+18` adds those numbers, `-23` runs to 23 (R20260925.6).
+BOX_ID_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\.(\d+)((?:[+-]\d+)*)(?![\d.])")
 
-    Not an optimisation for its own sake: `reconcile` asks about every task, so tokenising inside the inner loop is items x tasks (48 x 22 on this repo's live plan) of work on the path that lets every session end a turn.
+
+def box_ids(text):
+    """Every box id `text` names, the `+N` and `-N` shorthand expanded: `R20260924.20+21+23` -> {R20260924.20, .21, .23}; `T2.3-5` -> {T2.3, T2.4, T2.5}."""
+    out: set[str] = set()
+    for m in BOX_ID_RE.finditer(text):
+        prefix, n = m.group(1), int(m.group(2))
+        nums = {n}
+        last = n
+        for op, raw in re.findall(r"([+-])(\d+)", m.group(3)):
+            v = int(raw)
+            if op == "+":
+                nums.add(v)
+            elif v >= last:
+                nums.update(range(last, v + 1))
+            last = v
+        out.update("%s.%d" % (prefix, k) for k in nums)
+    return out
+
+
+def prepare(rows):
+    """[(id, state, tokens, box_ids)] -- the item side tokenised ONCE.
+
+    Not an optimisation for its own sake: `reconcile` asks about every task, so tokenising inside the inner loop is items x tasks (48 x 22 on this repo's live plan) of work on the path that lets every session end a turn. An item too short to fingerprint is still kept when it names a box id, since the id alone identifies it.
     """
     out = []
     for iid, state, text in rows:
         toks = _toks(text)
-        if len(toks) >= P.MIN_MATCH_TOKENS:
-            out.append((iid, state, toks))
+        ids = box_ids(text)
+        if len(toks) >= P.MIN_MATCH_TOKENS or ids:
+            out.append((iid, state, toks, ids))
     return out
 
 
@@ -252,11 +275,20 @@ def match_item(task, prepared):
 
     Containment in EITHER direction at wl_planfid.TASK_MATCH: an item that quotes a long task line, and an item whose wording the task line is a short version of, are both tracking. Generous on purpose -- see the module docstring on which direction a wrong answer costs more. Ties break on the strongest overlap so the id quoted back is the best one, not the first one; a tie AT the same overlap prefers a non-closed item over a closed one, since first-wins-on-ties otherwise means re-adding a box after ticking its original item under near-identical wording matches the dead item forever (found 2026-09-23: PLAN-tooling-transformation.md's W7P5-a/W1P6 boxes kept reporting stale_open against their own already-ticked originals, because the ticked item was earlier in fold order than the fresh replacement and both scored identically).
     """
+    # THE BOX ID FIRST (R20260925.6). A task that leads with its id (`**R20260924.16** ...`) is tracked by any item naming that id, `+`/`-` shorthand included: four grouped items (`R20260924.16+17`, `.18+19`, `.22`, `.20+21+23`) tracked eight boxes on 2026-09-24 and word overlap alone called most of them untracked. An open item beats a closed one.
+    lead = BOX_ID_RE.match(re.sub(r"^[*_`\s]+", "", task))
+    if lead is not None:
+        want = "%s.%s" % (lead.group(1), lead.group(2))
+        by_id = [(iid, state) for iid, state, _t, ids in prepared if want in ids]
+        if by_id:
+            return next(((i, s) for i, s in by_id if s not in CLOSED_STATES), by_id[0])
     tt = _toks(task)
     if len(tt) < P.MIN_MATCH_TOKENS:
         return None
     best = None
-    for iid, state, it in prepared:
+    for iid, state, it, _ids in prepared:
+        if len(it) < P.MIN_MATCH_TOKENS:
+            continue
         inter = len(tt & it)
         if not inter:
             continue
