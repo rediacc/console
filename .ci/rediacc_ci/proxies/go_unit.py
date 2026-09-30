@@ -138,9 +138,58 @@ def _count_lines(text: str, pattern: re.Pattern[str] | str) -> int:
     return sum(1 for line in lines if pattern.search(line))
 
 
-# `grep -cE '^(ok|---)'` (:148) and `grep -cE '^(ok|FAIL|\?)'` (:150).
-OK_RE = re.compile(r"^(ok|---)")
-REPORTED_RE = re.compile(r"^(ok|FAIL|\?)")
+# `grep -cE '^ok[[:blank:]]'` and `grep -cE '^(ok|FAIL|\?)[[:blank:]]+[^[:blank:]]'`. A result line NAMES its package; the bare `FAIL` go test prints after a failing package's output, and once more at the end of a failing run, is not one. Until 2026-09-30 both counts were
+# `^(ok|---)` / `^(ok|FAIL|\?)`, so one failing package among 65 read as "67 result lines for 65 packages" (CI run 36701282219) and every `--- FAIL` header counted as ok. The twin's comment carries the full story.
+OK_RE = re.compile(r"^ok[ \t]")
+REPORTED_RE = re.compile(r"^(ok|FAIL|\?)[ \t]+[^ \t]")
+
+# The failure-evidence filter, the twin's awk program line for line. Each `--- FAIL` header (a subtest's is indented) and each `panic:` opens a block that keeps up to FAIL_LINES following lines, until the next result or header line; a cut block says so. The old `grep -E '^(FAIL|---|\s+---)'` kept the header and dropped the t.Errorf text under it.
+FAIL_LINES = 60
+_BLOCK_OPEN_RE = re.compile(r"^(---|[ \t]+---) FAIL|^panic: ")
+_HEADER_RE = re.compile(r"^(FAIL|---|[ \t]+---)")
+_RESULT_RE = re.compile(r"^(ok|\?)[ \t]")
+
+
+def _lines(text: str) -> list[str]:
+    """The lines awk and grep read from a file: a final newline ends the last line rather than opening an empty one."""
+    if not text:
+        return []
+    lines = text.split("\n")
+    if text.endswith("\n"):
+        lines.pop()
+    return lines
+
+
+def failure_evidence(stdout: str, max_lines: int = FAIL_LINES) -> list[str]:
+    """The twin's awk program over `go test` stdout: every failing test's header AND its own output, bounded per test."""
+    out: list[str] = []
+    left = 0
+    blk = False
+    for line in _lines(stdout):
+        if _BLOCK_OPEN_RE.search(line):
+            out.append(line)
+            left, blk = max_lines, True
+            continue
+        if _HEADER_RE.search(line):
+            out.append(line)
+            blk = False
+            continue
+        if _RESULT_RE.search(line):
+            blk = False
+            continue
+        if blk and left > 0:
+            out.append(line)
+            left -= 1
+            continue
+        if blk:
+            out.append(f"    ... (cut at {max_lines} line(s) for this test)")
+            blk = False
+    return out
+
+
+def reported_packages(stdout: str) -> list[str]:
+    r"""`awk '/^(ok|FAIL|\?)[ \t]+[^ \t]/ { print $2 }'`: the package each result line names."""
+    return [line.split()[1] for line in _lines(stdout) if REPORTED_RE.search(line)]
 
 
 def run() -> int:
@@ -232,9 +281,10 @@ def run() -> int:
     else:
         p.bad(f"go test exited {rc}")
         print("  --- go test stdout (failures) ---", file=sys.stderr)
-        # `grep -E '^(FAIL|---|\s+---)' "$OUT" >&2 || tail -40 "$OUT" >&2`: the tail is the FALLBACK taken only when grep matched nothing at all.
-        fail_re = re.compile(r"^(FAIL|---|\s+---)")
-        hits = [line for line in proc.stdout.split("\n") if fail_re.search(line)]
+        # The twin's awk block filter; `tail -40` stays the fallback taken only when it kept nothing at all. `$(...)` strips trailing newlines, so a trailing empty kept line is dropped on both sides.
+        hits = failure_evidence(proc.stdout)
+        while hits and hits[-1] == "":
+            hits.pop()
         if hits:
             for line in hits:
                 print(line, file=sys.stderr)
@@ -258,6 +308,10 @@ def run() -> int:
             f"go test reported {reported} result line(s) for {len(subset)} package(s); "
             "packages went missing from the run"
         )
+        seen = set(reported_packages(proc.stdout))
+        for ip in subset:
+            if ip not in seen:
+                print(f"  - no result line: {ip}", file=sys.stderr)
 
     return p.finish()
 

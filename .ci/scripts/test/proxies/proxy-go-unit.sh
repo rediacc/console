@@ -158,7 +158,29 @@ if [[ $RC -eq 0 ]]; then
 else
     proxy_fail "go test exited $RC"
     echo "  --- go test stdout (failures) ---" >&2
-    grep -E '^(FAIL|---|\s+---)' "$OUT" >&2 || tail -40 "$OUT" >&2
+    # THE FAILING TEST'S OWN OUTPUT IS THE EVIDENCE. Until 2026-09-30 this was
+    # `grep -E '^(FAIL|---|\s+---)'`, which kept the `--- FAIL: TestX` header and
+    # dropped every indented line under it -- the t.Errorf/t.Fatalf text, the
+    # test's log, a `TempDir RemoveAll cleanup` error from the testing package.
+    # CI run 36701282219 reported `--- FAIL: TestPrereqScriptFailedCephInstallFails`
+    # and nothing else, so the flake could not name itself. Now each
+    # `--- FAIL` header (a subtest's is indented) and each `panic:` opens a
+    # block that keeps up to $FAIL_LINES following lines, until the next result
+    # or header line; a cut block says so. The tail stays the fallback for
+    # output with no header at all (a build failure prints none).
+    FAIL_LINES=60
+    HITS="$(awk -v max="$FAIL_LINES" '
+        /^(---|[ \t]+---) FAIL/ || /^panic: / { print; left = max; blk = 1; next }
+        /^(FAIL|---|[ \t]+---)/ { print; blk = 0; next }
+        /^(ok|\?)[ \t]/ { blk = 0; next }
+        blk && left > 0 { print; left--; next }
+        blk { print "    ... (cut at " max " line(s) for this test)"; blk = 0 }
+    ' "$OUT")"
+    if [[ -n "$HITS" ]]; then
+        printf '%s\n' "$HITS" >&2
+    else
+        tail -40 "$OUT" >&2
+    fi
     echo "  --- go test stderr (last 40) ---" >&2
     tail -40 "$ERR" >&2
 fi
@@ -166,13 +188,31 @@ fi
 # `go test` prints one result line per package. Fewer than the subset size means
 # packages silently dropped out of the invocation, which exits 0 and looks
 # exactly like success.
-OKN=$(grep -cE '^(ok|---)' "$OUT" || true)
+#
+# A RESULT LINE NAMES ITS PACKAGE: `ok  <TAB>pkg`, `FAIL<TAB>pkg`, `?   <TAB>pkg`.
+# Until 2026-09-30 the count was `^(ok|FAIL|\?)`, which also matched the BARE
+# `FAIL` line go test prints after a failing package's output and the bare
+# `FAIL` it prints once at the very end of a failing run, so one failing
+# package among 65 read as "67 result lines for 65 packages; packages went
+# missing" (CI run 36701282219) -- a false second finding stacked on the real
+# one. `ok` was counted as `^(ok|---)`, so every `--- FAIL` header counted as
+# a pass. A mismatch now names the packages that have no result line.
+OKN=$(grep -cE '^ok[[:blank:]]' "$OUT" || true)
 NOTESTS=$(grep -c 'no test files' "$OUT" || true)
-REPORTED=$(grep -cE '^(ok|FAIL|\?)' "$OUT" || true)
+REPORTED=$(grep -cE '^(ok|FAIL|\?)[[:blank:]]+[^[:blank:]]' "$OUT" || true)
 if [[ "$REPORTED" -eq "${#SUBSET[@]}" ]]; then
     proxy_pass "go test reported one result line per package ($REPORTED of ${#SUBSET[@]}); $OKN ok, $NOTESTS with no test files"
 else
     proxy_fail "go test reported $REPORTED result line(s) for ${#SUBSET[@]} package(s); packages went missing from the run"
+    SEEN="$(awk '/^(ok|FAIL|\?)[ \t]+[^ \t]/ { print $2 }' "$OUT")"
+    for ip in "${SUBSET[@]}"; do
+        # A whole-line match without a pipe: `grep -q` could SIGPIPE the printf
+        # under pipefail and read as "missing".
+        case $'\n'"$SEEN"$'\n' in
+            *$'\n'"$ip"$'\n'*) ;;
+            *) echo "  - no result line: $ip" >&2 ;;
+        esac
+    done
 fi
 
 proxy_finish

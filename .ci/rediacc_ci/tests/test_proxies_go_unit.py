@@ -159,7 +159,10 @@ def assert_same(
 
 
 def _mask(text: str) -> str:
-    return re.sub(r"[0-9]+\.[0-9]+s", "<t>", text)
+    # A panic's goroutine trace carries pointer values and goroutine ids, which differ run to run exactly as the wall times do.
+    text = re.sub(r"[0-9]+\.[0-9]+s", "<t>", text)
+    text = re.sub(r"goroutine [0-9]+", "goroutine <g>", text)
+    return re.sub(r"0x[0-9a-f]+", "<p>", text)
 
 
 def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
@@ -319,6 +322,74 @@ def test_a_planted_failing_test_is_reported_by_both_sides(tmp_path: pathlib.Path
     assert old.returncode == 1
     assert "go test exited 1" in old.stderr
     assert "--- FAIL: TestB" in old.stderr
+    # The failing test's OWN line, not only its header (CI run 36701282219 showed the header alone).
+    assert re.search(r"^    beta_test\.go:\d+: planted failure$", old.stderr, re.MULTILINE), (
+        old.stderr
+    )
+    # One failing package among two is still two result lines: the bare `FAIL` lines are not results.
+    assert "one result line per package (2 of 2); 1 ok, 0 with no test files" in old.stdout
+    assert "packages went missing" not in old.stderr
+    assert_same(old, new)
+
+
+# A failing test whose message spans many lines, a subtest failure, and a
+# panicking package: the three shapes the evidence filter must keep.
+NOISY = {
+    f"{RENET}/pkg/beta/beta_test.go": (
+        'package beta\n\nimport (\n\t"fmt"\n\t"strings"\n\t"testing"\n)\n\n'
+        "func TestLong(t *testing.T) {\n"
+        '\tvar b strings.Builder\n\tfor i := 1; i <= 100; i++ { fmt.Fprintf(&b, "row %03d\\n", i) }\n'
+        '\tt.Errorf("script output:\\n%s", b.String())\n}\n\n'
+        "func TestSub(t *testing.T) {\n"
+        '\tt.Log("outer log line")\n'
+        '\tt.Run("inner", func(t *testing.T) { t.Fatal("inner assertion text") })\n}\n'
+    ),
+    f"{RENET}/pkg/gamma/gamma_test.go": (
+        'package gamma\n\nimport "testing"\n\n'
+        'func TestPanics(t *testing.T) { panic("gamma exploded") }\n'
+    ),
+}
+
+
+def test_the_failing_tests_own_output_is_kept_and_bounded(tmp_path: pathlib.Path) -> None:
+    fixture = build_fixture(tmp_path, files={**PLAIN, **NOISY})
+    old, new = run_both(fixture)
+    assert old.returncode == 1
+    err = old.stderr
+    assert "--- FAIL: TestLong" in err
+    assert "        row 001" in err
+    # 60 lines kept after the header: the message line and rows 001-059.
+    assert "        row 059" in err
+    assert "row 060" not in err
+    assert "    ... (cut at 60 line(s) for this test)" in err
+    assert "outer log line" in err
+    assert "    --- FAIL: TestSub/inner" in err
+    assert "inner assertion text" in err
+    assert "panic: gamma exploded" in err
+    # Three packages, two failing: three result lines, however many bare FAIL lines go test adds.
+    assert "one result line per package (3 of 3); 1 ok, 0 with no test files" in old.stdout
+    assert_same(old, new)
+
+
+def test_a_package_with_no_result_line_is_named(tmp_path: pathlib.Path) -> None:
+    """The branch the count exists for, driven: `go test` reports one of the two subset packages and exits 0."""
+    real_go = shutil.which("go")
+    assert real_go
+    shim = tmp_path / "shim"
+    shim.mkdir()
+    (shim / "go").write_text(
+        "#!/bin/bash\n"
+        "if [ \"$1\" = test ]; then printf 'ok  \\tscratch/renet/pkg/alpha\\t0.001s\\n'; exit 0; fi\n"
+        f'exec {real_go} "$@"\n',
+        encoding="utf-8",
+    )
+    (shim / "go").chmod(0o755)
+    fixture = build_fixture(tmp_path, files=PLAIN)
+    old, new = run_both(fixture, path=f"{shim}:{os.environ.get('PATH', '/usr/bin:/bin')}")
+    assert old.returncode == 1
+    assert "go test reported 1 result line(s) for 2 package(s)" in old.stderr
+    assert "  - no result line: scratch/renet/pkg/beta\n" in old.stderr
+    assert "no result line: scratch/renet/pkg/alpha" not in old.stderr
     assert_same(old, new)
 
 
@@ -401,6 +472,65 @@ def test_subset_of_strips_the_cwd_prefix_and_honours_the_exclusion() -> None:
     assert go_unit.subset_of(cands, "/w", []) == ["m/pkg/a", "m/pkg/b"]
     # A directory outside the cwd keeps its absolute path and matches nothing.
     assert go_unit.subset_of(["m/x 1 0 /other/x"], "/w", ["x"]) == ["m/x"]
+
+
+# `go test -count=1 ./a ./b ./c` with ./a failing, ./c test-less, as go 1.26 prints it: the bare `FAIL` after a failing package's output and the bare `FAIL` closing a failing run are NOT result lines.
+GO_TEST_STDOUT = (
+    "--- FAIL: TestA (0.00s)\n"
+    "    a_test.go:3: boom\n"
+    "        second line\n"
+    "        \n"
+    "        after blank\n"
+    "    --- FAIL: TestA/sub (0.00s)\n"
+    "        a_test.go:3: subfail\n"
+    "FAIL\n"
+    "FAIL\tx/a\t0.004s\n"
+    "ok  \tx/b\t0.003s\n"
+    "?   \tx/c\t[no test files]\n"
+    "FAIL\n"
+)
+
+
+def test_the_result_count_ignores_the_bare_fail_lines() -> None:
+    """The false "67 result lines for 65 packages" of CI run 36701282219, with its control."""
+    assert go_unit._count_lines(GO_TEST_STDOUT, go_unit.REPORTED_RE) == 3
+    assert go_unit.reported_packages(GO_TEST_STDOUT) == ["x/a", "x/b", "x/c"]
+    assert go_unit._count_lines(GO_TEST_STDOUT, go_unit.OK_RE) == 1
+    # CONTROL: the pre-fix patterns over the same bytes produce exactly the reported miscount (+2 for one failing package) and count the two `--- FAIL` headers' top-level one as ok.
+    assert go_unit._count_lines(GO_TEST_STDOUT, re.compile(r"^(ok|FAIL|\?)")) == 5
+    assert go_unit._count_lines(GO_TEST_STDOUT, re.compile(r"^(ok|---)")) == 2
+
+
+def test_failure_evidence_keeps_the_assertion_text() -> None:
+    kept = go_unit.failure_evidence(GO_TEST_STDOUT)
+    assert kept == [
+        "--- FAIL: TestA (0.00s)",
+        "    a_test.go:3: boom",
+        "        second line",
+        "        ",
+        "        after blank",
+        "    --- FAIL: TestA/sub (0.00s)",
+        "        a_test.go:3: subfail",
+        "FAIL",
+        "FAIL\tx/a\t0.004s",
+        "FAIL",
+    ]
+    # CONTROL: the pre-fix grep kept the headers and none of the assertion text.
+    old = [ln for ln in GO_TEST_STDOUT.split("\n") if re.search(r"^(FAIL|---|\s+---)", ln)]
+    assert not any("boom" in ln or "subfail" in ln for ln in old)
+
+
+def test_failure_evidence_cuts_a_block_and_says_so() -> None:
+    body = "".join(f"    row {i}\n" for i in range(1, 11))
+    kept = go_unit.failure_evidence("--- FAIL: TestX (0.00s)\n" + body + "FAIL\n", max_lines=3)
+    assert kept == [
+        "--- FAIL: TestX (0.00s)",
+        "    row 1",
+        "    row 2",
+        "    row 3",
+        "    ... (cut at 3 line(s) for this test)",
+        "FAIL",
+    ]
 
 
 def test_the_documented_predicate_matches_the_grep_character_for_character() -> None:
