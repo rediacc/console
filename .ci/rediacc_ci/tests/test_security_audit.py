@@ -1270,3 +1270,119 @@ def test_jq_empty_matches_the_real_jq(tmp_path: pathlib.Path, text: str, valid: 
     real = subprocess.run(["jq", "empty", str(path)], capture_output=True, check=False, timeout=60)
     assert (real.returncode == 0) is valid, "jq changed its mind about %r" % text
     assert port.jq_empty(str(path)) is valid
+
+
+# --------------------------------------------------------------------------- a GHSA with several vulnerable lines ---------------------------------------------------------------------------
+
+# GHSA-q2hr-2g5m-vwhr as the Advisory Database serves it: four release lines, the 1.x line LAST.
+GHSA_BRACE_EXPANSION = {
+    "description": "brace-expansion ReDoS",
+    "vulnerabilities": [
+        {
+            "package": {"ecosystem": "npm", "name": "brace-expansion"},
+            "vulnerable_version_range": ">= 4.0.0, < 5.0.12",
+            "first_patched_version": "5.0.12",
+        },
+        {
+            "package": {"ecosystem": "npm", "name": "brace-expansion"},
+            "vulnerable_version_range": ">= 3.0.0, < 3.0.9",
+            "first_patched_version": "3.0.9",
+        },
+        {
+            "package": {"ecosystem": "npm", "name": "brace-expansion"},
+            "vulnerable_version_range": ">= 2.0.0, < 2.1.7",
+            "first_patched_version": "2.1.7",
+        },
+        {
+            "package": {"ecosystem": "npm", "name": "brace-expansion"},
+            "vulnerable_version_range": "< 1.1.21",
+            "first_patched_version": "1.1.21",
+        },
+    ],
+}
+
+# The `npm audit --json` shape for the tree that held brace-expansion 1.1.18: npm's source for the 1.x line carries its own `range`.
+AUDIT_BRACE_EXPANSION = {
+    "vulnerabilities": {
+        "brace-expansion": {
+            "name": "brace-expansion",
+            "range": "<=1.1.20",
+            "nodes": ["node_modules/brace-expansion"],
+            "via": [
+                {
+                    "source": 1200001,
+                    "name": "brace-expansion",
+                    "dependency": "brace-expansion",
+                    "title": "brace-expansion ReDoS",
+                    "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr",
+                    "severity": "moderate",
+                    "range": "<=1.1.20",
+                }
+            ],
+        }
+    },
+    "metadata": {"vulnerabilities": {"total": 1}},
+}
+
+
+def test_a_multi_line_ghsa_prints_the_line_npm_flagged() -> None:
+    """The 1.x line is printed for a 1.x install, not the GHSA's first (5.x) line."""
+    via = port.program_via_ranges(AUDIT_BRACE_EXPANSION)
+    assert via == {"1200001": ("brace-expansion", "<=1.1.20")}
+    row = port.program_details(GHSA_BRACE_EXPANSION, via["1200001"])
+    assert port.bash_read_fields(row, 3)[:2] == ["< 1.1.21", "1.1.21"]
+
+
+def test_the_pre_fix_selection_printed_the_patched_line() -> None:
+    """The control: without npm's range the old `.vulnerabilities[0]` pick is the 4.x line.
+
+    That is the row the twin rendered, and the one this fix exists to replace; with no range to narrow by, every line is printed rather than it alone.
+    """
+    first = port.jq_index0(GHSA_BRACE_EXPANSION["vulnerabilities"])
+    assert first["vulnerable_version_range"] == ">= 4.0.0, < 5.0.12"
+    unnarrowed = port.bash_read_fields(port.program_details(GHSA_BRACE_EXPANSION), 3)
+    assert unnarrowed[0] == (
+        ">= 4.0.0, < 5.0.12 (patched in 5.0.12); >= 3.0.0, < 3.0.9 (patched in 3.0.9); "
+        ">= 2.0.0, < 2.1.7 (patched in 2.1.7); < 1.1.21 (patched in 1.1.21)"
+    )
+    assert unnarrowed[1] != "5.0.12"
+
+
+def test_a_multi_line_ghsa_renders_the_1x_line_through_the_emitter(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """End to end: report -> `build_advisory_map` -> cached GHSA -> `emit_advisory`'s `Affected:` line."""
+    monkeypatch.chdir(tmp_path)
+    report = tmp_path / "audit-report.json"
+    report.write_text(json.dumps(AUDIT_BRACE_EXPANSION), encoding="utf-8")
+    cache = tmp_path / port.ADVISORY_CACHE_DIR
+    cache.mkdir()
+    (cache / "GHSA-q2hr-2g5m-vwhr.json").write_text(
+        json.dumps(GHSA_BRACE_EXPANSION), encoding="utf-8"
+    )
+    gate = port.Audit()
+    gate.build_advisory_map(str(report))
+    gate.emit("warn", "1200001", "brace-expansion", "")
+    out = capsys.readouterr().out
+    assert "  Affected: < 1.1.21  →  Patched in: 1.1.21" in out
+    assert "5.0.12" not in out
+
+
+@pytest.mark.parametrize(
+    ("npm_range", "expected"),
+    [
+        (">=4.0.0 <5.0.12", ">= 4.0.0, < 5.0.12"),
+        ("2.0.0 - 2.1.6", ">= 2.0.0, < 2.1.7"),
+        ("<=1.1.20 || >=3.0.0 <3.0.9", None),
+    ],
+)
+def test_npm_range_spellings_narrow_the_ghsa(npm_range: str, expected: str | None) -> None:
+    """npm's comparator, hyphen and `||` spellings all meet the Advisory Database's comma form."""
+    row = port.program_details(GHSA_BRACE_EXPANSION, ("brace-expansion", npm_range))
+    got = port.bash_read_fields(row, 3)[0]
+    if expected is None:
+        assert got == ">= 3.0.0, < 3.0.9 (patched in 3.0.9); < 1.1.21 (patched in 1.1.21)"
+    else:
+        assert got == expected

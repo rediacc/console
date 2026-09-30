@@ -510,12 +510,151 @@ def program_advisory_map(document: object) -> list[str]:
     ]
 
 
-def program_details(document: object) -> str:
+def program_via_ranges(document: object) -> dict[str, tuple[str, str]]:
+    """`{source: (package name, npm's range)}` from every `via` object.
+
+    npm keys one advisory SOURCE per vulnerable line of a GHSA, and each `via` object carries that source's own `range` (`<=1.1.20` for brace-expansion's 1.x line of GHSA-q2hr-2g5m-vwhr, where the GHSA itself lists four lines). This is what `select_ghsa_lines` narrows the GHSA's `vulnerabilities[]` with. First in input order wins, as `unique_by` does in `program_advisory_map`.
+    """
+    out: dict[str, tuple[str, str]] = {}
+    for _key, entry in jq_to_entries(jq_index(document, "vulnerabilities")):
+        for via in jq_iterate(jq_index(entry, "via")):
+            if not isinstance(via, dict):
+                continue
+            source = jq_tostring(via.get("source"))
+            if source in out:
+                continue
+            name, npm_range = via.get("name"), via.get("range")
+            out[source] = (
+                name if isinstance(name, str) else "",
+                npm_range if isinstance(npm_range, str) else "",
+            )
+    return out
+
+
+_SEMVER_RE = re.compile(r"^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?(?:\+\S*)?$")
+_COMPARATOR_RE = re.compile(r"(<=|>=|<|>|=)?\s*(v?\d[0-9A-Za-z.+-]*|\*)")
+
+
+def _semver_key(text: str) -> tuple | None:
+    """An orderable key for one version, a prerelease sorting below its release. None if unparsable."""
+    match = _SEMVER_RE.match(text.strip())
+    if not match:
+        return None
+    major, minor, patch, pre = match.groups()
+    core = (int(major), int(minor or 0), int(patch or 0))
+    if pre is None:
+        return (*core, 1, ())
+    parts = tuple((0, int(p), "") if p.isdigit() else (1, 0, p) for p in pre.split("."))
+    return (*core, 0, parts)
+
+
+def _semver_intervals(text: str) -> list[tuple] | None:
+    """A range as `[(lo, lo_inclusive, hi, hi_inclusive)]`, one per `||` clause; None bounds are open.
+
+    Covers both spellings that reach this gate: npm's (`>=0.27.3 <0.28.1`, `2.1.0 - 4.1.10`, `*`) and the Advisory Database's (`>= 4.0.0, < 5.0.12`). Anything else answers None, and the caller then prints every line rather than guess.
+    """
+    out: list[tuple] = []
+    for raw_clause in text.split("||"):
+        clause = raw_clause.replace(",", " ").strip()
+        lo: tuple | None = None
+        lo_inc = True
+        hi: tuple | None = None
+        hi_inc = True
+        if " - " in clause:
+            left, right = (part.strip() for part in clause.split(" - ", 1))
+            lo, hi = _semver_key(left), _semver_key(right)
+            if lo is None or hi is None:
+                return None
+            out.append((lo, True, hi, True))
+            continue
+        rest = clause
+        while rest:
+            match = _COMPARATOR_RE.match(rest)
+            if not match:
+                return None
+            rest = rest[match.end() :].lstrip()
+            op, version = match.group(1) or "=", match.group(2)
+            if version == "*":
+                continue
+            key = _semver_key(version)
+            if key is None:
+                return None
+            if op in (">", ">=") and (lo is None or key > lo or (key == lo and op == ">")):
+                lo, lo_inc = key, op == ">="
+            if op in ("<", "<=") and (hi is None or key < hi or (key == hi and op == "<")):
+                hi, hi_inc = key, op == "<="
+            if op == "=":
+                lo, lo_inc, hi, hi_inc = key, True, key, True
+        out.append((lo, lo_inc, hi, hi_inc))
+    return out
+
+
+def _intervals_meet(left: list[tuple], right: list[tuple]) -> bool:
+    """True when any clause of one range shares a version with any clause of the other."""
+    for a_lo, a_lo_inc, a_hi, a_hi_inc in left:
+        for b_lo, b_lo_inc, b_hi, b_hi_inc in right:
+            candidates = [(k, inc) for k, inc in ((a_lo, a_lo_inc), (b_lo, b_lo_inc)) if k]
+            lo, lo_inc = (
+                max(candidates, key=lambda c: (c[0], not c[1])) if candidates else (None, True)
+            )
+            candidates = [(k, inc) for k, inc in ((a_hi, a_hi_inc), (b_hi, b_hi_inc)) if k]
+            hi, hi_inc = min(candidates, key=lambda c: (c[0], c[1])) if candidates else (None, True)
+            if lo is None or hi is None or lo < hi or (lo == hi and lo_inc and hi_inc):
+                return True
+    return False
+
+
+def select_ghsa_lines(lines: list, name: str, npm_range: str) -> list:
+    """The GHSA `vulnerabilities[]` entries that describe the line npm actually flagged.
+
+    A GHSA lists one entry per vulnerable release line; npm names the line it matched in the `via` object's `range`. An entry is kept when its package is the `via` package (when both are named) and its `vulnerable_version_range` meets npm's range. When that narrows nothing down to at least one entry -- no npm range, an unparsable one, no overlap -- EVERY entry comes back, never only the first.
+    """
+    candidates = [line for line in lines if isinstance(line, dict)]
+    if name:
+        named = [
+            line
+            for line in candidates
+            if not isinstance(line.get("package"), dict)
+            or line["package"].get("name") in (None, name)
+        ]
+        candidates = named or candidates
+    wanted = _semver_intervals(npm_range) if npm_range else None
+    if wanted is None:
+        return candidates
+    matched = []
+    for line in candidates:
+        ghsa_range = line.get("vulnerable_version_range")
+        have = _semver_intervals(ghsa_range) if isinstance(ghsa_range, str) and ghsa_range else None
+        if have is not None and _intervals_meet(wanted, have):
+            matched.append(line)
+    return matched or candidates
+
+
+def program_details(document: object, via: tuple[str, str] | None = None) -> str:
     """The GHSA-detail program at audit.sh:144-149, as one `@tsv` row.
 
     The three `gsub`s are jq REGEX substitutions, so `\\n+` collapses a run of newlines to ONE space and `\\*\\*|##|\\`` deletes the three markdown noises. `.[0:240]` slices CODEPOINTS, which Python string slicing also does.
+
+    A GHSA WITH SEVERAL VULNERABLE LINES IS NARROWED, NOT TRUNCATED. The twin took `.vulnerabilities[0]`, so GHSA-q2hr-2g5m-vwhr printed `>= 4.0.0, < 5.0.12 -> 5.0.12` while the tree's vulnerable copy was brace-expansion 1.1.18. `via` is the `(package, npm range)` pair `program_via_ranges` recorded for this advisory source, and `select_ghsa_lines` keeps the entries it matches. One entry left renders exactly as before; several render as `<range> (patched in <ver>)` pairs joined with `; ` in the range slot, patched slot empty. A single-entry GHSA takes the old path unchanged, DEFECT 3 included.
     """
-    first = jq_index0(jq_index(document, "vulnerabilities"))
+    lines = jq_index(document, "vulnerabilities")
+    if isinstance(lines, list) and len(lines) > 1:
+        name, npm_range = via or ("", "")
+        chosen = select_ghsa_lines(lines, name, npm_range)
+        if len(chosen) > 1:
+            pairs = []
+            for line in chosen:
+                line_range = jq_tostring(jq_alt(line.get("vulnerable_version_range"), ""))
+                line_patched = jq_tostring(jq_alt(line.get("first_patched_version"), ""))
+                pairs.append(
+                    "%s (patched in %s)"
+                    % (line_range or advisory.UNKNOWN_RANGE, line_patched or "none")
+                )
+            first = {"vulnerable_version_range": "; ".join(pairs), "first_patched_version": ""}
+        else:
+            first = chosen[0] if chosen else jq_index0(lines)
+    else:
+        first = jq_index0(lines)
     vuln_range = jq_alt(jq_index(first, "vulnerable_version_range"), "")
     patched = jq_alt(jq_index(first, "first_patched_version"), "")
     description = jq_alt(jq_index(document, "description"), "")
@@ -591,6 +730,8 @@ class Audit:
         # ADV_GHSA is read back by name (`"${ADV_GHSA[@]}"`, `"${!ADV_GHSA[@]}"`)
         # rather than only written, so it needs its own dict as well as its cell in the emitter's table.
         self.ghsa: dict[str, str] = {}
+        # `{source: (package, npm range)}` from the `via` objects, so a multi-line GHSA renders the line npm flagged; see `program_details`.
+        self.via_ranges: dict[str, tuple[str, str]] = {}
         # `DEFER_REASON`, a global the twin sets as an out-parameter.
         self.defer_reason = ""
         # `local stale_actionable=false` in main, written by check_stale_entries
@@ -660,6 +801,7 @@ class Audit:
             for document, end_line in documents(audit_json):
                 try:
                     lines.extend(program_advisory_map(document))
+                    self.via_ranges.update(program_via_ranges(document))
                 except JqError as exc:
                     # jq CONTINUES with the next input value after a runtime error rather than aborting the program; measured on jq 1.8.1 with a two-document file whose first document errored and whose second still printed.
                     print(jq_error(audit_json, end_line, str(exc)), file=sys.stderr, flush=True)
@@ -745,7 +887,10 @@ class Audit:
             if not os.path.isfile(cache):
                 continue
             try:
-                rendered = [program_details(document) for document, _ in documents(cache)]
+                rendered = [
+                    program_details(document, self.via_ranges.get(source))
+                    for document, _ in documents(cache)
+                ]
                 details = "\n".join(rendered)
             except (JqError, ValueError, OSError, UnicodeDecodeError) as exc:
                 # THE UNGUARDED ASSIGNMENT, AND THE SECOND HALF OF DEFECT 6.
