@@ -30,7 +30,9 @@ lane: quality-branch
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
@@ -38,7 +40,7 @@ import sys
 from typing import Any
 
 import _cipath  # noqa: F401
-from rediacc_ci import paths
+from rediacc_ci import log, paths
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 HOOK_DIR = os.path.join(REPO_ROOT, ".claude", "hooks", "stop")
@@ -239,6 +241,46 @@ def new_held_findings(ledger_plans):
     ]
 
 
+# --------------------------------------------------------------------------- FINDING KEYS (agent/plans/PLAN-carried-red-finding-keys.md). Each finding is printed with a `::finding::<key>` line, so a push that carries this gate carries its findings one by one and a NEW finding still refuses.
+
+
+class Finding(str):
+    """A finding message that also carries its key. A `str`, so every control that reads the message (`startswith`, `in`) reads it unchanged."""
+
+    __slots__ = ("key",)
+    key: str
+
+    def __new__(cls, message, key):
+        obj = super().__new__(cls, message)
+        obj.key = _safe_key(key)
+        return obj
+
+
+def _safe_key(key):
+    """`key` when it fits the alphabet and the length bound, else `<rule>:<sha256(key)[:12]>`: an over-long plan path must not turn a finding into an exception."""
+    if log.FINDING_KEY_RE.match(key):
+        return key
+    rule = key.split(":", 1)[0] or "key"
+    return "%s:%s" % (rule, hashlib.sha256(key.encode("utf-8")).hexdigest()[:12])
+
+
+def box_key(rule, rel, sig, extra=None):
+    """`<rule>:<rel>#<sig>[:<sha256(extra)[:12]>]`. The plan path and the box signature (check_plan_boxes.sig, a hash of the task text) are the finding's identity; neither moves when a commit, a date or a count does. `extra` separates two findings on one box, such as two dead pointers, and is hashed UNMASKED because a pointer's line number is part of which pointer it is."""
+    key = "%s:%s#%s" % (rule, rel, sig)
+    if extra is not None:
+        key += ":" + hashlib.sha256(extra.encode("utf-8")).hexdigest()[:12]
+    return key
+
+
+def key_of(finding):
+    """The key a finding is emitted under: its own when it carries one, else `<rule>:<hash of the masked message>` (log.finding_key), where the rule is the message's first word (`P-A1`, `P-A5`, ...)."""
+    key = getattr(finding, "key", None)
+    if key:
+        return key
+    rule = str(finding).split(" ", 1)[0].strip(":") or "finding"
+    return _safe_key(log.finding_key(rule, str(finding)))
+
+
 # --------------------------------------------------------------------------- P-A2/P-A3/P-A4, the forward-only proof. Every oracle is injected so the controls drive the same function the real run does.
 
 
@@ -320,35 +362,48 @@ def tick_findings(
         commit = done_commit_of(rel, sig)
         if not evidence_of(rel, sig):
             out.append(
-                "P-A2 %s box %s moved open -> done in %s with no `    (ticked) ` evidence line "
-                "beneath it. `worklist.py --plan-tick` writes that line; a box flipped with the "
-                "Edit tool leaves nothing a later reader can check." % (rel, sig, commit[:12])
+                Finding(
+                    "P-A2 %s box %s moved open -> done in %s with no `    (ticked) ` evidence line "
+                    "beneath it. `worklist.py --plan-tick` writes that line; a box flipped with the "
+                    "Edit tool leaves nothing a later reader can check." % (rel, sig, commit[:12]),
+                    box_key("P-A2:no-evidence", rel, sig),
+                )
             )
         row = row_of(rel, sig)
         if row is None:
             out.append(
-                "P-A2 %s box %s was closed with no row in agent/ledgers/plan-investigation.jsonl. "
-                "The rule is investigate, then implement, then tick -- so that a box already done "
-                "is closed by finding it rather than by doing it again. Record what was looked at:"
-                "\n    worklist.py --plan-investigate <me> %s %s <absent|present|partial> "
-                "<kind>:<token> <kind>:<token> -- <note> --write" % (rel, sig, rel, sig)
+                Finding(
+                    "P-A2 %s box %s was closed with no row in agent/ledgers/plan-investigation.jsonl. "
+                    "The rule is investigate, then implement, then tick -- so that a box already done "
+                    "is closed by finding it rather than by doing it again. Record what was looked at:"
+                    "\n    worklist.py --plan-investigate <me> %s %s <absent|present|partial> "
+                    "<kind>:<token> <kind>:<token> -- <note> --write" % (rel, sig, rel, sig),
+                    box_key("P-A2:no-row", rel, sig),
+                )
             )
             continue
         for kind, token in row.get("pointers") or []:
             ok, why = resolve_fn(kind, token)
             if not ok:
                 out.append(
-                    "P-A3 %s box %s: the investigation row's `%s:%s` pointer does not resolve in "
-                    "this checkout -- %s. The row's own `resolved` field is deliberately not "
-                    "read; a pointer that resolved on one machine and not here is the finding."
-                    % (rel, sig, kind, token, why)
+                    Finding(
+                        "P-A3 %s box %s: the investigation row's `%s:%s` pointer does not resolve in "
+                        "this checkout -- %s. The row's own `resolved` field is deliberately not "
+                        "read; a pointer that resolved on one machine and not here is the finding."
+                        % (rel, sig, kind, token, why),
+                        box_key("P-A3", rel, sig, "%s:%s" % (kind, token)),
+                    )
                 )
         head = str(row.get("head") or "").strip()
         if head and commit and not ancestor_fn(head, commit):
             out.append(
-                "P-A4 %s box %s: the investigation recorded HEAD=%s and the commit that ticked "
-                "the box (%s) is not a descendant of it, so the investigation was written after "
-                "the implementation rather than before it." % (rel, sig, head[:12], commit[:12])
+                Finding(
+                    "P-A4 %s box %s: the investigation recorded HEAD=%s and the commit that ticked "
+                    "the box (%s) is not a descendant of it, so the investigation was written after "
+                    "the implementation rather than before it."
+                    % (rel, sig, head[:12], commit[:12]),
+                    box_key("P-A4", rel, sig),
+                )
             )
     return out
 
@@ -696,6 +751,64 @@ def controls_fired(enforce, planfile, planrec=None):
         )
         is None,
     )
+
+    # C11 -- FINDING KEYS. The box C1 plants (no investigation row) must be emitted as `::finding::P-A2:no-row:<rel>#<sig>`, through the real emitter; and the SAME finding judged against a different ticking commit, head and date must keep the same key, or a carried finding would read as new every time the tree moved.
+    def keyed(commit, head, when):
+        base = {"agent/plans/_done/PLAN-k.md": {"open_sigs": ["aaaaaaaa"], "done_sigs": []}}
+        head_plans = {"agent/plans/_done/PLAN-k.md": {"open_sigs": [], "done_sigs": ["aaaaaaaa"]}}
+        with_row = dict(healthy_row, head=head)
+        no_row = tick_findings(
+            moved_to_done(base, head_plans),
+            lambda _r, _s: "",
+            lambda _r, _s: None,
+            lambda _k, _t: (True, "ok"),
+            lambda _r, _s: commit,
+            lambda _c: when,
+            lambda _a, _b: True,
+            "2026-01-01",
+        )
+        late = tick_findings(
+            moved_to_done(base, head_plans),
+            lambda _r, _s: "evidence",
+            lambda _r, _s: with_row,
+            lambda k, _t: (k != "commit", "no such commit"),
+            lambda _r, _s: commit,
+            lambda _c: when,
+            lambda _a, _b: False,
+            "2026-01-01",
+        )
+        return [key_of(f) for f in no_row + late]
+
+    buf = io.StringIO()
+    first = keyed("c0ffee1234567", "abcdef0123456", "2026-01-05")
+    for k in first:
+        log.emit_finding(k, buf)
+    caught(
+        "C11: box C1 was not emitted as ::finding::P-A2:no-row:<rel>#<sig>",
+        "::finding::P-A2:no-row:agent/plans/_done/PLAN-k.md#aaaaaaaa\n" in buf.getvalue(),
+    )
+    caught(
+        "C11: a missing evidence line was not keyed P-A2:no-evidence:<rel>#<sig>",
+        "P-A2:no-evidence:agent/plans/_done/PLAN-k.md#aaaaaaaa" in first,
+    )
+    caught(
+        "C11: P-A3 and P-A4 were not keyed by their box",
+        any(k.startswith("P-A3:agent/plans/_done/PLAN-k.md#aaaaaaaa:") for k in first)
+        and "P-A4:agent/plans/_done/PLAN-k.md#aaaaaaaa" in first,
+    )
+    caught(
+        "C11: CONTROL: the same findings under a different commit, head and date changed key",
+        first == keyed("feedface9876543", "0123456abcdef", "2026-03-09"),
+    )
+    caught(
+        "C11: a message-hashed key moved with a count in its message",
+        key_of("P-A6 FLOOR: 3 plan(s) in the ledger")
+        == key_of("P-A6 FLOOR: 17 plan(s) in the ledger"),
+    )
+    caught(
+        "C11: CONTROL: two different message-hashed findings shared one key",
+        key_of("P-A6 FLOOR: 3 plan(s) in the ledger") != key_of("P-A6 VACUOUS: 3 plan rows"),
+    )
     return missed, len(driven)
 
 
@@ -861,6 +974,10 @@ def main(argv=None) -> int:
         print(f"{RED}x{NC} plan implementation:", file=sys.stderr)
         for finding in findings:
             print(f"  {finding}", file=sys.stderr)
+        # One `::finding::<key>` line per finding, after the prose, so the push receipt can carry them one by one (PLAN-carried-red-finding-keys).
+        sys.stderr.flush()
+        for finding in findings:
+            log.emit_finding(key_of(finding))
         return 1
 
     print(

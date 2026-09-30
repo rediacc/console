@@ -1,25 +1,32 @@
 {
   "_comment": [
-    "Gates whose failure is KNOWN, JUSTIFIED and deliberately carried past the",
+    "Findings whose failure is KNOWN, JUSTIFIED and deliberately carried past the",
     "push guard. This is not a way to push green CI -- CI still runs every gate",
     "and still fails on anything listed here. It only lets the push HAPPEN, with",
     "the failure named on the record instead of routed around silently.",
     "",
-    "block-unverified-push.sh enforces three things, and the last two are what",
-    "stop this becoming a permanent allowlist:",
-    "  1. every FAILING gate must appear here, or the push is still refused;",
-    "  2. every gate here must actually be failing -- a stale entry REFUSES,",
-    "     so an excuse cannot outlive the failure it excuses;",
-    "  3. the reason must be substantive, the same bar .dead-bash-allowlist",
-    "     applies and gate-test:dead-bash proves with a low-effort-BLOCKER case.",
+    "Version 2 carries FINDINGS, not gates. A gate that takes part prints one",
+    "`::finding::<key>` line per finding; `npm run ci:quick` records each failed",
+    "gate's keys under `findings` in .ci/cache/prepush-receipt.json, and an entry",
+    "copies them: {\"gate\", \"findings\": [keys], \"reason\"}. `\"findings\": \"*\"`",
+    "carries a whole gate, only for a gate that emits no keys yet, and needs a",
+    "reason of at least 160 characters.",
+    "",
+    ".claude/rediacc_hooks/guards/block_unverified_push.py reads this file from",
+    "HEAD and refuses the push when:",
+    "  1. a FAILING gate is not carried here;",
+    "  2. a gate carried here is not failing -- an excuse cannot outlive its failure;",
+    "  3. a carried gate emitted a key this file does not carry (a NEW finding);",
+    "  4. a carried key is no longer emitted (a STALE finding: remove it);",
+    "  5. a keyed gate reported no parsable keys, or a '*' gate does emit keys;",
+    "  6. an entry is malformed (no version 2, no findings, an empty list, '*'",
+    "     beside keys for one gate) -- a schema error, never skipped silently.",
+    "An entry whose reason is under 80 characters (160 for '*') carries nothing:",
+    "the same bar .dead-bash-allowlist applies and gate-test:dead-bash proves.",
     "",
     "A narrowed run (--only/--skip) is refused before any of this is consulted,",
     "so carrying cannot become a second way to launder a partial lane."
   ],
-  "carried": [
-    {
-      "gate": "check:ci-plan-implementation",
-      "reason": "28 P-A2 findings, all bookkeeping on plan boxes ticked by other sessions' commits c8f92eaa0 and b5a4e3a13: boxes in PLAN-stop-hook-focus-mode.md (12), PLAN-stop-hook-retro-20260925.md (6), PLAN-ci-gate-write-taint-scanners.md (5), PLAN-biome-only-lint.md (2), _done/PLAN-stop-hook-cap-saturated-wait.md (2) and PLAN-stop-hook-retro-20260924.md (1) flipped to done with the Edit tool, so they have no `(ticked)` evidence line and no agent/ledgers/plan-investigation.jsonl row. The remedy is `worklist.py --plan-investigate` per box, which records what the box's owner LOOKED AT; a push-prep pass that did not do that work cannot honestly write those rows. Transitional until the owning sessions record them."
-    }
-  ]
+  "version": 2,
+  "carried": []
 }

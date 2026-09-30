@@ -128,7 +128,7 @@ def _repo_with_receipt(path, receipt, carried=None):
     return path
 
 
-# The five receipt worlds this guard distinguishes. Without them the corpus sees whatever receipt this shared worktree happens to hold at the moment the test runs, which is BOTH undiscriminating and a race: another session running `ci:quick` between the bash pass and the Python pass would rewrite the file and the difference would be reported as a port defect.
+# The receipt worlds this guard distinguishes. Without them the corpus sees whatever receipt this shared worktree happens to hold at the moment the test runs, which is BOTH undiscriminating and a race: another session running `ci:quick` between the bash pass and the Python pass would rewrite the file and the difference would be reported as a port defect.
 FIXTURES = {
     "push-no-receipt": lambda p: _repo_with_receipt(p, None),
     "push-green": lambda p: _repo_with_receipt(p, {"whole": True, "exitCode": 0}),
@@ -139,36 +139,105 @@ FIXTURES = {
     "push-red-unnamed": lambda p: _repo_with_receipt(
         p, {"whole": True, "exitCode": 1, "failed": ["check:format", "check:ci-parity"]}
     ),
+    # A whole-gate carry: `"*"` over a gate whose receipt entry is null (it emits no `::finding::` lines), with a reason past the stricter 160-character bar.
     "push-red-carried": lambda p: _repo_with_receipt(
         p,
-        {"whole": True, "exitCode": 1, "failed": ["check:format"], "blocked": ["check:ci-go-vet"]},
+        {
+            "whole": True,
+            "exitCode": 1,
+            "failed": ["check:format"],
+            "findings": {"check:format": None},
+            "blocked": ["check:ci-go-vet"],
+        },
         carried={
+            "version": 2,
             "carried": [
                 {
                     "gate": "check:format",
+                    "findings": "*",
                     "reason": (
-                        "A reason of at least eighty characters, because the bar this "
-                        "guard applies is the one the dead-bash allowlist uses and a bare "
-                        "'known issue' excuses nothing at all here."
+                        "A reason of at least one hundred and sixty characters, because a whole-gate "
+                        "carry is only for a gate that emits no finding keys yet, and the bar for "
+                        "carrying everything it will ever report is higher than for carrying one key."
                     ),
                 }
-            ]
+            ],
         },
     ),
     "push-red-stale": lambda p: _repo_with_receipt(
         p,
         {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"]},
         carried={
+            "version": 2,
             "carried": [
                 {
                     "gate": "check:format",
+                    "findings": ["fmt:packages/a.ts"],
                     "reason": (
                         "A reason of at least eighty characters, kept deliberately long so "
                         "that this entry passes the substantive-reason bar and reaches the "
                         "stale-entry arm instead of being filtered out first."
                     ),
                 }
-            ]
+            ],
+        },
+    ),
+    # FINDING LEVEL (PLAN-carried-red-finding-keys): the carried gate is failing and named, but it emitted a key the entry does not carry, so the push refuses naming it; the sibling world carries exactly the emitted keys and is allowed.
+    "push-red-finding-new": lambda p: _repo_with_receipt(
+        p,
+        {
+            "whole": True,
+            "exitCode": 1,
+            "failed": ["check:ci-plan-implementation"],
+            "findings": {
+                "check:ci-plan-implementation": [
+                    "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d",
+                    "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
+                ]
+            },
+        },
+        carried={
+            "version": 2,
+            "carried": [
+                {
+                    "gate": "check:ci-plan-implementation",
+                    "findings": ["P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d"],
+                    "reason": (
+                        "A reason of at least eighty characters, so the entry clears the "
+                        "substance bar and the verdict turns on the finding keys alone."
+                    ),
+                }
+            ],
+        },
+    ),
+    "push-red-finding-carried": lambda p: _repo_with_receipt(
+        p,
+        {
+            "whole": True,
+            "exitCode": 1,
+            "failed": ["check:ci-plan-implementation"],
+            "findings": {
+                "check:ci-plan-implementation": [
+                    "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d",
+                    "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
+                ]
+            },
+        },
+        carried={
+            "version": 2,
+            "carried": [
+                {
+                    "gate": "check:ci-plan-implementation",
+                    "findings": [
+                        "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d",
+                        "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
+                    ],
+                    "reason": (
+                        "A reason of at least eighty characters, so the entry clears the "
+                        "substance bar and the verdict turns on the finding keys alone."
+                    ),
+                }
+            ],
         },
     ),
 }
@@ -270,6 +339,139 @@ def _read_json(path):
         return None
 
 
+#: The substance bar for a keyed entry: the one .dead-bash-allowlist uses and gate-test:dead-bash pins with a low-effort-BLOCKER case. A bare "known issue" excuses nothing.
+REASON_MIN = 80
+#: The stricter bar for `"findings": "*"`, a whole-gate carry. It is only for a gate that does not speak the `::finding::` protocol yet, so it must say more.
+STAR_REASON_MIN = 160
+CARRIED_VERSION = 2
+
+
+def parse_carried(doc):
+    """carried-reds.json v2 -> (`{gate: set(keys) | "*"}`, schema_error or None).
+
+    SCHEMA ERRORS REFUSE, they are never skipped: a v1 entry (`{gate, reason}` with no `findings`), an empty `findings`, a missing `version: 2`, or `"*"` beside keyed entries for one gate. A malformed entry skipped silently is how a carry file quietly stops carrying what its author thinks it carries.
+
+    An entry whose reason is under its bar (REASON_MIN, or STAR_REASON_MIN for `"*"`) is well-formed but carries nothing, so its gate then refuses as unnamed. Several keyed entries for one gate union their keys.
+    """
+    if doc is None:
+        return {}, None
+    if not isinstance(doc, dict) or doc.get("version") != CARRIED_VERSION:
+        return {}, 'carried-reds.json at HEAD is not `"version": %d`.' % CARRIED_VERSION
+    entries = doc.get("carried")
+    if not isinstance(entries, list):
+        return {}, "carried-reds.json at HEAD has no `carried` list."
+    carried: dict[str, set[str] | str] = {}
+    shapes: dict[str, str] = {}
+    for i, entry in enumerate(entries):
+        gate = entry.get("gate") if isinstance(entry, dict) else None
+        if not isinstance(gate, str) or not gate:
+            return {}, "carried-reds.json entry %d names no gate." % i
+        findings = entry.get("findings")
+        if findings == "*":
+            shape = "*"
+        elif (
+            isinstance(findings, list)
+            and findings
+            and all(isinstance(k, str) and k for k in findings)
+        ):
+            shape = "keys"
+        else:
+            return {}, (
+                "carried-reds.json entry %d (%s) has no `findings`: v2 carries a non-empty list of"
+                ' finding keys, or "*" for a gate that emits none.' % (i, gate)
+            )
+        if shapes.setdefault(gate, shape) != shape:
+            return {}, (
+                '%s is carried both by "*" and by keys; carry a gate one way or the other.' % gate
+            )
+        reason = entry.get("reason")
+        reason = reason if isinstance(reason, str) else ""
+        if len(reason) < (STAR_REASON_MIN if shape == "*" else REASON_MIN):
+            continue
+        if shape == "*":
+            carried[gate] = "*"
+            continue
+        keys = carried.get(gate)
+        if not isinstance(keys, set):
+            keys = carried[gate] = set()
+        keys.update(findings)
+    return carried, None
+
+
+def carried_verdict(receipt, doc):
+    """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
+
+    GATE LEVEL first, as before: a failed gate nothing carries refuses (unnamed), and a carried gate that is not failing refuses (stale). Then FINDING LEVEL, from `receipt["findings"]` (`{gate: [keys] | null}`, scripts/ci-runner/findings.ts): a keyed carry needs the gate's keys, and refuses on (a) a key the gate emitted that is not carried and (b) a carried key the gate no longer emits. A `"*"` carry is refused for a gate that DOES emit keys. A receipt with no `findings` field (an older runner) reads as null for every gate, so a keyed carry fails closed.
+    """
+    carried, schema_error = parse_carried(doc)
+    if schema_error is not None:
+        return schema_error + (
+            '\n  Each entry is {"gate", "findings": [keys] | "*", "reason"} under'
+            ' `"version": 2`; the keys are the gate\'s `::finding::` lines, recorded in the'
+            " receipt's `findings`."
+        ), []
+
+    failed = receipt.get("failed") if isinstance(receipt, dict) else None
+    failed = [g for g in failed if isinstance(g, str)] if isinstance(failed, list) else []
+    rf = receipt.get("findings") if isinstance(receipt, dict) else None
+    rf = rf if isinstance(rf, dict) else {}
+
+    unnamed = "".join(" %s" % g for g in failed if g not in carried)
+    if unnamed:
+        return (
+            "the gate run went RED and these failures are neither fixed nor carried:%s.\n"
+            "  To carry one deliberately, add it to .ci/config/carried-reds.json with a reason\n"
+            "  that says WHY it cannot be fixed now. CI still runs it and still fails on it --\n"
+            "  carrying only records the decision instead of routing around it." % unnamed
+        ), []
+
+    # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an allowlist rots into a permanent hole -- the npm side of this repo once carried 101 dead entries for that reason. If a carried gate is no longer failing, the entry must go before the next push.
+    stale = "".join(" %s" % g for g in sorted(carried) if g not in failed)
+    if stale:
+        return (
+            "these gates are carried in .ci/config/carried-reds.json but are NOT failing"
+            " any more:%s.\n"
+            "  Remove the entries. A carried red that has gone green is a standing excuse for\n"
+            "  a problem that no longer exists, which is how an allowlist becomes permanent."
+            % stale
+        ), []
+
+    notes = []
+    for g in failed:
+        emitted = rf.get(g)
+        emitted = [k for k in emitted if isinstance(k, str)] if isinstance(emitted, list) else None
+        if carried[g] == "*":
+            if emitted is not None:
+                return (
+                    "%s emits findings (%d in this receipt); carry them by key, not '*'. Copy the"
+                    " keys from the receipt's `findings` into its entry." % (g, len(emitted))
+                ), []
+            notes.append("%s (*)" % g)
+            continue
+        if emitted is None:
+            return (
+                "%s reported no parsable findings (or the receipt predates finding keys); a keyed"
+                " carry cannot be verified -- re-run npm run ci:quick" % g
+            ), []
+        new = sorted(set(emitted) - carried[g])
+        if new:
+            return (
+                "%s has NEW findings that .ci/config/carried-reds.json does not carry:\n%s\n"
+                "  A carried gate carries the findings it names, not every finding it will ever"
+                " have. Fix these, or carry them with a reason."
+                % (g, "".join("    %s\n" % k for k in new).rstrip("\n"))
+            ), []
+        gone = sorted(carried[g] - set(emitted))
+        if gone:
+            return (
+                "%s no longer reports these carried findings -- remove them from"
+                " .ci/config/carried-reds.json:\n%s"
+                % (g, "".join("    %s\n" % k for k in gone).rstrip("\n"))
+            ), []
+        notes.append("%s (%d findings carried)" % (g, len(carried[g])))
+    return None, notes
+
+
 def every_push_deletes_only(scan):
     """True when every `git ... push` segment in the command only deletes remote refs.
 
@@ -351,7 +553,6 @@ def run(ev):
     r_tree = _alt(receipt, "headTree", "")
     r_whole = _alt(receipt, "whole", False)
     r_exit = _alt(receipt, "exitCode", 1)
-    r_failed = _jq_join(receipt.get("failed") if isinstance(receipt, dict) else None)
     r_dirty = _alt(receipt, "dirtyDigest", "")
     r_blocked = _jq_join(receipt.get("blocked") if isinstance(receipt, dict) else None)
     # `R_TREE=$(jq -r ...)` is a STRING in the bash, whatever the JSON type, so
@@ -378,52 +579,13 @@ def run(ev):
 
     if r_exit != "0":
         # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the shape that gets a guard routed around; naming the exception keeps the refusal informative and leaves the excuse in git where it can be reviewed.
-        carried = []
+        #
         # READ FROM THE TREE BEING PUSHED, not the worktree. The receipt is keyed on HEAD^{tree}, so the excuses that clear it must come from the same tree. Reading the worktree let another writer's uncommitted edit to this file change the verdict on a push that does not contain that edit (2026-09-24: a working copy that dropped one entry refused a push whose HEAD still carried it). An absent file at HEAD means nothing is carried.
-        doc = _carried_at_head(root)
-        if doc is not None:
-            # Only entries whose reason is SUBSTANTIVE count. The bar is the one .dead-bash-allowlist uses and gate-test:dead-bash pins with a low-effort-BLOCKER case: a bare "known issue" excuses nothing.
-            entries = doc.get("carried") if isinstance(doc, dict) else None
-            for entry in entries if isinstance(entries, list) else []:
-                if not isinstance(entry, dict):
-                    continue
-                reason = entry.get("reason")
-                reason = reason if isinstance(reason, str) else ""
-                if len(reason) >= 80:
-                    carried.append(entry.get("gate"))
-            carried = [g for g in carried if isinstance(g, str)]
-
-        failed = receipt.get("failed") if isinstance(receipt, dict) else None
-        failed = [g for g in failed if isinstance(g, str)] if isinstance(failed, list) else []
-        # `for g in $(jq -r '(.failed // [])[]')` is UNQUOTED, so the shell word-
-        # splits each name. Every gate name here is one word, so the two agree;
-        # a name with a space would split in the bash and not here, and that is a difference in the ORIGINAL rather than in the port.
-        unnamed = "".join(" %s" % g for g in failed if g not in carried)
-
-        # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an allowlist rots into a permanent hole -- the npm side of this repo once carried 101 dead entries for that reason. If a carried gate is no longer failing, the entry must go before the next push.
-        stale = "".join(" %s" % g for g in carried if g not in failed)
-
-        if unnamed:
-            return _refuse(
-                ev,
-                "the gate run went RED and these failures are neither fixed nor carried:%s.\n"
-                "  To carry one deliberately, add it to .ci/config/carried-reds.json with a reason\n"
-                "  that says WHY it cannot be fixed now. CI still runs it and still fails on it --\n"
-                "  carrying only records the decision instead of routing around it." % unnamed,
-            )
-
-        if stale:
-            return _refuse(
-                ev,
-                "these gates are carried in .ci/config/carried-reds.json but are NOT failing"
-                " any more:%s.\n"
-                "  Remove the entries. A carried red that has gone green is a standing excuse for\n"
-                "  a problem that no longer exists, which is how an allowlist becomes permanent."
-                % stale,
-            )
-
+        refusal, notes = carried_verdict(receipt, _carried_at_head(root))
+        if refusal is not None:
+            return _refuse(ev, refusal)
         ev.warn("NOTE: pushing with CARRIED reds, each named in .ci/config/carried-reds.json:")
-        ev.warn("  %s" % r_failed)
+        ev.warn("  %s" % ", ".join(notes))
         ev.warn("  CI runs these for real and will fail on them. Carrying is a record of a")
         ev.warn("  deliberate decision, not a way to make CI green.")
 

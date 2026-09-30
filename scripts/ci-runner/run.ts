@@ -38,6 +38,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execGate } from './exec';
+import { findingsSelftest, receiptFindings } from './findings';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -853,6 +854,13 @@ async function selftest(): Promise<number> {
     'the passing control gate did not pass'
   );
   require_(!text.includes('selftest-pass'), "a passing gate's output must stay quiet");
+  // FINDING KEYS (PLAN-carried-red-finding-keys test 9). The planted failing gate above printed two markers and no `::finding::` line, so its receipt entry must be null -- "nothing parsable", never "no findings" -- and the passing gate must have no entry at all. The parser's own plants and controls follow in findingsSelftest().
+  require_(
+    JSON.stringify(receiptFindings(results, () => {})) === '{"selftest:fail":null}',
+    `a failed gate with no ::finding:: line must record null, got ${JSON.stringify(receiptFindings(results, () => {}))}`
+  );
+  const keyed = findingsSelftest();
+  for (const f of keyed.failures) require_(false, f);
 
   // A GATE'S DECLARED ENV REACHES ITS PROCESS, as its CI step's `env:` does. execGate spawned without it, so tutorial-player's PUBLIC_VIDEO_CDN_BASE_URL never applied locally and the gate failed in every clean clone while passing in CI (2026-09-26). The control spec fails unless the variable arrives.
   const envSpec = {
@@ -1308,7 +1316,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2} assertions)\n`
   );
   return 0;
 }
@@ -1382,6 +1390,10 @@ interface Receipt {
   blocked: string[];
   exitCode: number;
   failed: string[];
+  /**
+   * The finding keys each FAILED gate printed as `::finding::<key>` lines (scripts/ci-runner/findings.ts), one entry per failed gate, inserted in gate-id order so this block is byte-stable for identical gate output. `null` means the gate printed no valid line, or more than the cap: never read as zero findings. The push guard compares these with the keys `.ci/config/carried-reds.json` carries, so a carried gate cannot hide a new finding.
+   */
+  findings: Record<string, string[] | null>;
   wallMs: number;
   finishedAt: string;
   /** The checkout the gates actually ran in. Differs from the pushing checkout when `--receipt-out` wrote this from a snapshot clone. */
@@ -1707,6 +1719,7 @@ async function main(): Promise<number> {
         narrowedBy,
         exitCode,
         failed: results.filter((r) => r.status === 'fail').map((r) => r.id),
+        findings: receiptFindings(results, humanOut),
         blocked: results.filter((r) => r.status === 'blocked').map((r) => r.id),
         wallMs: meta.wallMs,
         finishedAt: new Date().toISOString(),

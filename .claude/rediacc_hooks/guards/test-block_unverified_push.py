@@ -85,6 +85,21 @@ GOOD_REASON = (
     "so it belongs to the operator rather than this session."
 )
 
+# The stricter bar a `"*"` (whole-gate) carry must clear: at least 160 characters.
+STAR_REASON = GOOD_REASON + (
+    " It emits no finding keys yet, so the whole gate is carried until it does."
+)
+if not (80 <= len(GOOD_REASON) < 160 <= len(STAR_REASON)):
+    raise SystemExit("fixture reasons no longer straddle the 80/160 bars the cases below test")
+TRAILERS = "check:ci-pr-task-trailers"
+K1 = "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d"
+K2 = "P-A2:no-row:agent/plans/_done/PLAN-b.md#4e5f6a7b"
+
+
+def keyed(*keys, gate=TRAILERS, reason=GOOD_REASON):
+    """One v2 entry carrying `keys` (or `"*"`) for `gate`."""
+    return {"gate": gate, "findings": keys[0] if keys == ("*",) else list(keys), "reason": reason}
+
 
 def _rekey():
     """Point the planted receipt at the CURRENT HEAD^{tree}. The guard reads carried-reds.json from HEAD, so carrying is a commit, and a commit moves the tree the receipt must name."""
@@ -97,15 +112,18 @@ def _rekey():
             json.dump(body, fh)
 
 
-def write_carried(*entries):
-    """The WORKTREE copy only, uncommitted: what another writer's in-flight edit looks like."""
+def write_carried(*entries, version=2):
+    """The WORKTREE copy only, uncommitted: what another writer's in-flight edit looks like. v2 unless a case plants another version."""
     os.makedirs(os.path.dirname(CARRIED), exist_ok=True)
+    doc = {"carried": list(entries)}
+    if version is not None:
+        doc["version"] = version
     with open(CARRIED, "w", encoding="utf-8") as fh:
-        json.dump({"carried": list(entries)}, fh)
+        json.dump(doc, fh)
 
 
-def carry(*entries):
-    write_carried(*entries)
+def carry(*entries, version=2):
+    write_carried(*entries, version=version)
     git("add", "--", CARRIED)
     git("commit", "-q", "--allow-empty", "-m", "carry")
     _rekey()
@@ -140,6 +158,21 @@ def run(cmd):
 
 PUSH = "git push origin 0827-1"
 cases = []
+
+
+def run_err(cmd):
+    """The guard's stderr, for the cases that assert what a refusal NAMES."""
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=d)
+    return subprocess.run(
+        GUARD_ARGV,
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=d,
+        env=env,
+        check=False,
+    ).stderr
+
 
 # --- the guard's whole purpose -----------------------------------------------
 drop()
@@ -223,46 +256,104 @@ cases.append(
 
 # --- carried reds: a RED receipt may authorise a push only when NAMED --------- All-or-nothing is the shape that gets a guard bypassed, so a red may be carried -- but only with every failure named, no stale entry, and a substantive reason.
 uncarry()
-put(exitCode=1, failed=["check:ci-pr-task-trailers"])
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 cases.append((2, run(PUSH), "a red with NO carried-reds file still refuses"))
 
-carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+carry(keyed(K1))
 cases.append((0, run(PUSH), "a red whose every failure is NAMED and justified is allowed"))
 
-put(exitCode=1, failed=["check:ci-pr-task-trailers", "check:lint"])
+put(exitCode=1, failed=[TRAILERS, "check:lint"], findings={TRAILERS: [K1], "check:lint": None})
 cases.append((2, run(PUSH), "a SECOND, unnamed red still refuses -- carrying is per-gate"))
 
 # The rot guard: an excuse must not outlive the failure it excuses. The npm side of this repo once carried 101 dead allowlist entries for exactly this reason.
-put(exitCode=1, failed=["check:lint"])
-carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+# Two failed gates, one carried and one green-but-carried: the gate-level stale arm, isolated from the unnamed arm.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+carry(keyed(K1), keyed(K1, gate="check:lint"))
 cases.append((2, run(PUSH), "a STALE carried entry (its gate now green) refuses"))
 
 # A bare excuse is not a justification -- the bar .dead-bash-allowlist applies.
-put(exitCode=1, failed=["check:ci-pr-task-trailers"])
-carry({"gate": "check:ci-pr-task-trailers", "reason": "known issue"})
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+carry(keyed(K1, reason="known issue"))
 cases.append((2, run(PUSH), "a LOW-EFFORT reason does not carry anything"))
 
 # ORDERING: `whole` is checked BEFORE carrying, so carrying cannot become a second way to launder a --only run. That hole is what the whole flag closed.
-put(exitCode=1, failed=["check:ci-pr-task-trailers"], whole=False)
-carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, whole=False)
+carry(keyed(K1))
 cases.append((2, run(PUSH), "a NARROWED run is refused even when its red is carried"))
 
 # THE TREE BEING PUSHED DECIDES, not the worktree. The receipt is keyed on HEAD^{tree}, so its excuses must come from the same tree.
-put(exitCode=1, failed=["check:ci-pr-task-trailers"])
-carry({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+carry(keyed(K1))
 write_carried()  # another writer's uncommitted copy DROPS the entry
 cases.append(
     (0, run(PUSH), "an uncommitted worktree edit that DROPS an entry does not change the verdict")
 )
 
 uncarry()
-put(exitCode=1, failed=["check:ci-pr-task-trailers"])
-write_carried({"gate": "check:ci-pr-task-trailers", "reason": GOOD_REASON})  # worktree only
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+write_carried(keyed(K1))  # worktree only
 cases.append(
     (2, run(PUSH), "an entry present ONLY in the worktree, absent at HEAD, carries nothing")
 )
 if os.path.exists(CARRIED):
     os.remove(CARRIED)
+
+# --- finding keys (PLAN-carried-red-finding-keys): a carried gate carries the findings it names ------------------------------------------------ Each planted defect sits beside its clean control.
+FULL = {TRAILERS: [K1, K2]}
+
+# 1. NEW FINDING: the gate emitted K2 as well, and only K1 is carried.
+put(exitCode=1, failed=[TRAILERS], findings=FULL)
+carry(keyed(K1))
+cases.append((2, run(PUSH), "1: a NEW finding under a carried gate refuses"))
+cases.append((True, K2 in run_err(PUSH), "1: the refusal names the new key"))
+carry(keyed(K1, K2))
+cases.append((0, run(PUSH), "1/2 CONTROL: every emitted key carried, none stale"))
+
+# 2. STALE FINDING: K2 is carried and the gate no longer emits it.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+cases.append((2, run(PUSH), "2: a carried key the gate no longer emits refuses"))
+cases.append((True, K2 in run_err(PUSH), "2: the refusal names the stale key"))
+
+# 3. KEYED CARRY OF A GATE THAT EMITS NOTHING: the receipt has null, so the keys cannot be checked.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: None})
+carry(keyed(K1))
+cases.append((2, run(PUSH), "3: a keyed carry of a gate with no parsable findings refuses"))
+carry(keyed("*", reason=STAR_REASON))
+cases.append((0, run(PUSH), "3/4 CONTROL: '*' with a 160-char reason over a null gate is allowed"))
+
+# 4. "*" OVER A GATE THAT DOES EMIT: it must be carried by key.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+cases.append((2, run(PUSH), "4: '*' over a gate that emits keys refuses"))
+
+# 5. "*" BELOW THE STRICTER BAR: an 80-character reason carries a key, not a whole gate.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: None})
+carry(keyed("*", reason=GOOD_REASON))
+cases.append((2, run(PUSH), "5: '*' with a reason under 160 characters carries nothing"))
+carry(keyed("*", reason=STAR_REASON))
+cases.append((0, run(PUSH), "5 CONTROL: the same '*' with 160+ characters is allowed"))
+
+# 6. OLD RECEIPT: no `findings` field at all reads as null for every gate, so a keyed carry fails closed.
+put(exitCode=1, failed=[TRAILERS])
+carry(keyed(K1))
+cases.append((2, run(PUSH), "6: a receipt with no findings field cannot verify a keyed carry"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+cases.append((0, run(PUSH), "6 CONTROL: the field present with the carried keys is allowed"))
+
+# 7. SCHEMA: a v1 entry, an empty findings list, a missing version, and "*" beside keys all refuse rather than being skipped.
+carry({"gate": TRAILERS, "reason": GOOD_REASON})
+cases.append((2, run(PUSH), "7: a v1 entry (no findings) is a schema error"))
+carry(keyed(K1))
+cases.append((0, run(PUSH), "7 CONTROL: the same entry in v2 is allowed"))
+carry({"gate": TRAILERS, "findings": [], "reason": GOOD_REASON})
+cases.append((2, run(PUSH), "7: an empty findings list is a schema error"))
+carry(keyed(K1), version=None)
+cases.append((2, run(PUSH), "7: a file with no version 2 is a schema error"))
+carry(keyed(K1), keyed("*", reason=STAR_REASON))
+cases.append((2, run(PUSH), "7: '*' beside keyed entries for one gate is a schema error"))
+# Several keyed entries for one gate union their keys.
+put(exitCode=1, failed=[TRAILERS], findings=FULL)
+carry(keyed(K1), keyed(K2))
+cases.append((0, run(PUSH), "7 CONTROL: two keyed entries for one gate union their keys"))
 
 uncarry()
 
@@ -275,6 +366,7 @@ for want, got, label in cases:
         print(f"  FAIL [{want}] {label} (got {got})")
 print(
     f"FAILURES: {bad}  ({len(cases)} case(s), {sum(1 for w, _, _ in cases if w == 2)} block / "
-    f"{sum(1 for w, _, _ in cases if w == 0)} allow)"
+    f"{sum(1 for w, _, _ in cases if w == 0)} allow / "
+    f"{sum(1 for w, _, _ in cases if w is True)} message)"
 )
 sys.exit(1 if bad else 0)

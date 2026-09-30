@@ -68,8 +68,10 @@ A caller that needs a second, independently configured logger -- a test capturin
 """
 
 import contextlib
+import hashlib
 import io
 import os
+import re
 import sys
 
 # The escape sequences, taken from .ci/scripts/lib/common.sh:19-24, which is the only pre-existing variant that tests the stream it writes to and is therefore the one this module is differentially checked against. YELLOW is the bright form (1;33) that common.sh uses, NOT the 0;33 in .ci/bootstrap.sh: a differential cannot be run against both, so the one with more callers wins and
@@ -243,6 +245,34 @@ def debug(message: str) -> None:
     default().debug(message)
 
 
+# FINDING KEYS (agent/plans/PLAN-carried-red-finding-keys.md). A gate that takes part prints one `::finding::<key>` line per finding; the ci-runner records the keys of each failed gate in the push receipt, and the push guard compares them with the keys the carried-reds config carries, so a carried gate cannot hide a NEW finding. The alphabet is the one scripts/ci-runner/findings.ts parses: `_` included, because a closed plan's path runs through `agent/plans/_done/`.
+FINDING_KEY_RE = re.compile(r"^[A-Za-z0-9._:/@#-]{1,200}$")
+FINDING_PREFIX = "::finding::"
+_VOLATILE_RE = re.compile(r"[0-9a-f]{7,40}|\d+")
+
+
+def finding_key(rule: str, message: str) -> str:
+    """`<rule>:<sha256(message with shas and numbers masked)[:12]>`, for a finding with no natural identity.
+
+    MASKED FIRST, so a count, a line number or a commit sha in the message does not change the key from run to run: the same finding must keep the same key, or a carried one reads as new every time the tree moves.
+    """
+    masked = _VOLATILE_RE.sub("#", message)
+    return "%s:%s" % (rule, hashlib.sha256(masked.encode("utf-8")).hexdigest()[:12])
+
+
+def emit_finding(key: str, stream=None) -> None:
+    """Print `::finding::<key>` on stderr (or `stream`), plain, never coloured, and flush.
+
+    A KEY OUTSIDE THE ALPHABET RAISES. It is a defect in the gate, and a line the runner would silently skip reads as "no parsable findings", which makes every keyed carry of that gate unverifiable without saying why.
+    """
+    if not isinstance(key, str) or not FINDING_KEY_RE.match(key):
+        raise ValueError("finding key %r is not %s" % (key, FINDING_KEY_RE.pattern))
+    target = sys.stderr if stream is None else stream
+    target.write(FINDING_PREFIX + key + "\n")
+    with contextlib.suppress(AttributeError, ValueError):
+        target.flush()
+
+
 def capture(colour: bool = False) -> tuple[Logger, io.StringIO]:
     """A Logger writing into a fresh buffer, plus the buffer.
 
@@ -259,6 +289,8 @@ __all__ = [
     "CYAN",
     "DEBUG_ENV",
     "DEBUG_ON",
+    "FINDING_KEY_RE",
+    "FINDING_PREFIX",
     "GREEN",
     "NC",
     "RED",
@@ -268,7 +300,9 @@ __all__ = [
     "colour_allowed",
     "debug",
     "default",
+    "emit_finding",
     "error",
+    "finding_key",
     "info",
     "reset",
     "step",

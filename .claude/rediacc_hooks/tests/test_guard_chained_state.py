@@ -174,10 +174,11 @@ def test_push_guard_names_the_commit_that_would_have_changed_head(tmp_path, monk
         tmp_path / "r",
         {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"]},
         carried={
+            "version": 2,
             "carried": [
-                {"gate": "check:ci-parity", "reason": LONG_REASON},
-                {"gate": "check:ci-paths-origin", "reason": LONG_REASON},
-            ]
+                {"gate": "check:ci-parity", "findings": ["parity:k1"], "reason": LONG_REASON},
+                {"gate": "check:ci-paths-origin", "findings": ["origin:k1"], "reason": LONG_REASON},
+            ],
         },
     )
     (repo / "x").write_text("x\n", encoding="utf-8")
