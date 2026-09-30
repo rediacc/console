@@ -2436,9 +2436,7 @@ jobs:
         # The real `Build (CLI)` job takes ~58s because it also does SEA
         # packaging and embeds the renet binaries, none of which this proxy's
         # fallback path needs.
-        run: |
-          npm run build:cli
-          cd packages/cli && node bundle.mjs
+        run: npm run build:cli
 
       - name: Install ruff
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

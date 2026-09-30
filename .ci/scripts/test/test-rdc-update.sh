@@ -14,7 +14,7 @@
 #
 # Required: RDC_BINARY env var pointing to a rdc executable for the
 # current platform (CI builds this in the build-cli job; local runs can
-# download it from cli/edge/ on R2 or build via `cd packages/cli && npm run build:cli`).
+# download it from cli/edge/ on R2 or build via `npm run build:cli`).
 #
 # Usage:
 #   RDC_BINARY=/path/to/rdc ./test-rdc-update.sh [scenario ...]

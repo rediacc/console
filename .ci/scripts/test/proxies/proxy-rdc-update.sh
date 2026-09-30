@@ -17,7 +17,7 @@
 # So this proxy does the thing the house rule asks for instead of quietly
 # dropping them: it EXEMPTS the two by name, PRINTS them on every single run,
 # and runs all seven the moment a real binary is available. Set RDC_BINARY (or
-# build one with `cd packages/cli && npm run build:cli`) and the exemption
+# build one with `npm run build:cli`) and the exemption
 # disappears by itself.
 #
 #   RDC_BINARY set          -> all 7 scenarios, no exemption
@@ -61,7 +61,7 @@ if [[ -z "${RDC_BINARY:-}" ]]; then
 fi
 
 proxy_need_exec "$SUBJECT" "the subject script is missing from this checkout"
-proxy_need_exec "$RDC_BINARY" "cd packages/cli && npm run build:cli, or export RDC_BINARY=/path/to/rdc"
+proxy_need_exec "$RDC_BINARY" "npm run build:cli, or export RDC_BINARY=/path/to/rdc"
 proxy_need_cmd python3 "sudo apt-get install -y python3 (the subject's update fixture server)"
 proxy_need_cmd node "./run.sh setup"
 proxy_need_file "$ROOT_DIR/packages/www/public/install.sh" "the installer the subject drives is missing from this checkout"
@@ -91,7 +91,7 @@ if [[ $REDUCED -eq 1 ]]; then
     echo "${PROXY_YEL}  $FALLBACK_BINARY (a node bundle, not a packaged SEA binary).${PROXY_OFF}"
     echo "${PROXY_YEL}  NOT EXERCISED HERE: ${SEA_ONLY[*]} -- both need SEA packaging.${PROXY_OFF}"
     echo "${PROXY_YEL}  CI runs all ${DECLARED_N} against a real binary; to do the same locally run${PROXY_OFF}"
-    echo "${PROXY_YEL}  'cd packages/cli && npm run build:cli' and re-run with RDC_BINARY set.${PROXY_OFF}"
+    echo "${PROXY_YEL}  'npm run build:cli' and re-run with RDC_BINARY set.${PROXY_OFF}"
 else
     RUN=("${SEA_FREE[@]}" "${SEA_ONLY[@]}")
     echo "proxy rdc-update: FULL RUN against RDC_BINARY=$RDC_BINARY (${#RUN[@]} scenarios)"

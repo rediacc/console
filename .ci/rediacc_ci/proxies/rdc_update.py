@@ -95,7 +95,7 @@ def run() -> int:
     p.need_exec(subject, "the subject script is missing from this checkout")
     p.need_exec(
         rdc_binary,
-        "cd packages/cli && npm run build:cli, or export RDC_BINARY=/path/to/rdc",
+        "npm run build:cli, or export RDC_BINARY=/path/to/rdc",
     )
     p.need_cmd("python3", "sudo apt-get install -y python3 (the subject's update fixture server)")
     p.need_cmd("node", "./run.sh setup")
@@ -138,7 +138,7 @@ def run() -> int:
             f"{yel}  CI runs all {len(declared)} against a real binary; "
             f"to do the same locally run{off}"
         )
-        print(f"{yel}  'cd packages/cli && npm run build:cli' and re-run with RDC_BINARY set.{off}")
+        print(f"{yel}  'npm run build:cli' and re-run with RDC_BINARY set.{off}")
     else:
         to_run = SEA_FREE + SEA_ONLY
         print(

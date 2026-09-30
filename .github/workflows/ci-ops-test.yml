@@ -213,7 +213,7 @@ jobs:
       - name: Build CLI
         # OTLP credentials are fetched at runtime after `rdc subscription
         # login` — no longer baked into the bundle (renet#51).
-        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+        run: npm run build:cli
 
       - name: Configure local config
         run: |
@@ -465,7 +465,7 @@ jobs:
 
       - name: Build CLI
         shell: bash
-        run: npm run build -w @rediacc/cli && npm run build:bundle -w @rediacc/cli
+        run: npm run build:cli
 
       - name: Configure local config
         shell: bash

@@ -45,7 +45,8 @@ function run(cmd: string, args: readonly string[], cwd: string): string {
  */
 export async function renetGoUnits(repoRoot: string): Promise<Unit[]> {
   const cwd = path.join(repoRoot, 'private', 'renet');
-  const out = run('go', ['list', './pkg/...', './cmd/...'], cwd);
+  // -buildvcs=false: a listing needs no VCS stamp, and the stamp runs `git status` in the submodule, which died of SIGBUS under ci:quick load on 2026-09-30 ("error obtaining VCS status: signal: bus error") while other gates were rewriting the index.
+  const out = run('go', ['list', '-buildvcs=false', './pkg/...', './cmd/...'], cwd);
   const ids = out
     .split('\n')
     .map((l) => l.trim())
