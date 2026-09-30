@@ -745,7 +745,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 15 | .py 15 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
-| .ci/rediacc_ci/ci | 21 | .py 21 |
+| .ci/rediacc_ci/ci | 22 | .py 22 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 33 | .py 33 |
 | .ci/rediacc_ci/deploy | 33 | .py 33 |
@@ -764,7 +764,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/review | 6 | .py 6 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
-| .ci/rediacc_ci/tests | 301 | .py 301 |
+| .ci/rediacc_ci/tests | 302 | .py 302 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/gates | 176 | .py 175, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |

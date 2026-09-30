@@ -7,11 +7,15 @@ name: Housekeeping
 # it never overlaps a release, so the sentinel+tag bijection is the sole guard
 # for R2 orphans and IN_FLIGHT_VERSION is intentionally NOT set.
 #
-# Two independent jobs:
-#   cleanup        — .ci/scripts/housekeeping/cleanup-versions.sh (releases, tags,
-#                    GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
-#                    branches, workflow runs/artifacts/cache).
-#   stripe-cleanup — Stripe sandbox orphan sweep + per-region webhook verification.
+# Four independent jobs:
+#   cleanup            — .ci/scripts/housekeeping/cleanup-versions.sh (releases, tags,
+#                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
+#                        branches, workflow runs/artifacts/cache).
+#   stripe-cleanup     — Stripe sandbox orphan sweep + per-region webhook verification.
+#   budget-check       — budget_report --check and gate_costs --check against their
+#                        committed baselines, reported to the nightly-status issue.
+#   gate-costs-capture — a serial ci:quick measuring each gate's CPU, uploaded as the
+#                        artifact gate_costs --refresh reads.
 
 on:
   schedule:
@@ -207,11 +211,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # .ci for the rediacc_ci package, scripts/ci for report-budget-check.cjs,
-          # .github for the workflow YAML budget_report.py's lane_display_patterns reads.
+          # .github for the workflow YAML budget_report.py's lane_display_patterns reads,
+          # scripts/ci-runner for the gates.lock.json gate_costs.py --check compares against.
           sparse-checkout: |
             .ci
             .github
             scripts/ci
+            scripts/ci-runner
 
       - uses: ./.github/actions/profiler
         with:
@@ -229,13 +235,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
+      # PLAN-ci-quick-cpu-scheduling 2.5: the committed per-gate CPU baseline against the
+      # last five gate-costs-capture artifacts. Its findings are appended to the budget
+      # summary so the ONE report step below posts both (report-budget-check.cjs dedupes
+      # on the run id, so a second post from this run would be dropped). Exit 3 means
+      # .ci/config/gate-costs.json does not exist yet: gate_costs prints a ::notice that
+      # nothing was compared, and it is neither reported nor failed.
+      - name: Gate cost baseline check
+        id: gate-costs-check
+        run: |
+          set +e
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --check --report-to /tmp/budget-check.txt
+          rc=$?
+          if [ "$rc" -eq 3 ]; then rc=0; fi
+          echo "rc=$rc" >>"$GITHUB_OUTPUT"
+          exit 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       # A SEPARATE STEP FROM THE FAILURE ITSELF, so the issue gets posted whether or
       # not the next step's own `exit 1` runs -- see report-budget-check.cjs's own
       # header for why this posts its own dated section rather than reusing
       # report-nightly-status.cjs's function, which is wired to a DIFFERENT trigger
       # (workflow_run: completed of "Console CI") with no payload this cron carries.
       - name: Report a stale or over-budget CI leg
-        if: steps.budget-check.outputs.rc != '0'
+        if: steps.budget-check.outputs.rc != '0' || steps.gate-costs-check.outputs.rc != '0'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           BUDGET_CHECK_SUMMARY_PATH: /tmp/budget-check.txt
@@ -243,5 +267,46 @@ jobs:
           script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
 
       - name: Fail the job when the budget check failed
-        if: steps.budget-check.outputs.rc != '0'
+        if: steps.budget-check.outputs.rc != '0' || steps.gate-costs-check.outputs.rc != '0'
         run: exit 1
+
+  gate-costs-capture:
+    name: Gate cost capture
+    # PLAN-ci-quick-cpu-scheduling 2.5. CI runs each gate as its own workflow step, so
+    # the only per-gate CPU figures come from this serial ci:quick run (--jobs 1: every
+    # gate uncontended). gate_costs.py --refresh/--check read the last five uploads.
+    #
+    # ESTIMATED FIT, 2026-09-30: gate_step_p90_seconds covers 234 of the 293 quick
+    # gates and sums to 383 s; the other 59 at 0.56 x their local contended wall add
+    # about 125 s, so about 8.5 minutes of gates plus about 2 minutes of setup. Gates
+    # this bare checkout cannot run (no submodules, no Go or uv toolchain) fail fast
+    # and land in the file's `unmeasured` list, not in its medians.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          natives: 'true'
+
+      # Gate reds are expected on this checkout and do not fail the capture; a missing
+      # or empty report does, since an artifact nobody can read measures nothing.
+      - name: Capture per-gate CPU (serial ci:quick)
+        run: |
+          set +e
+          npx tsx scripts/ci-runner/run.ts --quick --jobs 1 --sched slots --json >gate-costs.json 2>"$RUNNER_TEMP/gate-costs.log"
+          echo "run.ts exit $? (gate reds are expected on this checkout and do not fail the capture)"
+          set -e
+          tail -n 80 "$RUNNER_TEMP/gate-costs.log"
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --validate-capture gate-costs.json
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gate-costs-${{ github.sha }}
+          path: gate-costs.json
+          retention-days: 30
+          if-no-files-found: error

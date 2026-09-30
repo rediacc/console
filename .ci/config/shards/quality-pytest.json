@@ -426,6 +426,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_cancel_older_runs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_check_rerun_attempt.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_gate_costs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_generate_tag.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_initialize.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_list_e2e_probe_files.py",

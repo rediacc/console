@@ -49,7 +49,8 @@ const reportBudgetCheck = async ({ github, context, core }) => {
       '',
       '<sub>Posted automatically by PLAN-ci-time-budget T3.3 (housekeeping.yml, daily 03:00 UTC).',
       'A leg over 12 minutes, or a committed estimate drifting more than 25% from measured,',
-      'means .ci/config/lane-durations.json needs `budget_report.py --refresh`.</sub>',
+      'means .ci/config/lane-durations.json needs `budget_report.py --refresh`; a gate-cost',
+      'finding (the `gate_costs` lines) means .ci/config/gate-costs.json needs `gate_costs.py --refresh`.</sub>',
     ].join('\n')
   );
 
