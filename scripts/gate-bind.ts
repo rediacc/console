@@ -27,6 +27,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -1158,7 +1159,7 @@ export function scanDeclarations(
   return { declared, malformed };
 }
 
-function selftest(): number {
+function selftest(endToEnd = false): number {
   let bad = 0;
   const ck = (label: string, ok: boolean, detail?: unknown): void => {
     console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}`);
@@ -2194,7 +2195,143 @@ function selftest(): number {
     ck('CONTROL: buildShardManifest refuses a lane with zero shards', emptyRefused);
   }
 
+  selftestNeedsNot(ck);
+  // END TO END ONLY UNDER `--selftest`. Every mode of main runs selftest() as its instrument control, and the freshness check spawns the binder, so running it from that preamble recursed: each child ran the preamble and spawned the next (2026-09-30, 291 scratch dirs before it was killed). `npm run check:ci-gate-bind` runs `--selftest` first, so the gate still exercises it once per run.
+  if (endToEnd) selftestFreshness(ck);
   return bad;
+}
+
+type Check = (label: string, ok: boolean, detail?: unknown) => void;
+
+/**
+ * `needs-not` against the REAL gate file it was written for, plus a control each way.
+ *
+ * check_plan_deps.py lists submodule files only in its hand-run `--overlaps` and `--migrate-x` verbs, so the `submodules` its `git ls-files --recurse-submodules` literal infers is false for the CI path, and its lane (quality-branch) checks none out. The header's `needs-not: submodules` is what keeps the binder from refusing that placement.
+ */
+function selftestNeedsNot(ck: Check): void {
+  const planDeps = '.ci/scripts/quality/check_plan_deps.py';
+  const src = read(planDeps);
+  const real = bind(planDeps, src);
+  ck(
+    'check_plan_deps.py binds WITHOUT submodules: its needs-not scopes the hand-run listing away',
+    real !== null && !real.needs.includes('submodules'),
+    real?.needs
+  );
+  // CONTROL: the inference is live on this very file. Without it the line above passes vacuously the day the literal is refactored away, and needs-not becomes an entry nobody can test.
+  const stripped = src.replace(/^needs-not: submodules\n/m, '');
+  ck(
+    'CONTROL: the same file with its needs-not line removed infers submodules',
+    stripped !== src && bind(planDeps, stripped)?.needs.includes('submodules') === true
+  );
+  // CONTROL: a gate whose CI path really enumerates submodule files keeps the need, so needs-not is scoped to the file that declares it rather than disabling the inference. check_syncpack_sources.py lists every submodule package.json on its check path; its declared `needs: submodules` is blanked first, so only the inference can supply the need.
+  const syncpack = '.ci/scripts/quality/check_syncpack_sources.py';
+  const syncpackSrc = read(syncpack);
+  const undeclared = syncpackSrc.replace(/^needs: submodules$/m, 'needs: none');
+  ck(
+    'CONTROL: check_syncpack_sources.py, which lists submodule files in CI, still infers submodules',
+    undeclared !== syncpackSrc && bind(syncpack, undeclared)?.needs.includes('submodules') === true,
+    bind(syncpack, undeclared)?.needs
+  );
+  const hdr = [
+    '# ---- gate ----',
+    '# step: X',
+    '# needs: none',
+    '# needs-not: submodules',
+    '# blocker: BLOCKER: only a hand-run verb lists submodule files',
+    '# ---- end gate ----',
+    'git ls-files --recurse-submodules',
+  ].join('\n');
+  ck(
+    'needs-not removes an inferred need from a synthetic header',
+    bind('.ci/scripts/quality/check_a.py', hdr)?.needs.includes('submodules') === false
+  );
+  const noBlocker = hdr.replace(/^# blocker:.*\n/m, '');
+  ck(
+    'CONTROL: needs-not without a blocker is refused, so a subtraction always carries its reason',
+    noBlocker !== hdr &&
+      bind('.ci/scripts/quality/check_a.py', noBlocker) === null &&
+      headerError(noBlocker)?.includes('needs-not') === true,
+    headerError(noBlocker)
+  );
+}
+
+/**
+ * FRESHNESS, END TO END: `--dry-run --fail-on-drift` over a scratch copy of the generated files.
+ *
+ * 2026-09-26: five gates marked slow rebalanced the shards in gates.lock.json, the workflow regions kept the old split, and the local check stayed green; CI's shard receipts caught it after the push. The check that now closes that gap lives in `main`, so a unit test of a helper would not prove it. This runs the binder itself against a copy under `--generated-root`: made fresh with `--write` there, it must pass; with one region conjunct or one shard leg changed, it must fail and name the file. The real workflow and manifests are hashed before and after, and any change is a FAIL, because a `--generated-root` that stopped redirecting would otherwise regenerate the tree from inside a selftest.
+ */
+function selftestFreshness(ck: Check): void {
+  const shardsRel = '.ci/config/shards';
+  const realFiles = [
+    WORKFLOW,
+    ...fs.readdirSync(path.join(ROOT, shardsRel)).map((f) => `${shardsRel}/${f}`),
+  ];
+  const snapshot = (): string => realFiles.map((f) => read(f)).join('\0');
+  const before = snapshot();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-bind-fresh-'));
+  const run = (...args: string[]): { rc: number; err: string } => {
+    try {
+      execFileSync(
+        process.execPath,
+        [...process.execArgv, fileURLToPath(import.meta.url), ...args, '--generated-root', tmp],
+        { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf-8' }
+      );
+      return { rc: 0, err: '' };
+    } catch (e) {
+      const x = e as { status?: number; stderr?: string };
+      return { rc: x.status ?? -1, err: x.stderr ?? '' };
+    }
+  };
+  try {
+    for (const f of realFiles) {
+      fs.mkdirSync(path.dirname(path.join(tmp, f)), { recursive: true });
+      fs.copyFileSync(path.join(ROOT, f), path.join(tmp, f));
+    }
+    const made = run('--write');
+    ck(
+      'freshness: --write under --generated-root makes the scratch copy fresh',
+      made.rc === 0,
+      made
+    );
+    const fresh = run('--dry-run', '--fail-on-drift');
+    ck('CONTROL: a fresh scratch copy passes --fail-on-drift', fresh.rc === 0, fresh);
+
+    const wfPath = path.join(tmp, WORKFLOW);
+    const wf = fs.readFileSync(wfPath, 'utf-8');
+    const conj = /&& \(matrix\.shard == (\d+)\)/.exec(wf);
+    const staleWf =
+      conj === null
+        ? wf
+        : wf.replace(conj[0], `&& (matrix.shard == ${Number(conj[1]) === 1 ? 2 : 1})`);
+    fs.writeFileSync(wfPath, staleWf);
+    const staleRegion = run('--dry-run', '--fail-on-drift');
+    ck(
+      'a region whose shard conjunct disagrees with the lock FAILS --fail-on-drift, naming the workflow',
+      conj !== null && staleRegion.rc === 1 && staleRegion.err.includes(WORKFLOW),
+      staleRegion
+    );
+    fs.writeFileSync(wfPath, wf);
+
+    const mPath = path.join(tmp, shardsRel, 'quality-code.json');
+    const m = JSON.parse(fs.readFileSync(mPath, 'utf-8')) as { legs: { ids: string[] }[] };
+    const moved = m.legs[0]?.ids.shift();
+    if (moved !== undefined) m.legs[1]?.ids.push(moved);
+    fs.writeFileSync(mPath, `${JSON.stringify(m, null, 2)}\n`);
+    const staleLegs = run('--dry-run', '--fail-on-drift');
+    ck(
+      'a shard manifest whose legs disagree with the lock FAILS --fail-on-drift, naming the manifest',
+      moved !== undefined &&
+        staleLegs.rc === 1 &&
+        staleLegs.err.includes(`${shardsRel}/quality-code.json`),
+      staleLegs
+    );
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  ck(
+    'freshness selftest left the real workflow and shard manifests byte-identical',
+    snapshot() === before
+  );
 }
 
 function main(argv: string[]): void {
@@ -2205,6 +2342,14 @@ function main(argv: string[]): void {
   const write = argv.includes('--write') || dryRun;
   // `--dry-run --fail-on-drift` is the FRESHNESS check the plain run never was: it passed on 2026-09-28 while the committed quality-code shard manifest and six ci-quality.yml regions no longer matched what `--write` emits, and only CI's shard-receipt aggregator ("ran 16 gate(s) but the plan gives it 18") caught the drift, after the push.
   const failOnDriftFlag = argv.includes('--fail-on-drift');
+  // `--generated-root <dir>` READS AND WRITES THE GENERATED FILES (the workflow and the shard manifests) under <dir> instead of the tree, while every INPUT (headers, lock, manifest.ts, package.json) still comes from the tree. It exists so the selftest can prove the freshness check both ways on a scratch copy -- a stale region fails, a fresh one passes -- without ever writing the real workflow.
+  // Refused outside `--write`/`--dry-run`: the binding check judges the real workflow or nothing.
+  const genAt = argv.indexOf('--generated-root');
+  const genRoot = genAt >= 0 ? path.resolve(argv[genAt + 1] ?? '') : ROOT;
+  if (genAt >= 0 && (argv[genAt + 1] === undefined || !write)) {
+    console.error('✗ --generated-root needs a directory and --write or --dry-run');
+    process.exit(2);
+  }
   const drift: string[] = [];
   const failOnDrift = (found: readonly string[]): void => {
     if (!failOnDriftFlag || found.length === 0) return;
@@ -2226,7 +2371,7 @@ function main(argv: string[]): void {
     argv.flatMap((a, i) => (a === '--allow-drop' && argv[i + 1] ? [argv[i + 1]] : []))
   );
   if (argv.includes('--selftest')) {
-    const n = selftest();
+    const n = selftest(true);
     console.log(`${n === 0 ? '✓' : '✗'} gate-bind selftest: ${n} failure(s)`);
     process.exit(n === 0 ? 0 : 1);
   }
@@ -2355,7 +2500,7 @@ function main(argv: string[]): void {
     qualityGateTest?: boolean;
   }[];
   const lockById = new Map(lock.map((g) => [g.id, g]));
-  const workflow = read(WORKFLOW);
+  const workflow = fs.readFileSync(path.join(genRoot, WORKFLOW), 'utf-8');
   const caps = laneCapabilities(workflow);
   // The lock, for the shard assignment below. Read here and not inside the loop so a malformed lock fails once, loudly, rather than once per sharded lane.
   const lockEntries = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as Parameters<
@@ -2465,7 +2610,7 @@ function main(argv: string[]): void {
       }
       shardMap.set(job, assigned.legs);
       // T2.10. THE COMMITTED MANIFEST A CI LEG AND `npm run ci -- --lane/--shard` BOTH READ, written from the SAME `assigned.legs` the `matrix.shard` conjunct above comes from, so the two can never name different plans. `--dry-run` reports what would change without writing, same as the workflow rewrite below.
-      const manifestPath = path.join(ROOT, shardManifestPath(job));
+      const manifestPath = path.join(genRoot, shardManifestPath(job));
       const freshLegs = legsFromAssignment(assigned.legs, SHARD_COUNTS[job] as number);
       // AN UNCHANGED PLAN KEEPS ITS TIMESTAMP. Stamping `now` on every `--write` rewrote the committed manifest with a new `generatedAt` and nothing else, so every regenerate left a one-line diff that reviewed as a plan change (2026-09-27, quality-code.json). The stamp moves only when the legs do.
       let keptAt: string | undefined;
@@ -2596,7 +2741,7 @@ function main(argv: string[]): void {
       failOnDrift(drift);
       return;
     }
-    fs.writeFileSync(path.join(ROOT, WORKFLOW), text);
+    fs.writeFileSync(path.join(genRoot, WORKFLOW), text);
     console.log(`gate-bind --write: rewrote ${lanes.length} region(s) in ${WORKFLOW}`);
     return;
   }
