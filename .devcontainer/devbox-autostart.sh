@@ -55,10 +55,11 @@ cd "$WORKSPACE" || {
 # That precise bug is documented at .ci/lib/account.sh:141, where it made
 # `account dev` advertise a config store that answered ECONNREFUSED on first use.
 # `|| true` is the repo's established shape and also keeps the assignment from
-# aborting the script.
+# aborting the script. No `2>/dev/null` either: `-s` already keeps curl quiet on
+# stderr, and check:ci-devcontainer-scripts refuses a silenced `curl -o`.
 port_answers() {
     local port="$1" code
-    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || true)
+    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" || true)
     [ -n "$code" ] || return 1
     case "$code" in
         # Nothing is listening.

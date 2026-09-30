@@ -27,6 +27,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.quality import setup_idempotency
 from rediacc_ci.setup import host, machine, phases, port_parity
+from rediacc_ci.setup.ctx import Result
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
@@ -192,9 +193,14 @@ class _RecordingCtx(machine.Ctx):
     def which(self, _name: str) -> str | None:
         return None
 
-    def run(self, _argv, **_kwargs):
-        from rediacc_ci.setup.ctx import Result  # noqa: PLC0415
-
+    def run(
+        self,
+        argv: list[str],
+        *,
+        timeout: int | None = None,
+        stdin_text: str | None = None,
+    ) -> Result:
+        del argv, timeout, stdin_text
         return Result(1, "", "")
 
     def say(self, message: str = "") -> None:
