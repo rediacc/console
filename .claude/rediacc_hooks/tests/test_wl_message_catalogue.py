@@ -367,7 +367,14 @@ ARITY = {
     "CLI_PLANWHY_NO_INDEX": {"path": "p", "index": "agent/INDEX.md"},
     "CLI_PLANTICK_USAGE": None,
     "CLI_PLANTICK_DRY": {"rel": "p", "note": "n"},
-    "CLI_PLANTICK_WROTE": {"rel": "p", "ledger": "l", "investigation": "i", "note": "n", "me": "m"},
+    "CLI_PLANTICK_WROTE": {
+        "rel": "p",
+        "ledger": "l",
+        "investigation": "i",
+        "index": "x",
+        "note": "n",
+        "me": "m",
+    },
     "CLI_PLANINV_USAGE": None,
     "CLI_PLANINV_DRY": {
         "rel": "p",
