@@ -638,6 +638,7 @@ def program_details(document: object, via: tuple[str, str] | None = None) -> str
     A GHSA WITH SEVERAL VULNERABLE LINES IS NARROWED, NOT TRUNCATED. The twin took `.vulnerabilities[0]`, so GHSA-q2hr-2g5m-vwhr printed `>= 4.0.0, < 5.0.12 -> 5.0.12` while the tree's vulnerable copy was brace-expansion 1.1.18. `via` is the `(package, npm range)` pair `program_via_ranges` recorded for this advisory source, and `select_ghsa_lines` keeps the entries it matches. One entry left renders exactly as before; several render as `<range> (patched in <ver>)` pairs joined with `; ` in the range slot, patched slot empty. A single-entry GHSA takes the old path unchanged, DEFECT 3 included.
     """
     lines = jq_index(document, "vulnerabilities")
+    first: object
     if isinstance(lines, list) and len(lines) > 1:
         name, npm_range = via or ("", "")
         chosen = select_ghsa_lines(lines, name, npm_range)

@@ -1339,6 +1339,7 @@ def test_the_pre_fix_selection_printed_the_patched_line() -> None:
     That is the row the twin rendered, and the one this fix exists to replace; with no range to narrow by, every line is printed rather than it alone.
     """
     first = port.jq_index0(GHSA_BRACE_EXPANSION["vulnerabilities"])
+    assert isinstance(first, dict)
     assert first["vulnerable_version_range"] == ">= 4.0.0, < 5.0.12"
     unnarrowed = port.bash_read_fields(port.program_details(GHSA_BRACE_EXPANSION), 3)
     assert unnarrowed[0] == (

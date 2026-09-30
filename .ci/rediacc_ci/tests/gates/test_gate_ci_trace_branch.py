@@ -28,6 +28,7 @@ import os
 import pathlib
 import re
 import sys
+import typing
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -479,11 +480,12 @@ def test_noci_settled_bounds(gate):
     import importlib.util  # noqa: PLC0415
 
     spec = importlib.util.spec_from_file_location("ci_trace_under_test", TRACE)
+    assert spec is not None and spec.loader is not None, "cannot load %s" % TRACE
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     t0 = 1_900_000_000.0
     iso = "2030-03-17T17:46:40Z"  # == t0
-    rows = [
+    rows: list[tuple[dict[str, typing.Any], bool]] = [
         ({"pushed_at": iso, "first_seen": t0 + 170, "now": t0 + 179, "grace": 180}, False),
         ({"pushed_at": iso, "first_seen": t0 + 170, "now": t0 + 180, "grace": 180}, True),
         # A busy repo: pushedAt keeps moving, so only this process's own observation settles it.

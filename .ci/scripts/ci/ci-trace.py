@@ -483,7 +483,8 @@ def main(argv=None):
         print("no-verdict: could not determine the current branch", file=sys.stderr)
         return EXIT_NO_VERDICT
 
-    cache, read_failures, pinned_head, seen = {}, 0, None, {}
+    cache, read_failures, pinned_head = {}, 0, None
+    seen: dict[str, float] = {}
     deadline = time.time() + args.timeout
 
     while True:
