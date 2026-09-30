@@ -126,15 +126,18 @@
   description: "Missing or wrong translation"
   guide: false
 
-# ZERO consumers in code, verified twice: check:ci-label-refs finds no
-# reference to any of the three, and 01-verified-context.md:320 records the
-# same. `release` in particular DESCRIBES itself as triggering CD, which is not
-# true -- CD is dispatched unconditionally from finalize-release-sentinel
-# (ci.yml) and reads no label. Kept declared rather than deleted because 28
-# merged PRs carry `release` and deleting a label strips it from their history.
+# `release` HAS a consumer since the operator's 2026-09-30 ruling:
+# `rediacc_ci.ci.dispatch_release` (and its twin dispatch-release.sh) reads it,
+# as an exact whole label, from the merged PR during `initialize`, and a kept
+# (non-bump-none) PR carrying it dispatches cd-v2 with `publish_stable=true`:
+# edge AND stable, skipping the 7-day soak. A failed lookup never promotes.
+# `guide: false` on purpose: the reviewer must not apply it; a person does.
+# The other two below still have ZERO consumers in code (check:ci-label-refs
+# finds no reference to either) and are kept declared rather than deleted
+# because deleting a label strips it from the history of the PRs that carry it.
 - name: release
   color: "0E8A16"
-  description: "Historical only: CD reads no label, it is dispatched unconditionally"
+  description: "Merge publishes edge AND stable, skipping the 7-day soak (not with bump-none)"
   guide: false
 
 - name: description-current

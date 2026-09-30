@@ -29,6 +29,8 @@ import shutil
 import stat
 from typing import TYPE_CHECKING
 
+import pytest
+
 from rediacc_ci.ci import initialize as port
 from rediacc_ci.tests import differential as diff
 
@@ -139,6 +141,9 @@ printf 'dispatch-release.sh GITHUB_OUTPUT=[%s] %s\\n' "${GITHUB_OUTPUT-UNSET}" "
 echo "GITHUB_OUTPUT=[${GITHUB_OUTPUT-UNSET}]" >&2
 if [[ -n "${FAKE_DECISION:-}" ]]; then
     echo "decision: ${FAKE_DECISION}"
+fi
+if [[ -n "${FAKE_STABLE:-}" ]]; then
+    echo "${FAKE_STABLE}"
 fi
 """,
     ".ci/scripts/version/detect-bump-type.sh": """#!/bin/bash
@@ -712,6 +717,52 @@ def test_an_undecided_release_falls_open(tmp_path: pathlib.Path) -> None:
     old, new, files = run_both(tmp_path, env_extra={**PUSH_MAIN, "FAKE_DECISION": ""})
     assert "skip_release" not in old[1]
     assert "✓ Release decision: <undecided, will release>" in old[2]
+    assert_identical(old, new, files)
+
+
+def test_a_stable_release_writes_publish_stable_an_intentional_delta(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The `release` label (operator ruling 2026-09-30), port only.
+
+    INTENTIONAL DELTA (Rule T): initialize.sh never reads the stable line, so the twin's run is the same run minus the notice and the output key. Every other byte still agrees.
+    """
+    stable = "publish_stable: true (#591)"
+    old, new, files = run_both(
+        tmp_path,
+        env_extra={**PUSH_MAIN, "FAKE_DECISION": "release", "FAKE_STABLE": stable},
+        docker=False,
+    )
+    assert "publish_stable" not in old[1]
+    notice = (
+        "::notice title=Release to stable::%s: this release publishes to edge AND "
+        "stable, skipping the 7-day soak.\n" % stable
+    )
+    assert notice + "publish_stable=true\n" in new[1]
+    assert new[1].replace(notice + "publish_stable=true\n", "") == old[1]
+    assert "✓ Release channel: edge AND stable (%s)\n" % stable in new[2]
+    assert strip_prog(new[2]).replace(
+        "✓ Release channel: edge AND stable (%s)\n" % stable, ""
+    ) == strip_prog(old[2])
+    assert new[0] == old[0] == 0
+    assert files["new_calls"] == files["old_calls"]
+
+
+@pytest.mark.parametrize("decision", ["skip", ""])
+def test_a_stable_line_without_a_release_decision_is_ignored(
+    tmp_path: pathlib.Path, decision: str
+) -> None:
+    """Skip wins, and an undecided run stays edge-only: stable fails closed."""
+    old, new, files = run_both(
+        tmp_path,
+        env_extra={
+            **PUSH_MAIN,
+            "FAKE_DECISION": decision,
+            "FAKE_STABLE": "publish_stable: true (#591)",
+        },
+        docker=False,
+    )
+    assert "publish_stable" not in new[1]
     assert_identical(old, new, files)
 
 

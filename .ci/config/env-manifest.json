@@ -351,6 +351,7 @@
       "PR_LABELS",
       "PR_NUMBER",
       "PUBLISH_DOCKER_REGISTRY",
+      "PUBLISH_STABLE",
       "RDC_RENET_LICENSE",
       "RECEIPT_LANE",
       "RECEIPT_PATH",

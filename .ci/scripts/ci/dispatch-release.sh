@@ -28,11 +28,17 @@
 # the skip requires EVERY merged PR containing this commit to carry the label
 # rather than any one of them.
 #
+# STABLE. Operator ruling 2026-09-30: a kept (non-bump-none) PR carrying the
+# exact label `release` publishes to edge AND stable, skipping the 7-day soak,
+# via cd-v2's `publish_stable` input. Stable FAILS CLOSED: a lookup failure
+# still releases (to edge), but only a positive label read reaches stable.
+#
 # Env:
 #   GH_TOKEN            required, for both the lookup and the dispatch
 #   GITHUB_REPOSITORY   owner/repo
 #   GITHUB_SHA          the commit being released
 #   GITHUB_RUN_ID       passed through to cd-v2 as ci_run_id
+#   PUBLISH_STABLE      --dispatch-only: exactly "true" adds -f publish_stable=true
 #   DISPATCH_RELEASE_DRY_RUN  test seam: print the dispatch instead of running it
 #
 # Exit: 0 whether it dispatched or skipped. A non-zero exit here would fail the
@@ -47,10 +53,14 @@
 #   --decide-only    decide and report; never dispatches, never calls
 #                    `gh workflow run`. On SKIP it writes skip_release=true to
 #                    $GITHUB_OUTPUT so the steps that seal and dispatch can be
-#                    guarded. On every other outcome it writes NOTHING there --
-#                    including all three fail-open paths, whose whole purpose is
-#                    to end in a release.
-#   --dispatch-only  dispatch, with no API lookup at all. The decision was
+#                    guarded. On a release to stable it writes
+#                    publish_stable=true there and prints
+#                    `publish_stable: true (#N)` after the decision line. On
+#                    every other outcome it writes NOTHING there -- including
+#                    all three fail-open paths, whose whole purpose is to end in
+#                    a release, and which never reach stable.
+#   --dispatch-only  dispatch, with no API lookup at all; PUBLISH_STABLE carries
+#                    the earlier verdict. The decision was
 #                    already made by an earlier --decide-only step; asking twice
 #                    would double the API calls and could answer differently if
 #                    a label changed between the two.
@@ -74,6 +84,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 SKIP_LABEL='bump-none'
+STABLE_LABEL='release'
 
 # --decide-only / --dispatch-only / nothing. No flag keeps the original
 # end-to-end behaviour, which is what every existing caller and test drives.
@@ -91,15 +102,17 @@ esac
 require_var GITHUB_REPOSITORY
 require_var GITHUB_SHA
 
+# $1 = 'true' adds -f publish_stable=true (edge AND stable); anything else is edge only.
 dispatch() {
+    local -a argv=(gh workflow run cd-v2.yml --ref main -f release_mode=patch -f "ci_run_id=${GITHUB_RUN_ID:-}")
+    if [[ "${1:-}" == 'true' ]]; then
+        argv+=(-f publish_stable=true)
+    fi
     if [[ -n "${DISPATCH_RELEASE_DRY_RUN:-}" ]]; then
-        echo "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=${GITHUB_RUN_ID:-}"
+        echo "DRY-RUN: ${argv[*]}"
         return 0
     fi
-    gh workflow run cd-v2.yml \
-        --ref main \
-        -f release_mode=patch \
-        -f ci_run_id="${GITHUB_RUN_ID:-}"
+    "${argv[@]}"
 }
 
 # Does this commit earn a release? 0 = yes, 1 = no.
@@ -108,8 +121,10 @@ dispatch() {
 # mode it runs -- under the CI wiring this function runs exactly once, in the
 # --decide-only step, so suppressing the notices here would mean nothing ever
 # printed why a release was withheld or why a fail-open path released anyway.
-# What it does NOT do is touch $GITHUB_OUTPUT; that is the caller's job, and it
-# happens for the skip verdict only.
+# What it does NOT do is touch $GITHUB_OUTPUT; that is the caller's job. It sets
+# stable_prs to the kept PRs carrying STABLE_LABEL, and leaves it empty on
+# every fail-open path.
+stable_prs=''
 decide() {
     local rows
     # Every merged PR containing this commit, as "<number> <label,label,...>".
@@ -139,6 +154,9 @@ decide() {
             skip_prs="${skip_prs}#${pr_num} "
         else
             keep_prs="${keep_prs}#${pr_num} "
+            if grep -qx "$STABLE_LABEL" <<<"${labels//,/$'\n'}"; then
+                stable_prs="${stable_prs}#${pr_num} "
+            fi
         fi
     done <<<"$rows"
 
@@ -154,6 +172,11 @@ decide() {
     fi
 
     log_info "dispatching cd-v2 for ${GITHUB_SHA:0:7} (${keep_prs:-no PR})"
+    if [[ -n "$stable_prs" ]]; then
+        stable_prs="${stable_prs% }"
+        log_info "${stable_prs} carries '$STABLE_LABEL': publishing to edge AND stable, skipping the 7-day soak"
+        echo "::notice title=Release to stable::${stable_prs} is labelled ${STABLE_LABEL}, so ${GITHUB_SHA:0:7} publishes to edge AND stable, skipping the 7-day soak."
+    fi
     return 0
 }
 
@@ -164,26 +187,36 @@ fi
 
 case "$MODE" in
     decide)
+        key=''
         if [[ "$skip_release" == 'true' ]]; then
             echo 'decision: skip'
-            if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-                echo 'skip_release=true' >>"$GITHUB_OUTPUT"
-            fi
+            key='skip_release'
         else
             echo 'decision: release'
+            if [[ -n "$stable_prs" ]]; then
+                echo "publish_stable: true (${stable_prs})"
+                key='publish_stable'
+            fi
+        fi
+        if [[ -n "$key" && -n "${GITHUB_OUTPUT:-}" ]]; then
+            echo "${key}=true" >>"$GITHUB_OUTPUT"
         fi
         ;;
     dispatch)
-        # No lookup, by design: --decide-only already asked.
+        # No lookup, by design: --decide-only already asked, and ci.yml passes
+        # its stable verdict as PUBLISH_STABLE. Only exactly "true" promotes.
         echo 'decision: release'
-        dispatch
+        if [[ "${PUBLISH_STABLE:-}" == 'true' ]]; then
+            echo "::notice title=Release to stable::${GITHUB_SHA:0:7} publishes to edge AND stable (publish_stable=true), skipping the 7-day soak."
+        fi
+        dispatch "${PUBLISH_STABLE:-}"
         ;;
     full)
         if [[ "$skip_release" == 'true' ]]; then
             echo 'decision: skip'
         else
             echo 'decision: release'
-            dispatch
+            dispatch "$([[ -n "$stable_prs" ]] && echo true)"
         fi
         ;;
 esac

@@ -162,6 +162,8 @@ RESOLVE_VERSION_CURRENT_LINE = 290
 DETECT_POINTER_BUMP = ".ci/scripts/ci/detect-pointer-bump.sh"
 GENERATE_TAG = ".ci/scripts/ci/generate-tag.sh"
 DISPATCH_RELEASE = ".ci/scripts/ci/dispatch-release.sh"
+# The prefix of dispatch-release.sh's stable line (`rediacc_ci.ci.dispatch_release.STABLE_LINE`).
+STABLE_LINE = "publish_stable: true"
 DETECT_BUMP_TYPE = ".ci/scripts/version/detect-bump-type.sh"
 RESOLVE_VERSION = ".ci/scripts/version/resolve-version.sh"
 
@@ -326,7 +328,7 @@ def check_image_path(path: str, tag: str) -> str:
     return "true" if proc.returncode == 0 else "false"
 
 
-def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
+def release_decision(root_relative: str = DISPATCH_RELEASE) -> tuple[str, str]:
     """Twin :209, including the two things that make it fail OPEN.
 
         RELEASE_DECISION="$(GITHUB_OUTPUT='' <script> --decide-only 2>&1 \\
@@ -335,6 +337,13 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
     `2>&1` merges the child's stderr INTO the pipe, so its diagnostics are filtered out with everything else and never reach the log; `|| true` swallows every non-zero status, the child's and grep's alike. A crashed, cancelled or missing decider therefore yields the empty string, and the
     caller's `!= 'decision: skip'` then releases. That polarity is the twin's
     stated design, not an accident, so it is reproduced exactly.
+
+    Returns `(decision, stable)`. `stable` is the child's
+    `publish_stable: true (#N)` line, or empty. INTENTIONAL DELTA from the
+    twin (Rule T, PLAN-retire-bash-oracles.md): initialize.sh predates the
+    operator's 2026-09-30 `release`-label ruling and never reads that line. It
+    fails CLOSED: a crashed or silent decider prints no such line, so the run
+    stays edge-only.
     """
     sys.stdout.flush()
     # The CHILD's environment, built once and handed to the child. Deliberately not an alias this module then reads its own variables through.
@@ -353,7 +362,8 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> str:
         # bash writes its `No such file or directory` to the command's stderr, which the `2>&1` has already pointed into the pipe, so grep eats it and the substitution is empty. Same shape here.
         merged = ""
     lines = [line for line in merged.split("\n") if line.startswith("decision:")]
-    return "\n".join(lines)
+    stable = [line for line in merged.split("\n") if line.startswith(STABLE_LINE)]
+    return "\n".join(lines), (stable[0] if stable else "")
 
 
 def main(argv: list[str]) -> int:
@@ -493,10 +503,20 @@ def run(check_only: str, output_file: str) -> int:
         and os.environ.get("GITHUB_REF", "") == "refs/heads/main"
     ):
         log.step("Deciding whether this commit earns a release...")
-        decision = release_decision()
+        decision, stable = release_decision()
         log.info("Release decision: %s" % (decision or "<undecided, will release>"))
         if decision == "decision: skip":
             write_output("skip_release", "true", output_file)
+        elif decision == "decision: release" and stable:
+            # The `release` label: edge AND stable, skipping the 7-day soak.
+            # Read by finalize-release-sentinel's dispatch step as PUBLISH_STABLE.
+            log.info("Release channel: edge AND stable (%s)" % stable)
+            print(
+                "::notice title=Release to stable::%s: this release publishes to edge "
+                "AND stable, skipping the 7-day soak." % stable,
+                flush=True,
+            )
+            write_output("publish_stable", "true", output_file)
 
     # ----------------------------------------------------------------------- Step 6c: next version, from a tag list this refuses to guess at -----------------------------------------------------------------------
     log.step("Calculating next version from git tags...")
