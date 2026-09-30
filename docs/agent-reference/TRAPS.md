@@ -915,6 +915,29 @@ now_ms() {
 
 **Sweep, not fix:** `git grep 'date +%s%[0-9]*N'`. Bare `%N` compared against `%N` is safe (consistent units, as in `test-ci-runner.sh`); a precision digit compared against a threshold is not. Only the one site used a precision digit.
 
+## A single-FILE docker bind mount pins the INODE, so host edits never reach a running container
+Trap-Id: docker-file-bind-mount-pins-inode
+Enforced-By: JUDGMENT-ONLY
+Residue: Nothing checks that a container's copy of a bind-mounted FILE still matches the host's. `.devcontainer/devbox-entrypoint.sh` is mounted the same way as the script below and is still exposed; so is any future single-file mount. Only `devbox-autostart.sh` was moved off the pinned path.
+
+`docker run -v /host/path/file.sh:/usr/local/bin/file.sh` binds the INODE, not the path. An editor or script that writes the file by replace-and-rename gives it a new inode, and the container keeps serving the ORIGINAL bytes for the rest of its life. Directory mounts do not have this problem: the path is resolved on every open.
+
+Measured 2026-09-09 on `rediacc-devbox-26-console`, after editing
+`.devcontainer/devbox-autostart.sh` on the host:
+
+    host:      stat -c %i .devcontainer/devbox-autostart.sh   -> 4874047
+    container: stat -c %i /usr/local/bin/devbox-autostart.sh  -> 3155898
+
+**Why it fools rather than blocks.** The edit is really on disk, `docker inspect` really lists the mount, and the source path in that listing is really the file that was just edited — so every check an agent naturally reaches for agrees with it. The container then runs the old code and the test of the edit PASSES AS A TEST OF THE OLD BEHAVIOUR. In the case that produced this entry, a rewritten liveness check was confirmed working by a run whose log lines could only have come from the version it replaced, and the discrepancy was visible solely because the new wording was absent from the output.
+
+**The shape of the fix.** Reach the file through a DIRECTORY mount instead. This
+repo bind-mounts the worktree at its identical host path, so
+`$DEVBOX_WORKSPACE/.devcontainer/devbox-autostart.sh` is the same file always
+current, and `devbox_autostart_dispatch` (`.ci/lib/devbox.sh`) now runs that copy
+rather than the one under `/usr/local/bin`. Where a single-file mount is
+unavoidable, `docker cp` it in at dispatch time, or compare inodes before
+believing a test.
+
 ## `agent-browser open` returns 1 when its stdout is REDIRECTED and 0 on a terminal
 Trap-Id: agent-browser-exit-depends-on-tty
 Enforced-By: gate:check:ci-agent-browser-exit

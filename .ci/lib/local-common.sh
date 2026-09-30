@@ -200,37 +200,57 @@ ensure_cpu_features_gypi() {
 
 # Smart dependency installation (only if needed)
 # Uses a hash-based stamp so npm metadata-only mtime changes do not force reinstall
+# The identity of node_modules: the manifests that produce it plus the runtime it
+# was built against.
+#
+# Note `_sha256sum` prints `hash  path`, so the ABSOLUTE paths are folded in too and
+# the stamp is worktree-bound. That is intentional-by-accident but load-bearing to
+# know when reproducing a stamp by hand: hashing relative paths yields a different
+# value and makes a perfectly good stamp look stale.
+_deps_hash() {
+    {
+        _sha256sum "$LOCAL_ROOT_DIR/package.json"
+        _sha256sum "$LOCAL_ROOT_DIR/package-lock.json"
+        if [[ -f "$LOCAL_ROOT_DIR/.npmrc" ]]; then
+            _sha256sum "$LOCAL_ROOT_DIR/.npmrc"
+        fi
+        # The RUNTIME is part of the identity of node_modules, not just the
+        # manifests. install:natives rebuilds ssh2/cpu-features/esbuild
+        # against the local glibc, and the devbox image (Ubuntu 24.04,
+        # glibc 2.39) is not the same libc as a Debian 12 host (2.36). A
+        # .node built on one side fails to load on the other with a
+        # GLIBC_2.38-not-found error that looks like a corrupt install.
+        # Without this line the stamp matches across the flip and both
+        # sides believe the tree is fresh.
+        printf 'runtime=%s\n' "${REDIACC_NPM_RUNTIME:-host}"
+    } | _sha256sum | awk '{print $1}'
+}
+
+# Would `ensure_deps` do any work? READ-ONLY -- it writes nothing, not even a stamp.
+#
+# Extracted so `setup --check` can answer the question without duplicating the
+# rule. `--check` used to report only host tools, the image, the port block and
+# the container, so it printed "Nothing to do; ./run.sh setup would be a no-op"
+# immediately before a run that installed dependencies and compiled three native
+# modules for ~45s. Two implementations of "what does done mean" is how they came
+# to disagree; this is the one implementation.
+#
+# It must STAY read-only: TRAPS `once-failing-gate-is-not-automatically-a-flake`
+# records a CI run lost to the theory that `--check` had refreshed a stamp.
+deps_are_current() {
+    local node_modules_dir="$LOCAL_ROOT_DIR/node_modules"
+    local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/npm-install.stamp"
+    [[ -d "$node_modules_dir" ]] &&
+        [[ -x "$node_modules_dir/.bin/tsx" ]] &&
+        [[ -L "$node_modules_dir/@rediacc/cli" ]] &&
+        [[ "$(read_stamp_hash "$stamp_file")" == "$(_deps_hash)" ]]
+}
+
 ensure_deps() {
     local node_modules_dir="$LOCAL_ROOT_DIR/node_modules"
     local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/npm-install.stamp"
-    local current_hash
-    local saved_hash=""
 
-    current_hash="$(
-        {
-            _sha256sum "$LOCAL_ROOT_DIR/package.json"
-            _sha256sum "$LOCAL_ROOT_DIR/package-lock.json"
-            if [[ -f "$LOCAL_ROOT_DIR/.npmrc" ]]; then
-                _sha256sum "$LOCAL_ROOT_DIR/.npmrc"
-            fi
-            # The RUNTIME is part of the identity of node_modules, not just the
-            # manifests. install:natives rebuilds ssh2/cpu-features/esbuild
-            # against the local glibc, and the devbox image (Ubuntu 24.04,
-            # glibc 2.39) is not the same libc as a Debian 12 host (2.36). A
-            # .node built on one side fails to load on the other with a
-            # GLIBC_2.38-not-found error that looks like a corrupt install.
-            # Without this line the stamp matches across the flip and both
-            # sides believe the tree is fresh.
-            printf 'runtime=%s\n' "${REDIACC_NPM_RUNTIME:-host}"
-        } | _sha256sum | awk '{print $1}'
-    )"
-
-    saved_hash="$(read_stamp_hash "$stamp_file")"
-
-    if [[ -d "$node_modules_dir" ]] &&
-        [[ -x "$node_modules_dir/.bin/tsx" ]] &&
-        [[ -L "$node_modules_dir/@rediacc/cli" ]] &&
-        [[ "$saved_hash" == "$current_hash" ]]; then
+    if deps_are_current; then
         log_debug "Dependencies are up-to-date (stamp matched)"
         return 0
     fi
@@ -270,7 +290,18 @@ ensure_deps() {
     # waves edited the same spot, which they are not.
     log_step "Compiling native modules (blocked at install by ignore-scripts)..."
     (cd "$LOCAL_ROOT_DIR" && npm run install:natives)
-    write_stamp_hash "$stamp_file" "$current_hash"
+
+    # RECOMPUTE THE HASH, do not reuse the one from the top of this function.
+    #
+    # `npm install` REWRITES package-lock.json -- guaranteed here, because the
+    # committed lockfile is in npm 11's form and this function deliberately
+    # installs with npm@10 (see above), which writes the 27 nested `"dev": true`
+    # markers back. Recording the pre-install hash therefore described a tree that
+    # no longer existed, so the NEXT run missed the stamp and paid a full install
+    # plus an unconditional `npm rebuild ssh2 cpu-features esbuild` -- ~45s -- to
+    # arrive at exactly the same place. It settled only on the third run, and
+    # re-armed on every fresh checkout.
+    write_stamp_hash "$stamp_file" "$(_deps_hash)"
 }
 
 # Ensure shared packages are built
@@ -642,6 +673,22 @@ reexec_with_docker_group() {
 # Reaching that installer needs Go, and building renet does NOT need Docker:
 # build.sh's embed_assets skips with a warning when docker is absent
 # (private/renet/build.sh:143-149). So the bootstrap order is not circular.
+# Drop devbox.sh's memo of how to invoke docker, when it is loaded.
+#
+# devbox_docker() caches "docker" vs "sudo docker" for the life of the process
+# because a read-only `setup --check` was asking it thirteen times. That cache is
+# only safe while nothing changes whether docker is usable -- and this file does
+# change it, by installing docker and by adding the user to the docker group. A
+# memo taken BEFORE either of those would keep saying "sudo docker", or keep
+# saying docker is unreachable, for the rest of the run.
+#
+# Guarded on the function existing: local-common.sh is sourced on paths that never
+# load devbox.sh, and an unbound function under `set -u` would abort the run.
+_reset_docker_memo() {
+    declare -F devbox_docker_reset >/dev/null 2>&1 && devbox_docker_reset
+    return 0
+}
+
 ensure_docker_installed() {
     if docker version &>/dev/null; then
         log_debug "Docker present and usable: $(docker --version 2>/dev/null)"
@@ -652,6 +699,7 @@ ensure_docker_installed() {
     if command -v docker &>/dev/null && sudo docker version &>/dev/null; then
         log_warn "Docker is installed but not usable as $USER (group membership not active in this shell)"
         _ensure_docker_group
+        _reset_docker_memo
         return 0
     fi
 
@@ -679,6 +727,7 @@ ensure_docker_installed() {
     fi
 
     _ensure_docker_group
+    _reset_docker_memo
 
     # The first renet build ran without Docker, so its embedded CRIU/rsync
     # assets were skipped -- and _renet_source_hash PRUNES pkg/embed/assets

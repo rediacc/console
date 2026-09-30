@@ -47,16 +47,69 @@ cd "$WORKSPACE" || {
     exit 0
 }
 
-# start <name> <subcommand...> -- background, logged, never fatal.
+# True when something answers HTTP on the port.
+#
+# There is deliberately no `|| echo 000` here. curl ALREADY prints 000 on a
+# refused connection AND exits non-zero, so a fallback appends a second one and
+# the value becomes "000000" -- which is != "000", so a DEAD port reports alive.
+# That precise bug is documented at .ci/lib/account.sh:141, where it made
+# `account dev` advertise a config store that answered ECONNREFUSED on first use.
+# `|| true` is the repo's established shape and also keeps the assignment from
+# aborting the script.
+port_answers() {
+    local port="$1" code
+    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || true)
+    [ -n "$code" ] || return 1
+    case "$code" in
+        # Nothing is listening.
+        000) return 1 ;;
+        # A GATEWAY ERROR IS NOT A LIVE SERVICE, and this is not pedantry: the
+        # account gateway binds :4800 and proxies to Astro, so when Astro dies
+        # the gateway stays bound and answers 502 forever. Counting "something
+        # replied" as healthy read exactly that corpse as alive and skipped the
+        # restart -- measured 2026-09-09, `already serving on :4800` printed
+        # against a route the operator could see was broken. None of the
+        # services here emit these codes at / when they are actually well.
+        502 | 503 | 504) return 1 ;;
+        # Everything else counts, including 3xx (the gateway redirects / ) and
+        # 4xx (a service that is up but wants a path or auth). Cf.
+        # account_rustfs_alive, which accepts RustFS's 403 for the same reason.
+        *) return 0 ;;
+    esac
+}
+
+# start <name> <port> <subcommand...> -- background, logged, never fatal.
+# Pass an empty port when there is nothing to probe; the process test is the
+# fallback, not the preference.
 start() {
     local name="$1"
-    shift
+    local port="$2"
+    shift 2
     local logf="$LOG_DIR/$name.log"
 
-    # Do not stack a second copy on top of a service somebody already started;
-    # two servers racing for one port is a worse failure than not starting.
-    if pgrep -f "run.sh $*" >/dev/null 2>&1; then
-        log "$name already running; leaving it alone"
+    # THE PORT IS THE LIVENESS TEST, NOT THE PROCESS NAME.
+    #
+    # This used to be `pgrep -f "run.sh $*"`, and on 2026-09-09 that read a
+    # devbox whose account route had been answering 502 for hours as healthy:
+    # `run.sh account dev` (pid 4523) was still alive with no serving child at
+    # all -- the gateway had died and left its supervisor shell behind. pgrep
+    # matched the zombie, autostart said "already running; leaving it alone",
+    # and the only route that mattered stayed dead. Same trap, same file, as the
+    # comment on port_answers above.
+    #
+    # Starting over a non-serving instance is safe for the services here:
+    # account_dev opens by stopping whatever holds its gateway port ("Stopping
+    # previous account instance"), which is exactly the state this branch finds.
+    if [ -n "$port" ]; then
+        if port_answers "$port"; then
+            log "$name already serving on :$port; leaving it alone"
+            return 0
+        fi
+        if pgrep -f "run.sh $*" >/dev/null 2>&1; then
+            log "$name has a process but nothing answers :$port; replacing it"
+        fi
+    elif pgrep -f "run.sh $*" >/dev/null 2>&1; then
+        log "$name already running (no port to probe); leaving it alone"
         return 0
     fi
 
@@ -68,8 +121,15 @@ start() {
     log "$name pid $!"
 }
 
-start account-dev account dev
-start account-db account db
+# The account gateway is a FIXED 4800 (devbox.sh sets REDIACC_DEV_PORT_BASE and
+# labels the traefik service with the same number), so it is always probeable.
+start account-dev 4800 account dev
+
+# The database browser derives its port as base + DEVBOX_OFFSET_STUDIO
+# (.ci/lib/account.sh), which only the host knows, so devbox.sh passes it in.
+# Its absence is not an error -- a container created before that env var existed
+# simply falls back to the process test, the same way the terminal does below.
+start account-db "${DEVBOX_DB_PORT:-}" account db
 
 # The browser terminal. NOT routed through start(), which is run.sh-shaped
 # (`pgrep -f "run.sh $*"`, `exec ./run.sh "$@"`) and ttyd is not a run.sh
@@ -84,8 +144,10 @@ start account-db account db
 # and forwarded through setpriv by devbox-entrypoint.sh. Its absence is not an
 # error: a container created before that env var existed simply has no terminal.
 if [ -n "${DEVBOX_TERM_PORT:-}" ] && command -v ttyd >/dev/null 2>&1; then
-    if pgrep -x ttyd >/dev/null 2>&1; then
-        log "ttyd already running; leaving it alone"
+    if port_answers "$DEVBOX_TERM_PORT"; then
+        log "ttyd already serving on :$DEVBOX_TERM_PORT; leaving it alone"
+    elif pgrep -x ttyd >/dev/null 2>&1; then
+        log "ttyd has a process but nothing answers :$DEVBOX_TERM_PORT; leaving it alone (kill it to retry)"
     else
         log "starting ttyd on :$DEVBOX_TERM_PORT (log: $LOG_DIR/ttyd.log)"
         TTYD_PORT="$DEVBOX_TERM_PORT" setsid /usr/local/bin/start-ttyd.sh \
