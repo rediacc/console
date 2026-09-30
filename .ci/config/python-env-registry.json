@@ -108,7 +108,8 @@
       "GITHUB_OUTPUT",
       "GITHUB_REPOSITORY",
       "GITHUB_RUN_ID",
-      "GITHUB_SHA"
+      "GITHUB_SHA",
+      "PUBLISH_STABLE"
     ],
     ".ci/rediacc_ci/ci/dispatch_watchdog.py": [
       "GITHUB_REPOSITORY"
@@ -232,7 +233,8 @@
       "REDIACC_LANE",
       "REDIACC_NPM_RUNTIME",
       "SCRIPT_ENTRYPOINT",
-      "USER"
+      "USER",
+      "_DEVBOX_DOCKER"
     ],
     ".ci/rediacc_ci/core/local_common_shadow_driver.py": [
       "HOME",
@@ -905,7 +907,10 @@
     ],
     ".ci/rediacc_ci/release/check_soak_period.py": [
       "*name",
-      "FORCE"
+      "EDGE_VERSION",
+      "FORCE",
+      "NIGHTLY_HEAD_SHA",
+      "PROMOTE_TRIGGER"
     ],
     ".ci/rediacc_ci/release/check_stable_manifest.py": [
       "*name"
