@@ -158,6 +158,9 @@ const RULES = [
   // scripts/ci/*.cjs are EXECUTED by gated jobs: ci-quality.yml runs `node scripts/ci/write-shard-receipt.cjs` on every sharded lane, and housekeeping.yml requires scripts/ci/report-budget-check.cjs. A delta touching only one of them changes what those jobs do, so it forces full CI like scripts-drills.
   { name: 'scripts-ci', match: matchExactOrPrefix('scripts/ci'), full: 'harness' },
 
+  // The local gate runner is EXECUTED by a gated job: housekeeping.yml's gate-costs-capture runs `scripts/ci-runner/run.ts --quick --jobs 1 --sched slots --json` (8670cdc00), and its budget-check job reads scripts/ci-runner/gates.lock.json, so a delta touching only the runner changes what that job measures.
+  { name: 'scripts-ci-runner', match: matchExactOrPrefix('scripts/ci-runner'), full: 'harness' },
+
   // The GATE BINDER, which is executed by a gated job and also WRITES ci-quality.yml. It is the one file under scripts/ that both runs as a gate and generates the workflow other gates are stepped from, so a delta touching only it changes what every lane runs. check:ci-scope-scripts-reachability caught it as 'reduced'.
   { name: 'scripts-gate-bind', match: matchPrefix('scripts/gate-bind.ts'), full: 'harness' },
 

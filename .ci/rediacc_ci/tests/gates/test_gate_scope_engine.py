@@ -777,7 +777,13 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0 attribution-URL check that ran the ceph fork test, because scripts/** was a single blanket rule.
     expect_classify(gate, "gate source only", "reduced|18|", "scripts/gates/check-embed-credits.ts")
     expect_classify(gate, "gate lib only", "reduced|18|", "scripts/lib/blocker-validator.ts")
-    expect_classify(gate, "ci-runner only", "reduced|18|", "scripts/ci-runner/manifest.ts")
+    # FULL since 2026-09-30: housekeeping.yml's gate-costs-capture executes scripts/ci-runner/run.ts and its budget check reads gates.lock.json, so check_scope_scripts_reachability requires the `scripts-ci-runner` harness rule, the same verdict scripts/ci already has.
+    expect_classify(
+        gate,
+        "ci-runner only",
+        "full|18|account_e2e drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers elite_run fork_isolation install_methods license_enforcement ops package_tests renet unit update_flow",
+        "scripts/ci-runner/manifest.ts",
+    )
     # The tracked agent/ notes root. STATE.md is rewritten many times per session, so this row decides whether a session costs nothing or seventy minutes a write.
     expect_classify(gate, "agent session state only", "reduced|18|", "agent/97604f47/STATE.md")
     expect_classify(
