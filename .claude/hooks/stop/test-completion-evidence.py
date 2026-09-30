@@ -65,6 +65,8 @@ MUST_PASS = [
         "a hyphenated root dotfile resolves",
         "re-armed the trigger at .ci-trigger:1",
     ),
+    # Extensionless build files, 2026-09-30 (#ebd1753c): .devcontainer/Dockerfile could not be cited at all.
+    ("a nested Dockerfile resolves", "added the ARG at .devcontainer/Dockerfile:1"),
 ]
 
 if _SUBMODULE_SHA:
@@ -81,6 +83,8 @@ MUST_FAIL = [
     ),
     # The dotfile branch must still RESOLVE, or it would turn any dotted prose token into evidence. This is the control that keeps that branch honest.
     ("a fabricated root dotfile is not evidence", "see .no-such-allowlist:4"),
+    # The named-file branch must still RESOLVE.
+    ("a fabricated Dockerfile path is not evidence", "see no/such/Dockerfile:3"),
     # A fabricated hex string must still fail even now that submodule roots are also checked -- the per-submodule fallback adds a search location, never a looser match.
     ("a fabricated sha is not evidence even with submodule roots checked", "fixed deadbee1"),
 ]

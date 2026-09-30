@@ -186,6 +186,8 @@ CITE_RE = re.compile(
     r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt)"
     # NESTED DOTFILES, 2026-09-24: the optional directory prefix below. `private/account/.env:12` and `.ci/policy/.dead-bash-allowlist:19` could not be cited at all, because the lookbehind refuses a dot right after `/` and the branch had no way to consume the directories in front of it. Found while building wl_defersettle, whose settle evidence cites an env key's line.
     r"|(?:\.?[\w][\w.-]*/)*\.[\w][\w-]*"
+    # EXTENSIONLESS BUILD FILES, 2026-09-30, the same class again: `.devcontainer/Dockerfile:1` was refused by --plan-investigate as "carries no <path>:<line> citation", so no Dockerfile or Makefile in the repo could be cited (worklist #ebd1753c). Named, not open-ended: a bare `word:3` in prose must not start matching.
+    r"|(?:\.?[\w][\w.-]*/)*(?:Dockerfile|Containerfile|Makefile|Justfile|Procfile)(?:\.[\w-]+)?"
     r")"
     r":(\d+)(?:-\d+)?\b"
 )
