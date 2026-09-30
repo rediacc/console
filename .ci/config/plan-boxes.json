@@ -861,21 +861,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-npm-global-install-release-age.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 4,
-      "open_sigs": [],
-      "done_sigs": [
-        "76fc6ed3",
-        "ab348c25",
-        "bf9f08ca",
-        "e1112748"
-      ]
-    },
     "agent/plans/PLAN-parallel-writer-roster.md": {
       "status": "ready",
       "owner": "d778be9d",
@@ -2814,6 +2799,21 @@
         "d322b58b",
         "e4adea50",
         "ebada9a3"
+      ]
+    },
+    "agent/plans/_done/PLAN-npm-global-install-release-age.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-09-30",
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
+        "76fc6ed3",
+        "ab348c25",
+        "bf9f08ca",
+        "e1112748"
       ]
     },
     "agent/plans/_done/PLAN-npm11-everywhere.md": {
