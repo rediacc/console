@@ -8,7 +8,7 @@ Subcommands, one per workflow step, so each `run:` stays one line:
   upstream  fetch the origin `repomd.xml` and its signature, gpgv it with the OBS key (after asserting the key's fingerprint equals cephpkg.go's OBSKeyFingerprint), fetch `primary`, check its checksum, and report the current ceph-common/cephadm EVR (`obs_evr`) beside the tree's pin (`pin`, .ceph-image-pin).
   capture   capture one EVR: stop on an existing tag; download and check the repodata (retried from a fresh repomd on a mid-publish mismatch); refuse an EVR `primary` does not list; derive the package set in an opensuse/leap:16.0 container; download each RPM and check it against `primary`; `rpm -K` with only the OBS key; prove the staged tree with one positive and two negative container checks; push; read back. `--stage-only --out <dir>` does everything but the registry: no tag probe, no push.
   fetch     pull the tag for a pin into a directory and check its signature. A miss is rc 1: CI needs the mirror.
-  serve     start a detached `python3 -m http.server` on every interface for the E2E VMs (192.168.111.1 from the fleet).
+  serve     start a detached `python3 -m http.server` on every interface for the E2E VMs, which reach the runner at the fleet network's gateway (VM_GATEWAY, 192.168.111.254; 192.168.111.1 is the bridge VM), and print that URL. It answers on loopback and on the runner's own non-loopback address before it returns, so a loopback-only bind fails the step.
 
 THE PACKAGE SET is what renet's own two zypper steps (cephpkg's pinned `ceph-common=<EVR> cephadm=<EVR>`, then the profiles' other names, both `--no-recommends`) install from the OBS origin in a fresh container, intersected by (name, EVR, arch) with `primary`. The names are read from pkgset.go's Ceph sets, the union over every profile, so the set grows with renet. The steps run at the EVR being captured rather than through `renet ceph install`, because renet installs only its own pin and the point of capturing OBS's current build is that it may not be the pin yet.
 
@@ -34,6 +34,7 @@ import os
 import pathlib
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tarfile
@@ -92,6 +93,8 @@ HTTP_TIMEOUT_S = 120
 PULL_TIMEOUT_S = 600
 PUSH_TIMEOUT_S = 900
 SERVE_PORT = 8089
+# The runner's address on the `ops up` fleet network: renet opsconfig's VMNetGateway (`<VM_NET_BASE>.254`), the libvirt NAT bridge's own IP. 192.168.111.1 is the bridge VM, which also hosts the registry at :5000.
+VM_GATEWAY = "192.168.111.254"
 
 NS_REPO = "{http://linux.duke.edu/metadata/repo}"
 NS_COMMON = "{http://linux.duke.edu/metadata/common}"
@@ -1084,28 +1087,53 @@ def fetch(
     return verify_tree(dest, key, fingerprint, run)
 
 
-def serve(directory: pathlib.Path, port: int, probe: Callable[[str], bytes] = http_get) -> int:
-    """Start a detached http.server on every interface at port over directory and return its pid once it answers."""
+def primary_ipv4() -> str:
+    """The runner's own non-loopback IPv4: the source address of its default route (a UDP connect sends nothing)."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.connect(("192.0.2.1", 9))
+        addr: str = s.getsockname()[0]
+    if addr.startswith("127."):
+        raise MirrorError("no non-loopback IPv4 to probe the mirror on (got %s)" % addr)
+    return addr
+
+
+def serve(
+    directory: pathlib.Path,
+    port: int,
+    probe: Callable[[str], bytes] = http_get,
+    hosts: Callable[[], Sequence[str]] = lambda: ("127.0.0.1", primary_ipv4()),
+) -> int:
+    """Start a detached http.server on every interface at port over directory and return its pid once every host in hosts() answers.
+
+    The fleet network the VMs reach it on (VM_GATEWAY) does not exist yet (`ops up` creates it later), so the non-loopback probe is the runner's own
+    address: it answers only from an every-interface bind, which is what serves the gateway once the bridge comes up.
+    """
     if not (directory / "repodata" / "repomd.xml").is_file():
         raise MirrorError("%s is not a mirror tree (no repodata/repomd.xml)" % directory)
     log_path = directory.parent / ("obs-mirror-serve-%d.log" % port)
-    # No --bind: http.server's default is every interface (dual-stack), which the E2E VMs need, since they reach the runner over the fleet bridge at 192.168.111.1.
+    # No --bind: http.server's default is every interface (dual-stack), which the E2E VMs need, since they reach the runner at VM_GATEWAY on the fleet bridge.
     argv = [sys.executable, "-m", "http.server", "--directory", str(directory), str(port)]
     with open(log_path, "ab") as log:
         proc = subprocess.Popen(
             argv, stdout=log, stderr=log, stdin=subprocess.DEVNULL, start_new_session=True
         )
-    url = "http://127.0.0.1:%d/repodata/repomd.xml" % port
+    pending = ["http://%s:%d/repodata/repomd.xml" % (h, port) for h in hosts()]
     for _ in range(50):
         if proc.poll() is not None:
             raise MirrorError("http.server exited %s; see %s" % (proc.returncode, log_path))
         try:
-            probe(url)
-            return proc.pid
+            probe(pending[0])
+            pending.pop(0)
+            if not pending:
+                # Detached on purpose: the server outlives this process, so Popen.__del__ must neither warn about it nor queue it for reaping.
+                proc.returncode = 0
+                return proc.pid
+            continue
         except (urllib.error.URLError, OSError):
             time.sleep(0.2)
     proc.kill()
-    raise MirrorError("http.server never answered %s" % url)
+    proc.wait()
+    raise MirrorError("http.server never answered %s; see %s" % (pending[0], log_path))
 
 
 # --- CLI ----------------------------------------------------------------------------------
@@ -1260,8 +1288,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             _emit({"dir": str(args.dest)})
             return 0
         pid = serve(args.dir.resolve(), args.port)
-        print("serving %s on every interface, port %d (pid %d)" % (args.dir, args.port, pid))
-        _emit({"pid": str(pid)})
+        url = "http://%s:%d/" % (VM_GATEWAY, args.port)
+        print(
+            "serving %s on every interface, port %d (pid %d); the VMs use %s"
+            % (args.dir, args.port, pid, url)
+        )
+        _emit({"pid": str(pid), "url": url})
         return 0
     except (MirrorError, BakeImageError, OSError, urllib.error.URLError) as exc:
         print("::error::obs_mirror: %s" % exc, flush=True)

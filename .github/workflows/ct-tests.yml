@@ -1154,15 +1154,22 @@ jobs:
       # for the pin (a miss fails here, naming the ci-obs-mirror dispatch),
       # serve it on every interface, and export CEPH_ZYPPER_MIRROR so `ops up`
       # writes /etc/rediacc/ceph-zypper-mirror on every VM. The VMs reach the
-      # runner over the fleet bridge at 192.168.111.1.
+      # runner at the fleet network's gateway, 192.168.111.254 (obs_mirror's
+      # VM_GATEWAY); 192.168.111.1 is the bridge VM. `ops up` creates that
+      # network later, so serve's readiness probe is loopback plus the
+      # runner's own address, which only an every-interface bind answers.
       - name: Fetch the OBS mirror
         if: matrix.os-image == 'opensuse-16.0' && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork)
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror fetch --pin "$(sed -n 's/^host\.opensuse-16\.0=//p' private/renet/.ceph-image-pin)" --dest "$RUNNER_TEMP/obs-mirror"
       - name: Serve the OBS mirror
+        id: obs-serve
         if: matrix.os-image == 'opensuse-16.0' && !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork)
-        run: |
-          PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror serve --dir "$RUNNER_TEMP/obs-mirror" --port 8089
-          echo "CEPH_ZYPPER_MIRROR=http://192.168.111.1:8089/" >> "$GITHUB_ENV"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror serve --dir "$RUNNER_TEMP/obs-mirror" --port 8089
+      - name: Export the OBS mirror URL
+        if: steps.obs-serve.outcome == 'success'
+        env:
+          MIRROR_URL: ${{ steps.obs-serve.outputs.url }}
+        run: echo "CEPH_ZYPPER_MIRROR=$MIRROR_URL" >> "$GITHUB_ENV"
       # A fork PR's github.token cannot read the private package (plan Q4).
       - name: OBS mirror unavailable on a fork PR
         if: matrix.os-image == 'opensuse-16.0' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork

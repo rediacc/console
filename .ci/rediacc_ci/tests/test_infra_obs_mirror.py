@@ -16,8 +16,11 @@ import gzip
 import hashlib
 import io
 import json
+import os
 import pathlib
 import shutil
+import signal
+import socket
 import subprocess
 import tarfile
 from typing import Any
@@ -527,3 +530,75 @@ def test_fetch_unpacks_and_verifies(tmp_path: pathlib.Path) -> None:
     (tmp_path / "dest" / PRIMARY_HREF).write_bytes(b"corrupt")
     with pytest.raises(om.ChecksumMismatchError):
         om.verify_tree(tmp_path / "dest", _ctx(tmp_path).key, FPR, FakeRun())
+
+
+# --- serve --------------------------------------------------------------------------------
+
+
+def _mirror_tree(tmp_path: pathlib.Path) -> pathlib.Path:
+    tree = tmp_path / "mirror"
+    (tree / "repodata").mkdir(parents=True)
+    (tree / "repodata" / "repomd.xml").write_bytes(b"<repomd/>")
+    return tree
+
+
+def _free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port: int = s.getsockname()[1]
+    return port
+
+
+def test_serve_returns_a_live_pid_that_serves_the_tree(tmp_path: pathlib.Path) -> None:
+    port = _free_port()
+    pid = om.serve(_mirror_tree(tmp_path), port, hosts=lambda: ("127.0.0.1",))
+    try:
+        # The server outlives serve(): it is a detached session, not a child the caller must keep.
+        assert om.http_get("http://127.0.0.1:%d/repodata/repomd.xml" % port) == b"<repomd/>"
+    finally:
+        os.kill(pid, signal.SIGTERM)
+
+
+def test_serve_probes_every_host_and_names_the_one_that_never_answers(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(om.time, "sleep", lambda _s: None)
+    asked: list[str] = []
+
+    def probe(url: str) -> bytes:
+        asked.append(url)
+        if url.startswith("http://10.9.8.7:"):
+            raise OSError("connection refused")
+        return b"<repomd/>"
+
+    port = _free_port()
+    with pytest.raises(om.MirrorError, match=r"never answered http://10\.9\.8\.7:%d/" % port):
+        om.serve(_mirror_tree(tmp_path), port, probe=probe, hosts=lambda: ("127.0.0.1", "10.9.8.7"))
+    assert asked[0] == "http://127.0.0.1:%d/repodata/repomd.xml" % port
+    assert len(asked) > 2
+    assert all(u.startswith("http://10.9.8.7:") for u in asked[1:])
+
+
+def test_serve_refuses_a_directory_that_is_not_a_mirror(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(om.MirrorError, match="not a mirror tree"):
+        om.serve(tmp_path, _free_port(), hosts=lambda: ("127.0.0.1",))
+
+
+def test_primary_ipv4_is_not_loopback() -> None:
+    try:
+        addr = om.primary_ipv4()
+    except (OSError, om.MirrorError):
+        pytest.skip("no default route in this sandbox")
+    assert not addr.startswith("127.")
+
+
+def test_the_serve_cli_hands_the_vms_the_fleet_gateway_not_the_bridge_vm(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # 192.168.111.1 is the bridge VM (it hosts the :5000 registry); the runner is the libvirt gateway .254. PR #591's first run pointed zypper at .1.
+    out = tmp_path / "out"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    monkeypatch.setattr(om, "serve", lambda _d, _p: 4242)
+    assert om.main(["serve", "--dir", str(tmp_path), "--port", "8089"]) == 0
+    assert out.read_text().splitlines() == ["pid=4242", "url=http://192.168.111.254:8089/"]
+    assert om.VM_GATEWAY == "192.168.111.254"
