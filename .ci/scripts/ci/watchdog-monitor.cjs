@@ -101,6 +101,23 @@ function jobBaseName(name) {
   return segment.replace(/ \([^()]*\)$/, '');
 }
 
+/**
+ * When the job actually began running, in ms, or null when it never ran.
+ *
+ * NOT `job.started_at`: the jobs API fills it for a job still waiting for a runner, equal to `created_at`
+ * (run 36709808117: "Quality / Gate tests" queued behind the 20-job concurrency limit showed started_at =
+ * created_at, zero steps, and was cancelled as "ran 15.3m (budget 15m)" without ever running). The first
+ * step's start is the job's real start; a job with no started step has not run and cannot be over budget.
+ */
+function jobRunStartMs(job) {
+  // No `steps` field at all (a caller that never fetched them) keeps the old started_at reading; the real API always sends the array, empty for a job that never ran.
+  if (!Array.isArray(job.steps)) return job.started_at ? new Date(job.started_at).getTime() : null;
+  const starts = job.steps
+    .map((s) => (s && s.started_at ? new Date(s.started_at).getTime() : NaN))
+    .filter((ms) => Number.isFinite(ms));
+  return starts.length ? Math.min(...starts) : null;
+}
+
 /** The per-job budget for one job: its ruled exemption cap when JOB_BUDGET_CAPS names it, else the ordinary budget. */
 function jobBudgetFor(name, defaultMin, caps = JOB_BUDGET_CAPS) {
   // The full segment first ("Renet (Full)"), then the base name without a matrix suffix ("E2E Workers").
@@ -444,8 +461,8 @@ function evaluateBudget({
   runMode = 'report',
 }) {
   const minutesElapsed = (job) => {
-    if (!job.started_at) return null;
-    const startMs = new Date(job.started_at).getTime();
+    const startMs = jobRunStartMs(job);
+    if (startMs === null) return null;
     const endMs =
       job.status === 'completed' && job.completed_at ? new Date(job.completed_at).getTime() : nowMs;
     return (endMs - startMs) / 60000;
@@ -1375,8 +1392,9 @@ const monitor = async ({ github, context, core }) => {
   );
   const stuckThresholdFor = (j) => jobBudgetFor(j.name, STUCK_THRESHOLD_MIN);
   const jobElapsedMin = (j) => {
-    if (!j.started_at || !j.completed_at) return 0;
-    return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
+    const startMs = jobRunStartMs(j);
+    if (startMs === null || !j.completed_at) return 0;
+    return Math.round((new Date(j.completed_at).getTime() - startMs) / 60000);
   };
   console.log(
     `Stuck-threshold: ${STUCK_THRESHOLD_MIN}m, or the job's budget cap (cancellations at or after this are budget violations and are not retried)`

@@ -193,6 +193,45 @@ def test_run_clock_fires_at_20_01(gate):
     gate.log_pass("the run clock fires at 20:01 (%s)" % verdict["runViolation"])
 
 
+def test_a_queued_job_is_not_over_budget(gate):
+    """Run 36709808117: jobs queued behind the 20-job concurrency limit carried started_at = created_at and zero steps, and enforce mode cancelled the run on "ran 15.3m (budget 15m)" for jobs that never ran. The real API shape (an empty `steps` array) must read as not running; a job whose first step started 5 minutes ago is 5 minutes in, whatever its started_at says."""
+    queued = {"name": "Quality / Gate tests", "status": "queued", "started_at": T0, "steps": []}
+    running = {
+        "name": "Quality / Wiring",
+        "status": "in_progress",
+        "started_at": T0,
+        "steps": [{"name": "Set up job", "started_at": _iso(25)}],
+    }
+    verdict = evaluate(
+        gate,
+        jobs=[queued, running],
+        run={"run_started_at": T0},
+        nowMs=int(_ms(30, 0)),
+        jobBudgetMin=15,
+        runBudgetMin=None,
+        jobMode="enforce",
+    )
+    gate.assert_eq(
+        verdict["jobViolations"], [], "a queued job and a 5-minute-old job are both within budget"
+    )
+    gate.assert_eq(verdict["forceCancelRequested"], False, "nothing to cancel")
+    # Control: the same running job whose first step started at T0 is 30 minutes in and must fire.
+    running_long = dict(running, steps=[{"name": "Set up job", "started_at": T0}])
+    control = evaluate(
+        gate,
+        jobs=[running_long],
+        run={"run_started_at": T0},
+        nowMs=int(_ms(30, 0)),
+        jobBudgetMin=15,
+        runBudgetMin=None,
+        jobMode="enforce",
+    )
+    gate.assert_eq(
+        len(control["jobViolations"]), 1, "control: 30 minutes from the first step fires"
+    )
+    gate.log_pass("queue time is not runtime; the first step's start is the job's start")
+
+
 def test_report_mode_never_requests_force_cancel(gate):
     verdict = evaluate(
         gate,
