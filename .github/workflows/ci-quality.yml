@@ -2464,11 +2464,10 @@ jobs:
 
       - name: Python package tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # PYTEST_RUN_TIMEOUT_S is not set here: check_pytest.py's own default
-        # (600s, moved with timeout-minutes above -- see this job's block
-        # comment and the constant's own comment for the derivation) applies
-        # uniformly to all three legs, the same way the un-split job never set
-        # it either.
+        # PYTEST_RUN_TIMEOUT_S is not set here: check_pytest.py's own per-leg
+        # default (RUN_TIMEOUT_S, 840s; see the constant's comment for the
+        # derivation) applies uniformly to all three legs. An unsharded local
+        # run is bounded by the three legs' budget instead.
         run: |
           bash .ci/bootstrap.sh
           npm run check:ci-pytest -- --shard-manifest .ci/config/shards/quality-pytest.json --shard "${{ matrix.shard }}/3"
