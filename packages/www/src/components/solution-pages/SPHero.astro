@@ -62,7 +62,11 @@ const hasMedia = Astro.slots.has('default');
 <section class:list={['sp-hero', hasMedia && 'sp-hero-split']}>
   <div class="sp-hero-content">
     <h1>{hero.title}</h1>
-    <p class="sp-hero-sub">{hero.subtitle}</p>
+    {/* set:html, not plain interpolation: hero.subtitle carries a `<span
+        class="sp-emphasis">` wrap around the page's unique-feature phrase (the
+        translation value itself, same trust boundary as privacy-policy.astro's
+        prose paragraphs -- authored copy, never user input). */}
+    <p class="sp-hero-sub" set:html={hero.subtitle} />
     {cta && (
       <div class="sp-hero-cta">
         {/* AccountLink, not a bare <a>: it carries the data-track-* contract the

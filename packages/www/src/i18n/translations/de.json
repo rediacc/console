@@ -226,7 +226,7 @@
         "windows": "Windows"
       }
     },
-    "subtitle": "Rediacc ist die Software für Ihren Server. Sie klont Ihr Produktionssystem in Sekunden: Apps, Datenbanken, alles.",
+    "subtitle": "Rediacc ist die Software für <span class=\"sp-emphasis\">Ihren Server</span>. Sie klont Ihr Produktionssystem <span class=\"sp-emphasis\">in Sekunden</span>: Apps, Datenbanken, alles.",
     "title": "Produktion klonen.",
     "titleHighlight": " Alles bleibt ganz."
   },
@@ -319,32 +319,6 @@
     "title": "Newsletter",
     "unsubscribed": "Sie wurden abgemeldet. Schade, dass Sie gehen.",
     "errorRequiredEmail": "Bitte geben Sie Ihre E-Mail-Adresse ein."
-  },
-  "notASlice": {
-    "overline": "Ein Tool. Der ganze Stack.",
-    "slices": [
-      {
-        "description": "Sie kopieren deine Daten. Deine App ist mehr als Daten.",
-        "title": "Datenbank-Tools"
-      },
-      {
-        "description": "Sie kopieren deinen Code. Code allein ist kein Test.",
-        "title": "Dev-Box-Tools"
-      },
-      {
-        "description": "Sie speichern alles. Wiederherstellung dauert Stunden, nicht eine Minute.",
-        "title": "Backup-Tools"
-      },
-      {
-        "description": "Sie kopieren deine Manifeste. Ein Cluster ist mehr als YAML.",
-        "title": "Kubernetes-Tools"
-      }
-    ],
-    "title": "Die meisten Tools kopieren ein Stück. Wir kopieren alles.",
-    "winner": {
-      "description": "Jedes Team bekommt seine eigene schreibbare Kopie. Daten, Apps, Einstellungen, alles. Bereit in 60 Sekunden. Das gilt auch für ganze Kubernetes-Cluster. Du zahlst nur für Speicher, wenn sich etwas ändert.",
-      "label": "Rediacc"
-    }
   },
   "pages": {
     "blog": {
@@ -1091,22 +1065,21 @@
         "benefits": {
           "items": [
             {
-              "description": "AGENTS.md ins Projekt legen. Der KI-Assistent kennt sofort jeden Befehl, jedes Flag und jeden Workflow.",
+              "description": "Der Agent liest eine einzige Datei im Projektstamm und kennt danach den gesamten Befehlsumfang. Kein SDK zu installieren, kein Schema von Hand zu schreiben, keine Zugangsdaten zu verwalten.",
               "icon": "zap",
-              "title": "Null Integrationsaufwand"
+              "title": "Nichts zu integrieren"
             },
             {
-              "description": "JSON-Antworten benötigen durchschnittlich ~200 Tokens. Das --fields-Flag lässt Agenten nur die benötigten Daten anfordern. Kein verschwendeter Kontext.",
+              "description": "Antworten kommen strukturiert zurück, sodass ein Agent sie jedes Mal gleich verarbeitet und seinen Kontext für die Aufgabe nutzt statt fürs Auslesen eines Dashboards.",
               "icon": "terminal",
-              "title": "Sparsam mit Kontextfenstern"
+              "title": "Antworten bleiben schlank"
             },
             {
-              "description": "--dry-run zeigt destruktive Operationen als Vorschau. --yes ermöglicht Automatisierung. Agenten können mit eingebauten Schutzschienen zuversichtlich deployen. Sogar ein Fork des gesamten Clusters folgt denselben Regeln.",
+              "description": "Alles, was etwas löscht, zeigt vorher eine Vorschau, und Automatisierung muss ausdrücklich aktiviert werden. Ein Agent kann schnell arbeiten, ohne dass ein einziger Fehlversuch alles unwiderruflich macht.",
               "icon": "shield",
-              "title": "Standardmäßig sicher"
+              "title": "Destruktive Aktionen fragen zuerst nach"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Entwickelt für autonomes Infrastrukturmanagement"
         },
         "bottomCta": {
@@ -1116,8 +1089,8 @@
           "title": "Lassen Sie Ihren KI-Agent Ihre Infrastruktur verwalten."
         },
         "hero": {
-          "ctaLabel": "Server für Agenten bereitstellen",
-          "subtitle": "CLI-first. SSH-basiert. JSON standardmäßig. Jeder rdc-Befehl ist für autonome Agenten gebaut: kein GUI, keine Browser-Automatisierung, keine benutzerdefinierten Integrationen.",
+          "ctaLabel": "Kostenlos testen",
+          "subtitle": "CLI-first. SSH-basiert. JSON standardmäßig. Jeder rdc-Befehl ist <span class=\"sp-emphasis\">für autonome Agenten gebaut</span>: kein GUI, keine Browser-Automatisierung, keine benutzerdefinierten Integrationen.",
           "title": "Infrastruktur, die Ihr KI-Agent sofort versteht."
         },
         "howItWorks": {
@@ -1175,7 +1148,6 @@
               "title": "AI Agent"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Eine AGENTS.md-Vorlage ins Projektverzeichnis legen. Der KI-Assistent liest sie beim Start und kennt sofort jeden rdc-Befehl.",
@@ -1202,7 +1174,6 @@
         },
         "problem": {
           "description": "Ein KI-Coding-Assistent kann autonom Code schreiben, testen und debuggen. Doch sobald es um Deployment, Status-Checks oder Infrastruktur-Management geht, scheitert er: GUI-Dashboards, Browser-OAuth, instabile APIs und Responses, die das Kontextfenster sprengen.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "73%",
@@ -1252,26 +1223,8 @@
         "relatedSolutions": {
           "title": "Ähnliche Lösungen entdecken"
         },
-        "stats": [
-          {
-            "icon": "terminal",
-            "label": "CLI-native Operationen",
-            "number": "100%"
-          },
-          {
-            "icon": "zap",
-            "label": "Durchschnittliche Tokens pro Antwort",
-            "number": "~200"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "Browser-Automatisierung nötig",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Jede Designentscheidung bei Rediacc priorisiert maschinenlesbare Schnittstellen. Die Non-TTY-Erkennung wechselt automatisch zu JSON. Das konsistente Format bedeutet, dass Agenten jede Antwort auf dieselbe Weise verarbeiten. SSH-basierte Authentifizierung: keine OAuth-Flows, keine Token-Verwaltung.",
-          "overline": "AGENTENZENTRIERTES DESIGN",
+          "description": "Jede Designentscheidung bei Rediacc priorisiert <span class=\"sp-emphasis\">maschinenlesbare Schnittstellen</span>. Die Non-TTY-Erkennung wechselt automatisch zu JSON. Das konsistente Format bedeutet, dass Agenten jede Antwort auf dieselbe Weise verarbeiten. SSH-basierte Authentifizierung: keine OAuth-Flows, keine Token-Verwaltung.",
           "rediaccLabel": "Rediacc (rdc CLI)",
           "rows": [
             {
@@ -1303,22 +1256,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Ein fester Preis pro Maschine. Keine Gebühren pro Benutzer, keine überraschenden Rechnungen, keine Egress-Kosten. Ihr Budget bleibt planbar, auch wenn Sie wachsen.",
+              "description": "Der Preis richtet sich nach Maschinen. Die Rechnung im nächsten Jahr entspricht der von heute plus der Hardware, die Sie zusätzlich anschaffen. Nichts wird teurer, nur weil das Unternehmen gewachsen ist.",
               "icon": "tag",
-              "title": "Planbare Kosten"
+              "title": "Eine Rechnung, die Sie vorhersehen können"
             },
             {
-              "description": "Ihre Daten bleiben auf Ihrer Hardware, in offenen Formaten. Kein Anbieter kann Sie damit erpressen oder Ihnen Zugangsgebühren aufzwingen.",
+              "description": "Sie liegen auf Hardware, die Ihnen gehört, in Formaten, die jede Linux-Maschine lesen kann. Kein Anbieter ist je in der Position, über den Zugang zu Ihren eigenen Daten zu verhandeln.",
               "icon": "lock",
-              "title": "Ihre Daten, Ihre Kontrolle"
+              "title": "Niemand sonst hält Ihre Daten fest"
             },
             {
-              "description": "Vollständige Wiederherstellung in unter 5 Minuten. Unveränderliche Backups, die Ransomware nicht knackt. Ihr Geschäft läuft weiter. Falls ein Provider ausfällt, zieht das ganze System um – Kubernetes inklusive.",
+              "description": "Backups werden auf Dateisystemebene nur einmal geschrieben, Ransomware findet also nichts zum Überschreiben. Systeme kommen mit einem Wechsel zurück, nicht mit einem Wiederherstellungsfenster, das Kunden aussitzen müssen.",
               "icon": "shield",
-              "title": "Geschäftskontinuität"
+              "title": "Das Geschäft läuft einfach weiter"
             }
           ],
-          "overline": "GESCHÄFTSWERT",
           "title": "Das ist wirklich enthalten"
         },
         "bottomCta": {
@@ -1331,7 +1283,6 @@
           "description": "Passen Sie die Schieberegler an Ihr Unternehmen an. Sehen Sie den echten Kostenvergleich: Cloud gegen Eigenhosting.",
           "footnote": "Diese Zahlen sind Schätzungen basierend auf branchenüblichen Kostenmodellen. Ihre Einsparungen hängen von Ihrer Infrastruktur und Ihrem Umfang ab.",
           "headerTitle": "Einsparungen berechnen",
-          "overline": "DIE ZAHLEN",
           "results": {
             "blockedTime": "Jährliche Infrastrukturkosten",
             "contextSwitching": "Wiederherstellungszeit",
@@ -1344,7 +1295,7 @@
             "wait": "Ausfallstunden pro Jahr"
           },
           "title": "Wie viel könnten Sie sparen?",
-          "withAnnual": "Berechnen →",
+          "withAnnual": "Berechnen",
           "withoutTag": "Aktuelle Cloud-Kosten",
           "withResults": {
             "blockedTime": "60% weniger",
@@ -1355,8 +1306,8 @@
           "withTag": "Mit Rediacc"
         },
         "hero": {
-          "ctaLabel": "Zum Festpreis starten",
-          "subtitle": "Schützen Sie Ihre Geschäftsdaten auf Hardware, die Ihnen gehört. Ein fester Preis pro Maschine – ohne Gebühren pro Benutzer, ohne überraschende Cloud-Rechnungen, ohne dass der Anbieter Ihre Daten als Geisel hält.",
+          "ctaLabel": "Kostenlos testen",
+          "subtitle": "Schützen Sie Ihre Geschäftsdaten auf Hardware, die Ihnen gehört. <span class=\"sp-emphasis\">Ein fester Preis pro Maschine</span> – ohne Gebühren pro Benutzer, ohne überraschende Cloud-Rechnungen, ohne dass der Anbieter Ihre Daten als Geisel hält.",
           "title": "Ein Pauschalpreis pro Server. Ihre Daten bleiben bei Ihnen."
         },
         "meta": {
@@ -1366,7 +1317,6 @@
         },
         "problem": {
           "description": "Es fing mit einer kleinen Cloud-Rechnung an. Heute ist sie Ihre drittgrößte Ausgabe und wächst 20% pro Jahr. Benutzer-Lizenzen machen jede Neueinstellung teuer. Ihre Daten liegen in fremden Rechenzentren im Proprietär-Format des Anbieters. Wenn Sie weggehen wollen, zahlen Sie Egress-Gebühren, um Ihre eigenen Daten zu bekommen.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "20%",
@@ -1413,14 +1363,10 @@
           },
           "title": "Cloud-Rechnungen explodieren. Der Anbieter sitzt auf Ihren Daten."
         },
-        "relatedSolutions": {
-          "title": "Wie es funktioniert"
-        },
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
-          "ctaText": "CTO-Vertiefung teilen",
+          "ctaText": "CTO-Vertiefung öffnen",
           "description": "Das Tech-Team muss überprüfen, wie das in Ihren Stack passt. Teilen Sie ihnen die CTO-Analyse – sie enthält die Antworten, die das Team stellen wird.",
-          "overline": "NÄCHSTER SCHRITT",
           "title": "Mit dem CTO teilen"
         },
         "socialProof": {
@@ -1434,45 +1380,27 @@
             "improvement": "62% weniger Kosten, sofortige Wiederherstellung"
           },
           "quote": "Wir haben $18.000 pro Monat für Cloud-Infrastruktur für 47 Workloads ausgegeben. Nach der Migration zu Rediacc auf unseren eigenen Servern sank unsere Rechnung auf $6.800 – und die Wiederherstellungszeit ging von 4 Stunden auf 3 Minuten. Im ersten Monat war der ROI offensichtlich."
-        },
-        "stats": [
-          {
-            "icon": "tag",
-            "label": "Alles inklusive",
-            "number": "$204/Mo"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Verfügbarkeitsgarantie",
-            "number": "99,99%"
-          },
-          {
-            "icon": "users",
-            "label": "Pro-Sitz-Gebühren",
-            "number": "0"
-          }
-        ]
+        }
       },
       "forCtos": {
         "benefits": {
           "items": [
             {
-              "description": "Keine Cloud-Aufschläge, Pro-Sitz-Lizenzen oder Egress-Gebühren. Betrieb auf Ihrer bereits vorhandenen Hardware.",
+              "description": "Lizenzkosten richten sich nach Maschinen, nicht nach Köpfen. Wächst Ihr Team von zehn auf vierzig, ändert sich die Gehaltsabrechnung, aber die Infrastrukturrechnung bleibt, wo sie war.",
               "icon": "trend-up",
-              "title": "60% niedrigere TCO"
+              "title": "Ein Budget, das Wachstum übersteht"
             },
             {
-              "description": "Recovery in unter 5 Minuten. btrfs-Snapshots: Wiederherstellung ist ein Zeiger-Wechsel, kein Restore-Job.",
+              "description": "Weil eine Wiederherstellung nur ein Zeiger-Wechsel ist, kostet ein Test Minuten statt eines ganzen Wochenendes. Teams, die Recovery proben können, erfahren nicht erst im Ernstfall, dass ihr Backup kaputt war.",
               "icon": "zap",
-              "title": "Minuten, nicht Stunden"
+              "title": "Wiederherstellung, die Sie proben können"
             },
             {
-              "description": "Daten bleiben auf Ihrer Infrastruktur, in offenen Formaten. Anbieter wechseln, selbst verwalten, morgen migrieren: alles Ihre Entscheidung. Das gilt jetzt auch für Kubernetes-Cluster.",
+              "description": "Die Daten liegen in offenen Formaten auf Ihrem eigenen Dateisystem. Ein Wechsel ist damit eine Kopie, kein Migrationsprojekt, und keine Egress-Rechnung hängt an dieser Entscheidung.",
               "icon": "lock",
-              "title": "Kein Vendor Lock-in"
+              "title": "Ein Ausstieg, der schon funktioniert"
             }
           ],
-          "overline": "STRATEGISCHER WERT",
           "title": "Was Rediacc für Ihren Stack bedeutet"
         },
         "bottomCta": {
@@ -1485,7 +1413,6 @@
           "description": "Passen Sie die Regler an Ihre Situation an. Sehen Sie, wie Rediacc gegen Ihre heutige Rechnung abschneidet.",
           "footnote": "Schätzungen basieren auf branchen-üblichen TCO-Modellen, die Self-Hosted-Infrastruktur mit gleichwertigen Cloud-Services vergleichen. Tatsächliche Einsparungen hängen von Workload, Konfiguration und Skalierung ab.",
           "headerTitle": "Berechnen Sie Ihre Infrastruktur-Einsparungen",
-          "overline": "DIE ECHTEN KOSTEN",
           "results": {
             "blockedTime": "Jährliche Infrastrukturkosten",
             "contextSwitching": "Wiederherstellungszeit (MTTR)",
@@ -1498,7 +1425,7 @@
             "wait": "Stunden Ausfallzeit pro Jahr"
           },
           "title": "Was kostet Ihre Infrastruktur wirklich?",
-          "withAnnual": "Berechnen →",
+          "withAnnual": "Berechnen",
           "withoutTag": "Aktuelle Ausgaben",
           "withResults": {
             "blockedTime": "60% weniger",
@@ -1541,12 +1468,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "WETTBEWERBSUMFELD",
           "title": "Wie Rediacc im Vergleich abschneidet"
         },
         "hero": {
-          "ctaLabel": "TCO senken",
-          "subtitle": "Infrastruktur ohne Cloud-Markup. Keine Pro-Sitz-Preise. Recovery in Minuten, nicht Stunden.",
+          "ctaLabel": "Kostenlos testen",
+          "subtitle": "Infrastruktur ohne Cloud-Markup. Keine Pro-Sitz-Preise. <span class=\"sp-emphasis\">Recovery in Minuten</span>, nicht Stunden.",
           "title": "Infrastruktur-TCO um 60 % senken. Auf Ihrer Hardware skalieren."
         },
         "meta": {
@@ -1556,7 +1482,6 @@
         },
         "problem": {
           "description": "Ihre Cloud-Rechnung wächst jedes Jahr um 15–20 %. Pro-Sitz-Lizenzen bestrafen Teamwachstum. Wenn etwas ausfällt, dauert die 'sofortige Wiederherstellung' trotzdem Stunden — weil das Tool zwar Minuten-RPO verspricht, aber Tage liefert. Und mit jeder Vertragsverlängerung wird der Vendor-Lock teurer.",
-          "overline": "DAS KERNPROBLEM",
           "statCallouts": [
             {
               "number": "17%",
@@ -1608,9 +1533,8 @@
         },
         "shareWithTeam": {
           "ctaSlug": "for-devops",
-          "ctaText": "DevOps-Vertiefung teilen",
+          "ctaText": "DevOps-Vertiefung öffnen",
           "description": "Ihre Engineers lieben CLI-first-Workflows und sofort verfügbare Umgebungen. Teilen Sie den technischen Deep-Dive.",
-          "overline": "MIT IHREM TEAM TEILEN",
           "title": "Für Ihr DevOps-Team"
         },
         "socialProof": {
@@ -1625,26 +1549,8 @@
           },
           "quote": "Wir haben 47 Produktions-Workloads vom großen Cloud-Provider zu Rediacc auf unsere Hardware migriert. Infrastrukturkosten: 62% gespart im ersten Quartal. Beim ersten Incident Recovery in 3 Minuten statt 4 Stunden vom alten Tool."
         },
-        "stats": [
-          {
-            "icon": "trend-up",
-            "label": "Niedrigere TCO vs. Cloud",
-            "number": "60%"
-          },
-          {
-            "icon": "clock",
-            "label": "Vollständige Notfallwiederherstellung",
-            "number": "<5 Min"
-          },
-          {
-            "icon": "lock",
-            "label": "Kein Vendor Lock-in",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc läuft auf Ihrer Hardware und nutzt btrfs Copy-on-Write-Snapshots für sofortige Backups und Wiederherstellung. Jeder Snapshot ist auf Dateisystem-Ebene unveränderlich — Ransomware kann nicht verschlüsseln, was der Kernel schützt. Recovery heißt: einen Zeiger bewegen, nicht Terabytes restaurieren.",
-          "overline": "ARCHITEKTUR",
+          "description": "Rediacc läuft auf Ihrer Hardware und nutzt btrfs Copy-on-Write-Snapshots für sofortige Backups und Wiederherstellung. Jeder Snapshot ist auf Dateisystem-Ebene unveränderlich — Ransomware kann nicht verschlüsseln, was der Kernel schützt. Recovery heißt: <span class=\"sp-emphasis\">einen Zeiger bewegen, nicht Terabytes restaurieren</span>.",
           "rediaccLabel": "Rediacc (selbst gehostet)",
           "rows": [
             {
@@ -1676,22 +1582,21 @@
         "benefits": {
           "items": [
             {
-              "description": "Von der Anfrage zur funktionierenden Umgebung in unter einer Minute. Vollständiger Stack: OS, Container, Datenbanken, Konfiguration.",
+              "description": "Eine Umgebung zu bekommen ist nicht mehr die Aufgabe von jemand anderem. Du legst sie an und wirfst sie weg, so oft die Arbeit es eben braucht.",
               "icon": "zap",
-              "title": "60-Sekunden-Umgebungen"
+              "title": "Kein Ticket, keine Warteschlange"
             },
             {
-              "description": "Alles ist ein Befehl. Integriere CI/CD, Git Hooks oder deine Automation. Keine GUI nötig. Kubernetes inklusive: Jeder Namespace forkt wie jedes Repo.",
+              "description": "Jede Operation ist ein Befehl mit Exit-Code. Er passt direkt in eine Pipeline, einen Git-Hook oder ein Makefile, ganz ohne Wrapper, Browser oder Service-Account.",
               "icon": "terminal",
-              "title": "CLI-first, skriptfähig"
+              "title": "Lässt sich scripten wie alles andere"
             },
             {
-              "description": "Btrfs immutable Snapshots: Jede Umgebung in Sekunden zurück. Kein Datenverlust. Kein Downtime.",
+              "description": "Eine missglückte Migration oder ein falsches DROP ist mit einem Wechsel zurück zum Snapshot rückgängig gemacht. Das verändert, wie mutig Menschen mit echten Daten experimentieren.",
               "icon": "shield",
-              "title": "Sofortiges Rollback"
+              "title": "Fehler werden billig"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Entwickelt für Ingenieure, die alles automatisieren"
         },
         "bottomCta": {
@@ -1701,8 +1606,8 @@
           "title": "Probier's"
         },
         "hero": {
-          "ctaLabel": "Prod klonen",
-          "subtitle": "CLI-first Infrastruktur: Produktion in 60 Sekunden geklont, Rollback unter 5 Minuten, auf deiner Hardware. Keine Tickets. Kein Warten. Alles bleibt bei dir.",
+          "ctaLabel": "Kostenlos testen",
+          "subtitle": "CLI-first Infrastruktur: Produktion in <span class=\"sp-emphasis\">60 Sekunden</span> geklont, Rollback unter 5 Minuten, auf deiner Hardware. Keine Tickets. Kein Warten. Alles bleibt bei dir.",
           "title": "Klone in einer Minute. Stelle her in fünf. Keine Tickets mehr."
         },
         "howItWorks": {
@@ -1760,7 +1665,6 @@
               "title": "Produktion"
             }
           },
-          "overline": "WIE ES FUNKTIONIERT",
           "steps": [
             {
               "description": "Starte rdc ceph snapshot create production. Btrfs CoW snapshottet alles in unter einer Sekunde: App, Datenbank, Konfiguration.",
@@ -1787,7 +1691,6 @@
         },
         "problem": {
           "description": "Deine CI/CD deployt in Minuten. Deine IaC in Sekunden. Aber eine Testumgebung mit echten Daten braucht ein Ticket und drei Tage Wartezeit. Dein Staging ist geteilt, instabil und unterscheidet sich völlig von Production.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "69%",
@@ -1849,26 +1752,8 @@
           },
           "quote": "Wir sind von einem 3-Tage-Umgebungsbereitstellungszyklus auf unter einer Minute gekommen. Unsere Entwickler haben aufgehört, Tickets zu erstellen und angefangen auszuliefern. Die btrfs-Snapshots funktionieren einfach — 380 GB in 52 Sekunden geklont mit nahezu null zusätzlichem Speicher."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Klondauer",
-            "number": "60s"
-          },
-          {
-            "icon": "zap",
-            "label": "Vollständige Notfallwiederherstellung",
-            "number": "<5 Min"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "Ops-Tickets nötig",
-            "number": "0"
-          }
-        ],
         "techDiff": {
-          "description": "Rediacc nutzt btrfs Copy-on-Write-Snapshots auf Dateisystemebene. Ein Snapshot einer 380 GB Produktionsumgebung wird in Sekundenbruchteilen erstellt und benötigt zunächst keinen zusätzlichen Speicher. Sobald sich der Klon unterscheidet, verbrauchen nur geänderte Blöcke neuen Speicher.",
-          "overline": "UNTER DER HAUBE",
+          "description": "Rediacc nutzt btrfs Copy-on-Write-Snapshots auf Dateisystemebene. Ein Snapshot einer 380 GB Produktionsumgebung wird in <span class=\"sp-emphasis\">Sekundenbruchteilen</span> erstellt und benötigt zunächst keinen zusätzlichen Speicher. Sobald sich der Klon unterscheidet, verbrauchen nur geänderte Blöcke neuen Speicher.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -3053,7 +2938,6 @@
               "title": "Kontinuierlich, nicht jaehrlich"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Produktion klonen. KI angreifen lassen.",
@@ -3068,7 +2952,6 @@
           "description": "Jeder Tag, an dem eine Schwachstelle ungepatcht bleibt, ist ein Tag, an dem Ihre Infrastruktur exponiert ist. Berechnen Sie Ihr Risikofenster.",
           "footnote": "Modell: Traditionelle Pentest-Kosten bei ~15.000 $ pro Engagement pro ~10 Server. Blinder Fleck = % des Jahres ohne aktives Scanning. Rediacc-Kosten basierend auf 20 $/Server/Monat für kontinuierliche automatisierte Tests.",
           "headerTitle": "Sicherheitsexpositions-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "blindspot": "Blinder Fleck",
             "exposure": "Exposition pro Schwachstelle",
@@ -3095,7 +2978,6 @@
           "title": "Produktion klonen. KI angreifen lassen."
         },
         "howItWorks": {
-          "overline": "SO FUNKTIONIERT ES",
           "pipelineVisual": {
             "arrows": [
               {
@@ -3170,7 +3052,6 @@
         },
         "problem": {
           "description": "Penetrationstests auf Live-Systemen sind gefährlich. Sie können Dienste zum Absturz bringen, Daten beschädigen oder Fehlalarme auslösen. Daher überspringen die meisten Teams sie entweder oder testen gegen veraltete Staging-Umgebungen, die die Realität nicht widerspiegeln. Das Ergebnis: Schwachstellen bleiben monatelang ungepatcht — oder bis ein Angreifer sie zuerst findet.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "194 Tage",
@@ -3248,26 +3129,8 @@
           },
           "quote": "Wir haben unseren ersten automatisierten Pentest auf einem Produktionsklon durchgeführt und 23 Schwachstellen gefunden — darunter 2 kritische SQL-Injection-Vektoren, die drei manuelle Audits überlebt hatten. Wir haben alle vor unserer nächsten Compliance-Prüfung gepatcht, und wir führen jetzt wöchentlich statt jährlich Pentests durch."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone for testing",
-            "number": "47s"
-          },
-          {
-            "icon": "shield",
-            "label": "Production risk",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "CVE signatures scanned",
-            "number": "2,847"
-          }
-        ],
         "techDiff": {
           "description": "Traditionelle Penetrationstests zielen auf Staging-Umgebungen ab, die innerhalb von Tagen nach der Erstellung von der Produktion abweichen. Rediacc erstellt einen btrfs Copy-on-Write-Snapshot Ihrer tatsächlichen Produktionsinfrastruktur — gleiche Daten, gleiche Konfigurationen, gleiche Schwachstellen — und führt automatisierte Angriffssimulationen dagegen aus. Der Klon wird nach dem Test zerstört. Die Produktion wird nie berührt.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "Traditionelles Pentesting",
           "rediaccLabel": "Rediacc (greift einen Produktionsklon an)",
           "rows": [
@@ -3318,7 +3181,6 @@
               "title": "Sofortige Berichte"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Jede Aktion protokolliert. Nichts verborgen.",
@@ -3333,7 +3195,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten unvollständiger Audit-Trails.",
           "footnote": "Log-Zusammenstellung: Audits × Stunden pro Audit bei 200 $/Std. Audit-Lücken: geschätzt 1 pro 5 Server ohne zentralisierte Protokollierung. Untersuchungsverzögerung: Lücken × 12.000 $ (erweiterte Verstoßuntersuchung). Nicht-Compliance: 5.000 $ pro Lücke pro Audit. Mit Rediacc generiert ein CLI-Befehl in Sekunden einen vollständigen, SHA-256-verifizierten Bericht.",
           "headerTitle": "Audit-Trail-Risiko-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "compileHours": "Stunden für Log-Zusammenstellung / Jahr",
             "delayCost": "Untersuchungsverzögerungskosten",
@@ -3396,7 +3257,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Audit-Trail im Vergleich"
         },
         "hero": {
@@ -3461,7 +3321,6 @@
               "title": "Operationen"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Jedes Backup, jede Wiederherstellung, jeder Zugriff, jede Schluesselrotation und Konfigurationsaenderung wird automatisch aufgezeichnet. Kein Opt-in, kein Setup.",
@@ -3489,7 +3348,6 @@
         },
         "problem": {
           "description": "Wenn etwas schiefgeht, lautet die erste Frage 'was ist passiert?' Ohne vollständige Logs raten Sie. Unvollständige Audit-Trails bedeuten blinde Flecken. Blinde Flecken bedeuten Risiko. Prüfer akzeptieren 'wir glauben' nicht als Antwort.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "204 Tage",
@@ -3611,26 +3469,8 @@
           },
           "quote": "Während unseres SOC 2 Type II-Audits forderte der Prüfer 6 Monate Backup-Zugriffsprotokolle über alle 28 Server. Mit unserem vorherigen Tool wären das 2 Wochen manuelle Log-Aggregation gewesen — letztes Jahr hatten wir 4 Beanstandungen wegen unvollständiger Aufzeichnungen. Ich habe einen Rediacc-Befehl ausgeführt und in 30 Sekunden einen vollständigen, kryptografisch verifizierten Bericht erhalten. Die Prüferin sagte, es sei der sauberste Audit-Trail, den sie in 15 Jahren gesehen habe. Null Beanstandungen."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Actions Logged",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Log Integrity",
-            "number": "Manipulationssicher"
-          },
-          {
-            "icon": "zap",
-            "label": "Report Generation",
-            "number": "Sofort"
-          }
-        ],
         "techDiff": {
           "description": "Anwendungslogs sind zum Debuggen gedacht — sie sind veränderbar, unvollständig und über Systeme verstreut. Rediaccʼs Audit-Trail ist für Compliance konzipiert: Jede Operation ist kryptografisch signiert, chronologisch verkettet und als einzelner Bericht exportierbar.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "Veränderbare Anwendungslogs",
           "rediaccLabel": "Rediacc-Audit-Log",
           "rows": [
@@ -3660,7 +3500,6 @@
           "command": "rdc backup verify my-app",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verifizieren Sie Ihr erstes Backup in unter einer Minute.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Keine Kreditkarte erforderlich",
           "title": "Vertrauen Sie niemals einem unverifizierten Backup"
         },
         "calculator": {
@@ -3668,7 +3507,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten des Vertrauens auf 'Backup abgeschlossen'.",
           "footnote": "Beschädigte Backups: wöchentliche Jobs × 52 × Beschädigungsrate. Wiederherstellungsausfall: beschädigte Backups × Wiederherstellungsstunden × 100 $/Std. (Personal + verlorene Produktivität). Datenverlust: beschädigte Backups × 8 gefährdete Datensätze pro Vorfall × 173 $/Datensatz (IBM Cost of a Data Breach Report 2024). Mit täglicher automatisierter Verifizierung wird Beschädigung innerhalb von 24 Stunden erkannt — bevor sie sich verstärkt.",
           "headerTitle": "Berechnen Sie Ihre Backup-Risikoexposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "corrupted": "Beschädigte Backups / Jahr",
             "dataLoss": "Datenverlustrisiko (Datensätze)",
@@ -3731,7 +3569,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Backup-Verifizierung im Vergleich"
         },
         "hero": {
@@ -3796,7 +3633,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc repo push production ausfuehren. btrfs-Snapshot erfasst Ihren gesamten Stack atomar.",
@@ -3824,7 +3660,6 @@
         },
         "problem": {
           "description": "Sie denken, Sie sind geschützt. Sie haben Backups, die jede Nacht laufen. Aber sind sie tatsächlich gut? Die meisten Teams prüfen erst, wenn sie wiederherstellen müssen. Dann ist es zu spät. Ein beschädigtes Backup gibt Ihnen falsches Vertrauen — und sonst nichts.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "58%",
@@ -3929,7 +3764,6 @@
         },
         "techDiff": {
           "description": "Traditionelle Backup-Tools prüfen, ob Dateien geschrieben wurden. Rediacc geht weiter: Es klont das Backup, startet jeden Container, führt Gesundheitschecks gegen jeden Dienst durch und meldet bestanden/fehlgeschlagen. Keine Datei-Prüfsumme — ein vollständiger Wiederherstellungstest.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc-Verifizierung",
           "rows": [
             {
@@ -3972,7 +3806,6 @@
               "title": "Kein Vendor Lock-in"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Wenn AWS ausfaellt, laufen Sie weiter",
@@ -3980,7 +3813,6 @@
           "command": "rdc repo push production --to secondary-dc",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Replizieren Sie standortübergreifend kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
           "title": "Setzen Sie Ihr Unternehmen nicht auf eine Cloud"
         },
         "calculator": {
@@ -3988,7 +3820,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrem Unternehmen. Sehen Sie die wahren Kosten der Einzelcloud-Abhängigkeit.",
           "footnote": "Umsatzverlust: Stundenumsatz × Ausfallstunden. Failover-Arbeit: 3 Ingenieure × Failover-Stunden × 200 $/Std. × Vorfälle. Kundenabwanderung: 20 % des direkten Umsatzverlustes (konservative Schätzung). SLA-Bußgeld: 10 % des verlorenen Umsatzes. ITIC 2024 stellte fest, dass 41 % der Unternehmen stündliche Ausfallkosten von 1–5 Mio. $ berichten. Rediaccʼs <30s automatisches Failover eliminiert längere Ausfallzeitfenster.",
           "headerTitle": "Berechnen Sie Ihre Ausfallexposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "churn": "Kundenabwanderung (gesch.)",
             "labor": "Failover-Arbeitskosten",
@@ -4051,7 +3882,6 @@
               "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Kein anderes Tool wechselt in Sekunden zwischen Clouds"
         },
         "hero": {
@@ -4117,7 +3947,6 @@
               "title": "Primär (us-east-1)"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc replicate production --target secondary ausfuehren. Inkrementelle Synchronisierung — nur geaenderte Bloecke werden uebertragen.",
@@ -4145,7 +3974,6 @@
         },
         "problem": {
           "description": "Kritische Cloud-Ausfallereignisse stiegen 2024 um 18 % im Jahresvergleich, dauerten 18,7 % länger, und menschliches Versagen verursachte 68 % davon. Wenn Ihre einzige Cloud ausfällt, fällt alles aus. Ihre Kunden, Ihr Umsatz, Ihr Ruf. Alles als Geisel der Infrastruktur eines anderen.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "$300K+",
@@ -4271,26 +4099,8 @@
           },
           "quote": "Während des AWS us-east-1-Ausfalls letzten März wechselten unsere 12 Produktionsdienste in 22 Sekunden zu unserem sekundären Rechenzentrum. Unsere Kunden haben es nicht bemerkt. Unsere Wettbewerber waren 6 Stunden offline. Wir haben in dieser Woche drei neue Enterprise-Verträge von deren Kunden bekommen."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Failover Time",
-            "number": "<30s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Data Integrity",
-            "number": "99,99%"
-          },
-          {
-            "icon": "cloud",
-            "label": "Cloud Providers Supported",
-            "number": "3+"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc nutzt btrfs send/receive, um inkrementelle Diffs auf Dateisystemebene zu berechnen. Anstatt vollständige Images zu übertragen, bewegen sich nur geänderte Blöcke zwischen Standorten. Eine 380 GB Umgebung mit 2,4 GB täglicher Änderungen überträgt 2,4 GB — nicht 380 GB. Das ist eine 98 % Bandbreitenreduzierung. Replikation läuft kontinuierlich oder nach Zeitplan.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -4333,7 +4143,6 @@
               "title": "Messbare Verbesserung"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Sicherheit kontinuierlich testen, nicht jaehrlich",
@@ -4348,7 +4157,6 @@
           "description": "Die Lücke zwischen jährlichen Pentests ist das Fenster, auf das Angreifer zählen. Berechnen Sie, wie viel Risiko Sie tragen.",
           "footnote": "Modell: Traditioneller Pentest bei ~15.000 $ pro Engagement pro ~10 Server. Blinder Fleck = % des Jahres ohne aktives Scanning. Rediacc bei 20 $/Server/Monat für tägliche automatisierte Tests. Exposition = Lücke zwischen Erkennungszyklen + Behebungszeit.",
           "headerTitle": "Expositionsfenster-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "blindspot": "Blinder-Fleck-Fenster",
             "exposure": "Tage exponiert / Schwachstelle",
@@ -4375,7 +4183,6 @@
           "title": "Sicherheit kontinuierlich testen. Nicht jährlich."
         },
         "howItWorks": {
-          "overline": "SO FUNKTIONIERT ES",
           "pipelineVisual": {
             "arrows": [
               {
@@ -4445,7 +4252,6 @@
         },
         "problem": {
           "description": "Sie führen einmal im Jahr einen Penetrationstest durch. Er findet Probleme. Sie beheben sie. Aber was ist mit den Schwachstellen, die nächste Woche eingeführt werden? Oder nächsten Monat? Jährliches Testen bedeutet jährliche blinde Flecken. Angreifer warten nicht auf Ihren Zeitplan. Jeder Tag zwischen Pentests ist ein Tag, an dem Ihre Infrastruktur exponiert ist.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "364 Tage",
@@ -4523,26 +4329,8 @@
           },
           "quote": "Wir sind von jährlichen Pentests auf tägliche automatisierte Scans umgestiegen. Unsere mittlere Erkennungszeit für Schwachstellen sank von 180 Tagen auf 1 Tag. Im ersten Monat haben wir 14 Schwachstellen gefunden und gepatcht, die bis zu unserer nächsten jährlichen Überprüfung unentdeckt geblieben wären."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Test frequency",
-            "number": "Taeglich"
-          },
-          {
-            "icon": "shield",
-            "label": "Production downtime",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Vuln reduction in 4 weeks",
-            "number": "87%"
-          }
-        ],
         "techDiff": {
           "description": "Jeder geplante Scan erstellt einen frischen btrfs Copy-on-Write-Snapshot Ihrer Produktionsinfrastruktur, führt die vollständige KI-Pentest-Suite dagegen aus, generiert einen priorisierten Bericht mit Trendvergleich und zerstört den Klon. Keine Staging-Umgebung zu warten. Kein Drift. Keine veralteten Daten. Jeder Scan testet, was tatsächlich gerade in der Produktion läuft.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "Geplante Jahrestests",
           "rediaccLabel": "Rediacc (kontinuierlich)",
           "rows": [
@@ -4593,7 +4381,6 @@
               "title": "SecNumCloud und C5:2026 ausgerichtet"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Ihre Server, Ihre Schlüssel, Ihre Jurisdiktion.",
@@ -4608,7 +4395,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten von Souveränitätslücken.",
           "footnote": "Transferrisiko: Datensätze × €0,04 × 10 % Wahrscheinlichkeit regulatorischer Prüfung. Ausstiegsrisiko: 10 % der Hyperscaler-Ausgaben als geschätzte Wechselkostengrenze gemäß Datengesetz Artikel 25 (Nullgebühren-Frist 12. Januar 2027). DORA-Tests: Stunden × €200/Std. Ingenieurkosten. Mit Rediacc: Self-Hosted beseitigt Transferrisiko; offenes Format beseitigt Ausstiegsrisiko; Constant-Time-Fork reduziert DORA-Wiederherstellungstests auf Minuten unabhängig von der Repository-Größe.",
           "headerTitle": "Souveränitätsexpositions-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "doraTesting": "DORA Artikel 12 Testkosten",
             "exitPenalty": "Datengesetz 2027 Ausstiegsrisiko",
@@ -4669,7 +4455,6 @@
               "values": ["cross", "cross", "check", "check", "check", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Souveränität im Vergleich"
         },
         "hero": {
@@ -4734,7 +4519,6 @@
               "title": "US-Hyperscaler"
             }
           },
-          "overline": "WIE ES FUNKTIONIERT",
           "steps": [
             {
               "description": "Deployment auf Ihrer eigenen Hardware, Ihrem EU-IaaS-Anbieter oder einer beliebigen Kombination. Rediacc OE ist in Estland eingetragen; keine US-Muttergesellschaft, keine US-Steuerungsebene, keine CLOUD Act-Angriffsfläche.",
@@ -4762,7 +4546,6 @@
         },
         "problem": {
           "description": "US-amerikanische Cloud-Anbieter sind gesetzlich verpflichtet, CLOUD Act-Anordnungen zu befolgen, auch für Daten in EU-Rechenzentren. Vertragliche Zusagen können US-Bundesgesetze nicht außer Kraft setzen. Die Frage ist nicht, ob Ihr Anbieter es täte. Die Frage ist, ob er es rechtlich könnte.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "\"Nein, ich kann das nicht garantieren\" (frz. Original: \"Non, je ne peux pas le garantir\")",
@@ -4888,26 +4671,8 @@
           },
           "quote": "Nach dem Carniaux-Senatszeugnis im Juni 2025 stellte unser SecNumCloud-Prüfungsausschuss eine Frage: Können Sie nachweisen, dass Ihr Backup-Anbieter nicht gezwungen werden kann, Patientendaten an US-Behörden offenzulegen? Bei Microsoft Azure Backup konnten wir diese Frage nicht beantworten. Bei Rediacc ist die Antwort architektonisch: Die Schlüssel verlassen unser HSM niemals, der Betreiber hat keine US-Muttergesellschaft, und wir können in dreißig Sekunden einen signierten Verwahrungsbericht erstellen. Das ist die einzige Antwort, die ANSSI akzeptiert."
         },
-        "stats": [
-          {
-            "icon": "key",
-            "label": "Schlüssel an Anbieter hinterlegt",
-            "number": "0"
-          },
-          {
-            "icon": "lock",
-            "label": "Schlüsselverwahrung beim Kunden",
-            "number": "100%"
-          },
-          {
-            "icon": "globe",
-            "label": "Betreiberjurisdiktion",
-            "number": "EU-only"
-          }
-        ],
         "techDiff": {
           "description": "Ein US-Anbieter kann Ihre Daten in Frankfurt speichern und trotzdem von US-Gerichten zur Offenlegung gezwungen werden. Rediakcs Architektur beseitigt den Zwangsmechanismus vollständig: Es gibt keine Schlüssel zum Herausgeben und keinen Rückkanal zum Abfangen.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "US-amerikanischer Anbieter",
           "rediaccLabel": "Rediacc (keine Schlüssel zum Herausgeben)",
           "rows": [
@@ -4935,16 +4700,6 @@
           "title": "Warum Datenresidenz nicht Datensouveränität ist"
         }
       },
-      "downloadGated": {
-        "description": "Ein PDF ohne Marketingsprache, geschrieben für CISOs, CTOs und erfahrene Ingenieure. Hinterlassen Sie Ihre E-Mail-Adresse und wir senden Ihnen den Download-Link sowie eine einseitige Zusammenfassung per E-Mail zu.",
-        "disclaimer": "Eine E-Mail. Kein Verteiler. Abmeldung mit einem Klick.",
-        "dismissLabel": "Schließen",
-        "emailPlaceholder": "you@company.com",
-        "errorMessage": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an support@rediacc.com.",
-        "submitLabel": "Briefing zusenden",
-        "successMessage": "Bitte prüfen Sie Ihren Posteingang zur Bestätigung. Das PDF wurde außerdem in einem neuen Tab geöffnet.",
-        "title": "Technisches Briefing anfordern"
-      },
       "downloadShort": {
         "buttonLabel": "Kurzfassung herunterladen (PDF)",
         "description": "Kein Deep-Dive nötig. Die Fünf-Minuten-Version eignet sich für die nächste Teambesprechung.",
@@ -4963,7 +4718,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten anbietergesteuerter Verschlüsselung.",
           "footnote": "Audit-Vorbereitung: Audits × Stunden pro Audit. Compliance-Lücken: 1 pro 5 TB anbieterverwalteter Daten. Verstoßrisikoprämie: 4.880 $/TB × Risikofaktor (Branchendurchschnitt von IBM). Mit kundeneigenen Schlüsseln und Zero-Knowledge-Architektur ist das Schlüsselzugriffs-Audit ein einziger CLI-Befehl.",
           "headerTitle": "Verschlüsselungs-Governance-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "exposure": "Expositionsfenster pro Jahr",
             "gaps": "Compliance-Lücken (Schlüsselzugriff)",
@@ -5026,7 +4780,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Verschlüsselungskontrolle im Vergleich"
         },
         "hero": {
@@ -5091,7 +4844,6 @@
               "title": "Backup-Daten"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc keygen production ausfuehren. Ein 4096-Bit-RSA-Schluesselpaar erstellen, das nur Sie besitzen.",
@@ -5119,7 +4871,6 @@
         },
         "problem": {
           "description": "Die meisten Backup-Tools verschlüsseln Ihre Daten — mit ihren Schlüsseln. Das bedeutet, sie können darauf zugreifen. Ihre Mitarbeiter können darauf zugreifen. Ein Verstoß auf deren Seite legt Ihre Daten offen. Wenn Sie die Schlüssel nicht kontrollieren, kontrollieren Sie Ihre Daten nicht.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "Nur 8%",
@@ -5248,7 +4999,6 @@
         },
         "techDiff": {
           "description": "Anbietergesteuerte Verschlüsselung bedeutet, Ihr Anbieter hält die Schlüssel. Er kann Ihre Daten entschlüsseln. Seine Mitarbeiter können darauf zugreifen. Ein Verstoß auf deren Seite legt alles offen. Rediacc nutzt kundeneigene Schlüssel mit Zero-Knowledge-Architektur — wir sehen weder Ihren Klartext noch Ihren Schlüssel.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "Schlüssel beim Anbieter",
           "rediaccLabel": "Rediacc (Schlüssel beim Kunden)",
           "rows": [
@@ -5291,7 +5041,6 @@
               "title": "App + Datenbank + Konfiguration"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Produktion in 60 Sekunden klonen",
@@ -5299,7 +5048,6 @@
           "command": "rdc repo fork production --tag my-first-clone",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
           "title": "Geben Sie Ihren Entwicklern ihre Zeit zurück"
         },
         "calculator": {
@@ -5307,7 +5055,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrem Team. Die Zahlen werden Sie überraschen.",
           "footnote": "Basierend auf 160.000 $ durchschnittlicher Gesamtvergütung (92 $/h voll belastet). Wartekosten für Umgebungen: blockierte Zeit x 60 % Produktivitätseinbuße. Kontextwechsel: 24.000-50.000 $/Entwickler/Jahr. 69 % der Entwickler verlieren wöchentlich 8+ Stunden durch Ineffizienzen (Atlassian 2024). Entwickler sind nicht vollständig untätig während des Wartens — aber kaskadierende Abhängigkeiten verstärken sich über Sprints. Konservative Schätzungen — tatsächliche Einsparungen oft höher.",
           "headerTitle": "Berechnen Sie Ihre Wartekosten für Umgebungen",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "blockedTime": "Blockierte Zeit / Sprint",
             "contextSwitching": "Kontextwechselkosten",
@@ -5365,7 +5112,6 @@
               "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Kein anderes Tool klont Ihren vollständigen Stack"
         },
         "hero": {
@@ -5436,7 +5182,6 @@
               "title": "Produktion"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Der Entwickler fuehrt rdc ceph snapshot create production aus. Keine Tickets. Keine Genehmigungen.",
@@ -5464,7 +5209,6 @@
         },
         "problem": {
           "description": "Ihr Entwickler braucht eine Testumgebung. Er erstellt ein Ticket. Ops stellt einen Server bereit. Jemand konfiguriert ihn. Drei Tage später stimmt er trotzdem nicht mit der Produktion überein. Währenddessen ist Ihr Entwickler seit Montag blockiert — und jede Unterbrechung kostet 23 Minuten Erholungszeit.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "69%",
@@ -5590,26 +5334,8 @@
           },
           "quote": "Wir haben 12 produktionsidentische Testumgebungen in unter 10 Minuten hochgefahren — jede mit einer vollständigen 241 GB PostgreSQL-Datenbank. Unser vorheriger Prozess bestand aus manuellen Datenbank-Dumps ins Staging. Es brauchte 3 Ingenieure und 2 Tage pro Umgebung."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone Creation Time",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Production Identical",
-            "number": "100%"
-          },
-          {
-            "icon": "ticket-x",
-            "label": "DevOps Tickets Needed",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc nutzt btrfs Copy-on-Write-Snapshots auf Dateisystemebene. Ein Snapshot einer 241 GB großen Produktionsumgebung wird in Sekundenbruchteilen erstellt und verbraucht zunächst keinen zusätzlichen Speicher. Wenn der Klon durch Entwicklung abweicht, belegen nur geänderte Blöcke neuen Speicherplatz. Zehn Klone einer 241 GB großen Datenbank können weniger als 12 GB zusätzlichen Speicher verbrauchen.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5656,7 +5382,6 @@
               "title": "Zuversicht vor dem Chaos"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Testen Sie Ihren Failover, bevor Sie ihn brauchen",
@@ -5664,7 +5389,6 @@
           "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Führen Sie Ihren ersten DR-Test in unter 5 Minuten durch.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Keine Kreditkarte erforderlich",
           "title": "Testen Sie Ihren Failover-Plan noch heute"
         },
         "calculator": {
@@ -5672,7 +5396,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrem Unternehmen. Sehen Sie die wahren Kosten der Hoffnung, dass Ihr DR-Plan funktioniert.",
           "footnote": "Umsatzrisiko: Stundenumsatz × erwartete Ausfallstunden. Wiederherstellungsarbeit: 3 Ingenieure × Ausfallstunden × 200 $/Std. × je 3 Dienste. Kundenabwanderung: 20 % des gefährdeten Umsatzes (konservative Schätzung). Compliance: 10 % des verlorenen Umsatzes. Nur 13 % der Organisationen nutzen orchestrierte DR-Workflows (Veeam 2024). Mit monatlichen automatisierten Tests werden Lücken erkannt und behoben, bevor sie relevant werden.",
           "headerTitle": "Berechnen Sie Ihre DR-Testlückenexposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "churn": "Kundenabwanderung (gesch.)",
             "compliance": "Compliance-Bußgeldrisiko",
@@ -5735,7 +5458,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "DR-Test-Tools im Vergleich"
         },
         "hero": {
@@ -5800,7 +5522,6 @@
               "title": "Primär (us-east-1)"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc failover test --simulate ausfuehren. Kontrollierter Ausfall gegen einen Klon. Null Risiko fuer die Produktion.",
@@ -5828,7 +5549,6 @@
         },
         "problem": {
           "description": "Sie haben einen Disaster-Recovery-Plan. Aber wann haben Sie ihn zuletzt getestet? Die meisten Teams haben es nicht getan. Sie nehmen an, er funktioniert. Dann trifft die Katastrophe und sie stellen fest, dass es nicht so ist. Ein ungetesteter Plan ist kein Plan. Er ist eine Hoffnung.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "Nur 13%",
@@ -5942,26 +5662,8 @@
           },
           "quote": "Wir haben unseren ersten automatisierten Failover-Test an einem Dienstagmorgen durchgeführt. Er fand 3 kritische Lücken — einen veralteten DNS-Eintrag, ein fehlendes SSL-Zertifikat auf dem Sekundärsystem und eine Datenbankreplikationsverzögerung von 4 Minuten. Alle drei hätten einen echten Ausfall verursacht. Wir haben sie an einem Nachmittag behoben. Jetzt testen wir monatlich und schlafen besser."
         },
-        "stats": [
-          {
-            "icon": "refresh",
-            "label": "Recommended Test Frequency",
-            "number": "Monatlich"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Full-Stack Test Coverage",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Production Impact",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditionelle DR-Tests erfordern Produktionsausfallzeit, ein Team von Ingenieuren und wochenlange Planung. Rediacc nutzt btrfs Copy-on-Write-Snapshots, um in Sekunden einen isolierten Klon Ihrer gesamten Infrastruktur zu erstellen. Der Test läuft gegen den Klon — die Produktion stoppt nie.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc DR-Tests",
           "rows": [
             {
@@ -5995,7 +5697,6 @@
           "command": "rdc repo push production --to backup-vault",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Schützen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
           "title": "Keine Sorgen mehr wegen Ransomware"
         },
         "calculator": {
@@ -6003,7 +5704,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Infrastruktur. Die Zahlen summieren sich schnell.",
           "footnote": "Gefährdeter Umsatz basierend auf 9.000 $/Min. durchschn. Ausfallkosten (Splunk/Oxford Economics 2024). Wiederherstellungsarbeit: 6 Ingenieure × Wiederherstellungsstunden × 200 $/Std. Mischrate. Reputationskosten als Prozentsatz der direkten Kosten geschätzt (Branchenschätzung). Mit Rediacc: Unveränderliche Snapshots stellen in unter 5 Minuten wieder her — Ausfallzeit nähert sich null.",
           "headerTitle": "Berechnen Sie Ihre Ransomware-Exposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "downtime": "Ausfallzeit pro Vorfall",
             "labor": "Wiederherstellungsarbeitskosten",
@@ -6066,7 +5766,6 @@
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Das einzige Backup mit Unveränderlichkeit auf Dateisystemebene"
         },
         "hero": {
@@ -6131,7 +5830,6 @@
               "title": "Produktion"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc repo push production --immutable ausfuehren. Ihre Daten werden sofort erfasst und versiegelt.",
@@ -6159,7 +5857,6 @@
         },
         "problem": {
           "description": "Moderne Angreifer finden Ihre Backups, bevor sie Ihre Dateien verschlüsseln. Wenn Ihre Backups geändert werden können, werden sie es auch. Traditionelle Backup-Tools lassen die Tür offen — und 94 % der Ransomware-Opfer hatten ihre Backups während des Angriffs im Visier. Sie brauchen Backups, die sich im Moment ihrer Erstellung verschließen.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "94%",
@@ -6292,7 +5989,6 @@
         },
         "techDiff": {
           "description": "Rediacc nutzt btrfs-Nur-Lese-Snapshots auf Dateisystemebene. Sobald ein Snapshot versiegelt ist, verhindert der Kernel selbst Änderungen — keine Software-Sperren, die Malware umgehen kann, sondern Unveränderlichkeit auf Dateisystemebene. Selbst mit Root-Zugriff kann Ransomware einen versiegelten btrfs-Snapshot nicht verschlüsseln, ändern oder löschen.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc (btrfs unveränderlich)",
           "rows": [
             {
@@ -6322,7 +6018,6 @@
           "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Starten Sie mit der kostenlosen Community-Edition. On-Demand-Klonen inklusive.",
           "primaryCta": "Kostenlos starten",
-          "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
           "title": "Reduzieren Sie Ihre Infrastrukturkosten noch heute"
         },
         "calculator": {
@@ -6330,7 +6025,6 @@
           "description": "Jeder Server, der über Nacht läuft, ist Geld, das Ihr Konto für nichts verlässt.",
           "footnote": "Rediacc nutzt btrfs Copy-on-Write: Klone teilen Speicherblöcke mit der Produktion und verwenden ~1 % zusätzlichen Speicher. Umgebungen starten in <60s und werden via konfigurierbarem TTL automatisch gelöscht. Sie zahlen für einen Produktionsserver, nicht für 15 Kopien.",
           "headerTitle": "Infrastrukturverschwendungs-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "idle": "Geld für Leerlauf verbrannt",
             "monthly": "Monatliche Serverkosten",
@@ -6390,7 +6084,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Was andere für ungenutzte Kapazität berechnen"
         },
         "hero": {
@@ -6453,7 +6146,6 @@
               "title": "Dauerhaft aktiv"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Einen produktionsidentischen Klon bei Bedarf erstellen. 52 Sekunden. Kostet Centbetraege dank Copy-on-Write.",
@@ -6481,7 +6173,6 @@
         },
         "problem": {
           "description": "Sie haben 15 Entwicklungsumgebungen, die rund um die Uhr laufen. Entwickler nutzen sie 8 Stunden am Tag, 5 Tage die Woche. Das sind 33 % Auslastung. Sie zahlen für die anderen 67 % — Server, die nachts, an Wochenenden und Feiertagen untätig sind.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "60–80%",
@@ -6558,7 +6249,6 @@
         },
         "techDiff": {
           "description": "Traditionelle Entwicklungsumgebungen duplizieren ganze Server — jedes Byte Daten, jede Konfigurationsdatei, jede Bibliothek. Rediacc nutzt btrfs Copy-on-Write: Klone teilen unveränderte Blöcke mit der Produktion und verwenden nur 1 % zusätzlichen Speicher für eine 380 GB Umgebung.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc (Copy-on-Write)",
           "rows": [
             {
@@ -6605,7 +6295,6 @@
               "title": "Verifizierte Wiederherstellung"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Komplette Umgebungswiederherstellung in Minuten",
@@ -6613,7 +6302,6 @@
           "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Stellen Sie Ihre erste Umgebung in unter 5 Minuten wieder her.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Keine Kreditkarte erforderlich",
           "title": "In Minuten wieder online, nicht in Tagen"
         },
         "calculator": {
@@ -6621,7 +6309,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten der Wiederherstellung auf Dateiebene.",
           "footnote": "Wiederherstellung auf Dateiebene: 2 Std./Dienst Bereitstellung + Neukonfiguration. Entgangener Umsatz: Ausfallstunden × Stundenumsatz. Personalkosten: 2 Ingenieure × Wiederherstellungsstunden × 200 $/Std. Kundenabwanderung: 20 % des entgangenen Umsatzes durch SLA-Verletzungen. Rediacc: btrfs-Klon stellt vollständige Umgebung in unter 5 Minuten wieder her — ein Befehl, kein Neuaufbau.",
           "headerTitle": "Berechnen Sie Ihre Ausfallzeitexposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "churn": "Kundenabwanderungseffekt",
             "labor": "Personalkosten (Neuaufbau)",
@@ -6686,7 +6373,6 @@
               "values": ["check", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Wiederherstellungsfähigkeit im Vergleich"
         },
         "hero": {
@@ -6751,7 +6437,6 @@
               "title": "daily-2026-02-27"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc repo snapshot list production ausfuehren. Einen beliebigen Zeitpunkt in Ihrer Backup-Timeline auswaehlen.",
@@ -6779,7 +6464,6 @@
         },
         "problem": {
           "description": "Die Wiederherstellung einzelner Dateien dauert Stunden. Der Neuaufbau ganzer Umgebungen dauert Tage. Wenn Ihr Produktionsserver ausfällt, brauchen Sie nicht nur Dateien zurück — Sie brauchen alles zurück. Den Server, die Konfiguration, die Datenbank, die Netzwerkeinstellungen. Alles.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6905,26 +6589,8 @@
           },
           "quote": "Unser primärer Datenbankserver fiel an einem Samstag um 2:14 Uhr aus — defekter Festplattencontroller. Mit unserem alten Setup wäre das ein ganzes Wochenende mit Bereitstellung, Wiederherstellung und Neukonfiguration von 11 Diensten gewesen. Stattdessen habe ich einen Befehl von meinem Handy ausgeführt. Um 2:18 Uhr war alles zurück — MariaDB, die API, Nginx, Redis, alles. Gleiche Konfigurationen, gleicher Zustand, gleiche Daten. Der Bereitschaftsingenieur ging wieder schlafen."
         },
-        "stats": [
-          {
-            "icon": "zap",
-            "label": "Full Recovery Time",
-            "number": "<5Min"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Environment Fidelity",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "In Time",
-            "number": "Jeder Zeitpunkt"
-          }
-        ],
         "techDiff": {
           "description": "Traditionelle Wiederherstellung bedeutet einen neuen Server bereitstellen, Pakete installieren, Dateien einzeln wiederherstellen, Dienste neu konfigurieren und hoffen, dass nichts vergessen wurde. Rediacc nutzt btrfs-Snapshots, um die gesamte Umgebung zu klonen — Volumes, Konfigurationen, Container, Netzwerkeinstellungen — in einer einzigen atomaren Operation.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -6954,7 +6620,6 @@
           "command": "rdc repo fork production --tag ci-build",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Git-Integration inklusive.",
           "primaryCta": "Kostenlos starten",
-          "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
           "title": "Vereinfachen Sie Ihre CI/CD-Pipeline"
         },
         "calculator": {
@@ -6962,7 +6627,6 @@
           "description": "Jeder Test, der mit synthetischen Daten besteht, aber in der Produktion fehlschlägt, ist eine CI-Pipeline, die Sie angelogen hat.",
           "footnote": "Annahme: 75 $/Std. Entwicklerkosten. Blockierte Stunden geschätzt auf 1 Std. pro Entwickler pro CI-Ausfall durch Kontextwechsel. Produktionsfehler durch Testdatenabweichungen geschätzt auf das 1,5-fache der monatlichen Ausfallrate pro Quartal.",
           "headerTitle": "CI/CD-Wartungsrechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "blocked": "Blockierte Entwicklerstunden / Monat",
             "bugs": "Prod-Bugs durch schlechte Testdaten",
@@ -7018,7 +6682,6 @@
               "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Testfixtures vs. Produktionsklone"
         },
         "hero": {
@@ -7027,7 +6690,6 @@
           "title": "In Ihren bestehenden Workflow einfügen"
         },
         "howItWorks": {
-          "overline": "SO FUNKTIONIERT ES",
           "pipelineVisual": {
             "arrows": [
               {
@@ -7087,7 +6749,6 @@
         },
         "problem": {
           "description": "Jemand hat ein 200-Zeilen-Bash-Skript geschrieben, um Testumgebungen in Ihrer Pipeline bereitzustellen. Die Person hat das Unternehmen verlassen. Das Skript bricht jeden Monat. Niemand versteht es. Ihre CI/CD-Pipeline wird von Klebeband und Hoffnung zusammengehalten.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "69%",
@@ -7176,7 +6837,6 @@
         },
         "techDiff": {
           "description": "Traditionelle CI/CD stellt leere Container bereit und befüllt sie mit synthetischen Daten. Rediacc integriert sich auf Infrastrukturebene — jeder Push erhält einen vollständigen Produktionsklon mit echten Daten, echten Konfigurationen und echten Diensten.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7219,7 +6879,6 @@
               "title": "Eine Denkweise für alles"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Behalten Sie Ihr Kubernetes. Gewinnen Sie Mobilität."
         },
         "blurb": "Forken oder verschieben Sie Ihren Cluster – mit allen Daten",
@@ -7270,12 +6929,11 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Niemand sonst verschiebt einen laufenden Cluster samt seinen Daten"
         },
         "hero": {
           "ctaLabel": "Cluster forken",
-          "subtitle": "Ihr Cluster zieht als ganzes um: Nodes, Konfiguration, Daten. Auf eine andere Maschine oder in ein anderes Rechenzentrum. Die Umschaltung dauert Sekunden, nicht ein Wochenende.",
+          "subtitle": "Ihr Cluster zieht als ganzes um: Nodes, Konfiguration, Daten. Auf eine andere Maschine oder in ein anderes Rechenzentrum. Die Umschaltung dauert <span class=\"sp-emphasis\">Sekunden</span>, nicht ein Wochenende.",
           "title": "Einen laufenden Kubernetes-Cluster forken oder verschieben"
         },
         "howItWorks": {
@@ -7335,7 +6993,6 @@
               "title": "prod (Datacenter A)"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Jeder Node läuft von einer Image-Datei. Jedes Volume ist ein Ceph-RBD-Image. Zusammen ergeben sie den gesamten Cluster: Apps, Konfiguration und Daten.",
@@ -7363,7 +7020,6 @@
         },
         "problem": {
           "description": "Kubernetes hat Ihre Apps portabel gemacht. Der Cluster selbst ist es nicht. Die Daten liegen in einem einzigen Rechenzentrum. Ihn zu verschieben bedeutet ein Neuaufbau-Projekt: neue Nodes, neuer Speicher, Wiederherstellung aus dem Backup, alles neu testen. Deshalb ziehen die meisten Teams nie um. Und ihr Anbieter weiß das.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "27%",
@@ -7457,26 +7113,8 @@
             }
           ]
         },
-        "stats": [
-          {
-            "icon": "layers",
-            "label": "Kompletter 2-Node-Cluster-Fork",
-            "number": "46s"
-          },
-          {
-            "icon": "clock",
-            "label": "Migrations-Umschaltung, gemessen",
-            "number": "16s"
-          },
-          {
-            "icon": "zap",
-            "label": "Namespace-Fork",
-            "number": "1-5s"
-          }
-        ],
         "techDiff": {
-          "description": "Jeder Node läuft von einer Image-Datei auf btrfs. Jedes Volume ist ein Ceph-RBD-Image. Einen Cluster zu kopieren heißt, diese Images copy-on-write zu klonen. Kein Export, keine Konvertierung, kein Wiederherstellungsschritt. Deshalb dauert ein Fork Sekunden, nicht Monate.",
-          "overline": "UNTER DER HAUBE",
+          "description": "Jeder Node läuft von einer Image-Datei auf btrfs. Jedes Volume ist ein Ceph-RBD-Image. Einen Cluster zu kopieren heißt, diese Images copy-on-write zu klonen. Kein Export, keine Konvertierung, kein Wiederherstellungsschritt. Deshalb dauert ein Fork <span class=\"sp-emphasis\">Sekunden, nicht Monate</span>.",
           "traditionalLabel": "Migration per Backup und Restore",
           "rediaccLabel": "Rediacc (Copy-on-Write-Klon)",
           "rows": [
@@ -7542,7 +7180,6 @@
               "title": "Niemand sieht die Daten"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Das bekommen Sie"
         },
         "blurb": "Sicher migrieren – ohne Datenverlust",
@@ -7550,7 +7187,6 @@
           "command": "rdc repo push production --to secondary",
           "description": "Verschlüsselte Migration ist schon dabei. Starten Sie Ihre kostenlose 14-Tage-Testversion.",
           "primaryCta": "Kostenlos starten",
-          "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
           "title": "Jedes Mal sicher migrieren"
         },
         "calculator": {
@@ -7558,7 +7194,6 @@
           "description": "Jede Migration ohne Ende-zu-Ende-Verschlüsselung ist ein Compliance-Vorfall, der darauf wartet zu passieren.",
           "footnote": "Annahmen: 200 $/Stunde für Neuverschlüsselungskonfiguration, 4.880 $/TB Schaden durch Datenpanne (IBM 2024), 1 % Wahrscheinlichkeit pro Expositionsfenster. Rediacc verschlüsselt durchgehend – null Expositionsfenster, keine Neuverschlüsselung nötig.",
           "headerTitle": "Migrationsrisiko-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "labor": "Neuverschlüsselungsarbeit",
             "risk": "Gefährdete Daten pro Migration",
@@ -7619,12 +7254,11 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Was andere bei der Migration nicht können"
         },
         "hero": {
           "ctaLabel": "Sicher migrieren",
-          "subtitle": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre Daten bleiben verschlüsselt – vom Start bis ins Ziel. Keine Exposition. Kein Datenverlust.",
+          "subtitle": "Wechsel zwischen Servern, Clouds oder Anbietern? Ihre Daten <span class=\"sp-emphasis\">bleiben verschlüsselt – vom Start bis ins Ziel</span>. Keine Exposition. Kein Datenverlust.",
           "title": "Sicher migrieren – ohne Datenverlust"
         },
         "howItWorks": {
@@ -7684,7 +7318,6 @@
               "title": "Quelle"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Gespeicherte Kopien bleiben verschlüsselt. Schlüssel, Einstellungen und Richtlinien reisen mit ihnen. Nichts wird entschlüsselt.",
@@ -7712,7 +7345,6 @@
         },
         "problem": {
           "description": "Datenmigration schafft Exposition. Temporäre Dateien, unverschlüsselte Übertragungen, widersprüchliche Konfigurationen – jede Migration ist ein Risikofenster. Und die meisten Tools verlieren dabei die Verschlüsselungseinstellungen. Das zwingt Sie, alles auf der anderen Seite von Grund auf neu zu konfigurieren.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "89%",
@@ -7834,26 +7466,8 @@
           },
           "quote": "Wir haben 42 Server von Hetzner zu OVH an einem Wochenende migriert. 350 TB verschlüsselter Daten – ohne ein einziges exponiertes Byte. Unsere vorherige Migration, nur 8 Server, dauerte drei Wochen und erforderte die komplette Entschlüsselung in einen Staging-Bereich. Das war das letzte Mal, dass wir dieses Risiko eingegangen sind."
         },
-        "stats": [
-          {
-            "icon": "shield",
-            "label": "Exponierte Daten bei der Migration",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Verschlüsselung durchgehend",
-            "number": "100%"
-          },
-          {
-            "icon": "arrow-right-circle",
-            "label": "Beliebiges Ziel unterstützt",
-            "number": "Any"
-          }
-        ],
         "techDiff": {
-          "description": "Traditionelle Migrationstools entschlüsseln Daten vor der Übertragung – das schafft Expositionsfenster, in denen Ihre Daten ungeschützt liegen. Wir entschlüsseln nie. Verschlüsselte Blöcke werden als versiegelte Einheit übertragen.",
-          "overline": "UNTER DER HAUBE",
+          "description": "Traditionelle Migrationstools entschlüsseln Daten vor der Übertragung – das schafft Expositionsfenster, in denen Ihre Daten ungeschützt liegen. Wir entschlüsseln nie. Verschlüsselte Blöcke werden als <span class=\"sp-emphasis\">versiegelte Einheit</span> übertragen.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -7900,7 +7514,6 @@
               "title": "Weniger Produktionsfehler"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Entwicklungsumgebungen, die exakt der Produktion entsprechen",
@@ -7908,7 +7521,6 @@
           "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Produktionsparität inklusive.",
           "primaryCta": "Kostenlos starten",
-          "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
           "title": "Beenden Sie Umgebungsabweichungen für immer"
         },
         "calculator": {
@@ -7916,7 +7528,6 @@
           "description": "Jeder Produktionsfehler, der durch Umgebungsabweichungen verursacht wird, ist ein Fehler, der nie hätte existieren sollen.",
           "footnote": "Annahme: 600 $/Tag durchschnittliche Entwicklerkosten, 10-Tage-Sprints, 26 Sprints/Jahr. Umgebungsbezogene Bugs werden durch 100 % Produktionsparität via btrfs Copy-on-Write-Klonen eliminiert.",
           "headerTitle": "Paritätslücken-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "capacity": "Verlorene Sprint-Kapazität",
             "debug": "Debug-Stunden / Sprint",
@@ -7977,7 +7588,6 @@
               "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Code-Klonen vs. Umgebungs-Klonen"
         },
         "hero": {
@@ -8040,7 +7650,6 @@
               "title": "Produktion"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Starten Sie mit einem exakten Produktions-Snapshot via btrfs Copy-on-Write. Gleiches Betriebssystem, gleiche Konfigurationen, gleiche Daten.",
@@ -8068,7 +7677,6 @@
         },
         "problem": {
           "description": "Ihre Entwicklungsumgebung läuft mit einer anderen OS-Version. Andere Bibliotheksversionen. Andere Konfigurationen. Code besteht jeden Test in der Entwicklung, bricht dann in der Produktion. Diese Fehler sind schwer zu finden und teuer zu beheben. Sie passieren, weil die Entwicklung nicht mit der Produktion übereinstimmt.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "182x",
@@ -8166,26 +7774,8 @@
           },
           "quote": "Wir haben jeden Produktionsvorfall sechs Monate nach dem Umstieg auf Rediacc-Klone verfolgt. Umgebungsbezogene Bugs gingen von 14 pro Quartal auf buchstäblich null zurück. Unsere QA-Leiterin dachte, das Tracking-System sei defekt — sie hatte noch nie null gesehen."
         },
-        "stats": [
-          {
-            "icon": "check-circle",
-            "label": "Config match",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Environment drift",
-            "number": "0"
-          },
-          {
-            "icon": "x",
-            "label": "“Works on my machine” incidents",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditionelle Entwicklungsumgebungen sind von Grund auf gebaute Annäherungen — manuell bereitgestellt, separat konfiguriert, mit synthetischen Testdaten. Rediacc klont das tatsächliche Produktionsdateisystem auf Blockebene via btrfs Copy-on-Write.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8226,7 +7816,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Situation. Der Schaden summiert sich jede Minute.",
           "footnote": "Umsatzverlust basierend auf Ihrem Stundensatz × Wiederherstellungsstunden. Wiederherstellungsarbeit: 6 Ingenieure × 200 $/Std. Mischrate. Kundenabwanderung: geschätzt 20 % des direkten Umsatzverlustes. Regulatorisch: 50.000 $ Basis + skaliert mit Schweregrad. Mit Rediacc: <5 Min. Wiederherstellung aus unveränderlichem Snapshot eliminiert längere Ausfallzeiten.",
           "headerTitle": "Ausfallkosten-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "churn": "Kundenabwanderungskosten",
             "labor": "Wiederherstellungsarbeit",
@@ -8284,7 +7873,6 @@
               "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Kein anderes Tool stellt so schnell wieder her"
         },
         "hero": {
@@ -8350,7 +7938,6 @@
               "title": "Produktion (Offline)"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc backup list ausfuehren, um Ihren letzten sauberen Snapshot zu finden.",
@@ -8378,7 +7965,6 @@
         },
         "problem": {
           "description": "Die meisten Teams verbringen Tage mit dem Neuaufbau nach Ransomware. Währenddessen können Kunden Sie nicht erreichen. Der Umsatz stoppt. Vertrauen bricht. Der Angriff dauert eine Stunde. Die Wiederherstellung dauert eine Woche. Das ist der wahre Schaden — und die durchschnittliche Ransomware-Wiederherstellung dauert 24 Tage.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "24 Tage",
@@ -8495,7 +8081,6 @@
         },
         "techDiff": {
           "description": "Traditionelle Wiederherstellung baut von Grund auf neu — OS reinstallieren, Dateien wiederherstellen, Dienste neu konfigurieren. Rediacc stellt aus btrfs-Snapshots wieder her: Das Dateisystem wechselt einfach zum gespeicherten Zustand. Keine Neuinstallation, keine Neukonfiguration, keine Datenübertragung. Der Snapshot ist bereits auf der Festplatte — er wird einfach aktiviert.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "Traditioneller Wiederaufbau",
           "rediaccLabel": "Rediacc (sofortige btrfs-Kopien)",
           "rows": [
@@ -8525,7 +8110,6 @@
           "command": "rdc config backup-strategy set --cron '0 2 * * *'",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Legen Sie Ihre erste Aufbewahrungsrichtlinie in 30 Sekunden fest.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Keine Kreditkarte erforderlich",
           "title": "Compliance mühelos machen"
         },
         "calculator": {
@@ -8533,7 +8117,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Umgebung. Sehen Sie die wahren Kosten manueller Aufbewahrungsverwaltung.",
           "footnote": "Vorbereitungsstunden: Audits × Stunden pro Audit. Lücken: 1 Lücke pro 5 TB manuell verwalteter Daten (konservative Schätzung). Bußgeld: 50.000 $ pro Lücke (medianes DSGVO-Bußgeld für KMU). Arbeit: Vorbereitungsstunden × 200 $/Std. (Senior Engineer). Der durchschnittliche Datenverstoß kostet 4,88 Mio. $ (IBM 2024). Rediacc generiert auditfertige Berichte sofort — 2 Stunden pro Audit, automatisierte Richtliniendurchsetzung.",
           "headerTitle": "Berechnen Sie Ihre Compliance-Exposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "gaps": "Compliance-Lücken (gesch.)",
             "labor": "Manuelle Aufbewahrungsarbeit",
@@ -8596,7 +8179,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Aufbewahrungskonformität im Vergleich"
         },
         "hero": {
@@ -8662,7 +8244,6 @@
               "title": "Aufbewahrungsrichtlinien"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc config backup-strategy set --cron '0 2 * * *' ausfuehren. Aufbewahrung pro Framework oder Datentyp definieren.",
@@ -8690,7 +8271,6 @@
         },
         "problem": {
           "description": "Vorschriften verlangen, dass Sie Daten für bestimmte Zeiträume aufbewahren. Verfehlen Sie die Vorgabe und Sie stehen vor Bußgeldern, Audits und rechtlichen Problemen. Die meisten Backup-Tools behandeln Aufbewahrung als Nebensache. Am Ende verwalten Sie es manuell mit Tabellen und Hoffnung.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "$4,88M",
@@ -8823,7 +8403,6 @@
         },
         "techDiff": {
           "description": "Traditionelle Aufbewahrungsverwaltung bedeutet Backup-Daten in Tabellen verfolgen, manuelle Bereinigungsskripte ausführen und hoffen, dass nichts übersehen wurde, bevor der Prüfer kommt. Rediacc nutzt btrfs-Snapshot-Lifecycle-Management mit automatisierter Richtliniendurchsetzung — Backups werden ohne menschliches Eingreifen aufbewahrt, verifiziert und bereinigt.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc-Aufbewahrung",
           "rows": [
             {
@@ -8866,7 +8445,6 @@
               "title": "Sofortiger Rollback"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "OS-Updates ohne Risiko testen",
@@ -8874,7 +8452,6 @@
           "command": "rdc repo fork production --tag patch-test",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen, testen und verifizieren Sie kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
-          "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
           "title": "Patchen mit Vertrauen"
         },
         "calculator": {
@@ -8882,7 +8459,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihrer Infrastruktur. Sehen Sie das Risiko ungetesteter Updates.",
           "footnote": "Expositionstage: aufgeschobene Patches × 30 durchschn. Tage zwischen Patches. Ausfallzeit durch fehlgeschlagene Updates: Wiederherstellungsstunden × 9.000 $/Min. (Splunk/Oxford Economics 2024) × 10 % Ausfallrate. Wiederherstellungsarbeit: 3 Ingenieure × Wiederherstellungsstunden × 200 $/Std. Verstoßrisiko: 4,88 Mio. $ durchschn. Verstoß (IBM 2024) × Wahrscheinlichkeit ungepatchter Systeme skaliert nach Serveranzahl. Alle Zahlen sind konservative Schätzungen.",
           "headerTitle": "Berechnen Sie Ihre Patch-Risikoexposition",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "breach": "Verstoßrisiko (ungepatcht)",
             "downtime": "Ausfallzeit durch fehlgeschlagene Updates",
@@ -8945,7 +8521,6 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Kein anderes Tool testet Patches auf echten Produktionsdaten"
         },
         "hero": {
@@ -9010,7 +8585,6 @@
               "title": "Produktion"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "rdc ceph snapshot create production ausfuehren. Eine exakte Kopie ist in 60 Sekunden verfuegbar.",
@@ -9038,7 +8612,6 @@
         },
         "problem": {
           "description": "Sie müssen patchen. Aber jedes Update ist ein Glücksspiel. Wird es etwas kaputt machen? Sie wissen es erst, wenn es live ist. Die meisten Teams überspringen entweder Patches (riskant) oder testen in Umgebungen, die nicht mit der Produktion übereinstimmen (nutzlos). Keines von beidem ist gut genug.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "3x",
@@ -9164,26 +8737,8 @@
           },
           "quote": "Wir hatten letztes Quartal einen kritischen OpenSSL-Patch. Normalerweise hätten wir ein Wartungsfenster geplant und gehofft. Stattdessen haben wir alle 22 Produktionsserver geklont, den Patch angewendet, unsere vollständige Testsuite ausgeführt und null Regressionen bestätigt — alles in 18 Minuten. Wir haben die Produktion am selben Tag mit vollem Vertrauen gepatcht."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Clone Creation Time",
-            "number": "60s"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Production Identical",
-            "number": "100%"
-          },
-          {
-            "icon": "shield",
-            "label": "Production Downtime",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc nutzt btrfs Copy-on-Write-Snapshots, um Ihre gesamte Produktionsumgebung zu klonen — OS, Container, Datenbanken, Konfiguration — in Sekundenbruchteilen. Der Klon läuft in einem isolierten Netzwerk mit eigenem Docker-Daemon. Patches, die auf den Klon angewendet werden, berühren die Produktion nie. Wenn der Klon bricht, löschen Sie ihn. Wenn er funktioniert, wenden Sie den gleichen Patch auf die Produktion an.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9226,7 +8781,6 @@
               "title": "Preismacht"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Ihre Infrastruktur. Ihre Wahl. Immer.",
@@ -9241,7 +8795,6 @@
           "description": "Bewegen Sie die Regler passend zu Ihren Ausgaben. Sehen Sie, wie Lock-in still Ihr Budget aufzehrt.",
           "footnote": "Anbieteraufschlag: jährliche Ausgaben × (Preiserhöhung × Jahre / 2) — Zinseszinseffekt des Nicht-Wechselns. Migrationskosten: 2 Ingenieure × 6 Monate × 200 $/Std. (traditionelles Migrationsprojekt). Egress: geschätztes Datenvolumen × 0,09 $/GB. Mit Rediacc dauert die Migration <1 Stunde via btrfs inkrementeller Übertragung.",
           "headerTitle": "Lock-in-Steuer-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "egress": "Egress-Datentransfergebühren",
             "leverage": "Verhandlungsposition",
@@ -9304,7 +8857,6 @@
               "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
-          "overline": "DIE LÜCKE",
           "title": "Kein anderes Tool migriert Ihren vollständigen Stack in Minuten"
         },
         "hero": {
@@ -9370,7 +8922,6 @@
               "title": "AWS (us-east-1)"
             }
           },
-          "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
               "description": "Ihre Daten liegen in Standard-btrfs-Subvolumes. Keine proprietaeren Formate. Keine Anbieter-Agenten. Einfach Linux.",
@@ -9398,7 +8949,6 @@
         },
         "problem": {
           "description": "Sie haben sich angemeldet, als der Preis gut war. Jetzt stecken Sie fest. Ein Wechsel würde Monate dauern. Ihre Daten sind in deren Format. Ihre Tools hängen von deren APIs ab. Sie wissen, dass Sie nicht gehen können. Also steigt der Preis.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "27%",
@@ -9512,26 +9062,8 @@
           },
           "quote": "Unsere AWS-Rechnung erreichte 33.000 $/Monat und stieg jährlich um 20 %. Wir haben 14 Produktionsdienste migriert — GitLab, Nextcloud, 3 Datenbanken, Monitoring, alles — zu Hetzner in 45 Minuten. Monatliche Kosten sanken auf 4.200 $. Gleiche Leistung. Die Migration hatte sich in 8 Tagen amortisiert."
         },
-        "stats": [
-          {
-            "icon": "x",
-            "label": "Proprietary Formats",
-            "number": "0"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Portable Data",
-            "number": "100%"
-          },
-          {
-            "icon": "clock",
-            "label": "Full Migration Time",
-            "number": "<1hr"
-          }
-        ],
         "techDiff": {
           "description": "Rediacc speichert alle Daten in Standard-btrfs-Subvolumes — kein proprietäres Format, kein anbieterspezifischer Agent. Migration nutzt btrfs send/receive, um einen inkrementellen Snapshot auf jede Linux-Maschine zu übertragen. Eine 420 GB Umgebung mit 3,8 GB Änderungen seit der letzten Synchronisation überträgt 3,8 GB — nicht 420 GB.",
-          "overline": "UNTER DER HAUBE",
           "traditionalLabel": "Lock-in durch proprietäres Format",
           "rediaccLabel": "Rediacc (Standard-Linux-Speicher)",
           "rows": [
@@ -9578,7 +9110,6 @@
               "title": "Vollstaendige Verifizierung"
             }
           ],
-          "overline": "WARUM ES WICHTIG IST",
           "title": "Was Sie bekommen"
         },
         "blurb": "Schwachstellen beheben, bevor Angreifer kommen",
@@ -9586,7 +9117,6 @@
           "command": "rdc term production cve-2026-1234-fix",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verifizieren Sie Ihren ersten Patch in unter 4 Minuten.",
           "primaryCta": "Kostenlos starten",
-          "tierBadge": "Keine Kreditkarte erforderlich",
           "title": "Schneller patchen. Sicherer patchen."
         },
         "calculator": {
@@ -9594,7 +9124,6 @@
           "description": "Jeder Tag, an dem eine Schwachstelle ungepatcht bleibt, ist ein Tag, an dem Sie exponiert sind. Jeder eilige Patch riskiert einen Produktionsvorfall.",
           "footnote": "Modell: Traditionelle Behebungsarbeit bei 150 $/Std. Durchschnitt (Zeit des Sicherheitsingenieurs für Auswirkungsanalyse, Staging-Setup, Tests, Rollback). Fehlgeschlagene Patches auf 25 % geschätzt basierend auf Branchenerfahrung. Rediacc reduziert die Behebungszeit auf <1 Tag mit klonbasierter Verifizierung und eliminiert Patch-Ausfälle.",
           "headerTitle": "Behebungskosten-Rechner",
-          "overline": "DIE WAHREN KOSTEN",
           "results": {
             "exposure": "Exposition pro Schwachstelle",
             "failedPatches": "Fehlgeschlagene Patches / Jahr",
@@ -9616,7 +9145,6 @@
           "title": "Schwachstellen beheben, bevor Angreifer kommen"
         },
         "howItWorks": {
-          "overline": "SO FUNKTIONIERT ES",
           "pipelineVisual": {
             "arrows": [
               {
@@ -9691,7 +9219,6 @@
         },
         "problem": {
           "description": "Sie haben eine Schwachstelle gefunden. Jetzt müssen Sie sie patchen. Aber wird der Patch etwas kaputt machen? Sie können nicht in der Produktion testen. Und Ihre Staging-Umgebung ist 3 Wochen veraltet. Also eilen Sie entweder mit dem Patch und hoffen, oder warten und bleiben exponiert. Keine Option ist gut — und beide kosten Geld.",
-          "overline": "DAS PROBLEM",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9773,26 +9300,8 @@
           },
           "quote": "Ein kritischer CVE erschien an einem Freitagnachmittag. Bis Samstagmorgen hatten wir die Produktion geklont, den Patch angewendet, ihn gegen alle 4 betroffenen Dienste verifiziert und deployed — null Ausfallzeit. Unser vorheriger Prozess hätte 3 Wochen und ein Change-Management-Meeting gebraucht."
         },
-        "stats": [
-          {
-            "icon": "clock",
-            "label": "Patch + verify time",
-            "number": "<4Min"
-          },
-          {
-            "icon": "shield",
-            "label": "Test before deploy",
-            "number": "Safe"
-          },
-          {
-            "icon": "check-circle",
-            "label": "Unverified patches",
-            "number": "0"
-          }
-        ],
         "techDiff": {
           "description": "Traditionelles Patchen erfordert eine Staging-Umgebung, die der Produktion entspricht — aber Staging driftet innerhalb von Tagen ab. Rediacc erstellt in Sekunden einen btrfs Copy-on-Write-Snapshot Ihrer tatsächlichen Produktionsinfrastruktur, lässt Sie den Patch gegen echte Daten und echte Konfigurationen anwenden und verifizieren, und deployt dann den verifizierten Fix in die Produktion. Wenn der Patch die Verifizierung nicht besteht, verwerfen Sie den Klon. Die Produktion bleibt unberührt.",
-          "overline": "UNTER DER HAUBE",
           "rediaccLabel": "Rediacc",
           "rows": [
             {

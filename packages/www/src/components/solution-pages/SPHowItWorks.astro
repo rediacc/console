@@ -1,5 +1,7 @@
 ---
 import { getIcon } from './icons';
+import SPCloneSpark from './SPCloneSpark.astro';
+import type { SolutionRole } from '../../config/solution-pages';
 
 interface Service {
   name: string;
@@ -40,8 +42,13 @@ interface PipelineArrow {
 }
 
 interface Props {
+  /* Mechanism taxonomy from src/config/solution-pages.ts. A `property` page's
+     steps are facets of one capability, not an ordered procedure, so numbering
+     them asserts a sequence that does not exist ("Generate / Encrypt / Control",
+     "Open formats / Move with one command / Nothing to lock in"). Those pages
+     render an unnumbered list; copy/test/recover pages keep the numbers. */
+  role?: SolutionRole;
   howItWorks: {
-    overline: string;
     title: string;
     steps: { title: string; description: string; icon: string }[];
     cloneVisual?: {
@@ -61,21 +68,37 @@ interface Props {
   };
 }
 
-const { howItWorks } = Astro.props;
+const { howItWorks, role } = Astro.props;
+
+/* One marker per step, weighted so it reads as one thing, not two competing ones.
+   Earlier this was a flat numbered circle with no icon at all for ordered steps
+   (a numbered circle AND a same-size icon both saying "step N of 3" was tried and
+   reverted). This keeps that reasoning: the icon is still the dominant glyph, the
+   number is now a small corner badge on it rather than a second equal-weight
+   marker, so a numbered step shows what it does (icon) and where it sits in the
+   sequence (badge) without repeating the same fact twice at the same size. */
+const numbered = role !== 'property';
 ---
 
 <section class="sp-how-it-works">
   <div class="sp-how-it-works-inner">
-    <div class="sp-overline">{howItWorks.overline}</div>
     <h2>{howItWorks.title}</h2>
 
-    <div class="sp-steps">
+    <div class:list={['sp-steps', !numbered && 'sp-steps--plain']}>
       {howItWorks.steps.map((step, i) => (
         <div class="sp-step">
-          <div class="sp-step-icon">
-            <Fragment set:html={getIcon(step.icon)} />
-          </div>
-          <div class="sp-step-number">{i + 1}</div>
+          {numbered ? (
+            <div class="sp-step-icon-wrap">
+              <div class="sp-step-icon">
+                <Fragment set:html={getIcon(step.icon)} />
+              </div>
+              <span class="sp-step-number-badge">{i + 1}</span>
+            </div>
+          ) : (
+            <div class="sp-step-icon">
+              <Fragment set:html={getIcon(step.icon)} />
+            </div>
+          )}
           <h3>{step.title}</h3>
           <p>{step.description}</p>
         </div>
@@ -83,7 +106,7 @@ const { howItWorks } = Astro.props;
     </div>
 
     {howItWorks.cloneVisual && (
-      <div class="sp-clone-visual">
+      <div class="sp-clone-visual reveal">
         <div class:list={['sp-server-card', howItWorks.cloneVisual.production.cardClass ?? 'production']}>
           <div class="sp-server-card-header">
             <span class="sp-server-card-title">{howItWorks.cloneVisual.production.title}</span>
@@ -105,16 +128,14 @@ const { howItWorks } = Astro.props;
         </div>
 
         <div class="sp-clone-arrow">
-          <div class="sp-clone-arrow-bolt">
-            <Fragment set:html={getIcon(howItWorks.cloneVisual.arrow.icon ?? 'bolt')} />
-          </div>
+          <SPCloneSpark icon={howItWorks.cloneVisual.arrow.icon ?? 'bolt'} />
           <div class="sp-clone-arrow-label">{howItWorks.cloneVisual.arrow.label}</div>
           {howItWorks.cloneVisual.arrow.time && (
             <div class="sp-clone-arrow-time">{howItWorks.cloneVisual.arrow.time}</div>
           )}
         </div>
 
-        <div class:list={['sp-server-card', howItWorks.cloneVisual.clone.cardClass ?? 'clone']}>
+        <div class:list={['sp-server-card', howItWorks.cloneVisual.clone.cardClass ?? 'clone', 'sp-clone-spark-target']}>
           <div class="sp-server-card-header">
             <span class="sp-server-card-title">{howItWorks.cloneVisual.clone.title}</span>
             <span class="sp-server-card-status">{howItWorks.cloneVisual.clone.status}</span>
@@ -140,7 +161,7 @@ const { howItWorks } = Astro.props;
     )}
 
     {howItWorks.costVisual && (
-      <div class="sp-cost-visual">
+      <div class="sp-cost-visual reveal">
         <div class:list={['sp-cost-card', howItWorks.costVisual.wasteful.cardClass ?? 'wasteful']}>
           <div class="sp-cost-card-header">
             <span class="sp-cost-card-title">{howItWorks.costVisual.wasteful.title}</span>
@@ -162,14 +183,12 @@ const { howItWorks } = Astro.props;
         </div>
 
         <div class="sp-clone-arrow">
-          <div class="sp-clone-arrow-bolt">
-            <Fragment set:html={getIcon(howItWorks.costVisual.arrow.icon ?? 'bolt')} />
-          </div>
+          <SPCloneSpark icon={howItWorks.costVisual.arrow.icon ?? 'bolt'} />
           <div class="sp-clone-arrow-label">{howItWorks.costVisual.arrow.label}</div>
           <div class="sp-clone-arrow-time">{howItWorks.costVisual.arrow.detail}</div>
         </div>
 
-        <div class:list={['sp-cost-card', howItWorks.costVisual.efficient.cardClass ?? 'efficient']}>
+        <div class:list={['sp-cost-card', howItWorks.costVisual.efficient.cardClass ?? 'efficient', 'sp-clone-spark-target']}>
           <div class="sp-cost-card-header">
             <span class="sp-cost-card-title">{howItWorks.costVisual.efficient.title}</span>
             <span class="sp-cost-card-status">{howItWorks.costVisual.efficient.status}</span>
@@ -192,18 +211,27 @@ const { howItWorks } = Astro.props;
     )}
 
     {howItWorks.pipelineVisual && (
-      <div class="sp-pipeline-visual">
+      <div class="sp-pipeline-visual reveal">
         {howItWorks.pipelineVisual.cards.map((card, i) => (
           <Fragment>
             {i > 0 && howItWorks.pipelineVisual!.arrows[i - 1] && (
-              <div class="sp-clone-arrow">
-                <div class="sp-clone-arrow-bolt">
-                  <Fragment set:html={getIcon(howItWorks.pipelineVisual!.arrows[i - 1].icon)} />
-                </div>
+              <div class="sp-clone-arrow" style={`--sp-flow-delay: ${(i - 1) * 0.5}s`}>
+                <SPCloneSpark icon={howItWorks.pipelineVisual!.arrows[i - 1].icon} />
                 <div class="sp-clone-arrow-time">{howItWorks.pipelineVisual!.arrows[i - 1].label}</div>
               </div>
             )}
-            <div class:list={['sp-pipeline-card', i === 0 ? 'trigger' : i === 1 ? 'clone' : 'result']}>
+            <div
+              class:list={[
+                'sp-pipeline-card',
+                i === 0 ? 'trigger' : i === 1 ? 'clone' : 'result',
+                i === howItWorks.pipelineVisual!.cards.length - 1 && 'sp-clone-spark-target',
+              ]}
+              style={
+                i === howItWorks.pipelineVisual!.cards.length - 1
+                  ? `animation-delay: calc(${(howItWorks.pipelineVisual!.arrows.length - 1) * 0.5}s + 0.3s)`
+                  : undefined
+              }
+            >
               <div class="sp-pipeline-card-header">
                 <span class="sp-pipeline-card-title">{card.title}</span>
                 <span class="sp-pipeline-card-status">{card.status}</span>
@@ -221,3 +249,40 @@ const { howItWorks } = Astro.props;
     )}
   </div>
 </section>
+
+<script>
+  /* Counts a `.sp-clone-arrow-time` value up from 0 in sync with its own bolt's
+     one-shot flash (see solution-pages.css's `sp-spark-flash`/`sp-wipe-reveal`
+     comment). Delegated to ONE `animationstart` listener rather than a second
+     IntersectionObserver -- `.reveal.visible` (the shared scroll-reveal.js
+     observer) is what gates the flash firing at all, so this never runs before
+     the section is actually in view, and never runs twice per element.
+
+     Only animates when the final text starts with plain digits (`47s`, `70%
+     Savings`, the `3` of `3m 14s`); anything else -- a locale whose
+     naturalization reordered the number away from the front -- is left as the
+     static, already-correct SSR text. No i18n key depends on this running. */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.addEventListener('animationstart', (event) => {
+      if (event.animationName !== 'sp-spark-flash') return;
+      const arrow = (event.target as Element).closest('.sp-clone-arrow');
+      const counter = arrow?.querySelector<HTMLElement>('.sp-clone-arrow-time');
+      if (!counter || counter.dataset.counted) return;
+      const finalText = counter.textContent ?? '';
+      const match = finalText.match(/^(\d+)(.*)$/s);
+      if (!match) return;
+      counter.dataset.counted = '1';
+      const target = Number(match[1]);
+      const suffix = match[2];
+      const duration = 500;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min((now - start) / duration, 1);
+        counter.textContent = `${Math.round(target * progress)}${suffix}`;
+        if (progress < 1) requestAnimationFrame(tick);
+        else counter.textContent = finalText;
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+</script>

@@ -24,7 +24,6 @@
  */
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
-import Sentences from '../Sentences.astro';
 
 interface Props {
   lang: Language;
@@ -37,7 +36,12 @@ const { t } = createTranslator(lang);
 <section class="sp-home-hero">
   <div class="sp-home-hero-inner">
     <h1>{t('hero.title')}{t('hero.titleHighlight')}</h1>
-    <p class="sp-home-hero-sub"><Sentences text={t('hero.subtitle')} lang={lang} /></p>
+    {/* set:html, not <Sentences>: hero.subtitle wraps its unique-feature phrases in
+        `<span class="sp-emphasis">`, and Sentences renders its text through a plain
+        `{}` interpolation (auto-escaped), which would print the tags literally. This
+        is two sentences, so the per-sentence line-wrap control Sentences buys is a
+        small trade against getting the tags to render at all. */}
+    <p class="sp-home-hero-sub" set:html={t('hero.subtitle')} />
   </div>
 </section>
 
@@ -67,7 +71,7 @@ const { t } = createTranslator(lang);
     font-size: var(--font-size-4xl);
     font-weight: 700;
     line-height: 1.15;
-    letter-spacing: -0.03em;
+    letter-spacing: var(--tracking-tight);
     color: var(--color-heading);
   }
 

@@ -1,0 +1,26 @@
+---
+/**
+ * The animated "this is fast" cue shared by every clone-arrow in SPHowItWorks
+ * (cloneVisual, costVisual, pipelineVisual). Previously each of the three visual
+ * variants inlined its own copy of the same bolt-icon markup; this is that markup,
+ * once, with the flicker animation attached.
+ *
+ * The flicker is a continuous, very subtle loop rather than a one-shot reveal:
+ * unlike SolutionConstellation's nav nodes (deliberately NO idle loop, because a
+ * clickable target drifting under the cursor is a Fitts's-law tax), this icon is
+ * decorative and never a click target, so a slow "still alive / still fast" pulse
+ * costs nothing in usability. It never hides content, so it only needs the
+ * reduced-motion guard, not the `html.js-anim` guard that the reveal system uses.
+ */
+import { getIcon } from './icons';
+
+interface Props {
+  icon?: string;
+}
+
+const { icon = 'bolt' } = Astro.props;
+---
+
+<div class="sp-clone-arrow-bolt sp-clone-spark">
+  <Fragment set:html={getIcon(icon)} />
+</div>
