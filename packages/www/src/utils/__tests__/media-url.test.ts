@@ -2,15 +2,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * `publicFileExists` decides at import time whether to memoize (NODE_ENV=production), so
- * each test imports a FRESH copy of the module through vi.resetModules() after setting
+ * `publicFileExists` decides at import time whether to memoize (`import.meta.env.PROD`),
+ * so each test imports a FRESH copy of the module through vi.resetModules() after setting
  * the env it wants to exercise.
  */
 async function loadFresh() {
-  const { vi } = await import('vitest');
   vi.resetModules();
   return import('../media-url.ts');
 }
@@ -19,20 +18,19 @@ const KEY = 'videos/solutions/en/home.mp4';
 const LOCAL = `/assets/${KEY}`;
 
 let publicDir: string;
-const savedEnv = { cdn: process.env.PUBLIC_VIDEO_CDN_BASE_URL, node: process.env.NODE_ENV };
+const savedCdn = process.env.PUBLIC_VIDEO_CDN_BASE_URL;
 
 beforeEach(() => {
   publicDir = fs.mkdtempSync(path.join(os.tmpdir(), 'www-public-'));
   delete process.env.PUBLIC_VIDEO_CDN_BASE_URL;
-  delete process.env.NODE_ENV;
+  vi.stubEnv('PROD', false);
 });
 
 afterEach(() => {
   fs.rmSync(publicDir, { recursive: true, force: true });
-  if (savedEnv.cdn === undefined) delete process.env.PUBLIC_VIDEO_CDN_BASE_URL;
-  else process.env.PUBLIC_VIDEO_CDN_BASE_URL = savedEnv.cdn;
-  if (savedEnv.node === undefined) delete process.env.NODE_ENV;
-  else process.env.NODE_ENV = savedEnv.node;
+  if (savedCdn === undefined) delete process.env.PUBLIC_VIDEO_CDN_BASE_URL;
+  else process.env.PUBLIC_VIDEO_CDN_BASE_URL = savedCdn;
+  vi.unstubAllEnvs();
 });
 
 function plant(rel: string): void {
@@ -123,8 +121,8 @@ describe('publicFileExists memo', () => {
     expect(publicFileExists(LOCAL, publicDir)).toBe(true);
   });
 
-  it('memoizes under NODE_ENV=production', async () => {
-    process.env.NODE_ENV = 'production';
+  it('memoizes in a production build (import.meta.env.PROD)', async () => {
+    vi.stubEnv('PROD', true);
     const { publicFileExists } = await loadFresh();
     expect(publicFileExists(LOCAL, publicDir)).toBe(false);
     plant(LOCAL);

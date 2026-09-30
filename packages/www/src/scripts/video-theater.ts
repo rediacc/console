@@ -154,7 +154,9 @@ export function openTheater(mount: HTMLElement): void {
   closeButton?.focus();
 
   if (!first) {
-    currentVideo()?.play().catch(() => {});
+    currentVideo()
+      ?.play()
+      .catch(() => {});
     return;
   }
 
