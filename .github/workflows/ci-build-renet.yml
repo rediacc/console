@@ -343,10 +343,10 @@ jobs:
           if-no-files-found: error
 
   # Native macOS/Windows tests for pkg/procwalk (the process-ancestry walker
-  # behind the agent-override legitimacy checks). The Linux-hosted lint/vet
-  # never analyzes the darwin/windows build tags, and the real
+  # behind the agent-override legitimacy checks). renet's lint.sh analyzes the
+  # darwin/windows build tags statically (golangci-lint per GOOS), but the real
   # kern.procargs2 / PEB ReadProcessMemory code paths only execute on their
-  # native OS, so this is the sole CI coverage for them. Scope is strictly
+  # native OS, so this is their sole RUNTIME coverage. Scope is strictly
   # ./pkg/procwalk/...: cmd/renet and pkg/ebpf need the BPF go:generate step
   # (clang/libbpf), which exists only on the Linux runners.
   platform-tests:
