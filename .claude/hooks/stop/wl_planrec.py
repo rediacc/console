@@ -1917,7 +1917,7 @@ def ledger_row(root, rel, text, moved_at=""):
     open_t, done_t = PF.plan_boxes(text)
     # `folder` and `moved_at` joined the row on 2026-09-21 with check:ci-plan-folders. `folder` is DERIVED from the path, so it is computed here exactly as the gate computes it. `moved_at` is CARRIED: it records when a closed plan was moved into a terminal folder, nothing in the tree can be read back out of it once a later commit touches the new path, and recomputing it would reset
     # the 40-day retention clock on every surgical write. The previous value is passed in by the caller that has the committed ledger; absent, it is "" and the plan has not moved.
-    return {
+    row = {
         "status": status,
         "owner": CK.plan_owner(root, rel) or "unowned",
         "folder": plan_folder(rel),
@@ -1927,6 +1927,10 @@ def ledger_row(root, rel, text, moved_at=""):
         "open_sigs": sorted({box_sig(t) for t in open_t}),
         "done_sigs": sorted({box_sig(t) for t in done_t}),
     }
+    # `ruling` is EMITTED ONLY WHEN PRESENT, exactly as `check_plan_boxes.scan` does, through the same `wl_planfile.ruling_line`. Omitting it was worklist #b70eae96: a --plan-tick on a closed plan carrying `Ruling: #c3a46b36` rewrote its row without the key, and G-A0 then read "ruling is '#c3a46b36', ledger says None" on the very next run.
+    if ruling := PF.ruling_line(text):
+        row["ruling"] = ruling
+    return row
 
 
 def merge_ledger(doc, rel, row):

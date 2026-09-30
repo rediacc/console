@@ -905,6 +905,7 @@ control(
 
 # THE RESTATEMENT CONTROL. ledger_row is check_plan_boxes.scan restated, not imported, so the two are asserted equal here -- which is the only thing that keeps the restatement from drifting into a second opinion.
 sys.path.insert(0, str(HERE.parents[2] / ".ci" / "scripts" / "quality"))
+_cpb_loaded = False
 try:
     import importlib.util as _ilu
 
@@ -913,6 +914,7 @@ try:
     )
     _cpb = _ilu.module_from_spec(_spec)
     _spec.loader.exec_module(_cpb)
+    _cpb_loaded = True
     (ROOT / REL).write_text(_ticked, encoding="utf-8")
     control(
         "ledger_row is byte-for-byte what check_plan_boxes.scan writes",
@@ -921,6 +923,39 @@ try:
     )
 except Exception as _exc:  # noqa: BLE001
     truthy("the gate's own scan() could be loaded for the equality control: %r" % _exc, False)
+
+# A RULED, CLOSED PLAN (worklist #b70eae96). ledger_row dropped the `ruling` key the gate's scan() emits, so a --plan-tick on `agent/plans/_done/PLAN-ci-time-budget.md` (Status: closed, Ruling: #c3a46b36) rewrote its row as `ruling: None` and G-A0 went red on the next run. Driven through the real plan_tick and judged by the gate's own diff_problems, so the comparison is CI's and not a restated one.
+_RULED = PLAN.replace("Status: executing\n", "Status: closed\nRuling: #c3a46b36\n", 1)
+truthy("CONTROL: the ruled fixture really carries a header Ruling", F.ruling_line(_RULED))
+(ROOT / REL).write_text(_RULED, encoding="utf-8")
+_ticked_r, _doc_r, _note_r = R.plan_tick(
+    ROOT, REL, _sig_open, "verified by .ci/config/plan-boxes.json:1", "deadbeef"
+)
+control(
+    "the tick carries the plan's Ruling into its ledger row",
+    _doc_r["plans"][REL].get("ruling"),
+    "#c3a46b36",
+)
+if _cpb_loaded:
+    (ROOT / REL).write_text(_ticked_r, encoding="utf-8")
+    _scan_r = {REL: _cpb.scan(ROOT)[REL]}
+    control(
+        "check_plan_boxes' G-A0 finds NO disagreement after ticking a ruled plan",
+        _cpb.diff_problems(_scan_r, {"plans": {REL: _doc_r["plans"][REL]}}),
+        [],
+    )
+    _prefix_row = {k: v for k, v in _doc_r["plans"][REL].items() if k != "ruling"}
+    truthy(
+        "CONTROL: the pre-fix row shape (no `ruling` key) IS the reported disagreement",
+        any(
+            "ruling is '#c3a46b36', ledger says None" in p
+            for p in _cpb.diff_problems(_scan_r, {"plans": {REL: _prefix_row}})
+        ),
+    )
+    falsy(
+        "CONTROL: and an unruled plan's row carries no `ruling` key at all",
+        "ruling" in R.ledger_row(ROOT, REL, _ticked),
+    )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 
 raises(
