@@ -162,7 +162,7 @@ the local `public/assets/{tutorials/video,videos/solutions,tutorials/audio}`
 copies are removed from git entirely (gitignored) — see root `CLAUDE.md`'s
 "Media Assets" section for current status.
 
-There is a **fourth** media tree that this document historically omitted and that no sync script covers: `packages/www/public/media/founder/` (narration audio, captions, photos, posters, 138 files). It was untracked in #512 alongside the three above, but unlike them it was never mirrored to R2 and never added to `packages/www/.gitignore`, so for a while git history was the only copy of it that existed anywhere. Nothing in `HEAD` can regenerate it today: its generators (`packages/www/scripts/generate-team-video-audio.ts` and three siblings) were deleted in `8a537a367`. If the team-video feature is ever restored, restore the R2 coverage with it rather than letting it land back in git.
+There is a **fourth** media tree that this document historically omitted and that no sync script covers: `packages/www/public/media/founder/` (narration audio, captions, photos, posters, 138 files). It was untracked in #512 alongside the three above, but unlike them it was never mirrored to R2 and never added to `packages/www/.gitignore`, so for a while git history was the only copy of it that existed anywhere. Nothing in `HEAD` can regenerate it today: its generators (`packages/www/scripts/generate-team-video-audio.ts` and three siblings) were deleted in `c482e6246`. If the team-video feature is ever restored, restore the R2 coverage with it rather than letting it land back in git.
 
 ## 7. Restoring media after a fresh clone
 
