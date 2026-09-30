@@ -36,11 +36,12 @@
  * ---- end gate ----
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -48,6 +49,20 @@ const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 const RENET_DIR = path.join(CONSOLE_ROOT, 'private', 'renet');
 const LOCKFILE = path.join(RENET_DIR, 'embed-assets.lock.json');
 const ASSETS_DIR = path.join(RENET_DIR, 'pkg', 'embed', 'assets');
+const execFileAsync = promisify(execFile);
+
+/** Run a staged binary with stdin closed (as `stdio: 'ignore'` did), resolving its stdout or rejecting on a non-zero exit. */
+function runForStdout(bin: string, args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = execFile(
+      bin,
+      args,
+      { encoding: 'utf-8', timeout: 20_000, maxBuffer: 1024 * 1024 * 16 },
+      (error, stdout) => (error ? reject(error) : resolve(stdout))
+    );
+    child.stdin?.end();
+  });
+}
 
 interface Component {
   version?: string;
@@ -92,20 +107,53 @@ function stringsCarryVersion(lines: string[], pin: string): boolean {
   return lines.some((l) => needles.has(l.trim()));
 }
 
+/** Printable ASCII, the same range strings(1) uses by default. */
+function isPrintable(b: number): boolean {
+  return b >= 0x20 && b <= 0x7e;
+}
+
 /**
  * True when `buf` contains the pin as a COMPLETE printable run.
  *
  * Equivalent to `strings -a <bin> | grep -x <pin>`, done in process. Whole-run
  * rather than substring for the same reason as `stringsCarryVersion`: a loose
  * match would accept 3.5.01 as 3.5.0.
+ *
+ * It searches for each needle with the native `Buffer.indexOf` and then checks
+ * the match is a whole run: only spaces (the one printable byte `trim()` drops)
+ * may sit between it and a non-printable byte or the buffer edge on each side,
+ * and the run is at least 3 bytes, strings(1)'s default minimum. That is the
+ * same predicate `bufferCarriesVersionReference` computes by materialising every
+ * run, which cost about 20 of this gate's 24 seconds on ~900 MB of binaries; the
+ * controls compare the two on planted buffers every run.
  */
 function bufferCarriesVersion(buf: Buffer, pin: string): boolean {
+  for (const needle of versionNeedles(pin)) {
+    // A needle with a non-printable byte, or leading/trailing space, can never equal a trimmed printable run.
+    if (needle !== needle.trim() || ![...needle].every((c) => isPrintable(c.charCodeAt(0)))) {
+      continue;
+    }
+    const pat = Buffer.from(needle, 'latin1');
+    for (let at = buf.indexOf(pat); at !== -1; at = buf.indexOf(pat, at + 1)) {
+      let start = at;
+      while (start > 0 && buf[start - 1] === 0x20) start--;
+      if (start > 0 && isPrintable(buf[start - 1])) continue;
+      let end = at + pat.length;
+      while (end < buf.length && buf[end] === 0x20) end++;
+      if (end < buf.length && isPrintable(buf[end])) continue;
+      if (end - start >= 3) return true;
+    }
+  }
+  return false;
+}
+
+/** The run-materialising form of `bufferCarriesVersion`, kept as the oracle its controls compare against. */
+function bufferCarriesVersionReference(buf: Buffer, pin: string): boolean {
   const needles = versionNeedles(pin);
   if (needles.length === 0) return false;
   const runs: string[] = [];
   let cur = '';
-  for (let i = 0; i < buf.length; i++) {
-    const b = buf[i];
+  for (const b of buf) {
     // Printable ASCII, the same range strings(1) uses by default.
     if (b >= 0x20 && b <= 0x7e) {
       cur += String.fromCharCode(b);
@@ -147,18 +195,19 @@ interface Result {
   detail: string;
 }
 
-function probeAsset(
+async function probeAsset(
   component: string,
   zstPath: string,
   arch: string,
   pin: string,
   tmpDir: string
-): Result {
+): Promise<Result> {
   const asset = path.relative(ASSETS_DIR, zstPath);
   const bin = path.join(tmpDir, path.basename(zstPath).replace(/\.zst$/, ''));
   try {
-    const raw = execFileSync('zstd', ['-dc', zstPath], { maxBuffer: 1024 * 1024 * 512 });
-    fs.writeFileSync(bin, raw, { mode: 0o755 });
+    // zstd writes the file itself: no 200 MB round trip through a Node buffer.
+    await execFileAsync('zstd', ['-d', '-q', '-f', zstPath, '-o', bin]);
+    fs.chmodSync(bin, 0o755);
   } catch (error) {
     return {
       component,
@@ -173,12 +222,7 @@ function probeAsset(
     // The strong form: the binary itself answers.
     for (const flag of ['--version', 'version', '-V']) {
       try {
-        const out = execFileSync(bin, [flag], {
-          encoding: 'utf-8',
-          timeout: 20_000,
-          stdio: ['ignore', 'pipe', 'pipe'],
-          maxBuffer: 1024 * 1024 * 16,
-        });
+        const out = await runForStdout(bin, [flag]);
         if (statesVersion(out, pin)) {
           return { component, asset, pin, verdict: 'match', detail: `ran \`${flag}\`` };
         }
@@ -225,6 +269,34 @@ function probeAsset(
   } catch (error) {
     return { component, asset, pin, verdict: 'unprobed', detail: `read failed: ${String(error)}` };
   }
+}
+
+/**
+ * Probe every staged asset, a few at a time. Each probe is independent (its own
+ * temp file, its own subprocesses) and zstd decompression is single-threaded,
+ * so serial probing left the gate waiting on one core for about 4 seconds.
+ * Bounded, because this gate shares the machine with the whole ci:quick pool
+ * and a decompressed k3s or zot is 70-230 MB on disk. Results keep the staged
+ * order, so the report reads the same however the probes interleave.
+ */
+const PROBE_CONCURRENCY = 4;
+
+async function probeAll(
+  staged: Array<{ zst: string; arch: string; pin: string; name: string }>,
+  tmpDir: string
+): Promise<Result[]> {
+  const results = new Array<Result>(staged.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    while (next < staged.length) {
+      const i = next++;
+      const s = staged[i];
+      results[i] = await probeAsset(s.name, s.zst, s.arch, s.pin, tmpDir);
+    }
+  };
+  const width = Math.min(PROBE_CONCURRENCY, staged.length);
+  await Promise.all(Array.from({ length: width }, () => worker()));
+  return results;
 }
 
 // ─── Control ────────────────────────────────────────────────────────────────
@@ -282,12 +354,52 @@ function runControls(): string[] {
   if (!stringsCarryVersion(['irrelevant', '3.5.0', 'more'], '3.5.0')) {
     failures.push('control: an exact version line was not accepted by the string-table check');
   }
+
+  // The fast buffer scan must agree with the run-materialising oracle, including where they could plausibly diverge: buffer edges, space padding (trimmed), printable neighbours, a prefix-sharing longer version, the v-prefixed form, runs under 3 bytes, and a first occurrence that is not whole followed by a later one that is.
+  const nul = '\u0000';
+  const bufferCases: Array<{ text: string; pin: string; expected: boolean; label: string }> = [
+    { text: `${nul}3.5.0${nul}`, pin: '3.5.0', expected: true, label: 'NUL-delimited run' },
+    { text: '3.5.0', pin: '3.5.0', expected: true, label: 'run at both buffer edges' },
+    { text: `${nul}  3.5.0 ${nul}`, pin: '3.5.0', expected: true, label: 'space-padded run' },
+    { text: `${nul}v2.1.2\n`, pin: '2.1.2', expected: true, label: 'v-prefixed run' },
+    { text: `${nul}3.5.01${nul}`, pin: '3.5.0', expected: false, label: 'prefix-sharing version' },
+    {
+      text: `${nul}x3.5.0${nul}`,
+      pin: '3.5.0',
+      expected: false,
+      label: 'printable left neighbour',
+    },
+    {
+      text: `${nul}3.5.0 x${nul}`,
+      pin: '3.5.0',
+      expected: false,
+      label: 'printable right after space',
+    },
+    { text: `${nul}3.4.4${nul}`, pin: '3.5.0', expected: false, label: 'THE REGRESSION as bytes' },
+    { text: `${nul}1.2${nul}1${nul}`, pin: '1', expected: false, label: 'run under 3 bytes' },
+    {
+      text: `${nul}3.5.0x${nul}3.5.0${nul}`,
+      pin: '3.5.0',
+      expected: true,
+      label: 'later whole run',
+    },
+  ];
+  for (const { text, pin, expected, label } of bufferCases) {
+    const buf = Buffer.from(text, 'latin1');
+    const fast = bufferCarriesVersion(buf, pin);
+    const reference = bufferCarriesVersionReference(buf, pin);
+    if (fast !== expected || reference !== expected) {
+      failures.push(
+        `control: buffer scan, ${label} (pin ${pin}): fast=${fast} reference=${reference}, expected ${expected}`
+      );
+    }
+  }
   return failures;
 }
 
 // ─── Main ───────────────────────────────────────────────────────────────────
 
-function main(): void {
+async function main(): Promise<void> {
   console.log('Embedded asset versions: does the artifact match the pin?');
   console.log('='.repeat(60));
 
@@ -337,7 +449,7 @@ function main(): void {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'embed-verify-'));
   let results: Result[] = [];
   try {
-    results = staged.map((s) => probeAsset(s.name, s.zst, s.arch, s.pin, tmpDir));
+    results = await probeAll(staged, tmpDir);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
@@ -392,4 +504,4 @@ function main(): void {
   process.exit(0);
 }
 
-main();
+void main();
