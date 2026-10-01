@@ -841,6 +841,7 @@
       "ENABLE_HTTPS",
       "FULL_INTEGRATION",
       "GATEWAY_PORT",
+      "GIT_DIR",
       "GROUP_B_BRIDGE",
       "GROUP_B_NET",
       "GROUP_B_NET_BASE",

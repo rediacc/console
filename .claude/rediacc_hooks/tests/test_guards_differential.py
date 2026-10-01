@@ -90,9 +90,21 @@ def _stub_dir(tmp_path, stubs):
 FIXTURE_TOKEN = "{FIXTURE:%s}"  # noqa: S105
 
 
+# A HOME no host owns. FOUND 2026-09-30 (#0c7d2263's sweep of the world builders): `GIT_CONFIG_GLOBAL=/dev/null` stops git reading `~/.gitconfig`, but NOT `$XDG_CONFIG_HOME/git/ignore` and `.../attributes`, which git reads by default whatever the global config says, so a `git add -A` in a fixture honoured this machine's personal ignore list. And an inherited `GIT_DIR`, `GIT_INDEX_FILE` or `GIT_WORK_TREE` (a pytest run from inside a git hook sets them) would point
+# `git init` at the host's repository instead of the fixture's.
+NO_HOME = "/nonexistent"
+
+
+def _scrubbed(environ):
+    """`environ` without a single inherited `GIT_*` variable."""
+    return {k: v for k, v in environ.items() if not k.startswith("GIT_")}
+
+
 def _git_env():
     return dict(
-        os.environ,
+        _scrubbed(os.environ),
+        HOME=NO_HOME,
+        XDG_CONFIG_HOME=NO_HOME,
         GIT_AUTHOR_NAME="Fixture",
         GIT_AUTHOR_EMAIL="fixture@example.invalid",
         GIT_COMMITTER_NAME="Fixture",
@@ -240,8 +252,37 @@ def case_cwd(stem, work):
     return fixture_path(work, name) if name else str(ROOT)
 
 
+def _revive_process_world(stem):
+    """Rebuild `stem`'s spawned-process world if any of its shells has exited. True when it did.
+
+    FOUND 2026-09-30 (#af1d1d05): `test_the_differential_can_fail` reported `block_bash_write_to_running_script`'s DEFECT as changing no answer in a FULL run and passed filtered. The DEFECT only changes an answer when a named script is RUNNING (the guard allows everything else), so its every witness needs the world's live `bash <script>` shells, and those shells die two ways a filtered run never
+    reaches: each runs a 600-second `sleep`, and a FULL pass reaches this guard's defect well past ten minutes after the world was built; and under `-n`, a second xdist worker building the same fixed-path world waits out the 300-second lock and then kills the first worker's shells. The world's builder respawns only when its `_CHILDREN` list is empty, so a dead world stayed dead for the rest of the session.
+
+    The rebuild goes through the module's own reaper and lock list, released so the respawn can take the lock again from this same process (an flock held on one descriptor refuses a second descriptor of the same process).
+    """
+    module = guards.load(stem)
+    children = getattr(module, "_CHILDREN", None)
+    if not children or all(child.poll() is None for child in children):
+        return False
+    module._reap()
+    # Reaped by the pid `Popen` holds as well: a dropped `Popen` whose shell was never waited on raises a ResourceWarning at collection, which pytest turns into a failure of whichever test happens to be running.
+    for child in children:
+        with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+            child.kill()
+            child.wait(timeout=10)
+    for fd in module._LOCK_FDS:
+        os.close(fd)
+    module._LOCK_FDS.clear()
+    children.clear()
+    names = set(getattr(module, "FIXTURES", {}))
+    for key in [k for k in _FIXTURES if k[1] in names]:
+        del _FIXTURES[key]
+    return True
+
+
 def case_env(stem, extra, stubs, work):
     """`_base_env` for one case, with a `HOST_WORLDS` guard's PATH cut down to stubs + its fixture `bin/`."""
+    _revive_process_world(stem)
     stub_dir = _stub_dir(work, dict(DEFAULT_STUBS, **stubs))
     env = _base_env(stub_dir, extra, work)
     name = HOST_WORLDS.get(stem)
@@ -307,11 +348,33 @@ def all_builders():
     return table
 
 
+@contextlib.contextmanager
+def _hermetic_process_env():
+    """`os.environ` as `_git_env` builds it, for the duration of one world build.
+
+    A PORT MODULE'S OWN BUILDER does not call `_git_env`: `block_untagged_commit`'s `epic-snapshot`, for one, starts from `dict(os.environ, ...)`, so it inherited every `GIT_*` variable, the host's XDG ignore list, and an unpinned commit date. Swapping the process environment here gives every builder, shared or declared, the same scrubbed world without touching a guard.
+    """
+    saved = dict(os.environ)
+    os.environ.clear()
+    os.environ.update(_git_env())
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+
+
 def fixture_path(work, name):
-    if name not in _FIXTURES:
+    """`name`'s world under `work`, built once per `work`.
+
+    KEYED BY `work` AS WELL AS NAME, found 2026-09-30 while regoldening #0c7d2263: `regolden.py guards` records each guard under its own `TemporaryDirectory`, deleted when that guard is done, and a cache keyed by name alone handed every later guard the FIRST guard's deleted path. `git -C <gone> branch --show-current` then printed nothing, and 64 `block_untagged_commit` and 20 `block_unverified_push` records were frozen against a checkout that no longer existed.
+    """
+    key = (str(work), name)
+    if key not in _FIXTURES:
         target = pathlib.Path(work) / "fixtures" / name
-        _FIXTURES[name] = str(all_builders()[name](target))
-    return _FIXTURES[name]
+        with _hermetic_process_env():
+            _FIXTURES[key] = str(all_builders()[name](target))
+    return _FIXTURES[key]
 
 
 def _resolve_fixtures(value, work):
@@ -357,9 +420,14 @@ def _base_env(stub_dir, extra, work=None):
 
     `PATH` keeps the real one behind the stub directory: these guards call `git`, `sed`, `awk` and `python3`, and an empty PATH would make every one of them fail identically on both sides -- agreement that proves nothing.
     """
+    scratch = pathlib.Path(stub_dir).parent
+    for sub in ("fixture-home", "fixture-tmp"):
+        (scratch / sub).mkdir(exist_ok=True)
     env = {
         "PATH": "%s:%s" % (stub_dir, os.environ.get("PATH", "/usr/bin:/bin")),
-        "HOME": os.environ.get("HOME", "/"),
+        # An EMPTY home and temp dir the harness owns, not the runner's (#0c7d2263's sweep). `block_commit_meta`'s default variant expands `$HOME/...` body files off the real HOME, and `block_settled_questions` appends each refusal to `worklist.py --path`'s ledger under TMPDIR: run inherited, every differential pass wrote hundreds of `session: unknown` rows into this machine's live ask-refusal ledger.
+        "HOME": str(scratch / "fixture-home"),
+        "TMPDIR": str(scratch / "fixture-tmp"),
         "CLAUDE_PROJECT_DIR": str(ROOT),
         "LC_ALL": "C",
         "TZ": "UTC",
@@ -541,7 +609,8 @@ def build_cases():
             if payload not in seen:
                 seen.add(payload)
                 picked.append(("degen-%s" % label, payload))
-        foreign = pool if FULL else guardcorpus.cross_sample(pool, key)
+        # `foreign_pool` in BOTH modes: a host path fed to a guard it was not written for makes that guard's golden answer this machine's `/tmp` (#0c7d2263).
+        foreign = guardcorpus.foreign_pool(pool) if FULL else guardcorpus.cross_sample(pool, key)
         for payload in foreign:
             if payload not in seen:
                 seen.add(payload)
@@ -560,8 +629,16 @@ CASES, HARVEST_STATS, POOL = build_cases()
 
 # STILL SHARED WITH `test_hooks_procs.py`, and that is the whole reason this survives PLAN-retire-bash-oracles A3. Before A3 the comment here was about the bash driver's own cost (forking `env -i bash` once per case across roughly 6,000 cases); that reasoning left with the driver. What did NOT leave is that two of these guards (`block_self_matching_pgrep`,
 # `block_bash_write_to_running_script`) read the REAL process table, and `test_hooks_procs.py` spawns real processes visible to that same table to prove its own guards' hazards. Measured 2026-09-09: run on two different xdist workers at once, this file's anti-vacuity controls went red for reasons that had nothing to do with either port -- a `sleep 8` fixture from one file was
-# visible, at the wrong moment, to a case built by the other. Sharing this group serialises the two files onto one worker, which is what stops that. It is INERT without `--dist loadgroup`, so it changes nothing today; `test_hooks_procs.py` imports the name directly rather than each file hand-typing the same string.
+# visible, at the wrong moment, to a case built by the other. Sharing this group serialises the two files onto one worker, which is what stops that; `test_hooks_procs.py` imports the name directly rather than each file hand-typing the same string.
+#
+# UNTIL 2026-09-30 ONLY `test_hooks_procs.py` WORE THE MARK, and this file's half of the claim above was never true (#af1d1d05). `check_pytest.py` runs `-n 8 --dist loadgroup`, so the group is live, and every test here that builds a process world or reads the process table now carries it: the two anti-vacuity controls, and the golden cases of `PROCESS_TABLE_READERS`. Left ungrouped, two workers each built the
+# fixed-path running-script world and the second killed the first's shells.
 XDIST_GROUP = "hooks-guards"
+PROCESS_TABLE_READERS = {
+    "block_self_matching_pgrep",
+    "block_bash_write_to_running_script",
+    "block_edit_of_running_script",
+}
 
 
 def python_fields(stem, payload, extra, stubs, work):
@@ -787,6 +864,67 @@ def test_host_worlds_reach_the_guard(fixture_work):
     assert tool.hookio is hookio
 
 
+def test_host_path_payloads_never_cross_feed():
+    """A payload naming `/tmp`, `/home` or `$HOME` reaches only the guard its suite case was written for (#0c7d2263).
+
+    The CONTROL is a planted pair: the exact payload that made `block_untagged_commit`'s golden answer this machine's `/tmp/commit-msg.txt` must be dropped, and an ordinary commit beside it kept, or the filter is either absent or dropping everything.
+    """
+    bash = guardcorpus.BUILDERS["bash_json"]
+    planted = json.dumps(bash(["git commit -F /tmp/commit-msg.txt"]))
+    ordinary = json.dumps(bash(["git commit -F msg.txt -- a"]))
+    assert guardcorpus.cross_sample([planted, ordinary], "guards/x.py", limit=10) == [ordinary]
+    assert guardcorpus.foreign_pool([planted, ordinary]) == [ordinary]
+    for spelling in ("cat ~/x", "cp $HOME/a b", "cp ${HOME}/a b", "cd /tmp && ls", "ls /home/u"):
+        assert guardcorpus.names_host_path(spelling), spelling
+    for spelling in ("scp f host:/tmp", "ls packages/www/tmp/x", "cat /dev/null", "ls private/tmp"):
+        assert not guardcorpus.names_host_path(spelling), spelling
+    # The real pool carries the planted payload, so the filter is not vacuous over the corpus either, and no guard's foreign cases hold one.
+    assert planted in POOL
+    leaked = sorted(
+        {
+            stem
+            for stem, label, payload, *_ in CASES
+            if "|cross-" in label and guardcorpus.names_host_path(payload)
+        }
+    )
+    assert not leaked, "these guards were cross-fed a host path: %s" % leaked
+
+
+def test_the_case_environment_names_no_host(fixture_work):
+    """HOME and TMPDIR are the harness's own, and no inherited `GIT_*` variable reaches a world builder."""
+    env = case_env("block_commit_meta", {}, {}, fixture_work)
+    for key in ("HOME", "TMPDIR"):
+        assert env[key].startswith(str(fixture_work)), (key, env[key])
+    saved = dict(os.environ)
+    os.environ["GIT_DIR"] = "/nonexistent-host-repo/.git"
+    try:
+        with _hermetic_process_env():
+            assert "GIT_DIR" not in os.environ
+            assert os.environ["HOME"] == NO_HOME
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+
+
+@pytest.mark.xdist_group(XDIST_GROUP)
+def test_a_dead_process_world_is_rebuilt(fixture_work):
+    """A running-script world whose shells died comes back before the next case (#af1d1d05)."""
+    stem = "block_bash_write_to_running_script"
+    module = guards.load(stem)
+    extra = {label: env for label, env, _ in environments(module)}["running"]
+    case_env(stem, extra, {}, fixture_work)
+    assert module._CHILDREN, "the world spawned no shells, so there is nothing to revive"
+    assert not _revive_process_world(stem), "a live world was rebuilt for no reason"
+    module._reap()
+    for child in module._CHILDREN:
+        child.wait(timeout=10)
+    case_env(stem, extra, {}, fixture_work)
+    assert module._CHILDREN
+    assert all(c.poll() is None for c in module._CHILDREN)
+    payload = edge_payload(module, "echo x > %s" % module.LIVE_SCRIPT)
+    assert python_fields(stem, payload, extra, {}, fixture_work)["rc"] == "2"
+
+
 def test_the_frozen_clock_reaches_the_guard_and_straddles(fixture_work):
     """The freeze is real, honours TZ, and makes the two clocks disagree on every run.
 
@@ -814,8 +952,18 @@ def test_the_frozen_clock_reaches_the_guard_and_straddles(fixture_work):
 
 @pytest.mark.parametrize(
     ("stem", "label", "payload", "extra", "stubs"),
-    [(c[0], c[1], c[2], c[4], c[5]) for c in GOLDEN_CASES],
-    ids=["%s|%s" % (c[0], c[1]) for c in GOLDEN_CASES],
+    [
+        pytest.param(
+            c[0],
+            c[1],
+            c[2],
+            c[4],
+            c[5],
+            id="%s|%s" % (c[0], c[1]),
+            marks=[pytest.mark.xdist_group(XDIST_GROUP)] if c[0] in PROCESS_TABLE_READERS else [],
+        )
+        for c in GOLDEN_CASES
+    ],
 )
 def test_guard_matches_golden(fixture_work, stem, label, payload, extra, stubs):
     header, silent, records = golden_for(stem)
@@ -843,6 +991,7 @@ def test_guard_matches_golden(fixture_work, stem, label, payload, extra, stubs):
     assert not diffs, render(diffs, stem, label, payload)
 
 
+@pytest.mark.xdist_group(XDIST_GROUP)
 def test_every_guard_discriminates(fixture_work):
     """No guard may answer the same way on every case it was given.
 
@@ -862,6 +1011,7 @@ def test_every_guard_discriminates(fixture_work):
     )
 
 
+@pytest.mark.xdist_group(XDIST_GROUP)
 def test_the_differential_can_fail(tmp_path, fixture_work):
     """Every port declares one defect, and the comparison must catch it.
 
