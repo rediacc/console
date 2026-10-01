@@ -181,8 +181,8 @@ rdc run -f container_restart -m <machine> --param repository=<repo> --param cont
 | Script | Purpose |
 |--------|---------|
 | `deploy-bench.sh` | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
-| `reset-bench.sh` | Wipe bench D1 + R2 + worker secrets |
-| `backup-d1.sh` | Export production/edge D1 databases to `.backups/` |
+| `python3 -m rediacc_ci.ops.reset_bench` (run with `PYTHONPATH=.ci`) | Wipe bench D1 + R2 + worker secrets |
+| `python3 -m rediacc_ci.ops.backup_d1` (run with `PYTHONPATH=.ci`) | Export production/edge D1 databases to `.backups/` |
 | `lib/cf-auth.sh` | Shared Cloudflare + AWS auth helpers (legacy; only `deploy-bench` still uses it) |
 
 ## Secret Rotation (`./run.sh rotation`)

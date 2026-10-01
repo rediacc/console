@@ -1,6 +1,6 @@
 ---
 name: account-dev
-description: Running and driving the account server development environment: ./run.sh account dev (gateway + portal + www + RustFS), the TEST_MODE seams, dev credentials and seeding, port mechanics and orphan cleanup, the tsx no-hot-reload rule, and how the CLI connects to it (./rdc.sh --dev, config init --server, headless auth chains). Also the bench environment (bench.rediacc.com): deploying the account worker with scripts/ops/deploy-bench.sh, wrangler deploys, Cloudflare D1 databases and R2 buckets, worker secrets, and reset-bench.sh wipes. Use when a task needs a live account server or a bench deploy: license/subscription flows, config-storage work, portal testing, drills, D1 or wrangler trouble, or diagnosing gateway weirdness.
+description: Running and driving the account server development environment: ./run.sh account dev (gateway + portal + www + RustFS), the TEST_MODE seams, dev credentials and seeding, port mechanics and orphan cleanup, the tsx no-hot-reload rule, and how the CLI connects to it (./rdc.sh --dev, config init --server, headless auth chains). Also the bench environment (bench.rediacc.com): deploying the account worker with scripts/ops/deploy-bench.sh, wrangler deploys, Cloudflare D1 databases and R2 buckets, worker secrets, and rediacc_ci.ops.reset_bench wipes. Use when a task needs a live account server or a bench deploy: license/subscription flows, config-storage work, portal testing, drills, D1 or wrangler trouble, or diagnosing gateway weirdness.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---
@@ -29,7 +29,7 @@ customer's subscriptions and creates one; maxActivations int 1..10000 (default 5
 - GET /test/totp-code?email=...: the CURRENT computed TOTP for a seeded store (real
 secret, no hardcoded bypass): this is the headless 2FA path.
 - POST /test/seed-config-store, /test/seed-demo-partner, /test/emails (captured
-outbound mail), plus exam/study seeding. Headless auth chain precedent: .ci/scripts/test/run-account-e2e.sh (node entry + TEST_MODE, register/login/device-code mint); the drills' lib (scripts/drills/lib.sh drill_account_*) is the curl-based equivalent.
+outbound mail), plus exam/study seeding. Headless auth chain precedent: .ci/rediacc_ci/testrun/account_e2e.py (node entry + TEST_MODE, register/login/device-code mint); the drills' lib (scripts/drills/lib.sh drill_account_*) is the curl-based equivalent.
 
 ## Connecting the CLI
 

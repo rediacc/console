@@ -491,8 +491,9 @@ def main(argv: list[str] | None = None) -> int:
         text = target.read_text(encoding="utf-8", errors="replace")
         extract = python_dispatch_targets if name.endswith(".py") else dispatch_targets
         for sub in subcommands:
+            # COUNTED PER (verb source, verb) PAIR READ, NOT PER REFERENCE FOUND. Every verb CI invokes is a Python module now and the drills' bash twins are deleted (PLAN-retire-bash-oracles B3), so the honest number of `scripts/` references this half finds is zero; the floor still refuses a half that was never read (the verb module dropped from GATED_FILES, or no CI-invoked verb).
+            dispatch_scanned += 1
             for ref in extract(text, sub):
-                dispatch_scanned += 1
                 check_path(ref, "%s (%s)" % (name, sub))
 
     ci_scanned = 0

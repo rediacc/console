@@ -23,6 +23,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.drills import transfer
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 BASH = shutil.which("bash") or "/bin/bash"
@@ -176,7 +177,7 @@ class World:
 
 @pytest.fixture
 def world(tmp_path: pathlib.Path) -> typing.Iterator[World]:
-    """A scratch repo root holding both drills' bash twins and the fake rdc.sh."""
+    """A scratch repo root holding the fake rdc.sh (and, only for a re-freeze from bash, the drills' bash twins)."""
     root = tmp_path / "root"
     for rel in (
         "scripts/drills/lib.sh",
@@ -184,7 +185,10 @@ def world(tmp_path: pathlib.Path) -> typing.Iterator[World]:
         "scripts/drills/transfer.sh",
         ".ci/scripts/lib/common.sh",
         ".ci/config/well-known.env",
+        ".ci/config/well-known.generated.sh",
     ):
+        if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
+            continue
         dest = root / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
@@ -210,17 +214,47 @@ def _env(world: World, **extra: str) -> dict[str, str]:
     return env
 
 
+def _env_key(env: dict[str, str], work: pathlib.Path) -> list[str]:
+    """The environment as a key: machine-specific PATH entries are named, not spelled (the sealed one holds the tmp dir and the interpreter's directory)."""
+    rows = []
+    for k in sorted(env):
+        v = env[k]
+        if k == "PATH":
+            v = "sealed" if str(work) in v else "inherited"
+        rows.append("%s=%s" % (k, v))
+    return rows
+
+
 def _bash(world: World, script: str, args: list[str], env: dict[str, str]) -> tuple[int, str, str]:
-    proc = subprocess.run(
-        [BASH, str(world.root / "scripts/drills" / script), *args],
-        capture_output=True,
-        text=True,
-        env=env,
-        cwd=str(world.root),
-        check=False,
-        timeout=120,
+    """The retired twin's run of `scripts/drills/<script>`, from `goldens/twins/scripts.drills.<name>.jsonl` (PLAN-retire-bash-oracles B3).
+
+    Besides the streams the golden holds whether the twin left the stub gateway alive (its teardown SIGKILLs whatever listens on the gateway port), replayed here by stopping the stub. The key is the argv, the environment, and the fake `rdc.sh` text.
+    """
+    twin = "scripts/drills/%s" % script
+
+    def go() -> tuple[int, str, str]:
+        proc = subprocess.run(
+            [BASH, str(world.root / "scripts/drills" / script), *args],
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=str(world.root),
+            check=False,
+            timeout=120,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    rdc_text = (world.root / "rdc.sh").read_text().replace(sys.executable, "<PY>")
+    rc, out, err, got = diff.twin_run(
+        twin,
+        ["args=%r" % (args,), "env=%r" % (_env_key(env, world.root.parent),), "rdc=%s" % rdc_text],
+        go,
+        extras={"gateway": lambda: "1" if world.gateway_alive() else "0"},
+        work=(str(world.root.parent),),
     )
-    return proc.returncode, proc.stdout, proc.stderr
+    if diff.regolden_mode(twin) is None and got["gateway"] == "0":
+        world.stop_gateway()
+    return rc, out, err
 
 
 def _port(module: str, args: list[str], env: dict[str, str], world: World) -> tuple[int, str, str]:
@@ -351,11 +385,14 @@ def test_delta_the_offline_write_exit_is_the_clis_network_exit_code() -> None:
     match = re.search(r"NETWORK_ERROR:\s*(\d+)", cli_types)
     assert match, "the CLI's EXIT_CODES table no longer names NETWORK_ERROR"
     assert int(match.group(1)) == transfer.OFFLINE_WRITE_EXIT
-    # The control: the bash twin hard-codes exit 1 for the same assertion, which the live CLI contradicts.
-    assert (
-        'assert_exit 1 "the write fails (exit 1)"'
-        in (ROOT / "scripts/drills/transfer.sh").read_text()
-    )
+    # The control: the bash twin hard-codes exit 1 for the same assertion, which the live CLI contradicts. Frozen with the twin: whether its text carried that line.
+
+    def read_twin() -> tuple[int, str, str]:
+        text = (ROOT / "scripts/drills/transfer.sh").read_text()
+        return 0, "1" if 'assert_exit 1 "the write fails (exit 1)"' in text else "0", ""
+
+    carried = diff.twin_call("scripts/drills/transfer.sh", ["hard-codes exit 1"], read_twin)[1]
+    assert carried == "1"
 
 
 def test_delta_a_reused_gateway_survives_the_drill(world: World) -> None:

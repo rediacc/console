@@ -247,7 +247,6 @@ _SHELL_USERS = {
     ".ci/media/coverage.sh",
     ".ci/scripts/test/gates/test-toolchain.sh",
     ".ci/scripts/test/lib/test-helpers.sh",
-    ".ci/scripts/test/run-account-e2e.sh",
     ".ci/scripts/test/test-install-methods.sh",
     ".ci/tutorials/record.sh",
 }

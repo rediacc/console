@@ -59,7 +59,7 @@ def world(tmp_path: pathlib.Path) -> h.World:
 
 def _both(world: h.World, **env: str):
     e = world.env(**env)
-    b = world.bash("scripts/ops/backup-cutover-preflight.sh", [], e)
+    b = world.twin_run("scripts/ops/backup-cutover-preflight.sh", [], e)
     calls_b = [c for c in world.calls() if c["tool"] == "curl"]
     world.reset_log()
     p = world.port("rediacc_ci.ops.backup_cutover_preflight", [], e)

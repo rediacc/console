@@ -329,7 +329,8 @@ def _current_label() -> str:
         return "outside-pytest"
     if phase != "(call)":
         return "fixture"
-    return node.split("::", 1)[-1]
+    # xdist's `--dist loadgroup` appends `@<group>` to the node id of a test that sets `XDIST_GROUP`; a key that carried it would differ between `-n 0` (where a regolden records) and `-n 16`.
+    return re.sub(r"(?<=[\w\]])@[\w.-]+$", "", node.split("::", 1)[-1])
 
 
 def case_key(parts: list[str], *, work: tuple[str, ...], label: str | None) -> str:

@@ -10,8 +10,8 @@ This was wrong here until 2026-08-24 and it would have sent you to watch a job t
 |---|---|---|
 | install.sh across the platform matrix | `test-install-methods.sh` | `validate-install` (`ci.yml:1270`) |
 | install.sh itself | `test-install-script.sh` | `quality-static` (`ci-quality.yml:331`) |
-| the config install.sh writes | `test-install-sh-config.sh` | `quality-static` (`ci-quality.yml:338`) |
-| `./rdc.sh` flags and env (`--dev`, `--native`, `--config`) | `test-rdc-sh-env.sh` | `quality-static` (`ci-quality.yml:345`) |
+| the config install.sh writes | `rediacc_ci.release.install_sh_config_check` | `quality-static` (`ci-quality.yml:338`) |
+| `./rdc.sh` flags and env (`--dev`, `--native`, `--config`) | `rediacc_ci.security.rdc_sh_env_check` | `quality-static` (`ci-quality.yml:345`) |
 | deb/rpm packaging | `test-linux-packages.sh` | `package-tests` (`ci.yml:753`) |
 | the updater, channels, binary swap | `test-rdc-update.sh` | `update-flow-test` (`ct-update-flow.yml:63`) |
 
@@ -29,4 +29,4 @@ Install validation runs **pre-publish**, against R2 staging artifacts, on six pl
 
 ## Local
 
-All six run standalone. `test-rdc-sh-env.sh` needs no VM and is the fast one; the package tests want a container per distro.
+All six run standalone. `rediacc_ci.security.rdc_sh_env_check` needs no VM and is the fast one; the package tests want a container per distro.

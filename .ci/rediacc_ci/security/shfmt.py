@@ -6,7 +6,7 @@ W7P6 wave 28, cut over since. THIS MODULE IS THE LIVE REGISTERED GATE (`check:ci
 `.ci/shadow/w7p6-shfmt.observations.jsonl`, then retired against `goldens/shfmt/`.
 
 WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain` (the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
-verdict if fewer than `${SHFMT_MIN_FILES:-200}` shell scripts are visible, then
+verdict if fewer than `${SHFMT_MIN_FILES:-187}` shell scripts are visible, then
 runs `shfmt -i 4 -ci -d` over five deliberately-asymmetric scopes: all of `.ci`, all of `.claude`, `./run.sh` alone, `scripts/dev` plus `scripts/ops`, and `.github`.
 
 REAL RUNS OR STUBS: BOTH.
@@ -89,9 +89,10 @@ from rediacc_ci.core import toolchain
 SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 
 # The vacuity floor's default. Measured 2026-09-04: 568 .sh files across the four scopes; re-measured 2026-09-21 at 306, after the bash-retirement campaign and batches M1 to M4; re-measured 2026-09-23 at 265 (`floor_count()` over the three roots), one of which is the `.ci/cache/` prune below and the rest further retirements, so the margin is 65 files and shrinking.
+# Re-measured 2026-10-01 at 187 (`floor_count()`) after the twin goldens retired more `.sh` files (PLAN-retire-bash-oracles B3); the floor was lowered to that measured count in the same change, so it holds no margin and each further retirement batch lowers it again.
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
-DEFAULT_MIN_FILES = "200"
+DEFAULT_MIN_FILES = "187"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")

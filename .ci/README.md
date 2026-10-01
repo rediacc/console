@@ -32,7 +32,6 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 │   │   ├── install-deps.sh     # npm ci with platform handling
 │   │   └── build-packages.sh   # Build shared libraries
 │   ├── test/
-│   │   ├── run-unit.sh         # Run unit tests
 │   │   └── run-e2e.sh          # Run E2E (renet) tests
 │   ├── docker/
 │   │   └── retag_image.py      # Re-tag CI images to semantic version
@@ -56,7 +55,7 @@ All scripts are designed to be run from the repository root:
 .ci/scripts/setup/build-packages.sh
 
 # Run unit tests
-.ci/scripts/test/run-unit.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
 
 # Run E2E (renet) tests
 .ci/scripts/test/run-e2e.sh

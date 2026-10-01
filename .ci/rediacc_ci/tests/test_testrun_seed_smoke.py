@@ -43,8 +43,11 @@ def both(tmp_path: pathlib.Path, **extra: str) -> tuple[ts.Outcome, ts.Outcome, 
         env = env_for(directory, **extra)
         if side == "py":
             env = ts.py_env(env)
-        outcome = ts.run_side(runner, directory, ("npx",), env)
         gh = directory / "gh_output"
+        if side == "bash":
+            outcome = ts.twin_run(TWIN, runner, directory, ("npx",), env, files=(gh,))
+        else:
+            outcome = ts.run_side(runner, directory, ("npx",), env)
         outs.append((outcome, gh.read_text() if gh.exists() else ""))
     return outs[0][0], outs[1][0], outs[0][1], outs[1][1]
 

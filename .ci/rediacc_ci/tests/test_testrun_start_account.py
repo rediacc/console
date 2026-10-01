@@ -18,6 +18,7 @@ import time
 
 import pytest
 
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
 
 # THE HOST'S PORT SPACE IS SHARED: free_port() releases the port before the server binds it, so two xdist workers can draw the same one (a 1-in-4 flake under load on 2026-10-01). Same group as test_core_ports.py and test_core_account.py.
@@ -50,6 +51,14 @@ def reap(directory: pathlib.Path) -> None:
             os.kill(int(pid_file.read_text()), signal.SIGKILL)
 
 
+def server_up(directory: pathlib.Path) -> bool:
+    """Whether the server this side started is still running. The retired twin's answer is the frozen marker `bash-server-up`; the port's is read from its pid file."""
+    marker = directory / "bash-server-up"
+    if marker.exists():
+        return marker.read_text() == "1"
+    return alive(int((directory / "account-for-e2e.pid").read_text()))
+
+
 def side(
     tmp_path: pathlib.Path, name: str, args: list[str], mode: str = "", port: int | None = None
 ) -> tuple[ts.Outcome, pathlib.Path, int]:
@@ -64,11 +73,80 @@ def side(
         "STUB_MODE": mode,
         "ACCOUNT_API_PORT": str(port),
     }
-    runner = ts.bash_cmd(TWIN, *args) if name == "bash" else ts.py_cmd(MODULE, *args)
-    if name == "py":
-        env = ts.py_env(env)
-    outcome = ts.run_side(runner, directory, ("npx",), env, bodies={"npx": NPX_BODY}, timeout=60)
+    if name == "bash":
+        return bash_side(tmp_path, directory, args, mode, env, port), directory, port
+    outcome = ts.run_side(
+        ts.py_cmd(MODULE, *args),
+        directory,
+        ("npx",),
+        ts.py_env(env),
+        bodies={"npx": NPX_BODY},
+        timeout=60,
+    )
     return outcome, directory, port
+
+
+def bash_side(
+    tmp_path: pathlib.Path,
+    directory: pathlib.Path,
+    args: list[str],
+    mode: str,
+    env: dict[str, str],
+    port: int,
+) -> ts.Outcome:
+    """The retired twin's run, from `goldens/twins/test.start-account-for-e2e.jsonl`.
+
+    The port is random per run, so every record carries `<PORT>` and a replay puts this run's port back. The files the twin and its stub wrote, and whether its server outlived it, are records of their own: the files are rewritten into the directory so the assertions read them as they did live.
+    """
+    cell: dict[str, ts.Outcome] = {}
+    unwanted = str(port)
+
+    def sub(text: str) -> str:
+        return text.replace(unwanted, "<PORT>")
+
+    def go() -> tuple[int, str, str]:
+        out = ts.run_side(
+            ts.bash_cmd(TWIN, *args),
+            directory,
+            ("npx",),
+            env,
+            bodies={"npx": NPX_BODY},
+            timeout=60,
+        )
+        cell["o"] = out
+        return out.code, sub(out.out), sub(out.err)
+
+    def text_of(name: str):
+        def read() -> str:
+            path = directory / name
+            return sub(path.read_text()) if path.exists() else diff.ABSENT
+
+        return read
+
+    def up() -> str:
+        pid_file = directory / "account-for-e2e.pid"
+        return "1" if pid_file.exists() and alive(int(pid_file.read_text())) else "0"
+
+    names = ("gh_env", "gh_output", "stub.jsonl")
+    extras = {n: text_of(n) for n in names}
+    extras["calls"] = lambda: sub(json.dumps(cell["o"].calls))
+    extras["up"] = up
+    rc, out, err, got = diff.twin_run(
+        TWIN,
+        ["args=%r" % (args,), "mode=%s" % mode],
+        go,
+        extras=extras,
+        work=(str(tmp_path),),
+    )
+    if diff.regolden_mode(TWIN) is None:
+        for n in names:
+            if got[n] != diff.ABSENT:
+                (directory / n).write_text(got[n].replace("<PORT>", unwanted))
+        (directory / "bash-server-up").write_text(got["up"])
+        calls = json.loads(got["calls"].replace("<PORT>", unwanted))
+    else:
+        calls = cell["o"].calls
+    return ts.Outcome(rc, out.replace("<PORT>", unwanted), err.replace("<PORT>", unwanted), calls)
 
 
 def requests(directory: pathlib.Path) -> list[dict]:
@@ -121,8 +199,7 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
             "E2E_ACCOUNT_API_TOKEN=rdt_stub_token_0123456789",
         ]
         assert (directory / "gh_output").read_text() == f"server-url=http://127.0.0.1:{port}\n"
-        pid = int((directory / "account-for-e2e.pid").read_text())
-        assert alive(pid)
+        assert server_up(directory)
 
     def norm(out: ts.Outcome, directory: pathlib.Path, port: int) -> str:
         return ts.mask(out.out, directory).replace(str(port), "<PORT>")
@@ -178,10 +255,8 @@ def test_delta_a_failed_leg_does_not_leave_its_server_running(tmp_path: pathlib.
     new, nd, _ = side(tmp_path, "py", [], "no-token")
     try:
         assert old.code == new.code == 1
-        old_pid = int((od / "account-for-e2e.pid").read_text())
-        new_pid = int((nd / "account-for-e2e.pid").read_text())
-        assert alive(old_pid), "bash left the server holding the port"
-        assert not alive(new_pid)
+        assert server_up(od), "bash left the server holding the port"
+        assert not server_up(nd)
     finally:
         reap(od)
 

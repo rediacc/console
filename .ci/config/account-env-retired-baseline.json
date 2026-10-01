@@ -26,7 +26,6 @@
     ".ci/rediacc_ci/tests/test_security_rdc_sh_env_check.py": 5,
     ".ci/scripts/quality/check_bws_map.py": 1,
     ".ci/scripts/quality/check_secret_supply.py": 1,
-    ".ci/scripts/test/test-rdc-sh-env.sh": 4,
     ".claude/agents/account-dev.md": 1,
     ".claude/agents/media-pipeline.md": 1,
     ".claude/hooks/stop/wl_checks.py": 1,

@@ -32,7 +32,7 @@
 #   Worker: rediacc-account-bench
 #   Domain: https://bench.rediacc.com
 #
-# To wipe the bench environment, see: scripts/ops/reset-bench.sh
+# To wipe the bench environment, see: rediacc_ci.ops.reset_bench (PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

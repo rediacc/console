@@ -1,23 +1,22 @@
-"""A scratch world for driving `scripts/ops/{backup-d1,reset-bench,deploy-bench}.sh` and their Python ports against FAKE binaries.
+"""A scratch world for driving the retired `scripts/ops/*.sh` twins' frozen answers and their Python ports against FAKE binaries.
 
 The scratch PATH is REPLACED, never prepended: it holds the fakes plus symlinks to the few real tools the scripts need, so no real `curl`, `npx` or `wrangler` is reachable. Every fake appends one JSON line to `$FAKE_LOG` (argv, cwd and, for `npx`, which Cloudflare variables were set, never their values) and answers from `$FAKE_ROUTES`.
 
-The bash twins are COPIED into the scratch root (`scripts/ops/*`, `.ci/scripts/lib/common.sh`), so `ROOT_DIR` resolves to the scratch tree and a bash run writes `.backups/` there rather than into the checkout. The Python port runs from the real package with `REDIACC_CI_ROOT` pointing at the scratch root.
+The bash twins are retired (PLAN-retire-bash-oracles B3): `World.twin_run` answers from `goldens/twins/scripts.ops.<name>.jsonl`, the exit code, both streams, the fake-binary call log the twin appended and the files it wrote under the scratch root. Only a re-freeze (`REDIACC_CI_REGOLDEN=bash`, while the `.sh` still exists) runs bash, from a COPY in the scratch root so `ROOT_DIR` resolves there. The Python port runs from the real package with `REDIACC_CI_ROOT` pointing at the scratch root.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import pathlib
 import re
 import shutil
 import subprocess
 import sys
-from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
-
-if TYPE_CHECKING:
-    import pathlib
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 BASH = shutil.which("bash") or "/bin/bash"
@@ -158,17 +157,16 @@ class World:
         (self.bin / "python3").symlink_to(py)
         (self.bin / "bash").symlink_to(BASH)
         for rel in (
-            "scripts/ops/backup-d1.sh",
-            "scripts/ops/reset-bench.sh",
             "scripts/ops/deploy-bench.sh",
-            "scripts/ops/backup-cutover-preflight.sh",
-            "scripts/ops/apply-cf-redirect-rules.sh",
             "scripts/ops/lib/cf-auth.sh",
             ".ci/scripts/lib/common.sh",
             ".ci/config/well-known.env",
+            ".ci/config/well-known.generated.sh",
             "scripts/lib/well-known.sh",
             "scripts/lib/env-file.sh",
         ):
+            if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
+                continue
             dest = self.root / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, dest)
@@ -211,20 +209,77 @@ class World:
     def reset_log(self) -> None:
         self.log.write_text("")
 
-    def bash(
+    def snapshot(self) -> dict[str, tuple[int, str]]:
+        """Every regular file under the scratch root as `{relative path: (mode, text)}`; symlinks are not followed."""
+        seen: dict[str, tuple[int, str]] = {}
+        for here, dirs, names in os.walk(self.root):
+            dirs[:] = [d for d in dirs if not (pathlib.Path(here, d)).is_symlink()]
+            for name in names:
+                path = pathlib.Path(here, name)
+                if path.is_symlink():
+                    continue
+                rel = os.path.relpath(path, self.root)
+                seen[rel] = (
+                    path.stat().st_mode & 0o7777,
+                    path.read_text(encoding="utf-8", errors="replace"),
+                )
+        return seen
+
+    def twin_run(
         self, script: str, args: list[str], env: dict[str, str], stdin: str = ""
     ) -> tuple[int, str, str]:
-        proc = subprocess.run(
-            [BASH, str(self.root / script), *args],
-            capture_output=True,
-            text=True,
-            env=env,
-            input=stdin,
-            cwd=str(self.root),
-            check=False,
-            timeout=60,
+        """What the retired bash twin `script` answered, from its frozen golden.
+
+        Besides `(rc, stdout, stderr)` the golden holds what the twin left behind: the lines it appended to the fake-binary call log and the files it created or changed under the scratch root. Both are replayed here, so a test reads `world.calls()` and the tree exactly as it did when bash ran live. The key is the argv, the environment, stdin and the route table; the scratch parent folds to a token.
+        """
+        log_before: list[str] = []
+        files_before: list[dict[str, tuple[int, str]]] = []
+
+        def go() -> tuple[int, str, str]:
+            log_before.append(self.log.read_text())
+            files_before.append(self.snapshot())
+            proc = subprocess.run(
+                [BASH, str(self.root / script), *args],
+                capture_output=True,
+                text=True,
+                env=env,
+                input=stdin,
+                cwd=str(self.root),
+                check=False,
+                timeout=60,
+            )
+            return proc.returncode, proc.stdout, proc.stderr
+
+        def written() -> str:
+            after = self.snapshot()
+            old = files_before[0]
+            delta = {k: list(v) for k, v in after.items() if old.get(k) != v}
+            return json.dumps(delta, sort_keys=True)
+
+        rc, out, err, got = diff.twin_run(
+            script,
+            [
+                "args=%r" % (args,),
+                "env=%r" % (sorted(env.items()),),
+                "stdin=%r" % (stdin,),
+                "routes=%s" % self.routes.read_text(),
+            ],
+            go,
+            extras={
+                "log": lambda: self.log.read_text()[len(log_before[0]) :],
+                "files": written,
+            },
+            work=(str(self.root.parent),),
         )
-        return proc.returncode, proc.stdout, proc.stderr
+        if diff.regolden_mode(script) is None:
+            with self.log.open("a") as fh:
+                fh.write(got["log"])
+            for rel, (mode, text) in json.loads(got["files"]).items():
+                target = self.root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+                target.chmod(mode)
+        return rc, out, err
 
     def port(
         self, module: str, args: list[str], env: dict[str, str], stdin: str = ""

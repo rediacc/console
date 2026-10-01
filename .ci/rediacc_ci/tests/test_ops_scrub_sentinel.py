@@ -75,6 +75,8 @@ def world(tmp_path: pathlib.Path) -> h.World:
         ".ci/scripts/lib/emit-advisory.sh",
         ".ci/config/well-known.env",
     ):
+        if not (src / rel).is_file():  # a retired twin: only a re-freeze from bash runs it
+            continue
         dest = w.root / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src / rel, dest)
@@ -87,7 +89,7 @@ def _aws_calls(world: h.World) -> list[list[str]]:
 
 def _run_both(world: h.World, args: list[str], stdin: str = "", **env: str):
     e = world.env(**{**CREDS, **env})
-    b = world.bash(SUBJECT, args, e, stdin=stdin)
+    b = world.twin_run(SUBJECT, args, e, stdin=stdin)
     calls_b = _aws_calls(world)
     world.reset_log()
     (world.root / "calls.jsonl.count").unlink(missing_ok=True)
@@ -145,7 +147,7 @@ def test_argument_errors_match_bash(world: h.World, args: list[str], want: int) 
 
 def test_a_missing_variable_matches_bash(world: h.World) -> None:
     e = world.env(CLOUDFLARE_R2_ACCESS_KEY_ID="id")
-    b = world.bash(SUBJECT, ["v1.0.5"], e)
+    b = world.twin_run(SUBJECT, ["v1.0.5"], e)
     p = world.port(MODULE, ["v1.0.5"], e)
     _same(b, p)
     assert p[0] == 1

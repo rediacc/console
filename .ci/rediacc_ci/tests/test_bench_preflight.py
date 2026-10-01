@@ -89,7 +89,9 @@ def test_control_a_clean_install_passes(tmp_path):
 
 
 def test_deploy_bench_runs_both_preflights_before_the_first_migration():
-    text = paths.from_root("scripts", "ops", "deploy-bench.sh").read_text(encoding="utf-8")
-    migrate = text.index("d1 migrations apply")
-    assert -1 < text.index("bench_preflight lockfile ") < migrate
-    assert -1 < text.index("bench_preflight buckets ") < migrate
+    text = paths.from_root(".ci", "rediacc_ci", "ops", "deploy_bench.py").read_text(
+        encoding="utf-8"
+    )
+    migrate = text.index('"migrations", "apply"')
+    assert -1 < text.index("bench_preflight.lockfile(") < migrate
+    assert -1 < text.index("bench_preflight.buckets(") < migrate

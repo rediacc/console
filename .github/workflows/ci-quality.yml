@@ -1676,7 +1676,7 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/www
 
-      # The two unit suites `.ci/scripts/test/run-unit.sh` has always driven and
+      # The two unit suites `rediacc_ci.testrun.unit` has always driven and
       # the manifest never registered. Found 2026-09-06 by set difference: that
       # runner covers shared, cli:unit, provisioning and e2e-tests:unit, while
       # the manifest carried cli, shared, www and workers. 11 tests over 2 files
