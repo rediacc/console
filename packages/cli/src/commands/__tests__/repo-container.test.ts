@@ -54,7 +54,7 @@ function lastParams(): Record<string, unknown> {
 }
 
 function lastOptions(): Record<string, unknown> {
-  return execute.mock.calls.at(-1)?.[0];
+  return { ...execute.mock.calls.at(-1)?.[0] };
 }
 
 beforeEach(() => {
