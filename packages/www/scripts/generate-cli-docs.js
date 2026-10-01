@@ -274,7 +274,7 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
 
   // --- Frontmatter (translated per language, EXCEPT category) ---
   //
-  // `category` is a SCHEMA ENUM, not display text. `src/content/config.ts` declares z.enum(['Tutorials','Guides','Concepts','Reference','Use Cases','Legal']), so emitting the localized value fails the content collection at build time with "Invalid enum value ... received 'مرجع'" and takes the whole site build down, not just that page.
+  // `category` is a SCHEMA ENUM, not display text. `src/content.config.ts` declares z.enum(['Tutorials','Guides','Concepts','Reference','Use Cases','Legal']), so emitting the localized value fails the content collection at build time with "Invalid enum value ... received 'مرجع'" and takes the whole site build down, not just that page.
   //
   // This is why the generated docs and the files on disk had drifted apart: the on-disk copies carried the English enum, the generator produced the translated one, and cli-doc-freshness reported the difference every run. Regenerating to satisfy that gate then broke the build, which is the loop this comment exists to stop. The localized
   // string stays in the catalogs for display use; the frontmatter takes the enum from
@@ -282,7 +282,7 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   const categoryEnum = cliJsonEn.docs.frontmatter.category;
   // `subcategory` is a CONSTANT here, and deliberately NOT sourced from cli.json.
   //
-  // It is a schema enum that content/config.ts superRefines per category, so a localized value fails the collection exactly as a localized `category` does. Putting it in cli.json would therefore create an obligation to translate a string that must never be translated: check-translation-hashes requires every new cli.json key to appear in all 12 non-English locales, and it flagged
+  // It is a schema enum that content.config.ts superRefines per category, so a localized value fails the collection exactly as a localized `category` does. Putting it in cli.json would therefore create an obligation to translate a string that must never be translated: check-translation-hashes requires every new cli.json key to appear in all 12 non-English locales, and it flagged
   // this immediately when the first attempt did exactly that.
   //
   // `category` can live in cli.json because its localized value has a real display use elsewhere and the generator simply ignores it. `subcategory` has no such use, so there is nothing for the other locales to legitimately hold.

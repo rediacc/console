@@ -79,11 +79,11 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 |---|---|---|---|---|
 | `.actions-upgrade-blocklist` | name per line | 0 | 0 | both |
 | `.audit-allowlist` | name per line | 0 | 1 | both |
-| `.audit-prod-allowlist` | name per line | 9 | 5 | both |
+| `.audit-prod-allowlist` | name per line | 0 | 1 | both |
 | `.ci-parity-exempt` | name per line | 9 | 10 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
 | `.dead-bash-allowlist` | name per line | 12 | 13 | both |
-| `.deps-upgrade-blocklist` | name per line | 14 | 15 | both |
+| `.deps-upgrade-blocklist` | name per line | 8 | 9 | both |
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 1 | 2 | both |

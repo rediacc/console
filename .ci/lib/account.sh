@@ -503,7 +503,7 @@ account_dev() {
     # symptom is a 502 from Traefik rather than anything pointing at the bind.
     local dev_bind="${REDIACC_DEV_BIND:-127.0.0.1}"
     account_spawn "$CONSOLE_ROOT_DIR/packages/www" "$ACCOUNT_LOG_DIR/astro.log" \
-        npx astro dev --port "$ASTRO_PORT" --host "$dev_bind"
+        npx astro dev --port "$ASTRO_PORT" --host "$dev_bind" --ignore-lock
     local astro_pid=$ACCOUNT_SPAWNED
 
     # Start Vite dev server (account portal SPA)

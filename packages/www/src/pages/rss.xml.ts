@@ -10,7 +10,8 @@ export async function GET(context: APIContext) {
   // Filter for English posts only for the main RSS feed
   const englishPosts = blog
     .filter((post) => post.data.language === 'en')
-    .sort((a, b) => b.data.publishedDate.valueOf() - a.data.publishedDate.valueOf());
+    // Same-day posts fall back to the entry id, so the order never depends on the content loader's iteration order.
+    .sort((a, b) => b.data.publishedDate.valueOf() - a.data.publishedDate.valueOf() || a.id.localeCompare(b.id));
 
   return rss({
     title: 'Rediacc Blog',
@@ -19,7 +20,7 @@ export async function GET(context: APIContext) {
     items: englishPosts.map((post) => ({
       title: post.data.title,
       description: post.data.description,
-      link: `/en/blog/${getBaseSlug(post.slug)}?utm_source=rss&utm_medium=feed&utm_campaign=blog`,
+      link: `/en/blog/${getBaseSlug(post.id)}?utm_source=rss&utm_medium=feed&utm_campaign=blog`,
       pubDate: post.data.publishedDate,
       author: post.data.author,
       categories: [...post.data.tags, post.data.category],

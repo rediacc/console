@@ -27,7 +27,7 @@ const ORDER_FALLBACK = 99;
 export const GET: APIRoute = async () => {
   const docs = await getCollection(
     'docs',
-    (d) => d.data.language === 'en' && !(EXCLUDED_SLUGS as readonly string[]).includes(d.slug)
+    (d) => d.data.language === 'en' && !(EXCLUDED_SLUGS as readonly string[]).includes(d.id)
   );
 
   // Group by category
@@ -106,7 +106,7 @@ ${commandLines}
     const catDocs = byCategory.get(category)!;
     content += `## ${category}\n\n`;
     for (const doc of catDocs) {
-      const slug = getBaseSlug(doc.slug);
+      const slug = getBaseSlug(doc.id);
       content += `- [${doc.data.title}](${SITE_URL}/en/docs/${slug}.txt): ${doc.data.description}\n`;
     }
     content += '\n';

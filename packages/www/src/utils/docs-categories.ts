@@ -1,7 +1,7 @@
 /**
  * The docs category vocabulary, in ONE place.
  *
- * The values are the English `z.enum` members from `content/config.ts`, which are
+ * The values are the English `z.enum` members from `content.config.ts`, which are
  * IDENTIFIERS rather than display text and are therefore identical in every locale. The
  * translated label lives under `documentation.categories.*` in the locale catalogs, and
  * this module is the only thing that knows how one maps to the other.
@@ -88,7 +88,7 @@ export function groupByCategory<
  * category alone cannot answer.
  *
  * The values are identifiers, NOT display text, and are identical in all thirteen locales.
- * `content/config.ts` builds its `z.enum` from this array, so a value added here is the
+ * `content.config.ts` builds its `z.enum` from this array, so a value added here is the
  * only edit needed to make it legal in frontmatter, and a value that is NOT here fails the
  * build rather than silently creating a filter nobody can reach.
  */
@@ -177,7 +177,7 @@ export function tagCounts<T extends { data: { tags?: readonly string[] } }>(
  * The values are identifiers, NOT display text, identical in all thirteen locales. An
  * identifier may appear under several categories when the concept genuinely repeats
  * (`ai-agents` shelves exist in Guides, Concepts and Reference); it is still ONE label
- * key. `content/config.ts` builds its `z.enum` from DOC_SUBCATEGORY_VALUES and checks
+ * key. `content.config.ts` builds its `z.enum` from DOC_SUBCATEGORY_VALUES and checks
  * per-category legality against this table, so an illegal (category, subcategory) pair
  * fails the content build rather than silently rendering an unknown heading.
  */

@@ -1,9 +1,11 @@
-import { defineCollection, z } from 'astro:content';
-import { LANGUAGES } from '../i18n/types';
-import { DOC_SUBCATEGORY_VALUES, DOC_TAGS, subcategoriesFor } from '../utils/docs-categories';
+import { defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+import { z } from 'astro/zod';
+import { LANGUAGES } from './i18n/types';
+import { DOC_SUBCATEGORY_VALUES, DOC_TAGS, subcategoriesFor } from './utils/docs-categories';
 
 const blogCollection = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -20,7 +22,7 @@ const blogCollection = defineCollection({
 });
 
 const docsCollection = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
   schema: z
     .object({
       title: z.string(),
@@ -43,7 +45,7 @@ const docsCollection = defineCollection({
     .superRefine((doc, ctx) => {
       if (doc.subcategory && !subcategoriesFor(doc.category).includes(doc.subcategory)) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           path: ['subcategory'],
           message: `subcategory '${doc.subcategory}' is not on the '${doc.category}' shelf list; see DOC_SUBCATEGORIES in utils/docs-categories.ts`,
         });

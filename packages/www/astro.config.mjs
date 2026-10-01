@@ -6,8 +6,9 @@ import { execSync } from 'child_process';
 const version = process.env.APP_VERSION || '0.0.0-dev';
 
 import react from '@astrojs/react';
-// @astrojs/mdx is pinned at 4.x to track astro 5.x. v5 of the integration requires astro 6 — see .deps-upgrade-blocklist.
 import mdx from '@astrojs/mdx';
+// Astro 7 renders Markdown with Sätteri by default; the site's remark/rehype plugins need the unified processor from this package.
+import { unified } from '@astrojs/markdown-remark';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
@@ -136,6 +137,8 @@ export default defineConfig({
     routeManifestIntegration(),
   ],
   output: 'static',
+  // Astro 7 defaults to 'jsx', which drops whitespace that spans a line break between inline elements: a 'jsx' build of this site rendered the skip links as "Skip to main contentSkip to navigation" and the docs breadcrumb as "Home/". true keeps the HTML-collapsing behavior the templates were written against.
+  compressHTML: true,
   redirects: {
     '/en/team': '/en/company',
     '/de/team': '/de/company',
@@ -180,13 +183,15 @@ export default defineConfig({
     },
   },
   markdown: {
-    remarkPlugins: [
-      remarkVideoEmbed,
-      remarkTutorialEmbed,
-      remarkDocsCliLinks,
-      remarkResolveTranslations,
-    ],
-    // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing id, so these ids win and also land in file.data.astro.headings.
-    rehypePlugins: [rehypeStableHeadingIds],
+    processor: unified({
+      remarkPlugins: [
+        remarkVideoEmbed,
+        remarkTutorialEmbed,
+        remarkDocsCliLinks,
+        remarkResolveTranslations,
+      ],
+      // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing id, so these ids win and also land in file.data.astro.headings.
+      rehypePlugins: [rehypeStableHeadingIds],
+    }),
   },
 });

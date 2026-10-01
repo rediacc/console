@@ -9,7 +9,7 @@ export const GET: APIRoute = async () => {
   const zip = new JSZip();
 
   for (const doc of docs) {
-    const slug = getBaseSlug(doc.slug);
+    const slug = getBaseSlug(doc.id);
     const frontmatter = [
       '---',
       `title: ${doc.data.title}`,

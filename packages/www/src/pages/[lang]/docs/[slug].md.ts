@@ -11,7 +11,7 @@ export const getStaticPaths: GetStaticPaths = async () => {
     .map((doc) => ({
       params: {
         lang: doc.data.language,
-        slug: getBaseSlug(doc.slug),
+        slug: getBaseSlug(doc.id),
       },
       props: { doc },
     }));
