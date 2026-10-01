@@ -14,7 +14,7 @@
 # Nothing is written to GITHUB_ENV or GITHUB_OUTPUT before every secret has been read, so a failed attempt leaves nothing behind and a retry starts clean.
 #
 # THE CLASSES. `credential` is a 401, 403 or 404, or any failure the patterns below do not recognise, which keeps the rotation notice as the default exactly as before.
-# `transient` is a 5xx or 429 status or a connection or timeout error, and is retried after 5 s and then 15 s. The class is written to GITHUB_OUTPUT as `class`, and action.yml prints the rotation notice only when it is not `transient`.
+# `transient` is a 5xx or 429 status or a connection or timeout error, and is retried after 5 s, 15 s and 45 s: a Bitwarden 503 burst on 2026-10-01 (PR #591, job 110632137106) outlasted the earlier 5 s + 15 s window while 30 sibling jobs authenticated fine. The class is written to GITHUB_OUTPUT as `class`, and action.yml prints the rotation notice only when it is not `transient`.
 set -uo pipefail
 
 bin="${1:-}"
@@ -51,7 +51,7 @@ status_line() {
 
 errf="$(mktemp)"
 trap 'rm -f "$errf"' EXIT
-delays=(5 15)
+delays=(5 15 45)
 attempts=$((${#delays[@]} + 1))
 
 for ((i = 1; i <= attempts; i++)); do
