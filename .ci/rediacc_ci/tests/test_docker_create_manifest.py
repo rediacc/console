@@ -119,6 +119,10 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
     target = root / PORT_REL

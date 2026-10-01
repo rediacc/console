@@ -45,6 +45,7 @@ TWIN_REL = ".ci/scripts/build/extract-renet-from-image.sh"
 PORT_REL = ".ci/rediacc_ci/build/extract_renet_from_image.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
+GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 LOCKFILE_REL = "private/renet/embed-assets.lock.json"
 
 VENDORED = (
@@ -214,9 +215,9 @@ def fixture(
     stale_zst: bool = False,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         if rel == TWIN_REL and not (ROOT / rel).is_file():
             continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         shutil.copy2(ROOT / rel, root / rel)

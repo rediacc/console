@@ -176,6 +176,10 @@ def fixture(where: pathlib.Path, name: str, subject: pathlib.PurePosixPath) -> p
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     if subject.suffix == ".sh":
         shutil.copy2(ROOT / str(TWIN_REL), root / TWIN_REL)
     else:

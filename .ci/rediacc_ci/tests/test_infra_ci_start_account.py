@@ -35,7 +35,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.tests.wkloader import copy_loader
+from rediacc_ci.tests.wkloader import copy_loader, docker_less_path
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/infra/ci-start-account.sh"
@@ -214,8 +214,15 @@ def _mask_load(text: str) -> str:
     return LOAD_LINE.sub("  load average (1m 5m 15m): <masked>, cores: <masked>", text)
 
 
+# Bash names its own file and line on a missing command; the port cannot and need not reproduce either, so the prefix is dropped on both sides and the words after it are compared. `test_a_missing_docker_diagnostic_keeps_its_words` is the control that the mask hides only the prefix.
+COMMAND_NOT_FOUND_PREFIX = re.compile(
+    r"^\S*ci-start-account\.sh: line \d+: (?=\S+: command not found$)", re.MULTILINE
+)
+
+
 def _normalize(text: str, root: pathlib.Path) -> str:
     text = text.replace(str(root), "<root>")
+    text = COMMAND_NOT_FOUND_PREFIX.sub("", text)
     return LOAD_LINE.sub("  load average (1m 5m 15m): <masked>, cores: <masked>", text)
 
 
@@ -269,8 +276,14 @@ def _live(
         if env.get(key) == "":
             env.pop(key)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    # PREPENDED, not replaced: the subjects need the system's real bash, env and grep. The fake docker comes first, so this host's real daemon is never reached -- asserted by `test_the_fake_docker_is_actually_reached`.
-    env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
+    # PREPENDED, not replaced: the subjects need the system's real bash, env and grep (a case without docker swaps the host's PATH for `docker_less_path`). The fake docker comes first, so this host's real daemon is never reached -- asserted by `test_the_fake_docker_is_actually_reached`.
+    # A docker-less fixture gets a PATH that really has none: the host's docker would otherwise sit behind the empty fixture bin and answer.
+    rest = (
+        env.get("PATH", "")
+        if (root / "fxbin" / "docker").exists()
+        else docker_less_path(root / "nodocker")
+    )
+    env["PATH"] = "%s:%s" % (root / "fxbin", rest)
     env.pop("GITHUB_ACTIONS", None)
     env.pop("GITHUB_ENV", None)
     gho = root / "github_output.txt"
@@ -398,6 +411,28 @@ def test_the_fake_docker_is_actually_reached() -> None:
         assert gho == "account_server_url=http://localhost:3000\n", (
             "$GITHUB_OUTPUT was not written: %r" % gho
         )
+
+
+def test_the_docker_missing_case_really_has_no_docker() -> None:
+    """ANTI-VACUITY for `docker-missing-entirely`: the PATH that case runs under resolves bash, env and grep and does NOT resolve docker, whatever this host has installed."""
+    with tempfile.TemporaryDirectory() as td:
+        root = _fixture(pathlib.Path(td) / "n", with_docker=False)
+        farm = docker_less_path(root / "nodocker")
+        search = "%s:%s" % (root / "fxbin", farm)
+        assert shutil.which("docker", path=search) is None
+        for tool in ("bash", "env", "grep", "python3"):
+            assert shutil.which(tool, path=search), "%s missing from the docker-less PATH" % tool
+
+
+def test_a_missing_docker_diagnostic_keeps_its_words() -> None:
+    """CONTROL for `COMMAND_NOT_FOUND_PREFIX`: only bash's file and line prefix goes; the program name and the phrase stay compared, and a line that merely resembles one is left alone."""
+    root = pathlib.Path("/r")
+    bash_line = "/r/.ci/scripts/infra/ci-start-account.sh: line 87: docker: command not found\n"
+    assert _normalize(bash_line, root) == "docker: command not found\n"
+    assert _normalize(bash_line, root) != _normalize(bash_line.replace("docker", "podman"), root)
+    assert _normalize("note: line 87: docker: command not found here\n", root) == (
+        "note: line 87: docker: command not found here\n"
+    )
 
 
 def test_the_secret_guards_run_before_anything_else() -> None:

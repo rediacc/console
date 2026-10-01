@@ -118,6 +118,10 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_common: bool = True) -> 
         shutil.copy2(
             ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
         )
+        shutil.copy2(
+            ROOT / ".ci" / "config" / "well-known.generated.sh",
+            root / ".ci" / "config" / "well-known.generated.sh",
+        )
     else:
         assert not (root / ".ci" / "scripts" / "lib" / "common.sh").exists()
     return root

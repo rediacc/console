@@ -66,6 +66,7 @@ ARCH_RE = re.compile(r"(?<![A-Za-z0-9])(?:amd64|arm64)(?![A-Za-z0-9])")
 # The minimum of the package a path-invoked port needs. Deliberately short: the fixture must not become a second copy of the repository.
 COPIED = (
     ".ci/scripts/lib/common.sh",
+    ".ci/config/well-known.generated.sh",
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
     ".ci/rediacc_ci/__init__.py",
