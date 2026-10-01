@@ -1110,8 +1110,8 @@ def selftest():
             "neither this record's own path",
         )
         # R1 BLINDNESS: a `--follow` walk git cannot answer ends the run; it is never read as "no former names", which is how a transient fetch failure turned a correct record red on PR #591.
-        said = io.StringIO()
-        real_stderr, sys.stderr = sys.stderr, said
+        blind_said = io.StringIO()
+        real_stderr, sys.stderr = sys.stderr, blind_said
         try:
             follow_walk(root / "not-a-repo", rel)
             blind_exit = None
@@ -1121,8 +1121,8 @@ def selftest():
             sys.stderr = real_stderr
         ck(
             "R1: a failed --follow walk exits non-zero instead of judging, and names git's error",
-            blind_exit == 1 and "CANNOT SEE" in said.getvalue(),
-            f"got {blind_exit!r}, {said.getvalue()!r}",
+            blind_exit == 1 and "CANNOT SEE" in blind_said.getvalue(),
+            f"got {blind_exit!r}, {blind_said.getvalue()!r}",
         )
         # R1c MIRROR: the same pointer, through the STUB a tree-lifecycle move leaves behind. Only R1's needle is asserted absent, because the fixture's commit does not carry the text at the legacy path and R2 therefore fires on its own account.
         legacy = "agent/PLAN-legacy-fixture.md"
