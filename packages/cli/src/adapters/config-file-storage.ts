@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
@@ -94,7 +95,13 @@ export type RemoteStateWriter = (
 export class ConfigFileStorage {
   private readonly cache = new Map<string, RdcConfig>();
   private remoteStateWriter: RemoteStateWriter | null = null;
-  private readonly lockDepths = new Map<string, number>();
+  /**
+   * Config names whose file lock the CURRENT async call chain holds. Re-entrancy is a property of
+   * the call chain, not of the instance: a per-name counter on the instance made every concurrent
+   * caller that arrived while another held the lock look re-entrant, so it skipped the lock and
+   * ran its read-modify-write unprotected (lost writes under concurrent update()).
+   */
+  private readonly heldLocks = new AsyncLocalStorage<ReadonlySet<string>>();
   private readonly configDir: string;
 
   constructor(configDir: string = CONFIG_DIR) {
@@ -167,7 +174,12 @@ export class ConfigFileStorage {
       await fs.access(configPath);
     } catch {
       const emptyConfig = createEmptyRdcConfig();
-      await fs.writeFile(configPath, stringifyConfig(emptyConfig), { mode: 0o600 });
+      try {
+        // 'wx': never truncate a file a concurrent caller created (and may already have written to) since the access check.
+        await fs.writeFile(configPath, stringifyConfig(emptyConfig), { mode: 0o600, flag: 'wx' });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      }
     }
   }
 
@@ -188,16 +200,9 @@ export class ConfigFileStorage {
     }
     const configPath = this.getPath(name);
 
-    const depth = this.lockDepths.get(name) ?? 0;
-
-    // Re-entrant: already hold the lock
-    if (depth > 0) {
-      this.lockDepths.set(name, depth + 1);
-      try {
-        return await operation();
-      } finally {
-        this.lockDepths.set(name, depth);
-      }
+    // Re-entrant: this call chain already holds the lock
+    if (this.heldLocks.getStore()?.has(name)) {
+      return operation();
     }
 
     // Acquire lock
@@ -210,11 +215,11 @@ export class ConfigFileStorage {
       },
     });
 
-    this.lockDepths.set(name, 1);
     try {
-      return await operation();
+      const held = new Set(this.heldLocks.getStore());
+      held.add(name);
+      return await this.heldLocks.run(held, operation);
     } finally {
-      this.lockDepths.set(name, 0);
       await release();
     }
   }

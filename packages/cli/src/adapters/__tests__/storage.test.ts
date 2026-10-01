@@ -754,6 +754,26 @@ describe('ConfigFileStorage', () => {
       expect(Object.keys(config.resources?.machines ?? {})).toHaveLength(5);
     });
 
+    it('should not lose writes when callers arrive while another holds the lock', async () => {
+      await storage.init('test');
+      // Staggered arrivals: later callers reach the lock while an earlier one already holds it. A per-instance re-entrancy counter treated them as re-entrant and ran them unlocked.
+      await Promise.all(
+        Array.from({ length: 8 }, async (_, i) => {
+          await new Promise((r) => setTimeout(r, i * 3));
+          await storage.update('test', (cfg) => ({
+            ...cfg,
+            resources: {
+              ...cfg.resources,
+              machines: { ...cfg.resources?.machines, [`p${i}`]: { ip: `10.0.1.${i}`, user: 'u' } },
+            },
+          }));
+        })
+      );
+      storage.clearCache();
+      const config = await storage.load('test');
+      expect(Object.keys(config.resources?.machines ?? {})).toHaveLength(8);
+    });
+
     // 30s bound, not the 5s default: this stress case serializes ~dozens of locked read-modify-write round-trips through real file I/O and took 11.4s on a loaded CI runner (round-7 red) while passing in ~2s locally. The assertion is unchanged, only the bound fits the operation now (the #28 "deadline that fits" rule, applied to a test).
     it('should handle interleaved read-modify-write operations', { timeout: 30_000 }, async () => {
       await storage.init('test');
