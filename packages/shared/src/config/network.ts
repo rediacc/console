@@ -1,3 +1,5 @@
+import { WK_DATASTORE_PATH } from './well-known.generated.js';
+
 /**
  * Network configuration defaults
  */
@@ -12,7 +14,7 @@ export const NETWORK_DEFAULTS = {
   DEV_PORT: 3000,
 
   /** Default datastore mount path */
-  DATASTORE_PATH: '/mnt/rediacc',
+  DATASTORE_PATH: WK_DATASTORE_PATH,
 
   /** Default datastore size (percentage of available disk) */
   DATASTORE_SIZE: '95%',
