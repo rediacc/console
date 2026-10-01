@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..', '..');
-const SAMPLER = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'sampler-linux.sh');
+const SAMPLER = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'sampler_linux.py');
 const PANEL = path.join(REPO_ROOT, '.ci', 'rediacc_ci', 'ci', 'profiler_panel.py');
 
 function input(name, fallback) {
@@ -49,7 +49,7 @@ function alive(pid) {
   }
   try {
     const cmdline = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf8');
-    return cmdline.includes('sampler-linux.sh');
+    return cmdline.includes('sampler_linux.py');
   } catch {
     // No /proc entry: it died between the signal probe and the read.
     return false;
@@ -94,7 +94,7 @@ function runMain() {
     return;
   }
 
-  const child = spawn('bash', [SAMPLER, '--out', out, '--interval', interval], {
+  const child = spawn('python3', [SAMPLER, '--out', out, '--interval', interval], {
     detached: true,
     stdio: ['ignore', fd, fd],
     env: { ...process.env, PROFILER_RUNNER_LABEL: label },
