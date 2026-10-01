@@ -11,7 +11,10 @@ export async function GET(context: APIContext) {
   const englishPosts = blog
     .filter((post) => post.data.language === 'en')
     // Same-day posts fall back to the entry id, so the order never depends on the content loader's iteration order.
-    .sort((a, b) => b.data.publishedDate.valueOf() - a.data.publishedDate.valueOf() || a.id.localeCompare(b.id));
+    .sort(
+      (a, b) =>
+        b.data.publishedDate.valueOf() - a.data.publishedDate.valueOf() || a.id.localeCompare(b.id)
+    );
 
   return rss({
     title: 'Rediacc Blog',
