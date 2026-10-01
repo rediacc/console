@@ -841,6 +841,28 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-major-upgrade-age-clock.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "16f2e50e",
+        "190c5d98",
+        "2d823424",
+        "3329361f",
+        "4619bdca",
+        "944f7703",
+        "b364251a",
+        "bf306dcd",
+        "c546e233",
+        "f46036b1",
+        "fc5f438e"
+      ]
+    },
     "agent/plans/PLAN-nightly-retry-and-watchdog-noise.md": {
       "status": "compacted",
       "owner": "854ac1c6",
