@@ -34,33 +34,32 @@ then read it as a BASE-8 literal. Two consequences, both driven against the twin
 The port reads the number in base 10 (`over_cap`): `08` is 8 and dispatches without the bash diagnostic, `025` is 25 and ends the chain, `030` is 30 and still ends it. The recordings keep the twin's bytes; `test_delta_a_zero_padded_generation_is_decimal_and_the_cap_runs` pins both sides and fails on the octal behaviour.
 
 -----------------------------------------------------------------------------
-DEFECT D: A FAILED DEFAULT-BRANCH LOOKUP IS INDISTINGUISHABLE FROM A FAILED
-DISPATCH
+DEFECT D, FIXED AS A DELIBERATE DELTA (Rule T): A FAILED DEFAULT-BRANCH LOOKUP
+WAS INDISTINGUISHABLE FROM A FAILED DISPATCH
 -----------------------------------------------------------------------------
-The fallback arm is
+The twin's fallback arm is
 
     elif try_dispatch "$(gh api "repos/${GITHUB_REPOSITORY}" \\
         --jq '.default_branch')"; then
 
-and a command substitution inside an `elif` condition runs with `set -e` suspended. So when THAT lookup fails, its exit status is discarded, the ref becomes the EMPTY STRING, and `gh workflow run --ref ''` is attempted and reported as the dispatch having failed. Driven, with every `gh` call failing:
+and a command substitution inside an `elif` condition runs with `set -e` suspended. So when THAT lookup failed, its exit status was discarded, the ref became the EMPTY STRING, and `gh workflow run --ref ''` was attempted and reported as the dispatch having failed:
 
     (error) Failed to dispatch watchdog generation 1 for run 1: gh workflow run
       watchdog-monitor.yml --repo r/c --ref  -f target_run_id=1 ...
 
-The empty `--ref ` in that message is the whole receipt. "The lookup could not run" is folded into "the dispatch was refused", and the 404-bootstrap arm below then greps the WRONG error text for its fail-open decision.
+The port checks the lookup's status: a failed lookup is its own error (`Could not determine the default branch of <repo> ...`, exit 1) and no `gh workflow run` is attempted with an empty ref. The recording keeps the twin's bytes as the control; `test_delta_a_failed_default_branch_lookup_is_its_own_error` pins the port.
 
 -----------------------------------------------------------------------------
-DEFECT E: TWO ARGUMENT SHAPES DIE WITHOUT THE SCRIPT'S OWN MESSAGE
+DEFECT E, FIXED AS A DELIBERATE DELTA (Rule T): AN OPTION AS THE LAST TOKEN
+DIED WITHOUT THE SCRIPT'S OWN MESSAGE
 -----------------------------------------------------------------------------
-`--run-id` / `--generation` / `--pr-number` / `--head-ref` as the LAST token reads `"$2"` under `set -u`, so bash refuses with `<path>: line 40: $2: unbound variable`, exit 1 -- not the `Unknown option` message the parser exists to print. And `--pending-rerun` as the last token is
-worse: `"${2:-false}"` tolerates the absence, then `shift 2` with one argument
-left returns non-zero and `set -e` turns it into a **completely silent exit 1** (driven: zero bytes on both streams). Same class as `deploy/write_release_sentinel.py`'s FINDING 5.
+`--run-id` / `--generation` / `--pr-number` / `--head-ref` as the LAST token read `"$2"` under `set -u`, so bash refused with `<path>: line 40: $2: unbound variable`, exit 1. The port already named the option (`MISSING_VALUE`, divergence 3). `--pending-rerun` as the last token was worse in the twin: `"${2:-false}"` tolerated the absence, then `shift 2` with one argument left returned non-zero and `set -e` made a **completely silent exit 1** (zero bytes on both streams). The port now prints `MISSING_VALUE` for it too, exit 1; `test_delta_pending_rerun_as_the_last_token_names_the_option` fails on the silent exit.
 
 -----------------------------------------------------------------------------
-DEFECT F: A FAILED head_branch LOOKUP KILLS THE RUN WITH NO MESSAGE OF ITS OWN
+DEFECT F, FIXED AS A DELIBERATE DELTA (Rule T): A FAILED head_branch LOOKUP
+KILLED THE RUN WITH NO MESSAGE OF ITS OWN
 -----------------------------------------------------------------------------
-`HEAD_REF="$(gh api "$RUN_API" --jq '.head_branch // ""')"` is a plain
-assignment, so a failing lookup ends the script at exit 1 through `set -e` with only gh's own stderr to explain it -- while the very next `elif` treats an unreachable API as a reason to fail OPEN. The two adjacent lookups disagree about what an unreachable API means.
+`HEAD_REF="$(gh api "$RUN_API" --jq '.head_branch // ""')"` is a plain assignment, so a failing lookup ended the twin at gh's exit status through `set -e` with only gh's own stderr to explain it, while the very next `elif` treated an unreachable API as a reason to fail OPEN. The port keeps the exit status (so callers see what gh returned) and adds one line naming the lookup and the run (`Could not read the head branch of run ...`; the pull-request lookup gets the same treatment). `test_delta_a_failed_run_lookup_names_the_lookup` fails on the silent exit.
 
 -----------------------------------------------------------------------------
 DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
@@ -70,8 +69,7 @@ DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
     --run-id is required`. This port prints `MISSING_RUN_ID` /
     `MISSING_GENERATION` / `MISSING_REPOSITORY`, same stream, exit 1. Same
     ruling as `deploy/cf_purge_urls.py` divergence 1.
- 3. The `$2: unbound variable` shapes of Defect E print `MISSING_VALUE` here.
-    The silent `shift 2` shape is reproduced exactly: exit 1, nothing printed.
+ 3. The `$2: unbound variable` shapes of Defect E print `MISSING_VALUE` here, and so does the formerly silent `--pending-rerun` shape.
  4. common.sh's `echo -e` interprets backslash escapes in the message;
     `rediacc_ci.log` formats the message as data.
 
@@ -118,7 +116,7 @@ VALUE_OPTIONS = {
 class ArgError(Exception):
     """An argument the parser refuses. Carries the exact stderr text, or None.
 
-    `None` is the silent `shift 2` shape of Defect E, which prints nothing at all -- and a message-less refusal has to be representable, or the port would invent output the twin does not produce.
+    `None` is a refusal that prints nothing: the unknown-option arm, whose message the parser already logged itself.
     """
 
     def __init__(self, message: str | None) -> None:
@@ -151,10 +149,11 @@ def parse_args(argv: list[str]) -> dict[str, str]:
             i += 2
         elif opt == "--pending-rerun":
             # `PENDING_RERUN="${2:-false}"` tolerates the absence AND the empty
-            # string -- `:-` is a default-on-unset-OR-EMPTY, so `--pending-rerun ''` is accepted as `false` rather than refused by the true/false check below. `shift 2` then does not tolerate the absence: Defect E, reproduced exactly as a silent exit 1.
-            out["pending_rerun"] = (argv[i + 1] if i + 1 < len(argv) else "") or "false"
+            # string -- `:-` is a default-on-unset-OR-EMPTY, so `--pending-rerun ''` is accepted as `false` rather than refused by the true/false check below. A missing value is refused above, before this line.
             if i + 1 >= len(argv):
-                raise ArgError(None)
+                # The twin's `shift 2` died silently here (Defect E, fixed): the option is named instead.
+                raise ArgError(MISSING_VALUE % opt)
+            out["pending_rerun"] = argv[i + 1] or "false"
             i += 2
         else:
             log.error("Unknown option: %s" % opt)
@@ -270,13 +269,21 @@ def main(argv: list[str]) -> int:
     if not args["head_ref"]:
         status, value = gh_api(run_api, '.head_branch // ""')
         if status != 0:
-            # Defect F: `set -e` on a plain assignment. No message of its own.
+            # Defect F (fixed): the twin's `set -e` ended the run with no message of its own.
+            log.error(
+                "Could not read the head branch of run %s (%s exited %d)"
+                % (args["run_id"], "gh api", status)
+            )
             return status
         args["head_ref"] = value
     if not args["pr_number"]:
         # Best-effort: .pull_requests is populated for same-repo branches. When it stays empty the monitor simply skips the PR-label reads.
         status, value = gh_api(run_api, '.pull_requests[0].number // ""')
         if status != 0:
+            log.error(
+                "Could not read the pull request of run %s (%s exited %d)"
+                % (args["run_id"], "gh api", status)
+            )
             return status
         args["pr_number"] = value
 
@@ -291,8 +298,14 @@ def main(argv: list[str]) -> int:
             return 0
         dispatch_err = out
 
-    # Defect D: the lookup's exit status is DISCARDED and its empty output is used as a ref, exactly as the twin's command substitution in an `elif` condition discards it.
-    _status, default_branch = gh_api("repos/%s" % repository, ".default_branch")
+    # Defect D (fixed): the twin discarded this lookup's status and dispatched with an empty ref.
+    status, default_branch = gh_api("repos/%s" % repository, ".default_branch")
+    if status != 0:
+        log.error(
+            "Could not determine the default branch of %s (gh api exited %d); "
+            "nothing was dispatched" % (repository, status)
+        )
+        return 1
     status, out = dispatch(default_branch, args, repository)
     if status == 0:
         log.info(
