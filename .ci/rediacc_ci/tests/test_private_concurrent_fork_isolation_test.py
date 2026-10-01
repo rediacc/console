@@ -53,6 +53,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect
 from rediacc_ci.private import concurrent_fork_isolation_test as port
+from rediacc_ci.well_known import RUNTIME_DIR
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "concurrent-fork-isolation-test.sh"
@@ -148,8 +149,8 @@ HEALTHY_RULES: dict[str, list[dict]] = {
         {
             "match": "grep counter",
             "responses": [
-                {"out": "/var/run/rediacc/docker-aaa.sock\n"},
-                {"out": "/var/run/rediacc/docker-aaa.sock\n/var/run/rediacc/docker-bbb.sock\n"},
+                {"out": (RUNTIME_DIR + "/docker-aaa.sock\n")},
+                {"out": (RUNTIME_DIR + "/docker-aaa.sock\n" + RUNTIME_DIR + "/docker-bbb.sock\n")},
             ],
         },
         {"match": "docker-bbb.sock", "responses": [{"out": "25\n"}]},
@@ -224,6 +225,10 @@ def _fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True, exist_ok=True)
     shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / PORT_REL)
     return root
 
@@ -511,7 +516,7 @@ CASES = [
         id="the-checkpoint-forks-up-failed-outright",
     ),
     pytest.param(
-        {"rules": _ssh_rule("grep counter", {"out": "/var/run/rediacc/docker-aaa.sock\n"})},
+        {"rules": _ssh_rule("grep counter", {"out": (RUNTIME_DIR + "/docker-aaa.sock\n")})},
         {},
         id="no-second-socket-means-no-counter-in-the-forks-daemon",
     ),

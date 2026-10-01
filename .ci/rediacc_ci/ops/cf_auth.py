@@ -27,8 +27,9 @@ import subprocess
 import time
 
 from rediacc_ci import log
+from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
-CF_API_BASE = "https://api.cloudflare.com/client/v4"
+CF_API_BASE = WK_CF_API_BASE
 DEFAULT_ACCOUNT_ID = "fa51e4a18d553c30e1633288e9733d04"
 # A new token answers `Authentication error` for a few seconds. Measured 2026-10-01 against the bench D1 query endpoint: refused at 0 s, accepted at 6 s.
 PROPAGATION_SECONDS = 8

@@ -28,6 +28,7 @@ from typing import Any
 import pytest
 
 from rediacc_ci.infra import obs_mirror as om
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 EVR = "19.2.3-lp160.2.97"
 OLD = "19.2.3-lp160.2.96"
@@ -303,7 +304,7 @@ def test_the_profiles_come_from_ceph_install() -> None:
 
 
 def test_image_ref_refuses_what_a_tag_cannot_carry() -> None:
-    assert om.image_ref(EVR) == "ghcr.io/rediacc/ci-vm-bake:obs-mirror-v1-opensuse-16.0-" + EVR
+    assert om.image_ref(EVR) == (IMAGE_REGISTRY + "/ci-vm-bake:obs-mirror-v1-opensuse-16.0-") + EVR
     for bad in ("2:19.2.3-1.el10s", "19.2.3", "19.2.3-1+git", "latest"):
         with pytest.raises(om.MirrorError):
             om.image_ref(bad)

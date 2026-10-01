@@ -45,6 +45,7 @@ import pathlib
 import re
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 36
@@ -150,26 +151,36 @@ EDGE_CASES = [
     # 2026-09-30: a submodule PR carries no generated block, so there is none to drop.
     (
         "a submodule PATCH with a blockless body",
-        "gh api repos/rediacc/renet/pulls/113 -X PATCH -f body='prose only'",
+        ("gh api repos/" + RENET_REPO + "/pulls/113 -X PATCH -f body='prose only'"),
     ),
     (
         "a console PATCH with the same blockless body is still refused",
-        "gh api repos/rediacc/console/pulls/591 -X PATCH -f body='prose only'",
+        ("gh api repos/" + GH_REPO + "/pulls/591 -X PATCH -f body='prose only'"),
     ),
     (
         "a submodule PATCH beside a console one: the console one is judged",
         (
-            "gh api repos/rediacc/renet/pulls/113 -X PATCH -f body=x; "
-            "gh api repos/rediacc/console/pulls/591 -X PATCH -f body=y"
+            "gh api repos/"
+            + RENET_REPO
+            + "/pulls/113 -X PATCH -f body=x; "
+            + "gh api repos/"
+            + GH_REPO
+            + "/pulls/591 -X PATCH -f body=y"
         ),
     ),
-    ("a submodule edit by --repo", 'gh pr edit 113 --repo rediacc/renet --body "prose only"'),
-    ("a submodule edit by -R", 'gh pr edit 89 -R rediacc/account --body "prose only"'),
-    ("a console edit by --repo", 'gh pr edit 591 --repo rediacc/console --body "prose only"'),
-    ("a submodule create", 'gh pr create --repo rediacc/elite --title t --body "prose only"'),
+    (
+        "a submodule edit by --repo",
+        ("gh pr edit 113 --repo " + RENET_REPO + ' --body "prose only"'),
+    ),
+    ("a submodule edit by -R", ("gh pr edit 89 -R " + ACCOUNT_REPO + ' --body "prose only"')),
+    ("a console edit by --repo", ("gh pr edit 591 --repo " + GH_REPO + ' --body "prose only"')),
+    (
+        "a submodule create",
+        ("gh pr create --repo " + ELITE_REPO + ' --title t --body "prose only"'),
+    ),
     (
         "a submodule create does not excuse a console edit beside it",
-        'gh pr create --repo rediacc/renet --body "x" && gh pr edit 5 --body "y"',
+        ("gh pr create --repo " + RENET_REPO + ' --body "x" && gh pr edit 5 --body "y"'),
     ),
 ]
 

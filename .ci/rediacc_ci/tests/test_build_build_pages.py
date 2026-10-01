@@ -25,18 +25,24 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_pages as port
+from rediacc_ci.well_known import SITE_ORIGIN
+
+SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
 ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/build-pages.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_pages.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 
 # Everything the port imports, transitively.
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/build/__init__.py",
@@ -81,9 +87,9 @@ def fixture(
     an empty dict means it is created and left EMPTY, which is a different case (defect 4) and the one the twin reports as `cp: cannot stat`.
     """
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -308,17 +314,26 @@ def test_a_complete_assembly_prints_eleven_lines_and_exits_zero(tmp_path) -> Non
     assert old.stdout == ""
     worker = root.joinpath(*port.WORKER_SUBDIR)
     assert old.stderr == (
-        "→ Assembling pages package...\n"
-        "→ Copying www to root...\n"
-        "✓ Copied www to out/\n"
-        "→ Copying json to /json/...\n"
-        "✓ Copied json to out/json/\n"
-        "→ Copying pages to www worker static assets...\n"
-        "✓ Copied pages to %s/dist/\n"
-        "✓ Pages package ready at out/\n"
-        "✓   - Root:     www.rediacc.com (marketing site)\n"
-        "✓   - /json:    www.rediacc.com/json/ (template catalog)\n"
-        "✓   - /cli:     www.rediacc.com/cli/ (CLI update manifest)\n" % worker
+        (
+            "→ Assembling pages package...\n"
+            "→ Copying www to root...\n"
+            "✓ Copied www to out/\n"
+            "→ Copying json to /json/...\n"
+            "✓ Copied json to out/json/\n"
+            "→ Copying pages to www worker static assets...\n"
+            "✓ Copied pages to %s/dist/\n"
+            "✓ Pages package ready at out/\n"
+            "✓   - Root:     "
+            + SITE_HOST
+            + " (marketing site)\n"
+            + "✓   - /json:    "
+            + SITE_HOST
+            + "/json/ (template catalog)\n"
+            + "✓   - /cli:     "
+            + SITE_HOST
+            + "/cli/ (CLI update manifest)\n"
+        )
+        % worker
     ), old.stderr
     assert "out/index.html" in old_state
     assert "out/json/catalog.json" in old_state
@@ -388,7 +403,7 @@ def test_defect_1_the_default_output_deletes_the_manifest_it_then_looks_for(
     assert old.returncode == 0, old.stderr
     assert "Copying CLI manifest" not in old.stderr, "the block fired; defect 1 is gone"
     assert not [k for k in old_state if k.startswith("dist/cli")], sorted(old_state)
-    assert "✓   - /cli:     www.rediacc.com/cli/ (CLI update manifest)\n" in old.stderr
+    assert ("✓   - /cli:     " + SITE_HOST + "/cli/ (CLI update manifest)\n") in old.stderr
     assert "dist/cli-manifest/manifest.json" not in old_state, "the manifest survived"
     _agree(old_t, new_t, "default-output-self-destruct")
 

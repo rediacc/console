@@ -34,6 +34,7 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
 TARGET = paths.from_root(".ci", "scripts", "release", "assert-edge-tag-exists.sh")
 LIB_DIR = paths.from_root(".ci", "scripts", "lib")
@@ -128,9 +129,9 @@ class Fakes:
                 "TAG_STATE": tag,
                 "REL_STATE": rel,
                 "SENTINEL_STATE": sent,
-                "GITHUB_REPOSITORY": "rediacc/console",
+                "GITHUB_REPOSITORY": GH_REPO,
                 "CLOUDFLARE_R2_ENDPOINT": "https://example.invalid",
-                "RELEASES_BUCKET": "rediacc-releases",
+                "RELEASES_BUCKET": RELEASES_BUCKET,
                 "CLOUDFLARE_R2_ACCESS_KEY_ID": "test-key-id",
                 "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "test-secret",
             },
@@ -292,6 +293,10 @@ def test_the_control_fires_against_a_planted_403_pass(gate, tmp_path):
     (sandbox / "lib").mkdir(parents=True)
     for item in sorted(LIB_DIR.iterdir()):
         (sandbox / "lib" / item.name).symlink_to(item)
+    (sandbox.parent / "config").mkdir()
+    (sandbox.parent / "config" / "well-known.env").symlink_to(
+        paths.from_root(".ci", "config", "well-known.env")
+    )
     mutant = sandbox / "release" / "mutant-403-passes.sh"
     mutant.write_text(
         "".join(source[:begin]) + MUTANT_ARM + "".join(source[end + 1 :]), encoding="utf-8"

@@ -187,6 +187,10 @@ def fixture(
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
 
     worker = root / "workers" / "www"
     worker.mkdir(parents=True, exist_ok=True)

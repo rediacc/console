@@ -23,6 +23,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.proxies import ensure_nfpm
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -38,7 +39,9 @@ FIXTURE_FILES = (
     ".ci/scripts/test/proxies/proxy-lib.sh",
     ".devcontainer/toolchain.env",
     ".ci/config/constants.sh",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/__init__.py",
+    ".ci/rediacc_ci/well_known.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/proxyx.py",
     ".ci/rediacc_ci/proxies/__init__.py",
@@ -76,7 +79,7 @@ def _github_reachable() -> bool:
         return False
     return (
         subprocess.run(
-            ["curl", "-sS", "-m", "10", "-o", "/dev/null", "https://github.com"],
+            ["curl", "-sS", "-m", "10", "-o", "/dev/null", GH_ORIGIN],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,

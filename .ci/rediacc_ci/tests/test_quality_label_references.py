@@ -51,8 +51,12 @@ def build(tmp_path: pathlib.Path, labels: str | None, scan: dict[str, str]) -> p
     root = tmp_path / "fixture"
     (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
     (root / "fx" / "scan").mkdir(parents=True)
-    for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
+    for name in ("__init__.py", "log.py", "paths.py", "well_known.py", "controls.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        src / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     for name in ("__init__.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,

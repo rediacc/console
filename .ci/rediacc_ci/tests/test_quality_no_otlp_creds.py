@@ -16,6 +16,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.quality import no_otlp_creds as gate
+from rediacc_ci.well_known import RENET_REPO
 
 # --------------------------------------------------------------------------- The decision functions, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
@@ -23,7 +24,7 @@ from rediacc_ci.quality import no_otlp_creds as gate
 @pytest.mark.parametrize(
     ("buildinfo", "count"),
     [
-        pytest.param("\tpath\tgithub.com/rediacc/renet\n", 0, id="ordinary"),
+        pytest.param(("\tpath\tgithub.com/" + RENET_REPO + "\n"), 0, id="ordinary"),
         pytest.param("-X telemetry.otlpUser=a\n", 1, id="user"),
         pytest.param("-X telemetry.otlpPass=b\n", 1, id="pass"),
         pytest.param("telemetry.otlpUser telemetry.otlpPass\n", 2, id="both"),

@@ -77,6 +77,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import GH_ORIGIN
 
 # Configuration, carried with the twin's own inline comments.
 MIN_COMMITS = 3  # Minimum commits before requiring update
@@ -180,7 +181,7 @@ def stale_block(repo: str, pr_number: str, commit_count: int, age_minutes: int) 
         "  - Key implementation decisions",
         "  - Any breaking changes or migration notes",
         "",
-        "PR: https://github.com/%s/pull/%s" % (repo, pr_number),
+        ("PR: " + GH_ORIGIN + "/%s/pull/%s") % (repo, pr_number),
         "============================================================",
     ]
 
@@ -338,7 +339,7 @@ def selftest() -> int:
     # -- the advice block, both directions ----------------------------------
     block = stale_block("owner/repo", "42", 7, 90)
     text = "\n".join(block)
-    ctl.truthy("the block names the PR", "https://github.com/owner/repo/pull/42" in text)
+    ctl.truthy("the block names the PR", (GH_ORIGIN + "/owner/repo/pull/42") in text)
     ctl.truthy("the block reports the commit count", "Your PR has 7 commits" in text)
     ctl.truthy("the block reports the age and the threshold", "90 minutes (threshold: 30m)" in text)
     # THE CORRECTION OF 2026-09-03, asserted in both directions: the safe advice must be present AND the data-destroying advice must be absent.

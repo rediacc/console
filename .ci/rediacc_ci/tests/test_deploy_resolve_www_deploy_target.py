@@ -13,6 +13,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
+
+EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
+SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
 if TYPE_CHECKING:  # pathlib appears only in `tmp_path` annotations, never at runtime.
     import pathlib
@@ -38,7 +42,7 @@ def test_stable_target_selects_the_stable_worker(tmp_path: pathlib.Path) -> None
     (exit_code, out, err), written = run_port(tmp_path, {"TARGET": "stable"})
     assert (exit_code, out, err) == (0, "", "")
     assert written == (
-        "script=deploy-www.sh\nworker=rediacc-www\ndomain=www.rediacc.com\nsandbox=\n"
+        "script=deploy-www.sh\nworker=rediacc-www\ndomain=" + SITE_HOST + "\nsandbox=\n"
     )
 
 
@@ -46,8 +50,10 @@ def test_edge_target_selects_the_edge_worker_and_sandbox(tmp_path: pathlib.Path)
     (exit_code, out, err), written = run_port(tmp_path, {"TARGET": "edge"})
     assert (exit_code, out, err) == (0, "", "")
     assert written == (
-        "script=deploy-edge.sh\nworker=edge-rediacc-www\ndomain=edge.rediacc.com\n"
-        "sandbox=--sandbox\n"
+        "script=deploy-edge.sh\nworker=edge-rediacc-www\ndomain="
+        + EDGE_HOST
+        + "\n"
+        + "sandbox=--sandbox\n"
     )
 
 

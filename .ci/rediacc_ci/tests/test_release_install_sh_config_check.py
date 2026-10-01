@@ -28,6 +28,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.release import install_sh_config_check
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -45,7 +46,7 @@ BAD_GLYPH = "  ✗ "
 PORT_RE = re.compile(r"127\.0\.0\.1:\d+")
 
 # Mutation anchors, each asserted present before it is used.
-SERVER_DEFAULT = 'local account_server="${SERVER_URL:-https://www.rediacc.com}"'
+SERVER_DEFAULT = 'local account_server="${SERVER_URL:-' + SITE_ORIGIN + '}"'
 EARLY_RETURN = '    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then'
 CHMOD_ABSENT = '        chmod 600 "$config_file"\n    fi'
 BAKED_CHANNEL_GUARD = 'if [[ -z "${REDIACC_CHANNEL:-}" && "$CHANNEL" == "$default_channel" ]]; then'
@@ -63,6 +64,10 @@ def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (fixture / "packages" / "www" / "public").mkdir(parents=True, exist_ok=True)
     shutil.copy2(TWIN, fixture / ".ci" / "scripts" / "test" / TWIN.name)
     shutil.copy2(INSTALL_SH, fixture / INSTALL_SH_REL)
+    (fixture / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        TWIN.parents[2] / "config" / "well-known.env", fixture / ".ci" / "config" / "well-known.env"
+    )
     return fixture
 
 
@@ -166,8 +171,11 @@ def test_a_wrong_default_account_server_is_caught(tmp_path: pathlib.Path) -> Non
     old, new = run_both(fixture)
     assert old.returncode == 1
     assert old.stderr == (
-        BAD_GLYPH + "worker_channel_only: got channel=edge accountServer=https://V1.invalid; "
-        "expected channel=edge accountServer=https://www.rediacc.com\n"
+        BAD_GLYPH
+        + (
+            "worker_channel_only: got channel=edge accountServer=https://V1.invalid; "
+            "expected channel=edge accountServer=" + SITE_ORIGIN + "\n"
+        )
     )
     assert_same(old, new)
 

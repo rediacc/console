@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -68,7 +69,7 @@ def test_a_release_with_a_cli_asset_passes_on_both_sides(tmp_path: pathlib.Path)
         {"tagName": "v1.2.3", "assets": [{"name": "rdc-linux-x64"}, {"name": "checksums.txt"}]}
     )
     bindir = _make_fake_gh(tmp_path, rc=0, stdout=body)
-    old, new = run_both(bindir, {"VERSION": "v1.2.3", "GITHUB_REPOSITORY": "rediacc/console"})
+    old, new = run_both(bindir, {"VERSION": "v1.2.3", "GITHUB_REPOSITORY": GH_REPO})
     assert old == (0, "✓ Release v1.2.3 has 1 rdc-* CLI asset(s)\n", "")
     assert new == old
 
@@ -78,7 +79,7 @@ def test_a_release_with_no_cli_assets_fails_on_both_sides(tmp_path: pathlib.Path
         {"tagName": "v1.2.3", "assets": [{"name": "checksums.txt"}, {"name": "notes.md"}]}
     )
     bindir = _make_fake_gh(tmp_path, rc=0, stdout=body)
-    old, new = run_both(bindir, {"VERSION": "v1.2.3", "GITHUB_REPOSITORY": "rediacc/console"})
+    old, new = run_both(bindir, {"VERSION": "v1.2.3", "GITHUB_REPOSITORY": GH_REPO})
     assert old[0] == 1
     assert new[0] == 1
     assert "no rdc-* CLI assets" in old[1]
@@ -90,14 +91,14 @@ def test_a_release_with_no_cli_assets_fails_on_both_sides(tmp_path: pathlib.Path
 
 def test_a_missing_release_fails_on_both_sides(tmp_path: pathlib.Path) -> None:
     bindir = _make_fake_gh(tmp_path, rc=1, stderr="release not found\n")
-    old, new = run_both(bindir, {"VERSION": "v9.9.9", "GITHUB_REPOSITORY": "rediacc/console"})
+    old, new = run_both(bindir, {"VERSION": "v9.9.9", "GITHUB_REPOSITORY": GH_REPO})
     assert old == (1, "::error::no GitHub Release found for v9.9.9\nrelease not found\n", "")
     assert new == old
 
 
 def test_missing_version_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> None:
     bindir = _make_fake_gh(tmp_path, rc=0, stdout="{}")
-    old, new = run_both(bindir, {"GITHUB_REPOSITORY": "rediacc/console"})
+    old, new = run_both(bindir, {"GITHUB_REPOSITORY": GH_REPO})
     assert old[0] == 1
     assert new[0] == 1
     assert "VERSION" in old[2]

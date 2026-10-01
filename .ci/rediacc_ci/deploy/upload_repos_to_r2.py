@@ -74,6 +74,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
+from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 # The twin's own name, printed in its five guard messages and its one non-release-channel notice. A literal, because the bytes must survive the port.
 SELF = "upload-repos-to-r2.sh"
@@ -85,8 +86,8 @@ FORMATS = ("apt", "rpm", "apk", "archlinux")
 CC_MUTABLE = "no-cache"
 
 # The bucket and the public host, both hard-coded in the twin (:116, :135).
-BUCKET = "rediacc-releases"
-PUBLIC_HOST = "https://releases.rediacc.com"
+BUCKET = RELEASES_BUCKET
+PUBLIC_HOST = RELEASES_ORIGIN
 
 # `.ci/scripts/deploy/cf-purge-urls.sh` (:162), relative to the repository root the twin cd's into. Named once so the cutover to `cf_purge_urls.py` is one line in the box that owns it.
 PURGE_SCRIPT = ".ci/scripts/deploy/cf-purge-urls.sh"

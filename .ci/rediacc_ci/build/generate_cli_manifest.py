@@ -86,19 +86,20 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, RELEASES_ORIGIN
 
 # `.ci/scripts/lib/common.sh:205-210` resolves the root as `<lib>/../../..`;
 # this module sits at `.ci/rediacc_ci/build/`, which is the same depth.
 _ROOT_PARENT_INDEX = 3
 
 # `:22`.
-DEFAULT_REPO = "rediacc/console"
+DEFAULT_REPO = GH_REPO
 
 # `:65`, appended to the repo root. Defect 3 lives in the asymmetry between this absolute default and a caller-relative `--input`.
 DEFAULT_INPUT_SUBDIR = ("dist", "cli")
 
 # `:76`. The fallback when `RELEASES_BASE_URL` is unset or empty.
-DEFAULT_RELEASES_BASE = "https://releases.rediacc.com"
+DEFAULT_RELEASES_BASE = RELEASES_ORIGIN
 
 # `:99`. `${GITHUB_SHA:-unknown}`.
 DEFAULT_COMMIT = "unknown"
@@ -320,7 +321,7 @@ def _body(argv: list[str]) -> int:
     input_dir = opts.input_dir or str(root.joinpath(*DEFAULT_INPUT_SUBDIR))  # `:64-66`
     output_path = opts.output_path or "%s/manifest.json" % input_dir  # `:67-69`
 
-    release_url = "https://github.com/%s/releases/tag/v%s" % (opts.repo, opts.version)  # `:71`
+    release_url = (GH_ORIGIN + "/%s/releases/tag/v%s") % (opts.repo, opts.version)  # `:71`
 
     # `:76`. Read at the call site, never through an `env = dict(os.environ)`
     # alias: `check:ci-python-env-registry`'s AST scanner cannot see through one.

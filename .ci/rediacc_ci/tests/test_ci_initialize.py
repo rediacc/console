@@ -33,6 +33,10 @@ import pytest
 
 from rediacc_ci.ci import initialize as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
+from rediacc_ci.well_known import GH_ORIGIN as WK_GH_ORIGIN
+
+GH_HOST = WK_GH_ORIGIN.removeprefix("https://")
 
 if TYPE_CHECKING:
     import pathlib
@@ -209,6 +213,10 @@ def fixture_root(
     shutil.copyfile(
         "%s/.ci/scripts/lib/common.sh" % diff.repo(), root / ".ci/scripts/lib/common.sh"
     )
+    (root / ".ci/config").mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(
+        "%s/.ci/config/well-known.env" % diff.repo(), root / ".ci/config/well-known.env"
+    )
     twin = root / TWIN
     if not twin.exists():
         twin.symlink_to("%s/%s" % (diff.repo(), TWIN))
@@ -301,7 +309,7 @@ def assert_identical(old, new, files) -> None:
             )
 
 
-PAT_ENV = {"GITHUB_PAT": "s3cr3t-app-token", "GITHUB_REPOSITORY": "rediacc/console"}
+PAT_ENV = {"GITHUB_PAT": "s3cr3t-app-token", "GITHUB_REPOSITORY": GH_REPO}
 
 
 # --------------------------------------------------------------------------- Step 1 and step 2: the arms that never reach a sibling ---------------------------------------------------------------------------
@@ -454,7 +462,7 @@ def test_an_argument_that_is_not_a_shell_identifier_is_printfs_own_refusal(
     """
     old, new, files = run_both(tmp_path, "--a.b=1", env_extra=dict(PAT_ENV))
     assert old[0] == 2
-    assert old[2].endswith("line 334: printf: `ARG_A.B': not a valid identifier\n")
+    assert old[2].endswith("line 351: printf: `ARG_A.B': not a valid identifier\n")
     assert new[0] == 2
     assert new[2] == "printf: `ARG_A.B': not a valid identifier\n"
     assert files["old_calls"] == ""
@@ -502,21 +510,33 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         "",
     ]
     assert files["old_calls"] == (
-        "git config --global "
-        "url.https://x-access-token:s3cr3t-app-token@github.com/.insteadOf https://github.com/\n"
-        "generate-tag.sh --submodule private/renet\n"
-        "generate-tag.sh --closure web --extra renet-aaaa\n"
-        "generate-tag.sh --closure rdc --extra renet-aaaa\n"
-        "detect-bump-type.sh --verbose\n"
-        "dispatch-release.sh GITHUB_OUTPUT=[] --decide-only\n"
-        "git fetch --tags --force --no-recurse-submodules "
-        "https://x-access-token:s3cr3t-app-token@github.com/rediacc/console.git\n"
-        "git tag -l v* --sort=-v:refname\n"
-        "resolve-version.sh --bump-type patch\n"
-        "resolve-version.sh --current\n"
-        "docker manifest inspect ghcr.io/rediacc/renet:renet-aaaa-1.2.4\n"
-        "docker manifest inspect ghcr.io/rediacc/server:web-bbbb-1.2.4\n"
-        "docker manifest inspect ghcr.io/rediacc/rdc:rdc-cccc-1.2.4\n"
+        (
+            "git config --global "
+            "url.https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/.insteadOf "
+        )
+        + GH_ORIGIN
+        + "/\n"
+        + "generate-tag.sh --submodule private/renet\n"
+        + "generate-tag.sh --closure web --extra renet-aaaa\n"
+        + "generate-tag.sh --closure rdc --extra renet-aaaa\n"
+        + "detect-bump-type.sh --verbose\n"
+        + "dispatch-release.sh GITHUB_OUTPUT=[] --decide-only\n"
+        + "git fetch --tags --force --no-recurse-submodules "
+        + ("https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/")
+        + GH_REPO
+        + ".git\n"
+        + "git tag -l v* --sort=-v:refname\n"
+        + "resolve-version.sh --bump-type patch\n"
+        + "resolve-version.sh --current\n"
+        + "docker manifest inspect "
+        + IMAGE_REGISTRY
+        + "/renet:renet-aaaa-1.2.4\n"
+        + "docker manifest inspect "
+        + IMAGE_REGISTRY
+        + "/server:web-bbbb-1.2.4\n"
+        + "docker manifest inspect "
+        + IMAGE_REGISTRY
+        + "/rdc:rdc-cccc-1.2.4\n"
     )
     assert_identical(old, new, files)
 
@@ -561,7 +581,7 @@ def test_an_existing_image_reports_true(tmp_path: pathlib.Path) -> None:
             **PAT_ENV,
             "GITHUB_EVENT_NAME": "pull_request",
             "FAKE_GIT_TAGS": "v1.2.3",
-            "FAKE_DOCKER_HAVE": "ghcr.io/rediacc/server:web-bbbb",
+            "FAKE_DOCKER_HAVE": (IMAGE_REGISTRY + "/server:web-bbbb"),
         },
         docker=True,
     )
@@ -811,10 +831,10 @@ def test_an_empty_repository_slug_is_accepted_and_fetched(tmp_path: pathlib.Path
     assert old[0] == 0
     assert (
         "git fetch --tags --force --no-recurse-submodules "
-        "https://x-access-token:s3cr3t-app-token@github.com/.git\n"
+        "https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/.git\n"
     ) in files["old_calls"]
     assert_identical(old, new, files)
-    assert port.fetch_url("tok", "") == "https://x-access-token:tok@github.com/.git"
+    assert port.fetch_url("tok", "") == ("https://x-access-token:tok@" + GH_HOST + "/.git")
 
 
 def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path) -> None:
@@ -840,7 +860,7 @@ def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path
         "tag list that may be stale.\n"
     ) in old[2]
     assert "s3cr3t-app-token" not in old[2], "the app token must never reach the log"
-    assert "@github.com" in old[2], "the diagnostic must survive"
+    assert ("@" + GH_HOST) in old[2], "the diagnostic must survive"
     assert "***" in old[2], "redacted, not suppressed"
     assert "git tag" not in files["old_calls"], "no version may be computed from a stale list"
     assert_identical(old, new, files)

@@ -25,11 +25,12 @@ from rediacc_ci.quality import review_comments as sibling
 from rediacc_ci.quality import review_report_replies as gate
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import GH_REPO
 
 SLUG = "review-report-replies"
 MODULE = "review_report_replies"
 
-ENV_PREFIX = 'PR_NUMBER=42 GH_TOKEN=t GITHUB_REPOSITORY=rediacc/console PATH="$PWD/fxbin:$PATH"'
+ENV_PREFIX = "PR_NUMBER=42 GH_TOKEN=t GITHUB_REPOSITORY=" + GH_REPO + ' PATH="$PWD/fxbin:$PATH"'
 
 # DISPATCHES ON $2, the endpoint. `gh_json` calls `gh api <endpoint> --paginate`, so a stub keyed on $3 fails every call and makes both sides agree about nothing.
 GH_STUB = """#!/bin/bash
@@ -60,8 +61,12 @@ def build(
     root = tmp_path / "fixture"
     for rel in (".ci/rediacc_ci/quality", "fxbin", "fxdata"):
         (root / rel).mkdir(parents=True, exist_ok=True)
-    for name in ("__init__.py", "log.py", "paths.py", "controls.py"):
+    for name in ("__init__.py", "log.py", "paths.py", "well_known.py", "controls.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        src / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     for name in ("__init__.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,

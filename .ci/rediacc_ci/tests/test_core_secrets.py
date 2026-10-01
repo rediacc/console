@@ -18,6 +18,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import env, secrets
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # A value shaped like the real thing: base64, long, no English in it. Short fixture strings ("s3cret") hide bugs, because they collide with ordinary text and because a redactor that only ever sees them is never asked to deal with a value that contains another value.
 FAKE_KEY = "MC4CAQAwBQYDK2VwBCIEIH1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
@@ -99,14 +100,14 @@ def test_redact_env_masks_only_the_secret_named_variables() -> None:
     """The wrapper's whole job, with the non-secret variable as the control."""
     environ = {
         "ACCOUNT_JWT_SECRET": FAKE_KEY,
-        "REDIACC_ACCOUNT_SERVER": "http://localhost:4800",
+        "REDIACC_ACCOUNT_SERVER": "http://localhost:%d" % ACCOUNT_DEV_PORT,
     }
     out = secrets.redact_env(
-        "server=http://localhost:4800 jwt=%s" % FAKE_KEY,
+        "server=http://localhost:%d jwt=%s" % (ACCOUNT_DEV_PORT, FAKE_KEY),
         environ,
     )
     assert FAKE_KEY not in out
-    assert "http://localhost:4800" in out
+    assert "http://localhost:%d" % ACCOUNT_DEV_PORT in out
 
 
 # --------------------------------------------------------------------------- looks_secret -- against corpora, not against a table ---------------------------------------------------------------------------
@@ -371,8 +372,8 @@ def test_an_env_file_can_be_reported_on_without_any_value_escaping(tmp_path) -> 
     path.write_text(
         "ACCOUNT_ED25519_PRIVATE_KEY=%s\n"
         "ACCOUNT_X25519_PUBLIC_KEY=pubpubpub\n"
-        "REDIACC_ACCOUNT_SERVER=http://localhost:4800\n"
-        "ACCOUNT_JWT_SECRET=\n" % FAKE_KEY,
+        "REDIACC_ACCOUNT_SERVER=http://localhost:%d\n"
+        "ACCOUNT_JWT_SECRET=\n" % (FAKE_KEY, ACCOUNT_DEV_PORT),
         encoding="utf-8",
     )
     pairs = env.read_pairs(path, missing_ok=False)

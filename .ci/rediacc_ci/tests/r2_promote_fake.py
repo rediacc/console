@@ -19,6 +19,7 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -26,16 +27,18 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 CI = ROOT / ".ci"
 R2_PROMOTE = CI / "rediacc_ci" / "deploy" / "r2_promote.py"
-BUCKET = "rediacc-releases"
+BUCKET = RELEASES_BUCKET
 
 # Every fixture object's LastModified. Copies and puts stamp "now", so a stable object written by a run is newer than its edge source.
 T0 = 1_700_000_000
 
 # What aws printed on 2026-09-24 when a large .deb broke mid-read: the transient class the retry exists for.
 INCOMPLETE_READ = (
-    "download failed: s3://rediacc-releases/apt/edge/pool/x.deb to /tmp/x.deb "
-    "('Connection broken: IncompleteRead(7540288 bytes read, 848320 more expected)', "
-    "IncompleteRead(7540288 bytes read, 848320 more expected))\n"
+    "download failed: s3://"
+    + RELEASES_BUCKET
+    + "/apt/edge/pool/x.deb to /tmp/x.deb "
+    + "('Connection broken: IncompleteRead(7540288 bytes read, 848320 more expected)', "
+    + "IncompleteRead(7540288 bytes read, 848320 more expected))\n"
 )
 
 FAKE_AWS = r"""#!/usr/bin/env python3
@@ -360,10 +363,13 @@ def bucket_keys(root: pathlib.Path, prefix: str) -> dict[str, str]:
 
 # The contract every promote shares: the four stable pointers, and what each must and must not say.
 STABLE_POINTERS = {
-    "rediacc-releases/cli/stable/install.sh": ("REDIACC_CHANNEL:-stable", "REDIACC_CHANNEL:-edge"),
-    "rediacc-releases/cli/stable/install.ps1": ('} else { "stable" }', '} else { "edge" }'),
-    "rediacc-releases/rpm/stable/rediacc.repo": ("/rpm/stable/", "/edge/"),
-    "rediacc-releases/archlinux/stable/rediacc.conf": ("/archlinux/stable/", "/edge/"),
+    (RELEASES_BUCKET + "/cli/stable/install.sh"): (
+        "REDIACC_CHANNEL:-stable",
+        "REDIACC_CHANNEL:-edge",
+    ),
+    (RELEASES_BUCKET + "/cli/stable/install.ps1"): ('} else { "stable" }', '} else { "edge" }'),
+    (RELEASES_BUCKET + "/rpm/stable/rediacc.repo"): ("/rpm/stable/", "/edge/"),
+    (RELEASES_BUCKET + "/archlinux/stable/rediacc.conf"): ("/archlinux/stable/", "/edge/"),
 }
 EDGE_POINTERS = tuple(k.replace("/stable/", "/edge/", 1) for k in STABLE_POINTERS)
 

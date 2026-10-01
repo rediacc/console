@@ -32,6 +32,16 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import (
+    ACCOUNT_REPO,
+    ELITE_REPO,
+    GH_ORIGIN,
+    GH_REPO,
+    HOMEBREW_TAP_REPO,
+    RENET_REPO,
+)
+
+GH_HOST = GH_ORIGIN.removeprefix("https://")
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -110,28 +120,36 @@ def seed(root: Path, rows: int = 44) -> None:
 
     # FIVE repositories, four of them derived from .gitmodules at run time. The URL spellings are deliberately mixed (https and ssh, with and without .git) because both forms appear in real submodule files.
     (root / ".gitmodules").write_text(
-        '[submodule "private/renet"]\n'
-        "\tpath = private/renet\n"
-        "\turl = https://github.com/rediacc/renet.git\n"
-        "\tbranch = main\n"
-        '[submodule "private/homebrew-tap"]\n'
-        "\tpath = private/homebrew-tap\n"
-        "\turl = https://github.com/rediacc/homebrew-tap.git\n"
-        "\tbranch = main\n"
-        '[submodule "private/elite"]\n'
-        "\tpath = private/elite\n"
-        "\turl = git@github.com:rediacc/elite\n"
-        "\tbranch = main\n"
-        '[submodule "private/account"]\n'
-        "\tpath = private/account\n"
-        "\turl = https://github.com/rediacc/account.git\n"
-        "\tbranch = main\n",
+        (
+            ('[submodule "private/renet"]\n\tpath = private/renet\n\turl = ' + GH_ORIGIN + "/")
+            + RENET_REPO
+            + ".git\n"
+            + "\tbranch = main\n"
+            + '[submodule "private/homebrew-tap"]\n'
+            + "\tpath = private/homebrew-tap\n"
+            + ("\turl = " + GH_ORIGIN + "/")
+            + HOMEBREW_TAP_REPO
+            + ".git\n"
+            + "\tbranch = main\n"
+            + '[submodule "private/elite"]\n'
+            + "\tpath = private/elite\n"
+            + ("\turl = git@" + GH_HOST + ":")
+            + ELITE_REPO
+            + "\n"
+            + "\tbranch = main\n"
+            + '[submodule "private/account"]\n'
+            + "\tpath = private/account\n"
+            + ("\turl = " + GH_ORIGIN + "/")
+            + ACCOUNT_REPO
+            + ".git\n"
+            + "\tbranch = main\n"
+        ),
         encoding="utf-8",
     )
 
     # The live state D1 requires the target set to be DERIVED from: three of the five hold the secret, two do not.
     (root / "holders").write_text(
-        "rediacc/console\nrediacc/account\nrediacc/renet\n", encoding="utf-8"
+        (GH_REPO + "\n" + ACCOUNT_REPO + "\n" + RENET_REPO + "\n"), encoding="utf-8"
     )
 
     real_map = paths.from_root(".ci", "config", "bws-secret-map.json")
@@ -477,17 +495,17 @@ def test_the_target_set_is_derived_from_gitmodules_and_not_listed(tmp_path, monk
     seed(root)
     mod = module_for(root, monkeypatch)
     assert mod.target_repos() == [
-        "rediacc/account",
-        "rediacc/console",
-        "rediacc/elite",
-        "rediacc/homebrew-tap",
-        "rediacc/renet",
+        ACCOUNT_REPO,
+        GH_REPO,
+        ELITE_REPO,
+        HOMEBREW_TAP_REPO,
+        RENET_REPO,
     ], "the derived target set is not the parent plus the four submodules"
     # A FIFTH submodule, added to the fixture only. If the set were hardcoded this would not move, which is the whole claim.
     with (root / ".gitmodules").open("a", encoding="utf-8") as fh:
         fh.write(
             '[submodule "private/fifth"]\n\tpath = private/fifth\n'
-            "\turl = https://github.com/rediacc/fifth.git\n"
+            "\turl = " + GH_ORIGIN + "/rediacc/fifth.git\n"
         )
     mod2 = module_for(root, monkeypatch)
     assert "rediacc/fifth" in mod2.target_repos(), (
@@ -504,11 +522,11 @@ def test_exactly_the_repositories_that_hold_a_secret_are_written(tmp_path):
     gh_log = (root / "gh.log").read_text(encoding="utf-8")
     set_lines = "\n".join(ln for ln in gh_log.splitlines() if ln.startswith("SET"))
     wrote = sorted(set(re.findall(r"rediacc/[a-z-]+", set_lines)))
-    assert wrote == ["rediacc/account", "rediacc/console", "rediacc/renet"], (
+    assert wrote == [ACCOUNT_REPO, GH_REPO, RENET_REPO], (
         "the written set is not the three repositories that already held the secret"
     )
-    assert "SKIP     rediacc/elite" in out, "a repository without the secret was not named"
-    assert "SKIP     rediacc/homebrew-tap" in out, "the second such repository was not named"
+    assert ("SKIP     " + ELITE_REPO) in out, "a repository without the secret was not named"
+    assert ("SKIP     " + HOMEBREW_TAP_REPO) in out, "the second such repository was not named"
 
 
 def test_a_repository_that_gains_a_secret_is_written_on_the_next_run(tmp_path):
@@ -517,14 +535,14 @@ def test_a_repository_that_gains_a_secret_is_written_on_the_next_run(tmp_path):
     seed(root)
     # D1's real claim: the rule is derived from LIVE state, not from a list. The same fixture, one repository flipped into holding a secret, must be written.
     with (root / "holders").open("a", encoding="utf-8") as fh:
-        fh.write("rediacc/elite\n")
+        fh.write(ELITE_REPO + "\n")
     rc, out = run_full(root, FIXTURE_TOKEN)
     assert rc == 0, "the rotation failed: %s" % out
     gh_log = (root / "gh.log").read_text(encoding="utf-8")
-    assert "rediacc/elite" in "\n".join(ln for ln in gh_log.splitlines() if ln.startswith("SET")), (
+    assert ELITE_REPO in "\n".join(ln for ln in gh_log.splitlines() if ln.startswith("SET")), (
         "a repository that now HOLDS the secret was skipped, so the refresh set is hardcoded"
     )
-    assert "SKIP     rediacc/elite" not in out, (
+    assert ("SKIP     " + ELITE_REPO) not in out, (
         "the same repository was both written and reported as absent"
     )
 
@@ -587,7 +605,7 @@ def test_a_failed_repository_write_is_reported_and_exits_non_zero(tmp_path):
     body = gh_path.read_text(encoding="utf-8")
     body = body.replace(
         '  "secret set")\n',
-        '  "secret set")\n    case "$*" in *rediacc/renet*) exit 1 ;; esac\n',
+        ('  "secret set")\n    case "$*" in *' + RENET_REPO + "*) exit 1 ;; esac\n"),
     )
     gh_path.write_text(body, encoding="utf-8")
     rc, out = run_full(root, FIXTURE_TOKEN)

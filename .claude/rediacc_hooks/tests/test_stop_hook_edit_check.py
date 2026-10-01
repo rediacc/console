@@ -167,6 +167,13 @@ def claude_copy(tmp_path):
     root = tmp_path / ".claude"
     # `hookio.repo_root` finds the tree by `.claude` beside `.ci`, as every real checkout has it.
     (tmp_path / ".ci").mkdir()
+    # The hooks read the well-known registry through its reader and its file, both under `.ci`.
+    (tmp_path / ".ci" / "rediacc_ci").mkdir()
+    (tmp_path / ".ci" / "config").mkdir()
+    shutil.copy2(
+        CLAUDE.parent / ".ci" / "rediacc_ci" / "well_known.py", tmp_path / ".ci" / "rediacc_ci"
+    )
+    shutil.copy2(CLAUDE.parent / ".ci" / "config" / "well-known.env", tmp_path / ".ci" / "config")
     for sub in ("hooks", "rediacc_hooks"):
         shutil.copytree(CLAUDE / sub, root / sub, ignore=COPY_IGNORE)
     return root

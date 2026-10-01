@@ -101,6 +101,7 @@ import time
 from rediacc_ci import log
 from rediacc_ci.ci import detect_pointer_bump
 from rediacc_ci.core import common
+from rediacc_ci.well_known import GH_ORIGIN, IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- Twin line numbers. Bash prints these inside its own diagnostics, so they are part of the observable output rather than documentation. `test_the_pinned_line_numbers_still_point_at_the_twins_lines` re-derives every one of them from the twin.
 # ---------------------------------------------------------------------------
@@ -156,7 +157,7 @@ SUBMODULE_SENTINEL = "private/renet/.ci/ci.sh"
 BOT_AUTHORS = ("github-actions[bot]", "dependabot[bot]")
 
 #: All three images publish flat under this prefix (twin :304).
-REGISTRY_PREFIX = "ghcr.io/rediacc"
+REGISTRY_PREFIX = IMAGE_REGISTRY
 
 #: The registry name each tag belongs to, in the twin's order (twin :307-309).
 IMAGE_NAMES = (("renet", "renet"), ("web", "server"), ("rdc", "rdc"))
@@ -409,7 +410,7 @@ def run(check_only: str, output_file: str) -> int:
             "config",
             "--global",
             "url.https://x-access-token:%s@github.com/.insteadOf" % pat,
-            "https://github.com/",
+            (GH_ORIGIN + "/"),
         ],
         GIT_CONFIG_LINE,
         searched=True,

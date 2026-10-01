@@ -48,13 +48,14 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
+from rediacc_ci.well_known import GH_REPO
 
 SCRIPT_ENV = "RELEASE_DECIDE_SCRIPT"
 DEFAULT_SCRIPT = ".ci/scripts/ci/dispatch-release.sh"
 
 # The environment the subject is driven under. GITHUB_SHA is the real sha of the 2026-08-26 merge the gate is written from, kept so that a reader who greps for it lands on the incident rather than on a placeholder.
 DRIVE_ENV = {
-    "GITHUB_REPOSITORY": "rediacc/console",
+    "GITHUB_REPOSITORY": GH_REPO,
     "GITHUB_SHA": "1c006e538fe3d33eeb280b809140b0d477a280db",
 }
 

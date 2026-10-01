@@ -26,6 +26,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import sync_media_to_r2 as port
+from rediacc_ci.well_known import MEDIA_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -42,6 +43,8 @@ TREE_FILES = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/deploy/__init__.py",
@@ -198,7 +201,7 @@ CLOSING = (
     "✓ Sync complete. Verify with:\n"
     "✓   aws s3 sync --dryrun <local-dir> s3://rediacc-www-media/<prefix>/ "
     "--endpoint-url $CLOUDFLARE_R2_MEDIA_ENDPOINT\n"
-    "✓   curl -sI https://media.rediacc.com/<path>\n"
+    "✓   curl -sI " + MEDIA_ORIGIN + "/<path>\n"
 )
 
 
@@ -512,7 +515,7 @@ def test_pure_helpers() -> None:
     assert port.CLOSING_LINES[0] == "Sync complete. Verify with:"
     assert port.CLOSING_LINES[1].startswith("  aws s3 sync --dryrun <local-dir> ")
     assert port.CLOSING_LINES[1].endswith("--endpoint-url $CLOUDFLARE_R2_MEDIA_ENDPOINT")
-    assert port.CLOSING_LINES[2] == "  curl -sI https://media.rediacc.com/<path>"
+    assert port.CLOSING_LINES[2] == ("  curl -sI " + MEDIA_ORIGIN + "/<path>")
 
     default = port.parse_args([])
     assert (default.tutorials, default.solutions, default.audio) == (True, True, True)

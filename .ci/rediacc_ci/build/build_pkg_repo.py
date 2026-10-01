@@ -157,6 +157,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log
+from rediacc_ci.well_known import RELEASES_ORIGIN
 
 # ---------------------------------------------------------------------------
 # `.ci/config/constants.sh`, RESTATED. Two DIFFERENT kinds of constant, and the difference is load-bearing:
@@ -168,7 +169,7 @@ from rediacc_ci import log
 # `test_the_restated_constants_match_constants_sh` parses the real file and fails on drift in either.
 # ---------------------------------------------------------------------------
 PKG_NAME = "rediacc-cli"
-RELEASES_BASE_URL_DEFAULT = "https://releases.rediacc.com"
+RELEASES_BASE_URL_DEFAULT = RELEASES_ORIGIN
 
 # `:148`. The published public key, and its environment override.
 DEFAULT_PUBLIC_KEY_REL = ".ci/keys/gpg-public.asc"

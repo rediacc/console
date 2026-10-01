@@ -39,6 +39,8 @@ import shutil
 import subprocess
 import sys
 
+from rediacc_ci.well_known import GH_REPO
+
 WORKFLOW_GLOB = ".github/workflows/*.yml"
 WORKFLOW_DIR = ".github/workflows"
 COMPARE_NEEDLE = "Compare shadow secrets against GitHub"
@@ -46,7 +48,7 @@ VERDICT_RE = "shadow [A-Z0-9_]+ (match|MISMATCH|EMPTY)"
 GH_BINDING_RE = re.compile(r"GH_([A-Z0-9_]+):\s*\$\{\{\s*secrets\.([A-Z0-9_]+)\s*\}\}")
 
 ORG_SECRETS_API = "orgs/rediacc/actions/secrets"
-REPO_SECRETS_API = "repos/rediacc/console/actions/secrets"
+REPO_SECRETS_API = "repos/" + GH_REPO + "/actions/secrets"
 
 DEFAULT_RUNS = "6"
 

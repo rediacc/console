@@ -37,6 +37,7 @@ import sys
 
 import _cipath  # noqa: F401
 from rediacc_ci.controls import plant
+from rediacc_ci.well_known import UBUNTU_ARCHIVE, UBUNTU_AZURE_MIRROR
 
 # A sed that rewrites an apt source URL to a specific host. The captured group is the DESTINATION host, which is what has to vary for a fallback to exist.
 REWRITE = re.compile(r"s\|https?://[^|]*?ubuntu[^|]*?\|https?://([a-z0-9.-]+)/", re.IGNORECASE)
@@ -212,27 +213,47 @@ def selftest():
 
     single = (
         "RUN find /etc/apt -name 'sources.list' | xargs -r sed -i \\\n"
-        "        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\\n"
-        "    && for i in 1 2 3 4 5; do apt-get update && break; sleep 30; done\n"
+        "        -e 's|"
+        + UBUNTU_ARCHIVE
+        + "|"
+        + UBUNTU_AZURE_MIRROR
+        + "|g' \\\n"
+        + "    && for i in 1 2 3 4 5; do apt-get update && break; sleep 30; done\n"
     )
     both = (
         "RUN find /etc/apt -name 'sources.list' | xargs -r sed -i \\\n"
-        "        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\\n"
-        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
-        "        sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
-        "    done\n"
+        "        -e 's|"
+        + UBUNTU_ARCHIVE
+        + "|"
+        + UBUNTU_AZURE_MIRROR
+        + "|g' \\\n"
+        + "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        + "        sed -i -e 's|"
+        + UBUNTU_AZURE_MIRROR
+        + "|"
+        + UBUNTU_ARCHIVE
+        + "|g' /etc/apt/sources.list; \\\n"
+        + "    done\n"
     )
     none = "RUN apt-get update && apt-get install -y curl\n"
 
     # A fallback that fires only on the LAST attempt: two hosts are named, so the shallow "does a second host appear" test passes, and it still cannot help.
     too_late = (
         "RUN find /etc/apt -name 'sources.list' | xargs -r sed -i \\\n"
-        "        -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\\n"
-        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
-        '        if [ "$i" = "5" ]; then \\\n'
-        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
-        "        fi; \\\n"
-        "    done\n"
+        "        -e 's|"
+        + UBUNTU_ARCHIVE
+        + "|"
+        + UBUNTU_AZURE_MIRROR
+        + "|g' \\\n"
+        + "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        + '        if [ "$i" = "5" ]; then \\\n'
+        + "            sed -i -e 's|"
+        + UBUNTU_AZURE_MIRROR
+        + "|"
+        + UBUNTU_ARCHIVE
+        + "|g' /etc/apt/sources.list; \\\n"
+        + "        fi; \\\n"
+        + "    done\n"
     )
 
     # THE INCIDENT ITSELF, as the positive control.
@@ -269,13 +290,21 @@ def selftest():
 
     # UNREACHABLE BY EARLY EXIT. The fallback sits before the loop bound, so the bound check above is satisfied, and it still never runs because an earlier iteration bails out first. Loop bound and fallback position are each fine in isolation; only their RELATION to the give-up point decides reachability.
     stranded = (
-        "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
-        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
-        '        if [ "$i" = "3" ]; then echo giving up >&2; exit 1; fi; \\\n'
-        '        if [ "$i" = "4" ]; then \\\n'
-        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
-        "        fi; \\\n"
-        "    done\n"
+        "RUN sed -i -e 's|"
+        + UBUNTU_ARCHIVE
+        + "|"
+        + UBUNTU_AZURE_MIRROR
+        + "|g' /etc/apt/sources.list \\\n"
+        + "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        + '        if [ "$i" = "3" ]; then echo giving up >&2; exit 1; fi; \\\n'
+        + '        if [ "$i" = "4" ]; then \\\n'
+        + "            sed -i -e 's|"
+        + UBUNTU_AZURE_MIRROR
+        + "|"
+        + UBUNTU_ARCHIVE
+        + "|g' /etc/apt/sources.list; \\\n"
+        + "        fi; \\\n"
+        + "    done\n"
     )
     check(
         "the give-up iteration is read", giveup_iteration(stranded) == 3, giveup_iteration(stranded)
@@ -306,13 +335,21 @@ def selftest():
         ('[ "$i" -eq "N" ]', '[ "$i" -eq "5" ]'),
     ):
         variant = (
-            "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
-            "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
-            "        if %s; then \\\n"
-            % test
-            + "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
-            "        fi; \\\n"
-            "    done\n"
+            "RUN sed -i -e 's|"
+            + UBUNTU_ARCHIVE
+            + "|"
+            + UBUNTU_AZURE_MIRROR
+            + "|g' /etc/apt/sources.list \\\n"
+            + "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+            + "        if %s; then \\\n"
+        ) % test + (
+            "            sed -i -e 's|"
+            + UBUNTU_AZURE_MIRROR
+            + "|"
+            + UBUNTU_ARCHIVE
+            + "|g' /etc/apt/sources.list; \\\n"
+            + "        fi; \\\n"
+            + "    done\n"
         )
         check(
             "a last-iteration fallback written %s is caught" % label,
@@ -321,12 +358,20 @@ def selftest():
         )
     # CONTROL for the control: the same bracket shapes must NOT manufacture a finding when the fallback is early, or the fix would just be "report more".
     early_dbl = (
-        "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
-        "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
-        "        if [[ $i -eq 1 ]]; then \\\n"
-        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
-        "        fi; \\\n"
-        "    done\n"
+        "RUN sed -i -e 's|"
+        + UBUNTU_ARCHIVE
+        + "|"
+        + UBUNTU_AZURE_MIRROR
+        + "|g' /etc/apt/sources.list \\\n"
+        + "    && for i in 1 2 3 4 5; do apt-get update && break; \\\n"
+        + "        if [[ $i -eq 1 ]]; then \\\n"
+        + "            sed -i -e 's|"
+        + UBUNTU_AZURE_MIRROR
+        + "|"
+        + UBUNTU_ARCHIVE
+        + "|g' /etc/apt/sources.list; \\\n"
+        + "        fi; \\\n"
+        + "    done\n"
     )
     check(
         "an EARLY fallback written [[ -eq ]] still passes",
@@ -338,12 +383,20 @@ def selftest():
     # while NOTHING had been verified. That is the exact shape this repo calls a
     # gate that cannot fail, and it must be reported instead.
     unparseable = (
-        "RUN sed -i -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list \\\n"
-        "    && while read -r attempt; do apt-get update && break; \\\n"
-        '        if [ "$attempt" = "2" ]; then \\\n'
-        "            sed -i -e 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \\\n"
-        "        fi; \\\n"
-        "    done < /tmp/attempts\n"
+        "RUN sed -i -e 's|"
+        + UBUNTU_ARCHIVE
+        + "|"
+        + UBUNTU_AZURE_MIRROR
+        + "|g' /etc/apt/sources.list \\\n"
+        + "    && while read -r attempt; do apt-get update && break; \\\n"
+        + '        if [ "$attempt" = "2" ]; then \\\n'
+        + "            sed -i -e 's|"
+        + UBUNTU_AZURE_MIRROR
+        + "|"
+        + UBUNTU_ARCHIVE
+        + "|g' /etc/apt/sources.list; \\\n"
+        + "        fi; \\\n"
+        + "    done < /tmp/attempts\n"
     )
     check("an unparseable loop yields no bound", last_attempt(unparseable) is None)
     check(
@@ -388,7 +441,7 @@ def selftest():
         offenders(commented) == [],
         offenders(commented),
     )
-    pinned_with_comment = plant(commented, "http://archive.ubuntu.com/ubuntu|g", "x|g")
+    pinned_with_comment = plant(commented, (UBUNTU_ARCHIVE + "|g"), "x|g")
     check(
         "CONTROL: a block pinned to one host is STILL reported when it has a comment",
         offenders(pinned_with_comment) != [],

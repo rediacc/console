@@ -88,6 +88,7 @@ import traceback
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:  # pragma: no cover - typing only
     from types import ModuleType
@@ -616,7 +617,7 @@ def check3(yaml: ModuleType, workflows_dir: str, limit_raw: str, require_coverag
 # the same registry and must resolve it the same way rather than growing a second copy of the rule.
 
 REQUIRED_FIELDS = ("caller", "repo", "pinned_at", "calls", "passes_inputs", "passes_secrets")
-CONSOLE_PREFIX = "rediacc/console/"
+CONSOLE_PREFIX = GH_REPO + "/"
 
 
 class _BlindError(Exception):

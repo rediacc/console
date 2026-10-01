@@ -99,14 +99,15 @@ import tempfile
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 # The twin's own name, used in the bash-diagnostic stand-ins.
 SELF = "simulate-promotion.sh"
 
 # `BUCKET="rediacc-releases"` (twin :51) and the public host (twin :202, :213),
 # both hard-coded in the twin.
-BUCKET = "rediacc-releases"
-PUBLIC_HOST = "https://releases.rediacc.com"
+BUCKET = RELEASES_BUCKET
+PUBLIC_HOST = RELEASES_ORIGIN
 
 # `CC_MUTABLE="no-cache"` (twin :97). Channel paths reuse filenames per release,
 # so nothing under `<fmt>/<promoted>/` is safe to cache.

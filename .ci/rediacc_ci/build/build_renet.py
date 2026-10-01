@@ -115,9 +115,10 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import RENET_REPO
 
 # `:143`, `:145`. The builder image `build.sh embed_assets` leaves behind when it really built one. Its ABSENCE selects the cache-hit path, not a failure.
-BUILDER_IMAGE = "rediacc/renet:latest"
+BUILDER_IMAGE = RENET_REPO + ":latest"
 
 # `:132-140`, verbatim. One row per (component, arch), as `<imageDir>\t<assetBase>\t<arch>`. The field ORDER differs from the filter in `extract_renet_from_image.py`, which is the twin's doing and is preserved: the two scripts read the same lockfile with two different column orders.
 MATRIX_FILTER = """
@@ -152,7 +153,7 @@ VERIFY_TARGETS = (
 )
 
 # `:201`. The linker symbol the account server public key is injected into.
-KEY_SYMBOL = "-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey="
+KEY_SYMBOL = "-X github.com/" + RENET_REPO + "/pkg/license/keys.ProductionPublicKey="
 
 # `:37-44`. `$0` is substituted at print time.
 USAGE = (

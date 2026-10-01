@@ -10,6 +10,7 @@ differ by one iteration, which is the whole loop.
 """
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, HOMEBREW_TAP_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 22
@@ -53,8 +54,11 @@ EDGE_CASES = [
     ("a console create with --draft", "gh pr create --draft --title x --body y"),
     ("the short flag counts", "gh pr create -d --title x"),
     # Private repos cannot have drafts at all.
-    ("a private submodule create", "gh pr create --repo rediacc/renet --title x"),
-    ("a private submodule create WITH --draft", "gh pr create --repo rediacc/renet --draft -t x"),
+    ("a private submodule create", ("gh pr create --repo " + RENET_REPO + " --title x")),
+    (
+        "a private submodule create WITH --draft",
+        ("gh pr create --repo " + RENET_REPO + " --draft -t x"),
+    ),
     ("a cd into a submodule resolves the repo", "cd private/account && gh pr create -t x"),
     ("a foreign repo is not policed", "gh pr create --repo someone/other -t x"),
     # The segment scoping: a sibling create must not donate its --draft.
@@ -116,14 +120,11 @@ def run(ev):
 
         has_draft = hookio.grep_q_line(HAS_DRAFT, seg)
 
-        if hookio.case_glob(repo, "rediacc/console", "rediacc/homebrew-tap"):
+        if hookio.case_glob(repo, GH_REPO, HOMEBREW_TAP_REPO):
             if not has_draft:
                 ev.warn(PUBLIC_MESSAGE % repo)
                 return hookio.DENY
-        elif (
-            hookio.case_glob(repo, "rediacc/renet", "rediacc/account", "rediacc/elite")
-            and has_draft
-        ):
+        elif hookio.case_glob(repo, RENET_REPO, ACCOUNT_REPO, ELITE_REPO) and has_draft:
             ev.warn(PRIVATE_MESSAGE % repo)
             return hookio.DENY
     return hookio.ALLOW

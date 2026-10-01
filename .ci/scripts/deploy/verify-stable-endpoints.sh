@@ -47,17 +47,17 @@ cd "$(get_repo_root)"
 
 echo "Verifying stable deployment..."
 
-INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)
+INSTALL_SH=$(curl -fsSL "$WK_SITE_ORIGIN/install.sh")
 if ! grep -q 'REDIACC_CHANNEL:-stable' <<<"$INSTALL_SH"; then
-    echo "::error::www.rediacc.com/install.sh is not baked to channel=stable"
+    echo "::error::${WK_SITE_ORIGIN#https://}/install.sh is not baked to channel=stable"
     echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
     exit 1
 fi
 echo "  marketing (install.sh): OK (channel=stable)"
 
-INSTALL_PS1=$(curl -fsSL https://www.rediacc.com/install.ps1)
+INSTALL_PS1=$(curl -fsSL "$WK_SITE_ORIGIN/install.ps1")
 if ! grep -qF '} else { "stable" }' <<<"$INSTALL_PS1"; then
-    echo "::error::www.rediacc.com/install.ps1 is not baked to channel=stable"
+    echo "::error::${WK_SITE_ORIGIN#https://}/install.ps1 is not baked to channel=stable"
     echo "$INSTALL_PS1" | grep -F '$Channel' || true
     exit 1
 fi
@@ -72,21 +72,21 @@ echo "  marketing (install.ps1): OK (channel=stable)"
 RNDA=$RANDOM$RANDOM
 RNDB=$RANDOM$RANDOM
 RNDC=$RANDOM$RANDOM
-S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/about?cb=$RNDA")
+S=$(curl -sI -o /dev/null -w '%{http_code}' "$WK_SITE_ORIGIN/about?cb=$RNDA")
 [[ "$S" == "410" ]] || {
     echo "::error::www /about expected 410 (curated redirect table), got $S — old worker bundle likely live"
     exit 1
 }
 echo "  worker fingerprint (redirect table): OK (/about=410)"
 
-S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/en?cb=$RNDB")
+S=$(curl -sI -o /dev/null -w '%{http_code}' "$WK_SITE_ORIGIN/en?cb=$RNDB")
 [[ "$S" == "200" ]] || {
     echo "::error::www /en expected 200 (html_handling=drop-trailing-slash), got $S"
     exit 1
 }
 echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
 
-S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
+S=$(curl -sI -o /dev/null -w '%{http_code}' "$WK_SITE_ORIGIN/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
 [[ "$S" == "200" ]] || {
     echo "::error::www mixed-case font expected 200 (asset-path guard), got $S"
     exit 1
@@ -97,17 +97,17 @@ echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
 # must also be channel-baked. The re-bake step in the promote job
 # (above) rewrites REDIACC_CHANNEL:-edge → :-stable; this asserts it
 # worked and the upload actually landed.
-R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.sh)
+R2_SH=$(curl -fsSL "$WK_RELEASES_ORIGIN/cli/stable/install.sh")
 if ! grep -q 'REDIACC_CHANNEL:-stable' <<<"$R2_SH"; then
-    echo "::error::releases.rediacc.com/cli/stable/install.sh not baked to channel=stable"
+    echo "::error::${WK_RELEASES_ORIGIN#https://}/cli/stable/install.sh not baked to channel=stable"
     echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
     exit 1
 fi
 echo "  R2 cli/stable/install.sh: OK (channel=stable)"
 
-R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.ps1)
+R2_PS1=$(curl -fsSL "$WK_RELEASES_ORIGIN/cli/stable/install.ps1")
 if ! grep -qF '} else { "stable" }' <<<"$R2_PS1"; then
-    echo "::error::releases.rediacc.com/cli/stable/install.ps1 not baked to channel=stable"
+    echo "::error::${WK_RELEASES_ORIGIN#https://}/cli/stable/install.ps1 not baked to channel=stable"
     exit 1
 fi
 echo "  R2 cli/stable/install.ps1: OK (channel=stable)"

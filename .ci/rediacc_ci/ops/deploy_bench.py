@@ -28,16 +28,22 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.ops import bench_preflight, cf_auth
+from rediacc_ci.well_known import BENCH_ORIGIN
+
+BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 WORKER_NAME = "rediacc-account-bench"
 CONFIG = "wrangler.bench.toml"
 DB_NAME = "account-db-bench"
-DOMAIN = "bench.rediacc.com"
+DOMAIN = BENCH_HOST
 TURNSTILE_SITEKEY = "0x4AAAAAAC46Rczgin0T1o04"
 PROFILE = "deploy-bench"
 MISSING = "%s missing from the deploy-bench profile"
-HELP = """Deploy the account worker to bench.rediacc.com.
+HELP = (
+    """Deploy the account worker to """
+    + BENCH_HOST
+    + """.
 
 Usage:
   deploy_bench          (no arguments)
@@ -46,6 +52,7 @@ Credentials come from the deploy-bench Bitwarden profile; see
 .ci/config/secret-supply.json. Cloudflare auth: CF_MANAGEMENT_TOKEN, or
 CF_GLOBAL_API_KEY + CF_EMAIL, or an interactive prompt.
 """
+)
 
 
 class DeployError(Exception):

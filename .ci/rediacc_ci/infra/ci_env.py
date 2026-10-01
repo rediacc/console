@@ -102,6 +102,8 @@ import pathlib
 import subprocess
 import sys
 
+from rediacc_ci.well_known import ADMIN_EMAIL_DEFAULT, IMAGE_REGISTRY
+
 # The twin's `node -e "..."` argument, character for character, with the curve name as the only substitution. Both occurrences differ in that one word alone.
 KEYGEN_PROGRAM = """
         const crypto = require('crypto');
@@ -121,7 +123,7 @@ CUT_COLUMNS = 64
 RAND_HEX_ARGV = ["openssl", "rand", "-hex", "32"]
 STRIPE_PREFIX = "whsec_test_"
 
-DEFAULT_REGISTRY = "ghcr.io/rediacc"
+DEFAULT_REGISTRY = IMAGE_REGISTRY
 DEFAULT_ACTOR = "github-actions"
 DEFAULT_TAG = "latest"
 DEFAULT_ACCOUNT_URL = "http://account-server:3000"
@@ -130,7 +132,7 @@ DEFAULT_CI_MODE = "true"
 # `export SYSTEM_X="${SYSTEM_X:-<default>}"`, in the twin's order (:106-114).
 SYSTEM_DEFAULTS = (
     ("SYSTEM_DOMAIN", "localhost"),
-    ("SYSTEM_ADMIN_EMAIL", "admin@rediacc.io"),
+    ("SYSTEM_ADMIN_EMAIL", ADMIN_EMAIL_DEFAULT),
     ("SYSTEM_ADMIN_PASSWORD", "admin"),
     ("SYSTEM_ORGANIZATION_NAME", "Default Organization"),
     ("SYSTEM_DEFAULT_BRIDGE_NAME", "Global Bridges"),

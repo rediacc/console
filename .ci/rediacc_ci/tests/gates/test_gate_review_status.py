@@ -72,6 +72,7 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import ACCOUNT_REPO, GH_REPO, RENET_REPO
 
 # Seven cases read tracked files seam-free and every temp-world case runs the real scripts off the tracked tree; reads need no group. See the docstring.
 
@@ -360,10 +361,10 @@ def setup(gate, t) -> None:
             for line in (
                 '[submodule "private/renet"]',
                 "\tpath = private/renet",
-                "\turl = git@github.com:rediacc/renet.git",
+                ("\turl = git@github.com:" + RENET_REPO + ".git"),
                 '[submodule "private/account"]',
                 "\tpath = private/account",
-                "\turl = git@github.com:rediacc/account.git",
+                ("\turl = git@github.com:" + ACCOUNT_REPO + ".git"),
             )
         ),
         encoding="utf-8",
@@ -404,7 +405,7 @@ def run_status(gate, t, **env) -> Run:
         "GH_FIXTURES": os.fspath(t / "fixtures"),
         "GH_CAPTURE": os.fspath(t / "capture.txt"),
         "GH_TOKEN": "fake",
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "REVIEW_STATUS_HYGIENE_DIR": os.fspath(t / "hygiene"),
         "NO_COLOR": "1",
     }
@@ -1294,7 +1295,7 @@ def run_comments_gate(gate, t, **env) -> Run:
         "PATH": "%s%s%s" % (t / "bin", os.pathsep, os.environ.get("PATH", "")),
         "GH_FIXTURES": os.fspath(t / "fixtures"),
         "GH_TOKEN": "fake",
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "PR_NUMBER": "42",
         "NO_COLOR": "1",
     }
@@ -1340,7 +1341,7 @@ def test_unreplied_summary_blocks(gate):
         # Autofix guidance is part of the contract, not decoration: a future agent must be able to act from this output with no rediscovery.
         gate.assert_contains(
             run.out,
-            "gh api repos/rediacc/console/issues/42/comments -X POST",
+            ("gh api repos/" + GH_REPO + "/issues/42/comments -X POST"),
             "the output carries the exact command that posts an answer",
         )
         gate.assert_contains(run.out, "Re: review summary 900", "pre-filled with the comment id")
@@ -1639,7 +1640,7 @@ def run_report_gate(gate, t, *, head_ref: str = "", publish_root: str = "", **en
         "PATH": "%s%s%s" % (t / "bin", os.pathsep, os.environ.get("PATH", "")),
         "GH_FIXTURES": os.fspath(t / "fixtures"),
         "GH_TOKEN": "fake",
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "PR_NUMBER": "42",
         "NO_COLOR": "1",
         "PR_HEAD_REF": head_ref or "rs-fixture-branch-with-no-snapshot",
@@ -1710,7 +1711,7 @@ def test_report_without_fence_or_heading_blocks(gate):
         gate.assert_contains(run.out, "issuecomment-901", "the block links the exact report")
         gate.assert_contains(
             run.out,
-            "gh api repos/rediacc/console/issues/42/comments -X POST",
+            ("gh api repos/" + GH_REPO + "/issues/42/comments -X POST"),
             "and carries the exact command that posts an answer",
         )
         gate.assert_contains(
@@ -2229,7 +2230,7 @@ def run_mark(gate, t, subtype: str = "") -> Run:
             "GH_FIXTURES": os.fspath(t / "fixtures"),
             "GH_CAPTURE": os.fspath(t / "capture.txt"),
             "GH_TOKEN": "fake",
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
             "PR_NUMBER": "42",
             "HEAD_SHA": NEW_SHA,
             "EXECUTION_FILE": os.fspath(t / "execution.json"),
@@ -2347,7 +2348,7 @@ def run_gate_decision(gate, t) -> Run:
             "GH_FIXTURES": os.fspath(t / "fixtures"),
             "GH_CAPTURE": os.fspath(t / "capture.txt"),
             "GH_TOKEN": "fake",
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
             "GITHUB_OUTPUT": os.fspath(t / "gate-output.txt"),
             "EVENT_NAME": "workflow_dispatch",
             "PR_NUMBER": "42",

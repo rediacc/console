@@ -27,11 +27,12 @@ import urllib.request
 from typing import TYPE_CHECKING
 
 from rediacc_ci.controls import controls_first
+from rediacc_ci.well_known import CF_API_BASE
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-API_BASE = "https://api.cloudflare.com/client/v4"
+API_BASE = CF_API_BASE
 WIDGET_NAME = "rediacc-console"
 FIX = "./run.sh rotation rotate turnstile"
 # Rotation re-syncs the SECRET only (private/account/scripts/rotation/lib/config.ts `turnstile.bitwardenSecretName`); nothing in it writes the site key, so a site-key mismatch names a different fix.

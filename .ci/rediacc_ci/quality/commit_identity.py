@@ -103,9 +103,10 @@ import time
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import GH_REPO, OPERATOR_EMAIL
 
 # The default repository, matching `${GITHUB_REPOSITORY:-rediacc/console}`.
-DEFAULT_REPO = "rediacc/console"
+DEFAULT_REPO = GH_REPO
 
 # The commands both implementations require on PATH. See the port notes for why `jq` is here when nothing below calls it.
 REQUIRED_COMMANDS = ("gh", "jq")
@@ -520,7 +521,7 @@ def selftest() -> int:
     ctl = Controls("commit-identity", floor=22, verbose=True)
 
     attributed = _row("aaaaaaa1111", "mfbayraktar", "mfbayraktar", "m@example.invalid", "M F B")
-    no_author = _row("bbbbbbb2222", None, "mfbayraktar", "muhammed@rediacc.com", "M F B")
+    no_author = _row("bbbbbbb2222", None, "mfbayraktar", OPERATOR_EMAIL, "M F B")
     no_committer = _row("ccccccc3333", "mfbayraktar", None, "m@example.invalid", "M F B")
     bot = _row(
         "ddddddd4444", "github-actions[bot]", "github-actions[bot]", "b@example.invalid", "bot"
@@ -540,7 +541,7 @@ def selftest() -> int:
     ctl.check(
         "PLANT: a null .author is reported, sha shortened to seven",
         unattributed(parse_payload(no_author)),
-        ["    bbbbbbb  M F B <muhammed@rediacc.com>"],
+        [("    bbbbbbb  M F B <" + OPERATOR_EMAIL + ">")],
     )
     ctl.check(
         "PLANT: a null .committer is reported too",
@@ -551,7 +552,7 @@ def selftest() -> int:
         "the offender list is sorted and DEDUPLICATED, as `sort -u` is",
         unattributed(parse_payload(f"{no_author}\n{no_author}\n{no_committer}")),
         [
-            "    bbbbbbb  M F B <muhammed@rediacc.com>",
+            ("    bbbbbbb  M F B <" + OPERATOR_EMAIL + ">"),
             "    ccccccc  M F B <m@example.invalid>",
         ],
     )

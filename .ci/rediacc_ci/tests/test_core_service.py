@@ -23,6 +23,7 @@ import pytest
 from rediacc_ci.core import service, stubfarm
 from rediacc_ci.core import service_shadow_driver as svc_driver
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import DOCKER_INSTALL_DOCS
 
 TWIN = ".ci/lib/service.sh"
 
@@ -33,7 +34,9 @@ BASH_DRIVER = textwrap.dedent(
     check_docker() {
         if ! command -v docker &>/dev/null; then
             log_error "Docker is not installed"
-            log_info "Install Docker from: https://docs.docker.com/get-docker/"
+            log_info "Install Docker from: """
+    + DOCKER_INSTALL_DOCS
+    + """/"
             exit 1
         fi
         if ! docker info &>/dev/null; then

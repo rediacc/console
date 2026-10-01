@@ -3,7 +3,12 @@
 Taken from what `test-install-methods.sh` hands `docker run` (captured through a fake `docker`), with the run-specific values as `@NAME@` placeholders. `@PROBE@` is the fenced version probe (`install_methods.version_fence_probe`). Comment lines are not compared against the twin: the quick-install script drops a block of comments that cited line numbers of the bash file.
 """
 
-APT = r"""
+from rediacc_ci.well_known import HOMEBREW_TAP, RELEASES_ORIGIN, UBUNTU_ARCHIVE, UBUNTU_AZURE_MIRROR
+
+RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
+
+APT = (
+    r"""
         set -e
         # Point apt at the Azure-hosted Ubuntu mirror. The upstream
         # archive.ubuntu.com / security.ubuntu.com mirrors routinely become
@@ -12,8 +17,12 @@ APT = r"""
         # healthy. Azure mirror is co-located with the runners.
         for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
             [ -f "$f" ] && sed -i \
-                -e 's|http://archive\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
-                -e 's|http://security\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+                -e 's|http://archive\.ubuntu\.com/ubuntu|"""
+    + UBUNTU_AZURE_MIRROR
+    + r"""|g' \
+                -e 's|http://security\.ubuntu\.com/ubuntu|"""
+    + UBUNTU_AZURE_MIRROR
+    + r"""|g' \
                 "$f"
         done
         # FALL BACK if the Azure mirror is the thing that is down. The comment
@@ -25,7 +34,10 @@ APT = r"""
             echo 'azure mirror unreachable; falling back to archive.ubuntu.com' >&2
             for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
                 [ -f "$f" ] && sed -i \
-                    -e 's|http://azure\.archive\.ubuntu\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' \
+                    -e 's|http://azure\.archive\.ubuntu\.com/ubuntu|"""
+    + UBUNTU_ARCHIVE
+    + (
+        r"""|g' \
                     "$f"
             done
             apt-get update -qq
@@ -39,10 +51,14 @@ APT = r"""
         echo 'deb [signed-by=/usr/share/keyrings/rediacc.gpg] @RELEASES@/apt@SUFFIX@ stable main' > /etc/apt/sources.list.d/rediacc.list
 
         # Retry apt-get update for transient network flakes on the way to
-        # releases.rediacc.com. The underlying cause of the long flake
+        # """
+        + RELEASES_HOST
+        + r""". The underlying cause of the long flake
         # windows we chased in early iterations -- CF edge caching stale
         # Packages.gz -- is now neutralised by the zone-level Cache Rule
-        # that bypasses cache for releases.rediacc.com (see
+        # that bypasses cache for """
+        + RELEASES_HOST
+        + r""" (see
         # .ci/docs/r2-setup.md), so 5x15s is sufficient.
         for attempt in 1 2 3 4 5; do
             if apt-get update -qq -o Acquire::Retries=0; then
@@ -61,6 +77,8 @@ APT = r"""
         # version apt-get itself printed while installing the package.
         @PROBE@
     """
+    )
+)
 
 APT_PROBE = "rdc --version"
 
@@ -122,7 +140,8 @@ NPM = r"""
 
 NPM_PROBE = "rdc --version"
 
-QUICK = r"""
+QUICK = (
+    r"""
         set -e
         # Point apt at the Azure-hosted Ubuntu mirror. The upstream
         # archive.ubuntu.com / security.ubuntu.com mirrors routinely become
@@ -131,8 +150,12 @@ QUICK = r"""
         # healthy. Azure mirror is co-located with the runners.
         for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
             [ -f "$f" ] && sed -i \
-                -e 's|http://archive\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
-                -e 's|http://security\.ubuntu\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+                -e 's|http://archive\.ubuntu\.com/ubuntu|"""
+    + UBUNTU_AZURE_MIRROR
+    + r"""|g' \
+                -e 's|http://security\.ubuntu\.com/ubuntu|"""
+    + UBUNTU_AZURE_MIRROR
+    + r"""|g' \
                 "$f"
         done
         # FALL BACK if the Azure mirror is the thing that is down. The comment
@@ -144,7 +167,9 @@ QUICK = r"""
             echo 'azure mirror unreachable; falling back to archive.ubuntu.com' >&2
             for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
                 [ -f "$f" ] && sed -i \
-                    -e 's|http://azure\.archive\.ubuntu\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' \
+                    -e 's|http://azure\.archive\.ubuntu\.com/ubuntu|"""
+    + UBUNTU_ARCHIVE
+    + r"""|g' \
                     "$f"
             done
             apt-get update -qq
@@ -171,15 +196,20 @@ QUICK = r"""
         # by the container's shell, where a tilde inside a string would not.
         @PROBE@
     """
+)
 
 QUICK_PROBE = "$HOME/.local/bin/rdc --version"
 
-HOMEBREW = r"""
+HOMEBREW = (
+    r"""
         set -e
-        brew tap rediacc/tap
+        brew tap """
+    + HOMEBREW_TAP
+    + r"""
         brew install @TAP@
         # Fenced: brew prints the formula version while installing.
         @PROBE@
     """
+)
 
 HOMEBREW_PROBE = "rdc --version"

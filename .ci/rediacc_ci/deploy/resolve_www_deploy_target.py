@@ -14,6 +14,11 @@ from __future__ import annotations
 import os
 import sys
 
+from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
+
+EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
+SITE_HOST = SITE_ORIGIN.removeprefix("https://")
+
 SELF = "resolve-www-deploy-target.py"
 
 
@@ -33,12 +38,12 @@ def main(argv: list[str]) -> int:
     if target == "stable":
         script = "deploy-www.sh"
         worker = "rediacc-www"
-        domain = "www.rediacc.com"
+        domain = SITE_HOST
         sandbox = ""
     else:
         script = "deploy-edge.sh"
         worker = "edge-rediacc-www"
-        domain = "edge.rediacc.com"
+        domain = EDGE_HOST
         sandbox = "--sandbox"
 
     with open(output_path, "a", encoding="utf-8") as fh:

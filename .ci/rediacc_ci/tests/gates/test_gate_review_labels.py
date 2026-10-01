@@ -35,6 +35,7 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "review", "claude-review-gate.sh")
 LABELS_FILE = paths.from_root(".github", "labels.yml")
@@ -232,7 +233,7 @@ class World:
             "GH_CAPTURE": str(self.capture),
             "GH_CALLS": str(self.calls),
             "GH_TOKEN": "fake",
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
             "PR_NUMBER": "42",
             "HEAD_SHA": HEAD_SHA,
             "EXECUTION_FILE": str(self.execution),
@@ -278,7 +279,7 @@ class World:
         names = []
         inblock = False
         for line in self.captured().splitlines():
-            if line == "WRITE POST repos/rediacc/console/labels":
+            if line == ("WRITE POST repos/" + GH_REPO + "/labels"):
                 inblock = True
                 continue
             if line == "ENDCALL":
@@ -787,7 +788,7 @@ def test_stale_ledger_label_is_removed(gate, tmp_path):
     gate.assert_eq(world.ledger(), "bug", "and the ledger is rewritten to the new set")
     gate.assert_contains(
         world.captured(),
-        "WRITE PATCH repos/rediacc/console/issues/comments/900",
+        ("WRITE PATCH repos/" + GH_REPO + "/issues/comments/900"),
         "the existing ledger comment is updated, never duplicated",
     )
     gate.log_pass("a superseded verdict removes ONLY the labels the ledger recorded")
@@ -984,7 +985,7 @@ def test_workflow_step_is_guarded_against_the_arm_not_being_on_main(gate):
             "the Apply PR labels step lost its grep guard; until the arm is on main it will "
             "fail the review job"
         )
-    if "github.repository == 'rediacc/console'" not in workflow:
+    if ("github.repository == '" + GH_REPO + "'") not in workflow:
         gate.log_fail(
             "the Apply PR labels step is not scoped to console; the submodule repos consume no "
             "bump labels and have no inventory gate"

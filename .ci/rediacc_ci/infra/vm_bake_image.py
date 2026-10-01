@@ -36,22 +36,23 @@ import urllib.request
 from typing import TYPE_CHECKING
 
 from rediacc_ci.infra import vm_bake_key
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
     RunFn = Callable[..., subprocess.CompletedProcess[str]]
 
-REPOSITORY = "ghcr.io/rediacc/ci-vm-bake"
+REPOSITORY = IMAGE_REGISTRY + "/ci-vm-bake"
 ARTIFACT_TYPE = "application/vnd.rediacc.vm-bake.v1"
 LAYER_MEDIA_TYPE = "application/vnd.rediacc.vm-image.qcow2"
-SOURCE_ANNOTATION = "org.opencontainers.image.source=https://github.com/rediacc/console"
+SOURCE_ANNOTATION = ("org.opencontainers.image.source=" + GH_ORIGIN + "/") + GH_REPO
 
 ORAS_VERSION = "1.3.4"
 ORAS_SHA256_LINUX_AMD64 = "f27adb935022d94df8dc77719c322dda592c78a0d57a6f7dcdd8d900b248c454"
-ORAS_URL = (
-    "https://github.com/oras-project/oras/releases/download/v%s/oras_%s_linux_amd64.tar.gz"
-    % (ORAS_VERSION, ORAS_VERSION)
+ORAS_URL = (GH_ORIGIN + "/oras-project/oras/releases/download/v%s/oras_%s_linux_amd64.tar.gz") % (
+    ORAS_VERSION,
+    ORAS_VERSION,
 )
 
 # The build VM gets its own libvirt NAT network rather than libvirt's "default", which a host without libvirt-daemon-config-network lacks; 192.168.150.0/24 stays clear of the ops fleet (192.168.111.0/24) and of libvirt's default (192.168.122.0/24).

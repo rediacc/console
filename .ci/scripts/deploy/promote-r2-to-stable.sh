@@ -60,7 +60,7 @@ require_cmd aws
 : "${CLOUDFLARE_R2_ENDPOINT:?promote-r2-to-stable.sh: CLOUDFLARE_R2_ENDPOINT must be set}"
 EDGE_VERSION="${EDGE_VERSION:?promote-r2-to-stable.sh: EDGE_VERSION must be set}"
 
-BUCKET="rediacc-releases"
+BUCKET="$WK_RELEASES_BUCKET"
 EP="--endpoint-url $CLOUDFLARE_R2_ENDPOINT"
 
 CC_MUTABLE="no-cache"
@@ -167,7 +167,7 @@ for dir in cli apt rpm apk archlinux; do
     fi
 
     while IFS= read -r f; do
-        PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#"$TMP"/}")
+        PURGE_URLS+=("$WK_RELEASES_ORIGIN/${dir}/stable/${f#"$TMP"/}")
     done < <(find "$TMP" -type f)
     rm -rf "$TMP"
 done

@@ -353,6 +353,11 @@ def test_a_planted_defect_makes_the_differential_fail(
     )
     (package / "tests").mkdir()
     (package / "tests" / "__init__.py").write_text("", encoding="utf-8")
+    # The registry the copied package reads sits beside the package, in `config/`.
+    (tmp_path / "config").mkdir()
+    shutil.copy2(
+        paths.from_root(".ci/config/well-known.env"), tmp_path / "config" / "well-known.env"
+    )
     target = package / "core" / "release_state_validator.py"
     text = target.read_text(encoding="utf-8")
     assert text.count(find) == 1, "the mutation anchor %r moved" % name

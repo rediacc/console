@@ -144,6 +144,10 @@ def _fixture_root(tmp_path: pathlib.Path, *, worker: str = "dir") -> pathlib.Pat
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / "workers").mkdir(parents=True, exist_ok=True)
     shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     for rel, body in (
         (("version", "resolve-version.sh"), FAKE_RESOLVE_VERSION),

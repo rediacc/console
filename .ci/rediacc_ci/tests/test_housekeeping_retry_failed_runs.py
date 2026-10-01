@@ -114,6 +114,10 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_common: bool = True) -> 
     if with_common:
         (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
         shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+        (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(
+            ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+        )
     else:
         assert not (root / ".ci" / "scripts" / "lib" / "common.sh").exists()
     return root

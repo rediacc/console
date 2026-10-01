@@ -70,6 +70,7 @@ import time
 
 from rediacc_ci import log
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import GH_ORIGIN
 
 # The three variables `require_var` insists on, in the twin's order.
 REQUIRED_VARS = ("PR_NUMBER", "GH_TOKEN", "GITHUB_REPOSITORY")
@@ -330,7 +331,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Please resolve all review threads before merging.")
         print()
         print("Option 1: Via GitHub UI")
-        print("  1. Go to the PR: https://github.com/%s/pull/%s" % (repository, pr_number))
+        print(("  1. Go to the PR: " + GH_ORIGIN + "/%s/pull/%s") % (repository, pr_number))
         print("  2. Click 'Resolve conversation' on each thread")
         print()
         print("Option 2: Via CLI (resolve all threads at once)")

@@ -24,6 +24,7 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 ROOT = paths.repo_root()
 SUBJECT = ROOT / "scripts" / "ops" / "scrub-sentinel.sh"
@@ -86,7 +87,7 @@ def test_dry_run_completes_with_no_credentials(gate):
     result = dry_run(gate)
     gate.assert_exit(0, result, "dry-run must succeed even with bad credentials")
     gate.assert_contains(
-        result.combined, "s3://rediacc-releases/cli/%s/" % VERSION, "cli plan line printed"
+        result.combined, ("s3://" + RELEASES_BUCKET + "/cli/%s/") % VERSION, "cli plan line printed"
     )
     gate.assert_contains(
         result.combined, "dry-run: pass --execute", "script reached its final exit message"

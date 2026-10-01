@@ -27,6 +27,7 @@ if TYPE_CHECKING:  # pathlib appears only in `tmp_path` annotations, never at ru
 
 TWIN_REL = ".ci/scripts/release/validate-stage-artifacts.sh"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 MODULE = "validate_stage_artifacts"
 SLUG = "validate-stage-artifacts"
 SUM_MARK = "--- step-summary ---\n"
@@ -41,7 +42,9 @@ def _build_fixture(root: pathlib.Path, twin_root: str) -> None:
     """Copy just enough of the real tree for the recording's own root resolution to have landed on `root` instead of this checkout."""
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "release").mkdir(parents=True, exist_ok=True)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(os.path.join(twin_root, COMMON_REL), root / COMMON_REL)
+    shutil.copy2(os.path.join(twin_root, WELL_KNOWN_REL), root / WELL_KNOWN_REL)
 
 
 def _full_dist(root: pathlib.Path) -> None:

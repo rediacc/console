@@ -16,6 +16,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import env
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # The awkward file. Every line here exists because some spelling of it is in a real .env or a real pins file in this tree: `export ` from a shell profile,
 # quoted values from account.sh, `=` inside base64 from the crypto keys, blank
@@ -368,12 +369,12 @@ def test_keys_verb_prints_names_in_file_order_and_no_values(tmp_path) -> None:
 
 def test_get_verb_prints_the_value_and_exits_one_when_absent(tmp_path) -> None:
     """Both directions, because the exit code is the half rdc.sh:247 could not get."""
-    path = _write(tmp_path, "REDIACC_ACCOUNT_SERVER=http://localhost:4800\n")
+    path = _write(tmp_path, "REDIACC_ACCOUNT_SERVER=http://localhost:%d\n" % ACCOUNT_DEV_PORT)
     rc, out, err = _module(
         "python3 -m rediacc_ci.core.env get %s REDIACC_ACCOUNT_SERVER" % _q(str(path))
     )
     assert rc == 0, err
-    assert out.strip() == "http://localhost:4800"
+    assert out.strip() == "http://localhost:%d" % ACCOUNT_DEV_PORT
 
     rc, out, _err = _module("python3 -m rediacc_ci.core.env get %s NOPE" % _q(str(path)))
     assert rc == 1

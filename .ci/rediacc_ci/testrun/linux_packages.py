@@ -24,11 +24,12 @@ import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import common
+from rediacc_ci.well_known import RELEASES_ORIGIN
 
 PKG_NAME = "rediacc-cli"
 PKG_BINARY_NAME = "rdc"
 TEST_VERSION = "99.0.0"
-DEFAULT_RELEASES = "https://releases.rediacc.com"
+DEFAULT_RELEASES = RELEASES_ORIGIN
 PUBLISHED_KEY_REL = ".ci/keys/gpg-public.asc"
 APK_KEY_NAME = ".SIGN.RSA.releases@rediacc.com.rsa.pub"
 DUMMY_BINARY = '#!/bin/sh\necho "rdc version 99.0.0"\n'

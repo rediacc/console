@@ -37,6 +37,7 @@ import pytest
 from rediacc_ci.ci import cancel_older_runs as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -144,7 +145,7 @@ def restricted_bin(tmp_path: pathlib.Path, *, drop: str) -> pathlib.Path:
 def base_env() -> dict[str, str | None]:
     return {
         "GITHUB_RUN_ID": CURRENT_ID,
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "GH_TOKEN": "t",
         "FAKE_RUN_JSON": CURRENT_RUN_JSON,
     }
@@ -185,12 +186,14 @@ def run(
 
 def listing_call(workflow: str = "ci.yml", branch: str = "main") -> str:
     return (
-        "FAKEGH| api repos/rediacc/console/actions/workflows/%s/runs"
-        "?status=in_progress&branch=%s&per_page=10\n" % (workflow, branch)
-    )
+        "FAKEGH| api repos/"
+        + GH_REPO
+        + "/actions/workflows/%s/runs"
+        + "?status=in_progress&branch=%s&per_page=10\n"
+    ) % (workflow, branch)
 
 
-RUN_CALL = "FAKEGH| api repos/rediacc/console/actions/runs/9\n"
+RUN_CALL = "FAKEGH| api repos/" + GH_REPO + "/actions/runs/9\n"
 
 # What every LOOP case passes. `--poll-interval 0` because the sleep is not what is under test and a real second per case is a real second; the timeout is generous because these cases leave through the clean door, never through it.
 LOOP_ARGS = ("--timeout", "30", "--poll-interval", "0")
@@ -488,7 +491,7 @@ def test_the_filter_excludes_this_run_and_anything_newer() -> None:
     assert calls == (
         RUN_CALL
         + listing_call()
-        + "FAKEGH| api -X POST repos/rediacc/console/actions/runs/5/force-cancel\n"
+        + ("FAKEGH| api -X POST repos/" + GH_REPO + "/actions/runs/5/force-cancel\n")
         + listing_call()
     )
 
@@ -506,7 +509,7 @@ def test_quirk_3_the_api_response_body_leaks_onto_stdout() -> None:
 def test_force_cancel_falls_back_to_plain_cancel() -> None:
     _, _, stderr, calls = recorded("force-cancel-falls-back-to-cancel")
     assert "✓ Cancelled run #50 (force-cancel unavailable)\n" in stderr
-    assert "FAKEGH| api -X POST repos/rediacc/console/actions/runs/5/cancel\n" in calls
+    assert ("FAKEGH| api -X POST repos/" + GH_REPO + "/actions/runs/5/cancel\n") in calls
 
 
 def test_both_endpoints_failing_is_a_warning_and_still_a_pass() -> None:

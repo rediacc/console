@@ -66,6 +66,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci.core import account_lifecycle as lifecycle
 from rediacc_ci.core.stubfarm import Farm
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 if TYPE_CHECKING:  # annotation-only import
     from collections.abc import Mapping
@@ -253,7 +254,7 @@ def gateway(rc: int = 0) -> dict:
 
 DEV_ENV = {"REDIACC_BWS_PROFILES": "account-dev"}
 E2E_ENV_BASE = {"REDIACC_BWS_PROFILES": "account-e2e"}
-STRIPE_ENV = {"STRIPE_SANDBOX_SECRET_KEY": "sk_test_shadow", "GATEWAY_PORT": "4800"}
+STRIPE_ENV = {"STRIPE_SANDBOX_SECRET_KEY": "sk_test_shadow", "GATEWAY_PORT": str(ACCOUNT_DEV_PORT)}
 
 
 # ------------------------------------------------------------------ fixtures, by name, built identically for both sides
@@ -417,7 +418,7 @@ SCENARIOS: dict[str, list[Case]] = {
         ),
     ],
     "stripe": [
-        Case("no-key", "stripe-auto", env={"GATEWAY_PORT": "4800"}, pids=True),
+        Case("no-key", "stripe-auto", env={"GATEWAY_PORT": str(ACCOUNT_DEV_PORT)}, pids=True),
         Case(
             "no-cli",
             "stripe-auto",

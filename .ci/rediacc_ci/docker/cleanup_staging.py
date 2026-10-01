@@ -26,6 +26,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
 
@@ -36,7 +37,7 @@ PUBLISH_IMAGES = ("renet", "rdc")
 # `.ci/config/constants.sh:162`,
 # `PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"`.
 # `:-` means unset OR EMPTY takes the default, which is why the read below is `or` rather than a two-argument `get`.
-REGISTRY_DEFAULT = "ghcr.io/rediacc"
+REGISTRY_DEFAULT = IMAGE_REGISTRY
 
 # The prefix `${PUBLISH_DOCKER_REGISTRY#ghcr.io/}` strips (twin :67).
 GHCR_PREFIX = "ghcr.io/"

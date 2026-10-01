@@ -41,6 +41,7 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.infra import ci_pull_images as cpi
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-pull-images.sh"
@@ -205,9 +206,11 @@ def test_the_twin_parses_under_bash() -> None:
 def _bash_resolve(env: dict[str, str]) -> tuple[str, str, str]:
     """Lines 40-43, run by the real bash under the case's environment."""
     script = (
-        'DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc}"; '
-        'TAG="${TAG:-latest}"; RENET_TAG="${RENET_TAG:-$TAG}"; WEB_TAG="${WEB_TAG:-$TAG}"; '
-        'printf \'%s\\n%s\\n%s\\n\' "$DOCKER_REGISTRY" "$RENET_TAG" "$WEB_TAG"'
+        'DOCKER_REGISTRY="${DOCKER_REGISTRY:-'
+        + IMAGE_REGISTRY
+        + '}"; '
+        + 'TAG="${TAG:-latest}"; RENET_TAG="${RENET_TAG:-$TAG}"; WEB_TAG="${WEB_TAG:-$TAG}"; '
+        + 'printf \'%s\\n%s\\n%s\\n\' "$DOCKER_REGISTRY" "$RENET_TAG" "$WEB_TAG"'
     )
     out = subprocess.run(
         [BASH, "-c", script],
@@ -261,13 +264,14 @@ def test_the_token_check_comes_first_when_both_are_missing() -> None:
 
 def test_the_happy_path_is_five_docker_calls_in_this_order() -> None:
     exit_code, stdout, stderr, calls, _ = _sides(
-        "happy", FAKE_DOCKER_IMAGES="REPOSITORY:TAG\tSIZE\nghcr.io/rediacc/renet:latest\t10MB\n"
+        "happy",
+        FAKE_DOCKER_IMAGES=("REPOSITORY:TAG\tSIZE\n" + IMAGE_REGISTRY + "/renet:latest\t10MB\n"),
     )
     assert exit_code == 0
     assert calls == [
         "docker\tlogin\tghcr.io\t-u\t%s\t--password-stdin\tstdin='%s\\n'" % (ACTOR, TOKEN),
-        "docker\tpull\t--quiet\tghcr.io/rediacc/server:latest",
-        "docker\tpull\t--quiet\tghcr.io/rediacc/renet:latest",
+        ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/server:latest"),
+        ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/renet:latest"),
         "docker\tlogout\tghcr.io",
         # `\\t` -- TWO CHARACTERS. bash does not interpret `\t` inside double quotes, so docker receives a backslash and a `t` and expands it itself. A real tab here is the reflex mistake, and it is what the port shipped until this case fired.
         "docker\timages\t--format\ttable {{.Repository}}:{{.Tag}}\\t{{.Size}}",
@@ -280,7 +284,7 @@ def test_the_happy_path_is_five_docker_calls_in_this_order() -> None:
     assert out[-3:] == [
         "Pulled images:",
         "REPOSITORY:TAG\tSIZE",
-        "ghcr.io/rediacc/renet:latest\t10MB",
+        (IMAGE_REGISTRY + "/renet:latest\t10MB"),
     ], out
 
 
@@ -288,12 +292,14 @@ def test_the_final_grep_drops_rows_that_are_neither_rediacc_nor_the_header() -> 
     """`grep -E "(rediacc|REPOSITORY)"` is what decides these bytes, and both sides run the SAME grep binary rather than one of them re-implementing it."""
     _, stdout, _, _, _ = _sides(
         "grep",
-        FAKE_DOCKER_IMAGES="REPOSITORY:TAG\tSIZE\nubuntu:24.04\t80MB\nghcr.io/rediacc/renet:1\t9MB\n",
+        FAKE_DOCKER_IMAGES=(
+            "REPOSITORY:TAG\tSIZE\nubuntu:24.04\t80MB\n" + IMAGE_REGISTRY + "/renet:1\t9MB\n"
+        ),
     )
     out = stdout.decode().splitlines()
     assert "ubuntu:24.04\t80MB" not in out
     assert "REPOSITORY:TAG\tSIZE" in out
-    assert "ghcr.io/rediacc/renet:1\t9MB" in out
+    assert (IMAGE_REGISTRY + "/renet:1\t9MB") in out
 
 
 def test_no_matching_images_still_exits_zero() -> None:
@@ -305,18 +311,18 @@ def test_no_matching_images_still_exits_zero() -> None:
 
 def test_tag_feeds_both_images_and_either_can_override_it() -> None:
     _, _, _, calls, _ = _sides("tag", TAG="ci-42")
-    assert "docker\tpull\t--quiet\tghcr.io/rediacc/server:ci-42" in calls
-    assert "docker\tpull\t--quiet\tghcr.io/rediacc/renet:ci-42" in calls
+    assert ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/server:ci-42") in calls
+    assert ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/renet:ci-42") in calls
 
     _, _, _, calls, _ = _sides("tag-split", TAG="ci-42", WEB_TAG="w-9")
-    assert "docker\tpull\t--quiet\tghcr.io/rediacc/server:w-9" in calls
-    assert "docker\tpull\t--quiet\tghcr.io/rediacc/renet:ci-42" in calls
+    assert ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/server:w-9") in calls
+    assert ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/renet:ci-42") in calls
 
 
 def test_docker_registry_moves_renet_and_not_server() -> None:
     """PRESERVED SHAPE. The header documents DOCKER_REGISTRY as "Registry URL", but line 54 hard-codes `ghcr.io/rediacc/server`, so this variable moves ONE of the two images. If that ever changes, this test goes red first."""
     _, _, _, calls, _ = _sides("registry", DOCKER_REGISTRY="ghcr.io/example")
-    assert "docker\tpull\t--quiet\tghcr.io/rediacc/server:latest" in calls
+    assert ("docker\tpull\t--quiet\t" + IMAGE_REGISTRY + "/server:latest") in calls
     assert "docker\tpull\t--quiet\tghcr.io/example/renet:latest" in calls
 
 

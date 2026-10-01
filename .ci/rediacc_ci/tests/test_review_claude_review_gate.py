@@ -46,6 +46,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.review import claude_review_gate as gate
+from rediacc_ci.well_known import ACCOUNT_REPO, RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "review" / "claude-review-gate.sh"
@@ -192,13 +193,19 @@ with open(fixture, "rb") as fh:
     sys.stdout.buffer.write(fh.read())
 '''
 
-GITMODULES = """[submodule "private/renet"]
+GITMODULES = (
+    """[submodule "private/renet"]
 \tpath = private/renet
-\turl = git@github.com:rediacc/renet.git
+\turl = git@github.com:"""
+    + RENET_REPO
+    + """.git
 [submodule "private/account"]
 \tpath = private/account
-\turl = git@github.com:rediacc/account.git
+\turl = git@github.com:"""
+    + ACCOUNT_REPO
+    + """.git
 """
+)
 
 
 def _now_iso(delta_seconds: int = -60) -> str:

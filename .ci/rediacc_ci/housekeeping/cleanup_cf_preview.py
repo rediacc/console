@@ -67,6 +67,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 USAGE = "Usage: cleanup-cf-preview.sh --branch <branch_name> [--dry-run]"
 
@@ -77,7 +78,7 @@ DRY_RUN_ON = "true"
 CF_PAGES_PROJECT = "rediacc"
 
 # `https://api.cloudflare.com/client/v4$endpoint` (:46).
-CF_API_BASE = "https://api.cloudflare.com/client/v4"
+CF_API_BASE = WK_CF_API_BASE
 
 # `per_page=25` in the query and `-lt 25` in the loop guard (:66, :80). ONE
 # constant, because a page size that disagreed with the termination test would either stop after page 1 or never stop at all.

@@ -29,6 +29,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import upload_to_r2 as port
 from rediacc_ci.deploy import write_once_guard_check as harness
+from rediacc_ci.well_known import RELEASES_BUCKET as WK_RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -163,6 +164,7 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     shutil.copy2(VALIDATOR, root / ".ci" / "scripts" / "lib" / VALIDATOR.name)
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
+    shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "deploy" / PORT.name)
 
@@ -245,13 +247,14 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
 
 def _cp(src: str, dest: str, cache: str) -> str:
     return (
-        "aws\ts3\tcp\t%s\ts3://rediacc-releases/%s\t--endpoint-url\t%s\t--cache-control\t%s\t--no-progress\n"
-        % (
-            src,
-            dest,
-            ENDPOINT,
-            cache,
-        )
+        "aws\ts3\tcp\t%s\ts3://"
+        + WK_RELEASES_BUCKET
+        + "/%s\t--endpoint-url\t%s\t--cache-control\t%s\t--no-progress\n"
+    ) % (
+        src,
+        dest,
+        ENDPOINT,
+        cache,
     )
 
 
@@ -272,28 +275,45 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
     cli = str(root / "dist" / "cli")
     npm = str(root / "dist" / "npm")
     assert old_calls == (
-        "aws\ts3api\thead-object\t--bucket\trediacc-releases\t--key\tcli/v1.2.3/.released\t"
-        "--endpoint-url\t%s\n"
+        (
+            "aws\ts3api\thead-object\t--bucket\t"
+            + WK_RELEASES_BUCKET
+            + "\t--key\tcli/v1.2.3/.released\t"
+            + "--endpoint-url\t%s\n"
+        )
         % ENDPOINT
         + _cp("%s/rdc-darwin-arm64" % cli, "cli/v1.2.3/rdc-darwin-arm64", IMMUTABLE)
         + _cp("%s/rdc-linux-x64" % cli, "cli/v1.2.3/rdc-linux-x64", IMMUTABLE)
         + _cp("%s/rdc-darwin-arm64" % cli, "cli/edge/rdc-darwin-arm64", "no-cache")
         + _cp("%s/rdc-linux-x64" % cli, "cli/edge/rdc-linux-x64", "no-cache")
         + _cp("%s/manifest.json" % cli, "cli/edge/manifest.json", "no-cache")
-        + "aws\ts3\tcp\t-\ts3://rediacc-releases/cli/edge/latest.json\t--endpoint-url\t%s\t"
-        "--content-type\tapplication/json\t--cache-control\tno-cache\t--no-progress\n"
+        + (
+            "aws\ts3\tcp\t-\ts3://"
+            + WK_RELEASES_BUCKET
+            + "/cli/edge/latest.json\t--endpoint-url\t%s\t"
+            + "--content-type\tapplication/json\t--cache-control\tno-cache\t--no-progress\n"
+        )
         % ENDPOINT
         + 'STDIN<<<{"version":"1.2.3"}\n>>>\n'
-        + "aws\ts3\tcp\ts3://rediacc-releases/cli/versions.json\t-\t--endpoint-url\t%s\n" % ENDPOINT
-        + "aws\ts3\tcp\t-\ts3://rediacc-releases/cli/versions.json\t--endpoint-url\t%s\t"
-        "--content-type\tapplication/json\t--cache-control\tno-cache\t--no-progress\n"
+        + (
+            "aws\ts3\tcp\ts3://"
+            + WK_RELEASES_BUCKET
+            + "/cli/versions.json\t-\t--endpoint-url\t%s\n"
+        )
+        % ENDPOINT
+        + (
+            "aws\ts3\tcp\t-\ts3://"
+            + WK_RELEASES_BUCKET
+            + "/cli/versions.json\t--endpoint-url\t%s\t"
+            + "--content-type\tapplication/json\t--cache-control\tno-cache\t--no-progress\n"
+        )
         % ENDPOINT
         + 'STDIN<<<[\n  "1.2.3"\n]\n>>>\n'
         + _cp("%s/rediacc-cli-1.2.3.tgz" % npm, "npm/edge/rediacc-cli-1.2.3.tgz", IMMUTABLE)
         + _cp("%s/rediacc-cli-latest.tgz" % npm, "npm/edge/rediacc-cli-latest.tgz", "no-cache")
     )
     assert "✓   Artifacts uploaded: 3\n" in old.stderr
-    assert "✓   Bucket: rediacc-releases\n" in old.stderr
+    assert ("✓   Bucket: " + WK_RELEASES_BUCKET + "\n") in old.stderr
     _assert_agree(old, new, "happy-path", old_calls, new_calls)
 
 
@@ -308,7 +328,7 @@ def test_the_binary_order_is_the_shells_glob_order(tmp_path: pathlib.Path) -> No
     versioned = [
         line.split("\t")[4].rsplit("/", 1)[1]
         for line in old_calls.splitlines()
-        if "s3://rediacc-releases/cli/v1.2.3/" in line
+        if ("s3://" + WK_RELEASES_BUCKET + "/cli/v1.2.3/") in line
     ]
     assert versioned == [
         "rdc-Windows-x64.exe",
@@ -331,7 +351,7 @@ def test_a_pr_channel_never_writes_the_versioned_prefix(tmp_path: pathlib.Path) 
     assert "s3api" not in old_calls, "a pr channel probed the release sentinel"
     assert "cli/v1.2.3/" not in old_calls, "a pr channel wrote the immutable prefix"
     assert "versions.json" not in old_calls, "a pr channel touched the retention tracker"
-    assert "s3://rediacc-releases/cli/pr-9/latest.json" in old_calls
+    assert ("s3://" + WK_RELEASES_BUCKET + "/cli/pr-9/latest.json") in old_calls
     assert (
         "✓ CLI: uploaded to cli/pr-9/ (versioned path skipped; not a release channel)\n"
         in old.stderr
@@ -348,8 +368,8 @@ def test_dry_run_makes_no_call_at_all(tmp_path: pathlib.Path) -> None:
     assert old_calls == "", "a dry run reached aws"
     assert (
         "✓ [DRY-RUN] sentinel-aware guard would check "
-        "s3://rediacc-releases/cli/v1.2.3/ (cli v1.2.3)\n" in old.stderr
-    )
+        "s3://" + WK_RELEASES_BUCKET + "/cli/v1.2.3/ (cli v1.2.3)\n"
+    ) in old.stderr
     assert "✓ [DRY-RUN] Would update cli/versions.json\n" in old.stderr
     assert "✓   Artifacts uploaded: 3\n" in old.stderr, "the counter still counts in a dry run"
     _assert_agree(old, new, "dry-run", old_calls, new_calls)
@@ -409,8 +429,10 @@ def test_sealed_with_binaries_skips_the_prefix_but_still_moves_the_pointer(
         tmp_path, SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="16"
     )
     assert old.returncode == 0
-    assert "s3://rediacc-releases/cli/v1.2.3/rdc-" not in old_calls, "a sealed prefix was rewritten"
-    assert "s3://rediacc-releases/cli/edge/latest.json" in old_calls, (
+    assert ("s3://" + WK_RELEASES_BUCKET + "/cli/v1.2.3/rdc-") not in old_calls, (
+        "a sealed prefix was rewritten"
+    )
+    assert ("s3://" + WK_RELEASES_BUCKET + "/cli/edge/latest.json") in old_calls, (
         "the pointer stopped refreshing"
     )
     assert "✓ Idempotent: cli v1.2.3 is already sealed with 16 binary object(s).\n" in old.stderr
@@ -423,9 +445,11 @@ def test_sealed_but_empty_refuses_loudly_and_stops_the_run(tmp_path: pathlib.Pat
     old, new, old_calls, new_calls = run_both(tmp_path, SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="0")
     assert old.returncode == 1
     assert (
-        "✗ Corrupt release state: s3://rediacc-releases/cli/v1.2.3/ is SEALED "
-        "(.released present) but has NO binaries.\n" in old.stderr
-    )
+        "✗ Corrupt release state: s3://"
+        + WK_RELEASES_BUCKET
+        + "/cli/v1.2.3/ is SEALED "
+        + "(.released present) but has NO binaries.\n"
+    ) in old.stderr
     assert "scripts/ops/scrub-sentinel.sh v1.2.3 --execute" in old.stderr
     assert "R2 upload complete" not in old.stderr, "the run continued past the refusal"
     assert old_calls.count("aws\ts3\tcp") == 0
@@ -476,10 +500,10 @@ def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None
     assert "✓   Deleting cli/v9.9.21/\n" in old.stderr
     assert old_calls.count("aws\ts3\trm") == 3
     assert (
-        "aws\ts3\trm\ts3://rediacc-releases/cli/v9.9.19/\t--recursive\t--endpoint-url\t%s\n"
-        % ENDPOINT
-        in old_calls
-    )
+        "aws\ts3\trm\ts3://"
+        + WK_RELEASES_BUCKET
+        + "/cli/v9.9.19/\t--recursive\t--endpoint-url\t%s\n"
+    ) % ENDPOINT in old_calls
     _assert_agree(old, new, "prune", old_calls, new_calls)
 
 
@@ -523,8 +547,8 @@ def test_a_failed_tracker_read_is_silent_on_both_streams(tmp_path: pathlib.Path)
         tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), FAKE_GET_RC="255"
     )
     assert "ExpiredToken" not in old.stderr
-    assert "call: aws s3 cp s3://rediacc-releases/cli/versions.json" not in old.stderr
-    assert "aws\ts3\tcp\ts3://rediacc-releases/cli/versions.json\t-" in old_calls
+    assert ("call: aws s3 cp s3://" + WK_RELEASES_BUCKET + "/cli/versions.json") not in old.stderr
+    assert ("aws\ts3\tcp\ts3://" + WK_RELEASES_BUCKET + "/cli/versions.json\t-") in old_calls
     _assert_agree(old, new, "silent-get", old_calls, new_calls)
 
 
@@ -567,8 +591,8 @@ def test_without_jq_version_tracking_is_skipped_with_a_warning(tmp_path: pathlib
     )
     assert old.returncode == 0
     assert "⚠ jq not available, skipping version tracking for cli\n" in old.stderr
-    assert "aws\ts3\tcp\t-\ts3://rediacc-releases/cli/versions.json" not in old_calls
-    assert "aws\ts3\tcp\ts3://rediacc-releases/cli/versions.json\t-" in old_calls, (
+    assert ("aws\ts3\tcp\t-\ts3://" + WK_RELEASES_BUCKET + "/cli/versions.json") not in old_calls
+    assert ("aws\ts3\tcp\ts3://" + WK_RELEASES_BUCKET + "/cli/versions.json\t-") in old_calls, (
         "the tracker READ happens before the jq check and is wasted; that is the twin's order"
     )
     _assert_agree(old, new, "no-jq", old_calls, new_calls)
@@ -603,7 +627,7 @@ def test_skip_release_on_a_pr_channel_uploads_as_usual(tmp_path: pathlib.Path) -
         "✓ --skip-release ignored on channel 'pr-9': not a release channel, uploading as usual\n"
         "→ Uploading v1.2.3 to R2 channel: pr-9\n"
     )
-    assert "s3://rediacc-releases/cli/pr-9/latest.json" in old_calls
+    assert ("s3://" + WK_RELEASES_BUCKET + "/cli/pr-9/latest.json") in old_calls
     _assert_agree(old, new, "skip-pr", old_calls, new_calls)
 
 
@@ -625,7 +649,7 @@ def test_the_env_spellings_that_do_not_skip(tmp_path: pathlib.Path, spelling: st
     old, new, old_calls, new_calls = run_both(tmp_path, SKIP_RELEASE=spelling)
     assert old.returncode == 0
     assert "RELEASE SKIPPED" not in old.stdout, f"{spelling!r} was treated as a skip"
-    assert "s3://rediacc-releases/cli/edge/latest.json" in old_calls
+    assert ("s3://" + WK_RELEASES_BUCKET + "/cli/edge/latest.json") in old_calls
     _assert_agree(old, new, f"no-skip-env-{spelling}", old_calls, new_calls)
 
 
@@ -682,9 +706,11 @@ def test_the_latest_tarball_is_uploaded_mutable_and_never_versioned(
     uploads = [line for line in old_calls.splitlines() if "rediacc-cli-latest.tgz" in line]
     assert len(uploads) == 1, uploads
     assert (
-        "\ts3://rediacc-releases/npm/edge/rediacc-cli-latest.tgz\t--endpoint-url\t%s\t"
-        "--cache-control\tno-cache\t" % ENDPOINT in old_calls
-    )
+        "\ts3://"
+        + WK_RELEASES_BUCKET
+        + "/npm/edge/rediacc-cli-latest.tgz\t--endpoint-url\t%s\t"
+        + "--cache-control\tno-cache\t"
+    ) % ENDPOINT in old_calls
     _assert_agree(old, new, "npm-latest", old_calls, new_calls)
 
 
@@ -753,7 +779,7 @@ def test_the_npm_directory_is_read_from_the_environment(tmp_path: pathlib.Path) 
     old, old_calls = _run(root, "old", NPM_DIR=str(root / "alt"))
     new, new_calls = _run(root, "new", NPM_DIR=str(root / "alt"))
     assert old.returncode == 0
-    assert "s3://rediacc-releases/npm/edge/rediacc-cli-9.9.9.tgz" in old_calls
+    assert ("s3://" + WK_RELEASES_BUCKET + "/npm/edge/rediacc-cli-9.9.9.tgz") in old_calls
     _assert_agree(old, new, "npm-dir-override", old_calls, new_calls)
 
 
@@ -843,16 +869,11 @@ def test_divergence_a_flag_without_a_value_is_bashs_unbound_variable(
 # --------------------------------------------------------------------------- Staleness alarms: every constant restated from the twin, re-derived ---------------------------------------------------------------------------
 
 
-def test_the_constants_are_the_twins_constants() -> None:
-    """`BUCKET_DEFAULT` and `MAX_RELEASE_VERSIONS` are copies of `.ci/config/constants.sh`, which the port deliberately does not source. They are re-derived here so a change there turns this red instead of silently pointing the port at a different bucket."""
+def test_the_max_release_versions_is_the_twins() -> None:
+    """`MAX_RELEASE_VERSIONS` is a copy of `.ci/config/constants.sh`, which the port deliberately does not source (the bucket is the registry's, so it needs no alarm)."""
     source = CONSTANTS.read_text(encoding="utf-8")
-    bucket = re.search(
-        r'^readonly RELEASES_BUCKET="\$\{RELEASES_BUCKET:-([^}]*)\}"', source, re.MULTILINE
-    )
     maximum = re.search(r"^readonly R2_MAX_RELEASE_VERSIONS=(\d+)", source, re.MULTILINE)
-    assert bucket is not None, "constants.sh no longer spells RELEASES_BUCKET this way"
     assert maximum is not None, "constants.sh no longer spells R2_MAX_RELEASE_VERSIONS this way"
-    assert bucket.group(1) == port.BUCKET_DEFAULT
     assert int(maximum.group(1)) == port.MAX_RELEASE_VERSIONS
 
 

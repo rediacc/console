@@ -143,6 +143,7 @@ import tempfile
 import time
 
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
 
 # "The report header. A PRODUCER CONSTANT, not a wording guess: claude-review-gate.sh:188 writes it verbatim, and the Claude Code action's own tracking comment uses the same prefix (comment-logic.ts, quoted at claude-review-gate.sh:153). An in-progress comment cannot match it -- the word is 'finished'."
 REPORT_PREFIX = "**Claude finished"
@@ -406,7 +407,7 @@ def main(argv: list[str] | None = None) -> int:
         print("PR_NUMBER not set - skipping review report reply check (not a pull request)")
         return 0
 
-    repo = os.environ.get("GITHUB_REPOSITORY") or "rediacc/console"
+    repo = os.environ.get("GITHUB_REPOSITORY") or GH_REPO
 
     print("Checking review report replies for PR #%s..." % pr_number)
 
@@ -490,7 +491,7 @@ def main(argv: list[str] | None = None) -> int:
     print("The newest automated review report has not been addressed:")
     print()
     print("  - comment %s by @%s, posted %s" % (report_id, report_author, report_created))
-    print("    https://github.com/%s/pull/%s#issuecomment-%s" % (repo, pr_number, report_id))
+    print(("    " + GH_ORIGIN + "/%s/pull/%s#issuecomment-%s") % (repo, pr_number, report_id))
     print()
     print("------------------------------------------------------------")
     print("WHY THIS BLOCKS. This is the pipeline's report for the head it")
@@ -543,7 +544,7 @@ def main(argv: list[str] | None = None) -> int:
     print("  # overwrite the review rather than answer it.")
     print()
     print("Or comment directly on GitHub:")
-    print("  https://github.com/%s/pull/%s#issuecomment-%s" % (repo, pr_number, report_id))
+    print(("  " + GH_ORIGIN + "/%s/pull/%s#issuecomment-%s") % (repo, pr_number, report_id))
     print("------------------------------------------------------------")
     return 1
 

@@ -250,6 +250,10 @@ def make_fixture(tmp_path: Path, name: str = "fx") -> Fixture:
     if BASH_SCRIPT.is_file():
         shutil.copy(BASH_SCRIPT, fx.root / "scripts" / "dev" / "worktree.sh")
     shutil.copy(COMMON_SH, fx.root / ".ci" / "scripts" / "lib" / "common.sh")
+    (fx.root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        REPO / ".ci" / "config" / "well-known.env", fx.root / ".ci" / "config" / "well-known.env"
+    )
     fx.git("submodule", "add", "-q", str(fx.sub), "private/sub")
     (fx.root / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
     fx.git("add", "--", ".gitignore", "scripts", ".ci")

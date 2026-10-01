@@ -50,6 +50,7 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
+from rediacc_ci.well_known import RENET_REPO
 
 RENET_REL = "private/renet"
 MARKER = "go.mod"
@@ -218,13 +219,14 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # A `go test -v` transcript in which every expected test passes. The base every plant below mutates, and asserted CLEAN first: without that, each plant would "fire" against a transcript that was already failing.
-_PASSING_RUN = (
-    "\n".join("=== RUN   %s\n--- PASS: %s (0.00s)" % (name, name) for name in EXPECTED_TESTS)
-    + "\nPASS\nok  \tgithub.com/rediacc/renet/pkg/functions\t0.004s\n"
-)
+_PASSING_RUN = "\n".join(
+    "=== RUN   %s\n--- PASS: %s (0.00s)" % (name, name) for name in EXPECTED_TESTS
+) + ("\nPASS\nok  \tgithub.com/" + RENET_REPO + "/pkg/functions\t0.004s\n")
 
 # What `go test -list` prints: one name per line, then the package result line that `grep '^Test'` exists to drop.
-_LISTING = "\n".join(EXPECTED_TESTS) + "\nok  \tgithub.com/rediacc/renet/pkg/functions\t0.002s\n"
+_LISTING = "\n".join(EXPECTED_TESTS) + (
+    "\nok  \tgithub.com/" + RENET_REPO + "/pkg/functions\t0.002s\n"
+)
 
 
 def selftest() -> int:

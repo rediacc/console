@@ -37,6 +37,7 @@ import re
 import subprocess
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import OPERATOR_EMAIL
 
 CHAIN = "pre-bash"
 ORDER = 5
@@ -76,7 +77,7 @@ EDGE_CASES = [
     ("--author named inside a single-quoted message", "git commit -m 'explain --author=a@b.c'"),
     ("a -F message file hides its body", "git commit -F msg.txt"),
     # Not a commit at all.
-    ("prose about an address", "echo 'muhammed@rediacc.com is the wrong one'"),
+    ("prose about an address", ("echo '" + OPERATOR_EMAIL + " is the wrong one'")),
     ("git tag is deliberately out of scope", 'git tag -m "x" v1'),
     ("gh pr create is deliberately out of scope", "gh pr create --draft --fill"),
     # A submodule of this tree IS judged; an independent checkout is not.

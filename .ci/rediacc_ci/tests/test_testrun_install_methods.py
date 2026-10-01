@@ -21,6 +21,7 @@ import pytest
 from rediacc_ci.testrun import install_methods as port
 from rediacc_ci.testrun import install_scripts
 from rediacc_ci.tests import testrun_support as ts
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -605,7 +606,7 @@ def test_delta_a_failing_docker_pull_is_named(tmp_path: pathlib.Path) -> None:
         "bash ignored the failed pull and reported a version mismatch"
     )
     assert new.code == 1
-    assert "docker pull ghcr.io/rediacc/rdc:latest failed" in new.err
+    assert ("docker pull " + IMAGE_REGISTRY + "/rdc:latest failed") in new.err
     assert [c[1][0] for c in calls(new)] == ["pull"]
 
 

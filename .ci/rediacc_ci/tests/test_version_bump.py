@@ -162,6 +162,10 @@ def build(where: pathlib.Path, name: str, subject: pathlib.Path) -> pathlib.Path
     else:
         shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "version" / "bump.py")
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     if kw.get("with_pins", True):
         shutil.copy2(TOOLCHAIN_ENV, root / ".devcontainer" / "toolchain.env")

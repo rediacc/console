@@ -163,6 +163,10 @@ def _fixture(
         _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
     )
     shutil.copy2(CI_ENV, root / ".ci" / "scripts" / "infra" / CI_ENV.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     (root / ".ci" / "rediacc_ci" / "infra" / PORT.name).write_text(
         _null_sleep_python(
             port_source if port_source is not None else PORT.read_text(encoding="utf-8")

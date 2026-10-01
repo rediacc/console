@@ -25,6 +25,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.security import workflow_gates
+from rediacc_ci.well_known import ACCOUNT_REPO, GH_REPO
 
 if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
@@ -39,6 +40,8 @@ PORT = ROOT / PORT_REL
 PACKAGE_FILES = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/security/__init__.py",
     PORT_REL,
 )
@@ -108,25 +111,33 @@ jobs:
       TOKEN: ${{ secrets.TOKEN }}
 """
 
-REGISTRY = """callers:
+REGISTRY = (
+    """callers:
   - caller: private/acct/.github/workflows/review.yml
-    repo: rediacc/account
+    repo: """
+    + ACCOUNT_REPO
+    + """
     pinned_at: main
     calls: .github/workflows/callee.yml
     passes_inputs: [target]
     passes_secrets: [TOKEN]
 """
+)
 
-EXT_CALLER = """name: review
+EXT_CALLER = (
+    """name: review
 on: push
 jobs:
   r:
-    uses: rediacc/console/.github/workflows/callee.yml@main
+    uses: """
+    + GH_REPO
+    + """/.github/workflows/callee.yml@main
     with:
       target: x
     secrets:
       TOKEN: ${{ secrets.TOKEN }}
 """
+)
 
 
 def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:

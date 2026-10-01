@@ -51,7 +51,7 @@ export AWS_ACCESS_KEY_ID="${CLOUDFLARE_R2_ACCESS_KEY_ID}"
 export AWS_SECRET_ACCESS_KEY="${CLOUDFLARE_R2_SECRET_ACCESS_KEY}"
 export AWS_DEFAULT_REGION="auto"
 EP="--endpoint-url $CLOUDFLARE_R2_ENDPOINT"
-BUCKET="rediacc-releases"
+BUCKET="$WK_RELEASES_BUCKET"
 
 CC_MUTABLE="no-cache"
 
@@ -77,7 +77,7 @@ for dir in cli apt rpm apk archlinux; do
     fi
 
     while IFS= read -r f; do
-        PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#"$TMP"/}")
+        PURGE_URLS+=("$WK_RELEASES_ORIGIN/${dir}/stable/${f#"$TMP"/}")
     done < <(find "$TMP" -type f)
     rm -rf "$TMP"
 done
@@ -88,7 +88,7 @@ for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
     sed_in_place 's|/edge/|/stable/|g' /tmp/config
     aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --only-show-errors \
         --cache-control "$CC_MUTABLE"
-    PURGE_URLS+=("https://releases.rediacc.com/${file}")
+    PURGE_URLS+=("$WK_RELEASES_ORIGIN/${file}")
 done
 
 # Re-bake install scripts: cd-stage.yml baked 'edge' into
@@ -103,7 +103,7 @@ for file in cli/stable/install.sh cli/stable/install.ps1; do
         /tmp/script
     aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --only-show-errors \
         --cache-control "$CC_MUTABLE"
-    PURGE_URLS+=("https://releases.rediacc.com/${file}")
+    PURGE_URLS+=("$WK_RELEASES_ORIGIN/${file}")
 done
 
 echo "R2 promoted to stable"

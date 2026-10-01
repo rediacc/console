@@ -27,10 +27,12 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import release_state_validator as rsv
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 PRODUCT = "cli"
 STRICT_VERSION = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
-HELP = """Scrub a release sentinel and its versioned bytes from R2.
+HELP = (
+    """Scrub a release sentinel and its versioned bytes from R2.
 
 Usage:
   scrub_sentinel v1.0.5                  dry-run
@@ -38,8 +40,11 @@ Usage:
   scrub_sentinel v1.0.5 --execute --yes  skip confirmation
 
 Env (required): CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY,
-CLOUDFLARE_R2_ENDPOINT. RELEASES_BUCKET is optional (default rediacc-releases).
+CLOUDFLARE_R2_ENDPOINT. RELEASES_BUCKET is optional (default """
+    + RELEASES_BUCKET
+    + """).
 """
+)
 
 
 def _aws(argv: list[str]) -> subprocess.CompletedProcess:

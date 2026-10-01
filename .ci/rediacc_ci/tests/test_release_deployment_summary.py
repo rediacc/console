@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import IMAGE_REGISTRY, SITE_ORIGIN
 
 if TYPE_CHECKING:  # pathlib appears only in `tmp_path` annotations, never at runtime.
     import pathlib
@@ -21,11 +22,19 @@ EXPECTED = (
     "\n---\n\n## Deployment Complete\n\n"
     "**Version:** v1.2.3\n"
     "**CI Run:** 42 (sha: abc123)\n"
-    "**Pages URL:** https://www.rediacc.com\n\n"
-    "**Docker images:**\n"
-    "- ghcr.io/rediacc/renet:1.2.3 + :latest\n"
-    "- ghcr.io/rediacc/rdc:1.2.3 + :latest\n"
-    "- ghcr.io/rediacc/server:1.2.3 + :latest (on-prem)\n"
+    "**Pages URL:** "
+    + SITE_ORIGIN
+    + "\n\n"
+    + "**Docker images:**\n"
+    + "- "
+    + IMAGE_REGISTRY
+    + "/renet:1.2.3 + :latest\n"
+    + "- "
+    + IMAGE_REGISTRY
+    + "/rdc:1.2.3 + :latest\n"
+    + "- "
+    + IMAGE_REGISTRY
+    + "/server:1.2.3 + :latest (on-prem)\n"
 )
 
 

@@ -224,6 +224,10 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     if sanitize_sql:
         (root / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql").write_text(
             "UPDATE users SET email = 'redacted@example.com';\n", encoding="utf-8"

@@ -66,6 +66,7 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import RENET_REPO
 
 # The dev build produced by `build.sh dev`, and the CI release builds produced by `.ci/scripts/build/build-renet.sh`. The twin checks whichever exists and says "it's fine to have just one".
 DEV_RENET = ("private", "renet", "bin", "renet")
@@ -286,7 +287,9 @@ def selftest() -> int:
     """
     ctl = Controls("no-otlp-creds", floor=16, verbose=True)
 
-    clean_buildinfo = "\tpath\tgithub.com/rediacc/renet\n\tbuild\t-ldflags=-X main.Version=1.2.3\n"
+    clean_buildinfo = (
+        "\tpath\tgithub.com/" + RENET_REPO + "\n\tbuild\t-ldflags=-X main.Version=1.2.3\n"
+    )
     ctl.check(
         "CONTROL: an ordinary buildinfo is clean", buildinfo_findings("b", clean_buildinfo), []
     )

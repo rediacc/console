@@ -22,6 +22,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.release import reprobe_r2_sentinel as port
 from rediacc_ci.tests import pathmask
+from rediacc_ci.well_known import RELEASES_BUCKET as WK_RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -179,8 +180,10 @@ def test_sealed_sentinel_reports_present_and_exits_zero(tmp_path: pathlib.Path) 
     assert old[2] == ""
     assert old[3] == [
         (
-            "call: aws s3api head-object --bucket rediacc-releases "
-            "--key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid"
+            "call: aws s3api head-object --bucket "
+            + WK_RELEASES_BUCKET
+            + " "
+            + "--key cli/v1.1.2/.released --endpoint-url https://r2.example.invalid"
         )
     ]
     assert_agree(old, new, "present")

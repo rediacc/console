@@ -33,7 +33,7 @@ require_cmd jq
 : "${GITHUB_OUTPUT:?check-stable-manifest.sh: GITHUB_OUTPUT must be set}"
 EDGE_VERSION="${EDGE_VERSION:?check-stable-manifest.sh: EDGE_VERSION must be set}"
 
-STABLE_MANIFEST=$(curl -sf "https://releases.rediacc.com/cli/stable/manifest.json" || echo "")
+STABLE_MANIFEST=$(curl -sf "$WK_RELEASES_ORIGIN/cli/stable/manifest.json" || echo "")
 STABLE_VERSION=""
 if [[ -n "$STABLE_MANIFEST" ]]; then
     STABLE_VERSION=$(echo "$STABLE_MANIFEST" | jq -r '.version')

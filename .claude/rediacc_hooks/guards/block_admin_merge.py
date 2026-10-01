@@ -26,6 +26,7 @@ import json
 import subprocess
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import ACCOUNT_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 26
@@ -98,11 +99,11 @@ EDGE_CASES = [
     ("prose naming the banned command", "git commit -m '...gh pr merge --admin...'"),
     ("an ordinary merge", "gh pr merge 42 --rebase --auto"),
     ("an immediate merge with no selector", "gh pr merge --rebase"),
-    ("a merge on a submodule repo", "gh pr merge 7 --repo rediacc/renet --rebase"),
+    ("a merge on a submodule repo", ("gh pr merge 7 --repo " + RENET_REPO + " --rebase")),
     # The round-46 cross-attribution: fields belong to ONE invocation.
     (
         "a sibling view must not donate its repo",
-        "gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account",
+        ("gh pr view 94 --repo " + RENET_REPO + "; gh pr merge 66 --repo " + ACCOUNT_REPO),
     ),
     ("a foreign repo is not policed", "gh pr merge 42 --repo someone/other"),
     ("a different pr subcommand", "gh pr view 42"),
@@ -239,7 +240,7 @@ def run(ev):
             ev.warn(UNRESOLVABLE_MESSAGE % (repo, sel if sel != "" else "<current branch>"))
             return hookio.DENY
 
-        if not auto and repo == "rediacc/console":
+        if not auto and repo == GH_REPO:
             conclusion = _jq_conclusion(prdata)
             if conclusion != "SUCCESS":
                 ev.warn(

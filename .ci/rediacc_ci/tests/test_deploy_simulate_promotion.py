@@ -34,6 +34,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import simulate_promotion as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -73,12 +74,12 @@ DEFAULT_BUCKET = {
     "apt/pr-123/dists/Release": "release body\n",
     "apt/pr-123/dists/with space/InRelease": "inrelease body\n",
     "rpm/pr-123/rdc.rpm": "rpm bytes\n",
-    "rpm/pr-123/rediacc.repo": "[rediacc]\nbaseurl=https://releases.rediacc.com/rpm/pr-123/\n",
+    "rpm/pr-123/rediacc.repo": ("[rediacc]\nbaseurl=" + RELEASES_ORIGIN + "/rpm/pr-123/\n"),
     "apk/pr-123/rdc.apk": "apk bytes\n",
     "apk/pr-123/APKINDEX.tar.gz": "apkindex body\n",
     "archlinux/pr-123/rdc.pkg.tar.zst": "pkg bytes\n",
     "archlinux/pr-123/rediacc.conf": (
-        "[rediacc]\nServer = https://releases.rediacc.com/archlinux/pr-123/\n"
+        "[rediacc]\nServer = " + RELEASES_ORIGIN + "/archlinux/pr-123/\n"
     ),
 }
 
@@ -288,6 +289,10 @@ def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pat
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
 
     for side in ("old", "new"):
         base = root / f"{side}-s3" / port.BUCKET
@@ -465,9 +470,7 @@ def test_a_key_with_a_space_survives_the_awk_rejoin(tmp_path) -> None:
     _agree(old, new, "space-in-key")
 
     assert "apt/pr-123-promoted/dists/with space/InRelease" in _copied(old[1])
-    assert "https://releases.rediacc.com/apt/pr-123-promoted/dists/with space/InRelease" in _purged(
-        old[1]
-    )
+    assert (RELEASES_ORIGIN + "/apt/pr-123-promoted/dists/with space/InRelease") in _purged(old[1])
 
 
 def test_the_directory_order_and_the_cache_control_are_the_twins(tmp_path) -> None:
@@ -476,10 +479,10 @@ def test_the_directory_order_and_the_cache_control_are_the_twins(tmp_path) -> No
 
     listed = [c for c in _calls(old[1]) if c.startswith("aws s3 ls")]
     assert [c.split()[3] for c in listed] == [
-        "s3://rediacc-releases/apt/pr-123/",
-        "s3://rediacc-releases/rpm/pr-123/",
-        "s3://rediacc-releases/apk/pr-123/",
-        "s3://rediacc-releases/archlinux/pr-123/",
+        ("s3://" + RELEASES_BUCKET + "/apt/pr-123/"),
+        ("s3://" + RELEASES_BUCKET + "/rpm/pr-123/"),
+        ("s3://" + RELEASES_BUCKET + "/apk/pr-123/"),
+        ("s3://" + RELEASES_BUCKET + "/archlinux/pr-123/"),
     ], listed
     for call in _calls(old[1]):
         if call.startswith("aws s3api copy-object"):
@@ -496,8 +499,8 @@ def test_the_sed_fix_rewrites_the_channel_before_re_uploading(tmp_path) -> None:
     _agree(old, new, "sed-fix")
 
     calls = old[1]
-    assert "baseurl=https://releases.rediacc.com/rpm/pr-123-promoted/" in calls
-    assert "Server = https://releases.rediacc.com/archlinux/pr-123-promoted/" in calls
+    assert ("baseurl=" + RELEASES_ORIGIN + "/rpm/pr-123-promoted/") in calls
+    assert ("Server = " + RELEASES_ORIGIN + "/archlinux/pr-123-promoted/") in calls
     uploads = [line for line in calls.splitlines() if line.startswith("UPLOAD ")]
     assert len(uploads) == 2, uploads
     assert not any("/rpm/pr-123/" in line for line in uploads), (
@@ -513,11 +516,11 @@ def test_the_purge_list_is_the_copied_objects_plus_the_two_configs(tmp_path) -> 
 
     urls = _purged(old[1])
     assert len(urls) == 11, urls
-    assert "https://releases.rediacc.com/rpm/pr-123-promoted/rediacc.repo" in urls
-    assert "https://releases.rediacc.com/archlinux/pr-123-promoted/rediacc.conf" in urls
+    assert (RELEASES_ORIGIN + "/rpm/pr-123-promoted/rediacc.repo") in urls
+    assert (RELEASES_ORIGIN + "/archlinux/pr-123-promoted/rediacc.conf") in urls
     # THE TWO CONFIGS APPEAR TWICE, once from the copy listing and once from the
     # sed-fix loop. 9 + 2 = 11, and the duplication is the twin's.
-    assert urls.count("https://releases.rediacc.com/rpm/pr-123-promoted/rediacc.repo") == 2
+    assert urls.count(RELEASES_ORIGIN + "/rpm/pr-123-promoted/rediacc.repo") == 2
 
 
 def test_github_env_receives_the_promoted_channel_when_it_is_set(tmp_path) -> None:
@@ -599,10 +602,10 @@ def test_a_failed_listing_is_not_read_as_an_empty_channel(tmp_path) -> None:
         assert proc.returncode == int(status), proc.stderr
         assert "Access Denied" in proc.stderr, proc.stderr
         assert (
-            "✗ aws s3 ls s3://rediacc-releases/apt/pr-123/ failed (exit %s); nothing was promoted"
-            % status
-            in proc.stderr
-        ), proc.stderr
+            "✗ aws s3 ls s3://"
+            + RELEASES_BUCKET
+            + "/apt/pr-123/ failed (exit %s); nothing was promoted"
+        ) % status in proc.stderr, proc.stderr
         assert "refusing to promote an empty channel" not in proc.stderr
         assert "copy-object" not in calls
         assert "curl" not in calls
@@ -625,7 +628,7 @@ def test_fact_the_sed_fix_scratch_path_is_fixed(tmp_path) -> None:
 
     assert left_by_bash == left_by_python
     # THE LAST FILE WINS, and the last file is the archlinux one.
-    assert "Server = https://releases.rediacc.com/archlinux/pr-123-promoted/" in left_by_bash
+    assert ("Server = " + RELEASES_ORIGIN + "/archlinux/pr-123-promoted/") in left_by_bash
 
 
 def test_fact_an_unset_zone_is_an_unbound_variable_at_the_end(tmp_path) -> None:
@@ -754,10 +757,12 @@ def test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty(tmp_path) 
     assert "⚠ aws s3 cp attempt 1 failed, retrying in 15s..." in proc.stderr
     assert "⚠ aws s3 cp attempt 4 failed, retrying in 60s..." in proc.stderr
     assert (
-        "✗ aws s3 cp /tmp/config s3://rediacc-releases/rpm/pr-123-promoted/rediacc.repo "
-        "--endpoint-url https://r2.example.invalid --cache-control no-cache "
-        "failed after 5 attempts" in proc.stderr
-    )
+        "✗ aws s3 cp /tmp/config s3://"
+        + RELEASES_BUCKET
+        + "/rpm/pr-123-promoted/rediacc.repo "
+        + "--endpoint-url https://r2.example.invalid --cache-control no-cache "
+        + "failed after 5 attempts"
+    ) in proc.stderr
 
 
 def test_an_absent_sed_fix_target_is_skipped_in_silence(tmp_path) -> None:
@@ -872,7 +877,7 @@ def test_copy_object_argv_names_no_tagging_flag() -> None:
     assert argv[argv.index("--metadata-directive") + 1] == "REPLACE"
     assert "--tagging-directive" not in argv
     assert "--copy-props" not in argv
-    assert argv[argv.index("--copy-source") + 1] == "rediacc-releases/src"
+    assert argv[argv.index("--copy-source") + 1] == (RELEASES_BUCKET + "/src")
 
 
 def test_upload_argv_puts_the_read_timeout_before_the_paths() -> None:

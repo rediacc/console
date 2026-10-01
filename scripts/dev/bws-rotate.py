@@ -24,6 +24,7 @@ PORTED FROM BASH 2026-09-23 (Ruling 7, 2026-09-06: these trees are Python). Port
 from __future__ import annotations
 
 import getpass
+import importlib.util
 import json
 import os
 import re
@@ -59,8 +60,19 @@ VAR = "BWS_ACCESS_TOKEN"
 # THE FLOOR IS THE SAME 40 `scripts/ops/bws-map-refresh.py` refuses below, and for the identical reason: a scoped-down token or a wrong project returns a SHORT list rather than an error. A rotation that installed such a token would succeed here and fail in CI, one secret at a time, days later.
 MIN_SECRETS = int(os.environ.get("BWS_ROTATE_MIN_SECRETS", "40"))
 
-# The parent repository. Every other target is derived from .gitmodules; this one cannot be, because a repository does not list itself as its own submodule.
-PARENT_REPO = "rediacc/console"
+
+# The parent repository. Every other target is derived from .gitmodules; this one cannot be, because a repository does not list itself as its own submodule. Read when the target list is built, not at import, so a checkout without the registry still reaches the fingerprint refusal first.
+def _registry_gh_repo() -> str:
+    """`WK_GH_REPO`, read through the registry's own reader, loaded by file: this script is stdlib-only until the checkout is proved reachable, so it cannot import `rediacc_ci`."""
+    reader = Path(__file__).resolve().parents[2] / ".ci" / "rediacc_ci" / "well_known.py"
+    spec = importlib.util.spec_from_file_location("_bws_rotate_well_known", reader)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load the well-known reader from %s" % reader)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["_bws_rotate_well_known"] = module
+    spec.loader.exec_module(module)
+    return str(module.GH_REPO)
+
 
 # token_shape_ok <candidate> -- `0.<client-id>.<secret>:<key>`, the shape bws parses. A paste that lost its leading `0.` (a copy that started one character late is the commonest way) fails here rather than four steps later with "Doesn't contain a decryption key", which names nothing a reader can act on.
 TOKEN_RE = re.compile(r"^0\.[^.\s]+\.[^:\s]+:\S+$")
@@ -200,7 +212,7 @@ def submodule_repos() -> list[str]:
 
 def target_repos() -> list[str]:
     """The parent plus every submodule. The FULL candidate set, before anything is asked about which of them holds a secret."""
-    return sorted({PARENT_REPO, *submodule_repos()})
+    return sorted({_registry_gh_repo(), *submodule_repos()})
 
 
 def repo_has_secret(repo: str) -> bool:

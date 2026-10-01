@@ -23,6 +23,7 @@ PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, s
 """
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
 ORDER = 20
@@ -39,13 +40,17 @@ ALLOW_EMPTY = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit[^|;&]*--allow-
 ADVICE = (
     "Instead, rerun the run: for failures in tunnel-CONSUMER jobs (Tests+Infra E2E / CLI / "
     "E2E Electron, or any job that waited on 'tunnel URL'), use a FULL 'gh run rerun RUN_ID "
-    "--repo rediacc/console', because the tunnel-url artifact is named per run_attempt and "
-    "the already-green publisher job (infra-backend) does not rerun on --failed, so a "
-    "--failed rerun leaves consumers waiting 300s for an artifact that never appears. For "
-    "all other failures, 'gh run rerun RUN_ID --repo rediacc/console --failed' is cheaper "
-    "and sufficient. If the run was force-cancelled and the AI classified a transient "
-    "failure as code-change, first update .ci/prompts/ci-failure-classifier.md so that "
-    "pattern is recognized as transient, then rerun."
+    "--repo "
+    + GH_REPO
+    + "', because the tunnel-url artifact is named per run_attempt and "
+    + "the already-green publisher job (infra-backend) does not rerun on --failed, so a "
+    + "--failed rerun leaves consumers waiting 300s for an artifact that never appears. For "
+    + "all other failures, 'gh run rerun RUN_ID --repo "
+    + GH_REPO
+    + " --failed' is cheaper "
+    + "and sufficient. If the run was force-cancelled and the AI classified a transient "
+    + "failure as code-change, first update .ci/prompts/ci-failure-classifier.md so that "
+    + "pattern is recognized as transient, then rerun."
 )
 
 # A FIXED sha, from a `git` stub, and that is not cosmetic. The verified arm prints HEAD into its message, so a real HEAD would put this differential at the mercy of any other session committing between the bash pass and the Python pass -- two runs of the same case disagreeing for a reason that is not a port defect. The stub makes the world the same for both sides.
@@ -116,7 +121,7 @@ def run(ev):
                     [
                         "gh",
                         "api",
-                        "repos/rediacc/console/commits/%s/check-runs" % head_sha,
+                        ("repos/" + GH_REPO + "/commits/%s/check-runs") % head_sha,
                         "--jq",
                         ".total_count",
                     ],
@@ -155,9 +160,11 @@ def run(ev):
     )
     ev.warn(
         "   If GitHub created NO run at all for this head (verify: gh api "
-        "repos/rediacc/console/commits/$(git rev-parse HEAD)/check-runs --jq .total_count), "
-        "there is nothing to rerun; re-run this command with "
-        "CI_RETRIGGER_NO_RUN_FOR=$(git rev-parse HEAD), which makes the hook check that claim "
-        "itself."
+        "repos/"
+        + GH_REPO
+        + "/commits/$(git rev-parse HEAD)/check-runs --jq .total_count), "
+        + "there is nothing to rerun; re-run this command with "
+        + "CI_RETRIGGER_NO_RUN_FOR=$(git rev-parse HEAD), which makes the hook check that claim "
+        + "itself."
     )
     return hookio.DENY

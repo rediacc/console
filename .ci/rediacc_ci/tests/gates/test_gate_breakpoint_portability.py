@@ -31,6 +31,7 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 # Every case copies `.ci/breakpoint/`, a read; no group needed. See the docstring.
 
@@ -320,10 +321,10 @@ def test_upstream_slug_is_configurable(gate):
         bp = make_isolated(tmp)
         gate.assert_contains(
             (bp / "breakpoint.conf").read_text(encoding="utf-8"),
-            'BREAKPOINT_UPSTREAM_REPO="rediacc/console"',
+            ('BREAKPOINT_UPSTREAM_REPO="' + GH_REPO + '"'),
             "breakpoint.conf must declare the canonical repo",
         )
-        gate.log_pass("breakpoint.conf carries BREAKPOINT_UPSTREAM_REPO=rediacc/console")
+        gate.log_pass("breakpoint.conf carries BREAKPOINT_UPSTREAM_REPO=" + GH_REPO)
 
         for hit in bp_code_hits(bp, r"rediacc/"):
             rel, lineno = hit.rsplit(":", 1)

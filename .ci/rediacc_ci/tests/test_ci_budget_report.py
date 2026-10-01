@@ -20,6 +20,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import budget_report as br
+from rediacc_ci.well_known import GH_REPO
 
 # --------------------------------------------------------------------------- parse_workflow_jobs: has_matrix ---------------------------------------------------------------------------
 
@@ -365,7 +366,7 @@ def test_collect_unit_durations_reports_a_lane_with_zero_artifacts_rather_than_s
         return blob
 
     per_lane, missing = br.collect_unit_durations(
-        "rediacc/console",
+        GH_REPO,
         [1],
         ["test-e2e-workers", "test-account-e2e"],
         list_artifacts=fake_list,
@@ -384,7 +385,7 @@ def test_collect_unit_durations_no_lane_missing_when_every_lane_gets_an_artifact
         return _zip_with("results.json", '{"suites": []}')
 
     _, missing = br.collect_unit_durations(
-        "rediacc/console",
+        GH_REPO,
         [1],
         ["test-e2e-workers"],
         list_artifacts=fake_list,
@@ -401,7 +402,7 @@ def test_collect_unit_durations_survives_a_download_failure_and_still_reports_mi
         raise OSError("network hiccup")
 
     per_lane, missing = br.collect_unit_durations(
-        "rediacc/console",
+        GH_REPO,
         [1],
         ["test-e2e-workers"],
         list_artifacts=fake_list,
@@ -439,7 +440,7 @@ def test_collect_unit_durations_downloads_artifacts_concurrently():
         return blob
 
     per_lane, missing = br.collect_unit_durations(
-        "rediacc/console",
+        GH_REPO,
         [1],
         ["test-e2e-workers"],
         list_artifacts=fake_list,
@@ -462,7 +463,7 @@ def test_collect_unit_durations_merges_in_run_then_artifact_order_whatever_finis
         return _duration_blob(by_id[artifact_id])
 
     per_lane, _missing = br.collect_unit_durations(
-        "rediacc/console",
+        GH_REPO,
         [1, 2],
         ["test-e2e-workers"],
         list_artifacts=fake_list,
@@ -487,7 +488,7 @@ def test_collect_unit_durations_one_failed_download_does_not_lose_the_others():
         return blob
 
     per_lane, missing = br.collect_unit_durations(
-        "rediacc/console",
+        GH_REPO,
         [1],
         ["test-e2e-workers"],
         list_artifacts=fake_list,

@@ -39,6 +39,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_renet as port
+from rediacc_ci.well_known import RENET_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -48,12 +49,15 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/build/build-renet.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_renet.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 LOCKFILE_REL = "private/renet/embed-assets.lock.json"
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/build/__init__.py",
@@ -276,9 +280,9 @@ def fixture(
     renet_dir: bool = True,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -556,7 +560,7 @@ def test_the_cache_hit_path_reconstructs_every_asset_with_zstd(tmp_path) -> None
         in old.stderr
     )
     assert _calls(old_t[1], "docker") == [
-        ["FAKEBIN docker", "image", "inspect", "rediacc/renet:latest"]
+        ["FAKEBIN docker", "image", "inspect", (RENET_REPO + ":latest")]
     ]
     zstd_calls = _calls(old_t[1], "zstd")
     assert len(zstd_calls) == 5, "three components, but zot is amd64-only"
@@ -622,8 +626,10 @@ def test_the_account_public_key_is_injected_into_the_ldflags(tmp_path) -> None:
     assert "\u2713 Account server public key injected from environment\n" in old_t[0].stderr
     assert _calls(old_t[1], "go")[0][6] == (
         "-ldflags=-s -w -X main.Version=1.2.3 "
-        "-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey="
-        "MCowBQYDK2VwAyEAdeadbeef"
+        "-X github.com/"
+        + RENET_REPO
+        + "/pkg/license/keys.ProductionPublicKey="
+        + "MCowBQYDK2VwAyEAdeadbeef"
     )
     _agree(old_t, new_t, "key-injected")
     # The arm that must NOT fire: an EMPTY value is not an injection.
@@ -954,7 +960,7 @@ def test_ldflags_keeps_the_trailing_space_and_the_key_symbol() -> None:
     assert port.ldflags("1.2.3", "") == "-ldflags=-s -w -X main.Version=1.2.3 "
     assert port.ldflags("1.2.3", "KEY") == (
         "-ldflags=-s -w -X main.Version=1.2.3 "
-        "-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=KEY"
+        "-X github.com/" + RENET_REPO + "/pkg/license/keys.ProductionPublicKey=KEY"
     )
 
 

@@ -26,6 +26,7 @@ import tempfile
 import pytest
 
 from rediacc_hooks.tests import goldenio, guardcorpus
+from rediacc_hooks.wellknown import GH_REPO
 
 ROOT = guardcorpus.repo_root()
 PORTS = ROOT / ".claude" / "hooks" / "post-bash"
@@ -98,7 +99,7 @@ def _runs_query(tip=TIP, branch=BRANCH):
         "run",
         "list",
         "--repo",
-        "rediacc/console",
+        GH_REPO,
         "--branch",
         branch,
         "--json",
@@ -109,7 +110,7 @@ def _runs_query(tip=TIP, branch=BRANCH):
     )
 
 
-def _pr_list(repo="rediacc/console", branch=BRANCH):
+def _pr_list(repo=GH_REPO, branch=BRANCH):
     return _key(
         "gh",
         "pr",
@@ -186,10 +187,18 @@ CASES: list[tuple[str, str, dict, dict]] = [
                 _default("gh"): {"rc": 0},
                 _runs_query(): {"out": "111\n222\n"},
                 _key(
-                    "gh", "api", "repos/rediacc/console/actions/runs/111/force-cancel", "-X", "POST"
+                    "gh",
+                    "api",
+                    ("repos/" + GH_REPO + "/actions/runs/111/force-cancel"),
+                    "-X",
+                    "POST",
                 ): {"out": '{"cancelled":111}\n'},
                 _key(
-                    "gh", "api", "repos/rediacc/console/actions/runs/222/force-cancel", "-X", "POST"
+                    "gh",
+                    "api",
+                    ("repos/" + GH_REPO + "/actions/runs/222/force-cancel"),
+                    "-X",
+                    "POST",
                 ): {"out": '{"cancelled":222}\n'},
             },
         ),
@@ -204,7 +213,11 @@ CASES: list[tuple[str, str, dict, dict]] = [
                 _default("gh"): {"rc": 0},
                 _runs_query(): {"out": "111\n"},
                 _key(
-                    "gh", "api", "repos/rediacc/console/actions/runs/111/force-cancel", "-X", "POST"
+                    "gh",
+                    "api",
+                    ("repos/" + GH_REPO + "/actions/runs/111/force-cancel"),
+                    "-X",
+                    "POST",
                 ): {"rc": 1, "err": "boom\n"},
             },
         ),
@@ -253,7 +266,7 @@ CASES: list[tuple[str, str, dict, dict]] = [
             _git(),
             **{
                 _default("gh"): {"rc": 0},
-                REPO_VIEW: {"out": "rediacc/console\n"},
+                REPO_VIEW: {"out": (GH_REPO + "\n")},
                 _pr_list(): {"out": "null\n"},
             },
         ),
@@ -266,7 +279,7 @@ CASES: list[tuple[str, str, dict, dict]] = [
             _git(),
             **{
                 _default("gh"): {"rc": 0},
-                REPO_VIEW: {"out": "rediacc/console\n"},
+                REPO_VIEW: {"out": (GH_REPO + "\n")},
                 _pr_list(): {"out": "543\n"},
                 _key("gh", "pr", "view", "543", "--json", "body", "--jq", ".body"): {
                     "out": BODY_WITH_BLOCK + "\n"
@@ -274,7 +287,7 @@ CASES: list[tuple[str, str, dict, dict]] = [
                 _key(
                     "gh",
                     "api",
-                    "repos/rediacc/console/pulls/543",
+                    ("repos/" + GH_REPO + "/pulls/543"),
                     "-X",
                     "PATCH",
                     "-F",
@@ -291,7 +304,7 @@ CASES: list[tuple[str, str, dict, dict]] = [
             _git(),
             **{
                 _default("gh"): {"rc": 0},
-                REPO_VIEW: {"out": "rediacc/console\n"},
+                REPO_VIEW: {"out": (GH_REPO + "\n")},
                 _pr_list(): {"out": "543\n"},
                 _key("gh", "pr", "view", "543", "--json", "body", "--jq", ".body"): {
                     "out": "A body with no block at all\n"
@@ -299,7 +312,7 @@ CASES: list[tuple[str, str, dict, dict]] = [
                 _key(
                     "gh",
                     "api",
-                    "repos/rediacc/console/pulls/543",
+                    ("repos/" + GH_REPO + "/pulls/543"),
                     "-X",
                     "PATCH",
                     "-F",
@@ -316,7 +329,7 @@ CASES: list[tuple[str, str, dict, dict]] = [
             _git(log=""),
             **{
                 _default("gh"): {"rc": 0},
-                REPO_VIEW: {"out": "rediacc/console\n"},
+                REPO_VIEW: {"out": (GH_REPO + "\n")},
                 _pr_list(): {"out": "543\n"},
             },
         ),

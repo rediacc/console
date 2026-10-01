@@ -24,6 +24,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import promote_r2_to_stable as port
 from rediacc_ci.quality import python_env_registry
 from rediacc_ci.tests import r2_promote_fake as fake
+from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -61,12 +62,14 @@ DEFAULT_BUCKET = {
     "rpm/edge/repodata/primary.xml.gz": "primary body\n",
     "rpm/edge/repodata/repomd.xml": "repomd body\n",
     "rpm/edge/repodata/comps.xml": "comps body\n",
-    "rpm/edge/rediacc.repo": "[rediacc]\nbaseurl=https://releases.rediacc.com/rpm/edge/\n",
+    "rpm/edge/rediacc.repo": ("[rediacc]\nbaseurl=" + RELEASES_ORIGIN + "/rpm/edge/\n"),
     "apk/edge/rdc.apk": "apk bytes\n",
     "apk/edge/APKINDEX.tar.gz": "apkindex body\n",
     "archlinux/edge/rdc.pkg.tar.zst": "pkg bytes\n",
     "archlinux/edge/rediacc.db.tar.gz": "db body\n",
-    "archlinux/edge/rediacc.conf": "[rediacc]\nServer = https://releases.rediacc.com/archlinux/edge/\n",
+    "archlinux/edge/rediacc.conf": (
+        "[rediacc]\nServer = " + RELEASES_ORIGIN + "/archlinux/edge/\n"
+    ),
     **{"%s/stable/history-0.0.1.pkg" % d: "old release bytes\n" for d in port.CHANNEL_DIRS},
 }
 PHASE_FILTERED = ("cli/edge/latest-linux.yml", "rpm/edge/repodata/comps.xml")
@@ -132,7 +135,7 @@ def test_the_bulk_is_copied_server_side_and_only_the_pointers_are_fetched(tmp_pa
         assert record["cache_control"] == "no-cache", record
     # The metadata the old upload gave these objects: aws-cli guessed the type from the name.
     types = {r["key"]: r["content_type"] for r in fake.ops(records, "COPY")}
-    assert types["rediacc-releases/cli/stable/manifest.json"] == "application/json"
+    assert types[(RELEASES_BUCKET + "/cli/stable/manifest.json")] == "application/json"
 
 
 def test_mutation_control_a_bulk_through_the_runner_is_caught(tmp_path) -> None:
@@ -157,13 +160,13 @@ def test_every_selected_edge_object_lands_in_stable_with_its_bytes(tmp_path) -> 
     for key in PHASE_FILTERED:
         assert stable_of(key) not in stable, key
     # Stable history that edge does not name is untouched.
-    assert stable["rediacc-releases/apt/stable/history-0.0.1.pkg"] == "old release bytes\n"
+    assert stable[(RELEASES_BUCKET + "/apt/stable/history-0.0.1.pkg")] == "old release bytes\n"
 
 
 def _phase_order_problems(records) -> list[str]:
     order = [r["key"] for r in fake.ops(records, "COPY")]
     at = {key: i for i, key in enumerate(order)}
-    stable = "rediacc-releases/%s/stable/%s"
+    stable = RELEASES_BUCKET + "/%s/stable/%s"
     chains = (
         [("apt", "pool/rdc.deb"), ("apt", "Packages.gz"), ("apt", "InRelease")],
         [("rpm", "rdc.rpm"), ("rpm", "repodata/primary.xml.gz"), ("rpm", "repodata/repomd.xml")],
@@ -237,7 +240,7 @@ def test_mutation_control_a_pointer_copied_unrewritten_is_caught(tmp_path) -> No
     assert _pointer_problems(records) != []
     assert (
         "REDIACC_CHANNEL:-stable"
-        in fake.bucket_keys(root, "")["rediacc-releases/cli/stable/install.sh"]
+        in fake.bucket_keys(root, "")[(RELEASES_BUCKET + "/cli/stable/install.sh")]
     )
 
 
@@ -284,8 +287,8 @@ def test_a_run_that_dies_after_cli_leaves_the_stable_default_in_place(tmp_path) 
     root, proc, records = run(tmp_path, extra={"FAKE_AWS_DENY_MATCH": "apt/"})
     assert proc.returncode == 1, proc.stderr
     stable = fake.bucket_keys(root, "")
-    assert "REDIACC_CHANNEL:-stable" in stable["rediacc-releases/cli/stable/install.sh"]
-    assert '} else { "stable" }' in stable["rediacc-releases/cli/stable/install.ps1"]
+    assert "REDIACC_CHANNEL:-stable" in stable[(RELEASES_BUCKET + "/cli/stable/install.sh")]
+    assert '} else { "stable" }' in stable[(RELEASES_BUCKET + "/cli/stable/install.ps1")]
     assert fake.curl_calls(records) == 0
 
 
@@ -310,9 +313,9 @@ def test_the_purge_list_is_every_promoted_key_the_stable_listing_confirms(tmp_pa
     assert proc.returncode == 0, proc.stderr
     urls = fake.purge_urls(records)
     assert urls == _expected_urls(), urls
-    assert "https://releases.rediacc.com/cli/stable/latest-linux.yml" not in urls
+    assert (RELEASES_ORIGIN + "/cli/stable/latest-linux.yml") not in urls
     assert not any("history-" in u for u in urls)
-    assert "https://releases.rediacc.com/apt/stable/pool/rdc.deb" in urls
+    assert (RELEASES_ORIGIN + "/apt/stable/pool/rdc.deb") in urls
 
 
 def test_mutation_control_a_purge_list_from_local_files_is_caught(tmp_path) -> None:
@@ -341,7 +344,7 @@ def test_mutation_control_a_purge_list_that_skips_the_stable_listing_is_caught(t
         tmp_path, plant=planted, extra={"FAKE_AWS_DROP_COPY_MATCH": "apt/stable/pool/rdc.deb"}
     )
     assert proc.returncode == 0, proc.stderr
-    assert "https://releases.rediacc.com/apt/stable/pool/rdc.deb" in fake.purge_urls(records)
+    assert (RELEASES_ORIGIN + "/apt/stable/pool/rdc.deb") in fake.purge_urls(records)
 
 
 # --------------------------------------------------------------------------- Incremental, limits, vacuity ---------------------------------------------------------------------------
@@ -388,7 +391,7 @@ def test_a_transient_copy_failure_is_retried_and_announced(tmp_path) -> None:
     assert "copy of apt/edge/pool/rdc.deb failed (exit 1), retrying (2/3)" in proc.stderr, (
         proc.stderr
     )
-    assert "rediacc-releases/apt/stable/pool/rdc.deb" in fake.bucket_keys(root, "")
+    assert (RELEASES_BUCKET + "/apt/stable/pool/rdc.deb") in fake.bucket_keys(root, "")
 
 
 def test_a_persistent_transient_failure_stops_after_three_tries(tmp_path) -> None:

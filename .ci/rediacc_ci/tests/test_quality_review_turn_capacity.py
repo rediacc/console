@@ -57,8 +57,12 @@ def build(tmp_path: pathlib.Path, source: str | None) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True)
     shutil.copytree(src / ".ci" / "scripts" / "lib", root / ".ci" / "scripts" / "lib")
     # `proc.py` is in the list because the port routes its `bash -c` harness through the shared runner; without it the specimen dies at import and the comparison scores a traceback against the twin's recorded verdict.
-    for name in ("__init__.py", "log.py", "paths.py", "controls.py", "proc.py"):
+    for name in ("__init__.py", "log.py", "paths.py", "well_known.py", "controls.py", "proc.py"):
         shutil.copy2(src / ".ci" / "rediacc_ci" / name, root / ".ci" / "rediacc_ci" / name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        src / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     for name in ("__init__.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,

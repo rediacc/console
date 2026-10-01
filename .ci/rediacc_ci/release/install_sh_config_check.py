@@ -54,6 +54,7 @@ import tempfile
 import time
 
 from rediacc_ci import paths, runtmp
+from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
 
 INSTALL_SH_REL = "packages/www/public/install.sh"
 
@@ -268,13 +269,13 @@ def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
             (
                 "worker_full",
                 "edge",
-                "https://edge.rediacc.com",
+                EDGE_ORIGIN,
                 "yes",
                 "edge",
-                "https://edge.rediacc.com",
+                EDGE_ORIGIN,
             ),
             # worker_channel_only: fail-safe recovery path (the gap we closed)
-            ("worker_channel_only", "edge", "", "yes", "edge", "https://www.rediacc.com"),
+            ("worker_channel_only", "edge", "", "yes", "edge", SITE_ORIGIN),
             # worker_none: neither rewrite landed -- install.sh can't infer origin, leaves no config so rdc update falls back to default stable.
             ("worker_none", "stable", "", "no", "", ""),
             # worker_server_only: SERVER_URL rewritten but CHANNEL not.

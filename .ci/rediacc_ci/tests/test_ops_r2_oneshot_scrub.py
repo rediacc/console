@@ -13,6 +13,7 @@ import subprocess
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -104,8 +105,10 @@ def test_every_listing_site_is_reached_on_empty_prefixes(tmp_path: pathlib.Path)
     assert proc.stderr.rstrip("\n").endswith("Done."), proc.stderr
     listings = [c for c in calls if c.startswith("aws s3 ls ")]
     assert any("--summarize" in c for c in listings), "describe_prefix never listed"
-    assert any(c.startswith("aws s3 ls s3://rediacc-releases/desktop/v1.0.1/ ") for c in listings)
-    assert any("s3://rediacc-releases/apt/stable/ --recursive" in c for c in listings)
+    assert any(
+        c.startswith("aws s3 ls s3://" + RELEASES_BUCKET + "/desktop/v1.0.1/ ") for c in listings
+    )
+    assert any(("s3://" + RELEASES_BUCKET + "/apt/stable/ --recursive") in c for c in listings)
     assert "(empty or missing: desktop/)" in proc.stderr
 
 
@@ -115,7 +118,7 @@ def test_summarize_totals_alone_are_still_an_empty_prefix(tmp_path: pathlib.Path
     )
     assert proc.returncode == 0, proc.stderr
     assert "(empty or missing: staging/)" in proc.stderr
-    assert "Would delete s3://rediacc-releases/staging/" not in proc.stderr
+    assert ("Would delete s3://" + RELEASES_BUCKET + "/staging/") not in proc.stderr
 
 
 def test_a_failed_listing_stops_the_scrub_and_shows_awss_message(tmp_path: pathlib.Path) -> None:
@@ -151,7 +154,7 @@ def test_a_listing_with_objects_reaches_the_dry_run_plan(tmp_path: pathlib.Path)
     )
     proc, _calls = _run(tmp_path, FAKE_LS_RC="0", FAKE_LS_OUT=listing)
     assert proc.returncode == 0, proc.stderr
-    assert "[DRY-RUN] Would delete s3://rediacc-releases/cli/dryrun-9/" in proc.stderr
+    assert ("[DRY-RUN] Would delete s3://" + RELEASES_BUCKET + "/cli/dryrun-9/") in proc.stderr
     assert "[DRY-RUN] Would reap cli/pr-5/ (stale" in proc.stderr
     assert "0.0.0-dev pollution" in proc.stderr
     assert "Done." in proc.stderr

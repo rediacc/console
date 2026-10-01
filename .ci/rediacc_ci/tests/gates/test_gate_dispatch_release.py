@@ -22,6 +22,7 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "ci", "dispatch-release.sh")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
@@ -135,7 +136,7 @@ class Fixture:
             "GH_FIXTURES": str(self.fixtures),
             "GH_CALLS": str(self.calls),
             "GH_TOKEN": "fake",
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
             "GITHUB_SHA": SHA,
             "GITHUB_RUN_ID": "999",
             "GITHUB_OUTPUT": str(self.output),

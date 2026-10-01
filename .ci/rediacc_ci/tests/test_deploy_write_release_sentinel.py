@@ -38,6 +38,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import write_release_sentinel as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -176,7 +177,7 @@ def test_a_sealed_release_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
     old, new = drive(tmp_path, HAPPY)
     assert old.rc == 0, old.err
     assert old.out == "", "every line this script writes goes to stderr"
-    assert "→ writing sentinel: s3://rediacc-releases/cli/v1.0.5/.released" in old.err
+    assert ("→ writing sentinel: s3://" + RELEASES_BUCKET + "/cli/v1.0.5/.released") in old.err
     assert "✓   sealed cli/v1.0.5/.released" in old.err
     assert "✓ release v1.0.5 on edge is sealed" in old.err
     assert_same(old, new)
@@ -222,14 +223,18 @@ def test_the_three_aws_calls_are_made_in_order(tmp_path: pathlib.Path) -> None:
     old, new = drive(tmp_path, HAPPY)
     calls = [line for line in old.log.split("\n") if line]
     assert len(calls) == 3, old.log
-    assert calls[0].startswith("aws s3api list-objects-v2 --bucket rediacc-releases")
+    assert calls[0].startswith("aws s3api list-objects-v2 --bucket " + RELEASES_BUCKET)
     assert calls[1] == (
-        "aws s3 cp - s3://rediacc-releases/cli/v1.0.5/.released "
-        "--endpoint-url https://r2.invalid --cache-control no-cache "
-        "--content-type application/json"
+        "aws s3 cp - s3://"
+        + RELEASES_BUCKET
+        + "/cli/v1.0.5/.released "
+        + "--endpoint-url https://r2.invalid --cache-control no-cache "
+        + "--content-type application/json"
     )
     assert calls[2] == (
-        "aws s3 cp s3://rediacc-releases/cli/v1.0.5/.released - --endpoint-url https://r2.invalid"
+        "aws s3 cp s3://"
+        + RELEASES_BUCKET
+        + "/cli/v1.0.5/.released - --endpoint-url https://r2.invalid"
     )
     assert_same(old, new)
 
@@ -240,7 +245,7 @@ def test_releases_bucket_is_honoured(tmp_path: pathlib.Path) -> None:
     old, new = drive(tmp_path, HAPPY, env_extra={"RELEASES_BUCKET": "rediacc-staging"})
     assert old.rc == 0
     assert old.log.count("rediacc-staging") == 3, old.log
-    assert "rediacc-releases" not in old.log
+    assert RELEASES_BUCKET not in old.log
     assert_same(old, new)
 
 
@@ -271,9 +276,9 @@ def test_a_failed_probe_refuses_too_and_says_which(tmp_path: pathlib.Path) -> No
     """FINDING 6, REPRODUCED NOT FIXED. The library separates "the prefix is empty" from "the question could not be answered" on purpose; this caller collapses both to exit 1, so only the stderr text tells them apart. A release engineer reading `exit 1` cannot know whether to investigate R2 or the credentials."""
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_LIST_RC": "254"})
     assert old.rc == 1, "same code as the genuine refusal above; that is the finding"
-    assert "rsv_binary_count: list-objects-v2 failed for s3://rediacc-releases/cli/v1.0.5/" in (
-        old.err
-    )
+    assert (
+        "rsv_binary_count: list-objects-v2 failed for s3://" + RELEASES_BUCKET + "/cli/v1.0.5/"
+    ) in (old.err)
     assert "    An error occurred (AccessDenied) when calling ListObjectsV2" in old.err
     assert "no binaries" not in old.err, "the two refusals differ only in wording"
     assert old.payload is None
@@ -295,9 +300,11 @@ def test_a_missing_readback_fails_loud(tmp_path: pathlib.Path) -> None:
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_READBACK": "missing"})
     assert old.rc == 1
     assert (
-        "sentinel readback failed: s3://rediacc-releases/cli/v1.0.5/.released is missing "
-        "immediately after write" in old.err
-    )
+        "sentinel readback failed: s3://"
+        + RELEASES_BUCKET
+        + "/cli/v1.0.5/.released is missing "
+        + "immediately after write"
+    ) in old.err
     assert_same(old, new)
 
 
@@ -305,9 +312,8 @@ def test_a_readback_naming_a_different_version_fails_loud(tmp_path: pathlib.Path
     old, new = drive(tmp_path, HAPPY, env_extra={"FAKE_READBACK": "wrong"})
     assert old.rc == 1
     assert (
-        "sentinel readback content mismatch at s3://rediacc-releases/cli/v1.0.5/.released"
-        in old.err
-    )
+        "sentinel readback content mismatch at s3://" + RELEASES_BUCKET + "/cli/v1.0.5/.released"
+    ) in old.err
     assert "  wrote version=v1.0.5, read back version=v9.9.9" in old.err
     assert_same(old, new)
 

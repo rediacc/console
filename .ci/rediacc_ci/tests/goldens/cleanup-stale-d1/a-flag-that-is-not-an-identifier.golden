@@ -2,5 +2,5 @@
 exit: 2
 --- stdout ---
 --- stderr ---
-<root>/.ci/scripts/housekeeping/../lib/common.sh: line 334: printf: `ARG_MAX.AGE': not a valid identifier
+<root>/.ci/scripts/housekeeping/../lib/common.sh: line 351: printf: `ARG_MAX.AGE': not a valid identifier
 --- calls ---

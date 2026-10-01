@@ -13,6 +13,7 @@ import pathlib
 
 from rediacc_ci.quality import pr_description as gate
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 MODULE = "pr_description"
 
@@ -22,7 +23,7 @@ def test_the_advice_block_still_protects_the_generated_sections():
 
     Nothing in the exit code protects this sentence, and the wording it replaced told the reader to overwrite the entire PR body, which deletes both machine-written marker blocks.
     """
-    text = "\n".join(gate.stale_block("rediacc/console", "553", 6, 90))
+    text = "\n".join(gate.stale_block(GH_REPO, "553", 6, 90))
     assert "WITHOUT dropping its generated sections" in text
     assert "<!-- worklist-epics -->" in text
     assert "<!-- pushed-head -->" in text

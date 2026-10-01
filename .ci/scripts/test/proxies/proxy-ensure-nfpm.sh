@@ -52,7 +52,11 @@ proxy_need_file "$ROOT_DIR/.devcontainer/toolchain.env" "constants.sh sources th
 proxy_need_cmd curl "sudo apt-get install -y curl"
 proxy_need_cmd sha256sum "sudo apt-get install -y coreutils"
 proxy_need_cmd tar "sudo apt-get install -y tar"
-proxy_need_url "https://github.com" "the subject fetches the pinned tarball from github releases"
+set -a
+# shellcheck source=/dev/null
+. "$ROOT_DIR/.ci/config/well-known.env"
+set +a
+proxy_need_url "$WK_GH_ORIGIN" "the subject fetches the pinned tarball from github releases"
 proxy_preflight
 
 # The pin, read from the one place that holds it.
@@ -75,6 +79,7 @@ mkdir -p "$FIX/.ci/scripts/build" "$FIX/.ci/config" "$FIX/.devcontainer"
 cp "$ROOT_DIR/$SUBJECT_REL" "$FIX/$SUBJECT_REL"
 cp -r "$ROOT_DIR/.ci/scripts/lib" "$FIX/.ci/scripts/lib"
 cp "$ROOT_DIR/.ci/config/constants.sh" "$FIX/.ci/config/constants.sh"
+cp "$ROOT_DIR/.ci/config/well-known.env" "$FIX/.ci/config/well-known.env"
 cp "$ROOT_DIR/.devcontainer/toolchain.env" "$FIX/.devcontainer/toolchain.env"
 chmod +x "$FIX/$SUBJECT_REL"
 

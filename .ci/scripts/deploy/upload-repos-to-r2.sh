@@ -113,7 +113,7 @@ CC_MUTABLE="no-cache"
 PURGE_URLS=()
 for dir in apt rpm apk archlinux; do
     [[ -d "dist/repos/$dir" ]] || continue
-    aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
+    aws s3 sync "dist/repos/$dir" "s3://$WK_RELEASES_BUCKET/${dir}/${CHANNEL}/" \
         --cache-control "$CC_MUTABLE" \
         --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --only-show-errors
     # Purge every uploaded URL to evict entries cached under the
@@ -132,7 +132,7 @@ for dir in apt rpm apk archlinux; do
     fi
 
     while IFS= read -r f; do
-        PURGE_URLS+=("https://releases.rediacc.com/${dir}/${CHANNEL}/${f#dist/repos/$dir/}")
+        PURGE_URLS+=("$WK_RELEASES_ORIGIN/${dir}/${CHANNEL}/${f#dist/repos/$dir/}")
     done < <(find "dist/repos/$dir" -type f)
 done
 
@@ -145,11 +145,11 @@ for f in dist/pages/install.sh dist/pages/install.ps1; do
     sed -e "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-${CHANNEL}|g" \
         -e "s|} else { \"stable\" }|} else { \"${CHANNEL}\" }|g" \
         "$f" >"$tmp"
-    aws s3 cp "$tmp" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
+    aws s3 cp "$tmp" "s3://$WK_RELEASES_BUCKET/cli/${CHANNEL}/$(basename "$f")" \
         --cache-control "$CC_MUTABLE" \
         --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --only-show-errors
     rm -f "$tmp"
-    PURGE_URLS+=("https://releases.rediacc.com/cli/${CHANNEL}/$(basename "$f")")
+    PURGE_URLS+=("$WK_RELEASES_ORIGIN/cli/${CHANNEL}/$(basename "$f")")
 done
 echo "Repos uploaded to R2 channel: ${CHANNEL}"
 

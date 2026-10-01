@@ -54,9 +54,10 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The bucket, and the sentinel object name inside each version prefix.
-DEFAULT_BUCKET = "rediacc-releases"
+DEFAULT_BUCKET = RELEASES_BUCKET
 SENTINEL_KEY = ".released"
 
 # Strict semver with the `v` prefix. Pre-release tags are deliberately outside the contract, so they are filtered rather than judged.

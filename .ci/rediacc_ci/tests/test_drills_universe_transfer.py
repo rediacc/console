@@ -183,6 +183,7 @@ def world(tmp_path: pathlib.Path) -> typing.Iterator[World]:
         "scripts/drills/universe.sh",
         "scripts/drills/transfer.sh",
         ".ci/scripts/lib/common.sh",
+        ".ci/config/well-known.env",
     ):
         dest = root / rel
         dest.parent.mkdir(parents=True, exist_ok=True)

@@ -29,6 +29,8 @@ import typing
 from rediacc_ci import log
 from rediacc_ci.core import common, release_age
 from rediacc_ci.testrun import install_scripts as scripts
+from rediacc_ci.well_known import HOMEBREW_TAP as WK_HOMEBREW_TAP
+from rediacc_ci.well_known import IMAGE_REGISTRY, RELEASES_ORIGIN
 
 VALID_METHODS = (
     "binary",
@@ -47,9 +49,9 @@ VALID_METHODS = (
 )
 PKG_NAME = "rediacc-cli"
 PKG_BINARY_NAME = "rdc"
-DOCKER_IMAGE = "ghcr.io/rediacc/rdc"
-HOMEBREW_TAP = "rediacc/tap/rediacc-cli"
-DEFAULT_RELEASES = "https://releases.rediacc.com"
+DOCKER_IMAGE = IMAGE_REGISTRY + "/rdc"
+HOMEBREW_TAP = WK_HOMEBREW_TAP + "/rediacc-cli"
+DEFAULT_RELEASES = RELEASES_ORIGIN
 FENCE_BEGIN = "__RDC_VERSION_BEGIN__"
 FENCE_END = "__RDC_VERSION_END__"
 SKIPPED = 77
@@ -634,12 +636,14 @@ class Runner:
     def test_homebrew_install(self) -> int:
         cfg = self.cfg
         if cfg.dry_run:
-            log.info(f"[DRY-RUN] Would run: brew tap rediacc/tap && brew install {HOMEBREW_TAP}")
+            log.info(
+                f"[DRY-RUN] Would run: brew tap {WK_HOMEBREW_TAP} && brew install {HOMEBREW_TAP}"
+            )
             return 0
         if not shutil.which("brew"):
             log.error("Homebrew not available")
             return 1
-        for argv in (["brew", "tap", "rediacc/tap"], ["brew", "install", HOMEBREW_TAP]):
+        for argv in (["brew", "tap", WK_HOMEBREW_TAP], ["brew", "install", HOMEBREW_TAP]):
             if subprocess.run(argv, check=False, stdin=subprocess.DEVNULL).returncode != 0:
                 log.error(f"{' '.join(argv)} failed")
                 return 1

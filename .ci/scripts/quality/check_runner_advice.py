@@ -57,6 +57,7 @@ import sys
 import _cipath  # noqa: F401
 from rediacc_ci.core import allowlist
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.well_known import GH_REPO
 
 # --- The thresholds. These MIRROR .ci/scripts/ci/profiler/report.awk's advise() --- and its BEGIN block. Changing one without the other is what the gate --- test's awk/python parity case exists to catch.
 CPU_KEEP_MILLI = 1000
@@ -82,7 +83,7 @@ MIN_BASELINE_JOBS = 5
 # A baseline nobody refreshes stops describing reality. Loud, not silent.
 MAX_BASELINE_AGE_DAYS = 45
 
-REPO = "rediacc/console"
+REPO = GH_REPO
 ROW_MARKER = "PROFILER_BASELINE_V1 "
 INT_FIELDS = (
     "cpu_peak_milli",

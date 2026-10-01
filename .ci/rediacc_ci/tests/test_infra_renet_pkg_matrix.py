@@ -19,6 +19,7 @@ import pytest
 
 from rediacc_ci.infra import obs_mirror
 from rediacc_ci.infra import renet_pkg_matrix as m
+from rediacc_ci.well_known import ETC_DIR
 
 if TYPE_CHECKING:
     import pathlib
@@ -515,7 +516,13 @@ def test_run_cli_passes_the_event_through() -> None:
 # ---------------------------------------------------------------------------
 
 LEAP_PIN_TEXT = PIN_TEXT  # host.opensuse-16.0=19.2.3-lp160.2.96
-MIRROR_WRITE = "mkdir -p /etc/rediacc && printf '%s\\n' 'dir:/srv/obs-mirror' > /etc/rediacc/ceph-zypper-mirror"
+MIRROR_WRITE = (
+    "mkdir -p "
+    + ETC_DIR
+    + " && printf '%s\\n' 'dir:/srv/obs-mirror' > "
+    + ETC_DIR
+    + "/ceph-zypper-mirror"
+)
 
 
 class FakeDocker:

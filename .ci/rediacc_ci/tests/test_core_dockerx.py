@@ -22,6 +22,7 @@ import pytest
 from rediacc_ci import paths, proc
 from rediacc_ci.core import dockerx
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import RUNTIME_DIR
 
 # --------------------------------------------------------------------------- THE FROZEN MEASUREMENTS, docker 29.7.2, 2026-09-06 ---------------------------------------------------------------------------
 
@@ -438,10 +439,10 @@ def test_the_host_argument_does_not_leak_into_this_process(fake_bin, tmp_path, m
     path.chmod(0o755)
     monkeypatch.delenv("DOCKER_HOST", raising=False)
 
-    dockerx.docker(["ps"], host="unix:///var/run/rediacc/docker-7.sock")
+    dockerx.docker(["ps"], host=("unix://" + RUNTIME_DIR + "/docker-7.sock"))
     dockerx.docker(["ps"])
     assert env_log.read_text(encoding="utf-8").splitlines() == [
-        "unix:///var/run/rediacc/docker-7.sock",
+        ("unix://" + RUNTIME_DIR + "/docker-7.sock"),
         "(unset)",
     ]
     assert "DOCKER_HOST" not in os.environ

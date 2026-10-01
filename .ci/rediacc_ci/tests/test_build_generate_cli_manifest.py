@@ -55,12 +55,14 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.build import generate_cli_manifest as gcm
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, RELEASES_ORIGIN
 
 ROOT = paths.repo_root()
 
 PORT_REL = ".ci/rediacc_ci/build/generate_cli_manifest.py"
 TWIN_REL = ".ci/scripts/build/generate-cli-manifest.sh"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 
 SLUG = "generate-cli-manifest"
 CALLS_MARKER = "--- calls ---\n"
@@ -70,6 +72,8 @@ VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
 )
 
 BASH = shutil.which("bash") or "/bin/bash"
@@ -223,12 +227,12 @@ def build(tmp_path: pathlib.Path, name: str) -> pathlib.Path:
     """
     kw = CASE_KW[name]
     root = tmp_path / "repo"
-    for rel in (PORT_REL, COMMON_REL, *VENDORED):
+    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     if (ROOT / TWIN_REL).is_file():
         (root / TWIN_REL).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / TWIN_REL, root / TWIN_REL)
-    for rel in (COMMON_REL, PORT_REL, *VENDORED):
+    for rel in (COMMON_REL, WELL_KNOWN_REL, PORT_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -475,11 +479,11 @@ def test_one_valid_checksum_produces_one_binary_and_nine_lines(tmp_path: pathlib
     assert manifest_in(tmp_path, "one-binary") == {
         "version": "1.2.3",
         "releaseDate": FROZEN_DATE,
-        "releaseNotesUrl": "https://github.com/rediacc/console/releases/tag/v1.2.3",
+        "releaseNotesUrl": ((GH_ORIGIN + "/") + GH_REPO + "/releases/tag/v1.2.3"),
         "commit": "deadbeef",
         "binaries": {
             "linux-x64": {
-                "url": "https://releases.rediacc.com/cli/v1.2.3/rdc-linux-x64",
+                "url": (RELEASES_ORIGIN + "/cli/v1.2.3/rdc-linux-x64"),
                 "sha256": VALID_SHA,
             }
         },
@@ -497,7 +501,7 @@ def test_all_six_binaries_are_added_in_the_twins_iteration_order(tmp_path: pathl
         "win-arm64",
     ]
     assert got["binaries"]["win-arm64"]["url"] == (
-        "https://releases.rediacc.com/cli/v2.0.0/rdc-win-arm64.exe"
+        RELEASES_ORIGIN + "/cli/v2.0.0/rdc-win-arm64.exe"
     )
 
 
@@ -548,16 +552,14 @@ def test_stable_edge_and_an_empty_channel_all_get_the_versioned_url(
     for name in ("the-stable-channel", "the-edge-channel", "an-empty-channel"):
         got = manifest_in(tmp_path, name, "o.json")
         assert got["binaries"]["linux-x64"]["url"] == (
-            "https://releases.rediacc.com/cli/v1.2.3/rdc-linux-x64"
+            RELEASES_ORIGIN + "/cli/v1.2.3/rdc-linux-x64"
         ), name
 
 
 def test_any_other_channel_gets_its_own_path(tmp_path: pathlib.Path) -> None:
     """Every other channel points at `/cli/<channel>/` so `rdc update` fetches the bits that were actually uploaded for that pull request. Asserting only one side of the branch would let it invert unnoticed."""
     got = manifest_in(tmp_path, "a-pull-request-channel", "o.json")
-    assert got["binaries"]["linux-x64"]["url"] == (
-        "https://releases.rediacc.com/cli/pr-42/rdc-linux-x64"
-    )
+    assert got["binaries"]["linux-x64"]["url"] == (RELEASES_ORIGIN + "/cli/pr-42/rdc-linux-x64")
 
 
 def test_releases_base_url_overrides_the_host_and_an_empty_value_does_not(
@@ -578,7 +580,7 @@ def test_an_absent_github_sha_becomes_the_literal_unknown(tmp_path: pathlib.Path
 
 def test_the_repo_flag_only_moves_the_release_notes_url(tmp_path: pathlib.Path) -> None:
     got = manifest_in(tmp_path, "a-repo-flag")
-    assert got["releaseNotesUrl"] == "https://github.com/someone/fork/releases/tag/v1.2.3"
+    assert got["releaseNotesUrl"] == (GH_ORIGIN + "/someone/fork/releases/tag/v1.2.3")
     assert got["binaries"]["linux-x64"]["url"].startswith(gcm.DEFAULT_RELEASES_BASE)
 
 

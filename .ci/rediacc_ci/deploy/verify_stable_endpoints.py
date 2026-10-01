@@ -34,9 +34,15 @@ import sys
 from rediacc_ci import paths
 from rediacc_ci.core import common
 from rediacc_ci.deploy import verify_edge_endpoints as edge
+from rediacc_ci.well_known import RELEASES_ORIGIN, SITE_ORIGIN
+from rediacc_ci.well_known import RELEASES_ORIGIN as WK_RELEASES_ORIGIN
+from rediacc_ci.well_known import SITE_ORIGIN as WK_SITE_ORIGIN
 
-WWW = "https://www.rediacc.com"
-RELEASES = "https://releases.rediacc.com"
+RELEASES_HOST = WK_RELEASES_ORIGIN.removeprefix("https://")
+SITE_HOST = WK_SITE_ORIGIN.removeprefix("https://")
+
+WWW = SITE_ORIGIN
+RELEASES = RELEASES_ORIGIN
 
 # Reused rather than re-spelled: these are the SAME two `grep -qi` patterns the edge twin uses, character for character, on the same header block.
 HSTS = edge.HSTS
@@ -107,14 +113,14 @@ def main(argv: list[str]) -> int:
 def _verify() -> int:
     install_sh = _body_or_die("%s/install.sh" % WWW)
     if "REDIACC_CHANNEL:-stable" not in install_sh:
-        print("::error::www.rediacc.com/install.sh is not baked to channel=stable", flush=True)
+        print(("::error::" + SITE_HOST + "/install.sh is not baked to channel=stable"), flush=True)
         edge.grep_e(install_sh, "REDIACC_CHANNEL")
         return 1
     print("  marketing (install.sh): OK (channel=stable)", flush=True)
 
     install_ps1 = _body_or_die("%s/install.ps1" % WWW)
     if '} else { "stable" }' not in install_ps1:
-        print("::error::www.rediacc.com/install.ps1 is not baked to channel=stable", flush=True)
+        print(("::error::" + SITE_HOST + "/install.ps1 is not baked to channel=stable"), flush=True)
         edge.grep_f(install_ps1, "$Channel")
         return 1
     print("  marketing (install.ps1): OK (channel=stable)", flush=True)
@@ -156,7 +162,7 @@ def _verify() -> int:
     r2_sh = _body_or_die("%s/cli/stable/install.sh" % RELEASES)
     if "REDIACC_CHANNEL:-stable" not in r2_sh:
         print(
-            "::error::releases.rediacc.com/cli/stable/install.sh not baked to channel=stable",
+            ("::error::" + RELEASES_HOST + "/cli/stable/install.sh not baked to channel=stable"),
             flush=True,
         )
         edge.grep_e(r2_sh, "REDIACC_CHANNEL")
@@ -166,7 +172,7 @@ def _verify() -> int:
     r2_ps1 = _body_or_die("%s/cli/stable/install.ps1" % RELEASES)
     if '} else { "stable" }' not in r2_ps1:
         print(
-            "::error::releases.rediacc.com/cli/stable/install.ps1 not baked to channel=stable",
+            ("::error::" + RELEASES_HOST + "/cli/stable/install.ps1 not baked to channel=stable"),
             flush=True,
         )
         return 1

@@ -14,6 +14,7 @@ import pytest
 
 from rediacc_ci.quality import submodule_branches as mod
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import ACCOUNT_REPO, GH_ORIGIN, RENET_REPO
 
 # Every shape the twin's four-stage normaliser has to survive.
 REPLIES = [
@@ -50,19 +51,19 @@ def test_low_effort_normalisation_matches_the_shell(tmp_path: pathlib.Path, repl
 
 
 LINK_CASES = [
-    ("see https://github.com/rediacc/renet/pull/123", True),
-    ("depends on rediacc/renet#123", True),
-    ("rediacc/renet/pull/123", True),
+    ((("see " + GH_ORIGIN + "/") + RENET_REPO + "/pull/123"), True),
+    (("depends on " + RENET_REPO + "#123"), True),
+    ((RENET_REPO + "/pull/123"), True),
     ("no mention here", False),
-    ("rediacc/renet#124", False),
-    ("rediacc/account#123", False),  # right number, wrong repo
+    ((RENET_REPO + "#124"), False),
+    ((ACCOUNT_REPO + "#123"), False),  # right number, wrong repo
     ("", False),
 ]
 
 
 @pytest.mark.parametrize(("body", "linked"), LINK_CASES)
 def test_pr_is_linked(body: str, linked: bool) -> None:
-    url = "https://github.com/rediacc/renet/pull/123"
+    url = (GH_ORIGIN + "/") + RENET_REPO + "/pull/123"
     assert mod.pr_is_linked(url, body) is linked
 
 

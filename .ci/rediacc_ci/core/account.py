@@ -63,9 +63,10 @@ import time
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import local_common, ports
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT, DEV_USER_EMAIL
 
 # `.ci/config/constants.sh:117-120` and `:135,145`. Plain readonly assignments derived from CONSOLE_ROOT_DIR, so they are derived here the same way rather than read from the environment: constants.sh overwrites any inherited value, and a port that honoured an override would answer a question the twin cannot be asked.
-ACCOUNT_DEV_PORT_PREFERRED = 4800
+ACCOUNT_DEV_PORT_PREFERRED = ACCOUNT_DEV_PORT
 ACCOUNT_DEV_PORT_RANGE_END = 5799
 DEVBOX_OFFSET_STUDIO = 3
 
@@ -74,7 +75,7 @@ DB_BROWSER_PREFERRED = 4983
 DB_BROWSER_SCAN_SPAN = 40
 
 # `.ci/lib/account.sh:628`.
-DEFAULT_TOTP_EMAIL = "dev-user@rediacc.io"
+DEFAULT_TOTP_EMAIL = DEV_USER_EMAIL
 
 # The six environment names the account server reads its DEV keypair and session secrets under, the six `account_reset` pushes to Bitwarden (`.ci/lib/account.sh:794-799`). `mint_dev_keys()` writes exactly these, in this order.
 CRYPTO_KEYS = (

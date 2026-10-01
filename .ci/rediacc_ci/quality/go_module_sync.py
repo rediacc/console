@@ -70,6 +70,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import GO_DL_BASE
 
 # The needle. A literal string, not a pattern: the twin passes it to grep with no `-E`, and `.` in `github.com` would match any character under a regex reading. It does not matter for this needle and it would matter for the next one.
 REPLACE_NEEDLE = "replace github.com/rediacc/renet"
@@ -281,9 +282,13 @@ def selftest() -> int:
         # -- THE go-DEPENDENT HALF ---------------------------------------------
         if shutil.which("go") is None:
             ctl.fail(
-                "TOOLCHAIN: go is absent, so the tidy/untidy plants did not run. "
-                "Install Go (https://go.dev/dl/) and re-run; an unchecked half is "
-                "not a passing half",
+                (
+                    "TOOLCHAIN: go is absent, so the tidy/untidy plants did not run. "
+                    "Install Go ("
+                    + GO_DL_BASE
+                    + "/) and re-run; an unchecked half is "
+                    + "not a passing half"
+                ),
                 "go not on PATH",
             )
         else:

@@ -38,12 +38,13 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import GH_REPO
 
 # `^v[0-9]+\.[0-9]+\.[0-9]+$`: a malformed version must NOT become a tag, because `production` is the thing humans will trust.
 SEMVER_RE = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 
 # `${GITHUB_REPOSITORY:-rediacc/console}`.
-DEFAULT_REPO = "rediacc/console"
+DEFAULT_REPO = GH_REPO
 
 # The two substrings that mean "this version was never published", as opposed to "the lookup itself failed". Everything else takes the did-NOT-run branch.
 NOT_FOUND_MARKERS = ("release not found", "Not Found")

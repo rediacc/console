@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci.ci import check_rerun_attempt as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -110,12 +111,12 @@ def run_port(
 
 
 def test_below_the_cap_allows_the_rerun_and_exports_false(tmp_path: pathlib.Path) -> None:
-    result, files = run_port(tmp_path, env_extra={"RUN_ID": "5", "GH_REPO": "rediacc/console"})
+    result, files = run_port(tmp_path, env_extra={"RUN_ID": "5", "GH_REPO": GH_REPO})
     assert result[0] == 0
     assert result[1] == "::group::Fetching run details\n::endgroup::\n"
     assert "Run attempt 1 < max 2 - rerun is allowed" in result[2]
     assert files["envfile"] == "WATCHDOG_SKIP_RERUN=false\n"
-    assert files["log"] == "FAKEGH| api repos/rediacc/console/actions/runs/5 --jq .run_attempt\n"
+    assert files["log"] == ("FAKEGH| api repos/" + GH_REPO + "/actions/runs/5 --jq .run_attempt\n")
 
 
 def test_at_the_cap_skips_the_rerun_and_exports_true(tmp_path: pathlib.Path) -> None:

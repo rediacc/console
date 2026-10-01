@@ -40,12 +40,14 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.build import buildx_push_web as bpw
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 
 PORT_REL = ".ci/rediacc_ci/build/buildx_push_web.py"
 TWIN_REL = ".ci/scripts/build/buildx-push-web.sh"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 
 SLUG = "buildx-push-web"
 CALLS_MARKER = "--- calls ---\n"
@@ -88,7 +90,7 @@ SELF_RE = re.compile(r"\S*(?:%s|%s)" % (re.escape(TWIN_REL), re.escape(PORT_REL)
 FULL_ENV = {
     "PLATFORM": "linux/amd64",
     "VARIANT": "onprem",
-    "IMAGE_PATH": "ghcr.io/rediacc/server",
+    "IMAGE_PATH": (IMAGE_REGISTRY + "/server"),
     "WEB_TAG": "1.2.3",
     "ACCOUNT_ENTRY": "on-premise",
 }
@@ -121,9 +123,9 @@ CASES = tuple(CASE_KW)
 
 def fixture(where: pathlib.Path, subject: pathlib.Path) -> pathlib.Path:
     root = where / "repo"
-    for rel in (PORT_REL, COMMON_REL, *VENDORED):
+    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (COMMON_REL, *VENDORED):
+    for rel in (COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if subject.suffix == ".sh":
         (root / TWIN_REL).parent.mkdir(parents=True, exist_ok=True)
@@ -282,7 +284,7 @@ def test_amd64_builds_pushes_and_reports_the_tag() -> None:
     code, stdout, stderr, calls = recorded("amd64")
     assert code == 0, stderr
     assert stdout == "#1 [internal] load build definition\n"
-    assert stderr == "✓ Pushed ghcr.io/rediacc/server:1.2.3-amd64\n"
+    assert stderr == ("✓ Pushed " + IMAGE_REGISTRY + "/server:1.2.3-amd64\n")
     assert argv_of(calls) == [
         "CALL docker",
         "buildx",
@@ -300,7 +302,7 @@ def test_amd64_builds_pushes_and_reports_the_tag() -> None:
         "--build-arg",
         "ACCOUNT_ED25519_PUBLIC_KEY=",
         "--tag",
-        "ghcr.io/rediacc/server:1.2.3-amd64",
+        (IMAGE_REGISTRY + "/server:1.2.3-amd64"),
         "--push",
         ".",
     ]
@@ -310,10 +312,10 @@ def test_arm64_differs_only_in_the_platform_and_the_tag_suffix() -> None:
     """The two live jobs differ by exactly this, so both have recordings."""
     code, _, stderr, calls = recorded("arm64")
     assert code == 0, stderr
-    assert stderr == "✓ Pushed ghcr.io/rediacc/server:1.2.3-arm64\n"
+    assert stderr == ("✓ Pushed " + IMAGE_REGISTRY + "/server:1.2.3-arm64\n")
     argv = argv_of(calls)
     assert argv[argv.index("--platform") + 1] == "linux/arm64"
-    assert argv[argv.index("--tag") + 1] == "ghcr.io/rediacc/server:1.2.3-arm64"
+    assert argv[argv.index("--tag") + 1] == (IMAGE_REGISTRY + "/server:1.2.3-arm64")
 
 
 def test_the_ported_argv_builder_matches_what_the_twin_actually_ran() -> None:
@@ -402,9 +404,9 @@ def test_defect_platform_is_never_validated_only_split() -> None:
     ):
         code, _, stderr, calls = recorded(case)
         assert code == 0, stderr
-        assert stderr == "✓ Pushed ghcr.io/rediacc/server:1.2.3-%s\n" % suffix, case
+        assert stderr == ("✓ Pushed " + IMAGE_REGISTRY + "/server:1.2.3-%s\n") % suffix, case
         argv = argv_of(calls)
-        assert argv[argv.index("--tag") + 1] == "ghcr.io/rediacc/server:1.2.3-%s" % suffix
+        assert argv[argv.index("--tag") + 1] == (IMAGE_REGISTRY + "/server:1.2.3-%s") % suffix
         assert bpw.arch_of(platform) == suffix
 
 
@@ -422,7 +424,7 @@ def test_defect_the_build_context_is_the_callers_directory() -> None:
     """DEFECT 1. `--file Dockerfile` and the trailing `.` are relative and the subject never `cd`s, unlike BOTH neighbours in the same directory, which open with `cd "$(get_repo_root)"`. Recorded from a scratch directory holding a DIFFERENT one-line Dockerfile: the run succeeds, pushes under the production tag, and the fake records the decoy as its working directory."""
     code, _, stderr, calls = recorded("a-caller-elsewhere")
     assert code == 0, "the twin refused; it checked its context after all"
-    assert stderr == "✓ Pushed ghcr.io/rediacc/server:1.2.3-amd64\n"
+    assert stderr == ("✓ Pushed " + IMAGE_REGISTRY + "/server:1.2.3-amd64\n")
     assert "CWD\t<work>/elsewhere" in calls, calls
     argv = argv_of(calls)
     assert argv[-1] == "."

@@ -44,9 +44,10 @@ import sys
 import time
 
 from rediacc_ci import log
+from rediacc_ci.well_known import GH_REPO
 
 # `${RETRY_REPO:-rediacc/console}` and the three numeric knobs (:66-69).
-DEFAULT_REPO = "rediacc/console"
+DEFAULT_REPO = GH_REPO
 DEFAULT_MAX_AGE_HOURS = 48
 DEFAULT_MAX_ATTEMPT = 3
 DEFAULT_MAX_RETRIES_PER_RUN = 5

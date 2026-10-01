@@ -29,6 +29,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_linux_pkg as port
+from rediacc_ci.well_known import PKG_MAINTAINER_EMAIL, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -39,6 +40,7 @@ TWIN_REL = ".ci/scripts/build/build-linux-pkg.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_linux_pkg.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 CONSTANTS_REL = ".ci/config/constants.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 TOOLCHAIN_REL = ".devcontainer/toolchain.env"
 CANON_REL = ".ci/scripts/build/canonicalise-gpg-key.sh"
 
@@ -46,6 +48,8 @@ VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/build/__init__.py",
 )
 
@@ -213,9 +217,25 @@ def fixture(
     binary: bool = True,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, CONSTANTS_REL, TOOLCHAIN_REL, *VENDORED):
+    for rel in (
+        TWIN_REL,
+        PORT_REL,
+        COMMON_REL,
+        CONSTANTS_REL,
+        WELL_KNOWN_REL,
+        TOOLCHAIN_REL,
+        *VENDORED,
+    ):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, CONSTANTS_REL, TOOLCHAIN_REL, *VENDORED):
+    for rel in (
+        TWIN_REL,
+        COMMON_REL,
+        WELL_KNOWN_REL,
+        CONSTANTS_REL,
+        WELL_KNOWN_REL,
+        TOOLCHAIN_REL,
+        *VENDORED,
+    ):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -440,15 +460,13 @@ def test_the_absent_tools_are_absent_in_the_env_that_is_actually_driven(tmp_path
     )
 
 
-def test_the_restated_constants_match_constants_sh() -> None:
-    """The staleness alarm the module head promises. `constants.sh` is the source of truth for what a package is CALLED; a drift here is a mislabelled artifact, and nothing else in the tree would notice."""
+def test_the_restated_package_constants_match_constants_sh() -> None:
+    """The staleness alarm the module head promises, for the package fields the registry does not hold. `constants.sh` is the source of truth for what a package is CALLED; a drift here is a mislabelled artifact."""
     text = (ROOT / CONSTANTS_REL).read_text(encoding="utf-8")
     for name, value in (
         ("PKG_NAME", port.PKG_NAME),
         ("PKG_BINARY_NAME", port.PKG_BINARY_NAME),
-        ("PKG_MAINTAINER", port.PKG_MAINTAINER),
         ("PKG_DESCRIPTION", port.PKG_DESCRIPTION),
-        ("PKG_HOMEPAGE", port.PKG_HOMEPAGE),
         ("PKG_SECTION", port.PKG_SECTION),
         ("PKG_PRIORITY", port.PKG_PRIORITY),
     ):
@@ -684,9 +702,9 @@ def test_the_environment_nfpm_receives_is_the_whole_package_definition(tmp_path)
     seen = dict(line.split("=", 1) for line in old_t[2].splitlines())
     assert seen["PKG_NAME"] == "rediacc-cli"
     assert seen["PKG_BINARY_NAME"] == "rdc"
-    assert seen["PKG_MAINTAINER"] == "Rediacc <info@rediacc.com>"
+    assert seen["PKG_MAINTAINER"] == ("Rediacc <" + PKG_MAINTAINER_EMAIL + ">")
     assert seen["PKG_DESCRIPTION"] == "Rediacc CLI - automation and scripting tool"
-    assert seen["PKG_HOMEPAGE"] == "https://www.rediacc.com"
+    assert seen["PKG_HOMEPAGE"] == SITE_ORIGIN
     assert seen["PKG_SECTION"] == "utils"
     assert seen["PKG_PRIORITY"] == "optional"
     assert seen["VERSION"] == "1.2.3"

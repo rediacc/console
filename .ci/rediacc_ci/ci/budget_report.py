@@ -108,8 +108,9 @@ if TYPE_CHECKING:
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import ghx
+from rediacc_ci.well_known import GH_REPO
 
-DEFAULT_REPO = "rediacc/console"
+DEFAULT_REPO = GH_REPO
 DEFAULT_WORKFLOW = "ci.yml"
 DEFAULT_BRANCH = "main"
 DEFAULT_LIMIT = 15

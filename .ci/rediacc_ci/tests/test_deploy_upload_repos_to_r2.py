@@ -26,6 +26,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import upload_repos_to_r2 as port
+from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -136,6 +137,10 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "deploy" / PORT.name)
 
     for rel, body in (DEFAULT_TREE if tree is None else tree).items():
@@ -218,12 +223,11 @@ def find_urls(root: pathlib.Path, channel: str = "edge") -> list[str]:
             check=True,
         ).stdout
         urls.extend(
-            "https://releases.rediacc.com/%s/%s/%s"
-            % (fmt, channel, path[len("dist/repos/%s/" % fmt) :])
+            (RELEASES_ORIGIN + "/%s/%s/%s") % (fmt, channel, path[len("dist/repos/%s/" % fmt) :])
             for path in listing.splitlines()
         )
     urls.extend(
-        "https://releases.rediacc.com/cli/%s/%s" % (channel, name)
+        (RELEASES_ORIGIN + "/cli/%s/%s") % (channel, name)
         for name in ("install.sh", "install.ps1")
         if (root / "dist" / "pages" / name).is_file()
     )
@@ -264,23 +268,31 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
 
     head, _sep, purge = old_calls.partition("curl\t")
     assert head == (
-        "aws\ts3\tsync\tdist/repos/apt\ts3://rediacc-releases/apt/edge/\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
-        "aws\ts3\tsync\tdist/repos/apk\ts3://rediacc-releases/apk/edge/\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
-        "aws\ts3\tcp\t<tmp>\ts3://rediacc-releases/cli/edge/install.sh\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
-        'CONTENT<<<#!/bin/sh\n: "${REDIACC_CHANNEL:-edge}"\n>>>\n'
-        "aws\ts3\tcp\t<tmp>\ts3://rediacc-releases/cli/edge/install.ps1\t"
-        "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
-        'CONTENT<<<$c = if ($e) { "edge" } else { "edge" }\n>>>\n'
+        "aws\ts3\tsync\tdist/repos/apt\ts3://"
+        + RELEASES_BUCKET
+        + "/apt/edge/\t"
+        + "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
+        + "aws\ts3\tsync\tdist/repos/apk\ts3://"
+        + RELEASES_BUCKET
+        + "/apk/edge/\t"
+        + "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
+        + "aws\ts3\tcp\t<tmp>\ts3://"
+        + RELEASES_BUCKET
+        + "/cli/edge/install.sh\t"
+        + "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
+        + 'CONTENT<<<#!/bin/sh\n: "${REDIACC_CHANNEL:-edge}"\n>>>\n'
+        + "aws\ts3\tcp\t<tmp>\ts3://"
+        + RELEASES_BUCKET
+        + "/cli/edge/install.ps1\t"
+        + "--cache-control\tno-cache\t--endpoint-url\thttps://r2.example.invalid\t--only-show-errors\n"
+        + 'CONTENT<<<$c = if ($e) { "edge" } else { "edge" }\n>>>\n'
     )
     argv = purge.rstrip("\n").split("\t")
     assert argv[:-1] == [
         "-sS",
         "-X",
         "POST",
-        "https://api.cloudflare.com/client/v4/zones/zone-fixture/purge_cache",
+        (CF_API_BASE + "/zones/zone-fixture/purge_cache"),
         "-H",
         "Authorization: Bearer tok-fixture",
         "-H",
@@ -288,11 +300,11 @@ def test_a_full_upload_is_pinned_call_by_call(tmp_path: pathlib.Path) -> None:
         "--data",
     ]
     assert sorted(json.loads(argv[-1])["files"]) == [
-        "https://releases.rediacc.com/apk/edge/APKINDEX.tar.gz",
-        "https://releases.rediacc.com/apt/edge/InRelease",
-        "https://releases.rediacc.com/apt/edge/dists/stable/Packages.gz",
-        "https://releases.rediacc.com/cli/edge/install.ps1",
-        "https://releases.rediacc.com/cli/edge/install.sh",
+        (RELEASES_ORIGIN + "/apk/edge/APKINDEX.tar.gz"),
+        (RELEASES_ORIGIN + "/apt/edge/InRelease"),
+        (RELEASES_ORIGIN + "/apt/edge/dists/stable/Packages.gz"),
+        (RELEASES_ORIGIN + "/cli/edge/install.ps1"),
+        (RELEASES_ORIGIN + "/cli/edge/install.sh"),
     ]
     _assert_agree(old, new, "happy-path", old_calls, new_calls)
 
@@ -321,7 +333,7 @@ def test_a_nested_file_keeps_its_directories_in_the_url(tmp_path: pathlib.Path) 
     """`${f#dist/repos/$dir/}` IS A PREFIX STRIP, NOT A BASENAME. A port using
     `os.path.basename` would purge `.../apt/edge/Packages.gz`, a URL that does not exist, and leave the real one cached."""
     old, new, old_calls, new_calls = run_both(tmp_path)
-    assert "https://releases.rediacc.com/apt/edge/dists/stable/Packages.gz" in old_calls
+    assert (RELEASES_ORIGIN + "/apt/edge/dists/stable/Packages.gz") in old_calls
     _assert_agree(old, new, "prefix-strip", old_calls, new_calls)
 
 
@@ -330,7 +342,7 @@ def test_the_install_scripts_are_rewritten_to_the_channel(tmp_path: pathlib.Path
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="pr-42")
     assert 'CONTENT<<<#!/bin/sh\n: "${REDIACC_CHANNEL:-pr-42}"\n>>>' in old_calls
     assert 'CONTENT<<<$c = if ($e) { "edge" } else { "pr-42" }\n>>>' in old_calls
-    assert "s3://rediacc-releases/cli/pr-42/install.ps1" in old_calls
+    assert ("s3://" + RELEASES_BUCKET + "/cli/pr-42/install.ps1") in old_calls
     _assert_agree(old, new, "install-rewrite", old_calls, new_calls)
 
 
@@ -341,7 +353,7 @@ def test_a_format_with_no_directory_is_skipped_silently(tmp_path: pathlib.Path) 
     )
     assert old.returncode == 0
     assert old_calls.count("aws\ts3\tsync") == 1
-    assert "s3://rediacc-releases/rpm/edge/" in old_calls
+    assert ("s3://" + RELEASES_BUCKET + "/rpm/edge/") in old_calls
     assert "apt" not in old_calls
     _assert_agree(old, new, "absent-format", old_calls, new_calls)
 
@@ -436,7 +448,7 @@ def test_skip_release_on_a_pr_channel_uploads_as_usual(tmp_path: pathlib.Path) -
         "upload-repos-to-r2.sh: SKIP_RELEASE ignored on channel 'pr-9': "
         "not a release channel, uploading as usual\n"
     )
-    assert "s3://rediacc-releases/apt/pr-9/" in old_calls
+    assert ("s3://" + RELEASES_BUCKET + "/apt/pr-9/") in old_calls
     _assert_agree(old, new, "skip-pr", old_calls, new_calls)
 
 
@@ -530,7 +542,7 @@ def test_pure_helpers() -> None:
         "s3",
         "sync",
         "dist/repos/apt",
-        "s3://rediacc-releases/apt/edge/",
+        ("s3://" + RELEASES_BUCKET + "/apt/edge/"),
         "--cache-control",
         "no-cache",
         "--endpoint-url",
@@ -538,7 +550,7 @@ def test_pure_helpers() -> None:
         "--only-show-errors",
     ]
     assert port.cp_argv("/tmp/x", "edge", "install.sh", "https://e")[4] == (
-        "s3://rediacc-releases/cli/edge/install.sh"
+        "s3://" + RELEASES_BUCKET + "/cli/edge/install.sh"
     )
     assert port.sed_argv("pr-1", "dist/pages/install.sh")[2] == (
         "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-pr-1|g"
@@ -546,11 +558,9 @@ def test_pure_helpers() -> None:
     assert port.purge_argv("Z") == [".ci/scripts/deploy/cf-purge-urls.sh", "--zone", "Z"]
 
     assert port.repo_url("apt", "edge", "dists/stable/P.gz") == (
-        "https://releases.rediacc.com/apt/edge/dists/stable/P.gz"
+        RELEASES_ORIGIN + "/apt/edge/dists/stable/P.gz"
     )
-    assert port.install_url("edge", "install.ps1") == (
-        "https://releases.rediacc.com/cli/edge/install.ps1"
-    )
+    assert port.install_url("edge", "install.ps1") == (RELEASES_ORIGIN + "/cli/edge/install.ps1")
     assert port.strip_prefix("dist/repos/apt/a/b", "dist/repos/apt/") == "a/b"
     assert port.strip_prefix("elsewhere/x", "dist/repos/apt/") == "elsewhere/x"
 

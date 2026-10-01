@@ -30,9 +30,10 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from rediacc_ci.deploy import channel_stamp, transfer_retry
+from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
-BUCKET = "rediacc-releases"
-PUBLIC_HOST = "https://releases.rediacc.com"
+BUCKET = RELEASES_BUCKET
+PUBLIC_HOST = RELEASES_ORIGIN
 CC_MUTABLE = "no-cache"
 
 # R2's single-part object limit, which bounds one CopyObject. 5 GiB, taken as 5 * 10^9 to stay clear of the edge.

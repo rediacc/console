@@ -113,6 +113,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import bash_dialect
+from rediacc_ci.well_known import RUNTIME_DIR
 
 # The repo and tag names, verbatim. `FORK_REPO`/`CP_FORK_REPO` are the composed `name:tag` refs the CLI takes as a positional.
 PARENT_REPO = "bindrace-parent"
@@ -169,10 +170,13 @@ down() {
 BINDS_CMD = "ss -Hltnp4 'sport = :5432' 2>/dev/null | awk '{print $4}'"
 
 # Phase 4. NOTE THE LEADING AND TRAILING NEWLINES: the twin opens the argument on the line after `_ssh "` and closes it on its own line.
-PROJECTS_CMD = """
+PROJECTS_CMD = (
+    """
 sudo bash -c '
 set -e
-for sock in /var/run/rediacc/docker-*.sock; do
+for sock in """
+    + RUNTIME_DIR
+    + """/docker-*.sock; do
     [ -S "$sock" ] || continue
     projects=$(docker -H unix://$sock ps -a --format "{{index .Labels \\"com.docker.compose.project\\"}}" 2>/dev/null | sort -u | grep -v "^$" || true)
     project_count=$(echo "$projects" | grep -c . || true)
@@ -185,26 +189,34 @@ done
 echo 0
 '
 """
+)
 
 # Phase 5. Every per-network socket that runs a counter container.
 #
 # The `[ -n "$(... | grep ...)" ]` is the twin's pipefail/`grep -q` conversion, carried here VERBATIM because the differential compares the exact string both sides hand to ssh. See the twin's comment above `counter_sockets()` for why the site was converted even though the remote shell sets no pipefail.
-COUNTER_SOCKETS_CMD = """sudo bash -c '
-      for sock in /var/run/rediacc/docker-*.sock; do
+COUNTER_SOCKETS_CMD = (
+    """sudo bash -c '
+      for sock in """
+    + RUNTIME_DIR
+    + """/docker-*.sock; do
         [ -S "$sock" ] || continue
         if [ -n "$(docker -H unix://$sock ps --filter name=counter --format "{{.Names}}" 2>/dev/null | grep counter)" ]; then
           echo "$sock"
         fi
       done
     '"""
+)
 
 # The five phase-2 diagnostics, in the order the twin dumps them.
 DIAG_CGROUP_TREE = "sudo find /sys/fs/cgroup/rediacc.slice -maxdepth 4 -type d | head -50"
 DIAG_BINDS = "sudo ss -tlnp4 'sport = :5432' 2>&1"
 DIAG_BPF_MAP = "sudo bpftool map dump pinned /sys/fs/bpf/rediacc/cgroup_configs 2>&1 | head -60"
 DIAG_BPF_TREE = "sudo bpftool cgroup tree /sys/fs/cgroup/rediacc.slice 2>&1 | head -30"
-DIAG_DB_LOGS = """sudo bash -c '
-      for sock in /var/run/rediacc/docker-*.sock; do
+DIAG_DB_LOGS = (
+    """sudo bash -c '
+      for sock in """
+    + RUNTIME_DIR
+    + """/docker-*.sock; do
         echo "=== $sock ==="
         docker -H unix://$sock ps -a --format "{{.ID}} {{.Names}} {{.Status}}" 2>/dev/null || true
         cid=$(docker -H unix://$sock ps -a --filter name=db --format "{{.ID}}" 2>/dev/null | head -1)
@@ -216,6 +228,7 @@ DIAG_DB_LOGS = """sudo bash -c '
         fi
       done
     '"""
+)
 
 
 def counter_value_cmd(sock: str) -> str:

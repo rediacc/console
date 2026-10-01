@@ -19,8 +19,10 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.well_known import RELEASES_ORIGIN
+
 SELF = "check-edge-manifest.py"
-MANIFEST_URL = "https://releases.rediacc.com/cli/edge/manifest.json"
+MANIFEST_URL = RELEASES_ORIGIN + "/cli/edge/manifest.json"
 
 
 def _require(name: str) -> str:

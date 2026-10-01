@@ -24,8 +24,9 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_hooks import hookio
+from rediacc_hooks.wellknown import GH_REPO
 
-REPO = "rediacc/console"
+REPO = GH_REPO
 
 CANCELLED = (
     "⚡ Auto-cancelled %d old CI run(s) across: %s. The new push triggers a fresh CI run. "
@@ -37,10 +38,12 @@ CANCELLED = (
 
 REFRESH = (
     "📝 If a PR is open for any of: %s, refresh its description NOW (gh api "
-    "repos/rediacc/console/pulls/<N> -X PATCH -F body=@<file>, then re-read it to verify -- gh "
-    "pr edit --body fails SILENTLY here and is refused by the pre-bash guard). The "
-    "PR-Description gate fails when the body is older than the newest commit. Stale-only "
-    "failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
+    "repos/"
+    + GH_REPO
+    + "/pulls/<N> -X PATCH -F body=@<file>, then re-read it to verify -- gh "
+    + "pr edit --body fails SILENTLY here and is refused by the pre-bash guard). The "
+    + "PR-Description gate fails when the body is older than the newest commit. Stale-only "
+    + "failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
 )
 
 

@@ -34,6 +34,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import RUNTIME_DIR
 
 ROOT = paths.repo_root()
 SLUG = "compose-healthcheck-smoke-test"
@@ -139,7 +140,9 @@ DEFAULT_TICKS = tuple((str(1000 + i * 20), 0) for i in range(40))
 HEALTHY_REPLIES = {
     "poll": [("starting|0\n", "", 0), ("starting|1\n", "", 0), ("healthy|0\n", "", 0)],
     "app": [("running\n", "", 0)],
-    "diag": [("=== /var/run/rediacc/docker-7.sock ===\nState=running Health=starting/1\n", "", 0)],
+    "diag": [
+        (("=== " + RUNTIME_DIR + "/docker-7.sock ===\nState=running Health=starting/1\n"), "", 0)
+    ],
     "ss": [("LISTEN 0 244 127.0.0.1:5432 0.0.0.0:*\n", "", 0)],
 }
 
@@ -180,6 +183,10 @@ def _fixture(tmp_path: pathlib.Path, *, twin: bool = False) -> pathlib.Path:
         # ONLY WHEN THE TWIN IS THE SUBJECT, which is the one-shot recorder and nothing else. The suite drives the port or a throwaway mutant of it, and the twin is no longer in the tree to copy.
         shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / PORT_REL)
     return root
 
@@ -624,7 +631,9 @@ def test_the_four_remote_programs_survive_as_single_arguments():
     poll = next(p for p in programs if "name=^db$" in p and "=== $sock ===" not in p)
     diag = next(p for p in programs if "=== $sock ===" in p)
     sockets = next(p for p in programs if "ss -tlnp" in p)
-    assert poll.startswith("sudo bash -c '\n      for sock in /var/run/rediacc/docker-*.sock; do")
+    assert poll.startswith(
+        "sudo bash -c '\n      for sock in " + RUNTIME_DIR + "/docker-*.sock; do"
+    )
     assert '--filter name=^db$ --format "{{.ID}}"' in poll
     assert '"{{.State.Health.Status}}|{{.State.Health.FailingStreak}}"' in poll
     assert poll.endswith('echo "missing|"\n    \'')
