@@ -3,10 +3,10 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { captureNavigationEvidence, pollRoutesReady } from './lib/tutorial-player-diagnostics.js';
-import { createDevServer, resourceSnapshot } from './lib/dev-server-process.js';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { createDevServer, resourceSnapshot } from './lib/dev-server-process.js';
+import { captureNavigationEvidence, pollRoutesReady } from './lib/tutorial-player-diagnostics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -196,33 +196,82 @@ function clickSelector(selector) {
   }
 }
 
+/**
+ * A click that THREW never reached the page: agent-browser resolves the element and checks it is
+ * actionable BEFORE dispatching any input, so these refusals leave the player exactly as it was.
+ * Only that class is retried. A click that succeeded and did nothing is a real dropped click, and
+ * the scenario's own state assertion still fails on it -- the retry cannot hide that.
+ */
+const REFUSED_BEFORE_DISPATCH =
+  /not found|not visible|not attached|detached|intercept|obscured|not stable/i;
+const CLICK_ATTEMPTS = 4;
+const CLICK_RETRY_GAP_MS = 400;
+
+function clickWithRetry(selector) {
+  let result = clickSelector(selector);
+  for (let attempt = 1; !result.ok && attempt < CLICK_ATTEMPTS; attempt += 1) {
+    if (!REFUSED_BEFORE_DISPATCH.test(result.reason)) break;
+    log(
+      `→ click on ${selector} refused (attempt ${attempt}), retrying: ${result.reason.slice(0, 300)}`
+    );
+    wait(CLICK_RETRY_GAP_MS);
+    result = clickSelector(selector);
+  }
+  // The refusal text is the only evidence of WHY a click failed, and it used to be dropped.
+  if (!result.ok) log(`→ click on ${selector} FAILED: ${result.reason.slice(0, 600)}`);
+  return result;
+}
+
 function clickPlaybackButton() {
-  return clickSelector('.tvp-root [data-plyr="play"]');
+  return clickWithRetry('.tvp-root [data-plyr="play"]');
 }
 
 /**
- * Wait for the player's play control to EXIST, rather than sleeping and hoping.
+ * Wait until the player is READY TO TAKE A CLICK, not merely until its play control exists.
  *
- * WHY THIS REPLACED A FIXED SLEEP. The docs mounts build through an IntersectionObserver
- * and a dynamic `import()` of 122 KB of player, and on a dev server that import is
- * unbundled: measured on 2026-09-09, the first route of a run compiled in 18.4s and the
- * first navigation took 8.4s, after which `wait(1200)` was nowhere near enough. The click
- * then timed out against an element that did not exist yet -- and the failure did not even
- * look like a timing problem, because by the time the NEXT assertion ran the player had
- * appeared and the click had landed, so the whole scenario reported five failures that were
- * each one step out of phase: "pause did not stop the video" with `paused: false` was the
- * PLAY click being reported under the pause assertion's name.
+ * WHY A FIXED SLEEP WAS REPLACED. The docs mounts build through an IntersectionObserver and a
+ * dynamic `import()` of 122 KB of player, and on a dev server that import is unbundled:
+ * measured on 2026-09-09, the first route of a run compiled in 18.4s and the first navigation
+ * took 8.4s, after which `wait(1200)` was nowhere near enough. The click then ran against an
+ * element that did not exist yet and the whole scenario reported failures one step out of phase.
+ * Only the FIRST navigation of a run is slow enough to hit it, which is why a sleep survived.
  *
- * Proven pre-existing and independent of the theater work by running this gate against
- * HEAD's tutorial-video-hydrate.ts and TutorialVideoPlayer.tsx: identical five failures.
+ * WHY THE CONTROL ALONE IS NOT ENOUGH EITHER. The control appears the moment Plyr builds its
+ * DOM, while the media element is still at readyState 0 (measured: 0 on the first sample, 4
+ * about 100 ms later on an idle machine) and the control sits below the fold (y=949 in a
+ * 577 px viewport), so the click first has to scroll it into view. CI run 110606567114 died
+ * this way: on a loaded runner the very first click was refused ("play button click failed at
+ * start"), the player stayed paused at 0, and every later step ran one phase off -- the pause
+ * click started it and the resume click paused it.
  *
- * Only the FIRST navigation of a run is slow enough to hit it, because the module graph is
- * warm afterwards -- which is exactly why a fixed sleep survived here for so long.
+ * READY = the control exists, the media has its metadata, and the control has held the same
+ * position for three consecutive samples, so no layout shift can move it under the click. The
+ * poll runs inside the page (one round trip), bounded at 20 s.
  */
-function waitForPlayerControl() {
+function waitForPlayerReady() {
   try {
-    runAgent(['wait', '.tvp-root [data-plyr="play"]']);
-    return { ok: true };
+    const state = evalInPage(`(() => new Promise((resolve) => {
+      const SELECTOR = '.tvp-root [data-plyr="play"]';
+      const deadline = Date.now() + 20000;
+      let last = null;
+      let stable = 0;
+      const poll = () => {
+        const control = document.querySelector(SELECTOR);
+        const video = document.querySelector('.tvp-root video');
+        const rect = control ? control.getBoundingClientRect() : null;
+        const key = rect ? [rect.x, rect.y, rect.width, rect.height].join(',') : null;
+        const metadata = Boolean(video) && video.readyState >= 1;
+        stable = key !== null && key === last ? stable + 1 : 0;
+        last = key;
+        if (control && metadata && stable >= 2) return resolve({ ready: true });
+        if (Date.now() > deadline) {
+          return resolve({ ready: false, control: Boolean(control), metadata, stable });
+        }
+        setTimeout(poll, 100);
+      };
+      poll();
+    }))()`);
+    return state?.ready === true ? { ok: true } : { ok: false, reason: JSON.stringify(state) };
   } catch (error) {
     return { ok: false, reason: String(error) };
   }
@@ -273,7 +322,8 @@ function sampledStates(durationMs, tickMs) {
 function scenarioBasicPlayPauseResume() {
   log('→ scenario: basic play/pause/resume');
   openFirst(`${baseUrl}/en/docs/tutorial-production-mode`);
-  assertCondition(waitForPlayerControl().ok, 'player never appeared on the docs page');
+  const ready = waitForPlayerReady();
+  assertCondition(ready.ok, 'player never became ready on the docs page', ready);
   clearConsole();
 
   assertCondition(clickPlaybackButton().ok, 'play button click failed at start');
@@ -305,7 +355,7 @@ function scenarioBasicPlayPauseResume() {
 function scenarioBurstToggle() {
   log('→ scenario: burst toggle resilience');
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
-  wait(1000);
+  assertCondition(waitForPlayerReady().ok, 'player never became ready before burst');
   clearConsole();
 
   assertCondition(clickPlaybackButton().ok, 'initial click failed before burst');
@@ -335,7 +385,7 @@ function scenarioBurstToggle() {
 function scenarioSeekNoSnapback() {
   log('→ scenario: seek no snapback');
   open(`${baseUrl}/en/docs/tutorial-add-server`);
-  wait(1200);
+  assertCondition(waitForPlayerReady().ok, 'player never became ready before seek');
 
   const hasVideo = evalInPage(`(() => Boolean(document.querySelector('.tvp-root video')))()`);
   assertCondition(hasVideo, 'tutorial video element not found on the page');
@@ -375,7 +425,7 @@ function scenarioSeekNoSnapback() {
 function scenarioFullscreenAndLayering() {
   log('→ scenario: fullscreen and layering');
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
-  wait(1000);
+  assertCondition(waitForPlayerReady().ok, 'player never became ready before fullscreen');
   assertCondition(clickPlaybackButton().ok, 'play click failed before fullscreen');
   wait(900);
 
