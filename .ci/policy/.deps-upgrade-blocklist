@@ -14,6 +14,14 @@
 #
 # To upgrade a blocked package: remove its line from this file and run
 #   npm run check:deps -- --upgrade
+#
+# A LINE HOLDS A MAJOR FOR 90 DAYS, NOT FOREVER (operator ruling 2026-10-01).
+# check-deps.ts ages every blocklisted breaking bump from the first stable,
+# non-deprecated release of the first line past the current version: it warns
+# at 60 days and fails at 90 unless .ci/policy/deps-major-exceptions.json
+# excuses it with an owner, a reason and exactly one of a re-checked blocker
+# (peer-range, engine-floor) or an expiry at most 30 days out. Minor holds
+# (playwright) are outside the clock.
 
 # ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
 @eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support

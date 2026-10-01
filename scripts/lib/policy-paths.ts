@@ -97,6 +97,8 @@ const POLICY_FILES = Object.freeze([
   '.w7p5a-real-run-blocklist',
   // T-SCHED W7P5-a Section 4, 2026-09-15. Blocks only a `ledger`-status path's REAL-RUN leg, distinct from `.w7p5a-real-run-blocklist` (which blocks a whole path's port): the existing gate treats any allowlist entry whose path has graduated to "ledger" as STALE, so a genuinely-ledgered, real-run-blocked path needs its own file rather than sharing one with the whole-port blocklist.
   '.w7p5a-real-run-leg-blocklist',
+  // 2026-10-01. The fourth .json, for the same reason as the three beside it: each entry is a small record (owner, reason, and exactly one of a re-checked blocker or a dated expiry), which a name-per-line dotfile could not carry. It excuses a blocklisted npm major past its 90-day deadline. Read only by scripts/gates/check-deps.ts, which enforces its liveness in-gate (expired, stale, dead).
+  'deps-major-exceptions.json',
   // 2026-09-21. A TABLE of permitted root and agent/ classes, one row per class with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/tree_shape.py.
   'tree-shape.json',
 ] as const);
