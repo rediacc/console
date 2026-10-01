@@ -262,6 +262,55 @@ def test_check_reports_deps_through_the_live_rule(
     assert closing.startswith("WARN %d item(s)" % (4 + int(counted))), closing
 
 
+class _OldNodeCtx(_RecordingCtx):
+    """Only `node` is on PATH, at the version given."""
+
+    def __init__(self, root: pathlib.Path, version: str) -> None:
+        super().__init__(root)
+        self.version = version
+
+    def which(self, name: str) -> str | None:
+        return "/usr/bin/node" if name == "node" else None
+
+    def run(
+        self,
+        argv: list[str],
+        *,
+        timeout: int | None = None,
+        stdin_text: str | None = None,
+    ) -> Result:
+        del timeout, stdin_text
+        return Result(0, self.version + "\n", "") if argv[0] == "node" else Result(1, "", "")
+
+
+@pytest.mark.parametrize(
+    ("version", "row", "counted"),
+    [
+        ("v22.23.2", "  node        v22.23.2 OLDER than the floor 24.11.0", True),
+        ("v24.11.0", "  node        v24.11.0", False),
+        ("v24.21.0", "  node        v24.21.0", False),
+    ],
+)
+def test_check_judges_a_present_node_against_the_floor(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, version: str, row: str, counted: bool
+) -> None:
+    """A present node under NODE_VERSION_MIN is pending work, because `./run.sh setup` refuses it."""
+    monkeypatch.setattr(machine.bridge, "call", lambda *_a: 0)
+    monkeypatch.setattr(
+        machine,
+        "_devbox_facts",
+        lambda *_a: {"worktree": str(tmp_path), "image": "1", "running": "1"},
+    )
+    monkeypatch.setattr(machine, "_port_block_row", lambda *_a: "  port block  1-10")
+    monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
+    monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
+    ctx = _OldNodeCtx(tmp_path, version)
+    machine.check(ctx, {"DEVBOX_IMAGE": "img", "NODE_VERSION_MIN": "24.11.0"})
+    assert row in ctx.lines, ctx.lines
+    # gh, the compiler and docker are MISSING under this Ctx (3); an old node adds one.
+    assert ctx.lines[-1].startswith("WARN %d item(s)" % (3 + int(counted))), ctx.lines[-1]
+
+
 def test_check_without_a_start_time_prints_no_suffix(
     monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
 ) -> None:

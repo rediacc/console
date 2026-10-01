@@ -186,7 +186,14 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
     ctx.say()
 
     if ctx.which("node"):
-        ctx.say("  node        %s" % ctx.run(["node", "--version"], timeout=10).out.strip())
+        version = ctx.run(["node", "--version"], timeout=10).out.strip()
+        floor = constants.get("NODE_VERSION_MIN", "")
+        # JUDGED AGAINST THE FLOOR, the same `_at_least` `host.node_toolchain` refuses on. Printed bare, a Node 22 host read as healthy here after the floor moved to 24 while `./run.sh setup` itself stopped on it.
+        if floor and not host._at_least(version.removeprefix("v"), floor):
+            ctx.say("  node        %s OLDER than the floor %s" % (version, floor))
+            pending += 1
+        else:
+            ctx.say("  node        %s" % version)
     else:
         ctx.say(
             "  node        MISSING (install Node >= %s)" % constants.get("NODE_VERSION_MIN", "")
