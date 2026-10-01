@@ -1,19 +1,18 @@
-## SESSION d778be9d 2026-09-30T14:11:24Z
+## SESSION d778be9d 2026-09-30T17:50:29Z
 
-# STATE d778be9d -- 2026-09-30T14:20Z
+# STATE d778be9d -- 2026-09-30T17:55Z
 ## Where
-- Branch 0930-1, PR #591 (draft). #591 head pushed: e9fd7b344 (renet 1d43311). CI watch: ci-trace --wait --until-final (bg btlg5pl19). Label e2e-dependency-probe is on #591, so this run measures the probe jobs T3.1/T4.4 wait on.
-- Push recipe: receipt in /home/developer/pushclone-0923 (fetch 0930-1, checkout -f FETCH_HEAD, submodule update, build, doc-region, ci:quick --receipt-out /home/developer/console/.ci/cache/prepush-receipt.json), submodule pushes first, console push, confirm PR head, ci-trace in background. Once P2 lands the build and doc-region pre-steps drop.
-## Committed, unpushed
-- 7fc26359f plan verbs refresh agent/INDEX.md (#f4d0bc57), 162958df3 resprofile dilate t0_ms (#0d10395d), 1211887a7 embed comment.
-## Uncommitted, being verified
-- CPU plan P2 part 1 (#4f56fcee): build:cli pool node (root build:cli also bundles), needs edges (8 gates -> build:packages, proxy-rdc-update -> build:cli), go list -buildvcs=false, stale build:cli hints, CI bundle steps use npm run build:cli. Paths in scratchpad p2.paths. Final no-dist ci:quick in the push clone (bg b1byv1cz0). Commit when green.
-## Uncommitted ON PURPOSE
-- Lane-budget gate:true flip parked in scratchpad/manifest-uncommitted.patch (lane-budget hunk). Re-apply after probe jobs are measured: budget_report --refresh, gate-bind --write, gen:gates-lock, gen-docs, drop emit:false+blocker in check-lane-budget.ts, tick T3.1 (ceca68dc) + T4.4 (3f2a10d5), plan-boxes --update.
-- PLAN-ci-quick-cpu-scheduling.md: commit only when its boxes close. Left: P2 part 2 (default cores after an A/B, parity leaves slow, push recipe), P3 first --refresh (nightly after merge), P4.
+- Branch 0930-1, PR #591. Operator pushed 7 commits from another machine (d9961eb5f); fast-forwarded here, their gate failures fixed (www fe5a7078f, devbox f54c06c99, ported actions 11ca09eac + ledger 614c4e609, trap floor 5ce6b1761, trailers via .ci/config/commit-attributions.json 9c9d28d72).
+- Operator rulings today: release label -> edge+stable on merge (692e9a829); green nightly promotes edge to stable, soak kept (fbafc2100); untrailered commits attributed by ledger; git hooks installed locally (core.hooksPath in 5 repos).
+- Push recipe: push clone /home/developer/pushclone-0923: `git fetch -q /home/developer/console +0930-1:refs/remotes/lead/0930-1 && git checkout -q -f --detach lead/0930-1 && git submodule update -q --init private/renet private/account`, then `npm run -s ci:quick -- --receipt-out /home/developer/console/.ci/cache/prepush-receipt.json` (no pre-steps since P2). Push renet first when it has commits. ci-trace --wait --until-final --timeout 3h in background.
+- Message files: write with printf in ONE call, `git commit -F` in the NEXT (the written-file guard refuses both in one command).
 ## Writers running
-- #91c4716c prose heredoc scope, #615d2982 bulk-proof arms, #6608cc6e/#3d81dafd gate-bind. Spot-check, commit each.
+- #0c7d2263/#af1d1d05 guard goldens hermetic + can_fail flake (guardcorpus.py, test_guards_differential.py, goldens).
+- #3599e4a5 test_core_devbox speed (test_core_devbox.py, devbox_shadow_driver.py).
+## Uncommitted ON PURPOSE
+- agent/plans/PLAN-ci-quick-cpu-scheduling.md (P0-P2 done; P3/P4 need gate-costs.json from the nightly capture after merge). Move it aside to scratchpad/plans-aside when re-rendering INDEX/plan-boxes so the committed index excludes it.
+- Lane-budget gate:true flip parked in scratchpad/manifest-uncommitted.patch; needs the E2E probe jobs measured by a green #591 run.
 ## Next action
-1. Read b1byv1cz0; if green commit P2 part 1 by the p2.paths list.
-2. Spot-check and commit each writer's output as it reports.
-3. On the CI verdict: tick #ae6fac15, #432fc3f3, #6730ffb8; then the lane-budget flip.
+1. Run the receipt on HEAD, push, watch #591 (last red: env registry + trailers, both fixed).
+2. Spot-check and commit each writer as it reports.
+3. On a green run: budget_report --refresh and the lane-budget flip (#eaddeba0, #74abe7ef).
