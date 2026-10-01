@@ -49,7 +49,7 @@
       "onAutoForward": "ignore"
     }
   },
-  "postCreateCommand": "{ bash .devcontainer/init-submodules.sh || true; } && npm install && npm install --prefix private/account && npm run build:packages && npx --prefix packages/e2e playwright install chromium",
+  "postCreateCommand": "{ bash .devcontainer/init-submodules.sh || true; } && npm install && npm install --prefix private/account && npm run build:packages && npx --prefix packages/e2e-tests playwright install chromium",
   "postStartCommand": "start-desktop.sh; setsid start-ttyd.sh >/tmp/ttyd.log 2>&1 & start-kvm.sh; ./run.sh provision auto; ./run.sh backend auto; npm install",
   "remoteEnv": {
     "PORT": "3000",
