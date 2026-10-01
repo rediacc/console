@@ -318,6 +318,118 @@ def unfold(text: str, work: tuple[str, ...] = ()) -> str:
     return text
 
 
+# --------------------------------------------------------------------------- Host variance: what the RECORDING host baked into an answer ---------------------------------------------------------------------------
+#
+# `fold` handles paths. A golden also carries bytes that are a property of the host that recorded it rather than of the twin, and on 2026-10-01 those made PR #591's CI (ubuntu-24.04, user `runner`, bash 5.2) fail goldens recorded here (user `developer`, bash 5.3). Each rule below names one such variance. At RECORD time `host_fold` replaces the recorder's spelling with a token; at COMPARE time `host_unfold`
+# replaces the token with THIS host's spelling, so the call site still compares raw text against what the twin would have printed here. That is stricter than masking both sides: the port must produce this host's spelling exactly, and every byte outside the token is compared verbatim.
+#
+# THE RULES, and nothing else is folded:
+#
+#   ls -l OWNER/GROUP  An `ls -l` line names the file's owner and group, which is whoever ran the suite (`developer` here, `runner` on GitHub, a bare uid in a container with no passwd entry). Folded only in the two owner/group columns of a line shaped like `ls -l` output, and only when the value IS this process's user or group: a file owned by anyone else (`root`) stays literal and still fails.
+#   bash arithmetic    bash 5.3 says `arithmetic syntax error` where 5.2 says `syntax error` (`rediacc_ci.core.bash_dialect`); ports ask the running bash, so the twin's recorded clause must too. Anchored on the three continuations bash prints after it, as `frozen.mask_arith_dialect` is, so a `syntax error near unexpected token` is left alone.
+#   bash integer       bash 5.3 says `integer expected` where 5.2 says `integer expression expected`, after `[: <value>: `. Same module, same reasoning; no golden carries it on 2026-10-01, and the rule exists so the first one recorded on a 5.3 host does not repeat the arithmetic failure on CI.
+#
+# NOT A RULE, BECAUSE THE FIXTURE WAS THE SOURCE: `cp`'s `/usr/bin/cp: cannot stat` (a test wrapper exec'd the real binary by absolute path; the wrapper now passes `exec -a <name>`, see `test_build_build_pages.RECORDER`) and the Python traceback of a fake killed by EPIPE (`test_private_concurrent_fork_isolation_test.FAKE_CANNED` now takes SIGPIPE's default, as a C tool would). Fixing the
+# fixture removed the variance; folding it would have hidden it.
+
+LS_LONG_RE = re.compile(
+    r"^(?P<lead>[-bcdlpsD][-rwxsStTl]{9}[.+@]?[ \t]+\d+[ \t]+)"
+    r"(?P<owner>\S+)(?P<gap>[ \t]+)(?P<group>\S+)(?=[ \t]+\d)",
+    re.MULTILINE,
+)
+_ARITH_RE = re.compile(
+    r"(?:arithmetic )?syntax error(?= in expression|: operand expected|: invalid arithmetic operator)"
+)
+_INTEGER_RE = re.compile(r"(?<=: )integer (?:expression )?expected")
+USER_MARK = "<USER>"
+GROUP_MARK = "<GROUP>"
+ARITH_MARK = "<BASH:arith-syntax-error>"
+INTEGER_MARK = "<BASH:integer-expected>"
+
+
+def host_identity() -> tuple[str, str]:
+    """What `ls -l` prints for a file this process created: the effective user's and group's NAMES, or the bare ids when the passwd/group database has no entry (a container run as `-u 1001:1001`)."""
+    import grp  # noqa: PLC0415 - POSIX only, and only the goldens need it
+    import pwd  # noqa: PLC0415
+
+    uid, gid = os.geteuid(), os.getegid()
+    try:
+        user = pwd.getpwuid(uid).pw_name
+    except KeyError:
+        user = str(uid)
+    try:
+        group = grp.getgrgid(gid).gr_name
+    except KeyError:
+        group = str(gid)
+    return user, group
+
+
+def host_fold(text: str, identity: tuple[str, str] | None = None) -> str:
+    """Record time: the recording host's spellings become tokens. `identity` is (user, group), defaulting to this process's."""
+    user, group = identity or host_identity()
+
+    def owner_group(m: re.Match[str]) -> str:
+        owner = USER_MARK if m["owner"] == user else m["owner"]
+        grp_name = GROUP_MARK if m["group"] == group else m["group"]
+        return m["lead"] + owner + m["gap"] + grp_name
+
+    text = LS_LONG_RE.sub(owner_group, text)
+    text = _ARITH_RE.sub(ARITH_MARK, text)
+    return _INTEGER_RE.sub(INTEGER_MARK, text)
+
+
+def host_unfold(
+    text: str,
+    identity: tuple[str, str] | None = None,
+    dialect: tuple[str, str] | None = None,
+) -> str:
+    """Compare time: each token becomes THIS host's spelling. `dialect` is (arith clause, integer phrase), defaulting to what the bash on PATH prints."""
+    # Imported here: one bash probe, paid only when a golden is read.
+    from rediacc_ci.core import bash_dialect  # noqa: PLC0415
+
+    user, group = identity or host_identity()
+    if dialect is None:
+        dialect = (bash_dialect.arith_syntax_error(), bash_dialect.integer_expected())
+    for token, value in (
+        (USER_MARK, user),
+        (GROUP_MARK, group),
+        (ARITH_MARK, dialect[0]),
+        (INTEGER_MARK, dialect[1]),
+    ):
+        text = text.replace(token, value)
+    return text
+
+
+# A CPython traceback's RENDERING is the interpreter's, not the program's. Two lines of it vary by minor version: 3.13 began echoing the source of a `python3 -c` snippet under its `File "<string>"` frame (3.12, the GitHub runner, has no source to echo), and the PEP 657 ruler (`~~~^^^`) under an echoed line appears or not by version and by how much of the line the failing expression spans.
+# A subject that RUNS `python3 -c` (rather than forging the text) prints whichever its host renders, so a golden recorded on 3.14 cannot equal a 3.12 run byte for byte, and no token could be unfolded into "what this host would render" without running the snippet.
+#
+# So this one is a COMPARE-TIME MASK, applied by the call site to BOTH sides, and it removes only those two kinds of line inside a traceback: the source echo under a `<string>` frame, and a line made of nothing but `~` and `^`. The frame lines (file, line number, function), every echo under a real file's frame, the exception type and its message are all still compared.
+_TB_START = "Traceback (most recent call last):"
+_TB_FRAME_RE = re.compile(r'^  File "(?P<file>[^"]*)", line \d+')
+_TB_RULER_RE = re.compile(r"^\s*[~^]+\s*$")
+
+
+def mask_python_traceback(text: str) -> str:
+    """Drop the interpreter-version-dependent lines of every CPython traceback in `text`; everything else is returned unchanged."""
+    out: list[str] = []
+    in_tb = False
+    snippet = False
+    for line in text.splitlines(keepends=True):
+        bare = line.rstrip("\n")
+        if bare == _TB_START:
+            in_tb, snippet = True, False
+        elif in_tb and not bare.startswith(" "):
+            in_tb = False  # the exception line ends the block
+        elif in_tb:
+            frame = _TB_FRAME_RE.match(bare)
+            if frame:
+                snippet = frame["file"] == "<string>"
+            elif _TB_RULER_RE.match(bare) or (snippet and bare.startswith("    ")):
+                continue
+        out.append(line)
+    return "".join(out)
+
+
 def _current_label() -> str:
     """The test that is asking, from pytest's own `PYTEST_CURRENT_TEST`.
 
@@ -388,13 +500,17 @@ def golden_answer(twin: str, key: str, work: tuple[str, ...] = ()) -> Answer:
         )
     out = goldenio.decode_field(row.get("out", ""))
     err = goldenio.decode_field(row.get("err", ""))
-    return int(row["rc"]), unfold(out, work), unfold(err, work)
+    return int(row["rc"]), unfold(host_unfold(out), work), unfold(host_unfold(err), work)
 
 
 def _record(twin: str, key: str, answer: Answer, work: tuple[str, ...]) -> None:
     stem = golden_stem(twin)
     rc, out, err = answer
-    RECORDED.setdefault(stem, {})[key] = (rc, fold(out, work), fold(err, work))
+    RECORDED.setdefault(stem, {})[key] = (
+        rc,
+        host_fold(fold(out, work)),
+        host_fold(fold(err, work)),
+    )
     RECORDED_TWINS[stem] = str(twin)
 
 
