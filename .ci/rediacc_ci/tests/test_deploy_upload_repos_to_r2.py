@@ -18,19 +18,18 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import re
 import shutil
 import subprocess
 import sys
-import typing
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import upload_repos_to_r2 as port
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "upload-repos-to-r2.sh"
@@ -153,6 +152,10 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    # common.sh sources the generated shell form of the same constants (another writer's change, 2026-10-01); the fixture tree has to carry it or the twin dies before it starts.
+    generated = ROOT / ".ci" / "config" / "well-known.generated.sh"
+    if generated.is_file():
+        shutil.copy2(generated, root / ".ci" / "config" / generated.name)
     copy_loader(root)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "deploy" / PORT.name)
 
@@ -639,3 +642,121 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# --------------------------------------------------------------------------- Rule T: a transient R2 failure is retried, a refusal is not (#4175e786) ---------------------------------------------------------------------------
+
+INCOMPLETE_READ = (
+    "upload failed: dist/repos/apt/InRelease to s3://%s/apt/edge/InRelease "
+    "('Connection broken: IncompleteRead(7540288 bytes read, 848320 more expected)', "
+    "IncompleteRead(7540288 bytes read, 848320 more expected))\n" % RELEASES_BUCKET
+)
+
+# Fails the first `FAKE_AWS_FAIL_TIMES` calls with `FAKE_AWS_FAIL_STDERR`, then succeeds. The counter lives in a file because every call is its own process.
+FLAKY_AWS = """#!/usr/bin/python3
+import os
+import sys
+
+log = os.environ["FAKE_CALL_LOG"]
+with open(log, "a") as fh:
+    fh.write("aws\\t" + "\\t".join(sys.argv[1:]) + "\\n")
+counter = log + ".n"
+n = int(open(counter).read()) if os.path.exists(counter) else 0
+open(counter, "w").write(str(n + 1))
+if n < int(os.environ["FAKE_AWS_FAIL_TIMES"]):
+    sys.stderr.write(os.environ["FAKE_AWS_FAIL_STDERR"])
+    sys.exit(1)
+"""
+
+
+def _drive_port_in_process(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capfd: pytest.CaptureFixture[str],
+    *,
+    fail_times: int,
+    fail_stderr: str,
+) -> tuple[int, str, list[str]]:
+    """`port.main()` over a fixture tree with a flaky `aws`, no sleeping, and the delay between attempts zeroed.
+
+    In process because the delay is a module constant and a test that slept it for real would pay seconds per case; everything the port mutates (cwd, environment) is registered with monkeypatch first so it is restored.
+    """
+    root = fixture(tmp_path, {"dist/repos/apt/InRelease": "InRelease body\n"})
+    stub = pathlib.Path(_bin(root, aws_body=FLAKY_AWS))
+    purge = root / "purge.sh"
+    purge.write_text("#!/usr/bin/python3\nimport sys\n\nsys.stdin.read()\n", encoding="utf-8")
+    purge.chmod(0o755)
+    call_log = root / "calls.log"
+    call_log.write_text("", encoding="utf-8")
+
+    monkeypatch.chdir(root)
+    monkeypatch.setattr(port, "repo_root", lambda: str(root))
+    monkeypatch.setattr(port, "PURGE_SCRIPT", str(purge))
+    monkeypatch.setattr(port, "RETRY_DELAY_S", 0.0)
+    for name, value in {
+        **BASE_ENV,
+        "PATH": str(stub),
+        "FAKE_CALL_LOG": str(call_log),
+        "FAKE_AWS_FAIL_TIMES": str(fail_times),
+        "FAKE_AWS_FAIL_STDERR": fail_stderr,
+        "AWS_ACCESS_KEY_ID": "x",
+        "AWS_SECRET_ACCESS_KEY": "x",
+        "AWS_DEFAULT_REGION": "x",
+    }.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.delenv("SKIP_RELEASE", raising=False)
+
+    status = port.main([])
+    captured = capfd.readouterr()
+    calls = [line for line in call_log.read_text(encoding="utf-8").splitlines() if line]
+    return status, captured.err, calls
+
+
+def test_delta_a_broken_read_on_the_sync_is_retried_through(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """INTENTIONAL DELTA (Rule T, #4175e786). The twin ran each `aws s3 sync` / `cp` once under `set -e`, so ONE transient R2 `IncompleteRead` ended a release upload half-way. The port retries the transient class (3 attempts), says so on stderr, and still shows aws's own message each time. A fake that fails once, then succeeds."""
+    status, err, calls = _drive_port_in_process(
+        tmp_path, monkeypatch, capfd, fail_times=1, fail_stderr=INCOMPLETE_READ
+    )
+    assert status == 0, err
+    assert len([c for c in calls if c.startswith("aws\ts3\tsync")]) == 2
+    assert "IncompleteRead" in err
+    assert "retrying (2/3)" in err
+
+
+def test_delta_a_persistent_broken_read_still_fails_and_names_the_cause(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """Bounded: three attempts, then the run fails with aws's own status and a line naming the cause. A fake that always fails."""
+    status, err, calls = _drive_port_in_process(
+        tmp_path, monkeypatch, capfd, fail_times=99, fail_stderr=INCOMPLETE_READ
+    )
+    assert status == 1
+    assert len([c for c in calls if c.startswith("aws\ts3\tsync")]) == 3
+    assert "after 3 attempts" in err
+    assert "IncompleteRead" in err
+    assert "Repos uploaded" not in err
+
+
+@pytest.mark.parametrize(
+    "refusal",
+    [
+        "An error occurred (AccessDenied) when calling the PutObject operation\n",
+        "An error occurred (NoSuchBucket) when calling the PutObject operation\n",
+        "upload failed: the bucket said no\n",
+    ],
+)
+def test_delta_a_refusal_is_never_retried(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capfd: pytest.CaptureFixture[str],
+    refusal: str,
+) -> None:
+    status, err, calls = _drive_port_in_process(
+        tmp_path, monkeypatch, capfd, fail_times=99, fail_stderr=refusal
+    )
+    assert status == 1
+    assert len([c for c in calls if c.startswith("aws\ts3\tsync")]) == 1
+    assert "retrying (" not in err
+    assert refusal in err
