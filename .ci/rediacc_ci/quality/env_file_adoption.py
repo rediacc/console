@@ -79,15 +79,6 @@ EXEMPT = (
         ),
     ),
     (
-        ".ci/scripts/lib/common.sh",
-        (
-            "BLOCKER: loads .ci/config/well-known.env for about 28 scripts whose tests run "
-            "under a scrubbed PATH with no python3; env_file_load there measured about 790 "
-            "failures and 289 errors across about 55 test files on 2026-10-01, the same "
-            "python3 circularity as constants.sh. The retarget is worklist-tracked."
-        ),
-    ),
-    (
         ".ci/scripts/lib/toolchain.sh",
         (
             "BLOCKER: .ci/bootstrap.sh:76 calls toolchain_load as its FIRST action, and "

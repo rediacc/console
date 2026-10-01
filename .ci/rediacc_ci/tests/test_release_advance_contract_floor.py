@@ -95,6 +95,10 @@ def _fixture(tmp_path: pathlib.Path, floor_text: str | None) -> pathlib.Path:
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", fix / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        fix / ".ci" / "config" / "well-known.generated.sh",
+    )
     for lib in ("common.sh", "release-state-validator.sh"):
         shutil.copy2(ROOT / ".ci" / "scripts" / "lib" / lib, fix / ".ci" / "scripts" / "lib" / lib)
     for rel in PACKAGE_FILES:

@@ -252,6 +252,10 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", tree / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        tree / ".ci" / "config" / "well-known.generated.sh",
+    )
     if with_regions:
         shutil.copy2(REGIONS, tree / "regions.json")
     return tree

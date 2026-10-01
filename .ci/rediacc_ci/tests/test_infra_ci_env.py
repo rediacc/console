@@ -166,7 +166,7 @@ def _split(stdout: bytes, environ_out: bool):
             continue
         if environ_out and NAME_VALUE.match(line):
             name, _, value = line.partition("=")
-            # `WK_*` is the well-known registry the twin sources under `set -a`; it is not part of what ci-env hands its caller.
+            # `WK_*` is the well-known registry the twin exports through .ci/config/well-known.generated.sh; it is not part of what ci-env hands its caller.
             if name not in ci_env.SHELL_PRIVATE and not name.startswith("WK_"):
                 found[name] = value
             continue

@@ -104,6 +104,10 @@ def build_fixture_tree(gate, root: pathlib.Path) -> None:
         paths.from_root(".ci", "config", "well-known.env"),
         root / ".ci" / "config" / "well-known.env",
     )
+    shutil.copy2(
+        paths.from_root(".ci", "config", "well-known.generated.sh"),
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     for rel in DECLARED_INPUTS:
         target = root / rel
@@ -382,6 +386,10 @@ def closure_fixture(gate, resolver_body: str | None = None):
         shutil.copy2(
             paths.from_root(".ci", "config", "well-known.env"),
             tmp / ".ci" / "config" / "well-known.env",
+        )
+        shutil.copy2(
+            paths.from_root(".ci", "config", "well-known.generated.sh"),
+            tmp / ".ci" / "config" / "well-known.generated.sh",
         )
         resolver_copy = ci_dir / "version" / RESOLVER.name
         if resolver_body is None:

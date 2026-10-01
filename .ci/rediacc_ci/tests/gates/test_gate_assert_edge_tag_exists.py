@@ -297,6 +297,9 @@ def test_the_control_fires_against_a_planted_403_pass(gate, tmp_path):
     (sandbox.parent / "config" / "well-known.env").symlink_to(
         paths.from_root(".ci", "config", "well-known.env")
     )
+    (sandbox.parent / "config" / "well-known.generated.sh").symlink_to(
+        paths.from_root(".ci", "config", "well-known.generated.sh")
+    )
     mutant = sandbox / "release" / "mutant-403-passes.sh"
     mutant.write_text(
         "".join(source[:begin]) + MUTANT_ARM + "".join(source[end + 1 :]), encoding="utf-8"

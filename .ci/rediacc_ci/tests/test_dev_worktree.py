@@ -254,6 +254,10 @@ def make_fixture(tmp_path: Path, name: str = "fx") -> Fixture:
     shutil.copy2(
         REPO / ".ci" / "config" / "well-known.env", fx.root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        REPO / ".ci" / "config" / "well-known.generated.sh",
+        fx.root / ".ci" / "config" / "well-known.generated.sh",
+    )
     fx.git("submodule", "add", "-q", str(fx.sub), "private/sub")
     (fx.root / ".gitignore").write_text(".worktrees/\n", encoding="utf-8")
     fx.git("add", "--", ".gitignore", "scripts", ".ci")

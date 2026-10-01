@@ -14,18 +14,18 @@ set -euo pipefail
 # WELL-KNOWN VALUES
 # =============================================================================
 # Every script that sources this file reads the WK_* facts (origins, registry,
-# repository slugs, paths) from the one registry instead of typing them.
-_COMMON_WELL_KNOWN_ENV="${BASH_SOURCE[0]%/*}/../../config/well-known.env"
-if [[ -r "$_COMMON_WELL_KNOWN_ENV" ]]; then
-    set -a
+# repository slugs, paths) through well-known.generated.sh, the bash projection
+# of .ci/config/well-known.env: an exported WK_* is kept (the shell wins), nothing
+# in the file executes, and no python3 is needed (several tests scrub it off PATH).
+_COMMON_WELL_KNOWN_SH="${BASH_SOURCE[0]%/*}/../../config/well-known.generated.sh"
+if [[ -r "$_COMMON_WELL_KNOWN_SH" ]]; then
     # shellcheck source=/dev/null
-    . "$_COMMON_WELL_KNOWN_ENV"
-    set +a
+    . "$_COMMON_WELL_KNOWN_SH"
 else
-    echo "common.sh: well-known values missing: $_COMMON_WELL_KNOWN_ENV" >&2
+    echo "common.sh: well-known values missing: $_COMMON_WELL_KNOWN_SH" >&2
     return 1 2>/dev/null || exit 1
 fi
-unset _COMMON_WELL_KNOWN_ENV
+unset _COMMON_WELL_KNOWN_SH
 
 # =============================================================================
 # COLORS AND LOGGING

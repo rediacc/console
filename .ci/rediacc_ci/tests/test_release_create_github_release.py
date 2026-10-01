@@ -91,6 +91,10 @@ def _fixture(tmp_path: pathlib.Path, side: str, assets: tuple[str, ...]) -> path
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     for entry in assets:
         target = root / entry.rstrip("/")

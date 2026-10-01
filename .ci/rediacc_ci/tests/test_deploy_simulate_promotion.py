@@ -295,6 +295,10 @@ def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pat
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     copy_loader(root)
 
     for side in ("old", "new"):

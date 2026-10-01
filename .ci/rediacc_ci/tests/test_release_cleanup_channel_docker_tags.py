@@ -71,6 +71,10 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_deleter: bool = True) ->
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     if with_deleter:
         deleter = root / ".ci" / "scripts" / "docker" / "cleanup_staging.py"
         deleter.write_text(FAKE_CLEANUP_STAGING, encoding="utf-8")

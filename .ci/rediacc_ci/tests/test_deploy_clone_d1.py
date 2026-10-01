@@ -228,6 +228,10 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     if sanitize_sql:
         (root / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql").write_text(
             "UPDATE users SET email = 'redacted@example.com';\n", encoding="utf-8"

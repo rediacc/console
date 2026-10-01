@@ -73,6 +73,10 @@ def build_fixture(gate, base: pathlib.Path, *, rogue: bool = False) -> Fixture:
         paths.from_root(".ci", "config", "well-known.env"),
         base / "repo" / ".ci" / "config" / "well-known.env",
     )
+    shutil.copy2(
+        paths.from_root(".ci", "config", "well-known.generated.sh"),
+        base / "repo" / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     # The purge step shells out to this; keep it inert but present. It RECORDS the URLs it is handed, so the purge assertions read what the script actually asked to be purged rather than a proxy for it.
     _write_exec(

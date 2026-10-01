@@ -53,6 +53,7 @@ VENDORED = (
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
+    ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/build/__init__.py",
     ".ci/rediacc_ci/version/__init__.py",
     ".ci/rediacc_ci/version/inject_env.py",

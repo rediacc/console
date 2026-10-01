@@ -47,6 +47,7 @@
     "regions.json": ["regions.json:*", "WK_ACCOUNT_DEFAULT_ORIGIN"],
     "packages/shared/src/regions/data.json": ["regions.json:*", "WK_ACCOUNT_DEFAULT_ORIGIN"],
     "packages/shared/src/config/well-known.generated.ts": ["*"],
+    ".ci/config/well-known.generated.sh": ["*"],
     "scripts/data/literal-sources.json": ["*"]
   },
   "exemptions": [
@@ -106,7 +107,7 @@
     "ts": "{key}, imported from '@rediacc/shared/config/well-known.generated'",
     "worker": "{key}, imported relatively from packages/shared/src/config/well-known.generated",
     "py": "from rediacc_ci.well_known import {name}",
-    "sh": "${key} (source .ci/config/well-known.env, or .ci/config/constants.sh)",
+    "sh": "${key} (source .ci/config/well-known.generated.sh, or .ci/scripts/lib/common.sh / .ci/config/constants.sh)",
     "workflow": "${{ env.{key} }} after the 'Load well-known' step",
     "config": "{key}, composed at read time (ARG, ${VAR:-...}, a stored path), or declare this file a carrier",
     "region": "regions.json ({value}); TS: BAKED_IN_REGIONS / DEFAULT_REGION from '@rediacc/shared/regions'"

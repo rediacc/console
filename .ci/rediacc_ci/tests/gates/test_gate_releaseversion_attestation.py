@@ -40,6 +40,10 @@ class Fixture:
             paths.from_root(".ci", "config", "well-known.env"),
             root / ".ci" / "config" / "well-known.env",
         )
+        shutil.copy(
+            paths.from_root(".ci", "config", "well-known.generated.sh"),
+            root / ".ci" / "config" / "well-known.generated.sh",
+        )
         self.output = ""
 
     def artifacts(self, *relatives: str) -> None:

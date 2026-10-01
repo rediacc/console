@@ -51,6 +51,10 @@ def _build_scratch_tree(tmp_path: pathlib.Path) -> None:
         os.path.join(root, ".ci/config/well-known.env"),
         tmp_path / ".ci" / "config" / "well-known.env",
     )
+    shutil.copy(
+        os.path.join(root, ".ci/config/well-known.generated.sh"),
+        tmp_path / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     rediacc_ci = tmp_path / ".ci" / "rediacc_ci"
     release_pkg = rediacc_ci / "release"

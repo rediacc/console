@@ -12,8 +12,10 @@
 # WK_* therefore beats the registry. Python reads the same file directly through
 # rediacc_ci.well_known.
 #
-# Exempt by design: .ci/config/constants.sh sources the registry itself because
-# it runs before python3 is guaranteed (the BLOCKER in check_env_file_adoption).
+# .ci/config/constants.sh and .ci/scripts/lib/common.sh do not call this: they
+# run where python3 is not guaranteed, so they source .ci/config/well-known.generated.sh,
+# the bash projection check:ci-literal-sources renders from the same registry
+# with the same shell-wins rule and no python3 dependency.
 #
 # A missing or empty registry is a failure, never a quiet no-op: env_file_load
 # treats an absent file as normal, and a script that then reads an empty

@@ -221,6 +221,10 @@ def fixture(
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     if worker_dir:
         (root / "workers" / "www").mkdir(parents=True, exist_ok=True)
