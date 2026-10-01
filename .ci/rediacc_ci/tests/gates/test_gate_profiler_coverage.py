@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-profiler-coverage.sh`, retired in W7 P5.
 
-Tests for `.ci/scripts/quality/check-profiler-coverage.sh`: every Linux job uses the runner profiler, and every job that uses it is configured right.
+Tests for the profiler-coverage gate, `.ci/scripts/quality/check_profiler_coverage.py` (the entry `check:ci-profiler-coverage` runs; it replaced `check-profiler-coverage.sh`, retired under PLAN-retire-bash-oracles B3): every Linux job uses the runner profiler, and every job that uses it is configured right.
 
 Driven entirely through the gate's env seams (`PROFILER_COVERAGE_WORKFLOW_DIR`, `_ALLOWLIST`, `_ACTION_DIR`, `_WRAPPER_DIRS`, `_COVERING_ACTIONS` and the three floors) against temp fixtures, so no tracked workflow or allowlist is touched. The last twin case is the exception and the important one: it runs the gate SEAM-FREE over the real tree, which is what makes the manifest's
 CI-coverage claim true.
@@ -23,13 +23,14 @@ The twin's own leak check is kept as well: `test_real_tree_seam_free` forbids th
 """
 
 import os
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 # test_real_tree_seam_free, test_setup_workspace_is_builtin_coverage, test_wrapper_that_lost_the_profiler_refuses and the added control all read the real tree; reads need no group. See the docstring.
 
-GATE_REL = ".ci/scripts/quality/check-profiler-coverage.sh"
+GATE_REL = ".ci/scripts/quality/check_profiler_coverage.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
@@ -44,7 +45,7 @@ def require_gate(gate) -> str:
     """The subject, proved present before anything is claimed."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE_REL)
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return sys.executable
 
 
 def run_gate(
@@ -62,7 +63,7 @@ def run_gate(
     call rather than exported, which is what the twin's inline `VAR=... bash`
     form buys it: one case cannot leak a seam into the next.
     """
-    bash = require_gate(gate)
+    python = require_gate(gate)
     env = {
         "PROFILER_COVERAGE_WORKFLOW_DIR": os.fspath(workflow_dir),
         "PROFILER_COVERAGE_ALLOWLIST": os.fspath(allowlist),
@@ -71,7 +72,7 @@ def run_gate(
         "PROFILER_COVERAGE_MIN_LINUX": str(minl),
     }
     env.update(extra)
-    return harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
+    return harness.run([python, os.fspath(GATE)], cwd=paths.repo_root(), env=env)
 
 
 def profiled_job(job: str, runner: str, *extra_with: str) -> str:
@@ -701,8 +702,8 @@ def test_missing_action_yml_refuses(gate):
 
 def test_real_tree_seam_free(gate):
     """THE LOAD-BEARING CASE. No env seams at all: the real workflow dir, the real allowlist, the real action.yml, the real floors. This is what the manifest's BLOCKER claims runs on every CI run."""
-    bash = require_gate(gate)
-    result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root())
+    python = require_gate(gate)
+    result = harness.run([python, os.fspath(GATE)], cwd=paths.repo_root())
     gate.assert_exit(0, result, "the real tree must satisfy the gate")
     gate.assert_contains(result.combined, "Linux job(s) profiled", "prints the real coverage count")
     gate.assert_not_contains(

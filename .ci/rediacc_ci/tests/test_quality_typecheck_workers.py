@@ -24,12 +24,15 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.quality import typecheck_workers as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "quality" / "typecheck-workers.sh"
+# Retired under PLAN-retire-bash-oracles B3: every `_run(..., "old")` answers from `goldens/twins/quality.typecheck-workers.jsonl`, streams and call log both.
+TWIN_REL = ".ci/scripts/quality/typecheck-workers.sh"
+TWIN = ROOT / TWIN_REL
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "quality" / "typecheck_workers.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -97,7 +100,8 @@ def fixture(
     """
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "quality").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "quality" / TWIN.name)
+    if TWIN.is_file():  # only a re-freeze from bash runs it
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "quality" / TWIN.name)
 
     if make_workers_dir:
         (root / "workers").mkdir(parents=True, exist_ok=True)
@@ -115,6 +119,37 @@ def fixture(
 
 
 def _run(
+    root: pathlib.Path,
+    side: str,
+    *,
+    args: tuple[str, ...] = (),
+    **extra: str,
+):
+    """One side's (process, call log); the twin's from its golden."""
+    if side != "old":
+        return _live(root, side, args=args, **extra)
+    cell: dict[str, tuple] = {}
+
+    def run(which: str):
+        def go():
+            cell["v"] = _live(root, which, args=args, **extra)
+            proc = cell["v"][0]
+            return proc.returncode, proc.stdout, proc.stderr
+
+        return go
+
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        ["args=%r" % (args,), "env=%r" % (sorted(extra.items()),)],
+        run("old"),
+        port=run("new"),
+        extras={"calls": lambda: cell["v"][1]},
+        work=(str(root.parent),),
+    )
+    return subprocess.CompletedProcess([BASH, TWIN_REL], rc, out, err), got["calls"]
+
+
+def _live(
     root: pathlib.Path,
     side: str,
     *,
@@ -431,21 +466,18 @@ def test_tsc_argv_is_the_twins_words() -> None:
     ]
 
 
-def test_the_port_does_not_carry_a_second_copy_of_the_gate_header() -> None:
-    """The twin is the REGISTERED gate. `scripts/ci-runner` derives the estate
-    from `---- gate ----` blocks, so a copy of the block in the port would
-    register `lint:unused` twice from two files. The twin's own block is asserted present in the same breath, because "neither file has one" would satisfy a one-sided check.
+def test_the_port_carries_the_only_copy_of_the_gate_header() -> None:
+    """The port is the REGISTERED gate since the twin's retirement (PLAN-retire-bash-oracles B3). `scripts/ci-runner` derives the estate from `---- gate ----` blocks, so the block has exactly one owner, and the twin's absence is asserted in the same breath: "one file has one" with the twin still on disk would be two owners.
 
     THE MATCHER IS `scripts/lib/gate-header.ts`'s OWN, transcribed: an opening marker is a WHOLE LINE, optionally commented. A substring test reads as stricter and is in fact wrong -- it fails on this file's own prose, which names the marker in a sentence and declares nothing.
     """
     open_marker = re.compile(r"^\s*(?:#|//|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$")
-    twin_lines = TWIN.read_text(encoding="utf-8").split("\n")
     port_lines = PORT_FILE.read_text(encoding="utf-8").split("\n")
-    assert [ln for ln in twin_lines if open_marker.match(ln)], "the twin's registration moved"
-    assert [ln for ln in port_lines if open_marker.match(ln)] == []
-    assert "---- gate ----" in PORT_FILE.read_text(encoding="utf-8"), (
-        "the port explains the omission in prose, which is not a declaration"
+    assert not TWIN.is_file(), "the twin is back on disk, so the header has two candidate owners"
+    assert len([ln for ln in port_lines if open_marker.match(ln)]) == 1, (
+        "the port must carry exactly one header"
     )
+    assert "id: lint:unused" in port_lines
 
 
 def test_the_port_reads_no_environment_variable_of_its_own() -> None:
@@ -457,14 +489,23 @@ def test_the_port_reads_no_environment_variable_of_its_own() -> None:
 
 def test_the_twin_still_says_what_this_port_says_it_says() -> None:
     """A STALENESS GUARD, quoting the twin. Each of these is a line the port reproduces; if one moves, the port's claim to be a port needs re-checking rather than the assertion needs relaxing."""
-    text = TWIN.read_text(encoding="utf-8")
-    assert "find workers -maxdepth 2 -name tsconfig.json -type f | sort" in text
-    assert 'if [ ! -d "$dir/node_modules" ]; then' in text
-    assert 'if [ "${1:-}" = "--list" ]; then' in text
-    assert '[ "${1:-}" = "--install" ] && INSTALL_ONLY=1' in text
-    assert 'npx tsc --noEmit -p "$config"' in text
-    for line in port.NO_WORKERS_LINES:
-        assert line in text
+    needles = (
+        "find workers -maxdepth 2 -name tsconfig.json -type f | sort",
+        'if [ ! -d "$dir/node_modules" ]; then',
+        'if [ "${1:-}" = "--list" ]; then',
+        '[ "${1:-}" = "--install" ] && INSTALL_ONLY=1',
+        'npx tsc --noEmit -p "$config"',
+        *port.NO_WORKERS_LINES,
+    )
+
+    def read_twin():
+        body = TWIN.read_text(encoding="utf-8")
+        return 0, "".join("%s\n" % n for n in needles if n in body), ""
+
+    # Frozen with the retired twin (PLAN-retire-bash-oracles B3): which of the lines the port reproduces it carried.
+    text = diff.twin_call(TWIN_REL, ["carried lines"], read_twin)[1]
+    for needle in needles:
+        assert needle in text, needle
 
 
 def test_the_helpers_the_selftest_leans_on_are_exported() -> None:

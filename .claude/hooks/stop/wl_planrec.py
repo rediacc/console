@@ -352,7 +352,7 @@ def resolve(root, kind, token):
                 for a clone with no remote (the test fixture is one).
       fileline  wl_checks.citation_state, imported lazily -- see the note below.
       gate      a key in package.json's `scripts`. This is the same oracle
-                check-trap-registry.sh uses for its `gate:` pointers, so a gate
+                the trap-registry gate uses for its `gate:` pointers, so a gate
                 id that resolves here resolves there.
       plan      an `agent/PLAN-*.md` on disk.
       trap      a `Trap-Id:` in docs/agent-reference/TRAPS.md.

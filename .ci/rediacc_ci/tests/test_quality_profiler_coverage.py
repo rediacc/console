@@ -6,9 +6,12 @@ WHAT THE SHADOW LEDGER ALREADY PROVES:
 WHAT THE LEDGER CANNOT ISOLATE is the EIGHT EXTRACTORS, and they are the whole gate. Each is a small awk state machine whose failure mode is silence: an extractor that stops matching under-reports coverage, and under-reported coverage reads exactly like a clean tree. The twin knows this, which is why it self-tests every extractor against a planted sample before it looks at the real
 tree; this file does the other half, comparing the PORT against the TWIN over the repository's own workflows.
 
-THE TWIN'S TEXT IS READ AT TEST TIME, not copied here. Each awk program is pulled out of `.ci/scripts/quality/check-profiler-coverage.sh` by name and run under bash, so this comparison cannot drift away from the file it is about. A copy would be a third implementation, and a third implementation is what this whole workstream exists to remove.
+THE TWIN IS RETIRED, AND ITS ANSWERS ARE FROZEN WITH THEIR INPUTS (PLAN-retire-bash-oracles B3). Each awk program used to be pulled out of `.ci/scripts/quality/check-profiler-coverage.sh` by name and run under bash over the LIVE workflows. A frozen answer over a live corpus would go stale on the next unrelated workflow edit, so the corpus is frozen with it: nine
+workflows chosen to cover every shape the extractors branch on (a reusable-workflow caller, a matrixed `runs-on`, profiler steps with and without inputs) are snapshotted into `goldens/twins/quality.check-profiler-coverage.jsonl` under the label `corpus`, and the port is compared against the twin's answers over THAT text. The live tree is the gate's own business
+(`test_gate_profiler_coverage.py` and `check:ci-profiler-coverage`). The floors below are the snapshot's measured counts, not the live tree's.
 """
 
+import os
 import pathlib
 import re
 import subprocess
@@ -17,10 +20,26 @@ import pytest
 
 from rediacc_ci import log, paths
 from rediacc_ci.quality import profiler_coverage as pc
+from rediacc_ci.tests import differential as diff
 
-TWIN = paths.CI_DIR.parent / ".ci" / "scripts" / "quality" / "check-profiler-coverage.sh"
+TWIN_REL = ".ci/scripts/quality/check-profiler-coverage.sh"
+TWIN = paths.CI_DIR.parent / TWIN_REL
 WORKFLOWS = paths.CI_DIR.parent / ".github" / "workflows"
 ACTION_REF = "./.github/actions/profiler"
+ACTION_REL = ".github/actions/profiler/action.yml"
+
+# The frozen corpus: the smallest set of real workflows (as of the freeze) covering every branch the extractors take. See the module docstring.
+CORPUS_NAMES = (
+    "ci-build-cli.yml",
+    "ci-obs-mirror.yml",
+    "ci-vm-bake.yml",
+    "claude-mention.yml",
+    "claude-review.yml",
+    "cleanup-r2-staging.yml",
+    "ct-update-flow.yml",
+    "nightly-status.yml",
+    "profiler-probe.yml",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -48,17 +67,40 @@ def _twin_function(name: str) -> str:
 
 
 def _run_twin(names: list[str], call: str, *args: str) -> str:
-    script = "\n".join(_twin_function(n) for n in names) + "\n" + call + "\n"
-    proc = subprocess.run(
-        ["bash", "-c", script, "_", *args],
-        capture_output=True,
-        text=True,
-        check=False,
-        env={"LC_ALL": "C", "LANG": "C", "PATH": "/usr/bin:/bin"},
-    )
-    assert proc.returncode == 0, "%s / %s" % (proc.returncode, proc.stderr)
-    assert proc.stderr == "", proc.stderr
-    return proc.stdout
+    """The twin's answer for `call`, from the golden. The key carries the content of every argument that is a file, so a case is the same case wherever its scratch file lives."""
+    files = [a for a in args if os.path.isfile(a)]
+    work = tuple(sorted({os.path.dirname(f) for f in files}))
+
+    def bash():
+        script = "\n".join(_twin_function(n) for n in names) + "\n" + call + "\n"
+        proc = subprocess.run(
+            ["bash", "-c", script, "_", *args],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={"LC_ALL": "C", "LANG": "C", "PATH": "/usr/bin:/bin"},
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    parts = [
+        ",".join(names),
+        call,
+        *args,
+        *(pathlib.Path(f).read_text(encoding="utf-8") for f in files),
+    ]
+    rc, out, err = diff.twin_call(TWIN_REL, parts, bash, work=work)
+    assert rc == 0, "%s / %s" % (rc, err)
+    assert err == "", err
+    return out
+
+
+def _frozen_text(rel: str) -> str:
+    """A corpus file as it was when the twin was frozen (label `corpus`, shared by every test)."""
+
+    def live():
+        return 0, (paths.CI_DIR.parent / rel).read_text(encoding="utf-8"), ""
+
+    return diff.twin_call(TWIN_REL, ["corpus", rel], live, port=live, label="corpus")[1]
 
 
 def _lines(out: str) -> list[str]:
@@ -71,46 +113,54 @@ def _write(tmp: pathlib.Path, name: str, body: str) -> str:
     return str(path)
 
 
-def _corpus() -> list[pathlib.Path]:
-    """Every real workflow file, which is the corpus both sides must agree on.
+def _corpus(tmp: pathlib.Path) -> list[pathlib.Path]:
+    """The frozen workflows, written under `tmp` so both sides read a real file.
 
     A ZERO-LENGTH CORPUS IS A FAILING TEST, not a skipped one: every case below would pass vacuously over an empty list, which is the exact shape this gate's own floors exist to refuse.
     """
-    found = sorted(p for p in WORKFLOWS.iterdir() if p.is_file() and p.suffix in (".yml", ".yaml"))
-    assert len(found) >= 10, "the workflow corpus collapsed to %d file(s)" % len(found)
+    found = []
+    base = tmp / "workflows"
+    base.mkdir(exist_ok=True)
+    for name in CORPUS_NAMES:
+        path = base / name
+        path.write_text(_frozen_text(".github/workflows/%s" % name), encoding="utf-8")
+        found.append(path)
+    assert len(found) == len(CORPUS_NAMES), "the workflow corpus collapsed to %d file(s)" % len(
+        found
+    )
     return found
 
 
 # --------------------------------------------------------------------------- The extractors, over the repository's own workflows ---------------------------------------------------------------------------
 
 
-def test_job_keys_agrees_with_the_twin_on_every_real_workflow() -> None:
+def test_job_keys_agrees_with_the_twin_on_every_real_workflow(tmp_path: pathlib.Path) -> None:
     total = 0
-    for wf in _corpus():
+    for wf in _corpus(tmp_path):
         want = _lines(_run_twin(["job_keys"], 'job_keys "$1"', str(wf)))
         got = pc.job_keys(pc.records(wf.read_text(encoding="utf-8")))
         assert got == want, wf.name
         total += len(got)
     # THE SHAPE, NOT JUST THE VERDICT: a parse that collapsed to nothing would make every comparison above trivially true.
-    assert total >= 60, "the two agreed on only %d job(s)" % total
+    assert total >= 13, "the two agreed on only %d job(s)" % total
 
 
-def test_job_block_agrees_with_the_twin_on_every_real_job() -> None:
+def test_job_block_agrees_with_the_twin_on_every_real_job(tmp_path: pathlib.Path) -> None:
     checked = 0
-    for wf in _corpus():
+    for wf in _corpus(tmp_path):
         lines = pc.records(wf.read_text(encoding="utf-8"))
         for job in pc.job_keys(lines):
             want = _run_twin(["job_block"], 'job_block "$1" "$2"', str(wf), job)
             got = "".join("%s\n" % line for line in pc.job_block(lines, job))
             assert got == want, "%s:%s" % (wf.name, job)
             checked += 1
-    assert checked >= 60, "only %d block(s) compared" % checked
+    assert checked >= 13, "only %d block(s) compared" % checked
 
 
 def test_runs_on_and_is_caller_agree_with_the_twin(tmp_path: pathlib.Path) -> None:
     seen_runner = 0
     seen_caller = 0
-    for wf in _corpus():
+    for wf in _corpus(tmp_path):
         lines = pc.records(wf.read_text(encoding="utf-8"))
         for job in pc.job_keys(lines):
             block = pc.job_block(lines, job)
@@ -129,7 +179,7 @@ def test_runs_on_and_is_caller_agree_with_the_twin(tmp_path: pathlib.Path) -> No
 def test_covering_uses_and_step_inputs_agree_with_the_twin(tmp_path: pathlib.Path) -> None:
     covered = 0
     inputs_seen = 0
-    for wf in _corpus():
+    for wf in _corpus(tmp_path):
         lines = pc.records(wf.read_text(encoding="utf-8"))
         for job in pc.job_keys(lines):
             block = pc.job_block(lines, job)
@@ -150,7 +200,7 @@ def test_matrix_values_agrees_with_the_twin_where_a_matrix_exists(
     tmp_path: pathlib.Path,
 ) -> None:
     compared = 0
-    for wf in _corpus():
+    for wf in _corpus(tmp_path):
         lines = pc.records(wf.read_text(encoding="utf-8"))
         for job in pc.job_keys(lines):
             block = pc.job_block(lines, job)
@@ -165,8 +215,9 @@ def test_matrix_values_agrees_with_the_twin_where_a_matrix_exists(
     assert compared > 0, "no matrixed job in the corpus, so matrix_values was never exercised"
 
 
-def test_declared_inputs_agrees_with_the_twin_on_the_real_action() -> None:
-    action = paths.CI_DIR.parent / ".github" / "actions" / "profiler" / "action.yml"
+def test_declared_inputs_agrees_with_the_twin_on_the_real_action(tmp_path: pathlib.Path) -> None:
+    action = tmp_path / "action.yml"
+    action.write_text(_frozen_text(ACTION_REL), encoding="utf-8")
     want = _lines(_run_twin(["declared_inputs"], 'declared_inputs "$1"', str(action)))
     assert pc.declared_inputs(pc.records(action.read_text(encoding="utf-8"))) == want
     assert len(want) >= 1, "the action declares no inputs, so the parser proves nothing"

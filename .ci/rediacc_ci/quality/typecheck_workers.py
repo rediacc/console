@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/quality/typecheck-workers.sh` (111 lines).
+"""Port of `.ci/scripts/quality/typecheck-workers.sh` (111 lines), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/quality.typecheck-workers.jsonl`.
 
-Typecheck every Cloudflare Worker under `workers/`, installing its deps first. The twin's header owns WHY this is a script rather than more `tsc -p` clauses in `package.json` (each worker is a separate npm project whose `@cloudflare/workers-types` resolves from ITS OWN `node_modules`), and that argument is not restated here.
+Typecheck every Cloudflare Worker under `workers/`, installing its deps first.
+
+WHY THIS EXISTS RATHER THAN MORE `tsc -p` CLAUSES IN package.json (carried from the retired twin's header). Each worker is a SEPARATE npm project: its own package.json, its own lockfile, its own node_modules, and none of them is an npm workspace. Their tsconfigs all carry `types: ["@cloudflare/workers-types"]`, which tsc resolves from THAT project's node_modules and nowhere else.
+So `tsc --noEmit -p workers/<x>/tsconfig.json` from a root script is green on a machine that happens to have run an install in that directory and red everywhere else with `error TS2688: Cannot find type definition file for '@cloudflare/workers-types'` -- which is what c044d6099 shipped. DISCOVERY, NOT A LIST: the workers are found on disk, and a run that discovers ZERO is a hard failure.
 
 THIS FILE IS WHAT RUNS, since W7P4-b on 2026-09-20. Five surfaces moved together, because a cutover that leaves any one of them naming the twin is a half-cutover that reads as finished: the `Install worker project deps` step in `.github/workflows/ci-quality.yml`, the three `package.json` scripts (`check:types`, `typecheck`, `lint:unused`), both `scripts/ci-runner/manifest.ts`
 leaves, and `scripts/gates/check-typecheck-scope-coverage.ts`, which resolved the clause by finding a token ending in `.sh` and would have read every `workers/*/tsconfig.json` as UNCOVERED the moment there was no longer one to find.
 
-THE `---- gate ----` HEADER STAYED ON THE TWIN, and the `run:` inside it moved with everything else. `gate-bind` requires a header's derived `run` to equal its `package.json` script byte for byte, so the block now reads `run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip ...` from a file nothing executes. That is deliberate rather than
-overlooked: `lint:unused` is a COMPOSITE gate whose second clause is `knip`, so the header belongs to neither file more than the other, and moving it would re-derive `needs` under the `.py` rules for no behavioural gain. `check:ci-gate-bind` and `check:ci-parity` were both run green after the move.
+THE `---- gate ----` HEADER LIVES HERE NOW. It stayed on the twin through the W7P4-b cutover (`lint:unused` is a COMPOSITE gate whose second clause is `knip`, so it belonged to neither file more than the other); a retired twin cannot carry it, so PLAN-retire-bash-oracles B3 moved it to this module, field for field, `needs: node` declared rather than re-derived. `gate-bind` requires the `run` to
+equal the `package.json` script byte for byte.
+
+---- gate ----
+step: Unused exports (knip)
+needs: node
+id: lint:unused
+run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip --treat-config-hints-as-errors
+---- end gate ----
 
 Ledger: `.ci/shadow/w7p4b-typecheck-workers.observations.jsonl` -- nine rows, nine distinct clean trees, nine distinct finding sets (`npx tsx scripts/lib/shadow-gate.ts --pair w7p4b-typecheck-workers --assert --k 5`). The older `w7p6-typecheck-workers` ledger is superseded and not cited: its rows reach both sides through a fixture that no longer exists.
 

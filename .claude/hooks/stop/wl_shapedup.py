@@ -307,9 +307,9 @@ COUNTER = "scripts/gates/check-shape-duplication.ts"
 COUNTER_TIMEOUT_S = 60
 
 # The corpus signature, so an unchanged tree costs a stat sweep rather than 1.1s of tsx. Measured 2026-09-01: the counter is ~1.10s wall over 320 files / 39,447 windows, and the Stop hook fires on every poll. mtime+size rather than content: any edit moves it, so this can make the rule LATE by nothing and can never silently switch it off.
+# `.ci/scripts/quality/check-*.sh` left with the counter's family of that name (PLAN-retire-bash-oracles B3 retired its last file), so the two literals stay equal.
 CORPUS_GLOBS = (
     "scripts/gates/check-*.ts",
-    ".ci/scripts/quality/check-*.sh",
     ".ci/scripts/test/gates/test-*.sh",
 )
 

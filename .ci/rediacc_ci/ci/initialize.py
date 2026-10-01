@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/initialize.sh` (324 lines, 7 steps).
+"""Port of `.ci/scripts/ci/initialize.sh` (324 lines, 7 steps), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.initialize.jsonl`, and the `line N` numbers this module still prints in bash-shaped diagnostics are that blob's.
 
 The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
-LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. The bash twin remains only as the differential's oracle until its deletion; `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` still extracts its tag-fetch block by literal anchors.
+LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` drives its tag-fetch block, `fetch_latest_tag`, directly.
 
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
@@ -349,6 +349,67 @@ def release_decision(root_relative: str = DISPATCH_RELEASE) -> tuple[str, str]:
     return "\n".join(lines), (stable[0] if stable else "")
 
 
+def fetch_latest_tag(url: str, pat: str) -> tuple[int, str]:
+    """Step 6c's tag fetch and read: `(0, latest v* tag)`, or a non-zero status with the refusal already logged.
+
+    A FUNCTION OF ITS OWN so the both-ways gate test (`test_gate_releaseversion_tag_fetch.py`) can drive exactly this block in a throwaway repository; it used to extract the same block from `initialize.sh` by its anchors, and that file was retired under PLAN-retire-bash-oracles B3. Behaviour is unchanged: the differential in `test_ci_initialize.py` pins it against the twin's frozen answers.
+    """
+    handle, tag_fetch_err = tempfile.mkstemp()
+    os.close(handle)
+    fetch_ok = False
+    for attempt in range(1, FETCH_ATTEMPTS + 1):
+        sys.stdout.flush()
+        # `2>` truncates on every attempt, so only the LAST attempt's stderr is ever reported.
+        with open(tag_fetch_err, "wb") as errfile:
+            try:
+                status = subprocess.run(
+                    ["git", "fetch", "--tags", "--force", "--no-recurse-submodules", url],
+                    stderr=errfile,
+                    check=False,
+                ).returncode
+            except OSError as err:
+                status = bash_exec_failure(GIT_FETCH_LINE, "git", err, searched=True)
+        if status == 0:
+            fetch_ok = True
+            break
+        log.warn("Tag fetch attempt %d/%d failed" % (attempt, FETCH_ATTEMPTS))
+        if attempt < FETCH_ATTEMPTS:
+            time.sleep(attempt * FETCH_BACKOFF_SECONDS)
+
+    if not fetch_ok:
+        log.error(
+            "Could not fetch tags after %d attempts; refusing to compute a version from a tag "
+            "list that may be stale." % FETCH_ATTEMPTS
+        )
+        # FETCH_URL embeds the app token, and git echoes the remote in its errors, so git's stderr is redacted rather than printed raw.
+        with open(tag_fetch_err, "rb") as errfile:
+            sys.stderr.flush()
+            sys.stderr.buffer.write(redact(errfile.read(), pat))
+            sys.stderr.buffer.flush()
+        os.unlink(tag_fetch_err)
+        return 1, ""
+    os.unlink(tag_fetch_err)
+
+    status, tag_list = run_capture(["git", "tag", "-l", "v*", "--sort=-v:refname"], GIT_TAG_LINE)
+    if status != 0:
+        # A FAILED READ IS NOT AN EMPTY ONE. git's own status leaves the assignment and `set -e` carries it out, with no message of the script's own -- `test_a_failing_tag_read_dies_silently_under_pipefail` pins exactly that. It is also why the twin's pipe could not simply become `mapfile -t < <(git tag ...)`: a process substitution's status is not checked, so a failing git would
+        # arrive here as an empty tag list and be reported as "no v* tag exists".
+        return status, ""
+    latest_tag = tag_list.split("\n", 1)[0]
+    if not latest_tag:
+        log.error(
+            "Tag fetch succeeded but no v* tag exists; tag-based versioning cannot derive a "
+            "version here."
+        )
+        log.error(
+            "Create the initial tag (git tag -a v0.0.0 -m v0.0.0 && git push origin v0.0.0) "
+            "before running CI."
+        )
+        return 1, ""
+    log.info("Latest tag: %s" % latest_tag)
+    return 0, latest_tag
+
+
 def main(argv: list[str]) -> int:
     try:
         args = common.parse_args(argv)
@@ -517,59 +578,9 @@ def run(check_only: str, output_file: str) -> int:
         return 1
     url = fetch_url(os.environ.get("GITHUB_PAT", ""), os.environ.get("GITHUB_REPOSITORY", ""))
 
-    handle, tag_fetch_err = tempfile.mkstemp()
-    os.close(handle)
-    fetch_ok = False
-    for attempt in range(1, FETCH_ATTEMPTS + 1):
-        sys.stdout.flush()
-        # `2>` truncates on every attempt, so only the LAST attempt's stderr is ever reported.
-        with open(tag_fetch_err, "wb") as errfile:
-            try:
-                status = subprocess.run(
-                    ["git", "fetch", "--tags", "--force", "--no-recurse-submodules", url],
-                    stderr=errfile,
-                    check=False,
-                ).returncode
-            except OSError as err:
-                status = bash_exec_failure(GIT_FETCH_LINE, "git", err, searched=True)
-        if status == 0:
-            fetch_ok = True
-            break
-        log.warn("Tag fetch attempt %d/%d failed" % (attempt, FETCH_ATTEMPTS))
-        if attempt < FETCH_ATTEMPTS:
-            time.sleep(attempt * FETCH_BACKOFF_SECONDS)
-
-    if not fetch_ok:
-        log.error(
-            "Could not fetch tags after %d attempts; refusing to compute a version from a tag "
-            "list that may be stale." % FETCH_ATTEMPTS
-        )
-        # FETCH_URL embeds the app token, and git echoes the remote in its errors, so git's stderr is redacted rather than printed raw.
-        with open(tag_fetch_err, "rb") as errfile:
-            sys.stderr.flush()
-            sys.stderr.buffer.write(redact(errfile.read(), os.environ.get("GITHUB_PAT", "")))
-            sys.stderr.buffer.flush()
-        os.unlink(tag_fetch_err)
-        return 1
-    os.unlink(tag_fetch_err)
-
-    status, tag_list = run_capture(["git", "tag", "-l", "v*", "--sort=-v:refname"], GIT_TAG_LINE)
+    status, _latest_tag = fetch_latest_tag(url, os.environ.get("GITHUB_PAT", ""))
     if status != 0:
-        # A FAILED READ IS NOT AN EMPTY ONE. git's own status leaves the assignment and `set -e` carries it out, with no message of the script's own -- `test_a_failing_tag_read_dies_silently_under_pipefail` pins exactly that. It is also why the twin's pipe could not simply become `mapfile -t < <(git tag ...)`: a process substitution's status is not checked, so a failing git would
-        # arrive here as an empty tag list and be reported as "no v* tag exists".
         return status
-    latest_tag = tag_list.split("\n", 1)[0]
-    if not latest_tag:
-        log.error(
-            "Tag fetch succeeded but no v* tag exists; tag-based versioning cannot derive a "
-            "version here."
-        )
-        log.error(
-            "Create the initial tag (git tag -a v0.0.0 -m v0.0.0 && git push origin v0.0.0) "
-            "before running CI."
-        )
-        return 1
-    log.info("Latest tag: %s" % latest_tag)
 
     status, next_version = run_capture(
         [RESOLVE_VERSION, "--bump-type", bump_type], RESOLVE_VERSION_NEXT_LINE

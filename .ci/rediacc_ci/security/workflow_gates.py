@@ -1,18 +1,10 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`).
+"""Port of `.ci/scripts/security/check-workflow-gates.sh` (`check:ci-workflow-gates`), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/security.check-workflow-gates.jsonl`, and every `check-workflow-gates.sh:NN` citation below is to that blob.
 
 Six structural invariants over GitHub Actions workflow YAML that only a real parser can see. The twin is 1108 lines, of which only 125 are bash: 788 lines already live inside six `python3 - ... <<'PYEOF'` heredocs. So this is not a translation of 1108 lines of shell, it is a translation of the 125-line orchestrator plus a transcription of six Python programs that were already
 Python. Each `sys.exit(N)` below became `return N`; nothing else about the six programs' logic moved.
 
-LIVE CALLERS OF THE TWIN, none repointed by this port:
-  * `package.json:44` -- `"check:ci-workflow-gates": ".ci/scripts/security/check-workflow-gates.sh"`
-  * `scripts/ci-runner/manifest.ts:2966-2975` -- gate entry, `leaves:
-    ['.ci/scripts/security/check-workflow-gates.sh']`, bound to
-    `.github/workflows/ci-quality.yml`, job `quality-code`, step
-    `Workflow structural gates`.
-  * `.ci/rediacc_ci/tests/gates/test_gate_workflow_contracts.py:44`,
-    `test_gate_slim_timeout.py:29` and `test_gate_watchdog_monitor_ordering.py:35`
-    each drive the real twin against fixture trees through `WORKFLOWS_DIR`.
+LIVE CALLERS, all on the port: `package.json`'s `check:ci-workflow-gates` runs `.ci/scripts/security/check_workflow_gates.py` (manifest step `Workflow structural gates`, ci-quality.yml job `quality-code`), and `test_gate_workflow_contracts.py`, `test_gate_slim_timeout.py` and `test_gate_watchdog_monitor_ordering.py` drive it (or its `check6`) against fixture trees.
 
 THE SIX CHECKS, and what each one reads:
 
@@ -297,7 +289,13 @@ def workflow_call(doc: object) -> dict:
     return wc if isinstance(wc, dict) else {}
 
 
-def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file: str) -> int:
+def check2(
+    yaml: ModuleType,
+    workflows_dir: str,
+    real_tree: bool,
+    registry_file: str,
+    extra_exemptions: str = "",
+) -> int:
     docs: dict[str, object] = {}
     texts: dict[str, str] = {}
     # FLAT, unlike check 1.
@@ -344,8 +342,11 @@ def check2(yaml: ModuleType, workflows_dir: str, real_tree: bool, registry_file:
     # A LIST, converted below, deliberately: `{...}` with its last member deleted is
     # `{}`, which is an empty DICT, and the set arithmetic in arm (a3) then dies with
     # a TypeError while `in` and `sorted()` above degrade to silently matching nothing. Draining this list to empty is the declared endgame (W8 P1b), so the empty form has to be the safe one. Found by planting exactly that drain.
-    declared_unused_ok = set(_DECLARED_UNUSED_OK)
-    if len(declared_unused_ok) != len(_DECLARED_UNUSED_OK):
+    # TEST-ONLY seam, carried from check-workflow-gates.sh :228-235, which gained it after this port was written and before PLAN-retire-bash-oracles B3 retired it. `_DECLARED_UNUSED_OK` is drained to empty on the real tree by design (W8 P1b's "declared endgame"), which would leave the liveness sweep and arm (a3) with no positive case to prove they can fire at all. A
+    # fixture injects a synthetic pair through `WORKFLOW_GATES_EXTRA_EXEMPTIONS` as comma-separated "file:NAME" entries; production never sets it, so real runs are unaffected.
+    extra = [tuple(pair.split(":", 1)) for pair in extra_exemptions.split(",") if pair]
+    declared_unused_ok = set(_DECLARED_UNUSED_OK) | set(extra)
+    if len(declared_unused_ok) != len(_DECLARED_UNUSED_OK) + len(extra):
         print("DECLARED_UNUSED_OK contains a duplicate entry", file=sys.stderr, flush=True)
         return 1
     for fname, doc in docs.items():
@@ -1170,7 +1171,13 @@ def main(argv: list[str]) -> int:
     # --- Check 2 ---------------------------------------------------------------
     palette.info("Checking reusable-workflow secret/input contracts")
     rc = _guarded(
-        lambda: check2(yaml, workflows_dir, real_workflow_tree == "true", external_callers_file)
+        lambda: check2(
+            yaml,
+            workflows_dir,
+            real_workflow_tree == "true",
+            external_callers_file,
+            _env("WORKFLOW_GATES_EXTRA_EXEMPTIONS", ""),
+        )
     )
     if rc == 0:
         palette.success("Reusable-workflow secret/input contracts hold in both directions")

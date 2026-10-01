@@ -5,6 +5,8 @@ fail
 for the right reason.
 
 The whole gate, including F6's twenty-one planted controls, is covered by `.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
+
+THE TWIN IS RETIRED (PLAN-retire-bash-oracles B3). Its awk parser's answers, its floor and its two summary lines are frozen in `goldens/twins/quality.check-trap-registry.jsonl` through `differential.twin_call`; the extraction below runs only when that golden is re-frozen from a live twin (`regolden.py --source bash`).
 """
 
 import pathlib
@@ -13,8 +15,10 @@ import subprocess
 import pytest
 
 from rediacc_ci.quality import trap_registry as mod
+from rediacc_ci.tests import differential as diff
 
 TWIN = pathlib.Path(".ci/scripts/quality/check-trap-registry.sh")
+TWIN_REL = str(TWIN)
 
 
 def _awk_program() -> str:
@@ -46,19 +50,39 @@ CORPORA = [
 ]
 
 
+def _port_rows(corpus: str) -> str:
+    """The port's entries in the awk program's own output shape, for a re-record from the port."""
+    return "".join(
+        "%d\x1f%s\x1f%s\x1f%s\x1f%s\n"
+        % (e.line, e.trap_id, e.enforced_by, e.residue, "1" if e.residue_seen else "0")
+        for e in mod.parse_corpus(corpus)
+    )
+
+
 @pytest.mark.parametrize("corpus", CORPORA)
 def test_parser_matches_the_twins_awk(tmp_path: pathlib.Path, corpus: str) -> None:
     target = tmp_path / "TRAPS.md"
     target.write_text(corpus, encoding="utf-8")
-    proc = subprocess.run(
-        ["awk", _awk_program(), str(target)],
-        capture_output=True,
-        text=True,
-        check=False,
+
+    def awk():
+        proc = subprocess.run(
+            ["awk", _awk_program(), str(target)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    rc, out, err = diff.twin_call(
+        TWIN_REL,
+        ["awk parse_corpus", corpus],
+        awk,
+        port=lambda: (0, _port_rows(corpus), ""),
+        work=tmp_path,
     )
-    assert proc.returncode == 0, proc.stderr
+    assert rc == 0, err
     expected = []
-    for line in proc.stdout.split("\n"):
+    for line in out.split("\n"):
         if line == "":
             continue
         # US (0x1f), not TAB: tab is IFS whitespace in bash, so a run of two tabs COLLAPSES and an empty Residue silently reads as no Residue LINE.
@@ -71,26 +95,41 @@ def test_parser_matches_the_twins_awk(tmp_path: pathlib.Path, corpus: str) -> No
     assert got == expected
 
 
-def test_the_floor_is_the_twins_number() -> None:
-    """A divergence here is invisible to the differential.
-
-    Every fixture in the shadow ledger sets `TRAP_FLOOR` explicitly, so the DEFAULT is the one value the two implementations can disagree about without any recorded row noticing. It moved 75 -> 76 -> 77 within one session on 2026-09-06, which is precisely why this assertion exists.
-    """
+def _twin_floor():
     text = TWIN.read_text(encoding="utf-8")
     marker = 'TRAP_FLOOR="${TRAP_FLOOR:-'
     start = text.index(marker) + len(marker)
-    twin_floor = int(text[start : text.index('}"', start)])
-    assert twin_floor == mod.TRAP_FLOOR_DEFAULT
+    return 0, text[start : text.index('}"', start)], ""
+
+
+def test_the_floor_is_the_twins_number() -> None:
+    """A divergence here is invisible to the differential.
+
+    Every fixture in the shadow ledger sets `TRAP_FLOOR` explicitly, so the DEFAULT is the one value the two implementations can disagree about without any recorded row noticing. It moved 75 -> 76 -> 77 within one session on 2026-09-06, which is precisely why this assertion exists. Since the twin's retirement the frozen value is the floor it carried; raising the port's default is a Rule-T change re-recorded from the port with its reason.
+    """
+    _rc, twin_floor, _err = diff.twin_call(
+        TWIN_REL,
+        ["TRAP_FLOOR default"],
+        _twin_floor,
+        port=lambda: (0, str(mod.TRAP_FLOOR_DEFAULT), ""),
+    )
+    assert int(twin_floor) == mod.TRAP_FLOOR_DEFAULT
+
+
+def _twin_summary_lines():
+    text = TWIN.read_text(encoding="utf-8")
+    needles = ('[ "$errors" -eq 0 ]', '"$found trap-registry finding(s) in $TRAP_CORPUS')
+    return 0, "".join("%s\n" % n for n in needles if n in text), ""
 
 
 def test_the_summary_count_is_the_twins_boolean() -> None:
     """The twin prints a BOOLEAN where its message says "finding(s)".
 
-    `scan` in bash ends with `[ "$errors" -eq 0 ]` on purpose (a shell return is mod 256), and `main` then prints that status as the count. The port carries the bug rather than the intent, because a port that changed it would be non-equivalent to the gate CI runs. This assertion is the record of that decision; delete it in the same change that fixes both files.
+    `scan` in bash ends with `[ "$errors" -eq 0 ]` on purpose (a shell return is mod 256), and `main` then prints that status as the count. The port carries the bug rather than the intent, because a port that changed it would be non-equivalent to the gate CI runs. This assertion is the record of that decision, now against the frozen twin; fixing it is a B4 Rule-T change that re-records this case from the port.
     """
-    text = TWIN.read_text(encoding="utf-8")
-    assert '[ "$errors" -eq 0 ]' in text
-    assert '"$found trap-registry finding(s) in $TRAP_CORPUS' in text
+    _rc, out, _err = diff.twin_call(TWIN_REL, ["summary-count source lines"], _twin_summary_lines)
+    assert '[ "$errors" -eq 0 ]' in out
+    assert '"$found trap-registry finding(s) in $TRAP_CORPUS' in out
 
 
 def test_id_grammar() -> None:

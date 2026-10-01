@@ -16,6 +16,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-build-pages.observations.jsonl`.
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import pathlib
 import re
@@ -25,6 +26,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_pages as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import SITE_ORIGIN
 
 SITE_HOST = SITE_ORIGIN.removeprefix("https://")
@@ -90,6 +92,8 @@ def fixture(
     for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+        if rel == TWIN_REL and not (ROOT / rel).is_file():
+            continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -195,6 +199,48 @@ def _state(root: pathlib.Path) -> dict[str, str]:
 
 
 def _run(
+    root: pathlib.Path,
+    side: str,
+    *,
+    args: tuple[str, ...] = (),
+    drop: tuple[str, ...] = (),
+    cwd: str | None = None,
+    **extra,
+):
+    """One side's (process, call log, resulting tree). The twin's side answers from `goldens/twins/build.build-pages.jsonl`."""
+    if side != "old":
+        return _live(root, side, args=args, drop=drop, cwd=cwd, **extra)
+    cell: dict[str, tuple] = {}
+
+    def run(which: str):
+        def go():
+            cell["v"] = _live(root, which, args=args, drop=drop, cwd=cwd, **extra)
+            proc = cell["v"][0]
+            return proc.returncode, proc.stdout, proc.stderr
+
+        return go
+
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        [
+            "args=%r" % (args,),
+            "drop=%r" % (drop,),
+            "cwd=%s" % (cwd or ""),
+            "env=%r" % (sorted(extra.items()),),
+        ],
+        run("old"),
+        port=run("new"),
+        extras={
+            "calls": lambda: cell["v"][1],
+            "state": lambda: json.dumps(cell["v"][2], sort_keys=True),
+        },
+        work=(str(root.parent),),
+    )
+    proc = subprocess.CompletedProcess([BASH, TWIN_REL], rc, out, err)
+    return proc, got["calls"], json.loads(got["state"])
+
+
+def _live(
     root: pathlib.Path,
     side: str,
     *,
@@ -562,7 +608,10 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
         check=False,
         timeout=120,
     )
-    assert sorted(found.stdout.split()) == sorted([TWIN_REL, PORT_REL, self_rel]), found.stdout
+    # The twin left the set when it was retired (PLAN-retire-bash-oracles B3).
+    # The twin left the set when it was retired (PLAN-retire-bash-oracles B3); its frozen golden, which records the twin's own output naming the path, joined it. Neither writes the file.
+    golden_rel = str(diff.golden_file(TWIN_REL).relative_to(ROOT))
+    assert sorted(found.stdout.split()) == sorted([PORT_REL, self_rel, golden_rel]), found.stdout
 
 
 # --------------------------------------------------------------------------- The control: this differential can actually fail ---------------------------------------------------------------------------

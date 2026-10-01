@@ -3,8 +3,6 @@
   ".ci/scripts/build/build-pkg-repo.sh\tdocker",
   ".ci/scripts/build/build-pkg-repo.sh\tgpg",
   ".ci/scripts/build/build-renet.sh\tdocker",
-  ".ci/scripts/build/extract-renet-from-image.sh\tdocker",
-  ".ci/scripts/ci/detect-pointer-bump.sh\tjq",
   ".ci/scripts/ci/dispatch-release.sh\tgh",
   ".ci/scripts/deploy/clone-d1.sh\tjq",
   ".ci/scripts/deploy/upload-to-r2.sh\taws",
@@ -16,10 +14,7 @@
   ".ci/scripts/lib/common.sh\taws",
   ".ci/scripts/lib/common.sh\tgh",
   ".ci/scripts/lib/common.sh\tjq",
-  ".ci/scripts/private/concurrent-fork-isolation-test.sh\tdocker",
   ".ci/scripts/private/license-e2e.sh\tjq",
-  ".ci/scripts/quality/check-submodule-branches.sh\tgh",
-  ".ci/scripts/quality/check-submodule-branches.sh\tjq",
   ".ci/scripts/release/update-homebrew-tap.sh\tcurl",
   ".ci/scripts/version/detect-bump-type.sh\tgh"
 ]

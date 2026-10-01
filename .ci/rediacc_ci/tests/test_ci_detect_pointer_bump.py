@@ -28,6 +28,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import detect_pointer_bump as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -214,7 +215,8 @@ def fixture(
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "ci").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "ci" / TWIN.name)
+    if TWIN.is_file():  # only a re-freeze from bash runs it (PLAN-retire-bash-oracles B3)
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "ci" / TWIN.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -277,6 +279,54 @@ def fixture(
 
 
 def _run(
+    repo: Repo,
+    side: str,
+    *,
+    args: tuple[str, ...] = (),
+    with_event: bool = True,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """One side's (process, `gh` call log). The twin's answers from `goldens/twins/ci.detect-pointer-bump.jsonl` (PLAN-retire-bash-oracles B3)."""
+    kw: dict[str, typing.Any] = {
+        "args": args,
+        "with_event": with_event,
+        "drop": drop,
+        "drop_env": drop_env,
+        **extra,
+    }
+    if side != "old":
+        return _live(repo, side, **kw)
+    cell: dict[str, tuple] = {}
+
+    def run(which: str):
+        def go():
+            cell["v"] = _live(repo, which, **kw)
+            proc = cell["v"][0]
+            return proc.returncode, proc.stdout, proc.stderr
+
+        return go
+
+    # Files the twin WRITES, restored from the golden in compare mode: the `--output` target and the step summary.
+    written = []
+    if "--output" in args and args.index("--output") + 1 < len(args):
+        written.append(args[args.index("--output") + 1])
+    if extra.get("GITHUB_STEP_SUMMARY"):
+        written.append(extra["GITHUB_STEP_SUMMARY"])
+    rc, out, err, got = diff.twin_run(
+        str(TWIN.relative_to(ROOT)),
+        ["kw=%r" % (sorted(kw.items()),)],
+        run("old"),
+        port=run("new"),
+        files=tuple(written),
+        extras={"calls": lambda: cell["v"][1]},
+        work=(str(repo.root.parent),),
+    )
+    return subprocess.CompletedProcess([BASH, TWIN.name], rc, out, err), got["calls"]
+
+
+def _live(
     repo: Repo,
     side: str,
     *,
@@ -776,6 +826,8 @@ def test_the_port_carries_no_gate_header() -> None:
     """Neither file declares a gate, and the twin is checked in the same breath so "neither has one" cannot be satisfied by a broken matcher."""
     open_marker = re.compile(r"^\s*(?:#|//|\*)?\s*-{2,}\s*gate\s*-{2,}\s*$")
     for path in (TWIN, PORT_FILE):
+        if not path.is_file():
+            continue  # the twin is retired; its frozen answers carry no header either
         assert [
             ln for ln in path.read_text(encoding="utf-8").split("\n") if open_marker.match(ln)
         ] == [], path
@@ -786,20 +838,45 @@ def test_the_environment_this_module_reads_is_read_with_literal_keys() -> None:
 
     THE LIST IS THE TWIN'S OWN HEADER, in its order."""
     source = PORT_FILE.read_text(encoding="utf-8")
-    for name in (
+    names = (
         "GITHUB_EVENT_NAME",
         "GITHUB_REPOSITORY",
         "CHECKS_TOKEN",
         "GITHUB_PAT",
         "GITHUB_STEP_SUMMARY",
         "GITHUB_EVENT_PATH",
-    ):
+    )
+
+    def read_twin():
+        text = TWIN.read_text(encoding="utf-8")
+        return 0, "".join("%s\n" % n for n in names if n in text), ""
+
+    # Frozen with the retired twin (PLAN-retire-bash-oracles B3): the names its header read.
+    twin_names = diff.twin_call(str(TWIN.relative_to(ROOT)), ["env names"], read_twin)[1].split()
+    for name in names:
         assert 'os.environ.get("%s"' % name in source, name
-        assert name in TWIN.read_text(encoding="utf-8"), name
+        assert name in twin_names, name
 
 
 def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    text = TWIN.read_text(encoding="utf-8")
+    needles = (
+        "WALK_CAP=5",
+        "--deepen=$((WALK_CAP + 1))",
+        "grep -vE '^:160000 160000 '",
+        'net=$(git diff-tree -r --raw "$baseline" HEAD)',
+        "head_sha=$(git rev-parse HEAD)",
+        "identical | ahead",
+        port.REPO_SLUG_SED,
+        port.HEAD_SHA_JQ,
+        port.GREEN_JQ,
+    )
+
+    def read_twin():
+        body = TWIN.read_text(encoding="utf-8")
+        return 0, "".join("%s\n" % n for n in needles if n in body), ""
+
+    # Frozen with the retired twin (PLAN-retire-bash-oracles B3): which of the port's carried strings the twin held.
+    text = diff.twin_call(str(TWIN.relative_to(ROOT)), ["carried strings"], read_twin)[1]
     assert "WALK_CAP=5" in text
     assert "--deepen=$((WALK_CAP + 1))" in text
     assert "grep -vE '^:160000 160000 '" in text

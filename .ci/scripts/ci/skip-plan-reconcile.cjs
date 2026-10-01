@@ -88,14 +88,14 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 //       with `grep -n "full_suite" .github/workflows/ct-tests.yml`.
 // - ops ci.yml:717 elite_run ci.yml:739 - update_flow ci.yml:568 package_tests ci.yml:584 - install_methods is DELIBERATELY ABSENT: `validate-install` (ci.yml:1081-1083) is gated only on `stage-artifacts`, which has no full_suite clause (ci.yml:658), so the install matrix DOES run on push-to-main. Adding it here would exempt a genuine skip.
 //
-// pointer_bump_only ci.yml:123 <- initialize.sh:85/131-133 and detect-pointer-bump.sh:185. TRUE only on a pull_request whose every commit moves nothing but tree-identical gitlinks. Cuts ALL EIGHTEEN keys: - build-renet skips (ci.yml:493) and everything below it inherits:
+// pointer_bump_only ci.yml:123 <- rediacc_ci.ci.initialize and rediacc_ci.ci.detect_pointer_bump. TRUE only on a pull_request whose every commit moves nothing but tree-identical gitlinks. Cuts ALL EIGHTEEN keys: - build-renet skips (ci.yml:493) and everything below it inherits:
 //       build-docker-fast (ci.yml:532) -> tests (ci.yml:687) -> the 13 leaves;
 //       build-cli (ci.yml:553) -> update_flow (ci.yml:568);
 // build-docker (ci.yml:512) -> stage-artifacts (ci.yml:658) ->
 //       install_methods (ci.yml:1083); build-docker-fast -> elite_run
 // (ci.yml:741) - ops and package_tests carry their own explicit clause (ci.yml:719, ci.yml:584), which is load-bearing: neither `if:` references its build need, so under always() they would otherwise RUN and die fetching a missing artifact (the comment at ci.yml:712-714).
 //
-// is_bot ci.yml:105 <- initialize.sh:67-82. TRUE only for a push authored by github-actions[bot] or dependabot[bot]. - install_methods ONLY, via stage-artifacts (ci.yml:658). The other seventeen need no entry: is_bot can only be true on a `push`, where full_suite is already false and already exempts them. Listing them would be a second, redundant reason for the same skip and would
+// is_bot ci.yml:105 <- rediacc_ci.ci.initialize (is_bot_commit). TRUE only for a push authored by github-actions[bot] or dependabot[bot]. - install_methods ONLY, via stage-artifacts (ci.yml:658). The other seventeen need no entry: is_bot can only be true on a `push`, where full_suite is already false and already exempts them. Listing them would be a second, redundant reason for the same skip and would
 // make the annotation order load-bearing for no gain.
 //
 // NOT MODELLED, and the omission is deliberate: a planned job can also skip because an upstream job FAILED (quality failing skips package_tests,

@@ -1,6 +1,6 @@
 """Submodule branch, PR-linking and review-comment validation.
 
-Ported from `.ci/scripts/quality/check-submodule-branches.sh`, which is NOT deleted; see `rediacc_ci.quality.__init__`.
+Ported from `.ci/scripts/quality/check-submodule-branches.sh`, retired under PLAN-retire-bash-oracles B3 (no differential pinned it, so no golden was frozen; the blob is in git history, and `test_gate_shell_counter_increment.py` drives this port's counter).
 
 -----------------------------------------------------------------------------
 THE TWIN'S AI-FRIENDLY HEADER, CARRIED ACROSS IN FULL. It is a troubleshooting guide, not decoration: every ERROR string below is one this gate prints, and the FIX under it is what a session is meant to run.

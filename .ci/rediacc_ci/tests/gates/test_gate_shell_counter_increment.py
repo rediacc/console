@@ -16,30 +16,25 @@ THE SEVERE ONE is `check-submodule-branches.sh`'s unreplied-review-comment count
 function whose ONLY output is `echo "$unreplied_count"` at the end. So the first
 unreplied comment killed the subshell before it echoed anything: the function could report 0, and it could die, but it could never report a real count.
 
-WHAT THIS MODULE DOES. It does not re-implement the loop. It extracts the REAL
-function text out of the REAL gate script and runs it against a PATH-shimmed `gh`, so
-the code under test is the code that ships. Then it does the same with the PRE-FIX text recovered from git, which is the control.
+WHAT THIS MODULE DOES NOW. The gate whose counter this was, `check-submodule-branches.sh`, was retired under PLAN-retire-bash-oracles B3: CI runs its port, `.ci/rediacc_ci/quality/submodule_branches.py`, which counts in Python and cannot carry the defect. Its twin's text was extracted and driven here, together with a pre-fix copy recovered from git as the control; a deleted file can
+be neither, and freezing its functions to keep running them would test code nothing executes. So the subject moves to the port: the same two-unreplied fixture through a PATH-shimmed `gh` must yield 2, and a PLANT that stops counting at the first comment must not. What stays bash is what is still about bash: the semantics claim the whole fix rests on, and the structural sweep,
+widened from the two gate directories (which no longer hold a gate script) to every tracked `.sh` under `.ci/` so a reintroduction anywhere a script runs under `set -e` is caught.
 
-THE CONTROL'S FIRST BRANCH IS UNEXERCISED ON THIS TREE, and that is worth saying plainly rather than discovering it in CI. `HEAD` no longer contains the buggy increment, so `test_prefix_version_could_not_count_at_all` takes its second arm on every run here, exactly as the twin does. The first arm -- recover the old text, build a harness from it, prove it echoes nothing -- is
-carried faithfully and has never run in this checkout. If it ever fires, it is because somebody reintroduced `((unreplied_count++))` into a commit, which is itself the finding.
-
-ONE DELIBERATE ADDITION over the twin. Where the twin's second arm prints two `INFO` lines and returns having asserted NOTHING, this port asserts the thing those lines assume: that `HEAD` really is free of the buggy increment. A bash test may return without a `PASS:` line; a ported test may not (`conftest.py` here refuses a green that recorded no control), and inventing a
-decorative pass to satisfy that refusal would be exactly the vacuity it exists to catch. So the arm makes a real claim.
-
-TWO OF ITS CASES READ THE WORKING TREE DIRECTLY: the extraction reads `.ci/scripts/quality/check-submodule-branches.sh` line by line, and the structural sweep greps every `.sh` under `.ci/scripts/quality/` and `.ci/scripts/security/`. Both are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with. A pure reader needs no group.
+ONE CASE READS THE WORKING TREE: the sweep reads every tracked `.ci/**/*.sh`. It is a read, and no `XDIST_GROUP` is declared: this module has no `BASH_TWIN`, so `real_tree_admission` in `test_twin_parity.py` never looks at it. A pure reader needs no group.
 """
 
 import json
 import os
 import pathlib
 import re
+import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# Reads `.ci/scripts/quality/*.sh` and `.ci/scripts/security/*.sh` off the real working tree; reads need no group. See the module docstring.
+# Reads every tracked `.ci/**/*.sh` off the real working tree; reads need no group. See the module docstring.
 
-GATE_REL = ".ci/scripts/quality/check-submodule-branches.sh"
+GATE_REL = ".ci/rediacc_ci/quality/submodule_branches.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
 
 # Two review comments, NEITHER of them replied to. A correct counter says 2.
@@ -48,41 +43,11 @@ FIXTURE = """[
   {"id": 102, "in_reply_to_id": null, "body": "second finding"}
 ]"""
 
-# The pre-fix increment, as the twin greps for it.
-BUGGY_INCREMENT_RE = re.compile(r"\(\(\s*unreplied_count\+\+\s*\)\)")
-
 # `grep -qE '^\s*\(\(\s*[a-zA-Z_][a-zA-Z0-9_]*\+\+\s*\)\)\s*$'` from the twin's structural sweep, character for character.
 STANDALONE_INCREMENT_RE = re.compile(r"^\s*\(\(\s*[a-zA-Z_][a-zA-Z0-9_]*\+\+\s*\)\)\s*$")
 
 # `grep -q '^set -e\|^set -[a-z]*e'` -- the twin's own two-alternative BRE.
 SET_E_RE = re.compile(r"^set -e|^set -[a-z]*e", re.MULTILINE)
-
-# The three `sed -n '/START/,/END/p'` ranges the twin lifts out of the gate.
-EXTRACT_RANGES = (
-    (re.compile(r"^LOW_EFFORT_PATTERNS=\("), re.compile(r"^\)")),
-    (re.compile(r"^is_low_effort_reply\(\)"), re.compile(r"^\}")),
-    (re.compile(r"^check_pr_review_comments\(\)"), re.compile(r"^\}")),
-)
-
-
-def sed_range(source: str, start: re.Pattern[str], end: re.Pattern[str]) -> str:
-    """`sed -n '/start/,/end/p'`, semantics included rather than approximated.
-
-    RE-IMPLEMENTED RATHER THAN SHELLED OUT, and the semantics are the part worth stating because getting them subtly wrong is how an extraction quietly returns less than it should. sed opens a range on the first line matching `start`, keeps printing until a LATER line matches `end`, prints that line too, and then becomes eligible to open the range again. The `end` pattern is never
-    tested against the same line that opened the range, which is why `is_low_effort_reply()` does not terminate on its own line. An unterminated range runs to end of input.
-    """
-    out: list[str] = []
-    inside = False
-    for line in source.splitlines():
-        if not inside:
-            if start.search(line):
-                inside = True
-                out.append(line)
-            continue
-        out.append(line)
-        if end.search(line):
-            inside = False
-    return "".join(line + "\n" for line in out)
 
 
 def gh_shim(bindir: pathlib.Path) -> pathlib.Path:
@@ -94,111 +59,71 @@ def gh_shim(bindir: pathlib.Path) -> pathlib.Path:
     return bindir
 
 
-def build_harness(source: str, out: pathlib.Path) -> pathlib.Path:
-    """`build_harness`. A runnable script around the function text taken from `source`.
-
-    Extracting rather than copying is the point: if somebody rewrites the loop, this test follows them.
-    """
-    parts = [
-        "#!/bin/bash",
-        "set -euo pipefail",
-        # The counting loop is all we exercise; these stubs stand in for the sourced common.sh so the harness has no repo dependencies.
-        "log_warn() { :; }",
-        "log_error() { :; }",
-        # gh_json is the third common.sh helper the gate now uses: the fetch was `gh api ... 2>/dev/null || echo "[]"`, which turned an API failure into a PR with no review comments. The stub keeps this harness about the COUNTING loop by passing the call straight through to the shimmed gh, exactly as the real helper does on its first successful attempt.
-        'gh_json() { shift; [[ "${1:-}" == "--" ]] && shift; gh "$@"; }',
-    ]
-    body = "\n".join(parts) + "\n"
-    for start, end in EXTRACT_RANGES:
-        body += sed_range(source, start, end)
-    body += "check_pr_review_comments some/repo 1\n"
-    out.write_text(body, encoding="utf-8")
-    out.chmod(0o755)
-    return out
+COUNT_PROGRAM = """import sys
+sys.path.insert(0, sys.argv[1])
+import importlib.util
+spec = importlib.util.spec_from_file_location("subject", sys.argv[2])
+subject = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(subject)
+readable, count = subject.unreplied_review_comments("some/repo", "1")
+print("%s %d" % ("readable" if readable else "UNREADABLE", count))
+"""
 
 
-def run_harness(script: pathlib.Path, shim: pathlib.Path) -> harness.RunResult:
-    """`run_harness`. The shim goes FIRST on PATH; stderr is discarded by the twin, so callers here read `.out` only."""
-    bash = harness.require_tool("bash", "install bash; the subject IS a bash script")
-    return harness.run(
-        [bash, os.fspath(script)],
+def count_with(gate, module: pathlib.Path, work: pathlib.Path) -> str:
+    """The port's unreplied count for the two-comment FIXTURE, through a PATH-shimmed `gh`."""
+    shim = gh_shim(work / "bin")
+    program = work / "count.py"
+    program.write_text(COUNT_PROGRAM, encoding="utf-8")
+    python3 = harness.require_tool("python3", "install python3")
+    result = harness.run(
+        [python3, os.fspath(program), os.fspath(paths.from_root(".ci")), os.fspath(module)],
         cwd=paths.repo_root(),
         env={"PATH": "%s%s%s" % (shim, os.pathsep, os.environ.get("PATH", ""))},
     )
-
-
-def gate_source(gate) -> str:
-    if not GATE.is_file():
-        gate.log_fail("subject under test is missing: %s" % GATE_REL)
-    return GATE.read_text(encoding="utf-8")
+    if result.rc != 0:
+        gate.log_fail("the counting program did not run", result)
+    return result.out.strip()
 
 
 def test_extraction_is_not_vacuous(gate):
-    """Anti-vacuity: if the sed ranges stop matching (renamed function, reflowed file), both harnesses would be empty and both would "agree", which would look like a pass. Assert the real thing was actually extracted."""
-    with harness.temp_dir() as work:
-        built = build_harness(gate_source(gate), work / "new.sh")
-        text = built.read_text(encoding="utf-8")
-        gate.assert_contains(
-            text, "check_pr_review_comments()", "the harness really contains the extracted function"
-        )
-        gate.assert_contains(
-            text, "unreplied_count", "the harness really contains the counter under test"
-        )
-        gate.log_pass("the function text was extracted from the real gate, not stubbed")
+    """Anti-vacuity on the subject: the port must still expose the counter this file drives, or every case below would be exercising nothing."""
+    if not GATE.is_file():
+        gate.log_fail("subject under test is missing: %s" % GATE_REL)
+    text = GATE.read_text(encoding="utf-8")
+    gate.assert_contains(
+        text, "def unreplied_review_comments(", "the port carries the fetch-and-count"
+    )
+    gate.assert_contains(text, "def count_unreplied(", "the port carries the counter under test")
+    gate.log_pass("the counter under test is the port's own, not a stub")
 
 
 def test_fixed_version_counts_every_unreplied_comment(gate):
     with harness.temp_dir() as work:
-        shim = gh_shim(work / "bin")
-        built = build_harness(gate_source(gate), work / "new.sh")
-        result = run_harness(built, shim)
-        gate.assert_eq(
-            result.out.strip(),
-            "2",
-            "both unreplied comments are counted, so the gate can state a real number",
-        )
-        gate.log_pass("the fixed counter reports 2 of 2 unreplied comments")
+        got = count_with(gate, GATE, work)
+    gate.assert_eq(
+        got,
+        "readable 2",
+        "both unreplied comments are counted, so the gate can state a real number",
+    )
+    gate.log_pass("the port reports 2 of 2 unreplied comments")
 
 
 def test_prefix_version_could_not_count_at_all(gate):
-    """THE CONTROL. Recover the pre-fix text from git and prove it breaks. If this ever starts returning 2, the bug is gone from git history and this whole test is measuring nothing, so it fails loudly instead."""
-    git = harness.require_tool("git", "install git; the control is recovered from history")
-    show = harness.run([git, "-C", os.fspath(paths.repo_root()), "show", "HEAD:" + GATE_REL])
-    if show.rc != 0:
-        gate.log_fail("could not recover the pre-fix gate from HEAD; control unavailable")
-    old_source = show.out
-
-    if not BUGGY_INCREMENT_RE.search(old_source):
-        gate.log_info("HEAD no longer contains the buggy increment (the fix has been committed)")
-        gate.log_info("control satisfied by the standalone bash semantics assertion below")
-        # THE ADDITION over the twin, and the reason is in the module docstring: a bash test may return with no PASS line, a ported one may not. Rather than print a decorative pass, assert what the two INFO lines above assume.
-        gate.assert_eq(
-            bool(BUGGY_INCREMENT_RE.search(old_source)),
-            False,
-            "HEAD's copy of the gate is free of ((unreplied_count++))",
-        )
-        gate.assert_eq(
-            bool(BUGGY_INCREMENT_RE.search(gate_source(gate))),
-            False,
-            "and so is the working-tree copy, which is the one that ships",
-        )
-        gate.log_pass(
-            "the fix is committed: neither HEAD nor the working tree contains ((unreplied_count++))"
-        )
-        return
-
+    """THE CONTROL, on the port: a counter that gives up after the first unreplied comment -- the shape the bash defect produced, one finding and then nothing -- must NOT satisfy the case above. If it did, that case could not fail."""
+    source = GATE.read_text(encoding="utf-8")
+    anchor = "def count_unreplied(comments: list[dict]) -> int:\n"
+    if source.count(anchor) != 1:
+        gate.log_fail("the plant's anchor moved; this control is planting nothing")
+    planted = source.replace(anchor, anchor + "    comments = comments[:1]\n", 1)
     with harness.temp_dir() as work:
-        shim = gh_shim(work / "bin")
-        built = build_harness(old_source, work / "old.sh")
-        result = run_harness(built, shim)
-        gate.assert_eq(
-            result.out.strip(),
-            "",
-            "the pre-fix counter died before echoing, so it could report no count at all",
-        )
-        gate.log_pass(
-            "control: the pre-fix version produced NO count, confirming the defect was real"
-        )
+        mutant = work / "submodule_branches_mutant.py"
+        mutant.write_text(planted, encoding="utf-8")
+        got = count_with(gate, mutant, work)
+    gate.assert_eq(
+        got, "readable 1", "the planted early stop counts one, so the real case can tell"
+    )
+    gate.log_pass("control: a counter that stops at the first finding is caught")
 
 
 def test_bash_semantics_are_what_we_think(gate):
@@ -214,17 +139,18 @@ def test_bash_semantics_are_what_we_think(gate):
 def test_no_standalone_increments_remain(gate):
     """Structural sweep, so a future edit cannot quietly reintroduce the class into any gate that runs under set -e."""
     root = paths.repo_root()
-    files = sorted(
-        [
-            *(root / ".ci" / "scripts" / "quality").glob("*.sh"),
-            *(root / ".ci" / "scripts" / "security").glob("*.sh"),
-        ]
-    )
-    # ANTI-VACUITY, and the twin has no equivalent: its `for f in <glob>` would iterate the unexpanded pattern once, `[[ -f ]]` would drop it, and the sweep would report zero findings having read nothing.
+    tracked = subprocess.run(
+        ["git", "-C", os.fspath(root), "ls-files", "--", ".ci/*.sh"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.split()
+    files = sorted(root / rel for rel in tracked)
+    # ANTI-VACUITY, and the twin had no equivalent: its `for f in <glob>` would iterate the unexpanded pattern once, `[[ -f ]]` would drop it, and the sweep would report zero findings having read nothing.
     if not files:
         gate.log_fail(
-            "the sweep matched no shell files under .ci/scripts/quality or "
-            ".ci/scripts/security, so its clean verdict would mean nothing"
+            "the sweep matched no tracked shell file under .ci/, so its clean verdict would "
+            "mean nothing"
         )
     found = 0
     scanned = 0

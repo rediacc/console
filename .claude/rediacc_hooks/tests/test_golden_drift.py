@@ -18,29 +18,8 @@ ROOT = guardcorpus.repo_root()
 GOLDEN_FILES = sorted(goldenio.GOLDEN_DIR.glob("*.jsonl"))
 
 
-def _canonical(silent, records):
-    """One comparable value per case key, `intentional` stripped.
-
-    That field records WHY a change happened, not WHAT the answer is, so two records differing only in their reason string are not a drift -- and a record's OWN presence in `records` rather than `silent` is itself part of what is compared, since a case moving from silent to a real answer (or back) is exactly the kind of change this control exists to catch.
-    """
-    view: dict[str, tuple] = dict.fromkeys(silent, ("__silent__",))
-    for key, row in records.items():
-        view[key] = tuple(sorted((k, v) for k, v in row.items() if k != "intentional"))
-    return view
-
-
-def _undeclared_drift(old_silent, old_records, new_silent, new_records):
-    """Every case key whose answer changed between two snapshots without the NEW side carrying `intentional`."""
-    old_view = _canonical(old_silent, old_records)
-    new_view = _canonical(new_silent, new_records)
-    bad = []
-    for key, value in new_view.items():
-        old_value = old_view.get(key)
-        if old_value is None or old_value == value:
-            continue
-        if "intentional" not in new_records.get(key, {}):
-            bad.append(key)
-    return sorted(bad)
+# The decision lives in `goldenio` now, shared with the `.ci` twin goldens' own drift control; this name keeps this file's controls reading as before.
+_undeclared_drift = goldenio.undeclared_drift
 
 
 def test_the_drift_control_can_fail():

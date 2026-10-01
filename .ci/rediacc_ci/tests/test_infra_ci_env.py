@@ -264,7 +264,7 @@ def test_the_fakes_are_what_resolves() -> None:
         assert shutil.which("openssl", path=path) == str(base / "bin" / "openssl")
 
 
-def test_the_twin_is_sourced_by_two_scripts_and_executed_by_none() -> None:
+def test_the_twin_is_sourced_by_one_script_and_executed_by_none() -> None:
     """THE REASON THIS PORT IS A LIBRARY, re-checked rather than inherited from the allowlist. If something ever starts EXECUTING the twin, this goes red and the port needs a real CLI."""
     hits = subprocess.run(
         ["git", "grep", "-n", "ci-env.sh", "--", "*.sh"],
@@ -285,8 +285,8 @@ def test_the_twin_is_sourced_by_two_scripts_and_executed_by_none() -> None:
             sourcing.append(path)
         elif re.search(r'(bash|sh|\./)\s*"?[^\s"]*ci-env\.sh', text):
             executed.append(hit)
+    # ci-start-account.sh was retired under PLAN-retire-bash-oracles B3; its port sources nothing.
     assert sorted(set(sourcing)) == [
-        ".ci/scripts/infra/ci-start-account.sh",
         ".ci/scripts/infra/ci-start-elite.sh",
     ], sourcing
     assert executed == [], executed

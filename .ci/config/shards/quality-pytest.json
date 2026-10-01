@@ -564,7 +564,8 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_unit.py",
-        "pytest:.ci/rediacc_ci/tests/test_quality_bash_lib_migration_complete.py"
+        "pytest:.ci/rediacc_ci/tests/test_quality_bash_lib_migration_complete.py",
+        "pytest:.ci/rediacc_ci/tests/test_twin_goldens.py"
       ]
     }
   ]

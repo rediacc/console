@@ -393,6 +393,8 @@ RETIRED_TWINS = {
     "w7p4b-run-account": "W7P5 batch M5",
     "w7p4b-compose-healthcheck-smoke-test": "W7P5 batch M5",
     "w7p4b-scope-shadow": "W7P5 batch M6",
+    "w7p4b-ci-start-account": "PLAN-retire-bash-oracles B3 (goldens/twins/infra.ci-start-account.jsonl)",
+    "w7p4b-typecheck-workers": "PLAN-retire-bash-oracles B3 (goldens/twins/quality.typecheck-workers.jsonl)",
 }
 
 

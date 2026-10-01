@@ -153,6 +153,8 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """A scratch repository holding both implementations and the two fakes."""
     fx = tmp_path / "fx"
     for rel in COPIED:
+        if rel == TWIN_REL and not (ROOT / rel).is_file():
+            continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         dest = fx / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
@@ -202,14 +204,83 @@ def _env(fx: pathlib.Path, side: str, log: pathlib.Path) -> dict[str, str]:
     return env
 
 
+# The --argjson banner names jq's documentation URL, which moved between jq releases (see `test_the_jq_diagnostics_still_match_this_host`). A frozen twin answer is recorded with the RECORDING host's banner folded to this token and read back with THIS host's, so the golden is not a claim about which jq the recorder had.
+JQ_BANNER_MARK = "<JQ_ARGJSON_BANNER>"
+
+
+def _fold_banner(text: str) -> str:
+    banner = port.jq_argjson_banner()
+    return text.replace(banner, JQ_BANNER_MARK) if banner else text
+
+
+def _unfold_banner(text: str) -> str:
+    return text.replace(JQ_BANNER_MARK, port.jq_argjson_banner())
+
+
+def _old(
+    fx: pathlib.Path,
+    args,
+    log: pathlib.Path,
+    *,
+    tty: str | None = None,
+    target: pathlib.Path | None = None,
+):
+    """The twin's (rc, out, err), its call log and its `--output` file, from `goldens/twins/security.dependency-inventory.jsonl` (PLAN-retire-bash-oracles B3). The live run below happens only on a re-freeze from bash, or from the port with `--source port`."""
+    cell: dict[str, object] = {}
+
+    def side(which: str):
+        def run():
+            log.write_text("", encoding="utf-8")
+            subject = TWIN_REL if which == "old" else PORT_REL
+            runner = "bash" if which == "old" else "python3"
+            env = _env(fx, which, log)
+            if tty is None:
+                proc = subprocess.run(
+                    [runner, str(fx / subject), *args],
+                    env=env,
+                    cwd=str(fx),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=180,
+                )
+                answer = (proc.returncode, proc.stdout, proc.stderr)
+            else:
+                answer = differential.bash_streams(
+                    "%s %s" % (runner, fx / subject), env=env, cwd=str(fx), tty=tty
+                )
+            cell["log"] = log.read_text(encoding="utf-8")
+            cell["out"] = (
+                mask_generated(target.read_text(encoding="utf-8"))
+                if target is not None and target.is_file()
+                else differential.ABSENT
+            )
+            # `generatedAt` is a clock reading every comparison masks; recorded masked so a re-record does not read the time as a change.
+            return answer[0], mask_generated(_fold_banner(answer[1])), _fold_banner(answer[2])
+
+        return run
+
+    rc, out, err, got = differential.twin_run(
+        TWIN_REL,
+        ["args=%r" % (list(args),), "tty=%s" % tty],
+        side("old"),
+        port=side("new"),
+        extras={"log": lambda: cell["log"], "output": lambda: cell["out"]},
+        work=(str(fx),),
+    )
+    output = None if got["output"] == differential.ABSENT else got["output"]
+    return (rc, _unfold_banner(out), _unfold_banner(err)), got["log"].splitlines(), output
+
+
 def run_both(fx: pathlib.Path, *args: str) -> tuple[tuple, tuple, list[str], list[str]]:
     """Both implementations, same fixture, same fakes. Returns results AND call logs."""
     results = []
     logs = []
-    for side, argv in (
-        ("old", ["bash", str(fx / TWIN_REL)]),
-        ("new", ["python3", str(fx / PORT_REL)]),
-    ):
+    old_log = fx / "calls.old"
+    (rc, out, err), lines, _ = _old(fx, args, old_log)
+    results.append((rc, out.replace(str(fx), "<fx>"), err.replace(str(fx), "<fx>")))
+    logs.append(lines)
+    for side, argv in (("new", ["python3", str(fx / PORT_REL)]),):
         log = fx / ("calls.%s" % side)
         log.write_text("", encoding="utf-8")
         proc = subprocess.run(
@@ -233,8 +304,12 @@ def run_both(fx: pathlib.Path, *args: str) -> tuple[tuple, tuple, list[str], lis
 
 
 def assert_same(old: tuple, new: tuple) -> None:
+    """Exit and both streams. `generatedAt` is masked on stdout: the twin's answer is frozen with it masked (a clock reading), so the port's must be read the same way."""
     assert new[0] == old[0], "exit: twin %s, port %s" % (old[0], new[0])
-    assert new[1] == old[1], "stdout:\n--- twin\n%s--- port\n%s" % (old[1], new[1])
+    assert mask_generated(new[1]) == mask_generated(old[1]), "stdout:\n--- twin\n%s--- port\n%s" % (
+        old[1],
+        new[1],
+    )
     assert new[2] == old[2], "stderr:\n--- twin\n%s--- port\n%s" % (old[2], new[2])
 
 
@@ -276,56 +351,46 @@ def _hashes() -> dict[str, str]:
     return out
 
 
-def _run_real(*args: str) -> tuple[tuple, tuple]:
-    results = []
-    for side, argv in (("old", ["bash", str(TWIN)]), ("new", ["python3", str(PORT)])):
-        env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
-        if side == "new":
-            env["PYTHONPATH"] = str(ROOT / ".ci")
-        proc = subprocess.run(
-            [*argv, *args],
-            env=env,
-            cwd=str(ROOT),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=600,
-        )
-        results.append((proc.returncode, proc.stdout, proc.stderr))
-    return results[0], results[1]
+def _run_real(*args: str) -> tuple[int, str, str]:
+    """The PORT over the real repository.
 
-
-def test_the_real_repository_agrees_in_table_format() -> None:
-    """1,760 records over four real packages, byte for byte on both streams.
-
-    No fixture reproduces this input, and it is the only case that exercises `align_tsv` at real column widths, the four real truncation warnings and the real Go module graph at once.
+    These two cases compared the port against the twin, byte for byte, over the real lockfiles. That comparison cannot outlive the twin (PLAN-retire-bash-oracles B3): a frozen answer over a live dependency graph is stale on the next lockfile change, and freezing the graph would be a 1 MB golden that no longer says anything about the tree. What survives is
+    what the port alone can still be held to on the real input: it completes, it is not vacuous, it caps chains, and it is read-only. The byte-level equivalence lives on in every fixture case above and below, which compare against the twin's frozen answers.
     """
-    before = _hashes()
-    old, new = _run_real()
-    assert old[0] == 0, "the twin failed on the real tree:\n%s" % old[2]
-    assert_same(old, new)
-    # SEEN the verdict, not matched two empty strings.
-    assert "SUMMARY  packages=4  records=" in old[1]
-    assert old[1].count("\n") > 1000, "the real inventory collapsed to %d lines" % (
-        old[1].count("\n")
+    env = differential.env_for(PYTHONDONTWRITEBYTECODE="1")
+    env["PYTHONPATH"] = str(ROOT / ".ci")
+    proc = subprocess.run(
+        ["python3", str(PORT), *args],
+        env=env,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=600,
     )
-    assert "chains capped for" in old[2], "no truncation warning: --max-chains is not biting"
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def test_the_real_repository_inventories_in_table_format() -> None:
+    """Over four real packages: the only input that exercises `align_tsv` at real column widths, the real truncation warnings and the real Go module graph at once."""
+    before = _hashes()
+    new = _run_real()
+    assert new[0] == 0, "the port failed on the real tree:\n%s" % new[2]
+    # SEEN the verdict, not matched two empty strings.
+    assert "SUMMARY  packages=4  records=" in new[1]
+    assert new[1].count("\n") > 1000, "the real inventory collapsed to %d lines" % (
+        new[1].count("\n")
+    )
+    assert "chains capped for" in new[2], "no truncation warning: --max-chains is not biting"
     assert _hashes() == before, "a real run mutated a lockfile"
 
 
-def test_the_real_repository_agrees_in_json_format() -> None:
-    """`jq .` against `json.dumps(indent=2, ensure_ascii=False)`, on 1.1 MB.
-
-    `generatedAt` is the one masked field; everything else, including key ORDER and the exact indentation of a 25-deep chain array, is compared raw.
-    """
+def test_the_real_repository_inventories_in_json_format() -> None:
     before = _hashes()
-    old, new = _run_real("--format", "json", "--max-chains", "3")
-    assert old[0] == 0, "the twin failed on the real tree:\n%s" % old[2]
-    assert new[0] == old[0]
-    assert new[2] == old[2]
-    assert mask_generated(new[1]) == mask_generated(old[1])
-    assert "<MASKED>" in mask_generated(old[1]), "the mask matched nothing"
-    document = json.loads(old[1])
+    new = _run_real("--format", "json", "--max-chains", "3")
+    assert new[0] == 0, "the port failed on the real tree:\n%s" % new[2]
+    assert "<MASKED>" in mask_generated(new[1]), "generatedAt is missing"
+    document = json.loads(new[1])
     assert document["summary"]["packagesAnalyzed"] == 4
     assert document["summary"]["totals"]["records"] > 1000
     assert _hashes() == before, "a real run mutated a lockfile"
@@ -346,8 +411,14 @@ def test_help_text_constant_still_matches_the_twin() -> None:
 
     The port cannot slice its OWN source and get the twin's header, so the text is a constant -- and a constant is a second source of truth unless something re-derives it. This is that something.
     """
-    lines = TWIN.read_text(encoding="utf-8").split("\n")[1:35]
-    derived = "".join(re.sub(r"^# ?", "", line) + "\n" for line in lines)
+
+    def derive():
+        lines = TWIN.read_text(encoding="utf-8").split("\n")[1:35]
+        return 0, "".join(re.sub(r"^# ?", "", line) + "\n" for line in lines), ""
+
+    derived = differential.twin_call(
+        TWIN_REL, ["help header, lines 2-35"], derive, port=lambda: (0, port.HELP_TEXT, "")
+    )[1]
     assert derived == port.HELP_TEXT
 
 
@@ -476,7 +547,7 @@ def test_json_format_on_the_fixture(fixture: pathlib.Path) -> None:
     assert new[2] == old[2]
     assert mask_generated(new[1]) == mask_generated(old[1])
     document = json.loads(old[1])
-    assert document["tool"] == {"name": "dependency-inventory.sh", "maxChains": 1}
+    assert document["tool"] == {"name": "rediacc_ci.security.dependency_inventory", "maxChains": 1}
     assert [package["name"] for package in document["packages"]] == [
         "@rediacc/www",
         "@rediacc/cli",
@@ -506,10 +577,18 @@ def test_output_to_a_file(fixture: pathlib.Path, fmt: str) -> None:
     """
     results = []
     logs = []
-    for side, argv in (
-        ("old", ["bash", str(fixture / TWIN_REL)]),
-        ("new", ["python3", str(fixture / PORT_REL)]),
-    ):
+    old_target = fixture / "out.old.txt"
+    (rc, out, err), lines, written = _old(
+        fixture,
+        ["--format", fmt, "--output", str(old_target)],
+        fixture / "calls.old",
+        target=old_target,
+    )
+    results.append(
+        (rc, out, err.replace(str(old_target), "<out>").replace(str(fixture), "<fx>"), written)
+    )
+    logs.append(lines)
+    for side, argv in (("new", ["python3", str(fixture / PORT_REL)]),):
         log = fixture / ("calls.%s" % side)
         log.write_text("", encoding="utf-8")
         target = fixture / ("out.%s.txt" % side)
@@ -688,13 +767,7 @@ def test_colour_is_emitted_when_stderr_is_a_terminal(fixture: pathlib.Path) -> N
     deliberate divergence and is not this tool's subject.
     """
     log = fixture / "calls.tty"
-    log.write_text("", encoding="utf-8")
-    old = differential.bash_streams(
-        "bash %s" % (fixture / TWIN_REL),
-        env=_env(fixture, "old", log),
-        cwd=str(fixture),
-        tty="stderr",
-    )
+    old, _lines, _ = _old(fixture, [], log, tty="stderr")
     log.write_text("", encoding="utf-8")
     new = differential.bash_streams(
         "python3 %s" % (fixture / PORT_REL),
@@ -800,3 +873,13 @@ def test_jq_empty_distinguishes_no_value_from_invalid_from_null() -> None:
     assert port._jq_empty("not json") is port._INVALID
     assert port._jq_empty("null") is None
     assert port._jq_empty("{}") == {}
+
+
+def test_the_tool_names_itself_by_a_module_that_exists(fixture: pathlib.Path) -> None:
+    """Rule T, failing on the bash behaviour: the help and the JSON `tool.name` named `dependency-inventory.sh`, retired under PLAN-retire-bash-oracles B3. The intentional golden deltas are on the help and JSON records."""
+    old = assert_agree(fixture, "--help")
+    assert old[1].startswith("rediacc_ci.security.dependency_inventory - "), old[1][:80]
+    assert "dependency-inventory.sh" not in old[1].split("set -euo pipefail")[0]
+    doc = json.loads(mask_generated(assert_agree(fixture, "--format", "json")[1]))
+    assert doc["tool"]["name"] == "rediacc_ci.security.dependency_inventory"
+    assert (ROOT / ".ci" / "rediacc_ci" / "security" / "dependency_inventory.py").is_file()

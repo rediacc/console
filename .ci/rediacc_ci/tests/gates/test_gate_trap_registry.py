@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-trap-registry.sh`, retired in W7 P5.
 
-Behavioural test for `.ci/scripts/quality/check-trap-registry.sh`, and for the corpus parser it shares with the Stop hook (`.claude/hooks/stop/wl_store.py`).
+Behavioural test for the trap-registry gate (`.ci/scripts/quality/check_trap_registry.py`, which replaced `check-trap-registry.sh`), and for the corpus parser it shares with the Stop hook (`.claude/hooks/stop/wl_store.py`).
 
 WHAT IT GUARDS. `docs/agent-reference/TRAPS.md` is a REGISTRY, not prose: every `## ` entry names the instrument that enforces it, and the gate proves that pointer RESOLVES (F4) and is LIVE (F5). Presence alone would be worse than nothing, because the cheapest thing to name under a coverage gate is a check that cannot fire, and a gate demanding a name manufactures those at one per
 trap while reporting full coverage.
@@ -14,7 +14,7 @@ THE PLANTS BELOW GO INTO A COPY OF THE REAL CORPUS, never the tracked file. A ki
 
 NO `TWIN_TIMEOUT` DECLARED. Measured 2026-09-08: the twin takes 63s and this module takes comparable time, both far inside the 600s default. A declared timeout that nothing needs is a number that will be believed later.
 
-TRAP_FLOOR IS READ, NEVER TYPED. The subject prints `N entries (floor F)` and the added shape case parses BOTH out of that one line. A copy of the floor here would be a third place it lives (it is already in `check-trap-registry.sh` and `.ci/rediacc_ci/quality/trap_registry.py`, whose agreement `.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts), and a third copy is the
+TRAP_FLOOR IS READ, NEVER TYPED. The subject prints `N entries (floor F)` and the added shape case parses BOTH out of that one line. A copy of the floor here would be a third place it lives (it is already in `.ci/rediacc_ci/quality/trap_registry.py` and in the frozen golden of the retired bash twin, whose agreement `.ci/rediacc_ci/tests/test_quality_trap_registry.py` asserts), and a third copy is the
 one that goes stale.
 
 TWO TWIN CASES ARE REWRITTEN RATHER THAN LIFTED, and both go the same way. The twin's two `wl_store` cases run a python heredoc that prints `PASS `/`FAIL ` lines and then asserts the merged text contains no `FAIL`. This port runs the same functions in the same nested interpreter and prints their RESULTS as JSON, so each of the twin's seven checks becomes an assertion with its own
@@ -24,13 +24,15 @@ message. The difference matters: `assert_not_contains(out, "FAIL")` is also sati
 import json
 import os
 import re
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 # The real-tree case runs the subject seam-free, and every scan resolves pointers against the live manifest, dispatcher, hook suite and settings; reads need no group. See the docstring.
 
-GATE_REL = ".ci/scripts/quality/check-trap-registry.sh"
+# The Python entry point CI runs (`check:ci-trap-registry`). The bash original this test was written against, `check-trap-registry.sh`, was retired under PLAN-retire-bash-oracles B3; its parser's answers are frozen in `goldens/twins/quality.check-trap-registry.jsonl`.
+GATE_REL = ".ci/scripts/quality/check_trap_registry.py"
 GATE = paths.from_root(*GATE_REL.split("/"))
 CORPUS_REL = "docs/agent-reference/TRAPS.md"
 CORPUS = paths.from_root(*CORPUS_REL.split("/"))
@@ -46,7 +48,7 @@ GATE_TIMEOUT = 300
 def require_gate(gate) -> str:
     """The subject and its corpus, proved present before anything is claimed.
 
-    The twin asserts `-x` on the gate rather than `-f`, and that is the stronger claim: a subject that lost its executable bit still reads fine and still runs under an explicit `bash`, so a port checking only existence would pass a state the twin refuses.
+    `-x` on the gate rather than `-f`, and that is the stronger claim: a subject that lost its executable bit still reads fine and still runs under an explicit interpreter, so checking only existence would pass a state CI's direct invocation refuses.
     """
     if not GATE.is_file():
         gate.log_fail("gate not found: %s" % GATE_REL)
@@ -54,7 +56,7 @@ def require_gate(gate) -> str:
         gate.log_fail("gate not executable: %s" % GATE_REL)
     if not CORPUS.is_file():
         gate.log_fail("corpus missing: %s" % CORPUS_REL)
-    return harness.require_tool("bash", "install bash; the subject IS a bash script")
+    return sys.executable
 
 
 def corpus_text(gate) -> str:
@@ -79,9 +81,9 @@ def scan_corpus(gate, path) -> harness.RunResult:
     package.json, dispatcher, hook suite and settings, so a plant is judged against
     the tree as it actually is.
     """
-    bash = require_gate(gate)
+    python = require_gate(gate)
     return harness.run(
-        [bash, os.fspath(GATE), "--scan-only"],
+        [python, os.fspath(GATE), "--scan-only"],
         cwd=paths.repo_root(),
         env={"TRAP_CORPUS": os.fspath(path)},
         timeout=GATE_TIMEOUT,
@@ -170,8 +172,8 @@ def test_real_tree_is_green_and_the_controls_fired(gate):
 
     The three message assertions are the point. "the tree is clean" from a gate whose own controls silently stopped firing is exactly the green this estate refuses, so the verdict must state that the planted defects went red, that the clean fixtures stayed green, and what the population actually was.
     """
-    bash = require_gate(gate)
-    result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
+    python = require_gate(gate)
+    result = harness.run([python, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
     gate.assert_exit(0, result, "the real corpus must pass the registry gate")
     gate.assert_contains(
         result.combined,
@@ -404,8 +406,8 @@ def test_the_real_corpus_is_over_its_own_floor(gate):
     The floor is a RATCHET, so `entries == floor` is the normal, healthy state on
     the day an entry is added and the number is bumped with it. What is refused is a corpus that has fallen UNDER its own floor while the gate still reported green, and a floor of zero, which would make the population claim vacuous.
     """
-    bash = require_gate(gate)
-    result = harness.run([bash, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
+    python = require_gate(gate)
+    result = harness.run([python, os.fspath(GATE)], cwd=paths.repo_root(), timeout=GATE_TIMEOUT)
     gate.assert_exit(0, result, "the real run must pass before its shape means anything")
     match = SHAPE_RE.search(result.combined)
     if not match:

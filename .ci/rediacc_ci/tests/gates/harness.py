@@ -515,3 +515,60 @@ def watchdog_subject(gate, watchdog):
         gate.log_fail("subject under test is missing: %s" % watchdog)
     require_tool("node", "install Node.js; the watchdog is a CommonJS module")
     return watchdog
+
+
+# --------------------------------------------------------------------------- BASH_TWIN goldens (PLAN-retire-bash-oracles B3) ---------------------------------------------------------------------------
+#
+# `test_twin_parity.py` compares three facts about a gate-test twin: its VERDICT (rc), its runtime `PASS:` count, and the case set it declares and calls. Those three are all it ever reads from the twin, so they are what a frozen twin keeps. The record is the hooks' `rc`/`out`/`err` shape (`differential.goldenio`), with `out` carrying `passes: N` and one `case: <name>` line per case,
+# sorted, so a reviewer reads the diff of a re-record as plain lines. The golden lives beside the differential goldens, named by `differential.golden_stem`.
+#
+# WHILE THE TWIN EXISTS it is still driven, and a golden that disagrees with the live twin is STALE and fails: the freeze has to be retaken (`regolden.py <twin> --source bash`) before the file can go. ONCE THE TWIN IS GONE the golden answers instead.
+
+
+def diff_module():
+    # Imported lazily: `differential` builds its BASE_ENV (and a run dir) at import, which every harness user does not need.
+    from rediacc_ci.tests import differential  # noqa: PLC0415
+
+    return differential
+
+
+def parity_key(twin: str) -> str:
+    return diff_module().goldenio.case_key("parity", twin)
+
+
+def parity_text(passes: int, cases: set[str]) -> str:
+    return "passes: %d\n" % passes + "".join("case: %s\n" % c for c in sorted(cases))
+
+
+def parse_parity_text(text: str) -> tuple[int, set[str]]:
+    passes = -1
+    cases: set[str] = set()
+    for line in text.splitlines():
+        if line.startswith("passes: "):
+            passes = int(line[len("passes: ") :])
+        elif line.startswith("case: "):
+            cases.add(line[len("case: ") :])
+    if passes < 0:
+        raise AssertionError("a parity golden without a `passes:` line: %r" % text)
+    return passes, cases
+
+
+def frozen_twin(twin: str) -> tuple[int, int, set[str]] | None:
+    """(rc, passes, cases) from the twin's golden, or None when no golden exists."""
+    diff = diff_module()
+    header, silent, records = diff.goldenio.read_golden(diff.golden_file(twin))
+    if header is None:
+        return None
+    row = diff.goldenio.lookup(silent, records, parity_key(twin))
+    if row is None:
+        return None
+    passes, cases = parse_parity_text(diff.goldenio.decode_field(row.get("out", "")))
+    return int(row["rc"]), passes, cases
+
+
+def record_twin(twin: str, rc: int, passes: int, cases: set[str]) -> None:
+    """Keep this run's live answer for `regolden.py` to write (only under `REDIACC_CI_REGOLDEN`)."""
+    diff = diff_module()
+    stem = diff.golden_stem(twin)
+    diff.RECORDED.setdefault(stem, {})[parity_key(twin)] = (rc, parity_text(passes, cases), "")
+    diff.RECORDED_TWINS[stem] = twin

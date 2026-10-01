@@ -53,6 +53,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect
 from rediacc_ci.private import concurrent_fork_isolation_test as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import RUNTIME_DIR
 
 ROOT = paths.repo_root()
@@ -223,7 +224,8 @@ def _fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "scripts" / "private").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
+    if TWIN.is_file():  # only a re-freeze from bash runs it; compare mode never does
+        shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -309,6 +311,53 @@ def _binder(
 
 
 def _run(
+    subject: pathlib.PurePosixPath,
+    root: pathlib.Path,
+    tmp_path: pathlib.Path,
+    binder: str,
+    argv: tuple[str, ...] = (),
+    env_extra: dict[str, str] | None = None,
+) -> dict[str, object]:
+    """One subject's five observables. The TWIN's come from its frozen golden (PLAN-retire-bash-oracles B3); the port is driven live."""
+    if subject != TWIN_REL:
+        return _live(subject, root, tmp_path, binder, argv, env_extra)
+    cell: dict[str, dict[str, object]] = {}
+
+    def side(which: pathlib.PurePosixPath):
+        def run():
+            cell["v"] = _live(which, root, tmp_path, binder, argv, env_extra)
+            return cell["v"]["exit"], cell["v"]["stdout"], cell["v"]["stderr"]
+
+        return run
+
+    def field(name: str):
+        def read() -> str:
+            value = cell["v"][name]
+            if value is None:
+                return diff.ABSENT
+            return value if isinstance(value, str) else json.dumps(value)
+
+        return read
+
+    rc, out, err, got = diff.twin_run(
+        str(TWIN_REL),
+        ["argv=%r" % (argv,), "env=%r" % (sorted((env_extra or {}).items()),)],
+        side(TWIN_REL),
+        port=side(PORT_REL),
+        extras={n: field(n) for n in ("calls", "drifting", "uploaded")},
+        work=(str(tmp_path.resolve()),),
+    )
+    return {
+        "exit": rc,
+        "stdout": out,
+        "stderr": err,
+        "calls": json.loads(got["calls"]),
+        "drifting": json.loads(got["drifting"]),
+        "uploaded": None if got["uploaded"] == diff.ABSENT else got["uploaded"],
+    }
+
+
+def _live(
     subject: pathlib.PurePosixPath,
     root: pathlib.Path,
     tmp_path: pathlib.Path,
@@ -878,22 +927,31 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
     binder = _binder(tmp_path, absent=("mktemp",))
     raw = {}
     for subject in (TWIN_REL, PORT_REL):
-        proc = subprocess.run(
-            ["bash" if subject.suffix == ".sh" else "python3", str(root / subject)],
-            capture_output=True,
-            text=True,
-            env={
-                "PATH": binder,
-                "HOME": str(tmp_path / "home"),
-                "USER": "harness-user",
-                "PYTHONDONTWRITEBYTECODE": "1",
-                "PYTHONPATH": str(ROOT / ".ci"),
-            },
-            cwd=str(tmp_path),
-            check=False,
-            timeout=600,
-        )
-        raw[subject.name] = proc.stderr
+
+        def live(subject=subject):
+            proc = subprocess.run(
+                ["bash" if subject.suffix == ".sh" else "python3", str(root / subject)],
+                capture_output=True,
+                text=True,
+                env={
+                    "PATH": binder,
+                    "HOME": str(tmp_path / "home"),
+                    "USER": "harness-user",
+                    "PYTHONDONTWRITEBYTECODE": "1",
+                    "PYTHONPATH": str(ROOT / ".ci"),
+                },
+                cwd=str(tmp_path),
+                check=False,
+                timeout=600,
+            )
+            return proc.returncode, proc.stdout, proc.stderr
+
+        if subject == TWIN_REL:
+            raw[subject.name] = diff.twin_call(
+                str(TWIN_REL), ["raw stderr, no mask"], live, work=(str(tmp_path.resolve()),)
+            )[2]
+        else:
+            raw[subject.name] = live()[2]
     assert raw[TWIN_REL.name] != raw[PORT_REL.name], (
         "the two prefixes are identical, so the mask is unnecessary and should be deleted"
     )

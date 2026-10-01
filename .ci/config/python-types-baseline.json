@@ -961,20 +961,6 @@
       "message": "Unsupported right operand type for in (\"object\")"
     },
     {
-      "id": "030b7c1fcfe77b76",
-      "file": ".ci/rediacc_ci/tests/test_ci_cancel_older_runs.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
-    },
-    {
-      "id": "d940bd5e4050dcf7",
-      "file": ".ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
-    },
-    {
       "id": "5a851bf957e04aa1",
       "file": ".ci/rediacc_ci/tests/test_ci_derive_image_tag.py",
       "code": "operator",
@@ -1001,13 +987,6 @@
       "code": "arg-type",
       "count": 1,
       "message": "Argument \"env_extra\" to \"run_both\" has incompatible type \"dict[str, str]\"; expected \"dict[str, str | None] | None\""
-    },
-    {
-      "id": "4069d54a7387a5d6",
-      "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
     },
     {
       "id": "b8a73d0c9cb92340",
@@ -1057,13 +1036,6 @@
       "code": "operator",
       "count": 1,
       "message": "Unsupported right operand type for in (\"object\")"
-    },
-    {
-      "id": "b5c3d97024abb07a",
-      "file": ".ci/rediacc_ci/tests/test_ci_set_image_tags.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
     },
     {
       "id": "a0339a67a194c582",
@@ -1234,32 +1206,11 @@
       "message": "Value of type \"tuple[str, list[str]] | None\" is not indexable"
     },
     {
-      "id": "94fc4e0abf443d6c",
-      "file": ".ci/rediacc_ci/tests/test_core_toolchain.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, None]\"; expected \"str\""
-    },
-    {
       "id": "f829cd73fecc004f",
       "file": ".ci/rediacc_ci/tests/test_deploy_verify_edge_endpoints.py",
       "code": "dict-item",
       "count": 1,
       "message": "Dict entry 0 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
-    },
-    {
-      "id": "3bacb33734a16640",
-      "file": ".ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument \"PREVIEW_URL_OVERRIDE\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
-    },
-    {
-      "id": "3b60425ce8158f94",
-      "file": ".ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py",
-      "code": "arg-type",
-      "count": 4,
-      "message": "Argument \"PR_NUMBER\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
     },
     {
       "id": "b0a7d9477788a80a",
@@ -1295,13 +1246,6 @@
       "code": "call-overload",
       "count": 1,
       "message": "No overload variant of \"run\" matches argument types \"list[Any]\", \"int\", \"int\", \"bool\", \"dict[str, object]\""
-    },
-    {
-      "id": "b07aac48c42ae610",
-      "file": ".ci/rediacc_ci/tests/test_env_create_e2e_env.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[str, str | None]\"; expected \"str\""
     },
     {
       "id": "052ed35773b5d21b",
@@ -1365,27 +1309,6 @@
       "code": "arg-type",
       "count": 2,
       "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"tuple[str, ...]\""
-    },
-    {
-      "id": "11cd30bcf83fb188",
-      "file": ".ci/rediacc_ci/tests/test_log.py",
-      "code": "arg-type",
-      "count": 9,
-      "message": "Argument \"CI\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
-    },
-    {
-      "id": "0328892c88a9fdff",
-      "file": ".ci/rediacc_ci/tests/test_log.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument \"DEBUG\" to \"env_for\" has incompatible type \"str | None\"; expected \"str\""
-    },
-    {
-      "id": "a097ec5879d25191",
-      "file": ".ci/rediacc_ci/tests/test_log.py",
-      "code": "arg-type",
-      "count": 10,
-      "message": "Argument \"NO_COLOR\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
     },
     {
       "id": "f390e08f07c241b3",
@@ -1836,20 +1759,6 @@
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {
-      "id": "006a0f1bf37214f8",
-      "file": ".ci/rediacc_ci/tests/test_quality_renet_tier_map.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument \"GOPATH\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
-    },
-    {
-      "id": "c929959e81d69886",
-      "file": ".ci/rediacc_ci/tests/test_quality_renet_types.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument \"CI\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
-    },
-    {
       "id": "c1f8958078314389",
       "file": ".ci/rediacc_ci/tests/test_quality_review_comments.py",
       "code": "var-annotated",
@@ -1920,13 +1829,6 @@
       "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"tuple[str, ...]\""
     },
     {
-      "id": "73802225c322664d",
-      "file": ".ci/rediacc_ci/tests/test_release_check_edge_manifest.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument \"GITHUB_OUTPUT\" to \"env_for\" has incompatible type \"None\"; expected \"str\""
-    },
-    {
       "id": "8975fbd5cb8311ca",
       "file": ".ci/rediacc_ci/tests/test_release_mark_production.py",
       "code": "arg-type",
@@ -1983,13 +1885,6 @@
       "message": "Dict entry 4 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
     },
     {
-      "id": "3dc53a035e39e723",
-      "file": ".ci/rediacc_ci/tests/test_security_dependency_inventory.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"mask_generated\" has incompatible type \"str | None\"; expected \"str\""
-    },
-    {
       "id": "e7c3bf2970dff6da",
       "file": ".ci/rediacc_ci/tests/test_setup_build_packages.py",
       "code": "assignment",
@@ -2009,13 +1904,6 @@
       "code": "var-annotated",
       "count": 2,
       "message": "Need type annotation for \"lint_by_kind\" (hint: \"lint_by_kind: dict[<type>, <type>] = ...\")"
-    },
-    {
-      "id": "1390dd7321e4f896",
-      "file": ".ci/rediacc_ci/tests/test_signal_create_complete.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"env_for\" has incompatible type \"**dict[Any, Any | None]\"; expected \"str\""
     },
     {
       "id": "f9a942e56c969d9d",

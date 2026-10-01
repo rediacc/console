@@ -136,7 +136,7 @@ interface Family {
 
 const FAMILIES: readonly Family[] = [
   { pathspec: 'scripts/gates/check-*.ts', floor: 100 },
-  { pathspec: '.ci/scripts/quality/check-*.sh', floor: 3 },
+  // THE `.ci/scripts/quality/check-*.sh` FAMILY IS GONE, the same way the hook family below went: PLAN-retire-bash-oracles B3 retired its last file (`check-submodule-branches.sh`) on 2026-10-01, so the pathspec matches nothing and a row would carry a floor no deletion could breach. Its Python spelling, `.ci/scripts/quality/check_*.py`, is in ADVISORY_FAMILIES below.
   { pathspec: '.ci/scripts/test/gates/test-*.sh', floor: 5 },
   // THE `.claude/hooks/pre-bash/block-*.sh` FAMILY IS GONE, and this note stands in its place rather than a row with a floor of zero, which no deletion could ever breach. It held 43 guards; W5 ported 42 to `.claude/rediacc_hooks/guards/block_*.py` and left one bash file, and W7 P6 ported that one too, so the pathspec now matches nothing and `git ls-files` on it would refuse the
   // floor it used to carry. THE PYTHON SPELLING IS STILL NOT HERE, deliberately and with the cost measured: adding `.claude/rediacc_hooks/guards/block_*.py` on 2026-09-08 reported 26 new shapes, because the guards carry a shared scaffold of their own, so the widening is an extraction job like the quality half above and belongs in a commit of its own.
@@ -323,7 +323,7 @@ export function regexEnd(s: string, i: number): number {
  *     UNDER-counts duplication. Following a stray apostrophe eats the rest of the file.
  *     Those costs are not comparable, so the conservative reading wins.
  *   - A BACKTICK CROSSES A NEWLINE ONLY IN TYPESCRIPT. Once `'` stopped eating the file the
- *     next-widest swallower took over: `.ci/scripts/quality/check-trap-registry.sh:140` is
+ *     next-widest swallower took over: the since-retired `check-trap-registry.sh:140` is
  *     `match(line, /^[ \t]*(```+|~~~+)/)` inside an awk program inside a shell single-quoted
  *     string, so its THIRD backtick opened a literal running hundreds of lines. Measured with
  *     the quote arms already fixed and this one not: 296 of that file's 394 normalised lines
@@ -1390,7 +1390,7 @@ function controls(): { name: string; ok: boolean; detail?: string }[] {
         ).length === 5,
     },
     {
-      // `.ci/scripts/quality/check-trap-registry.sh:140`, which cost that file 296 of its 394 lines the moment the apostrophe arm stopped eating the region first.
+      // the since-retired `check-trap-registry.sh:140`, which cost that file 296 of its 394 lines the moment the apostrophe arm stopped eating the region first.
       name: 'a backtick inside a multi-line shell single-quoted block does not eat the file',
       ok: normalise("awk '\n  /^(```+)/ { print }\n' f\na=1\nb=2\nc=`date`", 'sh').length === 6,
     },

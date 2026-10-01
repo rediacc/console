@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/build/extract-renet-from-image.sh` (243 lines).
+"""Port of `.ci/scripts/build/extract-renet-from-image.sh` (243 lines), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/build.extract-renet-from-image.jsonl`, and the `:NN` line citations below are to that blob.
 
 THE CACHED FAST PATH for renet. When CI decides a renet image already exists
 (`renet_exists=true`) it does not rebuild renet from source; it creates a

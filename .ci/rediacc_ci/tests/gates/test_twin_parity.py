@@ -203,12 +203,24 @@ def test_the_registry_is_not_empty(gate):
             "comparison below ran against nothing and its green means nothing."
             % (paths.relative_to_root(HERE), MODULE_GLOB)
         )
+    frozen = 0
     for _name, _path, twin, _timeout in MODULES:
-        if not paths.from_root(*twin.split("/")).is_file():
-            gate.log_fail("BASH_TWIN %s does not exist; the parity claim cannot be made" % twin)
+        if paths.from_root(*twin.split("/")).is_file():
+            continue
+        if harness.frozen_twin(twin) is None:
+            gate.log_fail(
+                "BASH_TWIN %s does not exist and has no golden; the parity claim cannot be made"
+                % twin
+            )
+        frozen += 1
     gate.log_pass(
-        "%d ported module(s) declare a twin, and every twin file exists: %s"
-        % (len(MODULES), ", ".join(name for name, _, _, _ in MODULES))
+        "%d ported module(s) declare a twin (%d live, %d frozen as goldens): %s"
+        % (
+            len(MODULES),
+            len(MODULES) - frozen,
+            frozen,
+            ", ".join(name for name, _, _, _ in MODULES),
+        )
     )
 
 
@@ -550,20 +562,55 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
             "the full differential." % (name, twin_sha, port_sha, ALWAYS_DRIVE_ENV)
         )
         return
-    # A TIMEOUT IS A VERDICT HERE, NOT AN ERROR. `subprocess.run(timeout=)`
-    # raises, and an escaping `TimeoutExpired` arrives as a traceback in the parity driver rather than as a statement about the subject -- so the first thing a reader learns is that the harness broke, not that the twin is too slow to be driven this way. Caught on BOTH sides, because a port that hangs and a twin that is merely long are different findings and the message has to say
-    # which.
-    try:
-        twin_run = harness.run(["bash", str(twin_path)], timeout=twin_timeout)
-    except subprocess.TimeoutExpired:
-        gate.log_fail(
-            "TWIN TIMED OUT for %s: %s did not finish in %ds, so NO verdict was "
-            "reached and this comparison proves nothing. If the twin is legitimately "
-            "this slow, declare `TWIN_TIMEOUT = <seconds>` beside `BASH_TWIN` in %s "
-            "(capped at %ds). If it is not, the twin hangs and that is the finding."
-            % (name, twin, twin_timeout, module_path.name, MAX_TWIN_TIMEOUT)
-        )
-    twin_passes = len(PASS_LINE_RE.findall(ANSI_RE.sub("", twin_run.out)))
+    # ONCE THE TWIN IS DELETED its golden answers for it (harness, "BASH_TWIN goldens"): the verdict, the PASS count and the case set are the only three things this test ever read from it. While it exists it is still driven, and a golden that disagrees with it is stale.
+    if not twin_path.is_file() and harness.diff_module().regolden_mode(twin) is None:
+        frozen = harness.frozen_twin(twin)
+        if frozen is None:
+            gate.log_fail(
+                "BASH_TWIN %s is gone and has no golden at %s, so there is nothing to compare "
+                "%s against. Restore the freeze or drop the BASH_TWIN declaration."
+                % (twin, harness.diff_module().golden_file(twin), name)
+            )
+        assert frozen is not None  # log_fail raised above otherwise
+        twin_rc, twin_passes, cases = frozen
+        twin_out = twin_err = "(frozen golden; the twin is deleted)"
+    else:
+        # A TIMEOUT IS A VERDICT HERE, NOT AN ERROR. `subprocess.run(timeout=)`
+        # raises, and an escaping `TimeoutExpired` arrives as a traceback in the parity driver rather than as a statement about the subject -- so the first thing a reader learns is that the harness broke, not that the twin is too slow to be driven this way. Caught on BOTH sides, because a port that hangs and a twin that is merely long are different findings and the message has to say
+        # which.
+        try:
+            twin_run = harness.run(["bash", str(twin_path)], timeout=twin_timeout)
+        except subprocess.TimeoutExpired:
+            gate.log_fail(
+                "TWIN TIMED OUT for %s: %s did not finish in %ds, so NO verdict was "
+                "reached and this comparison proves nothing. If the twin is legitimately "
+                "this slow, declare `TWIN_TIMEOUT = <seconds>` beside `BASH_TWIN` in %s "
+                "(capped at %ds). If it is not, the twin hangs and that is the finding."
+                % (name, twin, twin_timeout, module_path.name, MAX_TWIN_TIMEOUT)
+            )
+        twin_rc, twin_out, twin_err = twin_run.rc, twin_run.out, twin_run.err
+        twin_passes = len(PASS_LINE_RE.findall(ANSI_RE.sub("", twin_out)))
+        cases = bash_cases(twin_path.read_text(encoding="utf-8"))
+        if harness.diff_module().regolden_mode(twin) == "bash":
+            harness.record_twin(twin, twin_rc, twin_passes, cases)
+        else:
+            frozen = harness.frozen_twin(twin)
+            if frozen is not None and frozen != (twin_rc, twin_passes, cases):
+                gate.log_fail(
+                    "STALE GOLDEN for %s: the live twin answers rc=%d passes=%d cases=%d, the "
+                    "golden rc=%d passes=%d cases=%d. Re-freeze before deleting it: "
+                    'PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden %s --source bash --reason "<why>"'
+                    % (
+                        name,
+                        twin_rc,
+                        twin_passes,
+                        len(cases),
+                        frozen[0],
+                        frozen[1],
+                        len(frozen[2]),
+                        twin,
+                    )
+                )
 
     try:
         port_proc, port_controls = run_port(module_path, tmp_path / "ledger.jsonl", twin_timeout)
@@ -574,7 +621,7 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
             "regression in the port, not a reason to raise `TWIN_TIMEOUT`." % (name, twin_timeout)
         )
 
-    twin_green = twin_run.rc == 0
+    twin_green = twin_rc == 0
     port_green = port_proc.returncode == 0
     if twin_green != port_green:
         gate.log_fail(
@@ -585,18 +632,17 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
             % (
                 name,
                 "passed" if twin_green else "FAILED",
-                twin_run.rc,
+                twin_rc,
                 "passed" if port_green else "FAILED",
                 port_proc.returncode,
-                twin_run.out,
-                twin_run.err,
+                twin_out,
+                twin_err,
                 port_proc.stdout,
                 port_proc.stderr,
             )
         )
     gate.log_pass("%s: twin and port agree (both %s)" % (name, "green" if twin_green else "red"))
 
-    cases = bash_cases(twin_path.read_text(encoding="utf-8"))
     ported = set(PY_FN_RE.findall(module_path.read_text(encoding="utf-8")))
     if cases:
         missing = sorted(cases - ported)
@@ -627,7 +673,7 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
     # The shape, printed on every run so a collapse is visible rather than silent.
     gate.log_info(
         "%s: twin rc=%d passes=%d | port rc=%d controls=%d tests=%d"
-        % (name, twin_run.rc, twin_passes, port_proc.returncode, port_controls, len(ported))
+        % (name, twin_rc, twin_passes, port_proc.returncode, port_controls, len(ported))
     )
     # Reached only when every refusal above declined to fire, so `agreed=True` is
     # the verdict this run actually produced rather than an assumption about it.

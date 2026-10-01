@@ -343,8 +343,9 @@ def test_the_three_hardcoded_submodule_lists_still_agree_with_gitmodules():
     declared = {s.path for s in gitx.submodules(root)}
     assert declared, "nothing to compare against"
 
+    # `check-submodule-branches.sh` was retired under PLAN-retire-bash-oracles B3; its port carries the same hardcoded list (`submodule_branches.py`), so the port takes its place here.
     for relative in (
-        ".ci/scripts/quality/check-submodule-branches.sh",
+        ".ci/rediacc_ci/quality/submodule_branches.py",
         ".ci/scripts/ci/scope-map.cjs",
         ".ci/scripts/ci/greenlight.cjs",
     ):

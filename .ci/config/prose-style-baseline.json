@@ -15,7 +15,7 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2885,
+ "count": 2884,
  "files": 712,
  "by_rule": {
   "R1": 1574,
@@ -23,7 +23,7 @@
   "R14": 1,
   "R18": 13,
   "R19": 62,
-  "R2": 611,
+  "R2": 610,
   "R7": 474
  },
  "findings": {
@@ -835,9 +835,6 @@
    ]
   },
   ".ci/rediacc_ci/tests/test_quality_control_vacuity.py": {
-   "R2": [
-    "6207a857ee5fbf10"
-   ],
    "R7": [
     "a907062be4dbe2ec"
    ]

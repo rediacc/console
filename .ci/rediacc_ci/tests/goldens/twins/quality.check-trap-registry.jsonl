@@ -1,0 +1,11 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 12, "source": "bash", "twin": ".ci/scripts/quality/check-trap-registry.sh", "twin_blob": "a89c6e4c2fcd91deebf6426e869087dd0133c72a"}}
+{"_silent": ["test_parser_matches_the_twins_awk[### not an entry\\n]#0c868d477a34c98b", "test_parser_matches_the_twins_awk[]#f6f21e68a16cc074", "test_parser_matches_the_twins_awk[no headings at all\\n]#4d33c2d8c9ae9a84"]}
+{"_key": "test_parser_matches_the_twins_awk[## a\\nTrap-Id: a\\nEnforced-By: x\\nResidue: y\\n## b\\nTrap-Id: b\\n]#4aba809f59c3d13e", "err": "", "out": "1\u001fa\u001fx\u001fy\u001f1\u001fa\n5\u001fb\u001f\u001f\u001f0\u001fb\n", "rc": "0"}
+{"_key": "test_parser_matches_the_twins_awk[## first\\nTrap-Id: a-trap\\nEnforced-By: JUDGMENT-ONLY\\nResidue: nothing.\\n\\nbody\\n]#3c7a43d281b4ccd1", "err": "", "out": "1\u001fa-trap\u001fJUDGMENT-ONLY\u001fnothing.\u001f1\u001ffirst\n", "rc": "0"}
+{"_key": "test_parser_matches_the_twins_awk[## no trailer at all\\n\\nbody\\n]#c5de1c9888f25d67", "err": "", "out": "1\u001f\u001f\u001f\u001f0\u001fno trailer at all\n", "rc": "0"}
+{"_key": "test_parser_matches_the_twins_awk[## one\\nTrap-Id: one\\nEnforced-By: gate:check:x\\nResidue:\\n]#a5ed54c3a7f7c5c6", "err": "", "out": "1\u001fone\u001fgate:check:x\u001f\u001f1\u001fone\n", "rc": "0"}
+{"_key": "test_parser_matches_the_twins_awk[## r\\nTrap-Id: r\\nEnforced-By: JUDGMENT-ONLY\\nResidue: x.\\n\\n```markdown\\n## Not A Trap\\n```\\n]#ea1820bdfa7ff863", "err": "", "out": "1\u001fr\u001fJUDGMENT-ONLY\u001fx.\u001f1\u001fr\n", "rc": "0"}
+{"_key": "test_parser_matches_the_twins_awk[## r\\nTrap-Id: r\\n\\n~~~\\n## Also Not A Trap\\n~~~\\n]#5270dfe52bd1f3bb", "err": "", "out": "1\u001fr\u001f\u001f\u001f0\u001fr\n", "rc": "0"}
+{"_key": "test_parser_matches_the_twins_awk[## t\\nTrap-Id: t\\n\\nResidue: this is body prose\\n]#ee83b8804b9d2b01", "err": "", "out": "1\u001ft\u001f\u001f\u001f0\u001ft\n", "rc": "0"}
+{"_key": "test_the_floor_is_the_twins_number#96a5fb7da082487b", "err": "", "out": "98", "rc": "0"}
+{"_key": "test_the_summary_count_is_the_twins_boolean#38bf91eb02585cf8", "err": "", "out": "[ \"$errors\" -eq 0 ]\n\"$found trap-registry finding(s) in $TRAP_CORPUS\n", "rc": "0"}

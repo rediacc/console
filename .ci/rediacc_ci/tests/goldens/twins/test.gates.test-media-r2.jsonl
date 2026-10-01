@@ -1,0 +1,3 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 1, "source": "bash", "twin": ".ci/scripts/test/gates/test-media-r2.sh", "twin_blob": "55415b8e5b98a205bf327b47ab61d0af3e87a72a"}}
+{"_silent": []}
+{"_key": "parity#c83e001095f8ce48", "err": "", "out": "passes: 6\ncase: test_a_broken_sync_never_fails_the_pipeline\ncase: test_a_planted_mutation_is_visible_to_the_behaviour_cases\ncase: test_the_cache_is_optional_in_both_directions\ncase: test_the_ownership_assertion_can_fail\ncase: test_this_module_solely_owns_the_moved_functions\n", "rc": "0"}

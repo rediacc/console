@@ -188,3 +188,28 @@ def carried_marker(key, old_records):
     if old_row is None:
         return None
     return old_row.get("intentional")
+
+
+def canonical_view(silent, records):
+    """One comparable value per case key, `intentional` stripped (it records WHY, not WHAT); a key's presence in `silent` rather than `records` is part of the value.
+
+    Shared by both golden-drift controls (`.claude/rediacc_hooks/tests/test_golden_drift.py` and `.ci/rediacc_ci/tests/test_twin_goldens.py`), so "what counts as a drift" has one definition for the two trees that share this format.
+    """
+    view: dict[str, tuple] = dict.fromkeys(silent, ("__silent__",))
+    for key, row in records.items():
+        view[key] = tuple(sorted((k, v) for k, v in row.items() if k != "intentional"))
+    return view
+
+
+def undeclared_drift(old_silent, old_records, new_silent, new_records):
+    """Every case key whose answer changed between two snapshots without the NEW side carrying `intentional`. A key absent from the old snapshot is new, not changed, exactly as `diff_and_mark` treats it."""
+    old_view = canonical_view(old_silent, old_records)
+    new_view = canonical_view(new_silent, new_records)
+    bad = []
+    for key, value in new_view.items():
+        old_value = old_view.get(key)
+        if old_value is None or old_value == value:
+            continue
+        if "intentional" not in new_records.get(key, {}):
+            bad.append(key)
+    return sorted(bad)

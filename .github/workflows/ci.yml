@@ -540,7 +540,7 @@ jobs:
     if: needs.initialize.outputs.is_bot != 'true'
     runs-on: ubuntu-slim
     # ubuntu-slim is killed at 15 minutes with no failed step, which reads as
-    # neither pass nor fail; check-workflow-gates.sh enforces <= 14 here.
+    # neither pass nor fail; check_workflow_gates.py enforces <= 14 here.
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1947,7 +1947,7 @@ jobs:
       #
       # STEP-level, not job-level, and that is not a style choice: a job-level
       # `if:` would leave finalize-release-sentinel with result `skipped`, and
-      # pipeline-sentinel feeds that result to assert-job-succeeded.sh, which
+      # pipeline-sentinel feeds that result to rediacc_ci.ci.assert_job_succeeded, which
       # treats `skipped` as a hard failure. Skipping the release would fail CI.
       # THE DECISION IS MADE IN `initialize`, NOT HERE. It used to be a step in
       # this job, which `needs: ci-complete` and is therefore DOWNSTREAM of
@@ -1955,7 +1955,7 @@ jobs:
       # uploader had already advanced the edge channel pointer, which is how
       # cli/edge/manifest.json came to advertise a version with no tag. Moving
       # it does not add a second evaluation: there is still exactly one, and
-      # this job now READS it. See .ci/scripts/ci/initialize.sh step 6b.
+      # this job now READS it. See rediacc_ci.ci.initialize step 6b.
       #
       # THE GUARD POLARITY IS INVERTED ON PURPOSE. `!= 'true'` means the seal
       # and the dispatch happen unless the decision explicitly said to skip.
@@ -2028,7 +2028,7 @@ jobs:
   # (watchdog force-cancel, concurrent-push supersession, manual cancel) and
   # 'failure' (the job already surfaced its own failure) pass through. Only
   # 'skipped' on a release-channel push-to-main trips this. See
-  # .ci/scripts/ci/assert-job-succeeded.sh for the full state table.
+  # .ci/rediacc_ci/ci/assert_job_succeeded.py for the full state table.
   # ============================================================================
   pipeline-sentinel:
     name: Pipeline Sentinel

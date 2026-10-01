@@ -6,7 +6,7 @@ still does not cover. All of that stays in the twin and is not restated here; wh
 
 FOUR MODES, in the twin's own precedence order (`--submodule` > `--closure` > `--self` > time-based). The precedence is silent: `--self --closure web` runs the closure and says nothing about the ignored flag.
 
-LIVE CALLERS, not repointed: `.ci/scripts/ci/initialize.sh` calls `--submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release channel. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only
+LIVE CALLERS, not repointed: the Initialize step (`rediacc_ci.ci.initialize`, which replaced `initialize.sh`) calls `.ci/scripts/ci/generate-tag.sh --submodule private/renet`, `--closure web` and `--closure rdc`, publishing the last two as `web_tag`/`rdc_tag`, which `cd-stage.yml` retags straight onto a release channel. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only
 step.
 
 Ledger: `.ci/shadow/w7p6-generate-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).

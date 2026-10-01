@@ -33,6 +33,7 @@ stripped strings, which would also stop the comparison seeing a real trailing-wh
 """
 
 import os
+import pathlib
 import pty
 import re
 import selectors
@@ -75,7 +76,7 @@ def repo() -> str:
     return str(paths.repo_root())
 
 
-def env_for(**overrides: str) -> dict[str, str]:
+def env_for(**overrides: str | None) -> dict[str, str]:
     """BASE_ENV plus overrides. A value of None REMOVES the key.
 
     The removal case is the interesting one: several conditions in this repo are
@@ -216,3 +217,352 @@ _TOOLCHAIN_TMP_RE = re.compile(r"(/(?:shfmt|sc|al))\.[A-Za-z0-9_]{8}\b")
 def mask_toolchain_tmp(text: str) -> str:
     """Replace per-process toolchain temp names with a stable `<tmp>`."""
     return _TOOLCHAIN_TMP_RE.sub(r"\1.<tmp>", text)
+
+
+# --------------------------------------------------------------------------- Goldens: the bash side, frozen ---------------------------------------------------------------------------
+#
+# PLAN-retire-bash-oracles B3. A differential proves a port MATCHES its bash twin, which keeps the twin on disk forever. `twin_streams` is the seam that lets the twin go: it answers exactly what `bash_streams` answered for the twin's command, but out of a frozen golden, so a test written against `old, new = twin..., port...` keeps comparing the port against the bash
+# behaviour after the bash file is deleted.
+#
+# THE FORMAT IS THE HOOKS' FORMAT, NOT A LOOK-ALIKE. `.claude/rediacc_hooks/tests/goldenio.py` (A1, commit b9714c304) owns the JSONL framing: a `_header` line, a `_silent` key list, then one `rc`/`out`/`err` record per non-silent key, with `intentional: "<reason>"` on a record a Rule-T change moved. It is loaded here BY PATH rather than copied, so there is one writer, one reader and
+# one `diff_and_mark` for both trees; `.ci` cannot import it by name because pytest only puts `.claude` on sys.path once a hook test has been collected, which a `.ci`-only run never does.
+#
+# THE ONE THING ADDED FOR `.ci` IS THE HEADER'S `twin_blob`: the git blob sha of the bash file the answers were recorded from (`git hash-object`), which is what the 2026-09-21 ruling asks a retired twin's golden to carry. The bash text stays recoverable with `git cat-file -p <twin_blob>` after the file is gone.
+#
+# THREE MODES, chosen by `REDIACC_CI_REGOLDEN` (only `regolden.py` sets it):
+#   unset   COMPARE. The answer comes from the golden; a key the golden lacks FAILS, naming the verb that records it. The twin file is never read, so deleting it changes nothing.
+#   bash    RECORD FROM THE TWIN. Runs bash exactly as before and keeps the answer. Only possible while the `.sh` still exists: this is the freeze.
+#   port    RECORD FROM THE PORT. For a Rule-T change after the twin is gone. Needs the call site to pass `port=`; every record whose value moved is stamped `intentional: <reason>`.
+
+
+def _load_goldenio():
+    import importlib.util  # noqa: PLC0415 - only this loader needs it
+
+    path = paths.repo_root() / ".claude" / "rediacc_hooks" / "tests" / "goldenio.py"
+    spec = importlib.util.spec_from_file_location("rediacc_ci_tests_goldenio", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("%s is missing: the shared golden format has no reader" % path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+goldenio = _load_goldenio()
+
+GOLDEN_DIR = paths.repo_root() / ".ci" / "rediacc_ci" / "tests" / "goldens" / "twins"
+REGOLDEN_ENV = "REDIACC_CI_REGOLDEN"
+# The stems a regolden run is recording, comma-separated. A module that touches the named twin may touch OTHER twins too (initialize's differential also drives the pointer-bump detector), and those must keep answering from their goldens: re-recording a twin nobody asked about, or failing because its `.sh` is already gone, is not this run's business.
+ONLY_ENV = "REDIACC_CI_REGOLDEN_ONLY"
+REGOLDEN_VERB = "PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden"
+
+Answer = tuple[int, str, str]
+
+# Recording state for one regolden process: {stem: {key: (rc, out, err)}} and {stem: twin path}. Empty in every ordinary run.
+RECORDED: dict[str, dict[str, Answer]] = {}
+RECORDED_TWINS: dict[str, str] = {}
+_LOADED: dict[str, tuple[dict, set[str], dict[str, dict]]] = {}
+_OCCURRENCE: dict[tuple[str, str], int] = {}
+
+
+def regolden_mode(twin: str | None = None) -> str | None:
+    """None (compare), "bash" or "port". Anything else is refused rather than read as compare. With `twin`, a run recording other stems answers None for this one."""
+    mode = os.environ.get(REGOLDEN_ENV) or None
+    if mode not in (None, "bash", "port"):
+        raise RuntimeError("%s=%r: expected 'bash' or 'port'" % (REGOLDEN_ENV, mode))
+    only = os.environ.get(ONLY_ENV)
+    if mode is not None and twin is not None and only and golden_stem(twin) not in only.split(","):
+        return None
+    return mode
+
+
+def golden_stem(twin: str) -> str:
+    """`.ci/scripts/ci/assert-job-succeeded.sh` -> `ci.assert-job-succeeded`. The directory is kept because two twins share a basename (`build/build-renet.sh`, `infra/build-renet.sh`)."""
+    rel = str(twin).replace("\\", "/")
+    root = str(paths.repo_root()).rstrip("/") + "/"
+    rel = rel.removeprefix(root).removeprefix(".ci/scripts/").removeprefix(".ci/")
+    return rel.removesuffix(".sh").replace("/", ".")
+
+
+def golden_file(twin: str) -> pathlib.Path:
+    return GOLDEN_DIR / ("%s.jsonl" % golden_stem(twin))
+
+
+def _folds(work: tuple[str, ...]) -> list[tuple[str, str]]:
+    """(literal, token) pairs, LONGEST literal first so a tmp root inside the checkout or under HOME wins over its prefix.
+
+    Each token names something that differs between the recording machine and every later one: the caller's scratch roots, this process's run dir, the checkout, HOME and the inherited PATH. Nothing else is folded, so a real change in a message still shows.
+    """
+    pairs = [(str(w), "<WORK%d>" % i) for i, w in enumerate(work) if str(w)]
+    run = os.path.dirname(BASE_ENV["TMPDIR"])
+    pairs += [
+        (run, "<RUN>"),
+        (str(paths.repo_root()), "<REPO>"),
+        (BASE_ENV["PATH"], "<PATH>"),
+    ]
+    # Not when HOME is `/` or `/tmp` (an unset HOME falls back to the latter): folding a root every scratch path lives under would fold all of them.
+    if BASE_ENV["HOME"] not in ("/", "/tmp"):
+        pairs.append((BASE_ENV["HOME"], "<HOME>"))
+    return sorted(pairs, key=lambda p: len(p[0]), reverse=True)
+
+
+def fold(text: str, work: tuple[str, ...] = ()) -> str:
+    for literal, token in _folds(work):
+        text = text.replace(literal, token)
+    return text
+
+
+def unfold(text: str, work: tuple[str, ...] = ()) -> str:
+    """The inverse of `fold` for THIS run: a golden recorded elsewhere reads back with this machine's paths in it, so the call site compares raw text exactly as it did when bash answered live."""
+    for literal, token in sorted(_folds(work), key=lambda p: len(p[1]), reverse=True):
+        text = text.replace(token, literal)
+    return text
+
+
+def _current_label() -> str:
+    """The test that is asking, from pytest's own `PYTEST_CURRENT_TEST`.
+
+    A call made from a fixture's setup is labelled `fixture`, not after the test that happened to trigger it first: which test sets up a module-scoped fixture depends on scheduling, and a key that moved with the scheduler would miss under xdist.
+    """
+    current = os.environ.get("PYTEST_CURRENT_TEST", "")
+    node, _, phase = current.rpartition(" ")
+    if not node:
+        return "outside-pytest"
+    if phase != "(call)":
+        return "fixture"
+    return node.split("::", 1)[-1]
+
+
+def case_key(parts: list[str], *, work: tuple[str, ...], label: str | None) -> str:
+    """`<label>#<content hash>[/<n>]`. `parts` are folded before hashing, so the key is the same on any machine; `/n` separates the n-th identical call inside one test (a call repeated after the test changed a fixture).
+
+    An EXPLICIT `label` names a value shared by every call with the same content (a frozen input corpus read by several tests), so it gets no `/n`: the n-th read of one shared value is the same record, not a new one.
+    """
+    if label is not None:
+        return goldenio.case_key(label, *[fold(p, work) for p in parts])
+    name = _current_label()
+    key = goldenio.case_key(name, *[fold(p, work) for p in parts])
+    seen = _OCCURRENCE.get((name, key), 0)
+    _OCCURRENCE[(name, key)] = seen + 1
+    return key if seen == 0 else "%s/%d" % (key, seen)
+
+
+def twin_key(
+    script: str,
+    *,
+    env: dict[str, str] | None,
+    cwd: str | None,
+    tty: str | None,
+    work: tuple[str, ...],
+    label: str | None,
+) -> str:
+    """The key `twin_streams` uses: the command, the environment, cwd and tty."""
+    child_env = BASE_ENV if env is None else env
+    parts = [script, "tty=%s" % tty, "cwd=%s" % (cwd or repo())]
+    parts += ["%s=%s" % (k, child_env[k]) for k in sorted(child_env)]
+    return case_key(parts, work=work, label=label)
+
+
+def load_golden(twin: str) -> tuple[dict, set[str], dict[str, dict]]:
+    stem = golden_stem(twin)
+    if stem not in _LOADED:
+        path = golden_file(twin)
+        header, silent, records = goldenio.read_golden(path)
+        if header is None:
+            raise AssertionError(
+                "no golden for %s at %s. While the twin exists, freeze it with:\n  %s %s "
+                '--source bash --reason "<why>"' % (twin, path, REGOLDEN_VERB, twin)
+            )
+        _LOADED[stem] = (header, silent, records)
+    return _LOADED[stem]
+
+
+def golden_answer(twin: str, key: str, work: tuple[str, ...] = ()) -> Answer:
+    _header, silent, records = load_golden(twin)
+    row = goldenio.lookup(silent, records, key)
+    if row is None:
+        raise AssertionError(
+            "golden %s has no answer for %s. A NEW case has no bash left to record it from: "
+            'add it with `%s %s --source port --reason "<why>"` and review the diff.'
+            % (golden_stem(twin), key, REGOLDEN_VERB, twin)
+        )
+    out = goldenio.decode_field(row.get("out", ""))
+    err = goldenio.decode_field(row.get("err", ""))
+    return int(row["rc"]), unfold(out, work), unfold(err, work)
+
+
+def _record(twin: str, key: str, answer: Answer, work: tuple[str, ...]) -> None:
+    stem = golden_stem(twin)
+    rc, out, err = answer
+    RECORDED.setdefault(stem, {})[key] = (rc, fold(out, work), fold(err, work))
+    RECORDED_TWINS[stem] = str(twin)
+
+
+def _work_tuple(work) -> tuple[str, ...]:
+    return tuple(str(w) for w in (work if isinstance(work, (list, tuple)) else (work,)))
+
+
+# What a file the twin did NOT write is recorded as, so "absent" and "empty" stay different answers.
+ABSENT = "\x00absent"
+
+
+def twin_run(
+    twin: str,
+    parts: list[str],
+    bash,
+    *,
+    files=(),
+    extras=None,
+    port=None,
+    work=(),
+    label: str | None = None,
+) -> tuple[int, str, str, dict[str, str]]:
+    """The general seam, for a twin whose answer is more than two streams.
+
+    `bash()` is how the differential ran the twin (any harness, any fixture) and returns `(rc, out, err)`; `parts` is what distinguishes this call inside its test. `files` are paths the twin WRITES (a `$GITHUB_OUTPUT`, a report): recorded after the run, and in compare mode written back from the golden (or removed, when the twin wrote nothing), so the test reads them exactly as
+    it did. `extras` maps a name to a zero-argument callable read after the run (a call log, a hash of a written tree); compare mode returns the frozen strings. Each is a record of its own under `<key>|<name>`, so one bash run yields every record and compare mode runs nothing.
+    """
+    work_t = _work_tuple(work)
+    key = case_key(list(parts), work=work_t, label=label)
+    names = ["file%d" % i for i in range(len(files))]
+    extras = extras or {}
+    mode = regolden_mode(twin)
+    if mode is None:
+        rc, out, err = golden_answer(twin, key, work_t)
+        for name, path in zip(names, files, strict=True):
+            content = golden_answer(twin, "%s|%s" % (key, name), work_t)[1]
+            if content == ABSENT:
+                if os.path.lexists(path):
+                    os.unlink(path)
+            else:
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(content)
+        frozen = {n: golden_answer(twin, "%s|%s" % (key, n), work_t)[1] for n in extras}
+        return rc, out, err, frozen
+    if mode == "bash":
+        answer = bash()
+    else:
+        if port is None:
+            raise RuntimeError(
+                "%s cannot be re-recorded from the port: this call site passes no `port=`" % key
+            )
+        answer = port()
+    rc, out, err = int(answer[0]), answer[1] or "", answer[2] or ""
+    _record(twin, key, (rc, out, err), work_t)
+    for name, path in zip(names, files, strict=True):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                content = fh.read()
+        except FileNotFoundError:
+            content = ABSENT
+        _record(twin, "%s|%s" % (key, name), (0, content, ""), work_t)
+    live = {}
+    for name, fn in extras.items():
+        live[name] = fn()
+        _record(twin, "%s|%s" % (key, name), (0, live[name], ""), work_t)
+    return rc, out, err, live
+
+
+def twin_call(
+    twin: str, parts: list[str], bash, *, port=None, work=(), label: str | None = None
+) -> Answer:
+    """`twin_run` for the common case: `(rc, out, err)` and nothing else."""
+    rc, out, err, _ = twin_run(twin, parts, bash, port=port, work=work, label=label)
+    return rc, out, err
+
+
+def twin_streams(
+    twin: str,
+    script: str,
+    *,
+    port=None,
+    env: dict[str, str] | None = None,
+    cwd: str | None = None,
+    tty: str | None = None,
+    timeout: float = DEFAULT_TIMEOUT,
+    work=(),
+    label: str | None = None,
+) -> Answer:
+    """What `bash_streams(script, ...)` answered for the twin, from the golden.
+
+    `twin` is the bash file's repo-relative path; `script` is the exact command the differential used to run it (it is part of the key). `work` lists the scratch roots this case built (a `tmp_path`, a fixture clone) so paths under them fold to stable tokens. `port`, a zero-argument callable returning the port's `(rc, out, err)` for the same case, is only needed to re-record
+    from the port after the twin is deleted.
+    """
+    work_t = _work_tuple(work)
+    key = twin_key(script, env=env, cwd=cwd, tty=tty, work=work_t, label=label)
+    mode = regolden_mode(twin)
+    if mode is None:
+        return golden_answer(twin, key, work_t)
+    if mode == "bash":
+        answer = bash_streams(script, env=env, cwd=cwd, tty=tty, timeout=timeout)
+    else:
+        if port is None:
+            raise RuntimeError(
+                "%s cannot be re-recorded from the port: this call site passes no `port=`" % key
+            )
+        answer = port()
+    _record(twin, key, answer, work_t)
+    return answer
+
+
+def blob_sha(path: str) -> str:
+    """`git hash-object` of the file as recorded: the sha `git cat-file -p` answers once it is committed, and the one a reader of a deleted twin needs."""
+    proc = subprocess.run(
+        ["git", "hash-object", "--", path],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=repo(),
+    )
+    return proc.stdout.strip()
+
+
+def write_recorded(
+    source: str, reason: str, only: set[str] | None = None, keep_unseen: bool = False
+) -> list[str]:
+    """Flush `RECORDED` into the goldens. Returns one summary line per stem.
+
+    Merged through the hooks' `diff_and_mark`, so a first freeze writes no markers, an unchanged re-record is a byte-identical no-op, and a moved value carries `intentional: <reason>`. A key the old golden had and this run never asked for is DROPPED and counted: the run covers every module naming the twin, so an unasked key is a case that no longer exists.
+    """
+    lines = []
+    for stem in sorted(RECORDED):
+        if only is not None and stem not in only:
+            continue
+        twin = RECORDED_TWINS[stem]
+        path = golden_file(twin)
+        old_header, old_silent, old_records = goldenio.read_golden(path)
+        answers = {k: (str(v[0]), v[1], v[2]) for k, v in RECORDED[stem].items()}
+        silent, records, changed = goldenio.diff_and_mark(answers, old_silent, old_records, reason)
+        dropped = (set(old_silent) | set(old_records)) - set(answers)
+        if keep_unseen:
+            # A selective re-record (`regolden.py -k`): the cases this run did not ask about keep exactly the record they had, marker and all.
+            silent |= dropped & set(old_silent)
+            records.update({k: old_records[k] for k in dropped if k in old_records})
+            dropped = set()
+        if source == "bash":
+            blob = blob_sha(twin)
+        else:
+            blob = (old_header or {}).get("twin_blob", "")
+            if not blob:
+                raise RuntimeError("%s: no twin_blob to carry over; freeze from bash first" % stem)
+        header = {
+            "bash_version": goldenio.bash_version_line()
+            if source == "bash"
+            else (old_header or {}).get("bash_version", ""),
+            "case_count": len(silent) + len(records),
+            "source": source,
+            "twin": twin,
+            "twin_blob": blob,
+        }
+        goldenio.write_golden(path, header, silent, records)
+        lines.append(
+            "%s: %d case(s), %d silent -> %s (%d changed, %d dropped)"
+            % (
+                stem,
+                len(silent) + len(records),
+                len(silent),
+                os.path.relpath(path, repo()),
+                len(changed),
+                len(dropped),
+            )
+        )
+    return lines

@@ -7,7 +7,7 @@ the scanned file list (`workflows.py:651-655`) so the banned-pattern scans becom
 THE SUBJECT IS THE PYTHON GATE NOW, and it used to be `.ci/scripts/quality/check-workflows.sh`.
 That twin was retired in W7P5-c once `.ci/shadow/w7p2-workflows.observations.jsonl` held K=5 (10 rows, 10 distinct trees, all `EQUIVALENT`), and the repoint was driven before the deletion rather than assumed: six drives over the three fixtures these callers build, with `CI` set and unset, compared stdout and stderr SEPARATELY, byte-identical on all six, against a control confirming a good fixture and a bad one do not produce the same bytes. Twin blob sha at the moment of deletion: 8b15557789b1fe8615c572a1076e6a3d7bc5bdca.
 
-test_gate_workflow_contracts.py looks like it belongs here and does NOT: it drives `.ci/scripts/security/check-workflow-gates.sh` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines rhyme; the contract does not. Folding it in would produce a helper with two meanings.
+test_gate_workflow_contracts.py looks like it belongs here and does NOT: it drives `.ci/scripts/security/check_workflow_gates.py` with `WORKFLOWS_DIR` -- a different script, a different variable, no inline-only switch. The five lines rhyme; the contract does not. Folding it in would produce a helper with two meanings.
 
 THE ONE DIFFERENCE FROM THE BASH ORIGINAL, and it is a real one rather than a
 translation artefact. `workflow-rule.sh` hard-codes `CI=true`, and

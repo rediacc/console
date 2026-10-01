@@ -23,6 +23,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-extract-renet-from-image.observations.jsonl`.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -32,6 +33,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import extract_renet_from_image as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
@@ -215,6 +217,8 @@ def fixture(
     for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+        if rel == TWIN_REL and not (ROOT / rel).is_file():
+            continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -335,10 +339,43 @@ def _reset(root: pathlib.Path, *, stale_zst: bool = False) -> None:
         (stale / "criu-linux-amd64.zst").write_text("STALE PAYLOAD\n", encoding="utf-8")
 
 
+def _old(root: pathlib.Path, **kw):
+    """The twin's (process, call log, staged tree), from `goldens/twins/build.extract-renet-from-image.jsonl` (PLAN-retire-bash-oracles B3). The `ls -la` mtime is masked at record time: a live clock reading `_mask` already hides, so a re-record must not see it as a change."""
+    cell: dict[str, tuple] = {}
+
+    def side(which: str):
+        def run():
+            proc, calls = _run(root, which, **kw)
+            cell["v"] = (proc, calls, _artifacts(root))
+            return (
+                proc.returncode,
+                LS_DATE_RE.sub("<MTIME>", proc.stdout),
+                LS_DATE_RE.sub("<MTIME>", proc.stderr),
+            )
+
+        return run
+
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        ["kw=%r" % (sorted(kw.items()),)],
+        side("old"),
+        port=side("new"),
+        extras={
+            "calls": lambda: cell["v"][1],
+            "files": lambda: json.dumps(cell["v"][2], sort_keys=True),
+        },
+        work=(str(root.parent),),
+    )
+    return (
+        subprocess.CompletedProcess([BASH, TWIN_REL], rc, out, err),
+        got["calls"],
+        json.loads(got["files"]),
+    )
+
+
 def run_both(root: pathlib.Path, *, stale_zst: bool = False, **kw):
     _reset(root, stale_zst=stale_zst)
-    old, old_calls = _run(root, "old", **kw)
-    old_files = _artifacts(root)
+    old, old_calls, old_files = _old(root, **kw)
     _reset(root, stale_zst=stale_zst)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
