@@ -49,6 +49,19 @@ import {
   type Sched,
 } from './pool';
 import {
+  admitWithinBudget,
+  appendHistory,
+  baseP90,
+  type Cost,
+  percentile,
+  QUICK_BUDGET_MS,
+  quickSelectSelftest,
+  readHistory,
+  resolvePushBase,
+  type SlowCandidate,
+  touchedSlow,
+} from './quick-select';
+import {
   type CpuTick,
   createReporter,
   criticalPath,
@@ -436,14 +449,163 @@ interface Selection {
   ids: Set<string>;
   /** Human description when the run is partial; undefined for a full run. */
   description?: string;
+  /** Slow gates the `--quick` diff admitted, for the wall history; empty when none or not quick. */
+  slowAdmitted?: string[];
+}
+
+const QUICK_HISTORY = path.join(REPO_ROOT, '.ci', 'cache', 'quick-walls.json');
+const LANE_DURATIONS = path.join(REPO_ROOT, '.ci', 'config', 'lane-durations.json');
+
+function gitTry(args: readonly string[]): string | undefined {
+  try {
+    return execFileSync('git', [...args], {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      maxBuffer: 64 * 1024 * 1024,
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+interface PushDiff {
+  /** Undefined when no base resolved; `tried` then names every ref attempted. */
+  files?: string[];
+  label: string;
+  scriptsBase?: Record<string, string>;
+}
+
+/**
+ * Files changed since the last push: the merge-base with the first resolvable ref of quick-select.ts `resolvePushBase`, against the WORKTREE, plus untracked files and widened gitlinks. The quick lane judges the worktree, so committed, staged, unstaged and new files all count.
+ */
+function changedSinceLastPush(): PushDiff {
+  const branch = gitTry(['branch', '--show-current']);
+  const base = resolvePushBase(gitTry, branch);
+  if (base.mergeBase === undefined) {
+    return { label: `UNRESOLVED (tried ${base.tried.join(', ')})` };
+  }
+  const named = (gitTry(['diff', '--name-only', base.mergeBase]) ?? '').split('\n').filter(Boolean);
+  const untracked = (gitTry(['ls-files', '--others', '--exclude-standard']) ?? '')
+    .split('\n')
+    .filter(Boolean);
+  const files = expandGitlinks([...new Set([...named, ...untracked])], (t) =>
+    process.stderr.write(t)
+  );
+  let scriptsBase: Record<string, string> | undefined;
+  try {
+    const raw = gitTry(['show', `${base.mergeBase}:package.json`]);
+    if (raw !== undefined)
+      scriptsBase = (JSON.parse(raw) as { scripts?: Record<string, string> }).scripts;
+  } catch {
+    scriptsBase = undefined;
+  }
+  return {
+    files,
+    label: `${base.ref} via ${base.via}, merge-base ${base.mergeBase.slice(0, 9)}`,
+    scriptsBase,
+  };
+}
+
+/** `{gate id: CI step p90 ms}` from lane-durations.json, the committed CI timing; empty when unreadable. */
+function ciStepP90(): Map<string, number> {
+  const out = new Map<string, number>();
+  try {
+    const raw = JSON.parse(fs.readFileSync(LANE_DURATIONS, 'utf-8')) as {
+      gate_step_p90_seconds?: Record<string, unknown>;
+    };
+    for (const [id, s] of Object.entries(raw.gate_step_p90_seconds ?? {})) {
+      if (typeof s === 'number' && Number.isFinite(s) && s > 0) out.set(id, s * 1000);
+    }
+  } catch {
+    /* priced from the local cache alone */
+  }
+  return out;
+}
+
+/** Why the quick lane will not admit a gate at any price, or undefined. Only tree writers today; see quick-select.ts THE TREE. */
+function treeWriteRefusal(spec: GateSpec | undefined): string | undefined {
+  if (spec === undefined) return undefined;
+  const claim = (spec.mutex ?? []).find((m) => m.startsWith('tree:'));
+  if (spec.writesTree === undefined && claim === undefined) return undefined;
+  return `it writes the shared tree (${spec.writesTree ?? claim}), which the quick lane does not do`;
+}
+
+/**
+ * One node's own cost, CONSERVATIVE on purpose: wall is the larger of the slowest local `recent` sample (the p90 of five samples by nearest rank IS the maximum) and the CI step p90, and CPU is the median local CPU, else the whole wall at one core. Undefined when neither source has it.
+ *
+ * WHY THE MAXIMUM. The first live run admitted check:deps on a local p90 of 26.4 s and it took 103.5 s, because the commit that touched it (0a65fb00e, unpushed) also made it slower. A touched gate's history predates the change that touched it, which is exactly when history is least trustworthy, so the estimate takes the worst number on record from either machine.
+ */
+function nodeCost(
+  id: string,
+  records: ReadonlyMap<string, DurationRecord>,
+  ci: ReadonlyMap<string, number>
+): Cost | undefined {
+  const rec = records.get(id);
+  const ciMs = ci.get(id);
+  const localMs = rec === undefined ? undefined : (percentile(rec.recent, 90) ?? rec.ewma);
+  if (localMs === undefined && ciMs === undefined) return undefined;
+  const wallMs = Math.max(localMs ?? 0, ciMs ?? 0);
+  const cpuMs = rec?.cpu !== undefined && rec.cpu.length > 0 ? median(rec.cpu) : wallMs;
+  const source =
+    localMs !== undefined && ciMs !== undefined
+      ? `max of local p90 ${(localMs / 1000).toFixed(1)}s and CI p90 ${(ciMs / 1000).toFixed(1)}s`
+      : localMs !== undefined
+        ? 'local p90'
+        : 'CI step p90';
+  return { wallMs, cpuMs, source };
+}
+
+/**
+ * A candidate's cost includes every slow prerequisite its `needs` closure pulls in, since buildGraph will run them: wall along the longest chain, CPU summed. A shared prerequisite is counted once per candidate, which over-prices a pair and errs toward the budget.
+ */
+function candidateCost(
+  id: string,
+  byId: ReadonlyMap<string, GateSpec>,
+  slow: ReadonlySet<string>,
+  records: ReadonlyMap<string, DurationRecord>,
+  ci: ReadonlyMap<string, number>
+): Cost | undefined {
+  const memo = new Map<string, number | undefined>();
+  const cpuSeen = new Map<string, number>();
+  let unpriced = false;
+  const chain = (n: string): number | undefined => {
+    if (memo.has(n)) return memo.get(n);
+    const own = nodeCost(n, records, ci);
+    if (own === undefined) {
+      unpriced = true;
+      memo.set(n, undefined);
+      return undefined;
+    }
+    cpuSeen.set(n, own.cpuMs);
+    let longest = 0;
+    for (const dep of byId.get(n)?.needs ?? []) {
+      if (!slow.has(dep)) continue;
+      longest = Math.max(longest, chain(dep) ?? 0);
+    }
+    const total = own.wallMs + longest;
+    memo.set(n, total);
+    return total;
+  };
+  const wall = chain(id);
+  if (unpriced || wall === undefined) return undefined;
+  const cpu = [...cpuSeen.values()].reduce((a, b) => a + b, 0);
+  const own = nodeCost(id, records, ci);
+  return {
+    wallMs: wall,
+    cpuMs: cpu,
+    source: `${own?.source ?? 'unpriced'}${cpuSeen.size > 1 ? ` + ${cpuSeen.size - 1} slow prereq(s)` : ''}`,
+  };
 }
 
 function select(
   specs: readonly GateSpec[],
   opts: Options,
-  warn: (text: string) => void
+  warn: (text: string) => void,
+  quickDeps?: QuickDiffDeps
 ): Selection {
   const notes: string[] = [];
+  let selectedSlow: string[] = [];
   // gate:false nodes are prerequisites, never selected on their own. They enter the run only through the needs-closure in buildGraph.
   let chosen = specs.filter((spec) => spec.gate);
 
@@ -478,8 +640,15 @@ function select(
         const via = (spec.needs ?? []).filter((n) => slow.has(n));
         return `${spec.id} (needs ${via.join(', ')})`;
       });
-    chosen = chosen.filter((spec) => !slow.has(spec.id));
-    notes.push(`--quick (${chosen.length} fast gate(s); ${slow.size} deferred)`);
+    // DIFF-SELECTED SLOW GATES (quick-select.ts). A slow gate the change set since the last push touches rejoins the lane, inside the p90 budget; every other slow gate stays deferred and is named as such.
+    const slowCandidates = chosen.filter((spec) => slow.has(spec.id));
+    const admitted = quickDiffAdmit(slowCandidates, specs, slow, opts, warn, quickDeps);
+    selectedSlow = admitted;
+    const admittedSet = new Set(admitted);
+    chosen = chosen.filter((spec) => !slow.has(spec.id) || admittedSet.has(spec.id));
+    notes.push(
+      `--quick (${chosen.length - admitted.length} fast gate(s) + ${admitted.length} diff-selected slow; ${slow.size - admitted.length} deferred)`
+    );
     if (demoted.length > 0) {
       warn(
         `ci-runner: --quick DEFERRED ${demoted.length} otherwise-fast gate(s) whose prerequisites are slow:\n` +
@@ -497,10 +666,95 @@ function select(
     notes.push(`--skip ${opts.skip.join(',')}`);
   }
 
+  const ids = new Set(chosen.map((spec) => spec.id));
   return {
-    ids: new Set(chosen.map((spec) => spec.id)),
+    ids,
     description: notes.length > 0 ? notes.join(' ') : undefined,
+    slowAdmitted: selectedSlow.filter((id) => ids.has(id)),
   };
+}
+
+/** Injected seams for the selftest; the real run reads git, the duration cache and lane-durations.json. */
+interface QuickDiffDeps {
+  diff: () => PushDiff;
+  records: () => Map<string, DurationRecord>;
+  ci: () => Map<string, number>;
+  history: () => ReturnType<typeof readHistory>;
+  cores: number;
+  scriptsNow: () => Record<string, string>;
+}
+
+function realQuickDiffDeps(opts: Options): QuickDiffDeps {
+  return {
+    diff: changedSinceLastPush,
+    records: () => loadDurationRecords(process.env.CI_RUNNER_CACHE ?? DEFAULT_CACHE),
+    ci: ciStepP90,
+    history: () => readHistory(QUICK_HISTORY),
+    cores: coreBudget(opts.jobs).cores,
+    scriptsNow: () =>
+      (
+        JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf-8')) as {
+          scripts?: Record<string, string>;
+        }
+      ).scripts ?? {},
+  };
+}
+
+/**
+ * The slow candidates the change set since the last push touches, cut to the p90 budget. Prints the whole shape: the base, the file count, every admitted gate with why, every dropped gate with why and how to run it, and the untouched deferred set by name.
+ */
+function quickDiffAdmit(
+  candidates: readonly GateSpec[],
+  specs: readonly GateSpec[],
+  slow: ReadonlySet<string>,
+  opts: Options,
+  warn: (text: string) => void,
+  injected?: QuickDiffDeps
+): string[] {
+  const deps = injected ?? realQuickDiffDeps(opts);
+  const diff = deps.diff();
+  const deferredLine = (ids: readonly string[]): string =>
+    ids.length === 0 ? '' : `  deferred, untouched (${ids.length}): ${ids.join(', ')}\n`;
+  if (diff.files === undefined) {
+    warn(
+      `ci-runner: --quick could not find the last push: ${diff.label}. NO slow gate was diff-selected, so all ${candidates.length} stay deferred; push the branch, or fetch origin/main so the fallback resolves.\n` +
+        deferredLine(candidates.map((c) => c.id))
+    );
+    return [];
+  }
+  const touches = touchedSlow(candidates as readonly SlowCandidate[], {
+    root: REPO_ROOT,
+    changed: diff.files,
+    matches: matchesAny,
+    scriptsNow: deps.scriptsNow(),
+    scriptsBase: diff.scriptsBase,
+  });
+  const byId = new Map(specs.map((s) => [s.id, s]));
+  const records = deps.records();
+  const ci = deps.ci();
+  const base = baseP90(deps.history());
+  const verdict = admitWithinBudget(
+    touches.map((t) => t.id),
+    (id) => candidateCost(id, byId, slow, records, ci),
+    base.ms,
+    deps.cores,
+    QUICK_BUDGET_MS,
+    (id) => treeWriteRefusal(byId.get(id))
+  );
+  const why = new Map(touches.map((t) => [t.id, t.why]));
+  const touchedSet = new Set(touches.map((t) => t.id));
+  const lines = [
+    `ci-runner: --quick diff since the last push (${diff.label}): ${diff.files.length} file(s); slow gates ${candidates.length}: ${touches.length} touched, ${verdict.admitted.length} selected, ${verdict.dropped.length} dropped, ${candidates.length - touches.length} untouched\n`,
+    ...verdict.admitted.map((id) => `  + SELECTED ${id}: ${why.get(id)}\n`),
+    ...verdict.dropped.map(
+      (d) =>
+        `  - DROPPED ${d.id} (touched: ${why.get(d.id)}): ${d.reason}. CI runs it; before pushing, \`npx tsx scripts/ci-runner/run.ts --only ${d.id}\`\n`
+    ),
+    `  projected p90 wall ${(verdict.projectedMs / 1000).toFixed(1)}s against the ${QUICK_BUDGET_MS / 1000}s budget (${base.note}, C ${deps.cores})\n`,
+    deferredLine(candidates.filter((c) => !touchedSet.has(c.id)).map((c) => c.id)),
+  ];
+  warn(lines.join(''));
+  return [...verdict.admitted];
 }
 
 /**
@@ -1308,6 +1562,104 @@ async function selftest(): Promise<number> {
   }
   require_(badSched, "CONTROL: --sched core (a typo) must be refused, not read as 'slots'");
 
+  // --quick DIFF SELECTION (quick-select.ts). The pure half: touch, import closure, npm script change, the mutant matcher, the budget, the base fallback.
+  const qs = quickSelectSelftest(os.tmpdir(), matchesAny);
+  for (const f of qs.failures) require_(false, `quick-select: ${f}`);
+  // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
+  {
+    const slowSpec = (id: string, leaf: string): GateSpec => ({
+      ...syntheticSpec(id, 'true'),
+      slow: true,
+      leaves: [leaf],
+    });
+    const qSpecs = [
+      syntheticSpec('selftest:q-fast', 'true'),
+      slowSpec('selftest:q-touched', 'scripts/ci-runner/quick-select.ts'),
+      slowSpec('selftest:q-untouched', 'scripts/ci-runner/gate-spec.ts'),
+    ];
+    const rec = (ms: number): DurationRecord => ({ ewma: ms, recent: [ms], cpu: [ms] });
+    const deps = (files: string[] | undefined, touchedMs = 5_000): QuickDiffDeps => ({
+      diff: () => ({ files, label: 'selftest-base' }),
+      records: () =>
+        new Map([
+          ['selftest:q-touched', rec(touchedMs)],
+          ['selftest:q-untouched', rec(5_000)],
+        ]),
+      ci: () => new Map(),
+      history: () => [],
+      cores: 10,
+      scriptsNow: () => ({}),
+    });
+    let said = '';
+    const capture = (t: string): void => {
+      said += t;
+    };
+    const quick = { ...EMPTY_OPTS, quick: true };
+    const sel = select(qSpecs, quick, capture, deps(['scripts/ci-runner/quick-select.ts']));
+    require_(
+      sel.ids.has('selftest:q-touched'),
+      '--quick must SELECT a slow gate whose leaf is in the diff'
+    );
+    require_(
+      !sel.ids.has('selftest:q-untouched'),
+      '--quick must DEFER a slow gate the diff does not touch'
+    );
+    require_(sel.ids.has('selftest:q-fast'), 'CONTROL: the fast gate must stay in the quick lane');
+    require_(
+      /deferred, untouched \(1\): selftest:q-untouched/.test(said),
+      `the untouched slow gate must be LISTED as deferred, said: ${said}`
+    );
+    require_(
+      select(qSpecs, quick, () => {}, deps(['scripts/ci-runner/gate-spec.ts'])).ids.has(
+        'selftest:q-untouched'
+      ),
+      'CONTROL: the deferred gate must be selectable when ITS leaf changes, or its deferral above says nothing about the diff'
+    );
+    require_(
+      !select(qSpecs, quick, () => {}, deps([])).ids.has('selftest:q-touched'),
+      'CONTROL: an empty diff must select no slow gate, or selection ignores the diff'
+    );
+    said = '';
+    const over = select(
+      qSpecs,
+      quick,
+      capture,
+      deps(['scripts/ci-runner/quick-select.ts'], 200_000)
+    );
+    require_(
+      !over.ids.has('selftest:q-touched') && /DROPPED selftest:q-touched/.test(said),
+      `a touched slow gate over the 90 s budget must be dropped BY NAME, said: ${said}`
+    );
+    said = '';
+    const lost = select(qSpecs, quick, capture, deps(undefined));
+    require_(
+      !lost.ids.has('selftest:q-touched') && /could not find the last push/.test(said),
+      'an unresolvable push base must select no slow gate and SAY so'
+    );
+    require_(
+      select(qSpecs, EMPTY_OPTS, () => {}, deps([])).ids.size === 3,
+      'CONTROL: without --quick every gate stays selected'
+    );
+    // A TOUCHED TREE WRITER IS REFUSED BY NAME, whatever it costs; the identical spec without the claim is admitted, so the refusal is about the claim.
+    said = '';
+    const writer = {
+      ...qSpecs[1],
+      mutex: ['tree:repo'],
+      writesTree: 'appends a fixture row',
+    };
+    const wSel = select(
+      [qSpecs[0], writer],
+      quick,
+      capture,
+      deps(['scripts/ci-runner/quick-select.ts'])
+    );
+    require_(
+      !wSel.ids.has('selftest:q-touched') &&
+        /DROPPED selftest:q-touched.*writes the shared tree/.test(said),
+      `a touched slow gate that writes the tree must be dropped BY NAME, said: ${said}`
+    );
+  }
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -1316,7 +1668,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2} assertions)\n`
+    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10} assertions)\n`
   );
   return 0;
 }
@@ -1667,6 +2019,21 @@ async function main(): Promise<number> {
 
   saveDurations(cachePath, durations, results);
   const exitCode = reporter.footer(results, { ...meta, util });
+  // THE BUDGET'S BASE: a green, unnarrowed quick run's wall, tagged with the slow gates it admitted so quick-select.ts baseP90() can keep those runs out of the base. Red runs are left out for the reason saveDurations leaves them out: a gate that failed early did not cost its full time.
+  if (
+    opts.quick &&
+    opts.manifest === undefined &&
+    opts.only === undefined &&
+    opts.skip === undefined &&
+    !opts.changed &&
+    exitCode === 0
+  ) {
+    appendHistory(QUICK_HISTORY, {
+      at: new Date().toISOString(),
+      wallMs: meta.wallMs,
+      slowAdmitted: selection.slowAdmitted ?? [],
+    });
+  }
 
   // THE RECEIPT IS MINTED ONLY BY A RUNNER THAT PROVED IT CAN FAIL.
   //
