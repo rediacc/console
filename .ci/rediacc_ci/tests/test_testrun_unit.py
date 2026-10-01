@@ -19,7 +19,7 @@ MODULE = "rediacc_ci.testrun.unit"
 def both(
     tmp_path: pathlib.Path, args: list[str], env: dict[str, str] | None = None
 ) -> tuple[ts.Outcome, ts.Outcome]:
-    old = ts.run_side(ts.bash_cmd(TWIN, *args), tmp_path / "bash", ("npm",), env)
+    old = ts.twin_run(TWIN, ts.bash_cmd(TWIN, *args), tmp_path / "bash", ("npm",), env)
     new = ts.run_side(ts.py_cmd(MODULE, *args), tmp_path / "py", ("npm",), ts.py_env(env))
     return old, new
 

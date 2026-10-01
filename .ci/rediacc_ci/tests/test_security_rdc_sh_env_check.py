@@ -21,6 +21,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-rdc-sh-env.observations.jsonl`.
 
 from __future__ import annotations
 
+import difflib
 import os
 import re
 import shutil
@@ -29,6 +30,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.security import rdc_sh_env_check
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -52,7 +54,8 @@ def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """A two-file skeleton both the twin and the port resolve inside."""
     fixture = tmp_path / "fixture"
     (fixture / ".ci" / "scripts" / "test").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, fixture / ".ci" / "scripts" / "test" / TWIN.name)
+    if TWIN.is_file():  # only a re-freeze from bash runs the twin (PLAN-retire-bash-oracles B3)
+        shutil.copy2(TWIN, fixture / ".ci" / "scripts" / "test" / TWIN.name)
     shutil.copy2(RDC_SH, fixture / "rdc.sh")
     return fixture
 
@@ -81,10 +84,38 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
     return subprocess.run(runner, env=env, capture_output=True, text=True, check=False, timeout=180)
 
 
+def _twin(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
+    """The retired twin's run over `fixture`, from `goldens/twins/test.test-rdc-sh-env.jsonl`.
+
+    The key is the MUTATION (a zero-context diff of the fixture's `rdc.sh` against the real one, so an unrelated edit to `rdc.sh` moves no key); the scratch root folds to a token.
+    """
+    mutated = fixture / "rdc.sh"
+    body = (
+        "".join(
+            difflib.unified_diff(
+                RDC_SH.read_text(encoding="utf-8").splitlines(keepends=True),
+                mutated.read_text(encoding="utf-8").splitlines(keepends=True),
+                n=0,
+            )
+        )
+        if mutated.is_file()
+        else "<absent>"
+    )
+
+    def go() -> tuple[int, str, str]:
+        done = _run(TWIN, fixture)
+        return done.returncode, done.stdout, done.stderr
+
+    rc, out, err = diff.twin_call(
+        str(TWIN.relative_to(ROOT)), ["rdc.sh mutation=%s" % body], go, work=(str(fixture),)
+    )
+    return subprocess.CompletedProcess([str(TWIN)], rc, out, err)
+
+
 def run_both(
     fixture: pathlib.Path, *, port: pathlib.Path | None = None
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
-    return _run(TWIN, fixture), _run(port or PORT, fixture)
+    return _twin(fixture), _run(port or PORT, fixture)
 
 
 def assert_same(
@@ -110,7 +141,7 @@ def mask_tmp(text: str) -> str:
 
 
 def test_real_tree_agrees_byte_for_byte() -> None:
-    old = _run(TWIN, ROOT)
+    old = _twin(ROOT)
     new = _run(PORT, ROOT)
     assert old.returncode == 0, old.stderr
     assert old.stdout.count(OK_GLYPH) == 7
@@ -125,7 +156,7 @@ def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
     assert old.returncode == 0, old.stderr
     assert_same(old, new)
     # The fixture must be a faithful stand-in, or every mutation below is measuring the fixture rather than the mutation.
-    assert old.stdout == _run(TWIN, ROOT).stdout
+    assert old.stdout == _twin(ROOT).stdout
 
 
 # --------------------------------------------------------------------------- Layer 1's four checks, each reached by a real mutation ---------------------------------------------------------------------------

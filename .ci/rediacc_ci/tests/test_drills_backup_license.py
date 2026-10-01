@@ -27,6 +27,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import backup, lib, wire
 from rediacc_ci.drills import license as license_drill
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -64,7 +65,10 @@ def root(tmp_path: pathlib.Path) -> pathlib.Path:
         "scripts/drills/license.sh",
         ".ci/scripts/lib/common.sh",
         ".ci/config/well-known.env",
+        ".ci/config/well-known.generated.sh",
     ):
+        if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
+            continue
         dest = scratch / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
@@ -96,16 +100,28 @@ def _env(root: pathlib.Path, **extra: str) -> dict[str, str]:
 
 
 def _bash(root: pathlib.Path, script: str, args: list[str], env: dict[str, str]):
-    proc = subprocess.run(
-        [BASH, str(root / "scripts/drills" / ("%s.sh" % script)), *args],
-        capture_output=True,
-        text=True,
-        env=env,
-        cwd=str(root),
-        check=False,
-        timeout=120,
+    """The retired twin's run of `scripts/drills/<script>.sh`, from `goldens/twins/scripts.drills.<script>.jsonl` (PLAN-retire-bash-oracles B3). The key is the argv and the environment, the machine PATH named rather than spelled."""
+    twin = "scripts/drills/%s.sh" % script
+
+    def go() -> tuple[int, str, str]:
+        proc = subprocess.run(
+            [BASH, str(root / twin), *args],
+            capture_output=True,
+            text=True,
+            env=env,
+            cwd=str(root),
+            check=False,
+            timeout=120,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    keyed = {k: ("<PATH>" if k == "PATH" else v) for k, v in env.items()}
+    return diff.twin_call(
+        twin,
+        ["args=%r" % (args,), "env=%r" % (sorted(keyed.items()),)],
+        go,
+        work=(str(root.parent),),
     )
-    return proc.returncode, proc.stdout, proc.stderr
 
 
 def _port(root: pathlib.Path, script: str, args: list[str], env: dict[str, str]):
@@ -239,12 +255,26 @@ def test_the_license_ssh_preflight_names_the_key(root: pathlib.Path) -> None:
 # ---------------------------------------------------------------------- the fixture image and manifests
 
 
+def _twin_text(what: str, extract) -> str:
+    """A piece of the retired twin's SOURCE, frozen with it: `extract(text)` runs only in a re-freeze from bash."""
+
+    def read() -> tuple[int, str, str]:
+        found = extract((ROOT / "scripts/drills/backup.sh").read_text())
+        assert found
+        return 0, found, ""
+
+    return diff.twin_call(
+        "scripts/drills/backup.sh", ["source text: %s" % what], read, label="source-%s" % what
+    )[1]
+
+
 def _node_image_helper(tmp_path: pathlib.Path) -> pathlib.Path:
-    text = (ROOT / "scripts/drills/backup.sh").read_text()
-    match = re.search(r"<<'IMAGE_JS'\n(.*?)\nIMAGE_JS\n", text, re.DOTALL)
-    assert match
+    def extract(text: str) -> str:
+        match = re.search(r"<<'IMAGE_JS'\n(.*?)\nIMAGE_JS\n", text, re.DOTALL)
+        return match.group(1) if match else ""
+
     helper = tmp_path / "image.js"
-    helper.write_text(match.group(1))
+    helper.write_text(_twin_text("image helper", extract))
     return helper
 
 
@@ -276,12 +306,14 @@ def test_the_fixture_image_and_plan_match_the_node_helper(
 
 @pytest.mark.skipif(not NODE, reason="needs node for the bash twin's manifest builder")
 def test_manifests_match_the_node_builder(tmp_path: pathlib.Path) -> None:
-    text = (ROOT / "scripts/drills/backup.sh").read_text()
-    match = re.search(
-        r"manifest_body\(\) \{.*?node -e '\n(.*?)\n    ' \"\$snapshot\"", text, re.DOTALL
-    )
-    assert match
-    script = match.group(1)
+
+    def extract(text: str) -> str:
+        match = re.search(
+            r"manifest_body\(\) \{.*?node -e '\n(.*?)\n    ' \"\$snapshot\"", text, re.DOTALL
+        )
+        return match.group(1) if match else ""
+
+    script = _twin_text("manifest builder", extract)
     seed, incr = tmp_path / "v1.bin", tmp_path / "v2.bin"
     backup.make_image(seed, "1")
     backup.make_image(incr, "2")
@@ -915,10 +947,17 @@ def test_a_failed_preclean_is_warned_with_its_lines(
 
 def test_the_bash_preclean_heredoc_equals_the_ports_script() -> None:
     """The remote script is the one thing both sides send over ssh; the port's text must equal the bash heredoc once the shell escapes are undone."""
-    text = (ROOT / "scripts/drills/license.sh").read_text()
-    match = re.search(r'bash -s" <<EOF\n(.*?)\nEOF\n', text, re.DOTALL)
-    assert match
-    heredoc = match.group(1)
+
+    def read_twin() -> tuple[int, str, str]:
+        text = (ROOT / "scripts/drills/license.sh").read_text()
+        match = re.search(r'bash -s" <<EOF\n(.*?)\nEOF\n', text, re.DOTALL)
+        assert match
+        return 0, match.group(1), ""
+
+    # Frozen with the retired twin: the heredoc it sent over ssh, as written.
+    heredoc = diff.twin_call(
+        "scripts/drills/license.sh", ["source text: preclean heredoc"], read_twin, label="preclean"
+    )[1]
     # Skip the leading commentary, then undo the unquoted-heredoc escapes the way the shell would.
     lines = heredoc.splitlines(keepends=True)
     while lines and lines[0].startswith("#"):
@@ -940,5 +979,4 @@ def test_the_bash_preclean_heredoc_equals_the_ports_script() -> None:
 def test_the_run_verbs_route_license_and_backup_to_the_ports() -> None:
     assert run_verbs.DRILL_MODULES["license"] == "rediacc_ci.drills.license"
     assert run_verbs.DRILL_MODULES["backup"] == "rediacc_ci.drills.backup"
-    assert set(run_verbs.DRILLS) == {"license", "backup"}, "the bash twins stay named until B3"
     assert list(run_verbs.DRILL_ARMS) == ["universe", "transfer", "license", "backup"]

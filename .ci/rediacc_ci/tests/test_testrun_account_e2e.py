@@ -19,6 +19,7 @@ import typing
 import pytest
 
 from rediacc_ci.testrun import account_e2e
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
 
 # THE HOST'S PORT SPACE IS SHARED: free_port() releases the port before the server binds it, so two xdist workers can draw the same one (a 1-in-4 flake under load on 2026-10-01). Same group as test_core_ports.py and test_core_account.py.
@@ -26,6 +27,7 @@ XDIST_GROUP = "ports"
 
 STUB = pathlib.Path(__file__).with_name("testrun_stub_server.py")
 SCRIPT_REL = ".ci/scripts/test/run-account-e2e.sh"
+TWIN = SCRIPT_REL
 MODULE = "rediacc_ci.testrun.account_e2e"
 SECRETS = {
     "ACCOUNT_ED25519_PRIVATE_KEY": "edpriv",
@@ -77,10 +79,18 @@ def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:
     root = directory / "root"
     (root / ".ci/scripts/test").mkdir(parents=True)
     (root / ".ci/scripts/lib").mkdir(parents=True)
-    shutil.copy(ts.ROOT / SCRIPT_REL, root / SCRIPT_REL)
+    if (
+        ts.ROOT / SCRIPT_REL
+    ).is_file():  # only a re-freeze from bash runs the twin (PLAN-retire-bash-oracles B3)
+        shutil.copy(ts.ROOT / SCRIPT_REL, root / SCRIPT_REL)
     shutil.copy(ts.ROOT / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
     (root / ".ci/config").mkdir(parents=True)
     shutil.copy(ts.ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
+    # common.sh sources the generated projection (410f34073); without it the twin died on its first line.
+    shutil.copy(
+        ts.ROOT / ".ci/config/well-known.generated.sh",
+        root / ".ci/config/well-known.generated.sh",
+    )
     (root / ".git").write_text("gitdir: x\n")
     (root / "package.json").write_text("{}")
     account = root / "private" / "account"
@@ -106,6 +116,8 @@ class Case(typing.NamedTuple):
     out: ts.Outcome
     root: pathlib.Path
     orphan: int | None
+    # The retired twin's answer to "is its backend's child still running": frozen, since the twin no longer runs.
+    orphan_up: bool | None = None
 
 
 def drive(
@@ -132,15 +144,77 @@ def drive(
         **(env or {}),
     }
     if name.startswith("bash"):
-        runner = ts.bash_cmd(str(root / SCRIPT_REL), *args)
-    else:
-        runner = ts.py_cmd(MODULE, *args)
-        full = ts.py_env({**full, "REDIACC_CI_ROOT": str(root)})
+        return bash_drive(tmp_path, directory, root, args, full, tools)
+    runner = ts.py_cmd(MODULE, *args)
+    full = ts.py_env({**full, "REDIACC_CI_ROOT": str(root)})
     outcome = ts.run_side(
         runner, directory, tools, full, cwd=directory, bodies={"npx": NPX_BODY}, timeout=90
     )
     orphan_file = directory / "orphan.pid"
     return Case(outcome, root, int(orphan_file.read_text()) if orphan_file.exists() else None)
+
+
+def bash_drive(
+    tmp_path: pathlib.Path,
+    directory: pathlib.Path,
+    root: pathlib.Path,
+    args: list[str],
+    full: dict[str, str],
+    tools: tuple[str, ...],
+) -> Case:
+    """The retired twin's run, from `goldens/twins/test.run-account-e2e.jsonl` (PLAN-retire-bash-oracles B3).
+
+    The backend's port is random per run, so records carry `<PORT>` and a replay puts this run's port back. What the twin left behind (its backend's child, the account database) is a record of its own.
+    """
+    port = full["ACCOUNT_API_PORT"]
+    cell: dict[str, ts.Outcome] = {}
+
+    def sub(text: str) -> str:
+        return text.replace(port, "<PORT>")
+
+    def go() -> tuple[int, str, str]:
+        out = ts.run_side(
+            ts.bash_cmd(str(root / SCRIPT_REL), *args),
+            directory,
+            tools,
+            full,
+            cwd=directory,
+            bodies={"npx": NPX_BODY},
+            timeout=90,
+        )
+        cell["o"] = out
+        return out.code, sub(out.out), sub(out.err)
+
+    def orphan() -> str:
+        pid_file = directory / "orphan.pid"
+        if not pid_file.exists():
+            return diff.ABSENT
+        return "1" if alive(int(pid_file.read_text())) else "0"
+
+    def db() -> str:
+        return "1" if (root / "private/account/e2e-account.db").exists() else "0"
+
+    keyed = {k: ("<PORT>" if k == "ACCOUNT_API_PORT" else v) for k, v in full.items()}
+    rc, out, err, got = diff.twin_run(
+        TWIN,
+        ["args=%r" % (args,), "env=%r" % (sorted(keyed.items()),), "tools=%r" % (tools,)],
+        go,
+        extras={
+            "calls": lambda: sub(json.dumps(cell["o"].calls)),
+            "orphan": orphan,
+            "db": db,
+        },
+        work=(str(tmp_path),),
+    )
+    live = diff.regolden_mode(TWIN) is not None
+    calls = cell["o"].calls if live else json.loads(got["calls"].replace("<PORT>", port))
+    if got["db"] == "1" and not live:
+        (root / "private/account/e2e-account.db").write_text("")
+    outcome = ts.Outcome(rc, out.replace("<PORT>", port), err.replace("<PORT>", port), calls)
+    orphan_file = directory / "orphan.pid"
+    pid = int(orphan_file.read_text()) if live and orphan_file.exists() else None
+    up = None if live else got["orphan"] == "1"
+    return Case(outcome, root, pid, up)
 
 
 def alive(pid: int | None) -> bool:
@@ -151,6 +225,10 @@ def alive(pid: int | None) -> bool:
     except OSError:
         return False
     return True
+
+
+def orphan_alive(case: Case) -> bool:
+    return alive(case.orphan) if case.orphan_up is None else case.orphan_up
 
 
 def norm_calls(case: Case) -> list[tuple]:
@@ -304,8 +382,15 @@ def test_webauthn_verdict_matches_the_embedded_node_program(
     tmp_path: pathlib.Path, counts: dict[str, int]
 ) -> None:
     """The twin's heredoc is extracted verbatim and run under node, then compared with the Python judgement."""
-    text = (ts.ROOT / SCRIPT_REL).read_text()
-    program = text.split("<<'NODE'; then\n", 1)[1].split("\nNODE\n", 1)[0]
+
+    def read_twin() -> tuple[int, str, str]:
+        text = (ts.ROOT / SCRIPT_REL).read_text()
+        return 0, text.split("<<'NODE'; then\n", 1)[1].split("\nNODE\n", 1)[0], ""
+
+    # Frozen with the retired twin: its embedded node program, verbatim.
+    program = diff.twin_call(
+        SCRIPT_REL, ["embedded node program"], read_twin, label="node-program"
+    )[1]
     report = tmp_path / "results.json"
     report.write_text(json.dumps(webauthn_fixture(counts)))
     done = subprocess.run(
@@ -360,8 +445,8 @@ def test_delta_the_backend_process_tree_is_stopped(
 ) -> None:
     old, new = run_both(tmp_path, reap, ["--projects", "firefox"])
     assert old.out.code == new.out.code == 0
-    assert alive(old.orphan), "bash killed the npx wrapper and left the backend's child running"
-    assert not alive(new.orphan)
+    assert orphan_alive(old), "bash killed the npx wrapper and left the backend's child running"
+    assert not orphan_alive(new)
 
 
 def test_delta_a_missing_checkout_fails_under_ci(tmp_path: pathlib.Path) -> None:

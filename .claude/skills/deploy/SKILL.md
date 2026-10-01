@@ -126,7 +126,7 @@ The repo's model is fix-forward (re-dispatch "Release to Edge" with `release_mod
   npx wrangler rollback <previous-version-id> --config workers/account/wrangler.<region>.toml -y
 ```
 
-A D1 migration is not undone by a Worker rollback. Migrations here only add; a destructive one needs an operator decision before it ships, and `scripts/ops/backup-d1.sh` exports the database first.
+A D1 migration is not undone by a Worker rollback. Migrations here only add; a destructive one needs an operator decision before it ships, and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1` exports the database first.
 
 ## 7. Report
 

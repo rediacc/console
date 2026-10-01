@@ -43,7 +43,7 @@ def _quiet_selfdestruct(text: str) -> list[str]:
 
 def test_token_mint_sequence_matches_bash(world: h.World) -> None:
     env = world.env(**GLOBAL_ENV)
-    rc_b, out_b, _ = world.bash("scripts/ops/backup-d1.sh", ["--dry-run"], env)
+    rc_b, out_b, _ = world.twin_run("scripts/ops/backup-d1.sh", ["--dry-run"], env)
     bash_calls = _curl_calls(world, mask=False)
     world.reset_log()
     rc_p, out_p, _ = world.port("rediacc_ci.ops.backup_d1", ["--dry-run"], env)
@@ -76,7 +76,7 @@ def test_no_zone_account_omits_the_zone_policy_like_bash(world: h.World) -> None
     routes.insert(0, {"method": "GET", "match": "/zones", "body": {"result": []}})
     world.set_routes(routes)
     env = world.env(**GLOBAL_ENV)
-    world.bash("scripts/ops/backup-d1.sh", ["--dry-run"], env)
+    world.twin_run("scripts/ops/backup-d1.sh", ["--dry-run"], env)
     bash_post = _curl_calls(world, mask=False)[2]["body"]
     world.reset_log()
     world.port("rediacc_ci.ops.backup_d1", ["--dry-run"], env)
@@ -96,7 +96,7 @@ def test_delta_a_failed_mint_says_why(world: h.World) -> None:
         ]
     )
     env = world.env(**GLOBAL_ENV)
-    rc_b, _, err_b = world.bash("scripts/ops/backup-d1.sh", ["--dry-run"], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["--dry-run"], env)
     assert rc_b == 1
     assert "Failed to create" not in err_b
     assert "Invalid API key" not in err_b
@@ -107,7 +107,7 @@ def test_delta_a_failed_mint_says_why(world: h.World) -> None:
 
 def test_delta_an_empty_token_is_refused(world: h.World) -> None:
     env = world.env()
-    rc_b, _, _err_b = world.bash("scripts/ops/backup-d1.sh", ["--dry-run"], env, stdin="2\n\n")
+    rc_b, _, _err_b = world.twin_run("scripts/ops/backup-d1.sh", ["--dry-run"], env, stdin="2\n\n")
     assert rc_b == 0  # the control: bash accepted an empty "Bearer " token
     rc_p, _, err_p = world.port("rediacc_ci.ops.backup_d1", ["--dry-run"], env, stdin="2\n\n")
     assert rc_p == 1
@@ -126,7 +126,7 @@ def test_delta_self_destruct_reports_a_failed_delete(world: h.World) -> None:
     )
     world.set_routes(routes)
     env = world.env(**TOKEN_ENV)
-    _, _, err_b = world.bash("scripts/ops/backup-d1.sh", ["edge", "--self-destruct"], env)
+    _, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["edge", "--self-destruct"], env)
     assert "CF management token deleted (self-destruct)" in h.strip(
         err_b
     )  # the control: bash claimed success
@@ -140,7 +140,7 @@ def test_delta_self_destruct_reports_a_failed_delete(world: h.World) -> None:
 
 def test_backup_d1_matches_bash(world: h.World) -> None:
     env = world.env(**TOKEN_ENV)
-    rc_b, out_b, err_b = world.bash("scripts/ops/backup-d1.sh", ["edge"], env)
+    rc_b, out_b, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["edge"], env)
     bash_calls = world.calls()
     bash_files = sorted(p.name for p in (world.root / ".backups/edge").iterdir())
     world.reset_log()
@@ -171,7 +171,7 @@ def test_backup_d1_matches_bash(world: h.World) -> None:
 
 def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
     env = world.env(**TOKEN_ENV)
-    rc_b, _, err_b = world.bash("scripts/ops/backup-d1.sh", ["--bogus"], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["--bogus"], env)
     rc_p, _, err_p = world.port("rediacc_ci.ops.backup_d1", ["--bogus"], env)
     assert rc_b == rc_p == 1
     assert h.strip(err_b) == h.strip(err_p)
@@ -179,7 +179,7 @@ def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
 
 def test_delta_a_minted_token_is_always_destroyed(world: h.World) -> None:
     env = world.env(**GLOBAL_ENV)
-    world.bash("scripts/ops/backup-d1.sh", ["edge"], env)
+    world.twin_run("scripts/ops/backup-d1.sh", ["edge"], env)
     assert [c["method"] for c in _curl_calls(world)] == [
         "GET",
         "GET",
@@ -193,7 +193,7 @@ def test_delta_a_minted_token_is_always_destroyed(world: h.World) -> None:
 
 def test_delta_a_failed_export_is_named_and_still_cleans_up(world: h.World) -> None:
     env = world.env(FAKE_NPX_FAIL="wrangler d1 export", FAKE_NPX_RC="7", **GLOBAL_ENV)
-    rc_b, _, err_b = world.bash("scripts/ops/backup-d1.sh", ["edge", "--self-destruct"], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["edge", "--self-destruct"], env)
     assert rc_b != 0
     assert "failed" not in h.strip(err_b)  # the control: silent exit
     assert "DELETE" not in [c["method"] for c in _curl_calls(world)]
@@ -215,7 +215,7 @@ def test_delta_all_filtered_output_is_not_a_failure(world: h.World) -> None:
         world.bin / "npx", quiet.replace("/usr/bin/env python3", __import__("sys").executable)
     )
     env = world.env(**TOKEN_ENV)
-    rc_b, _, _ = world.bash("scripts/ops/backup-d1.sh", ["edge"], env)
+    rc_b, _, _ = world.twin_run("scripts/ops/backup-d1.sh", ["edge"], env)
     assert rc_b != 0  # the control: grep -v selected nothing, pipefail ended the run
     rc_p, _, _ = world.port("rediacc_ci.ops.backup_d1", ["edge"], env)
     assert rc_p == 0
@@ -264,7 +264,7 @@ def _reset_routes(world: h.World, *extra: dict) -> None:
 def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**GLOBAL_ENV, **R2_ENV)
-    rc_b, out_b, err_b = world.bash("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
+    rc_b, out_b, err_b = world.twin_run("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
     bash_calls = world.calls()
     world.reset_log()
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
@@ -303,7 +303,7 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
 def test_delta_the_drop_goes_children_first_with_deferred_fks(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**TOKEN_ENV)
-    world.bash("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
+    world.twin_run("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
     bash_sql = next(
         c["body"]["sql"] for c in _curl_calls(world) if c["body"] and "DROP" in c["body"]["sql"]
     )
@@ -354,12 +354,12 @@ def test_reset_bench_r2_half_uses_the_s3_api(world: h.World) -> None:
 def test_reset_bench_unknown_argument_and_confirmation_match_bash(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**TOKEN_ENV, **R2_ENV)
-    rc_b, _, err_b = world.bash("scripts/ops/reset-bench.sh", ["--nope"], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/reset-bench.sh", ["--nope"], env)
     rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", ["--nope"], env)
     assert rc_b == rc_p == 2
     assert h.strip(err_b) == h.strip(err_p)
     world.reset_log()
-    rc_b, _, err_b = world.bash("scripts/ops/reset-bench.sh", [], env, stdin="no\n")
+    rc_b, _, err_b = world.twin_run("scripts/ops/reset-bench.sh", [], env, stdin="no\n")
     assert [c for c in world.calls() if c["tool"] == "npx"] == []
     world.reset_log()
     rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", [], env, stdin="no\n")
@@ -383,7 +383,7 @@ def test_delta_a_failed_r2_listing_is_not_an_empty_bucket(world: h.World) -> Non
     }
     _reset_routes(world, failing, s3_denied)
     env = world.env(**TOKEN_ENV, **R2_ENV)
-    rc_b, _, err_b = world.bash("scripts/ops/reset-bench.sh", ["--yes", "--r2-only"], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/reset-bench.sh", ["--yes", "--r2-only"], env)
     assert rc_b == 0
     assert "bench has been reset" in err_b
     world.reset_log()
@@ -405,7 +405,7 @@ def test_delta_the_r2_credentials_are_checked_before_anything_is_wiped(world: h.
 def test_delta_table_names_are_quoted_as_data(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**TOKEN_ENV)
-    world.bash("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
+    world.twin_run("scripts/ops/reset-bench.sh", ["--yes", "--d1-only"], env)
     bash_sql = next(
         c["body"]["sql"] for c in _curl_calls(world) if c["body"] and "DROP" in c["body"]["sql"]
     )
@@ -478,7 +478,7 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
 
 def test_deploy_bench_matches_bash(world: h.World) -> None:
     env = world.env(**TOKEN_ENV, **DEPLOY_ENV)
-    rc_b, out_b, err_b = world.bash("scripts/ops/deploy-bench.sh", [], env)
+    rc_b, out_b, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     bash_calls = world.calls()
     world.reset_log()
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
@@ -505,7 +505,7 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
     world: h.World,
 ) -> None:
     env = world.env(**GLOBAL_ENV, **DEPLOY_ENV)
-    world.bash("scripts/ops/deploy-bench.sh", [], env)
+    world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     bash_calls = world.calls()
     assert any(c["tool"] == "sleep" for c in bash_calls)
     world.reset_log()
@@ -520,7 +520,7 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
 
 def test_delta_a_supplied_token_does_not_wait(world: h.World) -> None:
     env = world.env(**TOKEN_ENV, **DEPLOY_ENV)
-    world.bash("scripts/ops/deploy-bench.sh", [], env)
+    world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     assert any(c["tool"] == "sleep" for c in world.calls())  # the control
     world.reset_log()
     world.port("rediacc_ci.ops.deploy_bench", [], env)
@@ -529,7 +529,7 @@ def test_delta_a_supplied_token_does_not_wait(world: h.World) -> None:
 
 def test_delta_arguments_are_rejected_not_ignored(world: h.World) -> None:
     env = world.env(**TOKEN_ENV, **DEPLOY_ENV)
-    rc_b, _, _ = world.bash("scripts/ops/deploy-bench.sh", ["--dry-run"], env)
+    rc_b, _, _ = world.twin_run("scripts/ops/deploy-bench.sh", ["--dry-run"], env)
     assert rc_b == 0
     assert any(
         c["tool"] == "npx" and c["argv"][:2] == ["wrangler", "deploy"] for c in world.calls()
@@ -544,7 +544,7 @@ def test_delta_arguments_are_rejected_not_ignored(world: h.World) -> None:
 def test_delta_secrets_are_validated_before_the_first_remote_write(world: h.World) -> None:
     broken = {k: v for k, v in DEPLOY_ENV.items() if k != "ROOT_EMAIL"}
     env = world.env(**TOKEN_ENV, **broken)
-    rc_b, _, err_b = world.bash("scripts/ops/deploy-bench.sh", [], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     assert rc_b == 1
     assert "ROOT_EMAIL is EMPTY" in h.strip(err_b)
     assert any(
@@ -559,7 +559,7 @@ def test_delta_secrets_are_validated_before_the_first_remote_write(world: h.Worl
 
 def test_deploy_bench_rotation_drift_matches_bash(world: h.World) -> None:
     env = world.env(FAKE_ROTATION_RC="1", **TOKEN_ENV, **DEPLOY_ENV)
-    rc_b, _, err_b = world.bash("scripts/ops/deploy-bench.sh", [], env)
+    rc_b, _, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
     assert rc_b == rc_p == 1
     assert "rotation drift detected" in h.strip(err_b)

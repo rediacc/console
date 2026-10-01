@@ -32,16 +32,12 @@ from rediacc_ci.well_known import DEV_USER_EMAIL, WEB_IMAGE_REPO
 if TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
 
-# What a verb hands over to. Every drill and `worktree` are Python (`rediacc_ci.drills`, `rediacc_ci.dev.worktree`). `DRILLS` and `WORKTREE_SCRIPT` name their bash twins, which nothing executes any more: they stay named only so check:ci-scope-scripts-reachability keeps them reachable as the differential oracles until PLAN-retire-bash-oracles B3 freezes their goldens and deletes them.
+# What a verb hands over to. Every drill and `worktree` are Python (`rediacc_ci.drills`, `rediacc_ci.dev.worktree`). `WORKTREE_SCRIPT` names the bash twin of `worktree`, which nothing executes any more: it stays named only so check:ci-scope-scripts-reachability keeps it reachable as a differential oracle until PLAN-retire-bash-oracles B3 freezes its goldens and deletes it. The drills' bash twins were frozen and deleted there.
 DRILL_MODULES = {
     "universe": "rediacc_ci.drills.universe",
     "transfer": "rediacc_ci.drills.transfer",
     "license": "rediacc_ci.drills.license",
     "backup": "rediacc_ci.drills.backup",
-}
-DRILLS = {
-    "license": "scripts/drills/license.sh",
-    "backup": "scripts/drills/backup.sh",
 }
 WORKTREE_SCRIPT = "scripts/dev/worktree.sh"
 

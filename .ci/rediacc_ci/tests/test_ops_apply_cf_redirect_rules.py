@@ -77,7 +77,7 @@ def _urls(world: h.World) -> list[tuple[str, str]]:
 def test_present_rule_matches_bash(world: h.World) -> None:
     world.set_routes(routes([RULE]))
     env = world.env(**ENV)
-    rc_b, out_b, err_b = world.bash("scripts/ops/apply-cf-redirect-rules.sh", [], env)
+    rc_b, out_b, err_b = world.twin_run("scripts/ops/apply-cf-redirect-rules.sh", [], env)
     calls_b = _urls(world)
     world.reset_log()
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.apply_cf_redirect_rules", [], env)
@@ -96,7 +96,7 @@ def test_present_rule_matches_bash(world: h.World) -> None:
 def test_missing_rule_dry_run_matches_bash(world: h.World) -> None:
     world.set_routes(routes([]))
     env = world.env(**ENV)
-    rc_b, out_b, _ = world.bash("scripts/ops/apply-cf-redirect-rules.sh", ["--dry-run"], env)
+    rc_b, out_b, _ = world.twin_run("scripts/ops/apply-cf-redirect-rules.sh", ["--dry-run"], env)
     calls_b = _urls(world)
     world.reset_log()
     rc_p, out_p, _ = world.port("rediacc_ci.ops.apply_cf_redirect_rules", ["--dry-run"], env)
@@ -112,7 +112,7 @@ def test_arguments_and_auth_match_bash(world: h.World) -> None:
         (["--bogus"], world.env(**ENV), 2),
         ([], world.env(), 1),
     ):
-        rc_b, _, err_b = world.bash("scripts/ops/apply-cf-redirect-rules.sh", args, env)
+        rc_b, _, err_b = world.twin_run("scripts/ops/apply-cf-redirect-rules.sh", args, env)
         rc_p, _, err_p = world.port("rediacc_ci.ops.apply_cf_redirect_rules", args, env)
         assert rc_b == rc_p == want
         assert err_b.strip() == err_p.strip()
@@ -121,7 +121,7 @@ def test_arguments_and_auth_match_bash(world: h.World) -> None:
 def test_global_key_auth_headers_match_bash(world: h.World) -> None:
     world.set_routes(routes([RULE]))
     env = world.env(CF_GLOBAL_API_KEY="gk", CF_EMAIL="e@x")
-    world.bash("scripts/ops/apply-cf-redirect-rules.sh", ["--dry-run"], env)
+    world.twin_run("scripts/ops/apply-cf-redirect-rules.sh", ["--dry-run"], env)
     heads_b = [
         c["headers"] for c in world.calls() if c["tool"] == "curl" and "api.cloudflare" in c["url"]
     ]
@@ -142,7 +142,7 @@ def test_delta_the_create_request_is_a_single_rule_object(world: h.World) -> Non
     }
     world.set_routes(routes([], (created,)))
     env = world.env(**ENV)
-    rc_b, _, _ = world.bash("scripts/ops/apply-cf-redirect-rules.sh", [], env)
+    rc_b, _, _ = world.twin_run("scripts/ops/apply-cf-redirect-rules.sh", [], env)
     post_b = next(c for c in world.calls() if c["method"] == "POST")["body"]
     assert rc_b == 0
     assert list(json.loads(post_b)) == ["rules"]
@@ -175,7 +175,7 @@ def test_delta_a_failing_advisory_does_not_fail_the_run(world: h.World) -> None:
     broken = {"method": "GET", "match": "/dns_records", "rc": 22}
     world.set_routes(routes([RULE], (broken,)))
     env = world.env(**ENV)
-    rc_b, _, _ = world.bash("scripts/ops/apply-cf-redirect-rules.sh", [], env)
+    rc_b, _, _ = world.twin_run("scripts/ops/apply-cf-redirect-rules.sh", [], env)
     assert rc_b == 22  # the control
     rc_p, out_p, _ = world.port("rediacc_ci.ops.apply_cf_redirect_rules", [], env)
     assert rc_p == 0

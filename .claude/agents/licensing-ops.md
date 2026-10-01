@@ -46,8 +46,8 @@ the `-` prefix means renewal can never block the backup.
 - Account server TEST_MODE routes: `POST /test/ensure-login`, `POST /test/ensure-subscription`
 accepts optional `maxActivations` (int 1..10000, default 5): seed a cap of 1 to build a reachable slot wall with two machines. It DELETES and recreates the customer's subscription: never call it mid-scenario to "lower" a cap (that orphans issued licenses); a live downgrade goes through `PUT /admin/subscriptions/:id`.
 - The e2e battery: `.ci/scripts/private/license-e2e.sh` (24+ scenarios, runs 3x:
-enforcing build must pass, nolicense and wrong-key builds must fail at pinned points). Mint tool `.ci/scripts/private/license-mint/` crafts expired/delegated/forged/ sequence fixtures offline (imports the real pkg/license via replace directive). The battery talks to NO account server; account-chain e2e lives in run-account-e2e.sh.
-- Drills: `./run.sh drill universe|transfer|license` (scripts/drills/). license needs ops
+enforcing build must pass, nolicense and wrong-key builds must fail at pinned points). Mint tool `.ci/scripts/private/license-mint/` crafts expired/delegated/forged/ sequence fixtures offline (imports the real pkg/license via replace directive). The battery talks to NO account server; account-chain e2e lives in rediacc_ci.testrun.account_e2e.
+- Drills: `./run.sh drill universe|transfer|license` (rediacc_ci.drills). license needs ops
 VMs (`./rdc.sh ops up`, basic=2 VMs for legs b-e, full 6 incl. Ceph for leg a) and a dev gateway it restarts itself. Every drill has `--selftest` (plants one failure, must exit non-zero) and `--keep-work` (preserves the temp dir for diagnosis).
 
 ## Gates that guard all this

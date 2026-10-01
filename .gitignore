@@ -145,7 +145,7 @@ reports/
 # Git worktrees
 .worktrees/
 
-# D1 database backups (local exports via scripts/ops/backup-d1.sh)
+# D1 database backups (local exports via rediacc_ci.ops.backup_d1)
 .backups/
 
 # SQLite databases (account E2E artifacts)

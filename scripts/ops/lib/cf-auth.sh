@@ -180,16 +180,6 @@ resolve_aws_auth() {
     export AWS_DEFAULT_REGION="${AWS_SES_ADMIN_REGION:-eu-central-1}"
 }
 
-# Verify self-destruct is possible (requires CF_MANAGEMENT_TOKEN).
-# After resolve_cf_auth, CF_MANAGEMENT_TOKEN is always set (auto-created from Global API Key if needed).
-check_self_destruct_capable() {
-    if [[ -z "${CF_MANAGEMENT_TOKEN:-}" ]]; then
-        log_error "Self-destruct requires Cloudflare authentication"
-        log_error "Set CF_MANAGEMENT_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL"
-        exit 1
-    fi
-}
-
 # Destroy credentials used to run the script.
 # Deletes the CF management token (self-destruct) and optionally the AWS admin key.
 # Args: [--aws] to also delete the AWS admin key

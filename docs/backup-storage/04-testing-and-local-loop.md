@@ -38,7 +38,7 @@ assume parity).
 4. One multipart sanity pass (not needed for MiB cells, but cheap insurance).
 
 Vehicle: a `rediacc-backups-bench` R2 bucket on the `rediacc-configs-bench` footing
-(wiped by the `reset-bench.sh` pattern, credentials via the cf-r2 rotation slug, `rotation check --for=bench` preflight), exercised by a `--cloud` leg on the drill, operator-run, cost-declared. Keep it out of the free local battery.
+(wiped by the `rediacc_ci.ops.reset_bench` pattern, credentials via the cf-r2 rotation slug, `rotation check --for=bench` preflight), exercised by a `--cloud` leg on the drill, operator-run, cost-declared. Keep it out of the free local battery.
 
 ## CI placement
 

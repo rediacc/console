@@ -18,6 +18,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-install-sh-config.observations.jsonl`.
 
 from __future__ import annotations
 
+import difflib
 import os
 import re
 import shutil
@@ -63,7 +64,8 @@ def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     fixture = tmp_path / "fixture"
     (fixture / ".ci" / "scripts" / "test").mkdir(parents=True, exist_ok=True)
     (fixture / "packages" / "www" / "public").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, fixture / ".ci" / "scripts" / "test" / TWIN.name)
+    if TWIN.is_file():  # only a re-freeze from bash runs the twin (PLAN-retire-bash-oracles B3)
+        shutil.copy2(TWIN, fixture / ".ci" / "scripts" / "test" / TWIN.name)
     shutil.copy2(INSTALL_SH, fixture / INSTALL_SH_REL)
     (fixture / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -98,6 +100,33 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
     return subprocess.run(runner, env=env, capture_output=True, text=True, check=False, timeout=180)
 
 
+def _twin(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
+    """The retired twin's run over `fixture`, from `goldens/twins/test.test-install-sh-config.jsonl`.
+
+    The key is the MUTATION (a zero-context diff of the fixture's `install.sh` against the real one, so every mutation is its own case and an unrelated edit to `install.sh` moves no key) or `<absent>`; the scratch root folds to a token.
+    """
+    install = fixture / INSTALL_SH_REL
+    if install.is_file():
+        body = "".join(
+            difflib.unified_diff(
+                INSTALL_SH.read_text(encoding="utf-8").splitlines(keepends=True),
+                install.read_text(encoding="utf-8").splitlines(keepends=True),
+                n=0,
+            )
+        )
+    else:
+        body = "<absent>"
+
+    def go() -> tuple[int, str, str]:
+        done = _run(TWIN, fixture)
+        return done.returncode, done.stdout, done.stderr
+
+    rc, out, err = diff.twin_call(
+        str(TWIN.relative_to(ROOT)), ["install.sh mutation=%s" % body], go, work=(str(fixture),)
+    )
+    return subprocess.CompletedProcess([str(TWIN)], rc, out, err)
+
+
 def python_shows_caret_ruler() -> bool:
     """Does the `python3` on PATH draw a caret ruler under a `-c` traceback?
 
@@ -129,7 +158,7 @@ def python_shows_caret_ruler() -> bool:
 def run_both(
     fixture: pathlib.Path, *, port: pathlib.Path | None = None
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
-    return _run(TWIN, fixture), _run(port or PORT, fixture)
+    return _twin(fixture), _run(port or PORT, fixture)
 
 
 def assert_same(
@@ -147,7 +176,7 @@ def assert_same(
 
 
 def test_real_tree_agrees(tmp_path: pathlib.Path) -> None:  # noqa: ARG001 -- symmetry
-    old = _run(TWIN, ROOT)
+    old = _twin(ROOT)
     new = _run(PORT, ROOT)
     assert old.returncode == 0, old.stderr
     assert old.stdout.count(OK_GLYPH) == 5
@@ -161,7 +190,7 @@ def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
     old, new = run_both(fixture)
     assert old.returncode == 0, old.stderr
     assert_same(old, new)
-    assert norm(old.stdout) == norm(_run(TWIN, ROOT).stdout)
+    assert norm(old.stdout) == norm(_twin(ROOT).stdout)
 
 
 # --------------------------------------------------------------------------- The failure branches, each reached by a real mutation ---------------------------------------------------------------------------

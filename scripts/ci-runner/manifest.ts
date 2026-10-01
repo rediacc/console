@@ -4743,7 +4743,7 @@ export const GATES: readonly GateSpec[] = [
 
   // F3: two Quality/Static steps that ran in CI and nowhere else. The forward gate could not see them because its BARE_GATE pattern only covered
   // .ci/scripts/{quality,security}/check-*.sh; these live in .ci/scripts/test/
-  // and start with test-. They are invoked by path, not by an npm key, because the Static lane is a bare checkout with no node_modules -- the same reason ci-quality.yml:166-171 already gives for its sibling test-install-sh-config.sh.
+  // and start with test-. They are invoked by path, not by an npm key, because the Static lane is a bare checkout with no node_modules -- the same reason ci-quality.yml:166-171 already gives for its sibling check:ci-install-sh-config (rediacc_ci.release.install_sh_config_check).
   {
     id: 'test:write-once-guard',
     run: 'PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py',

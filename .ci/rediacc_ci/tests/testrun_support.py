@@ -18,6 +18,7 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 BASH = shutil.which("bash") or "/bin/bash"
@@ -109,6 +110,44 @@ def run_side(
     )
     calls = [json.loads(line) for line in log.read_text().splitlines() if line.strip()]
     return Outcome(done.returncode, done.stdout, done.stderr, calls)
+
+
+def twin_run(
+    twin: str,
+    argv: list[str],
+    directory: pathlib.Path,
+    tools: typing.Iterable[str],
+    env: dict[str, str] | None = None,
+    cwd: pathlib.Path | None = None,
+    timeout: float = 120,
+    bodies: dict[str, str] | None = None,
+    files: typing.Iterable[pathlib.Path] = (),
+) -> Outcome:
+    """What the retired bash twin `twin` answered for this case, from `goldens/twins/` (PLAN-retire-bash-oracles B3).
+
+    `files` are paths the twin writes (a `$GITHUB_OUTPUT`): a re-freeze records them, every other run writes the frozen text back (or removes the path when the twin wrote none), so the caller reads them as it did live. Only a re-freeze (`REDIACC_CI_REGOLDEN=bash`, while the `.sh` still exists) runs `argv`; every other run reads the stored exit code, streams and fake-binary call log. The key is the argv, the environment and the tool list, with the scratch parent folded.
+    """
+    tools = list(tools)
+    cell: dict[str, Outcome] = {}
+
+    def go() -> tuple[int, str, str]:
+        cell["o"] = run_side(argv, directory, tools, env, cwd, timeout, bodies)
+        return cell["o"].code, cell["o"].out, cell["o"].err
+
+    rc, out, err, got = diff.twin_run(
+        twin,
+        [
+            "argv=%r" % (argv,),
+            "env=%r" % (sorted((env or {}).items()),),
+            "tools=%r" % (sorted(tools),),
+            "cwd=%s" % (cwd or ROOT),
+        ],
+        go,
+        files=tuple(str(f) for f in files),
+        extras={"calls": lambda: json.dumps(cell["o"].calls)},
+        work=(str(directory.parent),),
+    )
+    return Outcome(rc, out, err, json.loads(got["calls"]))
 
 
 def bash_cmd(script_rel: str, *args: str) -> list[str]:

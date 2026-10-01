@@ -250,7 +250,7 @@ landed.
 
 `buildDestinationCommand` and `DestinationBuild` are gone from `backup-schedule-unit-generator.ts`, and the dead rclone branch is gone from `backup-schedule-reconcile.ts` (which let `computeDesiredUnits` become synchronous). A non-hosted-service destination now **throws** instead of emitting an rclone unit.
 
-The interlock in `scripts/ops/backup-cutover-preflight.sh` was **inverted** to match: it used to pass when the rclone emission still worked, and now fails if that emission returns at all, and fails again if nothing refuses a storage destination. A preflight that could only pass while the thing it guards still existed was checking the opposite of what its name claimed.
+The interlock in `rediacc_ci.ops.backup_cutover_preflight` was **inverted** to match: it used to pass when the rclone emission still worked, and now fails if that emission returns at all, and fails again if nothing refuses a storage destination. A preflight that could only pass while the thing it guards still existed was checking the opposite of what its name claimed.
 
 Result after the removal: **179 files / 2353 tests passing**, zero skips, up from a 2342 baseline. Preflight 6/6.
 

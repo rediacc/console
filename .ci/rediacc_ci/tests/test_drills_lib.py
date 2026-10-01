@@ -26,6 +26,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.drills import lib
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -39,23 +40,46 @@ def _mask(text: str) -> str:
     return re.sub(r"\(\d+s\)", "(Ns)", text)
 
 
-def _run_bash(script: str, env: dict[str, str] | None = None) -> tuple[int, str, str]:
-    full = {
-        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-        "HOME": os.environ.get("HOME", "/tmp"),
-        "LC_ALL": "C",
-    }
-    full.update(env or {})
-    proc = subprocess.run(
-        [BASH, "-c", script],
-        capture_output=True,
-        text=True,
-        env=full,
-        cwd=str(ROOT),
-        check=False,
-        timeout=60,
+TWIN = "scripts/drills/lib.sh"
+
+
+def _run_bash(
+    script: str,
+    env: dict[str, str] | None = None,
+    work: tuple[str, ...] = (),
+    files: tuple[pathlib.Path, ...] = (),
+) -> tuple[int, str, str]:
+    """The retired twin's run of `script`, from `goldens/twins/scripts.drills.lib.jsonl` (PLAN-retire-bash-oracles B3).
+
+    `work` lists the scratch roots the script names (they fold to tokens in the key and the answer); `files` are what the script writes, restored from the golden so the test reads them as it did live. Only a re-freeze runs bash.
+    """
+
+    def go() -> tuple[int, str, str]:
+        full = {
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "HOME": os.environ.get("HOME", "/tmp"),
+            "LC_ALL": "C",
+        }
+        full.update(env or {})
+        proc = subprocess.run(
+            [BASH, "-c", script],
+            capture_output=True,
+            text=True,
+            env=full,
+            cwd=str(ROOT),
+            check=False,
+            timeout=60,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    rc, out, err, _ = diff.twin_run(
+        TWIN,
+        ["script=%s" % script, "env=%r" % (sorted((env or {}).items()),)],
+        go,
+        files=tuple(str(f) for f in files),
+        work=work,
     )
-    return proc.returncode, proc.stdout, proc.stderr
+    return rc, out, err
 
 
 PRELUDE = """
@@ -236,38 +260,26 @@ def test_json_get_matches_the_node_expressions_it_replaces(
     raw: str, path: str, expression: str, want: str
 ) -> None:
     assert lib.json_get(raw, path) == want
-    if shutil.which("node"):
-        proc = subprocess.run(
-            [BASH, "-c", PRELUDE + 'printf "%s" "$RAW" | drill_json "$EXPR"'],
-            capture_output=True,
-            text=True,
-            env={"PATH": os.environ.get("PATH", ""), "RAW": raw, "EXPR": expression},
-            cwd=str(ROOT),
-            check=False,
-        )
-        assert proc.stdout == want
+    got = _run_bash(
+        PRELUDE + 'printf "%s" "$RAW" | drill_json "$EXPR"', {"RAW": raw, "EXPR": expression}
+    )
+    assert got[1] == want
 
 
 def test_delta_unparseable_input_is_distinguished_from_an_absent_field() -> None:
     assert lib.json_get("not json", "a") == "<unparseable>"
     assert lib.json_get('{"b":1}', "a") == ""
-    if shutil.which("node"):
-        out = subprocess.run(
-            [BASH, "-c", PRELUDE + "printf 'not json' | drill_json 'd.a' || echo \"rc=$?\""],
-            capture_output=True,
-            text=True,
-            env={"PATH": os.environ.get("PATH", "")},
-            cwd=str(ROOT),
-            check=False,
-        )
-        # The control: the bash signals it with an exit status the assertion helper then rewrites into the same text.
-        assert out.stdout.strip() == "rc=3"
+    out = _run_bash(PRELUDE + "printf 'not json' | drill_json 'd.a' || echo \"rc=$?\"")
+    # The control: the bash signals it with an exit status the assertion helper then rewrites into the same text.
+    assert out[1].strip() == "rc=3"
 
 
 def test_md5_matches_the_bash_fingerprint(tmp_path: pathlib.Path) -> None:
     f = tmp_path / "f"
     f.write_text("hello")
-    b = _run_bash(PRELUDE + 'drill_md5 "%s"; drill_md5 "%s/none"' % (f, tmp_path))
+    b = _run_bash(
+        PRELUDE + 'drill_md5 "%s"; drill_md5 "%s/none"' % (f, tmp_path), work=(str(tmp_path),)
+    )
     assert b[1] == "5d41402abc4b2a76b9719d911017c592\nabsent\n"
     assert lib.md5(f) + "\n" + lib.md5(tmp_path / "none") + "\n" == b[1]
 
@@ -279,10 +291,15 @@ def _fake_root(tmp_path: pathlib.Path, run_sh: str) -> pathlib.Path:
     root = tmp_path / "root"
     (root / "scripts/drills").mkdir(parents=True)
     (root / ".ci/scripts/lib").mkdir(parents=True)
-    shutil.copy2(ROOT / "scripts/drills/lib.sh", root / "scripts/drills/lib.sh")
+    if (ROOT / "scripts/drills/lib.sh").is_file():  # only a re-freeze from bash sources it
+        shutil.copy2(ROOT / "scripts/drills/lib.sh", root / "scripts/drills/lib.sh")
     shutil.copy2(ROOT / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
     (root / ".ci/config").mkdir(parents=True)
     shutil.copy2(ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
+    # common.sh sources the generated projection (410f34073); without it the twin died on its first line.
+    shutil.copy2(
+        ROOT / ".ci/config/well-known.generated.sh", root / ".ci/config/well-known.generated.sh"
+    )
     run = root / "run.sh"
     run.write_text(run_sh)
     run.chmod(run.stat().st_mode | stat.S_IEXEC)
@@ -301,7 +318,7 @@ def test_delta_the_gateway_does_not_inherit_the_sandbox_config_home(tmp_path: pa
         "drill_init t\ndrill_gateway_wait_started() { return 0; }\n"
         "drill_gateway_restart >/dev/null\nwait\n" % (root, root, sandbox)
     )
-    _run_bash(bash, {"XDG_CONFIG_HOME": "/real/config"})
+    _run_bash(bash, {"XDG_CONFIG_HOME": "/real/config"}, work=(str(tmp_path),), files=(probe,))
     assert probe.read_text() == sandbox  # the control: the bash gateway saw the throwaway directory
     probe.unlink()
 

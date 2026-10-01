@@ -368,7 +368,7 @@ jobs:
       # dependency change into the invalidation surface of eight E2E jobs that
       # cannot be affected by one.
       #
-      # test-account-e2e keeps it. That job runs run-account-e2e.sh against
+      # test-account-e2e keeps it. That job runs rediacc_ci.testrun.account_e2e against
       # private/account and genuinely needs all three trees.
       - uses: ./.github/actions/setup-workspace
         with:
@@ -2582,7 +2582,7 @@ jobs:
         # T2.13 (PLAN-ci-time-budget): 4 legs from the committed
         # .ci/config/shards/test-account-e2e.json. Leg 1 carries the 10-stripe
         # mutex unit (only that leg starts `stripe listen`) and leg 2 carries
-        # the @webauthn coverage-floor bundle; run-account-e2e.sh derives both
+        # the @webauthn coverage-floor bundle; rediacc_ci.testrun.account_e2e derives both
         # from the leg's actual file list rather than trusting these numbers,
         # so this comment is documentation, not a contract the script relies on.
         shard: [1, 2, 3, 4]
@@ -2626,7 +2626,7 @@ jobs:
       # (root, private/account, private/account/web, private/account/e2e) --
       # that mechanism predates this box. What was still uncached, and paid four
       # times over (once per shard), is Playwright's own browser download:
-      # run-account-e2e.sh's `npx playwright install "$browser"` writes into
+      # rediacc_ci.testrun.account_e2e's `npx playwright install "$browser"` writes into
       # `~/.cache/ms-playwright` and re-downloads it from scratch on every leg
       # with no cache. Keyed on the e2e lockfile, which is what pins
       # `@playwright/test` (and so the browser build playwright installs) --
@@ -2642,7 +2642,7 @@ jobs:
       - name: Install Stripe CLI
         # Leg 1 holds the 10-stripe mutex unit (test-account-e2e.json); the
         # other three never call `stripe`, so skipping the install there is a
-        # pure time saving -- run-account-e2e.sh's own file-derived check is
+        # pure time saving -- rediacc_ci.testrun.account_e2e's own file-derived check is
         # what actually keeps a second `stripe listen` off the sandbox.
         if: env.STRIPE_SANDBOX_SECRET_KEY != '' && matrix.shard == 1
         run: |
@@ -2654,7 +2654,7 @@ jobs:
             https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public \
             | gpg --dearmor | sudo tee /usr/share/keyrings/stripe.gpg >/dev/null
           echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | sudo tee /etc/apt/sources.list.d/stripe.list
-          # Pinned: an unpinned install pulled 1.52.0, whose `stripe listen` refuses to start without an event selector, and broke this leg silently (run 36288155344). A bump is a deliberate edit here, with run-account-e2e.sh checked against the new CLI.
+          # Pinned: an unpinned install pulled 1.52.0, whose `stripe listen` refuses to start without an event selector, and broke this leg silently (run 36288155344). A bump is a deliberate edit here, with rediacc_ci.testrun.account_e2e checked against the new CLI.
           sudo apt-get update -qq && sudo apt-get install -y -qq stripe=1.52.0
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
@@ -2731,7 +2731,7 @@ jobs:
   # DOCKER is a REAL prerequisite, not a nicety: `drill transfer` needs the
   # RustFS container `./run.sh account dev` starts, because the config store is
   # backed by it. Without Docker that drill fails fast rather than reporting a
-  # green that skipped everything (transfer.sh:26-30).
+  # green that skipped everything (rediacc_ci.drills.transfer).
   #
   # NO ACCOUNT SECRETS. Locally `./run.sh account dev` binds the DEV keys from
   # Bitwarden (`bws_env exec --profile account-dev`); this leg instead mints a

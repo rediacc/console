@@ -69,9 +69,12 @@ def world(tmp_path: pathlib.Path) -> h.World:
         if real and not (w.bin / tool).exists():
             (w.bin / tool).symlink_to(real)
     src = paths.repo_root()
-    dest = w.root / SUBJECT
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src / SUBJECT, dest)
+    if (
+        src / SUBJECT
+    ).is_file():  # only a re-freeze from bash runs the twin (PLAN-retire-bash-oracles B3)
+        dest = w.root / SUBJECT
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src / SUBJECT, dest)
     h.World._write_exec(w.root / "rdc.sh", FAKE_RDC.format(py=py))
     cfg = w.root / ".config/rediacc"
     cfg.mkdir(parents=True)
@@ -87,7 +90,7 @@ def world(tmp_path: pathlib.Path) -> h.World:
 
 def _both(world: h.World, args: list[str], **env: str):
     e = world.env(TMPDIR=str(world.root / "tmp"), **env)
-    b = world.bash(SUBJECT, args, e)
+    b = world.twin_run(SUBJECT, args, e)
     calls_b = [c for c in world.calls() if c["tool"] != "curl" or True]
     world.reset_log()
     p = world.port(MODULE, args, e)
