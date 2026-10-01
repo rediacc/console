@@ -1,14 +1,12 @@
-## SESSION d778be9d 2026-10-01T08:11:48Z
+## SESSION d778be9d 2026-10-01T16:47:27Z
 
-# STATE d778be9d -- 2026-10-01T08:15Z
+# STATE d778be9d -- 2026-10-01T16:40Z
 ## Where
-- Branch 0930-1, PR #591 (label release: merge publishes edge+stable, operator ruling 2026-10-01 kept it). Pushed head 08645a1a2 (account 9a2c214, renet 81cca72); CI watch bg brq099g22 (ci-trace --wait --until-final), leased on #6730ffb8. Local ahead of the push: 9fd50d811 (setup --check judges Node against the floor).
-- Upgrade wave (operator 2026-10-01) DONE: playwright 273367db0, account web 1d3b2fb9c, astro 2d0fb5806, Node 24 + glob 13 72f7226cc (account 9a2c214), SEA smoke HOME fix 0605cbda9, format/lint 08645a1a2. Blocklist/exceptions removed per group; TS7, ESLint 10 family, @types/node 25+ (engine floor), stripe 23 (account) stay held.
-- Node 24 is the floor: this host's ~/.local/bin/node is still 22.23.2. Verify with PATH=<scratchpad>/node-v24.21.0-linux-x64/bin:$PATH. The host upgrade is the operator's `! ./run.sh setup` (TTY confirm).
-- Writer adf8fd13f89620adb (opus) owns scripts/gates/check-deps.ts (+ its selftest fixtures): #1feb4717 uninstalled-manifest refusal and #d8fef08a --upgrade bumps overrides. Spot-check, commit, tick.
-- Push recipe: push clone /home/developer/pushclone-0923 (fetch lead/0930-1, detach, submodule update renet+account), npm ci (+account, web, e2e) under Node 24, check:lint, ci:quick --receipt-out .ci/cache/prepush-receipt.json in the lead tree. Push each submodule in its OWN command first (the pre-bash guard scans the whole command), then the console. PR body via literal-path PATCH, then sync-epic-block.sh.
-- `npm run -s <missing-script>` exits 1 silently: confirm the script name before reading a silent red.
+- Branch 0930-1, PR #591 (label release). Last PUSH 704d3f0fe. Everything since is COMMITTED locally, head 15bf298bd, unpushed (bash retirement ports and caller switches, run-legacy deleted, literal registry + gate registered 788b34465, drains, red fixes 55f5da7cf + 15bf298bd). No writer is running. Account submodule pushed at 32fc9f9; renet unchanged.
+- Operator is restarting the session with REDIACC_ALLOW_CLUSTER_OPS and REDIACC_ALLOW_GRAND_REPO set (/ask 2026-10-01T16:01Z, [?] #87037302).
+- Uncommitted and NOT ours: .ci/policy/.host-toolchain-exceptions (a check:ci-release-state@aws entry). Leave it; ask whose if it persists.
+- Two KVM VMs (1, 11) from the drills writer may still be running; /tmp is a 29 GB tmpfs (VM disks live there).
 ## Next action
-1. On the writer's report: spot-check the check-deps.ts diff, run its selftest + real run, commit, tick #1feb4717 and #d8fef08a.
-2. On the CI verdict for 08645a1a2: fix any red; the next push carries 9fd50d811 + the check-deps commit.
-3. #2ec4c835 stripe 23 migration and the lane-budget items stay open.
+1. Run the full pre-push battery in /home/developer/pushclone-0923 (sync with checkout -B 0930-1 lead/0930-1, --set-upstream-to=origin/0930-1; npm ci if lockfile moved; check:lint, check:types, check:ci-python-types, pytest -n 8 .ci/rediacc_ci/tests .claude/rediacc_hooks/tests, ci:quick receipt), fix reds, push, refresh the PR body (literal-path PATCH), sync-epic-block.sh 591 0930-1, ci-trace --wait --until-final in background.
+2. License drill legs a-e live (#87037302): `PROVISION_CEPH_CLUSTER=1 ./rdc.sh ops up` (check `env | grep REDIACC_ALLOW` first; clear /tmp space), `scripts/drills/license.sh` then `./run.sh drill license`; compare; commit evidence; close #87037302.
+3. Then: remaining PLAN-retire-bash-oracles boxes (B3 golden-then-delete, B4, G1-G3, A5), #d2da808a common.sh exemption removal, stripe 23 after 2026-10-02T00:52Z (#2ec4c835).
