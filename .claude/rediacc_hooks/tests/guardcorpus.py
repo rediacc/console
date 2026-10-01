@@ -206,13 +206,30 @@ def builder_shape_drift():
     return drift
 
 
+# A payload that names a path ON THIS HOST, outside any directory the harness builds. FOUND 2026-09-30 (#0c7d2263): the suite's `git commit -F /tmp/commit-msg.txt` was written for `block_long_sleep`, which never opens the file, but cross-fed to `block_untagged_commit` it is READ, so that guard's golden answered whatever the machine's `/tmp` held that day. `/tmp`, `/home`, `/root`, `$HOME`, `${HOME}` and a leading `~/` are the spellings that reach a file this machine's other processes write.
+# A `host:/path` is a REMOTE path (`scp`, `ssh host "cat /var/..."` stays in the pool because nothing here reads the far side), which is why a `:` before the slash does not match. A payload's OWN guard still gets it, since the suite case was written against that guard's reading of it; only the cross-feed, where nobody chose the path for the guard reading it, drops it.
+HOST_PATH = re.compile(
+    r"(?<![A-Za-z0-9_.$/~:-])(?:/(?:tmp|home|root)(?![A-Za-z0-9_.-])|~/|\$HOME\b|\$\{HOME\})"
+)
+
+
+def names_host_path(payload):
+    """True when `payload` spells an absolute path this host owns rather than the harness."""
+    return HOST_PATH.search(payload) is not None
+
+
+def foreign_pool(payloads):
+    """The part of the payload pool that is safe to feed to a guard it was not written for: every payload naming no host path."""
+    return [payload for payload in payloads if not names_host_path(payload)]
+
+
 def cross_sample(payloads, guard, limit=CROSS_SAMPLE):
     """A deterministic slice of the whole payload pool, per guard.
 
-    Keyed by a hash of the guard name AND the payload, so two guards get DIFFERENT foreign samples. A single shared sample would mean every guard tested against the same forty strings, and a shape absent from those forty would be absent from the whole cross-feed.
+    Keyed by a hash of the guard name AND the payload, so two guards get DIFFERENT foreign samples. A single shared sample would mean every guard tested against the same forty strings, and a shape absent from those forty would be absent from the whole cross-feed. Drawn from `foreign_pool` only, so a host path never reaches a guard as foreign input.
     """
     scored = []
-    for payload in payloads:
+    for payload in foreign_pool(payloads):
         digest = hashlib.sha256(("%s\x00%s" % (guard, payload)).encode("utf-8")).hexdigest()
         scored.append((digest, payload))
     scored.sort()

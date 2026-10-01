@@ -1900,6 +1900,7 @@
       "HOOK_LABEL_DIR"
     ],
     ".claude/rediacc_hooks/tests/test_guards_differential.py": [
+      "GIT_DIR",
       "HOME",
       "PATH",
       "REDIACC_GUARD_DIFF_FULL",
