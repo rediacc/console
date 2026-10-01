@@ -252,6 +252,9 @@
       "GITHUB_REPOSITORY",
       "WORKLIST_PUBLISH_ROOT"
     ],
+    ".ci/rediacc_ci/core/run_verbs.py": [
+      "SCRIPT_ENTRYPOINT"
+    ],
     ".ci/rediacc_ci/core/secrets.py": [
       "*name",
       "*names[0]"
@@ -430,6 +433,14 @@
     ".ci/rediacc_ci/docker/run_in_image.py": [
       "REDIACC_NO_DOCKER"
     ],
+    ".ci/rediacc_ci/drills/lib.py": [
+      "DRILL_HOST",
+      "DRILL_KEEP_WORK",
+      "NO_COLOR"
+    ],
+    ".ci/rediacc_ci/drills/transfer.py": [
+      "DRILL_EXPECT_NO_KEYRING"
+    ],
     ".ci/rediacc_ci/env/create_e2e_env.py": [
       "*name",
       "BRIDGE_TIMEOUT",
@@ -504,11 +515,83 @@
       "CI",
       "NO_COLOR"
     ],
+    ".ci/rediacc_ci/ops/apply_cf_redirect_rules.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "CLOUDFLARE_API_TOKEN"
+    ],
+    ".ci/rediacc_ci/ops/backup_cutover_preflight.py": [
+      "ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET",
+      "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+      "ACCOUNT_BACKUP_S3_BUCKET",
+      "ACCOUNT_BACKUP_S3_ENDPOINT",
+      "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"
+    ],
     ".ci/rediacc_ci/ops/build_server.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY"
     ],
+    ".ci/rediacc_ci/ops/cf_auth.py": [
+      "AWS_SES_ADMIN_KEY_ID",
+      "AWS_SES_ADMIN_REGION",
+      "AWS_SES_ADMIN_SECRET",
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "CF_MANAGEMENT_TOKEN"
+    ],
+    ".ci/rediacc_ci/ops/deploy_bench.py": [
+      "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+      "ACCOUNT_BACKUP_S3_BUCKET",
+      "ACCOUNT_BACKUP_S3_ENDPOINT",
+      "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+      "ACCOUNT_ED25519_PRIVATE_KEY",
+      "ACCOUNT_ED25519_PUBLIC_KEY",
+      "ACCOUNT_JWT_SECRET",
+      "ACCOUNT_SERVER_API_KEY",
+      "ACCOUNT_X25519_PRIVATE_KEY",
+      "ACCOUNT_X25519_PUBLIC_KEY",
+      "AWS_IAM_ADMIN_ACCESS_KEY_ID",
+      "AWS_SES_ACCESS_KEY_ID",
+      "AWS_SES_ADMIN_KEY_ID",
+      "AWS_SES_CONFIGURATION_SET",
+      "AWS_SES_FROM",
+      "AWS_SES_REGION",
+      "AWS_SES_SECRET_ACCESS_KEY",
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+      "OBS_OTLP_CREDENTIALS",
+      "REDIACC_BWS_PROFILES",
+      "ROOT_EMAIL",
+      "SELLER_ADDRESS_LINE1",
+      "SELLER_ADDRESS_LINE2",
+      "SELLER_CITY",
+      "SELLER_COUNTRY",
+      "SELLER_EMAIL",
+      "SELLER_NAME",
+      "SELLER_POSTAL_CODE",
+      "SELLER_REGISTRATION_NUMBER",
+      "SELLER_VAT_NUMBER"
+    ],
     ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
       "BRANCH"
+    ],
+    ".ci/rediacc_ci/ops/linode_cluster_validation.py": [
+      "CLUSTER_NAME",
+      "CLUSTER_POOLS",
+      "HOME",
+      "NETWORK_CIDR",
+      "PROVIDER"
+    ],
+    ".ci/rediacc_ci/ops/reset_bench.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+    ],
+    ".ci/rediacc_ci/ops/scrub_sentinel.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
     ],
     ".ci/rediacc_ci/paths.py": [
       "REDIACC_CI_ROOT"
@@ -1029,6 +1112,46 @@
       "CI",
       "EXTERNAL_CALLERS_FILE"
     ],
+    ".ci/rediacc_ci/testrun/account_e2e.py": [
+      "*name",
+      "ACCOUNT_API_PORT",
+      "ACCOUNT_ED25519_PRIVATE_KEY",
+      "ACCOUNT_ED25519_PUBLIC_KEY",
+      "ACCOUNT_JWT_SECRET",
+      "ACCOUNT_SERVER_API_KEY",
+      "ACCOUNT_X25519_PRIVATE_KEY",
+      "ACCOUNT_X25519_PUBLIC_KEY",
+      "E2E_PORT",
+      "ROOT_EMAIL",
+      "STRIPE_E2E_WEBHOOK_SECRET",
+      "STRIPE_SANDBOX_SECRET_KEY",
+      "TMPDIR"
+    ],
+    ".ci/rediacc_ci/testrun/install_methods.py": [
+      "DOCKER_TAG",
+      "RELEASES_BASE_URL",
+      "REPO_CHANNEL",
+      "TMPDIR"
+    ],
+    ".ci/rediacc_ci/testrun/linux_packages.py": [
+      "PATH",
+      "PYTHONPATH",
+      "RELEASES_BASE_URL"
+    ],
+    ".ci/rediacc_ci/testrun/rdc_update.py": [
+      "RDC_BINARY"
+    ],
+    ".ci/rediacc_ci/testrun/seed_smoke.py": [
+      "ACCOUNT_JWT_SECRET",
+      "GITHUB_OUTPUT",
+      "PR_NUMBER"
+    ],
+    ".ci/rediacc_ci/testrun/start_account.py": [
+      "ACCOUNT_API_PORT",
+      "GITHUB_ENV",
+      "GITHUB_OUTPUT",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/tests/differential.py": [
       "HOME",
       "PATH"
@@ -1252,6 +1375,9 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_core_run_verbs.py": [
+      "SCRIPT_ENTRYPOINT"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_cf_purge_urls.py": [
       "HOME"
     ],
@@ -1331,6 +1457,13 @@
     ],
     ".ci/rediacc_ci/tests/test_docker_retag_image.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_lib.py": [
+      "HOME",
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_universe_transfer.py": [
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py": [
       "HOME"
