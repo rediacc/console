@@ -5,41 +5,5 @@
     "The gate refuses a STALE entry (sha not reachable from the tip), a REDUNDANT one (the commit carries a trailer), a duplicate, a short sha and an unknown epic. An entry for an already-merged commit is inert and may be pruned.",
     "docs/agent-reference/suppressions.md carries this file's row."
   ],
-  "attributions": [
-    {
-      "sha": "0c715ce631daadc91e49f206572de0a93516158b",
-      "epic": "e87fa3ce",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    },
-    {
-      "sha": "2635a00233cf48edf462f573962a37cf4cd976b0",
-      "epic": "e87fa3ce",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    },
-    {
-      "sha": "56a148945ceaad838336d82de115b8642a35831b",
-      "epic": "e87fa3ce",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    },
-    {
-      "sha": "d9961eb5f2983ca250d9b717cd35563d88f676a5",
-      "epic": "e87fa3ce",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    },
-    {
-      "sha": "86bb28370efa7993d88be4a4aadfacb533d5f967",
-      "epic": "d272ed52",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    },
-    {
-      "sha": "47d2a0a2857c0305435dc89a8078aa9ad7971a0c",
-      "epic": "d272ed52",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    },
-    {
-      "sha": "a97583ef3faea9b0ce90f7e4666fe83128c1e9c2",
-      "epic": "d272ed52",
-      "reason": "pushed from another machine whose commit-msg hook was not installed, attributed by the operator's ruling of 2026-09-30"
-    }
-  ]
+  "attributions": []
 }
