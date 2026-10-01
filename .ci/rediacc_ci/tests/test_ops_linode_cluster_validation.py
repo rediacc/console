@@ -34,7 +34,7 @@ FAKE_RDC = """#!{py}
 import json, os, sys
 with open(os.environ["FAKE_LOG"], "a") as fh:
     fh.write(json.dumps({{"tool": "rdc", "argv": sys.argv[1:]}}) + "\\n")
-if sys.argv[1:4] == ["config", "cluster", "add"]:
+if sys.argv[1:4] == ["config", "cluster", "add"] or "--declare-only" in sys.argv:
     sys.stderr.write(os.environ.get("FAKE_ADD_ERR", ""))
     sys.exit(int(os.environ.get("FAKE_ADD_RC", "0")))
 sys.exit(0)
@@ -157,15 +157,17 @@ def test_billable_phases_need_yes_in_both(world: h.World) -> None:
         assert not [c for c in calls_p if c["tool"] == "rdc"]
 
 
-def test_provision_calls_match_bash(world: h.World) -> None:
+def test_delta_provision_uses_the_cluster_create_the_cli_has(world: h.World) -> None:
+    """The twin declares with `config cluster add` (a subcommand the CLI no longer has) and provisions with `cluster create --name` (the name is positional); the port declares with `cluster create <name> --declare-only` and provisions with a bare `cluster create <name>`."""
     b, p, calls_b, calls_p = _both(world, ["provision", "--yes"], CLUSTER_POOLS="a:b:1:c,d:e:2")
     _same(b, p)
     rdc_b = [c["argv"] for c in calls_b if c["tool"] == "rdc"]
     rdc_p = [c["argv"] for c in calls_p if c["tool"] == "rdc"]
-    assert rdc_b == rdc_p
-    assert rdc_p[0][:6] == ["config", "cluster", "add", "--name", "lval", "--provider"]
+    assert rdc_b[0][:3] == ["config", "cluster", "add"]  # the twin's dead command, the control
+    assert rdc_b[1] == ["cluster", "create", "--name", "lval"]
+    assert rdc_p[0][:5] == ["cluster", "create", "lval", "--declare-only", "--provider"]
     assert rdc_p[0].count("--pool") == 2
-    assert rdc_p[1] == ["cluster", "create", "--name", "lval"]
+    assert rdc_p[1] == ["cluster", "create", "lval"]
 
 
 def test_destroy_removes_the_workdir_in_both(world: h.World) -> None:
@@ -173,8 +175,12 @@ def test_destroy_removes_the_workdir_in_both(world: h.World) -> None:
     state.mkdir(parents=True)
     b, p, calls_b, calls_p = _both(world, ["destroy", "--yes"])
     assert b[0] == p[0] == 0
+    # The twin passes `--name` (the CLI takes the cluster positionally); the port's call is the one the CLI accepts.
     assert [c["argv"] for c in calls_b if c["tool"] == "rdc"] == [
-        c["argv"] for c in calls_p if c["tool"] == "rdc"
+        ["cluster", "destroy", "--name", "lval", "--force"]
+    ]
+    assert [c["argv"] for c in calls_p if c["tool"] == "rdc"] == [
+        ["cluster", "destroy", "lval", "--force"]
     ]
     assert not state.exists()
 
@@ -226,8 +232,8 @@ def test_delta_cluster_add_is_not_swallowed_unless_the_cluster_exists(world: h.W
         c["argv"] for c in calls_b if c["tool"] == "rdc"
     ]  # the control
     assert p[0] == 1
-    assert "rdc config cluster add failed" in p[2]
-    assert not any(c["argv"][:1] == ["cluster"] for c in calls_p if c["tool"] == "rdc")
+    assert "rdc cluster create --declare-only failed" in p[2]
+    assert ["cluster", "create", "lval"] not in [c["argv"] for c in calls_p if c["tool"] == "rdc"]
     _b, p, _, calls_p = _both(
         world, ["provision", "--yes"], FAKE_ADD_RC="1", FAKE_ADD_ERR="cluster lval already exists"
     )
