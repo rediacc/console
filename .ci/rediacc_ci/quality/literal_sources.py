@@ -865,6 +865,8 @@ class Detectors:
         return hits
 
 
+_UPPER_TOKEN = re.compile(r"\b[A-Z][A-Z0-9_]*\b")
+
 # `github.com/` with no scheme or `git@` before it, ending right where the slug starts.
 _GO_IMPORT = re.compile(r"(?<![/@:\w.])github\.com/$")
 
@@ -1352,13 +1354,10 @@ def run(root: pathlib.Path) -> Result:
         except (FileNotFoundError, IsADirectoryError):
             continue
         # A consumer names the key (bash, workflows, TS), `well_known.NAME`, or imports NAME from rediacc_ci.well_known (Python).
-        py_import = "rediacc_ci.well_known" in text or "import well_known" in text
-        here = {
-            e.key
-            for e in entries
-            if re.search(r"\b%s\b|\bwell_known\.%s\b" % (e.key, e.name), text)
-            or (py_import and re.search(r"\b%s\b" % e.name, text))
-        }
+        # ONE token pass per file. The first version ran two uncompiled searches per entry per file, 42 x 342 of them, and took 15 of the gate's 18 s once the drain made 342 files consumers.
+        tokens = set(_UPPER_TOKEN.findall(text))
+        py_reader = "well_known" in text
+        here = {e.key for e in entries if e.key in tokens or (py_reader and e.name in tokens)}
         consumed |= here
         consumers += bool(here)
     findings.extend(
@@ -1470,9 +1469,35 @@ def summary(findings: list[Finding]) -> list[str]:
     return out
 
 
+def parse_paths(args: list[str]) -> list[str]:
+    """Every value after every `--paths`, up to the next `--flag`. Repeatable, and order-free with respect to the other flags."""
+    out: list[str] = []
+    taking = False
+    for a in args:
+        if a == "--paths":
+            taking = True
+        elif a.startswith("--"):
+            taking = False
+        elif taking:
+            out.append(a)
+    return out
+
+
+def path_matcher(specs: list[str]) -> re.Pattern[str] | None:
+    """One pattern for all `--paths` specs: a glob as written, and a plain path also as a directory (`packages/cli` covers `packages/cli/**`)."""
+    if not specs:
+        return None
+    parts = []
+    for spec in specs:
+        parts.append(glob_regex(spec).pattern)
+        if not any(c in spec for c in "*?"):
+            parts.append(glob_regex(spec.rstrip("/") + "/**").pattern)
+    return re.compile("|".join("(?:%s)" % p for p in parts))
+
+
 def report(result: Result, globs: list[str]) -> None:
-    pats = [glob_regex(g) for g in globs]
-    shown = [f for f in result.findings if not pats or any(p.match(f.path) for p in pats)]
+    pat = path_matcher(globs)
+    shown = [f for f in result.findings if pat is None or pat.match(f.path)]
     by_file: dict[str, list[Finding]] = collections.defaultdict(list)
     for f in shown:
         by_file[f.path].append(f)
@@ -1486,7 +1511,7 @@ def report(result: Result, globs: list[str]) -> None:
     print()
     print(
         "%d finding(s) in %d file(s)%s"
-        % (len(shown), len(by_file), " (of %d in the tree)" % len(result.findings) if pats else "")
+        % (len(shown), len(by_file), " (of %d in the tree)" % len(result.findings) if pat else "")
     )
     for line in summary(shown):
         print(line)
@@ -1522,7 +1547,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("literal sources: %s" % exc)
         return 1
     if "--report" in args:
-        globs = args[args.index("--paths") + 1 :] if "--paths" in args else []
+        globs = parse_paths(args)
         report(result, globs)
         return 1 if result.findings else 0
     if result.findings:
@@ -1833,6 +1858,20 @@ def selftest() -> bool:
         )
         py = lex_python('x = "a"\n"""doc"""\n# c\nf(\n  "b"\n)\n')
         check("python lexer: docstring and comment are prose, an argument is not", len(py) == 2)
+        specs = parse_paths(["--paths", "a.py", "b/", "--report", "--paths", "c/*.sh"])
+        check(
+            "--paths: every value of every --paths, flags excluded",
+            specs == ["a.py", "b/", "c/*.sh"],
+        )
+        pm = path_matcher(specs)
+        check(
+            "--paths: a file, a directory and a glob each select their files",
+            pm is not None and all(pm.match(x) for x in ("a.py", "b/x/y.ts", "c/z.sh")),
+        )
+        check(
+            "--paths: nothing else is selected",
+            pm is not None and not any(pm.match(x) for x in ("a.pyc", "bb/x.ts", "c/d/z.sh")),
+        )
 
         clean = _fx_tree(clean_files)
         roots.append(clean)

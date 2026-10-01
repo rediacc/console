@@ -89,7 +89,7 @@ def permitted(ref: str, record: dict) -> bool:
 
 
 def refresh(record_path: Path) -> int:
-    repo = json.loads(record_path.read_text(encoding="utf-8")).get("repo", GH_REPO)
+    repo = GH_REPO
     proc = subprocess.run(
         ["gh", "api", f"/repos/{repo}/actions/permissions/selected-actions"],
         capture_output=True,
@@ -181,7 +181,7 @@ def main(argv: list[str]) -> int:
         f"{ref} is used by {', '.join(sorted(where))} but this repository may not run "
         f"it. The job fails at action RESOLUTION, before any step, with a message that "
         f"names no secret and no script. Add a pattern to "
-        f"/repos/{record.get('repo')}/actions/permissions/selected-actions and re-run "
+        f"/repos/{GH_REPO}/actions/permissions/selected-actions and re-run "
         f"with --refresh, or use an action that is already permitted."
         for ref, where in sorted(used.items())
         if not permitted(ref, record)

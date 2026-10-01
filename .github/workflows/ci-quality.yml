@@ -379,6 +379,9 @@ jobs:
       - name: Language policy
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_language_policy.py
+      - name: Literal sources
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_literal_sources.py
       - name: Mutation runner self-test
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_mutate_check.py

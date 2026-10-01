@@ -62,6 +62,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
+// Relative and import-free: the projection of .ci/config/well-known.env (check:ci-literal-sources R4 holds it equal).
+import * as WELL_KNOWN from '../../packages/shared/src/config/well-known.generated.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -238,6 +240,25 @@ export interface Finding {
 }
 
 /**
+ * A step value that is exactly `${{ env.WK_NAME }}` is, by construction, the registry value: the
+ * workflow's "Load well-known" step exports every WK_ line of .ci/config/well-known.env, and the
+ * manifest entry reads the same value through the generated projection. Anything else, including an
+ * unregistered WK_ name, is returned unchanged and compared as written.
+ *
+ * @param v The step's env value as written in the workflow.
+ * @param registry The registry projection; the real one unless a control passes a fixture.
+ */
+export function wellKnownValue(
+  v: string,
+  registry: Record<string, unknown> = WELL_KNOWN as Record<string, unknown>
+): string {
+  const m = /^\$\{\{\s*env\.(WK_[A-Z0-9_]+)\s*\}\}$/.exec(v.trim());
+  if (m === null) return v;
+  const resolved = registry[m[1]];
+  return resolved === undefined ? v : String(resolved);
+}
+
+/**
  * Compare one step's two halves.
  *
  * `expected` is built HERE rather than passed in so the disagreement case has somewhere to
@@ -306,7 +327,7 @@ export function compareStep(
       });
       continue;
     }
-    if (e.value !== v) {
+    if (e.value !== v && e.value !== wellKnownValue(v)) {
       out.push({
         kind: 'value-drift',
         job,
@@ -607,6 +628,33 @@ function selftest(): number {
             read
           ).findings
         ) === 'value-drift:GH_TOKEN',
+    },
+    {
+      name: 'SILENT: ${{ env.WK_NAME }} in the step equals the registry value the entry declares',
+      ok:
+        compareStep(
+          'quality-code',
+          'S',
+          [gate('a', 'quality-code', 'S', { U: String(WELL_KNOWN.WK_MEDIA_ORIGIN) })],
+          { U: '${{ env.WK_MEDIA_ORIGIN }}' }
+        ).length === 0,
+    },
+    {
+      name: 'FIRES: ${{ env.WK_NAME }} resolving to a DIFFERENT value is still value-drift',
+      ok:
+        wellKnownValue('${{ env.WK_FIX }}', { WK_FIX: 'https://cdn.fixture' }) ===
+          'https://cdn.fixture' &&
+        compareStep('quality-code', 'S', [gate('a', 'quality-code', 'S', { U: 'https://other' })], {
+          U: '${{ env.WK_MEDIA_ORIGIN }}',
+        })[0]?.kind === 'value-drift',
+    },
+    {
+      name: 'FIRES: an unregistered WK_ name is not resolved, so it drifts',
+      ok:
+        wellKnownValue('${{ env.WK_NOT_REGISTERED }}') === '${{ env.WK_NOT_REGISTERED }}' &&
+        compareStep('quality-code', 'S', [gate('a', 'quality-code', 'S', { U: 'v' })], {
+          U: '${{ env.WK_NOT_REGISTERED }}',
+        })[0]?.kind === 'value-drift',
     },
     {
       name: 'FIRES: two claimants declaring one key differently is claimant-disagreement',
