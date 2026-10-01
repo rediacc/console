@@ -108,6 +108,7 @@
         "pytest:.ci/rediacc_ci/tests/test_devbox_bws.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_build_renet.py",
+        "pytest:.ci/rediacc_ci/tests/test_infra_renet_embed_cache.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
         "pytest:.ci/rediacc_ci/tests/test_log.py",
         "pytest:.ci/rediacc_ci/tests/test_native.py",

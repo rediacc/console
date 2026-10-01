@@ -394,9 +394,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -622,9 +628,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -791,9 +803,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -1132,6 +1150,8 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
@@ -1298,9 +1318,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -1469,9 +1495,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -1654,9 +1686,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -1878,9 +1916,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
@@ -2065,9 +2109,15 @@ jobs:
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache): a skipped restore once saved the
+        # bare checkout skeleton under this immutable key.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
