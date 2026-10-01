@@ -1684,6 +1684,9 @@
     ".ci/rediacc_ci/tests/test_setup_install_deps.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/wkloader.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/version/bump.py": [
       "DRY_RUN"
     ],
