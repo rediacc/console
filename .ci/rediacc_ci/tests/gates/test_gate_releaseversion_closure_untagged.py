@@ -42,6 +42,7 @@ COPIED = (
     (".ci", "scripts", "ci", "generate-tag.sh"),
     (".ci", "scripts", "lib", "common.sh"),
     (".ci", "config", "well-known.env"),
+    (".ci", "config", "well-known.generated.sh"),
     (".ci", "scripts", "version", "resolve-version.sh"),
 )
 

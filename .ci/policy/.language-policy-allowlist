@@ -75,6 +75,9 @@ file:.ci/bootstrap.sh
 # BLOCKER: a sourceable variable table whose consumers sit outside ruling 7's reach and stay bash for good -- rdc.sh:17 and scripts/dev/worktree.sh:223 source it, as do three inline workflow run: steps (cd-deploy-account.yml:238, ct-tests.yml:177, edge-clone-d1.yml:71), and Python already reads it through the shell bridge at .ci/rediacc_ci/setup/bridge.py instead of reimplementing it
 file:.ci/config/constants.sh
 
+# BLOCKER: generated, sourceable variable table (check_literal_sources.py --write renders it from .ci/config/well-known.env and R4 holds it equal); its consumers are bash (.ci/config/constants.sh, .ci/scripts/lib/common.sh) that run where python3 is not guaranteed
+file:.ci/config/well-known.generated.sh
+
 # BLOCKER: this is PID 1 of the published web image, copied to /docker-entrypoint.sh at Dockerfile:121 and named by ENTRYPOINT at Dockerfile:130, and the image is nginx on alpine with no Python interpreter in it; adding one to satisfy a repo-side language rule changes the shipped artifact rather than this repository
 file:.ci/docker/web/entrypoint.sh
 

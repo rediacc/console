@@ -148,6 +148,10 @@ def _fixture_root(tmp_path: pathlib.Path, *, worker: str = "dir") -> pathlib.Pat
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     for rel, body in (
         (("version", "resolve-version.sh"), FAKE_RESOLVE_VERSION),

@@ -50,6 +50,7 @@ VENDORED = (
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
+    ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/build/__init__.py",
 )
 
@@ -717,7 +718,7 @@ def test_the_environment_nfpm_receives_is_the_whole_package_definition(tmp_path)
 
 
 def test_both_sides_hand_nfpm_the_apk_signing_key_name(tmp_path) -> None:
-    """`.ci/config/nfpm.yaml` sets `apk.signature.key_name: "${WK_PKG_SIGNING_KEY_NAME}"`. The twin gets that variable from constants.sh's `set -a` source of well-known.env; the port must export it itself. Empty, nfpm falls back to the MAINTAINER address, and APKv2 matches the public key by that FILENAME, so every deployed /etc/apk/keys entry stops verifying."""
+    """`.ci/config/nfpm.yaml` sets `apk.signature.key_name: "${WK_PKG_SIGNING_KEY_NAME}"`. The twin gets that variable from constants.sh, which sources and exports .ci/config/well-known.generated.sh; the port must export it itself. Empty, nfpm falls back to the MAINTAINER address, and APKv2 matches the public key by that FILENAME, so every deployed /etc/apk/keys entry stops verifying."""
     root = fixture(tmp_path)
     old_t, new_t = run_both(root, args=(*DEB, "--format", "apk", "--arch", "x86_64"))
     assert old_t[0].returncode == 0, old_t[0].stderr

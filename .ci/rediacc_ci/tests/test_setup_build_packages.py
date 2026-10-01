@@ -49,6 +49,7 @@ TREE_FILES = (
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
+    ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/setup/__init__.py",

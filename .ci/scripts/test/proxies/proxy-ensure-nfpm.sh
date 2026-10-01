@@ -79,6 +79,7 @@ cp "$ROOT_DIR/$SUBJECT_REL" "$FIX/$SUBJECT_REL"
 cp -r "$ROOT_DIR/.ci/scripts/lib" "$FIX/.ci/scripts/lib"
 cp "$ROOT_DIR/.ci/config/constants.sh" "$FIX/.ci/config/constants.sh"
 cp "$ROOT_DIR/.ci/config/well-known.env" "$FIX/.ci/config/well-known.env"
+cp "$ROOT_DIR/.ci/config/well-known.generated.sh" "$FIX/.ci/config/well-known.generated.sh"
 cp "$ROOT_DIR/.devcontainer/toolchain.env" "$FIX/.devcontainer/toolchain.env"
 chmod +x "$FIX/$SUBJECT_REL"
 

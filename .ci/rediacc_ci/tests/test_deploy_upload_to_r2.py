@@ -165,6 +165,10 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     shutil.copy2(VALIDATOR, root / ".ci" / "scripts" / "lib" / VALIDATOR.name)
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
     shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
+    shutil.copy2(
+        CONSTANTS.with_name("well-known.generated.sh"),
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "deploy" / PORT.name)
 

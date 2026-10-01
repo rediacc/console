@@ -236,6 +236,10 @@ def _fixture(
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
+    shutil.copy2(
+        CONSTANTS.with_name("well-known.generated.sh"),
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / "toolchain.env")
     shutil.copy2(PORT, root / PORT_REL)
 

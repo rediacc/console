@@ -96,6 +96,10 @@ def _fixture_root(tmp_path: pathlib.Path, *, configs: dict[str, str] | None = No
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     for name, body in (configs or {"wrangler.eu.toml": FIXTURE_TOML}).items():
         (worker / name).write_text(body, encoding="utf-8")

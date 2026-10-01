@@ -102,6 +102,10 @@ def build_fixture(
     if not drop_toolchain_env:
         shutil.copy2(TOOLCHAIN_ENV, fixture / ".devcontainer" / "toolchain.env")
     shutil.copy2(WELL_KNOWN, fixture / ".ci" / "config" / "well-known.env")
+    shutil.copy2(
+        WELL_KNOWN.with_name("well-known.generated.sh"),
+        fixture / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     constants = CONSTANTS.read_text(encoding="utf-8")
     if pinned_sha is not None:

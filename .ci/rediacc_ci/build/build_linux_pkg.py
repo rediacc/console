@@ -550,7 +550,7 @@ def build(argv: list[str]) -> int:
     os.environ["PKG_MAINTAINER"] = PKG_MAINTAINER
     os.environ["PKG_DESCRIPTION"] = PKG_DESCRIPTION
     os.environ["PKG_HOMEPAGE"] = PKG_HOMEPAGE
-    # nfpm.yaml's apk `key_name` reads this. The twin inherits it from constants.sh's `set -a` source of well-known.env; unset here, nfpm falls back to the maintainer address and every deployed /etc/apk/keys entry stops matching.
+    # nfpm.yaml's apk `key_name` reads this. The twin inherits it from constants.sh, which sources and exports .ci/config/well-known.generated.sh; unset here, nfpm falls back to the maintainer address and every deployed /etc/apk/keys entry stops matching.
     os.environ["WK_PKG_SIGNING_KEY_NAME"] = PKG_SIGNING_KEY_NAME
     os.environ["VERSION"] = version
     os.environ["NFPM_ARCH"] = nfpm_arch

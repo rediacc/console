@@ -181,6 +181,10 @@ def _drive(p: proxyx.Proxy, root: pathlib.Path, fix: pathlib.Path, pinned: str) 
         root / ".ci" / "config" / "well-known.env", fix / ".ci" / "config" / "well-known.env"
     )
     shutil.copyfile(
+        root / ".ci" / "config" / "well-known.generated.sh",
+        fix / ".ci" / "config" / "well-known.generated.sh",
+    )
+    shutil.copyfile(
         root / ".devcontainer" / "toolchain.env", fix / ".devcontainer" / "toolchain.env"
     )
     fix_subject.chmod(0o755)

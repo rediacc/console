@@ -256,6 +256,10 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_pins: bool = True) -> pa
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
+    shutil.copy2(
+        CONSTANTS.with_name("well-known.generated.sh"),
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     if with_pins:
         shutil.copy2(TOOLCHAIN_ENV, root / ".devcontainer" / "toolchain.env")
     (root / "private" / "homebrew-tap" / "Formula" / "rediacc-cli.rb").write_text(

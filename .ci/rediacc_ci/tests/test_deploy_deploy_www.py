@@ -191,6 +191,10 @@ def fixture(
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     worker = root / "workers" / "www"
     worker.mkdir(parents=True, exist_ok=True)

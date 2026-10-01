@@ -122,6 +122,10 @@ def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(PORT, root / PORT_REL)
 
     if submodule == "dir":

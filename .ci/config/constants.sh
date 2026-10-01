@@ -36,22 +36,23 @@ unset _REDIACC_TOOLCHAIN_ENV
 # =============================================================================
 # WELL-KNOWN VALUES
 # =============================================================================
-# Sourced, not restated, exactly like the pins above. .ci/config/well-known.env
-# is the only place an origin, bucket, slug, image registry, owned path or
-# address is written; check:ci-literal-sources fails on a copy anywhere else.
+# Sourced, not restated, like the pins above. .ci/config/well-known.env is the
+# only place an origin, bucket, slug, image registry, owned path or address is
+# written; check:ci-literal-sources fails on a copy anywhere else. Bash reads it
+# through well-known.generated.sh, the projection that gate renders and holds
+# equal to it: an exported WK_* is kept (the shell wins), nothing in the file
+# executes, and no python3 is needed this early.
 # The WK_* names are facts. The knobs below (RELEASES_BASE_URL, DOCKER_REGISTRY,
 # ...) keep their `${X:-...}` override where they had one, and default to the fact.
-_REDIACC_WELL_KNOWN_ENV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/well-known.env"
-if [[ -r "$_REDIACC_WELL_KNOWN_ENV" ]]; then
-    set -a
+_REDIACC_WELL_KNOWN_SH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/well-known.generated.sh"
+if [[ -r "$_REDIACC_WELL_KNOWN_SH" ]]; then
     # shellcheck source=/dev/null
-    . "$_REDIACC_WELL_KNOWN_ENV"
-    set +a
+    . "$_REDIACC_WELL_KNOWN_SH"
 else
-    echo "constants.sh: well-known values missing: $_REDIACC_WELL_KNOWN_ENV" >&2
+    echo "constants.sh: well-known values missing: $_REDIACC_WELL_KNOWN_SH" >&2
     return 1 2>/dev/null || exit 1
 fi
-unset _REDIACC_WELL_KNOWN_ENV
+unset _REDIACC_WELL_KNOWN_SH
 
 # =============================================================================
 # VERSION REQUIREMENTS
