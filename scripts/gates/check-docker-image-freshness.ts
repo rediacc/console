@@ -144,7 +144,7 @@ function readGitmodulePaths(): string[] {
     .filter(Boolean);
 }
 
-import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
+import { WK_IMAGE_REGISTRY } from '../../packages/shared/src/config/well-known.generated.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {

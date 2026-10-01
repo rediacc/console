@@ -28,7 +28,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WK_MEDIA_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { WK_MEDIA_ORIGIN } from '../../shared/src/config/well-known.generated.js';
 import {
   type ManifestAsset,
   saveManifest,
