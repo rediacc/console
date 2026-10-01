@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { createDevServer, resourceSnapshot } from './lib/dev-server-process.js';
+import { createDevServer, pickFreePort, resourceSnapshot } from './lib/dev-server-process.js';
 import { captureNavigationEvidence, pollRoutesReady } from './lib/tutorial-player-diagnostics.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,10 +15,10 @@ const artifactsRoot = path.join(repoRoot, 'artifacts', 'tutorial-player-release-
 const stamp = new Date().toISOString().replaceAll(/[:.]/g, '-');
 const runDir = path.join(artifactsRoot, stamp);
 const session = `tutorial-player-gate-${Date.now()}`;
-/** Port the gate's throwaway static server listens on when none is given. */
-const DEFAULT_GATE_PORT = '4511';
-
-const port = Number(process.env.TUTORIAL_PLAYER_GATE_PORT ?? DEFAULT_GATE_PORT);
+// A fixed default port was the defect: a taken 4511 made astro move to 4512 while the browser still drove 4511 (somebody else's server). The default is now a kernel-assigned free port; the override stays for a deliberate pin, and createDevServer fails loudly if the banner's port differs from the one asked for.
+const port = process.env.TUTORIAL_PLAYER_GATE_PORT
+  ? Number(process.env.TUTORIAL_PLAYER_GATE_PORT)
+  : await pickFreePort();
 const baseUrl = `http://127.0.0.1:${port}`;
 const devServer = createDevServer({ repoRoot, port });
 

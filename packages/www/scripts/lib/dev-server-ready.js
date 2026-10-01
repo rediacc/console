@@ -38,3 +38,30 @@ export const DEV_SERVER_READY = /ready in \s*\d|Local\s+https?:\/\/(localhost|12
 export function isDevServerReady(accumulated) {
   return DEV_SERVER_READY.test(stripAnsi(accumulated));
 }
+
+/**
+ * THE PORT THE SERVER ACTUALLY BOUND, read from its own banner.
+ *
+ * `astro dev --port N` does not fail when N is taken: vite prints `Port N is in use, trying another one...` and binds the next free port, then the banner says `Local http://127.0.0.1:N+1/`. Reproduced 2026-10-02 with `python3 -m http.server 4511` holding the port: astro came up on 4512, exited the boot wait as "ready", and a gate navigating to its own configured 4511 would have driven the squatter -- every byte from a server that is not this checkout's, and a 200 that proves nothing. Returns null until the `Local` line has arrived.
+ */
+export function boundPort(accumulated) {
+  const match = /Local\s+https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\]):(\d+)/i.exec(
+    stripAnsi(accumulated)
+  );
+  return match ? Number(match[1]) : null;
+}
+
+/** Null when the server bound the port it was asked for; otherwise the loud failure naming both ports. */
+export function boundPortMismatch(accumulated, wantedPort) {
+  const text = stripAnsi(accumulated);
+  const actual = boundPort(text);
+  const moved = /Port \d+ is in use, trying another one/i.test(text);
+  if (actual === wantedPort && !moved) return null;
+  if (actual === null && !moved) return null;
+  return (
+    `astro dev did not bind the requested port: asked for ${wantedPort}, ` +
+    `${actual === null ? 'it moved to another port' : `it bound ${actual}`}` +
+    `${moved ? ' after "Port is in use, trying another one"' : ''}. ` +
+    `Port ${wantedPort} belongs to another listener; driving it would test somebody else's server.`
+  );
+}
