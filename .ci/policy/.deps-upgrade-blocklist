@@ -21,7 +21,7 @@
 # at 60 days and fails at 90 unless .ci/policy/deps-major-exceptions.json
 # excuses it with an owner, a reason and exactly one of a re-checked blocker
 # (peer-range, engine-floor) or an expiry at most 30 days out. Minor holds
-# (playwright) are outside the clock.
+# are outside the clock.
 
 # ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
 @eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
@@ -40,9 +40,6 @@ glob  # BLOCKER: root overrides force glob ^11 tree-wide and npm EOVERRIDE requi
 # eslint-plugin-unicorn v66 — major release with new/renamed lint rules
 eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames lint rules which would surface new violations across the whole monorepo; adoption deferred to a dedicated lint-tooling PR that audits and fixes the rule-set changes
 
-# playwright — E2E/test runner; any version bump changes the bundled browser revisions
-playwright  # BLOCKER: a playwright version bump changes the bundled browser revisions, so it is never a drop-in dependency bump — the pinned browsers must be re-downloaded (npx playwright install) and the E2E/bridge suites re-validated against the new revisions in the same change; take any future bump together with that test-infra revalidation
-@playwright/test  # BLOCKER: same hold as playwright above, and not a separate judgement call — @playwright/test@X depends on playwright@X pinned EXACTLY (verified: @playwright/test@1.62.0 -> "playwright": "1.62.0"), so upgrading it upgrades the browser revisions the entry above defers. Listing only `playwright` left the gate demanding the bump through its sibling; move both with the E2E/bridge revalidation.
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
 
