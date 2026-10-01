@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DEV_SERVER_READY, isDevServerReady, stripAnsi } from '../dev-server-ready.js';
+import {
+  boundPort,
+  boundPortMismatch,
+  DEV_SERVER_READY,
+  isDevServerReady,
+  stripAnsi,
+} from '../dev-server-ready.js';
 
 /**
  * THE FIXTURES ARE REAL CAPTURES, NOT HAND-TYPED APPROXIMATIONS. Both were produced by
@@ -55,5 +61,34 @@ describe('dev server readiness', () => {
 
   it('stripAnsi removes cursor and erase sequences, not just colour', () => {
     expect(stripAnsi('\u001b[2K\u001b[1Gready in 1 ms')).toBe('ready in 1 ms');
+  });
+});
+
+/** REAL capture, 2026-10-02: `python3 -m http.server 4511` held the port, astro was started with `--port 4511`. */
+const MOVED_LOG =
+  '{"message":"Port 4511 is in use, trying another one...","label":"vite","level":"info"}\n' +
+  '{"message":" astro  v7.3.5 ready in 64343 ms\\n┃ Local    http://127.0.0.1:4512/","label":"SKIP_FORMAT","level":"info"}';
+
+describe('bound port verification', () => {
+  it('reads the port from the plain and the coloured Local line', () => {
+    expect(boundPort(PLAIN_LOCAL)).toBe(4511);
+    expect(boundPort(CI_LOCAL)).toBe(4511);
+  });
+
+  it('accepts a server that bound the port it was asked for', () => {
+    expect(boundPortMismatch(`${PLAIN_BANNER}\n${PLAIN_LOCAL}`, 4511)).toBeNull();
+    expect(boundPortMismatch(`${CI_BANNER}\n${CI_LOCAL}`, 4511)).toBeNull();
+  });
+
+  // THE REGRESSION: the moved-port capture still reads as "ready", so only this check stands between the gate and the squatter.
+  it('CONTROL: the moved-port capture is ready yet is refused, naming both ports', () => {
+    expect(isDevServerReady(MOVED_LOG)).toBe(true);
+    const message = boundPortMismatch(MOVED_LOG, 4511);
+    expect(message).toContain('asked for 4511');
+    expect(message).toContain('bound 4512');
+  });
+
+  it('CONTROL: a Local URL on another port is refused even without the "in use" line', () => {
+    expect(boundPortMismatch(PLAIN_LOCAL, 4600)).toContain('bound 4511');
   });
 });

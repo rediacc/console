@@ -1,8 +1,9 @@
 // The tutorial player gate's throwaway astro dev server: start, the mid-run death flag, the captured log, and stop. Moved out of test-tutorial-player-release-gate.js to keep that script inside its line budget.
 import { spawn } from 'node:child_process';
+import net from 'node:net';
 import os from 'node:os';
 import process from 'node:process';
-import { isDevServerReady, stripAnsi } from './dev-server-ready.js';
+import { boundPort, boundPortMismatch, isDevServerReady, stripAnsi } from './dev-server-ready.js';
 
 /**
  * A resource-starved run and a real regression produce IDENTICAL symptoms here:
@@ -32,6 +33,20 @@ export function resourceSnapshot(bootMs) {
     // An instrument that says to dismiss the failure it just detected is worse than one that says nothing, and this one bought five re-runs of a real bug.
     pressureDetected: highLoad,
   };
+}
+
+/**
+ * A port the kernel just handed out, so a second gate run, a leftover astro or another session's server cannot already hold it. Ephemeral ports sit above every port Chromium refuses (ERR_UNSAFE_PORT). Still verified against the banner after start: the pick narrows the race, the banner check closes it.
+ */
+export async function pickFreePort() {
+  return await new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.once('error', reject);
+    probe.listen(0, '127.0.0.1', () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
 }
 
 /** One gate run's dev server. `diedMidRun` is read live, since the exit handler sets it after start() has settled. */
@@ -103,7 +118,16 @@ export function createDevServer({ repoRoot, port }) {
       // that was wrong, and a real capture is what settled it.
       const onData = (chunk) => {
         serverLog.push(stripAnsi(String(chunk)));
-        if (isDevServerReady(serverLog.join(''))) {
+        const text = serverLog.join('');
+        // A moved port is a failure the instant it is printed: the browser must never be pointed at a port this server does not hold.
+        const mismatch = boundPortMismatch(text, port);
+        if (mismatch) {
+          clearTimeout(timeout);
+          reject(new Error(mismatch));
+          return;
+        }
+        // Ready AND the Local URL seen: the banner's port is then proven equal to `port` by the check above.
+        if (isDevServerReady(text) && boundPort(text) !== null) {
           clearTimeout(timeout);
           resolve();
         }
