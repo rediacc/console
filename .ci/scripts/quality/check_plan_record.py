@@ -368,8 +368,33 @@ def _follow_names(root, rel):
 
     The walk is the whole cost of this gate: profiled 2026-09-24 at 517s wall, 223s of it in 131 calls to `_former_paths_by_git_history` and 47s in 35 to `_named_by_git_history`, the same `--follow` walk repeated for the same plan because `problems_for` runs once in the verdict and again in `census_row`. The history cannot change during one run, so one walk per path answers every later ask.
     """
-    names = _git(root, "log", "--follow", "--name-only", "--format=", "--", rel)
+    names = follow_walk(root, rel)
     return frozenset(line.strip() for line in names.splitlines() if line.strip())
+
+
+def follow_walk(root, rel):
+    """`git log --follow --name-only` for `rel`, and a git FAILURE ends the run instead of reading as "no former names".
+
+    `_git` answers "" on a non-zero exit, and here "" is a verdict: R1 then reports a record's legacy Full-Text path as naming somebody else's document. CI's quality-branch job clones with `filter: blob:none`, so `--follow`'s rename detection lazily fetches blobs, and PR #591's run on 5c6b23156 (job 110286643458) reported `agent/plans/PLAN-greenlight-verify-at-read.md` red for a path the same walk names on a full clone.
+    """
+    # Three tries: the same walk answered correctly on a blobless clone of that head and from refs/pull/591/merge, so the failure is transient, and a lazy fetch that fails once is retried rather than judged.
+    for _ in range(3):
+        r = subprocess.run(
+            ["git", "-C", str(root), "log", "--follow", "--name-only", "--format=", "--", rel],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if r.returncode == 0:
+            break
+    if r.returncode != 0:
+        print(
+            "CANNOT SEE: `git log --follow -- %s` exited %d, so this gate cannot tell a record's former paths from somebody else's: %s"
+            % (rel, r.returncode, r.stderr.strip() or "(no stderr)"),
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return r.stdout.strip()
 
 
 def problems_for(root, rel, text, current_ledger):
@@ -1083,6 +1108,21 @@ def selftest():
                 "Full-Text: %s agent/PLAN-elsewhere.md" % rec["full_text_sha"],
             ),
             "neither this record's own path",
+        )
+        # R1 BLINDNESS: a `--follow` walk git cannot answer ends the run; it is never read as "no former names", which is how a transient fetch failure turned a correct record red on PR #591.
+        said = io.StringIO()
+        real_stderr, sys.stderr = sys.stderr, said
+        try:
+            follow_walk(root / "not-a-repo", rel)
+            blind_exit = None
+        except SystemExit as stop:
+            blind_exit = stop.code
+        finally:
+            sys.stderr = real_stderr
+        ck(
+            "R1: a failed --follow walk exits non-zero instead of judging, and names git's error",
+            blind_exit == 1 and "CANNOT SEE" in said.getvalue(),
+            f"got {blind_exit!r}, {said.getvalue()!r}",
         )
         # R1c MIRROR: the same pointer, through the STUB a tree-lifecycle move leaves behind. Only R1's needle is asserted absent, because the fixture's commit does not carry the text at the legacy path and R2 therefore fires on its own account.
         legacy = "agent/PLAN-legacy-fixture.md"

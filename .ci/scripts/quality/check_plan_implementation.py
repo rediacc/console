@@ -36,6 +36,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 from typing import Any
 
@@ -953,7 +954,7 @@ def main(argv=None) -> int:
                 tick_findings(
                     judged,
                     lambda rel, sig: _evidence_line(REPO_ROOT, planrec, rel, sig),
-                    lambda rel, sig: row_under_any_path(rows, rel, sig, follow_names(planrec, rel)),
+                    lambda rel, sig: row_under_any_path(rows, rel, sig, follow_names(rel)),
                     lambda kind, token: resolve_here(
                         planrec, kind, token, absent_submodules(REPO_ROOT)
                     ),
@@ -1030,13 +1031,37 @@ def row_under_any_path(rows, rel, sig, follow_names=()):
 _FOLLOW: dict[str, tuple[str, ...]] = {}
 
 
-def follow_names(planrec, rel):
+def follow_names(rel):
     """`git log --follow` names of `rel`, walked once per path."""
     if rel not in _FOLLOW:
-        out = (
-            planrec._git_out(REPO_ROOT, "log", "--follow", "--name-only", "--format=", "--", rel)
-            or ""
-        )
+        # A git failure ends the run instead of reading as "no pre-move paths", the same blindness check_plan_record.follow_walk closes; three tries absorb a transient lazy fetch on CI's blob:none clone.
+        for _ in range(3):
+            r = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(REPO_ROOT),
+                    "log",
+                    "--follow",
+                    "--name-only",
+                    "--format=",
+                    "--",
+                    rel,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if r.returncode == 0:
+                break
+        if r.returncode != 0:
+            print(
+                "CANNOT SEE: `git log --follow -- %s` exited %d: %s"
+                % (rel, r.returncode, r.stderr.strip() or "(no stderr)"),
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        out = r.stdout.strip()
         _FOLLOW[rel] = tuple(sorted({ln.strip() for ln in out.splitlines() if ln.strip()} - {rel}))
     return _FOLLOW[rel]
 
