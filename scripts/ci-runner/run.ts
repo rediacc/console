@@ -1568,10 +1568,13 @@ async function selftest(): Promise<number> {
   for (const f of qs.failures) require_(false, `quick-select: ${f}`);
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
+    // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
     const slowSpec = (id: string, leaf: string): GateSpec => ({
       ...syntheticSpec(id, 'true'),
       slow: true,
       leaves: [leaf],
+      paths: ['selftest-no-such-dir/**'],
+      pathsOrigin: 'declared',
     });
     const qSpecs = [
       syntheticSpec('selftest:q-fast', 'true'),

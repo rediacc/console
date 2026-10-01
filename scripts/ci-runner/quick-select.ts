@@ -6,7 +6,8 @@
  * WHAT "TOUCHED" MEANS, in the inclusive direction on purpose (a false touch costs seconds and is bounded by the budget; a missed one is a deferral nobody sees):
  *   1. any declared `paths` glob matches a changed file;
  *   2. a `leaves` entry that is a repo file changed, or any file it imports, followed transitively (TS/JS relative specifiers, Python `rediacc_ci.*` and relative imports). Command leaves (`tsc`, `biome`, `knip`) name no file and add nothing;
- *   3. package.json changed AND the gate's npm script text differs from the base, following `npm run <x>` references, which is how parity resolves a `run` to its leaves.
+ *   3. package.json changed AND the gate's npm script text differs from the base, following `npm run <x>` references, which is how parity resolves a `run` to its leaves;
+ *   4. the gate declares NO `paths` and the change set is not empty: the `--changed` contract (select.ts), fail open on scope. Leaves name the gate's CODE, not what it reads: a corpus gate (prose style, python types, lint, the dist checks) reads files no leaf imports, so on 2026-10-01 a push that deleted files check:ci-prose-style scans passed this lane as "deferred, untouched" and CI went red on the stale baseline it left. Rules 1-3 still run first, because their reason is the more specific one to print.
  *
  * WHAT "THE LAST PUSH" MEANS: the merge-base of HEAD with the first ref that resolves among `@{push}`, `@{upstream}`, `origin/<branch>`, then `origin/main` (a branch never pushed has everything since main unpushed). The change set is that merge-base against the WORKTREE plus untracked files, since the quick lane judges the worktree. When none resolves, no slow gate is selected and the run SAYS so with the refs it tried: the quick lane is still the whole fast lane, so refusing it outright would punish a fresh clone for a question the fast gates do not need answered.
  *
@@ -202,7 +203,14 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
         input.scriptsBase === undefined ? undefined : scriptClosure(input.scriptsBase, script);
       if (input.scriptsBase === undefined || now !== before) {
         touches.push({ id: c.id, why: `its npm script '${script}' changed in package.json` });
+        continue;
       }
+    }
+    if (c.paths === undefined && input.changed.length > 0) {
+      touches.push({
+        id: c.id,
+        why: 'it declares no paths, so any change may reach what it reads (the --changed fail-open rule)',
+      });
     }
   }
   return touches;
@@ -412,11 +420,27 @@ export function quickSelectSelftest(
     fs.writeFileSync(path.join(root, '.ci', 'rediacc_ci', 'quality', 'core.py'), 'X = 1\n');
     fs.writeFileSync(path.join(root, '.ci', 'gate.py'), 'from rediacc_ci.quality import core\n');
     const cands: SlowCandidate[] = [
-      { id: 'slow:touched', run: 'npm run slow:touched', leaves: ['g/touched.ts', 'tsc'] },
-      { id: 'slow:untouched', run: 'npm run slow:untouched', leaves: ['g/untouched.ts'] },
+      // Every leaf-tracked fixture DECLARES paths: rule 4 selects a gate without them on any change, which would mask the leaf rules this selftest proves.
+      {
+        id: 'slow:touched',
+        run: 'npm run slow:touched',
+        paths: ['src/**'],
+        leaves: ['g/touched.ts', 'tsc'],
+      },
+      {
+        id: 'slow:untouched',
+        run: 'npm run slow:untouched',
+        paths: ['other/**'],
+        leaves: ['g/untouched.ts'],
+      },
       { id: 'slow:paths', run: 'npm run slow:paths', paths: ['docs/**'], leaves: ['biome'] },
-      { id: 'slow:py', run: 'npm run slow:py', leaves: ['.ci/gate.py'] },
+      { id: 'slow:py', run: 'npm run slow:py', paths: ['py/**'], leaves: ['.ci/gate.py'] },
     ];
+    const corpus: SlowCandidate = {
+      id: 'slow:corpus',
+      run: 'npm run slow:corpus',
+      leaves: ['g/untouched.ts'],
+    };
     const scripts = { 'slow:touched': 'a', 'slow:untouched': 'b && npm run inner', inner: 'c' };
     const pick = (
       changed: string[],
@@ -458,6 +482,24 @@ export function quickSelectSelftest(
       'CONTROL: under a matcher that ignores the diff the untouched path-scoped gate must be selected, or the fixture cannot see a broken selector'
     );
     check(pick([]).length === 0, 'CONTROL: an empty change set must select no slow gate');
+
+    // RULE 4: a gate that declares no paths is selected by a change no leaf reaches (its corpus), and an empty change set still selects nothing.
+    const withCorpus = (changed: string[]): string[] =>
+      touchedSlow([corpus], {
+        root,
+        changed,
+        matches,
+        scriptsNow: scripts,
+        scriptsBase: scripts,
+      }).map((t) => t.id);
+    check(
+      withCorpus(['docs/deleted.md']).join() === 'slow:corpus',
+      'a slow gate that declares no paths must be selected by any change (the --changed fail-open rule)'
+    );
+    check(
+      withCorpus([]).length === 0,
+      'CONTROL: an empty change set must not select a gate without paths'
+    );
 
     // THE BUDGET. Base 70 s on 10 cores: +10 s fits, +15 s on top does not; the dropped one is named; a wall alone over budget and an unpriced gate are both dropped by name.
     const costs: Record<string, Cost> = {
