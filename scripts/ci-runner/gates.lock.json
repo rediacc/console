@@ -3051,7 +3051,7 @@
     "run": "npm run check:ci-workflow-gates",
     "gate": true,
     "leaves": [
-      ".ci/scripts/security/check-workflow-gates.sh"
+      ".ci/scripts/security/check_workflow_gates.py"
     ],
     "ci": {
       "kind": "step",

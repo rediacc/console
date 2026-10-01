@@ -47,7 +47,7 @@ set -uo pipefail
 export LC_ALL=C
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SAMPLER="$SCRIPT_DIR/../ci/profiler/sampler-linux.sh"
+SAMPLER="$SCRIPT_DIR/../ci/profiler/sampler_linux.py"
 
 INTERVAL=2
 KEEP=0
@@ -128,7 +128,7 @@ mark() { # mark <name> <start_ms> <end_ms>
 
 echo "profiler-control: sampling every ${INTERVAL}s into $TSV"
 PROFILER_DISK_EVERY_S=10 PROFILER_RUNNER_LABEL=control \
-    bash "$SAMPLER" --out "$TSV" --interval "$INTERVAL" &
+    python3 "$SAMPLER" --out "$TSV" --interval "$INTERVAL" &
 SAMPLER_PID=$!
 sleep "$((INTERVAL * 2))"
 

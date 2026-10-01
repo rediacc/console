@@ -48,10 +48,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .ci/scripts
+          sparse-checkout: |
+            .ci/scripts
+            .ci/rediacc_ci
 
       - name: Probe runner facts
-        run: .ci/scripts/ci/profiler/sampler-linux.sh --probe
+        run: .ci/scripts/ci/profiler/sampler_linux.py --probe
         env:
           PROFILER_RUNNER_LABEL: ubuntu-slim
 
@@ -66,10 +68,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .ci/scripts
+          sparse-checkout: |
+            .ci/scripts
+            .ci/rediacc_ci
 
       - name: Probe runner facts
-        run: .ci/scripts/ci/profiler/sampler-linux.sh --probe
+        run: .ci/scripts/ci/profiler/sampler_linux.py --probe
         env:
           PROFILER_RUNNER_LABEL: ubuntu-latest
 

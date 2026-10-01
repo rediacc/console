@@ -2902,7 +2902,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
     gate: true,
-    leaves: ['.ci/scripts/security/check-workflow-gates.sh'],
+    leaves: ['.ci/scripts/security/check_workflow_gates.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

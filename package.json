@@ -39,7 +39,7 @@
     "check:ci-agent-browser-exit": ".ci/scripts/quality/check_agent_browser_exit.py",
     "check:ci-scans-tracked-paths": ".ci/scripts/quality/check_ci_scans_tracked_paths.py",
     "check:ci-greenlight-closures": ".ci/scripts/quality/check_greenlight_closures.py",
-    "check:ci-workflow-gates": ".ci/scripts/security/check-workflow-gates.sh",
+    "check:ci-workflow-gates": ".ci/scripts/security/check_workflow_gates.py",
     "check:ci-content-quality": ".ci/scripts/quality/check_content_quality.py",
     "check:ci-prose-style": ".ci/scripts/quality/check_prose_style.py",
     "check:ci-nis2-quotes": "tsx scripts/gates/check-directive-quotes.ts",
