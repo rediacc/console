@@ -9,10 +9,10 @@ LIVE CALLER, not repointed: `.github/workflows/ci.yml:1736` `run: .ci/scripts/ci
 Ledger: `.ci/shadow/w7p6-assert-ci-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert --k 5`).
 
 -----------------------------------------------------------------------------
-A REAL HOLE IN THE TWIN, REPRODUCED RATHER THAN FIXED
+A HOLE IN THE TWIN, FIXED HERE AS A DELIBERATE DELTA (Rule T)
 -----------------------------------------------------------------------------
 `POINTER_BUMP_ONLY=true` REPLACES the hard tier with `(INITIALIZE)` and moves
-the three build jobs into the soft tier. `RUN_SH_TESTS` is dropped from hard and added to NEITHER tier, so on a pointer-bump PR it is judged by nothing:
+the three build jobs into the soft tier. The twin drops `RUN_SH_TESTS` from hard and adds it to NEITHER tier, so on a pointer-bump PR it was judged by nothing:
 
     $ env -i PATH=/usr/bin:/bin HOME=/tmp POINTER_BUMP_ONLY=true \\
         RESULT_INITIALIZE=success RESULT_RUN_SH_TESTS=failure \\
@@ -20,8 +20,8 @@ the three build jobs into the soft tier. `RUN_SH_TESTS` is dropped from hard and
     ✓ All CI jobs passed successfully!
     exit 0
 
-It is LIVE rather than latent: `ci.yml:532-538` gates `run-sh-tests` on `is_bot` only, so the job really does run on a pointer-bump PR and a genuine failure of the hermetic entry-point suite reads as green. Fixing the twin is a cutover-box decision, so this port reproduces the hole exactly and `test_ci_assert_ci_complete.py::test_pointer_bump_drops_run_sh_tests_from_both _tiers`
-pins both sides of it.
+`ci.yml:532-538` gates `run-sh-tests` on `is_bot` only, so the job really runs on a pointer-bump PR and a genuine failure of the hermetic entry-point suite read as green. The port keeps `RUN_SH_TESTS` in the soft tier on that path: a skip is forgiven, a failure, a cancellation or a missing conclusion is not.
+`test_ci_assert_ci_complete.py::test_delta_pointer_bump_still_judges_run_sh_tests` pins it, and fails on the twin's behaviour.
 
 -----------------------------------------------------------------------------
 `${!var:-<unset>}` TREATS EMPTY AS UNSET, AND SO DOES THIS
@@ -70,9 +70,15 @@ SOFT_REQUIRED = (
     "E2E_DEPENDENCY_PROBE",
 )
 
-# The pointer-bump fast path (see `.ci/scripts/ci/detect-pointer-bump.sh`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is deliberately absent from this list because it is absent from the twin's -- see the hole documented above.
+# The pointer-bump fast path (see `.ci/scripts/ci/detect-pointer-bump.sh`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is NOT skipped on that path, and unlike the twin this list judges it -- see the delta documented above.
 POINTER_BUMP_HARD = ("INITIALIZE",)
-POINTER_BUMP_EXTRA_SOFT = ("BUILD_DOCKER", "BUILD_DEVCONTAINER", "BUILD_DOCKER_FAST", "BUILD_CLI")
+POINTER_BUMP_EXTRA_SOFT = (
+    "BUILD_DOCKER",
+    "BUILD_DEVCONTAINER",
+    "BUILD_DOCKER_FAST",
+    "BUILD_CLI",
+    "RUN_SH_TESTS",
+)
 
 
 def conclusion(job: str) -> str:

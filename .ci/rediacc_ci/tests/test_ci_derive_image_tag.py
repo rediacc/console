@@ -190,6 +190,11 @@ HELP_CASES = (
 )
 
 
+# Rule T, DEFECT A: the one help line the port changed on purpose. The twin's recordings keep the wrong sentence; `compare` rewrites that single line in the RECORDED help before comparing, and `test_delta_the_help_describes_what_the_branch_arm_reads` pins both halves.
+WRONG_BRANCH_LINE = "- Branch (e.g., main) → uses version from package.json"
+RIGHT_BRANCH_LINE = "- Branch (e.g., main) → uses the newest v* git tag (fallback: latest)"
+
+
 def strip_prog(text: str) -> str:
     return _PROG.sub("<prog>: line ", text)
 
@@ -340,7 +345,8 @@ def compare(tmp_path: pathlib.Path, name: str) -> None:
     got = drive(tmp_path, name)
     assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (name, want[0], got[0])
     if name in HELP_CASES:
-        assert help_body(got[1]) == help_body(want[1]), "%s: the help text diverged" % name
+        want_help = help_body(want[1]).replace(WRONG_BRANCH_LINE, RIGHT_BRANCH_LINE)
+        assert help_body(got[1]) == want_help, "%s: the help text diverged" % name
     else:
         assert got[1] == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
     assert got[2] == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])
@@ -639,18 +645,27 @@ def test_an_unknown_option_before_help_wins_instead() -> None:
     assert stderr == "✗ Unknown option: --nope\n"
 
 
-def test_the_help_text_is_the_twins_help_text_verbatim() -> None:
-    """The port's HELP_LINES are a COPY, and the recorded help output keeps the copy honest.
-
-    Includes DEFECT A: the line claiming the branch arm "uses version from package.json" is wrong -- nothing in either file ever read package.json -- and it is carried anyway, because the recording is of bytes the twin printed. Removing it from the port without a new recording is what this catches.
-    """
-    recorded_help = help_body(recorded("the-long-help")[1]).split("\n")
+def test_the_help_text_is_the_twins_help_text_but_for_the_branch_line() -> None:
+    """The port's HELP_LINES are a COPY, and the recorded help output keeps the copy honest: every line is the twin's, except the branch line corrected under Rule T (see below)."""
+    recorded_help = help_body(recorded("the-long-help")[1]).replace(
+        WRONG_BRANCH_LINE, RIGHT_BRANCH_LINE
+    )
+    recorded_lines = recorded_help.split("\n")
     for line in port.HELP_LINES:
         rendered = re.sub(r"\s+", " ", line.format(prog="<prog>")).strip()
-        assert rendered in recorded_help, "help line not in the recording: %r" % rendered
-    assert any("package.json" in line for line in recorded_help), (
-        "the docstring's DEFECT A is stale: the twin no longer mentions package.json"
-    )
+        assert rendered in recorded_lines, "help line not in the recording: %r" % rendered
+
+
+@pytest.mark.parametrize("name", [c for c in HELP_CASES if c != "an-unknown-option-before-help"])
+def test_delta_the_help_describes_what_the_branch_arm_reads(
+    tmp_path: pathlib.Path, name: str
+) -> None:
+    """INTENTIONAL DELTA (Rule T), DEFECT A. The twin's help said a branch build "uses version from package.json". Nothing in it ever read package.json (it reads the newest `v*` git tag and falls back to `latest`), and every package.json here carries the `0.0.0-dev` placeholder, so a reader believing the help would file the real answer as a bug. The recording is the control and keeps the wrong sentence; the port says what the code does."""
+    assert WRONG_BRANCH_LINE in help_body(recorded(name)[1]), "the twin's recording moved"
+    got = help_body(drive(tmp_path, name)[1])
+    assert RIGHT_BRANCH_LINE in got
+    assert "package.json" not in got
+    assert WRONG_BRANCH_LINE not in got
 
 
 # --------------------------------------------------------------------------- Colour ---------------------------------------------------------------------------

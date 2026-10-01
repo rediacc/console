@@ -8,11 +8,11 @@ LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, 
 Ledger: `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).
 
 -----------------------------------------------------------------------------
-DEFECT C: THE GENERATION CAP IS EVALUATED IN OCTAL, AND A ZERO-PADDED VALUE
-EITHER SKIPS THE CAP ENTIRELY OR APPLIES THE WRONG ONE
+DEFECT C, FIXED AS A DELIBERATE DELTA (Rule T): THE GENERATION CAP WAS
+EVALUATED IN OCTAL
 -----------------------------------------------------------------------------
-`[[ "$GENERATION" =~ ^[0-9]+$ ]]` accepts `08`. `((GENERATION > 22))` then
-reads it as a BASE-8 literal. Two consequences, both driven:
+`[[ "$GENERATION" =~ ^[0-9]+$ ]]` accepts `08`. The twin's `((GENERATION > 22))`
+then read it as a BASE-8 literal. Two consequences, both driven against the twin:
 
     $ bash .ci/scripts/ci/dispatch-watchdog.sh --run-id 1 --generation 08 \\
         --head-ref m
@@ -21,19 +21,17 @@ reads it as a BASE-8 literal. Two consequences, both driven:
     (info) Dispatched watchdog generation 08 for run 1 on ref m
     exit=0
 
-  `08`, `09` and `019` are invalid octal, so the arithmetic ABORTS, `((...))`
-  returns non-zero, the `if` is not taken, and the run proceeds AS IF UNDER THE
-  CAP. The cap check did not run and the script says nothing about it: this is
-  the "a check that could not run reads as a pass" shape.
+  `08`, `09` and `019` are invalid octal, so the arithmetic ABORTED, `((...))`
+  returned non-zero, the `if` was not taken, and the run proceeded AS IF UNDER
+  THE CAP: a check that could not run read as a pass.
 
     $ bash .ci/scripts/ci/dispatch-watchdog.sh --run-id 1 --generation 025 \\
-        --head-ref m        # 025 octal = 21, so 21 <= 22 and it DISPATCHES
+        --head-ref m        # 025 octal = 21, so 21 <= 22 and it DISPATCHED
     $ bash .ci/scripts/ci/dispatch-watchdog.sh --run-id 1 --generation 030 \\
-        --head-ref m        # 030 octal = 24, so 24 > 22 and the chain ENDS
+        --head-ref m        # 030 octal = 24, so 24 > 22 and the chain ENDED
 
-  A caller that zero-pads gets a cap of 22 OCTAL generations, not 22.
-  Reproduced exactly here, including the bash diagnostic's absence from this
-  port (divergence 1). `OCTAL_CAP` names it so a test can assert it by name.
+  A caller that zero-padded got a cap of 22 OCTAL generations, not 22.
+The port reads the number in base 10 (`over_cap`): `08` is 8 and dispatches without the bash diagnostic, `025` is 25 and ends the chain, `030` is 30 and still ends it. The recordings keep the twin's bytes; `test_delta_a_zero_padded_generation_is_decimal_and_the_cap_runs` pins both sides and fails on the octal behaviour.
 
 -----------------------------------------------------------------------------
 DEFECT D: A FAILED DEFAULT-BRANCH LOOKUP IS INDISTINGUISHABLE FROM A FAILED
@@ -67,10 +65,7 @@ assignment, so a failing lookup ends the script at exit 1 through `set -e` with 
 -----------------------------------------------------------------------------
 DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
 -----------------------------------------------------------------------------
- 1. bash's arithmetic diagnostic for an invalid octal literal
-    (`((: 08: value too great for base ...`) names a line of the twin. This
-    port takes the same branch, silently. Exit code, stdout and the script's
-    own stderr are identical; the twin emits one extra bash line.
+ 1. (retired by the Defect C fix: there is no octal reading left to diagnose.)
  2. `${RUN_ID:?--run-id is required}` prints `<path>: line 66: RUN_ID:
     --run-id is required`. This port prints `MISSING_RUN_ID` /
     `MISSING_GENERATION` / `MISSING_REPOSITORY`, same stream, exit 1. Same
@@ -96,9 +91,6 @@ from rediacc_ci.core import common
 # `MAX_GENERATIONS=22` (twin :85). ~3 hours at ~8-minute generations, matching
 # watchdog-monitor.yml's own maxRuntime.
 MAX_GENERATIONS = 22
-
-# Defect C, named so the differential can assert it by name.
-OCTAL_CAP = True
 
 # Divergence 2/3 stand-ins for bash's `${VAR:?}` and `$2: unbound variable`.
 MISSING_RUN_ID = "dispatch-watchdog.sh: RUN_ID: --run-id is required"
@@ -134,16 +126,9 @@ class ArgError(Exception):
         self.message = message
 
 
-def octal_gt(value: str, ceiling: int) -> bool | None:
-    """`((VALUE > ceiling))`, with bash's base rules. None = the arithmetic died.
-
-    A leading `0` makes it OCTAL, a leading `0x` hexadecimal, and an invalid digit for the chosen base aborts the whole expression. None is the abort, and the twin's `if` then falls through -- which is Defect C.
-    """
-    try:
-        parsed = int(value, 8) if len(value) > 1 and value[0] == "0" else int(value, 10)
-    except ValueError:
-        return None
-    return parsed > ceiling
+def over_cap(value: str, ceiling: int = MAX_GENERATIONS) -> bool:
+    """`value > ceiling`, in base 10. `value` has already matched `NUMERIC`, so `08` is 8 and `0022` is 22 (the twin read both as octal; see Defect C)."""
+    return int(value, 10) > ceiling
 
 
 def parse_args(argv: list[str]) -> dict[str, str]:
@@ -274,14 +259,12 @@ def main(argv: list[str]) -> int:
         log.error("--pending-rerun must be true or false, got: %s" % args["pending_rerun"])
         return 1
 
-    over_cap = octal_gt(args["generation"], MAX_GENERATIONS)
-    if over_cap:
+    if over_cap(args["generation"]):
         log.warn(
             "Generation %s exceeds cap %d (~3h of coverage) - ending the watchdog chain"
             % (args["generation"], MAX_GENERATIONS)
         )
         return 0
-    # `over_cap is None` is Defect C's abort arm: the twin's `if` is not taken and the run continues, cap unchecked.
 
     run_api = "repos/%s/actions/runs/%s" % (repository, args["run_id"])
     if not args["head_ref"]:

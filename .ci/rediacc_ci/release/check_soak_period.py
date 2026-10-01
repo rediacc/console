@@ -8,10 +8,10 @@ With `PROMOTE_TRIGGER=workflow_run` the soak is waived only when `nightly_tested
 DATE PARSING IS SHELLED OUT, NOT REIMPLEMENTED. The twin tries GNU `date -d` first, then BSD `date -j -f "%Y-%m-%dT%H:%M:%S"`, so it accepts a wider set of `EDGE_DATE` spellings than a hand-rolled `datetime.fromisoformat` would (GNU `date -d` parses far more than ISO-8601). Re-deriving that parser would be a second implementation of a contract the system `date` binary already owns,
 and would drift from it silently on some future EDGE_DATE this port never saw during review. Running the *exact* twin expression through `bash -c` keeps the two sides looking at the same parse, byte for byte.
 
-THE SILENT-ABORT BEHAVIOUR IS REPRODUCED ON PURPOSE. In bash,
+THE SILENT ABORT IS NOT REPRODUCED: IT NOW NAMES ITSELF (Rule T delta). In bash,
 `EDGE_EPOCH=$(cmd1 || cmd2)` is a simple command consisting only of a variable
-assignment, so its exit status is the exit status of the last command substitution performed -- and `set -e` therefore aborts the *whole script* right there if both date attempts fail, before any output is produced.
-Measured directly against the twin while it existed, with `EDGE_DATE=not-a-date SOAK_DAYS=7`: it exited 1 with nothing on stdout, nothing on stderr, and `$GITHUB_OUTPUT` untouched. This port raises `SystemExit(1)` at the same point with the same silence, rather than "fixing" it with an error message the twin never printed.
+assignment, so its exit status is the exit status of the last command substitution performed -- and `set -e` therefore aborted the *whole twin* right there if both date attempts failed, before any output was produced. Measured against the twin while it existed, with `EDGE_DATE=not-a-date SOAK_DAYS=7`: exit 1, nothing on stdout, nothing on stderr, `$GITHUB_OUTPUT` untouched, so a promote job went red with no reason in its log. The port keeps the
+exit code and the untouched stdout and `$GITHUB_OUTPUT`, and says on stderr which variable it could not read and what the value was. A non-numeric `SOAK_DAYS` is refused the same way, before anything is decided, instead of surfacing as a Python traceback. Pinned by `test_delta_an_unparseable_date_is_named` and `test_delta_a_non_numeric_soak_days_is_named_not_a_traceback`.
 
 INTEGER ARITHMETIC MATCHES BASH'S TRUNCATION, NOT PYTHON'S FLOOR. Bash `$(())` trutruncates toward zero; Python's `//` floors toward negative infinity. The two differ only when `EDGE_DATE` is in the future (a negative age), which the scripts do not defend against either way, so this port uses `int(delta / 86400)` -- `int()` on a float also truncates toward zero -- to keep that
 (mis)behaviour identical rather than accidentally fixing it here.
@@ -43,7 +43,15 @@ def main(argv: list[str]) -> int:
     del argv
     output_path = _require("GITHUB_OUTPUT")
     edge_date = _require("EDGE_DATE")
-    soak_days = _require("SOAK_DAYS")
+    soak_days_word = _require("SOAK_DAYS")
+    try:
+        soak_days = int(soak_days_word)
+    except ValueError:
+        print(
+            f"{SELF}: SOAK_DAYS must be a whole number of days (got {soak_days_word!r})",
+            file=sys.stderr,
+        )
+        return 1
     force = os.environ.get("FORCE", "")
 
     edge_epoch_proc = subprocess.run(
@@ -54,8 +62,11 @@ def main(argv: list[str]) -> int:
     )
     now_epoch_proc = subprocess.run(["date", "+%s"], capture_output=True, text=True, check=False)
     if edge_epoch_proc.returncode != 0 or now_epoch_proc.returncode != 0:
-        # Silent, matching the twin's `set -e` abort on both date attempts failing -- see the module docstring.
-        raise SystemExit(1)
+        # The twin's `set -e` aborted here with no message; this one names the value -- see the module docstring.
+        print(
+            f"{SELF}: EDGE_DATE could not be parsed as a date (got {edge_date!r})", file=sys.stderr
+        )
+        return 1
 
     edge_epoch = int(edge_epoch_proc.stdout.strip())
     now_epoch = int(now_epoch_proc.stdout.strip())
@@ -80,8 +91,8 @@ def main(argv: list[str]) -> int:
             print("Decided by: green nightly contains the edge commit, skipping soak check")
             fh.write("ready=true\n")
             fh.write("path=nightly\n")
-        elif age_days < int(soak_days):
-            print(f"Edge needs {int(soak_days) - age_days} more day(s) of soak")
+        elif age_days < soak_days:
+            print(f"Edge needs {soak_days - age_days} more day(s) of soak")
             fh.write("ready=false\n")
             fh.write("path=soak\n")
         else:

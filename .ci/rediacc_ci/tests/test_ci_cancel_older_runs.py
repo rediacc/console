@@ -306,6 +306,9 @@ CASE_KW: dict[str, tuple[tuple[str, ...], dict[str, object]]] = {
 
 CASES = tuple(CASE_KW)
 
+# The cases the port does not reproduce byte for byte, on purpose (Rule T): a malformed `--timeout` is a usage error now. The recordings stay the twin's bytes; each is pinned by a `test_delta_*` below that fails on the bash behaviour.
+MALFORMED_TIMEOUT_DELTAS = ("a-bare-word-timeout", "a-numeric-prefix-timeout")
+
 
 def render(returncode: int, stdout: str, stderr: str, calls: str, root: pathlib.Path) -> str:
     body = frozen.render(
@@ -355,7 +358,7 @@ def compare(
     return got
 
 
-@pytest.mark.parametrize("name", CASES)
+@pytest.mark.parametrize("name", [c for c in CASES if c not in MALFORMED_TIMEOUT_DELTAS])
 def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
     compare(tmp_path, name)
 
@@ -566,26 +569,39 @@ def test_the_defaults_are_60_10_and_ci_yml() -> None:
 # --------------------------------------------------------------------------- QUIRK 2: the arithmetic on an unquoted --timeout ---------------------------------------------------------------------------
 
 
-def test_quirk_2_a_bare_word_timeout_is_a_fatal_unbound_variable() -> None:
-    returncode, _, stderr, calls = recorded("a-bare-word-timeout")
-    assert returncode == 1
-    assert stderr.endswith("<prog>: line %d: abc: unbound variable\n" % port.ARITH_LINE)
-    assert calls == RUN_CALL, "it dies before the first listing"
+@pytest.mark.parametrize("name", MALFORMED_TIMEOUT_DELTAS)
+def test_delta_a_malformed_timeout_is_a_usage_error_naming_the_value(
+    tmp_path: pathlib.Path, name: str
+) -> None:
+    """INTENTIONAL DELTA (Rule T). The twin's arithmetic on an unquoted `--timeout` had two failures, both recorded and both kept as the control here:
 
+    * `abc` died on an unbound variable at the twin's line 92 (exit 1, after the run lookup);
+    * `1abc` printed an arithmetic diagnostic and REMOVED the timeout, so with an older run always present the loop never ended.
 
-def test_quirk_2_a_numeric_prefix_timeout_disables_the_timeout_entirely() -> None:
-    """`1abc` is an arithmetic SYNTAX error, so `[[ ]]` answered false, forever.
-
-    Recorded with no older runs so the loop can still exit through its other door; with an older run always present the twin ran until something else killed it (measured: `timeout 4` returned 124). The observable half here is that the diagnostic is printed and the script CONTINUES past it.
+    The port refuses either before touching `gh`: exit 2, the bad value and the flag named on stderr, no `gh` call, nothing on stdout.
     """
-    returncode, _, stderr, _ = recorded("a-numeric-prefix-timeout")
-    assert returncode == 0
-    assert (
-        '<prog>: line %d: [[: 1abc: value too great for base (error token is "1abc")'
-        % port.ARITH_LINE
-        in stderr
-    )
-    assert "✓ No older CI runs in progress - done\n" in stderr
+    want_exit, _, want_err, want_calls = recorded(name)
+    assert want_exit in (0, 1), "the twin's recording moved"
+    assert "line 92" in want_err
+    assert want_calls.startswith(RUN_CALL)
+
+    returncode, stdout, stderr, calls = drive(tmp_path, name)
+    assert returncode == 2
+    assert stdout == ""
+    assert "--timeout" in stderr
+    assert "'%s'" % CASE_KW[name][0][1] in stderr
+    assert "line 92" not in stderr
+    assert calls == "", "a usage error must not reach the network"
+
+
+@pytest.mark.parametrize("value", ["-5", "+5", "1.5", "0x10", " 5 ", "1e3"])
+def test_delta_only_a_whole_non_negative_number_is_a_timeout(
+    tmp_path: pathlib.Path, value: str
+) -> None:
+    returncode, _, stderr, calls = run(tmp_path, "python3 -m %s" % MODULE, "--timeout", value)
+    assert returncode == 2
+    assert repr(value) in stderr
+    assert calls == ""
 
 
 def test_an_empty_timeout_falls_back_to_the_default_rather_than_to_zero() -> None:

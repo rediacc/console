@@ -140,27 +140,34 @@ def test_pointer_bump_still_blocks_a_build_failure() -> None:
     assert "✗ BUILD_DOCKER: failure (soft-required" in old[2]
 
 
-def test_pointer_bump_drops_run_sh_tests_from_both_tiers() -> None:
-    """A REAL HOLE IN THE TWIN, pinned rather than repaired.
+def test_delta_pointer_bump_still_judges_run_sh_tests() -> None:
+    """INTENTIONAL DELTA (Rule T): the twin's pointer-bump branch drops `RUN_SH_TESTS` from BOTH tiers.
 
-    `POINTER_BUMP_ONLY=true` replaces the hard tier with `(INITIALIZE)` and
-    appends only the three build jobs to soft, so `RUN_SH_TESTS` is judged by nothing at all. `ci.yml:532-538` gates `run-sh-tests` on `is_bot` only, so the job really runs on a pointer-bump PR and a genuine failure of the hermetic entry-point suite reads as green.
-
-    Both sides must agree, including on the defect, or the port is not a port. Fixing the twin is a cutover-box decision and is reported, not done here.
+    `ci.yml:532-538` gates `run-sh-tests` on `is_bot` only, so the job really runs on a pointer-bump PR and a genuine failure of the hermetic entry-point suite read as green. The port keeps it in the soft tier there (a skip is forgiven, a failure or a missing conclusion is not). The first half is the control: the twin still says green.
     """
-    for verdict in ("failure", "cancelled", "skipped", ""):
+    for verdict in ("failure", "cancelled", ""):
         env = all_green()
         env["POINTER_BUMP_ONLY"] = "true"
         env["RESULT_RUN_SH_TESTS"] = verdict
-        old = assert_identical(env, expect_exit=0)
+        old, new = run_both(env)
+        assert old[0] == 0, "the twin's hole closed: %r" % (old,)
         assert old[2] == "✓ All CI jobs passed successfully!\n"
-        assert "RUN_SH_TESTS" not in old[2]
+        assert new[0] == 1
+        shown = verdict or "<unset>"
+        assert "✗ RUN_SH_TESTS: %s (soft-required" % shown in new[2]
 
-    # And RUN_SH_TESTS unset entirely -- a renamed job -- is equally invisible.
+    # A skip stays green, and a success is green.
+    for verdict in ("skipped", "success"):
+        env = all_green()
+        env["POINTER_BUMP_ONLY"] = "true"
+        env["RESULT_RUN_SH_TESTS"] = verdict
+        assert_identical(env, expect_exit=0)
+
+    # Unset entirely -- a renamed job -- is no longer invisible.
     env = all_green()
     env["POINTER_BUMP_ONLY"] = "true"
     del env["RESULT_RUN_SH_TESTS"]
-    assert_identical(env, expect_exit=0)
+    assert run_both(env)[1][0] == 1
 
 
 def test_pointer_bump_is_the_exact_string_true() -> None:
