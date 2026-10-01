@@ -27,7 +27,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WK_MEDIA_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { WK_MEDIA_ORIGIN } from '../../../shared/src/config/well-known.generated.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MANIFEST_PATH = path.join(__dirname, '../../src/data/video-manifest.json');

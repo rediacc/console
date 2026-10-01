@@ -38,7 +38,7 @@ import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WK_GH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { WK_GH_ORIGIN } from '../../packages/shared/src/config/well-known.generated.js';
 import {
   parseBlockeredList,
   validateBlockerQuality,

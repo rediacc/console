@@ -15,7 +15,7 @@
  *   ACCOUNT_ED25519_PUBLIC_KEY Ed25519 public key (SPKI base64) for signature verification
  */
 
-import { WK_RELEASES_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { WK_RELEASES_ORIGIN } from '../../../packages/shared/src/config/well-known.generated.js';
 import {
   type E2eResponseEnvelope,
   importX25519PublicKey,

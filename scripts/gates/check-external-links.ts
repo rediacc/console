@@ -43,7 +43,7 @@ import {
   WK_GH_API_BASE,
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
-} from '@rediacc/shared/config/well-known.generated';
+} from '../../packages/shared/src/config/well-known.generated.js';
 import { globSync } from 'glob';
 import { githubToken } from '../lib/github-token.js';
 

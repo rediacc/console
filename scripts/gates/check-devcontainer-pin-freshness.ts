@@ -62,7 +62,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WK_GH_API_BASE } from '@rediacc/shared/config/well-known.generated';
+import { WK_GH_API_BASE } from '../../packages/shared/src/config/well-known.generated.js';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import {
