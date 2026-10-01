@@ -72,7 +72,7 @@ WORKDIR /app/private/account
 # Without this, tsc would walk up to /app/node_modules and resolve `zod`
 # to whatever bridge-tests pulled in (zod 4.x), which causes a cascade
 # of TS2307/TS1259 errors in the type-only checks.
-RUN npm install --ignore-scripts
+RUN npm ci --ignore-scripts
 RUN npm run build
 # Use `npm exec esbuild` to ensure we run the workspace-pinned esbuild
 # (matching dev/CI bundling behavior) instead of `npx --yes` which would
