@@ -78,14 +78,14 @@ const subcategoryLabel = makeSubcategoryLabel(t);
 const englishSubcategoryBySlug = new Map<string, string>();
 for (const doc of allDocs) {
   if ((doc.data.language ?? 'en') === 'en' && doc.data.subcategory) {
-    englishSubcategoryBySlug.set(getBaseSlug(doc.slug), doc.data.subcategory);
+    englishSubcategoryBySlug.set(getBaseSlug(doc.id), doc.data.subcategory);
   }
 }
 
 type DocEntry = (typeof docs)[number];
 
 function resolveSubcategory(category: string, doc: DocEntry): string | undefined {
-  const sub = doc.data.subcategory ?? englishSubcategoryBySlug.get(getBaseSlug(doc.slug));
+  const sub = doc.data.subcategory ?? englishSubcategoryBySlug.get(getBaseSlug(doc.id));
   return sub && (subcategoriesFor(category) as readonly string[]).includes(sub)
     ? sub
     : undefined;
@@ -126,7 +126,7 @@ const categoryStates = visibleCategories.map(category => {
   const itemCount = docsByCategory[category].length;
   const categoryId = `category-${category.toLowerCase().replace(/\s+/g, '-')}`;
   const hasActiveDoc = docsByCategory[category].some(doc => {
-    const docSlug = getBaseSlug(doc.slug);
+    const docSlug = getBaseSlug(doc.id);
     return docSlug === currentSlug;
   });
   const isSmall = itemCount <= 3;
@@ -137,7 +137,7 @@ const categoryStates = visibleCategories.map(category => {
   const subgroups = grouped.groups
     ? grouped.groups.map((group, index) => {
         const groupId = `${categoryId}-${group.key}`;
-        const groupHasActive = group.entries.some((doc) => getBaseSlug(doc.slug) === currentSlug);
+        const groupHasActive = group.entries.some((doc) => getBaseSlug(doc.id) === currentSlug);
         return {
           key: group.key,
           groupId,
@@ -212,7 +212,7 @@ const categoryStates = visibleCategories.map(category => {
                     </button>
                     <ul class="sidebar-list collapsible-list doc-list" id={group.groupId}>
                       {group.entries.map((doc) => {
-                        const docSlug = getBaseSlug(doc.slug);
+                        const docSlug = getBaseSlug(doc.id);
                         const isActive = docSlug === currentSlug;
                         // The number prefix is a CURRICULUM affordance and Tutorials is
                         // the only category that is one. Elsewhere `order` is a bare
@@ -240,7 +240,7 @@ const categoryStates = visibleCategories.map(category => {
               {/* Docs with no resolvable shelf: a flat tail after the shelved groups, so
                   a lagging locale degrades to a plain list, never to a wrong heading. */}
               {ungrouped.map(doc => {
-                const docSlug = getBaseSlug(doc.slug);
+                const docSlug = getBaseSlug(doc.id);
                 const isActive = docSlug === currentSlug;
                 return (
                   <li class="sidebar-item">
@@ -272,13 +272,13 @@ const categoryStates = visibleCategories.map(category => {
     /* Uses shared sidebar-nav styles from sidebar-shared.css */
   }
 
-  /* Add extra margin to category items for spacing */
-  .category-item {
+  /* Add extra margin to category items for spacing. Both item rules are prefixed with `.sidebar-base` so they outrank sidebar-shared.css's `.sidebar-base .sidebar-item` margin on specificity alone; at equal specificity the winner depended on which stylesheet the bundler emitted last, and the astro 7 / vite 8 chunking reversed that order. */
+  .sidebar-base .category-item {
     margin-bottom: var(--space-6);
   }
 
   /* Subcategory groups inside Tutorials */
-  .subcategory-item {
+  .sidebar-base .subcategory-item {
     margin: var(--space-2) 0 var(--space-3) 0;
   }
 

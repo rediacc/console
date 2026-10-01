@@ -10,7 +10,7 @@ const ORDER_FALLBACK = 99;
 export const GET: APIRoute = async () => {
   const docs = await getCollection(
     'docs',
-    (d) => d.data.language === 'en' && !(EXCLUDED_SLUGS as readonly string[]).includes(d.slug)
+    (d) => d.data.language === 'en' && !(EXCLUDED_SLUGS as readonly string[]).includes(d.id)
   );
   docs.sort((a, b) => (a.data.order ?? ORDER_FALLBACK) - (b.data.order ?? ORDER_FALLBACK));
 

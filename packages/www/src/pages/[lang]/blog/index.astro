@@ -15,10 +15,11 @@ const { t } = createTranslator(lang);
 const allPosts = await getCollection('blog');
 const posts = allPosts
   .filter((post) => post.data.language === lang)
+  // Same-day posts fall back to the entry id, so the order never depends on the content loader's iteration order.
   .sort(
     (a, b) =>
       new Date(b.data.publishedDate).getTime() -
-      new Date(a.data.publishedDate).getTime()
+        new Date(a.data.publishedDate).getTime() || a.id.localeCompare(b.id)
   );
 
 // ONE ordering principle: newest first, with the category carried as a tag on each
@@ -59,7 +60,7 @@ const formatDate = (value: string | Date): string =>
             <span class="category">{leadPost.data.category}</span>
             <span>{formatDate(leadPost.data.publishedDate)}</span>
           </div>
-          <h2><a href={`/${lang}/blog/${getBaseSlug(leadPost.slug)}`}>{leadPost.data.title}</a></h2>
+          <h2><a href={`/${lang}/blog/${getBaseSlug(leadPost.id)}`}>{leadPost.data.title}</a></h2>
           <p class="description">{leadPost.data.description}</p>
         </article>
       </section>
@@ -75,7 +76,7 @@ const formatDate = (value: string | Date): string =>
                 <span class="category">{post.data.category}</span>
                 <span>{formatDate(post.data.publishedDate)}</span>
               </div>
-              <h3><a href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>{post.data.title}</a></h3>
+              <h3><a href={`/${lang}/blog/${getBaseSlug(post.id)}`}>{post.data.title}</a></h3>
               <p class="description">{post.data.description}</p>
             </article>
           ))}
@@ -89,7 +90,7 @@ const formatDate = (value: string | Date): string =>
         <ul class="posts-list" role="list">
           {restPosts.map(post => (
             <li class="post-row">
-              <a class="post-row-link" href={`/${lang}/blog/${getBaseSlug(post.slug)}`}>
+              <a class="post-row-link" href={`/${lang}/blog/${getBaseSlug(post.id)}`}>
                 <span class="post-row-date">{formatDate(post.data.publishedDate)}</span>
                 <span class="post-row-category">{post.data.category}</span>
                 <span class="post-row-title">{post.data.title}</span>

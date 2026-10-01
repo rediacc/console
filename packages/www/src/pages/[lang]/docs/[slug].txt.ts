@@ -9,14 +9,14 @@ const isExcludedBaseSlug = (slug: string) =>
   EXCLUDED_BASE_SLUGS.includes(slug as (typeof EXCLUDED_BASE_SLUGS)[number]);
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const docs = await getCollection('docs', (d) => !isExcludedBaseSlug(getBaseSlug(d.slug)));
+  const docs = await getCollection('docs', (d) => !isExcludedBaseSlug(getBaseSlug(d.id)));
 
   return docs
     .filter((doc) => SUPPORTED_LANGUAGES.includes(doc.data.language))
     .map((doc) => ({
       params: {
         lang: doc.data.language,
-        slug: getBaseSlug(doc.slug),
+        slug: getBaseSlug(doc.id),
       },
       props: { doc },
     }));

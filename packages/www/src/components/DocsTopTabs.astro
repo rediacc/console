@@ -23,7 +23,7 @@ const { t } = createTranslator(currentLang);
 // the raw vocabulary strings the browse page's cards carry in `data-category`.
 function categoryLabel(cat: string): string {
   const k = CATEGORY_KEYS[cat as DocCategory];
-  // The schema (src/content/config.ts) restricts category to this vocabulary.
+  // The schema (src/content.config.ts) restricts category to this vocabulary.
   // Failing loudly here keeps the invariant if the two lists ever drift: the
   // silent fallback used to render the raw frontmatter string as a seventh tab.
   // (docs-categories' makeCategoryLabel is deliberately LENIENT, which is right for

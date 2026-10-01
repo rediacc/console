@@ -53,11 +53,11 @@ const subcategoryLabel = makeSubcategoryLabel(t);
 // locale with partial coverage still browses a complete index instead of a short one.
 const all = await getCollection('docs');
 const inLang = all.filter((doc) => (doc.data.language || DEFAULT_LANGUAGE) === currentLang);
-const translatedSlugs = new Set(inLang.map((doc) => getBaseSlug(doc.slug)));
+const translatedSlugs = new Set(inLang.map((doc) => getBaseSlug(doc.id)));
 const english = all.filter(
   (doc) =>
     (doc.data.language || DEFAULT_LANGUAGE) === DEFAULT_LANGUAGE &&
-    !translatedSlugs.has(getBaseSlug(doc.slug))
+    !translatedSlugs.has(getBaseSlug(doc.id))
 );
 
 const shown = [...inLang, ...english];
@@ -70,7 +70,7 @@ const shown = [...inLang, ...english];
 const englishSubcategoryBySlug = new Map<string, string>();
 for (const doc of all) {
   if ((doc.data.language || DEFAULT_LANGUAGE) === DEFAULT_LANGUAGE && doc.data.subcategory) {
-    englishSubcategoryBySlug.set(getBaseSlug(doc.slug), doc.data.subcategory);
+    englishSubcategoryBySlug.set(getBaseSlug(doc.id), doc.data.subcategory);
   }
 }
 const groups = groupByCategory(shown);
@@ -203,7 +203,7 @@ const description = t('documentation.browse.description');
           <h2 class="docs-browse-group-title">{categoryLabel(group.category)}</h2>
           <ul class="docs-browse-grid">
             {group.docs.map((doc) => {
-              const slug = getBaseSlug(doc.slug);
+              const slug = getBaseSlug(doc.id);
               const tags = doc.data.tags ?? [];
               const shelfRaw = doc.data.subcategory ?? englishSubcategoryBySlug.get(slug);
               const shelf =

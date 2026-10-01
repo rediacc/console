@@ -765,7 +765,7 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     log_dir = account.log_directory()
     log.step("Starting Astro dev server on :%d..." % astro_port)
     astro_pid = spawn_background(
-        ["npx", "astro", "dev", "--port", str(astro_port), "--host", dev_bind],
+        ["npx", "astro", "dev", "--port", str(astro_port), "--host", dev_bind, "--ignore-lock"],
         cwd=os.path.join(root, "packages", "www"),
         log_path=os.path.join(log_dir, "astro.log"),
     )

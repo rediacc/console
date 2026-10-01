@@ -62,21 +62,6 @@
       "owner": "d778be9d",
       "reason": "self-imposed: the root overrides entry forces glob ^11 tree-wide (package.json _overridesReasons.glob) and npm EOVERRIDE needs the devDep range to equal it; line 12 first released 2025-11-17, 317 days on 2026-10-01",
       "expires": "2026-10-15"
-    },
-    "astro": {
-      "owner": "d778be9d",
-      "reason": "www is built on the astro 5 line and astro 6/7 are breaking majors covering the whole site build, taken with mdx and react as one migration; line 6 first released 2026-03-10, 204 days on 2026-10-01",
-      "expires": "2026-10-29"
-    },
-    "@astrojs/mdx": {
-      "owner": "d778be9d",
-      "reason": "@astrojs/mdx 8.x peers astro ^7.2.10, so it moves only with the held astro migration; line 5 first released 2026-03-10, 204 days on 2026-10-01",
-      "expires": "2026-10-29"
-    },
-    "@astrojs/react": {
-      "owner": "d778be9d",
-      "reason": "@astrojs/react 6+ is a major on the Astro integration stack and moves only with the held astro migration; line 6 first released 2026-06-22, 100 days on 2026-10-01",
-      "expires": "2026-10-29"
     }
   }
 }
