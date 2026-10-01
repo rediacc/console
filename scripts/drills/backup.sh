@@ -332,7 +332,7 @@ preflight_tools() {
     fi
     if leg_enabled g && [[ ! -x "$RENET_BIN" ]]; then
         log_error "Leg g needs the renet binary at $RENET_BIN, which is missing."
-        log_error "Build it:  (cd private/renet && ./build.sh dev)   — or run any ./rdc.sh command."
+        log_error "Build it:  (cd private/renet && ./build.sh dev), or run any ./rdc.sh command."
         log_error "Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k"
         ok=1
     fi
@@ -724,7 +724,7 @@ leg_a_session_mint() {
     ' <<<"$blob_response")
     forged_response=$(api POST "$(backup_api)/session" \
         "{\"license\":$forged,\"machineId\":\"$machine_id\"}")
-    capture "POST /backups/session (tampered blob — planted control)" "$forged_response"
+    capture "POST /backups/session (tampered blob, planted control)" "$forged_response"
     assert_equal 403 "$(api_status)" \
         "planted control: a tampered blob is REFUSED, so the check above can fail"
     assert_stdout_json 'd.code' INVALID_LICENSE_SIGNATURE "and the refusal names the signature"
@@ -863,7 +863,7 @@ leg_b_seed_upload() {
     assert_stdout_json 'd.grant.kind' presigned-s3 "the grant is the presigned-S3 kind"
     assert_stdout_json 'Object.keys(d.grant.putUrls).length' \
         "$(drill_json 'd.length' <<<"$missing")" \
-        "one PUT URL per missing hash — the wire contract renet treats a gap in as fatal"
+        "one PUT URL per missing hash: the wire contract renet treats a gap in as fatal"
     assert_stdout_json 'Object.values(d.grant.putUrls).every(u => u.includes("X-Amz-Signature=") && u.includes("/c/"))' \
         true "every URL is actually signed, and points into the lineage's chunk prefix"
     # The KEY shape, not just the value. renet indexes this map by bare hash
@@ -1133,7 +1133,7 @@ leg_e_quota_refusal() {
     local allowed
     allowed=$(session_api POST /grants \
         "{\"snapshotId\":\"snap-over-quota\",\"lineageGuid\":\"$LINEAGE\",\"declaredBytes\":1,\"hashes\":[]}")
-    capture "POST /backups/grants (with one byte of headroom — planted control)" "$allowed"
+    capture "POST /backups/grants (with one byte of headroom, planted control)" "$allowed"
     assert_equal 200 "$(api_status)" \
         "planted control: with one byte of room the SAME request is granted, so the refusal was the quota"
 
@@ -1334,7 +1334,7 @@ leg_h_machine_wire_conformance() {
     refused=$(api POST "$(backup_api)/grants" \
         "{\"lineage\":\"$LINEAGE\",\"hashes\":[]}" \
         -H "X-Backup-Session: $SESSION_TOKEN")
-    capture "POST /grants with the client's OLD body {lineage, hashes} — planted control" "$refused"
+    capture "POST /grants with the client's OLD body {lineage, hashes} (planted control)" "$refused"
     assert_equal 400 "$(api_status)" \
         "planted control: the pre-fix body is still refused, so the acceptances above mean something"
 }
@@ -1441,7 +1441,7 @@ leg_k_lapsed_restore() {
     want=$(image_js sha "$DRILL_WORK/image-v1.bin")
     got=$(image_js sha "$DRILL_WORK/restored-lapsed.bin")
     DRILL_LAST_CMD="sha256 of the image restored on a lapsed subscription"
-    assert_equal "$want" "$got" "byte-identically — retained data is USABLE data, not just stored data"
+    assert_equal "$want" "$got" "byte-identically: retained data is USABLE data, not just stored data"
 }
 
 leg_i_machine_verify() {

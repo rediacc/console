@@ -928,7 +928,9 @@ export function topVerbs(source: string): string[] {
  * would publish "no verb is served" as a fact.
  */
 export function registeredVerbs(source: string): string[] {
-  const out = [...source.matchAll(/^\s+name="([a-z][a-z0-9-]*)",\s*$/gm)].map((m) => m[1] as string);
+  const out = [...source.matchAll(/^\s+name="([a-z][a-z0-9-]*)",\s*$/gm)].map(
+    (m) => m[1] as string
+  );
   if (out.length === 0) {
     throw new Error(
       `${VERBS_SEAM} has no Verb(name="...") rows. That table is the router's whole seam to ` +

@@ -23,7 +23,7 @@ REGISTRATION IS CHECKED BOTH WAYS on every lock entry: `writesTree` without an e
 
 THE MUTEX IS THE WEAK FIX. It serialises the writer only against the other declared `tree:` claimants (today check:ci-pytest and gate-test:runner-advice); the hundreds of scanners that read the tree declare nothing and still overlap it, and no claim helps with the residue a hard kill leaves. Writing to a temp copy is the real fix, and every red says so.
 
-CONTROLS FIRST, both directions, on every run before the real verdict (PLAN section 4, C1-C10): a fixture tree is planted in a TemporaryDirectory, copied never symlinked, and driven through the same pipeline via `--root/--lock/--pkg`. REAL then asserts on the live tree: the lint-rule-liveness closure reaches the `.mjs`, at least one TEMP and one MODE-GATED site exist, and `check:ci-pytest`
+CONTROLS FIRST, both directions, on every run before the real verdict (PLAN section 4, C1-C10, plus C11-C12 for bash): a fixture tree is planted in a TemporaryDirectory, copied never symlinked, and driven through the same pipeline via `--root/--lock/--pkg`. REAL then asserts on the live tree: the lint-rule-liveness closure reaches the `.mjs`, at least one TEMP and one MODE-GATED site exist, and `check:ci-pytest`
 carries both `tree:repo` and `writesTree`.
 
 ANTI-VACUITY REFUSALS (exit 1, each named): the lock missing or unparseable; zero entries resolved to a scannable leaf; the lint-rule-liveness closure without its `.mjs`; the TS extractor exiting non-zero or printing non-JSON (never "no sites"); total sites under the floor; zero TEMP sites; zero TREE-or-MODE-GATED sites.
@@ -286,6 +286,43 @@ def classify(
 # --------------------------------------------------------------------------- the pipeline
 
 
+BASH_VAR_ASSIGN_RE = re.compile(
+    r"^[ \t]*(?:local|declare|readonly|export|typeset)?[ \t]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$"
+)
+# A value rooted at another variable and continuing into `.ci/cache`, nothing else: `"$REPO_ROOT/.ci/cache/bin"`.
+BASH_SCRATCH_VAL_RE = re.compile(
+    r'^"?\$\{?[A-Za-z_][A-Za-z0-9_]*\}?/\.ci/cache(?:/[^"\s$`;|&<>]*)?"?[ \t]*$'
+)
+BASH_VAR_REF_RE = re.compile(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def bash_scratch_vars(lines: list[str]) -> set[str]:
+    """Variables whose EVERY assignment in the file is `<root var>/.ci/cache[/...]` with no `..`.
+
+    The bash scanner (pool_writer_safety) seeds taint from the repo root and never asks where under it a write lands, so `BIN_DIR="$REPO_ROOT/.ci/cache/bin"; mkdir -p "$BIN_DIR"` reads as a TREE write. The Python and TS halves already file `.ci/cache/` as SCRATCH; this is the same rule for bash, kept conservative: one reassignment elsewhere in the file to anything else disqualifies the variable.
+    """
+    seen: dict[str, bool] = {}
+    for line in lines:
+        m = BASH_VAR_ASSIGN_RE.match(line)
+        if not m:
+            continue
+        name, val = m.group(1), m.group(2)
+        ok = bool(BASH_SCRATCH_VAL_RE.match(val)) and ".." not in val
+        seen[name] = seen.get(name, True) and ok
+    return {n for n, ok in seen.items() if ok}
+
+
+def bash_hit_is_scratch(body: str, scratch: set[str]) -> bool:
+    """A bash hit is SCRATCH when every variable it references is a scratch variable, and it references at least one.
+
+    Deliberately all-or-nothing: `cp "$BIN_DIR/x" "$OUT"` stays TREE when OUT is not scratch, and so does a line naming a variable this file never assigns, because its origin is unknown.
+    """
+    if ".." in body:
+        return False
+    refs = set(BASH_VAR_REF_RE.findall(body))
+    return bool(refs) and refs <= scratch
+
+
 def _bash_sites(root: pathlib.Path, rel: str) -> list[Site]:
     try:
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
@@ -293,12 +330,14 @@ def _bash_sites(root: pathlib.Path, rel: str) -> list[Site]:
         return []
     out: list[Site] = []
     lines = text.split("\n")
+    scratch = bash_scratch_vars(lines)
     for hit in pool_writer_safety.scan_text(text, rel):
         m = re.match(r"^(.*?):(\d+): (.*)$", hit)
         if m:
             line = int(m.group(2))
             flag = bash_mode_flag(lines, line)
-            out.append(Site(rel, line, "bash", m.group(3)[:100], "TREE", [[flag]] if flag else []))
+            origin = "SCRATCH" if bash_hit_is_scratch(m.group(3), scratch) else "TREE"
+            out.append(Site(rel, line, "bash", m.group(3)[:100], origin, [[flag]] if flag else []))
     return out
 
 
@@ -641,6 +680,8 @@ FIXTURE: dict[str, str] = {
     "c10/gate.py": 'from rediacc_ci import paths\n\n(paths.repo_root() / ".ci" / "cache" / "x").mkdir()\n',
     "c11/gate.sh": '#!/bin/bash\nREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"\nMANIFEST="$REPO_ROOT/MANIFEST"\nMODE="verify"\nif [[ "${ARG_WRITE:-}" == "true" ]]; then\n    MODE="write"\nfi\nif [[ "$MODE" == "write" ]]; then\n    {\n        echo x\n    } >"$MANIFEST"\nfi\nprintf y >"$REPO_ROOT/always"\n',
     "c10m/gate.py": 'from rediacc_ci import paths\n\n(paths.repo_root() / "packages" / "www" / "dist").mkdir()\n',
+    "c12/gate.sh": '#!/bin/bash\nREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"\nBIN_DIR="$REPO_ROOT/.ci/cache/bin"\nmkdir -p "$BIN_DIR"\nchmod +x "$BIN_DIR/tool"\n',
+    "c12m/gate.sh": '#!/bin/bash\nREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"\nBIN_DIR="$REPO_ROOT/.ci/cache/bin"\nOUT="$REPO_ROOT/dist"\nESC="$REPO_ROOT/.ci/cache/../../dist"\nmkdir -p "$OUT"\ncp "$BIN_DIR/tool" "$OUT/tool"\nmkdir -p "$ESC"\n',
 }
 
 CONTROL_LOCK: list[dict] = [
@@ -687,6 +728,8 @@ CONTROL_LOCK: list[dict] = [
     {"id": "c10m", "run": "c10m/gate.py", "gate": True},
     {"id": "c11", "run": "c11/gate.sh", "gate": True},
     {"id": "c11m", "run": "c11/gate.sh --write", "gate": True},
+    {"id": "c12", "run": "c12/gate.sh", "gate": True},
+    {"id": "c12m", "run": "c12m/gate.sh", "gate": True},
 ]
 CONTROL_REQUIRED = {"c4": "c4/d.mjs", "c4m": "c4m/missing.mjs"}
 
@@ -713,7 +756,7 @@ def build_fixture(dest: pathlib.Path, repo: pathlib.Path) -> None:
 
 
 def run_controls(repo: pathlib.Path, check: object) -> None:
-    """C1-C10 (PLAN section 4) through the whole pipeline over a planted tree. `check(label, cond)` records each."""
+    """C1-C12 (PLAN section 4, and the bash controls after it) through the whole pipeline over a planted tree. `check(label, cond)` records each."""
     record = check  # a Checker-shaped callable
     with tempfile.TemporaryDirectory(prefix="gate-tree-writes-") as tmp:
         root = pathlib.Path(tmp)
@@ -806,6 +849,16 @@ def run_controls(repo: pathlib.Path, check: object) -> None:
             record,
             "C11': with --write registered the gated write is TREE too",
             sum(v.bucket == "TREE" for v in res.verdicts if v.entry == "c11m") == 2,
+        )
+        _call(
+            record,
+            "C12: bash writes to $REPO_ROOT/.ci/cache/... are green (SCRATCH), and are counted",
+            not _red(res, "c12") and _buckets(res, "c12") == ["SAFE", "SAFE"],
+        )
+        _call(
+            record,
+            "C12': a non-cache target, a line mixing cache with tree, and a `..` escape out of the cache all stay red",
+            sum(v.bucket == "TREE" for v in res.verdicts if v.entry == "c12m") == 3,
         )
 
 

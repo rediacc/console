@@ -73,6 +73,21 @@ EXEMPT: dict[str, str] = {
         "The exemption dies the day `.ci/scripts/docker/` stops holding path-invoked "
         "entry points."
     ),
+    ".ci/scripts/security/_cipath.py": (
+        "BLOCKER: the canonical `.ci` hop for the path-invoked entry points in "
+        ".ci/scripts/security/, exempt for the reason the docker copy above gives: "
+        "`import _cipath` resolves only to a file beside the script, so each "
+        "directory of path-invoked entry points needs its own copy. The exemption "
+        "dies the day `.ci/scripts/security/` stops holding path-invoked entry points."
+    ),
+    ".ci/scripts/ci/profiler/_cipath.py": (
+        "BLOCKER: the canonical `.ci` hop for the profiler's path-invoked sampler "
+        "shims (3773868ac), exempt for the reason the docker copy above gives: a "
+        "path invocation puts only the script's own directory on sys.path[0]. Three "
+        "directories below `.ci` rather than two; the file's `raise` checks the depth. "
+        "The exemption dies the day `.ci/scripts/ci/profiler/` stops holding "
+        "path-invoked entry points."
+    ),
     ".ci/scripts/quality/check_fetch_retry.py": (
         "BLOCKER: ruff's E402 EXEMPTS a `sys.path` mutation that precedes a "
         "module-level import and exempts nothing else. Measured against ruff "

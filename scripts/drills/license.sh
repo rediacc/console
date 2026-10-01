@@ -236,7 +236,7 @@ preflight_ssh() {
     log_error "Cannot authenticate to $VM_IP as $SSH_USER using $SSH_KEY."
     log_error "This is the key 'renet ops' provisions the VMs with; if you rebuilt them"
     log_error "with a different one, pass it:  ./run.sh drill license --ssh-key <path>"
-    log_error "A plain 'ssh' may still succeed here while this fails — OpenSSH falls back"
+    log_error "A plain 'ssh' may still succeed here while this fails, because OpenSSH falls back"
     log_error "to your other default identities, and the CLI does not."
     exit 1
 }
@@ -727,7 +727,7 @@ leg_a_fork_remeters() {
     assert_equal valid "$fork_status" "the fork's own licence is now valid (S8c)"
 
     assert_equal valid "$(drill_repo_status "$VM_IP" status)" \
-        "and the PARENT's licence is still valid (S8d — the fork did not steal it)"
+        "and the PARENT's licence is still valid (S8d: the fork did not steal it)"
 
     after=$(meter_snapshot)
     assert_not_equal "$before" "$after" \
@@ -879,7 +879,7 @@ leg_d_refusal_on_lapse() {
     drill_note "subscription suspended"
 
     drill_run _ssh "$VM_IP" "sudo $VM_RENET license renew --force --output json"
-    assert_exit 0 "renew still exits 0 — one dead repo must not stop every other backup"
+    assert_exit 0 "renew still exits 0: one dead repo must not stop every other backup"
     assert_stdout_json 'd.results.some(r => r.outcome === "refused")' true \
         "the refusal is reported per repository"
     assert_stdout_json 'd.results.some(r => r.code === "SUBSCRIPTION_LAPSED")' true \

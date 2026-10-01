@@ -237,7 +237,7 @@ def main() -> int:
         log.info("cutover preflight: %d checks, all passed" % pf.checks)
         return 0
     log.error(
-        "cutover preflight: %d of %d checks FAILED — do not cut over" % (pf.failures, pf.checks)
+        "cutover preflight: %d of %d checks FAILED. Do not cut over" % (pf.failures, pf.checks)
     )
     return 1
 

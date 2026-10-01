@@ -288,11 +288,11 @@ verify_version() {
     local expected="$2"
 
     if [[ -z "$expected" ]]; then
-        log_error "verify_version: expected version is EMPTY — refusing to report a pass. The caller failed to resolve a version."
+        log_error "verify_version: expected version is EMPTY, so refusing to report a pass. The caller failed to resolve a version."
         return 1
     fi
     if [[ -z "$output" ]]; then
-        log_error "verify_version: no version output captured (expected '$expected') — refusing to report a pass. The binary did not run, or its output was discarded."
+        log_error "verify_version: no version output captured (expected '$expected'), so refusing to report a pass. The binary did not run, or its output was discarded."
         return 1
     fi
 

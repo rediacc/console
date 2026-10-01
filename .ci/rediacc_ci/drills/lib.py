@@ -393,7 +393,7 @@ class Drill:
         self.assert_equal(
             "this-value-is-planted",
             "and-this-one-differs",
-            "selftest control (planted failure — this drill MUST exit non-zero)",
+            "selftest control (planted failure: this drill MUST exit non-zero)",
         )
 
     # ------------------------------------------------------------------ summary
@@ -432,7 +432,7 @@ class Drill:
         if self.count == 0:
             # A run that asserted nothing is not a pass: a declared skip exits 0, but must not print the word a dashboard greps for.
             self._print(
-                "  %sdrill %s SKIPPED%s (0 assertions ran — nothing was proven)"
+                "  %sdrill %s SKIPPED%s (0 assertions ran, so nothing was proven)"
                 % (self.yellow, self.name, self.nc)
             )
             return 0
@@ -469,7 +469,7 @@ class Drill:
     def restart_gateway(self) -> None:
         """Stop what this run started and start a fresh `./run.sh account dev`, waiting until it is healthy."""
         self.step(
-            "Restarting the dev gateway (tsx does not hot-reload — a long-running gateway serves stale server code)"
+            "Restarting the dev gateway (tsx does not hot-reload, so a long-running gateway serves stale server code)"
         )
         self.stop_gateway()
         started = int(time.time())

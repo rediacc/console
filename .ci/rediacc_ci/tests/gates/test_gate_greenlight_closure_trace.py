@@ -184,7 +184,7 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
     # THE CONTROL. Delete ONE required entry from a copy of the table and the identical checker must go red, naming that key and that path. Two mutations, because they fail through different limbs: a path deletion exercises the coverage walk, and an emptied submodule list exercises the checkout implication.
     table = table_json(gate, tmp_path)
 
-    # Mutation 1: e2e_workers loses run-e2e.sh, the script its final step runs.
+    # Mutation 1: e2e_workers loses the shard manifest its final step hands the runner (`--shard-manifest`). It was run-e2e.sh until 3ed5836f7 made that step `python3 -m rediacc_ci.testrun.e2e`, which the `.ci/rediacc_ci` directory entry covers, so deleting the bash twin no longer uncovers anything.
     mutant = tmp_path / "mutant-path.json"
     mutate_table(
         gate,
@@ -193,14 +193,14 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
         'const fs = require("fs");\n'
         'const t = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));\n'
         "t.e2e_workers.paths = t.e2e_workers.paths.filter("
-        '(p) => p !== ".ci/scripts/test/run-e2e.sh");\n'
+        '(p) => p !== ".ci/config/shards/test-e2e-workers.json");\n'
         "fs.writeFileSync(process.argv[2], JSON.stringify(t));\n",
     )
     result = trace(gate, mutant)
     gate.assert_eq(result.rc, 1, "a table missing one required path must FAIL the checker")
     gate.assert_contains(
         result.combined,
-        "UNCOVERED e2e_workers .ci/scripts/test/run-e2e.sh not-in-closure",
+        "UNCOVERED e2e_workers .ci/config/shards/test-e2e-workers.json not-in-closure",
         "naming the key and the exact path that went uncovered",
     )
     # And ONLY that key: the finding must be attributed, not smeared across the table by a checker that collapses on any error.
@@ -236,7 +236,7 @@ def test_a_missing_entry_is_caught(gate, tmp_path):
 
 
 def test_ancestor_coverage_respects_the_separator(gate, tmp_path):
-    # Coverage is by exact entry OR by ancestor directory, and by nothing looser. A prefix match that ignored the separator would let `.ci/scripts/te` cover `.ci/scripts/test/run-e2e.sh`, which is the shape a careless `startsWith` takes.
+    # Coverage is by exact entry OR by ancestor directory, and by nothing looser. A prefix match that ignored the separator would let `.ci/config/sha` cover `.ci/config/shards/test-e2e-workers.json`, which is the shape a careless `startsWith` takes.
     table = table_json(gate, tmp_path)
 
     mutant = tmp_path / "mutant-dir.json"
@@ -247,7 +247,7 @@ def test_ancestor_coverage_respects_the_separator(gate, tmp_path):
         'const fs = require("fs");\n'
         'const t = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));\n'
         "t.e2e_workers.paths = t.e2e_workers.paths.map((p) =>\n"
-        '  p === ".ci/scripts/test/run-e2e.sh" ? ".ci/scripts/test" : p\n'
+        '  p === ".ci/config/shards/test-e2e-workers.json" ? ".ci/config/shards" : p\n'
         ");\n"
         "fs.writeFileSync(process.argv[2], JSON.stringify(t));\n",
     )
@@ -261,7 +261,7 @@ def test_ancestor_coverage_respects_the_separator(gate, tmp_path):
         'const fs = require("fs");\n'
         'const t = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));\n'
         "t.e2e_workers.paths = t.e2e_workers.paths.map((p) =>\n"
-        '  p === ".ci/scripts/test/run-e2e.sh" ? ".ci/scripts/te" : p\n'
+        '  p === ".ci/config/shards/test-e2e-workers.json" ? ".ci/config/sha" : p\n'
         ");\n"
         "fs.writeFileSync(process.argv[2], JSON.stringify(t));\n",
     )
@@ -269,7 +269,7 @@ def test_ancestor_coverage_respects_the_separator(gate, tmp_path):
     gate.assert_eq(result.rc, 1, "a bare string prefix must NOT be read as an ancestor")
     gate.assert_contains(
         result.combined,
-        "UNCOVERED e2e_workers .ci/scripts/test/run-e2e.sh",
+        "UNCOVERED e2e_workers .ci/config/shards/test-e2e-workers.json",
         "the path is still reported uncovered",
     )
     gate.log_pass("coverage follows directory boundaries, not string prefixes (case 4)")

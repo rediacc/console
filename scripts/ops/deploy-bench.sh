@@ -161,7 +161,7 @@ if ((rotation_rc != 0)); then
         log_error "environment even after the deploy-bench profile. This is NOT drift --"
         log_error "nothing was compared. Check AWS_IAM_ADMIN_ACCESS_KEY_ID in Bitwarden (ci-shared)."
     else
-        log_error "rotation drift detected — refusing to push stale secrets to bench"
+        log_error "rotation drift detected, so refusing to push stale secrets to bench"
         log_error "fix: run \`./run.sh rotation rotate <slug>\` for the credentials that drifted"
     fi
     exit 1
@@ -190,7 +190,7 @@ STRIPE_WEBHOOK_SECRET_BENCH=""
 # CAUGHT, and a silent bench is worse than a red one.
 _require_nonempty() {
     if [[ -z "${2:-}" ]]; then
-        log_error "$1 is EMPTY for bench — check its entry in Bitwarden (deploy-bench profile, .ci/config/secret-supply.json)"
+        log_error "$1 is EMPTY for bench. Check its entry in Bitwarden (deploy-bench profile, .ci/config/secret-supply.json)"
         exit 1
     fi
 }
@@ -211,7 +211,7 @@ _require_nonempty OBS_OTLP_CREDENTIALS "${OBS_OTLP_CREDENTIALS:-}"
 if ! jq -e -n --arg v "${OBS_OTLP_CREDENTIALS}" \
     '$v | fromjson | type == "object" and (.user | type) == "string" and (.pass | type) == "string"' \
     >/dev/null 2>&1; then
-    log_error "OBS_OTLP_CREDENTIALS is not a JSON {\"user\",\"pass\"} object for bench — re-mint it with ./run.sh rotation rotate otlp-bench"
+    log_error "OBS_OTLP_CREDENTIALS is not a JSON {\"user\",\"pass\"} object for bench: re-mint it with ./run.sh rotation rotate otlp-bench"
     exit 1
 fi
 

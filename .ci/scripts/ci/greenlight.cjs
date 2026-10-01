@@ -73,10 +73,9 @@ const VM_E2E_PATHS = [
   '.ci/scripts/infra/build-renet.sh',
   '.ci/rediacc_ci/infra/wait_for_vm_ssh.py',
   '.ci/rediacc_ci/env/create_e2e_env.py',
-  '.ci/scripts/test/run-e2e.sh',
   '.ci/rediacc_ci/ci_signal/create_complete.py',
-  // Used by ONE leg each and carried by all eight: start-account-for-e2e.sh by e2e_k8s_multinode (ct-tests.yml:1080), the two private scripts by fork_isolation (:1423, :1436). Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing.
-  '.ci/scripts/test/start-account-for-e2e.sh',
+  // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 3ed5836f7, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
+  // Used by ONE leg each and carried by all eight: the two private scripts by fork_isolation. Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing.
   '.ci/scripts/private/concurrent-fork-isolation-test.sh',
   '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
   '.ci/scripts/lib/common.sh',
@@ -314,16 +313,17 @@ const CLOSURES = {
     // PLAN-ci-time-budget T2.13 shards Account E2E four ways (ct-tests.yml `Account E2E (<i>/4)`).
     jobNames: ['Account E2E (1/4)', 'Account E2E (2/4)', 'Account E2E (3/4)', 'Account E2E (4/4)'],
     submodules: ['private/account'],
-    // Steps at ct-tests.yml:1653 (setup-workspace with account: 'true'), :1656 (`npm run build:packages`) and :1666 (run-account-e2e.sh).
+    // Steps: setup-workspace with account: 'true', `npm run build:packages`, and `python3 -m rediacc_ci.testrun.account_e2e` (the port of run-account-e2e.sh, which no job invokes any more).
     //
     // NOT in this list, and the absence is derived rather than overlooked: .ci/scripts/setup/build-packages.sh. setup-workspace only runs it when its `build-packages` input is 'true' (action.yml:91-93) and this job leaves that input unset, calling `npm run build:packages` directly instead. The script is therefore not an input to this job.
     paths: [
       // The shadow-run step this job now carries: it `uses:` this local composite, which resolves from the WORKSPACE, so the closure must hold it or a change to the action does not re-run this key.
       '.github/actions/bws-secrets',
-      '.ci/scripts/test/run-account-e2e.sh',
+      // The runner, `python3 -m rediacc_ci.testrun.account_e2e`, and everything it imports. The package is declared whole because its imports are not derivable from workflow text.
+      '.ci/rediacc_ci',
       // 348e25fcb (spec W T2.13) shards this job four ways off this manifest (ct-tests.yml:1965). Found by test_gate_greenlight_closure_trace.py.
       '.ci/config/shards/test-account-e2e.json',
-      // run-account-e2e.sh:27 sources it.
+      // install-deps.sh below sources it.
       '.ci/scripts/lib/common.sh',
       // The cache-miss install path, action.yml:77 and :81.
       '.ci/scripts/setup/install-deps.sh',
@@ -354,13 +354,12 @@ const CLOSURES = {
       'packages/shared',
       'packages/provisioning',
       'packages/locales',
-      // The drills' own source, and the entry points that reach it. The drill dispatch into scripts/drills/ lived in run.sh until the 2026-09-06 router split moved every verb body to .ci/legacy/run-legacy.sh; run.sh is now a 120-line dispatcher that execs into it. Both are listed, because a change to EITHER can change which drill runs, and the line numbers this comment used to
-      // cite (run.sh:1987 and :1991) no longer exist -- naming the files rather than their addresses is what stops that going stale again.
+      // The drills' own source, and the entry points that reach it. `./run.sh drill` routes to `python3 -m rediacc_ci` (the VERBS table in .ci/rediacc_ci/__main__.py, entry functions in core/run_verbs.py, drills in rediacc_ci/drills/), all inside the `.ci/rediacc_ci` entry above; .ci/legacy/run-legacy.sh, the bash dispatcher that used to sit between them, is deleted.
+      // run.sh is listed because a change to the router can change which drill runs. Naming the files rather than their line numbers is what stops this going stale again.
       'scripts/drills',
       'run.sh',
-      '.ci/legacy',
       'rdc.sh',
-      // The router sources constants.sh, local-common.sh and service.sh, and the legacy body sources account.sh, which pulls in find-port.sh. Named by FILE rather than by address: the line numbers this comment used to carry (run.sh:15-17 and :1854/:1891) pointed past the end of a file that is now 120 lines, which is the same way the block three lines above went stale. The whole
+      // The Python ports still source constants.sh and the .ci/lib shell helpers (local-common.sh, service.sh, account.sh, which pulls in find-port.sh) through their bash bridges. Named by FILE rather than by address, because line numbers went stale twice here. The whole
       // .ci/lib tree is one listing entry and self-maintains.
       '.ci/lib',
       '.ci/config/constants.sh',
@@ -443,15 +442,15 @@ const CLOSURES = {
       'packages/provisioning',
       'packages/locales',
       'packages/json',
-      // Driven directly as the installer under test, test-rdc-update.sh:33.
+      // Driven directly as the installer under test by rediacc_ci.testrun.rdc_update.
       'packages/www/public/install.sh',
       // The artifact producer's whole script dir plus the version injector it calls (ci-build-cli.yml:102,107,118).
       '.ci/scripts/build',
       '.ci/scripts/version',
       '.ci/scripts/setup/install-deps.sh',
       '.ci/scripts/setup/build-packages.sh',
-      // Sources nothing, deliberately: it is the one .ci script with no lib/common.sh dependency. common.sh is carried anyway via the producer's scripts.
-      '.ci/scripts/test/test-rdc-update.sh',
+      // The runner, `python3 -m rediacc_ci.testrun.rdc_update` (the port of test-rdc-update.sh, which no job invokes any more), and everything it imports.
+      '.ci/rediacc_ci',
       '.ci/scripts/lib/common.sh',
       '.github/actions/setup-workspace',
       'package.json',
@@ -498,7 +497,7 @@ const CLOSURES = {
       '.github/actions/bws-secrets',
       // The app-token step the submodule checkout needs to authenticate.
       '.github/actions/app-token',
-      // run-unit.sh:29,35,41,47 runs the four workspace suites, :55 the coverage roll-up. scope-map.cjs:266 additionally names www and workers, both of which the coverage config reaches.
+      // rediacc_ci.testrun.unit (the port of run-unit.sh) runs the workspace suites. scope-map.cjs:266 additionally names www and workers, both of which the coverage config reaches.
       'packages/shared',
       'packages/cli',
       'packages/provisioning',
@@ -507,7 +506,8 @@ const CLOSURES = {
       'packages/json',
       'packages/locales',
       'workers',
-      '.ci/scripts/test/run-unit.sh',
+      // The runner, `python3 -m rediacc_ci.testrun.unit`, and everything it imports.
+      '.ci/rediacc_ci',
       '.ci/scripts/setup/install-deps.sh',
       '.ci/scripts/setup/build-packages.sh',
       '.ci/scripts/lib/common.sh',

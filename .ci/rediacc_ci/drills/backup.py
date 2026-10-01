@@ -392,7 +392,7 @@ class Backup:
             if not (os.path.isfile(self.renet_bin) and os.access(self.renet_bin, os.X_OK)):
                 log.error("Leg g needs the renet binary at %s, which is missing." % self.renet_bin)
                 log.error(
-                    "Build it:  (cd private/renet && ./build.sh dev)   — or run any ./rdc.sh command."
+                    "Build it:  (cd private/renet && ./build.sh dev), or run any ./rdc.sh command."
                 )
                 log.error("Or drop the leg:  ./run.sh drill backup --legs a,b,c,d,e,f,h,j,k")
                 ok = False
@@ -679,7 +679,7 @@ class Backup:
             "%s/session" % self.backup_api(),
             {"license": forged_license, "machineId": self.machine_id},
         )
-        self.capture("POST /backups/session (tampered blob — planted control)", forged)
+        self.capture("POST /backups/session (tampered blob, planted control)", forged)
         d.assert_equal(
             "403",
             self.status,
@@ -775,7 +775,7 @@ class Backup:
         self.av(
             len(urls),
             len(missing),
-            "one PUT URL per missing hash — the wire contract renet treats a gap in as fatal",
+            "one PUT URL per missing hash: the wire contract renet treats a gap in as fatal",
         )
         self.av(
             all("X-Amz-Signature=" in u and "/c/" in u for u in urls.values()),
@@ -1059,7 +1059,7 @@ class Backup:
         # CONTROL: the same request, one byte of headroom later, must succeed: otherwise the refusal above could be any old rejection.
         self.patch_subscription({"storageQuotaBytes": _as_number(used) + 1})
         allowed = self.session_api("POST", "/grants", probe)
-        self.capture("POST /backups/grants (with one byte of headroom — planted control)", allowed)
+        self.capture("POST /backups/grants (with one byte of headroom, planted control)", allowed)
         d.assert_equal(
             "200",
             self.status,
@@ -1307,7 +1307,7 @@ class Backup:
             "POST", "%s/grants" % self.backup_api(), {"lineage": lineage, "hashes": []}, header
         )
         self.capture(
-            "POST /grants with the client's OLD body {lineage, hashes} — planted control", refused
+            "POST /grants with the client's OLD body {lineage, hashes} (planted control)", refused
         )
         d.assert_equal(
             "400",
@@ -1420,7 +1420,7 @@ class Backup:
         got = _sha_file(restored)
         d.last_cmd = "sha256 of the image restored on a lapsed subscription"
         d.assert_equal(
-            want, got, "byte-identically — retained data is USABLE data, not just stored data"
+            want, got, "byte-identically: retained data is USABLE data, not just stored data"
         )
 
     # ------------------------------------------------------------------ main

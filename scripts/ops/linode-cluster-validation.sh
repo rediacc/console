@@ -170,7 +170,7 @@ require_yes() {
 
 phase_provision() {
     require_yes provision
-    log "Provisioning cluster '$CLUSTER_NAME' ($CLUSTER_POOLS) on $PROVIDER — BILLABLE"
+    log "Provisioning cluster '$CLUSTER_NAME' ($CLUSTER_POOLS) on $PROVIDER (BILLABLE)"
     local pool_args=()
     local IFS=','
     for spec in $CLUSTER_POOLS; do pool_args+=(--pool "$spec"); done

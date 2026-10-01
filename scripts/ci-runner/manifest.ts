@@ -927,7 +927,13 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-setup-idempotency',
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
-    paths: ['.ci/lib/**', 'run.sh', '.ci/scripts/quality/check_setup_idempotency.py'],
+    paths: [
+      '.ci/lib/**',
+      'run.sh',
+      // setup() is ported to rediacc_ci.setup.machine.run_setup, which check G reads now that .ci/legacy/run-legacy.sh is deleted. Without this an edit to the file the gate READS does not select it.
+      '.ci/rediacc_ci/setup/machine.py',
+      '.ci/scripts/quality/check_setup_idempotency.py',
+    ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_setup_idempotency.py'],
     ci: {
@@ -1110,6 +1116,8 @@ export const GATES: readonly GateSpec[] = [
       '.devcontainer/**',
       '.github/workflows/**',
       '.ci/scripts/**',
+      // The gate's own corpus is `git ls-files '.ci/*.sh'`, and under default (non-glob) pathspec matching `*` CROSSES `/`, so it scans every shell script at any depth under .ci/ (.ci/lib, .ci/media, .ci/bootstrap.sh). `.ci/scripts/**` alone misses those; the runner matcher reads `**/` as zero-or-more directories, so `.ci/**/*.sh` selects the same set the gate reads.
+      '.ci/**/*.sh',
       '.ci/config/constants.sh',
       'run.sh',
     ],

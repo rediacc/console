@@ -86,7 +86,7 @@ def require_nonempty(name: str, value: str) -> None:
     """A secret that reached the push empty would be pushed empty and validated happily by the worker."""
     if not value:
         raise DeployError(
-            "%s is EMPTY for bench — check its entry in Bitwarden (deploy-bench profile, "
+            "%s is EMPTY for bench. Check its entry in Bitwarden (deploy-bench profile, "
             ".ci/config/secret-supply.json)" % name
         )
 
@@ -131,7 +131,7 @@ def secrets_payload() -> dict[str, str]:
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
     if not otlp_credentials_valid(otlp):
         raise DeployError(
-            'OBS_OTLP_CREDENTIALS is not a JSON {"user","pass"} object for bench — '
+            'OBS_OTLP_CREDENTIALS is not a JSON {"user","pass"} object for bench: '
             "re-mint it with ./run.sh rotation rotate otlp-bench"
         )
     return {
@@ -229,7 +229,7 @@ def _rotation_check(root) -> None:
             "nothing was compared. Check AWS_IAM_ADMIN_ACCESS_KEY_ID in Bitwarden (ci-shared)."
         )
     raise DeployError(
-        "rotation drift detected — refusing to push stale secrets to bench\n"
+        "rotation drift detected, so refusing to push stale secrets to bench\n"
         "fix: run `./run.sh rotation rotate <slug>` for the credentials that drifted"
     )
 
