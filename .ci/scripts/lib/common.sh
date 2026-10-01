@@ -11,6 +11,23 @@
 set -euo pipefail
 
 # =============================================================================
+# WELL-KNOWN VALUES
+# =============================================================================
+# Every script that sources this file reads the WK_* facts (origins, registry,
+# repository slugs, paths) from the one registry instead of typing them.
+_COMMON_WELL_KNOWN_ENV="${BASH_SOURCE[0]%/*}/../../config/well-known.env"
+if [[ -r "$_COMMON_WELL_KNOWN_ENV" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    . "$_COMMON_WELL_KNOWN_ENV"
+    set +a
+else
+    echo "common.sh: well-known values missing: $_COMMON_WELL_KNOWN_ENV" >&2
+    return 1 2>/dev/null || exit 1
+fi
+unset _COMMON_WELL_KNOWN_ENV
+
+# =============================================================================
 # COLORS AND LOGGING
 # =============================================================================
 

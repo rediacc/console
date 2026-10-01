@@ -73,6 +73,6 @@ log_info "Copied pages to $WORKER_DIR/dist/"
 
 # Display summary
 log_info "Pages package ready at $OUTPUT_DIR/"
-log_info "  - Root:     www.rediacc.com (marketing site)"
-log_info "  - /json:    www.rediacc.com/json/ (template catalog)"
-log_info "  - /cli:     www.rediacc.com/cli/ (CLI update manifest)"
+log_info "  - Root:     ${WK_SITE_ORIGIN#https://} (marketing site)"
+log_info "  - /json:    ${WK_SITE_ORIGIN#https://}/json/ (template catalog)"
+log_info "  - /cli:     ${WK_SITE_ORIGIN#https://}/cli/ (CLI update manifest)"

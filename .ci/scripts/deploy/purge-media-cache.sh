@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 ZONE_ID="9e802649c143c9cefd811d8fd671d31c" # rediacc.com
-HOSTNAME="media.rediacc.com"
+HOSTNAME="${WK_MEDIA_ORIGIN#https://}"
 
 require_cmd curl
 require_cmd jq
@@ -38,7 +38,7 @@ else
 fi
 
 log_step "Purging Cloudflare cache for $HOSTNAME..."
-RESPONSE="$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
+RESPONSE="$(curl -s -X POST "$WK_CF_API_BASE/zones/${ZONE_ID}/purge_cache" \
     "${AUTH_HEADERS[@]}" -H "Content-Type: application/json" \
     --data "{\"hosts\": [\"${HOSTNAME}\"]}")"
 

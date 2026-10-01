@@ -293,6 +293,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Promote Docker images
         if: needs.init.outputs.workers_only != 'true'
         run: |
@@ -303,7 +306,7 @@ jobs:
           .ci/scripts/docker/retag_image.py --image rdc --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
           # On-prem server image lives at ghcr.io/rediacc/server (outside elite/),
           # so PUBLISH_DOCKER_REGISTRY can't reach it. cd-stage stages :CHANNEL.
-          .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
+          .ci/scripts/docker/retag_image.py --image-path ${{ env.WK_IMAGE_REGISTRY }}/server --from "$CHANNEL" --to "$VERSION" --push-latest --skip-if-exists
 
       # -----------------------------------------------------------------------
       # Step 1b: Install dependencies and build shared packages

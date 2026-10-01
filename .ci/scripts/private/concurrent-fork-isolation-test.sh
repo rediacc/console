@@ -140,7 +140,7 @@ if ! rdc repo up "$FORK_REPO@$MACHINE_NAME"; then
 
     log_step "[diag] db container logs (parent + fork sockets)"
     _ssh "sudo bash -c '
-      for sock in /var/run/rediacc/docker-*.sock; do
+      for sock in ${WK_RUNTIME_DIR}/docker-*.sock; do
         echo \"=== \$sock ===\"
         docker -H unix://\$sock ps -a --format \"{{.ID}} {{.Names}} {{.Status}}\" 2>/dev/null || true
         cid=\$(docker -H unix://\$sock ps -a --filter name=db --format \"{{.ID}}\" 2>/dev/null | head -1)
@@ -219,7 +219,7 @@ log_step "Asserting no per-network daemon hosts more than one compose-project (r
 foreign=$(_ssh "
 sudo bash -c '
 set -e
-for sock in /var/run/rediacc/docker-*.sock; do
+for sock in ${WK_RUNTIME_DIR}/docker-*.sock; do
     [ -S \"\$sock\" ] || continue
     projects=\$(docker -H unix://\$sock ps -a --format \"{{index .Labels \\\"com.docker.compose.project\\\"}}\" 2>/dev/null | sort -u | grep -v \"^\$\" || true)
     project_count=\$(echo \"\$projects\" | grep -c . || true)
@@ -261,7 +261,7 @@ log_info "✓ each per-network daemon hosts at most one compose project"
 # conversion is defensively correct the day that remote body gains `-o pipefail`.
 counter_sockets() {
     _ssh "sudo bash -c '
-      for sock in /var/run/rediacc/docker-*.sock; do
+      for sock in ${WK_RUNTIME_DIR}/docker-*.sock; do
         [ -S \"\$sock\" ] || continue
         if [ -n \"\$(docker -H unix://\$sock ps --filter name=counter --format \"{{.Names}}\" 2>/dev/null | grep counter)\" ]; then
           echo \"\$sock\"

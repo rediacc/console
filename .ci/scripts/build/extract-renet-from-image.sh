@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Defaults
 TAG=""
 OUTPUT_DIR=""
-REGISTRY="ghcr.io/rediacc"
+REGISTRY="$WK_IMAGE_REGISTRY"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do

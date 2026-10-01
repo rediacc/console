@@ -7,7 +7,7 @@
 
 services:
   web:
-    image: rediacc/web:${SERVICE_TAG:-local}
+    image: ${WK_WEB_IMAGE_REPO}:${SERVICE_TAG:-local}
     build:
       context: ../../..
       dockerfile: Dockerfile
@@ -32,7 +32,7 @@ services:
       - ACCOUNT_ED25519_PUBLIC_KEY=${ACCOUNT_ED25519_PUBLIC_KEY}
       - ACCOUNT_SERVER_API_KEY=${ACCOUNT_SERVER_API_KEY}
       - ACCOUNT_JWT_SECRET=${ACCOUNT_JWT_SECRET}
-      - ROOT_EMAIL=${ROOT_EMAIL:-admin@rediacc.io}
+      - ROOT_EMAIL=${ROOT_EMAIL:-${WK_ADMIN_EMAIL_DEFAULT}}
     networks:
       - service
     depends_on:

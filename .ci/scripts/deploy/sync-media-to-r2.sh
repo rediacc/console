@@ -119,5 +119,5 @@ fi
 if [[ "$DRY_RUN" == false ]]; then
     log_info "Sync complete. Verify with:"
     log_info "  aws s3 sync --dryrun <local-dir> s3://$BUCKET/<prefix>/ --endpoint-url \$CLOUDFLARE_R2_MEDIA_ENDPOINT"
-    log_info "  curl -sI https://media.rediacc.com/<path>"
+    log_info "  curl -sI $WK_MEDIA_ORIGIN/<path>"
 fi

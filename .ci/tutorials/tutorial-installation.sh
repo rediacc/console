@@ -10,6 +10,10 @@
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -a
+# shellcheck source=/dev/null
+. "$SCRIPT_DIR/../../.ci/config/well-known.env"
+set +a
 source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 clear_screen
@@ -18,7 +22,7 @@ section "Install the CLI"
 # Real curl install. The install script overwrites the existing binary, so
 # re-running on a host that already has rdc is fine — the freshly-installed
 # binary is what the next command (rdc --version) invokes.
-run_cmd "curl -fsSL https://www.rediacc.com/install.sh | bash"
+run_cmd "curl -fsSL $WK_SITE_ORIGIN/install.sh | bash"
 
 pause 2
 

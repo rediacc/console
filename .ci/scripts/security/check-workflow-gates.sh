@@ -56,6 +56,10 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+set -a
+# shellcheck source=/dev/null
+. "$ROOT_DIR/.ci/config/well-known.env"
+set +a
 
 if [[ "${CI:-}" == "true" ]]; then
     RED="" GREEN="" YELLOW="" NC=""
@@ -638,13 +642,14 @@ if [[ -z "$EXTERNAL_CALLERS_FILE" ]]; then
 else
     log_info "Checking external-caller contracts against $(basename "$EXTERNAL_CALLERS_FILE")"
 
-    python3 - "$WORKFLOWS_DIR" "$EXTERNAL_CALLERS_FILE" "$EXTERNAL_CALLERS_ROOT" <<'PYEOF'
+    python3 - "$WORKFLOWS_DIR" "$EXTERNAL_CALLERS_FILE" "$EXTERNAL_CALLERS_ROOT" "$WK_GH_REPO" <<'PYEOF'
 import glob
 import os
 import sys
 import yaml
 
 workflows_dir, registry_file, scan_root = sys.argv[1], sys.argv[2], sys.argv[3]
+console_repo = sys.argv[4]
 
 offenders = []
 
@@ -747,7 +752,7 @@ for i, entry in enumerate(entries):
             )
 
 # --- (b) the declaration must match the caller's real file, when we have it
-CONSOLE_PREFIX = 'rediacc/console/'
+CONSOLE_PREFIX = console_repo + '/'
 verified = 0
 for entry in entries:
     if not isinstance(entry, dict) or any(f not in entry for f in REQUIRED_FIELDS):

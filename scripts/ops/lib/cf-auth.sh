@@ -19,7 +19,7 @@
 #   CF_GLOBAL_API_KEY + CF_EMAIL - Global API Key (legacy, cannot self-destruct)
 #   AWS_SES_ADMIN_KEY_ID + AWS_SES_ADMIN_SECRET - IAM admin credentials
 
-CF_API_BASE="https://api.cloudflare.com/client/v4"
+CF_API_BASE="$WK_CF_API_BASE"
 CF_AUTH_HEADERS=()
 
 # Resolve Cloudflare authentication.

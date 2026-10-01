@@ -150,7 +150,7 @@ jobs:
           if [ -f .ci/rediacc_ci/review/discover_epics.py ]; then
             PYTHONPATH=.ci python3 -m rediacc_ci.review.discover_epics
           else
-            echo "::notice::${GITHUB_REPOSITORY} does not vendor .ci/rediacc_ci/review/discover_epics.py (it lives in rediacc/console). Falling back to one flat review pass."
+            echo "::notice::${GITHUB_REPOSITORY} does not vendor .ci/rediacc_ci/review/discover_epics.py (it lives in the console repository). Falling back to one flat review pass."
             echo 'epics=[""]' >>"$GITHUB_OUTPUT"
           fi
 

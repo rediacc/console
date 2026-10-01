@@ -17,6 +17,10 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+set -a
+# shellcheck source=/dev/null
+. "$CONSOLE_ROOT/.ci/config/well-known.env"
+set +a
 
 # =============================================================================
 # PRESERVE WORKFLOW ENVIRONMENT VARIABLES
@@ -104,7 +108,7 @@ fi
 # SYSTEM DEFAULTS
 # =============================================================================
 export SYSTEM_DOMAIN="${SYSTEM_DOMAIN:-localhost}"
-export SYSTEM_ADMIN_EMAIL="${SYSTEM_ADMIN_EMAIL:-admin@rediacc.io}"
+export SYSTEM_ADMIN_EMAIL="${SYSTEM_ADMIN_EMAIL:-$WK_ADMIN_EMAIL_DEFAULT}"
 export SYSTEM_ADMIN_PASSWORD="${SYSTEM_ADMIN_PASSWORD:-admin}"
 [[ -n "${GITHUB_ACTIONS:-}" ]] && echo "::add-mask::$SYSTEM_ADMIN_PASSWORD"
 export SYSTEM_ORGANIZATION_NAME="${SYSTEM_ORGANIZATION_NAME:-Default Organization}"

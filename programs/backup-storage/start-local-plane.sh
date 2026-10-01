@@ -26,9 +26,13 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ACCOUNT_DIR="$ROOT_DIR/private/account"
+set -a
+# shellcheck source=/dev/null
+. "$ROOT_DIR/.ci/config/well-known.env"
+set +a
 
 BRIDGE_HOST="${BRIDGE_HOST:-192.168.111.254}"
-GATEWAY_PORT="${GATEWAY_PORT:-4800}"
+GATEWAY_PORT="${GATEWAY_PORT:-$WK_ACCOUNT_DEV_PORT}"
 RUSTFS_PORT="${RUSTFS_PORT:-9100}"
 RUSTFS_KEY="${RUSTFS_KEY:-configadmin}"
 RUSTFS_SECRET="${RUSTFS_SECRET:-configadmin}"

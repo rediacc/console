@@ -29,6 +29,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+set -a
+# shellcheck source=/dev/null
+. "$REPO_ROOT/.ci/config/well-known.env"
+set +a
 INSTALL_SH="$REPO_ROOT/packages/www/public/install.sh"
 
 if [[ ! -f "$INSTALL_SH" ]]; then
@@ -139,13 +143,13 @@ MOCK_URL="http://127.0.0.1:${mock_port}"
 
 # worker_full: both rewrites landed — ideal case
 run_case "worker_full" \
-    "edge" "https://edge.rediacc.com" \
-    "yes" "edge" "https://edge.rediacc.com"
+    "edge" "$WK_EDGE_ORIGIN" \
+    "yes" "edge" "$WK_EDGE_ORIGIN"
 
 # worker_channel_only: fail-safe recovery path (the gap we closed)
 run_case "worker_channel_only" \
     "edge" "" \
-    "yes" "edge" "https://www.rediacc.com"
+    "yes" "edge" "$WK_SITE_ORIGIN"
 
 # worker_none: neither rewrite landed — install.sh can't infer origin,
 # leaves no config so rdc update falls back to default stable.

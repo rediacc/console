@@ -1721,6 +1721,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Fetch secrets from Bitwarden
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
         # secrets.* by the cutover. The secrets.* reads that remain are the
@@ -1779,7 +1782,7 @@ jobs:
         if: always()
         run: |
           PROMOTED="${CHANNEL}-promoted"
-          BUCKET="rediacc-releases"
+          BUCKET="$WK_RELEASES_BUCKET"
           for dir in apt rpm apk archlinux; do
             aws s3 rm "s3://${BUCKET}/${dir}/${PROMOTED}/" --recursive \
               --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true

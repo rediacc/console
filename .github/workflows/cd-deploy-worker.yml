@@ -119,6 +119,9 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Build pages
         run: npm run build -w @rediacc/www
         env:
@@ -132,7 +135,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           # Single global CDN domain for tutorial/solution videos -- same value
           # for edge, stable, and PR previews. See .ci/docs/r2-media-setup.md.
-          PUBLIC_VIDEO_CDN_BASE_URL: https://media.rediacc.com
+          PUBLIC_VIDEO_CDN_BASE_URL: ${{ env.WK_MEDIA_ORIGIN }}
 
       - name: Copy pages to www worker assets
         run: |

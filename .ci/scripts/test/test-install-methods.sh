@@ -141,8 +141,8 @@ esac
 # Configuration
 # =============================================================================
 
-DOCKER_IMAGE="ghcr.io/rediacc/rdc"
-SITE_URL="${SITE_URL:-https://www.rediacc.com}"
+DOCKER_IMAGE="$WK_IMAGE_REGISTRY/rdc"
+SITE_URL="${SITE_URL:-$WK_SITE_ORIGIN}"
 # RELEASES_BASE_URL is set by constants.sh (sourced via common.sh) as readonly
 # REPO_CHANNEL: channel path segment ("stable", "edge", "pr-<n>"), or EMPTY
 # meaning THIS RUN STAGED NO ARTIFACTS (schedule / workflow_dispatch, whose
@@ -169,7 +169,7 @@ else
     REPO_URL="${RELEASES_BASE_URL}"
     REPO_CHANNEL_SUFFIX=""
 fi
-HOMEBREW_TAP="rediacc/tap/rediacc-cli"
+HOMEBREW_TAP="$WK_HOMEBREW_TAP/rediacc-cli"
 
 # Test counters
 PASS=0
@@ -805,8 +805,8 @@ test_apt_install() {
         # healthy. Azure mirror is co-located with the runners.
         for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
             [ -f \"\$f\" ] && sed -i \\
-                -e 's|http://archive\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
-                -e 's|http://security\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
+                -e 's|http://archive\\.ubuntu\\.com/ubuntu|$WK_UBUNTU_AZURE_MIRROR|g' \\
+                -e 's|http://security\\.ubuntu\\.com/ubuntu|$WK_UBUNTU_AZURE_MIRROR|g' \\
                 \"\$f\"
         done
         # FALL BACK if the Azure mirror is the thing that is down. The comment
@@ -818,7 +818,7 @@ test_apt_install() {
             echo 'azure mirror unreachable; falling back to archive.ubuntu.com' >&2
             for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
                 [ -f \"\$f\" ] && sed -i \\
-                    -e 's|http://azure\\.archive\\.ubuntu\\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' \\
+                    -e 's|http://azure\\.archive\\.ubuntu\\.com/ubuntu|$WK_UBUNTU_ARCHIVE|g' \\
                     \"\$f\"
             done
             apt-get update -qq
@@ -1031,7 +1031,7 @@ test_npm_install() {
 
 test_homebrew_install() {
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would run: brew tap rediacc/tap && brew install ${HOMEBREW_TAP}"
+        log_info "[DRY-RUN] Would run: brew tap $WK_HOMEBREW_TAP && brew install ${HOMEBREW_TAP}"
         return 0
     fi
 
@@ -1042,7 +1042,7 @@ test_homebrew_install() {
     fi
 
     # Tap and install
-    brew tap rediacc/tap
+    brew tap $WK_HOMEBREW_TAP
     brew install "${HOMEBREW_TAP}"
 
     # Verify. This one already compared its version, but it failed MUTELY --
@@ -1064,7 +1064,7 @@ test_homebrew_linuxbrew() {
 
     run_container_version_test "Homebrew (Linuxbrew)" docker run --rm homebrew/brew:latest bash -c "
         set -e
-        brew tap rediacc/tap
+        brew tap $WK_HOMEBREW_TAP
         brew install ${HOMEBREW_TAP}
         # Fenced: brew prints the formula version while installing.
         $(version_fence_probe "${PKG_BINARY_NAME} --version")
@@ -1111,8 +1111,8 @@ test_quick_install() {
         # healthy. Azure mirror is co-located with the runners.
         for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
             [ -f \"\$f\" ] && sed -i \\
-                -e 's|http://archive\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
-                -e 's|http://security\\.ubuntu\\.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \\
+                -e 's|http://archive\\.ubuntu\\.com/ubuntu|$WK_UBUNTU_AZURE_MIRROR|g' \\
+                -e 's|http://security\\.ubuntu\\.com/ubuntu|$WK_UBUNTU_AZURE_MIRROR|g' \\
                 \"\$f\"
         done
         # FALL BACK if the Azure mirror is the thing that is down. The comment
@@ -1124,7 +1124,7 @@ test_quick_install() {
             echo 'azure mirror unreachable; falling back to archive.ubuntu.com' >&2
             for f in /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources; do
                 [ -f \"\$f\" ] && sed -i \\
-                    -e 's|http://azure\\.archive\\.ubuntu\\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' \\
+                    -e 's|http://azure\\.archive\\.ubuntu\\.com/ubuntu|$WK_UBUNTU_ARCHIVE|g' \\
                     \"\$f\"
             done
             apt-get update -qq

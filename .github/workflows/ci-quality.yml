@@ -1639,6 +1639,9 @@ jobs:
       # in ssh2/cpu-features. build-packages: the cluster services import
       # @rediacc/provisioning through its dist/, and check_account_portal.py
       # typechecks against @rediacc/shared's dist.
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - id: setup
         uses: ./.github/actions/setup-workspace
         with:
@@ -1738,7 +1741,7 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:test:tutorial-player
         env:
-          PUBLIC_VIDEO_CDN_BASE_URL: https://media.rediacc.com
+          PUBLIC_VIDEO_CDN_BASE_URL: ${{ env.WK_MEDIA_ORIGIN }}
 
       # THE EVIDENCE WAS BEING COLLECTED AND THROWN AWAY. The gate writes a summary,
       # screenshots and (on a navigation timeout) the browser's pending requests plus the

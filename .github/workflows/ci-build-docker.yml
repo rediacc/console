@@ -294,12 +294,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Resolve variant-specific values
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
             onprem)
-              echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
+              echo "image_path=${{ env.WK_IMAGE_REGISTRY }}/server" >> "$GITHUB_OUTPUT"
               echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
               ;;
           esac
@@ -394,12 +397,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Resolve variant-specific values
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
             onprem)
-              echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
+              echo "image_path=${{ env.WK_IMAGE_REGISTRY }}/server" >> "$GITHUB_OUTPUT"
               echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
               ;;
           esac
@@ -443,12 +449,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Resolve image path
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
             onprem)
-              echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
+              echo "image_path=${{ env.WK_IMAGE_REGISTRY }}/server" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
@@ -506,13 +515,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Build & push rdc image (amd64)
         run: |
           mkdir -p bin && cp bin-x64/rdc-linux-musl-x64 bin/rdc
           docker buildx build \
             --file packages/cli/Dockerfile.native \
             --platform linux/amd64 \
-            --tag ghcr.io/rediacc/rdc:${{ inputs.rdc_tag }}-amd64 \
+            --tag ${{ env.WK_IMAGE_REGISTRY }}/rdc:${{ inputs.rdc_tag }}-amd64 \
             --push \
             .
 
@@ -522,7 +534,7 @@ jobs:
           docker buildx build \
             --file packages/cli/Dockerfile.native \
             --platform linux/arm64 \
-            --tag ghcr.io/rediacc/rdc:${{ inputs.rdc_tag }}-arm64 \
+            --tag ${{ env.WK_IMAGE_REGISTRY }}/rdc:${{ inputs.rdc_tag }}-arm64 \
             --push \
             .
 
@@ -601,13 +613,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Build & push amd64 renet image
         run: |
           docker buildx build \
             --file private/renet/Dockerfile.native \
             --platform linux/amd64 \
             --build-arg TARGETARCH=amd64 \
-            --tag ghcr.io/rediacc/renet:${{ inputs.renet_tag }}-amd64 \
+            --tag ${{ env.WK_IMAGE_REGISTRY }}/renet:${{ inputs.renet_tag }}-amd64 \
             --push \
             .
 
@@ -618,7 +633,7 @@ jobs:
             --file private/renet/Dockerfile.native \
             --platform linux/arm64 \
             --build-arg TARGETARCH=arm64 \
-            --tag ghcr.io/rediacc/renet:${{ inputs.renet_tag }}-arm64 \
+            --tag ${{ env.WK_IMAGE_REGISTRY }}/renet:${{ inputs.renet_tag }}-arm64 \
             --push \
             .
 
@@ -674,6 +689,9 @@ jobs:
           NPM_BEFORE="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
           echo "npm_before=${NPM_BEFORE}" >> "$GITHUB_OUTPUT"
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -684,8 +702,8 @@ jobs:
             NPM_BEFORE=${{ steps.tags.outputs.npm_before }}
           push: ${{ github.event_name == 'push' }}
           tags: |
-            ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}-amd64
-            ghcr.io/rediacc/devcontainer:latest-amd64
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:${{ steps.tags.outputs.date_tag }}-amd64
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest-amd64
 
   build-devcontainer-arm64:
     name: Devcontainer (arm64)
@@ -718,6 +736,9 @@ jobs:
           NPM_BEFORE="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
           echo "npm_before=${NPM_BEFORE}" >> "$GITHUB_OUTPUT"
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Build and push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -728,15 +749,17 @@ jobs:
             NPM_BEFORE=${{ steps.tags.outputs.npm_before }}
           push: ${{ github.event_name == 'push' }}
           tags: |
-            ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}-arm64
-            ghcr.io/rediacc/devcontainer:latest-arm64
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:${{ steps.tags.outputs.date_tag }}-arm64
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest-arm64
 
   build-devcontainer-manifest:
     name: Devcontainer Manifest
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # imagetools create against ghcr, i.e. a manifest push. No checkout in this
-    # job, but contents: read is kept for the composite action resolution.
+    # imagetools create against ghcr, i.e. a manifest push. The checkout is the
+    # sparse .ci/config cone, only so the job can read the image registry from
+    # .ci/config/well-known.env; contents: read covers it and the composite
+    # action resolution.
     permissions:
       contents: read
       packages: write
@@ -757,25 +780,32 @@ jobs:
           DATE_TAG=$(date -u +%Y%m%d)
           echo "date_tag=${DATE_TAG}" >> "$GITHUB_OUTPUT"
 
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/config
+
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Create manifest (dated)
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }} \
-            ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}-amd64 \
-            ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}-arm64
+            -t ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:${{ steps.tags.outputs.date_tag }} \
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:${{ steps.tags.outputs.date_tag }}-amd64 \
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:${{ steps.tags.outputs.date_tag }}-arm64
 
       - name: Create manifest (latest)
         run: |
           docker buildx imagetools create \
-            -t ghcr.io/rediacc/devcontainer:latest \
-            ghcr.io/rediacc/devcontainer:latest-amd64 \
-            ghcr.io/rediacc/devcontainer:latest-arm64
+            -t ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest \
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest-amd64 \
+            ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest-arm64
 
       - name: Verify
         run: |
-          docker buildx imagetools inspect ghcr.io/rediacc/devcontainer:latest
+          docker buildx imagetools inspect ${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest
           {
             echo "## Devcontainer Image Published"
-            echo "- **latest:** \`ghcr.io/rediacc/devcontainer:latest\`"
-            echo "- **dated:** \`ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}\`"
+            echo "- **latest:** \`${{ env.WK_IMAGE_REGISTRY }}/devcontainer:latest\`"
+            echo "- **dated:** \`${{ env.WK_IMAGE_REGISTRY }}/devcontainer:${{ steps.tags.outputs.date_tag }}\`"
           } >> "$GITHUB_STEP_SUMMARY"

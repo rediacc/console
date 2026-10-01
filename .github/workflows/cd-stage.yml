@@ -227,6 +227,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Stage Docker images
         # Skip on empty channel (schedule events). retag_image.py
         # uses `set -euo pipefail` and would fail loudly on an empty target
@@ -246,7 +249,7 @@ jobs:
           # On-prem server image lives outside the elite/ namespace; use --image-path
           # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the
           # build-server-docker-{amd64,arm64} jobs, sharing the web_tag.
-          .ci/scripts/docker/retag_image.py --image-path ghcr.io/rediacc/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag_image.py --image-path ${{ env.WK_IMAGE_REGISTRY }}/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------
       # Step 6: Validate all artifacts

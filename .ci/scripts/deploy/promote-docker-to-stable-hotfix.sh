@@ -30,12 +30,12 @@ require_cmd docker
 for image in renet rdc; do
     echo "Promoting ${image}: edge -> stable"
     docker buildx imagetools create \
-        -t "ghcr.io/rediacc/${image}:stable" \
-        "ghcr.io/rediacc/${image}:edge"
+        -t "$WK_IMAGE_REGISTRY/${image}:stable" \
+        "$WK_IMAGE_REGISTRY/${image}:edge"
 done
 # On-prem server image lives at ghcr.io/rediacc/server (outside elite/).
 echo "Promoting server: edge -> stable"
 docker buildx imagetools create \
-    -t "ghcr.io/rediacc/server:stable" \
-    "ghcr.io/rediacc/server:edge"
+    -t "$WK_IMAGE_REGISTRY/server:stable" \
+    "$WK_IMAGE_REGISTRY/server:edge"
 echo "Docker promoted to stable"

@@ -32,6 +32,6 @@ if [[ ! -d "node_modules" ]]; then
     npm install
 fi
 
-log_step "Deploying edge worker (edge.rediacc.com)..."
+log_step "Deploying edge worker (${WK_EDGE_ORIGIN#https://})..."
 npx wrangler deploy --config wrangler.edge.toml
 log_info "Edge worker deployed"
