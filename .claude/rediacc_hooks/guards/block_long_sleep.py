@@ -16,8 +16,13 @@ Two corrections landed 2026-08-25, both found while landing console#574.
    stable watch (same run_attempt seen twice, 90s apart) expressible at all.
    block-ci-polling.sh still catches real foreground polling shapes.
 
-Known false positive, shared with block-ci-polling.sh and accepted for the same reason: this reads the command TEXT, so a command that merely describes a long sleep -- a commit message quoting the recipe, a doc edit -- is blocked as if it were one. Taking the maximum widened that slightly (the first-sleep reading used to let such text through by accident). Narrowing it to exempt
-heredoc bodies would exempt the shape most likely to hide a real long sleep, so it stays; write the file with the Write tool and pass it by path instead.
+COMMAND POSITION, NOT TEXT (2026-10-01, #8e5a6452). The guard used to grep the raw command, so the word inside a QUOTED argument was read as a pause: a `printf` writing commit-message prose that named a 600-second sleep, and a worklist `--add "<text naming one>"`, were refused although neither runs anything. It now asks `shellscan._analyse` for the commands bash would run.
+A `sleep` is judged only where it is the command, after `do`, `then`, `!`, `timeout N`, `nohup`, `env`, `sudo` and the other prefixes the walk strips. The walk still descends into `sh -c` payloads, `eval`, substitutions, and a heredoc, here-string or `echo`/`cat` pipe fed to a shell, so every way of RUNNING a sleep is still seen.
+
+Two places keep the old text match, because a narrowing there would fail silently. A HEREDOC BODY is still scanned whatever reads it, under the operator's 2026-08-25 ruling pinned in tests/hookcases.py: a heredoc is where a genuine long sleep would hide, so a commit message passed as `-F - <<EOF` that quotes one is still refused (write the message with the Write tool and pass it by path).
+The operands of a command that runs them ELSEWHERE (`ssh`, `docker`, `podman`, `kubectl`, `watch`) are also scanned as text, since the walk does not follow a remote shell.
+
+The duration is read the way `sleep` reads it: every operand is summed, each with an optional `s`/`m`/`h`/`d` suffix, so `sleep 1m` is sixty seconds and `sleep infinity` never ends.
 
 RE-CONFIRMED 2026-08-27. Nine sibling guards were routed through lib/command-scan.sh that day to stop them matching prose, and this one was routed with them. The suite case pinning the 2026-08-25 ruling turned red and reverted it: the shared scanner drops heredoc bodies, which is the option the ruling names as the most tempting and the worst. The pin worked as designed.
 
@@ -32,7 +37,10 @@ the twin as it IS, so `_arith` was changed with it, in the same breath. Keeping 
 requires the exit code and stdout to match, and requires stderr to keep differing -- so the declaration cannot rot into an excuse for a match.
 """
 
-from rediacc_hooks import hookio
+import math
+import re
+
+from rediacc_hooks import hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 13
@@ -72,7 +80,12 @@ EDGE_CASES = [
     # The leading zero the PORT NOTE is about: bash reads this as twenty.
     ("a leading zero is read as octal", "sleep 024"),
     ("no sleep at all", "gh run view 123"),
-    ("a tab between sleep and its argument is not matched", "sleep\t45"),
+    # A tab separates words for bash, so since the command-position reading this IS a 45-second sleep.
+    ("a tab between sleep and its argument is a sleep", "sleep\t45"),
+    # #8e5a6452: the word inside a quoted argument is prose, not a command.
+    ("quoted prose naming a sleep", "printf '%s\\n' 'which sleep 600 s (a full run)' > msg.txt"),
+    ("a minute suffix", "sleep 1m"),
+    ("a heredoc body is still scanned", "git commit -F - <<'M'\nwhich sleep 600 s\nM"),
 ]
 
 # NO DECLARED DIVERGENCES, and the one that used to be here is worth recording as an absence. It was `sleep 08`: not valid octal, so the twin wrote a bash arithmetic error naming its own file and line number and then evaluated FALSE, permitting the command. The port agreed on the decision and said nothing, so the stderr difference was declared rather than faked -- emitting a path
@@ -90,9 +103,62 @@ def _arith(value):
     return int(value, 10)
 
 
-def _numeric(value):
-    """`sort -n`'s key: the leading decimal number, leading zeros and all."""
-    return int(value) if value.isdigit() else 0
+_UNIT = {"": 1, "s": 1, "m": 60, "h": 3600, "d": 86400}
+_OPERAND = re.compile(r"^([0-9]+(?:\.[0-9]*)?|\.[0-9]+)([smhd]?)$")
+# The text match kept for heredoc bodies and remote operands: a literal SPACE, as the original `grep -oE 'sleep +[0-9]+'` had it.
+_TEXT_SLEEP = re.compile(r"sleep +([0-9]+)")
+# Commands that run their operands somewhere the walk does not follow (a remote shell, a container, a repeated `sh -c`).
+_ELSEWHERE = frozenset(("ssh", "docker", "podman", "kubectl", "watch"))
+
+
+def _duration(argv):
+    """What `sleep` itself waits for these operands: their sum, `infinity` as inf, None when no operand is a duration."""
+    total = 0.0
+    found = False
+    for arg in argv:
+        if arg.lower() in ("inf", "infinity"):
+            return math.inf
+        match = _OPERAND.match(arg)
+        if match is None:
+            continue
+        number = match.group(1)
+        value = _arith(number) if number.isdigit() else float(number)
+        total += value * _UNIT[match.group(2)]
+        found = True
+    return total if found else None
+
+
+def _heredoc_bodies(cmd):
+    """Every heredoc body in `cmd`, whatever command reads it (the 2026-08-25 ruling)."""
+    lexer = shellscan._Lexer(cmd)
+    lexer.tokens()
+    return [
+        cmd[hd.body_start : hd.body_end]
+        for hd in lexer.heredocs
+        if hd.body_start is not None and hd.body_end is not None
+    ]
+
+
+def _sleeps(cmd):
+    """Every sleep in `cmd`, in seconds: the commands bash runs, then the text kept on purpose."""
+    found = []
+    for run_ in shellscan._analyse(cmd).runs:
+        base = run_.name.rsplit("/", 1)[-1]
+        if base == "sleep":
+            seconds = _duration(run_.argv)
+            if seconds is not None:
+                found.append(seconds)
+        elif base in _ELSEWHERE:
+            found.extend(_arith(m) for m in _TEXT_SLEEP.findall(" ".join(run_.argv)))
+    for body in _heredoc_bodies(cmd):
+        found.extend(_arith(m) for m in _TEXT_SLEEP.findall(body))
+    return found
+
+
+def _label(seconds):
+    if seconds == math.inf:
+        return "infinity"
+    return "%d" % seconds if seconds == int(seconds) else "%g" % seconds
 
 
 def run(ev):
@@ -100,20 +166,15 @@ def run(ev):
     bg = ev.flag("tool_input", "run_in_background")
 
     # The MAXIMUM sleep in the command, not the first one.
-    #
-    # PORT NOTE ON THE PIPELINE. `grep -oE 'sleep +[0-9]+'` uses a literal SPACE and not `[[:space:]]`, so `sleep\t45` is not a sleep as far as this guard is concerned. The second grep then keeps only the digits, and `sort -n | tail -1` picks the largest -- GNU sort falls back to a byte-wise comparison for equal keys, which is why the key below carries the record itself as its
-    # tiebreaker.
-    spans = hookio.grep_o(r"sleep +[0-9]+", cmd)
-    digits = hookio.grep_o(r"[0-9]+", hookio._grep_out(spans))
-    ordered = sorted(digits, key=lambda record: (_numeric(record), record))
-    sleep_val = ordered[-1] if ordered else ""
+    ordered = sorted(_sleeps(cmd))
+    value = ordered[-1] if ordered else None
 
     limit = FG_MAX
     if bg == "true":
         limit = BG_MAX
 
-    value = _arith(sleep_val) if sleep_val != "" else None
-    if sleep_val != "" and value is not None and value > limit:
+    sleep_val = _label(value) if value is not None else ""
+    if value is not None and value > limit:
         if bg == "true":
             ev.warn(
                 "❌ BLOCKED: sleep %ss exceeds %ss even for a background task. A watch that "
