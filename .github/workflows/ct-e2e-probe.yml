@@ -184,7 +184,7 @@ jobs:
 
       - name: Run E2E test alone (${{ matrix.file }})
         id: run
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --test "tests/${{ matrix.file }}"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test "tests/${{ matrix.file }}"
 
       - name: Record outcome
         if: always()

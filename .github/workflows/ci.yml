@@ -921,7 +921,7 @@ jobs:
           PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
       - name: Run Linux package tests
-        run: .ci/scripts/test/test-linux-packages.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.linux_packages
 
   # ============================================================================
   # COLUMN 3A-BIS: RELEASE-STATE DRIFT GATE
@@ -1577,7 +1577,7 @@ jobs:
 
       - name: Seed test data into preview D1
         id: seed
-        run: .ci/scripts/test/seed-smoke-test.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.seed_smoke
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
@@ -1749,28 +1749,28 @@ jobs:
 
       - name: Test APT install from promoted channel
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method apt --version ${{ needs.initialize.outputs.next_version }}
         env:
           REPO_CHANNEL: ${{ env.PROMOTED }}
 
       - name: Test DNF install from promoted channel
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method dnf --version ${{ needs.initialize.outputs.next_version }}
         env:
           REPO_CHANNEL: ${{ env.PROMOTED }}
 
       - name: Test APK install from promoted channel
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method apk --version ${{ needs.initialize.outputs.next_version }}
         env:
           REPO_CHANNEL: ${{ env.PROMOTED }}
 
       - name: Test Pacman install from promoted channel
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method pacman --version ${{ needs.initialize.outputs.next_version }}
         env:
           REPO_CHANNEL: ${{ env.PROMOTED }}

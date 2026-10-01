@@ -63,42 +63,42 @@ jobs:
 
       - name: Test Binary Download
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method binary --version ${{ inputs.version }} --platform linux --arch x64
 
       - name: Test Docker
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method docker --version ${{ inputs.version }}
 
       - name: Test APT Installation
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method apt --version ${{ inputs.version }}
 
       - name: Test DNF Installation
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method dnf --version ${{ inputs.version }}
 
       - name: Test APK Installation
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method apk --version ${{ inputs.version }}
 
       - name: Test Pacman Installation
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method pacman --version ${{ inputs.version }}
 
       - name: Test npm Install
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method npm --version ${{ inputs.version }}
 
       - name: Test Quick Install
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method quick --version ${{ inputs.version }}
 
   # ===========================================================================
@@ -128,17 +128,17 @@ jobs:
 
       - name: Test Binary Download
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method binary --version ${{ inputs.version }} --platform linux --arch arm64
 
       - name: Test Docker
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method docker --version ${{ inputs.version }}
 
       - name: Test Quick Install
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method quick --version ${{ inputs.version }}
 
   # ===========================================================================
@@ -159,7 +159,7 @@ jobs:
 
       - name: Test Binary Download
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method binary --version ${{ inputs.version }} --platform mac --arch arm64
 
   # ===========================================================================
@@ -180,7 +180,7 @@ jobs:
 
       - name: Test Binary Download
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method binary --version ${{ inputs.version }} --platform mac --arch x64
 
   # ===========================================================================
@@ -205,7 +205,7 @@ jobs:
       - name: Test Binary Download
         shell: bash
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method binary --version ${{ inputs.version }} --platform win --arch x64
 
   # ===========================================================================
@@ -228,7 +228,7 @@ jobs:
       - name: Test Binary Download
         shell: bash
         run: |
-          .ci/scripts/test/test-install-methods.sh \
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods \
             --method binary --version ${{ inputs.version }} --platform win --arch arm64
 
   # ===========================================================================
