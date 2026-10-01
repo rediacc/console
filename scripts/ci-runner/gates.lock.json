@@ -5459,7 +5459,7 @@
     "run": "npm run check:ci-proxy-linux-packages",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-linux-packages.sh"
+      ".ci/rediacc_ci/proxies/linux_packages.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -5474,7 +5474,7 @@
       "build:cli"
     ],
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-rdc-update.sh"
+      ".ci/rediacc_ci/proxies/rdc_update.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -5488,7 +5488,7 @@
     "gate": true,
     "heavy": true,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-license-e2e.sh"
+      ".ci/rediacc_ci/proxies/license_e2e.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -5502,7 +5502,7 @@
     "gate": true,
     "heavy": true,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-go-unit.sh"
+      ".ci/rediacc_ci/proxies/go_unit.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -5514,7 +5514,7 @@
     "run": "npm run check:ci-proxy-ops-host-check",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-ops-host-check.sh"
+      ".ci/rediacc_ci/proxies/ops_host_check.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -5551,7 +5551,7 @@
     "run": "npm run check:ci-proxy-ensure-nfpm",
     "gate": true,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-ensure-nfpm.sh"
+      ".ci/rediacc_ci/proxies/ensure_nfpm.py"
     ],
     "ci": {
       "kind": "local-only",
@@ -5564,7 +5564,7 @@
     "gate": true,
     "weight": 2,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-unit-tests.sh"
+      ".ci/rediacc_ci/proxies/unit_tests.py"
     ],
     "ci": {
       "kind": "step",
@@ -5582,7 +5582,7 @@
     ],
     "weight": 2,
     "leaves": [
-      ".ci/scripts/test/proxies/proxy-unit-tests.sh"
+      ".ci/rediacc_ci/proxies/unit_tests.py"
     ],
     "ci": {
       "kind": "step",

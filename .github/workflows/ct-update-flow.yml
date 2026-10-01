@@ -67,4 +67,4 @@ jobs:
         env:
           RDC_BINARY: ${{ steps.rdc.outputs.path }}
         run: |
-          .ci/scripts/test/test-rdc-update.sh all
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.rdc_update all

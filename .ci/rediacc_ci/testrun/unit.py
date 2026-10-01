@@ -2,7 +2,7 @@
 
 Deliberate difference from the twin (Rule T), with a test that fails on the bash behaviour: an unknown argument was silently ignored (`case` with no default arm), so `--coverge` ran the suites WITHOUT coverage and exited 0. It is refused with exit 2.
 
-KEPT, AND A FINDING: a failed `npm run test:coverage` only warns, as in the twin. The root package.json has no `test:coverage` script (`npm run test:coverage` answers "Missing script", measured 2026-10-01), so the `--coverage` step that ct-tests.yml passes has warned on every run and produced nothing. Making the step fatal would redden that job; the honest repair is to drop `--coverage` from the workflow call or to add the script, which is the lead's to apply.
+NO `--coverage`, a second deliberate difference. The twin's flag ran `npm run test:coverage`, a script no package.json defines ("Missing script", measured 2026-10-01), and only warned, so the one caller that passed it (ct-tests.yml) produced nothing on every run. The flag and its step are gone; the caller no longer passes it.
 """
 
 import os
@@ -33,8 +33,7 @@ SUITES: tuple[tuple[str, tuple[str, ...], str], ...] = (
         "@rediacc/e2e-tests unit tests failed",
     ),
 )
-COVERAGE = ("npm", "run", "test:coverage")
-USAGE = "usage: run-unit.sh [--coverage]"
+USAGE = "usage: python3 -m rediacc_ci.testrun.unit"
 
 
 def _run(argv: tuple[str, ...]) -> int:
@@ -46,14 +45,10 @@ def _run(argv: tuple[str, ...]) -> int:
 
 
 def main(argv: list[str]) -> int:
-    coverage = False
     for arg in argv:
-        if arg == "--coverage":
-            coverage = True
-        else:
-            log.error(f"Unknown option: {arg}")
-            print(USAGE, file=sys.stderr)
-            return 2
+        log.error(f"Unknown option: {arg}")
+        print(USAGE, file=sys.stderr)
+        return 2
     os.chdir(paths.repo_root())
     log.step("Running unit tests...")
     for name, command, failure in SUITES:
@@ -61,10 +56,6 @@ def main(argv: list[str]) -> int:
         if _run(command) != 0:
             log.error(failure)
             return 1
-    if coverage:
-        log.step("Generating coverage report...")
-        if _run(COVERAGE) != 0:
-            log.warn("Coverage generation failed")
     log.info("All unit tests passed")
     return 0
 

@@ -5177,7 +5177,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-proxy-linux-packages',
     run: 'npm run check:ci-proxy-linux-packages',
     gate: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-linux-packages.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/linux_packages.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -5189,7 +5189,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-proxy-rdc-update',
     gate: true,
     needs: ['build:cli'],
-    leaves: ['.ci/scripts/test/proxies/proxy-rdc-update.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/rdc_update.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -5202,7 +5202,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true,
     gate: true,
     heavy: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-license-e2e.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/license_e2e.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -5215,7 +5215,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true,
     gate: true,
     heavy: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-go-unit.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/go_unit.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -5226,7 +5226,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-proxy-ops-host-check',
     run: 'npm run check:ci-proxy-ops-host-check',
     gate: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-ops-host-check.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/ops_host_check.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -5260,7 +5260,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-proxy-ensure-nfpm',
     run: 'npm run check:ci-proxy-ensure-nfpm',
     gate: true,
-    leaves: ['.ci/scripts/test/proxies/proxy-ensure-nfpm.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/ensure_nfpm.py'],
     ci: {
       kind: 'local-only',
       blocker:
@@ -5272,7 +5272,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:test-provisioning',
     gate: true,
     weight: 2,
-    leaves: ['.ci/scripts/test/proxies/proxy-unit-tests.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/unit_tests.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5286,7 +5286,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     needs: ['build:packages'],
     weight: 2,
-    leaves: ['.ci/scripts/test/proxies/proxy-unit-tests.sh'],
+    leaves: ['.ci/rediacc_ci/proxies/unit_tests.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
