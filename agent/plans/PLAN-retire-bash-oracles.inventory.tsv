@@ -8,42 +8,42 @@ path	lines	category	reason with file:line	twin	tests naming it
 .ci/scripts/test/profiler-control.sh	280	GOLDEN-THEN-DELETE	test_ci_profiler_sampler_linux.py notes 14 invocation sites, twin still exists	-	test_ci_profiler_sampler_linux.py
 .ci/scripts/test/test-install-sh-config.sh	180	GOLDEN-THEN-DELETE	test_release_install_sh_config_check.py differential with TWIN	-	install_sh_config_check.py; test_release_install_sh_config_check.py
 .ci/scripts/test/test-rdc-sh-env.sh	222	GOLDEN-THEN-DELETE	test_security_rdc_sh_env_check.py differential with TWIN	-	rdc_sh_env_check.py; test_security_rdc_sh_env_check.py
-.ci/media/bridge.sh	180	PORT	has twin .ci/rediacc_ci/setup/bridge.py; sources local-common.sh	.ci/rediacc_ci/setup/bridge.py	
-.ci/media/coverage.sh	315	PORT	library functions; sourced by ci jobs; can be ported	-	
-.ci/media/cuda.sh	43	PORT	library; sourced by media jobs	-	
-.ci/media/media-entry.sh	194	PORT	router sourcing local-common.sh; dispatches to library functions	-	
-.ci/media/pool.sh	149	PORT	library functions; sourced	-	
-.ci/media/portable.sh	168	PORT	library for media setup	-	
-.ci/media/r2.sh	44	PORT	heavily referenced (154 refs); library functions	-	
-.ci/media/teaser.sh	181	PORT	dispatches to media functions; can be ported	-	
-.ci/media/tools/run-in-tts.sh	118	PORT	runs in TTS container; ported to Python; no Python fork needed	-	
-.ci/media/tools/upload-r2.sh	187	PORT	standalone tool; can be ported	-	
-.ci/media/tutorials.sh	845	PORT	dispatches tutorials; can be ported	-	
-.ci/media/venv.sh	152	PORT	library for venv setup	-	
-.ci/media/verify.sh	596	PORT	library; heavily tested	-	
-.ci/breakpoint/lib/breakpoint-blocker.sh	105	PORT	library; sourced by breakpoint scripts	-	
-.ci/breakpoint/lib/breakpoint-common.sh	436	PORT	library functions; sourced by breakpoint scripts	-	
-.ci/breakpoint/scripts/check-breakpoint-drift.sh	514	PORT	runs in breakpoint workflow; sources libraries	-	
-.ci/breakpoint/scripts/derive-descriptor.sh	107	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/desktop-ctl.sh	316	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/hold-breakpoint.sh	87	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/install-cloudflared.sh	90	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/install-extra-packages.sh	76	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/install-tmate.sh	88	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/install-vnc-desktop.sh	96	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/preflight-breakpoint.sh	159	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/publish-endpoints.sh	216	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/pull-service-images.sh	64	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/reap-breakpoint-orphans.sh	605	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/resolve-recipient.sh	56	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/select-mode.sh	119	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/start-origin.sh	255	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/start-shell.sh	108	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/start-tunnel.sh	369	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/stop-breakpoint.sh	276	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/sync-breakpoint.sh	313	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/scripts/test-breakpoint-lifecycle.sh	150	PORT	runs in breakpoint workflow	-	
-.ci/breakpoint/versions.sh	66	PORT	library sourced by breakpoint	-	
+.ci/media/bridge.sh	180	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	.ci/rediacc_ci/setup/bridge.py	
+.ci/media/coverage.sh	315	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/cuda.sh	43	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/media-entry.sh	194	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/pool.sh	149	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/portable.sh	168	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/r2.sh	44	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/teaser.sh	181	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/tools/run-in-tts.sh	118	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/tools/upload-r2.sh	187	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/tutorials.sh	845	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/venv.sh	152	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/media/verify.sh	596	KEEP-BASH	B0 re-judge 2026-10-01: drives the bash-native private/generative and private/growth repositories; .ci/policy/.language-policy-allowlist:51-52 BLOCKER (ruling 7 names the tree exempt, bash is its goal state)	-	
+.ci/breakpoint/lib/breakpoint-blocker.sh	105	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/lib/breakpoint-common.sh	436	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/check-breakpoint-drift.sh	514	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/derive-descriptor.sh	107	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/desktop-ctl.sh	316	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/hold-breakpoint.sh	87	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/install-cloudflared.sh	90	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/install-extra-packages.sh	76	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/install-tmate.sh	88	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/install-vnc-desktop.sh	96	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/preflight-breakpoint.sh	159	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/publish-endpoints.sh	216	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/pull-service-images.sh	64	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/reap-breakpoint-orphans.sh	605	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/resolve-recipient.sh	56	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/select-mode.sh	119	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/start-origin.sh	255	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/start-shell.sh	108	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/start-tunnel.sh	369	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/stop-breakpoint.sh	276	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/sync-breakpoint.sh	313	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/scripts/test-breakpoint-lifecycle.sh	150	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
+.ci/breakpoint/versions.sh	66	KEEP-BASH	B0 re-judge 2026-10-01: vendored byte-for-byte downstream and drift-locked (.ci/breakpoint/README.md:7, .ci/breakpoint/MANIFEST.sha256, .ci/policy/.language-policy-allowlist:54-55 BLOCKER); a port would fork the vendored contract	-	
 .ci/tutorials/lib/stage-branching.sh	101	KEEP-BASH	tutorial library; bash semantics for stage recording	-	
 .ci/tutorials/lib/stage-demo-pgadmin.sh	55	KEEP-BASH	tutorial library; bash semantics for stage recording	-	
 .ci/tutorials/lib/stage-my-app.sh	28	KEEP-BASH	tutorial library; bash semantics for stage recording	-	
@@ -109,6 +109,6 @@ scripts/dev/worktree.sh	807	PORT	carried	-
 
 TOTALS BY CATEGORY:
 GOLDEN-THEN-DELETE	2753	9 files
-KEEP-BASH	2317	24 files
-PORT	24711	74 files
+KEEP-BASH	10160	60 files
+PORT	16868	38 files
 TOTAL	29781	107 files
