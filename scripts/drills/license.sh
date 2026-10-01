@@ -553,6 +553,34 @@ meter_snapshot() {
         drill_json 'd.repoLicenseIssuances.effectiveUsed + ":" + d.activations'
 }
 
+# assert_meter_baseline — the starting meter is a precondition, not an
+# observation (see the port's assert_meter_baseline for the 2026-10-01 account).
+# Each run mints its own user and subscription, so more than one claimed machine
+# means the machine under test was counted under a drifted id: renet's
+# GetMachineID hashes every NIC outside a short OUI blacklist, so a transient
+# veth/tap/bridge at issuance time yields a second id and a phantom slot.
+assert_meter_baseline() {
+    local own claimed machine
+    own=$(_ssh "$VM_IP" "sudo $VM_RENET machine-id" 2>/dev/null | tr -d '[:space:]')
+    claimed=$(license_status_json | drill_json '(d.machines || []).map(m => m.machineId).sort().join(",")')
+    if [[ "$claimed" != "$own" ]]; then
+        drill_note "machine under test (sudo renet machine-id on $VM_IP): ${own:-?}"
+        for machine in ${claimed//,/ }; do
+            if [[ "$machine" == "$own" ]]; then
+                drill_note "  claimed on the subscription: $machine"
+            else
+                drill_note "  claimed on the subscription: $machine   <-- FOREIGN"
+            fi
+        done
+        drill_note "a foreign id on a fresh subscription is the machine under test counted under"
+        drill_note "a drifted id (a veth/tap/bridge existed when the licence was issued), not a"
+        drill_note "second machine; legs e and f assume exactly one claimed machine here"
+    fi
+    DRILL_LAST_CMD="GET /licenses/status (machines claimed before the fork)"
+    assert_equal "$own" "$claimed" \
+        "the subscription's meter holds exactly this machine (no phantom claim)"
+}
+
 license_status_json() {
     curl -sS -H "Authorization: Bearer $API_TOKEN" "$(drill_api_base)/licenses/status"
 }
@@ -690,6 +718,7 @@ leg_a_fork_remeters() {
     assert_equal valid "$parent_status" "the parent repo's licence is valid"
     assert_not_equal "" "$parent_ds" "and it is scoped to a real datastoreId"
 
+    assert_meter_baseline
     before=$(meter_snapshot)
 
     drill_run "$RDC" datastore fork "$DATASTORE_NAME" --tag "$FORK_TAG" \
@@ -997,19 +1026,24 @@ leg_f_dto_boundary() {
     # removed must report it missing. Without this, "chainHash is a string"
     # could be passing because the check never looks.
     printf '%s' "$body" | node -e '
-      const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
-      delete d.license.chainHash;
-      delete d.license.delegationCert;
+      let d;
+      try { d = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { d = {}; }
+      // A refusal body has no license to strip; the assertions above already
+      // failed on it, so degrade to the unstripped object rather than crash.
+      if (d && typeof d.license === "object" && d.license) {
+        delete d.license.chainHash;
+        delete d.license.delegationCert;
+      }
       process.stdout.write(JSON.stringify(d));
     ' >"$DRILL_WORK/stripped.json"
     local stripped_type
-    stripped_type=$(drill_json 'typeof d.license.chainHash' <"$DRILL_WORK/stripped.json")
+    stripped_type=$(drill_json 'typeof (d.license || {}).chainHash' <"$DRILL_WORK/stripped.json")
     DRILL_LAST_CMD="planted-strip control"
     assert_equal undefined "$stripped_type" \
         "planted-strip control: with chainHash removed the same check sees it gone"
 
     local cert_type
-    cert_type=$(drill_json 'typeof d.license.delegationCert' <"$DRILL_STDOUT")
+    cert_type=$(drill_json 'typeof (d.license || {}).delegationCert' <"$DRILL_STDOUT")
     if [[ "$cert_type" == "undefined" ]]; then
         drill_note "this account server is not a delegated (on-premise) deployment, so it"
         drill_note "attaches no delegationCert. The chainHash half of the boundary is proven"
