@@ -686,14 +686,14 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.audit-prod-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.ci-parity-exempt | 10 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
-| .ci/policy/.dead-bash-allowlist | 12 | # comment |
+| .ci/policy/.dead-bash-allowlist | 9 | # comment |
 | .ci/policy/.deps-upgrade-blocklist | 8 | inline |
 | .ci/policy/.devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 2 | # comment |
 | .ci/policy/.go-deps-upgrade-blocklist | 4 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
-| .ci/policy/.language-policy-allowlist | 18 | # comment |
+| .ci/policy/.language-policy-allowlist | 19 | # comment |
 | .ci/policy/.plan-housekeeping-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
@@ -734,7 +734,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/lib | 2 | .sh 2 |
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
-| .ci/config | 42 | .json 34, .txt 4, .conf 1, .env 1, .sh 1, .yaml 1 |
+| .ci/config | 43 | .json 34, .txt 4, .sh 2, .conf 1, .env 1, .yaml 1 |
 | .ci/config/shards | 6 | .json 6 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
@@ -846,7 +846,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/shfmt | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 16 | .golden 16 |
-| .ci/rediacc_ci/tests/goldens/twins | 14 | .jsonl 14 |
+| .ci/rediacc_ci/tests/goldens/twins | 32 | .jsonl 32 |
 | .ci/rediacc_ci/tests/goldens/validate-stage-artifacts | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
@@ -874,7 +874,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/scripts/review/prompts | 2 | .md 2 |
 | .ci/scripts/security | 2 | .py 2 |
 | .ci/scripts/setup | 2 | .sh 2 |
-| .ci/scripts/test | 14 | .sh 13, .ts 1 |
+| .ci/scripts/test | 8 | .sh 7, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
 | .ci/scripts/test/gates | 5 | .sh 5 |
 | .ci/scripts/test/lib | 3 | .sh 3 |
