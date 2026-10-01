@@ -1,3 +1,4 @@
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { ExecResult } from '../types';
 
 /**
@@ -21,7 +22,7 @@ export class SqlHelpers {
     // Use base64 encoding to safely pass SQL through multiple SSH hops
     const base64Sql = Buffer.from(sql).toString('base64');
     const result = await this.executeViaBridge(
-      `echo "${base64Sql}" | base64 -d | sudo docker -H unix:///var/run/rediacc/docker-${networkId}.sock exec -i ${containerName} psql -U postgres -d testdb -t`
+      `echo "${base64Sql}" | base64 -d | sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${networkId}.sock exec -i ${containerName} psql -U postgres -d testdb -t`
     );
     return result.stdout.trim();
   }

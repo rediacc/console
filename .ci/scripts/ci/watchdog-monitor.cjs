@@ -34,6 +34,8 @@
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 
+const { WK_CF_API_BASE, WK_GH_ORIGIN } = require('./well-known.cjs');
+
 // A downloaded release binary that will not execute is normally a truncated or stale CDN download (transient). It is a corrupt build only when no platform's install validation survives it. The classifier prompt says as much, but a prompt is advice; this signature + cross-job check is the enforcement.
 const BINARY_EXEC_FAILURE_RE =
   /is not a valid application for this OS platform|cannot execute binary file|Exec format error/i;
@@ -113,7 +115,7 @@ function jobRunStartMs(job) {
   // No `steps` field at all (a caller that never fetched them) keeps the old started_at reading; the real API always sends the array, empty for a job that never ran.
   if (!Array.isArray(job.steps)) return job.started_at ? new Date(job.started_at).getTime() : null;
   const starts = job.steps
-    .map((s) => (s && s.started_at ? new Date(s.started_at).getTime() : NaN))
+    .map((s) => (s && s.started_at ? new Date(s.started_at).getTime() : Number.NaN))
     .filter((ms) => Number.isFinite(ms));
   return starts.length ? Math.min(...starts) : null;
 }
@@ -543,7 +545,7 @@ function pendingNoRetryJobs({ jobs, noRetryPatterns, excludePatterns = [] }) {
 // Formats the COMPLETE set of failed jobs into a human-readable banner plus a one-line summary for the GitHub annotation. The watchdog force-cancels on the first failure it classifies, but a single poll can hold several already-failed jobs (e.g. lint + types + tests all red at once). Reporting only the one that drove the decision forces whoever reads the cancelled run to re-scan
 // every job to find the siblings -- so both the banner and the annotation name them all. Pure (no closure/env dependency) so it can be unit-tested in isolation.
 function formatFailureRoster(failedJobs, { owner, repo, runId }) {
-  const jobUrl = (j) => `https://github.com/${owner}/${repo}/actions/runs/${runId}/job/${j.id}`;
+  const jobUrl = (j) => `${WK_GH_ORIGIN}/${owner}/${repo}/actions/runs/${runId}/job/${j.id}`;
   const lines = [];
   lines.push('#'.repeat(70));
   lines.push(`Cancelling: ${failedJobs.length} job(s) failed`);
@@ -1007,7 +1009,7 @@ const monitor = async ({ github, context, core }) => {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     if (!token || !accountId) return null;
 
-    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${AI_MODEL}`;
+    const url = `${WK_CF_API_BASE}/accounts/${accountId}/ai/run/${AI_MODEL}`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
     try {
@@ -1210,7 +1212,7 @@ const monitor = async ({ github, context, core }) => {
     console.log(msg);
     if (job.id) {
       console.log(
-        `   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${targetRunId}/job/${job.id}`
+        `   Job URL: ${WK_GH_ORIGIN}/${context.repo.owner}/${context.repo.repo}/actions/runs/${targetRunId}/job/${job.id}`
       );
     }
     console.log(`   Run attempt: ${runAttempt}/${MAX_ATTEMPTS}`);

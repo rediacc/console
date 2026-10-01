@@ -1,6 +1,7 @@
 // BridgeTestRunner contains extensive delegation methods for backward compatibility. The actual implementations are in separate module files (methods/*.ts, helpers/*.ts).
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import {
   DEFAULT_NETWORK_ID,
   FORK_NETWORK_ID_A,
@@ -104,7 +105,7 @@ export function describeExecFailure(
   }
   return { code: 1, prefix: '' };
 }
-const DEFAULT_DATASTORE_PATH = '/mnt/rediacc';
+const DEFAULT_DATASTORE_PATH = WK_DATASTORE_PATH;
 
 // Re-export types for backwards compatibility
 export type { ExecResult };

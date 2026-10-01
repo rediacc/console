@@ -18,7 +18,9 @@ interface Env {
 // --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (edge.rediacc.com, pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
 // reflect the preview domain. Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview is false and rewriteOrigin() is skipped. ---------------------------------------------------------------------------
 
-const WWW_ORIGIN = 'https://www.rediacc.com';
+const WWW_ORIGIN = WK_SITE_ORIGIN;
+const WWW_HOST = new URL(WK_SITE_ORIGIN).host;
+const RELEASES_HOST = new URL(WK_RELEASES_ORIGIN).host;
 
 export const REWRITABLE_TYPES = [
   'text/html',
@@ -73,8 +75,8 @@ export async function rewriteOrigin(
   // Rewrite channel references in website HTML (install commands baked at build time)
   for (const format of ['apt', 'rpm', 'apk', 'archlinux', 'cli', 'npm']) {
     body = body.replaceAll(
-      `releases.rediacc.com/${format}/stable`,
-      `releases.rediacc.com/${format}/${channel}`
+      `${RELEASES_HOST}/${format}/stable`,
+      `${RELEASES_HOST}/${format}/${channel}`
     );
   }
   body = body.replaceAll('rdc:stable', `rdc:${channel}`);
@@ -117,6 +119,10 @@ const accountApp = createApp(
 
 // Relative, not a bare specifier: workers/www has its own package.json and is not a root workspace, so `@rediacc/locales` would not resolve. wrangler/esbuild inlines this the same way it already inlines ../../../private/account/src/app.js.
 import { SITE_LOCALES } from '../../../packages/locales/index.js';
+import {
+  WK_RELEASES_ORIGIN,
+  WK_SITE_ORIGIN,
+} from '../../../packages/shared/src/config/well-known.generated.js';
 
 const SUPPORTED_LANGUAGES = SITE_LOCALES;
 const DEFAULT_LANG = 'en';
@@ -345,7 +351,7 @@ async function serveWithSmartRedirect(
 export default {
   fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const isPreview = url.hostname !== 'www.rediacc.com';
+    const isPreview = url.hostname !== WWW_HOST;
     const channel = getChannel(url.hostname);
 
     if (url.pathname === '/robots.txt' && isPreview) {

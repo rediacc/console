@@ -61,7 +61,7 @@
     "happened."
   ],
   "refreshed_at": "2026-09-24T09:47:43Z",
-  "refreshed_from": "PROFILER_BASELINE_V1 annotations on 4 Console CI runs of branch 0923-1 (rediacc/console#590), check-runs annotations API. Not main: main has produced no annotated runs since the Actions-variables deletion; refresh from main after #590 merges.",
+  "refreshed_from": "PROFILER_BASELINE_V1 annotations on 4 Console CI runs of branch 0923-1 (PR #590), check-runs annotations API. Not main: main has produced no annotated runs since the Actions-variables deletion; refresh from main after #590 merges.",
   "jobs": {
     "ci-build-cli.yml:build-cli-executables": {
       "workflow": "ci-build-cli.yml",

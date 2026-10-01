@@ -4,9 +4,11 @@ import { get as httpGet } from 'node:http';
 import { get as httpsGet } from 'node:https';
 import { dirname, join } from 'node:path';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { WK_RELEASES_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import type { ReleaseChannel } from '@rediacc/shared/update/types';
 import { compareVersions } from '@rediacc/shared/utils';
 import { type UpdateManifest } from '../../types/index.js';
+import { debugLog } from '../../utils/debug.js';
 import {
   acquireUpdateLock,
   getOldBinaryPath,
@@ -15,21 +17,20 @@ import {
   isUpdateDisabled,
   STAGED_UPDATE_DIR,
 } from '../../utils/platform.js';
-import { debugLog } from '../../utils/debug.js';
 import { VERSION } from '../../version.js';
 import { readAccountPointer } from '../account/account-pointer.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import {
+  bytesToFetch,
   DELTA_FORMAT_VERSION,
   type DeltaIndex,
-  bytesToFetch,
   matchBlocks,
   reconstruct,
   remoteRanges,
 } from './delta.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
-const DEFAULT_MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
+const DEFAULT_MANIFEST_BASE_URL = `${WK_RELEASES_ORIGIN}/cli`;
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 

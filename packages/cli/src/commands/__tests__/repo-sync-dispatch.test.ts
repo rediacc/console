@@ -35,6 +35,7 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
   withPooledSftp: mockWithPooledSftp,
 }));
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import {
   type SyncConnectionContext,
@@ -50,7 +51,7 @@ const details: ConnectionDetails = {
   known_hosts: '',
   universalUser: 'svc',
   workingDirectory: '/mnt/repo',
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
 };
 
 const ctx: SyncConnectionContext = {

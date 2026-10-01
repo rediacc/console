@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import { buildLocalVault } from '../renet/renet-execution.js';
 
@@ -74,7 +75,7 @@ describe('buildLocalVault', () => {
 
     it('should use default datastore path when not specified', () => {
       const vault = JSON.parse(buildLocalVault(baseOpts()));
-      expect(vault.machine.datastore).toBe('/mnt/rediacc');
+      expect(vault.machine.datastore).toBe(WK_DATASTORE_PATH);
     });
   });
 

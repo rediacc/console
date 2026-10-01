@@ -54,6 +54,7 @@ vi.mock('@rediacc/shared/services/machine', () => ({
   getMachineContainers: mockGetMachineContainers,
 }));
 
+import { WK_CLOUD_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import {
   postRepoUpTasks,
   printResolvedServiceUrls,
@@ -216,7 +217,7 @@ describe('printResolvedServiceUrls', () => {
         repository: 'nextcloud',
         labels: {
           'rediacc.repo_name': 'nextcloud',
-          'traefik.http.routers.nc.rule': 'Host(`cloud.rediacc.io`)',
+          'traefik.http.routers.nc.rule': `Host(\`${new URL(WK_CLOUD_ORIGIN).host}\`)`,
         },
       },
       {
@@ -239,7 +240,7 @@ describe('printResolvedServiceUrls', () => {
 
     await printResolvedServiceUrls('nextcloud', 'hostinger', 'hostinger.example.com');
 
-    expect(mockInfo).toHaveBeenCalledWith('Exposed: https://cloud.rediacc.io  (custom)');
+    expect(mockInfo).toHaveBeenCalledWith(`Exposed: ${WK_CLOUD_ORIGIN}  (custom)`);
     expect(mockInfo).toHaveBeenCalledWith('Exposed: https://office.rediacc.io  (custom)');
     expect(mockInfo).toHaveBeenCalledTimes(2);
   });

@@ -27,10 +27,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_MEDIA_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MANIFEST_PATH = path.join(__dirname, '../../src/data/video-manifest.json');
-const CDN_BASE_URL = 'https://media.rediacc.com';
+const CDN_BASE_URL = WK_MEDIA_ORIGIN;
 
 type MediaKind = 'tutorials' | 'solutions';
 

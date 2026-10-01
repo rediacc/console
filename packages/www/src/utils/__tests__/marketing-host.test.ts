@@ -1,3 +1,10 @@
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_BENCH_ORIGIN,
+  WK_EDGE_ORIGIN,
+  WK_SITE_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS, type RegionInfo } from '@rediacc/shared/regions';
 import { describe, expect, it } from 'vitest';
 import type { Region } from '../../config/regions';
 import {
@@ -7,26 +14,36 @@ import {
   isMarketingHost,
 } from '../marketing-host';
 
+const BENCH_HOST = new URL(WK_BENCH_ORIGIN).host;
+const EDGE_HOST = new URL(WK_EDGE_ORIGIN).host;
+const EU_HOST = new URL(WK_ACCOUNT_DEFAULT_ORIGIN).host;
+const SITE_HOST = new URL(WK_SITE_ORIGIN).host;
+const regionOf = (id: string): RegionInfo => {
+  const r = BAKED_IN_REGIONS.find((x) => x.id === id);
+  if (!r) throw new Error(`no baked-in region ${id}`);
+  return r;
+};
+
 const eu: Region = {
   id: 'eu',
   label: 'Europe',
-  domain: 'eu.rediacc.com',
-  edgeDomain: 'edge-eu.rediacc.com',
+  domain: EU_HOST,
+  edgeDomain: regionOf('eu').edgeDomain,
   default: true,
 };
 
 describe('getHostKind', () => {
   it.each([
-    ['www.rediacc.com', 'marketing-stable'],
-    ['edge.rediacc.com', 'marketing-edge'],
+    [SITE_HOST, 'marketing-stable'],
+    [EDGE_HOST, 'marketing-edge'],
     ['pr-477.rediacc.workers.dev', 'preview'],
     ['anything.rediacc.workers.dev', 'preview'],
     ['localhost', 'localhost'],
-    ['eu.rediacc.com', 'portal'],
-    ['us.rediacc.com', 'portal'],
-    ['asia.rediacc.com', 'portal'],
-    ['edge-eu.rediacc.com', 'portal'],
-    ['bench.rediacc.com', 'portal'],
+    [EU_HOST, 'portal'],
+    [regionOf('us').domain, 'portal'],
+    [regionOf('asia').domain, 'portal'],
+    [regionOf('eu').edgeDomain, 'portal'],
+    [BENCH_HOST, 'portal'],
     ['intranet.customer.example', 'portal'],
   ] as const)('%s -> %s', (hostname, kind) => {
     expect(getHostKind(hostname)).toBe(kind);
@@ -35,8 +52,8 @@ describe('getHostKind', () => {
 
 describe('isMarketingHost', () => {
   it('opens the picker on the two marketing sites and localhost', () => {
-    expect(isMarketingHost('www.rediacc.com')).toBe(true);
-    expect(isMarketingHost('edge.rediacc.com')).toBe(true);
+    expect(isMarketingHost(SITE_HOST)).toBe(true);
+    expect(isMarketingHost(EDGE_HOST)).toBe(true);
     expect(isMarketingHost('localhost')).toBe(true);
   });
 
@@ -45,24 +62,24 @@ describe('isMarketingHost', () => {
   });
 
   it('portal and on-prem hosts navigate directly', () => {
-    expect(isMarketingHost('eu.rediacc.com')).toBe(false);
-    expect(isMarketingHost('edge-eu.rediacc.com')).toBe(false);
-    expect(isMarketingHost('bench.rediacc.com')).toBe(false);
+    expect(isMarketingHost(EU_HOST)).toBe(false);
+    expect(isMarketingHost(regionOf('eu').edgeDomain)).toBe(false);
+    expect(isMarketingHost(BENCH_HOST)).toBe(false);
     expect(isMarketingHost('intranet.customer.example')).toBe(false);
   });
 });
 
 describe('getPortalDomain (channel is host-determined)', () => {
   it('www hands off to the stable portal', () => {
-    expect(getPortalDomain('www.rediacc.com', eu)).toBe('eu.rediacc.com');
+    expect(getPortalDomain(SITE_HOST, eu)).toBe(EU_HOST);
   });
 
   it('edge marketing hands off to the edge portal', () => {
-    expect(getPortalDomain('edge.rediacc.com', eu)).toBe('edge-eu.rediacc.com');
+    expect(getPortalDomain(EDGE_HOST, eu)).toBe(regionOf('eu').edgeDomain);
   });
 
   it('localhost dev hands off to the edge portal (dev-safe default)', () => {
-    expect(getPortalDomain('localhost', eu)).toBe('edge-eu.rediacc.com');
+    expect(getPortalDomain('localhost', eu)).toBe(regionOf('eu').edgeDomain);
   });
 });
 
@@ -70,27 +87,27 @@ describe('buildPortalRedirectUrl', () => {
   it('preserves the target path and its query (checkout deep link)', () => {
     const url = new URL(
       buildPortalRedirectUrl(
-        'www.rediacc.com',
+        SITE_HOST,
         eu,
         '/account/?checkout=PROFESSIONAL&period=monthly&returnUrl=https%3A%2F%2Fwww.rediacc.com%2Fen%2Fpricing'
       )
     );
-    expect(url.origin).toBe('https://eu.rediacc.com');
+    expect(url.origin).toBe(WK_ACCOUNT_DEFAULT_ORIGIN);
     expect(url.pathname).toBe('/account/');
     expect(url.searchParams.get('checkout')).toBe('PROFESSIONAL');
     expect(url.searchParams.get('period')).toBe('monthly');
-    expect(url.searchParams.get('returnUrl')).toBe('https://www.rediacc.com/en/pricing');
+    expect(url.searchParams.get('returnUrl')).toBe(`${WK_SITE_ORIGIN}/en/pricing`);
   });
 
   it('regression: stable choice must not leak to the edge domain (old fast path hardcoded edgeDomain)', () => {
-    expect(buildPortalRedirectUrl('www.rediacc.com', eu, '/account/')).toBe(
-      'https://eu.rediacc.com/account/'
+    expect(buildPortalRedirectUrl(SITE_HOST, eu, '/account/')).toBe(
+      `${WK_ACCOUNT_DEFAULT_ORIGIN}/account/`
     );
   });
 
   it('merges captured utm_* params', () => {
     const url = new URL(
-      buildPortalRedirectUrl('www.rediacc.com', eu, '/account/', {
+      buildPortalRedirectUrl(SITE_HOST, eu, '/account/', {
         utm_source: 'hn',
         utm_campaign: 'launch',
       })
@@ -101,7 +118,7 @@ describe('buildPortalRedirectUrl', () => {
 
   it('never overwrites params already on the target path', () => {
     const url = new URL(
-      buildPortalRedirectUrl('www.rediacc.com', eu, '/account/?utm_source=explicit', {
+      buildPortalRedirectUrl(SITE_HOST, eu, '/account/?utm_source=explicit', {
         utm_source: 'stored',
       })
     );
@@ -110,7 +127,7 @@ describe('buildPortalRedirectUrl', () => {
 
   it('ignores non-utm and empty values from the tracker', () => {
     const url = new URL(
-      buildPortalRedirectUrl('www.rediacc.com', eu, '/account/', {
+      buildPortalRedirectUrl(SITE_HOST, eu, '/account/', {
         utm_source: '',
         referrer: 'https://evil.example',
         session_id: 'abc',
@@ -120,8 +137,8 @@ describe('buildPortalRedirectUrl', () => {
   });
 
   it('uses the edge domain when built from the edge marketing host', () => {
-    expect(buildPortalRedirectUrl('edge.rediacc.com', eu, '/account/')).toBe(
-      'https://edge-eu.rediacc.com/account/'
+    expect(buildPortalRedirectUrl(EDGE_HOST, eu, '/account/')).toBe(
+      `https://${regionOf('eu').edgeDomain}/account/`
     );
   });
 });

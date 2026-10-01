@@ -13,6 +13,7 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
 import { assertMachineSlotsAvailable } from '../account/license-preflight.js';
 import { getCluster } from '../config/config-cluster-ops.js';
@@ -22,7 +23,7 @@ import { outputService } from '../core/output.js';
 import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
 import { allocateAgentNetworkId } from './cluster-kube.js';
 
-const MOUNT_BASE = '/mnt/rediacc/mounts';
+const MOUNT_BASE = `${WK_DATASTORE_PATH}/mounts`;
 const NAMED_DS_BASE = '/mnt/rediacc-ds';
 const API_PORT = 6443;
 

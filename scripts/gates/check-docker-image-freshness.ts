@@ -34,7 +34,7 @@ import { spawnSync } from 'node:child_process';
  * Usage:
  *   npx tsx scripts/gates/check-docker-image-freshness.ts [--selftest] [--json]
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
@@ -144,8 +144,9 @@ function readGitmodulePaths(): string[] {
     .filter(Boolean);
 }
 
-import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
+import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
   baselineAdditions,
   renderRefusal,
@@ -171,7 +172,7 @@ export function parsePins(src: string, file: string): Pin[] {
     if (!m) return;
     const [, image, tag] = m;
     // Our own published images are not an upstream freshness question; they are outputs.
-    if (image.startsWith('ghcr.io/rediacc/')) return;
+    if (image.startsWith(`${WK_IMAGE_REGISTRY}/`)) return;
     out.push({ image, tag, file, line: i + 1 });
   });
   return out;
@@ -308,7 +309,10 @@ function selftest(): number {
     console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
     if (!ok) bad++;
   };
-  const pins = parsePins('FROM node:22-slim AS build\nFROM ghcr.io/rediacc/renet:latest\n', 'X');
+  const pins = parsePins(
+    `FROM node:22-slim AS build\nFROM ${WK_IMAGE_REGISTRY}/renet:latest\n`,
+    'X'
+  );
   check('a FROM pin is parsed', pins.length === 1 && pins[0].image === 'node');
   check(
     'our OWN ghcr images are not treated as upstream pins',

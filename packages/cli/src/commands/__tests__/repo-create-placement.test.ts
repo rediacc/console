@@ -50,7 +50,7 @@ vi.mock('../../utils/local-execution-failures.js', () => ({
 // Keep namedDatastoreMount real-shaped but avoid pulling the heavy cluster-kube graph.
 vi.mock('../../services/cluster/cluster-target.js', () => ({
   namedDatastoreMount: (d: string) => `/mnt/rediacc-ds/${d}`,
-  clusterMountRemotePath: (c: string) => `/mnt/rediacc/mounts/${c}`,
+  clusterMountRemotePath: (c: string) => `${WK_DATASTORE_PATH}/mounts/${c}`,
 }));
 
 const handleError = vi.fn();
@@ -59,6 +59,7 @@ vi.mock('../../utils/errors.js', async (orig) => ({
   handleError: (e: unknown) => handleError(e),
 }));
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { handleRepoCreate } from '../repo-create-delete.js';
 
 /** A config with the given datastores + machines, enough for placement resolution. */

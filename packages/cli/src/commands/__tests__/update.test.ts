@@ -1,6 +1,11 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import {
+  WK_EDGE_ORIGIN,
+  WK_RELEASES_ORIGIN,
+  WK_SITE_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockOutputService = vi.hoisted(() => ({
@@ -67,9 +72,9 @@ describe('handleChannelSwitch', () => {
         version: 1,
         encryption: { mode: 'plaintext' },
         account: {
-          accountServer: 'https://edge.rediacc.com',
+          accountServer: WK_EDGE_ORIGIN,
           e2ePublicKey: 'MEIwBQYDK2VwAzkA...',
-          releasesUrl: 'https://releases.rediacc.com',
+          releasesUrl: WK_RELEASES_ORIGIN,
         },
       })
     );
@@ -78,9 +83,9 @@ describe('handleChannelSwitch', () => {
 
     const account = readConfig().account as Record<string, unknown>;
     expect(account).toMatchObject({
-      accountServer: 'https://edge.rediacc.com',
+      accountServer: WK_EDGE_ORIGIN,
       e2ePublicKey: 'MEIwBQYDK2VwAzkA...',
-      releasesUrl: 'https://releases.rediacc.com',
+      releasesUrl: WK_RELEASES_ORIGIN,
       updateChannel: 'stable',
     });
   });
@@ -93,7 +98,7 @@ describe('handleChannelSwitch', () => {
         id: '00000000-0000-4000-8000-000000000002',
         version: 1,
         encryption: { mode: 'plaintext' },
-        account: { accountServer: 'https://www.rediacc.com', updateChannel: 'edge' },
+        account: { accountServer: WK_SITE_ORIGIN, updateChannel: 'edge' },
       })
     );
 

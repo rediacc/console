@@ -1,3 +1,4 @@
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { ExecResult } from '../types';
 
 /**
@@ -43,7 +44,7 @@ export class RepositoryHelpers {
   async isContainerRunning(containerName: string, networkId: string): Promise<boolean> {
     const CONTAINER_RUNNING_MARKER = 'running';
     const result = await this.executeViaBridge(
-      `sudo docker -H unix:///var/run/rediacc/docker-${networkId}.sock ps --filter "name=^${containerName}$" --format "{{.Names}}" | grep -q "^${containerName}$" && echo "${CONTAINER_RUNNING_MARKER}" || echo "stopped"`
+      `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${networkId}.sock ps --filter "name=^${containerName}$" --format "{{.Names}}" | grep -q "^${containerName}$" && echo "${CONTAINER_RUNNING_MARKER}" || echo "stopped"`
     );
     return result.stdout.trim() === CONTAINER_RUNNING_MARKER;
   }
@@ -232,7 +233,7 @@ export class RepositoryHelpers {
     for (let i = 0; i < maxAttempts; i++) {
       // Use actual query instead of pg_isready - this verifies the database is fully operational, not just that the socket accepts connections. This avoids race conditions where pg_isready passes but init scripts are still running or the database is restarting.
       const result = await this.executeViaBridge(
-        `sudo docker -H unix:///var/run/rediacc/docker-${networkId}.sock exec ${containerName} psql -U postgres -d testdb -c "SELECT 1" -t -q 2>/dev/null`
+        `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${networkId}.sock exec ${containerName} psql -U postgres -d testdb -c "SELECT 1" -t -q 2>/dev/null`
       );
       if (result.code === 0) {
         // eslint-disable-next-line no-console

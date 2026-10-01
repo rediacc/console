@@ -1,3 +1,8 @@
+import {
+  WK_DATASTORE_PATH,
+  WK_ETC_DIR,
+  WK_OPT_DIR,
+} from '@rediacc/shared/config/well-known.generated';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // First-time module evaluation in CI runners can exceed the 5s default test timeout (this file mocks 30+ deps before importing backup-schedule). Pull
@@ -144,7 +149,7 @@ async function desiredContentFor(
   strategyName: string,
   strategy: import('../../types/index.js').BackupStrategyConfig,
   destinations: import('../../types/index.js').BackupStrategyDestination[],
-  datastore = '/mnt/rediacc',
+  datastore = WK_DATASTORE_PATH,
   remoteRenetPath = '/usr/bin/renet'
 ) {
   const { _testing } = await import('../backup/backup-schedule.js');
@@ -179,7 +184,7 @@ const DEFAULT_LOCAL_CONFIG = {
       ip: '72.61.137.225',
       user: 'muhammed',
       port: 22,
-      datastore: '/mnt/rediacc',
+      datastore: WK_DATASTORE_PATH,
       backupStrategies: ['hourly-hot'],
     },
   },
@@ -220,7 +225,7 @@ describe('generateServiceUnit', () => {
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', bandwidthLimit: '6M', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain('ExecStart=/usr/bin/renet backup snapshot');
@@ -242,7 +247,7 @@ describe('generateServiceUnit', () => {
       'nightly-snapshot',
       { schedule: '0 3 * * *', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     expect(envVars).toEqual({});
@@ -257,7 +262,7 @@ describe('generateServiceUnit', () => {
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     expect(serviceContent).not.toContain('--mode');
@@ -273,7 +278,7 @@ describe('generateServiceUnit', () => {
         `nightly-${mode}`,
         { schedule: '0 3 * * *', mode, destinations: [] },
         [HOSTED_DEST],
-        '/mnt/rediacc',
+        WK_DATASTORE_PATH,
         '/usr/bin/renet'
       ).serviceContent;
 
@@ -291,7 +296,7 @@ describe('generateServiceUnit', () => {
         `nightly-${mode}`,
         { schedule: '0 3 * * *', mode, destinations: [] },
         [HOSTED_DEST],
-        '/mnt/rediacc',
+        WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
       const m = /TimeoutStopSec=(\d+)/.exec(serviceContent);
@@ -313,7 +318,7 @@ describe('generateServiceUnit', () => {
       'nightly',
       { schedule: '0 3 * * *', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     expect(serviceContent).not.toContain('--cold');
@@ -325,7 +330,7 @@ describe('generateServiceUnit', () => {
       'nightly-snapshot',
       { schedule: '0 3 * * *', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain('TimeoutStartSec=infinity');
@@ -343,7 +348,7 @@ describe('generateServiceUnit', () => {
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     // The '-' prefix is the whole point: a refused renewal (one lapsed repo, a network blip) and an older renet that does not know the `license` verb must both leave the backup running.
@@ -360,8 +365,8 @@ describe('generateServiceUnit', () => {
       'nightly-snapshot',
       { schedule: '0 3 * * *', destinations: [] },
       [HOSTED_DEST],
-      '/mnt/rediacc',
-      '/opt/rediacc/bin/renet'
+      WK_DATASTORE_PATH,
+      `${WK_OPT_DIR}/bin/renet`
     );
     expect(serviceContent).toContain(
       'ExecStartPre=-/opt/rediacc/bin/renet license renew --jitter 45s'
@@ -377,7 +382,7 @@ describe('generateServiceUnit', () => {
         'mixed',
         { schedule: '0 * * * *', destinations: [] },
         [HOSTED_DEST, { kind: 'storage' as const, name: 'dest2', storage: 'm2' }],
-        '/mnt/rediacc',
+        WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
     expect(call).toThrow(/Backup destination "dest2"/);
@@ -392,7 +397,7 @@ describe('generateServiceUnit', () => {
         'hourly-hot',
         { schedule: '0 * * * *', mode: 'hot', destinations: [] },
         [{ kind: 'storage' as const, name: 'onedrive-hourly', storage: 'microsoft' }],
-        '/mnt/rediacc',
+        WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
     expect(call).toThrow(/Backup destination "onedrive-hourly"/);
@@ -408,7 +413,7 @@ describe('generateServiceUnit', () => {
         'hourly-hot',
         { schedule: '0 * * * *', mode: 'hot', destinations: [] },
         [KINDLESS_DEST],
-        '/mnt/rediacc',
+        WK_DATASTORE_PATH,
         '/usr/bin/renet'
       );
     expect(call).toThrow(/Backup destination "onedrive-hourly"/);
@@ -496,7 +501,7 @@ describe('parseStrategyFromPath', () => {
     expect(
       _testing.parseStrategyFromPath('/etc/systemd/system/rediacc-backup-weekly-cold.timer')
     ).toEqual({ strategy: 'weekly-cold', type: 'timer' });
-    expect(_testing.parseStrategyFromPath('/etc/rediacc/backup-hourly-hot.env')).toEqual({
+    expect(_testing.parseStrategyFromPath(`${WK_ETC_DIR}/backup-hourly-hot.env`)).toEqual({
       strategy: 'hourly-hot',
       type: 'env',
     });
@@ -539,7 +544,7 @@ function buildRemoteFixture(
       sha256: overrides.timer?.sha256 ?? null,
     },
     envFile: {
-      path: '/etc/rediacc/backup-x.env',
+      path: `${WK_ETC_DIR}/backup-x.env`,
       exists: overrides.env?.exists ?? false,
       sha256: overrides.env?.sha256 ?? null,
     },

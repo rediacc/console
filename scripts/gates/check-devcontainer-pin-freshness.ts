@@ -62,16 +62,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_GH_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
+import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import {
   DEVCONTAINER_PIN_SOURCES as SOURCES,
   type DevcontainerPinSource as Source,
 } from '../lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
-import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
-import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { githubToken } from '../lib/github-token.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -180,7 +181,7 @@ async function latestFor(src: Source): Promise<Latest> {
   // NOT /releases/latest. On a monorepo that endpoint answers with whichever COMPONENT shipped last -- for bitwarden/clients that is web-*, desktop-*, browser-* or cli-* depending on the week -- so it would compare the CLI pin against a browser-extension version and produce nonsense in both directions. The list endpoint is ordered newest-first, so the first prefix match is the
   // answer.
   const rels = (await fetchJson(
-    `https://api.github.com/repos/${src.repo}/releases?per_page=100`
+    `${WK_GH_API_BASE}/repos/${src.repo}/releases?per_page=100`
   )) as GithubRelease[];
   const hit = rels.find(
     (r) => !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(src.tagPrefix)
@@ -330,7 +331,7 @@ async function main(): Promise<void> {
       for (const e of errors) console.error(`${RED}✗ ${e}${NC}`);
       console.error('  Check the release assets by hand, then set the ARGs yourself:');
       console.error(
-        '    curl -s https://api.github.com/repos/<repo>/releases/tags/<tag> | jq -r \'.assets[]|"\\(.name) \\(.digest)"\''
+        `    curl -s ${WK_GH_API_BASE}/repos/<repo>/releases/tags/<tag> | jq -r '.assets[]|"\\(.name) \\(.digest)"'`
       );
       process.exit(1);
     }

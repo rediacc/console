@@ -1,3 +1,7 @@
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_ACCOUNT_DEV_PORT,
+} from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -43,7 +47,7 @@ const {
   mockGetCurrent: vi.fn(),
   mockReadSSHKey: vi.fn(),
   mockAcquireRemoteRenet: vi.fn(),
-  mockGetSubscriptionServerUrl: vi.fn(() => 'http://localhost:4800'),
+  mockGetSubscriptionServerUrl: vi.fn(() => `http://localhost:${WK_ACCOUNT_DEV_PORT}`),
   mockGetSubscriptionScopeMismatch: vi.fn((token, configTeamName) => {
     if (configTeamName && token.teamName && configTeamName !== token.teamName) {
       return `Stored subscription token is bound to team "${token.teamName}", but the current config team is "${configTeamName}". Run "rdc subscription login" again after selecting the correct team.`;
@@ -56,7 +60,9 @@ const {
   mockOutputSuccess: vi.fn(),
   mockOutputError: vi.fn(),
   mockWithSpinner: vi.fn(),
-  mockReadAccountPointer: vi.fn(() => ({ accountServer: 'http://localhost:4800' })),
+  mockReadAccountPointer: vi.fn(() => ({
+    accountServer: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
+  })),
   mockDiscoverRegions: vi.fn(),
   mockPromptRegionSelection: vi.fn(),
 }));
@@ -164,13 +170,13 @@ describe('subscription command helpers', () => {
     mockAcquireRemoteRenet.mockResolvedValue({ remotePath: '/usr/bin/renet', uploaded: false });
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       token: { token: 'rdt_test', teamName: 'Platform', orgName: 'Acme' },
     });
     mockAuthorizeSubscriptionViaDeviceCode.mockResolvedValue({
       storedToken: {
         token: 'rdt_test',
-        serverUrl: 'http://localhost:4800',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
         subscriptionId: 'sub_1',
         orgName: 'Acme',
         teamName: 'Platform',
@@ -273,7 +279,7 @@ describe('subscription command helpers', () => {
 
     expect(mockOutputInfo).toHaveBeenCalledWith('errors.subscription.notLoggedIn');
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      'commands.subscription.status.serverWouldUse:http://localhost:4800'
+      `commands.subscription.status.serverWouldUse:http://localhost:${WK_ACCOUNT_DEV_PORT}`
     );
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
@@ -281,7 +287,7 @@ describe('subscription command helpers', () => {
   it('status fails hard when token team and current config team differ', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       token: { token: 'rdt_test', teamName: 'Platform' },
     });
     mockGetTeam.mockResolvedValue('Infra');
@@ -595,7 +601,7 @@ describe('subscription command helpers', () => {
 
   describe('region selection on first login', () => {
     it('should skip region prompt when the config has an accountServer', () => {
-      mockReadAccountPointer.mockReturnValue({ accountServer: 'https://eu.rediacc.com' });
+      mockReadAccountPointer.mockReturnValue({ accountServer: WK_ACCOUNT_DEFAULT_ORIGIN });
 
       // With accountServer set in the config pointer, the prompt should not trigger.
       const pointer = mockReadAccountPointer() as { accountServer?: string };

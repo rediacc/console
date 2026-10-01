@@ -1,3 +1,4 @@
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 /**
  * Backup credentials env-file helpers.
  *
@@ -9,7 +10,7 @@
 
 /** Path of the per-strategy EnvironmentFile= sidecar. */
 export function envFilePath(strategyName: string): string {
-  return `/etc/rediacc/backup-${strategyName}.env`;
+  return `${WK_ETC_DIR}/backup-${strategyName}.env`;
 }
 
 /**

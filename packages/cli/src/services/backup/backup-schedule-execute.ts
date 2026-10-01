@@ -8,6 +8,7 @@
  * half-deployed unit.
  */
 
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
@@ -80,7 +81,7 @@ async function cleanupOrphanedStaging(sftp: SFTPClient): Promise<void> {
   // left staging files behind, flag that to the operator.
   const cmd =
     `sudo sh -c 'rm -fv /etc/systemd/system/rediacc-backup-*.new ` +
-    `/etc/rediacc/backup-*.env.new 2>/dev/null; true'`;
+    `${WK_ETC_DIR}/backup-*.env.new 2>/dev/null; true'`;
   const stdout = await captureStdout(sftp, cmd);
   if (stdout.trim().length > 0) {
     const count = stdout.trim().split('\n').length;
@@ -272,9 +273,9 @@ async function ensureEtcRediacc(
   if (!needed) return;
   await runRemoteCommand(
     sftp,
-    'sudo install -d -m 0755 -o root -g root /etc/rediacc',
+    `sudo install -d -m 0755 -o root -g root ${WK_ETC_DIR}`,
     options,
-    'Failed to ensure /etc/rediacc exists'
+    `Failed to ensure ${WK_ETC_DIR} exists`
   );
 }
 

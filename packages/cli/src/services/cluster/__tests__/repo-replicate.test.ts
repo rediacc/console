@@ -1,3 +1,4 @@
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
@@ -34,12 +35,12 @@ const renderInput: ReplicaRenderInput = {
   replicas: [
     {
       index: 1,
-      datastoreLabel: 'rediacc.io/ds-ds-data-sqldb-replicas-r1',
+      datastoreLabel: `${WK_INFRA_DOMAIN}/ds-ds-data-sqldb-replicas-r1`,
       mountPath: '/mnt/rediacc-ds/ds-data-sqldb-replicas-r1',
     },
     {
       index: 2,
-      datastoreLabel: 'rediacc.io/ds-ds-data-sqldb-replicas-r2',
+      datastoreLabel: `${WK_INFRA_DOMAIN}/ds-ds-data-sqldb-replicas-r2`,
       mountPath: '/mnt/rediacc-ds/ds-data-sqldb-replicas-r2',
     },
   ],
@@ -51,7 +52,7 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
     // One PV per replica, each pinned to that replica's node datastore label.
     expect(yaml).toContain('name: sqldb-replicas-1-data');
     expect(yaml).toContain('name: sqldb-replicas-2-data');
-    expect(yaml).toContain('key: rediacc.io/ds-ds-data-sqldb-replicas-r1');
+    expect(yaml).toContain(`key: ${WK_INFRA_DOMAIN}/ds-ds-data-sqldb-replicas-r1`);
     // ★ #93 (storage speaks GUID, k8s objects speak name): the PV path into the fork mount is GUID-keyed, the fork is a byte-clone of the parent, whose volumes-open/CSI mount at mounts/volumes/<guid>/<vol>. A NAME-keyed path points at a directory that does not exist and the replica comes up EMPTY, so a regression back to the name must turn this red.
     expect(yaml).toContain(
       'path: /mnt/rediacc-ds/ds-data-sqldb-replicas-r1/mounts/volumes/guid-sqldb/data'
@@ -71,7 +72,7 @@ describe('renderReplicaSet (spec 05 §1 manifest plumbing)', () => {
     expect(yaml).toContain('name: sqldb-rw');
     expect(yaml).toContain('app: sqldb-primary');
     expect(yaml).toContain('name: sqldb-ro');
-    expect(yaml).toContain('rediacc.io/replica-set: sqldb-replicas');
+    expect(yaml).toContain(`${WK_INFRA_DOMAIN}/replica-set: sqldb-replicas`);
   });
 
   it('--headless makes the read Service headless (clusterIP: None)', () => {
@@ -152,9 +153,9 @@ describe('provisionReplicaDatastores (datastore plane: snapshot + N fork-attach)
       '/mnt/rediacc-ds/ds-data-set1-r3',
     ]);
     expect(placements.map((p) => p.datastoreLabel)).toEqual([
-      'rediacc.io/ds-ds-data-set1-r1',
-      'rediacc.io/ds-ds-data-set1-r2',
-      'rediacc.io/ds-ds-data-set1-r3',
+      `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r1`,
+      `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r2`,
+      `${WK_INFRA_DOMAIN}/ds-ds-data-set1-r3`,
     ]);
     expect(forks).toEqual([
       { index: 1, fork: 'ds-data:set1-r1', node: 'n1' },

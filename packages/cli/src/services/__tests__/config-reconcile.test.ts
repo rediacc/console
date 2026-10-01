@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { describe, expect, it } from 'vitest';
@@ -36,7 +37,7 @@ function baseConfig(): RdcConfig {
 function listWithRepo(guid: string, mounted = true): ListResult {
   return {
     repositories: [
-      { name: guid, repo_name: 'shop:main', mounted, mount_path: '/mnt/rediacc/mounts/x' },
+      { name: guid, repo_name: 'shop:main', mounted, mount_path: `${WK_DATASTORE_PATH}/mounts/x` },
     ],
   } as unknown as ListResult;
 }

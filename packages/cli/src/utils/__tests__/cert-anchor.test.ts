@@ -1,11 +1,14 @@
+import { WK_CLOUD_ORIGIN, WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import { parseCertAnchor } from '../cert-anchor.js';
 
-const BASE = 'rediacc.io';
+const CLOUD_HOST = new URL(WK_CLOUD_ORIGIN).host;
+
+const BASE = WK_INFRA_DOMAIN;
 
 describe('parseCertAnchor', () => {
   it('classifies the apex', () => {
-    expect(parseCertAnchor('rediacc.io', BASE).kind).toBe('apex');
+    expect(parseCertAnchor(WK_INFRA_DOMAIN, BASE).kind).toBe('apex');
   });
 
   it('classifies the root wildcard', () => {
@@ -13,7 +16,7 @@ describe('parseCertAnchor', () => {
   });
 
   it('classifies a single-label top-level subdomain', () => {
-    const a = parseCertAnchor('cloud.rediacc.io', BASE);
+    const a = parseCertAnchor(CLOUD_HOST, BASE);
     expect(a.kind).toBe('top-level');
     expect(a.anchor).toBe('cloud');
   });

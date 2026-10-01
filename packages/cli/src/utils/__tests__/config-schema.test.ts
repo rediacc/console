@@ -14,6 +14,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { RdcConfigSchema } from '@rediacc/shared/config-schema';
 import { configService } from '../../services/config/config-resources.js';
 import type { RdcConfig } from '../../types/index.js';
@@ -96,7 +97,7 @@ describe('config-schema', () => {
         ip: '10.0.0.1',
         user: 'root',
         port: 22,
-        datastore: '/mnt/rediacc',
+        datastore: WK_DATASTORE_PATH,
       });
       expect(result.success).toBe(true);
     });
@@ -478,8 +479,8 @@ describe('config-schema', () => {
     });
 
     it('normalizePath trims and strips trailing slashes', () => {
-      expect(normalizePath('/mnt/rediacc/')).toBe('/mnt/rediacc');
-      expect(normalizePath('/mnt/rediacc////')).toBe('/mnt/rediacc');
+      expect(normalizePath(`${WK_DATASTORE_PATH}/`)).toBe(WK_DATASTORE_PATH);
+      expect(normalizePath(`${WK_DATASTORE_PATH}////`)).toBe(WK_DATASTORE_PATH);
       expect(normalizePath('  /mnt/data  ')).toBe('/mnt/data');
     });
 

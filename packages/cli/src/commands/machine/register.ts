@@ -1,4 +1,5 @@
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
@@ -266,7 +267,11 @@ function registerSetup(machine: Command): void {
     .argument('<name>', t('options.name'))
     .summary(t('commands.machine.setup.descriptionShort'))
     .description(t('commands.machine.setup.description'))
-    .option('--datastore-path <path>', t('commands.machine.setup.datastoreOption'), '/mnt/rediacc')
+    .option(
+      '--datastore-path <path>',
+      t('commands.machine.setup.datastoreOption'),
+      WK_DATASTORE_PATH
+    )
     .option('--datastore-size <size>', t('commands.machine.setup.datastoreSizeOption'), '95%')
     .option('--debug', t('options.debug'))
     .action(async (name: string, options) => {

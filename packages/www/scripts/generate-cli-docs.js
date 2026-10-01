@@ -15,10 +15,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_LOCALES } from '@rediacc/locales';
+import { WK_SITE_ORIGIN } from '../../shared/src/config/well-known.generated.ts';
 import { LOCAL_GROUPS, toAnchorId, toGroupAnchorId } from './lib/cli-reference-catalog.js';
 import { computeSourceHash } from './validate-translation-freshness.js';
 
-import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // All supported languages
@@ -326,7 +327,7 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
   lines.push('');
   lines.push('```bash');
   lines.push('# macOS / Linux');
-  lines.push('curl -fsSL https://www.rediacc.com | sh');
+  lines.push(`curl -fsSL ${WK_SITE_ORIGIN} | sh`);
   lines.push('');
   lines.push('# Or use the packaged binary directly');
   lines.push('./rdc --help');

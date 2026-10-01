@@ -16,12 +16,13 @@
  * destination throws rather than producing a unit with no ExecStart at all.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
-import { buildBackupCommands } from '../backup/backup-schedule-unit-generator.js';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
+import { buildBackupCommands } from '../backup/backup-schedule-unit-generator.js';
 
 const RENET = '/usr/bin/renet';
-const DATASTORE = '/mnt/rediacc';
+const DATASTORE = WK_DATASTORE_PATH;
 
 const hosted = (name = 'chunks'): BackupStrategyDestination => ({
   name,

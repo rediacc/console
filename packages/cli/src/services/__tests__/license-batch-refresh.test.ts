@@ -1,3 +1,7 @@
+import {
+  WK_ACCOUNT_DEV_PORT,
+  WK_DATASTORE_PATH,
+} from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
@@ -11,8 +15,8 @@ const { mockGetSubscriptionTokenState } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(
     (): SubscriptionTokenState => ({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
-      token: { token: 'rdt_test', serverUrl: 'http://localhost:4800' },
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
+      token: { token: 'rdt_test', serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}` },
     })
   ),
 }));
@@ -60,15 +64,15 @@ describe('refreshRepoLicensesBatch', () => {
     ip: '127.0.0.1',
     user: 'root',
     port: 22,
-    datastore: '/mnt/rediacc',
+    datastore: WK_DATASTORE_PATH,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
-      token: { token: 'rdt_test', serverUrl: 'http://localhost:4800' },
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
+      token: { token: 'rdt_test', serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}` },
     });
     mockListRepositories.mockResolvedValue([
       {

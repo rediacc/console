@@ -5,6 +5,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import {
   getPlatform,
   getSSHHome,
@@ -139,7 +140,7 @@ function writeVSCodeSettings(settings: Record<string, unknown>, settingsPath?: s
 /**
  * Default datastore path for VS Code server installation
  */
-const DEFAULT_DATASTORE_PATH = '/mnt/rediacc';
+const DEFAULT_DATASTORE_PATH = WK_DATASTORE_PATH;
 
 /**
  * Gets the server install path from environment or default

@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 /**
  * Curated per-command documentation registries: worked examples, palette
  * search keywords, and list-output tabulation hints. A separate module from
@@ -382,7 +383,7 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       descriptionKey: 'commands.config.init.examples.basic',
     },
     {
-      command: 'rdc config init staging --server https://eu.rediacc.com',
+      command: `rdc config init staging --server ${WK_ACCOUNT_DEFAULT_ORIGIN}`,
       descriptionKey: 'commands.config.init.examples.withServer',
     },
   ],

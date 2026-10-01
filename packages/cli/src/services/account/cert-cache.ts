@@ -12,6 +12,7 @@
 
 import { X509Certificate } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { WK_OPT_DIR } from '@rediacc/shared/config/well-known.generated';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { AcmeCertCache } from '../../types/index.js';
@@ -21,7 +22,7 @@ import { outputService } from '../core/output.js';
 import { machineConnections } from '../machine/machine-connection.js';
 
 /** Remote path to Traefik's acme.json. */
-const ACME_JSON_PATH = '/opt/rediacc/proxy/letsencrypt/acme.json';
+const ACME_JSON_PATH = `${WK_OPT_DIR}/proxy/letsencrypt/acme.json`;
 
 /** Chunk size for base64 data (48KB). Keeps each chunk under Bitwarden/Vault limits. */
 const CHUNK_SIZE = 48 * 1024;

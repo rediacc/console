@@ -14,6 +14,12 @@ import {
   verifySignedRegions,
 } from '../index.js';
 
+const regionOf = (id: string): RegionInfo => {
+  const r = BAKED_IN_REGIONS.find((x) => x.id === id);
+  if (!r) throw new Error(`no baked-in region ${id}`);
+  return r;
+};
+
 // Test keys (same as subscription crypto tests) Fresh Ed25519 key pair generated for tests (verified to work with Node 22 crypto.subtle)
 const TEST_PUBLIC_KEY_SPKI = 'MCowBQYDK2VwAyEAFKKPwa2eTAOh+Ho3ntplPtbvHN90DywcbrjJx0+C27c=';
 const TEST_PRIVATE_KEY_PKCS8 = 'MC4CAQAwBQYDK2VwBCIEIKGh5gpzYDqjKcH0DIml3uFrKyFR3Tv7j02Z1nT4MXAA';
@@ -37,15 +43,15 @@ const TEST_REGIONS: RegionInfo[] = [
   {
     id: 'eu',
     label: 'Europe',
-    domain: 'eu.rediacc.com',
-    edgeDomain: 'edge-eu.rediacc.com',
+    domain: regionOf('eu').domain,
+    edgeDomain: regionOf('eu').edgeDomain,
     default: true,
   },
   {
     id: 'us',
     label: 'United States',
-    domain: 'us.rediacc.com',
-    edgeDomain: 'edge-us.rediacc.com',
+    domain: regionOf('us').domain,
+    edgeDomain: regionOf('us').edgeDomain,
     default: false,
   },
 ];

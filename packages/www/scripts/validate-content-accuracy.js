@@ -19,10 +19,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SITE_LOCALES } from '@rediacc/locales';
+import {
+  WK_RELEASES_ORIGIN,
+  WK_SITE_ORIGIN,
+} from '../../shared/src/config/well-known.generated.ts';
 import { parseRdcCommand } from './lib/cli-reference-catalog.js';
 import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 
-import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DOCS_DIR = path.join(ROOT_DIR, 'src', 'content', 'docs');
@@ -37,7 +41,10 @@ const EXCLUDED_DOC_SLUGS = new Set(['cli-application.md']);
 const TREE_UNLISTED_COMMANDS = new Set(['shortcuts']);
 
 // Valid *.rediacc.com domains
-const VALID_REDIACC_DOMAINS = new Set(['www.rediacc.com', 'releases.rediacc.com']);
+const VALID_REDIACC_DOMAINS = new Set([
+  new URL(WK_SITE_ORIGIN).host,
+  new URL(WK_RELEASES_ORIGIN).host,
+]);
 
 // Regex to extract rdc commands from inline backticks
 const BACKTICK_RDC_RE = /`(rdc\s[^`]+)`/g;

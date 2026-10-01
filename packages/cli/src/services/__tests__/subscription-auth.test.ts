@@ -1,6 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_ACCOUNT_DEV_PORT,
+} from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   getSubscriptionScopeMismatch,
@@ -13,7 +17,7 @@ import {
 } from '../account/subscription-auth.js';
 import { setConfigNameOverride } from '../config/config-name.js';
 
-const DEFAULT_SERVER = 'https://eu.rediacc.com';
+const DEFAULT_SERVER = WK_ACCOUNT_DEFAULT_ORIGIN;
 
 /**
  * These tests drive the REAL account-pointer reader against a temp config dir
@@ -110,26 +114,26 @@ describe('subscription-auth', () => {
 
     it('loads a ready token from REDIACC_TOKEN', () => {
       process.env.REDIACC_TOKEN = 'rdt_env';
-      process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
+      process.env.REDIACC_ACCOUNT_SERVER = `http://localhost:${WK_ACCOUNT_DEV_PORT}/account/`;
 
       expect(loadEnvSubscriptionToken()).toEqual({
         token: 'rdt_env',
-        serverUrl: 'http://localhost:4800/account',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account`,
       });
 
       expect(getSubscriptionTokenState()).toEqual({
         kind: 'ready',
-        serverUrl: 'http://localhost:4800/account',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account`,
         token: {
           token: 'rdt_env',
-          serverUrl: 'http://localhost:4800/account',
+          serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account`,
         },
       });
     });
 
     it('prefers REDIACC_TOKEN over the stored token file', () => {
       process.env.REDIACC_TOKEN = 'rdt_env';
-      process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
+      process.env.REDIACC_ACCOUNT_SERVER = `http://localhost:${WK_ACCOUNT_DEV_PORT}/account/`;
       writeFileSync(
         join(configDir, 'api-token-rediacc.json'),
         JSON.stringify({ token: 'rdt_file', serverUrl: 'http://localhost:4830/account' })
@@ -137,10 +141,10 @@ describe('subscription-auth', () => {
 
       expect(getSubscriptionTokenState()).toEqual({
         kind: 'ready',
-        serverUrl: 'http://localhost:4800/account',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account`,
         token: {
           token: 'rdt_env',
-          serverUrl: 'http://localhost:4800/account',
+          serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account`,
         },
       });
     });
@@ -149,7 +153,7 @@ describe('subscription-auth', () => {
       delete process.env.REDIACC_TOKEN;
       saveStoredSubscriptionToken({
         token: 'rdt_valid',
-        serverUrl: 'http://localhost:4800/',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/`,
         subscriptionId: 'sub_123',
         orgId: 'org_123',
         orgName: 'Acme',
@@ -159,10 +163,10 @@ describe('subscription-auth', () => {
 
       expect(getSubscriptionTokenState()).toEqual({
         kind: 'ready',
-        serverUrl: 'http://localhost:4800',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
         token: {
           token: 'rdt_valid',
-          serverUrl: 'http://localhost:4800',
+          serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
           subscriptionId: 'sub_123',
           orgId: 'org_123',
           orgName: 'Acme',
@@ -174,7 +178,9 @@ describe('subscription-auth', () => {
   });
 
   it('normalizes trailing slashes consistently', () => {
-    expect(normalizeServerUrl('http://localhost:4800///')).toBe('http://localhost:4800');
+    expect(normalizeServerUrl(`http://localhost:${WK_ACCOUNT_DEV_PORT}///`)).toBe(
+      `http://localhost:${WK_ACCOUNT_DEV_PORT}`
+    );
   });
 
   describe('getSubscriptionScopeMismatch()', () => {

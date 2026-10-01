@@ -27,6 +27,7 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { ReplicaSet } from '@rediacc/shared/config-schema';
 import {
   assertMachineSlotsAvailable,
@@ -37,10 +38,10 @@ import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
 
 /** Labels every replicate-generated object carries, for enumerate + teardown. */
-const REPLICA_LABEL = 'rediacc.io/replica-set';
-const INJECTED_LABEL = 'rediacc.io/injected';
+const REPLICA_LABEL = `${WK_INFRA_DOMAIN}/replica-set`;
+const INJECTED_LABEL = `${WK_INFRA_DOMAIN}/injected`;
 /** Node-label key prefix renet's kube_node_label stamps (distro/label.go). */
-const DS_NODE_LABEL_PREFIX = 'rediacc.io/ds-';
+const DS_NODE_LABEL_PREFIX = `${WK_INFRA_DOMAIN}/ds-`;
 /** Named-datastore mount base on machines (renet datastore.NamedMountBase). */
 const NAMED_DS_BASE = '/mnt/rediacc-ds';
 
