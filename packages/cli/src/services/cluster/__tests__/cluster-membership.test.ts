@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
@@ -86,7 +87,7 @@ describe('joinCluster', () => {
     expect(calls[1]).toMatchObject({
       machineName: 'adopted',
       params: {
-        mount_path: '/mnt/rediacc/mounts/prod',
+        mount_path: `${WK_DATASTORE_PATH}/mounts/prod`,
         role: 'agent',
         bind_ip: '192.168.111.50',
         endpoint: 'https://192.168.111.11:6443',
@@ -134,7 +135,7 @@ describe('evictCluster', () => {
     // The uninstall runs ON THE EVICTED MACHINE, against its own cluster mount.
     expect(calls[1]).toMatchObject({
       machineName: 'adopted',
-      params: { mount_path: '/mnt/rediacc/mounts/prod' },
+      params: { mount_path: `${WK_DATASTORE_PATH}/mounts/prod` },
     });
     expect(update).toHaveBeenCalledWith('adopted', { cluster: undefined });
   });

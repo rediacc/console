@@ -1,3 +1,8 @@
+import {
+  WK_GH_ORIGIN,
+  WK_GH_REPO,
+  WK_RELEASES_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   acquireUpdateLock,
@@ -195,9 +200,9 @@ describe('services/updater', () => {
       vi.mocked(readAccountPointer).mockReturnValue({});
     });
 
-    it('defaults to releases.rediacc.com/cli when config has no releasesUrl', () => {
+    it('defaults to the releases origin /cli when config has no releasesUrl', () => {
       vi.mocked(readAccountPointer).mockReturnValue({});
-      expect(getReleasesBaseUrl()).toBe('https://releases.rediacc.com/cli');
+      expect(getReleasesBaseUrl()).toBe(`${WK_RELEASES_ORIGIN}/cli`);
     });
 
     it('honours a custom releasesUrl from the config', () => {
@@ -230,13 +235,13 @@ describe('services/updater', () => {
 
     it('builds a URL from the explicit channel argument', () => {
       vi.mocked(readAccountPointer).mockReturnValue({});
-      expect(getManifestUrl('edge')).toBe('https://releases.rediacc.com/cli/edge/manifest.json');
+      expect(getManifestUrl('edge')).toBe(`${WK_RELEASES_ORIGIN}/cli/edge/manifest.json`);
     });
 
     it('resolves the channel from env when no argument is given', () => {
       process.env.REDIACC_UPDATE_CHANNEL = 'edge';
       vi.mocked(readAccountPointer).mockReturnValue({});
-      expect(getManifestUrl()).toBe('https://releases.rediacc.com/cli/edge/manifest.json');
+      expect(getManifestUrl()).toBe(`${WK_RELEASES_ORIGIN}/cli/edge/manifest.json`);
     });
 
     it('combines a custom releasesUrl with the resolved channel', () => {
@@ -291,7 +296,7 @@ describe('services/updater', () => {
       const manifest = {
         version: '0.5.0',
         releaseDate: '2026-01-01T00:00:00Z',
-        releaseNotesUrl: 'https://github.com/rediacc/console/releases/tag/v0.5.0',
+        releaseNotesUrl: `${WK_GH_ORIGIN}/${WK_GH_REPO}/releases/tag/v0.5.0`,
         binaries: {
           'linux-x64': { url: 'https://example.com/rdc-linux-x64', sha256: 'abc123' },
         },
@@ -324,7 +329,7 @@ describe('services/updater', () => {
       const manifest = {
         version: '0.5.0',
         releaseDate: '2026-01-01T00:00:00Z',
-        releaseNotesUrl: 'https://github.com/rediacc/console/releases/tag/v0.5.0',
+        releaseNotesUrl: `${WK_GH_ORIGIN}/${WK_GH_REPO}/releases/tag/v0.5.0`,
         binaries: {
           'linux-x64': { url: 'https://example.com/rdc-linux-x64', sha256: 'abc123' },
         },
@@ -342,7 +347,7 @@ describe('services/updater', () => {
 
       expect(result.updateAvailable).toBe(true);
       expect(result.latestVersion).toBe('0.5.0');
-      expect(result.releaseNotesUrl).toBe('https://github.com/rediacc/console/releases/tag/v0.5.0');
+      expect(result.releaseNotesUrl).toBe(`${WK_GH_ORIGIN}/${WK_GH_REPO}/releases/tag/v0.5.0`);
     });
 
     it('returns not available when manifest has same version', async () => {

@@ -1,3 +1,4 @@
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { CanarySet } from '@rediacc/shared/config-schema';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configService } from '../../config/config-resources.js';
@@ -84,7 +85,7 @@ describe('renderCanaryOverlay (rung 2 templating)', () => {
     expect(yaml).toContain('image: shop:v2');
     expect(yaml).toContain('replicas: 2');
     expect(yaml).toContain('value: canary');
-    expect(yaml).toContain('rediacc.io/replica-set: shop-canary');
+    expect(yaml).toContain(`${WK_INFRA_DOMAIN}/replica-set: shop-canary`);
     // Service: the annotations the renet router's canary rewrite consumes.
     expect(yaml).toContain('rediacc.canary_of: web');
     expect(yaml).toContain('rediacc.weight: "20"');

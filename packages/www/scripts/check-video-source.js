@@ -8,12 +8,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { WK_MEDIA_ORIGIN } from '../../shared/src/config/well-known.generated.ts';
 
 const wwwRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const probe = path.join(wwwRoot, 'public/assets/tutorials/video/en/tutorial-production-mode.mp4');
 if (!process.env.PUBLIC_VIDEO_CDN_BASE_URL && !fs.existsSync(probe)) {
   console.error(
-    'tutorial player gate: no video source. Set PUBLIC_VIDEO_CDN_BASE_URL=https://media.rediacc.com ' +
+    `tutorial player gate: no video source. Set PUBLIC_VIDEO_CDN_BASE_URL=${WK_MEDIA_ORIGIN} ` +
       `(what CI and the ci-runner set), or sync the local media into ${path.relative(process.cwd(), path.dirname(path.dirname(probe)))} ` +
       '(docs/agent-reference/media-assets.md). Exiting 77 (cannot-run): NOT a verdict on the player.'
   );

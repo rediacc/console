@@ -15,6 +15,7 @@
  *   ACCOUNT_ED25519_PUBLIC_KEY Ed25519 public key (SPKI base64) for signature verification
  */
 
+import { WK_RELEASES_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import {
   type E2eResponseEnvelope,
   importX25519PublicKey,
@@ -22,11 +23,12 @@ import {
   sealRequest,
 } from '@rediacc/shared/e2e';
 import {
-  type SignedSubscriptionBlob,
   importPublicKey,
+  type SignedSubscriptionBlob,
   verifySignature,
 } from '@rediacc/shared/subscription';
 
+const RELEASES_HOST = new URL(WK_RELEASES_ORIGIN).host;
 const PREVIEW_URL = process.env.PREVIEW_URL;
 const TOKEN = process.env.SMOKE_TEST_TOKEN;
 const ED25519_PUBLIC_KEY = process.env.ACCOUNT_ED25519_PUBLIC_KEY;
@@ -449,12 +451,12 @@ async function checkMarketingHtml(expectedChannel: string): Promise<void> {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const body = await resp.text();
     const stale = [
-      'releases.rediacc.com/cli/stable/',
-      'releases.rediacc.com/npm/stable/',
-      'releases.rediacc.com/apt/stable',
-      'releases.rediacc.com/rpm/stable',
-      'releases.rediacc.com/apk/stable',
-      'releases.rediacc.com/archlinux/stable',
+      `${RELEASES_HOST}/cli/stable/`,
+      `${RELEASES_HOST}/npm/stable/`,
+      `${RELEASES_HOST}/apt/stable`,
+      `${RELEASES_HOST}/rpm/stable`,
+      `${RELEASES_HOST}/apk/stable`,
+      `${RELEASES_HOST}/archlinux/stable`,
       'rdc:stable',
     ];
     const leaked = stale.filter((s) => body.includes(s));

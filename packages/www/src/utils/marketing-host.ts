@@ -1,3 +1,4 @@
+import { WK_EDGE_ORIGIN, WK_SITE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import type { Region } from '../config/regions';
 
 /**
@@ -38,9 +39,12 @@ import type { Region } from '../config/regions';
 
 export type HostKind = 'marketing-stable' | 'marketing-edge' | 'preview' | 'localhost' | 'portal';
 
+const SITE_HOST = new URL(WK_SITE_ORIGIN).hostname;
+const EDGE_HOST = new URL(WK_EDGE_ORIGIN).hostname;
+
 export function getHostKind(hostname: string): HostKind {
-  if (hostname === 'www.rediacc.com') return 'marketing-stable';
-  if (hostname === 'edge.rediacc.com') return 'marketing-edge';
+  if (hostname === SITE_HOST) return 'marketing-stable';
+  if (hostname === EDGE_HOST) return 'marketing-edge';
   if (hostname.endsWith('.rediacc.workers.dev')) return 'preview';
   if (hostname === 'localhost') return 'localhost';
   return 'portal';

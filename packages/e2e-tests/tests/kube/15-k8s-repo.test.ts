@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import type { ExecResult } from '../../src/utils/bridge/types';
 
@@ -449,9 +450,9 @@ ${dataSource ?? ''}`;
       // (1) PSA-restricted, repo-labeled namespace.
       const nsLabels = await kubectl(`get ns ${NS} -o jsonpath="{.metadata.labels}"`);
       expect(nsLabels.stdout).toContain('"pod-security.kubernetes.io/enforce":"restricted"');
-      expect(nsLabels.stdout).toContain('"rediacc.io/repo-namespace":"true"');
-      expect(nsLabels.stdout).toContain(`"rediacc.io/datastore":"${DATA_DS}"`);
-      expect(nsLabels.stdout).toContain('"rediacc.io/injected":"true"');
+      expect(nsLabels.stdout).toContain(`"${WK_INFRA_DOMAIN}/repo-namespace":"true"`);
+      expect(nsLabels.stdout).toContain(`"${WK_INFRA_DOMAIN}/datastore":"${DATA_DS}"`);
+      expect(nsLabels.stdout).toContain(`"${WK_INFRA_DOMAIN}/injected":"true"`);
 
       // (2) three default-deny NetworkPolicies.
       for (const np of [

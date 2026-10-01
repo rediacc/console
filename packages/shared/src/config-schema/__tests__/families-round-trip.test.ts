@@ -24,6 +24,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '../../config/well-known.generated.js';
 import { generateAesKey, generateCek } from '../../config-crypto/index.js';
 import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import {
@@ -79,12 +80,12 @@ function allFamiliesConfig(): RdcConfig {
     id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
     version: 3,
     encryption: { mode: 'plaintext' },
-    account: { userEmail: 'admin@example.com', accountServer: 'https://eu.rediacc.com' },
+    account: { userEmail: 'admin@example.com', accountServer: WK_ACCOUNT_DEFAULT_ORIGIN },
     defaults: { language: 'en', universalUser: 'rediacc', datastoreSize: '95%' },
     infra: { certEmail: 'ops@example.com', cfDnsZoneId: 'zone-1234' },
     // Host-local sections, present to PROVE they neither travel nor commit.
     remote: {
-      apiUrl: 'https://eu.rediacc.com',
+      apiUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
       storeId: '3f2a1b0c-9d8e-4f7a-8b6c-5d4e3f2a1b0c',
       configId: '4a3b2c1d-0e9f-4a8b-9c7d-6e5f4a3b2c1d',
       teamId: '5b4c3d2e-1f0a-4b9c-8d7e-7f6a5b4c3d2e',

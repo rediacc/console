@@ -6,6 +6,7 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { isValidPublicKeyId } from '@rediacc/shared/subscription';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
@@ -16,7 +17,7 @@ const LICENSE_DIR = '/var/lib/rediacc/license';
 const REPO_LICENSE_DIR = `${LICENSE_DIR}/repos`;
 const DATASTORE_LICENSE_DIR = `${LICENSE_DIR}/datastores`;
 const CLIENT_MACHINE_ID_PATH = '/etc/machine-id';
-export const DEFAULT_DATASTORE = '/mnt/rediacc';
+export const DEFAULT_DATASTORE = WK_DATASTORE_PATH;
 
 /**
  * What renet accepts as a datastore identity path segment, copied from

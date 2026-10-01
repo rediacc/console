@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import {
   DEFAULT_DATASTORE_PATH,
   DEFAULT_NETWORK_ID,
@@ -66,7 +67,7 @@ test.describe
     /** Last logged counter value of the counter container on a daemon. */
     const counterValue = async (networkId: string | number): Promise<number> => {
       const result = await runner.executeViaBridge(
-        `sudo docker -H unix:///var/run/rediacc/docker-${networkId}.sock logs --tail 5 ${parentContainerName} 2>/dev/null | grep -o "count=[0-9]*" | tail -1 | cut -d= -f2`
+        `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${networkId}.sock logs --tail 5 ${parentContainerName} 2>/dev/null | grep -o "count=[0-9]*" | tail -1 | cut -d= -f2`
       );
       return Number.parseInt(result.stdout.trim(), 10) || 0;
     };

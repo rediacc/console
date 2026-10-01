@@ -1,5 +1,5 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
-
 import {
   buildBackupCommands,
   generateServiceUnit,
@@ -99,10 +99,10 @@ describe('creating a destination an operator can actually schedule', () => {
     const { commands, envVars } = buildBackupCommands(
       { schedule: '0 * * * *', destinations: [dest] },
       [dest],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
-    expect(commands).toEqual(['/usr/bin/renet backup snapshot --datastore /mnt/rediacc']);
+    expect(commands).toEqual([`/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH}`]);
     // No credential reaches the unit: the machine authenticates with its licence blob and the server hands back a short-lived grant.
     expect(envVars).toEqual({});
   });
@@ -114,11 +114,11 @@ describe('creating a destination an operator can actually schedule', () => {
       'hourly-chunks',
       { schedule: '0 * * * *', destinations: [dest] },
       [dest],
-      '/mnt/rediacc',
+      WK_DATASTORE_PATH,
       '/usr/bin/renet'
     );
     expect(serviceContent).toContain(
-      'ExecStart=/usr/bin/renet backup snapshot --datastore /mnt/rediacc'
+      `ExecStart=/usr/bin/renet backup snapshot --datastore ${WK_DATASTORE_PATH}`
     );
     expect(serviceContent).not.toContain('EnvironmentFile=');
   });

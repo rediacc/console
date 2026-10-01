@@ -8,6 +8,7 @@
 //   script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
 
 const fs = require('node:fs');
+const { WK_GH_ORIGIN } = require('../../.ci/scripts/ci/well-known.cjs');
 const {
   ISSUE_LABEL,
   ISSUE_TITLE,
@@ -29,7 +30,7 @@ const readSummary = (path) => {
 const reportBudgetCheck = async ({ github, context, core }) => {
   const { owner, repo } = context.repo;
   const runId = process.env.GITHUB_RUN_ID || '';
-  const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com';
+  const serverUrl = process.env.GITHUB_SERVER_URL || WK_GH_ORIGIN;
   const url = `${serverUrl}/${owner}/${repo}/actions/runs/${runId}`;
   const summary = readSummary(process.env.BUDGET_CHECK_SUMMARY_PATH);
   const today = new Date().toISOString().slice(0, 10);

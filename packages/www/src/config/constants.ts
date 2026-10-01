@@ -2,12 +2,17 @@
  * Application-wide constants
  */
 import { PROTOCOL_DEFAULTS } from '@rediacc/shared/config/defaults';
+import {
+  WK_CLOUD_ORIGIN,
+  WK_CONTACT_EMAIL,
+  WK_GH_REPO,
+} from '@rediacc/shared/config/well-known.generated';
 
 /**
  * Primary contact email for Rediacc
  * Used across the website for forms, structured data, and contact information
  */
-export const CONTACT_EMAIL = 'contact@rediacc.com';
+export const CONTACT_EMAIL = WK_CONTACT_EMAIL;
 
 /**
  * Primary site URL
@@ -28,7 +33,7 @@ export const COMPANY_REGISTERED_ADDRESS =
 /**
  * GitHub repository path for fetching releases
  */
-export const GITHUB_REPO = 'rediacc/console';
+export const GITHUB_REPO = WK_GH_REPO;
 
 /**
  * External Links
@@ -40,7 +45,7 @@ export const EXTERNAL_LINKS = {
    * Used for high-intent CTAs (pricing, solutions, sales contact)
    * Update this URL when changing scheduling platforms
    */
-  SCHEDULE_CONSULTATION: 'https://cloud.rediacc.io/apps/calendar/appointment/kqpjP6qdYT63',
+  SCHEDULE_CONSULTATION: `${WK_CLOUD_ORIGIN}/apps/calendar/appointment/kqpjP6qdYT63`,
 } as const;
 
 /**

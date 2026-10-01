@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import { buildEnvPrefix } from '../term.js';
@@ -10,7 +11,7 @@ function details(over: Partial<ConnectionDetails>): ConnectionDetails {
     port: 22,
     privateKey: 'k',
     known_hosts: 'kh',
-    datastore: '/mnt/rediacc',
+    datastore: WK_DATASTORE_PATH,
     universalUser: 'u',
     ...over,
   };
@@ -20,13 +21,15 @@ describe('buildEnvPrefix — cluster namespace pin', () => {
   it('emits a namespace set-context after exporting KUBECONFIG', () => {
     const prefix = buildEnvPrefix(
       details({
-        environment: { KUBECONFIG: '/mnt/rediacc/mounts/prod/.rediacc/k3s/kubeconfig.yaml' },
+        environment: {
+          KUBECONFIG: `${WK_DATASTORE_PATH}/mounts/prod/.rediacc/k3s/kubeconfig.yaml`,
+        },
         kubeNamespace: 'shop',
-        workingDirectory: '/mnt/rediacc',
+        workingDirectory: WK_DATASTORE_PATH,
       })
     );
     expect(prefix).toContain(
-      "export KUBECONFIG='/mnt/rediacc/mounts/prod/.rediacc/k3s/kubeconfig.yaml'"
+      `export KUBECONFIG='${WK_DATASTORE_PATH}/mounts/prod/.rediacc/k3s/kubeconfig.yaml'`
     );
     expect(prefix).toContain(
       "kubectl config set-context --current --namespace='shop' >/dev/null 2>&1 || true"

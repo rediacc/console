@@ -20,6 +20,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '../../config/well-known.generated.js';
 import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import { toFullConfig } from '../payload.js';
 import type { RdcConfig } from '../schemas.js';
@@ -33,12 +34,12 @@ function fullyPopulated(): RdcConfig {
     version: 5,
     encryption: { mode: 'plaintext' },
     // Committed top-level sections — the addendum half of the family-drop bug: /account/userEmail rode in every CLI push's commitment set while the blob never carried `account`, so the editor's re-push failed anti-downgrade as a spurious conflict.
-    account: { userEmail: 'admin@example.com', accountServer: 'https://eu.rediacc.com' },
+    account: { userEmail: 'admin@example.com', accountServer: WK_ACCOUNT_DEFAULT_ORIGIN },
     defaults: { universalUser: 'rediacc' },
     infra: { certEmail: 'ops@example.com', cfDnsZoneId: 'zone-1' },
     // Host-local store pointer: commit:false in the registry (not synced, therefore not committed). Present to prove it commits nothing.
     remote: {
-      apiUrl: 'https://eu.rediacc.com',
+      apiUrl: WK_ACCOUNT_DEFAULT_ORIGIN,
       storeId: '3f2a1b0c-9d8e-4f7a-8b6c-5d4e3f2a1b0c',
       configId: '4a3b2c1d-0e9f-4a8b-9c7d-6e5f4a3b2c1d',
       storageKeyId: 'key-1',

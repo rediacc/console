@@ -1,3 +1,5 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+
 // The bridge/worker IPs and the RustFS endpoint are derived from the VM group's network env (VM_NET_BASE / VM_NET_OFFSET / VM_BRIDGE / VM_WORKERS) so a second
 // concurrent KVM group (e.g. VM_NET_BASE=192.168.112) resolves its own topology
 // instead of the hardcoded 192.168.111.x. Fallbacks equal the historical single-group constants, so a normal run (whose .env already sets these to the
@@ -19,7 +21,7 @@ const WORKER_1_IP = vmIp(WORKER_IDS[0] ?? 11);
 const WORKER_2_IP = vmIp(WORKER_IDS[1] ?? 12);
 
 export const TEST_ENV = {
-  datastorePath: '/mnt/rediacc',
+  datastorePath: WK_DATASTORE_PATH,
   uid: '7111',
   network: {
     defaultId: '9152',

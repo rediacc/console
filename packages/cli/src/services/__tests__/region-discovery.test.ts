@@ -4,34 +4,28 @@ const { mockVerifySignedRegions } = vi.hoisted(() => ({
   mockVerifySignedRegions: vi.fn(),
 }));
 
-vi.mock('@rediacc/shared/regions', () => ({
-  BAKED_IN_REGIONS: [
-    {
-      id: 'eu',
-      label: 'Europe',
-      domain: 'eu.rediacc.com',
-      edgeDomain: 'edge-eu.rediacc.com',
-      default: true,
-    },
-    {
-      id: 'us',
-      label: 'United States',
-      domain: 'us.rediacc.com',
-      edgeDomain: 'edge-us.rediacc.com',
-      default: false,
-    },
-  ],
-  DEFAULT_REGION: {
-    id: 'eu',
-    label: 'Europe',
-    domain: 'eu.rediacc.com',
-    edgeDomain: 'edge-eu.rediacc.com',
-    default: true,
-  },
-  verifySignedRegions: mockVerifySignedRegions,
-}));
+vi.mock('@rediacc/shared/regions', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@rediacc/shared/regions')>();
+  const pick = (id: string) => {
+    const r = actual.BAKED_IN_REGIONS.find((x) => x.id === id);
+    if (!r) throw new Error(`no baked-in region ${id}`);
+    return r;
+  };
+  return {
+    BAKED_IN_REGIONS: [pick('eu'), pick('us')],
+    DEFAULT_REGION: pick('eu'),
+    verifySignedRegions: mockVerifySignedRegions,
+  };
+});
 
+import { BAKED_IN_REGIONS, type RegionInfo } from '@rediacc/shared/regions';
 import { detectLikelyRegion, discoverRegions } from '../provision/region-discovery.js';
+
+const regionOf = (id: string): RegionInfo => {
+  const r = BAKED_IN_REGIONS.find((x) => x.id === id);
+  if (!r) throw new Error(`no baked-in region ${id}`);
+  return r;
+};
 
 describe('discoverRegions', () => {
   // THESE CASES CHANGED SHAPE ON PURPOSE (2026-08-26).
@@ -89,15 +83,15 @@ describe('detectLikelyRegion', () => {
     {
       id: 'eu',
       label: 'Europe',
-      domain: 'eu.rediacc.com',
-      edgeDomain: 'edge-eu.rediacc.com',
+      domain: regionOf('eu').domain,
+      edgeDomain: regionOf('eu').edgeDomain,
       default: true,
     },
     {
       id: 'us',
       label: 'United States',
-      domain: 'us.rediacc.com',
-      edgeDomain: 'edge-us.rediacc.com',
+      domain: regionOf('us').domain,
+      edgeDomain: regionOf('us').edgeDomain,
       default: false,
     },
   ];
@@ -112,8 +106,8 @@ describe('detectLikelyRegion', () => {
       {
         id: 'eu',
         label: 'Europe',
-        domain: 'eu.rediacc.com',
-        edgeDomain: 'edge-eu.rediacc.com',
+        domain: regionOf('eu').domain,
+        edgeDomain: regionOf('eu').edgeDomain,
         default: true,
       },
     ];

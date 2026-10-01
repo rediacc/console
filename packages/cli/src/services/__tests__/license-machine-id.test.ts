@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
 import { fetchSubscriptionLicenseReport, readMachineActivationStatus } from '../account/license.js';
@@ -19,7 +20,7 @@ vi.mock('../../remote/sftp/index.js', () => ({
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: vi.fn(() => ({
     kind: 'ready',
-    serverUrl: 'http://localhost:4800',
+    serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
     token: { token: 'rdt_test' },
   })),
 }));

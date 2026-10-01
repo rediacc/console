@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import { CliRunner } from '../../src/utils/CliRunner';
 import {
@@ -79,7 +80,7 @@ const accountPrereqs = [
   {
     name: 'REDIACC_ACCOUNT_SERVER',
     satisfied: ACCOUNT_SERVER.length > 0,
-    how: 'point it at an account server, e.g. `./run.sh account dev` on http://localhost:4800',
+    how: `point it at an account server, e.g. \`./run.sh account dev\` on http://localhost:${WK_ACCOUNT_DEV_PORT}`,
   },
   {
     name: 'E2E_ACCOUNT_API_TOKEN',

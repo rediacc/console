@@ -28,6 +28,7 @@ import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_MEDIA_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import {
   type ManifestAsset,
   saveManifest,
@@ -124,7 +125,7 @@ function statOrNull(p: string) {
 function main(): void {
   const manifest: VideoManifest = {
     generatedAt: new Date().toISOString(),
-    baseUrl: 'https://media.rediacc.com',
+    baseUrl: WK_MEDIA_ORIGIN,
     tutorials: {},
     solutions: {},
   };

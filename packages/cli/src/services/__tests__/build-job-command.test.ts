@@ -15,6 +15,7 @@
  * telemetry rules (renet#51): an opt-out must never ship OTLP credentials.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import {
   buildJobCancelCommand,
@@ -81,10 +82,10 @@ describe('buildJobStartCommand', () => {
     const cmd = startCommand({
       isDevelopment: false,
       telemetryDisabled: false,
-      kubeconfig: '/mnt/rediacc/mounts/abc/kubeconfig',
+      kubeconfig: `${WK_DATASTORE_PATH}/mounts/abc/kubeconfig`,
     });
 
-    expect(cmd).toContain(`KUBECONFIG='/mnt/rediacc/mounts/abc/kubeconfig'`);
+    expect(cmd).toContain(`KUBECONFIG='${WK_DATASTORE_PATH}/mounts/abc/kubeconfig'`);
   });
 
   it('renders the timeout as a Go duration', () => {

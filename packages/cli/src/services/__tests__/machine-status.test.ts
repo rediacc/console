@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildListCommand,
@@ -56,21 +57,21 @@ describe('buildListCommand', () => {
   const base = {
     envPrefix: '',
     remoteRenetPath: '/usr/lib/rediacc/renet/current/renet',
-    datastore: '/mnt/rediacc',
+    datastore: WK_DATASTORE_PATH,
   };
 
   it('omits --sections when no filter is given', () => {
     expect(buildListCommand(base)).toBe(
-      'sudo /usr/lib/rediacc/renet/current/renet list all --datastore /mnt/rediacc --json'
+      `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json`
     );
   });
 
   it('propagates a caller-provided sections filter', () => {
     expect(buildListCommand({ ...base, sections: ['containers'] })).toBe(
-      'sudo /usr/lib/rediacc/renet/current/renet list all --datastore /mnt/rediacc --json --sections containers'
+      `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json --sections containers`
     );
     expect(buildListCommand({ ...base, sections: ['system', 'repositories'] })).toBe(
-      'sudo /usr/lib/rediacc/renet/current/renet list all --datastore /mnt/rediacc --json --sections system,repositories'
+      `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json --sections system,repositories`
     );
   });
 

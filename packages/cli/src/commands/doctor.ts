@@ -1,6 +1,11 @@
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { DEFAULTS } from '@rediacc/shared/config';
+import {
+  WK_DOCKER_INSTALL_DOCS,
+  WK_GO_DL_BASE,
+  WK_SITE_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { isSubscriptionActive, type SubscriptionStatus } from '@rediacc/shared/subscription';
 import chalk from 'chalk';
 import { Command } from 'commander';
@@ -117,14 +122,14 @@ function checkEnvironment(): CheckSection {
         ['version'],
         (o) => o.replace(/^go version\s+/, '').split(/\s/)[0],
         'commands.doctor.checks.goInstalled',
-        'Install Go from https://go.dev/dl/'
+        `Install Go from ${WK_GO_DL_BASE}/`
       ),
       checkToolVersion(
         'docker',
         ['--version'],
         (o) => `Docker ${o.replace(/^Docker version\s+/, '').split(/,/)[0]}`,
         'commands.doctor.checks.dockerAvailable',
-        'Install Docker from https://docs.docker.com/get-docker/'
+        `Install Docker from ${WK_DOCKER_INSTALL_DOCS}/`
       )
     );
   }
@@ -323,9 +328,9 @@ const TIMEOUT_SENTINEL = Symbol('timeout');
 type LicenseReport = Awaited<ReturnType<typeof fetchSubscriptionLicenseReport>> & object;
 
 function getInactiveStatusHint(status: string): string {
-  if (status === 'EXPIRED') return 'Subscription expired. Renew at https://www.rediacc.com/account';
+  if (status === 'EXPIRED') return `Subscription expired. Renew at ${WK_SITE_ORIGIN}/account`;
   if (status === 'SUSPENDED') return 'Subscription suspended. Contact support or check billing';
-  return 'Subscription inactive. Activate at https://www.rediacc.com/account';
+  return `Subscription inactive. Activate at ${WK_SITE_ORIGIN}/account`;
 }
 
 function checkSubscriptionStatus(checks: CheckResult[], report: LicenseReport): void {
@@ -344,7 +349,7 @@ function checkSubscriptionStatus(checks: CheckResult[], report: LicenseReport): 
       name: t('commands.doctor.checks.subscriptionStatus'),
       value: `${report.planCode} (GRACE)`,
       status: 'warn',
-      hint: 'Subscription is in grace period. Renew at https://www.rediacc.com/account',
+      hint: `Subscription is in grace period. Renew at ${WK_SITE_ORIGIN}/account`,
     });
   } else {
     checks.push({

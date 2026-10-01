@@ -38,6 +38,7 @@ import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_GH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import {
   parseBlockeredList,
   validateBlockerQuality,
@@ -736,7 +737,7 @@ async function fetchChangelogUrl(packageName: string): Promise<string | null> {
           if (repoUrl.includes('github.com')) {
             const match = repoUrl.match(/github\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);
             if (match) {
-              changelogUrl = `https://github.com/${match[1]}/${match[2]}/releases`;
+              changelogUrl = `${WK_GH_ORIGIN}/${match[1]}/${match[2]}/releases`;
             }
           } else if (repoUrl.includes('gitlab.com')) {
             const match = repoUrl.match(/gitlab\.com[/:]([\w.-]+)\/([\w.-]+?)(\.git)?$/);

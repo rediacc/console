@@ -39,6 +39,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  WK_GH_API_BASE,
+  WK_RELEASES_ORIGIN,
+  WK_SITE_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { globSync } from 'glob';
 import { githubToken } from '../lib/github-token.js';
 
@@ -114,7 +119,7 @@ const ALLOWLISTED_DOMAINS = new Set([
   // this wave; nothing in 09654cc45 touched those files. Same class as azure.microsoft.com above -- HEAD unimplemented AND the host unreachable from automated clients, and only the first half is fixable here. Recheck by removing this line: the liveness audit below warns when an allowlisted domain starts answering again, so the exemption cannot outlive its reason quietly.
   'marketplace.visualstudio.com',
   // Own infrastructure -- only available after releases, not during CI
-  'releases.rediacc.com',
+  new URL(WK_RELEASES_ORIGIN).host,
   // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured 2026-07-29 with this file's own headers: BOTH the deep resource page and the bare domain root answer 403, so it is a whole-domain WAF block on the client rather than a dead page; it renders in a browser.
   'signmycode.com',
 ]);
@@ -132,7 +137,7 @@ const KNOWN_BROKEN = new Map<string, string>([
   //
   // The entry STAYS because both files still name the dead URL in prose, while explaining why not to call it. Removing it would re-red the link check.
   [
-    'https://www.rediacc.com/api/public/account-key',
+    `${WK_SITE_ORIGIN}/api/public/account-key`,
     'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command',
   ],
   // NOTE: a comment block for a gnupg.org entry used to sit here, describing the domain as unreachable from two networks on 2026-07-30. Its ENTRY is gone -- removed when the host came back -- and the prose outlived it, ending mid-sentence where the deleted line used to be. A reason with no entry reads as an entry to a skimming reader, so it is removed rather than left as
@@ -296,18 +301,18 @@ function toApiUrl(url: string): string | null {
     if (!/^\d+$/.test(num)) return null;
     // The issues endpoint returns both issues and PRs (PRs are issues with
     // a pull_request field), so a single lookup works for either form.
-    return `https://api.github.com/repos/${owner}/${repo}/issues/${num}`;
+    return `${WK_GH_API_BASE}/repos/${owner}/${repo}/issues/${num}`;
   }
   // tree and blob: check that the ref + path exists via the contents endpoint.
   // rest is <ref>/<path...>; collapse into contents/<path>?ref=<ref>.
   const slash = rest.indexOf('/');
   if (slash === -1) {
     // /tree/<branch> with no path — verify the branch exists.
-    return `https://api.github.com/repos/${owner}/${repo}/branches/${rest}`;
+    return `${WK_GH_API_BASE}/repos/${owner}/${repo}/branches/${rest}`;
   }
   const ref = rest.slice(0, slash);
   const path = rest.slice(slash + 1);
-  return `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
+  return `${WK_GH_API_BASE}/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
 }
 
 async function checkUrl(

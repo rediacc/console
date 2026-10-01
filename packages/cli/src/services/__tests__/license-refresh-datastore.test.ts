@@ -20,6 +20,11 @@
  * caller that passes no requestedSizeGb, so it is the only one that reaches the
  * probe. These assertions read the exact commands that reached the machine.
  */
+
+import {
+  WK_ACCOUNT_DEV_PORT,
+  WK_DATASTORE_PATH,
+} from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
@@ -28,7 +33,7 @@ const MACHINE_ID = '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1ac
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
 const DATASTORE_ID = '0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0';
 const NAMED_MOUNT = '/mnt/rediacc-ds/tier1';
-const DEFAULT_MOUNT = '/mnt/rediacc';
+const DEFAULT_MOUNT = WK_DATASTORE_PATH;
 const SEVEN_GIB = 7 * 1024 * 1024 * 1024;
 
 vi.mock('node:fs/promises', () => ({
@@ -38,7 +43,7 @@ vi.mock('node:fs/promises', () => ({
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: vi.fn(() => ({
     kind: 'ready',
-    serverUrl: 'http://localhost:4800',
+    serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
     token: { token: 'rdt_test' },
   })),
 }));

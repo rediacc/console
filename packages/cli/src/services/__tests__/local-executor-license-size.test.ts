@@ -13,6 +13,11 @@
  * output: a check on the rendered message would have passed against the broken
  * build too.
  */
+
+import {
+  WK_ACCOUNT_DEV_PORT,
+  WK_DATASTORE_PATH,
+} from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -107,7 +112,7 @@ const PARENT_GUID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const FORK_GUID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const DATASTORE_ID = '0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0';
 const NAMED_MOUNT = '/mnt/rediacc-ds/tier1';
-const DEFAULT_MOUNT = '/mnt/rediacc';
+const DEFAULT_MOUNT = WK_DATASTORE_PATH;
 const SEVEN_GIB = 7 * 1024 * 1024 * 1024;
 
 /** The exact probe the executor should emit for one mount + guid. */
@@ -212,7 +217,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     mockRefreshRepoLicenseIdentity.mockResolvedValue(undefined);
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       token: { token: 'rdt_test' },
     });
     mockExecStreaming.mockResolvedValue(0);
@@ -334,7 +339,7 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
     mockRefreshRepoLicenseIdentity.mockResolvedValue(undefined);
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       token: { token: 'rdt_test' },
     });
     mockExecStreaming.mockResolvedValue(0);

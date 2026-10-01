@@ -33,6 +33,7 @@
  * v1, the primitives compose.
  */
 
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { CanarySet } from '@rediacc/shared/config-schema';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
@@ -41,8 +42,8 @@ import { resolveExecutionTarget } from './cluster-target.js';
 import { dispatch, repoKeySlug } from './repo-replicate.js';
 
 /** Overlay-set label (shared with replicate; kube_delete scopes to it). */
-const REPLICA_LABEL = 'rediacc.io/replica-set';
-const INJECTED_LABEL = 'rediacc.io/injected';
+const REPLICA_LABEL = `${WK_INFRA_DOMAIN}/replica-set`;
+const INJECTED_LABEL = `${WK_INFRA_DOMAIN}/injected`;
 
 // Test seam (mirrors repo-replicate-ops).
 let clockFn: () => number = () => Date.now();

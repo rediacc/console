@@ -6,6 +6,7 @@
  * that the executor module consumes.
  */
 
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { BackupStrategyConfig } from '../../types/index.js';
 import { outputService } from '../core/output.js';
@@ -142,7 +143,7 @@ async function listRemoteUnitPaths(sftp: SFTPClient): Promise<string[]> {
   const cmd =
     `sudo sh -c "find /etc/systemd/system -maxdepth 1 ` +
     `\\( -name 'rediacc-backup-*.service' -o -name 'rediacc-backup-*.timer' \\) -printf '%p\\n' 2>/dev/null; ` +
-    `find /etc/rediacc -maxdepth 1 -name 'backup-*.env' -printf '%p\\n' 2>/dev/null; true"`;
+    `find ${WK_ETC_DIR} -maxdepth 1 -name 'backup-*.env' -printf '%p\\n' 2>/dev/null; true"`;
   const { stdout } = await captureStdout(sftp, cmd);
   return stdout
     .split('\n')

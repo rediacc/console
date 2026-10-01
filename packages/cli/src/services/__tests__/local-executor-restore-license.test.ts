@@ -17,6 +17,8 @@
  * failure is a plain error string and never the structured LICENSE_REQUIRED
  * that the CLI's recovery framework watches for.
  */
+
+import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -199,7 +201,7 @@ describe('backup restore: licensing the target machine', () => {
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
-      serverUrl: 'http://localhost:4800',
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       token: { token: 'rdt_test' },
     });
     mockAccountServerFetch.mockResolvedValue({

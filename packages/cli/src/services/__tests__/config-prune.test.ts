@@ -1,4 +1,5 @@
 import { gunzipSync, gzipSync } from 'node:zlib';
+import { WK_CLOUD_ORIGIN, WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { ArchivedRepository, RdcConfig } from '@rediacc/shared/config-schema';
 import { describe, expect, it } from 'vitest';
 import {
@@ -6,6 +7,8 @@ import {
   classifyArchives,
   pruneCertCacheBuckets,
 } from '../config/config-prune.js';
+
+const CLOUD_HOST = new URL(WK_CLOUD_ORIGIN).host;
 
 /** Build the same compressed-base64 shape the cert-cache writer uses. */
 function packAcme(acme: object): string {
@@ -122,8 +125,8 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       },
       state: {
         certCache: {
-          'rediacc.io': {
-            baseDomain: 'rediacc.io',
+          [WK_INFRA_DOMAIN]: {
+            baseDomain: WK_INFRA_DOMAIN,
             updatedAt: '2026-01-01T00:00:00Z',
             sourceMachine: 'hostinger',
             certCount: domains.length,
@@ -142,7 +145,7 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       `*.${deadGuid}.hostinger.rediacc.io`, // <- should be dropped
       '*.hostinger.rediacc.io', // <- machine-level wildcard, kept
       '*.unknown-machine.rediacc.io', // <- should be dropped
-      'cloud.rediacc.io', // <- top-level subdomain, kept
+      CLOUD_HOST, // <- top-level subdomain, kept
     ]);
     const anchors = buildConfigAnchors(cfg);
 
@@ -152,11 +155,11 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       [`*.${deadGuid}.hostinger.rediacc.io`, '*.unknown-machine.rediacc.io'].sort()
     );
 
-    const bucket = cfg.state!.certCache!['rediacc.io'];
+    const bucket = cfg.state!.certCache![WK_INFRA_DOMAIN];
     // Derived metadata must follow the cert filtering.
     expect(bucket.certCount).toBe(3);
     expect(Object.keys(bucket.certs).sort()).toEqual(
-      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', 'cloud.rediacc.io'].sort()
+      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', CLOUD_HOST].sort()
     );
 
     // The data blob should round-trip back to a parseable acme.json with the same kept domains. This is the bit that the dry-run path never exercises, gzip → filter → gzip → base64 must not corrupt the chain.
@@ -167,7 +170,7 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
     };
     const finalDomains = parsed.letsencrypt.Certificates.map((c) => c.domain.main).sort();
     expect(finalDomains).toEqual(
-      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', 'cloud.rediacc.io'].sort()
+      [`*.${liveGuid}.hostinger.rediacc.io`, '*.hostinger.rediacc.io', CLOUD_HOST].sort()
     );
   });
 
@@ -176,20 +179,20 @@ describe('pruneCertCacheBuckets — round-trip through gzip/base64', () => {
       `*.${liveGuid}.hostinger.rediacc.io`,
       '*.hostinger.rediacc.io',
     ]);
-    const beforeData = cfg.state!.certCache!['rediacc.io'].data;
+    const beforeData = cfg.state!.certCache![WK_INFRA_DOMAIN].data;
     const before = JSON.stringify(cfg);
 
     const removed = pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg));
     expect(removed).toHaveLength(0);
 
     // Bucket left untouched (data, certs, certCount all unchanged).
-    expect(cfg.state!.certCache!['rediacc.io'].data).toBe(beforeData);
+    expect(cfg.state!.certCache![WK_INFRA_DOMAIN].data).toBe(beforeData);
     expect(JSON.stringify(cfg)).toBe(before);
   });
 
   it('skips a bucket whose data field is corrupt rather than throwing', () => {
     const cfg = buildConfigWithCacheBucket([`*.${deadGuid}.hostinger.rediacc.io`]);
-    cfg.state!.certCache!['rediacc.io'].data = 'not-real-base64-or-gzip';
+    cfg.state!.certCache![WK_INFRA_DOMAIN].data = 'not-real-base64-or-gzip';
     const before = JSON.stringify(cfg);
 
     const removed = pruneCertCacheBuckets(cfg, buildConfigAnchors(cfg));

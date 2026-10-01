@@ -11,6 +11,7 @@ vi.mock('../../services/core/output.js', () => ({ outputService: { info: vi.fn()
 vi.mock('../../services/config/config-resources.js', () => ({ configService: {} }));
 vi.mock('../../i18n/index.js', () => ({ t: (k: string) => k }));
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { createRepoNameResolver } from '../../utils/guid-resolver.js';
 import {
   buildStorageHealthRows,
@@ -23,7 +24,7 @@ function makeSystem(diskAvail: string, dsAvail: string, dsTotal = '364.5G'): Sys
   return {
     disk: { total: '386.4G', used: '0G', available: diskAvail, use_percent: '0%' },
     datastore: {
-      path: '/mnt/rediacc',
+      path: WK_DATASTORE_PATH,
       total: dsTotal,
       used: '0G',
       available: dsAvail,
@@ -44,7 +45,7 @@ describe('deriveStorageSummary', () => {
     expect(s?.limitedBy).toBe('datastore');
     expect(s?.effectiveFree).toBe('6.5G');
     expect(s?.datastorePool).toBe('364.5G');
-    expect(s?.datastorePath).toBe('/mnt/rediacc');
+    expect(s?.datastorePath).toBe(WK_DATASTORE_PATH);
   });
 
   it('reports disk as the limiting resource when it has less free space', () => {

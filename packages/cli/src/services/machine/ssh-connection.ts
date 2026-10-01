@@ -4,6 +4,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { t } from '../../i18n/index.js';
 import { repoTagFromName } from '../../remote/repository/index.js';
 import { debugLog } from '../../utils/debug.js';
@@ -97,7 +98,7 @@ function buildRepositoryEnvFromVault(
 
   const dockerSocket = (machineVault.dockerSocket ??
     (networkId
-      ? `/var/run/rediacc/docker-${networkId}.sock`
+      ? `${WK_RUNTIME_DIR}/docker-${networkId}.sock`
       : DEFAULTS.DOCKER.SOCKET_PATH)) as string;
   const dockerHost = (machineVault.dockerHost ?? `unix://${dockerSocket}`) as string;
 

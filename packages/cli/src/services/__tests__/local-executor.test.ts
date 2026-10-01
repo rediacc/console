@@ -1,3 +1,8 @@
+import {
+  WK_ACCOUNT_DEV_PORT,
+  WK_DATASTORE_PATH,
+  WK_GH_REPO,
+} from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** The real `buildLocalVault` parameter shape, so the mock records a typed call. */
@@ -147,7 +152,7 @@ describe('localExecutorService first-use onboarding', () => {
     mockAuthorizeSubscriptionViaDeviceCode.mockResolvedValue({
       storedToken: {
         token: 'rdt_test',
-        serverUrl: 'http://localhost:4800',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       },
       status: { subscriptionId: 'sub_1' },
     });
@@ -182,7 +187,7 @@ describe('localExecutorService first-use onboarding', () => {
     expect(result.success).toBe(true);
   });
 
-  it('issues a license on missing-license recovery for operate-tier repository_up (rediacc/console#482)', async () => {
+  it(`issues a license on missing-license recovery for operate-tier repository_up (${WK_GH_REPO}#482)`, async () => {
     // repository_up is on the pre-flight deny-list, but recovery after a genuine missing-license failure on a fresh machine must still issue.
     mockExecStreaming
       .mockImplementationOnce((_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
@@ -818,7 +823,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         ip: '127.0.0.1',
         user: 'root',
         port: 22,
-        datastore: '/mnt/rediacc',
+        datastore: WK_DATASTORE_PATH,
       });
 
       await localExecutorService.execute({
@@ -828,7 +833,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       });
 
       const opts = mockBuildLocalVault.mock.calls[0][0] as { machine: { datastore?: string } };
-      expect(opts.machine.datastore).toBe('/mnt/rediacc');
+      expect(opts.machine.datastore).toBe(WK_DATASTORE_PATH);
     });
   });
 

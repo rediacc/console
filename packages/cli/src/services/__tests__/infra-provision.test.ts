@@ -35,6 +35,7 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import {
   buildInfraPayload,
   ensureClusterDnsRecords,
@@ -43,7 +44,7 @@ import {
 } from '../provision/infra-provision.js';
 
 const baseInfra: InfraConfig = {
-  baseDomain: 'rediacc.io',
+  baseDomain: WK_INFRA_DOMAIN,
   publicIPv4: '72.61.137.225',
   publicIPv6: '2a02:4780:c:e9b5::1',
   tcpPorts: [],

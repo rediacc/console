@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   buildSyncRemotePaths,
@@ -118,7 +119,7 @@ describe('validateDownloadOptions', () => {
 });
 
 describe('buildSyncRemotePaths', () => {
-  const base = '/mnt/rediacc/mounts/repo-guid';
+  const base = `${WK_DATASTORE_PATH}/mounts/repo-guid`;
 
   it('directory mode without subpath: trailing slash and "."', () => {
     const r = buildSyncRemotePaths(base, undefined, false);

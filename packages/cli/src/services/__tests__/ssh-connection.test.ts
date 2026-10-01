@@ -29,13 +29,14 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
+import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { getSSHConnectionDetails } from '../machine/ssh-connection.js';
 
 const baseMachineVault = {
   ip: '10.0.0.1',
   port: 22,
   known_hosts: 'ssh-ed25519 AAAA...',
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
   universalUser: 'rediacc',
 };
 
@@ -48,7 +49,7 @@ const baseRepoVault = {
   networkId: 'abc123',
   networkMode: 'bridge',
   tag: 'latest',
-  workingDirectory: '/mnt/rediacc/mounts/guid-1234',
+  workingDirectory: `${WK_DATASTORE_PATH}/mounts/guid-1234`,
 };
 
 describe('getSSHConnectionDetails', () => {
@@ -67,15 +68,15 @@ describe('getSSHConnectionDetails', () => {
     expect(result.host).toBe('10.0.0.1');
     expect(result.port).toBe(22);
     expect(result.user).toBe('rediacc');
-    expect(result.datastore).toBe('/mnt/rediacc');
+    expect(result.datastore).toBe(WK_DATASTORE_PATH);
     expect(result.universalUser).toBe('rediacc');
     expect(result.environment).toEqual({
       REDIACC_TEAM: 'team1',
       REDIACC_MACHINE: 'server-1',
-      REDIACC_DATASTORE: '/mnt/rediacc',
+      REDIACC_DATASTORE: WK_DATASTORE_PATH,
       REDIACC_DATASTORE_USER: 'rediacc',
     });
-    expect(result.workingDirectory).toBe('/mnt/rediacc');
+    expect(result.workingDirectory).toBe(WK_DATASTORE_PATH);
     expect(result.repositoryPath).toBeUndefined();
     expect(result.networkId).toBeUndefined();
   });
@@ -90,19 +91,19 @@ describe('getSSHConnectionDetails', () => {
     const result = await getSSHConnectionDetails('team1', 'server-1', 'my-app');
 
     expect(result.host).toBe('10.0.0.1');
-    expect(result.datastore).toBe('/mnt/rediacc');
+    expect(result.datastore).toBe(WK_DATASTORE_PATH);
     expect(result.universalUser).toBe('rediacc');
     expect(result.repositoryPath).toBe('/home/my-app');
     expect(result.networkId).toBe('abc123');
-    expect(result.workingDirectory).toBe('/mnt/rediacc/mounts/guid-1234');
+    expect(result.workingDirectory).toBe(`${WK_DATASTORE_PATH}/mounts/guid-1234`);
     expect(result.environment).toMatchObject({
       REDIACC_TEAM: 'team1',
       REDIACC_MACHINE: 'server-1',
       REDIACC_REPOSITORY: 'my-app',
       REDIACC_NETWORK_ID: 'abc123',
-      REDIACC_WORKING_DIR: '/mnt/rediacc/mounts/guid-1234',
-      DOCKER_SOCKET: '/var/run/rediacc/docker-abc123.sock',
-      DOCKER_HOST: 'unix:///var/run/rediacc/docker-abc123.sock',
+      REDIACC_WORKING_DIR: `${WK_DATASTORE_PATH}/mounts/guid-1234`,
+      DOCKER_SOCKET: `${WK_RUNTIME_DIR}/docker-abc123.sock`,
+      DOCKER_HOST: `unix://${WK_RUNTIME_DIR}/docker-abc123.sock`,
     });
   });
 

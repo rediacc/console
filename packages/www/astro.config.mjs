@@ -2,21 +2,23 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import { execSync } from 'child_process';
+
 // Version is injected by CI via APP_VERSION (resolved from git tags). Local dev shows 0.0.0-dev. No git-describe fallback — version resolution is the caller's job, not the build's.
 const version = process.env.APP_VERSION || '0.0.0-dev';
 
-import react from '@astrojs/react';
-import mdx from '@astrojs/mdx';
 // Astro 7 renders Markdown with Sätteri by default; the site's remark/rehype plugins need the unified processor from this package.
 import { unified } from '@astrojs/markdown-remark';
+import mdx from '@astrojs/mdx';
+import react from '@astrojs/react';
 import sitemap, { ChangeFreqEnum } from '@astrojs/sitemap';
+import { WK_SITE_ORIGIN } from '../shared/src/config/well-known.generated.ts';
+import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
+import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
+import { rehypeStableHeadingIds } from './src/plugins/rehype-stable-heading-ids.mjs';
+import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
-import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
-import { rehypeStableHeadingIds } from './src/plugins/rehype-stable-heading-ids.mjs';
-import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
-import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
 
 // Integration to generate search index before build. A failure fails the BUILD: the generator deletes the previous index files before writing, so swallowing its error ships a site with no search index while exiting 0.
 const searchIndexIntegration = {
@@ -30,7 +32,7 @@ const searchIndexIntegration = {
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com',
+  site: process.env.PUBLIC_SITE_URL || WK_SITE_ORIGIN,
   trailingSlash: 'never',
   integrations: [
     react(),
@@ -79,7 +81,7 @@ export default defineConfig({
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }
         // Root homepage
-        else if (url === (process.env.PUBLIC_SITE_URL || 'https://www.rediacc.com') + '/') {
+        else if (url === (process.env.PUBLIC_SITE_URL || WK_SITE_ORIGIN) + '/') {
           item.priority = 1.0;
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }

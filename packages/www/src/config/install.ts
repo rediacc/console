@@ -1,7 +1,12 @@
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import {
+  WK_HOMEBREW_TAP,
+  WK_IMAGE_REGISTRY,
+  WK_RELEASES_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { SITE_URL } from './constants';
 
-const RELEASES_URL = 'https://releases.rediacc.com';
+const RELEASES_URL = WK_RELEASES_ORIGIN;
 const CHANNEL = import.meta.env.PUBLIC_REPO_CHANNEL ?? UPDATE_DEFAULTS.CHANNEL;
 
 export type Platform = 'linux' | 'macos' | 'windows';
@@ -57,13 +62,13 @@ Invoke-WebRequest -Uri ${RELEASES_URL}/cli/${CHANNEL}/rdc-win-arm64.exe -OutFile
 };
 
 export const DOCKER_COMMANDS = `# Pull the image
-docker pull ghcr.io/rediacc/rdc:${CHANNEL}
+docker pull ${WK_IMAGE_REGISTRY}/rdc:${CHANNEL}
 
 # Run a command
-docker run --rm ghcr.io/rediacc/rdc:${CHANNEL} --version
+docker run --rm ${WK_IMAGE_REGISTRY}/rdc:${CHANNEL} --version
 
 # Create an alias for convenience
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:${CHANNEL}'`;
+alias rdc='docker run --rm -it -v $(pwd):/workspace ${WK_IMAGE_REGISTRY}/rdc:${CHANNEL}'`;
 
 export const APT_COMMANDS = `curl -fsSL ${RELEASES_URL}/apt/${CHANNEL}/gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/rediacc.gpg
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] ${RELEASES_URL}/apt/${CHANNEL} stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
@@ -87,7 +92,7 @@ Server = ${RELEASES_URL}/archlinux/${CHANNEL}/\\$arch" | sudo tee -a /etc/pacman
 # Install
 sudo pacman -Sy rediacc-cli`;
 
-export const HOMEBREW_COMMAND = 'brew install rediacc/tap/rediacc-cli';
+export const HOMEBREW_COMMAND = `brew install ${WK_HOMEBREW_TAP}/rediacc-cli`;
 
 export interface MethodMeta {
   id: InstallMethod;

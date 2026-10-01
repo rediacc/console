@@ -1,3 +1,4 @@
+import { WK_INFRA_DOMAIN, WK_OPT_DIR } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { downloadCertCache } from '../account/cert-cache.js';
@@ -42,7 +43,7 @@ describe('downloadCertCache connection sharing', () => {
     vi.clearAllMocks();
     mockConfigService.getLocalConfig.mockResolvedValue({
       machines: {
-        m1: { ip: '127.0.0.1', user: 'root', infra: { baseDomain: 'rediacc.io' } },
+        m1: { ip: '127.0.0.1', user: 'root', infra: { baseDomain: WK_INFRA_DOMAIN } },
       },
     });
     mockConfigService.getCurrent.mockResolvedValue({});
@@ -61,13 +62,16 @@ describe('downloadCertCache connection sharing', () => {
 
     expect(result).toEqual({ certCount: 0, compressedSize: expect.any(Number) });
     expect(mockAcquire).not.toHaveBeenCalled();
-    expect(exec).toHaveBeenCalledWith('sudo cat /opt/rediacc/proxy/letsencrypt/acme.json');
+    expect(exec).toHaveBeenCalledWith(`sudo cat ${WK_OPT_DIR}/proxy/letsencrypt/acme.json`);
     // The caller owns the shared connection; it must not be closed here.
     expect(close).not.toHaveBeenCalled();
     expect(mockConfigService.setStateBucket).toHaveBeenCalledWith(
       'certCache',
       expect.objectContaining({
-        'rediacc.io': expect.objectContaining({ baseDomain: 'rediacc.io', sourceMachine: 'm1' }),
+        [WK_INFRA_DOMAIN]: expect.objectContaining({
+          baseDomain: WK_INFRA_DOMAIN,
+          sourceMachine: 'm1',
+        }),
       })
     );
   });
@@ -77,7 +81,9 @@ describe('downloadCertCache connection sharing', () => {
 
     expect(result).toEqual({ certCount: 0, compressedSize: expect.any(Number) });
     expect(mockAcquire).toHaveBeenCalledExactlyOnceWith('m1');
-    expect(mockLeaseExec).toHaveBeenCalledWith('sudo cat /opt/rediacc/proxy/letsencrypt/acme.json');
+    expect(mockLeaseExec).toHaveBeenCalledWith(
+      `sudo cat ${WK_OPT_DIR}/proxy/letsencrypt/acme.json`
+    );
     expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 

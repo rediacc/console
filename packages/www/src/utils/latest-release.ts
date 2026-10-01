@@ -1,6 +1,7 @@
+import { WK_GH_API_BASE } from '@rediacc/shared/config/well-known.generated';
+import { githubToken } from '../../../../scripts/lib/github-token.ts';
 import { GITHUB_REPO } from '../config/constants';
 import type { GitHubRelease } from './release-parser';
-import { githubToken } from '../../../../scripts/lib/github-token.ts';
 
 /**
  * The latest GitHub release, fetched ONCE per build and shared by every locale.
@@ -32,7 +33,7 @@ async function fetchOnce(): Promise<GitHubRelease | null> {
   if (token !== undefined && token !== '') headers.Authorization = `Bearer ${token}`;
 
   try {
-    const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+    const response = await fetch(`${WK_GH_API_BASE}/repos/${GITHUB_REPO}/releases/latest`, {
       headers,
     });
     if (!response.ok) {

@@ -6,8 +6,9 @@
  */
 
 import { request as httpsRequest } from 'node:https';
+import { WK_CF_API_BASE } from '@rediacc/shared/config/well-known.generated';
 
-const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
+const CF_API_BASE = WK_CF_API_BASE;
 
 interface DnsRecord {
   id: string;

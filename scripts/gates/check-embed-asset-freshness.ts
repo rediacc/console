@@ -44,17 +44,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_GH_API_BASE, WK_RENET_REPO } from '@rediacc/shared/config/well-known.generated';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
+import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 // Extracted so scripts/gates/check-suppression-liveness.ts can reuse the inventory without importing this module (which runs main() at import time).
 import {
   EMBED_ASSET_SOURCES as SOURCES,
   type EmbedAssetSource as Source,
 } from '../lib/embed-asset-sources.js';
-import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
-import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { githubToken } from '../lib/github-token.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -173,7 +174,7 @@ async function latestFor(src: Source): Promise<Latest> {
   if (src.kind === 'github') {
     // /releases/latest excludes prereleases/drafts — the stable line we track.
     try {
-      const rel = (await fetchJson(`https://api.github.com/repos/${src.repo}/releases/latest`)) as {
+      const rel = (await fetchJson(`${WK_GH_API_BASE}/repos/${src.repo}/releases/latest`)) as {
         tag_name?: string;
         published_at?: string;
       };
@@ -186,7 +187,7 @@ async function latestFor(src: Source): Promise<Latest> {
       // Projects that tag but never cut GitHub "releases" (e.g. CRIU) 404 on /releases/latest — fall back to the tags list and take the highest stable vX.Y.Z. Tags carry no publish date, so the freshness window can't apply (treated as old enough).
       if (!/HTTP 404/.test((err as Error).message)) throw err;
       const tags = (await fetchJson(
-        `https://api.github.com/repos/${src.repo}/tags?per_page=100`
+        `${WK_GH_API_BASE}/repos/${src.repo}/tags?per_page=100`
       )) as Array<{ name?: string }>;
       const stable = tags
         .map((t) => t.name ?? '')
@@ -200,7 +201,7 @@ async function latestFor(src: Source): Promise<Latest> {
       //
       // A tag carries no publish time of its own, and this gate treats a null date as NOT deferred, so CRIU — which tags but never cuts GitHub releases — was the one component that got NO grace period at all: the moment upstream pushed a tag, the very next CI run went red. Every other component soaked for a day. One extra request buys uniform behaviour.
       const commit = (await fetchJson(
-        `https://api.github.com/repos/${src.repo}/commits/${encodeURIComponent(`v${newest}`)}`
+        `${WK_GH_API_BASE}/repos/${src.repo}/commits/${encodeURIComponent(`v${newest}`)}`
       )) as { commit?: { committer?: { date?: string } } };
       const date = commit.commit?.committer?.date;
       return { version: newest, publishedAt: date ? new Date(date) : null };
@@ -342,7 +343,7 @@ async function main(): Promise<void> {
   console.error('  then, for each bumped component:');
   console.error('    1. rebuild the builder image so the new binaries are pulled:');
   console.error(
-    '         (cd private/renet && docker build -t rediacc/renet:latest . && ./build.sh embed_assets --force)'
+    `         (cd private/renet && docker build -t ${WK_RENET_REPO}:latest . && ./build.sh embed_assets --force)`
   );
   console.error('    2. refresh any SHA256 pin (zot/k3s) + the AssetK3sVersion const in');
   console.error('       private/renet/pkg/embed/embed.go if k3s changed;');

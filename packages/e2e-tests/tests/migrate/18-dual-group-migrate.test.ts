@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { expect, test } from '@playwright/test';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { BridgeTestRunner } from '../../src/utils/bridge/BridgeTestRunner';
 import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/bridge/OpsManager';
 import type { ExecResult } from '../../src/utils/bridge/types';
@@ -36,7 +37,7 @@ const B_WORKER_ID = Number.parseInt(process.env.GROUP_B_WORKER ?? '51', 10);
 const B_WORKER_IP = `${B_NET}.${B_WORKER_ID}`;
 const B_NODE = `rediacc${B_WORKER_ID}`;
 
-const DATASTORE = '/mnt/rediacc';
+const DATASTORE = WK_DATASTORE_PATH;
 const K3S = '/usr/local/bin/rediacc-k3s';
 // Network IDs must be 2816 + n*64. Suites 15/16/17 use 2816-3328; suite 18 uses
 // 3392 (source) and reuses it on the destination (the image carries its netID).

@@ -6,6 +6,7 @@
  */
 
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { configService } from './config/config-resources.js';
 import { readSSHKey } from './renet/renet-execution.js';
 
@@ -203,8 +204,8 @@ class LocalVaultProvider implements VaultProvider {
         );
       }
       const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-      machineVault.dockerHost = `unix:///var/run/rediacc/docker-${repoConfig.networkId}.sock`;
-      machineVault.dockerSocket = `/var/run/rediacc/docker-${repoConfig.networkId}.sock`;
+      machineVault.dockerHost = `unix://${WK_RUNTIME_DIR}/docker-${repoConfig.networkId}.sock`;
+      machineVault.dockerSocket = `${WK_RUNTIME_DIR}/docker-${repoConfig.networkId}.sock`;
 
       // Resolve per-repo secrets into the two delivery channels:
       //   env  → REDIACC_SECRET_<NAME> in the SSH/renet shell; compose

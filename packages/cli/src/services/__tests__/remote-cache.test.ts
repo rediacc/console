@@ -12,6 +12,7 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: mockConfigFileStorage,
 }));
 
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import type { RdcConfig } from '../../types/index.js';
 import {
   formatStaleCacheWarning,
@@ -33,7 +34,7 @@ const local: RdcConfig = {
   remote: { ...REMOTE, cachedVersion: 3, cachedAt: '2026-07-01T00:00:00.000Z' },
   encryption: { mode: 'master-password' },
   state: { repos: { shop: { latest: { networkId: 4 } } } },
-  account: { userEmail: 'me@example.com', accountServer: 'https://eu.rediacc.com' },
+  account: { userEmail: 'me@example.com', accountServer: WK_ACCOUNT_DEFAULT_ORIGIN },
   defaults: { language: 'tr' },
   resources: { machines: { old: { ip: '10.0.0.1', user: 'root' } } },
 } as unknown as RdcConfig;
@@ -77,7 +78,7 @@ describe('mergeRemoteIntoCache', () => {
     expect(merged.defaults).toEqual({ language: 'en', datastoreSize: '90%' });
     // The pulled copy carries no account section, so no synced account key survives locally; the
     // device's own login does (logout is per device, ruling 2026-09-25).
-    expect(merged.account).toEqual({ accountServer: 'https://eu.rediacc.com' });
+    expect(merged.account).toEqual({ accountServer: WK_ACCOUNT_DEFAULT_ORIGIN });
   });
 
   it("keeps this device's login over the pulled copy's, absence included", () => {
@@ -91,7 +92,7 @@ describe('mergeRemoteIntoCache', () => {
     };
     expect(mergeRemoteIntoCache(local, withLogin, 5).account).toEqual({
       userEmail: 'ops@example.com',
-      accountServer: 'https://eu.rediacc.com',
+      accountServer: WK_ACCOUNT_DEFAULT_ORIGIN,
     });
     // A device that logged out keeps no login, whatever the pull carries.
     const loggedOut: RdcConfig = { ...local, account: { userEmail: 'me@example.com' } };

@@ -3,6 +3,7 @@
  * Ported from desktop/src/cli/core/env_bootstrap.py and repository_env.py
  */
 
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { repoTagFromName } from '../repository/repo-name.js';
 
 /**
@@ -67,7 +68,7 @@ export function buildRepositoryEnvironment(options: {
   // Derive Docker socket from networkId (per-repo isolated daemon)
   const resolvedSocket =
     dockerSocket ??
-    (networkId ? `/var/run/rediacc/docker-${networkId}.sock` : '/var/run/docker.sock');
+    (networkId ? `${WK_RUNTIME_DIR}/docker-${networkId}.sock` : '/var/run/docker.sock');
   const resolvedHost = dockerHost ?? `unix://${resolvedSocket}`;
 
   const fullRepoPath = `${datastore}${repositoryPath}`;

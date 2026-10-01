@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
+import { WK_RELEASES_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { getCacheDir, getStateDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { VERSION } from '../version.js';
@@ -55,7 +56,7 @@ export function getInstallMethod(): InstallMethod {
  * Get the npm install command for updating the CLI.
  */
 export function getNpmUpdateCommand(channel: string): string {
-  return `npm install -g https://releases.rediacc.com/npm/${channel}/rediacc-cli-latest.tgz`;
+  return `npm install -g ${WK_RELEASES_ORIGIN}/npm/${channel}/rediacc-cli-latest.tgz`;
 }
 
 /**

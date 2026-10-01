@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it, vi } from 'vitest';
 
 const mockGetRepository = vi.hoisted(() => vi.fn());
@@ -83,7 +84,7 @@ describe('LocalStateProvider', () => {
     function setupMachineWithRepo(repoConfig: Record<string, unknown>) {
       mockGetLocalConfig.mockResolvedValue({
         machines: {
-          srv: { ip: '1.2.3.4', user: 'root', knownHosts: 'kh', datastore: '/mnt/rediacc' },
+          srv: { ip: '1.2.3.4', user: 'root', knownHosts: 'kh', datastore: WK_DATASTORE_PATH },
         },
         ssh: { privateKeyPath: '/k' },
         renetPath: '/usr/bin/renet',
@@ -130,7 +131,7 @@ describe('LocalStateProvider', () => {
     it('machine-only vault (no repository) does not include env/file secrets', async () => {
       mockGetLocalConfig.mockResolvedValue({
         machines: {
-          srv: { ip: '1.2.3.4', user: 'root', knownHosts: 'kh', datastore: '/mnt/rediacc' },
+          srv: { ip: '1.2.3.4', user: 'root', knownHosts: 'kh', datastore: WK_DATASTORE_PATH },
         },
         ssh: { privateKeyPath: '/k' },
         renetPath: '/usr/bin/renet',

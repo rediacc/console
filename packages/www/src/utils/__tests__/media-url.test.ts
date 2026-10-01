@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { WK_MEDIA_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -42,18 +43,18 @@ function plant(rel: string): void {
 describe('cdnBaseUrl', () => {
   it('uses the manifest base when the env var is unset', async () => {
     const { cdnBaseUrl } = await loadFresh();
-    expect(cdnBaseUrl('https://media.rediacc.com')).toBe('https://media.rediacc.com');
+    expect(cdnBaseUrl(WK_MEDIA_ORIGIN)).toBe(WK_MEDIA_ORIGIN);
   });
 
   it('lets PUBLIC_VIDEO_CDN_BASE_URL override the manifest base', async () => {
     process.env.PUBLIC_VIDEO_CDN_BASE_URL = 'https://staging.example';
     const { cdnBaseUrl } = await loadFresh();
-    expect(cdnBaseUrl('https://media.rediacc.com')).toBe('https://staging.example');
+    expect(cdnBaseUrl(WK_MEDIA_ORIGIN)).toBe('https://staging.example');
   });
 
   it('strips a trailing slash from either source', async () => {
     const { cdnBaseUrl } = await loadFresh();
-    expect(cdnBaseUrl('https://media.rediacc.com/')).toBe('https://media.rediacc.com');
+    expect(cdnBaseUrl(`${WK_MEDIA_ORIGIN}/`)).toBe(WK_MEDIA_ORIGIN);
     process.env.PUBLIC_VIDEO_CDN_BASE_URL = 'https://staging.example//';
     const fresh = await loadFresh();
     expect(fresh.cdnBaseUrl('ignored')).toBe('https://staging.example');
@@ -62,7 +63,7 @@ describe('cdnBaseUrl', () => {
   it('treats an empty env var as unset', async () => {
     process.env.PUBLIC_VIDEO_CDN_BASE_URL = '';
     const { cdnBaseUrl } = await loadFresh();
-    expect(cdnBaseUrl('https://media.rediacc.com')).toBe('https://media.rediacc.com');
+    expect(cdnBaseUrl(WK_MEDIA_ORIGIN)).toBe(WK_MEDIA_ORIGIN);
   });
 });
 
@@ -74,7 +75,7 @@ describe('resolveMediaUrl', () => {
       resolveMediaUrl({
         localPath: LOCAL,
         cdnKey: KEY,
-        cdnBase: 'https://media.rediacc.com',
+        cdnBase: WK_MEDIA_ORIGIN,
         publicDir,
       })
     ).toBe(LOCAL);
@@ -86,10 +87,10 @@ describe('resolveMediaUrl', () => {
       resolveMediaUrl({
         localPath: LOCAL,
         cdnKey: KEY,
-        cdnBase: 'https://media.rediacc.com',
+        cdnBase: WK_MEDIA_ORIGIN,
         publicDir,
       })
-    ).toBe(`https://media.rediacc.com/${KEY}`);
+    ).toBe(`${WK_MEDIA_ORIGIN}/${KEY}`);
   });
 
   it('does not let a directory of the same name count as a file', async () => {
@@ -99,10 +100,10 @@ describe('resolveMediaUrl', () => {
       resolveMediaUrl({
         localPath: LOCAL,
         cdnKey: KEY,
-        cdnBase: 'https://media.rediacc.com',
+        cdnBase: WK_MEDIA_ORIGIN,
         publicDir,
       })
-    ).toBe(`https://media.rediacc.com/${KEY}`);
+    ).toBe(`${WK_MEDIA_ORIGIN}/${KEY}`);
   });
 
   it('tolerates a leading slash on the cdn key', async () => {

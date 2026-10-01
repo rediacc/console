@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
@@ -12,7 +13,7 @@ const {
   mockOutputInfo: vi.fn(),
   mockOutputWarn: vi.fn(),
   mockSaveStoredSubscriptionToken: vi.fn(),
-  mockGetSubscriptionServerUrl: vi.fn(() => 'http://localhost:4800'),
+  mockGetSubscriptionServerUrl: vi.fn(() => `http://localhost:${WK_ACCOUNT_DEV_PORT}`),
   mockGetSubscriptionScopeMismatch: vi.fn((token, configTeamName) => {
     if (configTeamName && token.teamName && configTeamName !== token.teamName) {
       return `Stored subscription token is bound to team "${token.teamName}", but the current config team is "${configTeamName}". Run "rdc subscription login" again after selecting the correct team.`;
@@ -61,7 +62,7 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
   it('prints the verification URL and errors immediately in non-interactive mode', async () => {
     mockAccountServerFetch.mockResolvedValueOnce({
       deviceCode: 'device-1',
-      verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
+      verificationUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account/authorize?code=ABCD-EFGH-IJ`,
       interval: 5,
       expiresIn: 300,
     });
@@ -72,7 +73,7 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
 
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.login.waitingApproval');
     expect(mockOutputInfo).toHaveBeenCalledWith(
-      '  http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ'
+      `  http://localhost:${WK_ACCOUNT_DEV_PORT}/account/authorize?code=ABCD-EFGH-IJ`
     );
     expect(mockSaveStoredSubscriptionToken).not.toHaveBeenCalled();
   });
@@ -83,7 +84,7 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
       // 1. POST /device-codes
       .mockResolvedValueOnce({
         deviceCode: 'device-1',
-        verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
+        verificationUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account/authorize?code=ABCD-EFGH-IJ`,
         interval: 1,
         expiresIn: 60,
       })
@@ -114,7 +115,7 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
     expect(result).toEqual({
       storedToken: {
         token: 'rdt_new',
-        serverUrl: 'http://localhost:4800',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
         subscriptionId: 'sub_1',
         orgId: 'org_1',
         orgName: 'Acme',
@@ -134,7 +135,7 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
     });
     expect(mockSaveStoredSubscriptionToken).toHaveBeenCalledWith({
       token: 'rdt_new',
-      serverUrl: 'http://localhost:4800',
+      serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
       subscriptionId: 'sub_1',
       orgId: 'org_1',
       orgName: 'Acme',
@@ -148,7 +149,7 @@ describe('authorizeSubscriptionViaDeviceCode', () => {
     mockAccountServerFetch
       .mockResolvedValueOnce({
         deviceCode: 'device-1',
-        verificationUrl: 'http://localhost:4800/account/authorize?code=ABCD-EFGH-IJ',
+        verificationUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}/account/authorize?code=ABCD-EFGH-IJ`,
         interval: 1,
         expiresIn: 60,
       })

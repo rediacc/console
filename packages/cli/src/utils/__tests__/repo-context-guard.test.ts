@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   detectDockerComposeCommand,
@@ -14,10 +15,10 @@ describe('detectRepoContextCommand', () => {
       ['docker compose up -d', 'docker'],
       ['Docker ps', 'docker'],
       ['docker-compose up -d', 'docker'],
-      ['DOCKER_HOST=unix:///var/run/rediacc/docker-3072.sock docker ps', 'docker'],
-      ['ls /var/run/rediacc/docker-3072.sock', 'docker'],
+      [`DOCKER_HOST=unix://${WK_RUNTIME_DIR}/docker-3072.sock docker ps`, 'docker'],
+      [`ls ${WK_RUNTIME_DIR}/docker-3072.sock`, 'docker'],
       ['sudo renet compose -- up -d', 'renet compose'],
-      ['ls /mnt/rediacc/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/', 'repo mount path'],
+      [`ls ${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/`, 'repo mount path'],
       ['docker ps | grep nginx', 'docker'],
       ['echo start && docker logs web', 'docker'],
       ['bash -c "docker ps"', 'docker'],
@@ -36,7 +37,7 @@ describe('detectRepoContextCommand', () => {
     });
 
     it('detects repo docker socket path without docker word', () => {
-      const result = detectRepoContextCommand('ls /var/run/rediacc/docker-3072.sock');
+      const result = detectRepoContextCommand(`ls ${WK_RUNTIME_DIR}/docker-3072.sock`);
       // matches 'docker' pattern (word boundary before hyphen)
       expect(result).not.toBeNull();
     });
@@ -49,7 +50,7 @@ describe('detectRepoContextCommand', () => {
 
     it('detects repo mount path with GUID', () => {
       const result = detectRepoContextCommand(
-        'cat /mnt/rediacc/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/config.yml'
+        `cat ${WK_DATASTORE_PATH}/mounts/a1b2c3d4-e5f6-7890-abcd-ef1234567890/config.yml`
       );
       expect(result).not.toBeNull();
       expect(result!.label).toBe('repo mount path');
@@ -64,7 +65,7 @@ describe('detectRepoContextCommand', () => {
       'free -m',
       'cat .dockerignore',
       'sudo renet list all --json',
-      'ls /mnt/rediacc/mounts/',
+      `ls ${WK_DATASTORE_PATH}/mounts/`,
     ])('%s → no match', (command) => {
       expect(detectRepoContextCommand(command)).toBeNull();
     });

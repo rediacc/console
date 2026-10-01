@@ -5,7 +5,7 @@ const mockConfigUpdate = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
 vi.mock('../account/subscription-auth.js', () => ({
   normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
-  getSubscriptionServerUrl: vi.fn().mockReturnValue('https://eu.rediacc.com'),
+  getSubscriptionServerUrl: vi.fn().mockReturnValue(WK_ACCOUNT_DEFAULT_ORIGIN),
   getSubscriptionTokenState: vi.fn().mockReturnValue({ kind: 'missing' }),
 }));
 
@@ -29,7 +29,15 @@ vi.mock('../../version.js', () => ({
   VERSION: '0.9.0',
 }));
 
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS, type RegionInfo } from '@rediacc/shared/regions';
 import { fetchServerInfo, getServerKeyMaterial } from '../account/account-client.js';
+
+const regionOf = (id: string): RegionInfo => {
+  const r = BAKED_IN_REGIONS.find((x) => x.id === id);
+  if (!r) throw new Error(`no baked-in region ${id}`);
+  return r;
+};
 
 describe('fetchServerInfo', () => {
   const originalFetch = globalThis.fetch;
@@ -57,10 +65,10 @@ describe('fetchServerInfo', () => {
       json: () => Promise.resolve(mockResponse),
     });
 
-    await fetchServerInfo('https://edge-eu.rediacc.com');
+    await fetchServerInfo(`https://${regionOf('eu').edgeDomain}`);
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'https://edge-eu.rediacc.com/account/api/v1/.well-known/server-info',
+      `https://${regionOf('eu').edgeDomain}/account/api/v1/.well-known/server-info`,
       expect.objectContaining({
         headers: expect.objectContaining({ 'User-Agent': expect.stringContaining('rdc/') }),
       })
@@ -81,10 +89,10 @@ describe('fetchServerInfo', () => {
         }),
     });
 
-    await fetchServerInfo('https://eu.rediacc.com/');
+    await fetchServerInfo(`${WK_ACCOUNT_DEFAULT_ORIGIN}/`);
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      'https://eu.rediacc.com/account/api/v1/.well-known/server-info',
+      `${WK_ACCOUNT_DEFAULT_ORIGIN}/account/api/v1/.well-known/server-info`,
       expect.anything()
     );
   });
@@ -104,7 +112,7 @@ describe('fetchServerInfo', () => {
       json: () => Promise.resolve(mockResponse),
     });
 
-    const info = await fetchServerInfo('https://edge-eu.rediacc.com');
+    const info = await fetchServerInfo(`https://${regionOf('eu').edgeDomain}`);
     expect(info.environment).toBe('edge');
     expect(info.updateChannel).toBe('edge');
     expect(info.minCliVersion).toBe('0.9.0');
@@ -125,7 +133,7 @@ describe('fetchServerInfo', () => {
         }),
     });
 
-    const info = await fetchServerInfo('https://eu.rediacc.com');
+    const info = await fetchServerInfo(WK_ACCOUNT_DEFAULT_ORIGIN);
     expect(info.environment).toBe('production');
     expect(info.updateChannel).toBe('stable');
   });
@@ -136,7 +144,7 @@ describe('fetchServerInfo', () => {
       status: 500,
     });
 
-    await expect(fetchServerInfo('https://eu.rediacc.com')).rejects.toThrow(
+    await expect(fetchServerInfo(WK_ACCOUNT_DEFAULT_ORIGIN)).rejects.toThrow(
       'server-info returned 500'
     );
   });
@@ -144,7 +152,7 @@ describe('fetchServerInfo', () => {
   it('throws on network error', async () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
-    await expect(fetchServerInfo('https://eu.rediacc.com')).rejects.toThrow('Network error');
+    await expect(fetchServerInfo(WK_ACCOUNT_DEFAULT_ORIGIN)).rejects.toThrow('Network error');
   });
 });
 
