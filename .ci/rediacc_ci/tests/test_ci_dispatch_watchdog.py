@@ -269,6 +269,9 @@ DIVERGENT = frozenset(
         "a-bad-run-id-empty",
         "an-octal-invalid-generation",
         "an-octal-generation-below-the-cap",
+        "a-failed-default-branch-lookup",
+        "pending-rerun-as-the-last-token",
+        "a-failed-head-ref-lookup",
         *("%s-as-the-last-token" % opt.lstrip("-") for opt in LAST_TOKEN_OPTIONS),
     }
 )
@@ -382,8 +385,8 @@ def test_a_head_ref_dispatch_that_succeeds_is_the_control_for_the_retry() -> Non
     assert "on ref gone" in recorded("a-head-ref-dispatch-that-succeeds")[2]
 
 
-def test_defect_d_a_failed_default_branch_lookup_becomes_an_empty_ref() -> None:
-    """`--ref ` with nothing after it was the whole receipt.
+def test_the_twins_failed_default_branch_lookup_recording_pins_the_dispatch_field_order() -> None:
+    """CONTROL for Defect D (the twin's bytes): `--ref ` with nothing after it was the whole receipt.
 
     The recorded `call: gh workflow run` line is also what now pins the `-f` field list and its ORDER, which used to be re-read out of the twin: a reordered list would still dispatch, and still be a different call.
     """
@@ -401,6 +404,18 @@ def test_defect_d_a_failed_default_branch_lookup_becomes_an_empty_ref() -> None:
         "head_ref",
         "pending_rerun",
     ], dispatch
+
+
+def test_delta_a_failed_default_branch_lookup_is_its_own_error(
+    bindir: pathlib.Path, nogh: pathlib.Path
+) -> None:
+    """INTENTIONAL DELTA (Rule T), defect D. The twin discarded the lookup's status and dispatched with `--ref ''`, reporting a failed dispatch. The port names the lookup and dispatches nothing."""
+    returncode, stdout, stderr = drive("a-failed-default-branch-lookup", bindir, nogh)
+    assert returncode == 1
+    assert stdout == ""
+    assert "Could not determine the default branch of " + GH_REPO in stderr
+    assert "workflow run" not in stderr, "an empty ref must never reach gh workflow run"
+    assert "Failed to dispatch" not in stderr
 
 
 @pytest.mark.parametrize("name", ["a-bootstrap-404-by-name", "a-bootstrap-404-by-http-status"])
@@ -589,12 +604,16 @@ def test_pending_rerun_true_reaches_the_dispatch() -> None:
     assert "-f pending_rerun=true" in recorded("pending-rerun-true")[2]
 
 
-def test_defect_e_pending_rerun_as_the_last_token_exits_1_in_total_silence() -> None:
-    """Zero bytes on BOTH streams. `shift 2` with one argument left, under set -e."""
+def test_delta_pending_rerun_as_the_last_token_names_the_option(
+    bindir: pathlib.Path, nogh: pathlib.Path
+) -> None:
+    """INTENTIONAL DELTA (Rule T), defect E. The twin's `shift 2` exited 1 with zero bytes on both streams (kept as the control); the port names the option, like every other value option."""
     returncode, stdout, stderr = recorded("pending-rerun-as-the-last-token")
+    assert (returncode, stdout, stderr) == (1, "", "")
+    returncode, stdout, stderr = drive("pending-rerun-as-the-last-token", bindir, nogh)
     assert returncode == 1
     assert stdout == ""
-    assert stderr == ""
+    assert stderr == (port.MISSING_VALUE % "--pending-rerun") + "\n"
 
 
 @pytest.mark.parametrize("opt", LAST_TOKEN_OPTIONS)
@@ -611,8 +630,8 @@ def test_defect_e_a_value_option_as_the_last_token_dies_as_bash(
     assert stderr == (port.MISSING_VALUE % opt) + "\n"
 
 
-def test_defect_f_a_failed_head_ref_lookup_ends_the_run_with_no_message() -> None:
-    """Only gh's own stderr explained it, while the NEXT lookup failed open."""
+def test_the_twins_failed_head_ref_lookup_recording_has_no_message() -> None:
+    """CONTROL for Defect F (the twin's bytes). Only gh's own stderr explained it, while the NEXT lookup failed open."""
     returncode, stdout, stderr = recorded("a-failed-head-ref-lookup")
     assert returncode == 4
     assert stdout == ""
@@ -621,6 +640,17 @@ def test_defect_f_a_failed_head_ref_lookup_ends_the_run_with_no_message() -> Non
     )
     assert "✗" not in stderr
     assert "⚠" not in stderr
+
+
+def test_delta_a_failed_run_lookup_names_the_lookup(
+    bindir: pathlib.Path, nogh: pathlib.Path
+) -> None:
+    """INTENTIONAL DELTA (Rule T), defect F. The twin ended at gh's status with only gh's stderr; the port keeps the status (4) and adds a line of its own."""
+    returncode, stdout, stderr = drive("a-failed-head-ref-lookup", bindir, nogh)
+    assert returncode == 4
+    assert stdout == ""
+    assert "api boom\n" in stderr
+    assert "Could not read the head branch of run 1" in stderr
 
 
 # --------------------------------------------------------------------------- Colour, and the option list ---------------------------------------------------------------------------

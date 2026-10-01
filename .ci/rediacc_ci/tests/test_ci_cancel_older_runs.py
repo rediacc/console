@@ -308,6 +308,7 @@ CASES = tuple(CASE_KW)
 
 # The cases the port does not reproduce byte for byte, on purpose (Rule T): a malformed `--timeout` is a usage error now. The recordings stay the twin's bytes; each is pinned by a `test_delta_*` below that fails on the bash behaviour.
 MALFORMED_TIMEOUT_DELTAS = ("a-bare-word-timeout", "a-numeric-prefix-timeout")
+MALFORMED_POLL_DELTAS = ("a-bad-poll-interval",)
 
 
 def render(returncode: int, stdout: str, stderr: str, calls: str, root: pathlib.Path) -> str:
@@ -358,7 +359,10 @@ def compare(
     return got
 
 
-@pytest.mark.parametrize("name", [c for c in CASES if c not in MALFORMED_TIMEOUT_DELTAS])
+@pytest.mark.parametrize(
+    "name",
+    [c for c in CASES if c not in MALFORMED_TIMEOUT_DELTAS + MALFORMED_POLL_DELTAS],
+)
 def test_port_matches_the_twins_recorded_output(tmp_path: pathlib.Path, name: str) -> None:
     compare(tmp_path, name)
 
@@ -612,10 +616,35 @@ def test_an_empty_timeout_falls_back_to_the_default_rather_than_to_zero() -> Non
     assert "No older CI runs in progress" in stderr
 
 
-def test_a_bad_poll_interval_takes_the_script_down_with_coreutils_message() -> None:
-    returncode, _, stderr, _ = recorded("a-bad-poll-interval")
-    assert returncode == 1
-    assert "sleep: invalid time interval 'zz'\n" in stderr
+def test_delta_a_malformed_poll_interval_is_a_usage_error_naming_the_value(
+    tmp_path: pathlib.Path,
+) -> None:
+    """INTENTIONAL DELTA (Rule T). The twin passed `--poll-interval zz` to `sleep` after the run lookup and listing, and died on coreutils' diagnostic (kept as the control). The port refuses it like `--timeout`: exit 2, flag and value named, no `gh` call, nothing on stdout."""
+    want_exit, _, want_err, want_calls = recorded("a-bad-poll-interval")
+    assert want_exit == 1
+    assert "sleep: invalid time interval 'zz'\n" in want_err
+    assert want_calls.startswith(RUN_CALL)
+
+    returncode, stdout, stderr, calls = drive(tmp_path, "a-bad-poll-interval")
+    assert returncode == 2
+    assert stdout == ""
+    assert "--poll-interval" in stderr
+    assert "'zz'" in stderr
+    assert "sleep:" not in stderr
+    assert calls == "", "a usage error must not reach the network"
+
+
+@pytest.mark.parametrize("value", ["-1", "+1", "0.5", "1m", "0x10", " 1 ", "1e3", "abc"])
+def test_delta_only_a_whole_non_negative_number_is_a_poll_interval(
+    tmp_path: pathlib.Path, value: str
+) -> None:
+    returncode, _, stderr, calls = run(
+        tmp_path, "python3 -m %s" % MODULE, "--timeout", "30", "--poll-interval", value
+    )
+    assert returncode == 2
+    assert "--poll-interval" in stderr
+    assert repr(value) in stderr
+    assert calls == ""
 
 
 def test_a_missing_gh_reads_as_a_pass_because_the_twin_has_no_require_cmd() -> None:

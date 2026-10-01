@@ -182,7 +182,7 @@ def force_cancel_run(repository: str, run_id: str, run_number: str) -> None:
 def sleep_like_bash(interval: str, line: int) -> None:
     """`sleep "$POLL_INTERVAL"`, the real binary.
 
-    A bad interval is coreutils' own two-line diagnostic and a non-zero status, which `set -e` turns into the script's exit code. Driven:
+    The twin passed a malformed interval straight here and died on coreutils' own two-line diagnostic; the port now refuses it up front (Rule T delta, see `main`), so only a whole number arrives. What the twin printed, driven:
 
         sleep: invalid time interval 'zz'
         Try 'sleep --help' for more information.
@@ -218,6 +218,12 @@ def main(argv: list[str]) -> int:
         )
         return 2
     timeout_seconds = int(timeout)
+    if not _TIMEOUT.fullmatch(poll_interval):
+        log.error(
+            "%s: --poll-interval must be a whole number of seconds (got %r)"
+            % (sys.argv[0], poll_interval)
+        )
+        return 2
 
     if not os.environ.get("GITHUB_RUN_ID", ""):
         log.warn("GITHUB_RUN_ID not set - skipping (not running in GitHub Actions)")
