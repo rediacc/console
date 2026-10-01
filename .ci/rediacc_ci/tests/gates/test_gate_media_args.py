@@ -159,7 +159,7 @@ def test_the_absence_assertion_can_fail(gate, tmp_path):
             "arms below would prove nothing"
         )
 
-    for relative in ("run.sh", "media.sh", ".ci/legacy/run-legacy.sh"):
+    for relative in ("run.sh", "media.sh"):
         target = repo / relative
         target.write_text(
             target.read_text(encoding="utf-8") + "\nTUTORIAL_COLS=999\n", encoding="utf-8"

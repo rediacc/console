@@ -182,7 +182,12 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_message_catalogue.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_priority_ladder.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_retro.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_universe_transfer.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_cf_family.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_install_methods.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_seed_smoke.py"
       ]
     },
     {
@@ -363,7 +368,13 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_roster.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_state_document.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_run_verbs.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_linode_cluster_validation.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_account_e2e.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_linux_packages.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_start_account.py"
       ]
     },
     {
@@ -544,7 +555,13 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_regression_gate.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_remaining_bank.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_submodule_decision.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_triage_and_plans.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_lib.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_e2e.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_rdc_update.py",
+        "pytest:.ci/rediacc_ci/tests/test_testrun_unit.py"
       ]
     }
   ]

@@ -75,10 +75,9 @@ OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
 
-# What the sandbox is built from. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `.ci/config` and `.ci/scripts/lib` are here because `run-legacy.sh` sources `constants.sh`, `toolchain.sh` and, through `local-common.sh`, `common.sh`; `.ci/lib` carries the two functions being stubbed and `service.sh`, which the twin also sources.
+# What the sandbox is built from. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `.ci/config` and `.ci/scripts/lib` are here because the prelude sources `constants.sh`, `toolchain.sh` and, through `local-common.sh`, `common.sh`; `.ci/lib` carries the two functions being stubbed and `service.sh`, which the twin also sources.
 SANDBOX_DIRS = (
     (".devcontainer",),
-    (".ci", "legacy"),
     (".ci", "config"),
     (".ci", "scripts", "lib"),
     (".ci", "lib"),
@@ -136,7 +135,10 @@ sys.exit(int(os.environ.get("DEV_NPM_RC", "0")))
 # The prelude the OLD side runs, which is `rediacc_ci/setup/bridge.py:PRELUDE` line for line. Identical on purpose: a differential whose two sides source different files is comparing environments rather than implementations.
 OLD_PROGRAM = """set -euo pipefail
 ROOT_DIR="$REDIACC_CI_ROOT"
-source "$ROOT_DIR/.ci/legacy/run-legacy.sh"
+source "$ROOT_DIR/.ci/config/constants.sh"
+source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
+source "$ROOT_DIR/.ci/lib/local-common.sh"
+source "$ROOT_DIR/.ci/lib/service.sh"
 source "$ROOT_DIR/.ci/lib/devbox.sh"
 dev "$@"
 """
@@ -366,15 +368,9 @@ def refuse(message: str) -> int:
 
 def twin_body(root: pathlib.Path) -> str:
     """The twin's `dev()` body, or an empty string once it is gone."""
-    legacy = root / ".ci" / "legacy" / "run-legacy.sh"
-    if not legacy.is_file():
-        return ""
-    text = legacy.read_text(encoding="utf-8")
-    start = text.find("\ndev() {\n")
-    if start < 0:
-        return ""
-    end = text.find("\n}\n", start)
-    return text[start : end + 3] if end > start else ""
+    # The bash dispatcher that held `dev()` is deleted, so there is no body to find and every run refuses. The function is kept so the refusal below keeps naming what is missing.
+    del root
+    return ""
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -389,8 +385,8 @@ def main(argv: list[str] | None = None) -> int:
     if not twin_body(root):
         return refuse(
             "the bash `dev()` body is absent from %s. The `dev` port has been "
-            "flipped, so this ledger is history and must not be extended."
-            % (root / ".ci" / "legacy" / "run-legacy.sh")
+            "flipped and the dispatcher that held it deleted, so this ledger is history "
+            "and must not be extended." % (root / ".ci" / "legacy" / "run-legacy.sh")
         )
 
     buffer: list[str] = []

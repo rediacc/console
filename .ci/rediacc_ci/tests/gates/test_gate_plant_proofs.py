@@ -30,12 +30,12 @@ TS_SUBJECT = "scripts/gates/check-docs-browse-invariants.ts"
 DEBT_SUBJECT = ".ci/scripts/test/gates/test-runner-advice.sh"
 
 # The proof pair this gate requires, lifted verbatim from the real bash subject.
-BASH_PROOF = """grep -q '^        clean) clean ;;$' "$ctl/legacy.sh" ||
-    no "CONTROL PLANT DID NOT LAND: the legacy dispatcher no longer carries a 'clean)' arm in that shape, so the unreachable-verb control below plants nothing and passes for free"
+BASH_PROOF = """grep -q '^TOP clean$' "$ctl/arms.txt" ||
+    no "CONTROL PLANT DID NOT LAND: the package no longer dispatches 'clean', so the unreachable-verb control below plants nothing and passes for free"
 """
 
-BASH_PROOF_AFTER = """grep -q '^        clean) clean ;;$' "$ctl/legacy.sh" &&
-    no "CONTROL PLANT DID NOT LAND: the dispatch arm survived the deletion in the copy"
+BASH_PROOF_AFTER = """grep -q '^TOP clean$' "$ctl/arms.txt" &&
+    no "CONTROL PLANT DID NOT LAND: the dispatch row survived the deletion in the copy"
 """
 
 TS_PROOF = "  const railHits = css.split(RAIL_NEEDLE).length - 1;\n"
@@ -136,12 +136,12 @@ def test_a_neighbouring_controls_proof_does_not_launder_this_plant(gate):
     gate.log_test("REGRESSION: three controls, one copied file, six lines apart")
     with harness.temp_dir() as tmp:
         root = _mirror(tmp)
-        # Strip BOTH of control (b)'s proof lines. Control (c), further down the same file, still greps the SAME "$ctl/legacy.sh" for its own needle.
+        # Strip BOTH of control (b)'s proof lines. Control (c), further down the same file, carries its own proof on a DIFFERENT copied input, and must not launder (b).
         _edit(root, BASH_SUBJECT, BASH_PROOF, "")
         _edit(root, BASH_SUBJECT, BASH_PROOF_AFTER, "")
         result = _run(root)
         gate.assert_exit(1, result, "a target-only rule would have stayed green here")
-        gate.assert_contains(result.combined, "clean) clean", "and it is (b) that is named")
+        gate.assert_contains(result.combined, "TOP clean", "and it is (b) that is named")
     gate.log_pass("a proof proves ONE mutation; the needle is what ties them together")
 
 

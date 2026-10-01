@@ -1,6 +1,6 @@
 """`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all fifty-four functions.
 
-THE TWIN IS STILL HERE AND IS STILL SOURCED. `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
+THE TWIN IS STILL HERE AND IS STILL SOURCED. `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` still source it (the deleted `.ci/legacy/run-legacy.sh` was a fifth), nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
 WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in its module docstring rather than restated here. Seven are the first slice's pure-function scenarios; sixteen are the STUB-FARM scenarios, in which `docker`, `sudo`, `curl`, `sleep`, `getent`, `stat` and `ss` are stubs that record every call and answer from a scripted table, so a side-effecting function is compared on the calls it MADE as well as on what it printed.
 
@@ -75,9 +75,8 @@ CHEAP_STUB_SCENARIOS = ("identity-worktree", "identity-gone")
 # A legal DNS label, which is what the slug has to be for traefik to route it at all. The same expression `test_gate_devbox_slug.py:40` applies.
 HOSTNAME_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
 
-# The five real `source` sites, each with the line that does it. A cut-over would delete one of these, and this differential would then be comparing a library nothing loads.
+# The four real `source` sites, each with the line that does it. A cut-over would delete one of these, and this differential would then be comparing a library nothing loads.
 SOURCE_SITES = (
-    (".ci/legacy/run-legacy.sh", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),
     (".ci/rediacc_ci/setup/bridge.py", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),
     (".ci/rediacc_ci/setup/shadow_driver.py", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),
     (".ci/rediacc_ci/dev/shadow_driver.py", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),

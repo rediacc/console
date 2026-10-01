@@ -87,7 +87,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
  * measurement refutes: demanding >= 1 install from an entrypoint that never had one is a
  * gate that fails on a correct tree.
  */
-export const ENTRY = '.ci/legacy/run-legacy.sh';
+export const ENTRY = 'run.sh';
 export const SCANNED = [ENTRY, ...fsSafeList('.ci/lib')];
 
 function fsSafeList(dir: string): string[] {

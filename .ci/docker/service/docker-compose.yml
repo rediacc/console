@@ -61,6 +61,8 @@ services:
       - RUSTFS_CONSOLE_ENABLE=true
       - RUSTFS_ACCESS_KEY=${RUSTFS_ACCESS_KEY:-rustfsadmin}
       - RUSTFS_SECRET_KEY=${RUSTFS_SECRET_KEY:-rustfsadmin}
+      # The four erasure endpoints are four volumes on ONE disk. Current rustfs refuses that ("local erasure endpoints must use distinct physical disks") and the container never turns healthy; this stack is local testing only.
+      - RUSTFS_UNSAFE_BYPASS_DISK_CHECK=true
     volumes:
       - rustfs_data_0:/data/rustfs0
       - rustfs_data_1:/data/rustfs1

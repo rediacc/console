@@ -28,8 +28,8 @@ An unreachable daemon and a command that does not exist produce the SAME code. S
 MEASUREMENT 2: `docker info` WRITES A FULL, HEALTHY-LOOKING REPORT TO STDOUT
 WHILE FAILING.
 ------------------------------------------------------------------------------
-Same run: with an unreachable daemon, `docker info` exits 1 and still prints the entire CLIENT section on stdout -- version, plugins, contexts -- ending with a bare `Server:` line and nothing under it. So a probe written as "did it print anything" answers YES for a machine with no engine. That shape is not hypothetical here: `.ci/legacy/run-legacy.sh:766-768` and
-`.ci/lib/devbox.sh:76` both branch on `docker version` output-or-status, and the only reason they are correct is that they happen to redirect to /dev/null and test the status.
+Same run: with an unreachable daemon, `docker info` exits 1 and still prints the entire CLIENT section on stdout -- version, plugins, contexts -- ending with a bare `Server:` line and nothing under it. So a probe written as "did it print anything" answers YES for a machine with no engine. That shape is not hypothetical here: `.ci/lib/devbox.sh:76` and the `check_docker` of the
+legacy dispatcher (deleted 2026-10-01) both branched on `docker version` output-or-status, and the only reason they are correct is that they happen to redirect to /dev/null and test the status.
 
 Which is the same rule the sibling module states for `gh`: check the status before you use the output. `DockerResult.stdout` is a property that RAISES the classified error unless the call succeeded, so a caller cannot write `docker_info().stdout.splitlines()` and receive a client-only report as though it described a running engine. `.stdout_raw` holds the bytes for diagnostics and
 `.stderr` is always readable, because the sentence naming the socket is the only useful thing a failed docker call produces.
@@ -368,7 +368,7 @@ def client_version(env: dict[str, str] | None = None) -> str:
 def state(env: dict[str, str] | None = None, *, host: str | None = None) -> str:
     """Which of the four situations this machine is in. One probe, four answers.
 
-    `docker version` rather than `docker info` as the probe, for two reasons. It is what `.ci/lib/local-common.sh:633`, `.ci/lib/devbox.sh:76` and `.ci/legacy/run-legacy.sh:766` already use, so this reports the same thing they act on; and `docker info` is the slower call, which matters when the engine is dead and the timeout is what you are waiting for.
+    `docker version` rather than `docker info` as the probe, for two reasons. It is what `.ci/lib/local-common.sh:633`, `.ci/lib/devbox.sh:76` and the service-start check of the deleted legacy dispatcher already used, so this reports the same thing they act on; and `docker info` is the slower call, which matters when the engine is dead and the timeout is what the caller waits on.
 
     STATE_UNKNOWN is real and is not a synonym for unreachable: a timeout, or a stderr this module cannot classify, means the question was not answered. It is grouped into CANNOT_RUN_STATES because acting on an unanswered probe is the failure this whole module exists to prevent, but it is REPORTED separately so a message can say "I could not tell" instead of inventing a cause.
     """

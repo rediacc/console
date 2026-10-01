@@ -86,10 +86,10 @@ import {
   type Provider,
   type ProviderRow,
   parseWorkflow,
-  portedVerbs,
   providerById,
   pyConst,
   pyFunctionBody,
+  registeredVerbs,
   topVerbs,
 } from '../lib/doc-providers.js';
 import { findRegions, OPEN_RE, type Region } from '../lib/doc-regions.js';
@@ -692,19 +692,15 @@ function selftest(): number {
   );
 
   ck(
-    'portedVerbs reads a multi-line table and skips its comments',
-    portedVerbs('PORTED_VERBS=(\n    setup # ported W6\n    # quality is next\n    test\n)').join(
-      ','
-    ) === 'setup,test'
+    'registeredVerbs reads the name of every Verb row',
+    registeredVerbs(
+      'VERBS = (\n    Verb(\n        name="setup",\n        summary="x",\n    ),\n    Verb(\n        name="dev",\n    ),\n)'
+    ).join(',') === 'dev,setup'
   );
-  // ZERO IS NOT A FAILURE HERE, and this control is the reason the provider has no floor. `PORTED_VERBS` is empty until the first verb moves (run.sh:37-39 says so), and a floor would have been red for the whole programme.
+  // THE TABLE IS NEVER EMPTY: run.sh forwards every verb but the two media ones to it, so zero rows means the wrong file or a changed spelling.
   ck(
-    'CONTROL: an EMPTY ported table is zero rows, not a refusal',
-    portedVerbs('PORTED_VERBS=()').length === 0
-  );
-  ck(
-    'planted: no PORTED_VERBS table at all is refused',
-    refusesToParse(() => portedVerbs('nothing here'))
+    'planted: a file with no Verb rows is refused',
+    refusesToParse(() => registeredVerbs('nothing here'))
   );
 
   ck(

@@ -16,8 +16,8 @@
 #
 # WHY THIS FOLDER EXISTS. run.sh was 2,647 lines and roughly 1,300 of them were this
 # pipeline. Phase 2 moved them here, and the router split that followed on the same day
-# moved everything else to .ci/legacy/run-legacy.sh, so run.sh itself is now a router of
-# about 120 lines that execs one of three destinations. Do not read a line count for run.sh
+# moved everything else out (it is Python now, `python3 -m rediacc_ci`), so run.sh itself is a
+# router of about 80 lines with two destinations. Do not read a line count for run.sh
 # out of this paragraph; read the file. The pipeline drives private/generative and
 # private/growth, which are separate gitignored repositories rather than submodules, so it
 # cannot be ported to Python with the rest of the tooling and is deliberately staying bash.

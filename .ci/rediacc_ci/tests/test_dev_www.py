@@ -40,6 +40,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.__main__ import VERBS
+from rediacc_ci.core import run_verbs
 from rediacc_ci.dev import shadow_driver, www
 from rediacc_ci.tests import frozen
 
@@ -322,21 +323,19 @@ def test_the_ledger_carries_five_equivalent_distinct_trees() -> None:
 def test_the_verb_is_served_once_and_only_by_python() -> None:
     """The partition `.ci/scripts/test/gates/test-run-sh.sh` section 6 asserts, from this side.
 
-    An OVERLAP is the failure the whole split exists to prevent: a verb left in both halves is served by whichever the router reaches first, so the port appears to work while the code it replaced is what actually ran.
+    An OVERLAP is the failure the whole split exists to prevent: a verb served by two implementations is answered by whichever the router reaches first, so the port appears to work while the code it replaced is what actually ran. The router has no `dev` arm and no table row; the package's VERBS table is the only server, and the bash dispatcher that once held `dev()` is deleted.
     """
     router = (ROOT / "run.sh").read_text(encoding="utf-8")
-    legacy = (ROOT / ".ci" / "legacy" / "run-legacy.sh").read_text(encoding="utf-8")
-    assert re.search(r"^PORTED_VERBS=\(.*\bdev\b.*\)$", router, re.MULTILINE), (
-        "run.sh does not forward `dev` to this package"
+    assert not re.search(r"^        dev\)", router, re.MULTILINE), "the router serves `dev` itself"
+    assert "run_ported" in router, "run.sh does not forward verbs to this package"
+    assert not (ROOT / ".ci" / "legacy" / "run-legacy.sh").exists(), (
+        "the bash body outlived the port"
     )
-    assert "\ndev() {\n" not in legacy, "the bash body outlived the port"
-    assert "\n        dev) dev ;;\n" not in legacy, "the legacy dispatch arm outlived the port"
 
 
 def test_the_help_text_still_documents_the_verb() -> None:
-    """`show_help` is the one inventory a person reads, and the gate test compares both halves against it. A ported verb that vanished from it reads as unreachable."""
-    legacy = (ROOT / ".ci" / "legacy" / "run-legacy.sh").read_text(encoding="utf-8")
-    assert re.search(r"^  dev\s{2,}\S", legacy, re.MULTILINE)
+    """`help` is the one inventory a person reads, and the gate test compares both halves against it. A ported verb that vanished from it reads as unreachable."""
+    assert re.search(r"^  dev\s{2,}\S", run_verbs.help_text(), re.MULTILINE)
 
 
 def test_the_verb_table_names_this_module() -> None:

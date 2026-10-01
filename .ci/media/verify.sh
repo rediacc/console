@@ -146,20 +146,21 @@ source "$MEDIA_VERIFY_ROOT/.ci/scripts/test/lib/test-helpers.sh"
 # path per line, and FAILS if any of them is missing.
 #
 # ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06 router
-# split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh, which made that
+# split moved every verb body out of run.sh into a legacy bash dispatcher, which made that
 # file a third origin overnight; four separate absence assertions had to be widened by
-# hand to notice, and missing one of them would not have shown up as a failure. Adding a
-# fourth origin is now one line here.
+# hand to notice, and missing one of them would not have shown up as a failure. The file
+# was deleted on 2026-10-01 (its verbs are Python now), so the list is back to two. Adding
+# an origin is one line here.
 #
 # IT REFUSES A MISSING ORIGIN RATHER THAN SKIPPING IT, and that is the point of the
 # function. An absence assertion over a file that is not there passes for free in both
 # spellings used here: media_defines returns 1 on a missing file, and `grep -q pat a b`
 # with b absent exits 2 while writing to stderr. Both read as "the name is not there" when
 # what happened is "nobody looked". Measured 2026-09-06 in a sandbox: deleting
-# run-legacy.sh left media_assert_sole_owner green with its legacy arm doing nothing at
-# all. Renaming that file is an ordinary thing for the bootstrap workstream to do, and
-# quietly losing a third of this proof when it happens is not acceptable.
-MEDIA_ORIGIN_RELPATHS=(run.sh media.sh .ci/legacy/run-legacy.sh)
+# an origin left media_assert_sole_owner green with that arm doing nothing at all.
+# Renaming an origin is an ordinary thing for the bootstrap workstream to do, and quietly
+# losing part of this proof when it happens is not acceptable.
+MEDIA_ORIGIN_RELPATHS=(run.sh media.sh)
 media_origins() {
     local root="$1" rel missing=0
     for rel in "${MEDIA_ORIGIN_RELPATHS[@]}"; do
@@ -334,9 +335,8 @@ media_assert_sole_owner() {
         fi
     done
 
-    # THE ORIGINS, FROM THE ONE LIST. run.sh, media.sh and -- since the 2026-09-06 router
-    # split moved every verb body there -- .ci/legacy/run-legacy.sh. A media function
-    # re-planted in any of them means the cutover has been undone for that name.
+    # THE ORIGINS, FROM THE ONE LIST. run.sh and media.sh. A media function re-planted in
+    # either of them means the cutover has been undone for that name.
     #
     # media_origins FAILS rather than skipping when one of those files is absent, and this
     # returns 1 with it. That is deliberate and it is the difference between an assertion
@@ -370,11 +370,10 @@ media_assert_sole_owner() {
 #
 # Builds a REAL, RUNNABLE repo at <dir>/repo and prints its path.
 #
-# Everything at the repo root is a SYMLINK to the real checkout except run.sh, media.sh,
-# .ci/media and .ci/legacy, which are copies -- those are the only paths a chain test or an
-# ownership control needs to ALTER, and the last of them joined the list on 2026-09-06 when
-# the router split made run-legacy.sh a third origin. .ci itself is rebuilt as a directory
-# of symlinks for the same reason. Symlinks
+# Everything at the repo root is a SYMLINK to the real checkout except run.sh, media.sh
+# and .ci/media, which are copies -- those are the only paths a chain test or an ownership
+# control needs to ALTER. .ci itself is rebuilt as a directory of symlinks for the same
+# reason. Symlinks
 # rather than copies because the whole tree is needed (run.sh sources .ci/config,
 # .ci/scripts/lib, .ci/lib and reads .devcontainer/toolchain.env at startup) and copying
 # it per test would be slow enough to matter.
@@ -397,21 +396,11 @@ media_chain_sandbox() {
     done
     for entry in "$MEDIA_VERIFY_ROOT"/.ci/*; do
         case "$(basename "$entry")" in
-            # .ci/media is copied below. .ci/legacy is REBUILT AS A REAL DIRECTORY OF
-            # COPIES rather than symlinked, and that is a correctness requirement, not a
-            # preference: the ownership control plants a duplicate function definition
-            # into each origin, and since the router split one of those origins is
-            # .ci/legacy/run-legacy.sh. Through a symlinked directory that append lands in
-            # the REAL checkout, corrupting a 1,300-line file owned by another workstream
-            # and leaving the sandbox proving nothing. Verified 2026-09-06: before this
-            # change "$repo/.ci/legacy/run-legacy.sh" resolved to
-            # /home/developer/console/.ci/legacy/run-legacy.sh.
+            # .ci/media is copied below. Every origin the ownership control plants a
+            # duplicate definition into (run.sh, media.sh) is a COPY at the sandbox root,
+            # never a path through a symlinked directory: an append through one would land
+            # in the REAL checkout and leave the sandbox proving nothing.
             media) continue ;;
-            legacy)
-                mkdir -p "$repo/.ci/legacy"
-                cp "$entry"/* "$repo/.ci/legacy/"
-                continue
-                ;;
         esac
         ln -sfn "$entry" "$repo/.ci/$(basename "$entry")"
     done
@@ -525,10 +514,7 @@ media_assert_module_owns() {
 # a specific vacuity in its history: the byte-identity helper it replaced compared two
 # extractions that had both found nothing and called them equal.
 #
-#   1. A second definition put back into EVERY origin, one at a time: run.sh,
-#      .ci/legacy/run-legacy.sh (where the router split moved every verb body, so it is
-#      where a re-planted media function would actually land today, and it was invisible
-#      here until 2026-09-06) and media.sh.
+#   1. A second definition put back into EVERY origin, one at a time: run.sh and media.sh.
 #   2. In media.sh the plant uses the ONE-LINE `name() { ...; }` spelling, because that is
 #      how media.sh actually wrote `die`, and a block-only search reports a one-line
 #      re-plant as absent and passes. fidelity_extract_any exists for exactly that, and
@@ -538,8 +524,8 @@ media_assert_module_owns() {
 #      this replaced was built around.
 #   4. AN ORIGIN FILE THAT IS NOT THERE. This is the arm that would otherwise be missing,
 #      and it is the one that matters most for arms 1 and 2: an absence check over a
-#      missing file passes for free, so renaming run-legacy.sh would silently retire a
-#      third of this proof while every gate stayed green.
+#      missing file passes for free, so renaming media.sh would silently retire half of
+#      this proof while every gate stayed green.
 #
 # Each arm restores the origin it damaged before the next one runs, so the arms are
 # independent rather than cumulative and a failure names one cause.
@@ -548,11 +534,12 @@ media_assert_ownership_control() {
     repo="$(media_chain_sandbox "$dir")"
 
     # REFUSE TO PROCEED THROUGH A SYMLINK. Every arm below WRITES to an origin inside the
-    # sandbox, and if media_chain_sandbox ever goes back to symlinking .ci/legacy those
-    # writes land in the real checkout. A guard rather than a comment, because the damage
-    # is silent and lands in another workstream's 1,300-line file.
-    [ -L "$repo/.ci/legacy" ] &&
-        log_fail "the sandbox symlinked .ci/legacy -- planting an origin here would write into the real checkout"
+    # sandbox, and if media_chain_sandbox ever symlinks one of them those writes land in
+    # the real checkout. A guard rather than a comment, because the damage is silent.
+    for rel in "${MEDIA_ORIGIN_RELPATHS[@]}"; do
+        [ -L "$repo/$rel" ] &&
+            log_fail "the sandbox symlinked $rel -- planting an origin here would write into the real checkout"
+    done
 
     for rel in "${MEDIA_ORIGIN_RELPATHS[@]}"; do
         if [ "$rel" = media.sh ]; then
@@ -570,14 +557,13 @@ media_assert_ownership_control() {
         log_fail "the ownership assertion passed for a function nothing defines -- absence is not ownership"
     fi
 
-    # PARKED AT THE SANDBOX ROOT, not beside the file it came from. A name under
-    # .ci/legacy/ would read as a claim that such a path exists, and the folder's
-    # documentation gate checks every .ci/ path a media file names.
-    mv "$repo/.ci/legacy/run-legacy.sh" "$repo/absent-origin"
+    # PARKED UNDER A NAME NO PATH CLAIM READS AS ONE: the folder's documentation gate
+    # checks every .ci/ path a media file names.
+    mv "$repo/media.sh" "$repo/absent-origin"
     if media_assert_sole_owner "$repo" "$module" "$name" 2>/dev/null; then
         log_fail "the ownership assertion passed with an origin file absent -- a file nobody read cannot testify that the name is not in it"
     fi
-    mv "$repo/absent-origin" "$repo/.ci/legacy/run-legacy.sh"
+    mv "$repo/absent-origin" "$repo/media.sh"
 
     log_pass "the ownership assertion fires on $name() re-planted in each of the ${#MEDIA_ORIGIN_RELPATHS[@]} origins (one-line form in media.sh), on a name nothing defines, and on an origin that is missing"
 }

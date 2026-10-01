@@ -110,17 +110,27 @@ def test_the_verb_table_is_data_with_a_name_accessor() -> None:
     assert cli.names((row,)) == ["probe"]
 
 
-def test_help_is_derived_from_the_table_not_written_twice() -> None:
-    """Every registered name appears in the help; an empty table says so."""
+def test_the_real_front_door_is_the_full_reference_and_names_every_verb() -> None:
+    """The real table registers a `help` row, so `--help` prints the whole command reference on stdout."""
     rc, out, err = _run(["--help"])
     assert rc == 0, err
     assert err == "", "help must not write to stderr"
-    assert "usage:" in out
+    assert out.startswith("Usage: ./run.sh [COMMAND] [OPTIONS]")
     for verb in cli.VERBS:
         assert verb.name in out, verb.name
-    if not cli.VERBS:
-        # Vacuity guard for the loop above: with an empty table it asserts nothing, so the empty state has to be asserted explicitly.
-        assert "none yet" in out
+    for name in ("provision", "www"):
+        assert name in out, "the router's own verbs are documented too"
+
+
+def test_a_table_without_a_help_row_derives_its_listing_from_the_table(tmp_path) -> None:
+    """Every registered name appears in the fallback help; an empty table says so."""
+    root = _fixture(tmp_path)
+    rc, out, err = _run(["--help"], root=root, cwd=tmp_path)
+    assert rc == 0, err
+    assert err == "", "help must not write to stderr"
+    assert "usage:" in out
+    assert "probe" in out
+    assert "none yet" in cli.format_help(())
     assert (
         cli.format_help((cli.Verb("probe", "print the argv it got", "probe"),)).count("probe") >= 1
     )
@@ -137,8 +147,17 @@ def test_h_is_the_same_help_on_the_same_stream() -> None:
 # --------------------------------------------------------------------------- the two error paths: a message, a stream, an exit code, and no traceback ---------------------------------------------------------------------------
 
 
-def test_no_verb_is_a_usage_error_on_stderr_and_not_a_traceback() -> None:
+def test_no_verb_is_the_full_reference_for_the_real_table() -> None:
     rc, out, err = _run([])
+    assert rc == 0, err
+    assert err == ""
+    assert out.startswith("Usage: ./run.sh [COMMAND] [OPTIONS]")
+
+
+def test_no_verb_is_a_usage_error_on_stderr_and_not_a_traceback(tmp_path) -> None:
+    """For a table with no `help` row: a usage error, on stderr, never a traceback and never a silent 0."""
+    root = _fixture(tmp_path)
+    rc, out, err = _run([], root=root, cwd=tmp_path)
     assert rc != 0
     assert rc == cli.EXIT_USAGE
     assert out == "", "a usage error must not land on stdout"
@@ -147,17 +166,12 @@ def test_no_verb_is_a_usage_error_on_stderr_and_not_a_traceback() -> None:
     assert "Traceback" not in err
 
 
-def test_an_unknown_verb_names_the_verb_and_the_known_ones() -> None:
+def test_an_unknown_verb_is_the_error_then_the_reference_with_exit_1_for_the_real_table() -> None:
     rc, out, err = _run(["definitely-not-a-verb"])
-    assert rc != 0
-    assert rc == cli.EXIT_USAGE
-    assert out == ""
-    assert "definitely-not-a-verb" in err
+    assert rc == 1
+    assert "Unknown command: definitely-not-a-verb" in err
     assert "Traceback" not in err
-    for verb in cli.VERBS:
-        assert verb.name in err, verb.name
-    if not cli.VERBS:
-        assert "no verbs are registered" in err
+    assert out.startswith("\nUsage: ./run.sh [COMMAND] [OPTIONS]")
 
 
 def test_an_unknown_verb_lists_the_registered_ones(tmp_path) -> None:
