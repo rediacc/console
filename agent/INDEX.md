@@ -522,7 +522,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-locale-techdiff-resync.md` | ready | 73 | 0 | 0 | 4806 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-major-upgrade-age-clock.md` | done | 144 | 0 | 11 | 19681 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-parallel-writer-roster.md` | ready | 304 | 0 | 28 | 40420 |
@@ -615,6 +614,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-hook-inventory-warn-guards.md` | landed | 69 | 0 | 0 | 4111 |
 | `agent/plans/_done/PLAN-json-prose-scope-audit.md` | done | 79 | 0 | 9 | 8023 |
 | `agent/plans/_done/PLAN-local-ci-gate-prerequisites.md` | landed | 79 | 0 | 0 | 4719 |
+| `agent/plans/_done/PLAN-major-upgrade-age-clock.md` | done | 145 | 0 | 11 | 19704 |
 | `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` | done | 368 | 0 | 23 | 34960 |
 | `agent/plans/_done/PLAN-npm-global-install-release-age.md` | done | 37 | 0 | 4 | 4840 |
 | `agent/plans/_done/PLAN-npm11-everywhere.md` | done | 84 | 0 | 11 | 11405 |
