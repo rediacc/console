@@ -144,14 +144,14 @@ Two things follow that you will hit in practice:
 - **A lane runs all of its gates even after one fails.** Every gate step carries
 `if: ${{ !cancelled() && steps.setup.outcome == 'success' }}`, so one push surfaces every failure in that lane. Do not "fix the first red and push" -- read the whole lane's step list first.
 - **`ubuntu-slim` dies at 15 minutes, hard.** The job is marked CANCELLED with no
-failed step, which reads as neither pass nor fail and poisons `CI Complete`. Every slim job must therefore declare `timeout-minutes` of 14 or less; CHECK 3 in `.ci/scripts/security/check-workflow-gates.sh` enforces it. A job that genuinely needs longer moves to `ubuntu-latest` -- the number is not a dial.
+failed step, which reads as neither pass nor fail and poisons `CI Complete`. Every slim job must therefore declare `timeout-minutes` of 14 or less; CHECK 3 in `.ci/scripts/security/check_workflow_gates.py` enforces it. A job that genuinely needs longer moves to `ubuntu-latest` -- the number is not a dial.
 
 Dependencies come from `./.github/actions/setup-workspace`, which restores a cached `node_modules` (200 MB, ~2.5s) instead of running `npm ci` per job. On a cache miss it falls back to `.ci/scripts/setup/install-deps.sh`, so a miss is slow, never broken.
 
 ### Runner profiling is an invariant, not a habit (`check:ci-profiler-coverage`)
 
 Standard runners are free and unlimited on this public repo, which is exactly what makes oversizing invisible: a job that uses ~1 core on a 4-vCPU `ubuntu-latest` VM burns four cores' worth of the world's electricity to do one core's work, and no bill ever says so. `./.github/actions/profiler` samples cpu/ram/disk/net and appends a profile to the job's own summary panel, so runner
-sizing becomes a measurement instead of a guess. Coverage maintained by habit decays the first time somebody adds a job in a hurry, so `.ci/scripts/quality/check-profiler-coverage.sh` makes it a build failure.
+sizing becomes a measurement instead of a guess. Coverage maintained by habit decays the first time somebody adds a job in a hurry, so `check:ci-profiler-coverage` (`.ci/rediacc_ci/quality/profiler_coverage.py`) makes it a build failure.
 
 It asserts two relations over `.github/workflows/*.yml`:
 

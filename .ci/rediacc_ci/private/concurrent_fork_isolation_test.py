@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/private/concurrent-fork-isolation-test.sh`.
+"""Port of `.ci/scripts/private/concurrent-fork-isolation-test.sh`, retired under PLAN-retire-bash-oracles B3 (its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/private.concurrent-fork-isolation-test.jsonl`). `.github/workflows/ct-tests.yml` runs this module for the fork_isolation leg; the "only call site" history below predates that cutover.
 
 Reproduces the renet#60 race (and its renet#59 prerequisite) on a worker VM provisioned by `renet ops up`, then rules on four things: that `rdc repo up` of a fork of a RUNNING parent exits 0, that the two postgres listeners are distinct `127.0.x.x:5432` and never `0.0.0.0:5432`, that no per-network docker daemon owns more than one compose project, and that `repo fork --checkpoint`
 restores process state in the fork while the parent keeps running (console#440).

@@ -11,7 +11,7 @@ WHY THERE IS NO CLI TWIN HERE, AND WHY THAT IS NOT A GAP
     exempted inject-env.sh and .ci/docker/service/env.sh, a child process
     cannot mutate its parent's environment in any language
 
-Checked again for this port rather than taken from the allowlist: the only two `source`/`.` call sites in the tree are `ci-start-account.sh:31` and `ci-start-elite.sh:29`, and the two ports of THOSE scripts (`infra/ci_start_account.py`, `infra/ci_start_elite.py:123-158`) run the real bash file through `bash -c '. "$1"; env -0'` and read the exported set back. Nothing runs it as a
+Checked again for this port rather than taken from the allowlist: the `source`/`.` call sites in the tree were `ci-start-account.sh:31` (retired under PLAN-retire-bash-oracles B3) and `ci-start-elite.sh:29`, and the two ports of THOSE scripts (`infra/ci_start_account.py`, `infra/ci_start_elite.py:123-158`) run the real bash file through `bash -c '. "$1"; env -0'` and read the exported set back. Nothing runs it as a
 program.
 
 So this module follows what the tree already does with a sourced-only twin: `.ci/scripts/test/proxies/proxy-lib.sh` is ported as the `core.proxyx` library, and `.ci/scripts/lib/common.sh` as `core.common` plus `core.review_budget` -- pure functions plus a small verb CLI whose only job is to give the shadow differential a surface to drive. `configure()` is the whole contract;

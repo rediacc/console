@@ -78,10 +78,10 @@ def test_the_cache_signature_watches_exactly_what_the_counter_reads():
 def test_both_literals_are_non_empty():
     """The anti-vacuity half. If either regex stopped matching -- a rename, a reformat, a move to a different quoting style -- both sides would come back as empty sets and the equality above would hold for the worst possible reason.
 
-    THE FLOOR IS 3 SINCE W7 P6, which ported the last `.claude/hooks/pre-bash/block-*.sh` and deleted that family from both lists. It is a floor on the PARSE, not a target for the estate: three is what the two literals hold today, so a regex that stopped matching still comes back below it.
+    THE FLOOR IS 2 SINCE PLAN-retire-bash-oracles B3, which retired the last `.ci/scripts/quality/check-*.sh` and deleted that family from both lists, as W7 P6 did for `.claude/hooks/pre-bash/block-*.sh` (3 before that). It is a floor on the PARSE, not a target for the estate: two is what the two literals hold today, so a regex that stopped matching still comes back below it.
     """
-    assert len(_families()) >= 3
-    assert len(_corpus_globs()) >= 3
+    assert len(_families()) >= 2
+    assert len(_corpus_globs()) >= 2
 
 
 def test_the_wide_signature_watches_exactly_what_the_advisory_profile_reads():

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/security/dependency-inventory.sh`.
+"""Port of `.ci/scripts/security/dependency-inventory.sh`, and since PLAN-retire-bash-oracles B3 the LIVE tool.
 
-W7P6 wave 27. The bash twin stays the LIVE tool; this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
-`.ci/rediacc_ci/tests/test_security_dependency_inventory.py` and by the K=5
-shadow ledger `.ci/shadow/w7p6-dependency-inventory.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
+The operator runs it on demand for NIS2/CRA compliance evidence: `PYTHONPATH=.ci python3 -m rediacc_ci.security.dependency_inventory [--format json|table] [--output PATH]`. Nothing else invokes it. It was proved byte-for-byte on both streams by `.ci/rediacc_ci/tests/test_security_dependency_inventory.py` and by the K=5 shadow ledger
+`.ci/shadow/w7p6-dependency-inventory.observations.jsonl` (W7P6 wave 27); the bash twin's answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/security.dependency-inventory.jsonl` and the file is deleted.
 
 WHAT IT DOES. Enumerates every dependency across the four analyzed Rediacc packages (www, cli, account, renet) for the NIS2/CRA supply-chain SBOM. Each dependency is classified by level (direct vs transitive), tagged by type (dependencies/devDependencies/peer/optional for npm; direct/indirect for Go), and carries its full dependency chain(s) from the package root down.
 
@@ -102,7 +101,8 @@ GO_PKG_PATH = "private/renet"
 
 # `sed -n '2,35p' "$0" | sed 's/^# \?//'`, verbatim, shell-source leak included. See port note 2. Do not tidy this: `test_help_text_constant_still_matches_the_twin` re-derives it from the twin and a "cleaner" version would fail that test, which is the point -- the leak is the twin's behaviour and this is its port.
 HELP_TEXT = (
-    "dependency-inventory.sh - Enumerate every dependency across the four analyzed\n"
+    # Rule T (PLAN-retire-bash-oracles B3): the two lines naming the program named the retired `dependency-inventory.sh`.
+    "rediacc_ci.security.dependency_inventory - Enumerate every dependency across the four analyzed\n"
     "Rediacc packages (www, cli, account, renet) for the NIS2/CRA\n"
     "supply-chain SBOM. Each dependency is classified by level (direct vs\n"
     "transitive), tagged by type (dependencies/devDependencies/peer/optional for\n"
@@ -116,7 +116,7 @@ HELP_TEXT = (
     "DAG is exponential, so it is intentionally not materialized).\n"
     "\n"
     "Usage:\n"
-    "  dependency-inventory.sh [--format json|table] [--output PATH] [--max-chains N]\n"
+    "  PYTHONPATH=.ci python3 -m rediacc_ci.security.dependency_inventory [--format json|table] [--output PATH] [--max-chains N]\n"
     "\n"
     "Options:\n"
     "  --format FORMAT    Output format: json or table (default: table)\n"
@@ -753,7 +753,8 @@ def build_summary(packages: list[dict], generated: str, max_chains: int) -> dict
 
     return {
         "generatedAt": generated,
-        "tool": {"name": "dependency-inventory.sh", "maxChains": max_chains},
+        # Rule T (PLAN-retire-bash-oracles B3): the SBOM named a tool that no longer exists.
+        "tool": {"name": "rediacc_ci.security.dependency_inventory", "maxChains": max_chains},
         "summary": {
             "packagesAnalyzed": len(packages),
             "totals": {

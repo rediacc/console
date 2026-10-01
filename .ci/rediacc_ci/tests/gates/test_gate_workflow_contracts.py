@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-workflow-contracts.sh`, retired in W7 P5.
 
-Both-ways test for the reusable-workflow contract checks in `.ci/scripts/security/check-workflow-gates.sh`: CHECK 2 (callers in this repo), CHECK 4 (callers in other repositories, declared in `.github/external-callers.yml`) and arm a2 (a `workflow_call` secret declaration nothing reads).
+Both-ways test for the reusable-workflow contract checks in the workflow-gates gate (`.ci/scripts/security/check_workflow_gates.py`, which replaced `check-workflow-gates.sh`): CHECK 2 (callers in this repo), CHECK 4 (callers in other repositories, declared in `.github/external-callers.yml`) and arm a2 (a `workflow_call` secret declaration nothing reads).
 
 WHY THIS CLASS NEEDS A GATE AT ALL. Inside a reusable workflow, `secrets.FOO` for a secret nobody declared under `on.workflow_call.secrets` evaluates to the EMPTY STRING: no warning, no failure, no log line. `cd-deploy-account.yml` read
 `OTLP_CLIENT_CREDENTIALS_{EU,US,ASIA}` that way, so every deployed account Worker ran
@@ -24,14 +24,18 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import GH_REPO
 
-CHECK = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
+# The Python gate CI runs (`check:ci-workflow-gates`). The bash original, `check-workflow-gates.sh`, was retired under PLAN-retire-bash-oracles B3; the port carries the same WORKFLOWS_DIR / EXTERNAL_CALLERS_* / SLIM_TIMEOUT_* seams.
+CHECK = paths.from_root(".ci", "scripts", "security", "check_workflow_gates.py")
 
 WITH_OK = "    with:\n      target: stable"
 SECRETS_OK = "    secrets:\n      DECLARED: ${{ secrets.DECLARED }}"
 
 
-def _bash() -> str:
-    return harness.require_tool("bash", "install bash; the subject is a bash script")
+def _python() -> str:
+    # The PATH python3, not this interpreter: the gate needs PyYAML, which CI installs for the system python and the pytest tool venv does not carry.
+    return harness.require_tool(
+        "python3", "install python3 with PyYAML; the gate parses workflow YAML"
+    )
 
 
 def run_check(directory, **overlay) -> harness.RunResult:
@@ -44,7 +48,7 @@ def run_check(directory, **overlay) -> harness.RunResult:
     if directory is not None:
         env["WORKFLOWS_DIR"] = str(directory)
     env.update(overlay)
-    return harness.run([_bash(), str(CHECK)], env=env, timeout=300)
+    return harness.run([_python(), str(CHECK)], env=env, timeout=300)
 
 
 def write_callee(d: pathlib.Path, extra: str = "") -> None:

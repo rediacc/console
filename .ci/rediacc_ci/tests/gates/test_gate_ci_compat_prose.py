@@ -139,21 +139,21 @@ def test_this_repos_own_explanations_survive(gate):
     pattern = re.compile(r"^[ \t]*#.*\b(%s|%s)\b" % (BANNED_SEQ, BANNED_MAPFILE), re.MULTILINE)
     documented = 0
     scanned = 0
-    for directory in ("quality", "security"):
-        base = paths.from_root(".ci", "scripts", directory)
-        for path in sorted(base.rglob("*")):
-            if not path.is_file():
-                continue
-            scanned += 1
-            try:
-                text = path.read_text(encoding="utf-8")
-            except (OSError, UnicodeDecodeError):
-                continue
-            if pattern.search(text):
-                documented += 1
+    # ALL OF `.ci/scripts`, not only `quality/` and `security/`: PLAN-retire-bash-oracles B3 retired the last shell gates there, and the file that documented `mapfile` in a comment (`typecheck-workers.sh`) went with them. The subject is the real tree's prose, wherever it lives; the gate itself scans every tracked `*.sh`.
+    base = paths.from_root(".ci", "scripts")
+    for path in sorted(base.rglob("*")):
+        if not path.is_file():
+            continue
+        scanned += 1
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if pattern.search(text):
+            documented += 1
     if scanned == 0:
         gate.log_fail(
-            "the two scan roots hold no files at all, so the count below is not a "
+            "the scan root holds no files at all, so the count below is not a "
             "measurement of anything and its green would mean nothing"
         )
     if documented < 1:

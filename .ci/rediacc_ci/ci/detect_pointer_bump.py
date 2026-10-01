@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/detect-pointer-bump.sh` (208 lines).
+"""Port of `.ci/scripts/ci/detect-pointer-bump.sh` (208 lines), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.detect-pointer-bump.jsonl`, and the `twin :NN` citations below are to that blob.
 
 Detect a "pointer bump only" PR head: content provably identical to a commit that already passed full CI, differing only in submodule gitlinks that moved to tree-identical commits now on the submodules' main. When it fires, `ci.yml` skips the expensive jobs and the run goes green in minutes, honestly, because the proof is content identity rather than trust. Any doubt on any step
 degrades
 to `pointer_bump_only=false`.
 
-The twin's header owns the three-step proof and the D9 root cause; neither is restated here.
+THE PROOF, in order (every step fail-safe to `pointer_bump_only=false`), carried over from the retired twin's header:
+  1. Walk HEAD backwards (single-parent commits only, cap WALK_CAP): every commit on the way must change ONLY gitlinks (mode 160000 -> 160000). The first non-pointer commit is the BASELINE.
+  2. The baseline must carry a successful "CI Complete" check run.
+  3. For the NET gitlink diff baseline..HEAD, each move old->new must be tree-identical (commit tree SHAs equal => byte-identical content) AND new must be an ancestor of the submodule's main (compare NEW...main => main is 'ahead' of or 'identical' to NEW).
 
-LIVE. `rediacc_ci.ci.initialize` calls `main` in process (its step 4), and `initialize` is what the workflows run. The bash twin remains only as the differential's oracle until its deletion.
+ENVIRONMENT: `GITHUB_EVENT_NAME` (only `pull_request` can fast-path), `GITHUB_REPOSITORY` (the console slug, for the check-runs lookup), `CHECKS_TOKEN` (plain GITHUB_TOKEN; checks:read on console), `GITHUB_PAT` (app token; contents:read on the submodule repos), `GITHUB_STEP_SUMMARY` (optional; receives the proof line). Every `gh` call exports the token it uses as `GH_TOKEN`.
+
+LIVE. `rediacc_ci.ci.initialize` calls `main` in process (its step 4), and `initialize` is what the workflows run.
 
 NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with `scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in `scripts/ci-runner` selects it; it is a workflow STEP that writes two outputs. This port carries no header either, for the same reason.
 

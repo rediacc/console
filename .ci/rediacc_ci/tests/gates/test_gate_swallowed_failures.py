@@ -99,12 +99,14 @@ REPAIRS = (
         "the OTLP gate errors when it cannot read a binary",
     ),
     (
-        ".ci/scripts/quality/check-submodule-branches.sh",
+        # The bash original was retired under PLAN-retire-bash-oracles B3; the repair lives on in its port.
+        ".ci/rediacc_ci/quality/submodule_branches.py",
         "refusing to report zero unreplied",
         "the submodule gate refuses to fabricate a zero",
     ),
     (
-        ".ci/scripts/security/dependency-inventory.sh",
+        # The bash original was retired under PLAN-retire-bash-oracles B3; the repair lives on in its port.
+        ".ci/rediacc_ci/security/dependency_inventory.py",
         "refusing to emit an empty dependency graph",
         "the SBOM refuses to ship an empty graph",
     ),

@@ -104,7 +104,7 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     # NOT registered here either: check-dead-bash.ts. Its "no input" is ZERO shell files, and this fixture is not empty of shell: it copies .ci/scripts/ (144 .sh files and 609 functions, measured 2026-10-01). The entry used to pass only because that partial corpus happened to hold dead symbols; with the fixture's copy of .ci/rediacc_ci removed the gate still reports 4 (three phase_* functions of linode-cluster-validation.sh and a mutate-check fixture), and with it the ports name all four, so the gate scans all 144 files, finds nothing dead and exits 0, which is a true
     # verdict over a real corpus rather than a vacuous one. Its genuine empty-tree refusal ("ZERO shell files") is proven in test_gate_dead_bash.py::test_empty_tree_is_vacuous, against a root that really holds no shell.
     # Both of its checks walk .github/workflows. The empty tree has no workflow YAML, so every invariant it asserts is over an empty set. It used to `exit 0` on a missing directory, which meant renaming the workflow tree would silently retire the gate.
-    (".ci/scripts/security/check-workflow-gates.sh", "blind"),
+    (".ci/scripts/security/check_workflow_gates.py", "blind"),
     # The empty tree has no package.json and no .github/workflows, so there is no gate census on either side and every one of its seven assertions would be over an empty set. It replaced check-ci-chain-parity.ts and check-gate-reachability.ts, which were registered here separately for the same property; both are gone.
     ("check-ci-parity.ts", "Refusing to run"),
     # The scope engine's workflow closure is computed by ITERATING `uses: ./.github/workflows/*` at runtime, never by matching names, so the test asserts a real closure over the real tree. On the empty fixture that
@@ -172,6 +172,10 @@ def empty_tree_fixture():
             source = ROOT / ".ci" / optional
             if source.is_dir():
                 shutil.copytree(source, tmp / ".ci" / optional, symlinks=True)
+        # The literal registry's TypeScript face is runtime, like `.ci/config` above: gates import it by relative source path (`../../packages/shared/src/config/well-known.generated.js`), so without it check-external-links.ts died with MODULE_NOT_FOUND before it could refuse the empty tree (PR #591, run on 87f8806fd).
+        registry = pathlib.Path("packages/shared/src/config/well-known.generated.ts")
+        (tmp / registry).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / registry, tmp / registry)
         # node_modules resolution walks upward from the script, so link the real one in; the point of the fixture is an empty SOURCE tree, not a broken runtime.
         (tmp / "node_modules").symlink_to(ROOT / "node_modules")
         yield tmp

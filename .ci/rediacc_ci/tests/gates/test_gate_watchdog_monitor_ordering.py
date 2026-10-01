@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-watchdog-monitor-ordering.sh`, retired in W7 P5.
 
-CHECK 6 of `check-workflow-gates.sh` had never been proven able to fail.
+CHECK 6 of the workflow-gates gate (`rediacc_ci.security.workflow_gates.check6`; the bash original `check-workflow-gates.sh` was retired under PLAN-retire-bash-oracles B3) had never been proven able to fail.
 
 WHY IT NEEDS A TEST. CHECK 6 is the rule that keeps the watchdog watching: no step ahead of "Monitor jobs and cancel on failure" may be able to stop the job. It was written after run 33704079162 reported "failure" having monitored NOTHING, and until this file its only evidence of working was that it was green -- which is also exactly what it looks like when its anchor moves, its
 allowlist swallows the case, or its verdict is computed off the wrong list.
@@ -9,47 +9,50 @@ It also got LOOSER in one direction and STRICTER in another: a step carrying BOT
 for. A rule with a new door in it is precisely the rule that needs a test walking
 through the door and then trying the wall beside it.
 
-HOW. The checker is EXTRACTED FROM THE LIVE GATE rather than restated here. A restated copy keeps passing after the original changes, which is the failure this file exists to detect.
+HOW. The checker is the LIVE GATE's own function, driven against a fixture root, rather than restated here. A restated copy keeps passing after the original changes, which is the failure this file exists to detect. (It used to be a heredoc lifted out of the bash gate; the port is the gate now.)
 
 THE TWIN IS A FLAT SCRIPT, so the port chooses the split: one test per plant, plus the extraction, plus one the twin does not have -- a check that the plant really lands AHEAD of the monitor step, because a plant that landed after it would make every refusal below fire for the wrong reason.
 """
 
-import re
+import inspect
 
 from rediacc_ci import paths
+from rediacc_ci.security import workflow_gates
 from rediacc_ci.tests.gates import harness
 
-GATE = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
+GATE = paths.from_root(".ci", "rediacc_ci", "security", "workflow_gates.py")
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 
 MONITOR_STEP = "      - name: Monitor jobs and cancel on failure"
 ANCHOR = "Monitor jobs and cancel on failure"
 
-# `python3 - "$ROOT_DIR" <<'PYEOF'` .. `PYEOF`, the awk range the twin uses. Two heredocs in the gate match that opener, which is why the body is selected BY CONTENT below rather than by being the first one found.
-HEREDOC_RE = re.compile(
-    r"^python3 - \"\$ROOT_DIR\" <<'PYEOF'\n(.*?)^PYEOF$", re.MULTILINE | re.DOTALL
-)
+RUNNER = """import sys
+sys.path.insert(0, %r)
+import yaml
+from rediacc_ci.security import workflow_gates
+sys.exit(workflow_gates.check6(yaml, sys.argv[1]))
+"""
 
 
 def check6_source(gate) -> str:
-    """CHECK 6's Python body, lifted out of the live gate."""
+    """CHECK 6, the live gate's own function."""
     if not GATE.is_file():
         gate.log_fail("subject under test is missing: %s" % GATE)
-    bodies = [b for b in HEREDOC_RE.findall(GATE.read_text(encoding="utf-8")) if ANCHOR in b]
-    if len(bodies) != 1:
+    body = inspect.getsource(workflow_gates.check6)
+    if ANCHOR not in inspect.getsource(workflow_gates):
         gate.log_fail(
-            "could not extract CHECK 6 from %s: %d heredoc(s) mention %r, expected exactly "
-            "1. It was renamed or restructured. This test now tests NOTHING; fix the "
-            "extraction, do not delete the test."
-            % (paths.relative_to_root(GATE), len(bodies), ANCHOR)
+            "%s no longer names %r, so CHECK 6 has no monitor to order against and this test "
+            "now tests NOTHING; fix the anchor, do not delete the test."
+            % (paths.relative_to_root(GATE), ANCHOR)
         )
-    return bodies[0]
+    return body
 
 
 def run_check(gate, tmp_path, workflow_text: str) -> harness.RunResult:
     """CHECK 6 over a one-file fixture tree holding `workflow_text`."""
+    check6_source(gate)
     script = tmp_path / "check6.py"
-    script.write_text(check6_source(gate), encoding="utf-8")
+    script.write_text(RUNNER % str(paths.from_root(".ci")), encoding="utf-8")
     root = tmp_path / "root"
     (root / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (root / ".github" / "workflows" / "watchdog-monitor.yml").write_text(
@@ -57,10 +60,10 @@ def run_check(gate, tmp_path, workflow_text: str) -> harness.RunResult:
     )
     python3 = harness.require_tool(
         "python3",
-        "install python3; CHECK 6's body is a python3 program lifted out of the gate, "
-        "and without an interpreter this case is UNRUN rather than fine",
+        "install python3; CHECK 6 runs under the interpreter CI gives the gate, "
+        "and without one this case is UNRUN rather than fine",
     )
-    # LIFTING THE BODY BYPASSES THE GATE'S OWN pyyaml BOOTSTRAP, which is the first thing check-workflow-gates.sh does ("pyyaml is absent from ubuntu-slim by default", line 112). Nothing re-establishes it here, so probe and say so.
+    # CALLING check6 DIRECTLY BYPASSES THE GATE'S OWN pyyaml BOOTSTRAP (`_ensure_yaml`: "pyyaml is absent from ubuntu-slim by default"). Nothing re-establishes it here, so probe and say so.
     harness.require_python_module(
         python3,
         "yaml",
@@ -106,8 +109,8 @@ def expect(gate, tmp_path, want: int, label: str, workflow_text: str) -> harness
 
 def test_check6_is_extracted_from_the_live_gate(gate):
     body = check6_source(gate)
-    gate.assert_contains(body, ANCHOR, "the extracted body must be the one that names the monitor")
-    gate.log_pass("CHECK 6 extracted from the live gate (%d lines)" % len(body.splitlines()))
+    gate.assert_contains(body, "watchdog-monitor.yml", "CHECK 6 must read the watchdog workflow")
+    gate.log_pass("CHECK 6 found in the live gate (%d lines)" % len(body.splitlines()))
 
 
 def test_the_plant_lands_ahead_of_the_monitor(gate):

@@ -256,7 +256,7 @@ TOOLS: tuple[Tool, ...] = (
         name="zstd",
         purpose=(
             "the renet embed-asset cache is zstd-compressed; "
-            "extract-renet-from-image.sh:95 require_cmd zstd"
+            "rediacc_ci.build.extract_renet_from_image requires zstd"
         ),
         pin_key=None,
         install={

@@ -1175,10 +1175,9 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-git-op-conditionals',
     gate: true,
     // Scoped to .claude/hooks and .ci/scripts/quality, where the two real defects lived (a git identity capture guarded against empty but not against rev-parse --abbrev-ref HEAD's misleading literal "HEAD" on a detached checkout, in both an assignment and a bare-statement shape). BOTH suffixes plus the port module: `globToRegExp('.ci/scripts/quality/*.sh')` is
-    // `^\.ci/scripts/quality/[^/]*\.sh$`, which does not match the new `.py` leaf, and gate-manifest's leaf-self-inclusion oracle reds without it.
+    // `^\.ci/scripts/quality/[^/]*\.sh$`, which does not match the new `.py` leaf, and gate-manifest's leaf-self-inclusion oracle reds without it. The `.sh` glob went on 2026-10-01: PLAN-retire-bash-oracles B3 retired the last shell file under .ci/scripts/quality, and a glob that matches nothing can only exclude.
     paths: [
       '.claude/hooks/**/*.sh',
-      '.ci/scripts/quality/*.sh',
       '.ci/scripts/quality/*.py',
       '.ci/rediacc_ci/quality/git_op_conditionals.py',
     ],
@@ -4484,7 +4483,7 @@ export const GATES: readonly GateSpec[] = [
   //
   // FIVE OF THEM RIDE AN EXISTING WORKFLOW STEP rather than adding one, by being chained into that step's npm key. The precedent is check:ci-locale-de-contamination (see its comment above), and the pairings are by SUBJECT, not by convenience:
   //   em-dash-surfaces        -> "i18n"; 2,401 of its 2,451 findings are locale VALUES, and
-  // check-content-quality.sh keeps the markdown half of the same ban. It was first pointed at the AI-slop step, which is the better SUBJECT match, and check-ci-parity refused it: that step invokes the script by path, not through npm, so the chain would never have reached CI. The pairing has to follow what the step RUNS, not what it is called.
+  // check:ci-content-quality keeps the markdown half of the same ban. It was first pointed at the AI-slop step, which is the better SUBJECT match, and check-ci-parity refused it: that step invokes the script by path, not through npm, so the chain would never have reached CI. The pairing has to follow what the step RUNS, not what it is called.
   //   locale-config-divergence-> "i18n cross-locale"; catalog-versus-catalog integrity,
   // beside de-contamination. Its true subject twin, check_i18n_value_types.py, compares the TYPE of every non-string leaf where this compares the VALUE -- but that step is a bare script path too, so it cannot host a chain.
   //   dead-translation-keys   -> "i18n"; check-translation-key-usage.ts in the same chain

@@ -25,8 +25,10 @@ PINNED BY PATH IN TWO PLACES, split across two arms:
 
   - RUN-IN-PLACE, so ENTRY POINT if repointed:
     `.ci/rediacc_ci/tests/gates/test_gate_trap_registry.py:68` (`GATE_REL`)
-  - DIFFERENTIAL, so it MUST KEEP NAMING THE TWIN:
-    `.ci/rediacc_ci/tests/test_quality_trap_registry.py:21`
+  - DIFFERENTIAL, which names the twin as the key of its frozen golden:
+    `.ci/rediacc_ci/tests/test_quality_trap_registry.py` (`TWIN`)
+
+Both arms are now settled: PLAN-retire-bash-oracles B3 repointed the gate test at this entry point and deleted the twin.
 
 Unlike this batch's three `kind: test` gates, this one has its own workflow step, so CI runs whatever the step's `run:` line names. That line is `npm run check:ci-trap-registry`, an indirection through package.json, so the driver's package.json edit moves the CI side too and no workflow edit is needed.
 
@@ -55,7 +57,7 @@ matters: a plant that dropped the count would have produced a red that said noth
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate. `docs/agent-reference/TRAPS.md` is untouched, and so is `TRAP_FLOOR` in both of the two places it lives.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-trap-registry.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 WAS INTACT at the cutover: the twin stayed on disk as the differential twin. PLAN-retire-bash-oracles B3 later froze its answers as goldens and deleted it.
 
 ---- gate ----
 step: Trap registry dispositions

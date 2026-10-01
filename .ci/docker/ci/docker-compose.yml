@@ -7,12 +7,12 @@
 #   source .ci/scripts/infra/ci-env.sh
 #   docker compose -f .ci/docker/ci/docker-compose.yml up -d account-server
 #
-# Driven by .ci/scripts/infra/ci-start-account.sh (invoked from ci.yml) and torn
+# Driven by rediacc_ci.infra.ci_start_account (invoked from ci.yml) and torn
 # down by rediacc_ci.infra.ci_stop.
 #
 # A `web:` SERVICE WAS REMOVED FROM HERE, and issue #533 is why it looked like it
 # belonged. It was never started by anything: the live driver brings up
-# account-server ALONE (ci-start-account.sh: `up -d account-server`), and the only
+# account-server ALONE (ci_start_account: `up -d account-server`), and the only
 # thing that ever started `web` was ci-start.sh, which had zero execution sites
 # and is deleted with it. It could not have run in CI regardless, because it named
 # ${DOCKER_REGISTRY}/web with `pull_policy: never` while CI only ever publishes

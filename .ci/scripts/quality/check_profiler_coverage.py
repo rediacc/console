@@ -59,7 +59,7 @@ Re-driven after the fix, both sides are byte-identical on both streams, and the 
 
 THE REAL TREE WAS NEVER WRITTEN TO for this gate; the allowlist is untouched.
 
-INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-profiler-coverage.sh` is NOT deleted here. It stays on disk as the differential twin; deletion is W7 P5's job.
+INVARIANT 5 WAS INTACT at the cutover: the twin stayed on disk as the differential twin. PLAN-retire-bash-oracles B3 later froze its answers as goldens and deleted it.
 
 ---- gate ----
 kind: test

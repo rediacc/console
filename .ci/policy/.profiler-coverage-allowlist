@@ -1,5 +1,5 @@
 # Jobs exempt from the "every Linux job is profiled" invariant enforced by
-# .ci/scripts/quality/check-profiler-coverage.sh.
+# .ci/rediacc_ci/quality/profiler_coverage.py (check:ci-profiler-coverage).
 #
 # Entry format: <workflow-basename>.yml:<job-id>, one per line, each covered by
 # a "# BLOCKER: <reason>" comment block above it (a blank line resets the

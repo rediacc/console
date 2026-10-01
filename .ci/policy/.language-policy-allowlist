@@ -110,7 +110,7 @@ file:.ci/scripts/test/proxies/proxy-lib.sh
 # BLOCKER: sourced by build-cli-executables.sh to export variables into the CALLER's shell, the same contract as the already-exempted .ci/docker/service/env.sh -- a child process cannot mutate its parent's environment in any language
 file:.ci/scripts/version/inject-env.sh
 
-# BLOCKER: sourced only, by ci-start-account.sh and ci-start-elite.sh, to export variables into the CALLER's shell -- same contract as the already-exempted inject-env.sh and .ci/docker/service/env.sh, a child process cannot mutate its parent's environment in any language
+# BLOCKER: sourced only, by ci-start-elite.sh and through `bash -c '. "$1"; env -0'` by the ports ci_start_account.py and ci_start_elite.py, to export variables into the CALLER's shell -- same contract as the already-exempted inject-env.sh and .ci/docker/service/env.sh, a child process cannot mutate its parent's environment in any language
 file:.ci/scripts/infra/ci-env.sh
 
 # BLOCKER: a bound fixture, not a standalone tool, doubly tied to bash -- .ci/rediacc_ci/quality/mutate_check.py:105-106 hardcodes SUITE_NAME as this exact basename and mutate-check.sh:162,167 invokes it as `bash "$SUITE"` explicitly; a Python rewrite would need edits to another gate's live contract plus the already-exempted mutate-check.sh, neither owned by this box

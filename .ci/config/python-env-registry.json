@@ -1189,7 +1189,10 @@
     ],
     ".ci/rediacc_ci/tests/differential.py": [
       "HOME",
-      "PATH"
+      "PATH",
+      "PYTEST_CURRENT_TEST",
+      "REDIACC_CI_REGOLDEN",
+      "REDIACC_CI_REGOLDEN_ONLY"
     ],
     ".ci/rediacc_ci/tests/gates/conftest.py": [
       "GATE_HARNESS_LEDGER"
@@ -1324,6 +1327,9 @@
     ],
     ".ci/rediacc_ci/tests/pathmask.py": [
       "PATH"
+    ],
+    ".ci/rediacc_ci/tests/regolden.py": [
+      "PYTEST_BIN"
     ],
     ".ci/rediacc_ci/tests/test_bench_preflight.py": [
       "PATH"

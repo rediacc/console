@@ -34,7 +34,7 @@ name: Console CI - Quality
 #   c. ubuntu-slim has a HARD 15-minute job cap that kills the job as
 #      "cancelled" with no failed step. Slim lanes therefore declare
 #      `timeout-minutes: 12` so they fail with their own message first. This is
-#      enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh; a
+#      enforced by CHECK 3 in .ci/scripts/security/check_workflow_gates.py; a
 #      slim job without a <=12 timeout is a red gate, not a style nit.
 #
 #   d. Job names are load-bearing for the watchdog:
@@ -57,7 +57,7 @@ on:
       # `git push origin HEAD:main` with user.name = GIT_BOT_NAME (a Bitwarden
       # secret since it left the vars.GIT_BOT_NAME Actions variable), which
       # is literally "github-actions[bot]" — the exact string
-      # .ci/scripts/ci/initialize.sh matches to set is_bot.
+      # rediacc_ci.ci.initialize matches to set is_bot.
       #
       # Two independent defenses stop those commits re-triggering a release:
       #   1. ci.yml's initialize job `if:` — github.actor + "[skip ci]"
@@ -714,7 +714,7 @@ jobs:
         with:
           client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
-          preset: pr-read   # gh pr list in check-submodule-branches.sh
+          preset: pr-read   # gh pr list in check_submodule_branches.py
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1807,7 +1807,7 @@ jobs:
     # ubuntu-latest, not ubuntu-slim: this job restores the tutorial-narration
     # audio cache from R2 (see the step below), which needs the AWS CLI. Every
     # other `aws s3` consumer in this repo already runs on ubuntu-latest, and
-    # ubuntu-slim is a minimal image -- check-workflow-gates.sh notes pyyaml is
+    # ubuntu-slim is a minimal image -- check_workflow_gates.py notes pyyaml is
     # absent from it by default, and check-commands.sh exists precisely because
     # commands "may not be available in ubuntu-slim". Without the restore the
     # per-file audio assertion silently disables itself, which is the false
@@ -1981,7 +1981,7 @@ jobs:
     # cancelled job and a passing job look identical in a run summary, so this
     # read as noise rather than as a job that never finished.
     #
-    # Per CHECK 3 in .ci/scripts/security/check-workflow-gates.sh, a bigger
+    # Per CHECK 3 in .ci/scripts/security/check_workflow_gates.py, a bigger
     # timeout is NOT the fix: "the number is not a dial, it is an assertion that
     # this job fits on this runner." It does not fit, so it moves.
     runs-on: ubuntu-latest

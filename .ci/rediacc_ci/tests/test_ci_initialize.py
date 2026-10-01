@@ -217,14 +217,18 @@ def fixture_root(
     shutil.copyfile(
         "%s/.ci/config/well-known.env" % diff.repo(), root / ".ci/config/well-known.env"
     )
+    # Only while the twin exists, i.e. on a re-freeze from bash (PLAN-retire-bash-oracles B3); compare mode never runs it.
     twin = root / TWIN
-    if not twin.exists():
+    if os.path.isfile("%s/%s" % (diff.repo(), TWIN)) and not os.path.lexists(twin):
         twin.symlink_to("%s/%s" % (diff.repo(), TWIN))
 
-    if side == "old":
-        detector = root / BASH_DETECTOR
-        if not detector.exists():
-            detector.symlink_to("%s/%s" % (diff.repo(), BASH_DETECTOR))
+    detector = root / BASH_DETECTOR
+    if (
+        side == "old"
+        and os.path.isfile("%s/%s" % (diff.repo(), BASH_DETECTOR))
+        and not os.path.lexists(detector)
+    ):
+        detector.symlink_to("%s/%s" % (diff.repo(), BASH_DETECTOR))
 
     for relative, body in FAKE_SIBLINGS.items():
         if relative in missing_siblings:
@@ -258,7 +262,11 @@ def run_both(
     results: dict[str, tuple[int, str, str]] = {}
     files: dict[str, str | None] = {}
 
-    for side in ("old", "new"):
+    results["old"], frozen = _old_side(
+        tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kwargs
+    )
+    files.update(frozen)
+    for side in ("new",):
         root = fixture_root(tmp_path, side, **fixture_kwargs)  # type: ignore[arg-type]
         call_log = root / "calls.log"
         call_log.write_text("", encoding="utf-8")
@@ -271,13 +279,10 @@ def run_both(
             "FAKE_LOG": str(call_log),
             **(env_extra or {}),
         }
-        if side == "old":
-            command = "bash %s %s" % (root / TWIN, quoted)
-        else:
-            env["PYTHONPATH"] = "%s/.ci" % diff.repo()
-            env["PYTHONDONTWRITEBYTECODE"] = "1"
-            env["REDIACC_CI_ROOT"] = str(root)
-            command = "python3 -m %s %s" % (MODULE, quoted)
+        env["PYTHONPATH"] = "%s/.ci" % diff.repo()
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env["REDIACC_CI_ROOT"] = str(root)
+        command = "python3 -m %s %s" % (MODULE, quoted)
 
         result = diff.bash_streams(
             command, env=diff.env_for(**env), cwd=str(root), tty=tty, timeout=timeout
@@ -294,6 +299,71 @@ def run_both(
                 scrub(target.read_text(encoding="utf-8")) if target.is_file() else None
             )
     return results["old"], results["new"], files
+
+
+def _old_side(tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kwargs):
+    """The twin's normalised answer and files, from `goldens/twins/ci.initialize.jsonl` (PLAN-retire-bash-oracles B3). The run below happens only on a re-freeze, from the twin or (`--source port`) from the port on the same fixture."""
+    cell: dict[str, object] = {}
+
+    def side(which: str):
+        def run():
+            root = fixture_root(tmp_path, "old", **fixture_kwargs)  # type: ignore[arg-type]
+            call_log = root / "calls.log"
+            call_log.write_text("", encoding="utf-8")
+            argv = list(args) + (["--output", output] if output is not None else [])
+            quoted = " ".join(shlex.quote(a) for a in argv)
+            env: dict[str, str | None] = {
+                "PATH": "%s:%s" % (root / "bin", tools),
+                "HOME": str(root / "home"),
+                "FAKE_LOG": str(call_log),
+                **(env_extra or {}),
+            }
+            if which == "old":
+                command = "bash %s %s" % (root / TWIN, quoted)
+            else:
+                env["PYTHONPATH"] = "%s/.ci" % diff.repo()
+                env["PYTHONDONTWRITEBYTECODE"] = "1"
+                env["REDIACC_CI_ROOT"] = str(root)
+                command = "python3 -m %s %s" % (MODULE, quoted)
+            result = diff.bash_streams(
+                command,
+                env=diff.env_for(**env),
+                cwd=str(root),
+                tty=tty,
+                timeout=timeout,
+            )
+
+            def scrub(text: str) -> str:
+                return text.replace(str(root), "<root>")
+
+            cell["calls"] = scrub(call_log.read_text(encoding="utf-8"))
+            for name in ("output", "true"):
+                target = root / (output if name == "output" and output else name)
+                cell[name] = (
+                    scrub(target.read_text(encoding="utf-8")) if target.is_file() else diff.ABSENT
+                )
+            return result[0], scrub(result[1]), scrub(result[2])
+
+        return run
+
+    rc, out, err, got = diff.twin_run(
+        TWIN,
+        [
+            "args=%r" % (list(args),),
+            "env=%r" % (sorted((env_extra or {}).items()),),
+            "output=%r" % (output,),
+            "tty=%s" % tty,
+            "fixture=%r" % (sorted(fixture_kwargs.items()),),
+        ],
+        side("old"),
+        port=side("new"),
+        extras={n: (lambda n=n: cell[n]) for n in ("calls", "output", "true")},
+        work=(str(tmp_path),),
+    )
+    frozen: dict[str, str | None] = {"old_calls": got["calls"]}
+    for name in ("output", "true"):
+        frozen["old_%s" % name] = None if got[name] == diff.ABSENT else got[name]
+    return (rc, out, err), frozen
 
 
 def assert_identical(old, new, files) -> None:
@@ -933,11 +1003,36 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
 
     Without this the port would keep printing `line 219` after someone inserted a line above it, and every differential above would still pass -- both sides would be wrong together until the twin moved, and the failure would then name a byte difference instead of the reason for it.
     """
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
-        lines = handle.read().split("\n")
+    pinned = (
+        port.WRITE_OUTPUT_LINE,
+        port.GIT_CONFIG_LINE,
+        port.GIT_SUBMODULE_LINE,
+        port.GENERATE_TAG_RENET_LINE,
+        port.GENERATE_TAG_WEB_LINE,
+        port.GENERATE_TAG_RDC_LINE,
+        port.DETECT_BUMP_TYPE_LINE,
+        port.FETCH_URL_LINE,
+        port.GIT_FETCH_LINE,
+        port.GIT_TAG_LINE,
+        port.RESOLVE_VERSION_NEXT_LINE,
+        port.RESOLVE_VERSION_CURRENT_LINE,
+    )
+
+    def read_twin():
+        with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
+            lines = handle.read().split("\n")
+        return 0, "".join("%d\t%s\n" % (n, lines[n - 1]) for n in sorted(set(pinned))), ""
+
+    # The twin is retired (PLAN-retire-bash-oracles B3): the lines at the pinned numbers are frozen with it, so a pin that moves names a line the golden never held.
+    frozen = dict(
+        line.split("\t", 1)
+        for line in diff.twin_call(TWIN, ["pinned lines %r" % (sorted(set(pinned)),)], read_twin)[
+            1
+        ].splitlines()
+    )
 
     def at(number: int) -> str:
-        return lines[number - 1]
+        return frozen[str(number)]
 
     assert 'echo "${key}=${value}" >>"$OUTPUT_FILE"' in at(port.WRITE_OUTPUT_LINE)
     assert "git config --global url." in at(port.GIT_CONFIG_LINE)
@@ -955,8 +1050,20 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
 
 def test_the_five_sibling_paths_are_the_ones_the_twin_calls() -> None:
     """A renamed sibling must red HERE, not in a CI job three steps later."""
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
-        body = handle.read()
+
+    def read_twin():
+        with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
+            text = handle.read()
+        named = (
+            port.GENERATE_TAG,
+            port.DISPATCH_RELEASE,
+            port.DETECT_BUMP_TYPE,
+            port.RESOLVE_VERSION,
+        )
+        return 0, "".join("%s\n" % p for p in named if p in text), ""
+
+    # Frozen with the retired twin (PLAN-retire-bash-oracles B3): the sibling paths it called.
+    body = diff.twin_call(TWIN, ["sibling paths"], read_twin)[1]
     for path in (
         port.GENERATE_TAG,
         port.DISPATCH_RELEASE,

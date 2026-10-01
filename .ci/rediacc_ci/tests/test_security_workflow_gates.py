@@ -25,6 +25,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.security import workflow_gates
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import ACCOUNT_REPO, GH_REPO
 
 if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
@@ -152,6 +153,8 @@ def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     """
     fx = tmp_path / "tree"
     for rel in (TWIN_REL, *PACKAGE_FILES):
+        if rel == TWIN_REL and not (ROOT / rel).is_file():
+            continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         dest = fx / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
@@ -193,15 +196,52 @@ def _env(fx: pathlib.Path, side: str, extra: dict[str, str]) -> dict[str, str]:
     return env
 
 
+def _real_port_only(fx: pathlib.Path, run):
+    """A re-record from the port must use the REAL port: a planted copy standing in for the twin would freeze the plant as the spec."""
+
+    def go():
+        if (fx / PORT_REL).read_bytes() != PORT.read_bytes():
+            raise RuntimeError(
+                "this case plants a defect in the port; exclude it from a --source port re-record with -k"
+            )
+        return run()
+
+    return go
+
+
 def run_both(
     fx: pathlib.Path, port_rel: str = PORT_REL, **envvars: str
 ) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
-    """Both implementations, same tree, same environment. Streams never merged."""
+    """Both implementations, same tree, same environment. Streams never merged.
+
+    The twin's side answers from `goldens/twins/security.check-workflow-gates.jsonl` (PLAN-retire-bash-oracles B3); it runs only on a re-freeze, from the twin or (`--source port`) from the real port on the same tree.
+    """
     results = []
-    for side, argv in (
-        ("old", ["bash", str(fx / TWIN_REL)]),
-        ("new", ["python3", str(fx / port_rel)]),
-    ):
+
+    def live(argv):
+        def go():
+            proc = subprocess.run(
+                argv,
+                env=_env(fx, "old" if argv[0] == "bash" else "new", envvars),
+                cwd=str(fx),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=180,
+            )
+            return proc.returncode, proc.stdout, proc.stderr
+
+        return go
+
+    rc, out, err = diff.twin_call(
+        TWIN_REL,
+        ["env=%r" % (sorted(envvars.items()),)],
+        live(["bash", str(fx / TWIN_REL)]),
+        port=_real_port_only(fx, live(["python3", str(fx / PORT_REL)])),
+        work=(str(fx),),
+    )
+    results.append((rc, out.replace(str(fx), "<fx>"), err.replace(str(fx), "<fx>")))
+    for side, argv in (("new", ["python3", str(fx / port_rel)]),):
         proc = subprocess.run(
             argv,
             env=_env(fx, side, envvars),
@@ -241,35 +281,33 @@ def test_the_baseline_fixture_is_green(tmp_path: pathlib.Path) -> None:
 # --------------------------------------------------------------------------- The real repository ---------------------------------------------------------------------------
 
 
-def test_the_real_repository_agrees() -> None:
-    """The only clean-tree case, and the only one that reads all seven real inputs.
+def test_the_real_repository_is_green_and_counts_what_it_read() -> None:
+    """The port over the real repository: the only clean-tree run, and the only one that reads all seven real inputs.
 
-    `.github/workflows`, `.github/external-callers.yml`, `private/*/.github/ workflows`, `.ci/breakpoint/workflow`, `watchdog-monitor.yml` and the two submodule caller files are none of them reproducible in a fixture. Both sides must agree on the info lines too, which carry the counts (`2 external caller call-site(s)`, `11 sparse Bitwarden-fetching job(s)`) that would collapse
-    silently if a glob stopped matching.
+    This compared the port against the twin, byte for byte, over the live tree. That comparison cannot outlive the twin (PLAN-retire-bash-oracles B3): a frozen answer over live workflows is stale on the next workflow edit. What survives is what the port alone can still be held to here -- green, and NOT VACUOUS: the info lines carry counts (`2 external caller call-site(s)`,
+    `11 sparse Bitwarden-fetching job(s)`) that would collapse silently if a glob stopped matching. Byte-level equivalence lives on in every fixture case, against the twin's frozen answers.
     """
-    results = []
-    for side, argv in (
-        ("old", ["bash", str(TWIN)]),
-        ("new", ["python3", str(PORT)]),
-    ):
-        env = {
-            "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
-            "HOME": os.environ.get("HOME", "/tmp"),
-            "LC_ALL": "C",
-            "LANG": "C",
-            "PYTHONDONTWRITEBYTECODE": "1",
-            "CI": "true",
-        }
-        if side == "new":
-            env["PYTHONPATH"] = str(ROOT / ".ci")
-        proc = subprocess.run(
-            argv, env=env, cwd=str(ROOT), capture_output=True, text=True, check=False, timeout=300
-        )
-        results.append((proc.returncode, proc.stdout, proc.stderr))
-    assert_same(results[0], results[1])
-    # Anti-vacuity for this test itself: it must have SEEN the counts, not just matched two empty strings.
-    assert "external caller call-site(s) verified" in results[0][1]
-    assert "sparse Bitwarden-fetching job(s) check out the map" in results[0][1]
+    env = {
+        "PATH": os.environ.get("PATH", "/usr/local/bin:/usr/bin:/bin"),
+        "HOME": os.environ.get("HOME", "/tmp"),
+        "LC_ALL": "C",
+        "LANG": "C",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "CI": "true",
+        "PYTHONPATH": str(ROOT / ".ci"),
+    }
+    proc = subprocess.run(
+        ["python3", str(PORT)],
+        env=env,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "external caller call-site(s) verified" in proc.stdout
+    assert "sparse Bitwarden-fetching job(s) check out the map" in proc.stdout
 
 
 def test_colour_is_emitted_when_ci_is_not_true(tmp_path: pathlib.Path) -> None:
@@ -1036,9 +1074,16 @@ def test_the_exemption_list_is_a_list_not_a_set_literal() -> None:
     The endgame for `DECLARED_UNUSED_OK` is empty, so the empty form has to be the safe one. This asserts the shape survives, in the port and in the twin.
     """
     assert isinstance(workflow_gates._DECLARED_UNUSED_OK, list)
-    body = TWIN.read_text(encoding="utf-8")
-    assert "_DECLARED_UNUSED_OK = [" in body
-    assert "DECLARED_UNUSED_OK = set(_DECLARED_UNUSED_OK)" in body
+    needles = ("_DECLARED_UNUSED_OK = [", "DECLARED_UNUSED_OK = set(_DECLARED_UNUSED_OK)")
+
+    def read_twin():
+        text = TWIN.read_text(encoding="utf-8")
+        return 0, "".join("%s\n" % n for n in needles if n in text), ""
+
+    # Frozen with the retired twin (PLAN-retire-bash-oracles B3).
+    body = diff.twin_call(TWIN_REL, ["exemption list shape"], read_twin)[1]
+    for needle in needles:
+        assert needle in body
 
 
 # --------------------------------------------------------------------------- A PLANTED DEFECT, on a throwaway copy, never on the file on disk ---------------------------------------------------------------------------

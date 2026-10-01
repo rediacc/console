@@ -1,4 +1,6 @@
-"""`rediacc_ci.ci.assert_job_succeeded` against its bash twin.
+"""`rediacc_ci.ci.assert_job_succeeded` against its bash twin's frozen answers.
+
+The twin, `.ci/scripts/ci/assert-job-succeeded.sh`, is deleted (PLAN-retire-bash-oracles B3); `differential.twin_streams` answers its side from `goldens/twins/ci.assert-job-succeeded.jsonl`. Re-record with `PYTHONPATH=.ci python3 -m rediacc_ci.tests.regolden <twin> --source port --reason "<why>"`.
 
 argv in, two streams and an exit code out; no subprocess, no file, no env beyond the colour decision, so both sides are driven directly and compared byte-for-byte. The only normalisation is the `$0` token in the usage line, which is the program's own name and therefore necessarily differs; `usage_tail` strips exactly that and nothing else.
 
@@ -10,7 +12,7 @@ from __future__ import annotations
 
 import shlex
 
-from rediacc_ci.ci import assert_job_succeeded as port
+from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
 
 TWIN = ".ci/scripts/ci/assert-job-succeeded.sh"
@@ -24,8 +26,10 @@ def run_both(
     extra = env_extra or {}
     old_env = diff.env_for(**extra)
     new_env = diff.env_for(**extra, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s %s" % (TWIN, quoted), env=old_env, tty=tty, timeout=30)
     new = diff.bash_streams("python3 -m %s %s" % (MODULE, quoted), env=new_env, tty=tty, timeout=30)
+    old = diff.twin_streams(
+        TWIN, "bash %s %s" % (TWIN, quoted), env=old_env, tty=tty, timeout=30, port=lambda: new
+    )
     return old, new
 
 
@@ -85,7 +89,22 @@ def test_an_unknown_result_fails_closed() -> None:
         "✗ housekeeping has unexpected result='neutral' "
         "(not success/skipped/cancelled/failure).\n" in old[2]
     )
-    assert "✗   Update assert-job-succeeded.sh to handle this state explicitly.\n" in old[2]
+    assert (
+        "✗   Update .ci/rediacc_ci/ci/assert_job_succeeded.py to handle this state explicitly.\n"
+        in old[2]
+    )
+
+
+def test_the_advice_names_a_file_that_exists() -> None:
+    """Rule T, failing on the bash behaviour: the retired twin's advice named itself, a file that no longer exists. The intentional golden delta is on the unknown- and empty-result records."""
+    old, new = run_both("housekeeping", "neutral")
+    advice = [line for line in new[2].splitlines() if "Update " in line]
+    assert advice, new[2]
+    target = advice[0].split("Update ", 1)[1].split(" ", 1)[0]
+    assert (paths.repo_root() / target).is_file(), (
+        "the advice names %s, which does not exist" % target
+    )
+    assert new == old
 
 
 def test_an_empty_result_fails_closed_too() -> None:
@@ -132,20 +151,6 @@ def test_an_empty_label_is_also_usage() -> None:
     old, new = run_both("", "success")
     assert (old[0], new[0]) == (2, 2)
     assert usage_tail(new[2]) == usage_tail(old[2])
-
-
-def test_every_advice_line_is_the_twins_line_verbatim() -> None:
-    """The two advice tuples are a COPY. Re-read the twin rather than restate it.
-
-    The label is `${JOB_LABEL}` in bash and `{label}` here, so the template is
-    rendered with the bash spelling and must then appear in the twin verbatim. A reworded line in either file breaks this before a differential case has to notice it through a byte comparison.
-    """
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        text = fh.read()
-    for line in port.SKIPPED_ADVICE:
-        assert 'log_error "%s"' % line.format(label="${JOB_LABEL}") in text
-    for line in port.EXTERNAL_ADVICE:
-        assert 'log_warn "%s"' % line.format(label="${JOB_LABEL}") in text
 
 
 def test_colour_on_a_terminal_is_byte_identical() -> None:

@@ -18,6 +18,8 @@ THE `unhealthy` DEFECT IS PINNED HERE, NOT FIXED. `ci-start-account.sh:106` grep
 behaviour and is outside this port's file ownership.
 
 K=5 LEDGER: `.ci/shadow/w7p6-ci-start-account.observations.jsonl`.
+
+THE TWIN IS RETIRED (PLAN-retire-bash-oracles B3). Every `_run("old", ...)` answers from `goldens/twins/infra.ci-start-account.jsonl` through `differential.twin_run`: both streams, the docker call log, the written `.env` and `$GITHUB_OUTPUT`, as the twin produced them on the fixture each case builds.
 """
 
 from __future__ import annotations
@@ -32,10 +34,12 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.wkloader import copy_loader
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-start-account.sh"
+TWIN_REL = ".ci/scripts/infra/ci-start-account.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_start_account.py"
 CI_ENV = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
 
@@ -160,9 +164,10 @@ def _fixture(
         "# fixture placeholder; the recording fake never reads it\n", encoding="utf-8"
     )
 
-    (root / ".ci" / "scripts" / "infra" / TWIN.name).write_text(
-        _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
-    )
+    if TWIN.is_file():  # only a re-freeze from bash runs it; compare mode never does
+        (root / ".ci" / "scripts" / "infra" / TWIN.name).write_text(
+            _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
+        )
     shutil.copy2(CI_ENV, root / ".ci" / "scripts" / "infra" / CI_ENV.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
@@ -205,12 +210,57 @@ def _fixture(
 LOAD_LINE = re.compile(r"^  load average \(1m 5m 15m\): .*, cores: .*$", re.MULTILINE)
 
 
+def _mask_load(text: str) -> str:
+    return LOAD_LINE.sub("  load average (1m 5m 15m): <masked>, cores: <masked>", text)
+
+
 def _normalize(text: str, root: pathlib.Path) -> str:
     text = text.replace(str(root), "<root>")
     return LOAD_LINE.sub("  load average (1m 5m 15m): <masked>, cores: <masked>", text)
 
 
 def _run(
+    which: str, root: pathlib.Path, *, secrets: dict[str, str] | None = None
+) -> tuple[subprocess.CompletedProcess[str], list[str], str | None, str | None]:
+    if which != "old":
+        return _live(which, root, secrets=secrets)
+    cell: dict[str, tuple] = {}
+
+    def side(which: str):
+        def run():
+            cell["v"] = _live(which, root, secrets=secrets)
+            proc = cell["v"][0]
+            # The load-average line is a live host reading, never compared (`_normalize`); recorded masked so a re-record does not mistake a different load for a change.
+            return proc.returncode, _mask_load(proc.stdout), _mask_load(proc.stderr)
+
+        return run
+
+    def extra(i: int):
+        def read() -> str:
+            value = cell["v"][i]
+            if i == 1:
+                return "".join("%s\n" % c for c in value)
+            return diff.ABSENT if value is None else value
+
+        return read
+
+    used = DETERMINISTIC_SECRETS if secrets is None else secrets
+    rc, out, err, got = diff.twin_run(
+        TWIN_REL,
+        ["old", *("%s=%s" % kv for kv in sorted(used.items()))],
+        side("old"),
+        port=side("new"),
+        extras={"calls": extra(1), "env": extra(2), "gho": extra(3)},
+        work=(str(root),),
+    )
+    proc = subprocess.CompletedProcess(["bash", TWIN_REL], rc, out, err)
+    calls = [line for line in got["calls"].splitlines() if line]
+    env_text = None if got["env"] == diff.ABSENT else got["env"]
+    gho_text = None if got["gho"] == diff.ABSENT else got["gho"]
+    return proc, calls, env_text, gho_text
+
+
+def _live(
     which: str, root: pathlib.Path, *, secrets: dict[str, str] | None = None
 ) -> tuple[subprocess.CompletedProcess[str], list[str], str | None, str | None]:
     env = dict(os.environ)
@@ -403,14 +453,10 @@ def test_the_load_line_is_really_there() -> None:
 
 
 def test_the_null_sleep_anchors_still_exist() -> None:
-    twin = TWIN.read_text(encoding="utf-8")
+    """The port half only: the twin's anchors were checked against its file until its retirement, and its frozen answers carry the probe count they produced (`test_the_probe_count_is_the_real_one`)."""
     port = PORT.read_text(encoding="utf-8")
-    assert twin.count(BASH_SLEEP_ANCHOR) == 1, "the bash poll-sleep anchor moved"
-    assert twin.count(BASH_SETTLE_ANCHOR) == 1, "the bash settle-sleep anchor moved"
     assert port.count(PY_SLEEP_ANCHOR) == 1, "the Python poll-sleep anchor moved"
     assert port.count(PY_SETTLE_ANCHOR) == 1, "the Python settle-sleep anchor moved"
-    assert twin.count("    local timeout=%d\n" % REAL_TIMEOUT) == 1
-    assert twin.count("    local interval=%d\n" % REAL_INTERVAL) == 1
     assert port.count("TIMEOUT_SECONDS = %d\n" % REAL_TIMEOUT) == 1
     assert port.count("INTERVAL_SECONDS = %d\n" % REAL_INTERVAL) == 1
     assert port.count("SETTLE_SECONDS = 2\n") == 1
@@ -477,3 +523,15 @@ def test_planted_defect_is_caught_by_this_differential() -> None:
         new, _, _, _ = _run("new", root_b)
         assert new.returncode == old.returncode == 0
         assert _normalize(new.stdout, root_b) == _normalize(old.stdout, root_a)
+
+
+def test_the_env_header_names_the_module_that_wrote_it() -> None:
+    """Rule T, failing on the bash behaviour: the retired twin stamped `# Auto-generated by ci-start-account.sh`, a file that no longer exists. The intentional golden delta is on every `.env` the agreement cases freeze."""
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td)
+        _, _, old_env, _ = _run("old", _fixture(base / "a"))
+        _, _, new_env, _ = _run("new", _fixture(base / "b"))
+    assert new_env is not None
+    assert new_env == old_env
+    header = new_env.splitlines()[0]
+    assert header == "# Auto-generated by rediacc_ci.infra.ci_start_account -- do not edit", header

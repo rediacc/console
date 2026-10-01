@@ -1223,7 +1223,6 @@
     "gate": true,
     "paths": [
       ".claude/hooks/**/*.sh",
-      ".ci/scripts/quality/*.sh",
       ".ci/scripts/quality/*.py",
       ".ci/rediacc_ci/quality/git_op_conditionals.py"
     ],

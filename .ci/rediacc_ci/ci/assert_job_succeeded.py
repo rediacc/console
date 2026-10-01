@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/assert-job-succeeded.sh` (61 lines).
+"""The transitive-skip sentinel: assert an upstream job was not silently skipped by the GHA needs-chain skip propagation (finding J).
 
-The transitive-skip sentinel: assert an upstream job was not silently skipped by the GHA needs-chain skip propagation (finding J). The twin's header owns the state table and why only `skipped` fails; it is not restated here beyond what the code needs.
+When a job in the needs chain skips, downstream jobs without `always()` quietly skip too; this catches that regression at runtime on push-to-main.
 
-LIVE. `.github/workflows/ci.yml` runs `python3 -m rediacc_ci.ci.assert_job_succeeded <label> <result>` for the finalize-release sentinel. The bash twin remains only as the differential's oracle until its deletion.
+THE STATE TABLE (this module owns it since the bash original, `.ci/scripts/ci/assert-job-succeeded.sh`, was retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.assert-job-succeeded.jsonl`, whose header names the blob):
+
+    success              pass
+    skipped              FAIL: the bug is back; fix the upstream `if:`
+    cancelled, failure   pass. cancelled is externally imposed (CI watchdog force-cancel, concurrent-push auto-cancel, manual cancel); failure is already surfaced by the upstream job itself. Neither is the class of bug this sentinel guards against.
+    anything else        FAIL, see below
+
+LIVE. `.github/workflows/ci.yml` runs `python3 -m rediacc_ci.ci.assert_job_succeeded <label> <result>` for the finalize-release sentinel.
 
 Ledger: `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).
 
@@ -12,9 +19,9 @@ THE UNKNOWN-RESULT ARM FAILS CLOSED, WHICH IS WHY THE PORT KEEPS IT VERBATIM
 -----------------------------------------------------------------------------
 Unlike its sibling `assert_channel_for_event`, whose `*)` arm warns and ACCEPTS, this script's `*)` arm ERRORS and exits 1 -- including for an EMPTY
 result, which is what `${{ needs.<job>.result }}` yields when the job name is
-misspelled in `needs:`. A renamed job therefore breaks loudly rather than passing, and that asymmetry between the two sentinels is deliberate on the twin's part.
+misspelled in `needs:`. A renamed job therefore breaks loudly rather than passing, and that asymmetry between the two sentinels is deliberate.
 
-`$0` in the usage line is the program's own name, so bash prints the `.sh` path and this prints the `.py` path; the differential normalises that one token and compares the rest byte-for-byte.
+`$0` in the usage line is the program's own name, so the frozen bash answer carries the `.sh` path and this prints the `.py` path; the differential normalises that one token and compares the rest byte-for-byte.
 """
 
 from __future__ import annotations
@@ -73,7 +80,8 @@ def main(argv: list[str]) -> int:
         "%s has unexpected result='%s' (not success/skipped/cancelled/failure)."
         % (job_label, result)
     )
-    log.error("  Update assert-job-succeeded.sh to handle this state explicitly.")
+    # Rule T (PLAN-retire-bash-oracles B3): the bash original named itself here; after its deletion that advice pointed at a file that no longer exists.
+    log.error("  Update .ci/rediacc_ci/ci/assert_job_succeeded.py to handle this state explicitly.")
     return 1
 
 

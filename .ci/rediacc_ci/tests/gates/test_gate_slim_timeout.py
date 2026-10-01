@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-slim-timeout.sh`, retired in W7 P5.
 
-Both-ways test for CHECK 3 in `.ci/scripts/security/check-workflow-gates.sh`.
+Both-ways test for CHECK 3 of the workflow-gates gate (`.ci/scripts/security/check_workflow_gates.py`, which replaced `check-workflow-gates.sh`).
 
 WHY THIS CLASS NEEDS A GATE AT ALL: ubuntu-slim is a 1-vCPU runner with a HARD 15-minute job cap enforced by the platform. A job that reaches it is not failed, it is CANCELLED with no failed step -- which reads as neither pass nor fail. CI Complete is poisoned, the watchdog has no error to classify, and the log's last line is a successful post-step. quality-security hit this twice
 in three runs during the 0722-1 wave, and the only clue was a job that "just stopped". An explicit timeout-minutes below the cap converts that silent kill into an ordinary timeout failure naming the step that hung.
@@ -17,7 +17,8 @@ The check is driven against fixture trees via `WORKFLOWS_DIR`, so every case but
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-CHECK = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
+# The Python gate CI runs (`check:ci-workflow-gates`). The bash original, `check-workflow-gates.sh`, was retired under PLAN-retire-bash-oracles B3; the port carries the same WORKFLOWS_DIR / EXTERNAL_CALLERS_* / SLIM_TIMEOUT_* seams.
+CHECK = paths.from_root(".ci", "scripts", "security", "check_workflow_gates.py")
 
 
 def run_check(gate, directory, *, coverage: str = "true") -> harness.RunResult:
@@ -28,7 +29,8 @@ def run_check(gate, directory, *, coverage: str = "true") -> harness.RunResult:
     if not CHECK.is_file():
         gate.log_fail("subject under test is missing: %s" % CHECK)
     return harness.run(
-        ["bash", str(CHECK)],
+        # The PATH python3: the gate needs PyYAML, which the pytest tool venv does not carry.
+        [harness.require_tool("python3", "install python3 with PyYAML"), str(CHECK)],
         env={
             "CI": "true",
             "WORKFLOWS_DIR": str(directory),
@@ -110,6 +112,9 @@ def test_real_workflows_pass(gate):
 
     A READ of `.github/workflows` and nothing else. It writes nowhere, which is what keeps this module admissible to the parity driver.
     """
-    result = harness.run(["bash", str(CHECK)], env={"CI": "true"})
+    result = harness.run(
+        [harness.require_tool("python3", "install python3 with PyYAML"), str(CHECK)],
+        env={"CI": "true"},
+    )
     gate.assert_exit(0, result, "every real ubuntu-slim job declares a compliant timeout")
     gate.log_pass("the repo's own .github/workflows satisfies the rule")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/review/discover-epics.sh`.
+"""Port of `.ci/scripts/review/discover-epics.sh`, retired under PLAN-retire-bash-oracles B3 (its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/review.discover-epics.jsonl`).
 
 Emits the epic ids a branch declares as a JSON array on `epics=`, for the
 review workflow's job matrix. The twin's own header explains why it is a script at all rather than an inline workflow block, and the reason is exactly the reason this port must not carry its own parser: the inline version "re-implemented the snapshot parse that `review_epic_ids` in .ci/scripts/lib/common.sh already does, so there were two copies of one rule -- and two copies

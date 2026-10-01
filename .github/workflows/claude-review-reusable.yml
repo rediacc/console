@@ -64,7 +64,7 @@ jobs:
     name: Discover epics
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # Checkout plus a local discover-epics.sh. No gh, no API, no GH_TOKEN in
+    # Checkout plus a local rediacc_ci.review.discover_epics. No gh, no API, no GH_TOKEN in
     # this job. Pinned so the cross-repo caller contract is explicit: this job
     # needs nothing beyond checkout.
     permissions:

@@ -75,8 +75,7 @@ const VM_E2E_PATHS = [
   '.ci/rediacc_ci/env/create_e2e_env.py',
   '.ci/rediacc_ci/ci_signal/create_complete.py',
   // The e2e runner and the account starter are `python3 -m rediacc_ci.testrun.e2e` and `rediacc_ci.testrun.start_account` since 3ed5836f7, so the `.ci/rediacc_ci` entry above carries them; their bash twins run-e2e.sh and start-account-for-e2e.sh are no longer invoked by any leg.
-  // Used by ONE leg each and carried by all eight: the two private scripts by fork_isolation. Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing.
-  '.ci/scripts/private/concurrent-fork-isolation-test.sh',
+  // Used by ONE leg each and carried by all eight: the two private scripts by fork_isolation. Over-wide for the other seven, which is the safe direction and costs nothing extra: they are in the same listing. The concurrent-fork isolation test is `python3 -m rediacc_ci.private.concurrent_fork_isolation_test`, carried by the `.ci/rediacc_ci` entry above; its bash twin was retired under PLAN-retire-bash-oracles B3.
   '.ci/rediacc_ci/private/compose_healthcheck_smoke_test.py',
   '.ci/scripts/lib/common.sh',
   // Added 4b5a52d9f (spec W T2.1-T2.3, T2.6): every VM/E2E leg now `uses:` this local composite before its build steps, which resolves from the WORKSPACE exactly like bws-secrets above, so a change to the action does not re-run these legs unless it is in the closure. Found by test_gate_greenlight_closure_trace.py.

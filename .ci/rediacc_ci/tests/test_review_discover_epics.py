@@ -24,12 +24,15 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "review" / "discover-epics.sh"
+# Retired under PLAN-retire-bash-oracles B3: every TWIN run below answers from `goldens/twins/review.discover-epics.jsonl` (`differential.twin_run`), including the `$GITHUB_OUTPUT` file it wrote.
+TWIN_REL = ".ci/scripts/review/discover-epics.sh"
+TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "review" / "discover_epics.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -84,12 +87,36 @@ def _path_without_jq(tmp_path: pathlib.Path) -> str:
     return str(stub)
 
 
+def _twin_parts(how: str, cwd: pathlib.Path, env: dict[str, str]) -> list[str]:
+    return [how, "cwd=%s" % cwd, *("%s=%s" % (k, env[k]) for k in sorted(env))]
+
+
+def _work(cwd: pathlib.Path) -> tuple[str, ...]:
+    # The case's tmp_path is the repo's parent; folding it covers the repo, a sibling `elsewhere` checkout and the no-jq stub dir.
+    return (str(cwd.parent),)
+
+
 def _run(
     subject: pathlib.Path, cwd: pathlib.Path, env: dict[str, str]
 ) -> subprocess.CompletedProcess[str]:
+    if subject == TWIN:
+        output = env.get("GITHUB_OUTPUT") or ""
+        rc, out, err, _ = diff.twin_run(
+            TWIN_REL,
+            _twin_parts("pipe", cwd, env),
+            lambda: _live(subject, cwd, env),
+            files=(output,) if output else (),
+            work=_work(cwd),
+        )
+        return subprocess.CompletedProcess([BASH, str(subject)], rc, out, err)
+    rc, out, err = _live(subject, cwd, env)
+    return subprocess.CompletedProcess([sys.executable, str(subject)], rc, out, err)
+
+
+def _live(subject: pathlib.Path, cwd: pathlib.Path, env: dict[str, str]):
     # RESOLVED FROM THE TEST PROCESS'S OWN PATH, not the child's. The missing-jq case hands the child an EMPTY PATH on purpose, and a bare "bash" would then fail to spawn at all -- a FileNotFoundError that reads like a broken harness rather than the refusal under test.
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
-    return subprocess.run(
+    proc = subprocess.run(
         [*runner, str(subject)],
         cwd=cwd,
         capture_output=True,
@@ -98,6 +125,7 @@ def _run(
         check=False,
         timeout=60,
     )
+    return proc.returncode, proc.stdout, proc.stderr
 
 
 def run_both(
@@ -253,6 +281,19 @@ def test_missing_jq_refuses_on_both_sides(tmp_path: pathlib.Path) -> None:
 
 
 def _run_with_socket_stdout(
+    subject: pathlib.Path, cwd: pathlib.Path, env: dict[str, str]
+) -> tuple[int, str, str]:
+    if subject == TWIN:
+        return diff.twin_call(
+            TWIN_REL,
+            _twin_parts("socket", cwd, env),
+            lambda: _live_socket(subject, cwd, env),
+            work=_work(cwd),
+        )
+    return _live_socket(subject, cwd, env)
+
+
+def _live_socket(
     subject: pathlib.Path, cwd: pathlib.Path, env: dict[str, str]
 ) -> tuple[int, str, str]:
     """Run one side with a UNIX SOCKET as fd 1, and read what reached it.

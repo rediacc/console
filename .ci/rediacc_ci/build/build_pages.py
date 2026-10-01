@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/build/build-pages.sh` (78 lines).
+"""Port of `.ci/scripts/build/build-pages.sh` (78 lines), retired under PLAN-retire-bash-oracles B3; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/build.build-pages.jsonl`.
 
 Assembles the Cloudflare Pages deployment package: `packages/www/dist` at the root, `packages/json/dist` under `/json/`, optionally a CLI manifest under `/cli/edge/` and `/cli/stable/`, and then a copy of the whole thing into `workers/www/dist` so the www worker serves it as static assets.
 
-LIVE CALLERS, neither repointed by this port:
-  * `.github/workflows/cd-stage.yml:185`  `.ci/scripts/build/build-pages.sh --output dist/pages`
-  * `.ci/legacy/run-legacy.sh:231`        the same invocation, for a PR preview
+LIVE CALLER: `.github/workflows/cd-stage.yml` runs `python3 -m rediacc_ci.build.build_pages --output dist/pages`.
 
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHY IT IS NOT `shutil`

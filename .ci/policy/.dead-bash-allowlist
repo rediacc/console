@@ -35,9 +35,6 @@ dispatch:phase_
 # BLOCKER: deliberately not wired into the release pipeline; its own header at the top of the file states MANUAL ONLY, and it is run by the operator when a proxy deploy is needed
 manual:.ci/scripts/deploy/deploy-proxy.sh
 
-# BLOCKER: NIS2/CRA supply-chain SBOM enumeration, run by the operator on demand when a dependency inventory is required for compliance evidence rather than on every build
-manual:.ci/scripts/security/dependency-inventory.sh
-
 # BLOCKER: starts OpenVSCode Server for self-hosted browser access and refuses to run inside Codespaces; invoked by the operator on a self-hosted box, not by the devcontainer lifecycle
 manual:.devcontainer/start-vscode.sh
 

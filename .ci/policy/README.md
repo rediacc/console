@@ -45,7 +45,7 @@ not as a description of the code today.
 | `.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` `EMBED_BLOCKLIST_FILE` | env seam over root join |
 | `.go-deps-upgrade-blocklist` | `.ci/rediacc_ci/quality/go_deps.py` `BLOCKLIST_REL` | `policy_rel`, over what was a root join in the deleted `check-go-deps.sh` |
 | `.plan-housekeeping-allowlist` | `.ci/scripts/quality/check-plan-housekeeping.sh` `ALLOWLIST` | env seam (`PLAN_HK_ALLOWLIST`) over root join |
-| `.profiler-coverage-allowlist` | `.ci/scripts/quality/check-profiler-coverage.sh` `ALLOWLIST` | **bare relative name**, correct only after the `cd "$REPO_ROOT"` above it |
+| `.profiler-coverage-allowlist` | `.ci/rediacc_ci/quality/profiler_coverage.py` `DEFAULT_ALLOWLIST` | `policy_rel`, over what was a bare relative name in the deleted `check-profiler-coverage.sh` |
 | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py` `allowlist_path` | flag, then env (`RUNNER_ADVICE_ALLOWLIST`), then root join |
 | `.unverified-download-allowlist` | `scripts/gates/check-unverified-downloads.ts` `UNVERIFIED_DOWNLOAD_ALLOWLIST` | env seam over root join |
 
@@ -54,7 +54,7 @@ about a tree nobody has any more.
 
 Eleven of the fifteen are additionally read by `scripts/gates/check-suppression-liveness.ts`, which since 2026-09-06 routes every one of those reads through `policyPath()` and therefore needs no edit when the move lands.
 
-**The four bare-relative reads are the reason the seam exists.** `audit.sh` and `check-profiler-coverage.sh` opened their allowlists by bare name and were correct only because they `cd` to the repository root first. Two of the four left with `audit.sh` at W7P5-b, and its port reads through `policy_rel` instead. A move that updated the root joins and missed these would leave four
+**The four bare-relative reads are the reason the seam exists.** `audit.sh` and `check-profiler-coverage.sh` opened their allowlists by bare name and were correct only because they `cd` to the repository root first. Two of the four left with `audit.sh` at W7P5-b and one with `check-profiler-coverage.sh` at PLAN-retire-bash-oracles B3; both ports read through `policy_rel` instead. A move that updated the root joins and missed these would leave four
 readers opening a file that is no longer there -- and in every one of these mechanisms, a file that is not there parses as zero entries, which is indistinguishable from "nothing is suppressed".
 
 ### The live inventory, generated
@@ -82,13 +82,13 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.audit-prod-allowlist` | name per line | 0 | 1 | both |
 | `.ci-parity-exempt` | name per line | 9 | 10 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
-| `.dead-bash-allowlist` | name per line | 12 | 13 | both |
+| `.dead-bash-allowlist` | name per line | 11 | 12 | both |
 | `.deps-upgrade-blocklist` | name per line | 7 | 8 | both |
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 1 | 2 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 3 | 4 | both |
-| `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
+| `.host-toolchain-exceptions` | name per line | 1 | 2 | both |
 | `.language-policy-allowlist` | name per line | 17 | 18 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
 | `.profiler-coverage-allowlist` | name per line | 66 | 4 | both |

@@ -64,7 +64,7 @@ jobs:
     # loses often enough to matter, and losing means CANCELLED-with-no-failed-step
     # instead of a timeout naming the step. The worst case here is 480s poll +
     # ~25s AI + <=5min force-cancel wait = 13.4m, which still fits.
-    # Enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh.
+    # Enforced by CHECK 3 in .ci/scripts/security/check_workflow_gates.py.
     timeout-minutes: 14
     # actions: write is load-bearing: watchdog-monitor.cjs force-cancels and
     # reruns failed jobs, and rediacc_ci.ci.dispatch_watchdog re-dispatches it.
@@ -104,13 +104,13 @@ jobs:
       # ~500-machine-minute retry" -- with both blank that was the operating mode.
       #
       # WHY THIS STEP IS ALLOWED TO PRECEDE THE MONITOR, which CHECK 6 of
-      # check-workflow-gates.sh otherwise forbids: it is registered in that check's PREREQS,
+      # check_workflow_gates.py otherwise forbids: it is registered in that check's PREREQS,
       # whose contract is "steps that must be allowed to fail, because the monitor cannot
       # run correctly without them". That is exactly this step -- a monitor with no
       # classifier credentials does not degrade, it hands the retry decision to an allowlist
       # nobody reviewed. The alternative route, `continue-on-error`, is banned repo-wide by
       # check-workflows.sh; a previous session tried it and reverted, and so did I before
-      # reading the note at check-workflow-gates.sh:984-994.
+      # reading the note above `check6` in .ci/rediacc_ci/security/workflow_gates.py.
       - name: Fetch secrets from Bitwarden
         uses: ./.github/actions/bws-secrets
         with:

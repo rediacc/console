@@ -1,6 +1,6 @@
 # Callers of this repo's reusable workflows that live in OTHER repositories.
 #
-# WHY THIS FILE EXISTS. `.ci/scripts/security/check-workflow-gates.sh` CHECK 2 enforces the
+# WHY THIS FILE EXISTS. `.ci/scripts/security/check_workflow_gates.py` CHECK 2 enforces the
 # caller/callee contract in both directions -- a caller must pass every required input and
 # secret the callee declares, and may not pass one it never declares. But that check scans
 # `.github/workflows` only (see its WORKFLOWS_DIR default), so it is structurally blind to
