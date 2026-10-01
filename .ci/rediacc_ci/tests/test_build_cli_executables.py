@@ -58,7 +58,19 @@ VENDORED = (
 BASH = shutil.which("bash") or "/bin/bash"
 
 # Real, deterministic, and genuinely reached. Anything absent from this tuple is ABSENT from the scratch PATH -- including `shasum`, whose absence is what makes the `sha256sum` arm the one taken, and `node`, which is supplied as a fake.
-PATH_MINIMUM = ("dirname", "mkdir", "cp", "chmod", "sed", "cat", "wc", "sha256sum", "jq")
+PATH_MINIMUM = (
+    "dirname",
+    "mkdir",
+    "cp",
+    "chmod",
+    "sed",
+    "cat",
+    "wc",
+    "sha256sum",
+    "jq",
+    "mktemp",
+    "rm",
+)
 
 RECORD = """{
     printf 'FAKEBIN %s' "$__self"
@@ -83,6 +95,10 @@ case "$__self" in
                 exit "${FAKE_RDC_VERSION_RC:-0}"
                 ;;
             doctor)
+                # A doctor that sees the caller's config fails the way the real one did on a developer machine: no JSON, a non-verdict exit.
+                if [[ -n "${FAKE_DOCTOR_LEAK_HOME:-}" ]] && [[ "$HOME" == "$FAKE_DOCTOR_LEAK_HOME" || -n "${REDIACC_CONFIG+x}" || -n "${XDG_CONFIG_HOME+x}" ]]; then
+                    exit 5
+                fi
                 [[ -n "${FAKE_DOCTOR_JSON:-}" ]] && printf '%s\\n' "$FAKE_DOCTOR_JSON"
                 printf 'doctor noise\\n' >&2
                 exit "${FAKE_DOCTOR_RC:-0}"
@@ -871,6 +887,22 @@ def test_doctor_exit_two_is_accepted(tmp_path) -> None:
         "\u2713 Doctor exited with code 2 (expected in CI without auth/renet)\n" in old_t[0].stderr
     )
     _agree(old_t, new_t, "doctor-2")
+
+
+def test_doctor_never_sees_the_callers_config(tmp_path) -> None:
+    """`:257-259`: an empty HOME, with REDIACC_CONFIG and XDG_CONFIG_HOME unset. The fake exits 5 with no JSON whenever the caller's HOME or either variable reaches it, so dropping the isolation on either side turns this red."""
+    root = fixture(tmp_path)
+    real_home = str(tmp_path / "real-home")
+    leak = {
+        "HOME": real_home,
+        "FAKE_DOCTOR_LEAK_HOME": real_home,
+        "REDIACC_CONFIG": "production",
+        "XDG_CONFIG_HOME": str(tmp_path / "real-home" / ".config"),
+    }
+    old_t, new_t = run_both(root, args=NATIVE, env_overrides=leak)
+    assert old_t[0].returncode == 0, old_t[0].stderr
+    assert "\u2713 Smoke test (doctor) passed\n" in old_t[0].stderr
+    _agree(old_t, new_t, "doctor-isolated")
 
 
 def test_a_silent_doctor_falls_into_the_failure_arm_even_at_exit_zero(tmp_path) -> None:

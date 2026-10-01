@@ -102,6 +102,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import log
 from rediacc_ci.version import inject_env
@@ -128,6 +129,9 @@ DOCTOR_MAX_OK_EXIT = 2
 # `:332`. The window bash uses for "killed by signal N": 128+1 .. 128+31.
 SIGNAL_EXIT_LOW = 128
 SIGNAL_EXIT_HIGH = 160
+
+# `:259`. Unset for the doctor smoke test, so neither a named config nor a relocated config dir reaches past its empty HOME.
+SMOKE_UNSET = frozenset(("REDIACC_CONFIG", "XDG_CONFIG_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME"))
 
 # `:273`. What `doctor` must report as the install method for a SEA build.
 EXPECTED_INSTALL_METHOD = "SEA binary"
@@ -498,18 +502,24 @@ def _doctor(binary: str) -> tuple[str, int]:
     """`:259`. `$(... 2>/dev/null) || DOCTOR_EXIT=$?`, with stderr thrown away.
 
     The `||` is what keeps `set -e` off this call: a doctor that exits non-zero is the EXPECTED case in CI, and the status is data here rather than a fault.
+
+    `:257-259` run it in an empty HOME, with REDIACC_CONFIG and the XDG dirs unset: doctor reads the active config, and a developer's real ~/.config/rediacc (an expired token) made it print `data: null`, so jq died with exit 5 and the build failed on the machine rather than on the bytes.
     """
-    try:
-        proc = subprocess.run(
-            [binary, "doctor", "--output", "json"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
-    except OSError:
-        message, code = _exec_failure(binary, 259)
-        print(message, file=sys.stderr, flush=True)
-        return "", code
+    env = {name: value for name, value in os.environ.items() if name not in SMOKE_UNSET}
+    with tempfile.TemporaryDirectory() as smoke_home:
+        env.update(HOME=smoke_home, APPDATA=smoke_home, LOCALAPPDATA=smoke_home)
+        try:
+            proc = subprocess.run(
+                [binary, "doctor", "--output", "json"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                env=env,
+                check=False,
+            )
+        except OSError:
+            message, code = _exec_failure(binary, 259)
+            print(message, file=sys.stderr, flush=True)
+            return "", code
     text = proc.stdout.decode("utf-8", errors="replace") if proc.stdout else ""
     return text.rstrip("\n"), proc.returncode
 
