@@ -9,7 +9,7 @@
  *
  * BREAKING UPGRADES ARE NEVER APPLIED BY DEFAULT. A version outside the current caret range (a new major, or a new minor on a 0.x line) is reported as a major awaiting a decision, and --upgrade does not install it anywhere, in the root or in a private/ manifest, unless .ci/config/deps-major-allow.json names it with a reason. Before 2026-09-26 no such rule existed: the root looked safe only because every outdated root major happened to carry its own blocklist line, and `--upgrade` took lucide-react 0 -> 1, @vitejs/plugin-react 4 -> 6 and vite 6 -> 8 in private/account/web because nothing there did.
  *
- * WHAT IS SCANNED, AND WHY LOCAL AND CI NOW AGREE. The private/ manifests scanned are the ones inside a git SUBMODULE declared in .gitmodules (plus the nested manifests in NESTED_PRIVATE_PACKAGE_DIRS), which is exactly the set the quality-content job checks out with `submodules: true`. A gitignored local-only directory such as private/growth is never scanned, because a verdict CI never reaches is not a gate. And every `current` version is read from the manifest's committed package-lock.json, because CI installs no node_modules under private/ and `npm outdated --package-lock-only` then reports NO `current` at all: until 2026-09-26 the gate dropped every such entry as "nothing to judge", so CI's private scan examined all of private/account and judged none of it, while a developer's installed node_modules made the same scan judge real packages locally.
+ * WHAT IS SCANNED, AND WHY LOCAL AND CI NOW AGREE. The private/ manifests scanned are the ones inside a git SUBMODULE declared in .gitmodules (plus the nested manifests in NESTED_PRIVATE_PACKAGE_DIRS), which is exactly the set the quality-content job checks out with `submodules: true`. A gitignored local-only directory such as private/growth is never scanned, because a verdict CI never reaches is not a gate. And every `current` version is read from the manifest's committed package-lock.json, because CI installs no node_modules under private/ and `npm outdated` then reports NO `current` at all: until 2026-09-26 the gate dropped every such entry as "nothing to judge", so CI's private scan examined all of private/account and judged none of it, while a developer's installed node_modules made the same scan judge real packages locally. Without node_modules `npm outdated` also OMITS every devDependency, optionalDependency and peerDependency outright (it reads the installed tree whatever flag it is given), so until 2026-10-01 CI never judged private/account's dev tooling at all and a fresh clone advised deleting valid held-major exceptions; those are now judged from the lockfile and the registry (see blindEdges), and an uninstalled root refuses the run.
  *
  * A BLOCKLIST LINE HOLDS A MAJOR FOR 90 DAYS, NOT FOREVER (operator ruling 2026-10-01). A blocklisted breaking bump is aged from the first stable, non-deprecated release of the first line past `current` (not from `latest`, whose line restarts at every new major). At 60 days it warns; at 90 it fails unless .ci/policy/deps-major-exceptions.json excuses it with an owner, a reason and exactly one of a mechanical blocker re-checked against the registry on every run (peer-range, engine-floor) or an expiry at most 30 days out. An exception that has expired, whose blocker has lifted, or that excuses nothing fails the gate. Before this, a blocklist line excused a major with no time limit, the oldest for 477 days.
  *
@@ -568,13 +568,142 @@ interface ManifestResult {
   name: string;
   entries: Record<string, OutdatedPackageInfo>;
   unknown: string[];
+  /** Root only: declared non-prod dependencies that are not installed, so npm never judged them. The caller refuses the run. */
+  uninstalled: string[];
+  /** Private only: uninstalled dependencies that neither the lockfile nor the registry could place. The caller refuses the run. */
+  unjudgeable: string[];
+  /** Private only: how many uninstalled dependencies were judged from the lockfile and the registry. */
+  blindJudged: number;
 }
 
-/** Probe one manifest. --package-lock-only for private/ ones, whose node_modules CI never installs. */
-function probeManifest(dir: string, isPrivate: boolean): ManifestResult {
-  const raw = runNpmOutdated(dir, isPrivate ? '--package-lock-only' : '') as RawOutdated;
-  const { entries, unknown } = normalizeOutdated(raw, dir, readLockPackages(dir));
-  return { dir, name: isPrivate ? path.relative(CONSOLE_ROOT, dir) : '', entries, unknown };
+/** The manifest sections `npm outdated` drops when the package is not on disk. Only `dependencies` survives a missing install. */
+const NON_PROD_SECTIONS = ['devDependencies', 'optionalDependencies', 'peerDependencies'] as const;
+
+/** The non-prod dependencies a manifest declares, by name, with their specs. Empty when the manifest is missing or unreadable. */
+function readNonProdDeclared(dir: string): Array<{ name: string; spec: string }> {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')) as Record<
+      string,
+      Record<string, string> | undefined
+    >;
+    const out = new Map<string, string>();
+    for (const section of NON_PROD_SECTIONS) {
+      for (const [name, spec] of Object.entries(pkg[section] ?? {})) {
+        if (!out.has(name)) out.set(name, spec);
+      }
+    }
+    return [...out].map(([name, spec]) => ({ name, spec }));
+  } catch {
+    return [];
+  }
+}
+
+/** A spec npm resolves from the registry. npm skips the rest (`file:`, `link:`, `workspace:`, git, URLs, `user/repo`) in `outdated` whether or not they are installed, and so does this gate. An `npm:` alias IS a registry spec, under another name. */
+function isRegistrySpec(spec: string): boolean {
+  if (spec.startsWith('npm:')) return true;
+  return !spec.includes(':') && !spec.includes('/');
+}
+
+/**
+ * THE BLIND SPOT OF `npm outdated` (worklist #1feb4717). It loads the INSTALLED tree whatever flag it is given (npm 11.20.0, lib/commands/outdated.js calls `arb.loadActual()`; `--package-lock-only` changes nothing there), and it skips every devDependency, optionalDependency and peerDependency that is not on disk. With no node_modules a manifest's dev tooling therefore reads as current: on 2026-10-01 private/account/web reported `{}` for its typescript, the blocklisted hold vanished, and the gate printed "excuses nothing ... Delete the entry" for a valid exception.
+ *
+ * Returns the declared non-prod registry dependencies of `dir` that npm did not report and that are not installed under any of `nodeModulesRoots` (a package on disk was judged by npm, and its absence from the report means it is current).
+ */
+function blindEdges(
+  dir: string,
+  reported: Set<string>,
+  nodeModulesRoots: string[]
+): Array<{ name: string; spec: string }> {
+  return readNonProdDeclared(dir).filter(
+    ({ name, spec }) =>
+      isRegistrySpec(spec) &&
+      !reported.has(name) &&
+      !nodeModulesRoots.some((r) =>
+        fs.existsSync(path.join(r, 'node_modules', name, 'package.json'))
+      )
+  );
+}
+
+/**
+ * Judge one uninstalled dependency the way `npm outdated` would have: `current` from the committed lockfile, `latest` from the registry's `latest` tag, `wanted` the highest stable version the declared range admits. Returns the entry (null when current), or a refusal line when either source cannot answer: unknown is unchecked, never fine.
+ */
+async function judgeBlindEdge(
+  manifest: string,
+  edge: { name: string; spec: string },
+  lock: Record<string, { version?: string }> | null
+): Promise<{ entry: OutdatedPackageInfo | null } | { refusal: string }> {
+  const label = `${edge.name} (${manifest})`;
+  if (edge.spec.startsWith('npm:')) {
+    return {
+      refusal: `${label}: not installed, so npm outdated skips it, and an npm: alias ("${edge.spec}") is not judged from the registry here`,
+    };
+  }
+  const current = lock?.[`node_modules/${edge.name}`]?.version;
+  if (!current) {
+    return {
+      refusal: `${label}: not installed, so npm outdated skips it, and package-lock.json pins no node_modules/${edge.name}`,
+    };
+  }
+  const doc = await fetchPackument(edge.name);
+  const latest = doc?.['dist-tags']?.latest;
+  if (!doc || !latest) {
+    return {
+      refusal: `${label}: not installed, so npm outdated skips it, and the registry returned no document with a latest tag`,
+    };
+  }
+  if (current === latest) return { entry: null };
+  const sets = parseRange(edge.spec);
+  const wanted = sets
+    ? stableVersions(doc)
+        .filter((v) => rangeAdmits(sets, v))
+        .pop()
+    : undefined;
+  return { entry: { current, latest, wanted } };
+}
+
+/**
+ * Probe one manifest. `npm outdated` runs WITHOUT `--package-lock-only`: that flag never changed what `outdated` reads (see blindEdges), and keeping it would claim a lockfile-only probe that does not exist.
+ *
+ * The root is always installed where the gate runs (CI's setup-workspace restores or installs it, and tsx itself comes from it), so an uninstalled root dependency is a tree that was never set up and is refused by the caller. A private manifest is NOT installed in CI (quality-content runs setup-workspace without `account: 'true'`), so its uninstalled dependencies are judged here from the lockfile and the registry instead, which is what makes CI and a developer's installed tree reach the same verdict.
+ */
+async function probeManifest(dir: string, isPrivate: boolean): Promise<ManifestResult> {
+  const raw = runNpmOutdated(dir) as RawOutdated;
+  const lock = readLockPackages(dir);
+  const { entries, unknown } = normalizeOutdated(raw, dir, lock);
+  const name = isPrivate ? path.relative(CONSOLE_ROOT, dir).split(path.sep).join('/') : '';
+  const reported = new Set(Object.keys(raw));
+  const result: ManifestResult = {
+    dir,
+    name,
+    entries,
+    unknown,
+    uninstalled: [],
+    unjudgeable: [],
+    blindJudged: 0,
+  };
+  if (!isPrivate) {
+    // The root's report covers its workspaces too, and a workspace dependency may sit in the workspace's own node_modules or hoisted to the root's.
+    for (const e of blindEdges(dir, reported, [dir])) result.uninstalled.push(`${e.name} (root)`);
+    const packagesDir = path.join(dir, 'packages');
+    const workspaces = fs.existsSync(packagesDir) ? fs.readdirSync(packagesDir).sort() : [];
+    for (const ws of workspaces) {
+      const wsDir = path.join(packagesDir, ws);
+      if (!fs.existsSync(path.join(wsDir, 'package.json'))) continue;
+      for (const e of blindEdges(wsDir, reported, [wsDir, dir])) {
+        result.uninstalled.push(`${e.name} (packages/${ws})`);
+      }
+    }
+    return result;
+  }
+  const blind = blindEdges(dir, reported, [dir]);
+  result.blindJudged = blind.length;
+  const judged = await Promise.all(blind.map((e) => judgeBlindEdge(name, e, lock)));
+  blind.forEach((e, i) => {
+    const j = judged[i];
+    if ('refusal' in j) result.unjudgeable.push(j.refusal);
+    else if (j.entry) result.entries[e.name] = j.entry;
+  });
+  return result;
 }
 
 /**
@@ -1348,6 +1477,80 @@ interface InstallStep {
   packages: PackageInfo[];
   /** The workspace path (`packages/<ws>`) for a `-w` step, where npm may resolve a nested copy. */
   workspace?: string;
+  /** An exact-pin `overrides` entry that would hold the package where it is: executeInstalls moves it to the judged version before npm runs. */
+  overrideBump?: { file: string; name: string; from: string; to: string };
+  /** Set when an override makes the step unsafe to apply: executeInstalls reports this and runs nothing. */
+  refused?: string;
+}
+
+/** The project-level `overrides` that pin a package itself, by name: a string value, or the `"."` key of an object value. Keys with a version selector (`name@range`) and nested parent scopes target transitive copies only and are left out. */
+function readDirectOverrides(dir: string): Map<string, string> {
+  const out = new Map<string, string>();
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')) as {
+      overrides?: Record<string, unknown>;
+    };
+    for (const [key, value] of Object.entries(pkg.overrides ?? {})) {
+      if (typeof value === 'string') out.set(key, value);
+      else if (typeof value === 'object' && value !== null) {
+        const self = (value as Record<string, unknown>)['.'];
+        if (typeof self === 'string') out.set(key, self);
+      }
+    }
+  } catch {
+    // An unreadable manifest has no overrides this planner can honour; npm itself will refuse it loudly.
+  }
+  return out;
+}
+
+const EXACT_VERSION_RE = /^\d+\.\d+\.\d+$/;
+
+/**
+ * Move one `overrides` entry in a package.json, refusing any file it cannot rewrite byte for byte (npm's own two-space form with a trailing newline), so nothing but that one value ever changes. Returns an error line, or null plus an advisory when the `_overridesReasons` note still names the old version. The note itself is never rewritten: it is the human justification check:ci-overrides-reasons enforces, and only a human can say why the new version is the right floor.
+ */
+function applyOverrideBump(b: NonNullable<InstallStep['overrideBump']>): {
+  error: string | null;
+  advisory: string | null;
+} {
+  const rel = path.relative(CONSOLE_ROOT, b.file) || 'package.json';
+  let text: string;
+  let pkg: { overrides?: Record<string, unknown>; _overridesReasons?: Record<string, unknown> };
+  try {
+    text = fs.readFileSync(b.file, 'utf-8');
+    pkg = JSON.parse(text) as typeof pkg;
+  } catch (e) {
+    return { error: `cannot read ${rel}: ${(e as Error).message}`, advisory: null };
+  }
+  if (`${JSON.stringify(pkg, null, 2)}\n` !== text) {
+    return {
+      error: `${rel} is not in npm's two-space JSON form, so its override is not rewritten blind; set overrides["${b.name}"] to "${b.to}" by hand, then run \`npm update ${b.name}\``,
+      advisory: null,
+    };
+  }
+  const overrides = pkg.overrides ?? {};
+  const current = overrides[b.name];
+  const self =
+    typeof current === 'object' && current !== null
+      ? (current as Record<string, unknown>)['.']
+      : current;
+  if (self !== b.from) {
+    return {
+      error: `${rel} overrides["${b.name}"] is no longer "${b.from}" (it changed after the plan was made); re-run the upgrade`,
+      advisory: null,
+    };
+  }
+  if (typeof current === 'object' && current !== null) {
+    (current as Record<string, unknown>)['.'] = b.to;
+  } else {
+    overrides[b.name] = b.to;
+  }
+  fs.writeFileSync(b.file, `${JSON.stringify(pkg, null, 2)}\n`);
+  const note = pkg._overridesReasons?.[b.name];
+  const advisory =
+    typeof note === 'string' && note.includes(b.from)
+      ? `${rel} _overridesReasons["${b.name}"] still names ${b.from}; the override is now ${b.to}. Update the note before committing.`
+      : null;
+  return { error: null, advisory };
 }
 
 /** The ranges a manifest declares for what it installs (dependencies, devDependencies, optionalDependencies). Peer ranges are left out: they say what a consumer must bring, not what this manifest installs. Empty when the manifest is missing or unreadable. */
@@ -1390,6 +1593,8 @@ function satisfiesRange(range: string | undefined, version: string): boolean {
  * TWO VERBS, chosen per manifest by the range it already declares. A target the declared range already allows (`^8.70.1` -> 8.71.0) is planned as `npm update <names>`: that is the only verb npm resolves a pinned sibling family with (typescript-eslint pins its @typescript-eslint/* siblings exactly, so on 2026-09-30 `npm install typescript-eslint@8.71.0 @typescript-eslint/parser@8.71.0 ...` failed ERESOLVE against the installed 8.70.1 family, while `npm update` of the same names succeeded). `npm update` takes the highest version the range allows, which is the judged `latest` unless a newer in-range version was published after this run's freshness check; executeInstalls therefore verifies every `(update)` step against the lockfile and fails it when npm resolved anything but the exact version judged (see verifyUpdatedVersions). A target outside the declared range (an allow-listed major, an exact pin) still installs as `name@<the exact latest judged>`, never `name@latest`, for the same freshness reason. The input is only ever `mustUpgrade`, which categorizePackages never lets a held major into.
  *
  * Root packages found in child package.json files upgrade per workspace (`-w=packages/<ws>`), judged against that workspace's own range, so they do not pollute the others; packages only the root declares run without `-w`, so child manifests are not rewritten.
+ *
+ * AN OVERRIDE DECIDES WHAT NPM RESOLVES (worklist #d8fef08a). A package the project's `overrides` pins to a range that excludes the judged version cannot move by `npm update` or `npm install`: on 2026-10-01 the root pinned fast-xml-parser to 5.11.1, `npm update -w=packages/www fast-xml-parser` stayed on 5.11.1, and the freshness guard failed the step. Such a package leaves the ordinary steps. When the override is an exact version and every declaring manifest's range admits the target, the step moves the override to the judged version (applyOverrideBump) and runs `npm update <name>` in the project root, which re-resolves every copy the override governs (measured on npm 11.20.0: `npm update` honours a changed override, while `npm install --package-lock-only` exits 0 without applying it). Any other override that excludes the target (a bounded range, a range this gate cannot read, a declared range that excludes the target too) is a refused step: moving it is a decision about the bound, not a freshness bump. An override that admits the target, or a `$name` reference to the root's own range, changes nothing here.
  */
 function planInstalls(
   root: string,
@@ -1398,16 +1603,48 @@ function planInstalls(
 ): InstallStep[] {
   const steps: InstallStep[] = [];
   const spec = (p: PackageInfo) => `${p.name}@${p.latest}`;
+  /** Overridden packages by `<cwd>\0<name>`, gathered across every manifest that declares them, then planned once per project. */
+  const overridden = new Map<
+    string,
+    { cwd: string; label: string; pkg: PackageInfo; value: string; problems: string[] }
+  >();
   /** One manifest's packages as up to two steps: `update` for in-range targets, then `install` for the rest. */
   const plan = (
     cwd: string,
     manifestDir: string,
     flags: string[],
     label: string,
-    pkgs: PackageInfo[],
+    allPkgs: PackageInfo[],
     workspace?: string
   ) => {
     const ranges = readDeclaredRanges(manifestDir);
+    const overrides = readDirectOverrides(cwd);
+    const pkgs = allPkgs.filter((p) => {
+      const value = overrides.get(p.name);
+      if (value === undefined || value.startsWith('$')) return true;
+      const sets = parseRange(value);
+      if (sets && rangeAdmits(sets, p.latest)) return true;
+      const key = `${cwd}\0${p.name}`;
+      const entry = overridden.get(key) ?? {
+        cwd,
+        label: cwd === root ? 'root' : label,
+        pkg: p,
+        value,
+        problems: [],
+      };
+      const manifestRel = path.relative(root, path.join(manifestDir, 'package.json'));
+      if (!EXACT_VERSION_RE.test(value)) {
+        entry.problems.push(
+          `overrides["${p.name}"] is "${value}", which excludes the judged ${p.latest}; only an exact-version pin is moved automatically`
+        );
+      } else if (ranges[p.name] !== undefined && !satisfiesRange(ranges[p.name], p.latest)) {
+        entry.problems.push(
+          `${manifestRel} declares ${p.name} "${ranges[p.name]}", which excludes the judged ${p.latest} as well as the override "${value}"`
+        );
+      }
+      overridden.set(key, entry);
+      return false;
+    });
     const inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
     const outOfRange = pkgs.filter((p) => !inRange.includes(p));
     if (inRange.length > 0) {
@@ -1458,6 +1695,27 @@ function planInstalls(
     if (packages.length === 0) continue;
     plan(dir, dir, [], name, packages);
   }
+  for (const { cwd, label, pkg, value, problems } of overridden.values()) {
+    const file = path.join(cwd, 'package.json');
+    if (problems.length > 0) {
+      const dirRel = path.relative(root, cwd) || '.';
+      steps.push({
+        cwd,
+        args: [],
+        label: `${label} (override)`,
+        packages: [pkg],
+        refused: `${[...new Set(problems)].join('; ')}. Move the override (and its _overridesReasons note) and any declared range by hand, then run \`npm update ${pkg.name}\` in ${dirRel}.`,
+      });
+      continue;
+    }
+    steps.push({
+      cwd,
+      args: ['update', pkg.name],
+      label: `${label} (override)`,
+      packages: [pkg],
+      overrideBump: { file, name: pkg.name, from: value, to: pkg.latest },
+    });
+  }
   return steps;
 }
 
@@ -1501,11 +1759,30 @@ function executeInstalls(steps: InstallStep[]): boolean {
     return true;
   }
   const failures: string[] = [];
+  const advisories: string[] = [];
   const env = upgradeChildEnv();
   for (const step of steps) {
+    if (step.refused) {
+      failures.push(
+        `  ${step.label}: ${step.packages.map((p) => `${p.name} ${p.current} -> ${p.latest}`).join(', ')} not applied: ${step.refused}`
+      );
+      continue;
+    }
     console.log(`${BLUE}Upgrading ${step.packages.length} package(s) in ${step.label}...${NC}\n`);
     for (const pkg of step.packages) printPackage(pkg);
     console.log();
+    if (step.overrideBump) {
+      const b = step.overrideBump;
+      const bumped = applyOverrideBump(b);
+      if (bumped.error) {
+        failures.push(`  ${step.label}: ${bumped.error}`);
+        continue;
+      }
+      console.log(
+        `  overrides["${b.name}"]: "${b.from}" -> "${b.to}" in ${path.relative(CONSOLE_ROOT, b.file) || 'package.json'}\n`
+      );
+      if (bumped.advisory) advisories.push(bumped.advisory);
+    }
     const result = spawnSync('npm', step.args, {
       cwd: step.cwd,
       stdio: 'inherit',
@@ -1519,7 +1796,10 @@ function executeInstalls(steps: InstallStep[]): boolean {
           ? `killed by ${result.signal}`
           : `exit status ${result.status}`;
       failures.push(
-        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} (${why})`
+        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} (${why})` +
+          (step.overrideBump
+            ? `; overrides["${step.overrideBump.name}"] was already moved to "${step.overrideBump.to}", so package.json and the lockfile disagree until it succeeds`
+            : '')
       );
       continue;
     }
@@ -1534,6 +1814,7 @@ function executeInstalls(steps: InstallStep[]): boolean {
       );
     }
   }
+  for (const a of advisories) console.log(`\n${YELLOW}${a}${NC}`);
   if (failures.length === 0) {
     console.log(`\n${GREEN}Upgrades completed${NC}`);
     return true;
@@ -1645,8 +1926,35 @@ async function checkDependencies(): Promise<void> {
     console.log(`${YELLOW}Not checked out, so not judged here (CI judges them): ${list}${NC}\n`);
   }
 
-  const manifests: ManifestResult[] = [probeManifest(CONSOLE_ROOT, false)];
-  for (const dir of scan.dirs) manifests.push(probeManifest(dir, true));
+  const manifests: ManifestResult[] = [await probeManifest(CONSOLE_ROOT, false)];
+  for (const dir of scan.dirs) manifests.push(await probeManifest(dir, true));
+
+  // An uninstalled dependency is unjudged, never current. Refused here, before anything is categorised, so no verdict below (above all the clock's "excuses nothing ... Delete the entry") is ever reached from a manifest npm could not see.
+  const uninstalledRoot = manifests.flatMap((m) => m.uninstalled);
+  if (uninstalledRoot.length > 0) {
+    console.error(
+      `${RED}✗${NC} ${uninstalledRoot.length} declared dev/optional/peer dependency(ies) of the root are not installed, so npm outdated skips them and this gate cannot judge them:`
+    );
+    for (const u of uninstalledRoot) console.error(`  ${u}`);
+    console.error(
+      '  Install the root tree, then re-run: npm ci && npm run install:natives\n' +
+        '  (CI restores or installs it in setup-workspace, so this means a tree that was never set up.)'
+    );
+    process.exit(1);
+  }
+  const unjudgeable = manifests.flatMap((m) => m.unjudgeable);
+  if (unjudgeable.length > 0) {
+    console.error(
+      `${RED}✗${NC} ${unjudgeable.length} uninstalled dependency(ies) could not be judged, so the run is refused rather than read as current:`
+    );
+    for (const u of unjudgeable) console.error(`  ${u}`);
+    console.error(
+      '  Fix the source named on each line (an unreachable registry, a lockfile missing the package), or install\n' +
+        '  that manifest (npm ci in its directory) so npm judges it from disk, then re-run.'
+    );
+    process.exit(1);
+  }
+  const blindJudged = manifests.reduce((s, m) => s + m.blindJudged, 0);
 
   // Unknown is unchecked. Refused before anything is categorised or installed.
   const unknown = manifests.flatMap((m) => m.unknown.map((n) => `${n}${where(m.name)}`));
@@ -1732,7 +2040,8 @@ async function checkDependencies(): Promise<void> {
   const totalTooNew = sum((g) => g.tooNew);
   const shape =
     `judged ${judged} package(s) across ${manifests.length} manifest(s) ` +
-    `(${manifests.map((m) => m.name || 'root').join(', ')})`;
+    `(${manifests.map((m) => m.name || 'root').join(', ')}), ` +
+    `${blindJudged} uninstalled dependency(ies) judged from lockfile and registry`;
 
   const deferredSummary = (): string => {
     const parts: string[] = [];
@@ -1878,6 +2187,8 @@ interface FixtureSpec {
   registry?: Record<string, Packument>;
   /** The `exceptions` object of .ci/policy/deps-major-exceptions.json; `{}` when absent. */
   exceptions?: Record<string, unknown>;
+  /** Extra files by path from the fixture root, e.g. an installed `node_modules/<name>/package.json`. */
+  files?: Record<string, string>;
 }
 
 // The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
@@ -1917,8 +2228,19 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     `${GROWTH_DIR}/.fixture-outdated.json`,
     JSON.stringify({ leftpad: { current: '1.0.0', latest: '1.0.1' } })
   );
-  for (const rel of new Set(['', ...Object.keys(spec.outdated), ...Object.keys(spec.locks)])) {
-    write(path.join(rel, 'package.json'), JSON.stringify(spec.manifests?.[rel] ?? {}));
+  for (const [rel, text] of Object.entries(spec.files ?? {})) write(rel, text);
+  const manifestDirs = [
+    '',
+    ...Object.keys(spec.outdated),
+    ...Object.keys(spec.locks),
+    ...Object.keys(spec.manifests ?? {}),
+  ];
+  for (const rel of new Set(manifestDirs)) {
+    // Written the way npm writes a manifest (two-space indent, trailing newline), because the override bump refuses a package.json it cannot round-trip byte for byte.
+    write(
+      path.join(rel, 'package.json'),
+      `${JSON.stringify(spec.manifests?.[rel] ?? {}, null, 2)}\n`
+    );
     write(path.join(rel, '.fixture-outdated.json'), JSON.stringify(spec.outdated[rel] ?? {}));
     if (spec.locks[rel])
       write(path.join(rel, 'package-lock.json'), JSON.stringify({ packages: spec.locks[rel] }));
@@ -1929,6 +2251,22 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       );
   }
   const log = path.join(root, 'npm-install.log');
+  // What real npm does with an exact-version `overrides` entry, measured 2026-10-01 on npm 11.20.0: `npm update` of an overridden package resolves the override's version, whatever newer version the declared range allows. The stub applies the same clamp after it writes the "resolved" lockfile, so a plan that ignores the override fails here exactly as it failed on the real tree.
+  write(
+    'bin/clamp-overrides.cjs',
+    [
+      "const fs = require('node:fs');",
+      "if (!fs.existsSync('package-lock.json')) process.exit(0);",
+      "const ov = JSON.parse(fs.readFileSync('package.json', 'utf8')).overrides || {};",
+      "const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));",
+      'lock.packages = lock.packages || {};',
+      'for (const name of process.argv.slice(2)) {',
+      "  if (typeof ov[name] === 'string' && /^\\d+\\.\\d+\\.\\d+$/.test(ov[name])) lock.packages[`node_modules/${name}`] = { version: ov[name] };",
+      '}',
+      "fs.writeFileSync('package-lock.json', JSON.stringify(lock));",
+      '',
+    ].join('\n')
+  );
   write(
     'bin/npm',
     [
@@ -1936,7 +2274,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       'case "$1" in',
       '  outdated) if [ -f .fixture-outdated.json ]; then cat .fixture-outdated.json; else echo "{}"; fi; exit 1 ;;',
       // Every install/update is recorded with the loglevel the child inherited, and a spec naming `fail-me` exits 7, so the selftest can see both the verb chosen and the failure report.
-      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; exit 0 ;;`,
+      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
       '  *) echo "fixture npm stub: unexpected: $*" >&2; exit 2 ;;',
       'esac',
       '',
@@ -1958,7 +2296,14 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
 function runFixture(
   spec: FixtureSpec,
   mode: 'check' | 'upgrade'
-): { status: number | null; output: string; installs: string[]; root: string } {
+): {
+  status: number | null;
+  output: string;
+  installs: string[];
+  root: string;
+  /** The root package.json as the run left it. */
+  rootManifest: string;
+} {
   const fx = buildFixture(spec);
   try {
     const child = spawnSync(
@@ -1976,6 +2321,7 @@ function runFixture(
       output: `${child.stdout ?? ''}${child.stderr ?? ''}`,
       installs,
       root: fx.root,
+      rootManifest: fs.readFileSync(path.join(fx.root, 'package.json'), 'utf-8'),
     };
   } finally {
     fs.rmSync(fx.root, { recursive: true, force: true });
@@ -2973,6 +3319,181 @@ function selftest(): void {
       rangeFloorMajor(parseRange('<30') ?? []) === 0
   );
 
+  // 11. AN UNINSTALLED MANIFEST IS NOT A CLEAN ONE (worklist #1feb4717, 2026-10-01). `npm outdated` reads the installed tree whatever flag it is given, and skips every devDependency, optionalDependency and peerDependency that is not on disk (npm 11.20.0, lib/commands/outdated.js: "deps different from prod not currently on disk are not included in the output"). So private/account/web with no node_modules reported `{}` for its typescript, the hold vanished, and the gate told the reader to delete a valid exception. The fixture is that shape: npm reports nothing, the lockfile pins 6.0.3, the registry has 7.0.2.
+  const tsDoc = doc('7.0.2', {
+    '6.0.3': { daysAgo: 300 },
+    '7.0.2': { daysAgo: 120 },
+  });
+  const tsReason =
+    'the web lint chain declares peer typescript below 7, so the web build stays on 6 until it moves';
+  const devCase = (over: Partial<FixtureSpec> = {}): FixtureSpec => ({
+    outdated: { '': {}, 'private/account': {}, 'private/account/web': {} },
+    locks: {
+      '': {},
+      'private/account': {},
+      'private/account/web': { 'node_modules/typescript': { version: '6.0.3' } },
+    },
+    manifests: {
+      'private/account/web': {
+        devDependencies: {
+          typescript: '^6.0.3',
+          '@rediacc/shared': 'file:../../../packages/shared',
+        },
+      },
+    },
+    blocklist:
+      'typescript  # BLOCKER: the web lint chain declares peer typescript below 7, so it stays on 6\n',
+    registry: { typescript: tsDoc },
+    exceptions: {
+      'private/account/web:typescript': {
+        owner: 'd778be9d',
+        reason: tsReason,
+        expires: dateIn(10),
+      },
+    },
+    ...over,
+  });
+  const uninstalled = run(devCase());
+  expect(
+    'uninstalled: a devDependency npm cannot see is judged from the lockfile and registry, so its exception excuses a real hold',
+    uninstalled.status === 0 &&
+      uninstalled.output.includes('  typescript (private/account/web), 120 days: excused') &&
+      !uninstalled.output.includes('excuses nothing') &&
+      uninstalled.output.includes(
+        '1 uninstalled dependency(ies) judged from lockfile and registry'
+      ),
+    uninstalled.detail
+  );
+  const installedDev = run(
+    devCase({
+      files: { 'private/account/web/node_modules/typescript/package.json': '{"version":"7.0.2"}' },
+    })
+  );
+  expect(
+    'uninstalled: CONTROL: the same devDependency ON DISK is left to npm (whose `{}` then means current), so the exception is dead',
+    installedDev.status === 1 &&
+      installedDev.output.includes(
+        '"private/account/web:typescript": excuses nothing in this run (no blocklist-held major matches). Delete the entry.'
+      ) &&
+      installedDev.output.includes('0 uninstalled dependency(ies) judged'),
+    installedDev.detail
+  );
+  const noRegistry = run(devCase({ registry: {} }));
+  expect(
+    'uninstalled: an uninstalled devDependency the registry cannot answer for is refused as unjudged, never passed',
+    noRegistry.status === 1 &&
+      noRegistry.output.includes(
+        'typescript (private/account/web): not installed, so npm outdated skips it, and the registry returned no document'
+      ) &&
+      !noRegistry.output.includes('excuses nothing') &&
+      !noRegistry.output.includes('up-to-date'),
+    noRegistry.detail
+  );
+  const rootUninstalled = run(
+    devCase({
+      manifests: { '': { devDependencies: { leftpad: '^1.0.0' } } },
+      exceptions: {},
+      locks: { '': {}, 'private/account': {} },
+      outdated: { '': {}, 'private/account': {} },
+    })
+  );
+  expect(
+    'uninstalled: a root devDependency that is not installed refuses the run and names the install command',
+    rootUninstalled.status === 1 &&
+      rootUninstalled.output.includes('leftpad (root)') &&
+      rootUninstalled.output.includes('npm ci && npm run install:natives') &&
+      !rootUninstalled.output.includes('up-to-date'),
+    rootUninstalled.detail
+  );
+  const rootInstalled = run(
+    devCase({
+      manifests: { '': { devDependencies: { leftpad: '^1.0.0' } } },
+      exceptions: {},
+      locks: { '': {}, 'private/account': {} },
+      outdated: { '': {}, 'private/account': {} },
+      files: { 'node_modules/leftpad/package.json': '{"version":"1.0.0"}' },
+    })
+  );
+  expect(
+    'uninstalled: CONTROL: the same root devDependency on disk passes',
+    rootInstalled.status === 0 && rootInstalled.output.includes('All dependencies are up-to-date'),
+    rootInstalled.detail
+  );
+
+  // 12. AN OVERRIDE PINS WHAT `npm update` RESOLVES (worklist #d8fef08a, 2026-10-01). fast-xml-parser was judged 5.11.1 -> 5.11.2, but the root `overrides` entry pinned 5.11.1, so `npm update -w=packages/www fast-xml-parser` stayed on 5.11.1 and the freshness guard failed the step. The planner now moves an exact-pin override to the judged version and runs `npm update <name>` at the root; a ranged override that excludes the target is refused up front. The stub npm clamps to an exact override exactly as real npm does.
+  const fxpReason =
+    'BLOCKER: pin 5.11.1 to carry the CDATA injection fix; without the pin transitive consumers drift below the fixed range';
+  const fxpCase = (override: string): FixtureSpec => ({
+    outdated: {
+      '': {
+        'fast-xml-parser': {
+          current: '5.11.1',
+          wanted: '5.11.1',
+          latest: '5.11.2',
+          dependent: 'www',
+        },
+      },
+      'private/account': {},
+    },
+    locks: {
+      '': { 'node_modules/fast-xml-parser': { version: '5.11.1' } },
+      'private/account': {},
+    },
+    updateLocks: { '': { 'node_modules/fast-xml-parser': { version: '5.11.2' } } },
+    manifests: {
+      '': {
+        workspaces: ['packages/www'],
+        overrides: { 'fast-xml-parser': override },
+        _overridesReasons: { 'fast-xml-parser': fxpReason },
+      },
+      'packages/www': { dependencies: { 'fast-xml-parser': '^5.11.0' } },
+    },
+  });
+  const pinned = runFixture(fxpCase('5.11.1'), 'upgrade');
+  const pinnedInst = pinned.installs.join('\n');
+  const pinnedDetail = `installs:\n${pinnedInst}\noutput:\n${pinned.output}\npackage.json:\n${pinned.rootManifest}`;
+  const pinnedPkg = JSON.parse(pinned.rootManifest) as {
+    overrides: Record<string, string>;
+    _overridesReasons: Record<string, string>;
+  };
+  expect(
+    'override: an exact-pin override is moved to the judged version and the update runs at the root, not under -w',
+    pinned.status === 0 &&
+      pinnedPkg.overrides['fast-xml-parser'] === '5.11.2' &&
+      pinnedInst.includes('<root> :: update fast-xml-parser ::') &&
+      !pinnedInst.includes('-w=packages/www fast-xml-parser'),
+    pinnedDetail
+  );
+  expect(
+    'override: the _overridesReasons note is kept intact, and its stale version is named for review',
+    pinnedPkg._overridesReasons['fast-xml-parser'] === fxpReason &&
+      pinned.output.includes('_overridesReasons["fast-xml-parser"] still names 5.11.1'),
+    pinnedDetail
+  );
+  const ranged = runFixture(fxpCase('>=5.0.0'), 'upgrade');
+  const rangedInst = ranged.installs.join('\n');
+  expect(
+    'override: CONTROL: an override range that admits the target is left alone and the workspace update runs as before',
+    ranged.status === 0 &&
+      (JSON.parse(ranged.rootManifest) as { overrides: Record<string, string> }).overrides[
+        'fast-xml-parser'
+      ] === '>=5.0.0' &&
+      rangedInst.includes('<root> :: update -w=packages/www fast-xml-parser ::'),
+    `installs:\n${rangedInst}\noutput:\n${ranged.output}`
+  );
+  const bounded = runFixture(fxpCase('>=5.0.0 <5.11.2'), 'upgrade');
+  const boundedInst = bounded.installs.join('\n');
+  expect(
+    'override: a ranged override that excludes the target is refused before npm runs, and package.json is untouched',
+    bounded.status === 1 &&
+      !boundedInst.includes('fast-xml-parser') &&
+      bounded.output.includes('excludes the judged 5.11.2') &&
+      (JSON.parse(bounded.rootManifest) as { overrides: Record<string, string> }).overrides[
+        'fast-xml-parser'
+      ] === '>=5.0.0 <5.11.2',
+    `installs:\n${boundedInst}\noutput:\n${bounded.output}`
+  );
+
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
@@ -2984,7 +3505,10 @@ function selftest(): void {
       "inherits a silent loglevel; a blocklisted major warns at 60 days and fails at 90 from its clock line's first ",
       'release (deprecated releases skipped), unless a live peer-range/engine-floor blocker or an expiry <=30 days ',
       'excuses it; expired, stale, dead, ownerless, reasonless and free-text-only exceptions fail; an undatable hold ',
-      'fails; the ignore-clock mutant turns the 91-day control green and is refused on a real tree'
+      'fails; the ignore-clock mutant turns the 91-day control green and is refused on a real tree; an uninstalled ',
+      'private devDependency is judged from lockfile and registry (and refused when they cannot answer) while an ',
+      'installed one is left to npm, and an uninstalled root refuses the run; an exact-pin override is moved to the ',
+      'judged version before a root npm update, while an admitting override is left alone and a bounding one is refused'
     )
   );
   process.exit(0);
