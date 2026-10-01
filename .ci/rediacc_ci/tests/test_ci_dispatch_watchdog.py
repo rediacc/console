@@ -18,8 +18,7 @@ them entirely on success. A single-answer fake would make those two facts indist
 
 The `call:` line is also what made a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and a successful dispatch reported ONLY through `log_info`, so no message-text regex could ever produce a finding on the happy path. The ledger was recorded with `--finding-re '^call: '`.
 
-TWO KINDS OF CASE ARE NOT COMPARED BYTE FOR BYTE, and both say so in `DIVERGENT`. bash's `${VAR:?}` and `$2: unbound variable` name a LINE OF THE TWIN, which the port cannot and must not reproduce; those cases compare the status, the empty stdout and the reason instead. Defect C's octal abort makes bash print `((: 08: value too great for base (error token is "08")`;
-`strip_bash_arith` removes exactly that line and nothing else, and the case that uses it asserts the removed line was really in the recording.
+TWO KINDS OF CASE ARE NOT COMPARED BYTE FOR BYTE, and both say so in `DIVERGENT`. bash's `${VAR:?}` and `$2: unbound variable` name a LINE OF THE TWIN, which the port cannot and must not reproduce; those cases compare the status, the empty stdout and the reason instead. Defect C's octal reading is now decimal (Rule T), so `08` loses bash's `((: 08: value too great for base` line and `025` ends the chain; both are pinned by `test_delta_a_zero_padded_generation_is_decimal_and_the_cap_runs` against their recordings.
 
 THE THREE STALENESS ALARMS THAT READ THE TWIN'S SOURCE ARE GONE, and the recordings replace them. They pinned the cap, the 404 pattern, the `-f` field order and the option list against the file CI ran. A deleted file does not drift; every one of those is now pinned by bytes the twin really printed -- the cap in two boundary recordings, the 404 pattern by four recordings either
 side of it, and the full `-f` list inside the recorded `call: gh workflow run` line.
@@ -115,12 +114,6 @@ def write_nogh(root: pathlib.Path) -> pathlib.Path:
             (root / tool).symlink_to(found)
     assert shutil.which("gh", path=str(root)) is None, "the control did not fire"
     return root
-
-
-def strip_bash_arith(stderr: str) -> str:
-    """Drop bash's own `((: ...: value too great for base` line. Nothing else."""
-    kept = [line for line in stderr.split("\n") if "value too great for base" not in line]
-    return "\n".join(kept)
 
 
 BASE_ARGS = ("--run-id", "1", "--generation", "1", "--head-ref", "m", "--pr-number", "3")
@@ -266,7 +259,7 @@ for _opt in LAST_TOKEN_OPTIONS:
 
 CASES = tuple(CASE_KW)
 
-# Cases the port does not reproduce byte for byte: bash's own `${VAR:?}` and `$2: unbound variable` diagnostics name a line of the twin, and defect C's octal abort adds an arithmetic line the port has no reason to print. Each is compared by status and reason in its own test below.
+# Cases the port does not reproduce byte for byte: bash's own `${VAR:?}` and `$2: unbound variable` diagnostics name a line of the twin, and defect C's octal reading is now decimal, which drops the arithmetic line from `08` and moves `025` over the cap (Rule T). Each is compared by status and reason in its own test below.
 DIVERGENT = frozenset(
     {
         "no-arguments-at-all",
@@ -275,6 +268,7 @@ DIVERGENT = frozenset(
         "a-missing-github-repository",
         "a-bad-run-id-empty",
         "an-octal-invalid-generation",
+        "an-octal-generation-below-the-cap",
         *("%s-as-the-last-token" % opt.lstrip("-") for opt in LAST_TOKEN_OPTIONS),
     }
 )
@@ -454,36 +448,46 @@ def test_generation_22_is_still_inside_the_cap() -> None:
     assert "Dispatched watchdog generation 22" in recorded("generation-22-is-inside-the-cap")[2]
 
 
-def test_defect_c_a_zero_padded_generation_skips_the_cap_entirely(
+def test_delta_a_zero_padded_generation_is_decimal_and_the_cap_runs(
     bindir: pathlib.Path, nogh: pathlib.Path
 ) -> None:
-    """`08` is invalid octal, the arithmetic aborted, and the run PROCEEDED."""
-    assert port.OCTAL_CAP is True
+    """INTENTIONAL DELTA (Rule T), defect C. The twin read `08` as base 8, the arithmetic died, and the run PROCEEDED with the cap unchecked; it read `025` as 21 and dispatched. The recordings keep both as the control; the port reads every generation in base 10."""
     want_exit, _, want_err = recorded("an-octal-invalid-generation")
+    assert want_exit == 0
+    assert 'value too great for base (error token is "08")' in want_err
     returncode, _, stderr = drive("an-octal-invalid-generation", bindir, nogh)
-    assert want_exit == returncode == 0
-    assert 'value too great for base (error token is "08")' in want_err, (
-        "the recording no longer holds the arithmetic error; the normalisation is now a lie"
-    )
-    assert strip_bash_arith(want_err) == stderr
+    assert returncode == 0
+    assert "value too great for base" not in stderr
     assert "✓ Dispatched watchdog generation 08 for run 1 on ref m\n" in stderr
 
+    want_exit, _, want_err = recorded("an-octal-generation-below-the-cap")
+    assert want_exit == 0
+    assert "Dispatched watchdog generation 025" in want_err
+    returncode, stdout, stderr = drive("an-octal-generation-below-the-cap", bindir, nogh)
+    assert returncode == 0
+    assert (
+        stderr == "⚠ Generation 025 exceeds cap 22 (~3h of coverage) - ending the watchdog chain\n"
+    )
+    assert "Dispatched" not in stderr
+    assert "call: " not in stdout + stderr, "an over-cap generation must not dispatch"
 
-def test_defect_c_a_zero_padded_generation_is_read_in_octal() -> None:
-    """`025` is 21 and dispatches; `030` is 24 and ends the chain."""
-    assert "Dispatched watchdog generation 025" in recorded("an-octal-generation-below-the-cap")[2]
+
+def test_a_zero_padded_generation_above_the_cap_still_ends_the_chain() -> None:
+    """`030` is over the cap in octal (24) and in decimal (30), so its recording is still the port's answer."""
     assert "Generation 030 exceeds cap 22" in recorded("an-octal-generation-above-the-cap")[2]
 
 
-def test_the_octal_helper_answers_both_directions() -> None:
-    assert port.octal_gt("23", 22) is True
-    assert port.octal_gt("22", 22) is False
-    assert port.octal_gt("0", 22) is False
-    assert port.octal_gt("00", 22) is False
-    assert port.octal_gt("025", 22) is False
-    assert port.octal_gt("030", 22) is True
-    assert port.octal_gt("08", 22) is None
-    assert port.octal_gt("019", 22) is None
+def test_the_cap_helper_reads_base_ten() -> None:
+    assert port.over_cap("23") is True
+    assert port.over_cap("22") is False
+    assert port.over_cap("0") is False
+    assert port.over_cap("00") is False
+    assert port.over_cap("0022") is False
+    assert port.over_cap("0023") is True
+    assert port.over_cap("025") is True
+    assert port.over_cap("030") is True
+    assert port.over_cap("08") is False
+    assert port.over_cap("019") is False
 
 
 # --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------

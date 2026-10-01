@@ -22,6 +22,31 @@ ATTEMPTS = 3
 FATAL_CODES = ("AccessDenied", "InvalidAccessKeyId", "NoSuchBucket", "ExpiredToken")
 
 
+# What a retry CAN change, as aws prints it. Deliberately a short list: an upload that fails for a reason not named here is reported once and left alone.
+TRANSIENT_MARKERS = (
+    "IncompleteRead",
+    "Connection broken",
+    "Connection reset",
+    "Read timeout",
+    "Connect timeout",
+    "Could not connect to the endpoint URL",
+    "(InternalError)",
+    "(SlowDown)",
+    "(ServiceUnavailable)",
+    "(RequestTimeout)",
+    "(503)",
+    "(500)",
+    "reached max retries",
+)
+
+
+def is_transient(stderr: str) -> bool:
+    """True when `stderr` names a failure class a retry can change, and no refusal (see FATAL_CODES) is named beside it."""
+    if fatal_code(stderr):
+        return False
+    return any(marker in stderr for marker in TRANSIENT_MARKERS)
+
+
 def fatal_code(stderr: str) -> str:
     """The first non-transient error code named in `stderr`, or "" when there is none."""
     for code in FATAL_CODES:
@@ -30,17 +55,24 @@ def fatal_code(stderr: str) -> str:
     return ""
 
 
-def retried(run: Callable[[], tuple[int, str]], what: str, self_name: str, delay_s: float) -> int:
+def retried(
+    run: Callable[[], tuple[int, str]],
+    what: str,
+    self_name: str,
+    delay_s: float,
+    *,
+    only_transient: bool = False,
+) -> int:
     """Call `run` up to ATTEMPTS times while it fails transiently. Returns the last status.
 
-    `run` returns `(status, stderr)`. A failure whose stderr names a `FATAL_CODES` entry ends the loop at once.
+    `run` returns `(status, stderr)`. A failure whose stderr names a `FATAL_CODES` entry ends the loop at once. With `only_transient`, so does any failure that `is_transient` does not recognise: the caller does not know its tool's refusals, so it retries only what it can name.
     """
     status, stderr = run()
     for attempt in range(2, ATTEMPTS + 1):
         if status == 0:
             return 0
         code = fatal_code(stderr)
-        if code:
+        if code or (only_transient and not is_transient(stderr)):
             break
         print(
             "%s: %s failed (exit %d), retrying (%d/%d)"

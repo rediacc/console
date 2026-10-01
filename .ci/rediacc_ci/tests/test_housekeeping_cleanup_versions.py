@@ -208,7 +208,7 @@ except common.RefusalError as exc:
     sys.exit(exc.code)
 try:
     code = housekeeping.run_phase(phase)
-except cv.ExpansionAbort:
+except cv.ExpansionAbortError:
     # bash resumes at the next TOP-LEVEL command after an expansion unwind;
     # `source x; <phase>` has none, so the shell ends with the failed
     # expansion's status. See ExpansionAbort in the port.
@@ -727,48 +727,82 @@ def test_phase_1_debug_output_is_identical_when_debug_is_true() -> None:
     assert "[DEBUG] Keeping release: v1.0.0 (index=1)" in err
 
 
-def test_a_zero_padded_versions_value_is_octal_on_both_sides() -> None:
-    """`--versions 010` keeps EIGHT, not ten, and does it silently.
-
-    An operator's own flag value, read by bash's arithmetic rules. The ninth and tenth releases are outside the keep window on both sides.
-    """
-    rows = [("v%d.0.0" % (20 - i), ago(90.5 + i)) for i in range(10)]
-    result = sides(
-        "cleanup_releases",
-        argv=("--dry-run", "--versions", "010", "--days", "1"),
-        fixture=_releases(*rows),
-    )
-    err = result[2].decode()
-    assert "Would delete release: v12.0.0" in err, "index 8 must fall outside keep-8"
-    assert "Would delete release: v11.0.0" in err
-    assert "Would delete release: v13.0.0" not in err, "index 7 is inside keep-8"
-
-
-def test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides() -> None:
-    """`--versions 08` is a bash arithmetic REFUSAL: a diagnostic and FALSE.
-
-    THE ONE NAMED DIVERGENCE. The decision, the exit code, the stdout and the entire call log are identical; only the text of the diagnostic differs, because bash names a file and a line number that this port cannot honestly claim. Asserted in both directions rather than skipped.
-    """
-    fixture = _releases(("v1.0.0", ago(0.5)))
+def _twin_and_port(
+    phase: str,
+    argv: tuple[str, ...],
+    fixture: dict,
+    env: dict | None = None,
+) -> tuple[tuple[int, bytes, bytes, list[str]], tuple[int, bytes, bytes, list[str]]]:
+    """Both sides over the same fakes WITHOUT asserting they agree: the shape every `test_delta_*` below needs, because the twin is the control and the port is what changed."""
     results = []
     with tempfile.TemporaryDirectory() as td:
         for side in ("bash", "python"):
             base = pathlib.Path(td) / side
             base.mkdir(parents=True)
-            results.append(
-                _run(side, "cleanup_releases", ("--dry-run", "--versions", "08"), fixture, {}, base)
-            )
-    old, new = results
-    assert new[0] == old[0]
-    assert new[1] == old[1]
-    assert new[3] == old[3]
-    assert 'value too great for base (error token is "08")' in old[2].decode()
-    assert 'value too great for base (error token is "08")' in new[2].decode()
-    assert "cleanup-versions.sh: line " in old[2].decode()
-    assert "cleanup_versions.py: [[: " in new[2].decode()
-    # And the DECISION was the same: index 0 was NOT inside the keep window, so the release went to the retention check and was kept by the 14-day default.
-    assert b"Releases: would delete 0 of 1" in old[2]
-    assert b"Releases: would delete 0 of 1" in new[2]
+            results.append(_run(side, phase, argv, fixture, dict(env or {}), base))
+    return results[0], results[1]
+
+
+def test_delta_a_zero_padded_versions_value_is_decimal() -> None:
+    """INTENTIONAL DELTA (Rule T). `--versions 010` is TEN, not eight.
+
+    The twin read an operator's flag as a bash arithmetic word, so `010` was base 8 and the ninth and tenth releases fell outside the keep window and were deleted. The first half is the control: the twin still deletes v12 and v11. The port keeps all ten.
+    """
+    rows = [("v%d.0.0" % (20 - i), ago(90.5 + i)) for i in range(10)]
+    old, new = _twin_and_port(
+        "cleanup_releases",
+        ("--dry-run", "--versions", "010", "--days", "1"),
+        _releases(*rows),
+    )
+    old_err, new_err = old[2].decode(), new[2].decode()
+    assert "Would delete release: v12.0.0" in old_err, "the twin's octal reading moved"
+    assert "Would delete release: v12.0.0" not in new_err
+    assert "Would delete release: v11.0.0" not in new_err
+    assert "Releases: would delete 0 of 10" in new_err
+    assert new[0] == 0
+
+
+def test_delta_an_invalid_octal_versions_value_is_decimal_not_a_refusal_branch() -> None:
+    """INTENTIONAL DELTA (Rule T). `--versions 08` made the twin print an arithmetic diagnostic and evaluate every keep-window test FALSE, so every release outside the 1-day retention was deleted regardless of the requested count. The port keeps the newest EIGHT, as asked, and prints no diagnostic."""
+    rows = [("v%d.0.0" % (20 - i), ago(90.5 + i)) for i in range(10)]
+    old, new = _twin_and_port(
+        "cleanup_releases", ("--dry-run", "--versions", "08", "--days", "1"), _releases(*rows)
+    )
+    old_err, new_err = old[2].decode(), new[2].decode()
+    assert 'value too great for base (error token is "08")' in old_err
+    assert "Would delete release: v13.0.0" in old_err, "the twin deleted inside the keep window"
+    assert "value too great for base" not in new_err
+    assert "Would delete release: v13.0.0" not in new_err
+    assert "Would delete release: v12.0.0" in new_err
+    assert "Would delete release: v11.0.0" in new_err
+    assert "Releases: would delete 0 of 10" in new_err, (
+        "Phase 1 never counts a dry-run delete (HAZARD 2)"
+    )
+
+
+@pytest.mark.parametrize(
+    ("argv", "env", "needle"),
+    [
+        (("--versions", "1x"), {}, "--versions"),
+        (("--versions", "-3"), {}, "--versions"),
+        (("--days", "1.5"), {}, "--days"),
+        (("--days", "0x10"), {}, "--days"),
+        ((), {"BRANCH_MAX_AGE_DAYS": "08x"}, "BRANCH_MAX_AGE_DAYS"),
+        ((), {"MAX_DELETES_PER_RUN": "1e3"}, "MAX_DELETES_PER_RUN"),
+    ],
+)
+def test_delta_a_non_numeric_operator_value_is_refused_by_name(
+    argv: tuple[str, ...], env: dict, needle: str
+) -> None:
+    """INTENTIONAL DELTA (Rule T). The twin let a malformed `--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` or `MAX_DELETES_PER_RUN` into bash arithmetic, where it became a diagnostic plus a permanently false comparison (so everything outside retention was deleted, or nothing ever was) or a mid-run unwind. The port refuses it at startup, before any call: exit 2, the name and the value on stderr."""
+    _old, new = _twin_and_port("run_all_phases", ("--dry-run", *argv), {}, env)
+    assert new[0] == 2
+    assert new[1] == b""
+    assert new[3] == [], "a refused value must not reach any API"
+    text = new[2].decode()
+    assert needle in text
+    assert "whole number" in text
+    assert "Phase 1" not in text
 
 
 # --------------------------------------------------------------------------- PHASE 2: GIT TAGS ---------------------------------------------------------------------------
@@ -2092,47 +2126,26 @@ def test_phase_9_deletes_and_charges_the_budget() -> None:
     assert "Branches (console): deleted 1, kept 0" in err
 
 
-def test_a_zero_padded_branch_age_unwinds_the_whole_run_on_both_sides() -> None:
-    """HAZARD 8, and it is the most serious thing in this file.
-
-    `BRANCH_MAX_AGE_DAYS=08` is an arithmetic EXPANSION error, not a comparison
-    error, so bash abandons every enclosing function frame: Phases 10, 11 and 12, the delete total and `Housekeeping complete` never run. The run ends on the failed expansion's status with no phase named and no summary at all.
-
-    Compared side by side rather than through `sides()` because the diagnostic itself is the port's one named divergence: bash names a file and a line.
-    """
+def test_delta_a_zero_padded_branch_age_is_decimal_and_the_run_completes() -> None:
+    """INTENTIONAL DELTA (Rule T), HAZARD 8. `BRANCH_MAX_AGE_DAYS=08` was an arithmetic EXPANSION error in the twin: bash abandoned every enclosing function frame, Phases 10, 11 and 12, the delete total and `Housekeeping complete` never ran, and the run ended on status 1 with no phase named. The first half is that control. The port reads 08 as 8 days and finishes the run."""
     fixture = {
         "gh": [rule("actions/caches", raw=_caches()), rule("", rc=1)],
         "curl": [rule("", rc=1)],
         "aws": [rule("", rc=1)],
     }
-    results = []
-    with tempfile.TemporaryDirectory() as td:
-        for side in ("bash", "python"):
-            base = pathlib.Path(td) / side
-            base.mkdir(parents=True)
-            results.append(
-                _run(
-                    side,
-                    "run_all_phases",
-                    ("--dry-run",),
-                    fixture,
-                    {"BRANCH_MAX_AGE_DAYS": "08"},
-                    base,
-                )
-            )
-    old, new = results
-    assert old[0] == 1, "the unwind carries status 1 out of the shell"
-    assert new[0] == 1, "and the port must carry the same status out of the same unwind"
-    assert old[1] == new[1], (old[1], new[1])
-    assert old[3] == new[3]
-    for stream in (old[2], new[2]):
-        text = stream.decode()
-        assert "Phase 9: Cleaning up stale branches (>08 days, no open PR)" in text
-        assert 'value too great for base (error token is "08")' in text
-        assert "Phase 10:" not in text, "the run was abandoned mid-phase-9"
-        assert "Housekeeping complete" not in text
-    assert "cleanup-versions.sh: line " in old[2].decode()
-    assert "cleanup_versions.py: " in new[2].decode()
+    old, new = _twin_and_port(
+        "run_all_phases", ("--dry-run",), fixture, {"BRANCH_MAX_AGE_DAYS": "08"}
+    )
+    old_text = old[2].decode()
+    assert old[0] == 1, "the twin's unwind carries status 1 out of the shell"
+    assert "Phase 10:" not in old_text, "the twin's unwind moved"
+    assert 'value too great for base (error token is "08")' in old_text
+    new_text = new[2].decode()
+    assert new[0] == 0
+    assert "Phase 9: Cleaning up stale branches (>8 days, no open PR)" in new_text
+    assert "value too great for base" not in new_text
+    assert "Phase 10:" in new_text
+    assert "Housekeeping complete" in new_text
 
 
 # --------------------------------------------------------------------------- PHASE 10: WORKFLOW RUNS ---------------------------------------------------------------------------
@@ -2479,40 +2492,22 @@ def test_phase_12_says_none_found_on_an_empty_listing() -> None:
     assert b"No Actions cache entries found" in result[2]
 
 
-def test_a_failed_cache_listing_kills_the_run_with_an_arithmetic_error() -> None:
-    """HAZARD 9, and it is a defect in the twin, reproduced rather than repaired.
+def test_delta_a_failed_cache_listing_is_named_and_evicts_nothing() -> None:
+    """INTENTIONAL DELTA (Rule T), HAZARD 9. `gh api ... | jq -s 'sort_by(...)' || echo "[]"` covers the WHOLE pipeline, and `echo` APPENDS to what jq already wrote (`jq -s` prints `[]` even for an empty stream). A gh that failed for ANY reason (a rate limit is the likely one) therefore left two json values, every later jq answered twice (`total = "0\n0"`), `[[ "0\n0" -eq 0 ]]` was an arithmetic syntax error, and the next `$((total_bytes / 1024 / 1024))` was an expansion error that unwound `run_all_phases`: exit 1, with one line of bash arithmetic diagnostics naming no phase. The first half is that control.
 
-    `gh api ... | jq -s 'sort_by(...)' || echo "[]"`. The `||` covers the WHOLE pipeline under pipefail, and `echo` APPENDS to what the pipeline already wrote -- and `jq -s` writes `[]` even for an empty stream. So a gh that fails
-    for ANY reason (a rate limit is the likely one) leaves the variable holding
-    `[]\n[]`, two json values, and every later jq answers TWICE:
-
-        total       = "0\n0"
-        total_bytes = "0\n0"
-
-    `[[ "0\n0" -eq 0 ]]` is an arithmetic syntax error, so the "No Actions cache entries found" early return is NOT taken; the next line's `$((total_bytes / 1024 / 1024))` is an arithmetic EXPANSION error, which unwinds every frame including `run_all_phases`. Phase 12 is last, so the visible damage is small -- the delete total and `Housekeeping complete` are lost and the run exits
-    1 -- but the nightly's only evidence is one line of bash arithmetic diagnostics naming no phase at all.
-
-    Compared side by side because the diagnostic text is the port's one named divergence; the exit code, stdout and call log are identical.
+    The port says the listing failed and what gh exited with, evicts nothing (a partial listing is not a basis for deleting caches), and returns normally: exit 0, so the rest of a run is not lost.
     """
     fixture = {"gh": [rule("actions/caches", rc=1)]}
-    results = []
-    with tempfile.TemporaryDirectory() as td:
-        for side in ("bash", "python"):
-            base = pathlib.Path(td) / side
-            base.mkdir(parents=True)
-            results.append(_run(side, "cleanup_actions_cache", (), fixture, {}, base))
-    old, new = results
-    assert old[0] == 1, "the unwind carries status 1 out of the shell"
-    assert new[0] == 1, "and the port must carry the same status out of the same unwind"
-    assert old[1] == new[1]
-    assert old[3] == new[3]
-    for stream in (old[2], new[2]):
-        text = stream.decode()
-        assert "Phase 12: Cleaning up Actions cache (target <= 5 GB)" in text
-        assert "No Actions cache entries found" not in text
-        assert "Actions cache:" not in text
+    old, new = _twin_and_port("cleanup_actions_cache", (), fixture)
+    assert old[0] == 1, "the twin's unwind moved"
     assert "%s in expression" % bash_dialect.arith_syntax_error() in old[2].decode()
-    assert "cleanup_versions.py: " in new[2].decode()
+    text = new[2].decode()
+    assert new[0] == 0
+    assert "Phase 12: Cleaning up Actions cache (target <= 5 GB)" in text
+    assert "Failed to list Actions caches (gh exited 1)" in text
+    assert "arithmetic" not in text
+    assert "value too great" not in text
+    assert not [c for c in calls_of(new[3], "gh") if "DELETE" in c], "nothing may be evicted"
 
 
 # --------------------------------------------------------------------------- THE WHOLE RUN ---------------------------------------------------------------------------

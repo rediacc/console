@@ -70,11 +70,25 @@ def test_force_bypasses_the_soak_window(tmp_path: pathlib.Path) -> None:
     assert written == "ready=true\npath=force\n"
 
 
-def test_unparseable_date_aborts_silently(tmp_path: pathlib.Path) -> None:
-    """See the module docstring. Not a weak assertion -- this IS the behaviour the twin had, measured directly against it while it existed."""
+def test_delta_an_unparseable_date_is_named(tmp_path: pathlib.Path) -> None:
+    """INTENTIONAL DELTA (Rule T): the twin's `set -e` aborted with exit 1 and NOTHING on either stream, so a promote job went red with no reason in its log. The port exits 1 and names the variable and its value on stderr, still writing nothing to `$GITHUB_OUTPUT` and printing nothing on stdout."""
     env = {"EDGE_DATE": "not-a-date", "SOAK_DAYS": "7"}
     (exit_code, out, err), written = run_port(tmp_path, env)
-    assert (exit_code, out, err) == (1, "", "")
+    assert exit_code == 1
+    assert out == ""
+    assert written == ""
+    assert "EDGE_DATE" in err
+    assert "'not-a-date'" in err
+
+
+def test_delta_a_non_numeric_soak_days_is_named_not_a_traceback(tmp_path: pathlib.Path) -> None:
+    """INTENTIONAL DELTA (Rule T): the twin's `[[ -lt $SOAK_DAYS ]]` printed a bash arithmetic diagnostic and read false (so it promoted); the port used to die in a Python traceback. It now refuses by name before anything is decided."""
+    env = {"EDGE_DATE": edge_date(2), "SOAK_DAYS": "seven"}
+    (exit_code, _out, err), written = run_port(tmp_path, env)
+    assert exit_code == 1
+    assert "SOAK_DAYS" in err
+    assert "'seven'" in err
+    assert "Traceback" not in err
     assert written == ""
 
 

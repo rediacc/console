@@ -87,3 +87,45 @@ def test_classify_names_the_refusal_code() -> None:
     assert transfer_retry.fatal_code(INCOMPLETE_READ) == ""
     # A path that merely CONTAINS the word is not a refusal: the code is matched in aws's parenthesised form.
     assert transfer_retry.fatal_code("download failed: s3://b/AccessDenied.txt timed out\n") == ""
+
+
+# --------------------------------------------------------------------------- only_transient: the upload's stricter class ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        INCOMPLETE_READ,
+        'Read timeout on endpoint URL: "https://r2.example.invalid/b"\n',
+        "An error occurred (InternalError) when calling the PutObject operation\n",
+        "An error occurred (SlowDown) when calling the PutObject operation\n",
+        "An error occurred (503) when calling the HeadObject operation: Service Unavailable\n",
+    ],
+)
+def test_the_transient_class_is_recognised(stderr) -> None:
+    assert transfer_retry.is_transient(stderr)
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "upload failed: the bucket said no\n",
+        "An error occurred (AccessDenied) when calling the PutObject operation\n",
+        "An error occurred (NoSuchKey) when calling the GetObject operation\n",
+        "An error occurred (NoSuchBucket) when calling the PutObject operation\n",
+        "",
+    ],
+)
+def test_anything_else_is_not_transient(stderr) -> None:
+    assert not transfer_retry.is_transient(stderr)
+
+
+def test_only_transient_retries_a_broken_read_and_nothing_else(capsys) -> None:
+    run, calls = _script((1, INCOMPLETE_READ), (0, ""))
+    assert transfer_retry.retried(run, "sync", "self.sh", 0, only_transient=True) == 0
+    assert len(calls) == 2
+    assert capsys.readouterr().err.count("retrying (") == 1
+
+    run, calls = _script((1, "upload failed: the bucket said no\n"), (0, ""))
+    assert transfer_retry.retried(run, "sync", "self.sh", 0, only_transient=True) == 1
+    assert len(calls) == 1, "an unclassified failure must not be retried"

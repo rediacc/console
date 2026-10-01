@@ -29,13 +29,13 @@ line pipes that into `jq`. Under `set -euo pipefail` a jq parse error is fatal:
 
 So the one script that otherwise cannot fail exits 5, with jq's raw text and no sentence of its own, whenever `gh` emits a deprecation warning on stderr alongside a perfectly good body. Reproduced exactly, by running the SAME `jq` and propagating its stderr and its status.
 
-QUIRK 2 -- A MALFORMED `--timeout` REMOVES THE TIMEOUT ENTIRELY AND THE LOOP NEVER ENDS. `[[ $ELAPSED -ge $TIMEOUT ]]` is bash arithmetic on an unquoted word, so `--timeout 1abc` is an arithmetic SYNTAX error, `[[ ]]` answers false, and the only exit the loop has is unreachable:
+QUIRK 2 -- A MALFORMED `--timeout` WAS ARITHMETIC ON AN UNQUOTED WORD, AND THE PORT REFUSES IT (Rule T delta). `[[ $ELAPSED -ge $TIMEOUT ]]` made `--timeout 1abc` an arithmetic SYNTAX error that `[[ ]]` answered false, so the timeout vanished and the loop never ended:
 
     $ timeout 4 bash .ci/scripts/ci/cancel-older-runs.sh --timeout 1abc \\
         --poll-interval 1     # with an older run always present
     rc=124   (killed by `timeout`, i.e. it was still going)
 
-`--timeout abc` takes the other arm: under `set -u` a bare identifier is an UNBOUND VARIABLE and the script dies at the twin's line 92 with exit 1. `_bash_ge` below reproduces both, including the twin's message text.
+and `--timeout abc` was an UNBOUND VARIABLE under `set -u`, dying at the twin's line 92 with exit 1 and a bash diagnostic. The port validates the value up front, before any `gh` call: only a whole non-negative decimal number is a timeout, anything else is a usage error (exit 2) naming the flag and the value. The recordings keep the twin's bytes; `test_delta_a_malformed_timeout_is_a_usage_error_naming_the_value` and `test_delta_only_a_whole_non_negative_number_is_a_timeout` fail on the bash behaviour.
 
 QUIRK 3 -- `force_cancel_run` LEAKS THE API RESPONSE BODY ONTO STDOUT.
 `gh api -X POST ... 2>/dev/null` redirects stderr only, so the `{}` GitHub
@@ -66,9 +66,6 @@ DEFAULT_TIMEOUT = "60"
 DEFAULT_POLL_INTERVAL = "10"
 DEFAULT_WORKFLOW = "ci.yml"
 
-# The twin's line number for `if [[ $ELAPSED -ge $TIMEOUT ]]`. bash puts it in the arithmetic diagnostic, so the port has to know it to be byte-identical. `test_the_arithmetic_line_number_is_still_line_92` re-derives it from the twin rather than trusting this constant.
-ARITH_LINE = 92
-
 # The twin's line numbers for its two `gh api` command substitutions. bash names the line in `command not found`, so a port that cannot fail identically on a machine without `gh` is not equivalent -- and the twin has NO `require_cmd`, so that machine reads as a PASS. See `not_found` below.
 RUN_LOOKUP_LINE = 57
 LISTING_LINE = 98
@@ -81,62 +78,8 @@ JQ_OLDER_RUNS = (
 JQ_LENGTH = "length"
 JQ_ROWS = ".[]"
 
-# `[A-Za-z_][A-Za-z0-9_]*`, which is what bash treats as a variable NAME inside an arithmetic context. Deliberately not `str.isidentifier()`: that accepts Unicode letters bash rejects.
-_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_DECIMAL = re.compile(r"^[+-]?[0-9]+$")
-
-
-class BashArithError(Exception):
-    """One fatal arithmetic diagnostic from bash, with the twin's exit code.
-
-    Two shapes, both driven against bash 5.3.9 on 2026-09-14:
-
-      `abc`  -> `<prog>: line 92: abc: unbound variable`, and the shell EXITS 1
-                because an unset-variable expansion is fatal under `set -u`.
-      `1abc` -> `<prog>: line 92: [[: 1abc: value too great for base
-                (error token is "1abc")`, and `[[ ]]` merely answers FALSE, so
-                the script CONTINUES. `fatal` is what tells the two apart.
-    """
-
-    def __init__(self, message: str, *, fatal: bool) -> None:
-        super().__init__(message)
-        self.message = message
-        self.fatal = fatal
-
-
-def _bash_ge(left: int, right_word: str) -> bool:
-    """`[[ $ELAPSED -ge $TIMEOUT ]]` where the right side is an unquoted word.
-
-    Only the right side needs the emulation: the left is `$(($(date +%s) - START_TIME))`, an integer this program computed.
-
-    THE THREE ARMS, IN THE ORDER BASH TAKES THEM:
-      * empty word            -> 0. `[[ "" -ge 0 ]]` is true, not an error.
-      * decimal integer       -> that integer.
-      * bare identifier       -> a VARIABLE NAME. Under `set -u` an unset name
-                                 is fatal; a set one would be re-evaluated, and
-                                 that recursion is deliberately NOT reproduced
-                                 (see the caveat below).
-      * anything else         -> arithmetic syntax error, non-fatal, false.
-
-    THE CAVEAT, STATED RATHER THAN DISCOVERED. bash resolves a SET identifier
-    recursively, so `TIMEOUT=PATH` would evaluate `$PATH` as arithmetic. This
-    treats every identifier as unset, because reaching that arm at all requires `--timeout <name-of-an-exported-variable>` and the honest reproduction of the recursive case is a full arithmetic evaluator. `0x10` and `010` (hex and octal in bash) are likewise not special-cased and land in the syntax-error arm; both are named here so the gap is a recorded decision.
-    """
-    word = right_word.strip()
-    if word == "":
-        return left >= 0
-    if _DECIMAL.match(word):
-        return left >= int(word, 10)
-    if _IDENT.match(word):
-        raise BashArithError(
-            "%s: line %d: %s: unbound variable" % (sys.argv[0], ARITH_LINE, word),
-            fatal=True,
-        )
-    raise BashArithError(
-        '%s: line %d: [[: %s: value too great for base (error token is "%s")'
-        % (sys.argv[0], ARITH_LINE, word, word),
-        fatal=False,
-    )
+# A timeout is whole seconds. ASCII digits only (`\d` would take other scripts' digits), and no sign, fraction, exponent or radix prefix: those were arithmetic quirks in the twin, not spellings anyone relied on.
+_TIMEOUT = re.compile(r"[0-9]+")
 
 
 def not_found(binary: str, line: int) -> str:
@@ -269,6 +212,13 @@ def main(argv: list[str]) -> int:
     # `${ARG_X:-default}` is an EMPTINESS test, so `--timeout=` falls back to 60
     # rather than to the empty string. That is why the `or DEFAULT_*` is there.
 
+    if not _TIMEOUT.fullmatch(timeout):
+        log.error(
+            "%s: --timeout must be a whole number of seconds (got %r)" % (sys.argv[0], timeout)
+        )
+        return 2
+    timeout_seconds = int(timeout)
+
     if not os.environ.get("GITHUB_RUN_ID", ""):
         log.warn("GITHUB_RUN_ID not set - skipping (not running in GitHub Actions)")
         return 0
@@ -309,15 +259,7 @@ def main(argv: list[str]) -> int:
 
     while True:
         elapsed = int(time.time()) - start_time
-        try:
-            expired = _bash_ge(elapsed, timeout)
-        except BashArithError as err:
-            sys.stderr.write(err.message + "\n")
-            sys.stderr.flush()
-            if err.fatal:
-                return 1
-            expired = False
-        if expired:
+        if elapsed >= timeout_seconds:
             log.warn(
                 "Timeout reached (%ss) - some older runs may not have been cancelled" % timeout
             )

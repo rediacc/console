@@ -8,15 +8,15 @@ SOLE IMPLEMENTATION. `rediacc_ci.ci.set_image_tags` was the twin's one live call
 Ledger: `.ci/shadow/w7p6-derive-image-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert --k 5`).
 
 -----------------------------------------------------------------------------
-DEFECT A -- THE HELP TEXT AND THE HEADER BOTH DESCRIBE A BRANCH THAT DOES NOT
-EXIST ANY MORE
+DEFECT A -- THE TWIN'S HELP TEXT DESCRIBED A BRANCH THAT DOES NOT EXIST ANY
+MORE (FIXED HERE AS A DELIBERATE DELTA, Rule T)
 -----------------------------------------------------------------------------
 Twin :16 ("If running from a branch -> use version from package.json (fallback: 'latest')") and twin :57 ("- Branch (e.g., main) -> uses version from
-package.json") both say package.json. The code at :77-88 reads GIT TAGS and has
-not touched package.json since the comment at :78-80 was added to explain the change ("Resolve the actual version from package.json instead of literal 'latest'" -- which is itself describing a third, older behaviour). Nothing in this file reads package.json.
+package.json") both said package.json. The code at :77-88 reads GIT TAGS and had
+not touched package.json since the comment at :78-80 was added to explain the change. Nothing in either file reads package.json.
 
-That matters beyond tidiness: every `package.json` in this repo carries the `0.0.0-dev` placeholder by design (CLAUDE.md, "Versioning"), so a reader who believes the help text expects `0.0.0-dev` and would file the real answer as a bug. The strings are reproduced VERBATIM here, wrong description and all, because the differential compares bytes and because `.ci/scripts/ci/` is not
-this writer's to change. Reported to the driver.
+That mattered beyond tidiness: every `package.json` in this repo carries the `0.0.0-dev` placeholder by design (CLAUDE.md, "Versioning"), so a reader who believed the help text would expect `0.0.0-dev` and file the real answer as a bug. The port's help says what the code does: "uses the newest v* git tag (fallback: latest)". The recordings keep the twin's sentence; `test_delta_the_help_describes_what_the_branch_arm_reads` fails on it, and the one rewritten line is
+named in the differential's `compare`.
 
 -----------------------------------------------------------------------------
 DEFECT B -- `--version ''` IS SILENTLY IGNORED RATHER THAN REFUSED
@@ -76,7 +76,7 @@ LOCAL_BRANCH = "local"
 # The three names `--env-file` writes, in the twin's order (twin :133-135).
 ENV_FILE_NAMES = ("TAG", "WEB_TAG", "RENET_TAG")
 
-# The help body, copied from the twin (:45-66) with `$0` left as a placeholder. DEFECT A lives in here verbatim: the "uses version from package.json" line is wrong and is reproduced anyway, because the differential compares bytes.
+# The help body, copied from the twin (:45-66) with `$0` left as a placeholder, except for the branch line (DEFECT A, corrected under Rule T).
 HELP_LINES = (
     "Usage: {prog} [OPTIONS]",
     "",
@@ -90,7 +90,7 @@ HELP_LINES = (
     "",
     "Auto-derivation (when --version not provided):",
     "  - Git tag (e.g., v1.2.3)  → uses tag name",
-    "  - Branch (e.g., main)     → uses version from package.json",
+    "  - Branch (e.g., main)     → uses the newest v* git tag (fallback: latest)",
     "",
     "Examples:",
     "  {prog}                              # Auto-derive, output to stdout",

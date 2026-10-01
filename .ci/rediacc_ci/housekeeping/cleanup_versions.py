@@ -54,6 +54,11 @@ THE ONE PLACE jq IS STILL EXECUTED is the failure path. When the twin feeds jq s
 twin has a byte-exact answer for.
 
 -----------------------------------------------------------------------------
+RULE T: THE OPERATOR-SUPPLIED COUNTS ARE NO LONGER BASH ARITHMETIC WORDS
+-----------------------------------------------------------------------------
+`--days`, `--versions`, `BRANCH_MAX_AGE_DAYS` and `MAX_DELETES_PER_RUN` are validated at startup (`_whole_number`): ASCII digits only, read in base 10, anything else refused with exit 2 naming the flag and the value. That closes the octal trap below at its source for the four values an operator can set (`010` keeps ten, `08` keeps eight, `08x` is refused), and with it HAZARD 8 (`BRANCH_MAX_AGE_DAYS=08` unwinding the run mid-Phase 9). HAZARD 9 (a failed cache listing doubling the stream and unwinding the run) is fixed in `cleanup_actions_cache`: the failure is named and nothing is evicted. The sections below describe the TWIN; `arith` keeps emulating it for the values that still reach it (epochs, API numbers), and the `test_delta_*` cases pin each change against the live twin as the control.
+
+-----------------------------------------------------------------------------
 BASH ARITHMETIC IS EMULATED, INCLUDING THE OCTAL TRAP
 -----------------------------------------------------------------------------
 `[[ $index -lt $KEEP_VERSIONS ]]` and `$((...))` are arithmetic contexts, and bash's integer literal rules are C's: a leading `0` means OCTAL. So
@@ -993,6 +998,19 @@ def try_json_values(blob: str) -> list | None:
         out.append(value)
 
 
+_WHOLE_NUMBER_RE = re.compile(r"[0-9]+")
+
+
+def _whole_number(name: str, value: str) -> str:
+    """An operator-supplied count, as canonical base-10 text, or a refusal that names it (exit 2).
+
+    The twin fed these straight into bash arithmetic, where `010` was EIGHT, `08` was a diagnostic plus a comparison that was false forever (so the keep window vanished and everything outside the retention was deleted), and `BRANCH_MAX_AGE_DAYS=08` unwound the whole run mid-phase. Only ASCII digits are a count here; they are read in base 10, and the canonical text (`08` -> `8`) is what every later `date`, comparison and log line sees. Refused before any call is made. See the module docstring, "BASH ARITHMETIC".
+    """
+    if not _WHOLE_NUMBER_RE.fullmatch(value):
+        raise common.RefusalError("%s must be a whole number (got %r)" % (name, value), code=2)
+    return str(int(value, 10))
+
+
 class Housekeeping:
     """The twin's SOURCE-TIME state: parsed args, config, guards, counters.
 
@@ -1005,16 +1023,24 @@ class Housekeeping:
 
         # :21-23. `${ARG_X:-default}` -- EMPTY falls back too, which is why this
         # is `or` and not `args.get(k, default)`.
-        self.retention_days = args.get("ARG_DAYS") or DEFAULT_RETENTION_DAYS
-        self.keep_versions = args.get("ARG_VERSIONS") or DEFAULT_KEEP_VERSIONS
+        self.retention_days = _whole_number(
+            "--days", args.get("ARG_DAYS") or DEFAULT_RETENTION_DAYS
+        )
+        self.keep_versions = _whole_number(
+            "--versions", args.get("ARG_VERSIONS") or DEFAULT_KEEP_VERSIONS
+        )
         self.dry_run_text = args.get("ARG_DRY_RUN") or "false"
 
         # :58, :49, :124. Read HERE because the twin reads them here, at source time: a caller that exports one of these after sourcing gets the old value in bash, and must get the old value here too.
         self.r2_bucket = os.environ.get("RELEASES_BUCKET") or DEFAULT_R2_BUCKET
-        self.branch_max_age_days = (
-            os.environ.get("BRANCH_MAX_AGE_DAYS") or DEFAULT_BRANCH_MAX_AGE_DAYS
+        self.branch_max_age_days = _whole_number(
+            "BRANCH_MAX_AGE_DAYS",
+            os.environ.get("BRANCH_MAX_AGE_DAYS") or DEFAULT_BRANCH_MAX_AGE_DAYS,
         )
-        self.max_deletes = os.environ.get("MAX_DELETES_PER_RUN") or DEFAULT_MAX_DELETES_PER_RUN
+        self.max_deletes = _whole_number(
+            "MAX_DELETES_PER_RUN",
+            os.environ.get("MAX_DELETES_PER_RUN") or DEFAULT_MAX_DELETES_PER_RUN,
+        )
 
         # :130-134, IN THE TWIN'S ORDER, which is observable: a host with no `aws` and no GH_TOKEN is told about aws, not about the token.
         common.require_cmd("gh")
@@ -3126,14 +3152,16 @@ class Housekeeping:
         )
         # `gh ... | jq -s 'sort_by(...)' || echo "[]"`. THE `||` COVERS THE WHOLE PIPELINE under pipefail, and `echo` APPENDS to whatever the pipeline already wrote -- so a gh that fails AFTER emitting rows leaves the variable holding TWO json values: the sorted array, then an empty one. Every downstream jq then answers twice ("3\n0"), which is why `total` and `total_bytes` are
         # carried as TEXT here and read through the bash arithmetic rules rather than as Python ints. A port that collapsed this to `[]` would take a completely different branch from the twin on the one input where gh half-fails.
+        if code != 0:
+            # Rule T (HAZARD 9): a failed listing is named and evicts nothing. The twin kept going on a half-read, doubled stream and died in an arithmetic expansion error that unwound the whole run.
+            log.warn("  Failed to list Actions caches (gh exited %d) - skipping eviction" % code)
+            return
         stream = [
             jq_sort_by(
                 json_values(caches_blob, "sort_by(.last_accessed_at)"),
                 lambda c: jq_get(c, "last_accessed_at"),
             )
         ]
-        if code != 0:
-            stream.append([])
         total_text = "\n".join(str(len(value)) for value in stream)
         caches = [entry for value in stream for entry in value]
 
