@@ -63,21 +63,6 @@
       "reason": "self-imposed: the root overrides entry forces glob ^11 tree-wide (package.json _overridesReasons.glob) and npm EOVERRIDE needs the devDep range to equal it; line 12 first released 2025-11-17, 317 days on 2026-10-01",
       "expires": "2026-10-15"
     },
-    "private/account/web:vite": {
-      "owner": "d778be9d",
-      "reason": "vite 6 -> 8 is two majors for the account portal build (config API, plugins, Rolldown) and moves with plugin-react as one portal-build migration; line 7 first released 2025-06-24, 463 days on 2026-10-01",
-      "expires": "2026-10-22"
-    },
-    "private/account/web:@vitejs/plugin-react": {
-      "owner": "d778be9d",
-      "reason": "plugin-react 6.x peers vite ^8, so it moves only with the held account portal vite migration; line 5 first released 2025-08-07, 419 days on 2026-10-01",
-      "expires": "2026-10-22"
-    },
-    "private/account/web:lucide-react": {
-      "owner": "d778be9d",
-      "reason": "lucide-react 1.x renames and removes icon exports the account portal imports; adopt it in a portal change that updates every import; line 0.576 first released 2026-03-02, 212 days on 2026-10-01",
-      "expires": "2026-10-22"
-    },
     "astro": {
       "owner": "d778be9d",
       "reason": "www is built on the astro 5 line and astro 6/7 are breaking majors covering the whole site build, taken with mdx and react as one migration; line 6 first released 2026-03-10, 204 days on 2026-10-01",
