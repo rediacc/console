@@ -31,7 +31,7 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.tests.wkloader import copy_loader
+from rediacc_ci.tests.wkloader import copy_loader, docker_less_path
 from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
@@ -209,7 +209,13 @@ def _run(
     env = dict(os.environ)
     env.update(DETERMINISTIC_SECRETS)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["PATH"] = "%s:%s" % (root / "fxbin", env.get("PATH", ""))
+    # A docker-less fixture gets a PATH that really has none: the host's docker would otherwise sit behind the fixture bin and answer `docker-missing-entirely` (the account twin's golden recorded exactly that, 115f8bb0c).
+    rest = (
+        env.get("PATH", "")
+        if (root / "fxbin" / "docker").exists()
+        else docker_less_path(root / "nodocker")
+    )
+    env["PATH"] = "%s:%s" % (root / "fxbin", rest)
     # PREPENDED, not replaced: the subjects need the system's real bash, env, grep and nproc. The fakes come first, so a real docker or curl on this host is shadowed and never reached -- asserted by `test_the_fakes_are_actually_reached`.
     env.pop("GITHUB_ACTIONS", None)
     env.pop("GITHUB_ENV", None)
