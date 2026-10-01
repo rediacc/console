@@ -623,12 +623,16 @@ renew_blob_for() {
 # the VM keeps its datastores, and a datastore with a MOUNTED repo inside
 # refuses to detach ("holders still present ... target is busy"). As a silent
 # one-liner this left stale state that failed the NEXT run's create with
-# "already exists", nine assertions deep in cascade. So: unmount every repo
-# inside each drill datastore first, then detach (fork with --discard, fork
-# before parent), then delete. The per-repo network_id comes from the repo's
-# own .rediacc.json under <mount>/mounts/<guid>/ because `repository list
-# --json` does not expose it while `repository unmount` requires it (reported).
-# Best-effort throughout: a fresh VM makes every line a no-op.
+# "already exists", nine assertions deep in cascade. So: unmount every MOUNTED
+# repo inside each drill datastore first (with the network_id `repository list
+# --json` reports), then discard the fork, then detach the parent when it is
+# attached and delete it. Silent only on the expected: a datastore that is not
+# registered here (a fresh VM) is quiet, and any other failure prints
+# "PRECLEAN FAILED: <command> (rc=N)" with renet's own words and fails the
+# script, which the caller turns into a warning BEFORE the create it would
+# break. Every line used to end in >/dev/null 2>&1, so after a VM crash left
+# drill-ds held detached the delete's real error was never seen and the create
+# said only "already exists".
 # Runs on BOTH machines: leg b relocates the drill datastore to the second one,
 # and a run that dies between the relocation and the move back leaves it there.
 # Precleaning only the first machine then failed the NEXT run's `datastore create`
@@ -642,7 +646,9 @@ leg_a_preclean() {
     # `set -e` for a step that is pure hygiene.
     leg_enabled b && hosts+=("$VM2_IP")
     for host in "${hosts[@]}"; do
-        leg_a_preclean_on "$host" || true
+        if ! leg_a_preclean_on "$host"; then
+            log_warn "leg a pre-clean on $host did not finish clean (its PRECLEAN FAILED lines are above); what it could not remove may fail the datastore create below"
+        fi
     done
     return 0
 }
@@ -657,29 +663,46 @@ leg_a_preclean_on() {
 # that first exercised leg c it reported ten results, eight of them corpses. Legs
 # c-e are only deterministic on a machine whose licences all belong to THIS run,
 # and leg a reissues everything it needs immediately after.
-sudo rm -rf /var/lib/rediacc/license/repos \\
+fail=0
+report() {
+    printf 'PRECLEAN FAILED: %s (rc=%s)\n' "\$1" "\$2" >&2
+    printf '%s\n' "\$3" | grep -v '^[[:space:]]*\$' | tail -n 3 | sed 's/^/    /' >&2
+    fail=1
+}
+step() {
+    out=\$("\$@" 2>&1) && return 0
+    rc=\$?
+    case "\$out" in *'is not registered on this machine'*) return 0 ;; esac
+    report "\$*" "\$rc" "\$out"
+}
+step sudo rm -rf /var/lib/rediacc/license/repos \\
     /var/lib/rediacc/license/datastores \\
     /var/lib/rediacc/license/failed \\
     /var/lib/rediacc/license/renew-state.json \\
-    /var/lib/rediacc/license/chain-state.json 2>/dev/null
+    /var/lib/rediacc/license/chain-state.json
+errf=\$(mktemp)
+trap 'rm -f "\$errf"' EXIT
+list=\$(sudo ${VM_RENET} datastore list --json 2>"\$errf") || { report 'datastore list --json' "\$?" "\$(cat "\$errf")"; exit 1; }
 for ds in ${DATASTORE_NAME}:${FORK_TAG} ${DATASTORE_NAME}; do
-    mount=\$(sudo ${VM_RENET} datastore list --json 2>/dev/null |
-        python3 -c "import json,sys; print(next((d.get('mountPath','') for d in json.load(sys.stdin) if d.get('name')=='\$ds'),''))" 2>/dev/null)
-    if [ -n "\$mount" ]; then
-        for guid in \$(sudo ${VM_RENET} repository list --datastore "\$mount" --json 2>/dev/null |
-            python3 -c "import json,sys; [print(r['name']) for r in json.load(sys.stdin)]" 2>/dev/null); do
-            nid=\$(sudo python3 -c "import json; print(json.load(open('\$mount/mounts/\$guid/.rediacc.json')).get('network_id',0))" 2>/dev/null || echo 0)
-            sudo ${VM_RENET} repository unmount --name "\$guid" --network-id "\$nid" --datastore "\$mount" --stop-docker --force >/dev/null 2>&1
-        done
+    row=\$(printf '%s' "\$list" | python3 -c "import json,sys; d=next((d for d in json.load(sys.stdin) if d.get('name')=='\$ds'),None); print('' if d is None else d.get('state','?')+' '+d.get('mountPath',''))" 2>&1) || { report "read \$ds from the datastore list" "\$?" "\$row"; continue; }
+    [ -n "\$row" ] || continue
+    read -r state mount <<< "\$row"
+    if [ "\$state" = attached ]; then
+        listing=\$(sudo ${VM_RENET} repository list --datastore "\$mount" --json 2>"\$errf") || { report "repository list --datastore \$mount" "\$?" "\$(cat "\$errf")"; listing='[]'; }
+        repos=\$(printf '%s' "\$listing" | python3 -c "import json,sys; [print(r['name'], r.get('network_id',0)) for r in json.load(sys.stdin) if r.get('mounted')]" 2>&1) || { report "read the mounted repos in \$mount" "\$?" "\$repos"; repos=''; }
+        while read -r guid nid; do
+            [ -n "\$guid" ] || continue
+            step sudo ${VM_RENET} repository unmount --name "\$guid" --network-id "\$nid" --datastore "\$mount" --stop-docker --force
+        done <<< "\$repos"
     fi
     if [ "\$ds" != "\${ds%:*}" ]; then
-        sudo ${VM_RENET} datastore detach --name "\$ds" --discard >/dev/null 2>&1
-    else
-        sudo ${VM_RENET} datastore detach --name "\$ds" >/dev/null 2>&1
+        step sudo ${VM_RENET} datastore detach --name "\$ds" --discard
+        continue
     fi
-    sudo ${VM_RENET} datastore delete --name "\$ds" >/dev/null 2>&1
+    [ "\$state" = attached ] && step sudo ${VM_RENET} datastore detach --name "\$ds"
+    step sudo ${VM_RENET} datastore delete --name "\$ds"
 done
-true
+exit \$fail
 EOF
 }
 

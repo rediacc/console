@@ -41,17 +41,39 @@ export function isDatastoreScopedId(datastoreId: string | undefined): datastoreI
   return !!datastoreId && DATASTORE_ID_PATTERN.test(datastoreId);
 }
 
+/**
+ * The machine's license identity, as renet computes it AS ROOT.
+ *
+ * Root is not a preference. renet hashes the DMI product UUID into the id and
+ * that file is root-only, so the same machine has a second, equally
+ * well-formed id for any other user (VM .11: c99b905a as root, a66b5f90 as
+ * the SSH user). A license bound to the second id fails `machine_mismatch`
+ * once its grace runs out and claims a phantom activation slot meanwhile. So
+ * there is no non-root fallback: `sudo -n` never prompts, and a machine where
+ * it is refused fails here with renet's or sudo's own message.
+ */
 export async function readRemoteMachineId(
   sftp: SFTPClient,
   remoteRenetPath?: string
 ): Promise<string> {
-  const command = remoteRenetPath
-    ? `sudo ${remoteRenetPath} machine-id 2>/dev/null`
-    : 'sudo renet machine-id 2>/dev/null || renet machine-id 2>/dev/null';
-  const machineId = (await sftp.exec(command)).trim();
+  const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
+  const command = `sudo -n ${renetPath} machine-id`;
+  let output: string;
+  try {
+    output = await sftp.exec(command);
+  } catch (error) {
+    const cause = (error instanceof Error ? error.message : String(error)).trim();
+    throw new Error(
+      `Failed to read the machine ID with \`${command}\` (it needs root without a password ` +
+        `prompt, and renet installed): ${cause}`,
+      { cause: error }
+    );
+  }
+  const machineId = output.trim();
   if (!/^[a-f0-9]{64}$/i.test(machineId)) {
     throw new Error(
-      'Failed to resolve remote renet machine ID. Ensure renet is installed and accessible for the SSH user.'
+      `\`${command}\` did not print a machine ID (expected 64 hex characters, got ` +
+        `${JSON.stringify(machineId.slice(0, 120))}).`
     );
   }
   return machineId;

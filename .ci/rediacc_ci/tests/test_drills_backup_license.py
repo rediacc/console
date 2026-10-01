@@ -738,14 +738,191 @@ def test_the_preclean_script_is_valid_bash_and_names_the_drill_datastores() -> N
     assert '"${ds%:*}"' in script or "${ds%%:*}" in script
 
 
+FAKE_PRECLEAN_RENET = """#!{py}
+import json, os, sys
+
+args = " ".join(sys.argv[1:])
+with open(os.environ["FAKE_RENET_LOG"], "a") as log:
+    log.write(args + "\\n")
+rc, out, err = json.loads(os.environ["FAKE_RENET_SCENARIO"]).get(args, [0, "", ""])
+sys.stdout.write(out)
+sys.stderr.write(err)
+sys.exit(rc)
+"""
+
+# `sudo rm -rf /var/lib/rediacc/license/...` must never run on the test host: the fake sudo swallows rm and runs everything else as the calling user.
+FAKE_PRECLEAN_SUDO = """#!/bin/sh
+if [ "$1" = rm ]; then echo "$*" >> "$FAKE_RENET_LOG"; exit 0; fi
+exec "$@"
+"""
+
+NOT_REGISTERED = 'Error: datastore "%s" is not registered on this machine\n'
+
+
+def _run_preclean(tmp_path: pathlib.Path, scenario: dict[str, list]) -> tuple[int, str, list[str]]:
+    """Run the port's remote script under bash against a fake renet; (exit, stderr, renet calls)."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    renet = bin_dir / "renet"
+    renet.write_text(FAKE_PRECLEAN_RENET.format(py=sys.executable))
+    sudo = bin_dir / "sudo"
+    sudo.write_text(FAKE_PRECLEAN_SUDO)
+    for exe in (renet, sudo):
+        exe.chmod(exe.stat().st_mode | stat.S_IXUSR)
+    log_file = tmp_path / "calls.log"
+    log_file.write_text("")
+    env = dict(os.environ)
+    env["PATH"] = "%s:%s" % (bin_dir, env.get("PATH", ""))
+    env["FAKE_RENET_LOG"] = str(log_file)
+    env["FAKE_RENET_SCENARIO"] = json.dumps(scenario)
+    proc = subprocess.run(
+        [BASH, "-s"],
+        input=license_drill.preclean_script(str(renet)),
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    calls = [c for c in log_file.read_text().splitlines() if not c.startswith("rm ")]
+    return proc.returncode, proc.stderr, calls
+
+
+def test_preclean_on_a_fresh_machine_is_silent_and_clean(tmp_path: pathlib.Path) -> None:
+    code, err, calls = _run_preclean(tmp_path, {"datastore list --json": [0, "[]", ""]})
+    assert (code, err) == (0, "")
+    assert calls == ["datastore list --json"]
+
+
+def test_preclean_reports_a_failed_delete_with_renets_own_words(tmp_path: pathlib.Path) -> None:
+    """The 2026-10-01 shape: a VM crash left drill-ds registered and held detached, so the delete is the step that fails; its cause used to go to /dev/null and the next create said only "already exists"."""
+    listing = [
+        {
+            "name": "drill-ds",
+            "state": "detached",
+            "heldDetached": True,
+            "mountPath": "/mnt/rediacc-ds/drill-ds",
+        }
+    ]
+    code, err, calls = _run_preclean(
+        tmp_path,
+        {
+            "datastore list --json": [0, json.dumps(listing), ""],
+            "datastore delete --name drill-ds": [
+                1,
+                "",
+                "Error: rbd: error removing image: image still has watchers\n",
+            ],
+        },
+    )
+    assert code == 1
+    assert (
+        "PRECLEAN FAILED: sudo %s datastore delete --name drill-ds (rc=1)"
+        % (tmp_path / "bin" / "renet")
+        in err
+    )
+    assert "image still has watchers" in err
+    assert "datastore detach --name drill-ds" not in calls, (
+        "a detached parent is not detached again"
+    )
+    assert calls[-1] == "datastore delete --name drill-ds"
+
+
+def test_preclean_keeps_not_registered_quiet(tmp_path: pathlib.Path) -> None:
+    listing = [
+        {
+            "name": "drill-ds:remeter",
+            "state": "detached",
+            "mountPath": "/mnt/rediacc-ds/drill-ds-remeter",
+        }
+    ]
+    code, err, calls = _run_preclean(
+        tmp_path,
+        {
+            "datastore list --json": [0, json.dumps(listing), ""],
+            "datastore detach --name drill-ds:remeter --discard": [
+                1,
+                "",
+                NOT_REGISTERED % "drill-ds:remeter",
+            ],
+        },
+    )
+    assert (code, err) == (0, "")
+    assert "datastore detach --name drill-ds:remeter --discard" in calls
+
+
+def test_preclean_unmounts_only_mounted_repos_with_their_listed_network_id(
+    tmp_path: pathlib.Path,
+) -> None:
+    mount = "/mnt/rediacc-ds/drill-ds"
+    listing = [{"name": "drill-ds", "state": "attached", "mountPath": mount}]
+    repos = [
+        {"name": ".lock-g1", "size": "0 B", "mounted": False},
+        {"name": "g1", "network_id": 2816, "mounted": True},
+        {"name": "g2", "network_id": 2880, "mounted": False},
+    ]
+    code, err, calls = _run_preclean(
+        tmp_path,
+        {
+            "datastore list --json": [0, json.dumps(listing), ""],
+            "repository list --datastore %s --json" % mount: [
+                0,
+                json.dumps(repos),
+                "a warning on stderr\n",
+            ],
+        },
+    )
+    assert (code, err) == (0, "")
+    unmounts = [c for c in calls if c.startswith("repository unmount")]
+    assert unmounts == [
+        "repository unmount --name g1 --network-id 2816 --datastore %s --stop-docker --force"
+        % mount
+    ]
+    assert calls[-2:] == ["datastore detach --name drill-ds", "datastore delete --name drill-ds"]
+
+
+def test_preclean_stops_and_says_so_when_the_datastore_list_fails(tmp_path: pathlib.Path) -> None:
+    code, err, calls = _run_preclean(
+        tmp_path, {"datastore list --json": [2, "", "renet: registry locked by pid 4242\n"]}
+    )
+    assert code == 1
+    assert "PRECLEAN FAILED: datastore list --json (rc=2)" in err
+    assert "registry locked by pid 4242" in err
+    assert calls == ["datastore list --json"]
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize(
+    ("code", "stderr", "warned"),
+    [(0, "", False), (1, "PRECLEAN FAILED: x (rc=1)\n    boom\n", True), (255, "", True)],
+)
+def test_a_failed_preclean_is_warned_with_its_lines(
+    capsys: pytest.CaptureFixture[str], code: int, stderr: str, warned: bool
+) -> None:
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    drill.init()
+    try:
+        _FakeLicense(drill, license_drill.Options()).report_preclean("192.168.111.11", code, stderr)
+    finally:
+        drill.teardown()
+    err = capsys.readouterr().err
+    assert ("pre-clean on 192.168.111.11 did not finish clean (exit %d)" % code in err) is warned
+    if stderr:
+        assert "boom" in err
+    if warned and not stderr:
+        assert "<no stderr" in err
+
+
 def test_the_bash_preclean_heredoc_equals_the_ports_script() -> None:
     """The remote script is the one thing both sides send over ssh; the port's text must equal the bash heredoc once the shell escapes are undone."""
     text = (ROOT / "scripts/drills/license.sh").read_text()
     match = re.search(r'bash -s" <<EOF\n(.*?)\nEOF\n', text, re.DOTALL)
     assert match
     heredoc = match.group(1)
-    # Skip the commentary, then undo the unquoted-heredoc escapes the way the shell would.
-    body = heredoc[heredoc.index("sudo rm -rf") :]
+    # Skip the leading commentary, then undo the unquoted-heredoc escapes the way the shell would.
+    lines = heredoc.splitlines(keepends=True)
+    while lines and lines[0].startswith("#"):
+        lines.pop(0)
+    body = "".join(lines)
     expanded = (
         body.replace("\\\\\n", "\\\n")
         .replace("\\`", "`")
