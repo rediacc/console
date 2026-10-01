@@ -448,7 +448,8 @@ def scan(
             raw = (root / rel).read_bytes()
         except OSError:
             continue
-        if rel not in pyset and b".py" not in raw:
+        # `rediacc_ci.` keeps a wiring file that only names modules (`python3 -m rediacc_ci.testrun.unit`): it carries no `.py` byte sequence and still routes.
+        if rel not in pyset and b".py" not in raw and b"rediacc_ci." not in raw:
             continue
         texts[rel] = raw.decode("utf-8", errors="ignore")
 
@@ -469,6 +470,12 @@ def scan(
     for rel in wiring:
         for hit in mentioned_paths(texts.get(rel, ""), index):
             admit(hit, "wired")
+        # The module form a caller switch writes, `python3 -m rediacc_ci.<pkg>.<mod>`, names no .py path. Until 2026-10-01 only the shadow ledger read it, so a workflow that ran `-m rediacc_ci.testrun.unit` left testrun/unit.py reported DEAD.
+        for mod in _MODULE_TOKEN.findall(texts.get(rel, "")):
+            base = ".ci/rediacc_ci/%s" % mod.replace(".", "/")
+            for candidate in (base + ".py", base + "/__main__.py"):
+                if candidate in pyset:
+                    admit(candidate, "wired")
     if "wired" not in set(routes.values()):
         raise RefusalError(
             "ZERO Python files are named by any of the %d wiring file(s); the "
@@ -809,6 +816,27 @@ def selftest(verbose: bool = False) -> int:
             "route shadow: a port named by `-m rediacc_ci.<mod>` in the ledger is not dead",
             _findings(modroot),
             [],
+        )
+
+        wiredroot = _fixture(
+            tmp / "wired-module",
+            {
+                ".ci/rediacc_ci/testrun/orphan_run.py": "X = 1\n",
+                ".github/workflows/ci.yml": "on: push\njobs:\n  t:\n    steps:\n      - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.orphan_run\n",
+            },
+        )
+        c.check(
+            "route wired: a workflow naming a port by `-m rediacc_ci.<mod>` reaches it",
+            _findings(wiredroot),
+            [],
+        )
+        unwired = _fixture(
+            tmp / "unwired-module", {".ci/rediacc_ci/testrun/orphan_run.py": "X = 1\n"}
+        )
+        c.check(
+            "route wired CONTROL: the same module with no caller is still dead",
+            _findings(unwired),
+            [".ci/rediacc_ci/testrun/orphan_run.py"],
         )
 
         (root / ".ci/scripts/quality/check-orphan.sh").unlink()
