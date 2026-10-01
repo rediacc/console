@@ -33,6 +33,7 @@ The one red pair is `w7p2-stagingtag` and it is expected: see Known open defects
 
 **Status addendum, 2026-09-24.** The table above is from 2026-09-07; it is kept as a record.
 - W7P5-b: `account.sh` is fully ported, 22 of 22 functions. `check:ci-bash-lib-ported` now holds every `.ci/lib` and `.ci/scripts/lib` library to its twin, with 59 gaps baselined.
+- G2 of PLAN-retire-bash-oracles, 2026-10-01: none of the 59 was a real gap. The gate now reads class methods, `log.py` and qualified `ALIASES`, so all 189 functions map to a Python twin and the baseline file is deleted.
 - W7P5-a: 26 real-run legs are confirmed, and 15 paths remain blocked. Twelve of those are operator-approved M-live runs, driven from the lead session.
 - W7P5-c, which deletes the bash twins, waits on those runs.
 - Details are in `06-progress.md`, section "W7P5-b closes".
