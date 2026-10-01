@@ -155,7 +155,10 @@ function tierFindings(
   // A GATE IS ALSO SLOW BY CLOSURE, and without this the two oracles here contradict each other. check:ci-client-bundle-budget costs 0.8s ITSELF and 132s through `needs: build:www`: the closure oracle says mark it, the tier oracle then says it is too cheap to be marked. Both are right about different costs, so tier defers to closure -- the number that decides lane membership is
   // what the gate costs to RUN, prerequisites included.
   const slowByClosure = slowByClosureSet(specs);
+  // A BUILD NODE A FAST GATE NEEDS IS THE LANE'S FLOOR, NOT A GATE THAT COULD MOVE TIER. build:packages and build:cli are `gate: false` prerequisites of the quick lane's typechecks; marking one slow would defer every fast gate that needs it, and the lane's total is bounded by the quick lane's p90 budget instead (scripts/ci-runner/quick-select.ts). A push clone builds them cold on every checkout (35-51 s against 12-20 s warm, 2026-10-01), which convicted them here on a load the rule was never about.
+  const neededByFast = new Set(specs.filter((s) => s.slow !== true).flatMap((s) => s.needs ?? []));
   for (const spec of specs) {
+    if (spec.gate === false && spec.slow !== true && neededByFast.has(spec.id)) continue;
     const ci = ciDur[spec.id];
     if (typeof ci === 'number') {
       // CI wins OUTRIGHT over a contradicting local cache, and judges BOTH directions off the one p90 -- no floor/median split, because this p90 is already a stable statistic over real CI runs, not a number a contended local checkout can skew. `continue` below means a step gate NEVER falls through to `dur`/local cache, even when one happens to hold an entry for it.
@@ -378,6 +381,19 @@ function selftest(tracked: readonly string[]): number {
     tierFindings([spec({ slow: true })], { x: 60_000 }).length === 0
   );
   // The five-false-reds fix, both directions. Without the second control the precondition could be a blanket "never tier" and the suite would not notice.
+  check(
+    'tier: a non-gate build node a fast gate needs is the lane floor, not convicted',
+    tierFindings([spec({ id: 'b', gate: false }), spec({ id: 'g', needs: ['b'] })], { b: 60_000 })
+      .length === 0
+  );
+  check(
+    'tier CONTROL: the same non-gate node with no fast dependent is still convicted',
+    tierFindings([spec({ id: 'b', gate: false })], { b: 60_000 }).length === 1
+  );
+  check(
+    'tier CONTROL: a GATE that a fast gate needs is still convicted',
+    tierFindings([spec({ id: 'b' }), spec({ id: 'g', needs: ['b'] })], { b: 60_000 }).length === 1
+  );
   check(
     'tier: a thin window of measurements does NOT convict',
     tierFindings([spec({})], { x: 60_000 }, { x: 3 }).length === 0
