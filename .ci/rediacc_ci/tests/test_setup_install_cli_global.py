@@ -73,7 +73,7 @@ TREE_FILES = (
 )
 
 # What a BASH subject needed in the tree on top of that: the twin itself and the library it sourced. Reached only by the one-shot recorder, which ran while the twin was still tracked; the suite's subject is the port or a throwaway mutant of it.
-BASH_FILES = (TWIN_REL, ".ci/scripts/lib/common.sh")
+BASH_FILES = (TWIN_REL, ".ci/scripts/lib/common.sh", ".ci/config/well-known.generated.sh")
 
 # `dirname`/`uname` for common.sh's source-time detection, `tr` for `to_upper` inside `parse_args`, and `ls`/`head`/`rm` because the twin ran all three and their real exit statuses are what the pipefail case turns on.
 PATH_MINIMUM = ("dirname", "uname", "tr", "ls", "head", "rm")

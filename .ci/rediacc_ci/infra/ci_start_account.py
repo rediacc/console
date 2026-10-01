@@ -150,6 +150,12 @@ def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[st
     try:
         return subprocess.run(["docker", *args], check=False, **kwargs)  # type: ignore[arg-type]
     except FileNotFoundError:
+        # Bash prints `<script>: line N: docker: command not found` wherever the call's stderr points: the script's stderr by default, the captured stdout under `2>&1`, nowhere under `2>/dev/null`. The port prints the same words without its own path and line (a line number inside a shell file is not reproducible).
+        target = kwargs.get("stderr")
+        if target is None:
+            print("docker: command not found", file=sys.stderr, flush=True)
+        elif target == subprocess.STDOUT:
+            print("docker: command not found", flush=True)
         return subprocess.CompletedProcess(["docker", *args], 127, stdout="", stderr="")
 
 

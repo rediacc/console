@@ -119,6 +119,10 @@ def _fixture(
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     if port_source is None:
         shutil.copy2(PORT, root / PORT_REL)
     else:

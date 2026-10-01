@@ -166,6 +166,10 @@ def build(where: pathlib.Path, name: str, subject: pathlib.Path) -> pathlib.Path
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     if kw.get("with_pins", True):
         shutil.copy2(TOOLCHAIN_ENV, root / ".devcontainer" / "toolchain.env")

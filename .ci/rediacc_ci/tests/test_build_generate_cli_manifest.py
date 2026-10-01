@@ -63,6 +63,7 @@ PORT_REL = ".ci/rediacc_ci/build/generate_cli_manifest.py"
 TWIN_REL = ".ci/scripts/build/generate-cli-manifest.sh"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
+GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
 SLUG = "generate-cli-manifest"
 CALLS_MARKER = "--- calls ---\n"
@@ -227,12 +228,12 @@ def build(tmp_path: pathlib.Path, name: str) -> pathlib.Path:
     """
     kw = CASE_KW[name]
     root = tmp_path / "repo"
-    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     if (ROOT / TWIN_REL).is_file():
         (root / TWIN_REL).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / TWIN_REL, root / TWIN_REL)
-    for rel in (COMMON_REL, WELL_KNOWN_REL, PORT_REL, *VENDORED):
+    for rel in (COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, PORT_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True, exist_ok=True)
     shutil.copy2(

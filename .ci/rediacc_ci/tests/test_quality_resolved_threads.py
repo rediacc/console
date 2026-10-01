@@ -79,6 +79,10 @@ def build(tmp_path: pathlib.Path, threads: str, reviews: str) -> pathlib.Path:
     shutil.copy2(
         src / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        src / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
     for name in ("__init__.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,

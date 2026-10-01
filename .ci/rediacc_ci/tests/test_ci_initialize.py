@@ -217,6 +217,10 @@ def fixture_root(
     shutil.copyfile(
         "%s/.ci/config/well-known.env" % diff.repo(), root / ".ci/config/well-known.env"
     )
+    shutil.copyfile(
+        "%s/.ci/config/well-known.generated.sh" % diff.repo(),
+        root / ".ci/config/well-known.generated.sh",
+    )
     # Only while the twin exists, i.e. on a re-freeze from bash (PLAN-retire-bash-oracles B3); compare mode never runs it.
     twin = root / TWIN
     if os.path.isfile("%s/%s" % (diff.repo(), TWIN)) and not os.path.lexists(twin):

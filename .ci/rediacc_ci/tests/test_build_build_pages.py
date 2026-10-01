@@ -37,6 +37,7 @@ TWIN_REL = ".ci/scripts/build/build-pages.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_pages.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
+GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
 # Everything the port imports, transitively.
 VENDORED = (
@@ -91,9 +92,9 @@ def fixture(
     an empty dict means it is created and left EMPTY, which is a different case (defect 4) and the one the twin reports as `cp: cannot stat`.
     """
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         if rel == TWIN_REL and not (ROOT / rel).is_file():
             continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         shutil.copy2(ROOT / rel, root / rel)
@@ -609,6 +610,11 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
         text=True,
         check=False,
         timeout=120,
+    )
+    # `git grep` exits 0 on a match and 1 on none; anything higher is git failing, which must not read as "no matches".
+    assert found.returncode in (0, 1), "git grep failed (rc %d): %s" % (
+        found.returncode,
+        found.stderr.strip(),
     )
     # The twin left the set when it was retired (PLAN-retire-bash-oracles B3); its frozen golden, which records the twin's own output naming the path, joined it. Neither writes the file.
     golden_rel = str(diff.golden_file(TWIN_REL).relative_to(ROOT))

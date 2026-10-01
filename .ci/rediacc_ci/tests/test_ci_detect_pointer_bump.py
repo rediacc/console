@@ -222,6 +222,10 @@ def fixture(
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.generated.sh",
+        root / ".ci" / "config" / "well-known.generated.sh",
+    )
 
     _git(root, "init", "-q", "-b", "main")
     repo = Repo(root)
