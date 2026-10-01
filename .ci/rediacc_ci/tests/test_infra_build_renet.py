@@ -27,6 +27,8 @@ THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN, and writing that test is wh
 `test_the_collapsed_identity_defeats_the_rebuild_the_stamp_exists _for` then demonstrates the consequence -- two different keys, one stamp, no rebuild. The first draft of that test asserted exit 127 and FAILED, which is how the defect surfaced: a failing pipeline inside a command substitution used as an ARGUMENT is invisible to `set -e` and `pipefail`.
 """
 
+import hashlib
+import json
 import os
 import pathlib
 import shutil
@@ -482,3 +484,61 @@ def test_build_args_drops_what_the_twin_drops():
     assert build_renet.build_args(["--nolicence"]) == []
     assert build_renet.build_args(["-v", "--license", "x"]) == ["--license"]
     assert build_renet.build_args(["--nolicense", "--license"]) == ["--nolicense", "--license"]
+
+
+# ---------------------------------------------------------------------------
+# The embed-assets cache verdict (rediacc_ci.infra.renet_embed_cache), as the PORT emits it. Port-only: it reads RENET_EMBED_CACHE_HIT and GITHUB_OUTPUT, which the twin never sees and the differential above never sets.
+# ---------------------------------------------------------------------------
+
+
+def _stage_receipt(root: pathlib.Path) -> None:
+    """One staged asset plus a receipt that vouches for it, in the fixture's renet tree."""
+    src = root / "private" / "renet"
+    lock = b'{"components": {}}'
+    (src / "embed-assets.lock.json").write_bytes(lock)
+    asset = src / "pkg" / "embed" / "assets" / "amd64" / "base" / "criu-linux-amd64.zst"
+    asset.parent.mkdir(parents=True)
+    asset.write_bytes(b"criu")
+    receipt = {
+        "lockfileSha256": hashlib.sha256(lock).hexdigest(),
+        "assets": {
+            "amd64/base/criu-linux-amd64.zst": {"sha256": hashlib.sha256(b"criu").hexdigest()}
+        },
+    }
+    (asset.parents[2] / ".staged.json").write_text(json.dumps(receipt), encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("hit", "staged", "build_rc", "want"),
+    [
+        pytest.param("false", True, 0, "true", id="miss-staged-built"),
+        pytest.param("false", True, 3, "true", id="miss-staged-go-build-failed-still-saves"),
+        pytest.param("false", False, 3, "false", id="miss-staging-never-finished"),
+        pytest.param("true", True, 0, "false", id="hit-never-saves"),
+    ],
+)
+def test_the_port_writes_the_cache_verdict_on_every_exit(tmp_path, hit, staged, build_rc, want):
+    root = _fixture(tmp_path / "c", build_rc=build_rc)
+    if staged:
+        _stage_receipt(root)
+    gh_out = tmp_path / "gh-output"
+    gh_out.write_text("", encoding="utf-8")
+    out = _run(
+        PORT_REL,
+        root,
+        env_extra={"GITHUB_OUTPUT": str(gh_out), "RENET_EMBED_CACHE_HIT": hit},
+    )
+    assert out["exit"] == build_rc
+    assert gh_out.read_text(encoding="utf-8") == "embed-cacheable=%s\n" % want
+
+
+def test_a_stale_cache_hit_is_announced_before_the_restage(tmp_path):
+    """The PR #591 shape: a HIT that restored the checkout skeleton. build.sh restages (~11 min) and nothing else in the log says why."""
+    root = _fixture(tmp_path / "w")
+    out = _run(PORT_REL, root, env_extra={"RENET_EMBED_CACHE_HIT": "true"})
+    assert str(out["stdout"]).startswith("::warning title=Stale renet-embed-assets cache entry::")
+    # CONTROL: a hit on a real staging says nothing.
+    good = _fixture(tmp_path / "g")
+    _stage_receipt(good)
+    quiet = _run(PORT_REL, good, env_extra={"RENET_EMBED_CACHE_HIT": "true"})
+    assert "::warning" not in str(quiet["stdout"])

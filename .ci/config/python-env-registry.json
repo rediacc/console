@@ -475,6 +475,10 @@
       "PATH",
       "RUNNER_TEMP"
     ],
+    ".ci/rediacc_ci/infra/renet_embed_cache.py": [
+      "GITHUB_OUTPUT",
+      "RENET_EMBED_CACHE_HIT"
+    ],
     ".ci/rediacc_ci/infra/renet_pkg_matrix.py": [
       "GITHUB_OUTPUT"
     ],

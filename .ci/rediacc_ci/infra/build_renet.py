@@ -64,6 +64,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.infra import renet_embed_cache
 
 # U+2014, written as an escape so no em dash is typed into a file under `.ci/rediacc_ci`, which `check:ci-em-dash-surfaces` scans. The CHARACTER still has to reach stderr, because the twin prints it and this port's whole claim is byte-identical output.
 _EM_DASH = "\u2014"
@@ -138,6 +139,23 @@ def exe_suffix() -> str:
 
 
 def main(argv: list[str]) -> int:
+    """The twin's behaviour, plus the embed-assets cache verdict (see `renet_embed_cache`).
+
+    The two additions read only `RENET_EMBED_CACHE_HIT` and `GITHUB_OUTPUT`, names the twin never sees and the differential never sets, so the comparison against the twin is untouched. The verdict is written AFTER the build on every exit path, failure included: a staging that completed before the go build failed is still worth saving, and one that did not complete carries no current receipt and is refused.
+    """
+    renet_src = console_root() / "private" / "renet"
+    if renet_src.is_dir():
+        warning = renet_embed_cache.stale_hit_warning(renet_src)
+        if warning is not None:
+            print(warning, flush=True)
+    try:
+        return _build(argv)
+    finally:
+        if renet_src.is_dir():
+            renet_embed_cache.write_verdict(renet_src)
+
+
+def _build(argv: list[str]) -> int:
     root = console_root()
     args = build_args(argv)
 

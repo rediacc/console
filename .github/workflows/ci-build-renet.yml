@@ -161,10 +161,19 @@ jobs:
       - name: Assert no OTLP credentials baked into the built binaries
         run: .ci/scripts/quality/check_no_otlp_creds.py
 
-      # Save even if a later step fails (the staging work is done and valid);
-      # the receipt makes a partially-staged tree self-healing on restore.
+      # Save only a tree the receipt vouches for, and only after a restore that ran
+      # and missed. The key is immutable, so a skeleton saved by a job that failed
+      # before staging is served as a "hit" to every later job (#591, 2026-09-30:
+      # a 1.15 KiB entry shadowed main's 302 MiB one and each E2E job rebuilt the
+      # assets for about 10 minutes).
+      - name: Embed-assets cache verdict
+        id: embed-verdict
+        if: always() && steps.embed-cache.outcome == 'success'
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.renet_embed_cache verdict
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        if: always() && steps.embed-verdict.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
