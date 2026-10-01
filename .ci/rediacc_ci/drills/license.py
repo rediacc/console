@@ -142,32 +142,56 @@ def _result_none(results: object, key: str, value: str) -> bool:
     )
 
 
+PRECLEAN_QUIET = "is not registered on this machine"
+"""The one renet error the pre-clean expects: the datastore is not on this machine (a fresh VM, or a previous run that cleaned up after itself). Every other failure is reported."""
+
+
 def preclean_script(renet: str) -> str:
-    """The machine-side pre-clean of leg a. The installed licence store is machine-local and SURVIVES every datastore this drill deletes, so a machine that has run the drill before holds blobs for repos and datastores that no longer exist; legs c-e are only deterministic on a machine whose licences all belong to THIS run. Mounted repos inside a drill datastore are unmounted first (a datastore with a mounted repo refuses to detach), forks are detached with --discard before the parent, then deleted. Best-effort throughout: a fresh VM makes every line a no-op."""
+    """The machine-side pre-clean of leg a. The installed licence store is machine-local and SURVIVES every datastore this drill deletes, so a machine that has run the drill before holds blobs for repos and datastores that no longer exist; legs c-e are only deterministic on a machine whose licences all belong to THIS run. Mounted repos inside a drill datastore are unmounted first (a datastore with a mounted repo refuses to detach), the fork is discarded with `detach --discard` before the parent, and the parent is detached (when attached) and deleted.
+
+    SILENT ONLY ON THE EXPECTED. Every step used to end in `>/dev/null 2>&1`, so after a VM crash left drill-ds registered but held detached, the parent's delete failed for a reason nobody saw and the NEXT step, `datastore create`, failed with "already exists". Now a step that fails with anything but `PRECLEAN_QUIET` prints `PRECLEAN FAILED: <command> (rc=N)` and the tail of its output on stderr, and the script exits 1; the caller reports it before the create it would otherwise break."""
     return (
-        "sudo rm -rf /var/lib/rediacc/license/repos \\\n"
+        "fail=0\n"
+        "report() {\n"
+        '    printf \'PRECLEAN FAILED: %%s (rc=%%s)\\n\' "$1" "$2" >&2\n'
+        "    printf '%%s\\n' \"$3\" | grep -v '^[[:space:]]*$' | tail -n 3 | sed 's/^/    /' >&2\n"
+        "    fail=1\n"
+        "}\n"
+        "step() {\n"
+        '    out=$("$@" 2>&1) && return 0\n'
+        "    rc=$?\n"
+        "    case \"$out\" in *'%(quiet)s'*) return 0 ;; esac\n"
+        '    report "$*" "$rc" "$out"\n'
+        "}\n"
+        "step sudo rm -rf /var/lib/rediacc/license/repos \\\n"
         "    /var/lib/rediacc/license/datastores \\\n"
         "    /var/lib/rediacc/license/failed \\\n"
         "    /var/lib/rediacc/license/renew-state.json \\\n"
-        "    /var/lib/rediacc/license/chain-state.json 2>/dev/null\n"
+        "    /var/lib/rediacc/license/chain-state.json\n"
+        "errf=$(mktemp)\n"
+        "trap 'rm -f \"$errf\"' EXIT\n"
+        'list=$(sudo %(renet)s datastore list --json 2>"$errf") || { report \'datastore list --json\' "$?" "$(cat "$errf")"; exit 1; }\n'
         "for ds in %(ds)s:%(tag)s %(ds)s; do\n"
-        "    mount=$(sudo %(renet)s datastore list --json 2>/dev/null |\n"
-        "        python3 -c \"import json,sys; print(next((d.get('mountPath','') for d in json.load(sys.stdin) if d.get('name')=='$ds'),''))\" 2>/dev/null)\n"
-        '    if [ -n "$mount" ]; then\n'
-        '        for guid in $(sudo %(renet)s repository list --datastore "$mount" --json 2>/dev/null |\n'
-        "            python3 -c \"import json,sys; [print(r['name']) for r in json.load(sys.stdin)]\" 2>/dev/null); do\n"
-        "            nid=$(sudo python3 -c \"import json; print(json.load(open('$mount/mounts/$guid/.rediacc.json')).get('network_id',0))\" 2>/dev/null || echo 0)\n"
-        '            sudo %(renet)s repository unmount --name "$guid" --network-id "$nid" --datastore "$mount" --stop-docker --force >/dev/null 2>&1\n'
-        "        done\n"
+        "    row=$(printf '%%s' \"$list\" | python3 -c \"import json,sys; d=next((d for d in json.load(sys.stdin) if d.get('name')=='$ds'),None); print('' if d is None else d.get('state','?')+' '+d.get('mountPath',''))\" 2>&1) || { report \"read $ds from the datastore list\" \"$?\" \"$row\"; continue; }\n"
+        '    [ -n "$row" ] || continue\n'
+        '    read -r state mount <<< "$row"\n'
+        '    if [ "$state" = attached ]; then\n'
+        '        listing=$(sudo %(renet)s repository list --datastore "$mount" --json 2>"$errf") || { report "repository list --datastore $mount" "$?" "$(cat "$errf")"; listing=\'[]\'; }\n'
+        "        repos=$(printf '%%s' \"$listing\" | python3 -c \"import json,sys; [print(r['name'], r.get('network_id',0)) for r in json.load(sys.stdin) if r.get('mounted')]\" 2>&1) || { report \"read the mounted repos in $mount\" \"$?\" \"$repos\"; repos=''; }\n"
+        "        while read -r guid nid; do\n"
+        '            [ -n "$guid" ] || continue\n'
+        '            step sudo %(renet)s repository unmount --name "$guid" --network-id "$nid" --datastore "$mount" --stop-docker --force\n'
+        '        done <<< "$repos"\n'
         "    fi\n"
         '    if [ "$ds" != "${ds%%:*}" ]; then\n'
-        '        sudo %(renet)s datastore detach --name "$ds" --discard >/dev/null 2>&1\n'
-        "    else\n"
-        '        sudo %(renet)s datastore detach --name "$ds" >/dev/null 2>&1\n'
+        '        step sudo %(renet)s datastore detach --name "$ds" --discard\n'
+        "        continue\n"
         "    fi\n"
-        '    sudo %(renet)s datastore delete --name "$ds" >/dev/null 2>&1\n'
+        '    [ "$state" = attached ] && step sudo %(renet)s datastore detach --name "$ds"\n'
+        '    step sudo %(renet)s datastore delete --name "$ds"\n'
         "done\n"
-        "true\n" % {"ds": DATASTORE_NAME, "tag": FORK_TAG, "renet": renet}
+        "exit $fail\n"
+        % {"ds": DATASTORE_NAME, "tag": FORK_TAG, "renet": renet, "quiet": PRECLEAN_QUIET}
     )
 
 
@@ -601,7 +625,9 @@ class License:
         )
 
     def assert_meter_baseline(self) -> None:
-        """THE STARTING METER IS A PRECONDITION, NOT AN OBSERVATION. Each run mints its own user and subscription, so the meter starts empty by construction and the only way to hold more than the one machine under test is for that machine to have been counted under a SECOND id. That is what happened on 2026-10-01 (first run on a fresh Ceph fleet: activations 2, not 1; the account DB shows the repo's first issuance by 42e1cfb3..., the reissue a minute later by c99b905a..., the id `sudo renet machine-id` reports for the VM): renet's `GetMachineID` hashes the MAC of every NIC not in a short OUI blacklist, so a transient veth/tap/bridge on the VM at the moment of issuance gives the SAME machine a DIFFERENT id and a phantom slot (reproduced on VM .12 with `ip link add .. type veth`: id changes while the link exists, returns when it goes). Every later cap-dependent step (leg e's seed of 3, leg f's third machine) then fails with 'Maximum machines reached', far from the cause. So the baseline is asserted here, where the cause is still in sight, and a mismatch names the foreign ids and the mechanism."""
+        """THE STARTING METER IS A PRECONDITION, NOT AN OBSERVATION. Each run mints its own user and subscription, so the meter starts empty by construction and the only way to hold more than the one machine under test is for that machine to have been counted under a SECOND id.
+        That happened on 2026-10-01 (first run on a fresh Ceph fleet: activations 2, not 1; the account DB showed the repo's first issuance by 42e1cfb3..., the reissue a minute later by c99b905a..., the id `sudo renet machine-id` reports for the VM). Two causes were found and fixed at the root: renet's `GetMachineID` hashed the MAC of every non-blocklisted interface, so a transient veth/tap/bridge moved the id (it now counts only device-backed Ethernet with a permanent address, read from sysfs), and the CLI fell back to a NON-ROOT `renet machine-id`, which hashes without the root-only product_uuid (that fallback is gone and renet refuses the non-root read).
+        Every later cap-dependent step (leg e's seed of 3, leg f's third machine) would fail with 'Maximum machines reached', far from the cause, so the baseline is still asserted here, where the cause is in sight, and a mismatch names the foreign ids."""
         d, o = self.d, self.o
         _, own = self.ssh_out(o.vm_ip, "sudo %s machine-id" % o.vm_renet)
         own = own.strip()
@@ -615,8 +641,10 @@ class License:
                     % (machine, "" if machine == own else "   <-- FOREIGN")
                 )
             d.note("a foreign id on a fresh subscription is the machine under test counted under")
-            d.note("a drifted id (a veth/tap/bridge existed when the licence was issued), not a")
-            d.note("second machine; legs e and f assume exactly one claimed machine here")
+            d.note("a second id (a renet older than the sysfs NIC filter, or a non-root read of")
+            d.note(
+                "`renet machine-id`), not a second machine; legs e and f assume exactly one here"
+            )
         d.last_cmd = "GET /licenses/status (machines claimed before the fork)"
         d.assert_equal(
             own,
@@ -631,7 +659,25 @@ class License:
         if o.enabled("b"):
             hosts.append(o.vm2_ip)
         for host in hosts:
-            self.ssh_out(host, "bash -s", stdin=preclean_script(o.vm_renet))
+            proc = subprocess.run(
+                self.ssh_argv(host, "bash -s"),
+                input=preclean_script(o.vm_renet),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.report_preclean(host, proc.returncode, proc.stderr)
+
+    def report_preclean(self, host: str, code: int, stderr: str) -> None:
+        """A pre-clean that did not finish clean is said out loud, with renet's own words, BEFORE the `datastore create` it would otherwise break with a bare "already exists". It stays a warning, not an assertion: the pre-clean is hygiene, and the step it guards asserts on its own."""
+        if code == 0:
+            return
+        log.warn(
+            "leg a pre-clean on %s did not finish clean (exit %d); what it could not remove may fail the datastore create below:"
+            % (host, code)
+        )
+        for line in stderr.strip().splitlines() or ["<no stderr; ssh itself may have failed>"]:
+            log.warn("  %s" % line)
 
     def datastore_entry(self, name: str) -> dict:
         _, out = self.ssh_out(self.o.vm_ip, "sudo %s datastore list --json" % self.o.vm_renet)

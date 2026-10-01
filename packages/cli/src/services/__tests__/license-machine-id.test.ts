@@ -1,7 +1,9 @@
 import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { fetchSubscriptionLicenseReport, readMachineActivationStatus } from '../account/license.js';
+import { readRemoteMachineId } from '../account/license-machine.js';
 
 const mockExec = vi.fn();
 const mockExecStreaming = vi.fn();
@@ -107,5 +109,49 @@ describe('license machine-id resolution', () => {
       activeCount: 1,
       maxCount: 2,
     });
+  });
+});
+
+describe('readRemoteMachineId reads the id as root only', () => {
+  const ROOT_ID = 'c99b905ad8189fccdef899a8e13e74f6b41622617c4fc031478bb33ce47dc3d5';
+  const NON_ROOT_ID = 'a66b5f9009fa96191eaae21d68e57a248dc2a9b48bdd3505f9684ad8ae7ef69c';
+
+  /** A remote that answers like VM .11: root gets one id, the SSH user another. */
+  function fakeRemote(sudo: 'ok' | 'refused') {
+    const commands: string[] = [];
+    const exec = vi.fn((command: string) => {
+      commands.push(command);
+      if (command.startsWith('sudo ')) {
+        return sudo === 'ok'
+          ? Promise.resolve(`${ROOT_ID}\n`)
+          : Promise.reject(new Error('Command exited with code 1: sudo: a password is required'));
+      }
+      return Promise.resolve(`${NON_ROOT_ID}\n`);
+    });
+    return { sftp: { exec } as unknown as SFTPClient, commands };
+  }
+
+  it('runs renet under non-interactive sudo, once, and returns the root id', async () => {
+    const { sftp, commands } = fakeRemote('ok');
+    await expect(readRemoteMachineId(sftp, '/usr/bin/renet')).resolves.toBe(ROOT_ID);
+    expect(commands).toEqual(['sudo -n /usr/bin/renet machine-id']);
+  });
+
+  it('defaults to renet on PATH, still under sudo', async () => {
+    const { sftp, commands } = fakeRemote('ok');
+    await expect(readRemoteMachineId(sftp)).resolves.toBe(ROOT_ID);
+    expect(commands).toEqual(['sudo -n renet machine-id']);
+  });
+
+  it('fails loudly with the cause when sudo is refused, never falling back to the non-root id', async () => {
+    const { sftp, commands } = fakeRemote('refused');
+    await expect(readRemoteMachineId(sftp)).rejects.toThrow(/sudo: a password is required/);
+    expect(commands).toHaveLength(1);
+    expect(commands.some((c) => !c.startsWith('sudo -n '))).toBe(false);
+  });
+
+  it('rejects output that is not a machine id', async () => {
+    const sftp = { exec: vi.fn(() => Promise.resolve('not-an-id\n')) } as unknown as SFTPClient;
+    await expect(readRemoteMachineId(sftp)).rejects.toThrow(/did not print a machine ID/);
   });
 });
