@@ -403,7 +403,8 @@ const selftest = (): number => {
     const parsed = parseAttributions(fs.readFileSync(realAtt, 'utf8'));
     check(
       `the tracked ${ATTRIBUTIONS_REL} parses to ${parsed.entries.length} entr(ies) with no error`,
-      parsed.errors.length === 0 && parsed.entries.length > 0
+      // An EMPTY ledger is a legitimate state (nothing needs attributing; the 2026-10-01 rewrite gave the seven commits their own trailers); the fixtures above prove entries are read.
+      parsed.errors.length === 0
     );
   }
 
