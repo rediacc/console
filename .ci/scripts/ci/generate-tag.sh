@@ -267,7 +267,7 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
     # A commit-hash key is always correct and merely wasteful: it cannot outlive
     # the commit. A closure key can, and there are inputs it provably does not
     # cover: ACCOUNT_ED25519_PUBLIC_KEY is passed as a build arg, the base images
-    # (node:22-alpine, alpine:3.20) float, and private/account is installed with
+    # (node:24-alpine, alpine:3.20) float, and private/account is installed with
     # an UNPINNED `npm install` -- so "same tag implies same bytes" is not true
     # today in either direction.
     #

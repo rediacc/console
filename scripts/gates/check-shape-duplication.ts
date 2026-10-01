@@ -1932,7 +1932,7 @@ async function emitIndex(
     bundle: true,
     platform: 'node',
     format: 'esm',
-    target: 'node22',
+    target: 'node24',
     metafile: true,
     write: false,
     outfile: probePath,

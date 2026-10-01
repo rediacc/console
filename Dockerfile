@@ -31,11 +31,11 @@
 # Build (local with the wrapper):
 #   PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem
 
-ARG NODE_IMAGE=node:22-alpine
+ARG NODE_IMAGE=node:24-alpine
 ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry
 # The one npm (.devcontainer/toolchain.env NPM_VERSION, which this build context
-# cannot reach; check:ci-lockfile asserts the two agree). The image's bundled npm 10
-# cannot resolve the npm-11 lockfiles this repo commits.
+# cannot reach; check:ci-lockfile asserts the two agree). The image's bundled npm is
+# not the pin, and two npm 11 minors can read and write a lockfile differently.
 ARG NPM_VERSION=11.20.0
 
 # =============================================================================

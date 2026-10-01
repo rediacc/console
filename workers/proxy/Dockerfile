@@ -10,11 +10,11 @@
 #   docker build -f workers/proxy/Dockerfile .
 
 # The one npm (.devcontainer/toolchain.env NPM_VERSION, outside this build context;
-# check:ci-lockfile asserts the two agree). node:22-slim bundles npm 10, which cannot
-# resolve the npm-11 lockfile `npm ci` installs below.
+# check:ci-lockfile asserts the two agree). node:24-slim bundles its own npm 11
+# minor, and `npm ci` below reads a lockfile written by exactly the pinned one.
 ARG NPM_VERSION=11.20.0
 
-FROM node:22-slim AS build
+FROM node:24-slim AS build
 ARG NPM_VERSION
 RUN npm install -g "npm@${NPM_VERSION}" --no-audit --no-fund
 
@@ -72,7 +72,7 @@ RUN CLI_VERSION="$(/opt/rediacc-bin/renet-linux-amd64 version | awk '{print $3}'
 
 # ---------------------------------------------------------------------------
 
-FROM node:22-slim
+FROM node:24-slim
 
 # The executor opens SSH itself (that is its entire job), and rsync backs the
 # renet binary staging path. renet itself is copied in below, from the build stage.

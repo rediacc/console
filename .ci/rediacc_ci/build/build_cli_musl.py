@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/build-cli-musl.sh` (165 lines).
 
-Builds the CLI as a musl-linked SEA binary by running `build-cli-executables.sh` INSIDE a `node:22-alpine` container, then renaming the container's glibc-named output (`dist/cli/rdc-linux-<arch>`) to the musl name (`dist/cli/rdc-linux-musl-<arch>`) and carrying its checksum across.
+Builds the CLI as a musl-linked SEA binary by running `build-cli-executables.sh` INSIDE a `node:24-alpine` container, then renaming the container's glibc-named output (`dist/cli/rdc-linux-<arch>`) to the musl name (`dist/cli/rdc-linux-musl-<arch>`) and carrying its checksum across.
 
 The whole build lives in a single `docker run ... sh -c '<script>'`. That inline script is the twin's, character for character, including the `'"$ARCH"'` quote-dance that splices the host's `$ARCH` into a single-quoted heredoc-ish string; see `CONTAINER_SCRIPT` below for why it is stored as a plain format string here instead.
 
@@ -90,7 +90,7 @@ DOCKER_PLATFORMS = {
 INJECT_ENV_REL = ".ci/scripts/version/inject-env.sh"
 
 # `:111`. The image the build runs in.
-CONTAINER_IMAGE = "node:22-alpine"
+CONTAINER_IMAGE = "node:24-alpine"
 
 # `:111-128`, verbatim. The twin writes this inside single quotes and splices the host `$ARCH` in with `'"$ARCH"'`; stored here as a `%s` slot because the quote-dance is a bash-only way of saying "substitute one value", and carrying it would reproduce the workaround rather than the string that reaches `sh -c`. The leading newline is the twin's: its single quote opens at the end of
 # `:111`.

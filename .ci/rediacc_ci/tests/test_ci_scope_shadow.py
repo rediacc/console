@@ -297,11 +297,16 @@ SHA_RE = re.compile(r"\b[0-9a-f]{40}\b")
 # The runner's Node patch version, which a crash trace prints last. Recorded as v22.23.2; PR run 36669944808 got v22.23.3 and two cases went red on a runner image bump, not on the port. Masked on BOTH sides (see `compare`), because the recordings are frozen bytes.
 NODE_RE = re.compile(r"\bNode\.js v\d+\.\d+\.\d+\b")
 
+# The runtime's OWN stack frames, the same class one layer down. The recordings were made on Node 22, and Node 24 (the floor since 2026-10-01) prints `node:internal/vm:219:10` where 22 printed `:209:10`, and `Module._load` where 22 printed `Function._load`. Those frames describe Node, not the port, so each one is reduced to a placeholder line: the frame COUNT and every frame in this repo's code are still compared.
+NODE_FRAME_RE = re.compile(r"^(\s+at ).*\bnode:internal/.*$", re.MULTILINE)
+
+
+def unnode(text: str) -> str:
+    return NODE_FRAME_RE.sub(r"\1<node:internal>", NODE_RE.sub("Node.js <version>", text))
+
 
 def mask(text: str, fixture: pathlib.Path) -> str:
-    return NODE_RE.sub(
-        "Node.js <version>", SHA_RE.sub("<sha>", text.replace(str(fixture), "<root>"))
-    )
+    return unnode(SHA_RE.sub("<sha>", text.replace(str(fixture), "<root>")))
 
 
 def artifacts(fixture: pathlib.Path, side: str) -> str:
@@ -374,7 +379,7 @@ def recorded(name: str) -> tuple[int, str, str, str]:
 
 def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, str]:
     exit_code, *fields = recorded(name)
-    want = (exit_code, *(NODE_RE.sub("Node.js <version>", field) for field in fields))
+    want = (exit_code, *(unnode(field) for field in fields))
     got = run(tmp_path, name)
     for index, field in enumerate(("exit", "stdout", "stderr", "artifacts")):
         assert got[index] == want[index], "%s: %s diverged:\n twin: %r\n port: %r" % (

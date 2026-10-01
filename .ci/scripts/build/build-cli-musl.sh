@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build CLI as a musl-linked SEA binary using Docker (node:22-alpine)
+# Build CLI as a musl-linked SEA binary using Docker (node:24-alpine)
 # Produces a binary that runs on Alpine Linux and other musl-based distros.
 #
 # Usage:
@@ -99,7 +99,7 @@ esac
 # Build inside Alpine container
 # The repo root is mounted at /workspace. The build script runs inside the
 # container using the musl-linked Node.js binary, producing a musl SEA binary.
-log_step "Running build inside node:22-alpine container..."
+log_step "Running build inside node:24-alpine container..."
 
 docker run --rm \
     --platform "$DOCKER_PLATFORM" \
@@ -108,7 +108,7 @@ docker run --rm \
     -e CI="${CI:-}" \
     -e CLI_VERSION="${CLI_VERSION:-0.0.0-dev}" \
     -e RELEASE_BUILD="${RELEASE_BUILD:-}" \
-    node:22-alpine sh -c '
+    node:24-alpine sh -c '
 set -e
 
 echo "→ Installing build dependencies..."

@@ -201,7 +201,7 @@ def node_toolchain(ctx: Ctx) -> int:
     if not minimum:
         ctx.error("constants.sh was not sourced, so the Node floor is unknown")
         return 1
-    major = ctx.env.get("NODE_VERSION_REQUIRED") or "22"
+    major = ctx.env.get("NODE_VERSION_REQUIRED") or "24"
 
     current = ""
     if ctx.which("node"):

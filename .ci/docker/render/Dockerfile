@@ -17,7 +17,7 @@
 # by this repo's own profile, and rasterisation is pinned to Skia's CPU backend precisely
 # to stay OFF the card that narration needs. Keeping this image GPU-free keeps it small
 # and keeps `--gpus all` to the one image that earns it.
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 
 # Chrome's shared libraries. Remotion downloads its own chrome-headless-shell, but the
 # system libs it links against are not in a slim base.

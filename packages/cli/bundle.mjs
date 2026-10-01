@@ -78,7 +78,7 @@ const result = await esbuild.build({
   entryPoints: ['src/index.ts'],
   bundle: true,
   platform: 'node',
-  target: 'node18',
+  target: 'node24',
   outfile: 'dist/cli-bundle.cjs',
   format: 'cjs',
   // Note: shebang comes from src/index.ts - no banner needed

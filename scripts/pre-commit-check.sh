@@ -12,22 +12,22 @@ cd "$PROJECT_ROOT"
 
 echo "🔍 Running pre-commit checks..."
 
-# 0. Check Node.js version (require v22.x)
+# 0. Check Node.js version (require v24.x)
 echo "→ Checking Node.js version..."
 if ! command -v node &>/dev/null; then
     echo "❌ Node.js is not installed"
-    echo "   Install Node.js v22.x from: https://nodejs.org/"
+    echo "   Install Node.js v24.x from: https://nodejs.org/"
     exit 2
 fi
 
 NODE_VERSION=$(node -v | cut -d'v' -f2)
 NODE_MAJOR=$(echo "$NODE_VERSION" | cut -d'.' -f1)
 
-if [ "$NODE_MAJOR" != "22" ]; then
+if [ "$NODE_MAJOR" != "24" ]; then
     echo "❌ Node.js version mismatch"
-    echo "   Required: v22.x"
+    echo "   Required: v24.x"
     echo "   Current:  v$NODE_VERSION"
-    echo "   Install Node.js v22 from: https://nodejs.org/"
+    echo "   Install Node.js v24 from: https://nodejs.org/"
     exit 2
 fi
 echo "✓ Node.js version: v$NODE_VERSION"

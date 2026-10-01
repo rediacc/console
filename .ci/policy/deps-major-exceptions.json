@@ -52,16 +52,11 @@
     },
     "@types/node": {
       "owner": "d778be9d",
-      "reason": "the engines.node floor is Node 22 (root >=22.13.0, private/account >=22.0.0), so types for Node 24+ APIs would describe a runtime this code does not require; line 24 first released 2025-06-10, 477 days on 2026-10-01",
+      "reason": "the engines.node floor is Node 24 (>=24.11.0 in root, packages/cli and private/account), so types for Node 25+ APIs would describe a runtime this code does not require; line 25 first released 2025-12-10, 295 days on 2026-10-01",
       "blocker": {
         "kind": "engine-floor",
         "engine": "node"
       }
-    },
-    "glob": {
-      "owner": "d778be9d",
-      "reason": "self-imposed: the root overrides entry forces glob ^11 tree-wide (package.json _overridesReasons.glob) and npm EOVERRIDE needs the devDep range to equal it; line 12 first released 2025-11-17, 317 days on 2026-10-01",
-      "expires": "2026-10-15"
     }
   }
 }

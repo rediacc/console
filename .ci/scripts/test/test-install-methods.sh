@@ -1327,7 +1327,7 @@ if [[ "$METHOD" == "npm" || "$METHOD" == "all" ]]; then
     log_step "npm Install Tests"
 
     if [[ "$PLATFORM" == "linux" ]]; then
-        run_test "npm Install (Node 22)" test_npm_install "node:22" "Node 22"
+        run_test "npm Install (Node 24)" test_npm_install "node:24" "Node 24"
     else
         skip_test "npm Install" "npm tests require Linux with Docker"
     fi

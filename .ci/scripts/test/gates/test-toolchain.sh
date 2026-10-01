@@ -107,13 +107,13 @@ else
 fi
 
 # node compares MAJOR only; both directions.
-fake node 'v22.99.0'
+fake node 'v24.99.0'
 if PATH="$TMP/bin:$PATH" toolchain_check node >/dev/null 2>&1; then
     ok "node: a different patch inside the pinned major is accepted"
 else
     no "node: same major was rejected"
 fi
-fake node 'v24.14.0'
+fake node 'v22.23.2'
 if PATH="$TMP/bin:$PATH" toolchain_check node >/dev/null 2>&1; then
     no "CONTROL: a different node MAJOR was accepted"
 else
