@@ -1462,12 +1462,13 @@ async function selftest(): Promise<number> {
   const wrapOpts = { cwd: REPO_ROOT, mergeOutput: false };
   if (process.platform !== 'win32') {
     const busy = await execGate(
-      syntheticSpec('selftest:cpu-busy', 'e=$((SECONDS+2)); while (( SECONDS < e )); do :; done'),
+      // A FIXED AMOUNT OF WORK, not a wall-clock window: `while (( SECONDS < e ))` burned whatever CPU the host left it in about 1-2 s, and on a loaded host (2026-10-01: a VM fleet and two writers) that was 466 ms against a 500 ms floor. 400k iterations cost about 0.3-0.9 s of CPU whatever the load; the floor sits well above the sleeping control's 100 ms.
+      syntheticSpec('selftest:cpu-busy', 'i=0; while (( i < 400000 )); do ((i++)); done'),
       wrapOpts
     );
     require_(
-      (busy.cpuMs ?? 0) > 500,
-      `a busy gate must report cpuMs > 500, got ${busy.cpuMs} over ${busy.ms} ms wall`
+      (busy.cpuMs ?? 0) > 200,
+      `a busy gate must report cpuMs > 200, got ${busy.cpuMs} over ${busy.ms} ms wall`
     );
     const idle = await execGate(syntheticSpec('selftest:cpu-sleep', 'sleep 1'), wrapOpts);
     require_(
