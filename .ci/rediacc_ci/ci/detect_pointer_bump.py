@@ -7,7 +7,7 @@ to `pointer_bump_only=false`.
 
 The twin's header owns the three-step proof and the D9 root cause; neither is restated here.
 
-LIVE CALLER, NOT REPOINTED. `initialize.sh` runs the bash twin after submodule init, and `.ci/rediacc_ci/ci/initialize.py` invokes the same bash file. This module is the twin's verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE. `rediacc_ci.ci.initialize` calls `main` in process (its step 4), and `initialize` is what the workflows run. The bash twin remains only as the differential's oracle until its deletion.
 
 NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with `scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in `scripts/ci-runner` selects it; it is a workflow STEP that writes two outputs. This port carries no header either, for the same reason.
 

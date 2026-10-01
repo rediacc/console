@@ -68,8 +68,9 @@ CASE_KW: dict[str, tuple[tuple[str, ...], dict[str, typing.Any]]] = {
 
 CASES = tuple(CASE_KW)
 
-# The one case the port does not reproduce byte for byte, on purpose. Compared by shape, in its own test.
+# The cases the port does not reproduce byte for byte, on purpose. Each is compared by shape in its own test.
 DIVERGENT = "an-escape-in-the-channel"
+FAIL_CLOSED_DELTAS = ("an-unknown-event", "a-capitalised-event-name")
 
 
 def mask_prog(text: str) -> str:
@@ -121,7 +122,9 @@ def compare(name: str) -> tuple[int, str, str]:
     return got
 
 
-@pytest.mark.parametrize("name", [c for c in CASES if c != DIVERGENT])
+@pytest.mark.parametrize(
+    "name", [c for c in CASES if c != DIVERGENT and c not in FAIL_CLOSED_DELTAS]
+)
 def test_port_matches_the_twins_recorded_output(name: str) -> None:
     compare(name)
 
@@ -193,20 +196,26 @@ def test_the_pr_anchor_is_end_of_string_not_end_of_line() -> None:
     assert port.PR_CHANNEL.fullmatch("pr-1\n") is None
 
 
-def test_unknown_event_warns_and_accepts_anything() -> None:
-    """The twin's `*)` arm failed OPEN. Recorded, not repaired: see the port's header."""
-    returncode, _, stderr = recorded("an-unknown-event")
-    assert returncode == 0
-    assert stderr == (
-        "⚠ Unknown event: pull_request_target (channel: 'dryrun-abc'); "
-        "accepting without assertion\n"
-        "✓ Channel 'dryrun-abc' matches event 'pull_request_target'\n"
-    )
+@pytest.mark.parametrize("name", FAIL_CLOSED_DELTAS)
+def test_an_unknown_event_fails_closed_where_the_twin_accepted(name: str) -> None:
+    """INTENTIONAL DELTA (Rule T): the twin's `*)` arm warned and exited 0. The recording keeps that; the port refuses.
+
+    Fails on the bash behaviour: the recorded exit is 0 and the port's must be 1.
+    """
+    want_exit, _, want_err = recorded(name)
+    assert want_exit == 0, "the twin's recording moved"
+    assert "accepting without assertion" in want_err
+    returncode, stdout, stderr = drive(name)
+    assert returncode == 1
+    assert stdout == ""
+    assert "Unknown event:" in stderr
+    assert "accepting without assertion" not in stderr
+    assert "matches event" not in stderr
 
 
-def test_a_capitalised_event_name_is_unknown_and_therefore_unguarded() -> None:
-    """`Push` is not `push`. A workflow typo defeated the guard in the twin too."""
-    assert recorded("a-capitalised-event-name")[0] == 0
+def test_a_capitalised_event_name_is_unknown_and_now_refused() -> None:
+    """`Push` is not `push`: a workflow typo used to defeat the guard in the twin and is now caught."""
+    assert drive("a-capitalised-event-name")[0] == 1
 
 
 def test_missing_channel_argument_is_the_empty_channel() -> None:

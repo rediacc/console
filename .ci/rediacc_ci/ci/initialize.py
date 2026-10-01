@@ -3,29 +3,14 @@
 
 The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
-LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step. The twin is also the subject of `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py`, which EXTRACTS its tag-fetch block by literal anchors; nothing here changes those anchors because
-nothing here
-touches the twin.
+LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. The bash twin remains only as the differential's oracle until its deletion; `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` still extracts its tag-fetch block by literal anchors.
 
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
 -----------------------------------------------------------------------------
-WHY THE FIVE SIBLING SCRIPTS ARE STILL THE BASH ONES
+THE POINTER-BUMP DETECTOR IS IN PROCESS, THE OTHER FOUR SIBLINGS ARE STILL BASH
 -----------------------------------------------------------------------------
-The twin shells out to `detect-pointer-bump.sh`, `generate-tag.sh` (three times), `detect-bump-type.sh`, `dispatch-release.sh` and `resolve-version.sh`. This port runs the SAME five bash scripts, by the same relative paths, with the same argv. Three reasons, in order of weight:
-
-  1. `detect-pointer-bump.sh` has no Python port at all, so a port that reached
-     for `rediacc_ci` siblings would have to reach for bash anyway, and the
-     mixture would be harder to reason about than either pure form.
-  2. A differential that ran bash siblings on one side and Python siblings on
-     the other would be comparing SIX pairs at once. When it disagreed, nothing
-     in the output would say which pair moved.
-  3. Repointing a live caller at a port is exactly the cutover step this wave is
-     forbidden to take.
-
-`set_image_tags.py`, the other file in this wave, does the opposite and calls `derive_image_tag` in process. The difference is deliberate: that sibling is
-ALREADY ported and already carries a K=5 ledger, and its twin's job there is one
-call with two arms rather than six calls threaded through five steps.
+Step 4 calls `rediacc_ci.ci.detect_pointer_bump.main` directly. The twin ran `detect-pointer-bump.sh`; the port does not, so the two are compared with the REAL bash detector on the twin's side and the Python detector on this side (the detector's own differential owns the detector's behaviour). `generate-tag.sh` (three times), `detect-bump-type.sh`, `dispatch-release.sh` and `resolve-version.sh` are still run as bash by both sides, by the same relative paths and argv, because each has a Python twin that belongs to another cutover and the differential would otherwise compare several pairs at once.
 
 -----------------------------------------------------------------------------
 DEFECT A -- `GITHUB_REPOSITORY` IS REQUIRED AND NEVER CHECKED, AND IT DIES 200
@@ -114,6 +99,7 @@ import tempfile
 import time
 
 from rediacc_ci import log
+from rediacc_ci.ci import detect_pointer_bump
 from rediacc_ci.core import common
 
 # --------------------------------------------------------------------------- Twin line numbers. Bash prints these inside its own diagnostics, so they are part of the observable output rather than documentation. `test_the_pinned_line_numbers_still_point_at_the_twins_lines` re-derives every one of them from the twin.
@@ -128,9 +114,6 @@ GIT_CONFIG_LINE = 104
 
 #: `if ! git submodule update --init --recursive private/ 2>/dev/null; then`
 GIT_SUBMODULE_LINE = 111
-
-#: `if ! .ci/scripts/ci/detect-pointer-bump.sh ...; then`
-DETECT_POINTER_BUMP_LINE = 131
 
 #: The three `generate-tag.sh` command substitutions.
 GENERATE_TAG_RENET_LINE = 141
@@ -159,7 +142,6 @@ RESOLVE_VERSION_CURRENT_LINE = 290
 
 # --------------------------------------------------------------------------- The five sibling scripts, spelled exactly as the twin spells them: RELATIVE to the repo root, which both implementations have already chdir'd to. Absolute paths would be tidier and would also stop the fixture in the differential from working, because the fixture's whole mechanism is that a relative path
 # lands in the fixture tree. ---------------------------------------------------------------------------
-DETECT_POINTER_BUMP = ".ci/scripts/ci/detect-pointer-bump.sh"
 GENERATE_TAG = ".ci/scripts/ci/generate-tag.sh"
 DISPATCH_RELEASE = ".ci/scripts/ci/dispatch-release.sh"
 # The prefix of dispatch-release.sh's stable line (`rediacc_ci.ci.dispatch_release.STABLE_LINE`).
@@ -405,7 +387,7 @@ def run(check_only: str, output_file: str) -> int:
     log.info(message)
 
     write_output("is_bot", is_bot, output_file)
-    # Default for every early-exit path; detect-pointer-bump.sh may overwrite it
+    # Default for every early-exit path; the pointer-bump detector may overwrite it
     # with true below (in GITHUB_OUTPUT the last write of a key wins).
     write_output("pointer_bump_only", "false", output_file)
 
@@ -457,7 +439,9 @@ def run(check_only: str, output_file: str) -> int:
     # `${OUTPUT_FILE:+--output "$OUTPUT_FILE"}` unquoted: the inner quotes survive
     # the expansion, so a path with spaces stays ONE word (driven), and an unset OUTPUT_FILE contributes zero words rather than one empty one.
     forwarded = ["--output", output_file] if output_file else []
-    if run_inherit([DETECT_POINTER_BUMP, *forwarded], DETECT_POINTER_BUMP_LINE) != 0:
+    # In process: the detector is `rediacc_ci.ci.detect_pointer_bump`, no longer the bash twin. Stdout is flushed first so its `key=value` lines keep their place among this module's own.
+    sys.stdout.flush()
+    if detect_pointer_bump.main(forwarded) != 0:
         log.warn("detect-pointer-bump.sh errored; running full CI")
         write_output("pointer_bump_only", "false", output_file)
 
