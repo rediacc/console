@@ -247,13 +247,21 @@ def test_check_node_version_has_one_python_copy() -> None:
     assert "local_common.check_node_version()" in source
 
 
-def test_the_twin_is_sourced_by_run_legacy_and_nothing_is_cut_over() -> None:
-    """The sequencing claim in the port's docstring, checked against the dispatcher."""
-    legacy = (paths.repo_root() / ".ci/legacy/run-legacy.sh").read_text(encoding="utf-8")
-    assert legacy.count('source "$ROOT_DIR/.ci/lib/account.sh"') == 2, (
-        "the account and rotation verbs no longer both source the twin; if this slice "
-        "has been cut over, this differential needs a different subject"
-    )
+def test_the_verbs_are_served_by_these_ports_and_the_legacy_dispatcher_is_gone() -> None:
+    """The cut-over claim, checked against the code that dispatches: every `account` verb and `rotation` reaches a function of these two modules, and nothing sources the bash twin to serve a verb."""
+    root = paths.repo_root()
+    assert not (root / ".ci/legacy/run-legacy.sh").exists()
+    verbs = (root / ".ci/rediacc_ci/core/run_verbs.py").read_text(encoding="utf-8")
+    for needle in (
+        '"dev": lambda _rest: account_lifecycle.main(["dev"])',
+        '"db": lambda rest: account.db(rest)',
+        '"stop": lambda _rest: account.stop()',
+        '"totp": lambda rest: account.totp(',
+        "account.rotation(argv)",
+    ):
+        assert needle in verbs, needle
+    router = (root / "run.sh").read_text(encoding="utf-8")
+    assert "account.sh" not in router
 
 
 # -- the helpers, exercised directly -----------------------------------------
@@ -1346,7 +1354,7 @@ def test_the_lifecycle_ledger_holds() -> None:
 
 
 def test_the_lifecycle_argv_surface_dispatches_like_run_legacy() -> None:
-    """`main` offers the verbs `.ci/legacy/run-legacy.sh` dispatches for this half, and refuses the rest."""
+    """`main` offers the verbs the `account` dispatch table sends to this half, and refuses the rest."""
     assert account_lifecycle.main([]) == 2
     assert account_lifecycle.main(["--help"]) == 0
     assert account_lifecycle.main(["nosuch"]) == 2

@@ -51,7 +51,7 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 // `setup()` LIVES IN THE LEGACY BODY, not the router. The 2026-09-06 split left run.sh a 120-line dispatcher and moved every verb implementation to
 // .ci/legacy/run-legacy.sh; this gate read run.sh and reported "lost its subject",
 // which is the honest refusal working -- a scan whose subject moved must go red, not pass on an empty file.
-export const ENTRY = '.ci/legacy/run-legacy.sh';
+export const ENTRY = 'run.sh';
 export const SCANNED = [ENTRY, '.ci/lib/setup.sh'];
 export const HELPER_FILE = '.ci/lib/local-common.sh';
 export const HELPER = 'ensure_deps';

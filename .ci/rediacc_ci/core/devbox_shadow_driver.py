@@ -96,7 +96,10 @@ EXIT_CANNOT_RUN = 77
 PRELUDE = r"""
 set -euo pipefail
 ROOT_DIR="$R"
-source "$ROOT_DIR/.ci/legacy/run-legacy.sh"
+source "$ROOT_DIR/.ci/config/constants.sh"
+source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
+source "$ROOT_DIR/.ci/lib/local-common.sh"
+source "$ROOT_DIR/.ci/lib/service.sh"
 source "$ROOT_DIR/.ci/lib/devbox.sh"
 
 norm() {

@@ -27,8 +27,8 @@ MEDIA_DIR = MEDIA_ROOT / ".ci" / "media"
 # See the docstring: resolved now, while the caller's real PATH is still in effect.
 _BASH = shutil.which("bash") or "/bin/bash"
 
-# ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06 router split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh, which made that file a third origin overnight; four separate absence assertions had to be widened by hand to notice, and missing one of them would not have shown up as a failure.
-MEDIA_ORIGIN_RELPATHS = ("run.sh", "media.sh", ".ci/legacy/run-legacy.sh")
+# ONE LIST, BECAUSE FOUR HAND-MAINTAINED COPIES IS WHAT WENT WRONG. The 2026-09-06 router split moved every verb body out of run.sh into .ci/legacy/run-legacy.sh, which made that file a third origin overnight; four separate absence assertions had to be widened by hand to notice. That file was deleted on 2026-10-01 (its verbs are Python now), so the list is back to two. Adding an origin is one line here.
+MEDIA_ORIGIN_RELPATHS = ("run.sh", "media.sh")
 
 
 class ExtractionError(Exception):
@@ -89,7 +89,7 @@ def media_origins(root: pathlib.Path) -> tuple[list[pathlib.Path], list[str]]:
 
     IT REFUSES A MISSING ORIGIN RATHER THAN SKIPPING IT, which is the whole point of the function. An absence assertion over a file that is not there passes for FREE: `media_defines` returns False on a missing file, and `grep -q pat a b`
     with b absent exits 2 while writing to stderr. Both read as "the name is not
-    there" when what happened is "nobody looked". Measured 2026-09-06 in a sandbox: deleting run-legacy.sh left the sole-owner assertion green with its legacy arm doing nothing at all.
+    there" when what happened is "nobody looked". Measured 2026-09-06 in a sandbox: deleting an origin left the sole-owner assertion green with that arm doing nothing at all.
 
     The caller decides what a missing origin means, which is why this returns the complaints rather than raising.
     """
@@ -272,12 +272,11 @@ def media_assert_module_owns(gate, module: str, *names: str) -> None:
 def media_chain_sandbox(directory: pathlib.Path) -> pathlib.Path:
     """A REAL, RUNNABLE repo at `<directory>/repo`.
 
-    Everything at the repo root is a SYMLINK to the real checkout except run.sh, media.sh, `.ci/media` and `.ci/legacy`, which are COPIES. Those are the only paths an ownership control needs to ALTER, and the last of them joined the list on 2026-09-06 when the router split made run-legacy.sh a third origin. `.ci` itself is rebuilt as a directory of symlinks for the same reason.
+    Everything at the repo root is a SYMLINK to the real checkout except run.sh, media.sh and `.ci/media`, which are COPIES. Those are the only paths an ownership control needs to ALTER. `.ci` itself is rebuilt as a directory of symlinks for the same reason.
 
     Symlinks rather than copies because the whole tree is needed (run.sh sources .ci/config, .ci/scripts/lib, .ci/lib and reads .devcontainer/toolchain.env at startup) and copying it per test would be slow enough to matter.
 
-    `.ci/legacy` IS REBUILT AS A REAL DIRECTORY OF COPIES, and that is a CORRECTNESS requirement rather than a preference: the ownership control plants a duplicate definition into each origin, and through a symlinked directory that append lands in the REAL checkout, corrupting a 1,300-line file owned by another workstream while the sandbox proves nothing. Verified 2026-09-06 in the
-    bash original: before that change the sandbox path resolved straight back to the live tree.
+    EVERY ORIGIN IS A COPY AT THE SANDBOX ROOT, and that is a CORRECTNESS requirement rather than a preference: the ownership control plants a duplicate definition into each origin, and through a symlinked path that append lands in the REAL checkout while the sandbox proves nothing.
 
     `.git` is skipped outright: nothing on the path to a marker runs git, and a symlink into the real object store is not worth the one accident.
     """
@@ -292,12 +291,6 @@ def media_chain_sandbox(directory: pathlib.Path) -> pathlib.Path:
         link.symlink_to(entry)
     for entry in sorted((MEDIA_ROOT / ".ci").iterdir()):
         if entry.name == "media":
-            continue
-        if entry.name == "legacy":
-            (repo / ".ci" / "legacy").mkdir(parents=True, exist_ok=True)
-            for item in sorted(entry.iterdir()):
-                if item.is_file():
-                    shutil.copy2(item, repo / ".ci" / "legacy" / item.name)
             continue
         link = repo / ".ci" / entry.name
         if link.is_symlink() or link.exists():
@@ -318,10 +311,8 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
 
     An assertion nobody has watched fail is an assertion nobody has checked, and this one has a specific vacuity in its history: the byte-identity helper it replaced compared two extractions that had both found nothing and called them equal.
 
-      1. A second definition put back into EVERY origin, one at a time: run.sh,
-         `.ci/legacy/run-legacy.sh` (where the router split moved every verb body,
-         so it is where a re-planted media function would actually land today, and
-         it was invisible here until 2026-09-06) and media.sh.
+      1. A second definition put back into EVERY origin, one at a time: run.sh
+         and media.sh.
       2. In media.sh the plant uses the ONE-LINE `name() { ...; }` spelling,
          because that is how media.sh actually wrote `die`, and a block-only
          search reports a one-line re-plant as ABSENT and passes.
@@ -331,20 +322,21 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
          either" must NOT read as unique ownership.
       4. AN ORIGIN FILE THAT IS NOT THERE. This is the arm that would otherwise be
          missing, and it is the one that matters most for arms 1 and 2: an absence
-         check over a missing file passes for free, so renaming run-legacy.sh
-         would silently retire a third of this proof while every gate stayed
+         check over a missing file passes for free, so renaming media.sh
+         would silently retire half of this proof while every gate stayed
          green.
 
     Each arm RESTORES the origin it damaged before the next one runs, so the arms are independent rather than cumulative and a failure names one cause.
     """
     repo = media_chain_sandbox(directory)
 
-    # REFUSE TO PROCEED THROUGH A SYMLINK. Every arm below WRITES to an origin inside the sandbox, and if the sandbox ever goes back to symlinking .ci/legacy those writes land in the real checkout. A guard rather than a comment, because the damage is silent and lands in another workstream's 1,300-line file.
-    if (repo / ".ci" / "legacy").is_symlink():
-        gate.log_fail(
-            "the sandbox symlinked .ci/legacy -- planting an origin here would write "
-            "into the real checkout"
-        )
+    # REFUSE TO PROCEED THROUGH A SYMLINK. Every arm below WRITES to an origin inside the sandbox, and if the sandbox ever symlinks one of them those writes land in the real checkout. A guard rather than a comment, because the damage is silent.
+    for rel in MEDIA_ORIGIN_RELPATHS:
+        if (repo / rel).is_symlink():
+            gate.log_fail(
+                "the sandbox symlinked %s -- planting an origin here would write into "
+                "the real checkout" % rel
+            )
 
     for rel in MEDIA_ORIGIN_RELPATHS:
         target = repo / rel
@@ -369,17 +361,17 @@ def media_assert_ownership_control(gate, directory: pathlib.Path, module: str, n
             "not ownership"
         )
 
-    # PARKED AT THE SANDBOX ROOT, not beside the file it came from. A name under .ci/legacy/ would read as a claim that such a path exists, and the folder's documentation gate checks every .ci/ path a media file names.
-    legacy = repo / ".ci" / "legacy" / "run-legacy.sh"
+    # PARKED UNDER A NAME NO PATH CLAIM READS AS ONE: the folder's documentation gate checks every .ci/ path a media file names.
+    origin = repo / "media.sh"
     parked = repo / "absent-origin"
-    legacy.rename(parked)
+    origin.rename(parked)
     gate.assertions += 1
     if media_assert_sole_owner(repo, module, name) is None:
         gate.log_fail(
             "the ownership assertion passed with an origin file absent -- a file nobody "
             "read cannot testify that the name is not in it"
         )
-    parked.rename(legacy)
+    parked.rename(origin)
 
     gate.log_pass(
         "the ownership assertion fires on %s() re-planted in each of the %d origins "

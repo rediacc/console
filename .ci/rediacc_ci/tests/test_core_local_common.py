@@ -1,7 +1,7 @@
 """`rediacc_ci.core.local_common` against the live `.ci/lib/local-common.sh`.
 
 THE TWIN IS STILL HERE AND IS STILL THE ONLY IMPLEMENTATION OF TWENTY-ONE OF ITS THIRTY FUNCTIONS.
-`rdc.sh:18`, `.ci/legacy/run-legacy.sh:47`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` and `.ci/scripts/test/gates/test-run-sh.sh:116` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.local_common_shadow_driver` sources `local-common.sh` through the same prelude `run-legacy.sh` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
+`rdc.sh:18`, `.ci/media/media-entry.sh:50`, `.ci/rediacc_ci/native.py:137` and `.ci/scripts/test/gates/test-run-sh.sh:116` all still source it, nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.local_common_shadow_driver` sources `local-common.sh` through the same prelude the deleted `run-legacy.sh` used and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
 
 WHAT IS COVERED AND WHAT IS NOT is decided by the driver's seven scenarios and stated in its module docstring rather than restated here.
 The short version: everything whose answer is computation over a local file or a local git read, and none of the eleven installers, the three interactive or session-altering functions, or the three `gate_lane_*` functions, which reach into `.ci/lib/devbox.sh`.
@@ -240,7 +240,6 @@ def test_the_twin_is_still_sourced_and_nothing_is_cut_over() -> None:
     root = paths.repo_root()
     for relative, needle in (
         ("rdc.sh", 'source "$ROOT_DIR/.ci/lib/local-common.sh"'),
-        (".ci/legacy/run-legacy.sh", 'source "$ROOT_DIR/.ci/lib/local-common.sh"'),
         (".ci/media/media-entry.sh", 'source "$ROOT_DIR/.ci/lib/local-common.sh"'),
         (".ci/rediacc_ci/native.py", 'source "$1/.ci/lib/local-common.sh"'),
     ):

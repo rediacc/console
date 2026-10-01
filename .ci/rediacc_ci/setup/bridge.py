@@ -12,9 +12,7 @@ WHY A BRIDGE AND NOT MORE PORT. `setup()` calls fifteen things. Nine of them are
 Porting those here would either DUPLICATE them, which is how two implementations drift, or move them, which is a different box with a much larger blast radius. So `setup` calls the same shell functions the same way, and the behaviour of those six is not merely preserved, it is IDENTICAL: the same bytes run. That is a stronger claim than any differential could make about a rewrite,
 and it is the honest scope of "port the setup verb".
 
-THE ENTRYPOINT IS ALWAYS THE SAME SHELL PROGRAM. Sourcing `run-legacy.sh` pulls in `constants.sh`, `toolchain.sh`, `local-common.sh`, `service.sh` and `setup.sh` in that order and defines nothing else, because that file ends with
-`if [[ "${BASH_SOURCE[0]}" == "${0}" ]]`. `devbox.sh` is sourced on top, exactly
-as the `setup()` arm does at `.ci/legacy/run-legacy.sh:583`.
+THE ENTRYPOINT IS ALWAYS THE SAME SHELL PROGRAM. The prelude sources `constants.sh`, `toolchain.sh`, `local-common.sh` and `service.sh` in that order, then `devbox.sh` on top. Until 2026-10-01 the first four arrived through `.ci/legacy/run-legacy.sh`, which sourced them and defined nothing else when sourced; that file is deleted, so the prelude names them itself.
 
 STREAMS ARE NOT CAPTURED BY DEFAULT. `ensure_deps` compiles native modules and `devbox_up` prints a probed route table; both take minutes and both are the thing an operator watches. A bridge that captured them would turn a live install into a silent hang, so `call()` inherits the streams and only `capture()` does not. The two are different functions rather than a flag, because a
 flag is a thing a caller gets wrong once and never notices.
@@ -28,10 +26,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
 
-# Sourced in the order `.ci/legacy/run-legacy.sh:41-49` sources them, minus the ones it pulls in transitively. Kept as data so the preamble is one string in one place and a reader can see the whole environment a bridged call runs in.
+# Sourced in the order the deleted `.ci/legacy/run-legacy.sh` sourced them. Kept as data so the preamble is one string in one place and a reader can see the whole environment a bridged call runs in.
 PRELUDE = (
     "set -euo pipefail",
-    'source "$ROOT_DIR/.ci/legacy/run-legacy.sh"',
+    'source "$ROOT_DIR/.ci/config/constants.sh"',
+    'source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"',
+    'source "$ROOT_DIR/.ci/lib/local-common.sh"',
+    'source "$ROOT_DIR/.ci/lib/service.sh"',
     'source "$ROOT_DIR/.ci/lib/devbox.sh"',
 )
 
@@ -49,7 +50,7 @@ CONSTANT_NAMES = (
 class BridgeError(RuntimeError):
     """The shell preamble itself failed, so no verdict about the call is possible.
 
-    Distinct from "the bridged function returned non-zero", which is an ordinary result and is returned as an exit code. This is the harness fault: bash is missing, `run-legacy.sh` moved, `constants.sh` refused to load. A caller that treated the two the same would report a broken checkout as a missing tool.
+    Distinct from "the bridged function returned non-zero", which is an ordinary result and is returned as an exit code. This is the harness fault: bash is missing, a sourced library moved, `constants.sh` refused to load. A caller that treated the two the same would report a broken checkout as a missing tool.
     """
 
 

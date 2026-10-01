@@ -45,7 +45,7 @@ INVOKED, NOT MENTIONED, and the distinction is the whole accuracy of the gate:
     also rejects `.ci/scripts/` and `packages/www/scripts/`: a match must begin at
     a path boundary that is not itself a path segment.
 
-THE LEGACY BODY IS SCANNED TOO, and the twin records what leaving it out cost:
+THE VERB MODULE IS SCANNED TOO. Until 2026-10-01 that was the bash dispatcher .ci/legacy/run-legacy.sh, which is deleted; its verbs are the entry functions in .ci/rediacc_ci/core/run_verbs.py, whose `DRILLS` and `WORKTREE_SCRIPT` constants name the callee scripts (attributed by constant name, see `python_dispatch_targets`). The twin records what leaving the dispatcher out cost:
 
     The 2026-09-06 router split moved every verb implementation to
     .ci/legacy/run-legacy.sh, taking the `drill` arm's dispatch with it. This loop
@@ -157,8 +157,8 @@ GATED_DIRS = (
     ".ci/scripts/housekeeping",
 )
 
-# `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The legacy body is here for the reason in the module docstring.
-GATED_FILES = ("run.sh", ".ci/legacy/run-legacy.sh")
+# `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The Python verb module is here for the reason in the module docstring.
+GATED_FILES = ("run.sh", ".ci/rediacc_ci/core/run_verbs.py")
 
 # Where the twin lived, as the CI invocation spelled it. Used ONLY to reproduce bash's `command not found` diagnostic; see dispatch_floor_refusal.
 TWIN_REL = ".ci/scripts/quality/check-scope-scripts-reachability.sh"
@@ -202,6 +202,9 @@ RUNSH_SUBCOMMAND = re.compile(r"\./run\.sh[ \t\v\f\r]+[a-z][a-z0-9-]*")
 TOP_LEVEL_LABEL = re.compile(r'^        [A-Za-z0-9_"|-]+\)')
 LABEL_LEAD = re.compile(r'^[ \t\v\f\r]*"?')
 LABEL_TAIL = re.compile(r'"?\).*$')
+
+# A column-zero module constant in the Python verb module: `NAME = ...` or `NAME: type = ...`.
+PY_CONSTANT = re.compile(r"^([A-Z][A-Z0-9_]*)\s*[=:]")
 
 # The two floors. `ci_scanned` had one from the start; the dispatch half did not, and the module docstring records what that cost.
 CI_SCAN_FLOOR = 20
@@ -315,6 +318,24 @@ def dispatch_targets(text: str, subcommand: str) -> list[str]:
             label = LABEL_TAIL.sub("", label, count=1)
             current = label
         if current == subcommand:
+            out.update(ROOT_PATH.findall(line))
+    return sorted(out)
+
+
+def python_dispatch_targets(text: str, subcommand: str) -> list[str]:
+    """`scripts/` paths named by the module-level constants of a Python verb module that belong to `subcommand`.
+
+    The bash dispatcher attributed a path to the nearest preceding top-level case label. The Python verb module holds each verb's callee scripts in a module-level constant whose NAME starts with the verb (`DRILLS` for `drill`, `WORKTREE_SCRIPT` for `worktree`), so attribution is by that name: a constant opens at a line starting `NAME =` or `NAME:` in column zero and runs to the next column-zero line that is not a continuation.
+    """
+    out: set[str] = set()
+    current = ""
+    for line in text.split("\n"):
+        opened = PY_CONSTANT.match(line)
+        if opened:
+            current = opened.group(1)
+        elif line and not line[0].isspace() and line[0] not in ")]}":
+            current = ""
+        if current and current.lower().startswith(subcommand.lower()):
             out.update(ROOT_PATH.findall(line))
     return sorted(out)
 
@@ -468,8 +489,9 @@ def main(argv: list[str] | None = None) -> int:
         if not target.is_file():
             continue
         text = target.read_text(encoding="utf-8", errors="replace")
+        extract = python_dispatch_targets if name.endswith(".py") else dispatch_targets
         for sub in subcommands:
-            for ref in dispatch_targets(text, sub):
+            for ref in extract(text, sub):
                 dispatch_scanned += 1
                 check_path(ref, "%s (%s)" % (name, sub))
 
@@ -601,8 +623,18 @@ def selftest() -> int:
     ctl.check("the .ci scan floor is 20", CI_SCAN_FLOOR, 20)
     ctl.check("the dispatch floor is 1", DISPATCH_FLOOR, 1)
     ctl.check("six gated directories are scanned", len(GATED_DIRS), 6)
-    # THE LEGACY BODY MUST STAY IN THE LIST. Removing it took this half to zero references on 2026-09-06 and the gate stayed green.
-    ctl.check("the legacy router body is scanned", ".ci/legacy/run-legacy.sh" in GATED_FILES, True)
+    # THE VERB MODULE MUST STAY IN THE LIST. Removing the dispatcher that held the `drill` arm took this half to zero references on 2026-09-06 and the gate stayed green.
+    ctl.check(
+        "the Python verb module is scanned", ".ci/rediacc_ci/core/run_verbs.py" in GATED_FILES, True
+    )
+    ctl.check(
+        "python dispatch: constants attribute by verb name",
+        python_dispatch_targets(
+            'DRILLS = {\n    "a": "scripts/drills/a.sh",\n}\nWORKTREE_SCRIPT = "scripts/dev/w.sh"\n',
+            "drill",
+        ),
+        ["scripts/drills/a.sh"],
+    )
 
     return 0 if ctl.report() else 1
 

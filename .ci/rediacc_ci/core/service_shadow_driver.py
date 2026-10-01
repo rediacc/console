@@ -2,7 +2,7 @@
 """Both sides of the `core.service` port differential, in one file.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.service_shadow_driver --side old --twin .ci/lib/service.sh --port .ci/rediacc_ci/core/service.py <scenario>
-        drives the BASH: sources `.ci/legacy/run-legacy.sh` (whose prelude sources `.ci/lib/service.sh` and defines the `check_docker` the twin calls) and calls the twin's own function.
+        drives the BASH: sources the libraries the deleted `.ci/legacy/run-legacy.sh` sourced (`.ci/lib/service.sh` among them) and defines the `check_docker` the twin calls, then calls the twin's own function.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.service_shadow_driver --side new --twin .ci/lib/service.sh --port .ci/rediacc_ci/core/service.py <scenario>
         drives the PYTHON: `python3 -m rediacc_ci.core.service <verb>`.
@@ -306,6 +306,30 @@ def side_env(root: pathlib.Path, farm: Farm, case: Case) -> dict[str, str]:
     return farm.env(base)
 
 
+# What the deleted `.ci/legacy/run-legacy.sh` gave the twin before the function ran: the four libraries it sourced, `set -euo pipefail`, and the `check_docker` that `service.sh` calls by late binding. `$1` is the repository root; the prelude's own `shift` drops it so `"$@"` is the twin's function and its arguments.
+OLD_PRELUDE = r"""
+set -euo pipefail
+ROOT_DIR="$1"; shift
+source "$ROOT_DIR/.ci/config/constants.sh"
+source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
+source "$ROOT_DIR/.ci/lib/local-common.sh"
+source "$ROOT_DIR/.ci/lib/service.sh"
+check_docker() {
+    if ! command -v docker &>/dev/null; then
+        log_error "Docker is not installed"
+        log_info "Install Docker from: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+
+    if ! docker info &>/dev/null; then
+        log_error "Docker is not running"
+        log_info "Start Docker Desktop or Docker daemon"
+        exit 1
+    fi
+}
+"""
+
+
 def run_side(
     side: str, repo: pathlib.Path, case: Case, env: dict[str, str]
 ) -> subprocess.CompletedProcess:
@@ -313,9 +337,9 @@ def run_side(
         argv = [
             "bash",
             "-c",
-            'source "$1"; shift; "$@"',
+            OLD_PRELUDE + '"$@"',
             "service-old",
-            str(repo / ".ci" / "legacy" / "run-legacy.sh"),
+            str(repo),
             FN[case.verb],
             *case.args,
         ]

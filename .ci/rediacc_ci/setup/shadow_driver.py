@@ -132,7 +132,10 @@ GO_FILES = (
 OLD_PRELUDE = """
 set -euo pipefail
 export REDIACC_DOCKER_GROUP_REEXEC=1
-source "$ROOT_DIR/.ci/legacy/run-legacy.sh"
+source "$ROOT_DIR/.ci/config/constants.sh"
+source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
+source "$ROOT_DIR/.ci/lib/local-common.sh"
+source "$ROOT_DIR/.ci/lib/service.sh"
 source "$ROOT_DIR/.ci/lib/devbox.sh"
 """
 

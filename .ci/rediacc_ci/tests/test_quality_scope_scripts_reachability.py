@@ -326,9 +326,40 @@ def test_dispatch_attribution_is_by_nearest_top_level_label():
     assert gate.dispatch_targets(text, "account") == ["scripts/dev/worktree.sh"]
 
 
-def test_the_legacy_router_body_is_still_scanned():
-    """Dropping it took this half to zero references, and the gate stayed green."""
-    assert ".ci/legacy/run-legacy.sh" in gate.GATED_FILES
+def test_python_dispatch_attribution_is_by_constant_name():
+    """The Python verb module names its callee scripts in module-level constants; attribution is by the verb the constant name starts with."""
+    text = (
+        "DRILLS = {\n"
+        '    "universe": "scripts/drills/universe.sh",\n'
+        '    "backup": "scripts/drills/backup.sh",\n'
+        "}\n"
+        'WORKTREE_SCRIPT = "scripts/dev/worktree.sh"\n'
+        "\n"
+        "def f():\n"
+        '    return "scripts/not/a/constant.sh"\n'
+    )
+    assert gate.python_dispatch_targets(text, "drill") == [
+        "scripts/drills/backup.sh",
+        "scripts/drills/universe.sh",
+    ]
+    assert gate.python_dispatch_targets(text, "worktree") == ["scripts/dev/worktree.sh"]
+    assert gate.python_dispatch_targets(text, "account") == []
+
+
+def test_the_real_verb_module_yields_the_drill_scripts_that_are_still_bash():
+    """`license` and `backup` are scripts; `universe` and `transfer` are Python modules and name no `scripts/` path."""
+    root = gate.paths.repo_root()
+    text = (root / ".ci/rediacc_ci/core/run_verbs.py").read_text(encoding="utf-8")
+    assert gate.python_dispatch_targets(text, "drill") == [
+        "scripts/drills/backup.sh",
+        "scripts/drills/license.sh",
+    ]
+
+
+def test_the_verb_module_is_scanned_and_the_deleted_dispatcher_is_not_named():
+    """Dropping the dispatcher took this half to zero references once, and the gate stayed green."""
+    assert ".ci/rediacc_ci/core/run_verbs.py" in gate.GATED_FILES
+    assert ".ci/legacy/run-legacy.sh" not in gate.GATED_FILES
     assert "run.sh" in gate.GATED_FILES
 
 

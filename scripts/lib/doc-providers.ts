@@ -865,7 +865,7 @@ const readSeam = (root: string, rel: string): string => {
 };
 
 const ROUTER_SEAM = 'run.sh';
-const LEGACY_SEAM = '.ci/legacy/run-legacy.sh';
+const VERBS_SEAM = '.ci/rediacc_ci/__main__.py';
 const BOOTSTRAP_SEAM = '.ci/bootstrap.sh';
 const TOOLCHAIN_SEAM = '.devcontainer/toolchain.env';
 
@@ -920,29 +920,20 @@ export function topVerbs(source: string): string[] {
 }
 
 /**
- * The `PORTED_VERBS` table, which is EMPTY today and is expected to be.
+ * The verbs `python3 -m rediacc_ci` serves: the `name=` of every `Verb(...)` row in the `VERBS`
+ * table of `.ci/rediacc_ci/__main__.py`.
  *
- * Empty is a statement rather than a fault (run.sh:37-39 says so), so this must not refuse on
- * zero: a floor here would go red on the day the port finishes moving the last verb back out,
- * and it would have been red for the whole programme before the first one moved. The number
- * is exactly why the region exists -- it is the port's progress bar, and prose would carry a
- * stale count of it within a week.
+ * Never empty: `run.sh` forwards every verb but the two media ones to that table, so an empty read
+ * means this scan is looking at the wrong file or the table's spelling changed, and rendering it
+ * would publish "no verb is served" as a fact.
  */
-export function portedVerbs(source: string): string[] {
-  const m = /^PORTED_VERBS=\(([\s\S]*?)\)\s*$/m.exec(source);
-  if (m === null) {
+export function registeredVerbs(source: string): string[] {
+  const out = [...source.matchAll(/^\s+name="([a-z][a-z0-9-]*)",\s*$/gm)].map((m) => m[1] as string);
+  if (out.length === 0) {
     throw new Error(
-      `${ROUTER_SEAM} has no PORTED_VERBS=( ... ) table. That table is the router's whole ` +
-        'seam between bash and Python; not finding it means this scan is reading the wrong file.'
+      `${VERBS_SEAM} has no Verb(name="...") rows. That table is the router's whole seam to ` +
+        'Python; not finding it means this scan is reading the wrong file.'
     );
-  }
-  const out: string[] = [];
-  for (const line of (m[1] ?? '').split('\n')) {
-    const body = line.replace(/#.*$/, '').trim();
-    for (const tok of body.split(/\s+/)) {
-      const v = tok.replace(/["']/g, '').trim();
-      if (v !== '') out.push(v);
-    }
   }
   return out.sort(byCodePoint);
 }
@@ -983,16 +974,15 @@ export function bootstrapPins(bootstrap: string, toolchain: string): [string, st
 export const bootstrapProvider: Provider = {
   id: 'bootstrap',
   scans:
-    '`run.sh`, its `PORTED_VERBS` table, the legacy dispatcher and the pins ' +
+    '`run.sh`, the `VERBS` table of `.ci/rediacc_ci/__main__.py` and the pins ' +
     '`.ci/bootstrap.sh` installs, folded to one row per entry point',
   columns: ['Entry point', 'Serves', 'Count', 'Names'],
   rows: (root) => {
     const router = readSeam(root, ROUTER_SEAM);
-    const legacy = readSeam(root, LEGACY_SEAM);
+    const verbsSource = readSeam(root, VERBS_SEAM);
     const pins = bootstrapPins(readSeam(root, BOOTSTRAP_SEAM), readSeam(root, TOOLCHAIN_SEAM));
     const routerArms = topVerbs(router);
-    const ported = portedVerbs(router);
-    const legacyArms = topVerbs(legacy).filter((v) => v !== 'help');
+    const served = registeredVerbs(verbsSource);
 
     // ONE ROW PER ENTRY POINT, with the members spelled out in the last cell rather than counted. A count alone cannot see one verb leaving as another arrives, which is the exact shape a port produces: `--changed` selection and the router's own gate test both key on the SET, so the document has to as well.
     const rows: ProviderRow[] = [
@@ -1009,18 +999,9 @@ export const bootstrapProvider: Provider = {
         key: 'rediacc_ci',
         cells: [
           '`python3 -m rediacc_ci`',
-          'verbs listed in `PORTED_VERBS`',
-          String(ported.length),
-          ported.length === 0 ? '(none yet)' : ported.map((v) => `\`${v}\``).join(', '),
-        ],
-      },
-      {
-        key: 'legacy',
-        cells: [
-          `\`${LEGACY_SEAM}\``,
-          'every verb the router does not serve itself',
-          String(legacyArms.length),
-          legacyArms.length === 0 ? '(none)' : legacyArms.map((v) => `\`${v}\``).join(', '),
+          'verbs in its `VERBS` table (every verb the router does not serve itself)',
+          String(served.length),
+          served.map((v) => `\`${v}\``).join(', '),
         ],
       },
       {
@@ -1034,13 +1015,6 @@ export const bootstrapProvider: Provider = {
       },
     ];
 
-    // THE UNION, NOT EACH ROW. Zero ported verbs is the tree's real state; zero verbs ANYWHERE means the two dispatchers were both misparsed, and rendering that would publish "this repository has no entry points".
-    if (routerArms.length + ported.length + legacyArms.length === 0) {
-      throw new Error(
-        `${ROUTER_SEAM} and ${LEGACY_SEAM} between them yielded no verbs. One dispatcher can ` +
-          'legitimately be empty during the port; both cannot.'
-      );
-    }
     if (pins.length === 0) {
       throw new Error(
         `${BOOTSTRAP_SEAM} dereferences no *_VERSION that ${TOOLCHAIN_SEAM} defines. Either ` +

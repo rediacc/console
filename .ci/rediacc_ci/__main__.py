@@ -1,22 +1,17 @@
-"""`python3 -m rediacc_ci` -- this package's command line, and the router's other half.
+"""`python3 -m rediacc_ci` -- this package's command line, and the only destination of `./run.sh` besides the media entry point.
 
-WHAT THIS IS FOR. `./run.sh` is a router with three destinations (the media entry point, this package, the legacy bash body). Its Python arm is one line:
+WHAT THIS IS FOR. `./run.sh` is a router with two destinations: `.ci/media/media-entry.sh` for `provision` and `www`, and this package for every other verb. Its Python arm is one line:
 
     PYTHONPATH="$ROOT_DIR/.ci" exec python3 -m rediacc_ci "$@"
 
-so `run.sh` hands this file the WHOLE argv, verb included, and every ported verb arrives here. Until this file existed that arm named a module that was not on disk: `run.sh` said so out loud in its own header rather than letting the first port discover it as a ModuleNotFoundError.
+so `run.sh` hands this file the WHOLE argv, verb included. The legacy bash dispatcher (`.ci/legacy/run-legacy.sh`) is gone: its last verbs moved here when its verb table emptied, and `rediacc_ci/core/run_verbs.py` holds the entry functions for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help.
 
-THE TABLE HOLDS TWO VERBS TODAY, AND THAT IS THE HONEST STATE. `setup` and `dev` have moved: they are the rows below and the two names in run.sh's `PORTED_VERBS`, and `.ci/legacy/run-legacy.sh` has neither a `setup` arm nor a `dev` one, nor either function body. Every other top-level verb is still the legacy dispatcher's. Registering a name here that the legacy dispatcher also
-serves would create exactly the overlap the whole split exists to prevent -- the port looks like it works while the code it replaced is what actually ran -- so a name arrives here only when the verb genuinely moves, in the same change that deletes its legacy arm and adds it to `PORTED_VERBS`.
+THE TABLE IS DATA, NOT CONTROL FLOW. The verb set has to be INTROSPECTABLE: `names()` is the accessor the gate test reads to prove every verb the help documents is served and every served verb is documented, in both directions. A dispatch written as a chain of `if verb == ...` has no such accessor.
 
-That invariant is checked rather than trusted: .ci/scripts/test/gates/test-run-sh.sh section 6 fails an orphan (a name here with no legacy arm removed) and an overlap (a name served twice) alike. `--help`, the no-verb path and the unknown-verb path are the parts a person meets first and the parts a stub would fake, and they are real here and tested against the real command.
+THE `help` VERB IS THE FRONT DOOR. No verb at all, `-h` and `--help` run it when the table registers one, which prints the full command reference (`./run.sh help` before the legacy file was deleted), and an unknown verb runs its `unknown_main` (the error, the reference, exit 1). A table without a `help` row falls back to a listing DERIVED from the table, with usage errors on stderr and exit 2; that fallback is what the
+fixture package in tests/test_main.py exercises, because it carries one probe verb and nothing else.
 
-WHY A TABLE AND NOT A CHAIN OF `if verb == ...`. The verb set has to be
-INTROSPECTABLE. `--help` derives its listing from the table rather than from a second hand-maintained string (the legacy body's three inventories -- arms, `show_help`, per-verb `Usage:` -- disagreed with each other for months, which is what .ci/scripts/test/gates/test-run-sh.sh section 6 now refuses), and the next workstream's boxes read the set programmatically. `names()` is the
-accessor; a dispatch written as control flow has no such thing.
-
-THE HANDLER IS RESOLVED LAZILY, by dotted name, at the moment its verb is dispatched. `rediacc_ci/__init__.py` refuses to re-export its submodules for a stated reason -- it is imported by a vacuity fixture whose whole point is that most of the tree is absent -- and a table that imported every handler at module scope would undo that decision one row at a time. `--help` therefore
-imports nothing at all.
+THE HANDLER IS RESOLVED LAZILY, by dotted name, at the moment its verb is dispatched. `rediacc_ci/__init__.py` refuses to re-export its submodules for a stated reason -- it is imported by a vacuity fixture whose whole point is that most of the tree is absent -- and a table that imported every handler at module scope would undo that decision one row at a time.
 """
 
 import dataclasses
@@ -43,9 +38,9 @@ class Verb:
     entry: str = "main"
 
 
-# THE VERB TABLE. One row per top-level verb `./run.sh` forwards here, and the row must land in the SAME change that adds the name to `PORTED_VERBS` in run.sh and deletes its arm from .ci/legacy/run-legacy.sh -- test-run-sh.sh section 6 fails an orphan and an overlap alike, so a half-done port is red rather than ambiguous.
+# THE VERB TABLE. One row per top-level verb `./run.sh` forwards here. `provision` and `www` are not rows: the router sends both to `.ci/media/media-entry.sh`, which stays bash by design.
 #
-# THE NEXT LINE IS MATCHED LITERALLY BY tests/test_main.py, which builds a throwaway package around a copy of this file with one probe verb planted in place of the empty tuple -- the only way to exercise dispatch while the real table is empty. Keep it on one line, in this spelling; the fixture refuses to run rather than testing nothing if the replacement stops matching.
+# THE NEXT LINE IS MATCHED LITERALLY BY tests/test_main.py, which builds a throwaway package around a copy of this file with one probe verb planted in place of the table. Keep it on one line, in this spelling; the fixture refuses to run rather than testing nothing if the replacement stops matching.
 VERBS: tuple[Verb, ...] = (
     Verb(
         name="setup",
@@ -56,6 +51,66 @@ VERBS: tuple[Verb, ...] = (
         name="dev",
         summary="start the www (marketing site) development server",
         module="rediacc_ci.dev.www",
+    ),
+    Verb(
+        name="service",
+        summary="start | stop | status | logs for rediacc/web and RustFS",
+        module="rediacc_ci.core.run_verbs",
+        entry="service_main",
+    ),
+    Verb(
+        name="account",
+        summary="dev | db | test | stop | reset | seed-demo | totp for the account server",
+        module="rediacc_ci.core.run_verbs",
+        entry="account_main",
+    ),
+    Verb(
+        name="rotation",
+        summary="credential rotation (private/account/scripts/rotation)",
+        module="rediacc_ci.core.run_verbs",
+        entry="rotation_main",
+    ),
+    Verb(
+        name="worktree",
+        summary="manage git worktrees (create, switch, prune, list)",
+        module="rediacc_ci.core.run_verbs",
+        entry="worktree_main",
+    ),
+    Verb(
+        name="devbox",
+        summary="up | status | url | stop | proxy | remove | shell | exec | doctor | logs",
+        module="rediacc_ci.core.run_verbs",
+        entry="devbox_main",
+    ),
+    Verb(
+        name="drill",
+        summary="scripted walkthroughs: universe | transfer | license | backup",
+        module="rediacc_ci.core.run_verbs",
+        entry="drill_main",
+    ),
+    Verb(
+        name="quality",
+        summary="run the quality checks (lint, format, types, ..., all)",
+        module="rediacc_ci.core.run_verbs",
+        entry="quality_main",
+    ),
+    Verb(
+        name="fix",
+        summary="auto-fix formatting, lint and shell formatting",
+        module="rediacc_ci.core.run_verbs",
+        entry="fix_main",
+    ),
+    Verb(
+        name="clean",
+        summary="clean build artifacts",
+        module="rediacc_ci.core.run_verbs",
+        entry="clean_main",
+    ),
+    Verb(
+        name="help",
+        summary="print the full command reference",
+        module="rediacc_ci.core.run_verbs",
+        entry="help_main",
     ),
 )
 
@@ -98,9 +153,13 @@ def _resolve(verb: Verb):
 def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
     """Dispatch `argv` (verb first, exactly as run.sh forwards it).
 
-    `table` is a test seam and nothing else: the real table is empty today, so every dispatch case would otherwise be untestable, and a seam that injects the real production code path is a better answer than a fake verb registered to make the tests pass.
+    `table` is a test seam and nothing else: a seam that injects the real production code path is a better answer than a fake verb registered to make the tests pass, and it is how the dispatch cases run against a table holding one probe verb.
     """
     registry = VERBS if table is None else table
+    front_door = next((verb for verb in registry if verb.name == "help"), None)
+
+    if not argv and front_door is not None:
+        return _finish(front_door, _resolve(front_door)([]))
 
     if not argv:
         # A USAGE ERROR, NOT A TRACEBACK, and not a silent 0 either. stderr, because stdout belongs to whatever the verb would have printed.
@@ -115,10 +174,17 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
     rest = list(argv[1:])
 
     if verb_name in ("-h", "--help"):
+        if front_door is not None:
+            return _finish(front_door, _resolve(front_door)([]))
         print(format_help(registry))
         return 0
 
     match = next((verb for verb in registry if verb.name == verb_name), None)
+    if match is None and front_door is not None:
+        # The legacy dispatcher's answer: the error, the full reference, exit 1.
+        unknown = _resolve(dataclasses.replace(front_door, entry="unknown_main"))
+        return _finish(front_door, unknown([verb_name]))
+
     if match is None:
         print("%s: unknown verb: %s" % (PROGRAM, verb_name), file=sys.stderr)
         known = names(registry)
@@ -126,8 +192,7 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
             print("%s: known verbs: %s" % (PROGRAM, " ".join(known)), file=sys.stderr)
         else:
             print(
-                "%s: no verbs are registered yet; every verb is still served by "
-                ".ci/legacy/run-legacy.sh." % PROGRAM,
+                "%s: no verbs are registered." % PROGRAM,
                 file=sys.stderr,
             )
         return EXIT_USAGE
@@ -138,13 +203,17 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
     if rest and rest[0] == "--":
         rest = rest[1:]
 
-    code = _resolve(match)(rest)
+    return _finish(match, _resolve(match)(rest))
+
+
+def _finish(verb: Verb, code) -> int:
+    """A handler's return value as an exit status."""
     if code is None:
         # A handler that falls off its end succeeded. Spelled out because the alternative -- `return code` -- makes `None` an exit status of 0 by accident of SystemExit's coercion rather than by decision.
         return 0
     if not isinstance(code, int):
         print(
-            "%s: %s returned %r, which is not an exit code" % (PROGRAM, verb_name, code),
+            "%s: %s returned %r, which is not an exit code" % (PROGRAM, verb.name, code),
             file=sys.stderr,
         )
         return 1
