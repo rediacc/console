@@ -81,19 +81,11 @@ const EXCLUDED_DIRS = ['docs/design'];
 // reference.md is auto-generated from the live command tree — never hand-stale.
 const EXCLUDE_FILES = new Set(['reference.md']);
 
-// Root/global options not attached to per-command nodes in command-tree.json.
-const GLOBAL_LONG_FLAGS = new Set([
-  '--output',
-  '--context',
-  '--lang',
-  '--version',
-  '--help',
-  '--help-all',
-  '--quiet',
-  '--config',
-]);
+// Root/global options not attached to per-command nodes: the tree's `globalOptions` plus Commander's built-in help (and the CLI's `--help-all`), filled in below once the tree is read.
+const GLOBAL_LONG_FLAGS = new Set(['--help', '--help-all']);
+const GLOBAL_SHORT_FLAGS = new Set(['-h']);
 // Global options that consume the following token as their value (so we skip it when locating the first real subcommand, e.g. `rdc --config prod machine …`).
-const GLOBAL_VALUE_FLAGS = new Set(['--output', '--context', '--lang', '--config']);
+const GLOBAL_VALUE_FLAGS = new Set<string>();
 
 // Curated renames applied by --fix: stale command prefixes whose current form is unambiguous (verified against `rdc <cmd> --help`). Keys/values are the tokens after `rdc`. Applied longest-key-first as a prefix replace. ★ P4 REVERSED SEVERAL OF THESE. The map used to carry `'machine status': 'machine query'` and `'subscription refresh': 'subscription refresh activation'` — both of
 // which now point at commands that NO LONGER EXIST, because P4 renamed them in the OPPOSITE direction (`machine query` became
@@ -120,6 +112,7 @@ interface TreeNode {
   options?: { flags: string }[];
   arguments?: { name: string; required: boolean; variadic: boolean }[];
   subcommands?: TreeNode[];
+  globalOptions?: { flags: string }[];
 }
 
 interface CmdNode {
@@ -171,7 +164,13 @@ function buildCmd(node: TreeNode): CmdNode {
 
 const tree: TreeNode = JSON.parse(fs.readFileSync(TREE_PATH, 'utf-8'));
 const ROOT_CMD = buildCmd(tree);
-for (const f of longFlagsOf(tree)) GLOBAL_LONG_FLAGS.add(f);
+for (const option of [...(tree.options ?? []), ...(tree.globalOptions ?? [])]) {
+  const spelled = option.flags.split(' <')[0].match(/-{1,2}[A-Za-z][\w-]*/g) ?? [];
+  for (const flag of spelled) {
+    (flag.startsWith('--') ? GLOBAL_LONG_FLAGS : GLOBAL_SHORT_FLAGS).add(flag);
+    if (flag.startsWith('--') && option.flags.includes('<')) GLOBAL_VALUE_FLAGS.add(flag);
+  }
+}
 
 // Top-level commands that export-command-tree.ts drops via EXCLUDED_TOP_LEVEL. They are real and take positional args, so register them as arg-accepting leaves to avoid false "unknown subcommand" reports.
 //
@@ -544,7 +543,7 @@ function validateInvocation(file: string, line: number, raw: string, out: Violat
   if (tokens[0] !== 'rdc') return;
   let node = ROOT_CMD;
   const validFlags = new Set(GLOBAL_LONG_FLAGS);
-  const validShort = new Set<string>(['-h', '-V', '-o', '-y']);
+  const validShort = new Set(GLOBAL_SHORT_FLAGS);
   const pathParts: string[] = [];
   let i = 1;
 

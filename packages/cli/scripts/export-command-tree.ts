@@ -22,6 +22,8 @@ import {
   type CommandNode,
   createDescriptionResolver,
   EXCLUDED_TOP_LEVEL,
+  extractOption,
+  GLOBAL_OPTION_LONGS,
   loadLocale,
   walkCommand,
 } from './lib/command-tree-lib.js';
@@ -38,6 +40,11 @@ if (tree === null) {
 
 // Filter out top-level shortcut aliases
 tree.subcommands = tree.subcommands.filter((sub) => !EXCLUDED_TOP_LEVEL.has(sub.name));
+
+// The globals the walker keeps off every node are still valid on every command; record them once at the root.
+tree.globalOptions = cli.options
+  .filter((opt) => GLOBAL_OPTION_LONGS.has(opt.long ?? ''))
+  .map((opt) => extractOption(opt, resolver));
 
 // `--output <path>` lets the freshness gate re-export to a scratch file and diff it against the committed tree, instead of overwriting the working tree to check it.
 const outputFlag = process.argv.indexOf('--output');
