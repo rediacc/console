@@ -44,10 +44,10 @@ def test_consumer_extractor_rejects_a_different_binary():
 
 
 def test_probe_extractor_respects_the_word_boundary():
-    """`xkeyctl` and `re-keyctl` are different commands, and must not contribute."""
-    assert gate.probe_verbs("xkeyctl show @u") == []
-    assert gate.probe_verbs("re-keyctl add @u") == []
-    assert gate.probe_verbs("keyctl show @u") == ["show"]
+    """`"xkeyctl"` and `"re-keyctl"` are different commands, and must not contribute."""
+    assert gate.probe_verbs('["xkeyctl", "show", "@u"]') == []
+    assert gate.probe_verbs('["re-keyctl", "add", "@u"]') == []
+    assert gate.probe_verbs('["keyctl", "show", "@u"]') == ["show"]
 
 
 def test_bash_is_available():

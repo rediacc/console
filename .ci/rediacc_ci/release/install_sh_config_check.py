@@ -39,6 +39,16 @@ lives -- quote no volatile value at all.
 bash child writes to the inherited fd directly, so without the flush the port's own lines land out of order regardless of when they were printed.
 
 Exit: 0 when no case failed, 1 otherwise.
+
+REGISTERED CI GATE: `check:ci-install-sh-config`, step "install.sh config tests" in `.github/workflows/ci-quality.yml`, job `quality-static`. The twin carried this header until B3 deleted it (50dd86fb0); a gate whose declarer is gone emits no step, so the header lives with the run target now, as `install_script_check.py`'s does.
+
+---- gate ----
+id: check:ci-install-sh-config
+run: PYTHONPATH=.ci python3 -m rediacc_ci.release.install_sh_config_check
+step: install.sh config tests
+needs: none
+selftest: true
+---- end gate ----
 """
 
 from __future__ import annotations
