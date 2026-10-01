@@ -2,7 +2,7 @@
 /**
  * Em dashes in the www surfaces that no gate was looking at.
  *
- * WHY THIS EXISTS. `.ci/scripts/quality/check-content-quality.sh` bans U+2014, and it has
+ * WHY THIS EXISTS. `check:ci-content-quality` (.ci/rediacc_ci/quality/content_quality.py) bans U+2014, and it has
  * banned it for a long time. It scans `packages/www/src/content/{docs,blog}` for `*.md`
  * and `*.mdx` and nothing else (see its CONTENT_DIRS). Every other surface the site
  * renders text from was outside it: the 13 locale catalogs, and every `.astro` and `.tsx`

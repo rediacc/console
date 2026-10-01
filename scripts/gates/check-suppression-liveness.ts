@@ -557,7 +557,7 @@ const PROBES: Probe[] = [
     entries: (root) => {
       const p = path.join(root, '.ci/config/content-quality-allowlist.txt');
       if (!fs.existsSync(p)) return [];
-      // Plain path-per-line list, NOT BLOCKER-gated — mirrors load_allowlist() in .ci/scripts/quality/check-content-quality.sh.
+      // Plain path-per-line list, NOT BLOCKER-gated — mirrors the allowlist reader in .ci/rediacc_ci/quality/content_quality.py.
       return fs
         .readFileSync(p, 'utf-8')
         .split('\n')
@@ -565,7 +565,8 @@ const PROBES: Probe[] = [
         .filter((e) => e.entry !== '' && !e.entry.startsWith('#'));
     },
     universe: (root) => {
-      if (!fs.existsSync(path.join(root, 'packages'))) return null;
+      // The content tree itself, not `packages/`: a tree holding some other package (the anti-vacuity fixture carries the literal registry under packages/shared) but no www content condemned all 13 entries instead of skipping.
+      if (!fs.existsSync(path.join(root, 'packages/www/src/content'))) return null;
       const p = path.join(root, '.ci/config/content-quality-allowlist.txt');
       const names = new Set<string>();
       if (fs.existsSync(p)) {
@@ -578,7 +579,7 @@ const PROBES: Probe[] = [
       return { names, source: `${names.size} allowlisted paths that still exist` };
     },
     why: (entry) =>
-      `"${entry}" does not exist; .ci/scripts/quality/check-content-quality.sh can never match a file that is not there, so this entry excludes nothing.`,
+      `"${entry}" does not exist; check:ci-content-quality can never match a file that is not there, so this entry excludes nothing.`,
     fix: (entry, e) => [
       `remove line ${e.line} ("${entry}") from .ci/config/content-quality-allowlist.txt, then: npm run check:ci-content-quality`,
     ],
