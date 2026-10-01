@@ -37,33 +37,30 @@ Every sourcer runs this library under `set -euo pipefail`. Those three flags are
   ERREXIT, WITH ITS SUPPRESSION RULES. `Devbox.errexit` is True at the top of a call, as it is under the driver's `( set -e; "$@" )` and under `run-legacy.sh`'s own `set -e`. A failing command in statement position raises `ShellExit` through `checked()`.
   A function called as a CONDITION (`if f`, `f || x`, `! f`) runs with errexit OFF for its whole body, however deeply it nests, which is `cond()`. A COMMAND SUBSTITUTION does not inherit errexit at all (bash does not set `inherit_errexit` here), which is `sub()`: the function inside it runs to completion and only its final status comes back to the assignment, where errexit judges it.
 
-  PIPEFAIL. A pipeline's status is its rightmost non-zero member. That is what turns `getent group docker | cut -d: -f3` into a death on a host with no docker group (twin defect 1 below), and what makes `cid="$(devbox_container_id)"` carry `docker ps`'s failure through `head -1`.
+  PIPEFAIL. A pipeline's status is its rightmost non-zero member. That is what turns `getent group docker | cut -d: -f3` into a death on a host with no docker group (Rule T fix D1 below), and what makes `cid="$(devbox_container_id)"` carry `docker ps`'s failure through `head -1`.
 
   NOUNSET. `local x="$1"` with no first argument prints `$1: unbound variable` and ends the shell with status 1, whatever the errexit context. `_req()` raises that; the three functions whose bodies read a bare positional (`devbox_state_write`, `devbox_state_get`, `_devbox_bind_if_present`) are the new ones this applies to.
 
   COMMAND SUBSTITUTION STRIPS EVERY TRAILING NEWLINE and nothing else, and a bare `while read -r x` DROPS a final line with no newline. Both are reproduced wherever the twin relies on them, and the second one is a defect (twin defect 3).
 
-  `log_*` IS `echo -e`. `.ci/scripts/lib/common.sh:35-54` writes every log line with `echo -e`, which interprets backslash escapes IN THE MESSAGE. `rediacc_ci.log` deliberately does not, and for most ports that is the right call; here the messages carry data the twin does not control (a docker label, a worktree path), so the port reproduces the escapes through `echo_e()` and names it as twin defect 4.
+  `log_*` IS `echo -e`. `.ci/scripts/lib/common.sh:35-54` writes every log line with `echo -e`, which interprets backslash escapes IN THE MESSAGE. `rediacc_ci.log` deliberately does not, and for most ports that is the right call; here the messages carry data the twin does not control (a docker label, a worktree path), so the port prints them verbatim: Rule T fix D4.
 
 --------------------------------------------------------------------------
-TWIN DEFECTS REPRODUCED ON PURPOSE, NOT FIXED
+RULE T: ELEVEN TWIN DEFECTS FIXED (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-`.ci/lib/*.sh` is not edited by a port, so every one of these is reproduced byte for byte and pinned by a driver scenario. Each is a real behaviour of the shipped bash, found by running it.
+`.ci/lib/*.sh` is not edited by a port, so each of these is an INTENTIONAL DELTA: the twin still has the defect, `test_core_devbox.py` pins the twin's behaviour against the live twin (`SCENARIO_CLAIMS`) and the port's in its `test_delta_*` cases, and the live differential leaves exactly the labels in `DELTA_LABELS` out of its comparison.
 
-  1. `devbox_up` DIES SILENTLY ON A HOST WITH NO `docker` GROUP. `docker_gid="$(getent group docker 2>/dev/null | cut -d: -f3)"` is a pipeline under pipefail, so `getent`'s status 2 (key not found) becomes the assignment's status, and errexit kills `devbox_up` right after "proxy ensure" with nothing on stderr.
-     On macOS there is no `getent` at all and the status is 127, the "command not found" message going to the same `/dev/null`. The `${docker_gid:+...}` expansions below that line were written for an EMPTY gid and are unreachable in exactly the case they were written for. Pinned by `up-create`.
-  2. `devbox_identity_ok` SUCCEEDS WHEN THE DEVBOX IS NOT RUNNING. It captures `devbox_exec`'s output with `|| true` and then looks only for "dubious ownership", so the "Devbox is not running" refusal is swallowed and the probe reports a usable identity. `devbox_doctor` still fails, through `devbox_mount_ok`. Pinned by `exec`.
-  3. `devbox_slug_conflicts` DROPS A FINAL `docker ps` LINE WITH NO TRAILING NEWLINE, because its loop is a bare `while read -r cid` (the `|| [[ -n ]]` guard the driver's own loops carry is absent). Real `docker ps` terminates its lines; the stub farm shows what an unterminated answer costs. Pinned by `docker-query`.
-  4. `log_*` INTERPRETS BACKSLASHES IN DATA. A conflicting checkout's worktree label `/x\\ty` is printed with a TAB in it, and `\\c` in a label truncates the log line and swallows its newline. `echo_e()` reproduces the whole escape table, including bash's `\\u%04X` spelling for a code point the C locale cannot encode. Pinned by `status`.
-  5. `devbox_exec` WITH NO ARGUMENT RUNS `bash -lc "'' "`. `$# -eq 1` is false, so the zero-argument call takes the re-quoting branch, and `printf '%q '` with no arguments still consumes its format once with an empty string. Pinned by `exec`.
-  6. A ZERO-PADDED `base_port` IS OCTAL. `$((base_port + DEVBOX_OFFSET_VSCODE))` is shell arithmetic, which reads `017000` as octal 7680, so a hand-edited state file moves every route to a port nothing listens on. `bash_int()` reproduces it. Pinned by `up-create`.
-  7. `docker ps` FAILING KILLS A DIRECTLY CALLED FUNCTION, SILENTLY, WHEREVER `cid="$(devbox_container_id)"` IS A BARE ASSIGNMENT: `./run.sh devbox stop` exits with `docker ps`'s status and prints nothing, and `devbox_slug_active`, `devbox_container_running`, `devbox_router_hosts`, `devbox_missing_binds`, `devbox_remove`, `devbox_logs`, `devbox_shell` and `devbox_exec` share the shape. Pinned by `docker-query` and `lifecycle`.
-     A caller that reaches the same function THROUGH a command substitution survives, because errexit is not inherited into `$(...)`. That was measured, not assumed, and it corrected this port's first draft: `devbox_url` with no slug keeps going through `slug="$(devbox_slug_active)"` and prints the recomputed slug (`identity`'s `url-ps-fails`).
-  8. RETIRED. `devbox_status` used to DIE IF THE LABEL INSPECT FAILED AFTER THE RUNNING CHECK SUCCEEDED, because `_hosts="$(devbox_router_hosts)"` carried the inspect's status through pipefail into a bare assignment. The labels are now fetched once by `devbox_container_labels`, whose inspect is `|| true`, so the table prints under the basename slug instead. `status`'s `hosts-fail` step pins the new behaviour.
-  9. `devbox_up`'s "Starting existing devbox container" PATH DIES ON A FAILED `docker start` WITH NO MESSAGE: `$d start "$cid" >/dev/null` is a bare statement under errexit and its stderr is the only explanation. Pinned by `up-existing`.
- 10. THE BASENAME FALLBACK HOSTNAME DEPENDS ON THE CALLER'S LOCALE. `devbox_slug_basename` runs `tr` and `sed` WITHOUT the `LC_ALL=C` its sibling `devbox_slugify` forces, so a multibyte character in a worktree directory name becomes one dash per BYTE under `LC_ALL=C` and one dash per CHARACTER under a UTF-8 locale.
-     The same checkout gets two different hostnames depending on who runs `./run.sh devbox up`. The port follows the locale the same way (`locale_is_utf8()`), and `identity-detached` and `identity-utf8` pin the two answers side by side.
- 11. `devbox_state_get` INTERPOLATES ITS KEY INTO A `sed` REGULAR EXPRESSION, so `base.port` matches `base_port=` and `sl*ug` matches `sug=`. Every caller passes a literal identifier, so it is latent. `bre_prefix()` reproduces the dot, the star, a bracket and an anchor, and REFUSES (`DevboxError`) a key carrying `/`, `\\` or a newline, which `sed` would reject with a parse error this port does not reproduce. Pinned by `state`.
+  D1. `devbox_up` DIED SILENTLY ON A HOST WITH NO `docker` GROUP (`getent group docker | cut -d: -f3` under pipefail, so getent's status 2 reached errexit). It warns, passes no `--group-add` and carries on: the `${docker_gid:+...}` guards were written for exactly that.
+  D2. `devbox_identity_ok` SUCCEEDED WHEN THE DEVBOX WAS NOT RUNNING (`|| true` swallowed the refusal). It fails with a message.
+  D3. `devbox_slug_conflicts` DROPPED A FINAL `docker ps` LINE WITH NO NEWLINE (a bare `while read -r cid`). Every line is read.
+  D4. `log_*` INTERPRETED BACKSLASHES IN DATA (`echo -e`): a worktree label `/x\\ty` printed a TAB and `\\c` swallowed the rest of the line. Messages print verbatim, and the whole escape table (`echo_e`) is gone with the defect.
+  D5. `devbox_exec` WITH NO ARGUMENT RAN `bash -lc "'' "`. It is refused with status 2.
+  D6. A ZERO-PADDED `base_port` WAS OCTAL (`$((base_port + 5))`), moving every route to a port nothing listens on. `decimal()` reads it as decimal, for the ready-timing variables too.
+  D7. `docker ps` FAILING ENDED A DIRECTLY CALLED FUNCTION SILENTLY with docker's status (`./run.sh devbox stop` printed nothing). It ends with the same status and says "docker ps failed". A caller that reaches it through a command substitution survives, as before.
+  D9. `devbox_up`'s "Starting existing devbox container" PATH DIED ON A FAILED `docker start` WITH NO MESSAGE. It says "Could not start the existing devbox container" and returns docker's status.
+  D10. THE BASENAME FALLBACK HOSTNAME DEPENDED ON THE CALLER'S LOCALE (`tr` and `sed` without the `LC_ALL=C` its sibling forces). One checkout, one hostname: the C-locale rule.
+  D11. `devbox_state_get` INTERPOLATED ITS KEY INTO A `sed` REGULAR EXPRESSION (`base.port` matched `base_port=`). The key is a literal, and so is the slug label key.
+  D8 was retired earlier in the twin itself (`devbox_status` dying on a failed label inspect); the labels are fetched once by `devbox_container_labels`.
 
 --------------------------------------------------------------------------
 WHAT THIS PORT DOES NOT CLAIM, stated rather than left to a reader
@@ -80,15 +77,14 @@ All three were run against the live twin before any of them was written, under `
 Measured 2026-09-23 on this machine: `tr` and `od` are **uutils coreutils 0.8.0**, `sed` is **GNU sed 4.9**, `bash` is **5.3.9**. The differential licence recorded for this port is equivalence against that tool set.
 `tr` and `sed` are REIMPLEMENTED rather than shelled out: a port that piped the twin's own pipeline would be the same program, and its differential would prove nothing.
 
-SEVEN BEHAVIOURS OF THE PURE THREE, REPRODUCED ON PURPOSE:
-  1. AN EMPTY ANSWER IS STILL A LINE. `devbox_slugify ''` prints one newline and exits 0, because the final `printf '%s\\n'` runs whatever the pipeline produced, including nothing.
-  2. THE 40-CHARACTER CAP IS APPLIED BEFORE THE FINAL TRIM, so the answer can be 39 characters. `${s:0:40}` can land ON a dash, and a trailing dash is not a legal DNS label, which is the whole reason the second `sed` exists.
-  3. A NEWLINE IN THE INPUT SURVIVES. `sed` works line by line, so `s/^-*//` and `s/-*$//` trim EVERY line rather than the whole string, and a two-line argument yields a two-line answer.
-  4. MULTIBYTE COLLAPSES TO ONE DASH PER RUN, NOT ONE PER BYTE, and that is the `s/--*/-/g` stage rather than any awareness of UTF-8: `feat/uber` with an umlaut is `feat-ber` because two bytes became two dashes and then one.
-  5. `${3:-unknown}` FIRES ON AN EMPTY THIRD ARGUMENT AND IS INERT ANYWAY. The `unknown` it supplies reaches the `*)` arm, and so does every other value that is not `yes` or `no`.
-  The port applies the default for fidelity rather than for behaviour, and that is a measurement: a planted variant that dropped the default moved no observation in any of the differential scenarios, while one that read an empty claim as `no` moved two. `${2:-}` does not have that shape: a plant that dropped the `${hint:+ -- $hint}` suffix moved fourteen.
-  6. `devbox_slug_drift` NEVER FAILS: it ends in an explicit `return 0`, so its result is what it PRINTED, never its status.
-  7. NO ARGUMENT AT ALL IS AN UNBOUND VARIABLE, AND THAT IS NOT A RETURN. `devbox_slug_drift` and `devbox_route_label` open with `local want="$1"` and `local code="$1"`; under `set -u` a call with no arguments prints `$1: unbound variable` and KILLS the shell with status 1. `devbox_slugify` is written `"${1:-}"` and answers the empty string. The two that would die raise `DevboxError` while the one that would not answers.
+THE PURE THREE: ONE DEFECT FIXED (P3), SIX BEHAVIOURS THAT ARE NOT DEFECTS:
+  P3 FIXED. A NEWLINE IN THE INPUT USED TO SURVIVE: `sed` trims per line, so a two-line argument yielded a two-line, unroutable slug. A newline is a dash like any byte outside the DNS alphabet.
+  1. AN EMPTY ANSWER IS STILL A LINE. `devbox_slugify ''` prints one newline and exits 0: the final `printf '%s\\n'` runs whatever the pipeline produced. A function that prints a value prints its terminator.
+  2. THE 40-CHARACTER CAP IS APPLIED BEFORE THE FINAL TRIM, so the answer can be 39 characters. `${s:0:40}` can land ON a dash, and a trailing dash is not a legal DNS label, which is the whole reason the second `sed` exists. The result is a legal label either way.
+  4. MULTIBYTE COLLAPSES TO ONE DASH PER RUN, NOT ONE PER BYTE: `feat/uber` with an umlaut is `feat-ber` because two bytes became two dashes and then one. A readable name, and stable.
+  5. `${3:-unknown}` FIRES ON AN EMPTY THIRD ARGUMENT AND IS INERT ANYWAY: the `unknown` it supplies reaches the `*)` arm, and so does every other value that is not `yes` or `no`. Kept for fidelity; removing it moves no observation.
+  6. `devbox_slug_drift` NEVER FAILS: it ends in an explicit `return 0`, so its result is what it PRINTED. A reporter, not a check.
+  7. NO ARGUMENT AT ALL IS AN UNBOUND VARIABLE, which is NOT A DEFECT: `devbox_slug_drift` and `devbox_route_label` open with `local want="$1"` and `local code="$1"`, and refusing a call with no subject is the strict answer (a default `code` would have the word contradict the code). They raise `DevboxError`; `devbox_slugify` is written `"${1:-}"` and answers the empty string.
 """
 
 from __future__ import annotations
@@ -132,10 +128,10 @@ ROUTE_LIVE = "live (HTTP %s)"
 # A 502 whose backend process is ALIVE: coming up or wedged, and the probe cannot tell which, so the row names the command that settles both rather than promising "starting".
 ROUTE_NOT_SERVING_YET = "not serving yet -- ./run.sh devbox up re-dispatches it"
 
-# What `${3:-unknown}` supplies for a missing OR EMPTY third argument. Reproduced behaviour 5.
+# What `${3:-unknown}` supplies for a missing OR EMPTY third argument (behaviour 5 of the pure three).
 ROUTED_UNKNOWN = "unknown"
 
-# What bash prints, and the status it exits with, when `local x="$1"` meets `set -u` with no arguments. Reproduced behaviour 7. The `<file>: line <N>: ` stamp bash puts in front of it is dropped by the differential on both sides, because a port cannot reproduce a line number in a file it is not.
+# What bash prints, and the status it exits with, when `local x="$1"` meets `set -u` with no arguments. Behaviour 7 of the pure three. The `<file>: line <N>: ` stamp bash puts in front of it is dropped by the differential on both sides, because a port cannot reproduce a line number in a file it is not.
 UNBOUND_MESSAGE = "$1: unbound variable"
 UNBOUND_STATUS = 1
 
@@ -276,7 +272,7 @@ def lower_ascii(raw: bytes) -> bytes:
 def sanitise_line(line: bytes) -> str:
     """`s/[^a-z0-9-]/-/g; s/--*/-/g; s/^-*//; s/-*$//` over ONE line, `.ci/lib/devbox.sh:194`.
 
-    In that order, which is what makes a multibyte character one dash rather than two or three: every byte outside the set becomes a dash first, and only then do runs collapse. Reproduced behaviour 4.
+    In that order, which is what makes a multibyte character one dash rather than two or three: every byte outside the set becomes a dash first, and only then do runs collapse. Behaviour 4 of the pure three.
     The answer is ASCII by construction, so this is where the bytes become a `str`.
     """
     dashed = "".join(chr(byte) if byte in SLUG_KEEP else "-" for byte in line)
@@ -291,7 +287,7 @@ def sanitise_line(line: bytes) -> str:
 def trim_dashes(line: str) -> str:
     """`s/^-*//; s/-*$//` over ONE line, `.ci/lib/devbox.sh:196`.
 
-    The second pass, after the 40-character cut. It does NOT collapse runs, because the first pass already did and nothing between them can create one. Reproduced behaviour 2 is why it exists at all.
+    The second pass, after the 40-character cut. It does NOT collapse runs, because the first pass already did and nothing between them can create one. Behaviour 2 of the pure three is why it exists at all.
     """
     return line.strip("-")
 
@@ -299,7 +295,7 @@ def trim_dashes(line: str) -> str:
 def slugify(value: str | None = None) -> str:
     """`devbox_slugify`, `.ci/lib/devbox.sh:186-197`, as a caller CAPTURES it.
 
-    `None` is the no-argument case, which `"${1:-}"` makes the empty string rather than an error; see reproduced behaviour 7 for why the other two functions differ.
+    `None` is the no-argument case, which `"${1:-}"` makes the empty string rather than an error; see behaviour 7 of the pure three for why the other two functions differ.
     What is returned is what `s="$(devbox_slugify "$x")"` binds, so the trailing newline the twin prints is absent here exactly as command substitution strips it. `slugify_stdout` is the byte-level answer.
 
     THE INPUT IS TREATED AS BYTES, with `surrogateescape`, because the twin's pipeline is byte-level under `LC_ALL=C` and the live corpus includes branch names that are not valid UTF-8 at all.
@@ -308,17 +304,17 @@ def slugify(value: str | None = None) -> str:
     """
     raw = "" if value is None else value
     lowered = lower_ascii(raw.encode("utf-8", "surrogateescape"))
-    # `sed` reads LINES, so the trims are per line and a final chunk with no newline is still a line. The join and the strip together reproduce both that and the command substitution the twin's own callers wrap this in.
-    sanitised = "\n".join(sanitise_line(line) for line in lowered.split(b"\n")).rstrip("\n")
-    # `${s:0:40}` counts CHARACTERS in the shell's own locale, and the string is ASCII by the time it gets here, so characters and bytes are the same count. Reproduced behaviour 2: the cut comes first and the trim after.
+    # Rule T fix P3: a newline is outside the DNS alphabet like any other byte, so it becomes a dash. The twin's `sed` trimmed per LINE, so a two-line argument answered a two-line, unroutable hostname.
+    sanitised = sanitise_line(lowered)
+    # `${s:0:40}` counts CHARACTERS in the shell's own locale, and the string is ASCII by the time it gets here, so characters and bytes are the same count. Behaviour 2 of the pure three: the cut comes first and the trim after.
     capped = sanitised[:SLUG_MAX]
-    return "\n".join(trim_dashes(line) for line in capped.split("\n"))
+    return trim_dashes(capped)
 
 
 def slugify_stdout(value: str | None = None) -> str:
     """The exact bytes `devbox_slugify` writes to stdout, which is never empty.
 
-    The final `printf '%s\\n'` runs whatever the pipeline produced, so an input that sanitises away still prints one newline. Reproduced behaviour 1, and the reason this is a separate function: the value a caller binds and the bytes a differential compares are not the same string.
+    The final `printf '%s\\n'` runs whatever the pipeline produced, so an input that sanitises away still prints one newline. Behaviour 1 of the pure three, and the reason this is a separate function: the value a caller binds and the bytes a differential compares are not the same string.
     """
     return slugify(value) + "\n"
 
@@ -329,8 +325,8 @@ def slugify_stdout(value: str | None = None) -> str:
 def slug_drift(want: str | None = None, baked: str = "", recorded: str = "") -> Outcome:
     """`devbox_slug_drift`, `.ci/lib/devbox.sh:242-253`.
 
-    Three names in, up to two lines out, status ALWAYS 0 (reproduced behaviour 6). An empty name on either side of a comparison silences that comparison, which is what makes a checkout with no container and no state file quiet rather than doubly wrong.
-    `want=None` is the no-argument call, which under `set -u` is not a quiet default but a dead shell; see reproduced behaviour 7.
+    Three names in, up to two lines out, status ALWAYS 0 (behaviour 6 of the pure three). An empty name on either side of a comparison silences that comparison, which is what makes a checkout with no container and no state file quiet rather than doubly wrong.
+    `want=None` is the no-argument call, which under `set -u` is not a quiet default but a dead shell; see behaviour 7 of the pure three.
     """
     if want is None:
         raise DevboxError(UNBOUND_MESSAGE, code=UNBOUND_STATUS)
@@ -349,7 +345,7 @@ def route_label(
 
     THE INVARIANT IT CARRIES IS THAT THE WORD NEVER CONTRADICTS THE CODE, and the twin's own comment records "OK (404)" shipping for one commit as the failure that motivated it.
     A 404 is "live" only when the CALLER has confirmed a router exists for that hostname, because the status code alone cannot tell traefik's no-such-router 404 from a backend's own not-found.
-    An EMPTY `routed` is the unknown arm rather than a fourth case, which is reproduced behaviour 5 and is INERT there, since the unknown arm is also the catch-all; `code=None` is the unbound-variable death, which is reproduced behaviour 7 and is not inert at all.
+    An EMPTY `routed` is the unknown arm rather than a fourth case, which is behaviour 5 of the pure three and is INERT there, since the unknown arm is also the catch-all; `code=None` is the unbound-variable death, which is behaviour 7 of the pure three and is not inert at all.
     (Different context, deliberately untouched: the proxy health probe in `devbox_proxy_ensure` treats any answer including 404 as a healthy traefik. That is a claim about the PROXY, not about a route.)
     """
     if code is None:
@@ -374,107 +370,19 @@ def route_label(
 
 # --------------------------------------------------------------------------- the shell's own text rules ---------------------------------------------------------------------------
 
-# `echo -e`'s single-character escapes, `.ci/scripts/lib/common.sh:35-54` via bash's `echo` builtin. `\\e` and `\\E` are both ESC.
-ECHO_SIMPLE = {
-    ord("a"): 7,
-    ord("b"): 8,
-    ord("e"): 27,
-    ord("E"): 27,
-    ord("f"): 12,
-    ord("n"): 10,
-    ord("r"): 13,
-    ord("t"): 9,
-    ord("v"): 11,
-    ord("\\"): 92,
-}
-OCTAL_DIGITS = b"01234567"
-HEX_DIGITS = b"0123456789abcdefABCDEF"
 ASCII_LIMIT = 0x80
-BYTE_MASK = 0xFF
 
 
 def locale_is_utf8(env: dict[str, str]) -> bool:
     """Is the shell's character type a UTF-8 one? `LC_ALL`, then `LC_CTYPE`, then `LANG`, as POSIX orders them.
 
-    Decides twin defect 10 and the `\\u` arm of `echo -e`. The first NON-EMPTY of the three wins, which is how the C library resolves them.
+    Decides how `printf '%q'` spells a multibyte character. The first NON-EMPTY of the three wins, which is how the C library resolves them.
     """
     for name in ("LC_ALL", "LC_CTYPE", "LANG"):
         value = env.get(name, "")
         if value:
             return bool(re.search(r"utf-?8", value, re.IGNORECASE))
     return False
-
-
-def utf8_lenient(code: int) -> bytes:
-    """UTF-8 for ANY code point bash's `\\u`/`\\U` accepts, surrogates and values past 0x10FFFF included.
-
-    Measured: under `C.utf8`, `echo -e '\\uD800'` prints ED A0 80 and `'\\U110000'` prints F4 90 80 80, neither of which Python's own encoder will produce, so the arithmetic is written out.
-    """
-    if code < ASCII_LIMIT:
-        return bytes([code])
-    limits = ((0x800, 2, 0xC0), (0x10000, 3, 0xE0), (0x200000, 4, 0xF0), (0x4000000, 5, 0xF8))
-    length, lead = next(((size, first) for limit, size, first in limits if code < limit), (6, 0xFC))
-    tail = []
-    for _ in range(length - 1):
-        tail.append(0x80 | (code & 0x3F))
-        code >>= 6
-    return bytes([lead | code, *reversed(tail)])
-
-
-def _take(data: bytes, start: int, digits: bytes, limit: int) -> tuple[str, int]:
-    """Up to `limit` characters from `digits` starting at `start`: the text taken and where it stopped."""
-    end = start
-    while end < len(data) and end - start < limit and data[end] in digits:
-        end += 1
-    return data[start:end].decode("ascii"), end
-
-
-def echo_e(message: str, utf8: bool = False) -> tuple[bytes, bool]:
-    """`echo -e "$message"`'s bytes, and whether the trailing newline survives. Twin defect 4.
-
-    MEASURED AGAINST BASH 5.3.9, not read from a manual, and the measurements are the table: `\\0` takes up to three octal digits after the zero and masks to a byte (`\\0777` is 0xFF); `\\101` is NOT octal and prints as written; `\\x` takes up to two hex digits and prints `\\x` when it has none; `\\u` takes four and `\\U` eight.
-    A code point below 0x80 prints as its byte (`\\u0` is a NUL); above that, a UTF-8 locale encodes it and the C locale prints `\\u%04X` or `\\U%08X` with the digits UPPERCASED; `\\c` stops ALL further output including the newline; an unknown escape prints as written.
-    """
-    data = message.encode("utf-8", "surrogateescape")
-    out = bytearray()
-    index = 0
-    while index < len(data):
-        byte = data[index]
-        if byte != ord("\\") or index + 1 >= len(data):
-            out.append(byte)
-            index += 1
-            continue
-        escape = data[index + 1]
-        index += 2
-        if escape in ECHO_SIMPLE:
-            out.append(ECHO_SIMPLE[escape])
-        elif escape == ord("c"):
-            return bytes(out), False
-        elif escape == ord("0"):
-            digits, index = _take(data, index, OCTAL_DIGITS, 3)
-            out.append(int(digits or "0", 8) & BYTE_MASK)
-        elif escape == ord("x"):
-            digits, index = _take(data, index, HEX_DIGITS, 2)
-            if digits:
-                out.append(int(digits, 16))
-            else:
-                out += b"\\x"
-        elif escape in (ord("u"), ord("U")):
-            width = 4 if escape == ord("u") else 8
-            digits, index = _take(data, index, HEX_DIGITS, width)
-            if not digits:
-                out += bytes([ord("\\"), escape])
-                continue
-            code = int(digits, 16)
-            if code < ASCII_LIMIT:
-                out.append(code)
-            elif utf8:
-                out += utf8_lenient(code)
-            else:
-                out += (("\\u%04X" if width == 4 else "\\U%08X") % code).encode("ascii")
-        else:
-            out += bytes([ord("\\"), escape])
-    return bytes(out), True
 
 
 # `printf %q`'s backslash set, measured by sweeping every printable ASCII character through bash 5.3.9 under `LC_ALL=C`. `~` is quoted only first or after `:` / `=`, and `#` only first.
@@ -501,7 +409,7 @@ def _q_printable_chars(data: bytes, utf8: bool) -> list[tuple[bytes, bool]]:
 
 
 def shell_quote(word: str, utf8: bool = False) -> str:
-    """`printf '%q' "$word"`, as bash 5.3.9 spells it. Twin defect 5 rides on its empty case.
+    """`printf '%q' "$word"`, as bash 5.3.9 spells it. Its empty case spells `''`.
 
     THREE SHAPES, chosen in this order. The empty word is `''`. A word holding ANY non-printable character is ANSI-C quoted as a whole, `$'...'`, with `\\a \\b \\t \\n \\v \\f \\r \\E`, `\\\\`, `\\'` and three-digit octal for the rest. Otherwise each character in `Q_BACKSLASHED` gets a backslash.
     Under `LC_ALL=C` every byte above 0x7e is non-printable, so `é` is `$'\\303\\251'`; under a UTF-8 locale a printable multibyte character passes through. The differential compares the C form; the UTF-8 form follows the same rule with the locale's own notion of printable.
@@ -544,88 +452,34 @@ def basename(path: str) -> str:
     return stripped.rsplit("/", 1)[-1]
 
 
-def slug_basename_rule(name: str, utf8: bool) -> str:
+def slug_basename_rule(name: str) -> str:
     """`basename ... | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g; s/^-*//; s/-*$//'`, `.ci/lib/devbox.sh:199-201`, as PRINTED.
 
-    NOT `slugify`, and the three differences are the point of keeping this rule verbatim: no run collapse, no 40-character cap, and NO forced `LC_ALL=C`, which is twin defect 10.
-    Under the C locale every byte outside the set is a dash; under a UTF-8 locale GNU sed sees a valid multibyte CHARACTER as one character and an invalid byte as one, and uutils `tr` lowers ASCII only in both.
-    Each input line becomes one output line, newline-terminated, because `sed` terminates every line it prints when its input line was terminated and `basename` always terminates its answer.
+    NOT `slugify`, and two differences are the point of keeping this rule: no run collapse and no 40-character cap. It runs under the C locale like `slugify` (Rule T fix D10): the twin forced no `LC_ALL`, so a multibyte character became one dash per BYTE for one caller and one per CHARACTER for another, and the same checkout got two hostnames.
+    Every byte outside the set is a dash. Each input line becomes one output line, newline-terminated, because `sed` terminates every line it prints when its input line was terminated and `basename` always terminates its answer.
     """
     lowered = lower_ascii((name + "\n").encode("utf-8", "surrogateescape"))
     lines = lowered.split(b"\n")[:-1]
     out = []
     for line in lines:
-        if utf8:
-            units = [
-                unit.encode("utf-8", "surrogateescape")
-                for unit in line.decode("utf-8", "surrogateescape")
-            ]
-        else:
-            units = [bytes([byte]) for byte in line]
-        dashed = "".join(
-            unit.decode("ascii") if len(unit) == 1 and unit[0] in SLUG_KEEP else "-"
-            for unit in units
-        )
+        dashed = "".join(chr(byte) if byte in SLUG_KEEP else "-" for byte in line)
         out.append(dashed.strip("-") + "\n")
     return "".join(out)
 
 
-def bre_prefix(key: str) -> re.Pattern[bytes]:
-    """The regular expression `sed -n "s/^${key}=//p"` really compiles. Twin defect 11.
+def decimal(text: str) -> int:
+    """A port number or a duration as a DECIMAL integer, leading zeros included (Rule T fix D6).
 
-    A BRE fragment: `.` is any byte, `*` repeats the atom before it (and is literal when it opens the expression), `[...]` is a bracket expression copied through, and `^`/`$` are literal away from the ends. `/`, `\\` and a newline would make `sed` parse something else or refuse, and this port raises rather than guessing which.
-    """
-    if any(bad in key for bad in ("/", "\\", "\n", "[:")):
-        raise DevboxError("devbox_state_get key %r is not a sed BRE this port reproduces" % key)
-    parts: list[str] = ["^"]
-    index = 0
-    while index < len(key):
-        character = key[index]
-        if character == "*" and index > 0:
-            parts.append("*")
-        elif character == ".":
-            parts.append(".")
-        elif character == "[":
-            close = key.find(
-                "]", index + 2 if key[index + 1 : index + 2] in ("]", "^") else index + 1
-            )
-            if close < 0:
-                raise DevboxError("devbox_state_get key %r has an unclosed bracket" % key)
-            parts.append(key[index : close + 1])
-            index = close
-        else:
-            parts.append(re.escape(character))
-        index += 1
-    parts.append("=")
-    try:
-        return re.compile("".join(parts).encode("utf-8", "surrogateescape"), re.DOTALL)
-    except re.error as exc:
-        raise DevboxError(
-            "devbox_state_get key %r is not a sed BRE this port reproduces" % key
-        ) from exc
-
-
-def bash_int(text: str) -> int:
-    """Shell arithmetic's reading of a bare number. Twin defect 6: a leading zero is OCTAL.
-
-    `0x`/`0X` is hex, a leading `0` is octal, anything else is decimal. Surrounding blanks are ignored as `$(( ))` ignores them. Anything else raises rather than guessing: shell arithmetic would dereference a NAME, which is a different program.
+    The twin's `$((base_port + 5))` is shell arithmetic, which reads `017000` as octal 7680 and rejects `08`, so a hand-edited state file moved every route to a port nothing listens on. Surrounding blanks are ignored. Anything that is not digits raises `DevboxError`: shell arithmetic would dereference a NAME, which is a different program.
     """
     stripped = text.strip()
-    sign = 1
-    if stripped[:1] in ("-", "+"):
-        sign = -1 if stripped[0] == "-" else 1
-        stripped = stripped[1:]
-    if re.fullmatch(r"0[xX][0-9a-fA-F]+", stripped):
-        return sign * int(stripped, 0)
-    if re.fullmatch(r"0[0-7]*", stripped):
-        return sign * int(stripped, 8)
-    if re.fullmatch(r"[1-9][0-9]*", stripped):
-        return sign * int(stripped)
-    raise DevboxError("arithmetic on %r is not a number this port reproduces" % text)
+    if re.fullmatch(r"[+-]?[0-9]+", stripped):
+        return int(stripped, 10)
+    raise DevboxError("%r is not a number" % text)
 
 
 def complete_lines(text: str) -> list[str]:
-    """The lines a bare `while read -r x` loop sees: a final line with no newline is DROPPED. Twin defect 3."""
+    """The lines a bare `while read -r x` loop sees: a final line with no newline is DROPPED."""
     lines = text.split("\n")
     lines.pop()
     return lines
@@ -731,14 +585,16 @@ class Devbox:
     def log(self, level: str, message: str) -> None:
         """`log_info` / `log_warn` / `log_error` / `log_step` / `log_debug`, `.ci/scripts/lib/common.sh:35-54`.
 
-        `echo -e "${COLOUR}<glyph>${NC} $*" >&2`. The glyph and colour are `rediacc_ci.log`'s, which carries common.sh's table; the message goes through `echo_e()` first because the twin's `-e` applies to the whole argument, message included (twin defect 4).
+        `echo -e "${COLOUR}<glyph>${NC} $*" >&2`. The glyph and colour are `rediacc_ci.log`'s, which carries common.sh's table. The message is printed VERBATIM (Rule T fix D4): the twin's `-e` applied to the whole argument, so a backslash in DATA (a worktree label) became a tab or swallowed the rest of the line.
         `log_debug` is silent unless `DEBUG` is exactly `true` at CALL time.
         """
         if level == "debug" and self.env.get(log.DEBUG_ENV, "false") != log.DEBUG_ON:
             return
         glyph_line = self._logger.format(level, "")
-        body, newline = echo_e(message, self.utf8)
-        self.write(glyph_line.encode("utf-8") + body + (b"\n" if newline else b""), self.stderr)
+        self.write(
+            glyph_line.encode("utf-8") + message.encode("utf-8", "surrogateescape") + b"\n",
+            self.stderr,
+        )
 
     def checked(self, status: int) -> int:
         """errexit: a non-zero status in statement position ends the shell, when errexit is armed."""
@@ -1068,12 +924,12 @@ class Devbox:
     def state_get(self, *argv: str) -> int:
         """`devbox_state_get`, `.ci/lib/devbox.sh:124-128`: `sed -n "s/^${key}=//p" "$DEVBOX_STATE_FILE" | head -1`.
 
-        Status 1 ONLY when the file is missing; a file without the key prints nothing and succeeds, and callers reject the EMPTY value themselves. The FIRST matching line wins, printed with the matched prefix removed and its own newline kept, so a last line with no newline prints without one. The key is a regular expression (twin defect 11).
+        Status 1 ONLY when the file is missing; a file without the key prints nothing and succeeds, and callers reject the EMPTY value themselves. The FIRST matching line wins, printed with the matched prefix removed and its own newline kept, so a last line with no newline prints without one. The key is a LITERAL (Rule T fix D11): the twin interpolated it into a `sed` regular expression, so `base.port` matched `base_port=`.
         """
         key = self._req(argv, 0)
         if not os.path.isfile(self.state_file):
             return 1
-        pattern = bre_prefix(key)
+        prefix = (key + "=").encode("utf-8", "surrogateescape")
         with open(self.state_file, "rb") as handle:
             data = handle.read()
         position = 0
@@ -1081,9 +937,8 @@ class Devbox:
             newline = data.find(b"\n", position)
             end = len(data) if newline < 0 else newline
             line = data[position:end]
-            match = pattern.match(line)
-            if match:
-                self.write(line[match.end() :] + (b"" if newline < 0 else b"\n"))
+            if line.startswith(prefix):
+                self.write(line[len(prefix) :] + (b"" if newline < 0 else b"\n"))
                 break
             position = end + 1
         return 0
@@ -1129,9 +984,9 @@ class Devbox:
     def slug_basename(self, *_argv: str) -> int:
         """`devbox_slug_basename`, `.ci/lib/devbox.sh:199-201`: the pre-branch rule, kept EXACTLY as it was.
 
-        It is the fallback, and being the old behaviour verbatim is what makes existing containers keep their names. `slug_basename_rule` carries the rule and twin defect 10, its locale dependence.
+        It is the fallback, and being the old rule is what makes existing containers keep their names. `slug_basename_rule` carries the rule and Rule T fix D10, which pins it to the C locale.
         """
-        self.write(slug_basename_rule(basename(self.worktree_path()), self.utf8))
+        self.write(slug_basename_rule(basename(self.worktree_path())))
         return 0
 
     def slug(self, *_argv: str) -> int:
@@ -1170,7 +1025,7 @@ class Devbox:
         """`devbox_slug_active [labels]`: what the RUNNING container was built with.
 
         Everything the operator is shown, and every probe, must use this and not a freshly computed slug: after a branch rename the two disagree, and a probe against the recomputed name reaches no router at all. No container is `devbox_slug`; a container with no slug label predates the label and is hosted under the old basename rule, which is exactly what it was created with.
-        The slug is read out of `labels` (fetched here when the caller has none) through `sed -n "s/^${KEY}=//p" | head -1`, whose key is a BRE: see `bre_prefix`.
+        The slug is read out of `labels` (fetched here when the caller has none) through `sed -n "s/^${KEY}=//p" | head -1`, matched as a LITERAL key (Rule T fix D11).
         """
         labels = self._opt(argv, 0)
         if not labels:
@@ -1181,12 +1036,11 @@ class Devbox:
                 return 0
             status, labels = self.sub(self.container_labels, cid)
             self.checked(status)
-        pattern = bre_prefix(DEVBOX_SLUG_LABEL_KEY)
+        prefix = (DEVBOX_SLUG_LABEL_KEY + "=").encode("utf-8", "surrogateescape")
         found = ""
         for line in (labels + "\n").encode("utf-8", "surrogateescape").split(b"\n")[:-1]:
-            match = pattern.match(line)
-            if match:
-                found = line[match.end() :].decode("utf-8", "surrogateescape")
+            if line.startswith(prefix):
+                found = line[len(prefix) :].decode("utf-8", "surrogateescape")
                 break
         if found == "<no value>":
             found = ""
@@ -1198,7 +1052,7 @@ class Devbox:
     def slug_conflicts(self, *argv: str) -> int:
         """`devbox_slug_conflicts`, `.ci/lib/devbox.sh:255-270`: other checkouts' containers already claiming this hostname.
 
-        Prints their worktree paths; empty output means no conflict. The `docker ps` answer is read by a bare `while read -r cid` loop, which drops an unterminated final line (twin defect 3) and trims blanks around each id. A container whose worktree label is this checkout's own path, or is missing, is not a conflict.
+        Prints their worktree paths; empty output means no conflict. Every `docker ps` line is read, an unterminated final one included (Rule T fix D3: the twin's bare `while read -r cid` dropped it), and blanks around each id are trimmed. A container whose worktree label is this checkout's own path, or is missing, is not a conflict.
         """
         slug = self._opt(argv, 0)
         if not slug:
@@ -1213,7 +1067,7 @@ class Devbox:
             out=CAPTURE,
             err=NULL,
         )
-        for line in complete_lines(listing):
+        for line in all_lines(listing):
             cid = ifs_trim(line)
             if not cid:
                 continue
@@ -1247,7 +1101,7 @@ class Devbox:
     def url(self, *argv: str) -> int:
         """`devbox_url`, `.ci/lib/devbox.sh:283-291`: `http://<slug>[-<suffix>].localhost:8090`.
 
-        The slug defaults to the CONTAINER's name, never a recomputed one: printing a URL this checkout would use, for a container hosted under another name, is the exact lie the parameter exists to prevent. That default is why this is not a pure function, and why a failing `docker ps` kills it silently (twin defect 7).
+        The slug defaults to the CONTAINER's name, never a recomputed one: printing a URL this checkout would use, for a container hosted under another name, is the exact lie the parameter exists to prevent. That default is why this is not a pure function, and why a failing `docker ps` ends it (now with a message: Rule T fix D7).
         """
         suffix = self._opt(argv, 0)
         slug = self._opt(argv, 1)
@@ -1539,7 +1393,7 @@ class Devbox:
     def container_id(self, *_argv: str) -> int:
         """`devbox_container_id`, `.ci/lib/devbox.sh:438-442`: this worktree's container, found by LABEL, first line only.
 
-        By label and not by name: two different checkouts can each contain a worktree called 0824-1, and the daemon is the truth while the state file is only a cache. The status is `docker ps`'s through pipefail, which is what twin defect 7 is made of.
+        By label and not by name: two different checkouts can each contain a worktree called 0824-1, and the daemon is the truth while the state file is only a cache. The status is `docker ps`'s through pipefail, and a failure is NAMED on stderr (Rule T fix D7): the twin's bare callers ended silently with that status.
         """
         d = self.docker_words()
         status, listing = self.run(
@@ -1547,6 +1401,13 @@ class Devbox:
             out=CAPTURE,
             err=NULL,
         )
+        if status != 0:
+            # Rule T fix D7: the twin ended every bare caller of this function SILENTLY with docker's status.
+            self.log(
+                "error",
+                "docker ps failed (exit %d); cannot look up this worktree's devbox container"
+                % status,
+            )
         cut = listing.find("\n")
         self.write(listing if cut < 0 else listing[: cut + 1])
         return status
@@ -1707,8 +1568,8 @@ class Devbox:
         self.checked(status)
         nominal_text = self.env.get("DEVBOX_READY_NOMINAL_S") or str(READY_NOMINAL_S)
         ceiling_text = self.env.get("DEVBOX_READY_CEILING_S") or str(READY_CEILING_S)
-        nominal = bash_int(nominal_text)
-        ceiling = bash_int(ceiling_text)
+        nominal = decimal(nominal_text)
+        ceiling = decimal(ceiling_text)
         start = self.clock()
         announced = False
         last_plain = -10
@@ -1792,7 +1653,7 @@ class Devbox:
         script = workspace + "/.devcontainer/devbox-autostart.sh"
         forwarded = ["-e", "DEVBOX_WORKSPACE=%s" % workspace]
         if base_port:
-            base = bash_int(base_port)
+            base = decimal(base_port)
             forwarded += ["-e", "DEVBOX_DB_PORT=%d" % (base + DEVBOX_OFFSET_STUDIO)]
             forwarded += ["-e", "DEVBOX_TERM_PORT=%d" % (base + DEVBOX_OFFSET_TERM)]
         _, output = self.run(
@@ -1837,7 +1698,7 @@ class Devbox:
         THE LABELS. The account gateway is the ONLY app door (marketing site at /, portal at /account/, API at /account/api/); a second hostname pointed straight at Astro 404'd on /account. The database route serves sqlite_web from the same origin, so there is no hosted third-party page and no Local Network Access permission to grant.
         ttyd's terminal is a WebSocket upgrade that traefik v3 proxies with no middleware, and a BROKEN upgrade still answers 200 on `/`, so only a browser can see it. The container publishes on 0.0.0.0 inside the proxy's network: on ChromeOS the browser is outside the VM and reaches it by address.
 
-        Twin defects 1 (the docker group), 6 (octal base port) and 9 (the silent start failure) all live in this function.
+        Rule T fixes D1 (the docker group), D6 (octal base port) and D9 (the silent start failure) all live in this function.
         """
         # One `docker version` for the whole run, seeded in the PARENT so every `d="$(devbox_docker)"` below inherits it.
         self.docker_init()
@@ -1914,7 +1775,11 @@ class Devbox:
         self.checked(status)
         if cid:
             self.log("step", "Starting existing devbox container")
-            self.checked(self.run([*d, "start", cid], out=NULL)[0])
+            status = self.run([*d, "start", cid], out=NULL)[0]
+            if status != 0:
+                # Rule T fix D9: the twin's bare `docker start` ended here with docker's own words and no explanation of what was being started.
+                self.log("error", "Could not start the existing devbox container %s" % cid)
+                return status
             self.checked(self.await_ready(cid))
             self.checked(self.status())
             return 0
@@ -1942,20 +1807,26 @@ class Devbox:
         status, name = self.sub(self.container_name)
         self.checked(status)
         status, group = self.run(["getent", "group", "docker"], out=CAPTURE, err=NULL)
-        # `| cut -d: -f3`: the third colon field of every line, the WHOLE line when it has no colon, and pipefail keeps getent's status (twin defect 1).
+        # `| cut -d: -f3`: the third colon field of every line, the WHOLE line when it has no colon, and pipefail keeps getent's status (Rule T fix D1).
         fields = [
             (line.split(":")[2] if len(line.split(":")) > 2 else "") if ":" in line else line
             for line in all_lines(group)
         ]
         docker_gid = "\n".join(fields).rstrip("\n")
-        self.checked(status)
+        if status != 0 or not docker_gid:
+            # Rule T fix D1: no `docker` group is a warning and an empty gid, the case the `--group-add` guards below were written for. The twin's pipeline took getent's status into errexit and ended `devbox_up` silently.
+            self.log(
+                "warn",
+                "No docker group on this host; the devbox container gets no docker socket access",
+            )
+            docker_gid = ""
 
         kvm_gid = ""
         if os.path.exists("/dev/kvm"):
             _, kvm_gid = self.value(["stat", "-c", "%g", "/dev/kvm"], err=NULL)
         tun_dev = "/dev/net/tun" if os.path.exists("/dev/net/tun") else ""
 
-        base = bash_int(base_port)
+        base = decimal(base_port)
         vscode_port = base + DEVBOX_OFFSET_VSCODE
         studio_port = base + DEVBOX_OFFSET_STUDIO
         term_port = base + DEVBOX_OFFSET_TERM
@@ -2130,7 +2001,7 @@ class Devbox:
 
         PROBE each route rather than listing URLs and hoping. Traefik answers a bare 502 when a router matches but nothing is listening behind it, and that page names neither the service nor the reason, so an operator reads "Bad Gateway" for a backend that was simply never started, or was started on the HOST instead of inside the devbox.
         The CONTAINER's name is computed once: every URL and every probe Host must be the name its routers actually carry. `|| true` on the probe is load-bearing under `set -e`: curl exits non-zero on a timeout (28) or a refused connection (7), and a probe that cannot reach a route must report "000", not abort the status command (observed as `setup --check` exiting 28).
-        Two containers defining one router make every reachability claim dishonest, so a conflict turns every row into "ambiguous". The row is `printf '  %-9s %-46s %s\\n'`, padded by BYTES. Twin defect 8 (a failing label inspect killing the command) is retired: the labels are fetched once, `|| true`.
+        Two containers defining one router make every reachability claim dishonest, so a conflict turns every row into "ambiguous". The row is `printf '  %-9s %-46s %s\\n'`, padded by BYTES. Retired twin defect 8 (a failing label inspect killing the command) is retired: the labels are fetched once, `|| true`.
         """
         self.docker_init()
         status, _ = self.sub(self.base_port, err=NULL)
@@ -2290,8 +2161,12 @@ class Devbox:
         -u vscode BY NAME, never `$(id -u):$(id -g)`: exec as root and git refuses the worktree with "dubious ownership", `git ls-files` returns empty, and a gate reports a green over zero files (measured live on 2026-08-25). `-t` ONLY when both stdin and stdout are TTYs: `docker exec -t` allocates a pty, which injects carriage returns, and a piped `--json` gate then fails to parse for reasons that name nothing.
         `bash -lc`, not `bash -c`: PATH for go and node comes from /etc/environment, which only a login shell reads. THE COST, paid for on 2026-09-04: the login shell re-sources the profile AFTER any PATH the caller exported, so a caller-side PATH override runs the IMAGE's tool; to probe another version, invoke its absolute path.
         `devbox_docker` answers TWO WORDS when the docker group is not active yet, and quoting that as one command name produces `sudo docker: command not found` (measured 2026-08-26), so it is split with `read -r -a`.
-        TWO CALL SHAPES: one argument is shell syntax and passes verbatim; several are real argv and are re-quoted word by word with `printf '%q '` (on 2026-09-04 joining them with spaces ran `bash -c npm` inside the box and returned npm's exit code, not the gate's). Zero arguments take the second branch too: twin defect 5.
+        TWO CALL SHAPES: one argument is shell syntax and passes verbatim; several are real argv and are re-quoted word by word with `printf '%q '` (on 2026-09-04 joining them with spaces ran `bash -c npm` inside the box and returned npm's exit code, not the gate's). Zero arguments are refused with status 2 (Rule T fix D5): the twin took the second branch and ran `bash -lc "'' "`.
         """
+        if not argv:
+            # Rule T fix D5: the twin ran `bash -lc "'' "` inside the container for zero arguments.
+            self.log("error", "devbox exec needs a command")
+            return 2
         d = self.sub(self.docker)[1]
         status, cid = self.sub(self.container_id)
         self.checked(status)
@@ -2315,7 +2190,7 @@ class Devbox:
         command = (
             argv[0]
             if len(argv) == 1
-            else "".join(shell_quote(arg, self.utf8) + " " for arg in argv or ("",))
+            else "".join(shell_quote(arg, self.utf8) + " " for arg in argv)
         )
         return self.run([*words, *flags, cid, "bash", "-lc", command])[0]
 
@@ -2350,10 +2225,14 @@ class Devbox:
     def identity_ok(self, *_argv: str) -> int:
         """`devbox_identity_ok`, `.ci/lib/devbox.sh:1151-1166`: is the exec identity one git will accept? The root-exec trap.
 
-        `[ -n "$(printf '%s' "$out" | grep ...)" ]`, not `| grep -q`: $out is `git status --porcelain` over the whole worktree, so it is UNBOUNDED, and losing grep -q's race under an inherited pipefail is silent in the worst direction. Twin defect 2 is the other half: the exec's own failure is swallowed.
+        `[ -n "$(printf '%s' "$out" | grep ...)" ]`, not `| grep -q`: $out is `git status --porcelain` over the whole worktree, so it is UNBOUNDED, and losing grep -q's race under an inherited pipefail is silent in the worst direction. Rule T fix D2 is the other half: a devbox that is not running now fails the probe, where the twin swallowed the exec's refusal.
         """
         command = "git -C '%s' status --porcelain" % self.worktree_path()
-        _, out = self.sub(self.exec, command, err=TO_OUT)
+        status, out = self.sub(self.exec, command, err=TO_OUT)
+        if status == 1 and "Devbox is not running" in out:
+            # Rule T fix D2: a devbox that is not running has no usable identity. The twin swallowed the refusal and reported success.
+            self.log("error", "devbox identity cannot be verified: the devbox is not running")
+            return 1
         if "dubious ownership" in out:
             self.log(
                 "error", "devbox exec identity is wrong: git refuses the worktree as another user's"

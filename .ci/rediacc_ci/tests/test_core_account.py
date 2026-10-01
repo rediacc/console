@@ -53,6 +53,22 @@ OBSERVATION_FLOOR = {
 
 _CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
 
+# RULE T: the lines the port INTENTIONALLY no longer shares with the twin. Each is a defect the twin still has and the port fixed (see the `test_delta_*` cases at the end), so the live differential leaves exactly these lines out of its comparison, and `test_every_delta_case_still_diverges` proves each is still a real divergence.
+DELTA_LINES = {
+    # A2: banner padding by characters, shown by the multibyte row.
+    "probe": ("obs banner| ..│..héllo",),
+    # A1: the missing-gateway-port refusal, which the twin leaves silent.
+    "totp": ("obs err no-key|",),
+}
+
+
+def _delta_comparable(out: str, scenario: str) -> list[str]:
+    return [
+        line
+        for line in out.splitlines()
+        if not any(line.startswith(prefix) for prefix in DELTA_LINES.get(scenario, ()))
+    ]
+
 
 def drive(side: str, scenario: str) -> tuple[int, str, str]:
     """One side of one scenario, run once per session and remembered.
@@ -92,7 +108,9 @@ def test_the_port_matches_the_live_twin(scenario: str) -> None:
     new_rc, new_out, new_err = drive("new", scenario)
     assert old_rc == 0, "the bash side could not run: %s" % old_err
     assert new_rc == 0, "the port side could not run: %s" % new_err
-    assert old_out == new_out, "scenario %s diverged" % scenario
+    assert _delta_comparable(old_out, scenario) == _delta_comparable(new_out, scenario), (
+        "scenario %s diverged" % scenario
+    )
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS)
@@ -285,29 +303,6 @@ def test_banner_row_pads_to_63_and_never_truncates(text: str, expected: int) -> 
     body = row[len("  │  ") : -1]
     assert body.count(" ") - text.count(" ") == expected
     assert text in row
-
-
-def test_banner_row_pads_by_bytes_not_characters() -> None:
-    """Defect 2. A multibyte glyph really does shorten the visible field."""
-    text = "héllo, ünicode"
-    row = account.banner_row(text)
-    assert len(text.encode("utf-8")) > len(text)
-    assert len(row[len("  │  ") : -1].encode("utf-8")) == 63
-
-
-def test_gateway_port_from_state_raises_where_the_twin_dies() -> None:
-    """Defect 1: no match is not an empty answer, it is the end of the function."""
-    assert account.gateway_port_from_state("gateway_port=%d\n" % ACCOUNT_DEV_PORT) == str(
-        ACCOUNT_DEV_PORT
-    )
-    assert account.gateway_port_from_state("gateway_port=\n") == ""
-    with pytest.raises(account.StateAbortedError, match="matched nothing"):
-        account.gateway_port_from_state("started=1\n")
-
-
-def test_gateway_port_from_state_truncates_a_value_containing_an_equals_sign() -> None:
-    """Defect 3. `cut -d= -f2` takes the second field only. Preserved, not fixed."""
-    assert account.gateway_port_from_state("gateway_port=a=b\n") == "a"
 
 
 def test_grep_cut_keeps_every_match_the_way_the_twin_captures_them() -> None:
@@ -1110,6 +1105,30 @@ LIFECYCLE_FLOOR = {
 
 _LIFECYCLE_CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
 
+# RULE T: the lifecycle cases whose WHOLE transcript the port intentionally changed (`test_delta_l*`), per scenario. Everything else is compared byte for byte.
+LIFECYCLE_DELTA_CASES = {
+    "credentials": {"seed-null", "seed-not-json", "hostname-fails"},
+    "dev": {"state-missing-key"},
+    "e2e": {"install-fails"},
+    "helpers": {"state-port-equals"},
+    "seed": {"state-without-port", "curl-fails"},
+    "stripe": {"sync-fails"},
+}
+
+# L7: the state file's `pids=` line is comma separated now. The twin wrote spaces, so this one spelling is normalised on both sides.
+_PIDS_LINE = re.compile(r"(state pids=)([N,]+)")
+
+
+def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
+    skip = LIFECYCLE_DELTA_CASES.get(scenario, set())
+    kept = []
+    for line in lines:
+        parts = line.split(" ", 2)
+        if len(parts) > 1 and parts[0] == "obs" and parts[1] in skip:
+            continue
+        kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), line))
+    return kept
+
 
 def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
     """One side of one lifecycle scenario, run once per session and remembered."""
@@ -1145,8 +1164,10 @@ def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
     new_rc, new_out, new_err = drive_lifecycle("new", scenario)
     assert old_rc == 0, "the bash side could not run: %s" % old_err
     assert new_rc == 0, "the port side could not run: %s" % new_err
-    if old_out != new_out:
-        diverged = sorted(set(old_out.splitlines()) ^ set(new_out.splitlines()))
+    old = _lifecycle_comparable(old_out.splitlines(), scenario)
+    new = _lifecycle_comparable(new_out.splitlines(), scenario)
+    if old != new:
+        diverged = sorted(set(old) ^ set(new))
         pytest.fail("scenario %s diverged:\n%s" % (scenario, "\n".join(diverged[:40])))
 
 
@@ -1233,7 +1254,7 @@ LIFECYCLE_PLANTS = (
     ("seed", "http-500-json", 'if http_code != "200":', 'if http_code not in ("200", "500"):'),
     ("stripe", "happy", "secret[:12]", "secret[:11]"),
     ("dev", "previous-instance", "for offset in (0, 1, 2):", "for offset in (0, 1):"),
-    ("dev", "reuse-rustfs", '" ".join(str(p) for p in PIDS)', '",".join(str(p) for p in PIDS)'),
+    ("dev", "reuse-rustfs", '",".join(str(p) for p in pids)', '";".join(str(p) for p in pids)'),
 )
 
 
@@ -1273,10 +1294,12 @@ def test_a_planted_defect_in_the_lifecycle_port_is_caught(
         twin = lifecycle_driver.observe("old", repo, case)
         planted = lifecycle_driver.observe("new", fake, case)
         clean = lifecycle_driver.observe("new", repo, case)
-    assert clean == twin, (
+    assert _lifecycle_comparable(clean, scenario) == _lifecycle_comparable(twin, scenario), (
         "the unplanted port disagrees on %s, so the plant proves nothing" % case_name
     )
-    assert planted != twin, "the plant %r -> %r went unnoticed on %s" % (old, new, case_name)
+    assert _lifecycle_comparable(planted, scenario) != _lifecycle_comparable(twin, scenario), (
+        "the plant %r -> %r went unnoticed on %s" % (old, new, case_name)
+    )
 
 
 # Worklist #e45fc13c: `account_cleanup` signalled only the pid it tracked, so a dev server behind `npx` could outlive `account dev` on its port. Each side WITHOUT the process-group kill must orphan the tree job's child; each side with it must not.
@@ -1364,3 +1387,234 @@ def test_the_lifecycle_argv_surface_dispatches_like_run_legacy() -> None:
     for verb in ("dev", "test", "reset", "seed-demo"):
         assert verb in account_lifecycle.USAGE
     assert "test e2e" in account_lifecycle.USAGE
+
+
+# -- Rule T: the twin's defects, fixed in the ports as INTENTIONAL DELTAS --------
+#
+# PLAN-retire-bash-oracles section 1 and task B4. Each case below pins the port's FIXED behaviour; the twin still has the defect, and the live differential above excludes exactly the cases named in `DELTA_CASES` / `LIFECYCLE_DELTA_CASES` (and `test_every_delta_case_still_diverges` proves each exclusion is still a real divergence, so a delta cannot go stale).
+# The twin's behaviour is shown beside each fix, driven for real, so the claim "bash does this" is measured and not remembered.
+
+
+def _bash_state(text: str, script: str, tmp_path) -> subprocess.CompletedProcess:
+    state = tmp_path / ".account-state"
+    state.write_text(text, encoding="utf-8")
+    return subprocess.run(
+        ["bash", "-c", "set -euo pipefail; ACCOUNT_STATE_FILE=%s; %s" % (state, script)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_delta_a1_totp_names_a_state_file_without_a_gateway_port(tmp_path, capsys) -> None:
+    """Defect A1, fixed: a state file with no `gateway_port=` line explains itself instead of dying silently with exit 1."""
+    twin = _bash_state(
+        "started=1\n",
+        'g=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" | cut -d= -f2); echo reached',
+        tmp_path,
+    )
+    assert (twin.returncode, twin.stdout, twin.stderr) == (1, "", ""), (
+        "the twin's silent death moved"
+    )
+    (tmp_path / ".account-state").write_text("started=1\n", encoding="utf-8")
+    rc = account.totp(env={"CONSOLE_ROOT_DIR": str(tmp_path)})
+    assert rc == 1
+    assert (
+        "Could not read gateway port from %s" % (tmp_path / ".account-state")
+        in capsys.readouterr().err
+    )
+
+
+def test_delta_a2_banner_row_pads_by_characters() -> None:
+    """Defect A2, fixed: a multibyte glyph no longer shifts the closing bar. The row is as wide as the ASCII row."""
+    ascii_row = account.banner_row("hello, unicode")
+    assert len(account.banner_row("héllo, ünicode")) == len(ascii_row)
+    assert len(account.banner_row("→ arrow — dash")) == len(ascii_row)
+    assert len(account_lifecycle._pad_bytes("é", 4)) == 4
+
+
+def test_delta_a3_a_state_value_containing_an_equals_sign_survives() -> None:
+    """Defect A3, fixed: the value is everything after the FIRST `=`, where `cut -d= -f2` kept the second field only."""
+    assert account.gateway_port_from_state("gateway_port=a=b\n") == "a=b"
+    assert account.grep_cut("k=x=y=z\nk=2\n", "k") == "x=y=z\n2"
+    assert account_lifecycle.grep_cut("k=x=y\n", "k") == "x=y"
+
+
+def test_delta_a4_unknown_option_after_studio_is_a_correct_refusal() -> None:
+    """Defect A4 is NOT a defect, and this pins why it stays as it is: `account db --studio --bogus` refuses with exit 2 because an unrecognised option is refused wherever it sits. Rejecting it is the right answer, so port and twin agree."""
+    with pytest.raises(account.AccountError) as excinfo:
+        account.parse_db_args(["--studio", "--bogus"])
+    assert excinfo.value.code == 2
+
+
+@pytest.mark.parametrize("missing", ["gateway_port", "pids"])
+def test_delta_a5_stop_runs_the_teardown_when_a_state_key_is_missing(
+    missing: str, monkeypatch, tmp_path
+) -> None:
+    """Defect A5, fixed: a state file lacking `gateway_port=` or `pids=` no longer ends `stop()` before the teardown, so the state file is removed. The twin dies there and leaves it."""
+    lines = {"gateway_port": "gateway_port=1\n", "pids": "pids=\n"}
+    text = "".join(v for k, v in lines.items() if k != missing) + "started=1\n"
+    twin = _bash_state(
+        text,
+        'old_gateway=$(grep "^gateway_port=" "$ACCOUNT_STATE_FILE" | cut -d= -f2); '
+        'old_pids=$(grep "^pids=" "$ACCOUNT_STATE_FILE" | cut -d= -f2); rm -f "$ACCOUNT_STATE_FILE"',
+        tmp_path,
+    )
+    assert twin.returncode == 1, "the twin's death moved"
+    assert (tmp_path / ".account-state").exists(), "the twin's death moved"
+    (tmp_path / ".account-state").write_text(text, encoding="utf-8")
+    monkeypatch.setenv("PATH", _fake_docker(tmp_path / "bin"))
+    assert account.stop({"CONSOLE_ROOT_DIR": str(tmp_path)}) == 0
+    assert not (tmp_path / ".account-state").exists()
+
+
+def test_delta_l1_seed_demo_reaches_its_could_not_reach_branch(
+    monkeypatch, capsys, tmp_path
+) -> None:
+    """Defect L1, fixed: an unreachable gateway prints the message the twin wrote and could never reach, and ends 1."""
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", str(tmp_path))
+
+    def capture(argv, *, quiet_err=False):  # noqa: ARG001 -- the stand-in for `_capture`'s signature
+        return (0, '{"email":"x"}') if argv[0] == "jq" else (7, "")
+
+    monkeypatch.setattr(account_lifecycle, "_capture", capture)
+    rc = account_lifecycle.main(["seed-demo", "a@b.c", "--port", "1"])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "Could not reach the account gateway on port 1" in err
+    assert "Is the dev gateway running?" in err
+
+
+def test_delta_l2_a_state_file_without_the_key_is_not_a_silent_death(monkeypatch, tmp_path) -> None:
+    """Defect L2, fixed: `seed-demo` and the previous-instance stop treat a missing `gateway_port=` as an empty value (the preferred port, or nothing to stop) instead of ending silently."""
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", str(tmp_path))
+    (tmp_path / ".account-state").write_text("started=1\n", encoding="utf-8")
+    seen = []
+
+    def capture(argv, *, quiet_err=False):  # noqa: ARG001 -- the stand-in for `_capture`'s signature
+        seen.append(argv)
+        return (0, "x") if argv[0] == "jq" else (7, "")
+
+    monkeypatch.setattr(account_lifecycle, "_capture", capture)
+    account_lifecycle.main(["seed-demo", "a@b.c"])
+    assert any(
+        "127.0.0.1:%s/" % account.ACCOUNT_DEV_PORT_PREFERRED in part
+        for argv in seen
+        for part in argv
+    ), seen
+    monkeypatch.setattr(account_lifecycle, "_sleep", lambda _s: None)
+    account_lifecycle._stop_previous(str(tmp_path / ".account-state"))
+    assert not (tmp_path / ".account-state").exists()
+
+
+def test_delta_l3_an_unreadable_seed_answer_still_prints_the_logins(monkeypatch, capsys) -> None:
+    """Defect L3, fixed: when the seed-config-store answer is not JSON node can read, the logins are still printed with the recovery code shown as unavailable. The twin ends silently before the banner."""
+    assert account_lifecycle.seed_fields("not json") == ("", "", "")
+    assert account_lifecycle.seed_fields("null") == ("", "", "")
+    _drive_credentials(monkeypatch, seed="not json", hostname=(0, "10.0.0.5 10.0.0.6"))
+    out = capsys.readouterr().out
+    assert "Dev logins" in out
+    assert "<unavailable>" in out
+
+
+def test_delta_l4_a_failing_hostname_still_prints_the_logins(monkeypatch, capsys) -> None:
+    """Defect L4, fixed: `hostname -I` failing (macOS) drops the Network row and keeps the banner."""
+    _drive_credentials(monkeypatch, seed='{"existing":1}', hostname=(1, ""))
+    out = capsys.readouterr().out
+    assert "Dev logins" in out
+    assert "Network:" not in out
+
+
+def _drive_credentials(monkeypatch, *, seed: str, hostname: tuple[int, str]) -> None:
+    monkeypatch.setattr(account_lifecycle, "_run", lambda _argv, **_kw: 0)
+    monkeypatch.setattr(account_lifecycle, "_sleep", lambda _s: None)
+
+    def capture(argv, *, quiet_err=False):  # noqa: ARG001 -- the stand-in for `_capture`'s signature
+        if argv[0] == "openssl":
+            return 0, "abcd1234abcd1234"
+        if argv[0] == "hostname":
+            return hostname
+        return 0, seed
+
+    monkeypatch.setattr(account_lifecycle, "_capture", capture)
+    assert account_lifecycle.dev_credentials("4800") == 0
+
+
+def test_delta_l5_a_failing_stripe_sync_says_so(monkeypatch, capsys, tmp_path) -> None:
+    """Defect L5, fixed: a failing `stripe-sync.ts` still ends the run with npx's status, but now names what failed, where the twin died with only the tail of npx's own output."""
+    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "sk_test_x")
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", str(tmp_path))
+    monkeypatch.setattr(account_lifecycle.shutil, "which", lambda _name: "/bin/true")
+    monkeypatch.setattr(account_lifecycle, "_capture", lambda _argv, **_kw: (1, ""))
+
+    def failing_tail(_argv, _count, **_kw):
+        raise account_lifecycle.ErrexitError(3, "npx exited 3")
+
+    monkeypatch.setattr(account_lifecycle, "_tail", failing_tail)
+    with pytest.raises(account_lifecycle.ErrexitError) as excinfo:
+        account_lifecycle.stripe_auto()
+    assert excinfo.value.code == 3
+    assert "Stripe product sync failed" in capsys.readouterr().err
+
+
+def test_delta_l6_a_failing_install_shows_more_than_its_last_line(tmp_path, capsys) -> None:
+    """Defect L6, fixed: on a non-zero status the tailed log keeps up to thirty lines, where the twin's `tail -1` showed one line of an npm failure."""
+    script = tmp_path / "noisy"
+    script.write_text(
+        "#!/bin/sh\nfor i in $(seq 1 50); do echo line$i; done\nexit 4\n", encoding="utf-8"
+    )
+    script.chmod(0o755)
+    with pytest.raises(account_lifecycle.ErrexitError) as excinfo:
+        account_lifecycle._tail([str(script)], 1, cwd=str(tmp_path))
+    assert excinfo.value.code == 4
+    out = capsys.readouterr().out
+    assert "line50" in out
+    assert "line21" in out
+    assert "line20" not in out
+    account_lifecycle._tail(["sh", "-c", "seq 1 9"], 2, cwd=str(tmp_path))
+    assert capsys.readouterr().out == "8\n9\n", "a success keeps the tail length"
+
+
+def test_delta_l7_pids_are_written_comma_separated() -> None:
+    """Defect L7, fixed: `pids=` carries the commas the twin's `${A[*]// /,}` was written for and never produced. Both readers split on commas and whitespace, so old and new files both read back."""
+    proc = subprocess.run(
+        ["bash", "-c", 'A=(101 202 303); echo "${A[*]// /,}"'],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert proc.stdout == "101 202 303\n", "the twin's expansion moved"
+    assert account_lifecycle.pids_line([101, 202, 303]) == "pids=101,202,303"
+    assert account_lifecycle.pids_line([]) == "pids="
+    assert account.state_pids("pids=101,202\n").replace(",", " ").split() == ["101", "202"]
+
+
+@pytest.mark.parametrize("scenario", sorted(DELTA_LINES))
+def test_every_account_delta_line_still_diverges(scenario: str) -> None:
+    """A delta that stopped diverging is a stale exclusion hiding a comparison, so each one must still differ between the sides."""
+    _, old_out, _ = drive("old", scenario)
+    _, new_out, _ = drive("new", scenario)
+    for prefix in DELTA_LINES[scenario]:
+        old = [line for line in old_out.splitlines() if line.startswith(prefix)]
+        new = [line for line in new_out.splitlines() if line.startswith(prefix)]
+        assert old != new, "the delta %r no longer diverges: remove it from DELTA_LINES" % prefix
+
+
+@pytest.mark.parametrize("scenario", sorted(LIFECYCLE_DELTA_CASES))
+def test_every_lifecycle_delta_case_still_diverges(scenario: str) -> None:
+    _, old_out, _ = drive_lifecycle("old", scenario)
+    _, new_out, _ = drive_lifecycle("new", scenario)
+    for name in LIFECYCLE_DELTA_CASES[scenario]:
+        old = [line for line in old_out.splitlines() if line.startswith("obs %s " % name)]
+        new = [line for line in new_out.splitlines() if line.startswith("obs %s " % name)]
+        assert old, "the delta case %s never ran on the twin side" % name
+        assert old != new, "the delta case %s no longer diverges: remove it from the set" % name
+
+
+def test_the_pids_normaliser_is_still_needed() -> None:
+    """L7: both sides write a `state pids=` line, and they differ only in the separator."""
+    _, old_out, _ = drive_lifecycle("old", "dev")
+    _, new_out, _ = drive_lifecycle("new", "dev")
+    assert "state pids=N N" in old_out
+    assert "state pids=N,N" in new_out
+    assert "state pids=N,N" not in old_out

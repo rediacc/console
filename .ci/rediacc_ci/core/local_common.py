@@ -22,23 +22,20 @@ THIS MACHINE DOES NOT RUN GNU COREUTILS. Measured 2026-09-23: `sha256sum`, `sort
 So the differential licence recorded for this port is equivalence against THAT tool set. Every behaviour reproduced below was measured against the tools actually on PATH rather than read out of a GNU manual, and the two places it could matter are named where they are reproduced: `sort -V`'s ordering in `version_gte` and `sha256sum`'s backslash escaping in `sha256_lines`.
 
 --------------------------------------------------------------------------
-SIX TWIN BEHAVIOURS REPRODUCED ON PURPOSE, NOT FIXED
+RULE T: SIX TWIN DEFECTS FIXED (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-  1. `compute_hash_for_package_dirs` OVER AN EMPTY FILE SET IS NOT THE HASH OF NOTHING. `xargs -0 $_SHA256SUM_CMD` with empty input still RUNS the command once, with no arguments, so `sha256sum` reads its own (empty) stdin and prints `e3b0c442...  -`. That line, not an empty stream, is what the outer hash sees. Measured: an empty directory fingerprints as
-  `abcfa6a9d4df344d1781bc2560b5e4cdcae08b39ed303063535e7e1e926a304a`, which is `sha256("e3b0c442...  -\n")`. A port that hashed an empty stream would answer `e3b0c442...` and look perfectly reasonable.
-  2. `_git_tree_fingerprint` DIES OR SURVIVES DEPENDING ON WHO CALLED IT. `existing="$(while ...; do [[ -f "$f" ]] && printf ...; done)"` is a BARE ASSIGNMENT taking the while loop's status, which is the status of the LAST iteration only. A `changed` list whose last entry is a DELETED file therefore leaves status 1. Under armed `errexit` the subshell dies there,
-  printing nothing; called from `compute_tree_hash`, which spells it `if fp="$(_git_tree_fingerprint ...)"`, errexit is SUPPRESSED and the function runs to completion. Measured both ways 2026-09-23. `errexit=` on `git_tree_fingerprint()` carries that, and `compute_tree_hash()` passes `errexit=False` because its call site does.
-  3. `has_npm_script` GREPS THE WHOLE `package.json`, not the `scripts` object, so a DEPENDENCY called `zod` makes `has_npm_script zod` true. Preserved, and pinned by a differential case.
-  4. `has_npm_script` ON A MISSING `package.json` EXITS 2, not 1, because that is grep's status for an unreadable file, and the message reaches stderr un-prefixed.
-  5. `write_stamp_hash` APPENDS A NEWLINE the reader never removes: `read_stamp_hash` is `cat`, so a value written and read back has grown one byte. `ensure_renet_built:848` is built around that, splitting the stamp with `sed -n 1p`.
-  6. `_sha256sum` WITH NO TOOL CALLS `exit 1`, killing the sourcing shell rather than returning; and `compute_hash_for_package_dirs` does NOT go through it, it interpolates `$_SHA256SUM_CMD` directly, so with no tool it degrades to an EMPTY COMMAND in a pipeline.
-  It then prints nothing on either stream and exits 125, because `xargs` with no command runs `echo`, nothing is reading the pipe, and a child killed by SIGPIPE is 125. Two different failure modes for one missing binary, both preserved.
+Each is an INTENTIONAL DELTA from `.ci/lib/local-common.sh`, which still has the defect. `test_core_local_common.py` pins the port's behaviour in its `test_delta_c*` cases and excludes exactly those cases from the live differential.
+  C1. `compute_hash_for_package_dirs` over an EMPTY file set was not the hash of nothing: `xargs -0 $_SHA256SUM_CMD` still ran the tool once, which hashed its own empty stdin, so an empty directory fingerprinted as `abcfa6a9d4df...` (the hash of `e3b0c442...  -`). It is `e3b0c442...` now.
+  C2. `_git_tree_fingerprint` DIED OR SURVIVED DEPENDING ON WHO CALLED IT: a bare `existing=$(while ...)` assignment takes the LAST iteration's status, so a changed list ending in a DELETED file killed it under armed errexit and not from an `if`. It never dies on that now, and `git_tree_fingerprint()` has no `errexit` argument.
+  C3. `has_npm_script` GREPPED THE WHOLE `package.json`, so a dependency called `zod` answered true. It reads the `scripts` object, and the name is a literal (the BRE refusal is gone with the regular expression). A manifest that is not JSON is refused with status 1.
+  C4. `has_npm_script` ON A MISSING `package.json` EXITED 2 with grep's own text. It answers false and says "no package.json at <path>".
+  C5. `write_stamp_hash` APPENDED A NEWLINE the reader never removed. `read_stamp_hash` strips that one newline, so a value reads back as it was written; the file format is unchanged and old stamps read the same.
+  C6. A MISSING sha256 TOOL HAD TWO FAILURE MODES: `_sha256sum` exited 1 with a message, `compute_hash_for_package_dirs` interpolated an empty command and exited 125 (or 0) in silence. Both now say "No sha256 tool found" and answer status 1.
 
 --------------------------------------------------------------------------
-THE ONE PLACE THE PORT REFUSES WHERE THE TWIN WOULD GUESS
+THE BRE REFUSAL IS GONE
 --------------------------------------------------------------------------
-`has_npm_script` tests with `grep -q "\\"$script_name\\":"`, which makes the script name a BASIC REGULAR EXPRESSION. All 388 script names in this repository's `package.json` are `[a-z0-9:-]+`, where a BRE and a literal agree, so a literal search is equivalent for the whole live corpus.
-Rather than silently assume that forever, `has_npm_script()` raises on a name carrying a BRE metacharacter: a divergence that is refused is a divergence somebody sees. Same shape as `account.py`'s `env_add_if_missing`.
+`has_npm_script` used to refuse a name carrying a BRE metacharacter, because the twin's `grep -q "\\"$script_name\\":"` made the name a regular expression. It reads the `scripts` object now (Rule T fix C3), so a name is a literal and `a.c` is just a name.
 
 --------------------------------------------------------------------------
 WHAT IS SHELLED OUT AND WHAT IS REIMPLEMENTED, AND WHY EACH WAY
@@ -54,6 +51,7 @@ from __future__ import annotations
 import contextlib
 import fnmatch
 import hashlib
+import json
 import os
 import pathlib
 import platform
@@ -76,14 +74,8 @@ PRUNE_NAME_GLOBS = ("*.tsbuildinfo", ".DS_Store")
 # The two tools `.ci/lib/local-common.sh:29-35` resolves between, in its order.
 SHA256_TOOLS = (("sha256sum",), ("shasum", "-a", "256"))
 
-# `sha256sum` with no arguments and an empty stdin. See reproduced behaviour 1.
+# `sha256sum` with no arguments and an empty stdin: the answer for `sha256sum()` with no names. `compute_hash_for_package_dirs` no longer feeds it to the outer hash (Rule T fix C1).
 EMPTY_STDIN_LINE = "%s  -\n" % hashlib.sha256(b"").hexdigest()
-
-# What `compute_hash_for_package_dirs` exits with when NO sha256 tool is installed, which is not 0 and not 1. See reproduced behaviour 6; the derivation is in `compute_hash_for_package_dirs`.
-XARGS_KILLED_BY_SIGNAL = 125
-
-# A name that is not a literal under `grep`'s BRE. See the module docstring.
-BRE_METACHARACTERS = set(".[]*^$\\")
 
 
 class LocalCommonError(RuntimeError):
@@ -145,7 +137,7 @@ def local_lib_dir(env: dict[str, str] | None = None) -> str:
 def sha256_command() -> list[str]:
     """`_SHA256SUM_CMD`, `.ci/lib/local-common.sh:29-35`, resolved the same way and in the same order.
 
-    Empty list where the twin leaves the variable empty, which is the case both reproduced behaviours in 6 hang off.
+    Empty list where the twin leaves the variable empty (Rule T fix C6).
     """
     for candidate in SHA256_TOOLS:
         if shutil.which(candidate[0]) is not None:
@@ -176,7 +168,7 @@ def digest_file(path: str) -> str:
 def sha256sum(names: list[str], stdin: bytes | None = None) -> Outcome:
     """`_sha256sum`, `.ci/lib/local-common.sh:37-43`.
 
-    Raises `LocalCommonError(code=1)` where the twin logs and calls `exit 1`, which in a SOURCED function takes the whole shell down rather than returning to the caller. See reproduced behaviour 6.
+    Raises `LocalCommonError(code=1)` where the twin logs and calls `exit 1`, which in a SOURCED function takes the whole shell down rather than returning to the caller. See Rule T fix C6.
 
     AN UNREADABLE FILE IS NOT AN EXCEPTION, because the tool does not raise either: it names the file on stderr, omits its line, hashes everything else, and exits 1. Measured 2026-09-23. The port raised `FileNotFoundError` here until the differential showed the twin reporting and carrying on, which is the same shape the `core.account` port's missing-curl defect took.
     """
@@ -288,12 +280,12 @@ def find_files(root: str, start_points: list[str]) -> tuple[list[str], bool]:
 def sha256_lines(root: str, names: list[str]) -> str:
     """`xargs -0 $_SHA256SUM_CMD 2>/dev/null` over the sorted name list.
 
-    THE EMPTY CASE IS NOT AN EMPTY STREAM. See reproduced behaviour 1: xargs still runs the command once, with no arguments, and the tool then hashes its own empty stdin.
+    THE EMPTY CASE IS AN EMPTY STREAM (Rule T fix C1). The twin's xargs still ran the tool once with no arguments, which hashed its own empty stdin and fed `<hash-of-nothing>  -` to the outer hash.
 
     An UNREADABLE file is skipped rather than raised on, which is what `sha256sum` does: it writes to stderr, which `2>/dev/null` discards, and omits the line.
     """
     if not names:
-        return EMPTY_STDIN_LINE
+        return ""
     out = []
     for name in names:
         try:
@@ -319,10 +311,9 @@ def compute_hash_for_package_dirs(
         sys.stderr.write(failure + "\n")
         return Outcome("", 1)
     if not sha256_command():
-        # `$_SHA256SUM_CMD` EXPANDS TO NOTHING, and the exit status that produces is 125 rather than the 0 this port first assumed. MEASURED 2026-09-23 against a PATH with neither `sha256sum` nor `shasum` on it, in all three shapes (a populated tree, an empty one, a missing start point), and the port was WRONG until that control ran.
-        # The derivation: `xargs -0` with no command defaults to `echo`; the next two pipeline stages are empty commands, so nothing reads the pipe; `echo` takes SIGPIPE; GNU xargs reports a child killed by a signal as 125; `pipefail` carries it out. Stdout and stderr are both empty, so a caller sees an empty hash with a status nobody checks.
-        # A CONTROL, NOT A SCENARIO. Every differential scenario runs with `sha256sum` installed, so this branch is unreachable from the ledger; `test_core_local_common.py` builds the PATH farm that reaches it and compares the two sides live rather than against this constant.
-        return Outcome("", XARGS_KILLED_BY_SIGNAL)
+        # Rule T fix C6. The twin interpolated `$_SHA256SUM_CMD` as an EMPTY COMMAND here: `xargs -0` defaulted to `echo`, nothing read the pipe, and the answer was an empty hash with status 125 (or 0, a scheduling race) and nothing on either stream. `sha256sum()` above says "No sha256 tool found" and exits 1; so does this.
+        log.error("No sha256 tool found (need sha256sum or shasum)")
+        return Outcome("", 1)
     found, failed = find_files(root_dir, start_points)
     # `LC_ALL=C sort -z`: a BYTE sort of the NUL-terminated names, not a locale one.
     ordered = sorted(found, key=os.fsencode)
@@ -349,13 +340,12 @@ def git_tree_fingerprint(
     root: str,
     start_points: list[str],
     env: dict[str, str] | None = None,
-    errexit: bool = True,
 ) -> str | None:
     """`_git_tree_fingerprint`, `.ci/lib/local-common.sh:92-134`.
 
     Returns the fingerprint with its trailing newline, or None everywhere the twin prints nothing and exits 1: git absent, not a work tree, no HEAD, an unusable root, or a failed plumbing call.
 
-    `errexit` IS NOT A STYLE KNOB, it is reproduced behaviour 2. With it True the port dies where the twin's bare `existing=` assignment dies under armed errexit; with it False the port runs on, which is what the twin does when `compute_tree_hash` calls it from an `if` condition.
+    A changed list ending in a DELETED file does not end it (Rule T fix C2): the twin's bare `existing=` assignment took the loop's last status and died under armed errexit, but not when `compute_tree_hash` called it from an `if`.
     """
     failure = cd_error(root)
     if failure is not None:
@@ -385,14 +375,7 @@ def git_tree_fingerprint(
 
     existing: list[str] = []
     if changed:
-        last_ok = True
-        for name in changed.split("\n"):
-            last_ok = os.path.isfile(os.path.join(root, name))
-            if last_ok:
-                existing.append(name)
-        if errexit and not last_ok:
-            # The bare assignment takes the while loop's status, and the loop's status is the LAST iteration's. Reproduced behaviour 2.
-            return None
+        existing = [n for n in changed.split("\n") if os.path.isfile(os.path.join(root, n))]
 
     hashes = ""
     if existing:
@@ -429,9 +412,9 @@ def compute_tree_hash(
 ) -> Outcome:
     """`compute_tree_hash`, `.ci/lib/local-common.sh:137-146`.
 
-    `if fp="$(_git_tree_fingerprint ...)" && [[ -n "$fp" ]]` is an `if` CONDITION, so errexit is suppressed inside it; `errexit=False` below is that call site, not a preference.
+    `if fp="$(_git_tree_fingerprint ...)" && [[ -n "$fp" ]]`.
     """
-    fingerprint = git_tree_fingerprint(root, start_points, env, errexit=False)
+    fingerprint = git_tree_fingerprint(root, start_points, env)
     if fingerprint is not None and fingerprint.strip("\n") != "":
         return Outcome(fingerprint.strip("\n") + "\n", 0)
     return compute_hash_for_package_dirs(root, start_points, env)
@@ -443,17 +426,18 @@ def compute_tree_hash(
 def read_stamp_hash(stamp_file: str) -> str:
     """`read_stamp_hash`, `.ci/lib/local-common.sh:148-154`.
 
-    `cat` and nothing else, so the trailing newline `write_stamp_hash` added is STILL THERE. A missing file yields the empty string and status 0, which is the whole reason a fresh checkout reads as stale rather than as an error.
+    The ONE trailing newline `write_stamp_hash` added is removed (Rule T fix C5); the twin's `cat` kept it, so a value grew a byte on every round trip. A missing file yields the empty string and status 0, which is the whole reason a fresh checkout reads as stale rather than as an error.
     """
     if not os.path.isfile(stamp_file):
         return ""
-    return pathlib.Path(stamp_file).read_text(encoding="utf-8", errors="surrogateescape")
+    text = pathlib.Path(stamp_file).read_text(encoding="utf-8", errors="surrogateescape")
+    return text.removesuffix("\n")
 
 
 def write_stamp_hash(stamp_file: str, stamp_hash: str) -> None:
     """`write_stamp_hash`, `.ci/lib/local-common.sh:156-162`.
 
-    `printf '%s\\n'` APPENDS A NEWLINE. See reproduced behaviour 5.
+    `printf '%s\\n'` APPENDS A NEWLINE, which `read_stamp_hash` removes again (Rule T fix C5); the file format is the twin's.
 
     `mkdir -p "$(dirname "$stamp_file")"`, and `dirname` answers `.` for a bare name where `os.path.dirname` answers the empty string. Getting that wrong turns a relative stamp path into a `mkdir("")`.
     """
@@ -600,29 +584,23 @@ def version_gte(one: str, two: str) -> bool:
 
 
 def has_npm_script(script_name: str, env: dict[str, str] | None = None) -> bool:
-    """`has_npm_script`, `.ci/lib/local-common.sh:401-404`.
+    """`has_npm_script`, `.ci/lib/local-common.sh:401-404`, with two Rule T fixes.
 
-    `grep -q "\\"$script_name\\":" "$LOCAL_ROOT_DIR/package.json"`, which is a SEARCH OF THE WHOLE FILE and not of the `scripts` object: reproduced behaviour 3. A missing file raises with code 2, which is grep's: reproduced behaviour 4.
-
-    Raises `ValueError` on a name carrying a BRE metacharacter. See the module docstring.
+    C3: the `scripts` object is searched, and the name is a literal. The twin's `grep -q "\\"$script_name\\":"` searched the WHOLE file as a regular expression, so a dependency, a manifest key or a script's own text answered true.
+    C4: a missing `package.json` answers False with a readable message, where the twin exited 2 with grep's text. A manifest that is not JSON raises `LocalCommonError` with status 1.
     """
-    metachars = BRE_METACHARACTERS & set(script_name)
-    if metachars:
-        raise ValueError(
-            "script name %r carries the BRE metacharacter(s) %s; the twin tests for it "
-            'with `grep -q "\\"$script_name\\":"`, where that is a pattern and not a '
-            "literal, so this port would silently answer a different question. Add a case "
-            "to test_core_local_common.py pinning what the twin actually does before "
-            "allowing it." % (script_name, "".join(sorted(metachars)))
-        )
     target = os.path.join(local_root_dir(env), "package.json")
     try:
         text = pathlib.Path(target).read_text(encoding="utf-8", errors="surrogateescape")
-    except OSError as exc:
-        # grep's own diagnostic, un-prefixed, on stderr, and its own exit status.
-        sys.stderr.write("grep: %s: %s\n" % (target, exc.strerror))
-        raise LocalCommonError("grep could not read %s" % target, code=2) from exc
-    return ('"%s":' % script_name) in text
+    except OSError:
+        sys.stderr.write("has_npm_script: no package.json at %s\n" % target)
+        return False
+    try:
+        manifest = json.loads(text)
+    except ValueError as exc:
+        raise LocalCommonError("%s is not valid JSON" % target, code=1) from exc
+    scripts = manifest.get("scripts") if isinstance(manifest, dict) else None
+    return isinstance(scripts, dict) and script_name in scripts
 
 
 # --------------------------------------------------------------------------- the machine-mutating half ---------------------------------------------------------------------------
@@ -1283,7 +1261,7 @@ RENET_NAMES = ("*.go", "*.c", "*.h", "go.mod", "go.sum", "build.sh", "docker-com
 def renet_source_hash(renet_dir: str) -> str | None:
     """`_renet_source_hash`, `.ci/lib/local-common.sh:719`. The digest line, or None where `cd` fails.
 
-    `find .` from inside the directory, so every name starts `./`; `-path` prunes are exact paths here, not globs. `LC_ALL=C sort -z` is a byte sort. `xargs -0 sha256sum` over no names at all still runs the tool once on its own empty stdin (reproduced behaviour 1).
+    `find .` from inside the directory, so every name starts `./`; `-path` prunes are exact paths here, not globs. `LC_ALL=C sort -z` is a byte sort. An empty name list hashes as nothing, the same Rule T fix C1 as `compute_hash_for_package_dirs`.
     """
     failure = cd_error(renet_dir)
     if failure is not None:
@@ -1350,8 +1328,7 @@ def ensure_renet_built(env: dict[str, str] | None = None) -> bool:
         ]
         account_key = _subst("\n".join(hits).replace("\r", ""))
 
-    # `if ! { _src_hash="$(_git_tree_fingerprint ...)" && [[ -n ... ]]; }` is an `if` CONDITION, so errexit is suppressed inside it.
-    fingerprint = git_tree_fingerprint(renet_dir, ["."], env, errexit=False)
+    fingerprint = git_tree_fingerprint(renet_dir, ["."], env)
     source = _subst(fingerprint) if fingerprint is not None else ""
     if fingerprint is None or not source:
         computed = renet_source_hash(renet_dir)

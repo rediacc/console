@@ -618,7 +618,7 @@ def write_relative(stamps: pathlib.Path) -> None:
 
 def fingerprint_or_one(root: str, points: list[str], env: dict[str, str]) -> local_common.Outcome:
     """`_git_tree_fingerprint` as the shell sees it: a line on stdout, or nothing and 1."""
-    fingerprint = local_common.git_tree_fingerprint(root, points, env, errexit=True)
+    fingerprint = local_common.git_tree_fingerprint(root, points, env)
     if fingerprint is None:
         return local_common.Outcome("", 1)
     return local_common.Outcome(fingerprint, 0)

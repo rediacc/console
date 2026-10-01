@@ -13,6 +13,7 @@ Every scenario runs with `sha256sum` on PATH, so neither missing-tool branch is 
 """
 
 import ast
+import hashlib
 import json
 import os
 import pathlib
@@ -62,6 +63,42 @@ except local_common.LocalCommonError as exc:
 
 _CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
 
+# RULE T: the transcript lines the port INTENTIONALLY no longer shares with the twin. Each is a defect the twin still has and the port fixed (`test_delta_c*` at the end of this file), so the live differential leaves exactly these lines out, and `test_every_delta_line_still_diverges` proves each is still a real divergence.
+DELTA_LINES = {
+    # C2: the fingerprint no longer dies when the changed list ends in a deleted file.
+    "git-fp": (
+        "obs rc fp-dot=",
+        "obs out fp-dot|",
+        "obs rc fp-src=",
+        "obs out fp-src|",
+        "obs rc fp-two=",
+        "obs out fp-two|",
+        "obs rc fp-no-tree=",
+        "obs out fp-no-tree|",
+        "obs rc fp-no-paths=",
+        "obs out fp-no-paths|",
+    ),
+    # C1: an empty file set hashes as nothing.
+    "hash": ("obs out walk-empty|", "obs out walk-missing|"),
+    # C3 and C4: the scripts object is searched, and a missing manifest says so.
+    "npm-script": (
+        "obs npm [zod]",
+        "obs npm [name]",
+        "obs npm [private]",
+        "obs npm [scripts]",
+        "obs rc npm-missing=",
+        "obs err npm-missing|",
+    ),
+}
+
+
+def _delta_comparable(out: str, scenario: str) -> list[str]:
+    return [
+        line
+        for line in out.splitlines()
+        if not any(line.startswith(prefix) for prefix in DELTA_LINES.get(scenario, ()))
+    ]
+
 
 def drive(side: str, scenario: str) -> tuple[int, str, str]:
     """One side of one scenario, run once per session and remembered.
@@ -101,7 +138,21 @@ def test_the_port_matches_the_live_twin(scenario: str) -> None:
     new_rc, new_out, new_err = drive("new", scenario)
     assert old_rc == 0, "the bash side could not run: %s" % old_err
     assert new_rc == 0, "the port side could not run: %s" % new_err
-    assert old_out == new_out, "scenario %s diverged" % scenario
+    assert _delta_comparable(old_out, scenario) == _delta_comparable(new_out, scenario), (
+        "scenario %s diverged" % scenario
+    )
+
+
+@pytest.mark.parametrize("scenario", sorted(DELTA_LINES))
+def test_every_delta_line_still_diverges(scenario: str) -> None:
+    """A delta that stopped diverging is a stale exclusion hiding a comparison."""
+    _, old_out, _ = drive("old", scenario)
+    _, new_out, _ = drive("new", scenario)
+    for prefix in DELTA_LINES[scenario]:
+        old = [line for line in old_out.splitlines() if line.startswith(prefix)]
+        new = [line for line in new_out.splitlines() if line.startswith(prefix)]
+        assert old or new, "neither side printed %r" % prefix
+        assert old != new, "the delta %r no longer diverges: remove it from DELTA_LINES" % prefix
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS)
@@ -320,26 +371,6 @@ def test_sha256_line_escapes_the_way_the_tool_on_this_machine_escapes(tmp_path) 
     assert "\\%s" % digest in expected, "the backslash name must be escaped"
 
 
-def test_the_empty_file_set_is_not_the_hash_of_nothing(tmp_path) -> None:
-    """Reproduced behaviour 1, pinned against the live pipeline rather than a constant."""
-    (tmp_path / "empty").mkdir()
-    outcome = local_common.compute_hash_for_package_dirs(str(tmp_path), ["empty"])
-    proc = subprocess.run(
-        [
-            "bash",
-            "-c",
-            "cd %s && find empty -type f -print0 2>/dev/null | LC_ALL=C sort -z | "
-            "xargs -0 sha256sum 2>/dev/null | sha256sum | awk '{print $1}'" % tmp_path,
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    assert outcome.out == proc.stdout
-    # And it is NOT the hash of an empty stream, which is what a reasonable port would answer.
-    assert outcome.out.strip() != local_common.EMPTY_STDIN_LINE.split()[0]
-
-
 @pytest.mark.parametrize(
     ("path", "pruned"),
     [
@@ -363,12 +394,12 @@ def test_is_pruned_both_directions(path: str, pruned: bool) -> None:
     assert local_common.is_pruned(path) is pruned
 
 
-def test_a_stamp_grows_a_newline_and_the_reader_keeps_it(tmp_path) -> None:
-    """Reproduced behaviour 5, and the nested-directory creation in the same call."""
+def test_a_stamp_is_written_with_a_newline_and_read_without_it(tmp_path) -> None:
+    """Rule T fix C5 (see `test_delta_c5`), and the nested-directory creation in the same call."""
     target = tmp_path / "deep" / "nested" / "out.stamp"
     local_common.write_stamp_hash(str(target), "deadbeef")
     assert target.read_text(encoding="utf-8") == "deadbeef\n"
-    assert local_common.read_stamp_hash(str(target)) == "deadbeef\n"
+    assert local_common.read_stamp_hash(str(target)) == "deadbeef"
     # The two-line shape `ensure_renet_built:907` writes, and the `sed -n 1p` it reads back.
     local_common.write_stamp_hash(str(target), "abc\nbin=4096:1700000000")
     assert local_common.read_stamp_hash(str(target)).split("\n")[0] == "abc"
@@ -430,41 +461,6 @@ def test_version_gte_gets_the_cases_a_dotted_split_gets_wrong() -> None:
     # LEADING ZEROS COLLAPSE UNDER -V, so these tie there and `sort`'s LAST-RESORT byte compare decides, which makes the pair ASYMMETRIC in a way no version intuition predicts. Measured against the twin: `_version_gte 1.00 1.0` is 0 and `_version_gte 01.0 1.0` is 1, because `1.00` sorts after `1.0` byte-wise while `01.0` sorts before it.
     assert local_common.version_gte("1.00", "1.0") is True
     assert local_common.version_gte("01.0", "1.0") is False
-
-
-def test_has_npm_script_refuses_a_name_that_is_not_a_literal(tmp_path) -> None:
-    """The one place the port refuses where the twin would quietly pattern-match."""
-    (tmp_path / "package.json").write_text('{"scripts":{"abc":"x"}}', encoding="utf-8")
-    env = {"LOCAL_ROOT_DIR": str(tmp_path)}
-    with pytest.raises(ValueError, match="BRE metacharacter"):
-        local_common.has_npm_script("a.c", env)
-    # The control: an ordinary name still answers in both directions.
-    assert local_common.has_npm_script("abc", env) is True
-    assert local_common.has_npm_script("nosuch", env) is False
-
-
-def test_has_npm_script_finds_a_dependency_name_too(tmp_path) -> None:
-    """Reproduced behaviour 3, preserved rather than corrected.
-
-    The twin greps the whole file, so a dependency and the manifest's own keys answer true. Anything that narrowed this to the `scripts` object would be a different function with the same name.
-    """
-    (tmp_path / "package.json").write_text(
-        '{\n  "name": "x",\n  "scripts": {"build": "b"},\n  "dependencies": {"zod": "^4"}\n}\n',
-        encoding="utf-8",
-    )
-    env = {"LOCAL_ROOT_DIR": str(tmp_path)}
-    assert local_common.has_npm_script("build", env) is True
-    assert local_common.has_npm_script("zod", env) is True
-    assert local_common.has_npm_script("name", env) is True
-    assert local_common.has_npm_script("buil", env) is False
-
-
-def test_has_npm_script_exits_two_on_a_missing_manifest(tmp_path) -> None:
-    """Reproduced behaviour 4: that is grep's status, and it is not 1."""
-    env = {"LOCAL_ROOT_DIR": str(tmp_path / "nowhere")}
-    with pytest.raises(local_common.LocalCommonError) as raised:
-        local_common.has_npm_script("build", env)
-    assert raised.value.code == 2
 
 
 def test_the_local_root_seam_derives_the_same_three_paths() -> None:
@@ -583,14 +579,13 @@ def test_no_sha256_tool_degrades_the_same_way_on_both_sides(tmp_path) -> None:
             "the port raised instead of answering: %s" % port.stderr
         )
         assert "sha=1" in port.stdout, port.stdout
-        # THE TWIN'S EXIT CODE IS A RACE, THE EMPTY HASH IS NOT.
-        # With no sha256 tool the pipeline's second hasher exits at once, and whether xargs' child is still writing (SIGPIPE, xargs 125) or already done depends on scheduling: CI run 36488748933's Pytest (3/3) saw the twin answer walk=0 where it usually answers 125.
-        # The contract both sides must share is that no hash is printed; the port models the SIGPIPE outcome, the one the twin produces nearly always.
-        assert twin_walk_code in (0, local_common.XARGS_KILLED_BY_SIGNAL), walk_line
-        assert "walk=%d out=[]" % local_common.XARGS_KILLED_BY_SIGNAL in port.stdout, (
-            "the port answered %r; it must refuse with walk=%d and an empty hash (the twin answered walk=%d)"
-            % (port.stdout.strip(), local_common.XARGS_KILLED_BY_SIGNAL, twin_walk_code)
+        # RULE T FIX C6. The twin's exit code is a scheduling race (125 when xargs' child is killed by SIGPIPE, 0 when it finishes first) and it prints nothing; the port says "No sha256 tool found" and answers 1, which is `_sha256sum`'s own status. The one contract both sides still share is that no hash is printed.
+        assert twin_walk_code in (0, 125), walk_line
+        assert "walk=1 out=[]" in port.stdout, (
+            "the port answered %r; it must refuse with walk=1 and an empty hash (the twin answered walk=%d)"
+            % (port.stdout.strip(), twin_walk_code)
         )
+        assert "No sha256 tool found" in port.stderr, port.stderr
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -672,6 +667,9 @@ def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
 #
 # Driven by `rediacc_ci.core.local_common_actions_shadow_driver`: each case runs both sides as child processes in one fixed sandbox with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker` and `sg` stubbed, and compares rc, both streams, the ordered stub transcript and the whole sandbox tree afterwards. Every case drives the LIVE twin.
 
+# RULE T: action cases whose transcript the port intentionally changed.
+ACTION_DELTA_CASES = {"renet/source-hash-empty"}
+
 ACTION_CASES = [
     (scenario, case) for scenario, cases in actions_driver.SCENARIOS.items() for case in cases
 ]
@@ -685,6 +683,18 @@ def test_actions_match_the_live_twin(scenario, case) -> None:
     with actions_driver.locked():
         old = actions_driver.observe("old", repo, case)
         new = actions_driver.observe("new", repo, case)
+    if "%s/%s" % (scenario, case.name) in ACTION_DELTA_CASES:
+        # Rule T fix C1 (`test_delta_c1`): an empty source tree hashes as nothing, where the twin hashed its own empty stdin. Compared on the two answers, so the case still proves the rest of the transcript moved no other line.
+        assert old != new, "the delta case %s/%s no longer diverges" % (scenario, case.name)
+        old_out = [line for line in old if line.startswith("obs source-hash-empty out#0|")]
+        new_out = [line for line in new if line.startswith("obs source-hash-empty out#0|")]
+        assert old_out[0].endswith(
+            "abcfa6a9d4df344d1781bc2560b5e4cdcae08b39ed303063535e7e1e926a304a"
+        )
+        assert new_out[0].endswith(hashlib.sha256(b"").hexdigest())
+        rest = lambda lines: [x for x in lines if "out#0|" not in x]  # noqa: E731
+        assert rest(old) == rest(new)
+        return
     assert old == new, "case %s/%s diverged" % (scenario, case.name)
 
 
@@ -787,3 +797,122 @@ def test_the_actions_ledger_holds() -> None:
         timeout=180,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+# -- Rule T: the twin's defects, fixed in the port as INTENTIONAL DELTAS ---------
+#
+# PLAN-retire-bash-oracles section 1 and task B4. Each case pins the port's FIXED behaviour and shows the twin's defect beside it, measured live. The live differential above excludes exactly the cases named in `DELTA_CASES`, and `test_every_delta_case_still_diverges` proves each exclusion is still a real divergence.
+
+
+def _bash(script: str, cwd) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["bash", "-c", script], cwd=str(cwd), capture_output=True, text=True, check=False
+    )
+
+
+def test_delta_c1_an_empty_file_set_hashes_as_nothing(tmp_path) -> None:
+    """Defect C1, fixed: an empty file set fingerprints as the hash of NOTHING. The twin's `xargs` still ran `sha256sum` once, which hashed its own empty stdin, so the fingerprint was `sha256("<hash-of-nothing>  -\\n")`."""
+    (tmp_path / "empty").mkdir()
+    twin = _bash(
+        "cd . && find empty -type f -print0 2>/dev/null | LC_ALL=C sort -z | "
+        "xargs -0 sha256sum 2>/dev/null | sha256sum | awk '{print $1}'",
+        tmp_path,
+    )
+    assert twin.stdout.strip() == "abcfa6a9d4df344d1781bc2560b5e4cdcae08b39ed303063535e7e1e926a304a"
+    outcome = local_common.compute_hash_for_package_dirs(str(tmp_path), ["empty"])
+    assert outcome.out == hashlib.sha256(b"").hexdigest() + "\n"
+    assert outcome.code == 0
+
+
+def _repo_with_a_deleted_last_file(tmp_path) -> None:
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@t.t"]
+    subprocess.run([*git, "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "a.txt").write_text("a", encoding="utf-8")
+    (tmp_path / "z.txt").write_text("z", encoding="utf-8")
+    subprocess.run([*git, "-C", str(tmp_path), "add", "."], check=True)
+    subprocess.run([*git, "-C", str(tmp_path), "commit", "-qm", "x"], check=True)
+    (tmp_path / "z.txt").unlink()
+
+
+def test_delta_c2_a_deleted_last_file_never_kills_the_fingerprint(tmp_path) -> None:
+    """Defect C2, fixed: the fingerprint no longer depends on who called it. A changed list ENDING in a deleted file made the twin's bare `existing=` assignment die under armed errexit, so the same repository fingerprinted or did not depending on the call site."""
+    _repo_with_a_deleted_last_file(tmp_path)
+    lib = paths.repo_root() / ".ci" / "lib" / "local-common.sh"
+    twin = _bash(
+        'source %s; set -euo pipefail; _git_tree_fingerprint "$PWD" .; echo "rc=$?"' % lib, tmp_path
+    )
+    assert twin.stdout.strip() == "", "the twin's call-site dependence moved"
+    assert twin.returncode == 1, "the twin's call-site dependence moved"
+    fingerprint = local_common.git_tree_fingerprint(str(tmp_path), ["."])
+    assert fingerprint is not None
+    assert len(fingerprint.strip()) == 64
+    assert local_common.compute_tree_hash(str(tmp_path), ["."]).out == fingerprint
+
+
+def test_delta_c3_has_npm_script_reads_the_scripts_object(tmp_path) -> None:
+    """Defect C3, fixed: a dependency, a manifest key or a script's own VALUE no longer answers true. The twin grepped the whole file for `"name":`."""
+    (tmp_path / "package.json").write_text(
+        '{\n  "name": "x",\n  "scripts": {"build": "echo \\"zod\\": 1", "a.c": "x"},\n'
+        '  "dependencies": {"zod": "^4"}\n}\n',
+        encoding="utf-8",
+    )
+    env = {"LOCAL_ROOT_DIR": str(tmp_path)}
+    twin = _bash(
+        'grep -q "\\"zod\\":" package.json && echo yes; grep -q "\\"name\\":" package.json && echo yes',
+        tmp_path,
+    )
+    assert twin.stdout.count("yes") == 2, "the twin's whole-file search moved"
+    assert local_common.has_npm_script("build", env) is True
+    assert local_common.has_npm_script("zod", env) is False
+    assert local_common.has_npm_script("name", env) is False
+    assert local_common.has_npm_script("buil", env) is False
+    # A name is a literal now, so the BRE refusal is gone and a dotted name is just a name.
+    assert local_common.has_npm_script("a.c", env) is True
+    assert local_common.has_npm_script("abc", env) is False
+
+
+def test_delta_c3_a_manifest_that_is_not_json_is_refused(tmp_path) -> None:
+    (tmp_path / "package.json").write_text("{ nope", encoding="utf-8")
+    with pytest.raises(local_common.LocalCommonError) as raised:
+        local_common.has_npm_script("build", {"LOCAL_ROOT_DIR": str(tmp_path)})
+    assert raised.value.code == 1
+
+
+def test_delta_c4_a_missing_manifest_is_no_script_not_exit_two(tmp_path, capsys) -> None:
+    """Defect C4, fixed: a missing `package.json` answers false with a readable message. The twin exited 2, which is grep's status for an unreadable file, with grep's own un-prefixed text."""
+    twin = _bash(
+        'has() { grep -q "\\"build\\":" nowhere/package.json; }; has; echo "rc=$?"', tmp_path
+    )
+    assert "rc=2" in twin.stdout, "the twin's grep status moved"
+    target = tmp_path / "nowhere"
+    assert local_common.has_npm_script("build", {"LOCAL_ROOT_DIR": str(target)}) is False
+    assert (
+        "has_npm_script: no package.json at %s" % (target / "package.json")
+        in capsys.readouterr().err
+    )
+
+
+def test_delta_c5_the_stamp_reads_back_what_was_written(tmp_path) -> None:
+    """Defect C5, fixed: a value written and read back is the same value. The twin's writer appended a newline the `cat` reader kept, so every round trip grew one byte (and callers had to know to split with `sed -n 1p`)."""
+    target = tmp_path / "out.stamp"
+    local_common.write_stamp_hash(str(target), "deadbeef")
+    assert target.read_text(encoding="utf-8") == "deadbeef\n", "the on-disk format must not change"
+    assert local_common.read_stamp_hash(str(target)) == "deadbeef"
+    local_common.write_stamp_hash(str(target), "abc\nbin=4096:1700000000")
+    assert local_common.read_stamp_hash(str(target)) == "abc\nbin=4096:1700000000"
+    # A file the twin wrote (or one with no newline at all) reads the same way.
+    target.write_text("plain", encoding="utf-8")
+    assert local_common.read_stamp_hash(str(target)) == "plain"
+
+
+def test_delta_c6_no_sha256_tool_fails_one_way(tmp_path, monkeypatch, capsys) -> None:
+    """Defect C6, fixed: a missing sha256 tool is ONE failure, said once, with status 1, from both entry points. The twin had two modes: `_sha256sum` exited 1 with a message, while `compute_hash_for_package_dirs` interpolated an empty command and exited 125 (or 0) with nothing on either stream."""
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "f").write_text("x", encoding="utf-8")
+    monkeypatch.setattr(local_common, "sha256_command", list)
+    outcome = local_common.compute_hash_for_package_dirs(str(tmp_path), ["pkg"])
+    assert (outcome.out, outcome.code) == ("", 1)
+    assert "No sha256 tool found" in capsys.readouterr().err
+    with pytest.raises(local_common.LocalCommonError) as raised:
+        local_common.sha256sum([str(tmp_path / "pkg" / "f")])
+    assert raised.value.code == 1
