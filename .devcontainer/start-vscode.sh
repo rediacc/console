@@ -35,6 +35,11 @@
 
 set -euo pipefail
 
+set -a
+# shellcheck source=/dev/null
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.ci/config/well-known.env"
+set +a
+
 DEFAULT_VERSION="1.109.5"   # keep in sync with OPENVSCODE_VERSION in .devcontainer/Dockerfile
                             # `--version latest` resolves the newest release at run time
 
@@ -174,7 +179,7 @@ resolve_latest_version() {
   trap "rm -f '$TMP_ERR'" RETURN
   local body err
   err="$TMP_ERR"
-  body="$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors https://api.github.com/repos/gitpod-io/openvscode-server/releases/latest 2>"$err")"
+  body="$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "$WK_GH_API_BASE/repos/gitpod-io/openvscode-server/releases/latest" 2>"$err")"
   tag="$(printf '%s' "$body" | sed -n 's/.*"tag_name"[^"]*"openvscode-server-v\([^"]*\)".*/\1/p' | head -1)"
   if [ -z "$tag" ]; then
     # Print what curl actually said. "could not resolve the latest release" on

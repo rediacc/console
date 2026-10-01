@@ -101,7 +101,7 @@ fi
 log_step "Initializing private submodules..."
 
 # Configure git to use token for GitHub (x-access-token works for both PATs and App tokens)
-git config --global url."https://x-access-token:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
+git config --global url."https://x-access-token:${GITHUB_PAT}@${WK_GH_ORIGIN#https://}/".insteadOf "$WK_GH_ORIGIN/"
 
 # Check if submodules are already initialized
 if [[ -f "private/renet/.ci/ci.sh" ]]; then
@@ -332,7 +332,7 @@ check_image_path() {
 
 # All images publish flat under ghcr.io/rediacc/<name> (renet, rdc, server).
 check_image() {
-    check_image_path "ghcr.io/rediacc/$1" "$2"
+    check_image_path "$WK_IMAGE_REGISTRY/$1" "$2"
 }
 
 RENET_EXISTS=$(check_image "renet" "$RENET_TAG")

@@ -8,6 +8,15 @@
 [[ -n "${ACCOUNT_LIB_LOADED:-}" ]] && return 0
 readonly ACCOUNT_LIB_LOADED=1
 
+# The WK_* well-known values (.ci/config/well-known.env). Sourced by local-common.sh
+# already; a standalone source of this file loads them itself.
+if [[ -z "${WK_GH_REPO:-}" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../config" && pwd)/well-known.env"
+    set +a
+fi
+
 # Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
 # rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
 # Every port question below now names the module directly.
@@ -573,7 +582,7 @@ account_dev_credentials() {
     fi
 
     local root_email="${ROOT_EMAIL:-root@rediacc.dev}"
-    local user_email="dev-user@rediacc.io"
+    local user_email="$WK_DEV_USER_EMAIL"
     local partner_email="dev-partner@rediacc.io"
     local root_pw user_pw partner_pw
     root_pw=$(openssl rand -hex 8)
@@ -676,7 +685,7 @@ account_banner_row() {
 # the running gateway's port from the state file -- the store + TOTP secret are
 # seeded by `account dev`, so the gateway must be up. Dev-only route.
 account_totp() {
-    local email="${1:-dev-user@rediacc.io}"
+    local email="${1:-$WK_DEV_USER_EMAIL}"
     if [[ ! -f "$ACCOUNT_STATE_FILE" ]]; then
         log_error "No running dev gateway (state file absent). Start it: ./run.sh account dev"
         exit 1

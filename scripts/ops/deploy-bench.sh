@@ -62,7 +62,7 @@ WORKER_DIR="$ROOT_DIR/workers/account"
 WORKER_NAME="rediacc-account-bench"
 CONFIG="wrangler.bench.toml"
 DB_NAME="account-db-bench"
-DOMAIN="bench.rediacc.com"
+DOMAIN="${WK_BENCH_ORIGIN#https://}"
 # Bench has its own Turnstile widget (rediacc-console-bench) so rotations of
 # the production widget don't block bench deploys. The sitekey is public (it
 # ships in HTML). The secret is the store entry CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH,

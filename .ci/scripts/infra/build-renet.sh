@@ -96,7 +96,7 @@ else
     # Step 3: Require Go
     if ! command -v go &>/dev/null; then
         log_error "Go is not installed (required for building renet)"
-        log_error "Install Go from: https://go.dev/dl/"
+        log_error "Install Go from: $WK_GO_DL_BASE/"
         exit 1
     fi
 

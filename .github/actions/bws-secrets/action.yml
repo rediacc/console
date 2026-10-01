@@ -18,11 +18,11 @@ description: >
   name absent from the map fails HERE, before sm-action runs. A malformed line
   fails here too.
 
-  AN ORG-SETTINGS PRECONDITION THAT NO IN-TREE GATE CAN SEE. rediacc/console
+  AN ORG-SETTINGS PRECONDITION THAT NO IN-TREE GATE CAN SEE. This repository
   restricts which actions may run (`allowed_actions: selected`), and
   bitwarden/sm-action is not owned by rediacc, not GitHub-owned, and not
   Marketplace-verified -- so the first CI run of this composite failed with
-  "The action bitwarden/sm-action@1238aae8... is not allowed in rediacc/console"
+  "The action bitwarden/sm-action@1238aae8... is not allowed in <owner>/<repo>"
   before any secret was fetched (run 33690518859, 2026-09-02). Fixed by adding
   ONE pattern to the repository allowlist, and deliberately the exact pinned SHA
   rather than `bitwarden/*`:
@@ -31,7 +31,7 @@ description: >
 
   So bumping the pin below is a THREE-PLACE change: this file's `uses:` line,
   the checksum table in the prewarm step, and
-  /repos/rediacc/console/actions/permissions/selected-actions. The allowlist is
+  /repos/<owner>/<repo>/actions/permissions/selected-actions. The allowlist is
   recorded here because it is invisible in the tree -- the failure surfaces only
   after a push, and only as an action-resolution error that names no secret at
   all. (account/renet/elite are `allowed_actions: all` and needed no change.)

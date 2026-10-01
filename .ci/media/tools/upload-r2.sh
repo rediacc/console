@@ -184,4 +184,4 @@ else
         --path "$REMOTE_KEY" --size "$SIZE" --sha256 "$SHA256" "${ENGINE_ARGS[@]}"
 fi
 
-log_info "Done: https://media.rediacc.com/${REMOTE_KEY}"
+log_info "Done: $WK_MEDIA_ORIGIN/${REMOTE_KEY}"

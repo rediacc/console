@@ -404,7 +404,7 @@ jobs:
         env:
           GH_APP_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git config --global url."https://x-access-token:${GH_APP_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${GH_APP_TOKEN}@${GITHUB_SERVER_URL#https://}/".insteadOf "$GITHUB_SERVER_URL/"
           git submodule update --init --depth=1 private/renet
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0

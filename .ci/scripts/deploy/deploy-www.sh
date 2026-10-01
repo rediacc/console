@@ -95,7 +95,7 @@ compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
 [vars]
-ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
+ALLOWED_EMAIL_DOMAINS = "$WK_APEX_DOMAIN,$WK_INFRA_DOMAIN"
 # Must be set explicitly. envSchema defaults ENVIRONMENT to "production", so an
 # unset value here made every preview worker report environment "production" and
 # hand out updateChannel "stable" -- while the install.sh this same worker serves

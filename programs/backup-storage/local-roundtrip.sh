@@ -40,9 +40,14 @@
 # from this tree already installed on the VM, and start-local-plane.sh running.
 set -euo pipefail
 
+set -a
+# shellcheck source=/dev/null
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.ci/config/well-known.env"
+set +a
+
 VM="${VM:-192.168.111.11}"
 BRIDGE_HOST="${BRIDGE_HOST:-192.168.111.254}"
-GATEWAY_PORT="${GATEWAY_PORT:-4800}"
+GATEWAY_PORT="${GATEWAY_PORT:-$WK_ACCOUNT_DEV_PORT}"
 BASE="http://${BRIDGE_HOST}:${GATEWAY_PORT}/account/api/v1"
 DATASTORE="${DATASTORE:-/mnt/rediacc}"
 CELL_BYTES="${CELL_BYTES:-65536}"

@@ -46,7 +46,7 @@ fi
 
 failed=()
 for repo in "${repos[@]}"; do
-    url="https://github.com/${owner}/${repo}.git"
+    url="$GITHUB_SERVER_URL/${owner}/${repo}.git"
     attempt=1
     last_err=""
     while :; do

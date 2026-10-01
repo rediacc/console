@@ -160,12 +160,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Promote Docker images (:edge -> :stable)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         run: |
           for image in renet rdc; do
-            SRC="ghcr.io/rediacc/${image}:edge"
-            DST="ghcr.io/rediacc/${image}:stable"
+            SRC="${{ env.WK_IMAGE_REGISTRY }}/${image}:edge"
+            DST="${{ env.WK_IMAGE_REGISTRY }}/${image}:stable"
             echo "Promoting ${image}: edge -> stable"
             docker buildx imagetools create -t "$DST" "$SRC"
           done

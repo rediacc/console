@@ -85,10 +85,10 @@ cd "$REPO_ROOT"
 
 # Submodule to repo mapping
 declare -A SUBMODULE_REPOS=(
-    ["private/renet"]="rediacc/renet"
-    ["private/homebrew-tap"]="rediacc/homebrew-tap"
-    ["private/account"]="rediacc/account"
-    ["private/elite"]="rediacc/elite"
+    ["private/renet"]="$WK_RENET_REPO"
+    ["private/homebrew-tap"]="$WK_HOMEBREW_TAP_REPO"
+    ["private/account"]="$WK_ACCOUNT_REPO"
+    ["private/elite"]="$WK_ELITE_REPO"
 )
 
 # Patterns for low-effort replies that don't count as real responses

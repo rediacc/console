@@ -443,7 +443,7 @@ check_node_version() {
 check_go_installed() {
     if ! command -v go &>/dev/null; then
         log_error "Go is not installed (required for building renet)"
-        log_info "Install Go from: https://go.dev/dl/"
+        log_info "Install Go from: $WK_GO_DL_BASE/"
         exit 1
     fi
     log_debug "Go present: $(command -v go)"
@@ -485,7 +485,7 @@ ensure_go_installed() {
 
     if [[ "$(uname -s)" != "Linux" ]]; then
         log_error "Go $want_version is required and this helper only installs it on Linux"
-        log_info "Install it from https://go.dev/dl/ and re-run"
+        log_info "Install it from $WK_GO_DL_BASE/ and re-run"
         return 1
     fi
 
@@ -500,7 +500,7 @@ ensure_go_installed() {
     esac
 
     local tarball="go${want_version}.linux-${arch}.tar.gz"
-    local url="https://go.dev/dl/${tarball}"
+    local url="$WK_GO_DL_BASE/${tarball}"
     local tmp
     tmp="$(mktemp -d)"
 

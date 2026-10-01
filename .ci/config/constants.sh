@@ -34,6 +34,26 @@ fi
 unset _REDIACC_TOOLCHAIN_ENV
 
 # =============================================================================
+# WELL-KNOWN VALUES
+# =============================================================================
+# Sourced, not restated, exactly like the pins above. .ci/config/well-known.env
+# is the only place an origin, bucket, slug, image registry, owned path or
+# address is written; check:ci-literal-sources fails on a copy anywhere else.
+# The WK_* names are facts. The knobs below (RELEASES_BASE_URL, DOCKER_REGISTRY,
+# ...) keep their `${X:-...}` override where they had one, and default to the fact.
+_REDIACC_WELL_KNOWN_ENV="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/well-known.env"
+if [[ -r "$_REDIACC_WELL_KNOWN_ENV" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    . "$_REDIACC_WELL_KNOWN_ENV"
+    set +a
+else
+    echo "constants.sh: well-known values missing: $_REDIACC_WELL_KNOWN_ENV" >&2
+    return 1 2>/dev/null || exit 1
+fi
+unset _REDIACC_WELL_KNOWN_ENV
+
+# =============================================================================
 # VERSION REQUIREMENTS
 # =============================================================================
 # DERIVED FROM toolchain.env, NOT restated: NODE_VERSION is already in scope
@@ -81,7 +101,7 @@ readonly CI_LIB_DIR="$CI_DIR/lib"
 # DOCKER REGISTRY CONFIGURATION
 # =============================================================================
 # DOCKER_REGISTRY can be overridden by .env for local development
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc}"
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-$WK_IMAGE_REGISTRY}"
 DOCKER_TAG="${DOCKER_TAG:-latest}"
 
 # =============================================================================
@@ -104,7 +124,7 @@ readonly VM_NET_BASE_DEFAULT="192.168.111"
 readonly VM_BRIDGE_DEFAULT=1
 
 # Default System Configuration (can be overridden by .env)
-SYSTEM_ADMIN_EMAIL="${SYSTEM_ADMIN_EMAIL:-admin@rediacc.io}"
+SYSTEM_ADMIN_EMAIL="${SYSTEM_ADMIN_EMAIL:-$WK_ADMIN_EMAIL_DEFAULT}"
 SYSTEM_ADMIN_PASSWORD="${SYSTEM_ADMIN_PASSWORD:-admin}"
 SYSTEM_ORGANIZATION_NAME="${SYSTEM_ORGANIZATION_NAME:-Default Organization}"
 SYSTEM_DEFAULT_BRIDGE_NAME="${SYSTEM_DEFAULT_BRIDGE_NAME:-Global Bridges}"
@@ -114,7 +134,7 @@ SYSTEM_DEFAULT_TEAM_NAME="${SYSTEM_DEFAULT_TEAM_NAME:-Private Team}"
 # =============================================================================
 # ACCOUNT DEV CONFIGURATION
 # =============================================================================
-readonly ACCOUNT_DEV_PORT_PREFERRED=4800
+readonly ACCOUNT_DEV_PORT_PREFERRED="$WK_ACCOUNT_DEV_PORT"
 readonly ACCOUNT_DEV_PORT_RANGE_END=5799
 readonly ACCOUNT_STATE_FILE="$CONSOLE_ROOT_DIR/.account-state"
 readonly ACCOUNT_LOG_DIR="$CONSOLE_ROOT_DIR/.account-logs"
@@ -128,11 +148,11 @@ readonly ACCOUNT_LOG_DIR="$CONSOLE_ROOT_DIR/.account-logs"
 #
 # The URL is a different matter: its hostname follows the BRANCH, so it changes
 # when the branch does. A bookmark survives a reboot, not a checkout.
-readonly DEVBOX_IMAGE="ghcr.io/rediacc/devcontainer:latest"
+readonly DEVBOX_IMAGE="$WK_IMAGE_REGISTRY/devcontainer:latest"
 # The LOCAL repository of the per-operator derived image: the base with `vscode`
 # renumbered to the host's ids (.devcontainer/Dockerfile.uid). Deliberately not
 # a ghcr.io/ name, so a derived tag can never be mistaken for something to push.
-readonly DEVBOX_UID_IMAGE_REPO="rediacc/devbox"
+readonly DEVBOX_UID_IMAGE_REPO="$WK_DEVBOX_UID_IMAGE_REPO"
 readonly DEVBOX_PORT_RANGE_START=17000
 readonly DEVBOX_PORT_RANGE_END=17999
 readonly DEVBOX_PORT_BLOCK=10
@@ -163,7 +183,7 @@ readonly DEVBOX_DOMAIN="localhost"
 # =============================================================================
 # PUBLISHING CONFIGURATION
 # =============================================================================
-PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"
+PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-$WK_IMAGE_REGISTRY}"
 
 # Bot identity for CI commits: the GIT_BOT_NAME / GIT_BOT_EMAIL Bitwarden secrets (ci-shared).
 # Used by: update-homebrew-tap.sh, cd-v2.yml (git tag creation).
@@ -201,17 +221,17 @@ readonly VERSION_FILES_JSON=(
 # =============================================================================
 # RELEASE DISTRIBUTION CONFIGURATION (Cloudflare R2)
 # =============================================================================
-readonly RELEASES_BASE_URL="${RELEASES_BASE_URL:-https://releases.rediacc.com}"
-readonly RELEASES_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"
+readonly RELEASES_BASE_URL="${RELEASES_BASE_URL:-$WK_RELEASES_ORIGIN}"
+readonly RELEASES_BUCKET="${RELEASES_BUCKET:-$WK_RELEASES_BUCKET}"
 
 # =============================================================================
 # PACKAGE REPOSITORY CONFIGURATION
 # =============================================================================
 readonly PKG_NAME="rediacc-cli"
 readonly PKG_BINARY_NAME="rdc"
-readonly PKG_MAINTAINER="Rediacc <info@rediacc.com>"
+readonly PKG_MAINTAINER="Rediacc <$WK_PKG_MAINTAINER_EMAIL>"
 readonly PKG_DESCRIPTION="Rediacc CLI - automation and scripting tool"
-readonly PKG_HOMEPAGE="https://www.rediacc.com"
+readonly PKG_HOMEPAGE="$WK_SITE_ORIGIN"
 readonly PKG_SECTION="utils"
 readonly PKG_PRIORITY="optional"
 readonly R2_MAX_RELEASE_VERSIONS=20

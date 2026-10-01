@@ -41,7 +41,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck source=../../.ci/scripts/lib/common.sh
 source "$REPO_ROOT/.ci/scripts/lib/common.sh"
 
-BUCKET="rediacc-releases"
+BUCKET="$WK_RELEASES_BUCKET"
 DRY_RUN=true
 ASSUME_YES=false
 
@@ -325,7 +325,7 @@ stage2c() {
                 reason="stale $((age / 86400))d"
             else
                 local state
-                state="$(gh pr view "$pr_num" --repo rediacc/console --json state --jq '.state' 2>/dev/null)"
+                state="$(gh pr view "$pr_num" --repo "$WK_GH_REPO" --json state --jq '.state' 2>/dev/null)"
                 [[ -z "$state" ]] && state="UNKNOWN"
                 if [[ "$state" != "OPEN" ]]; then
                     reason="PR #${pr_num} ${state}"

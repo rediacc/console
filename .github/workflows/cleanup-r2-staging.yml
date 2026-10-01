@@ -40,6 +40,9 @@ jobs:
             .github/actions
             .ci/rediacc_ci
 
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Fetch secrets from Bitwarden
         # SHADOW RUN: exports BWS_-prefixed copies that nothing consumes. The
         # live secrets.* reads below are untouched until the cutover flips them.
@@ -57,5 +60,5 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-          RELEASES_BUCKET: rediacc-releases
+          RELEASES_BUCKET: ${{ env.WK_RELEASES_BUCKET }}
           CHANNEL: pr-${{ github.event.pull_request.number }}

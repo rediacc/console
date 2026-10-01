@@ -21,6 +21,15 @@ readonly DEVBOX_LIB_LOADED=1
 
 DEVBOX_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# The WK_* well-known values (.ci/config/well-known.env). Sourced by local-common.sh
+# already; a standalone source of this file loads them itself.
+if [[ -z "${WK_GH_REPO:-}" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../config" && pwd)/well-known.env"
+    set +a
+fi
+
 # Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
 # rediacc_ci.core.ports, is DELETED (W7P5-b): a shim is a delay, not an exit.
 # `derive_slot` and `find_port_block` below name the module directly.
@@ -1038,7 +1047,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         --label "traefik.http.routers.${slug}-account.rule=Host(\`${slug}-account.${DEVBOX_DOMAIN}\`)"
         --label "traefik.http.routers.${slug}-account.entrypoints=web"
         --label "traefik.http.routers.${slug}-account.service=${slug}-account"
-        --label "traefik.http.services.${slug}-account.loadbalancer.server.port=4800"
+        --label "traefik.http.services.${slug}-account.loadbalancer.server.port=${WK_ACCOUNT_DEV_PORT}"
         # Database browser. `account db` serves sqlite_web here, whose UI comes
         # from this same origin -- so there is no hosted third-party page and no
         # Local Network Access permission to grant. (An earlier version
@@ -1098,7 +1107,7 @@ devbox_up() { # devbox_up [force_pull] [--no-rehost]
         -e DEVBOX_WORKSPACE="$workspace" \
         -e REDIACC_NPM_RUNTIME=devbox \
         -e REDIACC_DEV_BIND=0.0.0.0 \
-        -e REDIACC_DEV_PORT_BASE=4800 \
+        -e REDIACC_DEV_PORT_BASE=${WK_ACCOUNT_DEV_PORT} \
         -w "$workspace" \
         --entrypoint /usr/local/bin/devbox-entrypoint.sh \
         "$run_image" >/dev/null || {

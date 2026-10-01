@@ -140,9 +140,9 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
         ' "$_lockfile")
 
         if command -v docker >/dev/null 2>&1 &&
-            docker image inspect rediacc/renet:latest >/dev/null 2>&1; then
+            docker image inspect $WK_RENET_REPO:latest >/dev/null 2>&1; then
             # Source A: the builder image from this run's embed_assets.
-            _nb_cid="$(docker create rediacc/renet:latest)"
+            _nb_cid="$(docker create $WK_RENET_REPO:latest)"
             for _entry in "${_native_assets[@]}"; do
                 IFS=$'\t' read -r _dir _base _na <<<"$_entry"
                 docker cp "$_nb_cid:$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||

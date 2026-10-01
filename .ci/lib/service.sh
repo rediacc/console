@@ -63,7 +63,7 @@ service_start() {
 
     export SERVICE_HTTP_PORT="$port"
 
-    log_step "Starting rediacc/web service (port: $port)"
+    log_step "Starting $WK_WEB_IMAGE_REPO service (port: $port)"
 
     # Source environment (generates secrets, writes .env)
     source "$SERVICE_DOCKER_DIR/env.sh"
@@ -72,7 +72,7 @@ service_start() {
     if [[ "$skip_build" == "true" ]]; then
         log_info "Skipping build (--no-build)"
     else
-        log_step "Building rediacc/web:${SERVICE_TAG} image..."
+        log_step "Building $WK_WEB_IMAGE_REPO:${SERVICE_TAG} image..."
         _service_compose build web
     fi
 

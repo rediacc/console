@@ -51,7 +51,7 @@ WEB_TAG="${WEB_TAG:-$TAG}"
     # Pull all required images. The server image is the onprem build at
     # ghcr.io/rediacc/server (outside the elite/ namespace), tagged with WEB_TAG.
     log_step "Pulling server:${WEB_TAG}..."
-    docker pull --quiet "ghcr.io/rediacc/server:${WEB_TAG}"
+    docker pull --quiet "$WK_IMAGE_REGISTRY/server:${WEB_TAG}"
 
     log_step "Pulling renet:${RENET_TAG}..."
     docker pull --quiet "${DOCKER_REGISTRY}/renet:${RENET_TAG}"

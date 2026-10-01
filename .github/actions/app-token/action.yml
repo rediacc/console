@@ -123,7 +123,7 @@ runs:
       env:
         TOKEN: ${{ steps.token.outputs.token }}
       run: |
-        git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+        git config --global url."https://x-access-token:${TOKEN}@${GITHUB_SERVER_URL#https://}/".insteadOf "$GITHUB_SERVER_URL/"
 
     # A token that mints successfully is not yet readable for every repository in its scope: jobs 108876231507 and 109010480668 cloned elite, homebrew-tap and renet with it while account answered "Repository not found" twice within 6 seconds of the mint.
     # This step reads each scoped repository through the credential written above, with up to 60 seconds of backoff, so every caller's checkout starts only once the token works, and a repository that never becomes readable fails here by name.

@@ -64,7 +64,7 @@ fi
 if [ "$current_uid" != "$HOST_UID" ] || [ "$current_gid" != "$HOST_GID" ]; then
   log "ERROR: $CONTAINER_USER is ${current_uid}:${current_gid} in this image, the host is ${HOST_UID}:${HOST_GID}"
   log "This container was not created from the image derived for this host."
-  log "The devbox runs rediacc/devbox:uid${HOST_UID}-gid${HOST_GID}-<base id>-<recipe hash>, derived from"
+  log "The devbox runs the image tagged uid${HOST_UID}-gid${HOST_GID}-<base id>-<recipe hash>, derived from"
   log ".devcontainer/Dockerfile.uid by devbox_ensure_uid_image. Recreate it:"
   log "  ./run.sh devbox remove && ./run.sh devbox up"
   exit 1

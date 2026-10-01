@@ -23,6 +23,11 @@
 
 set -euo pipefail
 
+set -a
+# shellcheck source=/dev/null
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.ci/config/well-known.env"
+set +a
+
 ZONE_ID="9e802649c143c9cefd811d8fd671d31c" # rediacc.com
 DRY_RUN=0
 
@@ -52,7 +57,7 @@ fi
 # Locate the http_request_dynamic_redirect ruleset for this zone.
 RULESET_ID=$(
     curl -sSf "${AUTH[@]}" \
-        "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/rulesets" |
+        "$WK_CF_API_BASE/zones/${ZONE_ID}/rulesets" |
         jq -r '.result[] | select(.phase == "http_request_dynamic_redirect") | .id'
 )
 if [[ -z "$RULESET_ID" ]]; then
@@ -64,13 +69,13 @@ echo "ruleset: ${RULESET_ID}"
 # Fetch current rules.
 CURRENT=$(
     curl -sSf "${AUTH[@]}" \
-        "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/rulesets/${RULESET_ID}"
+        "$WK_CF_API_BASE/zones/${ZONE_ID}/rulesets/${RULESET_ID}"
 )
 
 # The apex rule: match any URL on the bare rediacc.com host, 301 to
 # https://www.rediacc.com/<path>, preserve query string.
-APEX_EXPR='(http.request.full_uri wildcard r"https://rediacc.com/*")'
-APEX_TARGET_EXPR='wildcard_replace(http.request.full_uri, r"https://rediacc.com/*", r"https://www.rediacc.com/${1}")'
+APEX_EXPR="(http.request.full_uri wildcard r\"https://$WK_APEX_DOMAIN/*\")"
+APEX_TARGET_EXPR="wildcard_replace(http.request.full_uri, r\"https://$WK_APEX_DOMAIN/*\", r\"$WK_SITE_ORIGIN/\${1}\")"
 
 HAS_APEX=$(jq -r --arg expr "$APEX_EXPR" '
   .result.rules[]?
@@ -110,7 +115,7 @@ else
     RESP=$(curl -sSf "${AUTH[@]}" -X POST \
         -H "Content-Type: application/json" \
         -d "$PAYLOAD" \
-        "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/rulesets/${RULESET_ID}/rules")
+        "$WK_CF_API_BASE/zones/${ZONE_ID}/rulesets/${RULESET_ID}/rules")
 
     NEW_ID=$(jq -r '.result.rules[-1].id // empty' <<<"$RESP")
     if [[ -n "$NEW_ID" ]]; then
@@ -125,10 +130,10 @@ fi
 # Smoke test (no-auth, follows public traffic path).
 echo ""
 echo "smoke test:"
-STATUS=$(curl -sI "https://rediacc.com/solutions/backup-verification/" | head -1 | awk '{print $2}')
-LOC=$(curl -sI "https://rediacc.com/solutions/backup-verification/" | grep -i '^location:' | awk '{print $2}' | tr -d '\r' || true)
-if [[ "$STATUS" == "301" ]] && [[ "$LOC" == *"www.rediacc.com"* ]]; then
-    echo "[OK]   rediacc.com/* -> www.rediacc.com/* (live, 301)"
+STATUS=$(curl -sI "https://$WK_APEX_DOMAIN/solutions/backup-verification/" | head -1 | awk '{print $2}')
+LOC=$(curl -sI "https://$WK_APEX_DOMAIN/solutions/backup-verification/" | grep -i '^location:' | awk '{print $2}' | tr -d '\r' || true)
+if [[ "$STATUS" == "301" ]] && [[ "$LOC" == *"${WK_SITE_ORIGIN#https://}"* ]]; then
+    echo "[OK]   $WK_APEX_DOMAIN/* -> ${WK_SITE_ORIGIN#https://}/* (live, 301)"
 else
     echo "[WARN] smoke test unexpected: status=${STATUS} location=${LOC}" >&2
 fi
@@ -137,12 +142,12 @@ fi
 # Left as manual operator action — only 1 URL in the GSC 404 list.
 CONSOLE_CNAME=$(
     curl -sSf "${AUTH[@]}" \
-        "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/dns_records?name=console.rediacc.com" |
+        "$WK_CF_API_BASE/zones/${ZONE_ID}/dns_records?name=${WK_CONSOLE_ORIGIN#https://}" |
         jq -r '.result[0] | "\(.content) proxied=\(.proxied)"'
 )
 echo ""
 echo "advisory:"
-echo "  console.rediacc.com -> ${CONSOLE_CNAME}"
+echo "  ${WK_CONSOLE_ORIGIN#https://} -> ${CONSOLE_CNAME}"
 echo "  Not proxied; CF Redirect Rules can't intercept it."
 echo "  Fix (manual): flip proxied=true on that CNAME + add a redirect rule,"
 echo "  OR change the CNAME to an orange-clouded host we control."

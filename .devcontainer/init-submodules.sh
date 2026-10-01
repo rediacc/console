@@ -62,6 +62,10 @@ say() { [ "$QUIET" = true ] || printf '%s\n' "$*"; }
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "Not inside a git repository." >&2; exit 2; }
 cd "$REPO_ROOT" || exit 2
+set -a
+# shellcheck source=/dev/null
+. "$REPO_ROOT/.ci/config/well-known.env"
+set +a
 
 if [ ! -f .gitmodules ]; then
   say "No .gitmodules found, nothing to initialize."
@@ -194,7 +198,7 @@ diagnose_github_auth() {
       # rejected token as valid: `curl -f -D -` still dumps the 401 headers.
       local resp code login scopes
       resp="$(curl -sS --retry 5 --retry-delay 3 -D - -H "Authorization: Bearer $SUBMODULE_TOKEN" \
-                https://api.github.com/user 2>/dev/null)"
+                "$WK_GH_API_BASE/user" 2>/dev/null)"
       code="$(printf '%s' "$resp" | sed -n '1s@^HTTP/[0-9.]* \([0-9]*\).*@\1@p' | tail -1)"
       if [ "$code" = 200 ]; then
         login="$(printf '%s' "$resp" | sed -n 's/.*"login"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
