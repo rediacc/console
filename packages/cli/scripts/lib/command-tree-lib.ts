@@ -35,6 +35,8 @@ export interface CommandNode {
   options: OptionNode[];
   arguments: ArgumentNode[];
   subcommands: CommandNode[];
+  /** Root only: the global options `GLOBAL_OPTION_LONGS` keeps off every per-command node, so a consumer validating `rdc <cmd> -o json` learns them from the tree instead of hand-copying the list. */
+  globalOptions?: OptionNode[];
 }
 
 export interface OptionNode {
@@ -219,13 +221,7 @@ export function extractContractPositional(
 // ---------- Tree walker ----------
 
 /** Global options that appear on every command and are excluded per-command. */
-export const GLOBAL_OPTION_LONGS = new Set([
-  '--output',
-  '--context',
-  '--lang',
-  '--version',
-  '--help',
-]);
+export const GLOBAL_OPTION_LONGS = new Set(['--output', '--lang', '--version', '--help']);
 
 /**
  * Top-level commands held out of the generated contract.

@@ -255,6 +255,9 @@ const PY_LAUNCHERS = new Set([
  * (`["rdc", "repo", ...]`), which `\brdc\s+` never matched in any language.
  */
 function pythonProsePosition(line: string, index: number): boolean {
+  // The text an `echo`/`printf` prints is output, not an invocation: `DUMMY_BINARY = '#!/bin/sh\necho "rdc version 99.0.0"\n'` (testrun/linux_packages.py) is a fake binary's version line. Only these two printers, never any quote: `ssh host "rdc repo up"` and `bash -c "rdc ..."` ARE invocations.
+  // `(?<=\\n)` because the printer often follows an escaped newline inside the literal, where `\b` cannot fire (`\necho` reads as `necho`).
+  if (/(?:\b|(?<=\\n))(?:echo|printf)\s+["']$/.test(line.slice(0, index))) return true;
   const preceding = /([A-Za-z][A-Za-z0-9_-]*)\s+$/.exec(line.slice(0, index));
   if (!preceding) return false;
   return !PY_LAUNCHERS.has(preceding[1].toLowerCase());
@@ -284,6 +287,15 @@ export function scanSourceText(
       continue;
     for (const match of lines[i].matchAll(SOURCE_PATTERN)) {
       if (opts.python && pythonProsePosition(lines[i], match.index)) continue;
+      // A first word running into a file extension is a FILE handed to a binary, not a subcommand: `RDC_BINARY=/path/to/rdc test-rdc-update.sh` (testrun/rdc_update.py's usage line). No `rdc` subcommand contains a dot.
+      if (
+        /^\.\w/.test(
+          lines[i].slice(
+            match.index + match[0].length - match[1].length + match[1].split(/\s/)[0].length
+          )
+        )
+      )
+        continue;
       const hit = classifyCommandPath(tokensAfterRdc(match[1]));
       if (hit) hits.push({ ...hit, line: i + 1 });
     }
@@ -348,9 +360,9 @@ function globalFlags(): Set<string> {
   if (cachedGlobalFlags) return cachedGlobalFlags;
   const tree = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'packages/cli/scripts/command-tree.json'), 'utf-8')
-  ) as { options?: { flags: string }[] };
+  ) as { options?: { flags: string }[]; globalOptions?: { flags: string }[] };
   const flags = new Set<string>(['--help', '-h']);
-  for (const option of tree.options ?? []) {
+  for (const option of [...(tree.options ?? []), ...(tree.globalOptions ?? [])]) {
     for (const flag of optionFlags(option)) flags.add(flag);
   }
   cachedGlobalFlags = flags;

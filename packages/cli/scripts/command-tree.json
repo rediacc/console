@@ -5663,5 +5663,25 @@
       "arguments": [],
       "subcommands": []
     }
+  ],
+  "globalOptions": [
+    {
+      "flags": "-V, --version",
+      "descriptionKey": null,
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
+      "flags": "-o, --output <format>",
+      "descriptionKey": "options.output",
+      "mandatory": false,
+      "defaultValue": "table"
+    },
+    {
+      "flags": "-l, --lang <code>",
+      "descriptionKey": "options.lang",
+      "mandatory": false,
+      "defaultValue": null
+    }
   ]
 }
