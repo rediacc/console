@@ -46,7 +46,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WK_GH_API_BASE, WK_RENET_REPO } from '@rediacc/shared/config/well-known.generated';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
-import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 // Extracted so scripts/gates/check-suppression-liveness.ts can reuse the inventory without importing this module (which runs main() at import time).
 import {
@@ -342,15 +342,15 @@ async function main(): Promise<void> {
   console.error('    npm run check:ci-embed-asset-freshness -- --upgrade');
   console.error('  then, for each bumped component:');
   console.error('    1. rebuild the builder image so the new binaries are pulled:');
-  console.error(
-    `         (cd private/renet && docker build -t ${WK_RENET_REPO}:latest . && ./build.sh embed_assets --force)`
+  errorLines(
+    `         (cd private/renet && docker build -t ${WK_RENET_REPO}:latest . && ./build.sh embed_assets --force)`,
+    '    2. refresh any SHA256 pin (zot/k3s) + the AssetK3sVersion const in',
+    '       private/renet/pkg/embed/embed.go if k3s changed;',
+    '    3. update the credits inventories (credits.go + third-party-credits.json)',
+    '       — `npm run check:ci-embed-credits` tells you the exact expected versions.',
+    '  A bump may need a Dockerfile tweak (e.g. a version-pinned patch that no longer',
+    '  applies); the --upgrade only rewrites the ARG, so re-run this gate to confirm.'
   );
-  console.error('    2. refresh any SHA256 pin (zot/k3s) + the AssetK3sVersion const in');
-  console.error('       private/renet/pkg/embed/embed.go if k3s changed;');
-  console.error('    3. update the credits inventories (credits.go + third-party-credits.json)');
-  console.error('       — `npm run check:ci-embed-credits` tells you the exact expected versions.');
-  console.error('  A bump may need a Dockerfile tweak (e.g. a version-pinned patch that no longer');
-  console.error('  applies); the --upgrade only rewrites the ARG, so re-run this gate to confirm.');
   console.error('');
   console.error('TO HOLD one back instead: add its base name (e.g. `k3s`) with a `# BLOCKER:`');
   console.error('reason to .ci/policy/.embed-assets-upgrade-blocklist.');

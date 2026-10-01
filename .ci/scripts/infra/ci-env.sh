@@ -17,10 +17,9 @@ set -e
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONSOLE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-set -a
 # shellcheck source=/dev/null
-. "$CONSOLE_ROOT/.ci/config/well-known.env"
-set +a
+source "$CONSOLE_ROOT/scripts/lib/well-known.sh"
+well_known_load
 
 # =============================================================================
 # PRESERVE WORKFLOW ENVIRONMENT VARIABLES

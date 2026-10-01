@@ -34,6 +34,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import simulate_promotion as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -211,8 +212,9 @@ with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
 sys.exit(0)
 """
 
-# `awk`, `xargs`, `mktemp`, `sed` and `bash` are all reached by the twin, and `jq` by cf-purge-urls.sh.
+# `awk`, `xargs`, `mktemp`, `sed` and `bash` are all reached by the twin, `jq` and the registry loader's `python3` by cf-purge-urls.sh.
 PATH_MINIMUM = (
+    "python3",
     "awk",
     "xargs",
     "mktemp",
@@ -293,6 +295,7 @@ def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pat
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    copy_loader(root)
 
     for side in ("old", "new"):
         base = root / f"{side}-s3" / port.BUCKET

@@ -45,6 +45,7 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.infra import ci_env
+from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import ADMIN_EMAIL_DEFAULT, IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
@@ -136,6 +137,7 @@ def _tree(base: pathlib.Path) -> pathlib.Path:
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", base / ".ci" / "config" / "well-known.env"
     )
+    copy_loader(base)
     shutil.copy2(PORT, base / ".ci" / "rediacc_ci" / "infra" / "ci_env.py")
     return base
 
@@ -431,8 +433,8 @@ def test_a_missing_node_ends_the_sourcing_shell_at_127() -> None:
         base = _tree(pathlib.Path(td))
         _stub_bin(base)
         (base / "bin" / "node").unlink()
-        # A CURATED PATH, because the real one has a real node on it and the point of this case is that there is none. `dirname` and `uname` are what the twin needs before it reaches node: its own SCRIPT_DIR, and common.sh's detect_os/detect_arch, which run at SOURCE time.
-        for name in ("dirname", "uname"):
+        # A CURATED PATH, because the real one has a real node on it and the point of this case is that there is none. `dirname`, `uname` and `python3` (the registry loader) are what the twin needs before it reaches node: its own SCRIPT_DIR, and common.sh's detect_os/detect_arch, which run at SOURCE time.
+        for name in ("dirname", "uname", "python3"):
             real = shutil.which(name)
             assert real is not None, name
             (base / "bin" / name).symlink_to(real)
@@ -598,9 +600,9 @@ def test_no_github_env_means_nothing_is_appended_anywhere() -> None:
         old, new = results
         assert old.returncode == new.returncode == 0
         assert old.stdout == new.stdout
-        assert sorted(p.name for p in base.iterdir()) == sorted([".ci", "bin", "calls.log"]), (
-            "something was written outside the tree"
-        )
+        assert sorted(p.name for p in base.iterdir()) == sorted(
+            [".ci", "bin", "calls.log", "scripts"]
+        ), "something was written outside the tree"
 
 
 def test_an_unwritable_env_directory_stops_the_run_after_the_masks() -> None:

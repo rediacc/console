@@ -33,6 +33,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
+import { errorLines } from '../lib/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // THE SEAM, for the control only: KEY_USAGE_WWW_SRC points the scan at a mirror of the www source (an `i18n/translations/en.json` plus the probe), so the control never plants a file in the real tree. check-docs-render-parity.ts's DOCS_RENDER_PARITY_ROOT is the same shape.
@@ -305,12 +306,12 @@ function main(): void {
     ? undefined
     : files.find((f) => path.basename(f) === '__control_probe__.tsx');
   if (leftover !== undefined) {
-    console.error(
-      `\x1b[31m✗\x1b[0m ${path.relative(WWW_SRC, leftover)} is a leftover TEST FIXTURE, not source.`
+    errorLines(
+      `\x1b[31m✗\x1b[0m ${path.relative(WWW_SRC, leftover)} is a leftover TEST FIXTURE, not source.`,
+      '  A control run was killed before its `finally` could unlink it. The key it',
+      '  references is meant not to exist. Delete the file and re-run:',
+      `    rm ${path.relative(process.cwd(), leftover)}`
     );
-    console.error('  A control run was killed before its `finally` could unlink it. The key it');
-    console.error('  references is meant not to exist. Delete the file and re-run:');
-    console.error(`    rm ${path.relative(process.cwd(), leftover)}`);
     process.exit(1);
   }
 

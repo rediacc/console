@@ -29,7 +29,7 @@ THE HEADER'S "ALWAYS EXITS 0" CLAIM IS NOT TRUE, AND THE PORT REPRODUCES THE UNT
 TWO DIVERGENCES, BOTH IN TEXT THAT ONLY A HUMAN READS:
 
   1. `--zone` AS THE LAST ARGUMENT. The twin reads `"$2"` under `set -u`, so
-     bash itself refuses with `<path>: line 44: $2: unbound variable`, exit 1.
+     bash itself refuses with `<path>: line 43: $2: unbound variable`, exit 1.
      That message names the bash file and a bash line number; this port prints
      `MISSING_ZONE_VALUE` on stderr and exits 1. Same stream, same status. Same
      ruling as `deploy/wait_for_preview_worker.py` made for `${VAR:?}`.

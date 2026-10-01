@@ -8,7 +8,7 @@
 //   script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
 
 const fs = require('node:fs');
-const { WK_GH_ORIGIN } = require('../../.ci/scripts/ci/well-known.cjs');
+const { WK_GH_ORIGIN } = require('./well-known.cjs');
 const {
   ISSUE_LABEL,
   ISSUE_TITLE,

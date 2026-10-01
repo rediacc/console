@@ -64,8 +64,8 @@ if fail_on and call_index == int(fail_on):
 sys.stdout.write(json.dumps({"success": True, "errors": [], "result": {"id": "purge"}}) + "\\n")
 """
 
-# `jq` is a real prerequisite of BOTH sides (the port shells out to the same binary, for the reasons in its docstring) and `sed` is what the twin's --help is made of. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
-PATH_MINIMUM = ("jq", "sed")
+# `jq` is a real prerequisite of BOTH sides (the port shells out to the same binary, for the reasons in its docstring) `sed` is what the twin's --help is made of, and `python3` and `dirname` are what the registry loader (env_file_load) runs. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
+PATH_MINIMUM = ("jq", "sed", "python3", "dirname")
 
 
 def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
@@ -461,7 +461,7 @@ def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
     """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY ACCIDENT. `--zone` as the last token reads `"$2"` under `set -u`, and the twin dies with bash's own message naming the bash FILE and a bash LINE. The port cannot honestly print that; it prints its own sentence. Same stream, same exit status, no request from either."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone"])
     assert old.returncode == new.returncode == 1
-    assert old.stderr.endswith("line 44: $2: unbound variable\n")
+    assert old.stderr.endswith("line 43: $2: unbound variable\n")
     assert new.stderr == "cf-purge-urls.sh: --zone requires a value\n"
     assert old.stderr != new.stderr
     assert old.stdout == new.stdout == ""

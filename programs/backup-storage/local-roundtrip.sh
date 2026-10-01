@@ -40,10 +40,9 @@
 # from this tree already installed on the VM, and start-local-plane.sh running.
 set -euo pipefail
 
-set -a
 # shellcheck source=/dev/null
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.ci/config/well-known.env"
-set +a
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/well-known.sh"
+well_known_load
 
 VM="${VM:-192.168.111.11}"
 BRIDGE_HOST="${BRIDGE_HOST:-192.168.111.254}"

@@ -42,6 +42,10 @@ PACKAGE_FILES = (
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
+    "scripts/lib/well-known.sh",
+    "scripts/lib/env-file.sh",
+    ".ci/rediacc_ci/core/env.py",
+    ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/security/__init__.py",
     PORT_REL,
 )

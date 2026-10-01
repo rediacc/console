@@ -11,10 +11,9 @@ readonly ACCOUNT_LIB_LOADED=1
 # The WK_* well-known values (.ci/config/well-known.env). Sourced by local-common.sh
 # already; a standalone source of this file loads them itself.
 if [[ -z "${WK_GH_REPO:-}" ]]; then
-    set -a
     # shellcheck source=/dev/null
-    . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../config" && pwd)/well-known.env"
-    set +a
+    source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/well-known.sh"
+    well_known_load
 fi
 
 # Port utilities. `.ci/lib/find-port.sh`, the bash shim that used to wrap
