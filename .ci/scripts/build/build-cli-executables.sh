@@ -254,10 +254,10 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
 
     # Test 2: doctor --output json
     log_step "Running smoke test: doctor --output json"
-    DOCTOR_OUTPUT=""
+    SMOKE_HOME=$(mktemp -d) # doctor reads the active config: an empty HOME makes a developer machine look like a CI runner, where a real ~/.config/rediacc (an expired token) made doctor print `data: null` and jq die with exit 5. Kept on this line so the port's twin line numbers hold.
     DOCTOR_EXIT=0
-    DOCTOR_OUTPUT=$("$OUTPUT_DIR/$BINARY_NAME" doctor --output json 2>/dev/null) || DOCTOR_EXIT=$?
-
+    DOCTOR_OUTPUT=$(unset REDIACC_CONFIG XDG_CONFIG_HOME XDG_STATE_HOME XDG_CACHE_HOME && HOME="$SMOKE_HOME" APPDATA="$SMOKE_HOME" LOCALAPPDATA="$SMOKE_HOME" "$OUTPUT_DIR/$BINARY_NAME" doctor --output json 2>/dev/null) || DOCTOR_EXIT=$?
+    rm -rf "$SMOKE_HOME"
     if [[ $DOCTOR_EXIT -le 2 ]] && [[ -n "$DOCTOR_OUTPUT" ]]; then
         log_info "Doctor exited with code $DOCTOR_EXIT (expected in CI without auth/renet)"
 
