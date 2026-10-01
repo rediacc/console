@@ -8,15 +8,15 @@ SOLE IMPLEMENTATION. `.github/workflows/ci.yml:295` runs this module, and so doe
 Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
 
 -----------------------------------------------------------------------------
-THE `*)` ARM FAILS OPEN, AND THAT IS REPRODUCED RATHER THAN REPAIRED
+THE UNKNOWN-EVENT ARM FAILS CLOSED, A DELIBERATE DELTA FROM THE TWIN
 -----------------------------------------------------------------------------
-An event name the `case` does not know -- a typo, or a genuinely new trigger such as `pull_request_target` -- WARNS and returns 0 with any channel at all:
+The twin's `*)` arm WARNED and returned 0 for any event name its `case` did not know, with any channel at all (a typo such as `Push`, or a new trigger such as `pull_request_target`, was exempt from the guard):
 
     $ python3 -m rediacc_ci.ci.assert_channel_for_event pull_request_target dryrun-abc
-    (warn) Unknown event: pull_request_target (channel: 'dryrun-abc') ...
-    exit 0
+    (error) Unknown event: pull_request_target (channel: 'dryrun-abc') ...
+    exit 1
 
-That is the twin's documented behaviour (its `workflow_dispatch` arm exists precisely because `*)` accepts), and `docs/ci-overhaul/02-v1-economics.md:92` already names it as a thing to harden. Changing it here would make the port non-equivalent, so it is carried verbatim and reported instead.
+This port exits 1 instead (plan PLAN-retire-bash-oracles, Rule T). Safe for the one caller, because `ci.yml` fires on exactly `push`, `pull_request`, `schedule` and `workflow_dispatch` and every one has an arm; a new trigger added to `on:` now has to gain an arm here in the same change. The recordings under `goldens/assert-channel-for-event/` stay the twin's bytes, and `an-unknown-event` and `a-capitalised-event-name` are intentional deltas, each pinned by a test that fails on the warn-and-accept behaviour.
 
 -----------------------------------------------------------------------------
 TWO SPELLING DIFFERENCES, BOTH PINNED BY THE DIFFERENTIAL
@@ -73,9 +73,11 @@ def main(argv: list[str]) -> int:
             log.error("pull_request events must resolve to pr-N channel (got: '%s')." % channel)
             return 1
     else:
-        log.warn(
-            "Unknown event: %s (channel: '%s'); accepting without assertion" % (event, channel)
+        log.error(
+            "Unknown event: %s (channel: '%s'); add an explicit arm for it in %s."
+            % (event, channel, sys.argv[0])
         )
+        return 1
 
     log.info("Channel '%s' matches event '%s'" % (channel or "<empty>", event))
     return 0

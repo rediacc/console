@@ -3,9 +3,7 @@
 
 The transitive-skip sentinel: assert an upstream job was not silently skipped by the GHA needs-chain skip propagation (finding J). The twin's header owns the state table and why only `skipped` fails; it is not restated here beyond what the code needs.
 
-LIVE CALLERS, not repointed: `.github/workflows/ci.yml:1937` and its siblings, one per sentinel job (`run: .ci/scripts/ci/assert-job-succeeded.sh
-<label> "${{ needs.<job>.result }}"`). The bash twin stays the registered gate;
-this module is its verified-equivalent alternative and the cutover is a separate, later, driver-only step.
+LIVE. `.github/workflows/ci.yml` runs `python3 -m rediacc_ci.ci.assert_job_succeeded <label> <result>` for the finalize-release sentinel. The bash twin remains only as the differential's oracle until its deletion.
 
 Ledger: `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).
 

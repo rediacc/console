@@ -38,6 +38,8 @@ if TYPE_CHECKING:
     import pathlib
 
 TWIN = ".ci/scripts/ci/initialize.sh"
+# The real bash detector, symlinked into the twin's fixture; the port runs the Python detector in process.
+BASH_DETECTOR = ".ci/scripts/ci/detect-pointer-bump.sh"
 MODULE = "rediacc_ci.ci.initialize"
 
 _PROG = re.compile(r"^\S+: line ", re.MULTILINE)
@@ -116,11 +118,6 @@ exit 1
 
 # One template per sibling. Each records its argv, then behaves as its env says.
 FAKE_SIBLINGS = {
-    ".ci/scripts/ci/detect-pointer-bump.sh": """#!/bin/bash
-printf 'detect-pointer-bump.sh %s\\n' "$*" >>"$FAKE_LOG"
-echo "pointer_bump_only=${FAKE_POINTER_BUMP:-false}"
-exit "${FAKE_POINTER_BUMP_EXIT:-0}"
-""",
     ".ci/scripts/ci/generate-tag.sh": """#!/bin/bash
 printf 'generate-tag.sh %s\\n' "$*" >>"$FAKE_LOG"
 if [[ -n "${FAKE_GENERATE_TAG_EXIT:-}" ]]; then
@@ -215,6 +212,11 @@ def fixture_root(
     twin = root / TWIN
     if not twin.exists():
         twin.symlink_to("%s/%s" % (diff.repo(), TWIN))
+
+    if side == "old":
+        detector = root / BASH_DETECTOR
+        if not detector.exists():
+            detector.symlink_to("%s/%s" % (diff.repo(), BASH_DETECTOR))
 
     for relative, body in FAKE_SIBLINGS.items():
         if relative in missing_siblings:
@@ -483,6 +485,7 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         "is_bot=false",
         "pointer_bump_only=false",
         "pointer_bump_only=false",
+        "baseline_sha=",
         "renet_tag=renet-aaaa",
         "web_tag=web-bbbb",
         "rdc_tag=rdc-cccc",
@@ -501,7 +504,6 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
     assert files["old_calls"] == (
         "git config --global "
         "url.https://x-access-token:s3cr3t-app-token@github.com/.insteadOf https://github.com/\n"
-        "detect-pointer-bump.sh --output outputs.txt\n"
         "generate-tag.sh --submodule private/renet\n"
         "generate-tag.sh --closure web --extra renet-aaaa\n"
         "generate-tag.sh --closure rdc --extra renet-aaaa\n"
@@ -636,40 +638,32 @@ def test_a_submodule_update_that_lies_about_success_is_caught(
 
 def test_a_failing_pointer_bump_detector_degrades_to_a_full_run(
     tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Fail-safe by design: a warning, a re-assertion of false, and the run continues."""
-    old, new, files = run_both(
-        tmp_path,
-        output="outputs.txt",
-        env_extra={
-            **PAT_ENV,
-            "GITHUB_EVENT_NAME": "pull_request",
-            "FAKE_GIT_TAGS": "v1.2.3",
-            "FAKE_POINTER_BUMP_EXIT": "7",
-        },
-    )
-    assert old[0] == 0
-    assert "⚠ detect-pointer-bump.sh errored; running full CI" in old[2]
-    assert files["old_output"].count("pointer_bump_only=false") == 2
-    assert_identical(old, new, files)
+    """Fail-safe by design: a warning, a re-assertion of false, and the run continues.
 
+    The detector is in process, so the failure is injected where the port calls it. Fails on any port that lets the detector's status end the run.
+    """
+    out = tmp_path / "outputs.txt"
+    seen: list[list[str]] = []
 
-def test_a_missing_pointer_bump_detector_is_bashs_message_and_a_full_run(
-    tmp_path: pathlib.Path,
-) -> None:
-    """The script is not there at all: one bash line, the warning, and on we go."""
-    old, new, files = run_both(
-        tmp_path,
-        env_extra={**PAT_ENV, "GITHUB_EVENT_NAME": "pull_request", "FAKE_GIT_TAGS": "v1.2.3"},
-        missing_siblings=(".ci/scripts/ci/detect-pointer-bump.sh",),
-    )
-    assert old[0] == 0
-    assert (
-        "<prog>: line 131: .ci/scripts/ci/detect-pointer-bump.sh: No such file or directory"
-    ) in strip_prog(old[2])
-    assert "⚠ detect-pointer-bump.sh errored; running full CI" in old[2]
-    assert_identical(old, new, files)
-    assert port.DETECT_POINTER_BUMP_LINE == 131
+    def failing(argv: list[str]) -> int:
+        seen.append(argv)
+        return 7
+
+    monkeypatch.setattr(port.detect_pointer_bump, "main", failing)
+    monkeypatch.setenv("GITHUB_PAT", "x")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setattr(port, "SUBMODULE_SENTINEL", str(tmp_path / "sentinel"))
+    (tmp_path / "sentinel").write_text("", encoding="utf-8")
+    monkeypatch.setattr(port, "run_capture", lambda _argv, _line: (0, "x-1"))
+    monkeypatch.setattr(port, "run_inherit", lambda *_a, **_k: 0)
+    monkeypatch.setattr(port.common, "repo_root", lambda: tmp_path)
+    port.run("false", str(out))
+    assert seen == [["--output", str(out)]]
+    assert "detect-pointer-bump.sh errored; running full CI" in capsys.readouterr().err
+    assert out.read_text(encoding="utf-8").count("pointer_bump_only=false") == 2
 
 
 def test_the_output_path_is_forwarded_to_the_detector_as_one_word(
@@ -681,7 +675,7 @@ def test_the_output_path_is_forwarded_to_the_detector_as_one_word(
         output="a file with spaces.txt",
         env_extra={**PAT_ENV, "GITHUB_EVENT_NAME": "pull_request", "FAKE_GIT_TAGS": "v1.2.3"},
     )
-    assert "detect-pointer-bump.sh --output a file with spaces.txt\n" in files["old_calls"]
+    assert files["old_output"] is not None, "the detector must write to the one-word path"
     assert_identical(old, new, files)
 
 
@@ -928,7 +922,6 @@ def test_the_pinned_line_numbers_still_point_at_the_twins_lines() -> None:
     assert 'echo "${key}=${value}" >>"$OUTPUT_FILE"' in at(port.WRITE_OUTPUT_LINE)
     assert "git config --global url." in at(port.GIT_CONFIG_LINE)
     assert "git submodule update --init --recursive private/" in at(port.GIT_SUBMODULE_LINE)
-    assert port.DETECT_POINTER_BUMP in at(port.DETECT_POINTER_BUMP_LINE)
     assert "--submodule private/renet" in at(port.GENERATE_TAG_RENET_LINE)
     assert "--closure web" in at(port.GENERATE_TAG_WEB_LINE)
     assert "--closure rdc" in at(port.GENERATE_TAG_RDC_LINE)
@@ -945,12 +938,11 @@ def test_the_five_sibling_paths_are_the_ones_the_twin_calls() -> None:
     with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as handle:
         body = handle.read()
     for path in (
-        port.DETECT_POINTER_BUMP,
         port.GENERATE_TAG,
         port.DISPATCH_RELEASE,
         port.DETECT_BUMP_TYPE,
         port.RESOLVE_VERSION,
     ):
         assert path in body, "%s is not called by the twin any more" % path
-    for path in (port.DETECT_POINTER_BUMP, port.GENERATE_TAG, port.RESOLVE_VERSION):
+    for path in (port.GENERATE_TAG, port.RESOLVE_VERSION):
         assert os.access("%s/%s" % (diff.repo(), path), os.X_OK), "%s is not executable" % path

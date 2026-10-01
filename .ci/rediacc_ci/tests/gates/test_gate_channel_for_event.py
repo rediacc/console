@@ -7,7 +7,7 @@ THE SUBJECT IS THE PORT, NOT THE BASH SCRIPT. `.ci/scripts/ci/assert-channel-for
 
 WHAT THIS GUARDS, unchanged from the twin. The channel decides whether a run uploads to R2. A previous design resolved a `dryrun-<sha>` channel for non-publishing events and produced roughly 5 GB of orphan R2 bytes per trigger. This script is the assertion that stops that returning, so it is load-bearing for cost, not just for tidiness.
 
-The script's final `*)` arm WARNS AND ACCEPTS ANY CHANNEL, so a new event type lands exempt from the guard unless someone remembers to add an arm. The fall-through is deliberately KEPT (failing closed on an unknown event would break CI the moment GitHub adds one), which is precisely why every event the repo actually uses needs an explicit arm and a test pinning it.
+The script's final `*)` arm FAILS CLOSED (the bash twin warned and accepted), so a new event type must gain an arm in the same change that adds the trigger. `ci.yml` fires on exactly four events and each has an explicit arm and a test pinning it.
 
 THE PORT CHANGES ONE THING AND IT IS NOT A VERDICT. The twin keeps the last run's output in a single `$OUT/log.txt` and two of its cases read it after the fact; here `check()` returns the output alongside the verdict, so a case reads the output of the call it made rather than of whichever call ran last. Same bytes, same assertions, no shared mutable file.
 """
@@ -109,12 +109,12 @@ def test_the_dispatch_arm_is_explicit_not_the_fallthrough(gate):
     gate.log_pass("the rehearsal is matched by an explicit arm, not warn-and-accept")
 
 
-def test_unknown_event_still_warns_and_accepts(gate):
-    # Documenting the deliberate fall-through: failing closed here would break CI the moment GitHub introduces an event. Pinned so that changing it is a decision rather than an accident.
+def test_unknown_event_fails_closed(gate):
+    # Intentional delta from the bash twin, which warned and accepted. Fails on that behaviour.
     verdict, output = check(gate, "merge_group", "")
-    gate.assert_eq(verdict, "ok", "an unknown event is accepted")
+    gate.assert_eq(verdict, "rejected", "an unknown event is refused")
     gate.assert_contains(output, "Unknown event", "and says so out loud")
-    gate.log_pass("an unknown event warns and accepts, deliberately")
+    gate.log_pass("an unknown event is refused, not waved through")
 
 
 def test_missing_event_is_a_usage_error(gate):
