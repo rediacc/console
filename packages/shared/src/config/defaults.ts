@@ -9,6 +9,13 @@
  *   const port = options?.port ?? DEFAULTS.SSH.PORT;
  */
 
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_PROFILING_ORIGIN,
+  WK_SANDBOX_ORIGIN,
+  WK_SITE_ORIGIN,
+} from './well-known.generated.js';
+
 /**
  * SSH and network connection defaults
  */
@@ -126,7 +133,7 @@ export const TELEMETRY_DEFAULTS = {
   UNIT: 'ms',
 
   /** Pyroscope profiling endpoint */
-  PROFILING_ENDPOINT: 'https://profiles.rediacc.io',
+  PROFILING_ENDPOINT: WK_PROFILING_ORIGIN,
 } as const;
 
 /**
@@ -203,7 +210,7 @@ export const PROTOCOL_DEFAULTS = {
   ACTION_DESKTOP: 'desktop',
 
   /** Default public site URL */
-  SITE_URL: 'https://www.rediacc.com',
+  SITE_URL: WK_SITE_ORIGIN,
 } as const;
 
 /**
@@ -397,7 +404,7 @@ export const SUBSCRIPTION_DEFAULTS = {
   UNKNOWN_QUOTA: '?',
 
   /** Default account server URL (EU region) */
-  ACCOUNT_SERVER_URL: 'https://eu.rediacc.com',
+  ACCOUNT_SERVER_URL: WK_ACCOUNT_DEFAULT_ORIGIN,
 
   /** Device code polling interval (seconds) */
   DEVICE_CODE_POLL_INTERVAL: 5,
@@ -541,7 +548,7 @@ export const DEFAULTS = {
  */
 export const API_DEFAULTS = {
   /** Sandbox API URL */
-  SANDBOX_URL: 'https://sandbox.rediacc.com/api',
+  SANDBOX_URL: `${WK_SANDBOX_ORIGIN}/api`,
 
   /** Default console base URL */
   CONSOLE_URL: 'http://localhost:3000/console/',
