@@ -77,8 +77,11 @@ PASSTHROUGH_TOOLS = ("cat", "sort", "head", "tail", "grep", "tee", "rm")
 # the port does not source common.sh and so does not probe. A recording fake would turn that into a call-log divergence about something neither subject does on purpose, and a MISSING `uname` would put two `command not found` lines on the twin's stderr that the port has no way to produce.
 NEEDED = ("bash", "sh", "python3", "uname", "env", "dirname", "ls", "cut")
 
+# SIGPIPE TAKES ITS DEFAULT, as in a C tool such as the real ssh: a fake whose reader is gone (`head` absent) dies silently. Python ignores SIGPIPE and instead printed a BrokenPipeError traceback whose wording and caret lines are the interpreter's version (3.14 here, 3.12 on the GitHub runner, PR #591 CI 2026-10-01), so the frozen twin stderr carried bytes of the
+# fixture's Python rather than of either subject.
 FAKE_CANNED = """#!/usr/bin/env python3
-import json, pathlib, sys
+import json, pathlib, signal, sys
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 NAME = %(name)r
 RULES = %(rules)r
 with pathlib.Path(%(log)r).open("a", encoding="utf-8") as fh:

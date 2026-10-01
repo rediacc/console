@@ -56,8 +56,8 @@ MINIMAL_CONFIG = 'local account_json="{\\"accountServer\\":\\"$account_server\\"
 
 
 def norm(text: str) -> str:
-    """Mask the kernel-assigned mock port. Nothing else is normalized."""
-    return PORT_RE.sub("127.0.0.1:PORT", text)
+    """Mask the kernel-assigned mock port, and the interpreter-version lines of a CPython traceback (`differential.mask_python_traceback`: the `-c` source echo and the caret ruler, which 3.14 draws and the runner's 3.12 does not). Nothing else is normalized."""
+    return diff.mask_python_traceback(PORT_RE.sub("127.0.0.1:PORT", text))
 
 
 def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:

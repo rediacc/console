@@ -155,3 +155,148 @@ def test_an_unknown_mode_is_refused(monkeypatch) -> None:
     monkeypatch.setenv(diff.REGOLDEN_ENV, "both")
     with pytest.raises(RuntimeError, match="expected 'bash' or 'port'"):
         diff.regolden_mode()
+
+
+# --------------------------------------------------------------------------- Host variance (differential.host_fold / host_unfold) ---------------------------------------------------------------------------
+#
+# Each rule has the same two controls: (a) the variant a second host prints is ACCEPTED after the golden is unfolded there, and (b) a real difference on the same line is still REFUSED. The recorder and the comparer are spelled out as data, so neither control depends on who runs the suite.
+
+RECORDER = ("developer", "developer")
+RUNNER = ("runner", "runner")
+BASH_53 = ("arithmetic syntax error", "integer expected")
+BASH_52 = ("syntax error", "integer expression expected")
+LS_HERE = "-rw-r--r-- 1 developer developer 32 <MTIME> renet-linux-amd64\n"
+LS_THERE = "-rw-r--r-- 1 runner runner 32 <MTIME> renet-linux-amd64\n"
+
+
+def _carry(text: str, recorder=RECORDER, comparer=RUNNER, to=BASH_52) -> str:
+    """A golden recorded on one host, read back on another: what the comparer's call site sees."""
+    return diff.host_unfold(diff.host_fold(text, recorder), comparer, to)
+
+
+def test_ls_owner_and_group_fold_to_the_comparing_host() -> None:
+    assert diff.host_fold(LS_HERE, RECORDER) == (
+        "-rw-r--r-- 1 <USER> <GROUP> 32 <MTIME> renet-linux-amd64\n"
+    )
+    assert _carry(LS_HERE) == LS_THERE
+    # A container user with no passwd entry: `ls` prints the bare ids, and so does the unfold.
+    assert _carry(LS_HERE, comparer=("1001", "1001")) == LS_THERE.replace("runner", "1001")
+
+
+def test_ls_fold_still_refuses_a_real_difference() -> None:
+    # A different size or file name on the same line is compared verbatim.
+    assert _carry(LS_HERE) != LS_THERE.replace(" 32 ", " 33 ")
+    assert _carry(LS_HERE) != LS_THERE.replace("amd64", "arm64")
+    # A file owned by someone OTHER than the recorder is not the recorder's identity: it stays literal, so a port whose file lands owned by the runner fails against a golden that said root.
+    owned_by_root = LS_HERE.replace("developer developer", "root root")
+    assert diff.host_fold(owned_by_root, RECORDER) == owned_by_root
+    assert _carry(owned_by_root) != LS_THERE
+    # Outside the two ls columns the user name is plain text, never folded.
+    prose = "developer developer 32 renet\n"
+    assert diff.host_fold(prose, RECORDER) == prose
+
+
+def test_bash_arithmetic_clause_follows_the_comparing_bash() -> None:
+    line = '<shell>: [[: 1 2: arithmetic syntax error in expression (error token is "2")\n'
+    assert _carry(line) == line.replace("arithmetic syntax error", "syntax error")
+    assert _carry(line, to=BASH_53) == line
+    for continuation in (
+        ': operand expected (error token is "+ ")',
+        ': invalid arithmetic operator (error token is ";ls")',
+    ):
+        shaped = "((: x: arithmetic syntax error%s\n" % continuation
+        assert _carry(shaped) == shaped.replace("arithmetic syntax error", "syntax error")
+
+
+def test_bash_arithmetic_fold_still_refuses_a_real_difference() -> None:
+    line = '[[: 1 2: arithmetic syntax error in expression (error token is "2")\n'
+    assert _carry(line) != line.replace("arithmetic syntax error", "syntax error").replace(
+        '"2"', '"3"'
+    )
+    # A 5.3 spelling from a port that HARDCODES it is refused on a 5.2 host: the golden now says what this bash says.
+    assert _carry(line) != line
+    # The parser's own complaint is not the arithmetic clause and is not folded.
+    parse = "bash: -c: line 1: syntax error near unexpected token `)'\n"
+    assert diff.host_fold(parse, RECORDER) == parse
+
+
+def test_bash_integer_phrase_follows_the_comparing_bash() -> None:
+    line = "[: abc: integer expected\n"
+    assert _carry(line) == "[: abc: integer expression expected\n"
+    assert _carry(line) != "[: abd: integer expression expected\n"
+    assert diff.host_fold("an integer expected here\n", RECORDER) == "an integer expected here\n"
+
+
+def test_golden_answer_unfolds_for_the_host_reading_it(monkeypatch) -> None:
+    """End to end through the real reader and a real golden: the recorder's identity is a token on disk, and the reader puts THIS host's back. Anti-vacuity: the corpus must actually carry a token, or the rule is exercised by nothing real."""
+    from rediacc_ci.core import bash_dialect  # noqa: PLC0415
+
+    carried = [p for p in GOLDENS if diff.USER_MARK in p.read_text(encoding="utf-8")]
+    assert carried, "no twin golden carries %s; the ls rule guards nothing" % diff.USER_MARK
+    path = carried[0]
+    header, _silent, records = diff.goldenio.read_golden(path)
+    key = next(k for k, v in sorted(records.items()) if diff.USER_MARK in v.get("out", ""))
+    monkeypatch.delenv(diff.REGOLDEN_ENV, raising=False)
+    monkeypatch.setattr(diff, "host_identity", lambda: ("runner", "runner"))
+    monkeypatch.setattr(bash_dialect, "arith_syntax_error", lambda _env=None: "syntax error")
+    _rc, out, _err = diff.golden_answer(header["twin"], key)
+    assert " runner runner " in out
+    assert diff.USER_MARK not in out
+    assert diff.GROUP_MARK not in out
+
+
+@pytest.mark.parametrize("path", GOLDENS, ids=[p.stem for p in GOLDENS])
+def test_no_golden_carries_a_recorders_ls_identity(path) -> None:
+    """Every `ls -l` line in a golden names its owner and group as tokens. A literal one is a golden written before the rule (or by hand), and fails on every host whose user differs from the recorder's."""
+    _header, _silent, records = diff.goldenio.read_golden(path)
+    literal: list[str] = []
+    for key, row in sorted(records.items()):
+        for field in ("out", "err"):
+            text = diff.goldenio.decode_field(row.get(field, ""))
+            literal.extend(
+                "%s %s: %s %s" % (key, field, m["owner"], m["group"])
+                for m in diff.LS_LONG_RE.finditer(text)
+                if (m["owner"], m["group"]) != (diff.USER_MARK, diff.GROUP_MARK)
+            )
+    assert not literal, "%s carries literal ls owners: %s" % (path.name, literal[:5])
+
+
+# The `-c` traceback of `test.test-install-sh-config`, as each interpreter renders it (measured: 3.14.4 here, 3.12.3 in ubuntu:24.04, the runner's image).
+TB_314 = (
+    "Traceback (most recent call last):\n"
+    '  File "<string>", line 1, in <module>\n'
+    "    import json,sys; print(json.load(open(sys.argv[1]))['account']['updateChannel'])\n"
+    "                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^\n"
+    "KeyError: 'updateChannel'\n"
+)
+TB_312 = (
+    "Traceback (most recent call last):\n"
+    '  File "<string>", line 1, in <module>\n'
+    "KeyError: 'updateChannel'\n"
+)
+
+
+def test_python_traceback_mask_absorbs_the_interpreter_rendering() -> None:
+    assert diff.mask_python_traceback(TB_314) == diff.mask_python_traceback(TB_312) == TB_312
+    # Text around the traceback is untouched, and a ruler-shaped line OUTSIDE one is kept.
+    around = "before\n    indented prose\n" + TB_314 + "  ~~~^^\nafter\n"
+    assert (
+        diff.mask_python_traceback(around)
+        == "before\n    indented prose\n" + TB_312 + "  ~~~^^\nafter\n"
+    )
+
+
+def test_python_traceback_mask_still_refuses_a_real_difference() -> None:
+    masked = diff.mask_python_traceback(TB_314)
+    assert masked != diff.mask_python_traceback(TB_312.replace("updateChannel", "accountServer"))
+    assert masked != diff.mask_python_traceback(TB_312.replace("KeyError", "TypeError"))
+    assert masked != diff.mask_python_traceback(TB_312.replace("line 1", "line 2"))
+    # A real file's frame keeps its source echo: only a `-c` snippet's is version-dependent.
+    file_frame = TB_312.replace(
+        '  File "<string>", line 1, in <module>\n',
+        '  File "/x/check.py", line 9, in main\n    value = cfg["updateChannel"]\n',
+    )
+    assert "value = cfg" in diff.mask_python_traceback(file_frame)
+    assert diff.mask_python_traceback(file_frame) != diff.mask_python_traceback(
+        file_frame.replace("value = cfg", "value = conf")
+    )

@@ -58,11 +58,13 @@ PLAIN = ("dirname", "uname", "tr")
 # Recorded wrappers around the real binaries. These three ARE the ported logic.
 RECORDED = ("rm", "mkdir", "cp")
 
+# `exec -a {name}`: the subject spawned `cp`, so the real binary must see `argv[0] == "cp"`, as it does without the wrapper. A bare `exec /usr/bin/cp` hands it the absolute path, and GNU coreutils prints argv[0] verbatim in its diagnostics: `/usr/bin/cp: cannot stat` on ubuntu-24.04 (PR #591 CI, 2026-10-01) where Ubuntu 26.04's patched `gnucp` printed
+# `cp:` and the golden froze that. The variance was the wrapper's, not the subject's.
 RECORDER = """#!/bin/bash
 printf 'CALL {name}' >>"$FAKE_CALL_LOG"
 for a in "$@"; do printf '\\t%s' "$a" >>"$FAKE_CALL_LOG"; done
 printf '\\n' >>"$FAKE_CALL_LOG"
-exec {real} "$@"
+exec -a {name} {real} "$@"
 """
 
 # Directories either side may create or destroy, reset between the two runs.
@@ -608,7 +610,6 @@ def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> N
         check=False,
         timeout=120,
     )
-    # The twin left the set when it was retired (PLAN-retire-bash-oracles B3).
     # The twin left the set when it was retired (PLAN-retire-bash-oracles B3); its frozen golden, which records the twin's own output naming the path, joined it. Neither writes the file.
     golden_rel = str(diff.golden_file(TWIN_REL).relative_to(ROOT))
     assert sorted(found.stdout.split()) == sorted([PORT_REL, self_rel, golden_rel]), found.stdout
