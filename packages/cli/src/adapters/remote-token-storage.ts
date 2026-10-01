@@ -132,7 +132,12 @@ export class RemoteTokenStorage {
     try {
       await fs.access(path);
     } catch {
-      await fs.writeFile(path, '{}', { mode: 0o600 });
+      try {
+        // 'wx': never truncate a token a concurrent set() wrote since the access check.
+        await fs.writeFile(path, '{}', { mode: 0o600, flag: 'wx' });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      }
     }
 
     const release = await lockfile.lock(path, LOCK_OPTIONS);
