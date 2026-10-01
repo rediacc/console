@@ -1429,7 +1429,7 @@ def test_delta_a2_banner_row_pads_by_characters() -> None:
     """Defect A2, fixed: a multibyte glyph no longer shifts the closing bar. The row is as wide as the ASCII row."""
     ascii_row = account.banner_row("hello, unicode")
     assert len(account.banner_row("héllo, ünicode")) == len(ascii_row)
-    assert len(account.banner_row("→ arrow — dash")) == len(ascii_row)
+    assert len(account.banner_row("→ arrow ✓ check")) == len(ascii_row)
     assert len(account_lifecycle._pad_bytes("é", 4)) == 4
 
 

@@ -89,7 +89,8 @@ from rediacc_ci.controls import Controls
 
 # The two subjects, spelled exactly as the twin spells them, because the spelling lands in the finding text and in the log_step banner.
 CONSUMER = "packages/cli/src/utils/secure-storage.ts"
-PROBE = "scripts/drills/transfer.sh"
+# The probe is the transfer drill's keyring preflight. It lived in scripts/drills/transfer.sh until PLAN-retire-bash-oracles B3 retired that twin (50dd86fb0); the port is the code that runs, so the gate reads the port.
+PROBE = ".ci/rediacc_ci/drills/transfer.py"
 
 # Cleanup-only verbs, carried verbatim from the twin with its reasoning: "The consumer unlinks; the probe purges. Both remove the key and neither is on the success path the probe exists to predict, so they are interchangeable here. Anything else must be exercised."
 EXEMPT_VERBS = ("unlink", "purge", "revoke")
@@ -102,8 +103,8 @@ EM_DASH = "—"
 CONSUMER_CALL = re.compile(r"execFileSync\('keyctl', \['[a-z]+")
 TRAILING_VERB = re.compile(r"'[a-z]+$")
 
-# `grep -oE '(^|[^-[:alnum:]_])keyctl [a-z]+'`. The leading alternation is the word boundary: it rejects `xkeyctl show` and `re-keyctl add` while admitting a line that STARTS with the command. POSIX [[:alnum:]] is spelled out rather than abbreviated to `\w`, which in Python also admits `_` and every unicode letter.
-PROBE_CALL = re.compile(r"(?:^|[^-a-zA-Z0-9_])keyctl [a-z]+")
+# A `keyctl` call in the probe is a Python argv list, `["keyctl", "<verb>", ...]`. The quote before `keyctl` is the word boundary the bash-era `(^|[^-[:alnum:]_])` class supplied: `"xkeyctl"` and `"re-keyctl"` are other strings. `\s` spans newlines, so a list wrapped across lines still counts.
+PROBE_CALL = re.compile(r"""\[\s*["']keyctl["']\s*,\s*["']([a-z]+)["']""")
 
 # `sed 's/[[:space:]]*#.*$//'`, first match only, per line.
 COMMENT_STRIP = re.compile(r"[ \t\v\f\r]*#.*$")
@@ -127,16 +128,8 @@ def probe_verbs(text: str) -> list[str]:
 
     The strip is the gate: see the module docstring for the version that counted a `keyctl pipe` living inside the preflight's own comment and certified a probe whose read-back had been deleted.
     """
-    verbs: set[str] = set()
-    for line in text.split("\n"):
-        stripped = COMMENT_STRIP.sub("", line, count=1)
-        for hit in PROBE_CALL.findall(stripped):
-            # `awk '{print $NF}'`: the last whitespace-separated field. The match
-            # may carry a leading boundary character, which this discards exactly as awk does.
-            fields = hit.split()
-            if fields:
-                verbs.add(fields[-1])
-    return sorted(verbs)
+    stripped = "\n".join(COMMENT_STRIP.sub("", line, count=1) for line in text.split("\n"))
+    return sorted(set(PROBE_CALL.findall(stripped)))
 
 
 def missing_verbs(consumer: list[str], probe: list[str], exempt=EXEMPT_VERBS) -> list[str]:
@@ -242,19 +235,33 @@ def selftest() -> int:
         ("nothing at all", "", []),
     ]
     probe_cases = [
-        ("bare invocation at line start", "keyctl add @u", ["add"]),
-        ("indented invocation", "    keyctl pipe %s\n", ["pipe"]),
+        ("one argv call", '["keyctl", "add", "user", k, "v", "@u"]', ["add"]),
+        ("single quotes and an indented call", "    run(['keyctl', 'pipe', found])\n", ["pipe"]),
         (
             "several, deduplicated and sorted",
-            "keyctl purge user\nkeyctl add @u\nkeyctl add @s\n",
+            '["keyctl", "purge", "user", k]\n["keyctl", "add", "user"]\n["keyctl", "add", "x"]\n',
             ["add", "purge"],
         ),
+        (
+            "a call wrapped across lines",
+            '[\n    "keyctl",\n    "search",\n    "@u",\n]',
+            ["search"],
+        ),
         # THE FOUNDING NEGATIVE. A verb named only in a comment must NOT count: this is the exact defect the twin's planted-defect proof found.
-        ("a verb only in a comment does not count", "    # keyctl pipe reads it back", []),
-        ("a trailing comment does not hide the code before it", "keyctl add  # then pipe", ["add"]),
-        # NEGATIVE: the leading boundary class must reject a longer identifier.
-        ("xkeyctl is not keyctl", "xkeyctl show @u", []),
-        ("re-keyctl is not keyctl", "re-keyctl add @u", []),
+        (
+            "a verb only in a comment does not count",
+            '    # ["keyctl", "pipe", found] reads it back',
+            [],
+        ),
+        (
+            "a trailing comment does not hide the code before it",
+            '["keyctl", "add"]  # then ["keyctl", "pipe"]',
+            ["add"],
+        ),
+        # NEGATIVE: the quote boundary must reject a longer identifier, and prose is not a call.
+        ('"xkeyctl" is not keyctl', '["xkeyctl", "show", "@u"]', []),
+        ('"re-keyctl" is not keyctl', '["re-keyctl", "add", "@u"]', []),
+        ("a shell spelling is not a Python call", "keyctl add @u", []),
         ("nothing at all", "", []),
     ]
     missing_cases = [
