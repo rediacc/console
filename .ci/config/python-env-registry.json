@@ -433,10 +433,45 @@
     ".ci/rediacc_ci/docker/run_in_image.py": [
       "REDIACC_NO_DOCKER"
     ],
+    ".ci/rediacc_ci/drills/backup.py": [
+      "BACKUP_BUCKET_NAME",
+      "CONFIG_R2_ACCESS_KEY_ID",
+      "CONFIG_R2_SECRET_ACCESS_KEY",
+      "DRILL_RENET_BIN",
+      "DRILL_REPO_REF",
+      "DRILL_STORE_BUCKET",
+      "DRILL_STORE_ENDPOINT",
+      "DRILL_STORE_KEY",
+      "DRILL_STORE_REGION",
+      "DRILL_STORE_SECRET",
+      "HOME",
+      "RENET_DATA_DIR",
+      "RUSTFS_PORT",
+      "SSH_KEY",
+      "SSH_USER",
+      "USER",
+      "VM_NET_BASE"
+    ],
     ".ci/rediacc_ci/drills/lib.py": [
       "DRILL_HOST",
       "DRILL_KEEP_WORK",
       "NO_COLOR"
+    ],
+    ".ci/rediacc_ci/drills/license.py": [
+      "CLAUDECODE",
+      "COPILOT_CLI",
+      "CURSOR_TRACE_ID",
+      "DRILL_RENET_PATH",
+      "GEMINI_CLI",
+      "HOME",
+      "REDIACC_AGENT",
+      "REDIACC_ALLOW_CLUSTER_OPS",
+      "REDIACC_ALLOW_GRAND_REPO",
+      "RENET_DATA_DIR",
+      "SSH_KEY",
+      "SSH_USER",
+      "USER",
+      "VM_NET_BASE"
     ],
     ".ci/rediacc_ci/drills/transfer.py": [
       "DRILL_EXPECT_NO_KEYRING"
@@ -1457,6 +1492,9 @@
     ],
     ".ci/rediacc_ci/tests/test_docker_retag_image.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_backup_license.py": [
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",

@@ -312,7 +312,9 @@ class License:
         log.error("Cannot authenticate to %s as %s using %s." % (o.vm_ip, o.ssh_user, o.ssh_key))
         log.error("This is the key 'renet ops' provisions the VMs with; if you rebuilt them")
         log.error("with a different one, pass it:  ./run.sh drill license --ssh-key <path>")
-        log.error("A plain 'ssh' may still succeed here while this fails — OpenSSH falls back")
+        log.error(
+            "A plain 'ssh' may still succeed here while this fails, because OpenSSH falls back"
+        )
         log.error("to your other default identities, and the CLI does not.")
         raise SystemExit(1)
 
@@ -715,7 +717,7 @@ class License:
         d.assert_equal(
             "valid",
             self.repo_status(o.vm_ip, "status"),
-            "and the PARENT's licence is still valid (S8d — the fork did not steal it)",
+            "and the PARENT's licence is still valid (S8d: the fork did not steal it)",
         )
 
         after = self.meter_snapshot()
@@ -844,7 +846,7 @@ class License:
         d.note("subscription suspended")
 
         self.ssh_run(o.vm_ip, "sudo %s license renew --force --output json" % o.vm_renet)
-        d.assert_exit(0, "renew still exits 0 — one dead repo must not stop every other backup")
+        d.assert_exit(0, "renew still exits 0: one dead repo must not stop every other backup")
         results = self.stdout_field("results")
         self.av(
             _result_any(results, "outcome", "refused"),

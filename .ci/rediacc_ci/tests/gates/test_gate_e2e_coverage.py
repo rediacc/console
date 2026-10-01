@@ -56,7 +56,7 @@ DARK_TEST_TS = """test('this suite is never selected by any live config', async 
 WORKFLOW_YML = """jobs:
   e2e:
     steps:
-      - run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.fixture.config.ts
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.fixture.config.ts
 """
 
 
@@ -184,3 +184,36 @@ def test_registry_workflow_drift_rejected(gate, tmp_path):
         result.combined, "playwright.ghost.config.ts", "the drift error names the ghost config"
     )
     gate.log_pass("registry/workflow drift self-check fires")
+
+
+def test_comment_naming_the_runner_is_not_a_default_call(gate, tmp_path):
+    """A COMMENT IS NOT AN INVOCATION. ct-tests.yml carries prose naming run-e2e.sh with no --config; read line by line, that prose alone satisfied "some workflow runs the default config"."""
+    root = build_fixture(gate, tmp_path)
+    (root / "workflows" / "ci.yml").write_text(
+        WORKFLOW_YML + "      # run-e2e.sh writes one durations file per invocation\n",
+        encoding="utf-8",
+    )
+    result = run_gate(gate, root, "playwright.fixture.config.ts,playwright.config.ts:default")
+    gate.assert_exit(1, result, "a comment must not stand in for a bare default-config call")
+    gate.assert_contains(result.combined, "default config", "the finding names the missing default")
+    gate.log_pass("a comment naming the runner is not a default-config call")
+
+
+def test_folded_call_reads_as_one_command(gate, tmp_path):
+    """A call folded with backslashes is ONE command: its --config on a continuation line names a config, and the head line alone is not a bare default call."""
+    root = build_fixture(gate, tmp_path)
+    (root / "workflows" / "ci.yml").write_text(
+        "jobs:\n  e2e:\n    steps:\n      - run: |\n"
+        "          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 \\\n"
+        "            --config playwright.fixture.config.ts\n",
+        encoding="utf-8",
+    )
+    result = run_gate(gate, root)
+    gate.assert_not_contains(
+        result.combined, "NO workflow runs it", "the folded call names its config"
+    )
+    gate.log_pass("a folded runner call is read whole")
+    # CONTROL: the same folded call, but the registry also claims a default no call backs.
+    result = run_gate(gate, root, "playwright.fixture.config.ts,playwright.config.ts:default")
+    gate.assert_exit(1, result, "the folded head line must not read as a bare default call")
+    gate.log_pass("CONTROL: the folded head line is not a default call")

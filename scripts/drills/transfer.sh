@@ -136,7 +136,7 @@ preflight_keyring() {
             drill_note "keyring usable (keyctl @u write+read round trip)"
             return 0
         fi
-        drill_note "keyctl add succeeded but the read back did not — treating the keyring as unusable"
+        drill_note "keyctl add succeeded but the read back did not, so the keyring is treated as unusable"
     fi
 
     if [[ -n "${DRILL_EXPECT_NO_KEYRING:-}" ]]; then
@@ -285,7 +285,7 @@ phase_offline_read() {
         "the write went to the server: the cached version advanced to 2"
 
     drill_proxy_stop
-    drill_note "offline shim stopped — the config's server is now refusing connections"
+    drill_note "offline shim stopped; the config's server is now refusing connections"
 
     drill_run env XDG_CONFIG_HOME="$DEVICE1_HOME" REDIACC_CONFIG="$CONFIG_NAME" \
         REDIACC_DEFAULT_OUTPUT=table "$RDC" machine list
@@ -364,7 +364,7 @@ phase_second_device() {
     assert_exit 0 "device 2 reports its remote status"
     assert_stdout_json 'd.data.status' connected "device 2 is connected"
     assert_stdout_json 'd.data.cachedVersion' 2 \
-        "device 2 pulled version 2 — the version device 1's write produced"
+        "device 2 pulled version 2, the version device 1's write produced"
 
     local d1_status d2_store d2_config
     d1_status=$(env XDG_CONFIG_HOME="$DEVICE1_HOME" REDIACC_CONFIG="$CONFIG_NAME" \

@@ -368,7 +368,7 @@ drill_selftest_probe() {
     drill_step "selftest: planting one assertion that cannot pass"
     DRILL_LAST_CMD="<selftest control: no command>"
     assert_equal "this-value-is-planted" "and-this-one-differs" \
-        "selftest control (planted failure — this drill MUST exit non-zero)"
+        "selftest control (planted failure: this drill MUST exit non-zero)"
 }
 
 # =============================================================================
@@ -415,7 +415,7 @@ drill_summary() {
     # vacuous-green shape these drills exist to catch. Say SKIPPED instead and
     # keep the exit code.
     if [[ "$DRILL_COUNT" -eq 0 ]]; then
-        printf '  %bdrill %s SKIPPED%b (0 assertions ran — nothing was proven)\n' \
+        printf '  %bdrill %s SKIPPED%b (0 assertions ran, so nothing was proven)\n' \
             "$YELLOW" "$DRILL_NAME" "$NC"
         return 0
     fi
@@ -458,7 +458,7 @@ drill_gateway_alive() {
 # breaks the offline leg of `drill transfer`: the server would still answer
 # after the drill believed it had stopped it.
 drill_gateway_restart() {
-    drill_step "Restarting the dev gateway (tsx does not hot-reload — a long-running gateway serves stale server code)"
+    drill_step "Restarting the dev gateway (tsx does not hot-reload, so a long-running gateway serves stale server code)"
     drill_gateway_stop
     local t0
     t0=$(date +%s)

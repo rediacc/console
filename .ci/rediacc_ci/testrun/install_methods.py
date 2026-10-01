@@ -152,12 +152,12 @@ def verify_version(output: str, expected: str) -> bool:
     """
     if not expected:
         log.error(
-            "verify_version: expected version is EMPTY — refusing to report a pass. The caller failed to resolve a version."
+            "verify_version: expected version is EMPTY, so refusing to report a pass. The caller failed to resolve a version."
         )
         return False
     if not output:
         log.error(
-            f"verify_version: no version output captured (expected '{expected}') — refusing to report a pass. The binary did not run, or its output was discarded."
+            f"verify_version: no version output captured (expected '{expected}'), so refusing to report a pass. The binary did not run, or its output was discarded."
         )
         return False
     lines = output.splitlines()

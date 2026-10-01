@@ -79,7 +79,7 @@ class Transfer:
                     d.note("keyring usable (keyctl @u write+read round trip)")
                     return True
                 d.note(
-                    "keyctl add succeeded but the read back did not — treating the keyring as unusable"
+                    "keyctl add succeeded but the read back did not, so the keyring is treated as unusable"
                 )
         declared = os.environ.get("DRILL_EXPECT_NO_KEYRING")
         if declared:
@@ -252,7 +252,7 @@ class Transfer:
             "the write went to the server: the cached version advanced to 2",
         )
         d.stop_shim()
-        d.note("offline shim stopped — the config's server is now refusing connections")
+        d.note("offline shim stopped; the config's server is now refusing connections")
         self.cli(
             self.device1,
             "machine",
@@ -367,7 +367,7 @@ class Transfer:
         d.assert_stdout_json(
             "data.cachedVersion",
             "2",
-            "device 2 pulled version 2 — the version device 1's write produced",
+            "device 2 pulled version 2, the version device 1's write produced",
         )
         d2_store = lib.json_get(d.stdout_text(), "data.storeId")
         d2_config = lib.json_get(d.stdout_text(), "data.configId")

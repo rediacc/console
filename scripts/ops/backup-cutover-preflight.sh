@@ -197,7 +197,7 @@ main() {
         log_info "cutover preflight: $CHECKS checks, all passed"
         return 0
     fi
-    log_error "cutover preflight: $FAILURES of $CHECKS checks FAILED — do not cut over"
+    log_error "cutover preflight: $FAILURES of $CHECKS checks FAILED. Do not cut over"
     return 1
 }
 

@@ -508,8 +508,8 @@ jobs:
       # --refresh (T3.2) to read. A dedicated, separately-named upload rather than
       # folding into the artifact above: budget_report.py matches an artifact by
       # the `unit-durations-<lane>-` NAME PREFIX alone, and this leg's own
-      # run-e2e.sh writes one `unit-durations*.json` per `npx playwright test`
-      # invocation it starts (see run-e2e.sh's own T1.6 comment) -- all of them are
+      # runner (rediacc_ci.testrun.e2e) starts `npx playwright test`, whose T1.6
+      # reporter (packages/e2e-tests/playwright.config.ts) writes `unit-durations*.json` -- all of them are
       # globbed into this one artifact, and parse_unit_duration_artifact sums the
       # durations of same-named units across every member it finds.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -1776,11 +1776,9 @@ jobs:
             suite 17 tears its cluster down in its own last test, and this fleet
             runs --nolicense renet, so there is no licensed cluster to adopt;
             the VM tier is excluded from the run rather than skipped inside it.
-        # ONE LINE, deliberately. check-e2e-coverage's registry self-check scans
-        # workflows line by line and only pairs a `--config` with a `run-e2e.sh`
-        # on the SAME line; folding this across lines makes it read the call as a
-        # bare default-config invocation and fail with "playwright.k8s-multinode
-        # .config.ts is in LIVE_CONFIG_REGISTRY but NO workflow runs it".
+        # check-e2e-coverage's registry self-check pairs this `--config` with the
+        # runner by reading one logical shell command (backslash continuations
+        # joined), so the config is named here whether or not the call is folded.
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-multinode.config.ts --grep-invert "licensing on the fleet" --fail-on-skip
 
       # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).

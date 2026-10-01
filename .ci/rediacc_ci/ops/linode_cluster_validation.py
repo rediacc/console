@@ -247,7 +247,7 @@ class Validation:
     def phase_provision(self) -> None:
         self._require_yes("provision")
         log(
-            "Provisioning cluster '%s' (%s) on %s — BILLABLE"
+            "Provisioning cluster '%s' (%s) on %s (BILLABLE)"
             % (self.cluster, self.pools, self.provider)
         )
         pool_args: list[str] = []

@@ -76,7 +76,7 @@ const RESET = '\x1b[0m';
 
 /**
  * The configs CI actually executes. `playwright.config.ts` is the DEFAULT config
- * (the bare `run-e2e.sh` call, no --config flag); the rest are named on a
+ * (the e2e runner called with no --config flag); the rest are named on a
  * `--config` flag in a workflow. `playwright.image.config.ts` is deliberately
  * ABSENT — no workflow runs it (suite 20 is local-only) — and the self-check
  * below fails the moment a workflow starts running a config not listed here, so
@@ -137,16 +137,43 @@ function rel(p: string): string {
 // ── 1. Live-config registry ↔ workflow self-check ────────────────────────────
 
 /**
- * Scan .github/workflows/*.yml for the two ways a config is invoked:
- *   - `run-e2e.sh --config playwright.X.config.ts`  → a NAMED config
- *   - `run-e2e.sh` with no --config on the same line → the DEFAULT config
+ * Scan .github/workflows/*.yml for the two ways a config is invoked through the
+ * e2e runner (`python3 -m rediacc_ci.testrun.e2e`, or its bash twin `run-e2e.sh`):
+ *   - the runner with `--config playwright.X.config.ts` → a NAMED config
+ *   - the runner with no --config in the same command    → the DEFAULT config
+ * A command is one logical shell line: backslash continuations are joined first,
+ * so a call folded across lines is read whole, and comment lines are skipped, so
+ * prose that names the runner is not mistaken for a bare default-config call.
  * The gate fails if a workflow runs a config the registry omits, if the registry
  * names a config no workflow runs, or if the registry claims a default that no
- * bare run-e2e.sh invocation backs.
+ * bare runner invocation backs.
  */
+const E2E_RUNNER_RE = /(?:\brediacc_ci\.testrun\.e2e\b|\brun-e2e\.sh\b)/;
+
+function logicalShellLines(content: string): string[] {
+  const out: string[] = [];
+  let pending = '';
+  for (const raw of content.split('\n')) {
+    if (/^\s*#/.test(raw)) {
+      if (pending) out.push(pending);
+      pending = '';
+      continue;
+    }
+    if (/\\\s*$/.test(raw)) {
+      pending += `${raw.replace(/\\\s*$/, '')} `;
+      continue;
+    }
+    out.push(pending + raw);
+    pending = '';
+  }
+  if (pending) out.push(pending);
+  return out;
+}
+
 function selfCheckRegistry(): void {
   const namedInWorkflows = new Set<string>();
   let bareDefaultSeen = false;
+  let runnerCalls = 0;
   const configFlagRe = /--config\s+(playwright[.\w-]*\.config\.ts)/g;
 
   const workflowFiles = fs.existsSync(WORKFLOWS_DIR)
@@ -154,11 +181,12 @@ function selfCheckRegistry(): void {
     : [];
   for (const wf of workflowFiles) {
     const content = fs.readFileSync(wf, 'utf-8');
-    for (const line of content.split('\n')) {
-      if (!line.includes('run-e2e.sh')) continue;
+    for (const line of logicalShellLines(content)) {
+      if (!E2E_RUNNER_RE.test(line)) continue;
+      runnerCalls++;
       const configs = [...line.matchAll(configFlagRe)].map((m) => m[1]!);
       if (configs.length === 0) {
-        // A run-e2e.sh invocation with no --config drives the default config.
+        // A runner invocation with no --config drives the default config.
         bareDefaultSeen = true;
       } else {
         for (const c of configs) namedInWorkflows.add(c);
@@ -188,7 +216,7 @@ function selfCheckRegistry(): void {
   }
   if (registryHasDefault && !bareDefaultSeen) {
     problems.push(
-      `  - LIVE_CONFIG_REGISTRY marks a default config but no workflow calls run-e2e.sh without --config`
+      `  - LIVE_CONFIG_REGISTRY marks a default config but no workflow calls the e2e runner without --config`
     );
   }
 
@@ -201,13 +229,15 @@ function selfCheckRegistry(): void {
     console.log(
       `Named configs come from '--config <file>' in .github/workflows/*.yml; the default`
     );
-    console.log(`config is the bare 'run-e2e.sh' call. Reconcile the two and re-run.`);
+    console.log(
+      `config is a runner call with no --config (rediacc_ci.testrun.e2e or run-e2e.sh). Reconcile the two and re-run.`
+    );
     process.exit(1);
   }
 
   console.log(
     `${GREEN}✓${RESET} Live-config registry matches the workflows ` +
-      `(${registryNamed.size} named + 1 default; ${workflowFiles.length} workflow files scanned)`
+      `(${registryNamed.size} named + 1 default; ${runnerCalls} runner call(s) in ${workflowFiles.length} workflow files)`
   );
 }
 

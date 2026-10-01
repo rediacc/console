@@ -101,7 +101,8 @@ REGISTRY: tuple[tuple[str, str], ...] = (
     (".ci/scripts/quality/check_gate_tree_writes.py", "VACUOUS INPUT"),
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh. This harness's fixture copies scripts/ and .ci/scripts/ but not .ci/breakpoint/, so the drift gate would fail with "No such file or directory" -- non-zero for a reason that has nothing to do with vacuity, which is precisely the false signal the REGISTRY POLICY above warns about. Its missing-manifest
     # behaviour is proven in test_gate_breakpoint_portability.py instead, where an isolated copy of the folder genuinely exists. The former autopilot-no-bypass / autopilot-workflow-invariants pair that used to be discussed here is gone along with the whole Autopilot subsystem (agent/plans/PLAN-remove-autopilot.md).
-    ("check-dead-bash.ts", "dead shell symbol"),
+    # NOT registered here either: check-dead-bash.ts. Its "no input" is ZERO shell files, and this fixture is not empty of shell: it copies .ci/scripts/ (144 .sh files and 609 functions, measured 2026-10-01). The entry used to pass only because that partial corpus happened to hold dead symbols; with the fixture's copy of .ci/rediacc_ci removed the gate still reports 4 (three phase_* functions of linode-cluster-validation.sh and a mutate-check fixture), and with it the ports name all four, so the gate scans all 144 files, finds nothing dead and exits 0, which is a true
+    # verdict over a real corpus rather than a vacuous one. Its genuine empty-tree refusal ("ZERO shell files") is proven in test_gate_dead_bash.py::test_empty_tree_is_vacuous, against a root that really holds no shell.
     # Both of its checks walk .github/workflows. The empty tree has no workflow YAML, so every invariant it asserts is over an empty set. It used to `exit 0` on a missing directory, which meant renaming the workflow tree would silently retire the gate.
     (".ci/scripts/security/check-workflow-gates.sh", "blind"),
     # The empty tree has no package.json and no .github/workflows, so there is no gate census on either side and every one of its seven assertions would be over an empty set. It replaced check-ci-chain-parity.ts and check-gate-reachability.ts, which were registered here separately for the same property; both are gone.
@@ -477,7 +478,7 @@ def test_registry_entries_exist(gate):
 
 
 def test_validator_rejects_empty_tree(gate):
-    """THE REGISTRY LOOP, one case rather than 42, and the difference is only in the report: every entry is driven and every failure is named, instead of the twin's exit-on-first."""
+    """THE REGISTRY LOOP, one case rather than one per entry, and the difference is only in the report: every entry is driven and every failure is named, instead of the twin's exit-on-first."""
     if not REGISTRY:
         gate.log_fail("REGISTRY is empty, so this loop compared nothing")
     problems = []

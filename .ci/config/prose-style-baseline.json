@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2886,
+ "count": 2885,
  "files": 712,
  "by_rule": {
-  "R1": 1575,
+  "R1": 1574,
   "R11": 150,
   "R14": 1,
   "R18": 13,
@@ -6135,8 +6135,7 @@
   "scripts/gates/check-external-links.ts": {
    "R1": [
     "6416215380f6b3bb",
-    "b7970f99886df21d",
-    "ee68f1cc0facc2b0"
+    "b7970f99886df21d"
    ],
    "R2": [
     "a3ac67e2904313f4"
