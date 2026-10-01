@@ -214,8 +214,20 @@ def walk_text(root: pathlib.Path, *, apply_excludes: bool = True):
         yield path, data.decode("utf-8", "replace")
 
 
-def extract(name: str, targets: list[pathlib.Path]) -> list[str]:
+def corpus_texts(targets: list[pathlib.Path]) -> list[str]:
+    """Every file text `extract` would read under `targets`, in the same order, read ONCE.
+
+    WHY. The sweep runs every pattern over the same scan dirs, and `extract` walked, resolved and read the whole corpus again for each one: ten walks per run, 99,881 `realpath` calls and 6.7 CPU-s standalone, 17.5-18.6 CPU-s in the quick lane (measured 2026-10-01). Reading once and handing every pattern the same texts returns the same labels in the same order.
+    """
+    return [text for target in targets for _path, text in walk_text(target)]
+
+
+def extract(name: str, targets: list[pathlib.Path], *, texts: list[str] | None = None) -> list[str]:
     """One pattern's labels, in first-seen order, WITH duplicates.
+
+    `texts`, when given, is `corpus_texts(targets)` read once by the caller, and is used instead of walking `targets` again.
+
+    A FILE IS SPLIT INTO LINES ONLY WHEN THE PATTERN MATCHES SOMEWHERE IN IT. Any match inside one line is also a match inside the whole text, so a file with no whole-text match has no line that could yield a label; skipping it changes nothing but the cost. 4.58 million per-line `findall` calls were most of the remaining time, nearly all of them empty.
 
     The twin's `extract` prints one label per line and the caller sorts and deduplicates afterwards, so duplicates are the honest intermediate value; a
     port that deduplicated here would make the self-test's `!= "selftest-label"`
@@ -228,12 +240,16 @@ def extract(name: str, targets: list[pathlib.Path]) -> list[str]:
     out: list[str] = []
     line_re = spec.get("line")
     find_re = spec["find"]
-    for target in targets:
-        for _path, text in walk_text(target):
-            for raw in text.split("\n"):
-                if line_re is not None and not line_re.search(raw):
-                    continue
-                out.extend(_capture(spec, hit) for hit in find_re.findall(raw))
+    source = corpus_texts(targets) if texts is None else texts
+    for text in source:
+        if not find_re.search(text):
+            continue
+        for raw in text.split("\n"):
+            if line_re is not None and not line_re.search(raw):
+                continue
+            hits = find_re.findall(raw)
+            if hits:
+                out.extend(_capture(spec, hit) for hit in hits)
     return out
 
 
@@ -330,8 +346,9 @@ def main(argv: list[str] | None = None) -> int:
     # ---- the sweep --------------------------------------------------------
     targets = [pathlib.Path(spec) for spec in scan_dirs]
     swept: set[str] = set()
+    texts = corpus_texts(targets)
     for name in PATTERNS:
-        swept.update(extract(name, targets))
+        swept.update(extract(name, targets, texts=texts))
     found = sorted(swept)
 
     # "'ubuntu-slim' etc. cannot appear: patterns anchor on label-consuming shapes, not on generic strings. Still, drop anything that is obviously a template placeholder rather than a literal."
