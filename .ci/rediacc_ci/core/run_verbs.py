@@ -3,7 +3,7 @@
 WHAT THIS REPLACES. `.ci/legacy/run-legacy.sh` was the dispatcher for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help. Each verb here is the same arm in Python, calling the ports that already existed (`core.service`, `core.account`, `core.account_lifecycle`, `core.devbox`, `core.local_common`, `core.toolchain`, `security.shellcheck`, `security.shfmt`,
 `quality.submodule_branches`) rather than a second copy of them. `rediacc_ci/__main__.py` names every entry below in its VERBS table; `./run.sh` forwards everything except the two media verbs to it.
 
-EVERY ENTRY TAKES THE VERB'S REMAINING ARGV (verb already removed) and RETURNS AN EXIT STATUS, which is what `__main__` expects. An entry that hands the terminal to a child (`devbox shell`, `worktree`) uses `os.execv`, so the child owns the exit code and the signals, as `exec` did in the router.
+EVERY ENTRY TAKES THE VERB'S REMAINING ARGV (verb already removed) and RETURNS AN EXIT STATUS, which is what `__main__` expects. An entry that hands the terminal to a child (`devbox shell`) lets that child own the exit code and the signals, as `exec` did in the router.
 
 WHERE THIS DIFFERS FROM THE BASH ON PURPOSE (Rule T). Each is pinned by `tests/test_core_run_verbs.py`:
 
@@ -27,14 +27,17 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths
 from rediacc_ci.core import account, account_lifecycle, devbox, local_common, service, toolchain
 from rediacc_ci.security import shfmt
+from rediacc_ci.well_known import DEV_USER_EMAIL, WEB_IMAGE_REPO
 
 if TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
 
-# What a verb hands over to. The `universe` and `transfer` drills are Python (`rediacc_ci.drills`); `license`, `backup` and `worktree` are scripts outside this package, and the tables are the one place their paths are named.
+# What a verb hands over to. Every drill and `worktree` are Python (`rediacc_ci.drills`, `rediacc_ci.dev.worktree`). `DRILLS` and `WORKTREE_SCRIPT` name their bash twins, which nothing executes any more: they stay named only so check:ci-scope-scripts-reachability keeps them reachable as the differential oracles until PLAN-retire-bash-oracles B3 freezes their goldens and deletes them.
 DRILL_MODULES = {
     "universe": "rediacc_ci.drills.universe",
     "transfer": "rediacc_ci.drills.transfer",
+    "license": "rediacc_ci.drills.license",
+    "backup": "rediacc_ci.drills.backup",
 }
 DRILLS = {
     "license": "scripts/drills/license.sh",
@@ -142,10 +145,13 @@ def _with_docker_group(args: list[str]) -> None:
 
 # --------------------------------------------------------------------------- help ---------------------------------------------------------------------------
 
-HELP = """Usage: ./run.sh [COMMAND] [OPTIONS]
+HELP = (
+    """Usage: ./run.sh [COMMAND] [OPTIONS]
 
 SERVICE COMMANDS:
-  service start [port] [--no-build]  Build and run rediacc/web (default port: 8080)
+  service start [port] [--no-build]  Build and run """
+    + WEB_IMAGE_REPO
+    + """ (default port: 8080)
   service stop                    Stop service containers
   service status                  Show service status
   service logs [container]        Show logs (web, rustfs, all)
@@ -158,7 +164,9 @@ ACCOUNT COMMANDS:
   account stop             Stop account Docker containers
   account reset            Reset .env + database and regenerate
   account seed-demo        Seed a demo partner org end-to-end against the dev gateway (takes <email>)
-  account totp [email]     Print the current 2FA code for a dev user (default dev-user@rediacc.io)
+  account totp [email]     Print the current 2FA code for a dev user (default """
+    + DEV_USER_EMAIL
+    + """)
 
 ROTATION COMMANDS (private/account/scripts/rotation/):
   rotation init            Bootstrap manifest from current platform state
@@ -263,6 +271,7 @@ REQUIREMENTS:
 ENVIRONMENT:
   GITHUB_TOKEN        GitHub personal access token (for ghcr.io auth)
 """
+)
 
 
 def help_text() -> str:
@@ -326,27 +335,9 @@ def rotation_main(argv: list[str]) -> int:
 # --------------------------------------------------------------------------- worktree, drill ---------------------------------------------------------------------------
 
 
-def _exec(script: str, args: list[str]) -> int:
-    """Replace this process with `script`. A script that cannot start is reported, with 127 for absent and 126 for not executable, as a shell would."""
-    path = str(root() / script)
-    _flush()
-    try:
-        os.execv(path, [path, *args])  # noqa: S606 -- forwarding exec, the child owns the terminal and the exit code
-    except FileNotFoundError:
-        log.error("%s: not found" % script)
-        return 127
-    except OSError as exc:
-        log.error("%s: %s" % (script, exc.strerror or exc))
-        return 126
-    return 0  # pragma: no cover -- execv does not return
-
-
 def worktree_main(argv: list[str]) -> int:
-    return _exec(WORKTREE_SCRIPT, argv)
-
-
-def _script_arm(script: str) -> Arm:
-    return lambda rest: _exec(script, rest)
+    _flush()
+    return importlib.import_module("rediacc_ci.dev.worktree").main(argv)
 
 
 def _module_arm(module: str) -> Arm:
@@ -363,8 +354,8 @@ def _module_arm(module: str) -> Arm:
 DRILL_ARMS: dict[str, Arm] = {
     "universe": _module_arm(DRILL_MODULES["universe"]),
     "transfer": _module_arm(DRILL_MODULES["transfer"]),
-    "license": _script_arm(DRILLS["license"]),
-    "backup": _script_arm(DRILLS["backup"]),
+    "license": _module_arm(DRILL_MODULES["license"]),
+    "backup": _module_arm(DRILL_MODULES["backup"]),
 }
 
 

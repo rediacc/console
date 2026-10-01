@@ -491,34 +491,9 @@ def test_d5_quality_submodules_runs_the_python_port(monkeypatch, capsys) -> None
 # --------------------------------------------------------------------------- exec arms: worktree and drill ---------------------------------------------------------------------------
 
 
-def test_worktree_and_drill_exec_the_scripts_under_the_repository_root(root, monkeypatch) -> None:
-    execed: list[tuple[str, list[str]]] = []
-    monkeypatch.setattr(os, "execv", lambda path, argv: execed.append((path, argv)))
-    rv.worktree_main(["list"])
-    rv.drill_main(["backup", "--selftest"])
-    rv.drill_main(["license"])
-    assert execed == [
-        (str(root / "scripts/dev/worktree.sh"), [str(root / "scripts/dev/worktree.sh"), "list"]),
-        (
-            str(root / "scripts/drills/backup.sh"),
-            [str(root / "scripts/drills/backup.sh"), "--selftest"],
-        ),
-        (str(root / "scripts/drills/license.sh"), [str(root / "scripts/drills/license.sh")]),
-    ]
-
-
-def test_an_absent_or_unexecutable_script_is_127_or_126_with_a_message(root, capsys) -> None:
-    assert rv.worktree_main([]) == 127
-    assert "scripts/dev/worktree.sh: not found" in capsys.readouterr().err
-    script = root / "scripts" / "dev" / "worktree.sh"
-    script.parent.mkdir(parents=True)
-    script.write_text("#!/bin/bash\n")
-    script.chmod(0o644)
-    assert rv.worktree_main([]) == 126
-    assert "worktree.sh" in capsys.readouterr().err
-
-
-def test_the_ported_drills_import_their_module_and_pass_their_argv_through(monkeypatch) -> None:
+def test_the_drills_and_worktree_import_their_module_and_pass_their_argv_through(
+    monkeypatch,
+) -> None:
     seen: list[tuple[str, list[str]]] = []
 
     class Fake:
@@ -532,9 +507,15 @@ def test_the_ported_drills_import_their_module_and_pass_their_argv_through(monke
     monkeypatch.setattr(rv.importlib, "import_module", Fake)
     assert rv.drill_main(["universe", "--keep-work"]) == 7
     assert rv.drill_main(["transfer", "--selftest"]) == 7
+    assert rv.drill_main(["license"]) == 7
+    assert rv.drill_main(["backup", "--selftest"]) == 7
+    assert rv.worktree_main(["list"]) == 7
     assert seen == [
         ("rediacc_ci.drills.universe", ["--keep-work"]),
         ("rediacc_ci.drills.transfer", ["--selftest"]),
+        ("rediacc_ci.drills.license", []),
+        ("rediacc_ci.drills.backup", ["--selftest"]),
+        ("rediacc_ci.dev.worktree", ["list"]),
     ]
 
 
