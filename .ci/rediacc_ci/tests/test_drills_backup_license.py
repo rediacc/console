@@ -603,9 +603,10 @@ def test_delta_the_gateway_does_not_inherit_the_sandbox_and_the_store_env_reache
         subject.setup_store_env()
         gateway = drill.gateway_env()
         cli = drill.cli_env()
-        assert "XDG_CONFIG_HOME" not in gateway
-        assert "REDIACC_CONFIG" not in gateway
+        # The SANDBOX's value must not reach the gateway; an ambient one it inherits is the operator's own (the CI runner sets one).
         assert cli["XDG_CONFIG_HOME"].endswith("/xdg")
+        assert gateway.get("XDG_CONFIG_HOME") != cli["XDG_CONFIG_HOME"]
+        assert "REDIACC_CONFIG" not in gateway
         assert cli["REDIACC_CONFIG"] == "drill-backup"
         assert gateway["BWS_ACCESS_TOKEN"] == MARKER
         assert gateway["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups"
@@ -618,7 +619,7 @@ def test_delta_the_gateway_does_not_inherit_the_sandbox_and_the_store_env_reache
     try:
         lic = license_drill.License(other, license_drill.Options())
         lic.setup_sandbox()
-        assert "XDG_CONFIG_HOME" not in other.gateway_env()
+        assert other.gateway_env().get("XDG_CONFIG_HOME") != other.cli_env()["XDG_CONFIG_HOME"]
         assert "RDC_RENET_LICENSE" not in other.gateway_env()
         assert other.cli_env()["RDC_RENET_LICENSE"] == "1"
     finally:
