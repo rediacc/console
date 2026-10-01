@@ -13,6 +13,7 @@ NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, and each
 import ast
 import contextlib
 import fcntl
+import functools
 import hashlib
 import io
 import json
@@ -345,6 +346,94 @@ SCENARIO_CLAIMS = {
 
 # -- the differential itself -------------------------------------------------
 
+# RULE T: the step labels whose lines the port INTENTIONALLY no longer shares with the twin, per scenario. Each is a defect the twin still has and the port fixed (`test_delta_*` at the end of this file); the live differential leaves exactly these labels out, and `test_every_delta_label_still_diverges` proves each is still a real divergence.
+DELTA_LABELS = {
+    "docker-query": {
+        "conflicts-nonl",  # D3
+        "running-ps-fails",  # D7
+        "active-ps-fails",  # D7
+        "missing-ps-fails",  # D7
+        "cid-fail",  # D7
+    },
+    "exec": {"doctor-not-running", "zero", "identity-not-running"},  # D2, D5
+    "identity": {"url-ps-fails"},  # D7
+    "identity-utf8": {"status-escape", "slug", "basename"},  # D4, D10
+    "lifecycle": {"stop-ps-fails"},  # D7
+    "state": {"get-dot", "get-star", "get-bracket"},  # D11
+    "status": {"conflict"},  # D4
+    "up-create": {"no-group", "octal"},  # D1, D6
+    "up-existing": {"start-fails"},  # D9
+}
+
+# P3: a newline in a slug argument is a dash. The scenarios whose corpus carries newlines compare those labels against the TWIN'S answer for the same input with each newline replaced by another byte outside the DNS alphabet, which is what the fix means.
+NEWLINE_SCENARIOS = ("slug-edge", "slug-fuzz")
+
+
+def _label_of(line: str) -> str:
+    return line[4:].partition(" ")[0]
+
+
+def _without_delta_labels(out: str, scenario: str) -> list[str]:
+    skip = DELTA_LABELS.get(scenario, set())
+    return [line for line in out.splitlines() if _label_of(line) not in skip]
+
+
+def _hex_stdout(line: str) -> bytes:
+    return bytes.fromhex(line.split(" out=", 1)[1])
+
+
+@functools.cache
+def _twin_stdout_for(values: tuple[str, ...]) -> tuple[bytes, ...]:
+    """The live twin's `devbox_slugify` stdout for each value, in one bash process."""
+    root = paths.repo_root()
+    script = (
+        "set -euo pipefail\n"
+        'ROOT_DIR="%s"\n'
+        'source "$ROOT_DIR/.ci/config/constants.sh"\n'
+        'source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"\n'
+        'source "$ROOT_DIR/.ci/lib/local-common.sh"\n'
+        'source "$ROOT_DIR/.ci/lib/service.sh"\n'
+        'source "$ROOT_DIR/.ci/lib/devbox.sh"\n'
+        "while IFS= read -r -d '' v; do devbox_slugify \"$v\" | od -An -v -tx1 | tr -d ' \\n'; echo; done\n"
+    ) % root
+    payload = b"".join(value.encode("utf-8", "surrogateescape") + b"\0" for value in values)
+    proc = subprocess.run(
+        ["bash", "-c", script],
+        input=payload,
+        capture_output=True,
+        check=True,
+        env={**os.environ, "LC_ALL": "C"},
+    )
+    return tuple(bytes.fromhex(line.decode()) for line in proc.stdout.splitlines())
+
+
+def _newline_delta_holds(scenario: str, old_out: str, new_out: str) -> bool:
+    """Every diverging slug label has a newline in its input, and the port answers what the twin answers with that newline spelled `!`."""
+    corpus = driver.slug_corpus(scenario)
+    old_lines = {_label_of(x): x for x in old_out.splitlines() if x.startswith("obs slug-")}
+    new_lines = {_label_of(x): x for x in new_out.splitlines() if x.startswith("obs slug-")}
+    if old_lines.keys() != new_lines.keys():
+        return False
+    diverged = [label for label in old_lines if old_lines[label] != new_lines[label]]
+    for label in diverged:
+        index = label.rpartition("-")[2]
+        if not index.isdigit() or "\n" not in corpus[int(index)]:
+            return False
+    expected = _twin_stdout_for(
+        tuple(corpus[int(label.rpartition("-")[2])].replace("\n", "!") for label in diverged)
+    )
+    return all(
+        _hex_stdout(new_lines[label]) == answer
+        for label, answer in zip(diverged, expected, strict=True)
+    )
+
+
+def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
+    """The comparison the whole file stands on, minus the Rule T deltas."""
+    if scenario in NEWLINE_SCENARIOS:
+        return _newline_delta_holds(scenario, old_out, new_out)
+    return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
+
 
 @pytest.mark.parametrize("scenario", SCENARIOS)
 def test_the_port_matches_the_live_twin(scenario: str) -> None:
@@ -361,11 +450,27 @@ def test_the_port_matches_the_live_twin(scenario: str) -> None:
     )
     if scenario in SCENARIO_CLAIMS:
         SCENARIO_CLAIMS[scenario](observations(old_out))
-    assert old_out == new_out, "scenario %s diverged" % scenario
+    assert equivalent(scenario, old_out, new_out), "scenario %s diverged" % scenario
+
+
+@pytest.mark.parametrize("scenario", sorted(DELTA_LABELS))
+def test_every_delta_label_still_diverges(scenario: str) -> None:
+    """A delta that stopped diverging is a stale exclusion hiding a comparison."""
+    old_out, new_out = drive("old", scenario)[1], drive("new", scenario)[1]
+    for label in DELTA_LABELS[scenario]:
+        old = [x for x in old_out.splitlines() if _label_of(x) == label]
+        new = [x for x in new_out.splitlines() if _label_of(x) == label]
+        assert old, "the twin never ran %s" % label
+        assert old != new, "the delta %s no longer diverges: remove it from DELTA_LABELS" % label
+
+
+@pytest.mark.parametrize("scenario", NEWLINE_SCENARIOS)
+def test_the_newline_delta_is_a_real_divergence(scenario: str) -> None:
+    assert drive("old", scenario)[1] != drive("new", scenario)[1]
 
 
 def test_the_basename_fallback_depends_on_the_locale() -> None:
-    """Twin defect 10, against the live twin: one checkout, two hostnames, decided by the caller's locale."""
+    """Twin defect 10, against the live twin: one checkout, two hostnames, decided by the caller's locale. The PORT answers the C one for both (`test_delta_d10`)."""
     c_locale = observations(drive("old", "identity-detached")[1])
     utf8 = observations(drive("old", "identity-utf8")[1])
     assert stdout_of(c_locale["basename"]) == b"my-box----9\n"
@@ -489,11 +594,13 @@ def test_a_planted_defect_is_caught(label: str, attribute: str, scenario: str, m
     Planted in process rather than on disk, so nothing can leave a defect behind in the tree. `monkeypatch` restores the attribute when the case ends.
     """
     _, twin_out, _ = drive("old", scenario)
-    assert new_transcript(scenario) == twin_out, "the port already disagrees before the plant"
+    assert equivalent(scenario, twin_out, new_transcript(scenario)), (
+        "the port already disagrees before the plant"
+    )
     owner, _, name = attribute.rpartition(".")
     target = devbox.Devbox if owner == "Devbox" else devbox
     monkeypatch.setattr(target, name, planted_value(attribute))
-    assert new_transcript(scenario) != twin_out, (
+    assert not equivalent(scenario, twin_out, new_transcript(scenario)), (
         "PLANT DID NOT FIRE: %s changed no observation in %s" % (label, scenario)
     )
 
@@ -702,34 +809,6 @@ ECHO_WORDS = [
 ]
 
 
-@pytest.mark.parametrize("locale", ["C", "C.utf8"])
-def test_echo_e_is_bash_echo_e(locale: str) -> None:
-    answers = bash_outputs('echo -e "$w"', ECHO_WORDS, locale)
-    for word, answer in zip(ECHO_WORDS, answers, strict=True):
-        body, newline = devbox.echo_e(word, locale != "C")
-        assert body + (b"\n" if newline else b"") == answer, repr(word)
-
-
-def test_bash_int_reads_octal_and_hex_as_shell_arithmetic_does() -> None:
-    assert devbox.bash_int("017000") == 7680
-    assert devbox.bash_int("0x10") == 16
-    assert devbox.bash_int(" 17010 ") == 17010
-    assert devbox.bash_int("0") == 0
-    with pytest.raises(devbox.DevboxError):
-        devbox.bash_int("08")
-    with pytest.raises(devbox.DevboxError):
-        devbox.bash_int("base_port")
-
-
-def test_the_state_key_refusal_is_explicit() -> None:
-    """Twin defect 11's boundary: a key sed would parse differently is REFUSED, not guessed."""
-    for key in ("a/b", "a\\b", "a\nb", "[[:alpha:]]"):
-        with pytest.raises(devbox.DevboxError):
-            devbox.bre_prefix(key)
-    assert devbox.bre_prefix("sl*ug").match(b"sllug=x")
-    assert devbox.bre_prefix("*x").match(b"*x=1")
-
-
 # -- the tty arms of devbox_exec, which the differential cannot reach ----------
 
 
@@ -902,11 +981,12 @@ def test_the_empty_answer_is_still_a_line() -> None:
     assert devbox.slugify_stdout() == "\n"
 
 
-def test_a_newline_in_the_argument_survives_because_sed_works_per_line() -> None:
-    assert devbox.slugify("a\nb") == "a\nb"
-    assert devbox.slugify("-a-\n-b-") == "a\nb"
+def test_a_newline_in_the_argument_is_a_dash() -> None:
+    """Rule T fix P3 (`test_delta_p3`): the twin kept the newline, because `sed` works per line."""
+    assert devbox.slugify("a\nb") == "a-b"
+    assert devbox.slugify("-a-\n-b-") == "a-b"
     assert devbox.slugify("a\n") == "a"
-    assert devbox.slugify("\na") == "\na"
+    assert devbox.slugify("\na") == "a"
 
 
 def test_multibyte_collapses_to_one_dash_per_run() -> None:
@@ -923,11 +1003,10 @@ def test_lowering_is_ascii_only() -> None:
 
 
 def test_the_basename_rule_is_not_slugify() -> None:
-    """No collapse, no cap, and the locale decides the dash count (twin defect 10)."""
-    assert devbox.slug_basename_rule("a..b", False) == "a--b\n"
-    assert devbox.slug_basename_rule("x" * 50, False) == "x" * 50 + "\n"
-    assert devbox.slug_basename_rule("aÜb", False) == "a--b\n"
-    assert devbox.slug_basename_rule("aÜb", True) == "a-b\n"
+    """No collapse, no cap, and the C locale's dash count whatever the caller's locale (Rule T fix D10)."""
+    assert devbox.slug_basename_rule("a..b") == "a--b\n"
+    assert devbox.slug_basename_rule("x" * 50) == "x" * 50 + "\n"
+    assert devbox.slug_basename_rule("aÜb") == "a--b\n"
 
 
 def test_slug_drift_reports_the_two_disagreements_and_nothing_else() -> None:
@@ -965,3 +1044,129 @@ def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
     assert (paths.repo_root() / TWIN).is_file()
     assert (paths.repo_root() / PORT).is_file()
     assert pathlib.Path(DRIVER).name == "devbox_shadow_driver.py"
+
+
+# -- Rule T: the twin's defects, fixed in the port as INTENTIONAL DELTAS ---------
+#
+# PLAN-retire-bash-oracles section 1 and task B4. Each case below pins the port's FIXED behaviour from the PORT's transcript of the scenario that exposes the defect. The twin's behaviour is pinned beside it by `SCENARIO_CLAIMS` (against the live twin), so a twin that moved fails there. The live differential leaves exactly the labels named in `DELTA_LABELS` out of its comparison, and `test_every_delta_label_still_diverges` proves each is still a real divergence.
+
+
+def port_obs(scenario: str) -> dict[str, list[str]]:
+    rc, out, err = drive("new", scenario)
+    assert rc == 0, err
+    return observations(out)
+
+
+def test_delta_d1_a_host_with_no_docker_group_still_creates_the_devbox() -> None:
+    """Defect D1, fixed: no `docker` group is a warning and a container with no `--group-add`, where the twin died silently with getent's status after the proxy check."""
+    obs = port_obs("up-create")["no-group"]
+    assert status_of(obs) == 0
+    run = next(call for call in calls_of(obs) if call[1:4] == ["run", "-d", "--name"])
+    # The only `--group-add` left is the kvm group's, on a host that has /dev/kvm; the docker group's is gone and its gid env is empty.
+    assert run.count("--group-add") == (1 if os.path.exists("/dev/kvm") else 0)
+    assert "DOCKER_GID=" in run
+    assert any("No docker group on this host" in line for line in errs_of(obs))
+
+
+def test_delta_d2_the_identity_probe_fails_when_the_devbox_is_not_running() -> None:
+    """Defect D2, fixed: a devbox that is not running has no usable identity. The twin's `|| true` swallowed the refusal and reported success."""
+    obs = port_obs("exec")["identity-not-running"]
+    assert status_of(obs) == 1
+    assert any("not running" in line for line in errs_of(obs))
+
+
+def test_delta_d3_an_unterminated_final_docker_line_is_still_a_container() -> None:
+    """Defect D3, fixed: the last `docker ps` line is read even without a trailing newline, so `id4` is inspected."""
+    obs = port_obs("docker-query")["conflicts-nonl"]
+    assert any("id4" in call for call in calls_of(obs))
+    assert any("id1" in call for call in calls_of(obs))
+
+
+def test_delta_d4_log_lines_print_data_verbatim() -> None:
+    """Defect D4, fixed: a worktree label's backslashes are DATA. The twin's `echo -e` expanded `\\t`, spelled `\\u00fc` as `ü` and let `\\c` swallow the rest of the line."""
+    lines = errs_of(port_obs("status")["conflict"])
+    assert "✓   /other/x\\ty\\u00fcz" in lines
+    assert "✓   /cut\\chere" in lines
+    assert any(line.startswith("✓ Which container answers") for line in lines)
+
+
+def test_delta_d5_exec_with_no_command_is_a_usage_error() -> None:
+    """Defect D5, fixed: zero arguments are refused with status 2. The twin ran `bash -lc "'' "` inside the container."""
+    obs = port_obs("exec")["zero"]
+    assert status_of(obs) == 2
+    assert not any(call[1:2] == ["exec"] for call in calls_of(obs))
+    assert any("needs a command" in line for line in errs_of(obs))
+
+
+def test_delta_d6_a_zero_padded_base_port_is_decimal() -> None:
+    """Defect D6, fixed: `017000` is port 17000. The twin's shell arithmetic read it as octal 7680 and moved every route to a port nothing listens on."""
+    run = next(
+        call
+        for call in calls_of(port_obs("up-create")["octal"])
+        if call[1:4] == ["run", "-d", "--name"] and call[4] != "rediacc-devbox-proxy"
+    )
+    assert "DEVBOX_PORT=17000" in run
+    assert "DEVBOX_TERM_PORT=17005" in run
+    assert devbox.decimal("017000") == 17000
+    assert devbox.decimal(" 08 ") == 8
+    with pytest.raises(devbox.DevboxError):
+        devbox.decimal("a1")
+
+
+@pytest.mark.parametrize(
+    ("scenario", "label", "status"),
+    [("docker-query", "active-ps-fails", 3), ("docker-query", "missing-ps-fails", 2)],
+)
+def test_delta_d7_a_failing_docker_ps_says_so(scenario: str, label: str, status: int) -> None:
+    """Defect D7, fixed: the call still ends with docker's status, and now names the failure. The twin ended silently, with nothing on stderr."""
+    obs = port_obs(scenario)[label]
+    assert status_of(obs) == status
+    assert any("docker ps failed" in line for line in errs_of(obs))
+
+
+def test_delta_d7_stop_names_a_failing_docker_ps() -> None:
+    obs = port_obs("lifecycle")["stop-ps-fails"]
+    assert status_of(obs) == 2
+    assert any("docker ps failed" in line for line in errs_of(obs))
+
+
+def test_delta_d9_a_failed_docker_start_says_what_failed() -> None:
+    """Defect D9, fixed: a failed `docker start` is named. The twin ended with docker's words alone."""
+    obs = port_obs("up-existing")["start-fails"]
+    assert status_of(obs) == 1
+    errs = errs_of(obs)
+    assert errs[0] == "→ Starting existing devbox container"
+    assert any("Could not start the existing devbox container" in line for line in errs)
+
+
+def test_delta_d10_the_basename_fallback_ignores_the_locale() -> None:
+    """Defect D10, fixed: one checkout has one hostname, whatever the caller's locale. The twin answered `my-box----9` under the C locale and `my-box---9` under UTF-8; both are the C answer now."""
+    c_locale = port_obs("identity-detached")
+    utf8 = port_obs("identity-utf8")
+    assert stdout_of(c_locale["basename"]) == b"my-box----9\n"
+    assert stdout_of(utf8["basename"]) == b"my-box----9\n"
+    assert driver.STUB_SCENARIOS["identity-utf8"][1] == "C.utf8"
+
+
+def test_delta_d11_the_state_key_is_a_literal() -> None:
+    """Defect D11, fixed: `base.port` is not `base_port` and `sl*ug` is not `slug`. The twin compiled the key as a regular expression."""
+    obs = port_obs("state")
+    assert stdout_of(obs["get-dot"]) == b""
+    assert stdout_of(obs["get-star"]) == b""
+    # The literal spelling still reads the real key.
+    assert stdout_of(obs["get-last"]) == b"no-newline"
+
+
+def test_delta_p3_a_newline_in_a_slug_input_is_a_dash() -> None:
+    """Pure-three defect 3, fixed: a newline is outside the DNS alphabet like any other byte. The twin's `sed` trimmed per LINE, so a two-line argument produced a two-line, unroutable hostname."""
+    assert devbox.slugify("a\nb") == "a-b"
+    assert devbox.slugify("\nfeat\n") == "feat"
+    assert devbox.slugify_stdout("x\ny") == "x-y\n"
+
+
+def test_delta_p7_a_missing_argument_stays_a_refusal() -> None:
+    """Pure-three behaviour 7 is NOT a defect: `devbox_slug_drift` and `devbox_route_label` need their first argument, and refusing the call is the strict answer. Port and twin agree, so the case is pinned here and left as it is."""
+    with pytest.raises(devbox.DevboxError):
+        devbox.slug_drift(None)
+    with pytest.raises(devbox.DevboxError):
+        devbox.route_label(None)

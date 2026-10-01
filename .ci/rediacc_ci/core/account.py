@@ -31,17 +31,14 @@ TWO FUNCTIONS THE TWIN BORROWS FROM ITS SOURCER
 `devbox_state_get` is called at `:1004` and defined at `.ci/lib/devbox.sh:124`, which `account_db` sources on demand. It is re-implemented below rather than imported, because `rediacc_ci.core.devbox` builds a whole `Devbox` context to answer it and this reader needs one key; `test_core_account.py` compares the two against the live bash.
 
 --------------------------------------------------------------------------
-FIVE TWIN BEHAVIOURS REPRODUCED ON PURPOSE, NOT FIXED
+RULE T: FOUR TWIN DEFECTS FIXED, ONE NOT A DEFECT (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-  1. `account_totp` DIES SILENTLY on a state file with no `gateway_port=` line. `gateway_port=$(grep "^gateway_port=" ... | cut -d= -f2)` is a BARE ASSIGNMENT, so it takes the pipeline's status; grep matching nothing exits 1; every sourcer of this file has `pipefail` and `errexit` armed.
-  The function stops there, prints NOTHING, and returns 1, so the "Could not read gateway port" message two lines below is reachable ONLY when the line exists with an empty value. Measured 2026-09-23 against the live twin. `gateway_port_from_state()` raises `StateAbortedError` where the twin dies, and `totp()` maps it to the same silent exit 1.
-  2. `account_banner_row` PADS BY BYTES. `printf '%-63s'` counts bytes, so a multibyte glyph shortens the visible field and shifts the closing bar left. The twin's own comment at `:570-572` says the content is kept ASCII for exactly this reason.
-  `banner_row()` pads by bytes, not by characters, so a caller that ever passes a non-ASCII string gets the twin's broken box rather than a quietly different one.
-  3. `cut -d= -f2` TAKES THE SECOND FIELD ONLY, so a state value containing `=` is truncated. Preserved in `gateway_port_from_state()`.
-  4. `account_db`'s `--studio` arm still parses the REST of the argument list before acting, so `account db --studio --bogus` refuses with exit 2 rather than starting Drizzle. Preserved in `parse_db_args()`.
-  5. `account_stop` DIES THE SAME SILENT WAY, TWICE. Both `old_gateway=$(grep "^gateway_port=" ... | cut ...)` and `old_pids=$(grep "^pids=" ... | cut ...)` are the same bare, non-`local` pipeline as defect 1.
-  A state file that EXISTS but is missing either key kills the function under errexit before Docker teardown or `rm -f "$ACCOUNT_STATE_FILE"` ever run, leaving stale containers and a stale state file behind. Measured 2026-09-23 against a live bash reproduction (`set -euo pipefail`, a hand-crafted state file carrying only the other key).
-  `stop()` reproduces both dead ends: `gateway_port_from_state()`/`state_pids()` each raise `StateAbortedError` and `stop()` returns 1 having done nothing further, same as the twin.
+Each is an INTENTIONAL DELTA from `.ci/lib/account.sh`, which still has the defect; `test_core_account.py` pins the port's behaviour in its `test_delta_*` cases and excludes exactly those scenario cases from the live differential.
+  A1. `account_totp` used to DIE SILENTLY on a state file with no `gateway_port=` line (a bare `$(grep | cut)` assignment under `pipefail` and `errexit`). It now says "Could not read gateway port" and returns 1.
+  A2. `account_banner_row` padded by BYTES (`printf '%-63s'`), so a multibyte glyph shifted the closing bar left. `banner_row()` pads by characters.
+  A3. `cut -d= -f2` truncated a state value containing `=`. `grep_cut()` keeps everything after the first `=`.
+  A5. `account_stop` died the same silent way, twice, leaving containers and the state file behind. A missing key is now an empty value and the teardown runs.
+  A4 IS NOT A DEFECT. `account db --studio --bogus` refuses with exit 2 because an unknown option is refused wherever it sits; that is the right answer, and port and twin agree.
 
 --------------------------------------------------------------------------
 WHY THE LOGGER IS `rediacc_ci.log`
@@ -94,10 +91,6 @@ class AccountError(RuntimeError):
     def __init__(self, message: str, code: int = 1) -> None:
         super().__init__(message)
         self.code = code
-
-
-class StateAbortedError(RuntimeError):
-    """Where the twin's bare assignment takes errexit down. See defect 1."""
 
 
 # --------------------------------------------------------------------------- paths ---------------------------------------------------------------------------
@@ -376,25 +369,19 @@ def generate_crypto_keys(strict: bool = False) -> CryptoKeys:
 def banner_row(text: str) -> str:
     """`account_banner_row`, `.ci/lib/account.sh:620-622`.
 
-    PADS BY BYTES, because `printf '%-63s'` does. See defect 2 in the module docstring. The trailing newline is the caller's: `printf` adds it and so does `print()`.
+    PADS BY CHARACTERS, where the twin's `printf '%-63s'` pads by bytes and shifts the closing bar left for any multibyte glyph (Rule T fix A2). The trailing newline is the caller's: `printf` adds it and so does `print()`.
     """
-    width = 63 - len(text.encode("utf-8"))
+    width = 63 - len(text)
     return "  │  %s%s│" % (text, " " * max(width, 0))
 
 
 def grep_cut(state_text: str, key: str) -> str:
-    """`grep "^KEY=" FILE | cut -d= -f2` as the twin's bare assignment runs it.
+    """`grep "^KEY=" FILE | cut -d= -f2`, as the twin intends it. Rule T fixes A1, A3 and A5.
 
-    EVERY matching line, each cut to its SECOND `=`-field (defect 3), joined by the newlines `$(...)` keeps between them. Raises `StateAbortedError` where grep matches nothing, because that is what the twin does: exit 1 from grep, through `pipefail`, into `errexit`. Defect 1.
-    Until 2026-09-24 this returned the FIRST match only; a state file with the key twice gave the twin both values and the port one. Every state-file read in both account modules now goes through here.
+    EVERY matching line's value, which is everything after the FIRST `=` (the twin's `cut -d= -f2` kept the second field only, so `a=b` read back as `a`), joined by the newlines `$(...)` keeps between them. A key that is not there is the EMPTY string: the twin's bare assignment took grep's exit 1 through `pipefail` into `errexit` and ended the function silently, with Docker still running and the state file left behind.
     """
     prefix = key + "="
-    values = [line.split("=")[1] for line in state_text.split("\n") if line.startswith(prefix)]
-    if not values:
-        raise StateAbortedError(
-            "grep '^%s' matched nothing, and the twin's bare assignment takes that "
-            "exit 1 through pipefail into errexit; it dies here printing nothing" % prefix
-        )
+    values = [line[len(prefix) :] for line in state_text.split("\n") if line.startswith(prefix)]
     return "\n".join(values)
 
 
@@ -404,7 +391,7 @@ def gateway_port_from_state(state_text: str) -> str:
 
 
 def state_pids(state_text: str) -> str:
-    """`grep "^pids=" | cut -d= -f2`, `account_stop`'s other bare assignment (defect 5). `.ci/lib/account.sh:668`."""
+    """`grep "^pids=" | cut -d= -f2`, `account_stop`'s other bare assignment (fix A5). `.ci/lib/account.sh:668`."""
     return grep_cut(state_text, "pids")
 
 
@@ -476,7 +463,7 @@ def js_str(value) -> str:
 def totp(email: str | None = None, env: dict[str, str] | None = None) -> int:
     """`account_totp`, `.ci/lib/account.sh:627-659`. Returns the twin's exit code.
 
-    THE SILENT EXIT 1 IS DELIBERATE. A state file with no `gateway_port=` line at all makes the twin die inside its own assignment with nothing on either stream; this returns 1 having printed nothing, for the same input.
+    A state file with no `gateway_port=` line at all makes the twin die inside its own assignment with nothing on either stream; this says "Could not read gateway port" and returns 1 (Rule T fix A1).
     """
     address = email or DEFAULT_TOTP_EMAIL
     path = state_file(env)
@@ -484,10 +471,7 @@ def totp(email: str | None = None, env: dict[str, str] | None = None) -> int:
         log.error("No running dev gateway (state file absent). Start it: ./run.sh account dev")
         return 1
     text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
-    try:
-        gateway_port = gateway_port_from_state(text)
-    except StateAbortedError:
-        return 1
+    gateway_port = gateway_port_from_state(text)
     if gateway_port == "":
         log.error("Could not read gateway port from %s" % path)
         return 1
@@ -539,20 +523,14 @@ def stop(env: dict[str, str] | None = None) -> int:
 
     Kills the dev pids and gateway-port occupant tracked in the state file, tears down the `account-server` container and any RustFS config-store ghosts, and removes the state file. Starts and stops REAL infrastructure, so this is real-run verified rather than shadow-differentially proved; see the module docstring.
 
-    Returns 1 where the twin's bare `old_gateway=$(...)` or `old_pids=$(...)` assignment matches nothing and dies under errexit/pipefail before Docker teardown or the `rm -f` ever run (defect 5). Returns 0 otherwise, same as the twin having nothing further to report.
+    A state file missing either key is read as an empty value and the teardown runs: the twin's bare `old_gateway=$(...)` or `old_pids=$(...)` assignment died under errexit/pipefail before Docker teardown or the `rm -f` ever ran (Rule T fix A5). Returns 0.
     """
     log.step("Stopping account services")
     path = state_file(env)
     if os.path.isfile(path):
         text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
-        try:
-            old_gateway = gateway_port_from_state(text)
-        except StateAbortedError:
-            return 1
-        try:
-            old_pids = state_pids(text)
-        except StateAbortedError:
-            return 1
+        old_gateway = gateway_port_from_state(text)
+        old_pids = state_pids(text)
 
         if old_pids and state_owned(text, path):
             # `for pid in ${old_pids//,/ }`: unquoted, so word-splitting drops any empty field the comma substitution leaves behind.
@@ -571,13 +549,15 @@ def stop(env: dict[str, str] | None = None) -> int:
     # `(cd "$ACCOUNT_DIR" && docker compose down --remove-orphans) 2>/dev/null || true` and the container stop/rm loop below both run unconditionally in the twin, relying on `2>/dev/null || true` to swallow even a missing `docker` binary.
     # Gating the whole section on `shutil.which("docker")` produces the identical observable outcome (no output, nothing torn down) without needing to catch `FileNotFoundError` at every one of the four call sites below.
     if shutil.which("docker") is not None:
-        subprocess.run(
-            ["docker", "compose", "down", "--remove-orphans"],
-            cwd=account_dir(env),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        )
+        # `(cd "$ACCOUNT_DIR" && docker compose down ...) 2>/dev/null || true`: a missing account directory is swallowed too, where an unguarded `cwd=` raised.
+        with contextlib.suppress(OSError):
+            subprocess.run(
+                ["docker", "compose", "down", "--remove-orphans"],
+                cwd=account_dir(env),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
 
         for container in ("account-server",):
             names_proc = subprocess.run(
@@ -714,7 +694,7 @@ def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
 def parse_db_args(argv: list[str]) -> bool:
     """`account_db`'s option loop, `.ci/lib/account.sh:954-966`.
 
-    True for `--studio`. Raises `AccountError(code=2)` on anything else, INCLUDING an unknown option that follows `--studio`, because the twin's loop keeps parsing after setting the flag. Defect 4.
+    True for `--studio`. Raises `AccountError(code=2)` on anything else, INCLUDING an unknown option that follows `--studio`, because the twin's loop keeps parsing after setting the flag. That refusal is right, so it is not a Rule T fix (A4).
     """
     use_studio = False
     for arg in argv:

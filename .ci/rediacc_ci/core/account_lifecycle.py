@@ -19,15 +19,16 @@ ERREXIT
 Every sourcer of the twin arms `set -euo pipefail`, so a bare command that fails ENDS THE PROCESS with its status rather than returning. `ErrexitError` is that: it carries the status, `main()` exits with it, and `dev()`'s cleanup maps it to the exit code its EXIT trap would have seen. `rediacc_ci.core.local_common.LocalCommonError` and `rediacc_ci.core.account.AccountError` are the same thing raised by the functions this module borrows, and `code_of()` reads all three.
 
 --------------------------------------------------------------------------
-TWIN BEHAVIOURS REPRODUCED ON PURPOSE, NOT FIXED
+RULE T: SIX TWIN DEFECTS FIXED, ONE KEPT (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-  1. `account_seed_demo`'s "Could not reach the account gateway" branch is DEAD CODE. `body=$(curl ...)` is a bare assignment, so a failing curl kills the function under errexit before `curl_exit=$?` is ever read; what the user sees is curl's own `-sS` diagnostic and curl's exit status. `seed_demo()` dies the same way.
-  2. `account_seed_demo`, `account_dev` and `account_stop` read the state file with the same bare `grep | cut` assignment `account_totp` does (`rediacc_ci.core.account`, defect 1), so a state file missing the key is a SILENT exit 1.
-  3. `account_dev_credentials` DIES SILENTLY when the seed-config-store answer is not a JSON object node can read. The three `read -r` calls sit in a `{ ... } < <(node ...)` group whose own `|| true` is inside the process substitution, so a node that prints nothing leaves the first `read` at end of file, and that failing `read` is a bare command under errexit. The login banner is never printed. `seed_fields()` raises where node prints nothing.
-  4. `account_dev_credentials` also dies silently when `hostname -I` fails (macOS has no `-I`): `lan_ip=$(hostname -I 2>/dev/null | awk ...)` is a bare assignment whose pipeline status is hostname's under pipefail.
-  5. `account_stripe_auto` dies with npx's status when `scripts/stripe-sync.ts` fails, because `(... npx tsx ... 2>&1 | tail -5)` is a bare subshell and pipefail carries npx's status out of the pipe.
-  6. `account_dev`, `account_test_e2e` and `account_stripe_auto` all `tail` an install or sync log, so a failing `npm install` shows only its last line (or five) before the process ends with npm's status.
-  7. `account_dev` writes `pids=` SPACE-separated. `${ACCOUNT_PIDS[*]// /,}` applies the substitution to each ELEMENT (none of which holds a space) and only then joins them with the first character of IFS, so the commas the line was written for never appear: `A=(101 202 303); echo "${A[*]// /,}"` prints `101 202 303`. Harmless today, because both readers (`account_dev`'s previous-instance stop and `account_stop`) turn commas into spaces and then split on whitespace, so either spelling works; the comma form is the obvious cleanup once this port is the only writer (W7P5-c).
+Each is an INTENTIONAL DELTA from `.ci/lib/account.sh`, which still has the defect. `test_core_account.py` pins the port's behaviour in its `test_delta_l*` cases and excludes exactly those cases from the live differential.
+  L1. `account_seed_demo`'s "Could not reach the account gateway" branch was DEAD CODE (a bare `body=$(curl ...)` died under errexit first). It is reachable now: the message, and exit 1.
+  L2. `account_seed_demo`, `account_dev` and `account_stop` read the state file with a bare `grep | cut`, so a state file missing the key was a SILENT exit 1. A missing key is an empty value.
+  L3. `account_dev_credentials` died SILENTLY when the seed-config-store answer was not JSON node can read (a `read` at end of file inside `{ ... } < <(node ...)`), and the login banner was never printed. The banner is printed with the recovery code unavailable.
+  L4. `account_dev_credentials` died silently when `hostname -I` failed (macOS). The Network rows are left out and the banner is printed.
+  L5. `account_stripe_auto` died with npx's status and no explanation of its own. It still ends with that status, and now says "Stripe product sync failed".
+  L6. A failing `npm install` showed only `tail -1` of its log. A non-zero status keeps up to `FAILURE_TAIL` lines; a success keeps the twin's count.
+  L7. `account_dev` wrote `pids=` SPACE-separated, because `${ACCOUNT_PIDS[*]// /,}` substitutes per element. `pids_line()` writes the commas it was written for; both readers split on commas and whitespace.
 
 --------------------------------------------------------------------------
 WHAT THE DIFFERENTIAL DOES NOT REACH, SAID HERE RATHER THAN LEFT TO A READER
@@ -192,6 +193,9 @@ def _cd_or_die(path: str, *, stream=None) -> None:
     raise ErrexitError(1, message)
 
 
+FAILURE_TAIL = 30
+
+
 def _tail(
     argv: list[str], count: int, *, cwd: str, extra_env: dict[str, str] | None = None
 ) -> None:
@@ -211,7 +215,9 @@ def _tail(
     except FileNotFoundError:
         out, status = ("%s: command not found\n" % argv[0]).encode(), 127
     lines = out.splitlines(keepends=True)
-    sys.stdout.buffer.write(b"".join(lines[-count:]) if lines else b"")
+    # A failure keeps up to FAILURE_TAIL lines: the twin's `tail -1` showed one line of an npm failure (Rule T fix L6).
+    keep = max(count, FAILURE_TAIL) if status != 0 else count
+    sys.stdout.buffer.write(b"".join(lines[-keep:]) if lines else b"")
     sys.stdout.flush()
     if status != 0:
         raise ErrexitError(status, "%s exited %d inside a pipefail pipeline" % (argv[0], status))
@@ -231,8 +237,8 @@ def _newer(one: str, two: str) -> bool:
 
 
 def _pad_bytes(text: str, width: int) -> str:
-    """`printf '%-Ns'`, which pads by BYTES. See `rediacc_ci.core.account`, defect 2."""
-    return text + " " * max(width - len(text.encode("utf-8")), 0)
+    """`printf '%-Ns'`, padded by CHARACTERS: the twin's pads by bytes (Rule T fix A2, `rediacc_ci.core.account.banner_row`)."""
+    return text + " " * max(width - len(text), 0)
 
 
 def _check_node() -> None:
@@ -299,31 +305,25 @@ def load_defaults() -> int:
 
 
 def grep_cut(text: str, key: str) -> str:
-    """`grep "^KEY=" FILE | cut -d= -f2` as a bare assignment: EVERY matching line's second field, joined as `$(...)` joins them.
+    """`grep "^KEY=" FILE | cut -d= -f2`: EVERY matching line's value, joined as `$(...)` joins them, and EMPTY where the key is not there.
 
-    Raises `account.StateAbortedError` where grep matches nothing, which under pipefail and errexit is the twin's silent death.
+    See `rediacc_ci.core.account.grep_cut`: Rule T fixes A1, A3 and A5, and L2 here. The twin took grep's exit 1 into errexit and died silently.
     """
-    prefix = key + "="
-    values = [line.split("=")[1] for line in text.split("\n") if line.startswith(prefix)]
-    if not values:
-        raise account.StateAbortedError("grep '^%s' matched nothing" % prefix)
-    return "\n".join(values)
+    return account.grep_cut(text, key)
 
 
 def state_gateway_port() -> tuple[int, str]:
     """`account_state_gateway_port`, `.ci/lib/account.sh:65-68`. Returns (status, stdout).
 
-    1 with nothing printed when the state file is absent, and 1 from grep, again with nothing printed, when it has no `gateway_port=` line.
+    1 with nothing printed when the state file is absent or has no `gateway_port=` line: a status the caller can read, which is what the twin's grep status was meant to be.
     """
     path = account.state_file()
     if not os.path.isfile(path):
         return 1, ""
     text = pathlib.Path(path).read_text(encoding="utf-8", errors="surrogateescape")
-    try:
-        value = grep_cut(text, "gateway_port")
-    except account.StateAbortedError:
+    if not any(line.startswith("gateway_port=") for line in text.split("\n")):
         return 1, ""
-    return 0, value + "\n"
+    return 0, grep_cut(text, "gateway_port") + "\n"
 
 
 def cleanup(exit_code: int) -> int:
@@ -403,12 +403,17 @@ def stripe_auto() -> int:
         _sleep(1)
 
     log.info("Syncing Stripe products/prices...")
-    _tail(
-        ["npx", "tsx", "scripts/stripe-sync.ts"],
-        5,
-        cwd=account.account_dir(),
-        extra_env={"STRIPE_SECRET_KEY": key},
-    )
+    try:
+        _tail(
+            ["npx", "tsx", "scripts/stripe-sync.ts"],
+            5,
+            cwd=account.account_dir(),
+            extra_env={"STRIPE_SECRET_KEY": key},
+        )
+    except ErrexitError as exc:
+        # Rule T fix L5: the twin ended here with npx's status and only the tail of npx's own output to explain it.
+        log.error("Stripe product sync failed (exit %d): scripts/stripe-sync.ts" % exc.code)
+        raise
 
     fd, stripe_log = tempfile.mkstemp()
     os.close(fd)
@@ -469,14 +474,14 @@ def _refuse_constant(name: str):
 def seed_fields(body: str) -> tuple[str, str, str]:
     """The twin's `node -e` read of the seed-config-store answer, `.ci/lib/account.sh:567`.
 
-    `d.existing?1:0`, `d.recoveryCode||""`, `d.totpSecret||""`. Raises `ErrexitError(1)` where node prints NOTHING, which is where the twin's first `read` hits end of file and errexit ends the job (defect 3): an answer that is not JSON, and `null`, whose `.existing` throws.
+    `d.existing?1:0`, `d.recoveryCode||""`, `d.totpSecret||""`. Where node prints NOTHING (an answer that is not JSON, and `null`, whose `.existing` throws) the answer is three EMPTY fields: the twin's first `read` hit end of file and errexit ended the job before the login banner (Rule T fix L3), and the banner shows the recovery code as unavailable.
     """
     try:
         data = json.loads(body + "\n", parse_constant=_refuse_constant)
     except ValueError:
-        raise ErrexitError(1, "node could not parse the seed answer") from None
+        return "", "", ""
     if data is None:
-        raise ErrexitError(1, "null.existing throws in node")
+        return "", "", ""
     if not isinstance(data, dict):
         return "0", "", ""
     existing = "1" if js_truthy(data.get("existing")) else "0"
@@ -573,10 +578,9 @@ def dev_credentials(gateway_port: str) -> int:
     else:
         recovery_display = seed_recovery or "<unavailable>"
 
+    # Rule T fix L4: a failing `hostname -I` (macOS has no `-I`) leaves the LAN row out; the twin's pipefail assignment ended the job before the banner.
     status, hostnames = _capture(["hostname", "-I"], quiet_err=True)
-    if status != 0:
-        raise ErrexitError(status, "hostname -I failed inside a pipefail assignment")
-    lan_ip = _first_fields(hostnames + "\n" if hostnames else "")
+    lan_ip = _first_fields(hostnames + "\n" if hostnames else "") if status == 0 else ""
 
     rows = [
         "",
@@ -631,11 +635,8 @@ def _arith(value: str) -> int:
 def _stop_previous(state: str) -> None:
     """`.ci/lib/account.sh:330-360`: the previous instance from this worktree's state file."""
     text = pathlib.Path(state).read_text(encoding="utf-8", errors="surrogateescape")
-    try:
-        old_gateway = grep_cut(text, "gateway_port")
-        old_pids = grep_cut(text, "pids")
-    except account.StateAbortedError:
-        raise ErrexitError(1, "a bare state-file assignment matched nothing") from None
+    old_gateway = grep_cut(text, "gateway_port")
+    old_pids = grep_cut(text, "pids")
     log.step("Stopping previous account instance (gateway:%s)..." % (old_gateway or "?"))
     # Only pids this writer recorded: see `account.state_owned`.
     if old_pids and account.state_owned(text, state):
@@ -756,6 +757,11 @@ def _fork_credentials(gateway_port: str) -> None:
         os._exit(code)
 
 
+def pids_line(pids: list[int]) -> str:
+    """The state file's `pids=` line, COMMA-separated as the twin's `${ACCOUNT_PIDS[*]// /,}` intended (Rule T fix L7): the substitution runs per element and the join then uses a space. Both readers split on commas and whitespace, so a file from either writer reads back."""
+    return "pids=%s" % ",".join(str(p) for p in pids)
+
+
 def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     """`.ci/lib/account.sh:446-499`: everything after the trap is armed. Returns the gateway's status, or dies."""
     os.makedirs(account.log_directory(), exist_ok=True)
@@ -786,8 +792,7 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     _, started = _capture(["date", "+%s"])
     lines = [
         "gateway_port=%d" % gateway_port,
-        # Twin behaviour 7: SPACES, not the commas the substitution was written for.
-        "pids=%s" % " ".join(str(p) for p in PIDS),
+        pids_line(PIDS),
         "writer=%s" % account.writer_stamp(),
         "worktree=%s" % root,
         "started=%s" % started,
@@ -1076,16 +1081,13 @@ def _pretty(body: str) -> None:
 def seed_demo(args: list[str]) -> int:
     """`account_seed_demo`, `.ci/lib/account.sh:842-913`. A demo partner org against the running dev gateway.
 
-    The port is `--port`, else the state file's (a bare assignment, so a state file without the key is a silent death), else `ACCOUNT_DEV_PORT_PREFERRED`.
+    The port is `--port`, else the state file's (a state file without the key falls through, where the twin died silently: Rule T fix L2), else `ACCOUNT_DEV_PORT_PREFERRED`.
     """
     email, port = parse_seed_args(args)
     state = account.state_file()
     if not port and os.path.isfile(state):
         text = pathlib.Path(state).read_text(encoding="utf-8", errors="surrogateescape")
-        try:
-            port = grep_cut(text, "gateway_port")
-        except account.StateAbortedError:
-            raise ErrexitError(1, "a bare state-file assignment matched nothing") from None
+        port = grep_cut(text, "gateway_port")
     port = port or str(account.ACCOUNT_DEV_PORT_PREFERRED)
 
     url = "http://127.0.0.1:%s/account/api/v1/test/seed-demo-partner" % port
@@ -1110,8 +1112,10 @@ def seed_demo(args: list[str]) -> int:
         ]
     )
     if status != 0:
-        # Defect 1: the twin's "Could not reach" branch is unreachable, because this assignment is where errexit ends it.
-        raise ErrexitError(status, "curl failed under errexit")
+        # Rule T fix L1: the twin's "Could not reach" branch is unreachable, because its bare `body=$(curl ...)` ends the function under errexit first.
+        log.error("Could not reach the account gateway on port %s" % port)
+        log.info("Is the dev gateway running? Start it with: ./run.sh account dev")
+        raise ErrexitError(1, "the gateway is unreachable")
     http_code = body.rsplit("\n", 1)[-1]
     body = body.rsplit("\n", 1)[0]
 
