@@ -44,7 +44,10 @@ import ast
 import hashlib
 import pathlib
 
-from rediacc_ci import gitx, paths
+from rediacc_ci import gitx, paths, xdist_groups
+
+# The scan lists the working tree (`git ls-files --cached --others`), which real-tree writers plant probes into and remove mid-suite: on 2026-10-01 a `-n 16` run failed here on test_gate_shrink_only_composition.py's `quality/zz_composition_string_probe_port_*.py`, listed and gone before it was read. Same group, so the two never run side by side.
+XDIST_GROUP = xdist_groups.REAL_TREE_GROUP
 
 #: relpath -> why this hop is correct forever. Each reason is checked for liveness
 #: below, and each is PRINTED on every run: a quiet exemption is how a control stops
