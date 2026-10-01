@@ -52,10 +52,9 @@ proxy_need_file "$ROOT_DIR/.devcontainer/toolchain.env" "constants.sh sources th
 proxy_need_cmd curl "sudo apt-get install -y curl"
 proxy_need_cmd sha256sum "sudo apt-get install -y coreutils"
 proxy_need_cmd tar "sudo apt-get install -y tar"
-set -a
 # shellcheck source=/dev/null
-. "$ROOT_DIR/.ci/config/well-known.env"
-set +a
+source "$ROOT_DIR/scripts/lib/well-known.sh"
+well_known_load
 proxy_need_url "$WK_GH_ORIGIN" "the subject fetches the pinned tarball from github releases"
 proxy_preflight
 

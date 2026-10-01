@@ -23,3 +23,12 @@ export const NC = isTTY ? '\x1b[0m' : ''; // No Color (reset)
 export function joinReport(...lines: string[]): string {
   return lines.join('');
 }
+
+/**
+ * Print several lines to stderr as ONE `console.error` call.
+ *
+ * NAMES THE SHAPE `check:ci-shape-duplication` found in `check-docker-image-freshness.ts`, `check-embed-asset-freshness.ts` and `check-translation-key-usage.ts`: a run of consecutive `console.error(...)` calls, each carrying one line of a failure report. The output is byte-identical to the run it replaces (each line followed by a newline), so a caller keeps its wording and only stops repeating the call.
+ */
+export function errorLines(...lines: string[]): void {
+  console.error(lines.join('\n'));
+}

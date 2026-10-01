@@ -62,10 +62,9 @@ say() { [ "$QUIET" = true ] || printf '%s\n' "$*"; }
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || {
   echo "Not inside a git repository." >&2; exit 2; }
 cd "$REPO_ROOT" || exit 2
-set -a
 # shellcheck source=/dev/null
-. "$REPO_ROOT/.ci/config/well-known.env"
-set +a
+source "$REPO_ROOT/scripts/lib/well-known.sh"
+well_known_load
 
 if [ ! -f .gitmodules ]; then
   say "No .gitmodules found, nothing to initialize."

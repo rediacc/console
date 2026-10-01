@@ -166,6 +166,8 @@ class World:
             "scripts/ops/lib/cf-auth.sh",
             ".ci/scripts/lib/common.sh",
             ".ci/config/well-known.env",
+            "scripts/lib/well-known.sh",
+            "scripts/lib/env-file.sh",
         ):
             dest = self.root / rel
             dest.parent.mkdir(parents=True, exist_ok=True)

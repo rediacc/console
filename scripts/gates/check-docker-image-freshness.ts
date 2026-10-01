@@ -145,7 +145,7 @@ function readGitmodulePaths(): string[] {
 }
 
 import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
-import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
   baselineAdditions,
@@ -524,11 +524,11 @@ async function main(): Promise<void> {
       `\n${RED}✗${NC} ${fresh.length} base image pin(s) newly stale past the soak window:\n`
     );
     for (const s of fresh) console.error(`    ${s}`);
-    console.error(
-      `\nThe window is the SHARED one from .ci/config/release-age.json (${win / 60000} min,`
+    errorLines(
+      `\nThe window is the SHARED one from .ci/config/release-age.json (${win / 60000} min,`,
+      'rounded up to the next UTC day) so a day of upgrades surfaces together.',
+      'Bump the pin. Do not add it to the baseline.'
     );
-    console.error('rounded up to the next UTC day) so a day of upgrades surfaces together.');
-    console.error('Bump the pin. Do not add it to the baseline.');
     process.exit(1);
   }
   if (fixed.length > 0) {

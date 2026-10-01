@@ -26,6 +26,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import upload_repos_to_r2 as port
+from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -91,9 +92,20 @@ if rc:
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
 """
 
-# Every real binary either side reaches for. `find`, `sed` and `mktemp` are called by BOTH implementations (the port shells out to the same three, for the reasons in its docstring); `jq` belongs to cf-purge-urls.sh; `uname`, `dirname`, `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a
+# Every real binary either side reaches for. `find`, `sed` and `mktemp` are called by BOTH implementations (the port shells out to the same three, for the reasons in its docstring); `jq` and `python3` (the registry loader, env_file_load) belong to cf-purge-urls.sh; `uname`, `dirname`, `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a
 # behaviour change.
-PATH_MINIMUM = ("jq", "uname", "dirname", "basename", "find", "wc", "mktemp", "sed", "rm")
+PATH_MINIMUM = (
+    "python3",
+    "jq",
+    "uname",
+    "dirname",
+    "basename",
+    "find",
+    "wc",
+    "mktemp",
+    "sed",
+    "rm",
+)
 
 TMP_RE = re.compile(r"/\S*/tmp\.[A-Za-z0-9]{10}")
 
@@ -141,6 +153,7 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    copy_loader(root)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "deploy" / PORT.name)
 
     for rel, body in (DEFAULT_TREE if tree is None else tree).items():

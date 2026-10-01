@@ -35,10 +35,9 @@
 
 set -euo pipefail
 
-set -a
 # shellcheck source=/dev/null
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.ci/config/well-known.env"
-set +a
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/lib/well-known.sh"
+well_known_load
 
 DEFAULT_VERSION="1.109.5"   # keep in sync with OPENVSCODE_VERSION in .devcontainer/Dockerfile
                             # `--version latest` resolves the newest release at run time

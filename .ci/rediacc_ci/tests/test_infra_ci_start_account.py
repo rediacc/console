@@ -32,6 +32,7 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests.wkloader import copy_loader
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-start-account.sh"
@@ -167,6 +168,7 @@ def _fixture(
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
     )
+    copy_loader(root)
     (root / ".ci" / "rediacc_ci" / "infra" / PORT.name).write_text(
         _null_sleep_python(
             port_source if port_source is not None else PORT.read_text(encoding="utf-8")

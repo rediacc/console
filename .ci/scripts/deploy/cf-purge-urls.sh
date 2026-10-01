@@ -30,10 +30,9 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 # The well-known API base; the same registry the Python port reads.
-set -a
-# shellcheck source=../../config/well-known.env
-. "$SCRIPT_DIR/../../config/well-known.env"
-set +a
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../../../scripts/lib/well-known.sh"
+well_known_load
 
 ZONE_ID=""
 URLS=()

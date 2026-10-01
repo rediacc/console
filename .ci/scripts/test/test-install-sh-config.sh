@@ -29,10 +29,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-set -a
 # shellcheck source=/dev/null
-. "$REPO_ROOT/.ci/config/well-known.env"
-set +a
+source "$REPO_ROOT/scripts/lib/well-known.sh"
+well_known_load
 INSTALL_SH="$REPO_ROOT/packages/www/public/install.sh"
 
 if [[ ! -f "$INSTALL_SH" ]]; then

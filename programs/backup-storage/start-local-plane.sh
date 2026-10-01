@@ -26,10 +26,9 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ACCOUNT_DIR="$ROOT_DIR/private/account"
-set -a
 # shellcheck source=/dev/null
-. "$ROOT_DIR/.ci/config/well-known.env"
-set +a
+source "$ROOT_DIR/scripts/lib/well-known.sh"
+well_known_load
 
 BRIDGE_HOST="${BRIDGE_HOST:-192.168.111.254}"
 GATEWAY_PORT="${GATEWAY_PORT:-$WK_ACCOUNT_DEV_PORT}"

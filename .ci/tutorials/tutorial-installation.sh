@@ -10,10 +10,9 @@
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-set -a
 # shellcheck source=/dev/null
-. "$SCRIPT_DIR/../../.ci/config/well-known.env"
-set +a
+source "$SCRIPT_DIR/../../scripts/lib/well-known.sh"
+well_known_load
 source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 clear_screen

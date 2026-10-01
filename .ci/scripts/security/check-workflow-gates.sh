@@ -56,10 +56,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-set -a
 # shellcheck source=/dev/null
-. "$ROOT_DIR/.ci/config/well-known.env"
-set +a
+source "$ROOT_DIR/scripts/lib/well-known.sh"
+well_known_load
 
 if [[ "${CI:-}" == "true" ]]; then
     RED="" GREEN="" YELLOW="" NC=""

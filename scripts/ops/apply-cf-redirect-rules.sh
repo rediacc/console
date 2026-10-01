@@ -23,10 +23,9 @@
 
 set -euo pipefail
 
-set -a
 # shellcheck source=/dev/null
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/.ci/config/well-known.env"
-set +a
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/scripts/lib/well-known.sh"
+well_known_load
 
 ZONE_ID="9e802649c143c9cefd811d8fd671d31c" # rediacc.com
 DRY_RUN=0

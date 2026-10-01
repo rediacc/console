@@ -5,7 +5,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const REGISTRY = path.resolve(__dirname, '../../config/well-known.env');
+const REGISTRY = path.resolve(__dirname, '../../.ci/config/well-known.env');
 
 const load = () => {
   const out = {};

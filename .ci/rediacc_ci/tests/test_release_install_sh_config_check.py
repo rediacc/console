@@ -28,6 +28,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.release import install_sh_config_check
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -68,6 +69,7 @@ def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     shutil.copy2(
         TWIN.parents[2] / "config" / "well-known.env", fixture / ".ci" / "config" / "well-known.env"
     )
+    copy_loader(fixture)
     return fixture
 
 
