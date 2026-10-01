@@ -64,6 +64,12 @@ This port prints the `VAR: msg` half, on the same stream, with the same exit sta
 `:?` IS AN UNSET-OR-EMPTY TEST: `CHANNEL=` refuses exactly as an absent CHANNEL
 does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it and then sync every package format to `s3://rediacc-releases/apt//`.
 
+-----------------------------------------------------------------------------
+RULE T DELTA: A TRANSIENT R2 FAILURE IS RETRIED (#4175e786)
+-----------------------------------------------------------------------------
+The twin ran each `aws s3 sync` and `aws s3 cp` once under `set -e`, so one transient R2 `IncompleteRead` (measured on 2026-09-24 on a large package) ended a release upload half-way. The port retries the two transfers up to three times, `RETRY_DELAY_S` apart, and only when aws's stderr names a failure a retry can change (`transfer_retry.is_transient`: a broken read, a timeout, a 5xx, a throttle). A refusal (`AccessDenied`, `NoSuchBucket`, an expired key) and anything unrecognised fails on the
+first try exactly as the twin did, with byte-identical output. A retried transfer replays aws's own stderr each time, says `retrying (n/3)`, and a transfer that never succeeds ends with a line naming the cause and then aws's own status. `sync` and `cp` of one object are idempotent, which is what makes the repeat safe. Pinned by the `test_delta_*` cases at the end of the differential, each a fake `aws` that fails once and then succeeds, or always.
+
 K=5 LEDGER: `.ci/shadow/w7p6-upload-repos-to-r2.observations.jsonl`.
 """
 
@@ -74,6 +80,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
+from rediacc_ci.deploy import transfer_retry
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 # The twin's own name, printed in its five guard messages and its one non-release-channel notice. A literal, because the bytes must survive the port.
@@ -88,6 +95,9 @@ CC_MUTABLE = "no-cache"
 # The bucket and the public host, both hard-coded in the twin (:116, :135).
 BUCKET = RELEASES_BUCKET
 PUBLIC_HOST = RELEASES_ORIGIN
+
+# Seconds between the attempts of a retried transfer (Rule T, #4175e786). A module constant, not an environment variable: the bash twin has no knob, and a test that must not sleep sets it directly.
+RETRY_DELAY_S = 5.0
 
 # `.ci/scripts/deploy/cf-purge-urls.sh` (:162), relative to the repository root the twin cd's into. Named once so the cutover to `cf_purge_urls.py` is one line in the box that owns it.
 PURGE_SCRIPT = ".ci/scripts/deploy/cf-purge-urls.sh"
@@ -319,6 +329,34 @@ def _run(argv: list[str], **kwargs) -> int:
     return subprocess.run(argv, check=False, **kwargs).returncode
 
 
+def _transfer(argv: list[str], what: str) -> int:
+    """One `aws s3 sync|cp`, retried through a transient R2 failure (Rule T).
+
+    aws's stderr is captured so the failure can be classified, and replayed byte for byte so a run that does not retry prints exactly what the twin printed. stdout stays inherited.
+    """
+    last_error = [""]
+    attempts = [0]
+
+    def attempt() -> tuple[int, str]:
+        attempts[0] += 1
+        _flush()
+        proc = subprocess.run(argv, check=False, stderr=subprocess.PIPE)
+        sys.stderr.buffer.write(proc.stderr)
+        sys.stderr.flush()
+        last_error[0] = proc.stderr.decode("utf-8", "replace")
+        return proc.returncode, last_error[0]
+
+    status = transfer_retry.retried(attempt, what, SELF, RETRY_DELAY_S, only_transient=True)
+    if status and attempts[0] > 1 and transfer_retry.is_transient(last_error[0]):
+        cause = last_error[0].strip().splitlines()[-1] if last_error[0].strip() else "no output"
+        print(
+            "%s: %s failed after %d attempts; last error: %s" % (SELF, what, attempts[0], cause),
+            file=sys.stderr,
+            flush=True,
+        )
+    return status
+
+
 def _mktemp() -> str:
     """`tmp="$(mktemp)"` (:144). The binary, not `tempfile`: see the docstring."""
     _flush()
@@ -337,7 +375,7 @@ def _upload_repos(channel: str, endpoint: str) -> list[str]:
         if not os.path.isdir(directory):
             continue
 
-        status = _run(sync_argv(fmt, channel, endpoint))
+        status = _transfer(sync_argv(fmt, channel, endpoint), "sync of %s" % directory)
         if status:
             raise BashExitError(status)
 
@@ -373,7 +411,7 @@ def _upload_install_scripts(channel: str, endpoint: str) -> list[str]:
             raise BashExitError(status)
 
         name = os.path.basename(source)
-        status = _run(cp_argv(tmp, channel, name, endpoint))
+        status = _transfer(cp_argv(tmp, channel, name, endpoint), "upload of %s" % name)
         if status:
             raise BashExitError(status)
 
