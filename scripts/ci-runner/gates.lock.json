@@ -686,6 +686,25 @@
     }
   },
   {
+    "id": "check:types:incremental",
+    "run": "npm run check:types:incremental",
+    "gate": true,
+    "needs": [
+      "build:cli"
+    ],
+    "mutex": [
+      "build-artifacts"
+    ],
+    "heavy": true,
+    "leaves": [
+      "scripts/ci-runner/typecheck-incremental.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a local cache-backed twin of check:types, which CI already runs over the same project set in the quality-code 'TypeScript' step from a cold cache, where an incremental mirror would only repeat that work"
+    }
+  },
+  {
     "id": "check:ci-tutorial-healthcheck-headroom",
     "run": "npm run check:ci-tutorial-healthcheck-headroom",
     "gate": true,

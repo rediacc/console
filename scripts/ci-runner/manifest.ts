@@ -682,6 +682,22 @@ export const GATES: readonly GateSpec[] = [
       step: 'TypeScript',
     },
   },
+  {
+    // check:types's project set through tsc's incremental caches, so the quick lane reads the test tsconfigs (a TS2322 in a CLI test file reached CI on 2026-10-01 because check:types is slow). Measured 2026-10-01 on 24 cores: cold 28.6 s, warm 8.6-8.9 s, about 90 CPU-s warm.
+    id: 'check:types:incremental',
+    run: 'npm run check:types:incremental',
+    gate: true,
+    // build:cli already compiles the composite packages in the quick lane; its dist is what the noEmit projects resolve, and the `tsc -b` clause this mirrors writes the same dist.
+    needs: ['build:cli'],
+    mutex: ['build-artifacts'],
+    heavy: true,
+    leaves: ['scripts/ci-runner/typecheck-incremental.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        "BLOCKER: a local cache-backed twin of check:types, which CI already runs over the same project set in the quality-code 'TypeScript' step from a cold cache, where an incremental mirror would only repeat that work",
+    },
+  },
   // >>> gen-manifest: region 8
   {
     id: 'check:ci-tutorial-healthcheck-headroom',
