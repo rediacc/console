@@ -957,7 +957,6 @@
     "paths": [
       ".ci/lib/**",
       "run.sh",
-      ".ci/legacy/**",
       ".ci/scripts/quality/check_setup_idempotency.py"
     ],
     "pathsOrigin": "declared",
@@ -1162,7 +1161,6 @@
       ".devcontainer/**",
       ".github/workflows/**",
       ".ci/scripts/**",
-      ".ci/legacy/**",
       ".ci/config/constants.sh",
       "run.sh"
     ],
@@ -1715,6 +1713,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-security",
       "step": "GitHub Actions variables"
+    }
+  },
+  {
+    "id": "check:ci-literal-sources",
+    "run": "npm run check:ci-literal-sources",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_literal_sources.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Literal sources"
     }
   },
   {

@@ -779,6 +779,7 @@ export const GATES: readonly GateSpec[] = [
     // Was defined in package.json but referenced nowhere: never ran in CI, and failed locally against its own 60s dev-server-boot timeout the first time it was actually invoked (a cold `astro dev` measured 84s). Fixed the timeout (packages/www/scripts/test-tutorial-player-release-gate.js) alongside wiring this in.
     id: 'check:test:tutorial-player',
     env: {
+      // A carrier of WK_MEDIA_ORIGIN (scripts/data/literal-sources.json), value-checked by check:ci-literal-sources: gate harnesses copy scripts/ alone into a bare tree and import this file, so it cannot import from packages/.
       PUBLIC_VIDEO_CDN_BASE_URL: 'https://media.rediacc.com',
     },
     run: 'npm run check:test:tutorial-player',
@@ -926,13 +927,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-setup-idempotency',
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
-    paths: [
-      '.ci/lib/**',
-      'run.sh',
-      // The verb bodies, and setup() with them, moved here in the 2026-09-06 router split. Without this an edit to the file the gate READS does not select it.
-      '.ci/legacy/**',
-      '.ci/scripts/quality/check_setup_idempotency.py',
-    ],
+    paths: ['.ci/lib/**', 'run.sh', '.ci/scripts/quality/check_setup_idempotency.py'],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_setup_idempotency.py'],
     ci: {
@@ -1115,8 +1110,6 @@ export const GATES: readonly GateSpec[] = [
       '.devcontainer/**',
       '.github/workflows/**',
       '.ci/scripts/**',
-      // The gate's own corpus is `git ls-files '.ci/*.sh'`, and under default (non-glob) pathspec matching `*` CROSSES `/`, so it already scans .ci/legacy/run-legacy.sh. This selector does not: `.ci/scripts/**` misses `.ci/legacy/`. Verified, not assumed -- the two matchers have different semantics and that gap is exactly how a gate keeps reading a file that no longer selects it.
-      '.ci/legacy/**',
       '.ci/config/constants.sh',
       'run.sh',
     ],
@@ -1638,6 +1631,18 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-security',
       step: 'GitHub Actions variables',
+    },
+  },
+  {
+    id: 'check:ci-literal-sources',
+    run: 'npm run check:ci-literal-sources',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_literal_sources.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Literal sources',
     },
   },
   // <<< gen-manifest: region 14
