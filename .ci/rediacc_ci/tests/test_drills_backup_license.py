@@ -669,6 +669,68 @@ def test_the_leg_f_planted_strip_control_fails_on_a_server_that_strips() -> None
     assert wire.typeof(wire.lookup(body, "license.chainHash")) == "undefined"
 
 
+class _FakeLicense(license_drill.License):
+    """A License whose HTTP and ssh edges answer from fixed text."""
+
+    status_text = "{}"
+    activate_text = ""
+
+    def license_status(self) -> str:
+        return self.status_text
+
+    def activate_repo_for(self, machine_id: str) -> str:  # noqa: ARG002
+        return self.activate_text
+
+    def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:  # noqa: ARG002
+        return 0, "own-id\n"
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize(
+    "refusal",
+    [
+        '{"error":"Maximum machines (3) reached.","code":"MAX_MACHINES_REACHED"}',
+        "",
+        "<html>502</html>",
+    ],
+)
+def test_leg_f_reports_a_refused_activation_as_failed_assertions_not_a_crash(refusal: str) -> None:
+    """2026-10-01: the bash leg f died with a raw `TypeError` on `delete d.license.chainHash` when activate-repo answered a refusal; the port must record failures and carry on."""
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    drill.init()
+    try:
+        lic = _FakeLicense(drill, license_drill.Options())
+        lic.setup_sandbox()
+        lic.activate_text = refusal
+        lic.leg_f_dto_boundary()
+        assert drill.failures >= 3
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+@pytest.mark.parametrize(
+    ("machines", "passes"),
+    [
+        ([{"machineId": "own-id"}], True),
+        ([{"machineId": "own-id"}, {"machineId": "drifted-id"}], False),
+        ([], False),
+    ],
+)
+def test_the_meter_baseline_names_a_phantom_machine(machines: list[dict], passes: bool) -> None:
+    """The starting meter is exactly the machine under test; a second id on a fresh subscription fails the leg where the cause is visible."""
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    drill.init()
+    try:
+        lic = _FakeLicense(drill, license_drill.Options())
+        lic.status_text = wire.compact({"machines": machines})
+        assert lic.claimed_machine_ids() == sorted(m["machineId"] for m in machines)
+        lic.assert_meter_baseline()
+        assert (drill.failures == 0) is passes
+    finally:
+        drill.teardown()
+
+
 def test_the_preclean_script_is_valid_bash_and_names_the_drill_datastores() -> None:
     script = license_drill.preclean_script("renet")
     assert subprocess.run([BASH, "-n"], input=script, text=True, check=False).returncode == 0

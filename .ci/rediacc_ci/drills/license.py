@@ -588,6 +588,42 @@ class License:
 
     # ------------------------------------------------------------------ leg a
 
+    def claimed_machine_ids(self) -> list[str]:
+        """The machine ids this drill's subscription has an activation row for."""
+        parsed = wire.parse(self.license_status())
+        machines = wire.lookup(parsed, "machines")
+        if not isinstance(machines, list):
+            return []
+        return sorted(
+            wire.jstr(m.get("machineId"))
+            for m in machines
+            if isinstance(m, dict) and m.get("machineId")
+        )
+
+    def assert_meter_baseline(self) -> None:
+        """THE STARTING METER IS A PRECONDITION, NOT AN OBSERVATION. Each run mints its own user and subscription, so the meter starts empty by construction and the only way to hold more than the one machine under test is for that machine to have been counted under a SECOND id. That is what happened on 2026-10-01 (first run on a fresh Ceph fleet: activations 2, not 1; the account DB shows the repo's first issuance by 42e1cfb3..., the reissue a minute later by c99b905a..., the id `sudo renet machine-id` reports for the VM): renet's `GetMachineID` hashes the MAC of every NIC not in a short OUI blacklist, so a transient veth/tap/bridge on the VM at the moment of issuance gives the SAME machine a DIFFERENT id and a phantom slot (reproduced on VM .12 with `ip link add .. type veth`: id changes while the link exists, returns when it goes). Every later cap-dependent step (leg e's seed of 3, leg f's third machine) then fails with 'Maximum machines reached', far from the cause. So the baseline is asserted here, where the cause is still in sight, and a mismatch names the foreign ids and the mechanism."""
+        d, o = self.d, self.o
+        _, own = self.ssh_out(o.vm_ip, "sudo %s machine-id" % o.vm_renet)
+        own = own.strip()
+        claimed = self.claimed_machine_ids()
+        foreign = [m for m in claimed if m != own]
+        if foreign:
+            d.note("machine under test (sudo renet machine-id on %s): %s" % (o.vm_ip, own or "?"))
+            for machine in claimed:
+                d.note(
+                    "  claimed on the subscription: %s%s"
+                    % (machine, "" if machine == own else "   <-- FOREIGN")
+                )
+            d.note("a foreign id on a fresh subscription is the machine under test counted under")
+            d.note("a drifted id (a veth/tap/bridge existed when the licence was issued), not a")
+            d.note("second machine; legs e and f assume exactly one claimed machine here")
+        d.last_cmd = "GET /licenses/status (machines claimed before the fork)"
+        d.assert_equal(
+            own,
+            ",".join(claimed),
+            "the subscription's meter holds exactly this machine (no phantom claim)",
+        )
+
     def leg_a_preclean(self) -> None:
         o = self.o
         hosts = [o.vm_ip]
@@ -672,6 +708,7 @@ class License:
         d.assert_equal("valid", parent_status, "the parent repo's licence is valid")
         d.assert_not_equal("", parent_ds, "and it is scoped to a real datastoreId")
 
+        self.assert_meter_baseline()
         before = self.meter_snapshot()
 
         d.run(
@@ -942,7 +979,9 @@ class License:
         )
 
         # Planted-strip control: the same assertion against a body with the field removed must report it missing. Without this, "chainHash is a string" could be passing because the check never looks.
-        stripped = json.loads(body)
+        # A refusal body (`{"error": ...}`) or a non-JSON one has no `license` to strip; the three assertions above already reported it as a failure, so the control degrades to an empty object instead of crashing the drill with a raw traceback.
+        parsed_body = wire.parse(body)
+        stripped = parsed_body if isinstance(parsed_body, dict) else {}
         if isinstance(stripped.get("license"), dict):
             stripped["license"].pop("chainHash", None)
             stripped["license"].pop("delegationCert", None)
