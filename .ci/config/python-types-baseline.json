@@ -254,20 +254,6 @@
       "message": "Incompatible types in assignment (expression has type \"list[tuple[str, str, str]]\", variable has type \"list[str]\")"
     },
     {
-      "id": "facffe342cf374a8",
-      "file": ".ci/rediacc_ci/quality/label_references.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"findall\""
-    },
-    {
-      "id": "1eeec7d581b3baff",
-      "file": ".ci/rediacc_ci/quality/label_references.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"search\""
-    },
-    {
       "id": "d72704650b30972f",
       "file": ".ci/rediacc_ci/quality/plan_housekeeping.py",
       "code": "arg-type",
@@ -1027,14 +1013,14 @@
       "id": "b8a73d0c9cb92340",
       "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
       "code": "operator",
-      "count": 8,
+      "count": 7,
       "message": "Unsupported right operand type for in (\"str | None\")"
     },
     {
       "id": "636d2aece9ffd282",
       "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
       "code": "union-attr",
-      "count": 3,
+      "count": 2,
       "message": "Item \"None\" of \"str | None\" has no attribute \"count\""
     },
     {
