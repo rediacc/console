@@ -7,7 +7,7 @@ Validates the Linode VLAN cluster path against REAL Linode infrastructure and pr
 Phases (default `preflight plan`):
   preflight    inspect orphaned tofu state and query the live Linode API; exit 2 when live billable instances or volumes match a campaign prefix (never auto-destroys)
   plan         generate the cluster `main.tf.json` with the real CLI generator and run `terraform plan` (creates nothing)
-  provision    [--yes] `rdc config cluster add` + `rdc cluster create`. BILLABLE
+  provision    [--yes] `rdc cluster create --declare-only` + `rdc cluster create`. BILLABLE
   verify       assert zero survivors in `tofu state list` and in the Linode API; exit 4 on any
   destroy      [--yes] `rdc cluster destroy --force`, verify, remove the workdir
   idempotency  [--yes] provision -> destroy -> verify
@@ -253,14 +253,14 @@ class Validation:
         pool_args: list[str] = []
         for spec in self.pools.split(","):
             pool_args += ["--pool", spec]
+        # The twin's declare step names a `config` subcommand the CLI no longer has, and `cluster create`/`cluster destroy` take the name positionally (check:cli-examples, 2026-10-01): its provision and destroy calls would all fail. Declare with `cluster create --declare-only` (an existing declaration is tolerated, as before), then provision with a bare `cluster create`.
         added = subprocess.run(
             [
                 self.rdc,
-                "config",
                 "cluster",
-                "add",
-                "--name",
+                "create",
                 self.cluster,
+                "--declare-only",
                 "--provider",
                 self.provider,
                 "--network-cidr",
@@ -277,11 +277,10 @@ class Validation:
         sys.stderr.write(added.stderr)
         if added.returncode != 0 and "exist" not in (added.stdout + added.stderr).lower():
             raise PhaseError(
-                added.returncode, "rdc config cluster add failed (exit %d)" % added.returncode
+                added.returncode,
+                "rdc cluster create --declare-only failed (exit %d)" % added.returncode,
             )
-        self._run(
-            [self.rdc, "cluster", "create", "--name", self.cluster], what="rdc cluster create"
-        )
+        self._run([self.rdc, "cluster", "create", self.cluster], what="rdc cluster create")
 
     def phase_verify(self) -> None:
         log("Verifying ZERO survivors for cluster '%s'" % self.cluster)
@@ -318,7 +317,7 @@ class Validation:
         self._require_yes("destroy")
         log("Destroying cluster '%s'" % self.cluster)
         rc = subprocess.run(
-            [self.rdc, "cluster", "destroy", "--name", self.cluster, "--force"], check=False
+            [self.rdc, "cluster", "destroy", self.cluster, "--force"], check=False
         ).returncode
         if rc != 0:
             warn("destroy returned non-zero; verifying anyway")
