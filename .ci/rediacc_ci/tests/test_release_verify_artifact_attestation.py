@@ -17,6 +17,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -45,6 +46,11 @@ def _build_scratch_tree(tmp_path: pathlib.Path) -> None:
     ci_scripts_lib.mkdir(parents=True)
     shutil.copy(os.path.join(root, TWIN_REL), ci_scripts_release / "verify-artifact-attestation.sh")
     shutil.copy(os.path.join(root, ".ci/scripts/lib/common.sh"), ci_scripts_lib / "common.sh")
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    shutil.copy(
+        os.path.join(root, ".ci/config/well-known.env"),
+        tmp_path / ".ci" / "config" / "well-known.env",
+    )
 
     rediacc_ci = tmp_path / ".ci" / "rediacc_ci"
     release_pkg = rediacc_ci / "release"
@@ -75,10 +81,10 @@ def run_both(
     twin_abs = str(tmp_path / TWIN_REL)
     ci_abs = str(tmp_path / ".ci")
     old_env = diff.env_for(
-        GITHUB_REPOSITORY="rediacc/console", PATH=path_with_fake, FAKE_GH_FAIL_FILES=fail_files
+        GITHUB_REPOSITORY=GH_REPO, PATH=path_with_fake, FAKE_GH_FAIL_FILES=fail_files
     )
     new_env = diff.env_for(
-        GITHUB_REPOSITORY="rediacc/console",
+        GITHUB_REPOSITORY=GH_REPO,
         PATH=path_with_fake,
         FAKE_GH_FAIL_FILES=fail_files,
         PYTHONPATH=ci_abs,

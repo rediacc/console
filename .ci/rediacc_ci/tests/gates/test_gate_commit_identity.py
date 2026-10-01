@@ -15,6 +15,7 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO, OPERATOR_EMAIL
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_commit_identity.py")
 
@@ -86,7 +87,7 @@ def run_gate(tmp_path, commits, gh_rc=0, declared=None) -> harness.RunResult:
             "FAKE_GH_RC": str(gh_rc),
             "GITHUB_TOKEN": "x",
             "PR_NUMBER": "1",
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
         },
     )
 
@@ -95,12 +96,10 @@ def run_gate(tmp_path, commits, gh_rc=0, declared=None) -> harness.RunResult:
 
 
 def test_null_author_fails(gate, tmp_path):
-    result = run_gate(
-        tmp_path, [commit_json("0d6611aaaa", None, "mfbayraktar", "muhammed@rediacc.com")]
-    )
+    result = run_gate(tmp_path, [commit_json("0d6611aaaa", None, "mfbayraktar", OPERATOR_EMAIL)])
     gate.assert_exit(1, result, "a commit GitHub attributes to nobody must fail")
     gate.assert_contains(result.combined, "0d6611a", "naming the sha")
-    gate.assert_contains(result.combined, "muhammed@rediacc.com", "and the email")
+    gate.assert_contains(result.combined, OPERATOR_EMAIL, "and the email")
     gate.log_pass("an unattributed author is reported by sha and address")
 
 
@@ -208,11 +207,11 @@ def test_over_the_old_cap_still_finds_the_offender(gate, tmp_path):
         commit_json("c%09d" % i, "mfbayraktar", "mfbayraktar", "ok@example.com")
         for i in range(1, 254)
     ]
-    commits.append(commit_json("917d1902dd", None, None, "muhammed@rediacc.com"))
+    commits.append(commit_json("917d1902dd", None, None, OPERATOR_EMAIL))
     result = run_gate(tmp_path, commits)
     gate.assert_exit(1, result, "one unattributed commit among 254 must still fail")
     gate.assert_contains(result.combined, "917d190", "naming the sha")
-    gate.assert_contains(result.combined, "muhammed@rediacc.com", "and the address")
+    gate.assert_contains(result.combined, OPERATOR_EMAIL, "and the address")
     gate.log_pass("PLANT: an offender hidden in a 254-commit PR is found")
 
 

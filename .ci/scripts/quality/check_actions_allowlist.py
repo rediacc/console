@@ -34,6 +34,7 @@ from pathlib import Path
 
 import _cipath  # noqa: F401
 from rediacc_ci import controls
+from rediacc_ci.well_known import GH_REPO
 
 ROOT = Path(os.environ.get("ACTIONS_ALLOWLIST_ROOT") or Path(__file__).resolve().parents[3])
 RECORD = ROOT / ".ci" / "config" / "actions-allowlist.json"
@@ -88,7 +89,7 @@ def permitted(ref: str, record: dict) -> bool:
 
 
 def refresh(record_path: Path) -> int:
-    repo = json.loads(record_path.read_text(encoding="utf-8")).get("repo", "rediacc/console")
+    repo = json.loads(record_path.read_text(encoding="utf-8")).get("repo", GH_REPO)
     proc = subprocess.run(
         ["gh", "api", f"/repos/{repo}/actions/permissions/selected-actions"],
         capture_output=True,

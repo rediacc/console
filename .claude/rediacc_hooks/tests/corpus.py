@@ -27,6 +27,8 @@ Nothing here executes anything it harvests. The corpus is text handed to two imp
 import pathlib
 import re
 
+from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, HOMEBREW_TAP_REPO, RENET_REPO
+
 
 # The repo root, found by looking for what only the root has, rather than by counting `parents[N]`. `.ci/rediacc_ci/paths.py` makes the argument at length: a depth constant still resolves after the file moves, silently, to the wrong tree. That module is not imported here on purpose -- these hooks run from `.claude/settings.json` with no pytest ini and no `pythonpath`, so a hook
 # package that needs `.ci` on sys.path to find itself would be a new coupling.
@@ -272,14 +274,14 @@ EDGE_CASES = [
     # -- round 46: fields belong to one invocation ------------------------
     (
         "r46 two gh commands one line",
-        "gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account",
+        ("gh pr view 94 --repo " + RENET_REPO + "; gh pr merge 66 --repo " + ACCOUNT_REPO),
     ),
     (
         "r46 two merges one line",
-        "gh pr merge 12 --repo rediacc/console && gh pr merge 34 --repo rediacc/renet",
+        ("gh pr merge 12 --repo " + GH_REPO + " && gh pr merge 34 --repo " + RENET_REPO),
     ),
-    ("r46 repo with equals", "gh pr merge 5 --repo=rediacc/elite"),
-    ("r46 -R short form", "gh pr ready -R rediacc/homebrew-tap 9"),
+    ("r46 repo with equals", ("gh pr merge 5 --repo=" + ELITE_REPO)),
+    ("r46 -R short form", ("gh pr ready -R " + HOMEBREW_TAP_REPO + " 9")),
     # -- the env-prefix bypass that beat seven guards ---------------------
     ("env prefix before git", "FOO=bar git commit -m x"),
     ("env prefix after semicolon", "echo hi; FOO=bar git push"),

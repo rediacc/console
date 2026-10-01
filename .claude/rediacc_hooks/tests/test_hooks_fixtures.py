@@ -13,6 +13,7 @@ import subprocess
 import pytest
 
 from rediacc_hooks.tests import hookblocks, hookcases
+from rediacc_hooks.wellknown import ACCOUNT_REPO, CLAUDE_CODE_URL, GH_REPO
 
 bash_json = hookcases.bash_json
 tool_json = hookcases.tool_json
@@ -182,7 +183,7 @@ def test_block_raw_pr_body_edit_asks_what_the_live_body_carries(tmp_path):
 # THE LITERAL IS ASSEMBLED FROM PARTS, for the reason `.ci/rediacc_ci/quality/claude_attribution.py` gives at length: this guard refuses any command whose text carries the trailer, so a file spelling it out could not be handed to a shell here at all.
 TOKEN = "Co-" + "Authored-By"
 TRAILER = TOKEN + ": Claude Opus 5 <noreply@anthropic.com>"
-FOOTER = "\U0001f916 " + "Generated with [Claude Code](https://claude.com/claude-code)"
+FOOTER = "\U0001f916 " + ("Generated with [Claude Code](" + CLAUDE_CODE_URL + ")")
 
 
 @pytest.mark.xdist_group("hooks-fixtures")
@@ -774,13 +775,13 @@ def test_block_premature_ready(tmp_path):
     ready_case(
         2,
         "FAILURE",
-        "gh pr ready 42 --repo rediacc/console",
+        ("gh pr ready 42 --repo " + GH_REPO),
         "premature-ready: flipping ready while CI is not SUCCESS is refused",
     )
     ready_case(
         0,
         "SUCCESS",
-        "gh pr ready 42 --repo rediacc/console",
+        ("gh pr ready 42 --repo " + GH_REPO),
         "premature-ready CONTROL: a green CI Complete lets the flip through",
     )
     # AND DIRECTLY, for the reason spelled out at the one-open-PR cases above: after the cutover a helper body no longer names its guard, so the coverage reader credited
@@ -788,7 +789,7 @@ def test_block_premature_ready(tmp_path):
     # direction on every run. The helper keeps the CI-conclusion matrix; this is the one line the gate can see.
     block.check(
         "check 2 guards/block_premature_ready.py",
-        bash_json("gh pr ready 42 --repo rediacc/console"),
+        bash_json("gh pr ready 42 --repo " + GH_REPO),
         "premature-ready: a red CI Complete refuses the flip",
         env=path_env(stub_gh(tmp_path / "gh-red", "FAILURE", 0)),
     )
@@ -899,13 +900,13 @@ def test_block_merge_with_unpushed(tmp_path):
     )
     block.check(
         "check 2 guards/block_merge_with_unpushed.py",
-        bash_json("gh pr merge 583 --repo rediacc/console --rebase --auto"),
+        bash_json("gh pr merge 583 --repo " + GH_REPO + " --rebase --auto"),
         "merge-unpushed: --repo console is still this checkout",
         env=env,
     )
     block.check(
         "check 0 guards/block_merge_with_unpushed.py",
-        bash_json("gh pr merge 84 --repo rediacc/account --rebase"),
+        bash_json("gh pr merge 84 --repo " + ACCOUNT_REPO + " --rebase"),
         "merge-unpushed CONTROL: a merge for a DIFFERENT repo is out of scope",
         env=env,
     )

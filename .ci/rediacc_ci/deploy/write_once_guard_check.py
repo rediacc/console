@@ -52,6 +52,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 ROOT_DIR = paths.repo_root()
 GUARD_SCRIPT = ROOT_DIR / ".ci" / "scripts" / "deploy" / "upload-to-r2.sh"
@@ -63,7 +64,7 @@ NC = "\033[0m"
 
 # Environment upload-to-r2.sh requires before we can source it.
 BASE_ENV = {
-    "RELEASES_BUCKET": "rediacc-releases",
+    "RELEASES_BUCKET": RELEASES_BUCKET,
     "CLOUDFLARE_R2_ENDPOINT": "https://example.invalid",
     "VERSION": "0.0.0-test",
     "CHANNEL": "pr-0",

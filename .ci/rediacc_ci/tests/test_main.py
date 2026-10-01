@@ -13,6 +13,7 @@ import json
 import pathlib
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 
@@ -69,6 +70,12 @@ def _fixture(tmp_path, *, main_source: str | None = None) -> pathlib.Path:
     # No re-exports, exactly like the real __init__: the fixture must not need any module the real package happens to have.
     (pkg / "__init__.py").write_text("__all__: list[str] = []\n", encoding="utf-8")
     (pkg / "__main__.py").write_text(planted, encoding="utf-8")
+    # The one module the real `__main__` imports besides the standard library, and the registry it reads (found beside the package, in `config/`).
+    shutil.copy2(paths.repo_root() / ".ci" / "rediacc_ci" / "well_known.py", pkg / "well_known.py")
+    (root / "config").mkdir()
+    shutil.copy2(
+        paths.repo_root() / ".ci" / "config" / "well-known.env", root / "config" / "well-known.env"
+    )
     # `probe` is a TOP-LEVEL module, not `rediacc_ci.probe`: resolving it proves the dotted name in the table is what gets imported, rather than something the package would have pulled in anyway.
     (root / "probe.py").write_text(PROBE_SOURCE, encoding="utf-8")
     return root

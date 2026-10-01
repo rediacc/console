@@ -23,6 +23,7 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 SUT = paths.from_root(".ci", "scripts", "deploy", "simulate-promotion.sh")
 COMMON = paths.from_root(".ci", "scripts", "lib", "common.sh")
@@ -67,6 +68,11 @@ def build_fixture(gate, base: pathlib.Path, *, rogue: bool = False) -> Fixture:
     fx.bin.mkdir()
     shutil.copy2(SUT, fx.target)
     shutil.copy2(COMMON, base / "repo" / ".ci" / "scripts" / "lib" / "common.sh")
+    (base / "repo" / ".ci" / "config").mkdir(parents=True)
+    shutil.copy2(
+        paths.from_root(".ci", "config", "well-known.env"),
+        base / "repo" / ".ci" / "config" / "well-known.env",
+    )
 
     # The purge step shells out to this; keep it inert but present. It RECORDS the URLs it is handed, so the purge assertions read what the script actually asked to be purged rather than a proxy for it.
     _write_exec(
@@ -85,32 +91,39 @@ def write_fake_aws(fx: Fixture, *, rogue: bool = False) -> None:
     rogue_line = '    prefix="somewhere-else/"\n' if rogue else ""
     _write_exec(
         fx.bin / "aws",
-        "#!/bin/bash\n"
-        'printf \'%%s\\n\' "$*" >>"%s"\n'
-        'case "$1" in\n'
-        '    --version) echo "%s" ;;\n'
-        "    configure) exit 0 ;;\n"
-        "    s3)\n"
-        "        # Real `aws s3 ls <prefix> --recursive` prints FULL keys under the\n"
-        "        # prefix asked for. A stub that ignored the prefix would hide the\n"
-        "        # strip-and-rebuild logic entirely, so derive the keys from argv[3].\n"
-        '        if [[ "$2" == "ls" ]]; then\n'
-        '            prefix="${3#s3://rediacc-releases/}"\n'
-        "%s"
-        '            echo "2026-08-20 12:00:01       1234 ${prefix}dists/Release"\n'
-        '            echo "2026-08-20 12:00:02         12 ${prefix}dists/with space/InRelease"\n'
-        "        fi\n"
-        "        # The sed-fix step downloads a config file and then edits it in\n"
-        "        # place. A download takes the form: cp s3://SRC LOCALPATH\n"
-        "        # --endpoint-url URL, so the destination is argv[4] and NOT the last\n"
-        "        # argument, which is the endpoint value.\n"
-        '        if [[ "$2" == "cp" && "$3" == s3://* && "$4" != s3://* ]]; then\n'
-        "            printf 'baseurl=https://releases.rediacc.com/rpm/edge/\\n' >\"$4\"\n"
-        "        fi\n"
-        "        exit 0\n"
-        "        ;;\n"
-        "esac\n"
-        "exit 0\n" % (fx.argv_log, AWS_VERSION, rogue_line),
+        (
+            "#!/bin/bash\n"
+            'printf \'%%s\\n\' "$*" >>"%s"\n'
+            'case "$1" in\n'
+            '    --version) echo "%s" ;;\n'
+            "    configure) exit 0 ;;\n"
+            "    s3)\n"
+            "        # Real `aws s3 ls <prefix> --recursive` prints FULL keys under the\n"
+            "        # prefix asked for. A stub that ignored the prefix would hide the\n"
+            "        # strip-and-rebuild logic entirely, so derive the keys from argv[3].\n"
+            '        if [[ "$2" == "ls" ]]; then\n'
+            '            prefix="${3#s3://'
+            + RELEASES_BUCKET
+            + '/}"\n'
+            + "%s"
+            + '            echo "2026-08-20 12:00:01       1234 ${prefix}dists/Release"\n'
+            + '            echo "2026-08-20 12:00:02         12 ${prefix}dists/with space/InRelease"\n'
+            + "        fi\n"
+            + "        # The sed-fix step downloads a config file and then edits it in\n"
+            + "        # place. A download takes the form: cp s3://SRC LOCALPATH\n"
+            + "        # --endpoint-url URL, so the destination is argv[4] and NOT the last\n"
+            + "        # argument, which is the endpoint value.\n"
+            + '        if [[ "$2" == "cp" && "$3" == s3://* && "$4" != s3://* ]]; then\n'
+            + "            printf 'baseurl="
+            + RELEASES_ORIGIN
+            + '/rpm/edge/\\n\' >"$4"\n'
+            + "        fi\n"
+            + "        exit 0\n"
+            + "        ;;\n"
+            + "esac\n"
+            + "exit 0\n"
+        )
+        % (fx.argv_log, AWS_VERSION, rogue_line),
     )
 
 
@@ -152,8 +165,14 @@ def test_the_copy_is_server_side(gate, tmp_path: pathlib.Path):
     promote_or_fail(gate, fx)
     gate.assert_contains(
         fx.argv(),
-        "s3api copy-object --bucket rediacc-releases --key apt/edge-promoted/dists/Release "
-        "--copy-source rediacc-releases/apt/edge/dists/Release",
+        (
+            "s3api copy-object --bucket "
+            + RELEASES_BUCKET
+            + " --key apt/edge-promoted/dists/Release "
+            + "--copy-source "
+            + RELEASES_BUCKET
+            + "/apt/edge/dists/Release"
+        ),
         "apt objects are copied bucket-to-bucket, and the destination key is rebuilt correctly",
     )
     gate.assert_not_contains(
@@ -181,7 +200,7 @@ def test_all_four_formats_are_copied(gate, tmp_path: pathlib.Path):
         gate.assert_contains(fx.argv(), "--key %s/edge-promoted/" % fmt, "%s is promoted" % fmt)
         gate.assert_contains(
             fx.argv(),
-            "--copy-source rediacc-releases/%s/edge/" % fmt,
+            ("--copy-source " + RELEASES_BUCKET + "/%s/edge/") % fmt,
             "%s is sourced from the unpromoted channel" % fmt,
         )
     gate.log_pass("all four repo formats are promoted")
@@ -217,17 +236,17 @@ def test_purge_urls_come_from_the_listing_and_survive_spaces(gate, tmp_path: pat
     promote_or_fail(gate, fx)
     gate.assert_contains(
         fx.argv(),
-        "s3 ls s3://rediacc-releases/apt/edge/ --recursive",
+        ("s3 ls s3://" + RELEASES_BUCKET + "/apt/edge/ --recursive"),
         "purge URLs are derived from a listing, not a transfer",
     )
     gate.assert_contains(
         fx.purge_list(),
-        "https://releases.rediacc.com/apt/edge-promoted/dists/Release",
+        (RELEASES_ORIGIN + "/apt/edge-promoted/dists/Release"),
         "a promoted URL is queued for purge",
     )
     gate.assert_contains(
         fx.purge_list(),
-        "https://releases.rediacc.com/apt/edge-promoted/dists/with space/InRelease",
+        (RELEASES_ORIGIN + "/apt/edge-promoted/dists/with space/InRelease"),
         "a key containing a space survives into its purge URL intact",
     )
     gate.assert_contains(fx.output(), "Promotion simulated", "the script ran to completion")

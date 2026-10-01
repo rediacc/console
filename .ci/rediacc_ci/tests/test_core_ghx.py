@@ -22,6 +22,7 @@ import pytest
 from rediacc_ci import paths, proc
 from rediacc_ci.core import ghx
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_API_BASE, GH_REPO
 
 # --------------------------------------------------------------------------- THE FROZEN MEASUREMENTS
 #
@@ -50,8 +51,10 @@ MEASURED_UNKNOWN_VERB_STDERR = 'unknown command "frobnicate" for "gh"\n'
 # What GitHub answers when the token is present and the budget is not. Not captured from a live 403 here (that would mean spending the budget to prove the string); it is the documented body, and the case that matters is the ORDERING it exercises, not the exact wording.
 RATE_LIMIT_STDERR = (
     "HTTP 403: API rate limit exceeded for user ID 1. If you reach out to GitHub "
-    "Support for help, please include the request ID. (https://api.github.com/...)\n"
-    "To get started with GitHub CLI, please run:  gh auth login\n"
+    "Support for help, please include the request ID. ("
+    + GH_API_BASE
+    + "/...)\n"
+    + "To get started with GitHub CLI, please run:  gh auth login\n"
 )
 
 # A 404 body from `gh api`, which is a JSON OBJECT and not the array a caller of a list endpoint is expecting. This is the shape `json_list` refuses.
@@ -168,12 +171,12 @@ def test_the_measured_constants_match_the_module():
 def _assert_failure_is_not_an_empty_answer():
     """A `gh` that could not answer must RAISE, not return an empty list."""
     with pytest.raises(ghx.GhUnauthenticatedError):
-        ghx.pr_head_refs(repo="rediacc/console")
+        ghx.pr_head_refs(repo=GH_REPO)
 
 
 def _assert_empty_is_an_empty_answer():
     """A `gh` that answered "nothing here" must return the empty list."""
-    assert ghx.pr_head_refs(repo="rediacc/console") == []
+    assert ghx.pr_head_refs(repo=GH_REPO) == []
 
 
 def test_a_failed_call_raises_rather_than_answering_empty(fake_bin):
@@ -208,7 +211,7 @@ def test_the_stderr_survives_and_names_the_cause(fake_bin):
     """28 call sites send this to /dev/null. It is the only useful thing a failed call produces, so it must reach the exception's message."""
     fake_bin("gh", rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
     with pytest.raises(ghx.GhUnauthenticatedError) as caught:
-        ghx.pr_head_refs(repo="rediacc/console")
+        ghx.pr_head_refs(repo=GH_REPO)
     assert "gh auth login" in str(caught.value)
     assert caught.value.stderr == MEASURED_UNAUTH_STDERR
     assert caught.value.returncode == MEASURED_UNAUTH_RC
@@ -286,14 +289,14 @@ def test_the_guard_pipeline_cannot_tell_an_outage_from_an_empty_day(dual_fake_gh
 def test_the_module_tells_them_apart_on_the_same_fake(dual_fake_gh):
     """The other direction, on the same binary the pipeline could not read."""
     dual_fake_gh([])
-    assert ghx.branch_indexes("0826", repo="rediacc/console") == set()
-    assert ghx.next_branch_name("0826", repo="rediacc/console") == "0826-1"
+    assert ghx.branch_indexes("0826", repo=GH_REPO) == set()
+    assert ghx.next_branch_name("0826", repo=GH_REPO) == "0826-1"
 
     dual_fake_gh([], rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
     with pytest.raises(ghx.GhUnauthenticatedError):
-        ghx.branch_indexes("0826", repo="rediacc/console")
+        ghx.branch_indexes("0826", repo=GH_REPO)
     with pytest.raises(ghx.GhUnauthenticatedError):
-        ghx.next_branch_name("0826", repo="rediacc/console")
+        ghx.next_branch_name("0826", repo=GH_REPO)
 
 
 def test_the_next_branch_name_is_one_past_the_highest_used(fake_bin):
@@ -561,12 +564,12 @@ def test_the_noninteractive_environment_reaches_the_child(argv_recorder):
 
 def test_the_repo_flag_is_appended_rather_than_inferred(argv_recorder):
     log, _env = argv_recorder
-    ghx.gh(["pr", "list"], repo="rediacc/console")
+    ghx.gh(["pr", "list"], repo=GH_REPO)
     assert log.read_text(encoding="utf-8").split() == [
         "pr",
         "list",
         "--repo",
-        "rediacc/console",
+        GH_REPO,
     ]
 
 
@@ -618,7 +621,7 @@ def _module_run(bindir: pathlib.Path, args: list[str]) -> subprocess.CompletedPr
 
 def test_the_dispatcher_prints_a_name_on_stdout_and_exits_zero(fake_bin):
     fake_bin("gh", stdout=_rows("0826-1", "0826-2"))
-    done = _module_run(fake_bin.bindir, ["next-branch-name", "0826", "rediacc/console"])
+    done = _module_run(fake_bin.bindir, ["next-branch-name", "0826", GH_REPO])
     assert done.returncode == 0
     assert done.stdout == "0826-3\n"
     assert done.stderr == ""
@@ -628,7 +631,7 @@ def test_the_dispatcher_puts_the_reason_on_stderr_and_nothing_on_stdout(fake_bin
     """THE CONTRACT `name="$(...)" || handle-it` DEPENDS ON. A failure must not
     put a plausible name on stdout, and must not exit 0."""
     fake_bin("gh", rc=MEASURED_UNAUTH_RC, stderr=MEASURED_UNAUTH_STDERR)
-    done = _module_run(fake_bin.bindir, ["next-branch-name", "0826", "rediacc/console"])
+    done = _module_run(fake_bin.bindir, ["next-branch-name", "0826", GH_REPO])
     assert done.returncode != 0
     assert done.stdout == ""
     assert "gh auth login" in done.stderr

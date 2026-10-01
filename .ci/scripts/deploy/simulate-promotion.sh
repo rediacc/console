@@ -48,7 +48,7 @@ require_cmd aws
 }
 
 PROMOTED="${CHANNEL}-promoted"
-BUCKET="rediacc-releases"
+BUCKET="$WK_RELEASES_BUCKET"
 EP=(--endpoint-url "$CLOUDFLARE_R2_ENDPOINT")
 
 # Hand PROMOTED back to subsequent workflow steps when running under Actions.
@@ -219,7 +219,7 @@ for dir in apt rpm apk archlinux; do
 
     while IFS= read -r key; do
         [[ -n "$key" ]] || continue
-        PURGE_URLS+=("https://releases.rediacc.com/${DST_PREFIX}${key#"$SRC_PREFIX"}")
+        PURGE_URLS+=("$WK_RELEASES_ORIGIN/${DST_PREFIX}${key#"$SRC_PREFIX"}")
     done <"$KEYS"
     rm -f "$KEYS"
 done
@@ -230,7 +230,7 @@ for file in "rpm/${PROMOTED}/rediacc.repo" "archlinux/${PROMOTED}/rediacc.conf";
         sed_in_place "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
         aws_s3_cp_retry /tmp/config "s3://${BUCKET}/${file}" "${EP[@]}" \
             --cache-control "$CC_MUTABLE"
-        PURGE_URLS+=("https://releases.rediacc.com/${file}")
+        PURGE_URLS+=("$WK_RELEASES_ORIGIN/${file}")
         log_info "Fixed channel in ${file}"
     fi
 done

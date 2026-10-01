@@ -43,6 +43,7 @@ ROOT = paths.repo_root()
 PORT_REL = ".ci/rediacc_ci/build/build_www.py"
 TWIN_REL = ".ci/scripts/build/build-www.sh"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 
 SLUG = "build-www"
 CALLS_MARKER = "--- calls ---\n"
@@ -108,9 +109,10 @@ CASES = tuple(CASE_KW)
 def fixture(where: pathlib.Path, subject: pathlib.Path) -> pathlib.Path:
     """A throwaway tree holding the subject and the libraries it needs."""
     root = where / "repo"
-    for rel in (PORT_REL, COMMON_REL, *VENDORED):
+    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / COMMON_REL, root / COMMON_REL)
+    shutil.copy2(ROOT / WELL_KNOWN_REL, root / WELL_KNOWN_REL)
     for rel in VENDORED:
         shutil.copy2(ROOT / rel, root / rel)
     if subject.suffix == ".sh":

@@ -17,6 +17,7 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 SUT = paths.from_root(".ci", "scripts", "release", "mark-production.sh")
 
@@ -80,7 +81,7 @@ def run_sut(workdir: pathlib.Path, mode: str, version: str, script: pathlib.Path
         ["bash", str(script), version],
         env={
             "PATH": "%s:%s" % (bindir, os.environ.get("PATH", "")),
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
         },
     ).rc
 

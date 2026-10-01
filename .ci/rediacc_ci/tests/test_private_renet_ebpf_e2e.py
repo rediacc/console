@@ -32,6 +32,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "renet-ebpf-e2e.sh"
@@ -88,14 +89,14 @@ NEEDED = (
 EBPF_NAMES = ("TestEBPF_BindRewrite", "TestEBPF_ConnectIsolation")
 ALL_PASS = (
     "".join("=== RUN   %s\n--- PASS: %s (0.11s)\n" % (name, name) for name in EBPF_NAMES)
-    + "PASS\nok\tgithub.com/rediacc/renet/pkg/ebpf\t0.310s\n"
+    + ("PASS\nok\tgithub.com/" + RENET_REPO + "/pkg/ebpf\t0.310s\n")
 ).encode("utf-8")
 ALL_SKIP = (
     "".join(
         "=== RUN   %s\n--- SKIP: %s (0.00s)\n    ebpf_test.go:22: requires root\n" % (name, name)
         for name in EBPF_NAMES
     )
-    + "PASS\nok\tgithub.com/rediacc/renet/pkg/ebpf\t0.004s\n"
+    + ("PASS\nok\tgithub.com/" + RENET_REPO + "/pkg/ebpf\t0.004s\n")
 ).encode("utf-8")
 
 SHELL_PREFIX = re.compile(r"^[^\n]*?: line \d+: ", re.MULTILINE)
@@ -117,6 +118,10 @@ def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
     shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / PORT_REL)
 
     if submodule == "dir":

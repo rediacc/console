@@ -22,6 +22,7 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
 
 REPORTER = paths.from_root(".ci", "scripts", "ci", "report-nightly-status.cjs")
 BUDGET_REPORTER = paths.from_root("scripts", "ci", "report-budget-check.cjs")
@@ -29,7 +30,7 @@ ALERTS_CONFIG = paths.from_root(".ci", "config", "ci-alerts.json")
 WORKFLOW = paths.from_root(".github", "workflows", "nightly-status.yml")
 
 RUN_ID = "30237524399"
-RUN_URL = "https://github.com/rediacc/console/actions/runs/30237524399"
+RUN_URL = (GH_ORIGIN + "/") + GH_REPO + "/actions/runs/30237524399"
 
 # Lifted verbatim from the twin's HARNESS heredoc. See the module docstring for why it is not translated.
 HARNESS_CJS = r"""

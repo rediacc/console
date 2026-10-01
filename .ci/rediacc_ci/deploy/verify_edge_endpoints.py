@@ -39,6 +39,12 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.core import common
+from rediacc_ci.well_known import EDGE_ORIGIN, RELEASES_ORIGIN
+from rediacc_ci.well_known import EDGE_ORIGIN as WK_EDGE_ORIGIN
+from rediacc_ci.well_known import RELEASES_ORIGIN as WK_RELEASES_ORIGIN
+
+EDGE_HOST = WK_EDGE_ORIGIN.removeprefix("https://")
+RELEASES_HOST = WK_RELEASES_ORIGIN.removeprefix("https://")
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,8 +52,8 @@ if TYPE_CHECKING:
 SELF = "verify-edge-endpoints.py"
 
 # The twin's hard-coded hosts. Named constants so a reader can see at a glance that this program has no configurable target, which is the fact that decided the fake-`curl` design above.
-EDGE = "https://edge.rediacc.com"
-RELEASES = "https://releases.rediacc.com"
+EDGE = EDGE_ORIGIN
+RELEASES = RELEASES_ORIGIN
 
 DEVNULL = subprocess.DEVNULL
 
@@ -215,7 +221,7 @@ def main(argv: list[str]) -> int:
         return "REDIACC_CHANNEL:-edge" in body
 
     if not fetch_retry("install.sh channel", install_sh_baked, retries, retry_sleep):
-        print("::error::edge.rediacc.com/install.sh is not baked to channel=edge", flush=True)
+        print(("::error::" + EDGE_HOST + "/install.sh is not baked to channel=edge"), flush=True)
         grep_e(_Last.install_sh, "REDIACC_CHANNEL")
         return 1
     print("  marketing (install.sh): OK (channel=edge)", flush=True)
@@ -229,7 +235,7 @@ def main(argv: list[str]) -> int:
         return '} else { "edge" }' in body
 
     if not fetch_retry("install.ps1 channel", install_ps1_baked, retries, retry_sleep):
-        print("::error::edge.rediacc.com/install.ps1 is not baked to channel=edge", flush=True)
+        print(("::error::" + EDGE_HOST + "/install.ps1 is not baked to channel=edge"), flush=True)
         grep_f(_Last.install_ps1, "$Channel")
         return 1
     print("  marketing (install.ps1): OK (channel=edge)", flush=True)
@@ -292,7 +298,7 @@ def main(argv: list[str]) -> int:
             return any(footer_re.search(comment.sub("", line)) for line in lines(body))
 
         if not fetch_retry("marketing footer", footer_matches, retries, retry_sleep):
-            print("::error::edge.rediacc.com footer does not render v%s" % version, flush=True)
+            print(("::error::" + EDGE_HOST + " footer does not render v%s") % version, flush=True)
             # `grep -oE ... | head -3`: every non-overlapping match, first three.
             shown = 0
             for line in lines(_Last.footer_html):
@@ -318,7 +324,7 @@ def main(argv: list[str]) -> int:
 
         if not fetch_retry("R2 install.sh channel", r2_sh_baked, retries, retry_sleep):
             print(
-                "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge",
+                ("::error::" + RELEASES_HOST + "/cli/edge/install.sh not baked to channel=edge"),
                 flush=True,
             )
             grep_e(_Last.r2_sh, "REDIACC_CHANNEL")
@@ -334,7 +340,7 @@ def main(argv: list[str]) -> int:
 
         if not fetch_retry("R2 install.ps1 channel", r2_ps1_baked, retries, retry_sleep):
             print(
-                "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge",
+                ("::error::" + RELEASES_HOST + "/cli/edge/install.ps1 not baked to channel=edge"),
                 flush=True,
             )
             return 1
@@ -356,7 +362,7 @@ def main(argv: list[str]) -> int:
 
         if not fetch_retry("R2 latest.json", latest_json_readable, retries, retry_sleep):
             print(
-                "::error::releases.rediacc.com/cli/edge/latest.json is not readable",
+                ("::error::" + RELEASES_HOST + "/cli/edge/latest.json is not readable"),
                 flush=True,
             )
             return 1

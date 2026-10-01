@@ -22,6 +22,7 @@ import subprocess
 import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import GH_REPO
 
 ROOT = paths.repo_root()
 PORT = ROOT / ".ci" / "rediacc_ci" / "ci" / "scope_reconcile_shadow.py"
@@ -145,7 +146,7 @@ def _base_env(
     summary = tmp_path / f"summary-{label}.md"
     env = {
         "PATH": os.environ.get("PATH", ""),
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "GITHUB_RUN_ID": "12345",
         "GITHUB_STEP_SUMMARY": str(summary),
         "SCOPE_SHADOW_OUT": str(out_dir),
@@ -339,7 +340,7 @@ def test_summary_unset_duplicates_the_whole_output(tmp_path: pathlib.Path) -> No
     fake_bin = _fake_gh_bin(tmp_path / "fakebin-summary-unset")
     env = {
         "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}",
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "GITHUB_RUN_ID": "12345",
         "SCOPE_SHADOW_OUT": str(tmp_path / "out-summary-unset"),
         "SCOPE_SHADOW_TIMEOUT": "2",
@@ -395,7 +396,7 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     fake_bin = _fake_gh_bin(tmp_path / "fakebin-plant")
     env = {
         "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}",
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "GITHUB_RUN_ID": "12345",
         "GITHUB_STEP_SUMMARY": str(tmp_path / "summary-plant.md"),
         "SCOPE_SHADOW_OUT": str(tmp_path / "out-plant"),

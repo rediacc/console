@@ -31,6 +31,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.docker import retag_image as port
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -127,6 +128,10 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
     target = root / PORT_REL
@@ -393,27 +398,33 @@ def test_all_retags_both_images_and_pushes_latest() -> None:
 
     head = "docker\tbuildx\timagetools\tcreate\t-t\t"
     assert calls.splitlines() == [
-        head + "ghcr.io/rediacc/renet:0.5.0\tghcr.io/rediacc/renet:ci-1",
-        head + "ghcr.io/rediacc/renet:latest\tghcr.io/rediacc/renet:ci-1",
-        head + "ghcr.io/rediacc/rdc:0.5.0\tghcr.io/rediacc/rdc:ci-1",
-        head + "ghcr.io/rediacc/rdc:latest\tghcr.io/rediacc/rdc:ci-1",
+        head + (IMAGE_REGISTRY + "/renet:0.5.0\t" + IMAGE_REGISTRY + "/renet:ci-1"),
+        head + (IMAGE_REGISTRY + "/renet:latest\t" + IMAGE_REGISTRY + "/renet:ci-1"),
+        head + (IMAGE_REGISTRY + "/rdc:0.5.0\t" + IMAGE_REGISTRY + "/rdc:ci-1"),
+        head + (IMAGE_REGISTRY + "/rdc:latest\t" + IMAGE_REGISTRY + "/rdc:ci-1"),
     ], calls
     # THE NEGATIVE HALF: the source is the CI tag, never the destination.
-    assert ":0.5.0\tghcr.io/rediacc/renet:0.5.0" not in calls
+    assert (":0.5.0\t" + IMAGE_REGISTRY + "/renet:0.5.0") not in calls
     assert "✓ Re-tag summary: 2 succeeded, 0 failed" in stderr
 
 
 def test_a_single_image_takes_the_registry_prefix() -> None:
     _, _, stderr, calls = recorded("a-single-image")
     assert calls.splitlines() == [
-        "docker\tbuildx\timagetools\tcreate\t-t\tghcr.io/rediacc/api:b\tghcr.io/rediacc/api:a"
+        (
+            "docker\tbuildx\timagetools\tcreate\t-t\t"
+            + IMAGE_REGISTRY
+            + "/api:b\t"
+            + IMAGE_REGISTRY
+            + "/api:a"
+        )
     ]
     assert "→ Re-tagging api: a -> b" in stderr
 
 
 def test_an_image_path_bypasses_the_registry_and_shortens_the_label() -> None:
     _, _, stderr, calls = recorded("an-image-path")
-    assert "ghcr.io/rediacc" not in calls, calls
+    assert IMAGE_REGISTRY not in calls, calls
     # `basename` for the LABEL, full path for the reference.
     assert "→ Re-tagging server: a -> b" in stderr
     assert "✓ Re-tagged server successfully" in stderr
@@ -421,12 +432,12 @@ def test_an_image_path_bypasses_the_registry_and_shortens_the_label() -> None:
 
 def test_an_image_with_a_slash_is_treated_as_a_full_path() -> None:
     """THE UNDOCUMENTED HALF: `--image` did not always mean "relative". The twin decided by looking for a `/` inside `retag_image`, so this reaches the same code path as `--image-path`."""
-    assert "ghcr.io/rediacc" not in recorded("an-image-with-a-slash")[3]
+    assert IMAGE_REGISTRY not in recorded("an-image-with-a-slash")[3]
 
 
 def test_an_image_path_without_a_slash_is_treated_as_relative() -> None:
     """And the OTHER half: `--image-path` did not always bypass the registry."""
-    assert "ghcr.io/rediacc/server:b" in recorded("an-image-path-without-a-slash")[3]
+    assert (IMAGE_REGISTRY + "/server:b") in recorded("an-image-path-without-a-slash")[3]
 
 
 def test_the_registry_override_reaches_the_argv() -> None:
@@ -446,7 +457,9 @@ def test_a_failing_latest_push_aborts_that_image() -> None:
     returncode, _, stderr, calls = recorded("a-failing-latest-push")
     assert returncode == 1
     assert len(calls.splitlines()) == 2, calls
-    assert "✗ Failed to re-tag ghcr.io/rediacc/api:a -> ghcr.io/rediacc/api:latest" in stderr
+    assert (
+        "✗ Failed to re-tag " + IMAGE_REGISTRY + "/api:a -> " + IMAGE_REGISTRY + "/api:latest"
+    ) in stderr
     assert "Re-tagged api successfully" not in stderr
 
 
@@ -465,10 +478,10 @@ def test_a_missing_docker_is_bashs_own_command_not_found() -> None:
 def test_dry_run_inspects_the_source_and_pushes_nothing() -> None:
     returncode, stdout, stderr, calls = recorded("a-dry-run")
     assert returncode == 0
-    assert calls.splitlines() == ["docker\tbuildx\timagetools\tinspect\tghcr.io/rediacc/api:a"], (
-        calls
-    )
-    assert "✓ [DRY-RUN] Would also tag: ghcr.io/rediacc/api:latest" in stderr
+    assert calls.splitlines() == [
+        ("docker\tbuildx\timagetools\tinspect\t" + IMAGE_REGISTRY + "/api:a")
+    ], calls
+    assert ("✓ [DRY-RUN] Would also tag: " + IMAGE_REGISTRY + "/api:latest") in stderr
     # The probe's own stdout is DISCARDED by `>/dev/null`, so nothing leaks.
     assert stdout == "\n", repr(stdout)
 
@@ -476,7 +489,7 @@ def test_dry_run_inspects_the_source_and_pushes_nothing() -> None:
 def test_dry_run_fails_when_the_source_cannot_be_inspected() -> None:
     returncode, _, stderr, _ = recorded("a-dry-run-that-cannot-inspect")
     assert returncode == 1
-    assert "✗ [DRY-RUN] Failed to inspect source image: ghcr.io/rediacc/api:a" in stderr
+    assert ("✗ [DRY-RUN] Failed to inspect source image: " + IMAGE_REGISTRY + "/api:a") in stderr
 
 
 def test_dry_run_with_a_missing_docker_names_the_probe_line() -> None:
@@ -495,7 +508,7 @@ def test_skip_if_exists_with_no_destination_falls_through_to_the_retag() -> None
     assert returncode == 0
     # ONE probe (the destination), then the retag. The source was never probed, because the twin short-circuited on an empty destination digest.
     assert len(calls.splitlines()) == 2, calls
-    assert "\tcreate\t-t\tghcr.io/rediacc/api:b\t" in calls
+    assert ("\tcreate\t-t\t" + IMAGE_REGISTRY + "/api:b\t") in calls
 
 
 def test_skip_if_exists_skips_when_the_digests_match() -> None:
@@ -503,9 +516,8 @@ def test_skip_if_exists_skips_when_the_digests_match() -> None:
     assert returncode == 0
     assert "\tcreate\t" not in calls, "an idempotent retry still pushed"
     assert (
-        "✓ Destination matches source digest, skipping: ghcr.io/rediacc/api:b (sha256:same)"
-        in stderr
-    )
+        "✓ Destination matches source digest, skipping: " + IMAGE_REGISTRY + "/api:b (sha256:same)"
+    ) in stderr
 
 
 def test_skip_if_exists_retags_when_the_digests_differ() -> None:
@@ -515,8 +527,8 @@ def test_skip_if_exists_retags_when_the_digests_differ() -> None:
     assert "\tcreate\t" in calls, "a stale destination was left in place"
     assert (
         "✓ Destination exists but digest differs (dst=sha256:stale src=sha256:fresh), "
-        "retagging: ghcr.io/rediacc/api:b" in stderr
-    )
+        "retagging: " + IMAGE_REGISTRY + "/api:b"
+    ) in stderr
 
 
 def test_skip_if_exists_retags_when_the_source_cannot_be_read() -> None:
@@ -576,7 +588,7 @@ def test_basename_matches_bash_on_trailing_slashes() -> None:
 
 def test_resolve_splits_on_the_slash(monkeypatch) -> None:
     monkeypatch.delenv("PUBLISH_DOCKER_REGISTRY", raising=False)
-    assert port.resolve("renet") == ("ghcr.io/rediacc/renet", "renet")
+    assert port.resolve("renet") == ((IMAGE_REGISTRY + "/renet"), "renet")
     assert port.resolve("ghcr.io/acme/server") == ("ghcr.io/acme/server", "server")
 
 
@@ -590,9 +602,9 @@ def test_validate_raises_in_the_twins_order() -> None:
 
 def test_the_registry_default_is_taken_on_unset_and_on_empty(monkeypatch) -> None:
     monkeypatch.delenv("PUBLISH_DOCKER_REGISTRY", raising=False)
-    assert port.registry() == "ghcr.io/rediacc"
+    assert port.registry() == IMAGE_REGISTRY
     monkeypatch.setenv("PUBLISH_DOCKER_REGISTRY", "")
-    assert port.registry() == "ghcr.io/rediacc"
+    assert port.registry() == IMAGE_REGISTRY
 
 
 def test_dry_run_is_the_string_true_and_nothing_else(monkeypatch) -> None:
@@ -600,19 +612,14 @@ def test_dry_run_is_the_string_true_and_nothing_else(monkeypatch) -> None:
     assert port.dry_run_default() == "yes"
 
 
-def test_the_constants_are_still_constants_shs() -> None:
-    """`constants.sh` is NOT a twin and is not going anywhere: it is the shared source of the image list and the registry default, so drift between it and the port's copy is still a live risk."""
+def test_the_published_images_are_still_constants_shs() -> None:
+    """The image list is shared with constants.sh and not in the registry, so drift between it and the port's copy is still a live risk."""
     import re  # noqa: PLC0415 -- one alarm, scoped to this case
 
     text = CONSTANTS.read_text(encoding="utf-8")
     images = re.search(r"^readonly PUBLISH_IMAGES=\((.*)\)$", text, re.MULTILINE)
     assert images is not None, "PUBLISH_IMAGES is no longer a one-line array in constants.sh"
     assert tuple(images.group(1).replace('"', "").split()) == port.PUBLISH_IMAGES
-    registry = re.search(
-        r'^PUBLISH_DOCKER_REGISTRY="\$\{PUBLISH_DOCKER_REGISTRY:-([^}]*)\}"$', text, re.MULTILINE
-    )
-    assert registry is not None, "the registry default moved in constants.sh"
-    assert registry.group(1) == port.REGISTRY_DEFAULT
 
 
 # --------------------------------------------------------------------------- The controls: these goldens can actually fail ---------------------------------------------------------------------------
@@ -638,7 +645,7 @@ def test_a_planted_argument_swap_is_caught_only_by_the_call_log(tmp_path: pathli
     assert got[1] == want[1], "the plant changed stdout; wrong plant"
     assert got[2] == want[2], "the plant changed stderr; wrong plant"
     assert got[3] != want[3], "THE CALL LOG DID NOT SEE THE SWAP: this gate cannot fail"
-    assert "-t\tghcr.io/rediacc/api:a\tghcr.io/rediacc/api:b" in got[3]
+    assert ("-t\t" + IMAGE_REGISTRY + "/api:a\t" + IMAGE_REGISTRY + "/api:b") in got[3]
 
     compare(tmp_path / "good", "a-single-image")
     assert PORT_FILE.read_text(encoding="utf-8") == source

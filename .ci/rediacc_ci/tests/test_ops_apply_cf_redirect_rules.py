@@ -11,11 +11,12 @@ import typing
 import pytest
 
 from rediacc_ci.tests import ops_cf_harness as h
+from rediacc_ci.well_known import APEX_DOMAIN, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
 
-APEX_EXPR = '(http.request.full_uri wildcard r"https://rediacc.com/*")'
+APEX_EXPR = '(http.request.full_uri wildcard r"https://' + APEX_DOMAIN + '/*")'
 RULE = {
     "id": "rule-apex",
     "expression": APEX_EXPR,
@@ -54,8 +55,12 @@ def routes(rules: list[dict], extra: tuple[dict, ...] = ()) -> list[dict]:
         },
         {
             "method": "GET",
-            "match": "https://rediacc.com/",
-            "raw": "HTTP/2 301 \r\nlocation: https://www.rediacc.com/solutions/backup-verification/\r\n\r\n",
+            "match": ("https://" + APEX_DOMAIN + "/"),
+            "raw": (
+                "HTTP/2 301 \r\nlocation: "
+                + SITE_ORIGIN
+                + "/solutions/backup-verification/\r\n\r\n"
+            ),
         },
     ]
 
@@ -81,9 +86,11 @@ def test_present_rule_matches_bash(world: h.World) -> None:
     assert err_b == err_p
     # The bash probes the smoke URL twice (status, then Location); the port makes one request (delta 3).
     assert [c for i, c in enumerate(calls_b) if i == 0 or c != calls_b[i - 1]] == _urls(world)
-    assert calls_b.count(("GET", "https://rediacc.com/solutions/backup-verification/")) == 2
+    assert (
+        calls_b.count(("GET", ("https://" + APEX_DOMAIN + "/solutions/backup-verification/"))) == 2
+    )
     assert "[OK]   apex redirect rule present (id=rule-apex)" in out_p
-    assert "console.rediacc.com -> rediacc.github.io proxied=false" in out_p
+    assert ("console." + APEX_DOMAIN + " -> rediacc.github.io proxied=false") in out_p
 
 
 def test_missing_rule_dry_run_matches_bash(world: h.World) -> None:
@@ -172,7 +179,7 @@ def test_delta_a_failing_advisory_does_not_fail_the_run(world: h.World) -> None:
     assert rc_b == 22  # the control
     rc_p, out_p, _ = world.port("rediacc_ci.ops.apply_cf_redirect_rules", [], env)
     assert rc_p == 0
-    assert "console.rediacc.com -> lookup failed" in out_p
+    assert ("console." + APEX_DOMAIN + " -> lookup failed") in out_p
 
 
 def test_delta_two_matching_rulesets_are_refused(world: h.World) -> None:

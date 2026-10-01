@@ -32,6 +32,9 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
+
+GH_HOST = GH_ORIGIN.removeprefix("https://")
 
 BP_SRC = paths.from_root(".ci", "breakpoint")
 GATE_REL = "scripts/check-breakpoint-drift.sh"
@@ -177,13 +180,13 @@ def test_write_regenerates_in_console(gate):
     Both remote-URL forms are exercised, since HTTPS clones carry the suffix and SSH clones may not.
     """
     for url in (
-        "https://github.com/rediacc/console.git",
-        "git@github.com:rediacc/console.git",
+        ((GH_ORIGIN + "/") + GH_REPO + ".git"),
+        (("git@" + GH_HOST + ":") + GH_REPO + ".git"),
     ):
         with harness.temp_dir() as tmp:
             bp = make_copy(tmp)
             (bp / "MANIFEST.sha256").unlink()
-            run = run_gate(bp, "--write", GITHUB_REPOSITORY="rediacc/console")
+            run = run_gate(bp, "--write", GITHUB_REPOSITORY=GH_REPO)
             gate.assert_exit(
                 0, run, "--write must succeed in the canonical repo (remote form: %s)" % url
             )
@@ -199,7 +202,7 @@ def test_write_is_byte_identical_to_committed(gate):
         bp = make_copy(tmp)
         committed = manifest_body(bp)
         (bp / "MANIFEST.sha256").unlink()
-        run = run_gate(bp, "--write", GITHUB_REPOSITORY="rediacc/console")
+        run = run_gate(bp, "--write", GITHUB_REPOSITORY=GH_REPO)
         if run.rc != 0:
             gate.log_fail("--write failed while checking manifest freshness: %s" % run.out)
         regenerated = manifest_body(bp)

@@ -26,6 +26,9 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_edge as port
+from rediacc_ci.well_known import EDGE_ORIGIN
+
+EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -90,6 +93,10 @@ def _fixture_root(tmp_path: pathlib.Path, *, config: bool = True) -> pathlib.Pat
     worker = root / "workers" / "www"
     worker.mkdir(parents=True, exist_ok=True)
     shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     if config:
         (worker / port.CONFIG).write_text('name = "rediacc-www-edge"\n', encoding="utf-8")
@@ -207,7 +214,9 @@ def test_the_one_wrangler_call_is_pinned_in_full(tmp_path: pathlib.Path) -> None
         "  cwd=www\n"
         "  token='tok'\n"
     )
-    assert old.stderr == ("→ Deploying edge worker (edge.rediacc.com)...\n✓ Edge worker deployed\n")
+    assert old.stderr == (
+        "→ Deploying edge worker (" + EDGE_HOST + ")...\n✓ Edge worker deployed\n"
+    )
     assert old.stdout == "added 1 package\nTotal Upload: 1.00 KiB\n"
     assert "d1" not in old_calls, "there is no database here"
     _assert_agree(old, new, "happy-path", old_calls, new_calls)

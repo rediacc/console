@@ -19,6 +19,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import cf_purge_urls as port
+from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -164,10 +165,11 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
     assert old_calls == [
         (
             "curl\t-sS\t-X\tPOST\t"
-            "https://api.cloudflare.com/client/v4/zones/zone-fixture/purge_cache\t"
-            "-H\tAuthorization: Bearer tok-fixture\t"
-            "-H\tContent-Type: application/json\t"
-            '--data\t{"files":["https://a","https://b"]}'
+            + WK_CF_API_BASE
+            + "/zones/zone-fixture/purge_cache\t"
+            + "-H\tAuthorization: Bearer tok-fixture\t"
+            + "-H\tContent-Type: application/json\t"
+            + '--data\t{"files":["https://a","https://b"]}'
         )
     ]
     assert old_calls == [purge_call(["https://a", "https://b"])]
@@ -459,7 +461,7 @@ def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
     """THE ONE DIVERGENCE, ASSERTED IN BOTH DIRECTIONS SO IT CANNOT BE "FIXED" BY ACCIDENT. `--zone` as the last token reads `"$2"` under `set -u`, and the twin dies with bash's own message naming the bash FILE and a bash LINE. The port cannot honestly print that; it prints its own sentence. Same stream, same exit status, no request from either."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["--zone"])
     assert old.returncode == new.returncode == 1
-    assert old.stderr.endswith("line 38: $2: unbound variable\n")
+    assert old.stderr.endswith("line 44: $2: unbound variable\n")
     assert new.stderr == "cf-purge-urls.sh: --zone requires a value\n"
     assert old.stderr != new.stderr
     assert old.stdout == new.stdout == ""
@@ -469,7 +471,7 @@ def test_divergence_a_trailing_zone_flag_is_bashs_own_unbound_variable(
 def test_pure_helpers() -> None:
     assert port.BATCH_SIZE == 30
     assert port.SELF == "cf-purge-urls.sh"
-    assert port.CF_API_BASE == "https://api.cloudflare.com/client/v4"
+    assert port.CF_API_BASE == WK_CF_API_BASE
 
     assert port.parse_argv(["--zone", "Z", "a", "-x"]) == ("Z", ["a", "-x"])
     assert port.parse_argv([]) == ("", [])
@@ -500,7 +502,7 @@ def test_pure_helpers() -> None:
         "-sS",
         "-X",
         "POST",
-        "https://api.cloudflare.com/client/v4/zones/Z/purge_cache",
+        (WK_CF_API_BASE + "/zones/Z/purge_cache"),
         "-H",
         "h",
         "-H",

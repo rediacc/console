@@ -281,6 +281,8 @@ def _fake_root(tmp_path: pathlib.Path, run_sh: str) -> pathlib.Path:
     (root / ".ci/scripts/lib").mkdir(parents=True)
     shutil.copy2(ROOT / "scripts/drills/lib.sh", root / "scripts/drills/lib.sh")
     shutil.copy2(ROOT / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
+    (root / ".ci/config").mkdir(parents=True)
+    shutil.copy2(ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
     run = root / "run.sh"
     run.write_text(run_sh)
     run.chmod(run.stat().st_mode | stat.S_IEXEC)

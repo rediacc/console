@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci.core import platform as platform_
 from rediacc_ci.core import toolchain
+from rediacc_ci.well_known import GO_DL_BASE
 
 if TYPE_CHECKING:  # pragma: no cover - both names are only ever annotations here
     from rediacc_ci.setup.ctx import Ctx, Result
@@ -86,7 +87,7 @@ sudo apt-get update
 sudo apt-get install gh -y"""
 
 NODE_DIST_INDEX = "https://nodejs.org/dist/index.json"
-GO_DL_INDEX = "https://go.dev/dl/?mode=json&include=all"
+GO_DL_INDEX = GO_DL_BASE + "/?mode=json&include=all"
 
 
 # --------------------------------------------------------------------------- helpers the bash spells inline ---------------------------------------------------------------------------
@@ -542,13 +543,15 @@ def _go_install(ctx: Ctx, *, want: str, filename: str) -> int:
         want_sha = go_pick_sha(index.decode("utf-8", "replace"), filename) if index else None
         if not want_sha:
             ctx.error("Could not find a published checksum for %s." % filename)
-            ctx.error("Check that %s exists on https://go.dev/dl/ (the pin may be wrong)." % want)
+            ctx.error(
+                ("Check that %s exists on " + GO_DL_BASE + "/ (the pin may be wrong).") % want
+            )
             return 1
 
         ctx.step("Downloading %s" % filename)
-        payload = _fetch("https://go.dev/dl/%s" % filename, 600)
+        payload = _fetch((GO_DL_BASE + "/%s") % filename, 600)
         if payload is None:
-            ctx.error("Download failed: https://go.dev/dl/%s" % filename)
+            ctx.error(("Download failed: " + GO_DL_BASE + "/%s") % filename)
             return 1
         archive = tmp / filename
         archive.write_bytes(payload)

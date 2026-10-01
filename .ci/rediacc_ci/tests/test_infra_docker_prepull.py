@@ -47,6 +47,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.infra import docker_prepull as dp
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 # FROM THE MODULE, not spelled out. This port shares its BASENAME with `rediacc_ci.proxies.docker_prepull`, and `check:ci-dead-python`'s `mentioned` route matches by basename on purpose ("a bare basename admits every corpus file with that name"), so writing the literal here admits that OTHER file and its `MANUAL_ENTRY_POINTS` exemption is then reported as no longer true. Measured:
@@ -276,7 +277,7 @@ def test_split_spec_agrees_with_bash_on_every_shape() -> None:
     for spec in (
         "ubuntu:24.04",
         "ubuntu:24.04=linux/amd64",
-        "ghcr.io/rediacc/base:1.2=linux/arm64",
+        (IMAGE_REGISTRY + "/base:1.2=linux/arm64"),
         "a=b=c",
         "trailing=",
         "=linux/amd64",

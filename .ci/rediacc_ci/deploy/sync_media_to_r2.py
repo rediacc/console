@@ -88,6 +88,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import MEDIA_ORIGIN
 
 # `BUCKET="rediacc-www-media"` (twin :36). Hard-coded there, hard-coded here.
 BUCKET = "rediacc-www-media"
@@ -118,7 +119,7 @@ CLOSING_LINES = (
     "Sync complete. Verify with:",
     "  aws s3 sync --dryrun <local-dir> s3://%s/<prefix>/ --endpoint-url "
     "$CLOUDFLARE_R2_MEDIA_ENDPOINT" % BUCKET,
-    "  curl -sI https://media.rediacc.com/<path>",
+    ("  curl -sI " + MEDIA_ORIGIN + "/<path>"),
 )
 
 # The four facts in the module docstring, as constants so a test can assert each by name instead of restating the sentence.

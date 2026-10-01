@@ -113,6 +113,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import release_state_validator as rsv
+from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
 
 # =============================================================================
 # CONFIGURATION -- the twin's block at :21-124, constant for constant.
@@ -133,12 +134,12 @@ BRANCH_REPOS = ("console", "renet", "account", "elite", "homebrew-tap", "sql")
 # twin's own words: there is no workflow_dispatch input for it and there should not be one, because a gate cannot fabricate a 30-day-old branch.
 DEFAULT_BRANCH_MAX_AGE_DAYS = "30"
 
-RELEASE_REPO = "rediacc/console"
+RELEASE_REPO = GH_REPO
 CF_PAGES_PROJECT = "rediacc"
 
 # `R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. constants.sh has already
 # defaulted RELEASES_BUCKET by the time the twin reads it, so the two `:-` defaults are the same value twice.
-DEFAULT_R2_BUCKET = "rediacc-releases"
+DEFAULT_R2_BUCKET = RELEASES_BUCKET
 R2_RETENTION_DAYS = 7
 R2_FORMAT_DIRS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
 R2_ORPHAN_VERSION_AGE_DAYS = 14
@@ -1073,7 +1074,7 @@ class Housekeeping:
                 "-s",
                 "-X",
                 method,
-                "https://api.cloudflare.com/client/v4%s" % endpoint,
+                (CF_API_BASE + "%s") % endpoint,
                 "-H",
                 "Authorization: Bearer %s" % os.environ.get("CLOUDFLARE_API_TOKEN", ""),
                 "-H",

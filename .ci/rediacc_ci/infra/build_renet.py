@@ -65,6 +65,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.infra import renet_embed_cache
+from rediacc_ci.well_known import GO_DL_BASE
 
 # U+2014, written as an escape so no em dash is typed into a file under `.ci/rediacc_ci`, which `check:ci-em-dash-surfaces` scans. The CHARACTER still has to reach stderr, because the twin prints it and this port's whole claim is byte-identical output.
 _EM_DASH = "\u2014"
@@ -196,7 +197,7 @@ def _build(argv: list[str]) -> int:
         # Step 3: require go. `command -v go &>/dev/null` -> `shutil.which`.
         if shutil.which("go") is None:
             log.error("Go is not installed (required for building renet)")
-            log.error("Install Go from: https://go.dev/dl/")
+            log.error("Install Go from: " + GO_DL_BASE + "/")
             return 1
 
         # Step 4: delegate. build.sh owns the licence decision; the flags are only forwarded when one was passed, matching the twin's guarded

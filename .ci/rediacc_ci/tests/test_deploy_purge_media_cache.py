@@ -20,6 +20,9 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import purge_media_cache as port
+from rediacc_ci.well_known import CF_API_BASE, MEDIA_ORIGIN
+
+MEDIA_HOST = MEDIA_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -151,19 +154,22 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
     assert old_calls == [
         (
             "curl\t-s\t-X\tPOST\t"
-            "https://api.cloudflare.com/client/v4/zones/"
-            "9e802649c143c9cefd811d8fd671d31c/purge_cache\t"
-            "-H\tAuthorization: Bearer tok-fixture\t"
-            "-H\tContent-Type: application/json\t"
-            '--data\t{"hosts": ["media.rediacc.com"]}'
+            + CF_API_BASE
+            + "/zones/"
+            + "9e802649c143c9cefd811d8fd671d31c/purge_cache\t"
+            + "-H\tAuthorization: Bearer tok-fixture\t"
+            + "-H\tContent-Type: application/json\t"
+            + ('--data\t{"hosts": ["' + MEDIA_HOST + '"]}')
         )
     ]
     assert old_calls == [purge_call()]
     assert old.stdout == "", "this script must never put anything on stdout"
     assert old.stderr == (
-        "→ Purging Cloudflare cache for media.rediacc.com...\n"
-        "✓ Purge complete. Cache repopulates on next request "
-        "(cf-cache-status: MISS then HIT).\n"
+        "→ Purging Cloudflare cache for "
+        + MEDIA_HOST
+        + "...\n"
+        + "✓ Purge complete. Cache repopulates on next request "
+        + "(cf-cache-status: MISS then HIT).\n"
     )
     _assert_agree(old, new, "request-shape", old_calls, new_calls)
 
@@ -236,8 +242,10 @@ def test_an_unsuccessful_body_prints_the_errors_array(tmp_path: pathlib.Path) ->
     )
     assert old.returncode == 1
     assert old.stderr == (
-        "→ Purging Cloudflare cache for media.rediacc.com...\n"
-        '✗ Purge failed: [{"code":10000,"message":"Authentication error"}]\n'
+        "→ Purging Cloudflare cache for "
+        + MEDIA_HOST
+        + "...\n"
+        + '✗ Purge failed: [{"code":10000,"message":"Authentication error"}]\n'
     )
     _assert_agree(old, new, "unsuccessful-body", old_calls, new_calls)
 
@@ -282,7 +290,7 @@ def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path)
     """
     old, new, old_calls, new_calls = run_both(tmp_path, [], FAKE_CURL_RC="6")
     assert old.returncode == 6
-    assert old.stderr == "→ Purging Cloudflare cache for media.rediacc.com...\n"
+    assert old.stderr == ("→ Purging Cloudflare cache for " + MEDIA_HOST + "...\n")
     assert old.stdout == ""
     assert len(old_calls) == 1
     assert port.A_TRANSPORT_FAILURE_IS_SILENT
@@ -316,8 +324,8 @@ def test_divergence_common_sh_interprets_backslash_escapes_in_the_cf_error(
 
 def test_pure_helpers() -> None:
     assert port.ZONE_ID == "9e802649c143c9cefd811d8fd671d31c"
-    assert port.PURGE_HOSTNAME == "media.rediacc.com"
-    assert port.PURGE_BODY == '{"hosts": ["media.rediacc.com"]}'
+    assert port.PURGE_HOSTNAME == MEDIA_HOST
+    assert port.PURGE_BODY == ('{"hosts": ["' + MEDIA_HOST + '"]}')
 
     assert port.auth_headers({"CLOUDFLARE_API_TOKEN": "T"}) == ["-H", "Authorization: Bearer T"]
     assert port.auth_headers({"CF_GLOBAL_API_KEY": "K", "CF_EMAIL": "E"}) == [
@@ -334,13 +342,13 @@ def test_pure_helpers() -> None:
         "-s",
         "-X",
         "POST",
-        ("https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/purge_cache"),
+        (CF_API_BASE + "/zones/9e802649c143c9cefd811d8fd671d31c/purge_cache"),
         "-H",
         "h",
         "-H",
         "Content-Type: application/json",
         "--data",
-        '{"hosts": ["media.rediacc.com"]}',
+        ('{"hosts": ["' + MEDIA_HOST + '"]}'),
     ]
 
 

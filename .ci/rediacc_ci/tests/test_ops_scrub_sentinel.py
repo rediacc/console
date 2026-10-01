@@ -73,6 +73,7 @@ def world(tmp_path: pathlib.Path) -> h.World:
         ".ci/scripts/lib/release-state-validator.sh",
         ".ci/scripts/lib/blocker-validator.sh",
         ".ci/scripts/lib/emit-advisory.sh",
+        ".ci/config/well-known.env",
     ):
         dest = w.root / rel
         dest.parent.mkdir(parents=True, exist_ok=True)

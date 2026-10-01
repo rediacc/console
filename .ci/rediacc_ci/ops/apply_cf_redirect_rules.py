@@ -25,15 +25,26 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE, SITE_ORIGIN
+
 ZONE_ID = "9e802649c143c9cefd811d8fd671d31c"  # rediacc.com
-API = "https://api.cloudflare.com/client/v4"
-APEX_EXPR = '(http.request.full_uri wildcard r"https://rediacc.com/*")'
+API = CF_API_BASE
+APEX_EXPR = '(http.request.full_uri wildcard r"https://' + APEX_DOMAIN + '/*")'
 APEX_TARGET_EXPR = (
-    'wildcard_replace(http.request.full_uri, r"https://rediacc.com/*", '
-    'r"https://www.rediacc.com/${1}")'
+    'wildcard_replace(http.request.full_uri, r"https://'
+    + APEX_DOMAIN
+    + '/*", '
+    + 'r"'
+    + SITE_ORIGIN
+    + '/${1}")'
 )
-SMOKE_URL = "https://rediacc.com/solutions/backup-verification/"
-HELP = """Apply + verify the Cloudflare apex redirect rule for rediacc.com -> www.rediacc.com.
+SMOKE_URL = "https://" + APEX_DOMAIN + "/solutions/backup-verification/"
+HELP = (
+    """Apply + verify the Cloudflare apex redirect rule for """
+    + APEX_DOMAIN
+    + """ -> www."""
+    + APEX_DOMAIN
+    + """.
 
 Usage:
   apply_cf_redirect_rules            verify, create if missing
@@ -41,6 +52,7 @@ Usage:
 
 Auth: CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY + CF_EMAIL.
 """
+)
 
 
 class ApplyError(Exception):
@@ -115,8 +127,8 @@ def _smoke() -> None:
     for line in lines:
         if line.lower().startswith("location:"):
             location = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
-    if status == "301" and "www.rediacc.com" in location:
-        print("[OK]   rediacc.com/* -> www.rediacc.com/* (live, 301)")
+    if status == "301" and ("www." + APEX_DOMAIN) in location:
+        print("[OK]   " + APEX_DOMAIN + "/* -> www." + APEX_DOMAIN + "/* (live, 301)")
     else:
         print(
             "[WARN] smoke test unexpected: status=%s location=%s" % (status, location),
@@ -127,7 +139,7 @@ def _smoke() -> None:
 def _advisory(headers: list[str]) -> None:
     try:
         records = _api(
-            headers, "GET", "%s/zones/%s/dns_records?name=console.rediacc.com" % (API, ZONE_ID)
+            headers, "GET", ("%s/zones/%s/dns_records?name=console." + APEX_DOMAIN) % (API, ZONE_ID)
         )
         result = records.get("result") or []
         cname = (
@@ -139,7 +151,7 @@ def _advisory(headers: list[str]) -> None:
         cname = "lookup failed (%s)" % exc
     print()
     print("advisory:")
-    print("  console.rediacc.com -> %s" % cname)
+    print(("  console." + APEX_DOMAIN + " -> %s") % cname)
     print("  Not proxied; CF Redirect Rules can't intercept it.")
     print("  Fix (manual): flip proxied=true on that CNAME + add a redirect rule,")
     print("  OR change the CNAME to an orange-clouded host we control.")

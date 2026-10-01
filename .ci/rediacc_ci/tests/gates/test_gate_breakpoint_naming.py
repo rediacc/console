@@ -23,12 +23,13 @@ import os
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import INFRA_DOMAIN
 
 DERIVE = paths.from_root(".ci", "breakpoint", "scripts", "derive-descriptor.sh")
 CONF = paths.from_root(".ci", "breakpoint", "breakpoint.conf")
 
 # The zone every expectation below is written against. ASSERTED rather than read, so a conf change that moves the zone shows up HERE, where the hostname expectations live, instead of as a mystery DNS failure at session start.
-EXPECTED_ZONE = "rediacc.io"
+EXPECTED_ZONE = INFRA_DOMAIN
 
 LISTED_LABELS = ("rdc-ci", "rdc-dev", "rdc-demo")
 

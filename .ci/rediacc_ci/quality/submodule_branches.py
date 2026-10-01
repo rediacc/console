@@ -125,13 +125,16 @@ import time
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
+
+GH_HOST = GH_ORIGIN.removeprefix("https://")
 
 # Submodule to repo mapping. The four submodules this repository carries.
 SUBMODULE_REPOS = {
-    "private/renet": "rediacc/renet",
-    "private/homebrew-tap": "rediacc/homebrew-tap",
-    "private/account": "rediacc/account",
-    "private/elite": "rediacc/elite",
+    "private/renet": RENET_REPO,
+    "private/homebrew-tap": HOMEBREW_TAP_REPO,
+    "private/account": ACCOUNT_REPO,
+    "private/elite": ELITE_REPO,
 }
 
 # The iteration ORDER the twin uses in both of its loops, written out rather than taken from the mapping above. Bash's associative-array order is a hash order and is NOT this list; the two loops both hard-code this sequence, so a port that iterated the mapping would print its findings in a different order.
@@ -420,7 +423,7 @@ def pr_is_linked(pr_url: str, text: str) -> bool:
     if pr_url in text:
         return True
     repo_match = re.search(r"github\.com/[^/]+/[^/]+", pr_url)
-    repo = repo_match.group(0).replace("github.com/", "") if repo_match else ""
+    repo = repo_match.group(0).replace((GH_HOST + "/"), "") if repo_match else ""
     if repo and pr_number:
         pattern = re.compile(
             r"%s#%s|%s/pull/%s"
@@ -765,22 +768,22 @@ def selftest() -> int:
     )
 
     # -- pr_is_linked -------------------------------------------------------
-    url = "https://github.com/rediacc/renet/pull/123"
+    url = (GH_ORIGIN + "/") + RENET_REPO + "/pull/123"
     ctl.truthy("CONTROL: the bare URL counts as a link", pr_is_linked(url, "see %s" % url))
     ctl.truthy(
         "CONTROL: the org/repo#number shorthand counts too",
-        pr_is_linked(url, "depends on rediacc/renet#123"),
+        pr_is_linked(url, ("depends on " + RENET_REPO + "#123")),
     )
     ctl.truthy(
         "CONTROL: the org/repo/pull/number form counts too",
-        pr_is_linked(url, "rediacc/renet/pull/123"),
+        pr_is_linked(url, (RENET_REPO + "/pull/123")),
     )
     ctl.falsy("MIRROR: an unrelated body is not a link", pr_is_linked(url, "no mention here"))
     ctl.falsy(
         "MIRROR: a DIFFERENT PR number in the same repo is not this link",
-        pr_is_linked(url, "rediacc/renet#124"),
+        pr_is_linked(url, (RENET_REPO + "#124")),
     )
-    ctl.falsy("VACUITY: an empty URL cannot be linked", pr_is_linked("", "rediacc/renet#123"))
+    ctl.falsy("VACUITY: an empty URL cannot be linked", pr_is_linked("", (RENET_REPO + "#123")))
     ctl.falsy("VACUITY: an empty body links nothing", pr_is_linked(url, ""))
 
     # -- current_branch, and the detached-head trap -------------------------

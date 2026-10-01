@@ -31,6 +31,7 @@ import sys
 import _cipath  # noqa: F401
 from rediacc_ci import controls
 from rediacc_ci import proc as ci_proc
+from rediacc_ci.well_known import GH_REPO
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 GATE = os.path.join(ROOT, ".ci", "scripts", "review", "claude-review-gate.sh")
@@ -71,7 +72,7 @@ def render(escaper_body, scope):
         + "scope=$1\n"
         + 'printf "EPIC: {{EPIC_SCOPE}}\\nREPO: {{REPO}}\\n" | '
         + 'sed -e "s|{{EPIC_SCOPE}}|$(sed_replacement "$scope")|g" '
-        + '-e "s|{{REPO}}|$(sed_replacement "rediacc/console")|g"\n'
+        + ('-e "s|{{REPO}}|$(sed_replacement "' + GH_REPO + '")|g"\n')
     )
     # Through the shared runner, not `subprocess.run`: this spawns a bash script that itself spawns `sed` in a command substitution, and `capture_output`
     # with a plain timeout kills only the direct child and then blocks forever in

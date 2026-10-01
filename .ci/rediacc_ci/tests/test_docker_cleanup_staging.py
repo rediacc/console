@@ -40,6 +40,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.docker import cleanup_staging as port
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -365,9 +366,9 @@ def test_dry_run_names_both_images_and_calls_nothing() -> None:
     assert stderr.splitlines() == [
         "→ Cleaning up staging tags: staging-abc",
         "→ Deleting staging tag for renet: staging-abc",
-        "✓ [DRY-RUN] Would delete: ghcr.io/rediacc/renet:staging-abc",
+        ("✓ [DRY-RUN] Would delete: " + IMAGE_REGISTRY + "/renet:staging-abc"),
         "→ Deleting staging tag for rdc: staging-abc",
-        "✓ [DRY-RUN] Would delete: ghcr.io/rediacc/rdc:staging-abc",
+        ("✓ [DRY-RUN] Would delete: " + IMAGE_REGISTRY + "/rdc:staging-abc"),
         "✓ Cleanup summary: 2 succeeded",
     ], stderr
     # THE SEPARATORS ARE STDOUT, the log lines are stderr. Merging the two would hide a stream swap, which is the class this file exists for.
@@ -481,8 +482,8 @@ def test_the_merged_stream_keeps_the_twins_line_order() -> None:
 
 
 def test_org_of_strips_the_ghcr_prefix_and_keeps_the_first_segment() -> None:
-    assert port.org_of("ghcr.io/rediacc") == "rediacc"
-    assert port.org_of("ghcr.io/rediacc/sub/deep") == "rediacc"
+    assert port.org_of(IMAGE_REGISTRY) == "rediacc"
+    assert port.org_of(IMAGE_REGISTRY + "/sub/deep") == "rediacc"
     # The NEGATIVE half, which is the defect above stated as a unit fact.
     assert port.org_of("docker.io/rediacc") == "docker.io"
 
@@ -524,28 +525,19 @@ def test_dry_run_is_the_string_true_and_nothing_else(monkeypatch) -> None:
 
 def test_the_registry_default_is_taken_on_unset_and_on_empty(monkeypatch) -> None:
     monkeypatch.delenv("PUBLISH_DOCKER_REGISTRY", raising=False)
-    assert port.registry() == "ghcr.io/rediacc"
+    assert port.registry() == IMAGE_REGISTRY
     monkeypatch.setenv("PUBLISH_DOCKER_REGISTRY", "")
-    assert port.registry() == "ghcr.io/rediacc"
+    assert port.registry() == IMAGE_REGISTRY
     monkeypatch.setenv("PUBLISH_DOCKER_REGISTRY", "ghcr.io/other")
     assert port.registry() == "ghcr.io/other"
 
 
-def test_the_constants_are_still_constants_shs() -> None:
-    """THE FIRST STALENESS ALARM, UNCHANGED, and it reads `constants.sh` rather than the twin, so a deletion does not touch it.
-
-    The port restates `PUBLISH_IMAGES` and the registry default rather than sourcing constants.sh (which hard-requires `.devcontainer/toolchain.env`). This is the alarm that makes the copy safe.
-    """
+def test_the_published_images_are_still_constants_shs() -> None:
+    """The image list is shared with constants.sh and not in the registry, so drift between it and the port's copy is still a live risk."""
     text = CONSTANTS.read_text(encoding="utf-8")
     images = re.search(r"^readonly PUBLISH_IMAGES=\((.*)\)$", text, re.MULTILINE)
     assert images is not None, "PUBLISH_IMAGES is no longer a one-line array in constants.sh"
     assert tuple(images.group(1).replace('"', "").split()) == port.PUBLISH_IMAGES
-
-    registry = re.search(
-        r'^PUBLISH_DOCKER_REGISTRY="\$\{PUBLISH_DOCKER_REGISTRY:-([^}]*)\}"$', text, re.MULTILINE
-    )
-    assert registry is not None, "the registry default moved in constants.sh"
-    assert registry.group(1) == port.REGISTRY_DEFAULT
 
 
 # --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------

@@ -42,6 +42,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.docker import run_in_image, shadow_driver
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import WEB_IMAGE_REPO
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
     import pathlib
@@ -201,7 +202,7 @@ def test_the_note_and_the_build_line_are_on_stderr_and_nowhere_else() -> None:
     assert run_in_image.NOTE_NO_DOCKER in stderr
     assert run_in_image.NOTE_NO_DOCKER not in stdout
     _code, stdout, stderr, _trace = recorded("web-image-absent")
-    building = run_in_image.BUILDING % "rediacc/web:local"
+    building = run_in_image.BUILDING % (WEB_IMAGE_REPO + ":local")
     assert building in stderr
     assert building not in stdout
 
@@ -210,13 +211,13 @@ def test_a_present_image_is_never_rebuilt() -> None:
     code, _stdout, stderr, trace = recorded("web-image-present")
     assert code == 0
     assert [line.split("argv=", 1)[1] for line in trace if line.startswith("docker ")] == [
-        "image inspect rediacc/web:local",
+        ("image inspect " + WEB_IMAGE_REPO + ":local"),
         (
             "run --rm --ipc=host -u 4242:4343 -e HOME=/tmp -e npm_config_cache=/tmp/.npm "
-            "-v <root>:<root> -w <root> rediacc/web:local npm run build"
+            "-v <root>:<root> -w <root> " + WEB_IMAGE_REPO + ":local npm run build"
         ),
     ]
-    assert (run_in_image.BUILDING % "rediacc/web:local") not in stderr
+    assert (run_in_image.BUILDING % (WEB_IMAGE_REPO + ":local")) not in stderr
 
 
 def test_a_failed_build_never_reaches_docker_run() -> None:

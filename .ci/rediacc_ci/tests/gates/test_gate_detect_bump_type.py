@@ -21,6 +21,7 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "version", "detect-bump-type.sh")
 LABELS_FILE = paths.from_root(".github", "labels.yml")
@@ -187,7 +188,7 @@ class World:
             "GH_FIXTURES": str(self.root / "fixtures"),
             "GH_CALLS": str(self.calls),
             "GH_TOKEN": "fake",
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
             "NO_COLOR": "1",
         }
         env.update(overrides)

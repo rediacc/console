@@ -36,6 +36,9 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import EDGE_ORIGIN
+
+EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -112,7 +115,7 @@ def main(argv: list[str]) -> int:
         if status != 0:
             return status  # `set -e`
 
-    log.step("Deploying edge worker (edge.rediacc.com)...")
+    log.step("Deploying edge worker (" + EDGE_HOST + ")...")
     status = _run(deploy_argv())
     if status != 0:
         return status  # `set -e`

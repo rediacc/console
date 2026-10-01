@@ -235,6 +235,7 @@ def _fixture(
     shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
+    shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / "toolchain.env")
     shutil.copy2(PORT, root / PORT_REL)
 
@@ -836,35 +837,6 @@ def test_bash_arith_is_bashs_grammar_and_not_int(tmp_path):
     assert build_pkg_repo.bash_arith("08") is None
     assert build_pkg_repo.bash_arith("007") == 7
     assert build_pkg_repo.bash_arith("abc") == 0
-
-
-def test_the_restated_constants_match_constants_sh():
-    """The two values this port copies out of `.ci/config/constants.sh`.
-
-    A stale constant here is a repository published under the wrong package name or pointing at the wrong host, so the alarm is not optional. The two are parsed with DIFFERENT patterns on purpose: `PKG_NAME` is a bare `readonly`
-    and `RELEASES_BASE_URL` is a `readonly X="${X:-default}"`, and the port
-    depends on that difference -- one is a constant, the other an overridable default.
-    """
-    text = CONSTANTS.read_text(encoding="utf-8")
-
-    bare = re.search(r'^readonly PKG_NAME="([^"$]+)"$', text, re.MULTILINE)
-    assert bare, "PKG_NAME is no longer a bare readonly in constants.sh"
-    assert bare.group(1) == build_pkg_repo.PKG_NAME, (
-        "PKG_NAME drifted: constants.sh says %r, the port says %r"
-        % (bare.group(1), build_pkg_repo.PKG_NAME)
-    )
-
-    overridable = re.search(
-        r'^readonly RELEASES_BASE_URL="\$\{RELEASES_BASE_URL:-([^}]+)\}"$', text, re.MULTILINE
-    )
-    assert overridable, (
-        "RELEASES_BASE_URL is no longer an overridable default in constants.sh; the "
-        "port reads the environment for it and would now diverge"
-    )
-    assert overridable.group(1) == build_pkg_repo.RELEASES_BASE_URL_DEFAULT, (
-        "RELEASES_BASE_URL default drifted: constants.sh says %r, the port says %r"
-        % (overridable.group(1), build_pkg_repo.RELEASES_BASE_URL_DEFAULT)
-    )
 
 
 def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):

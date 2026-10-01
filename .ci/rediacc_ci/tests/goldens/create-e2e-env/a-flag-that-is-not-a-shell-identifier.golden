@@ -2,6 +2,6 @@
 exit: 2
 --- stdout ---
 --- stderr ---
-<root>/.ci/scripts/env/../lib/common.sh: line 334: printf: `ARG_A.B': not a valid identifier
+<root>/.ci/scripts/env/../lib/common.sh: line 351: printf: `ARG_A.B': not a valid identifier
 --- file ---
 null

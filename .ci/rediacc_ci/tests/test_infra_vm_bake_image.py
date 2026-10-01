@@ -19,6 +19,7 @@ from typing import Any
 import pytest
 
 from rediacc_ci.infra import vm_bake_image as vbi
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 KEY = "vm-bake-v1-debian-13-2026-09-08e81f4c97c76189"
 IMAGE_NAME = "debian-13-genericcloud-amd64.qcow2"
@@ -47,7 +48,7 @@ def _pulls_one_image(argv: list[str]) -> None:
 
 
 def test_image_ref_names_the_one_package_and_refuses_a_non_key() -> None:
-    assert vbi.image_ref(KEY) == "ghcr.io/rediacc/ci-vm-bake:" + KEY
+    assert vbi.image_ref(KEY) == (IMAGE_REGISTRY + "/ci-vm-bake:") + KEY
     with pytest.raises(vbi.BakeImageError):
         vbi.image_ref("latest")
 

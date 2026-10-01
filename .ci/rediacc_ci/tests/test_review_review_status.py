@@ -41,6 +41,7 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.review import review_status as rs
+from rediacc_ci.well_known import ACCOUNT_REPO, RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "review" / "review-status.sh"
@@ -157,13 +158,19 @@ echo "stub %s for PR ${PR_NUMBER:-?}"
 exit %d
 """
 
-GITMODULES = """[submodule "private/renet"]
+GITMODULES = (
+    """[submodule "private/renet"]
 \tpath = private/renet
-\turl = git@github.com:rediacc/renet.git
+\turl = git@github.com:"""
+    + RENET_REPO
+    + """.git
 [submodule "private/account"]
 \tpath = private/account
-\turl = git@github.com:rediacc/account.git
+\turl = git@github.com:"""
+    + ACCOUNT_REPO
+    + """.git
 """
+)
 
 # The endpoints the two sides legitimately ask for differently. See the module docstring; this list is the ONLY place the raw-argv comparison is relaxed.
 BUDGET_ENDPOINTS = ("/issues/", "pr")

@@ -56,13 +56,14 @@ import tempfile
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import RELEASES_ORIGIN
 
 # `.ci/config/constants.sh:288`, verbatim. Relative to the tap submodule root.
 HOMEBREW_FORMULA_PATH = "Formula/rediacc-cli.rb"
 
 # `.ci/config/constants.sh:200`: `${RELEASES_BASE_URL:-https://releases.rediacc.com}`,
 # so the environment still wins.
-RELEASES_BASE_URL_DEFAULT = "https://releases.rediacc.com"
+RELEASES_BASE_URL_DEFAULT = RELEASES_ORIGIN
 
 # The submodule path, spelled the way the twin spells it in three places.
 TAP_SUBMODULE = "private/homebrew-tap"

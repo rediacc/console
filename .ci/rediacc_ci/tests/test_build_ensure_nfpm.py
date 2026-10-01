@@ -34,6 +34,7 @@ ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "build" / "ensure-nfpm.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "ensure_nfpm.py"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
+WELL_KNOWN = ROOT / ".ci" / "config" / "well-known.env"
 TOOLCHAIN_ENV = ROOT / ".devcontainer" / "toolchain.env"
 
 TWIN_REL = ".ci/scripts/build/ensure-nfpm.sh"
@@ -100,6 +101,7 @@ def build_fixture(
         (fixture / PORT_REL).write_text(port_source, encoding="utf-8")
     if not drop_toolchain_env:
         shutil.copy2(TOOLCHAIN_ENV, fixture / ".devcontainer" / "toolchain.env")
+    shutil.copy2(WELL_KNOWN, fixture / ".ci" / "config" / "well-known.env")
 
     constants = CONSTANTS.read_text(encoding="utf-8")
     if pinned_sha is not None:

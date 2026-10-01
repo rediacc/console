@@ -35,6 +35,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect
 from rediacc_ci.housekeeping import cleanup_versions as cv
+from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET, RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "housekeeping" / "cleanup-versions.sh"
@@ -390,7 +391,7 @@ def test_the_fake_gh_is_actually_reached_and_records_its_argv() -> None:
             "release",
             "list",
             "--repo",
-            "rediacc/console",
+            GH_REPO,
             "--limit",
             "200",
             "--json",
@@ -653,12 +654,12 @@ def test_phase_1_really_deletes_and_then_best_effort_deletes_the_tag() -> None:
         fixture=_releases(("v1.0.0", ago(90.5))),
     )
     calls = calls_of(result[3], "gh")
-    assert calls[1] == ["release", "delete", "v1.0.0", "--repo", "rediacc/console", "--yes"]
+    assert calls[1] == ["release", "delete", "v1.0.0", "--repo", GH_REPO, "--yes"]
     assert calls[2] == [
         "api",
         "-X",
         "DELETE",
-        "repos/rediacc/console/git/refs/tags/v1.0.0",
+        ("repos/" + GH_REPO + "/git/refs/tags/v1.0.0"),
     ]
     assert b"Releases: deleted 1 of 1" in result[2]
 
@@ -775,7 +776,7 @@ def test_an_invalid_octal_versions_value_takes_the_same_branch_on_both_sides() -
 
 def _tags_fixture(annotated: bool = True, *, dates: dict | None = None) -> dict:
     dates = dates or {"v2.0.0": ago(1.5), "v1.0.0": ago(400.5)}
-    rules = [rule("repos/rediacc/console/tags", json_body=[{"name": n} for n in dates])]
+    rules = [rule(("repos/" + GH_REPO + "/tags"), json_body=[{"name": n} for n in dates])]
     for name in dates:
         sha = "sha-%s" % name
         rules.append(
@@ -791,7 +792,7 @@ def _tags_fixture(annotated: bool = True, *, dates: dict | None = None) -> dict:
             )
         )
         rules.append(rule("git/commits/", sha, json_body={"committer": {"date": dates[name]}}))
-    rules.append(rule("repos/rediacc/renet/tags", rc=1))
+    rules.append(rule(("repos/" + RENET_REPO + "/tags"), rc=1))
     rules.append(rule("-X", "DELETE", "git/refs/tags"))
     return {"gh": rules}
 
@@ -803,21 +804,21 @@ def test_phase_2_dates_an_annotated_tag_from_its_tagger_and_deletes_the_old_one(
         fixture=_tags_fixture(annotated=True),
     )
     calls = calls_of(result[3], "gh")
-    assert ["api", "repos/rediacc/console/tags", "--paginate", "--jq", ".[].name"] in calls
+    assert ["api", ("repos/" + GH_REPO + "/tags"), "--paginate", "--jq", ".[].name"] in calls
     assert [
         "api",
-        "repos/rediacc/console/git/tags/sha-v2.0.0",
+        ("repos/" + GH_REPO + "/git/tags/sha-v2.0.0"),
         "--jq",
         ".tagger.date",
     ] in calls
     err = result[2].decode()
-    assert "Tags (rediacc/console): deleted 1 of 2" in err
-    assert "No tags found for rediacc/renet" not in err, "log_debug is off by default"
+    assert ("Tags (" + GH_REPO + "): deleted 1 of 2") in err
+    assert ("No tags found for " + RENET_REPO) not in err, "log_debug is off by default"
     assert [
         "api",
         "-X",
         "DELETE",
-        "repos/rediacc/console/git/refs/tags/v1.0.0",
+        ("repos/" + GH_REPO + "/git/refs/tags/v1.0.0"),
     ] in calls
 
 
@@ -832,7 +833,7 @@ def test_phase_2_falls_back_to_the_commit_date_for_a_lightweight_tag() -> None:
     calls = calls_of(result[3], "gh")
     assert [
         "api",
-        "repos/rediacc/console/git/commits/sha-v1.0.0",
+        ("repos/" + GH_REPO + "/git/commits/sha-v1.0.0"),
         "--jq",
         ".committer.date",
     ] in calls
@@ -850,7 +851,7 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
         argv=("--dry-run", "--versions", "0", "--days", "7"),
         fixture={
             "gh": [
-                rule("repos/rediacc/console/tags", json_body=[{"name": "v1.0.0"}]),
+                rule(("repos/" + GH_REPO + "/tags"), json_body=[{"name": "v1.0.0"}]),
                 rule(
                     "git/ref/tags/v1.0.0", json_body={"object": {"type": "tag", "sha": "annot-sha"}}
                 ),
@@ -862,17 +863,17 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
                     json_body={"object": {"sha": "commit-sha"}},
                 ),
                 rule("git/commits/commit-sha", json_body={"committer": {"date": ago(400.5)}}),
-                rule("repos/rediacc/renet/tags", rc=1),
+                rule(("repos/" + RENET_REPO + "/tags"), rc=1),
             ]
         },
     )
     calls = calls_of(result[3], "gh")
-    assert calls[1] == ["api", "repos/rediacc/console/git/ref/tags/v1.0.0"]
-    assert calls[2] == ["api", "repos/rediacc/console/git/tags/annot-sha", "--jq", ".tagger.date"]
-    assert calls[3] == ["api", "repos/rediacc/console/git/tags/annot-sha", "--jq", ".object.sha"]
+    assert calls[1] == ["api", ("repos/" + GH_REPO + "/git/ref/tags/v1.0.0")]
+    assert calls[2] == ["api", ("repos/" + GH_REPO + "/git/tags/annot-sha"), "--jq", ".tagger.date"]
+    assert calls[3] == ["api", ("repos/" + GH_REPO + "/git/tags/annot-sha"), "--jq", ".object.sha"]
     assert calls[4] == [
         "api",
-        "repos/rediacc/console/git/commits/commit-sha",
+        ("repos/" + GH_REPO + "/git/commits/commit-sha"),
         "--jq",
         ".committer.date",
     ]
@@ -889,15 +890,15 @@ def test_phase_2_a_tag_object_with_no_tagger_date_yields_the_string_null() -> No
         argv=("--dry-run", "--versions", "0", "--days", "7"),
         fixture={
             "gh": [
-                rule("repos/rediacc/console/tags", json_body=[{"name": "v1.0.0"}]),
+                rule(("repos/" + GH_REPO + "/tags"), json_body=[{"name": "v1.0.0"}]),
                 rule("git/ref/tags/v1.0.0", json_body={"object": {"type": "tag", "sha": "s"}}),
                 rule("git/tags/s", json_body={"tagger": {}}),
-                rule("repos/rediacc/renet/tags", rc=1),
+                rule(("repos/" + RENET_REPO + "/tags"), rc=1),
             ]
         },
     )
     assert b"Could not parse date 'null' - retaining item" in result[2]
-    assert b"Tags (rediacc/console): would delete 0 of 1" in result[2]
+    assert b"Tags (%s): would delete 0 of 1" % GH_REPO.encode() in result[2]
 
 
 def test_phase_2_says_nothing_when_the_tag_list_call_fails() -> None:
@@ -909,9 +910,9 @@ def test_phase_2_says_nothing_when_the_tag_list_call_fails() -> None:
         env={"DEBUG": "true"},
     )
     err = result[2].decode()
-    assert "[DEBUG]   No tags found for rediacc/console" in err
-    assert "[DEBUG]   No tags found for rediacc/renet" in err
-    assert "Tags (rediacc/console):" not in err
+    assert ("[DEBUG]   No tags found for " + GH_REPO) in err
+    assert ("[DEBUG]   No tags found for " + RENET_REPO) in err
+    assert ("Tags (" + GH_REPO + "):") not in err
 
 
 def test_phase_2_retry_is_silenced_by_the_call_sites_redirection() -> None:
@@ -1067,9 +1068,10 @@ def test_phase_4_keeps_two_per_environment_and_none_for_a_closed_pr() -> None:
     assert "Would delete: 4 (pr-7" not in err
     assert "[DRY-RUN] Would delete: 5 (pr-9," in err
     assert (
-        "Deployments (rediacc/console): deleted 2 of 5 (keeping 2 per environment, 0 for closed-PR pr-*)"
-        in err
-    )
+        "Deployments ("
+        + GH_REPO
+        + "): deleted 2 of 5 (keeping 2 per environment, 0 for closed-PR pr-*)"
+    ) in err
 
 
 def test_phase_4_falls_back_to_keep_n_when_the_open_pr_lookup_fails() -> None:
@@ -1113,13 +1115,13 @@ def test_phase_4_sets_a_deployment_inactive_before_deleting_it() -> None:
     calls = calls_of(result[3], "gh")
     assert calls[2] == [
         "api",
-        "repos/rediacc/console/deployments/1/statuses",
+        ("repos/" + GH_REPO + "/deployments/1/statuses"),
         "-X",
         "POST",
         "-f",
         "state=inactive",
     ]
-    assert calls[3] == ["api", "-X", "DELETE", "repos/rediacc/console/deployments/1"]
+    assert calls[3] == ["api", "-X", "DELETE", ("repos/" + GH_REPO + "/deployments/1")]
     assert b"deleted 1 of 1" in result[2]
 
 
@@ -1254,8 +1256,9 @@ def test_phase_5_really_deletes_with_force_and_counts_the_success_flag() -> None
         "-X",
         "DELETE",
         (
-            "https://api.cloudflare.com/client/v4/accounts/fixture-account/pages/"
-            "projects/rediacc/deployments/d2?force=true"
+            CF_API_BASE
+            + "/accounts/fixture-account/pages/"
+            + "projects/rediacc/deployments/d2?force=true"
         ),
         "-H",
     ]
@@ -1414,7 +1417,7 @@ def test_phase_6_is_a_403_by_design_and_stops_after_the_first_one() -> None:
         fixture={
             "gh": [
                 rule(
-                    "repos/rediacc/console/environments",
+                    ("repos/" + GH_REPO + "/environments"),
                     "--jq",
                     json_body={
                         "environments": [
@@ -1437,7 +1440,7 @@ def test_phase_6_is_a_403_by_design_and_stops_after_the_first_one() -> None:
         "Environment pr-2 left in place (by design: the App is barred from Administration:write)"
         in err
     )
-    assert "Environments (rediacc/console): deleted 0 of 2 pr-* environments" in err
+    assert ("Environments (" + GH_REPO + "): deleted 0 of 2 pr-* environments") in err
 
 
 def test_phase_6_says_nothing_to_do_when_there_are_no_pr_environments() -> None:
@@ -1446,7 +1449,7 @@ def test_phase_6_says_nothing_to_do_when_there_are_no_pr_environments() -> None:
         fixture={"gh": [rule("environments", json_body={"environments": []})]},
     )
     assert b"No stale preview environments to clean up" in result[2]
-    assert b"Environments (rediacc/console):" not in result[2]
+    assert b"Environments (%s):" % GH_REPO.encode() not in result[2]
 
 
 # --------------------------------------------------------------------------- PHASE 7: CLOUDFLARE D1 PREVIEW DATABASES ---------------------------------------------------------------------------
@@ -1644,19 +1647,19 @@ def test_phase_8a_reaps_a_dryrun_prefix_older_than_the_window() -> None:
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("dryrun-abc/")),
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("dryrun-abc/")),
             rule("--prefix cli/dryrun-abc/", raw="%s\n" % ago(30.5)),
         ),
         env=R2_ENV,
     )
     err = result[2].decode()
-    assert "Deleted s3://rediacc-releases/cli/dryrun-abc/ (dryrun 30d old)" in err
+    assert ("Deleted s3://" + RELEASES_BUCKET + "/cli/dryrun-abc/ (dryrun 30d old)") in err
     assert "8a: processed 6 format dirs, deleted 1 dryrun prefix(es)" in err
     rm_calls = [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]]
     assert rm_calls[0] == [
         "s3",
         "rm",
-        "s3://rediacc-releases/cli/dryrun-abc/",
+        ("s3://" + RELEASES_BUCKET + "/cli/dryrun-abc/"),
         "--recursive",
         "--endpoint-url",
         R2_ENDPOINT,
@@ -1669,7 +1672,7 @@ def test_phase_8a_holds_a_dryrun_prefix_inside_the_window_and_one_it_cannot_date
         "cleanup_r2",
         fixture=r2_fixture(
             rule(
-                "ls s3://rediacc-releases/npm/ ",
+                ("ls s3://" + RELEASES_BUCKET + "/npm/ "),
                 raw=pre_line("dryrun-young/") + pre_line("dryrun-undatable/"),
             ),
             rule("--prefix npm/dryrun-young/", raw="%s\n" % ago(1.5)),
@@ -1685,7 +1688,9 @@ def test_phase_8b_reaps_a_closed_prs_prefix_and_an_over_age_open_one() -> None:
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/apt/ ", raw=pre_line("pr-3/") + pre_line("pr-7/")),
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/apt/ "), raw=pre_line("pr-3/") + pre_line("pr-7/")
+            ),
             rule("--prefix apt/pr-3/", raw="%s\n" % ago(1.5)),
             rule("--prefix apt/pr-7/", raw="%s\n" % ago(30.5)),
             gh=[
@@ -1697,12 +1702,12 @@ def test_phase_8b_reaps_a_closed_prs_prefix_and_an_over_age_open_one() -> None:
         env=R2_ENV,
     )
     err = result[2].decode()
-    assert "Deleted s3://rediacc-releases/apt/pr-3/ (PR #3 CLOSED)" in err
+    assert ("Deleted s3://" + RELEASES_BUCKET + "/apt/pr-3/ (PR #3 CLOSED)") in err
     # pr-7 is OPEN but 30 days stale, so the age arm reaps it anyway and the PR state is never even looked up.
-    assert "Deleted s3://rediacc-releases/apt/pr-7/ (stale 30d)" in err
+    assert ("Deleted s3://" + RELEASES_BUCKET + "/apt/pr-7/ (stale 30d)") in err
     assert "8b: deleted 2 PR channel prefix(es)" in err
     assert [c for c in calls_of(result[3], "gh") if c[:2] == ["pr", "view"]] == [
-        ["pr", "view", "3", "--repo", "rediacc/console", "--json", "state", "--jq", ".state"]
+        ["pr", "view", "3", "--repo", GH_REPO, "--json", "state", "--jq", ".state"]
     ]
 
 
@@ -1710,7 +1715,7 @@ def test_phase_8b_keeps_an_open_prs_recent_prefix() -> None:
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/rpm/ ", raw=pre_line("pr-7/")),
+            rule(("ls s3://" + RELEASES_BUCKET + "/rpm/ "), raw=pre_line("pr-7/")),
             rule("--prefix rpm/pr-7/", raw="%s\n" % ago(1.5)),
             gh=[rule("pr", "view", json_body={"state": "OPEN"}), rule("tags", raw="")],
         ),
@@ -1723,12 +1728,15 @@ def test_phase_8c_deletes_a_legacy_prefix_only_when_it_holds_something() -> None
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/staging/", raw="2026-01-01 00:00:00  12 staging/x\n"),
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/staging/"),
+                raw="2026-01-01 00:00:00  12 staging/x\n",
+            ),
         ),
         env=R2_ENV,
     )
     err = result[2].decode()
-    assert "Deleted s3://rediacc-releases/staging/ (legacy)" in err
+    assert ("Deleted s3://" + RELEASES_BUCKET + "/staging/ (legacy)") in err
     assert "packages/ (legacy)" not in err
     assert "cli/latest/ (legacy)" not in err
 
@@ -1737,7 +1745,10 @@ def test_phase_8d_keeps_a_committed_release_and_reaps_an_aged_orphan() -> None:
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("v9.0.0/") + pre_line("v9.9.9/")),
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line("v9.0.0/") + pre_line("v9.9.9/"),
+            ),
             rule("list-objects-v2", "ends_with(Key", raw="cli/v9.0.0/.released\n"),
             rule("--prefix cli/v9.9.9/", raw="%s\n" % ago(30.5)),
             gh=[rule("tags", json_body=[{"name": "v9.0.0"}])],
@@ -1749,9 +1760,11 @@ def test_phase_8d_keeps_a_committed_release_and_reaps_an_aged_orphan() -> None:
     assert "drift: " not in err
     assert "cli/v9.0.0" not in err
     assert (
-        "Deleted s3://rediacc-releases/cli/v9.9.9/ (orphan cli/v9.9.9 (no .released "
-        "sentinel, no git tag, >14d old))" in err
-    )
+        "Deleted s3://"
+        + RELEASES_BUCKET
+        + "/cli/v9.9.9/ (orphan cli/v9.9.9 (no .released "
+        + "sentinel, no git tag, >14d old))"
+    ) in err
     assert "8d: deleted 1 orphan versioned prefix(es); found 0 drift finding(s)" in err
 
 
@@ -1760,7 +1773,7 @@ def test_phase_8d_holds_a_young_orphan_because_it_may_be_a_release_in_flight() -
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("v9.9.9/")),
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v9.9.9/")),
             rule("--prefix cli/v9.9.9/", raw="%s\n" % ago(1.5)),
         ),
         env=R2_ENV,
@@ -1777,7 +1790,7 @@ def test_phase_8d_never_touches_the_version_this_ci_run_is_releasing() -> None:
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("v9.9.9/")),
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v9.9.9/")),
             rule("--prefix cli/v9.9.9/", raw="%s\n" % ago(30.5)),
         ),
         env=dict(R2_ENV, IN_FLIGHT_VERSION="v9.9.9"),
@@ -1791,7 +1804,10 @@ def test_phase_8d_latches_the_run_as_failed_on_drift_in_either_direction() -> No
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("v9.0.0/") + pre_line("v9.1.0/")),
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line("v9.0.0/") + pre_line("v9.1.0/"),
+            ),
             rule("list-objects-v2", "ends_with(Key", raw="cli/v9.0.0/.released\n"),
             gh=[rule("tags", json_body=[{"name": "v9.1.0"}])],
         ),
@@ -1818,7 +1834,7 @@ def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("v1.0.0/")),
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v1.0.0/")),
             rule("list-objects-v2", "ends_with(Key", raw="cli/v1.0.0/.released\n"),
             gh=[rule("tags", raw="")],
         ),
@@ -1843,8 +1859,8 @@ def test_phase_8f_keeps_the_top_semvers_and_always_zaps_the_dev_pollution() -> N
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/apt/stable/ --recursive", raw=listing),
-            rule("ls s3://rediacc-releases/apt/stable/ ", raw=listing),
+            rule(("ls s3://" + RELEASES_BUCKET + "/apt/stable/ --recursive"), raw=listing),
+            rule(("ls s3://" + RELEASES_BUCKET + "/apt/stable/ "), raw=listing),
         ),
         env=R2_ENV,
     )
@@ -1867,8 +1883,8 @@ def test_phase_8f_leaves_channel_metadata_alone() -> None:
         "cleanup_r2",
         argv=("--dry-run",),
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/apt/edge/ --recursive", raw=listing),
-            rule("ls s3://rediacc-releases/apt/edge/ ", raw=listing),
+            rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ --recursive"), raw=listing),
+            rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ "), raw=listing),
         ),
         env=R2_ENV,
     )
@@ -1909,7 +1925,7 @@ def test_phase_8e_aborts_an_old_multipart_and_holds_a_young_one() -> None:
             "s3api",
             "abort-multipart-upload",
             "--bucket",
-            "rediacc-releases",
+            RELEASES_BUCKET,
             "--key",
             "cli/v1/rdc",
             "--upload-id",
@@ -1928,9 +1944,15 @@ def test_phase_8_dry_run_makes_no_destructive_call_at_all() -> None:
         "cleanup_r2",
         argv=("--dry-run",),
         fixture=r2_fixture(
-            rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("dryrun-x/") + pre_line("v9.9.9/")),
-            rule("ls s3://rediacc-releases/staging/", raw="2026-01-01 00:00:00 1 staging/x\n"),
-            rule("ls s3://rediacc-releases/apt/stable/", raw=listing),
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line("dryrun-x/") + pre_line("v9.9.9/"),
+            ),
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/staging/"),
+                raw="2026-01-01 00:00:00 1 staging/x\n",
+            ),
+            rule(("ls s3://" + RELEASES_BUCKET + "/apt/stable/"), raw=listing),
             rule("--prefix cli/dryrun-x/", raw="%s\n" % ago(30.5)),
             rule("--prefix cli/v9.9.9/", raw="%s\n" % ago(30.5)),
             rule("list-multipart-uploads", raw=uploads + "\n"),
@@ -1938,8 +1960,10 @@ def test_phase_8_dry_run_makes_no_destructive_call_at_all() -> None:
         env=R2_ENV,
     )
     err = result[2].decode()
-    assert "[DRY-RUN] Would delete s3://rediacc-releases/cli/dryrun-x/ (dryrun 30d old)" in err
-    assert "[DRY-RUN] Would delete s3://rediacc-releases/staging/ (legacy)" in err
+    assert (
+        "[DRY-RUN] Would delete s3://" + RELEASES_BUCKET + "/cli/dryrun-x/ (dryrun 30d old)"
+    ) in err
+    assert ("[DRY-RUN] Would delete s3://" + RELEASES_BUCKET + "/staging/ (legacy)") in err
     assert "[DRY-RUN] Would abort multipart: k (age 84h)" in err
     for call in calls_of(result[3], "aws"):
         assert call[:2] != ["s3", "rm"], call
@@ -1952,7 +1976,9 @@ def test_phase_8_dry_run_makes_no_destructive_call_at_all() -> None:
 def _branches_fixture(*names: str, **rules_by_key: dict) -> dict:
     """console answers with `names`; the other five repos 404 (a `log_debug`)."""
     out = [
-        rule("repos/rediacc/console/branches?per_page=100", json_body=[{"name": n} for n in names]),
+        rule(
+            ("repos/" + GH_REPO + "/branches?per_page=100"), json_body=[{"name": n} for n in names]
+        ),
     ]
     out.extend(rules_by_key.values())
     out.append(rule("branches?per_page=100", rc=1))
@@ -2024,7 +2050,7 @@ def test_phase_9_a_failed_delete_is_the_one_that_fails_the_whole_run() -> None:
     )
     result = sides("cleanup_stale_branches", fixture=fixture, env={"GITHUB_ACTIONS": "true"})
     err = result[2].decode()
-    assert "Phase 9: could not delete rediacc/console@stale (90 days old): " in err
+    assert ("Phase 9: could not delete " + GH_REPO + "@stale (90 days old): ") in err
     assert "HTTP 403: no contents:write" in err, "the captured STDERR is quoted back"
     assert b"::error title=Stale-branch delete failed::" in result[1]
     assert b"Branches (console): deleted 0, kept 0" in result[2]
@@ -2043,7 +2069,10 @@ def test_phase_9_reports_no_error_output_when_gh_says_nothing() -> None:
     )
     result = sides("cleanup_stale_branches", fixture=fixture)
     # The recording fake writes its own `call:` line to stderr, which the twin captures with `2>&1 >/dev/null` -- so the reason is that line, identically on both sides. The `:-` default is exercised by the port's own unit shape.
-    assert b"Phase 9: could not delete rediacc/console@stale (90 days old): call: gh" in result[2]
+    assert (
+        b"Phase 9: could not delete %s@stale (90 days old): call: gh" % GH_REPO.encode()
+        in result[2]
+    )
 
 
 def test_phase_9_deletes_and_charges_the_budget() -> None:
@@ -2537,7 +2566,7 @@ def test_run_all_phases_exits_1_once_at_the_end_when_a_phase_latched() -> None:
             "gh": [rule("actions/caches", raw=_caches()), rule("", rc=1)],
             "curl": [rule("", rc=1)],
             "aws": [
-                rule("ls s3://rediacc-releases/cli/ ", raw=pre_line("v9.0.0/")),
+                rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v9.0.0/")),
                 rule("list-objects-v2", "ends_with(Key", raw="cli/v9.0.0/.released\n"),
                 rule("list-objects-v2", "Contents[0].LastModified", raw="None\n"),
                 rule("list-multipart-uploads", raw="null\n"),

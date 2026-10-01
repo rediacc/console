@@ -79,6 +79,8 @@ def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:
     (root / ".ci/scripts/lib").mkdir(parents=True)
     shutil.copy(ts.ROOT / SCRIPT_REL, root / SCRIPT_REL)
     shutil.copy(ts.ROOT / ".ci/scripts/lib/common.sh", root / ".ci/scripts/lib/common.sh")
+    (root / ".ci/config").mkdir(parents=True)
+    shutil.copy(ts.ROOT / ".ci/config/well-known.env", root / ".ci/config/well-known.env")
     (root / ".git").write_text("gitdir: x\n")
     (root / "package.json").write_text("{}")
     account = root / "private" / "account"

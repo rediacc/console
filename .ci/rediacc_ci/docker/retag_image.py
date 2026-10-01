@@ -28,12 +28,13 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
 
 # `.ci/config/constants.sh:169` and `:162`. Restated for the reason `cleanup_staging` records, and pinned against constants.sh by the differential.
 PUBLISH_IMAGES = ("renet", "rdc")
-REGISTRY_DEFAULT = "ghcr.io/rediacc"
+REGISTRY_DEFAULT = IMAGE_REGISTRY
 
 # The digest format string the twin hands `imagetools inspect` (twin :148,:150).
 DIGEST_FORMAT = "{{.Manifest.Digest}}"
@@ -85,7 +86,7 @@ def usage(prog: str) -> str:
             "",
             "Options:",
             "  --image NAME       Re-tag image relative to PUBLISH_DOCKER_REGISTRY",
-            "  --image-path PATH  Re-tag full image path (e.g., ghcr.io/rediacc/server)",
+            ("  --image-path PATH  Re-tag full image path (e.g., " + IMAGE_REGISTRY + "/server)"),
             "  --all              Re-tag all images in PUBLISH_IMAGES",
             "  --from TAG         Source CI tag",
             "  --to VERSION       Target semantic version",

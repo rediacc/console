@@ -32,11 +32,12 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # --------------------------------------------------------------------------- The twin's constants ---------------------------------------------------------------------------
 
 # `.ci/config/constants.sh:162`. `:-` takes the default on unset OR empty.
-REGISTRY_DEFAULT = "ghcr.io/rediacc"
+REGISTRY_DEFAULT = IMAGE_REGISTRY
 
 # `ARCHS=("amd64" "arm64")` (twin :38), in order: the source list order is the
 # order docker is handed, and imagetools keeps it in the manifest.
@@ -104,7 +105,7 @@ def usage(prog: str) -> str:
             "",
             "Options:",
             "  --image NAME      Image name relative to PUBLISH_DOCKER_REGISTRY (api, bridge, ...)",
-            "  --image-path PATH Full image path (e.g., ghcr.io/rediacc/server)",
+            ("  --image-path PATH Full image path (e.g., " + IMAGE_REGISTRY + "/server)"),
             "  --tag TAG         Tag for the manifest",
             "  --push-latest     Also create and push :latest manifest",
             "  --dry-run         Preview without creating manifest",

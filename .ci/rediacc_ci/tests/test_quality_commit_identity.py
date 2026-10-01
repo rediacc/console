@@ -21,6 +21,7 @@ import json
 import subprocess
 
 from rediacc_ci.quality import commit_identity as ci
+from rediacc_ci.well_known import OPERATOR_EMAIL
 
 # The three strings that decided WHAT the bash twin read, frozen here after it and its gate test were retired in W7 P5 (the K=5 ledger under `.ci/shadow/` already licensed the equivalence). Captured from tracked history the day the twin left, a comparison against what the twin actually said rather than a description of what the port currently does.
 TWIN_COMPARE_CALL = 'api "repos/${repo}/compare/${base}...${head}?per_page=100" --paginate'
@@ -49,14 +50,14 @@ def _rows() -> str:
                 "sha": "b" * 40,
                 "author": None,
                 "committer": "mfbayraktar",
-                "email": "muhammed@rediacc.com",
+                "email": OPERATOR_EMAIL,
                 "name": "M F B",
             },
             {
                 "sha": "c" * 40,
                 "author": None,
                 "committer": None,
-                "email": "muhammed@rediacc.com",
+                "email": OPERATOR_EMAIL,
                 "name": "M F B",
             },
             {

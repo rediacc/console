@@ -12,6 +12,8 @@ from __future__ import annotations
 import os
 import sys
 
+from rediacc_ci.well_known import IMAGE_REGISTRY, SITE_ORIGIN
+
 SELF = "deployment-summary.py"
 
 
@@ -38,12 +40,12 @@ def main(argv: list[str]) -> int:
         "",
         f"**Version:** v{version}",
         f"**CI Run:** {ci_run_id} (sha: {ci_sha})",
-        "**Pages URL:** https://www.rediacc.com",
+        ("**Pages URL:** " + SITE_ORIGIN),
         "",
         "**Docker images:**",
-        f"- ghcr.io/rediacc/renet:{version} + :latest",
-        f"- ghcr.io/rediacc/rdc:{version} + :latest",
-        f"- ghcr.io/rediacc/server:{version} + :latest (on-prem)",
+        f"- {IMAGE_REGISTRY}/renet:{version} + :latest",
+        f"- {IMAGE_REGISTRY}/rdc:{version} + :latest",
+        f"- {IMAGE_REGISTRY}/server:{version} + :latest (on-prem)",
     ]
     with open(summary_path, "a", encoding="utf-8") as fh:
         fh.writelines(line + "\n" for line in lines)

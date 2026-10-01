@@ -37,6 +37,7 @@ import re
 import sys
 
 from rediacc_hooks import hookio, shellscan, syspath
+from rediacc_hooks.wellknown import IMAGE_REGISTRY
 
 CHAIN = "pre-bash"
 ORDER = 34
@@ -577,58 +578,68 @@ def run(ev):
         != 0
     ):
         ev.warn_raw(
-            "NOTE: %s needs '%s'. Neither this host nor the devbox (%s) has it, so it\n"
-            "genuinely cannot run anywhere right now -- that is a real finding about the\n"
-            "IMAGE, not about your change.\n"
-            "\n"
-            'Fix the image rather than recording another "environmental" red:\n'
-            "  1. add '%s' to .devcontainer/Dockerfile with an explicit version, the way\n"
-            "     the other tools there are pinned (an unpinned tool that decides a CI\n"
-            "     verdict is a different verdict on every rebuild)\n"
-            '  2. REBUILD THE IMAGE, not just the container. "devbox remove" removes the\n'
-            "     CONTAINER; devbox_ensure_image then short-circuits on the image it\n"
-            "     already has (.ci/lib/devbox.sh:367), and if you delete the image it\n"
-            "     PULLS from the registry first -- so a local Dockerfile edit reaches the\n"
-            "     box by neither route. Measured 2026-08-27: GO_VERSION was bumped to\n"
-            "     1.26.6 and the container still reported go1.26.4. What actually works:\n"
-            "         docker build -t ghcr.io/rediacc/devcontainer:latest -f"
-            " .devcontainer/Dockerfile .devcontainer\n"
-            "         ./run.sh devbox remove && ./run.sh devbox up\n"
-            "  3. re-run the gate and say in your summary that you changed the image\n"
-            "\n"
-            "Proceeding, so the gate's own message is what you see.\n" % (label, need, cid, need)
+            (
+                "NOTE: %s needs '%s'. Neither this host nor the devbox (%s) has it, so it\n"
+                "genuinely cannot run anywhere right now -- that is a real finding about the\n"
+                "IMAGE, not about your change.\n"
+                "\n"
+                'Fix the image rather than recording another "environmental" red:\n'
+                "  1. add '%s' to .devcontainer/Dockerfile with an explicit version, the way\n"
+                "     the other tools there are pinned (an unpinned tool that decides a CI\n"
+                "     verdict is a different verdict on every rebuild)\n"
+                '  2. REBUILD THE IMAGE, not just the container. "devbox remove" removes the\n'
+                "     CONTAINER; devbox_ensure_image then short-circuits on the image it\n"
+                "     already has (.ci/lib/devbox.sh:367), and if you delete the image it\n"
+                "     PULLS from the registry first -- so a local Dockerfile edit reaches the\n"
+                "     box by neither route. Measured 2026-08-27: GO_VERSION was bumped to\n"
+                "     1.26.6 and the container still reported go1.26.4. What actually works:\n"
+                "         docker build -t "
+                + IMAGE_REGISTRY
+                + "/devcontainer:latest -f"
+                + " .devcontainer/Dockerfile .devcontainer\n"
+                + "         ./run.sh devbox remove && ./run.sh devbox up\n"
+                + "  3. re-run the gate and say in your summary that you changed the image\n"
+                + "\n"
+                + "Proceeding, so the gate's own message is what you see.\n"
+            )
+            % (label, need, cid, need)
         )
         return hookio.ALLOW
 
     ev.warn_raw(
-        "BLOCKED: %s needs '%s', which is missing on this host and PRESENT in the devbox.\n"
-        "\n"
-        "Run it there instead:\n"
-        "\n"
-        "  %s\n"
-        "\n"
-        "WHY THIS IS REFUSED RATHER THAN WARNED. A gate that cannot run does not report a\n"
-        "verdict about your code, and this session recorded exactly that as an\n"
-        '"environmental gap" three times in one afternoon while the container sat running\n'
-        "with the right tool. Once it was worse than tidiness: check:ci-renet on the host\n"
-        "said 'command not found', and in the devbox it RUNS and reports six stdlib\n"
-        "vulnerabilities in the image's own go1.26.4. Not a defect in the shipped code --\n"
-        "CI installs a different toolchain and sees none of them -- but a real finding\n"
-        "about the image that the host could not see at all.\n"
-        "\n"
-        "IF THE DEVBOX IS ALSO WRONG, FIX THE IMAGE -- that is in scope and is the point\n"
-        "of this guard. .devcontainer/Dockerfile is where the toolchain is declared, and\n"
-        "'%s' should be pinned there with an explicit version, because a tool that\n"
-        "decides a CI verdict must be the same one CI uses. Rebuild the IMAGE, not the\n"
-        'container: "devbox remove" leaves the image untouched and devbox_ensure_image\n'
-        "reuses or re-pulls it, so a Dockerfile edit reaches the box by neither route.\n"
-        "    docker build -t ghcr.io/rediacc/devcontainer:latest -f"
-        " .devcontainer/Dockerfile .devcontainer\n"
-        "    ./run.sh devbox remove && ./run.sh devbox up\n"
-        "and say in your summary that you changed the image, since that is a change the\n"
-        "operator did not ask for.\n"
-        "\n"
-        "If you genuinely mean to run it on the host and read its refusal, say so and use\n"
-        "the devbox form to get a real answer instead.\n" % (label, need, route, need)
+        (
+            "BLOCKED: %s needs '%s', which is missing on this host and PRESENT in the devbox.\n"
+            "\n"
+            "Run it there instead:\n"
+            "\n"
+            "  %s\n"
+            "\n"
+            "WHY THIS IS REFUSED RATHER THAN WARNED. A gate that cannot run does not report a\n"
+            "verdict about your code, and this session recorded exactly that as an\n"
+            '"environmental gap" three times in one afternoon while the container sat running\n'
+            "with the right tool. Once it was worse than tidiness: check:ci-renet on the host\n"
+            "said 'command not found', and in the devbox it RUNS and reports six stdlib\n"
+            "vulnerabilities in the image's own go1.26.4. Not a defect in the shipped code --\n"
+            "CI installs a different toolchain and sees none of them -- but a real finding\n"
+            "about the image that the host could not see at all.\n"
+            "\n"
+            "IF THE DEVBOX IS ALSO WRONG, FIX THE IMAGE -- that is in scope and is the point\n"
+            "of this guard. .devcontainer/Dockerfile is where the toolchain is declared, and\n"
+            "'%s' should be pinned there with an explicit version, because a tool that\n"
+            "decides a CI verdict must be the same one CI uses. Rebuild the IMAGE, not the\n"
+            'container: "devbox remove" leaves the image untouched and devbox_ensure_image\n'
+            "reuses or re-pulls it, so a Dockerfile edit reaches the box by neither route.\n"
+            "    docker build -t "
+            + IMAGE_REGISTRY
+            + "/devcontainer:latest -f"
+            + " .devcontainer/Dockerfile .devcontainer\n"
+            + "    ./run.sh devbox remove && ./run.sh devbox up\n"
+            + "and say in your summary that you changed the image, since that is a change the\n"
+            + "operator did not ask for.\n"
+            + "\n"
+            + "If you genuinely mean to run it on the host and read its refusal, say so and use\n"
+            + "the devbox form to get a real answer instead.\n"
+        )
+        % (label, need, route, need)
     )
     return hookio.DENY

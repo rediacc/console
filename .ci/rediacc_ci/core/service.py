@@ -74,6 +74,7 @@ import time
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import ports
+from rediacc_ci.well_known import DOCKER_INSTALL_DOCS, WEB_IMAGE_REPO
 
 # `.ci/config/constants.sh:295-297`, verbatim. UNCONDITIONAL, with no tty test: see defect 2 in the module docstring. Named `COLOR_` rather than reusing `log.RED` so a reader grepping either file finds the same spelling.
 COLOR_RED = "\033[0;31m"
@@ -184,7 +185,7 @@ def docker_available() -> tuple[bool, list[str]]:
     if shutil.which("docker") is None:
         return False, [
             "Docker is not installed",
-            "Install Docker from: https://docs.docker.com/get-docker/",
+            ("Install Docker from: " + DOCKER_INSTALL_DOCS + "/"),
         ]
     probe = subprocess.run(["docker", "info"], capture_output=True, text=True, check=False)
     if probe.returncode != 0:
@@ -478,14 +479,16 @@ def service_start(args: list[str]) -> int:
         port = str(found)
 
     os.environ["SERVICE_HTTP_PORT"] = port
-    log.step("Starting rediacc/web service (port: %s)" % port)
+    log.step(("Starting " + WEB_IMAGE_REPO + " service (port: %s)") % port)
 
     source_env_sh(os.path.join(docker_dir(), "env.sh"))
 
     if skip_build:
         log.info("Skipping build (--no-build)")
     else:
-        log.step("Building rediacc/web:%s image..." % os.environ.get("SERVICE_TAG", ""))
+        log.step(
+            ("Building " + WEB_IMAGE_REPO + ":%s image...") % os.environ.get("SERVICE_TAG", "")
+        )
         _errexit(compose_argv(["build", "web"]))
 
     log.step("Starting services...")

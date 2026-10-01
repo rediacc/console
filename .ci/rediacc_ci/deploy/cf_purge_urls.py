@@ -29,7 +29,7 @@ THE HEADER'S "ALWAYS EXITS 0" CLAIM IS NOT TRUE, AND THE PORT REPRODUCES THE UNT
 TWO DIVERGENCES, BOTH IN TEXT THAT ONLY A HUMAN READS:
 
   1. `--zone` AS THE LAST ARGUMENT. The twin reads `"$2"` under `set -u`, so
-     bash itself refuses with `<path>: line 38: $2: unbound variable`, exit 1.
+     bash itself refuses with `<path>: line 44: $2: unbound variable`, exit 1.
      That message names the bash file and a bash line number; this port prints
      `MISSING_ZONE_VALUE` on stderr and exits 1. Same stream, same status. Same
      ruling as `deploy/wait_for_preview_worker.py` made for `${VAR:?}`.
@@ -50,6 +50,11 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
+from rediacc_ci.well_known import RELEASES_ORIGIN
+
+RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
+
 # The twin's own name, printed in every message it emits (:53, :66, :83, :104). A literal rather than argv[0], because the messages must stay byte-identical through the port and argv[0] here is a `.py` path.
 SELF = "cf-purge-urls.sh"
 
@@ -58,7 +63,7 @@ SELF = "cf-purge-urls.sh"
 BATCH_SIZE = 30
 
 # `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache` (:91).
-CF_API_BASE = "https://api.cloudflare.com/client/v4"
+CF_API_BASE = WK_CF_API_BASE
 
 # The `$2: unbound variable` stand-in named in divergence 1 above.
 MISSING_ZONE_VALUE = "cf-purge-urls.sh: --zone requires a value"
@@ -69,7 +74,8 @@ ALWAYS_EXITS_ZERO_IS_FALSE = True
 # `sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'` over the twin: its comment block
 # from line 2 to the first empty line, with one leading `# ` removed. Kept as
 # bytes here; the differential recomputes the extraction and compares.
-HELP = """Purge a list of URLs from Cloudflare cache.
+HELP = (
+    """Purge a list of URLs from Cloudflare cache.
 
 Usage:
   cf-purge-urls.sh --zone <ZONE_ID> url1 url2 ...
@@ -79,7 +85,9 @@ Auth (in order tried):
   1. $CLOUDFLARE_API_TOKEN  -> Authorization: Bearer
   2. $CF_GLOBAL_API_KEY + $CF_EMAIL -> X-Auth-Key + X-Auth-Email (global key)
 
-Why: releases.rediacc.com is an R2 bucket exposed via a CF custom domain.
+Why: """
+    + RELEASES_HOST
+    + """ is an R2 bucket exposed via a CF custom domain.
 Even when uploads now set Cache-Control: no-cache, any pre-existing CF
 edge-cache entry from before the fix persists with its original (default)
 TTL, so apt-get update fetches the fresh InRelease but the old cached
@@ -89,7 +97,9 @@ evicts those stale entries; the next request hits R2 origin (which now
 returns no-cache) and CF will not re-cache.
 
 Failure mode: purge is best-effort defence in depth -- the real fix
-against stale CF cache on releases.rediacc.com is the zone-level
+against stale CF cache on """
+    + RELEASES_HOST
+    + """ is the zone-level
 Cache Rule documented in .ci/docs/r2-setup.md. This script therefore
 always exits 0 even on credential/auth/API failures, and logs a
 ::warning:: so the CI run surfaces the issue without failing the job.
@@ -98,6 +108,7 @@ will still be visible as a warning and investigation can begin from
 there.
 
 """
+)
 
 
 class BashExitError(Exception):

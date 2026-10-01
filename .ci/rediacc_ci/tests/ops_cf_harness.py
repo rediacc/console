@@ -165,6 +165,7 @@ class World:
             "scripts/ops/apply-cf-redirect-rules.sh",
             "scripts/ops/lib/cf-auth.sh",
             ".ci/scripts/lib/common.sh",
+            ".ci/config/well-known.env",
         ):
             dest = self.root / rel
             dest.parent.mkdir(parents=True, exist_ok=True)

@@ -7,10 +7,11 @@ import json
 
 from rediacc_hooks import dispatch, guards
 from rediacc_hooks.tests import goldenio
+from rediacc_hooks.wellknown import CLAUDE_CODE_URL
 
 STEM = "block_commit_meta"
 # Assembled from parts: a source line spelling the footer out is itself one.
-FOOTER = "\U0001f916 " + "Generated " + "with [Claude Code](https://claude.com/claude-code)"
+FOOTER = "\U0001f916 " + "Generated " + ("with [Claude Code](" + CLAUDE_CODE_URL + ")")
 TRAILER = "Co-" + "Authored-By: Claude <noreply@anthropic.com>"
 CREATE = "gh pr " + "create"
 

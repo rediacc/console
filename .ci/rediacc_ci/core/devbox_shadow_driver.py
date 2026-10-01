@@ -86,6 +86,7 @@ import threading
 from typing import Any, Self, cast
 
 from rediacc_ci.core import devbox
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # The prefix `shadow-gate --finding-re '^obs '` is pointed at. Deliberately not a cross or a FAIL: those already mean "a finding" to the comparator's marker table, and an observation that AGREES is not a failure.
 OBS = "obs"
@@ -1052,7 +1053,11 @@ def create_rules(
         d.labels(route_labels(SLUG)),
         d.mounts(ALL_MOUNTS),
         rule(
-            *d.d, "image", "inspect", "--format", out="ghcr.io/rediacc/devcontainer@sha256:feed\n"
+            *d.d,
+            "image",
+            "inspect",
+            "--format",
+            out=(IMAGE_REGISTRY + "/devcontainer@sha256:feed\n"),
         ),
         rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
         rule("stat", out="993\n"),
@@ -1441,7 +1446,7 @@ def image_steps() -> list[Step]:
         Step(
             "digest",
             "devbox_image_digest",
-            rules=[rule(*digest, out="ghcr.io/rediacc/devcontainer@sha256:0123\n")],
+            rules=[rule(*digest, out=(IMAGE_REGISTRY + "/devcontainer@sha256:0123\n"))],
         ),
         Step("digest-fail", "devbox_image_digest", rules=[rule(*digest, rc=1)]),
         Step("digest-partial", "devbox_image_digest", rules=[rule(*digest, out="partial\n", rc=1)]),

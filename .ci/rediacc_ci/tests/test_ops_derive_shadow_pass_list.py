@@ -48,6 +48,8 @@ PORT_REL = ".ci/rediacc_ci/ops/derive_shadow_pass_list.py"
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/ops/__init__.py",
 )
 

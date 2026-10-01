@@ -18,6 +18,8 @@ import dataclasses
 import importlib
 import sys
 
+from rediacc_ci.well_known import WEB_IMAGE_REPO
+
 # How this program is spelled in its own messages. `./run.sh <verb>` is what a person actually types for a ported verb, but a message naming run.sh would be wrong for the verbs reached directly (and for `run.sh`'s own error paths), so the module form is used and run.sh is named in the help text instead.
 PROGRAM = "python3 -m rediacc_ci"
 
@@ -54,7 +56,7 @@ VERBS: tuple[Verb, ...] = (
     ),
     Verb(
         name="service",
-        summary="start | stop | status | logs for rediacc/web and RustFS",
+        summary=("start | stop | status | logs for " + WEB_IMAGE_REPO + " and RustFS"),
         module="rediacc_ci.core.run_verbs",
         entry="service_main",
     ),

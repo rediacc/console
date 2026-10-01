@@ -99,6 +99,11 @@ def build_fixture_tree(gate, root: pathlib.Path) -> None:
     shutil.copy2(GATE, root / ".ci" / "scripts" / "ci" / GATE.name)
     for lib in sorted(paths.from_root(".ci", "scripts", "lib").glob("*.sh")):
         shutil.copy2(lib, root / ".ci" / "scripts" / "lib" / lib.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        paths.from_root(".ci", "config", "well-known.env"),
+        root / ".ci" / "config" / "well-known.env",
+    )
 
     for rel in DECLARED_INPUTS:
         target = root / rel
@@ -373,6 +378,11 @@ def closure_fixture(gate, resolver_body: str | None = None):
         shutil.copy2(GATE, ci_dir / "ci" / GATE.name)
         for lib in sorted(paths.from_root(".ci", "scripts", "lib").glob("*.sh")):
             shutil.copy2(lib, ci_dir / "lib" / lib.name)
+        (tmp / ".ci" / "config").mkdir(parents=True)
+        shutil.copy2(
+            paths.from_root(".ci", "config", "well-known.env"),
+            tmp / ".ci" / "config" / "well-known.env",
+        )
         resolver_copy = ci_dir / "version" / RESOLVER.name
         if resolver_body is None:
             shutil.copy2(RESOLVER, resolver_copy)

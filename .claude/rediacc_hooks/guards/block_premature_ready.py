@@ -7,6 +7,7 @@ as well as an unset one, and empty is precisely what the network path yields whe
 """
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 25
@@ -46,17 +47,17 @@ READY_GRAPHQL_MESSAGE = (
 )
 
 EDGE_CASES = [
-    ("the flip this guard gates", "gh pr ready 42 --repo rediacc/console"),
+    ("the flip this guard gates", ("gh pr ready 42 --repo " + GH_REPO)),
     ("the flip with no selector at all", "gh pr ready"),
     # --undo can only push a PR back to draft, so it is always safe.
-    ("an undo is always allowed", "gh pr ready --undo 42 --repo rediacc/console"),
+    ("an undo is always allowed", ("gh pr ready --undo 42 --repo " + GH_REPO)),
     # ...and it must belong to THIS invocation, not to a sibling.
     ("an undo followed by a real flip", "gh pr ready --undo 1; gh pr ready 531"),
     # Only console has draft PRs, so a --repo elsewhere is a no-op flip.
-    ("a flip on a private submodule repo", "gh pr ready 42 --repo rediacc/renet"),
+    ("a flip on a private submodule repo", ("gh pr ready 42 --repo " + RENET_REPO)),
     (
         "a sibling view must not donate its repo",
-        "gh pr view 1 --repo rediacc/renet; gh pr ready 531",
+        ("gh pr view 1 --repo " + RENET_REPO + "; gh pr ready 531"),
     ),
     ("a different pr subcommand", "gh pr view 42"),
     ("prose naming the command", "echo '; gh pr ready is hook-gated'"),
@@ -119,7 +120,7 @@ def run(ev):
 
         # Only console has draft PRs (free plan, public repo). A --repo pointing elsewhere is a no-op flip; let gh handle it.
         repo = shellscan.target_repo(seg, scan, cwd)
-        if repo != "rediacc/console":
+        if repo != GH_REPO:
             continue
 
         # PR selector: first bare number/URL/branch token after `ready`, else the session cwd's current branch (matching gh's own default resolution).
@@ -136,7 +137,7 @@ def run(ev):
                 "view",
                 sel,
                 "--repo",
-                "rediacc/console",
+                GH_REPO,
                 "--json",
                 "statusCheckRollup",
                 "--jq",

@@ -106,6 +106,8 @@ from typing import Any
 
 from rediacc_ci import log
 from rediacc_ci.core import release_age
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT, IMAGE_REGISTRY
+from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
 
 # The DNS-label cap `${s:0:40}` applies. `.ci/lib/devbox.sh:195`. Well under the 63 a label allows, because the slug also gets a `-code` / `-account` / `-db` / `-term` suffix before it becomes a hostname.
 SLUG_MAX = 40
@@ -140,9 +142,9 @@ UNBOUND_STATUS = 1
 # --------------------------------------------------------------------------- the constants `.ci/config/constants.sh:123-157` defines ---------------------------------------------------------------------------
 # COPIED, NOT READ, and `test_core_devbox.py::test_the_constants_match_constants_sh` parses the `readonly` lines of that file on every run and fails on any drift. Reading them at import would mean parsing bash from Python at every call; copying them and checking the copy is the pattern `account.py` set.
 
-DEVBOX_IMAGE = "ghcr.io/rediacc/devcontainer:latest"
+DEVBOX_IMAGE = IMAGE_REGISTRY + "/devcontainer:latest"
 # The LOCAL repository of the per-operator derived image (`.devcontainer/Dockerfile.uid`): the base with `vscode` renumbered to the host's ids. Deliberately not a ghcr.io/ name, so a derived tag can never be mistaken for something to push.
-DEVBOX_UID_IMAGE_REPO = "rediacc/devbox"
+DEVBOX_UID_IMAGE_REPO = WK_DEVBOX_UID_IMAGE_REPO
 DEVBOX_PORT_RANGE_START = 17000
 DEVBOX_PORT_RANGE_END = 17999
 DEVBOX_PORT_BLOCK = 10
@@ -2081,7 +2083,7 @@ class Devbox:
             "-e",
             "REDIACC_DEV_BIND=0.0.0.0",
             "-e",
-            "REDIACC_DEV_PORT_BASE=4800",
+            "REDIACC_DEV_PORT_BASE=%d" % ACCOUNT_DEV_PORT,
             "-w",
             workspace,
             "--entrypoint",

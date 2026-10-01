@@ -27,6 +27,7 @@ import pathlib
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 ENGINE = paths.from_root(".ci", "scripts", "ci", "scope-engine.cjs")
 MAP = paths.from_root(".ci", "scripts", "ci", "scope-map.cjs")
@@ -34,7 +35,8 @@ RECONCILE = paths.from_root(".ci", "scripts", "ci", "skip-plan-reconcile.cjs")
 # The scope shadow SUBJECT, which since W7P5 batch M6 is the module rather than the retired `.ci/scripts/ci/scope-shadow.sh`.
 SHADOW = paths.from_root(".ci", "rediacc_ci", "ci", "scope_shadow.py")
 
-HARNESS_JS = r"""'use strict';
+HARNESS_JS = (
+    r"""'use strict';
 const fs = require('fs');
 const path = require('path');
 
@@ -224,7 +226,9 @@ if (mutation) new Function('f', 'basePlan', 'healthyJobs', mutation)(f, basePlan
 const calls = [];
 const io = engine.createRepoIo({
   repoRoot: '/nonexistent-by-design',
-  repo: 'rediacc/console',
+  repo: '"""
+    + GH_REPO
+    + r"""',
   branch: f.branch,
   run: makeRun(f, calls),
 });
@@ -260,6 +264,7 @@ process.stdout.write(
     2,
   )}\n`,
 )"""
+)
 
 
 class Scenario:

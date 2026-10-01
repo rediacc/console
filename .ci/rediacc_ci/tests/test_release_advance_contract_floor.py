@@ -41,6 +41,7 @@ PACKAGE_FILES = (
     "__init__.py",
     "log.py",
     "paths.py",
+    "well_known.py",
     "core/__init__.py",
     "core/release_state_validator.py",
     "release/__init__.py",
@@ -91,6 +92,9 @@ def _fixture(tmp_path: pathlib.Path, floor_text: str | None) -> pathlib.Path:
     (fix / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (fix / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(TWIN, fix / ".ci" / "scripts" / "release" / TWIN.name)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", fix / ".ci" / "config" / "well-known.env"
+    )
     for lib in ("common.sh", "release-state-validator.sh"):
         shutil.copy2(ROOT / ".ci" / "scripts" / "lib" / lib, fix / ".ci" / "scripts" / "lib" / lib)
     for rel in PACKAGE_FILES:

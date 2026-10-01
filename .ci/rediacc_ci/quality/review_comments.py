@@ -130,6 +130,7 @@ import sys
 import time
 
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
 
 # Patterns for low-effort replies that don't count as real responses. These are
 # case-insensitive and match the entire reply (with optional punctuation).
@@ -365,7 +366,7 @@ def main(argv: list[str] | None = None) -> int:
         print("PR_NUMBER not set - skipping review comments check (not a pull request)")
         return 0
 
-    repo = os.environ.get("GITHUB_REPOSITORY") or "rediacc/console"
+    repo = os.environ.get("GITHUB_REPOSITORY") or GH_REPO
 
     print("Checking review comments for PR #%s..." % pr_number)
 
@@ -490,7 +491,7 @@ def main(argv: list[str] | None = None) -> int:
         print("  # NOT /pulls/comments/{COMMENT_ID}/replies (this will return 404)")
         print()
         print("Or reply directly on GitHub:")
-        print("  https://github.com/%s/pull/%s" % (repo, pr_number))
+        print(("  " + GH_ORIGIN + "/%s/pull/%s") % (repo, pr_number))
         print("------------------------------------------------------------")
 
     if summary_unaddressed:
@@ -499,7 +500,7 @@ def main(argv: list[str] | None = None) -> int:
         print("UNANSWERED REVIEW SUMMARY (1):")
         print()
         print("  - comment %s by @%s, posted %s" % (summary_id, summary_author, summary_created))
-        print("    https://github.com/%s/pull/%s#issuecomment-%s" % (repo, pr_number, summary_id))
+        print(("    " + GH_ORIGIN + "/%s/pull/%s#issuecomment-%s") % (repo, pr_number, summary_id))
         print('    "%s..."' % summary_head)
         print()
         print("------------------------------------------------------------")
@@ -556,7 +557,7 @@ def main(argv: list[str] | None = None) -> int:
         print("  #     overwrite the review, not answer it.")
         print()
         print("Or comment directly on GitHub:")
-        print("  https://github.com/%s/pull/%s#issuecomment-%s" % (repo, pr_number, summary_id))
+        print(("  " + GH_ORIGIN + "/%s/pull/%s#issuecomment-%s") % (repo, pr_number, summary_id))
         print("------------------------------------------------------------")
 
     return 1 if has_issues else 0

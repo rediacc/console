@@ -21,6 +21,7 @@ import stat
 from typing import TYPE_CHECKING
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -107,7 +108,7 @@ def _ok_env(**over: str) -> dict[str, str]:
     env = {
         "VERSION": "1.2.3",
         "CI_RUN_ID": "1234567890",
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "GH_TOKEN": "fake-token",
     }
     env.update(over)

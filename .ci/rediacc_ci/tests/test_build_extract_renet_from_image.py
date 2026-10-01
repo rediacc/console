@@ -32,6 +32,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import extract_renet_from_image as port
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -41,12 +42,15 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/build/extract-renet-from-image.sh"
 PORT_REL = ".ci/rediacc_ci/build/extract_renet_from_image.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 LOCKFILE_REL = "private/renet/embed-assets.lock.json"
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/build/__init__.py",
@@ -208,9 +212,9 @@ def fixture(
     stale_zst: bool = False,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -442,8 +446,10 @@ def test_a_flag_with_no_value_dies_the_way_set_u_does(tmp_path) -> None:
 def test_the_registry_defaults_and_can_be_overridden(tmp_path) -> None:
     root = fixture(tmp_path)
     old_t, new_t = run_both(root)
-    assert "Extracting renet binaries from ghcr.io/rediacc/renet:abc1234" in old_t[0].stderr
-    assert _calls(old_t[1], "docker")[0][1:] == ["create", "ghcr.io/rediacc/renet:abc1234"]
+    assert ("Extracting renet binaries from " + IMAGE_REGISTRY + "/renet:abc1234") in old_t[
+        0
+    ].stderr
+    assert _calls(old_t[1], "docker")[0][1:] == ["create", (IMAGE_REGISTRY + "/renet:abc1234")]
     _agree(old_t, new_t, "default-registry")
 
     old2_t, new2_t = run_both(root, args=("--tag", "v9", "--registry", "registry.example/team"))

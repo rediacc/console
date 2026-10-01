@@ -65,6 +65,7 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import devbox
+from rediacc_ci.well_known import GO_DL_BASE
 
 # `.ci/lib/local-common.sh:65`. `-path` in find is plain fnmatch: `*` crosses `/`, which is what makes a bare `*/dist/*` prune everything under any `dist` below the start point.
 PRUNE_PATH_GLOBS = ("*/dist/*", "*/node_modules/*", "*/reports/*", "*/test-results/*")
@@ -927,7 +928,7 @@ def check_go_installed() -> None:
     found = shutil.which("go")
     if found is None:
         log.error("Go is not installed (required for building renet)")
-        log.info("Install Go from: https://go.dev/dl/")
+        log.info("Install Go from: " + GO_DL_BASE + "/")
         raise LocalCommonError("go is not installed", code=1)
     log.debug("Go present: %s" % found)
 
@@ -971,7 +972,7 @@ def ensure_go_installed(env: dict[str, str] | None = None) -> bool:
 
     if _uname("-s") != "Linux":
         log.error("Go %s is required and this helper only installs it on Linux" % want)
-        log.info("Install it from https://go.dev/dl/ and re-run")
+        log.info("Install it from " + GO_DL_BASE + "/ and re-run")
         return False
 
     machine = _uname("-m")
@@ -984,7 +985,7 @@ def ensure_go_installed(env: dict[str, str] | None = None) -> bool:
         return False
 
     tarball = "go%s.linux-%s.tar.gz" % (want, arch)
-    url = "https://go.dev/dl/%s" % tarball
+    url = (GO_DL_BASE + "/%s") % tarball
     tmp = _subst(_capture(["mktemp", "-d"]).stdout)
     download = os.path.join(tmp, tarball)
 

@@ -22,6 +22,7 @@ import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 CHECK = paths.from_root(".ci", "scripts", "security", "check-workflow-gates.sh")
 
@@ -148,15 +149,19 @@ def ec_fixture(d: pathlib.Path) -> pathlib.Path:
         encoding="utf-8",
     )
     (root / "private" / "acct" / ".github" / "workflows" / "review.yml").write_text(
-        "name: caller\n"
-        "on: push\n"
-        "jobs:\n"
-        "  c:\n"
-        "    uses: rediacc/console/.github/workflows/callee.yml@main\n"
-        "    with:\n"
-        "      target: x\n"
-        "    secrets:\n"
-        "      TOKEN: ${{ secrets.TOKEN }}\n",
+        (
+            "name: caller\n"
+            "on: push\n"
+            "jobs:\n"
+            "  c:\n"
+            "    uses: "
+            + GH_REPO
+            + "/.github/workflows/callee.yml@main\n"
+            + "    with:\n"
+            + "      target: x\n"
+            + "    secrets:\n"
+            + "      TOKEN: ${{ secrets.TOKEN }}\n"
+        ),
         encoding="utf-8",
     )
     (root / "registry.yml").write_text(
@@ -564,14 +569,18 @@ def a3_fixture(d: pathlib.Path) -> pathlib.Path:
         encoding="utf-8",
     )
     (root / "private" / "acct" / ".github" / "workflows" / "review.yml").write_text(
-        "name: caller\n"
-        "on: push\n"
-        "jobs:\n"
-        "  c:\n"
-        "    uses: rediacc/console/.github/workflows/claude-review-reusable.yml@main\n"
-        "    secrets:\n"
-        "      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: "
-        "${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}\n",
+        (
+            "name: caller\n"
+            "on: push\n"
+            "jobs:\n"
+            "  c:\n"
+            "    uses: "
+            + GH_REPO
+            + "/.github/workflows/claude-review-reusable.yml@main\n"
+            + "    secrets:\n"
+            + "      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: "
+            + "${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}\n"
+        ),
         encoding="utf-8",
     )
     (root / "registry.yml").write_text(
@@ -658,13 +667,17 @@ def test_a3_pinned_but_unexempted_is_reported(gate, tmp_path):
         encoding="utf-8",
     )
     (root / "private" / "acct" / ".github" / "workflows" / "other-caller.yml").write_text(
-        "name: other-caller\n"
-        "on: push\n"
-        "jobs:\n"
-        "  c:\n"
-        "    uses: rediacc/console/.github/workflows/other.yml@main\n"
-        "    secrets:\n"
-        "      UNUSED_TOKEN: ${{ secrets.UNUSED_TOKEN }}\n",
+        (
+            "name: other-caller\n"
+            "on: push\n"
+            "jobs:\n"
+            "  c:\n"
+            "    uses: "
+            + GH_REPO
+            + "/.github/workflows/other.yml@main\n"
+            + "    secrets:\n"
+            + "      UNUSED_TOKEN: ${{ secrets.UNUSED_TOKEN }}\n"
+        ),
         encoding="utf-8",
     )
     with (root / "registry.yml").open("a", encoding="utf-8") as fh:

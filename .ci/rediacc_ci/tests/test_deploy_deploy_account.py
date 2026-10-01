@@ -92,6 +92,10 @@ def _fixture_root(tmp_path: pathlib.Path, *, configs: dict[str, str] | None = No
     worker = root / "workers" / "account"
     worker.mkdir(parents=True, exist_ok=True)
     shutil.copy2(COMMON_SH, root / ".ci" / "scripts" / "lib" / COMMON_SH.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     for name, body in (configs or {"wrangler.eu.toml": FIXTURE_TOML}).items():
         (worker / name).write_text(body, encoding="utf-8")

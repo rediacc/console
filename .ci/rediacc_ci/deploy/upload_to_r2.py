@@ -105,13 +105,14 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The twin's own name. Used for nothing the twin prints (it prints `$0`), only
 # for this port's own refusals, which the twin has no analogue for.
 SELF = "upload-to-r2.sh"
 
 # `.ci/config/constants.sh:201` and `:213`. Restated rather than sourced, for the reason in the docstring, and pinned against constants.sh by a staleness alarm.
-BUCKET_DEFAULT = "rediacc-releases"
+BUCKET_DEFAULT = RELEASES_BUCKET
 MAX_RELEASE_VERSIONS = 20
 
 # `CACHE_CONTROL_MUTABLE` / `CACHE_CONTROL_IMMUTABLE` (:176-177). The immutable policy is legitimate HERE, unlike in `upload-repos-to-r2.sh`, because the URL itself carries the version: `cli/v1.2.3/rdc-linux-x64` never serves other bytes.

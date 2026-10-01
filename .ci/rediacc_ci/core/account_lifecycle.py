@@ -55,6 +55,7 @@ import threading
 
 from rediacc_ci import log
 from rediacc_ci.core import account, env, local_common, ports
+from rediacc_ci.well_known import DEV_USER_EMAIL as WK_DEV_USER_EMAIL
 
 # `ACCOUNT_PIDS`, `.ci/lib/account.sh:39`: every background process `account_dev` starts, killed by `account_cleanup`.
 PIDS: list[int] = []
@@ -65,7 +66,7 @@ RUSTFS_PORT = 9100
 
 # `.ci/lib/account.sh:524-526`.
 DEFAULT_ROOT_EMAIL = "root@rediacc.dev"
-DEV_USER_EMAIL = "dev-user@rediacc.io"
+DEV_USER_EMAIL = WK_DEV_USER_EMAIL
 DEV_PARTNER_EMAIL = "dev-partner@rediacc.io"
 # `.ci/lib/account.sh:558`. A CONSTANT on purpose: an idempotent re-seed cannot re-wrap the CEK without the prior password.
 STORE_PASSWORD = "DevConsole123!"  # noqa: S105 -- the twin's published dev constant, printed in the banner

@@ -90,6 +90,7 @@ import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -130,14 +131,19 @@ A_NON_PR_NAME_IS_ACCEPTED_VERBATIM = True
 # THE U+2014 ON THE `trailingSlash` COMMENT IS THE TWIN'S, written as an escape rather than as the character itself, for the reason in the module docstring. THE BACKTICKS on the `trailingSlash` line are `\`` in the twin's UNQUOTED heredoc, which bash renders as bare backticks; there is no command substitution in the emitted bytes.
 #
 # `%s` three times, in the twin's order: the worker name, then the database name and its UUID at the bottom.
-PREVIEW_TOML = """name = "%s"
+PREVIEW_TOML = (
+    """name = "%s"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
 [vars]
-ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
+ALLOWED_EMAIL_DOMAINS = \""""
+    + APEX_DOMAIN
+    + ""","""
+    + INFRA_DOMAIN
+    + """\"
 # Must be set explicitly. envSchema defaults ENVIRONMENT to "production", so an
 # unset value here made every preview worker report environment "production" and
 # hand out updateChannel "stable" -- while the install.sh this same worker serves
@@ -173,6 +179,7 @@ database_name = "%s"
 database_id = "%s"
 migrations_dir = "../../private/account/drizzle"
 """
+)
 
 
 def strip_newlines(token: str) -> str:

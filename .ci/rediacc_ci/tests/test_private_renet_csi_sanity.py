@@ -27,6 +27,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "renet-csi-sanity.sh"
@@ -86,7 +87,7 @@ GOOD_TRANSCRIPT = (
     b"SUCCESS! -- 48 Passed | 0 Failed | 0 Pending | 2 Skipped\n"
     b"--- PASS: TestCSISanity (61.24s)\n"
     b"PASS\n"
-    b"ok\tgithub.com/rediacc/renet/pkg/kubecsi\t61.300s\n"
+    b"ok\tgithub.com/" + RENET_REPO.encode() + b"/pkg/kubecsi\t61.300s\n"
 )
 
 SHELL_PREFIX = re.compile(r"^[^\n]*?: line \d+: ", re.MULTILINE)
@@ -111,6 +112,10 @@ def _fixture(tmp_path: pathlib.Path, *, renet: bool = True) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
     shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / PORT_REL)
     if renet:
         (root / "private" / "renet" / "pkg" / "kubecsi").mkdir(parents=True)
@@ -255,7 +260,7 @@ CASES = [
     ),
     pytest.param(
         {},
-        {"go_out": b"PASS\nok\tgithub.com/rediacc/renet/pkg/kubecsi\t0.1s\n"},
+        {"go_out": b"PASS\nok\tgithub.com/" + RENET_REPO.encode() + b"/pkg/kubecsi\t0.1s\n"},
         {},
         id="no-ginkgo-summary-line-at-all",
     ),

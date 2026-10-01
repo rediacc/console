@@ -80,9 +80,10 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # `:17`.
-DEFAULT_REGISTRY = "ghcr.io/rediacc"
+DEFAULT_REGISTRY = IMAGE_REGISTRY
 
 # `:68`, `:71`. The two binaries that come straight out of `/opt/renet/`.
 RENET_LINUX_BINARIES = ("renet-linux-amd64", "renet-linux-arm64")

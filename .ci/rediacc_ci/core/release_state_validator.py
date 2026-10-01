@@ -139,9 +139,10 @@ import subprocess
 import sys
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 # `RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"` (release-state-validator.sh:72).
-DEFAULT_BUCKET = "rediacc-releases"
+DEFAULT_BUCKET = RELEASES_BUCKET
 
 # `RSV_SENTINEL_KEY=".released"` (:73). The commit marker, written LAST.
 SENTINEL_KEY = ".released"

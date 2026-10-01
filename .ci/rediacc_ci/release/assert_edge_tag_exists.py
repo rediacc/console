@@ -70,6 +70,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
 SELF = "assert-edge-tag-exists.py"
 
@@ -81,8 +82,8 @@ VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$")
 
 # `${GITHUB_REPOSITORY:-rediacc/console}` (:92) and
 # `${RELEASES_BUCKET:-rediacc-releases}` (:93). `:-` fires on unset OR empty.
-DEFAULT_REPO = "rediacc/console"
-DEFAULT_BUCKET = "rediacc-releases"
+DEFAULT_REPO = GH_REPO
+DEFAULT_BUCKET = RELEASES_BUCKET
 
 # The three environment variables `${VAR:?...}` demands, IN THE TWIN'S ORDER
 # (:82-84). Order is observable: only the first missing one is ever named.

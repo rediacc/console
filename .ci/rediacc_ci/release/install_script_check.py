@@ -58,6 +58,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, RELEASES_ORIGIN, SITE_ORIGIN
 
 INSTALL_SH_REL = "packages/www/public/install.sh"
 
@@ -91,8 +92,10 @@ PRESENT_CONFIG = (
 
 CONFIG_WITH_EDGE = (
     '{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,'
-    '"encryption":{"mode":"plaintext"},"account":{"accountServer":"https://eu.rediacc.com",'
-    '"updateChannel":"edge"}}\n'
+    '"encryption":{"mode":"plaintext"},"account":{"accountServer":"'
+    + ACCOUNT_DEFAULT_ORIGIN
+    + '",'
+    + '"updateChannel":"edge"}}\n'
 )
 
 CONFIG_EDGE_NO_SERVER = (
@@ -102,8 +105,10 @@ CONFIG_EDGE_NO_SERVER = (
 
 CONFIG_NO_CHANNEL = (
     '{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,'
-    '"encryption":{"mode":"plaintext"},"account":{"accountServer":"https://eu.rediacc.com",'
-    '"region":"eu"}}\n'
+    '"encryption":{"mode":"plaintext"},"account":{"accountServer":"'
+    + ACCOUNT_DEFAULT_ORIGIN
+    + '",'
+    + '"region":"eu"}}\n'
 )
 
 
@@ -210,8 +215,12 @@ def test_write_install_config_default_noop(sh: Shell) -> None:
     home = sh.fresh_home()
     sh.run(
         home,
-        "CHANNEL=stable SERVER_URL='' RELEASES_URL=https://releases.rediacc.com "
-        "write_install_config >/dev/null 2>&1 || true\n",
+        (
+            "CHANNEL=stable SERVER_URL='' RELEASES_URL="
+            + RELEASES_ORIGIN
+            + " "
+            + "write_install_config >/dev/null 2>&1 || true\n"
+        ),
     )
     config = _config(home)
     if config.is_file():
@@ -231,8 +240,12 @@ def test_write_install_config_channel_only(sh: Shell) -> None:
     home = sh.fresh_home()
     sh.run(
         home,
-        "CHANNEL=edge SERVER_URL='' RELEASES_URL=https://releases.rediacc.com "
-        "write_install_config >/dev/null 2>&1\n",
+        (
+            "CHANNEL=edge SERVER_URL='' RELEASES_URL="
+            + RELEASES_ORIGIN
+            + " "
+            + "write_install_config >/dev/null 2>&1\n"
+        ),
     )
     config = _config(home)
     if not config.is_file():
@@ -240,7 +253,7 @@ def test_write_install_config_channel_only(sh: Shell) -> None:
     body = config.read_text(encoding="utf-8").rstrip("\n")
     if '"updateChannel":"edge"' not in body:
         log_fail("updateChannel field not edge: %s" % body)
-    if '"accountServer":"https://www.rediacc.com"' not in body:
+    if ('"accountServer":"' + SITE_ORIGIN + '"') not in body:
         log_fail("accountServer should default to production: %s" % body)
     # The absent-file branch must produce a valid minimal v3 config, not a bare account blob -- the CLI parses this file directly.
     if '"schemaVersion":3' not in body:
@@ -293,9 +306,14 @@ def test_write_install_config_present_no_jq_untouched(sh: Shell) -> None:
     shim = build_nojq_shim(sh.temp)
     out = sh.run(
         home,
-        'out="$(PATH="%s" CHANNEL=edge SERVER_URL="" '
-        'RELEASES_URL=https://releases.rediacc.com write_install_config 2>&1 || true)"\n'
-        "printf '%%s' \"$out\"\n" % shim,
+        (
+            'out="$(PATH="%s" CHANNEL=edge SERVER_URL="" '
+            "RELEASES_URL="
+            + RELEASES_ORIGIN
+            + ' write_install_config 2>&1 || true)"\n'
+            + "printf '%%s' \"$out\"\n"
+        )
+        % shim,
     )
     after = config.read_text(encoding="utf-8")
     if before != after:

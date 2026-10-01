@@ -19,6 +19,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 GATE_SRC = paths.from_root(".ci", "scripts", "release", "verify-artifact-attestation.sh")
 COMMON_SRC = paths.from_root(".ci", "scripts", "lib", "common.sh")
@@ -34,6 +35,11 @@ class Fixture:
         self.script = root / ".ci" / "scripts" / "release" / GATE_SRC.name
         shutil.copy(GATE_SRC, self.script)
         shutil.copy(COMMON_SRC, root / ".ci" / "scripts" / "lib" / COMMON_SRC.name)
+        (root / ".ci" / "config").mkdir(parents=True)
+        shutil.copy(
+            paths.from_root(".ci", "config", "well-known.env"),
+            root / ".ci" / "config" / "well-known.env",
+        )
         self.output = ""
 
     def artifacts(self, *relatives: str) -> None:
@@ -66,7 +72,7 @@ class Fixture:
             [str(self.script)],
             env={
                 "PATH": "%s:%s" % (bindir, os.environ.get("PATH", "")),
-                "GITHUB_REPOSITORY": "rediacc/console",
+                "GITHUB_REPOSITORY": GH_REPO,
                 "GH_TOKEN": "fake",  # a literal the fake gh never reads
             },
         )

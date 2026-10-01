@@ -39,6 +39,7 @@ import pytest
 from rediacc_ci.ci import dispatch_watchdog as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -78,7 +79,7 @@ TOOLS_WITHOUT_GH = (
     "uname",
 )
 
-BASE = {"GITHUB_REPOSITORY": "rediacc/console"}
+BASE = {"GITHUB_REPOSITORY": GH_REPO}
 
 BOOTSTRAP_TEXTS = (
     "workflow watchdog-monitor.yml not found on the default branch",
@@ -355,10 +356,14 @@ def test_an_explicit_head_ref_needs_no_lookup_at_all() -> None:
 
 def test_a_missing_head_ref_and_pr_number_are_resolved_from_the_run() -> None:
     assert recorded("both-lookups-are-made")[2] == (
-        'call: gh api repos/rediacc/console/actions/runs/123 --jq .head_branch // ""\n'
-        "call: gh api repos/rediacc/console/actions/runs/123 --jq "
-        '.pull_requests[0].number // ""\n'
-        "✓ Dispatched watchdog generation 1 for run 123 on ref mybranch\n"
+        "call: gh api repos/"
+        + GH_REPO
+        + '/actions/runs/123 --jq .head_branch // ""\n'
+        + "call: gh api repos/"
+        + GH_REPO
+        + "/actions/runs/123 --jq "
+        + '.pull_requests[0].number // ""\n'
+        + "✓ Dispatched watchdog generation 1 for run 123 on ref mybranch\n"
     )
 
 
@@ -373,7 +378,7 @@ def test_an_explicit_pr_number_skips_only_its_own_lookup() -> None:
 def test_an_empty_head_ref_from_the_api_falls_through_to_the_default_branch() -> None:
     """`.head_branch // ""` could legitimately answer empty; then arm two ran."""
     stderr = recorded("an-empty-head-ref-from-the-api")[2]
-    assert "call: gh api repos/rediacc/console --jq .default_branch\n" in stderr
+    assert ("call: gh api repos/" + GH_REPO + " --jq .default_branch\n") in stderr
     assert "on the default branch (head-ref copy unavailable)" in stderr
 
 
@@ -391,7 +396,7 @@ def test_defect_d_a_failed_default_branch_lookup_becomes_an_empty_ref() -> None:
     returncode, _, stderr = recorded("a-failed-default-branch-lookup")
     assert returncode == 1
     assert "--ref  -f target_run_id=1" in stderr, "the empty ref did not reach gh"
-    assert stderr.startswith("call: gh api repos/rediacc/console --jq .default_branch\n")
+    assert stderr.startswith("call: gh api repos/" + GH_REPO + " --jq .default_branch\n")
     assert "✗ Failed to dispatch watchdog generation 1 for run 1:" in stderr
     dispatch = next(line for line in stderr.split("\n") if "workflow run" in line)
     fields = [tok for tok in dispatch.split(" -f ") if "=" in tok]
@@ -608,7 +613,7 @@ def test_defect_f_a_failed_head_ref_lookup_ends_the_run_with_no_message() -> Non
     assert returncode == 4
     assert stdout == ""
     assert stderr == (
-        'call: gh api repos/rediacc/console/actions/runs/1 --jq .head_branch // ""\napi boom\n'
+        "call: gh api repos/" + GH_REPO + '/actions/runs/1 --jq .head_branch // ""\napi boom\n'
     )
     assert "✗" not in stderr
     assert "⚠" not in stderr

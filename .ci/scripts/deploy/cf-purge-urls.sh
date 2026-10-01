@@ -28,6 +28,12 @@
 # there.
 
 set -euo pipefail
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# The well-known API base; the same registry the Python port reads.
+set -a
+# shellcheck source=../../config/well-known.env
+. "$SCRIPT_DIR/../../config/well-known.env"
+set +a
 
 ZONE_ID=""
 URLS=()
@@ -88,7 +94,7 @@ while [[ $i -lt $TOTAL ]]; do
     BATCH=("${URLS[@]:$i:30}")
     PAYLOAD=$(printf '%s\n' "${BATCH[@]}" | jq -R . | jq -sc '{files: .}')
     RESPONSE=$(curl -sS -X POST \
-        "https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache" \
+        "$WK_CF_API_BASE/zones/${ZONE_ID}/purge_cache" \
         "${AUTH_HEADERS[@]}" \
         -H "Content-Type: application/json" \
         --data "$PAYLOAD")

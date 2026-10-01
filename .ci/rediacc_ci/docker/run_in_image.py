@@ -58,6 +58,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.core import release_age
+from rediacc_ci.well_known import WEB_IMAGE_REPO
 
 # How this program names itself in its own diagnostics. The twins used their own paths; a module has no such path, so the module name stands in.
 SELF = "run_in_image.py"
@@ -95,7 +96,7 @@ class Target:
 
 # THE TWO TOKENS THAT DIFFERED BETWEEN THE TWO TWINS, and the whole of what differed. `web` is the Astro plus agent-browser toolchain; `render` is Remotion plus chrome-headless-shell.
 TARGETS = (
-    Target("web", "rediacc/web:local", (".ci", "docker", "web"), npm_before=True),
+    Target("web", (WEB_IMAGE_REPO + ":local"), (".ci", "docker", "web"), npm_before=True),
     Target("render", "rediacc/render:local", (".ci", "docker", "render")),
 )
 

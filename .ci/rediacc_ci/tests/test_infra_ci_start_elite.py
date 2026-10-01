@@ -31,6 +31,7 @@ import tempfile
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-start-elite.sh"
@@ -145,6 +146,10 @@ def _fixture(
         _null_sleep_bash(TWIN.read_text(encoding="utf-8")), encoding="utf-8"
     )
     shutil.copy2(CI_ENV, root / ".ci" / "scripts" / "infra" / CI_ENV.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     (root / ".ci" / "rediacc_ci" / "infra" / PORT.name).write_text(
         _null_sleep_python(
             port_source if port_source is not None else PORT.read_text(encoding="utf-8")
@@ -276,7 +281,7 @@ def test_the_fakes_are_actually_reached() -> None:
         assert "curl" in verbs, "the health endpoint was never probed: %r" % verbs
         assert "docker" in verbs, "docker ps was never run: %r" % verbs
         assert written is not None, "no .env was written at all"
-        assert "DOCKER_REGISTRY=ghcr.io/rediacc" in written, (
+        assert ("DOCKER_REGISTRY=" + IMAGE_REGISTRY) in written, (
             "the .env was not written from ci-env.sh's exported values: %r" % written
         )
 

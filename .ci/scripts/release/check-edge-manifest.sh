@@ -29,7 +29,7 @@ require_cmd curl
 require_cmd jq
 : "${GITHUB_OUTPUT:?check-edge-manifest.sh: GITHUB_OUTPUT must be set}"
 
-EDGE_MANIFEST=$(curl -sf "https://releases.rediacc.com/cli/edge/manifest.json" || echo "")
+EDGE_MANIFEST=$(curl -sf "$WK_RELEASES_ORIGIN/cli/edge/manifest.json" || echo "")
 if [[ -z "$EDGE_MANIFEST" ]]; then
     echo "No edge manifest found, skipping"
     echo "skip=true" >>"$GITHUB_OUTPUT"

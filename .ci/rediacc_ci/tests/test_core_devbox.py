@@ -616,18 +616,6 @@ def test_the_twin_is_still_sourced_and_nothing_is_cut_over() -> None:
         assert needle in (root / relative).read_text(encoding="utf-8"), relative
 
 
-def test_the_constants_match_constants_sh() -> None:
-    """The port COPIES `.ci/config/constants.sh`'s DEVBOX_* values; this reads the file and fails on any drift."""
-    text = (paths.repo_root() / CONSTANTS).read_text(encoding="utf-8")
-    declared = dict(re.findall(r'^readonly (DEVBOX_[A-Z_]+)="?([^"\s]*)"?', text, re.MULTILINE))
-    assert len(declared) >= 12, "constants.sh declares only %d DEVBOX_ value(s)" % len(declared)
-    for name, value in declared.items():
-        if name == "DEVBOX_STATE_FILE":
-            assert value == "$CONSOLE_ROOT_DIR/" + devbox.DEVBOX_STATE_NAME
-            continue
-        assert str(getattr(devbox, name)) == value, "%s is %r in constants.sh" % (name, value)
-
-
 def test_the_pure_three_reach_nothing_but_their_arguments() -> None:
     """The first slice's purity claim, kept for the three that ARE pure, with the side-effecting class as the other-direction control."""
     tree = ast.parse((paths.repo_root() / PORT).read_text(encoding="utf-8"))

@@ -85,17 +85,18 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # `echo "===...==="`, 70 columns. Measured off the twin rather than eyeballed.
 RULE = "=" * 70
 BANNER = "  Pre-pulling Docker images with temporary authentication..."
 
 # `${DOCKER_REGISTRY:-ghcr.io/rediacc}` and `${TAG:-latest}` (lines 40-43).
-DEFAULT_REGISTRY = "ghcr.io/rediacc"
+DEFAULT_REGISTRY = IMAGE_REGISTRY
 DEFAULT_TAG = "latest"
 
 # Line 54, hard-coded and NOT `$DOCKER_REGISTRY`. See the wart above.
-SERVER_REPO = "ghcr.io/rediacc/server"
+SERVER_REPO = IMAGE_REGISTRY + "/server"
 
 # The registry `docker login` / `docker logout` name. A bare host, no path.
 REGISTRY_HOST = "ghcr.io"

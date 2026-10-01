@@ -24,6 +24,7 @@ import json
 import subprocess
 
 from rediacc_hooks.tests import corpus
+from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO, RENET_REPO
 
 ROOT = corpus.repo_root()
 HOOKS = ROOT / ".claude" / "hooks"
@@ -667,7 +668,7 @@ STATIC: list[Case] = [
     # identical push through. Command strings are CONCATENATED on purpose: the guard matches any Bash command containing these literals, including the one that edits this file.
     case(
         "check 2 guards/block_git_force_push.py",
-        bash_json("git push --mirror https://github.com/rediacc/console.git"),
+        bash_json(("git push --mirror " + GH_ORIGIN + "/") + GH_REPO + ".git"),
         "force-push: --mirror is a force of every ref",
     ),
     case(
@@ -1108,14 +1109,22 @@ STATIC: list[Case] = [
     case(
         "check 2 guards/block_nondraft_pr_create.py",
         bash_json(
-            "gh pr create --draft --repo rediacc/console -t x; gh pr create --repo rediacc/console -t y"
+            "gh pr create --draft --repo "
+            + GH_REPO
+            + " -t x; gh pr create --repo "
+            + GH_REPO
+            + " -t y"
         ),
         "nondraft-create: second create on the line is judged too (no --draft donation)",
     ),
     case(
         "check 2 guards/block_nondraft_pr_create.py",
         bash_json(
-            "gh pr create --draft --repo rediacc/console -t x; gh pr create --draft --repo rediacc/renet -t y"
+            "gh pr create --draft --repo "
+            + GH_REPO
+            + " -t x; gh pr create --draft --repo "
+            + RENET_REPO
+            + " -t y"
         ),
         "nondraft-create: draft-on-private caught in the second segment (no --repo donation)",
     ),
@@ -1382,7 +1391,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_nondraft_pr_create.py",
-        bash_json("gh pr list --repo rediacc/console"),
+        bash_json("gh pr list --repo " + GH_REPO),
         "nondraft-create: non-create command ignored",
     ),
     case(
@@ -1461,7 +1470,7 @@ STATIC: list[Case] = [
     # Round-46 cross-attribution, the exact live firing: a sibling `gh pr view` donated its --repo to the merge's PR number, resolving a DIFFERENT repo's PR #66 (long merged, one unresolved thread) and blocking a clean merge. With the segment fix this stays a foreign-repo no-op and never hits the network; with the bug it resolves rediacc/renet and blocks.
     case(
         "check 0 guards/block_admin_merge.py",
-        bash_json("gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo otherorg/tool"),
+        bash_json("gh pr view 94 --repo " + RENET_REPO + "; gh pr merge 66 --repo otherorg/tool"),
         "admin-merge: sibling gh --repo does not donate to the merge segment",
     ),
     # NOT asserted here: per-segment --auto and per-segment PR selectors on block-admin-merge. Both only change behavior once a rediacc repo is resolved, which puts them on the network path this offline harness cannot drive (same limitation as the NOTE above). They are covered by the hook's live proofs, not by a case that would pass either way -- a green assertion that cannot fail
@@ -1636,7 +1645,7 @@ STATIC: list[Case] = [
     # --- block-ci-polling.sh boundaries, both directions ------------------------ These pin the pattern itself. A guard nobody tests either rots into blocking everything (and gets disabled) or stops matching (and guards nothing).
     case(
         "check 2 guards/block_ci_polling.py",
-        bash_json("sleep 30 && gh run list --repo rediacc/console"),
+        bash_json("sleep 30 && gh run list --repo " + GH_REPO),
         "ci-polling: classic poll with && blocks",
     ),
     case(
@@ -1850,21 +1859,33 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_ci_polling.py",
         bash_json(
-            'R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
+            'R=123; until [ "$(gh run view $R --repo '
+            + GH_REPO
+            + ' --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo '
+            + GH_REPO
+            + " --json conclusion,jobs"
         ),
         "ci-polling: terminal-state watch ok",
     ),
     case(
         "check 0 guards/block_ci_reverse_poll.py",
         bash_json(
-            'R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
+            'R=123; until [ "$(gh run view $R --repo '
+            + GH_REPO
+            + ' --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo '
+            + GH_REPO
+            + " --json conclusion,jobs"
         ),
         "ci-reverse-poll: terminal-state watch ok",
     ),
     case(
         "check 0 guards/block_long_sleep.py",
         bash_json(
-            'R=123; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs'
+            'R=123; until [ "$(gh run view $R --repo '
+            + GH_REPO
+            + ' --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo '
+            + GH_REPO
+            + " --json conclusion,jobs"
         ),
         "long-sleep: terminal-state watch ok",
     ),

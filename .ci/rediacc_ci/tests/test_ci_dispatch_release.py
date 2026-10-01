@@ -32,6 +32,7 @@ import pytest
 
 from rediacc_ci.ci import dispatch_release as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -56,7 +57,7 @@ exit "${FAKE_GH_RUN_RC:-0}"
 """
 
 BASE = {
-    "GITHUB_REPOSITORY": "rediacc/console",
+    "GITHUB_REPOSITORY": GH_REPO,
     "GITHUB_SHA": "abcdef1234567890abcdef1234567890abcdef12",
     "FAKE_GH_ECHO": "none",
 }

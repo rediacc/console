@@ -102,6 +102,10 @@ def _fixture(
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
     shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / PORT_REL)
 
     scripts = root / "private" / "renet" / "scripts"

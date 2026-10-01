@@ -96,6 +96,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.core import toolchain
+from rediacc_ci.well_known import ETC_DIR
 
 # The npm major every lockfile is written in and every lane installs with (issue #587). CLAUDE.md's npm section is the prose half of this constant; the exact version is `NPM_VERSION` in `.devcontainer/toolchain.env`, and this only bounds it.
 NPM_MAJOR = "11"
@@ -686,8 +687,12 @@ FIXTURE_COMPOSITE = (
     '        [[ "$(npm --version)" == "$pin" ]]\n'
 )
 FIXTURE_DEVCONTAINER = (
-    "FROM base\nCOPY toolchain.env /etc/rediacc/toolchain.env\n"
-    'RUN . /etc/rediacc/toolchain.env && npm install -g "npm@${NPM_VERSION}"\n'
+    "FROM base\nCOPY toolchain.env "
+    + ETC_DIR
+    + "/toolchain.env\n"
+    + "RUN . "
+    + ETC_DIR
+    + '/toolchain.env && npm install -g "npm@${NPM_VERSION}"\n'
 )
 
 

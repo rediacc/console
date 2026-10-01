@@ -37,6 +37,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "renet-root-tests.sh"
@@ -100,7 +101,9 @@ def _transcript(*passing: str, ok: bool = True) -> str:
             lines.append("--- FAIL: %s (0.01s)" % name)
             lines.append("    state_test.go:41: not running as root")
     lines.append("PASS" if ok else "FAIL")
-    lines.append("%s\tgithub.com/rediacc/renet/pkg/repository\t0.042s" % ("ok" if ok else "FAIL"))
+    lines.append(
+        ("%s\tgithub.com/" + RENET_REPO + "/pkg/repository\t0.042s") % ("ok" if ok else "FAIL")
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -130,6 +133,10 @@ def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
     shutil.copy2(TWIN, root / TWIN_REL)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, root / PORT_REL)
 
     if submodule == "dir":

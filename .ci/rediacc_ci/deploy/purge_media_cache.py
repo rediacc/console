@@ -39,14 +39,18 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
+from rediacc_ci.well_known import MEDIA_ORIGIN
+
+MEDIA_HOST = MEDIA_ORIGIN.removeprefix("https://")
 
 # `ZONE_ID="9e802649c143c9cefd811d8fd671d31c" # rediacc.com` (:25) and
 # `HOSTNAME="media.rediacc.com"` (:26). LITERALS, not arguments: a caller cannot
 # point this at another zone or another hostname by accident, and that is the reason the script takes no options at all.
 ZONE_ID = "9e802649c143c9cefd811d8fd671d31c"
-PURGE_HOSTNAME = "media.rediacc.com"
+PURGE_HOSTNAME = MEDIA_HOST
 
-CF_API_BASE = "https://api.cloudflare.com/client/v4"
+CF_API_BASE = WK_CF_API_BASE
 
 # `--data "{\"hosts\": [\"${HOSTNAME}\"]}"` (:43). Hand-built by the twin rather
 # than by jq, SPACE AFTER THE COLON INCLUDED, so it is a literal here too: the fake curl records argv, and a body compacted differently is a different request even though Cloudflare would accept either.

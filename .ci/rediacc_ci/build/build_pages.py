@@ -84,6 +84,9 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.well_known import SITE_ORIGIN
+
+SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
 # `.ci/scripts/lib/common.sh:205-210` resolves the root as `<lib>/../../..`;
 # this module sits at `.ci/rediacc_ci/build/`, which is the same depth.
@@ -126,9 +129,9 @@ CP_WORKER_LINE = 71
 
 # `:75-78`, verbatim including the column padding.
 SUMMARY_TAIL = (
-    "  - Root:     www.rediacc.com (marketing site)",
-    "  - /json:    www.rediacc.com/json/ (template catalog)",
-    "  - /cli:     www.rediacc.com/cli/ (CLI update manifest)",
+    ("  - Root:     " + SITE_HOST + " (marketing site)"),
+    ("  - /json:    " + SITE_HOST + "/json/ (template catalog)"),
+    ("  - /cli:     " + SITE_HOST + "/cli/ (CLI update manifest)"),
 )
 
 

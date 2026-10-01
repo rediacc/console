@@ -22,6 +22,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import update_homebrew_tap as port
+from rediacc_ci.well_known import GH_ORIGIN, RELEASES_ORIGIN, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -49,22 +50,29 @@ DOWNLOAD_SHAS = {
 ORIGIN_SHA = "c" * 40
 
 # The formula fixture, carrying the real file's shape: two `on_*` blocks, two `if Hardware::CPU.arm?` / `else` pairs, four `sha256` lines and a `version` line. `test_the_fixture_matches_the_real_formulas_shape` keeps it honest.
-FORMULA = """class RediaccCli < Formula
+FORMULA = (
+    """class RediaccCli < Formula
   desc "Rediacc CLI - automation and scripting tool"
-  homepage "https://www.rediacc.com"
+  homepage \""""
+    + SITE_ORIGIN
+    + """\"
   version "1.0.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-mac-arm64"
+      url \""""
+    + RELEASES_ORIGIN
+    + """/cli/v#{version}/rdc-mac-arm64"
       sha256 "aaaaaaaa"
 
       def install
         bin.install "rdc-mac-arm64" => "rdc"
       end
     else
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-mac-x64"
+      url \""""
+    + RELEASES_ORIGIN
+    + """/cli/v#{version}/rdc-mac-x64"
       sha256 "bbbbbbbb"
 
       def install
@@ -75,14 +83,18 @@ FORMULA = """class RediaccCli < Formula
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-linux-arm64"
+      url \""""
+    + RELEASES_ORIGIN
+    + """/cli/v#{version}/rdc-linux-arm64"
       sha256 "cccccccc"
 
       def install
         bin.install "rdc-linux-arm64" => "rdc"
       end
     else
-      url "https://releases.rediacc.com/cli/v#{version}/rdc-linux-x64"
+      url \""""
+    + RELEASES_ORIGIN
+    + """/cli/v#{version}/rdc-linux-x64"
       sha256 "dddddddd"
 
       def install
@@ -96,6 +108,7 @@ FORMULA = """class RediaccCli < Formula
   end
 end
 """
+)
 
 FAKE_GIT = (
     """#!/usr/bin/python3
@@ -242,6 +255,7 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_pins: bool = True) -> pa
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
+    shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
     if with_pins:
         shutil.copy2(TOOLCHAIN_ENV, root / ".devcontainer" / "toolchain.env")
     (root / "private" / "homebrew-tap" / "Formula" / "rediacc-cli.rb").write_text(
@@ -483,10 +497,10 @@ def test_the_download_urls_are_exact(tmp_path: pathlib.Path) -> None:
     old, new = run_both(tmp_path, ["--version", "2.5.0"])
     urls = [c.split("\t")[2] for c in old[1] if c.startswith("curl\t")]
     assert urls == [
-        "https://releases.rediacc.com/cli/v2.5.0/rdc-mac-arm64.sha256",
-        "https://releases.rediacc.com/cli/v2.5.0/rdc-mac-x64.sha256",
-        "https://releases.rediacc.com/cli/v2.5.0/rdc-linux-arm64.sha256",
-        "https://releases.rediacc.com/cli/v2.5.0/rdc-linux-x64.sha256",
+        (RELEASES_ORIGIN + "/cli/v2.5.0/rdc-mac-arm64.sha256"),
+        (RELEASES_ORIGIN + "/cli/v2.5.0/rdc-mac-x64.sha256"),
+        (RELEASES_ORIGIN + "/cli/v2.5.0/rdc-linux-arm64.sha256"),
+        (RELEASES_ORIGIN + "/cli/v2.5.0/rdc-linux-x64.sha256"),
     ]
     assert_agree(old, new, "download-urls")
 
@@ -729,12 +743,12 @@ def test_github_pat_is_passed_per_command_and_never_persisted(
         calls = side[1]
         assert not any("\tconfig\t" in c for c in calls), calls
         assert not any("ghp_secret" in c for c in calls), "the token reached argv"
-        helper = "credential.https://github.com.helper=" + port.CREDENTIAL_HELPER
+        helper = ("credential." + GH_ORIGIN + ".helper=") + port.CREDENTIAL_HELPER
         authed = [c for c in calls if helper in c]
         verbs = sorted(c.rsplit("\t", 3)[1] if "fetch" not in c else "fetch" for c in authed)
         assert verbs == ["fetch", "push", "push"], authed
         for c in authed:
-            assert "\tcredential.https://github.com.helper=\t" in c, "the reset entry is missing"
+            assert ("\tcredential." + GH_ORIGIN + ".helper=\t") in c, "the reset entry is missing"
         assert not (tmp_path / "old-home" / ".gitconfig").exists()
         assert not (tmp_path / "new-home" / ".gitconfig").exists()
     assert_agree(old, new, "github-pat")
@@ -756,7 +770,11 @@ def test_the_credential_helper_answers_real_git_with_the_token(tmp_path: pathlib
     home = tmp_path / "cred-home"
     home.mkdir()
     (home / ".gitconfig").write_text(
-        '[credential "https://github.com"]\n\thelper = "!f() { echo username=inherited; echo password=inherited; }; f"\n',
+        (
+            '[credential "'
+            + GH_ORIGIN
+            + '"]\n\thelper = "!f() { echo username=inherited; echo password=inherited; }; f"\n'
+        ),
         encoding="utf-8",
     )
     env = {
@@ -835,26 +853,19 @@ def test_pure_helpers() -> None:
     assert port.checksum_url("https://x", "1.2.3", "a.sha256") == "https://x/cli/v1.2.3/a.sha256"
     assert port.commit_message("1.2.3") == "chore(release): bump rediacc-cli to 1.2.3 [skip ci]"
     assert port.usage("p").startswith("Usage: p --version X.Y.Z")
-    assert port.releases_base_url({}) == "https://releases.rediacc.com"
+    assert port.releases_base_url({}) == RELEASES_ORIGIN
     assert port.releases_base_url({"RELEASES_BASE_URL": "https://s"}) == "https://s"
-    assert port.releases_base_url({"RELEASES_BASE_URL": ""}) == "https://releases.rediacc.com"
+    assert port.releases_base_url({"RELEASES_BASE_URL": ""}) == RELEASES_ORIGIN
     opts = port.parse_argv(["--version", "1.0.0", "--push", "--dry-run"])
     assert (opts.version, opts.push, opts.dry_run) == ("1.0.0", True, True)
     assert not opts.stage_only
     assert port.parse_argv([]).version == ""
 
 
-def test_constants_have_not_drifted() -> None:
-    """The two scalars the twin gets from constants.sh, re-read from the file.
-
-    A LIVE PARSE WOULD FOLLOW A CHANGE SILENTLY; this turns one red instead.
-    """
+def test_the_formula_path_has_not_drifted() -> None:
+    """HOMEBREW_FORMULA_PATH is the one scalar the twin gets from constants.sh that the registry does not hold, re-read from the file."""
     text = CONSTANTS.read_text(encoding="utf-8")
     assert 'readonly HOMEBREW_FORMULA_PATH="%s"' % port.HOMEBREW_FORMULA_PATH in text
-    assert (
-        'readonly RELEASES_BASE_URL="${RELEASES_BASE_URL:-%s}"' % port.RELEASES_BASE_URL_DEFAULT
-        in text
-    )
 
 
 def test_the_fixture_matches_the_real_formulas_shape() -> None:

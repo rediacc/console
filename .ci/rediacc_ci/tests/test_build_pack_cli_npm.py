@@ -172,6 +172,10 @@ def fixture(where: pathlib.Path, name: str, subject: pathlib.PurePosixPath) -> p
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "build").mkdir(parents=True)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     if subject.suffix == ".sh":
         shutil.copy2(ROOT / str(TWIN_REL), root / TWIN_REL)
     else:

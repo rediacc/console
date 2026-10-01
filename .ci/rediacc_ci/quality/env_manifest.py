@@ -99,6 +99,7 @@ LIVE_SHARDS = (
     "ci-runner",
     "gate-seam",
     "toolchain",
+    "well-known",
     "machine-local",
     "product-runtime",
     "harness",

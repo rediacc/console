@@ -50,6 +50,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 # build_fixture copies the real .ci/scripts/ci and every case runs that copy; a pure reader needs no group. See the docstring.
 
@@ -374,7 +375,7 @@ process.stdout.write(Object.keys(JOB_SURFACES).map((k) => `run_${k}`).join("\\n"
             "OUTPUT_FILE": os.fspath(outfile),
             "MERGE_SHA": self.merge_sha,
             "HEAD_SHA": self.c2_sha,
-            "GITHUB_REPOSITORY": "rediacc/console",
+            "GITHUB_REPOSITORY": GH_REPO,
             "GITHUB_RUN_ID": str(CURRENT_RUN_ID),
             "GITHUB_HEAD_REF": "pr",
             "GITHUB_STEP_SUMMARY": os.fspath(outdir / "summary.md"),

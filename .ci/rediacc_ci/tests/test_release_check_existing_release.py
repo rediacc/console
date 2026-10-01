@@ -13,6 +13,7 @@ import subprocess
 import sys
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 TWIN = ".ci/scripts/release/check-existing-release.sh"
 MODULE = "check_existing_release"
@@ -76,12 +77,10 @@ def run_both(
     repo: pathlib.Path, bindir: pathlib.Path, version: str
 ) -> tuple[tuple[int, str, str], tuple[int, str, str]]:
     path_with_fake = f"{bindir}:{os.environ.get('PATH', '/usr/bin:/bin')}"
-    old_env = diff.env_for(
-        VERSION=version, GITHUB_REPOSITORY="rediacc/console", PATH=path_with_fake
-    )
+    old_env = diff.env_for(VERSION=version, GITHUB_REPOSITORY=GH_REPO, PATH=path_with_fake)
     new_env = diff.env_for(
         VERSION=version,
-        GITHUB_REPOSITORY="rediacc/console",
+        GITHUB_REPOSITORY=GH_REPO,
         PATH=path_with_fake,
         PYTHONPATH=_CI_ABS,
         PYTHONDONTWRITEBYTECODE="1",
@@ -145,9 +144,9 @@ def test_missing_version_fails_the_same_way_reworded(tmp_path: pathlib.Path) -> 
     repo = _make_repo_with_origin(tmp_path, tags=[])
     bindir = _make_fake_gh(tmp_path, rc=1, stderr="release not found\n")
     path_with_fake = f"{bindir}:{os.environ.get('PATH', '/usr/bin:/bin')}"
-    old_env = diff.env_for(GITHUB_REPOSITORY="rediacc/console", PATH=path_with_fake)
+    old_env = diff.env_for(GITHUB_REPOSITORY=GH_REPO, PATH=path_with_fake)
     new_env = diff.env_for(
-        GITHUB_REPOSITORY="rediacc/console",
+        GITHUB_REPOSITORY=GH_REPO,
         PATH=path_with_fake,
         PYTHONPATH=_CI_ABS,
         PYTHONDONTWRITEBYTECODE="1",

@@ -27,6 +27,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.housekeeping import cleanup_cf_preview as port
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import CF_API_BASE
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -299,15 +300,17 @@ def test_the_request_shape_is_asserted_in_full(tmp_path: pathlib.Path) -> None:
     assert want_calls == [
         (
             "curl\t-s\t-X\tGET\t"
-            "https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/"
-            "rediacc/deployments?env=preview&per_page=25&page=1\t"
-            "-H\tAuthorization: Bearer tok-fixture\t-H\tContent-Type: application/json"
+            + CF_API_BASE
+            + "/accounts/acct-fixture/pages/projects/"
+            + "rediacc/deployments?env=preview&per_page=25&page=1\t"
+            + "-H\tAuthorization: Bearer tok-fixture\t-H\tContent-Type: application/json"
         ),
         (
             "curl\t-s\t-X\tDELETE\t"
-            "https://api.cloudflare.com/client/v4/accounts/acct-fixture/pages/projects/"
-            "rediacc/deployments/dep-1-0?force=true\t"
-            "-H\tAuthorization: Bearer tok-fixture\t-H\tContent-Type: application/json"
+            + CF_API_BASE
+            + "/accounts/acct-fixture/pages/projects/"
+            + "rediacc/deployments/dep-1-0?force=true\t"
+            + "-H\tAuthorization: Bearer tok-fixture\t-H\tContent-Type: application/json"
         ),
     ]
     # And the port's own builders agree with those literals.
@@ -525,7 +528,7 @@ def test_pure_helpers() -> None:
         "-s",
         "-X",
         "GET",
-        "https://api.cloudflare.com/client/v4/x",
+        (CF_API_BASE + "/x"),
         "-H",
         "Authorization: Bearer T",
         "-H",

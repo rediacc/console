@@ -18,6 +18,7 @@ import subprocess
 
 from rediacc_ci.quality import claude_attribution as ca
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import OPERATOR_EMAIL
 
 SLUG = "claude-attribution"
 TRAILER = "Co-" + "Authored-By"
@@ -126,7 +127,7 @@ def test_the_author_check_agrees_with_the_twins_grep() -> None:
     for name, email in (
         ("Someone", "noreply@anthropic.com"),
         ("Claude", "someone@example.invalid"),
-        ("Muhammed Fatih Bayraktar", "muhammed@rediacc.com"),
+        ("Muhammed Fatih Bayraktar", OPERATOR_EMAIL),
         ("A Human", "human@example.invalid"),
     ):
         joined = "%s %s" % (name, email)

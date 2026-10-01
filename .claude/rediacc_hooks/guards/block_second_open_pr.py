@@ -20,6 +20,7 @@ import json
 import subprocess
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 24
@@ -75,7 +76,10 @@ EDGE_CASES = [
     ("sh -c wrapping does not bypass it", "sh -c 'gh pr create --draft -t x -b y'"),
     # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it would block the FIRST PR too and simply stop all work.
     ("a non-create gh command is ignored", "gh pr view 567"),
-    ("a submodule create is judged against ITS repo", "gh pr create --repo rediacc/renet -t x"),
+    (
+        "a submodule create is judged against ITS repo",
+        ("gh pr create --repo " + RENET_REPO + " -t x"),
+    ),
     ("prose naming the command", "echo 'gh pr create --draft'"),
 ]
 

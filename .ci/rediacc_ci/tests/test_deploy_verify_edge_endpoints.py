@@ -39,6 +39,10 @@ from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect
 from rediacc_ci.deploy import verify_edge_endpoints as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import EDGE_ORIGIN, RELEASES_ORIGIN
+
+EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
+RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -137,21 +141,21 @@ def healthy_fixture(target: pathlib.Path, version: str = "1.2.3") -> None:
     """A fixture set on which every one of the twin's assertions passes."""
     target.mkdir(parents=True, exist_ok=True)
     write = {
-        "edge.rediacc.com/install.sh": ("body", 'REDIACC_CHANNEL="${REDIACC_CHANNEL:-edge}"\n'),
-        "edge.rediacc.com/install.ps1": ("body", '$Channel = if ($e) { $e } else { "edge" }\n'),
-        "edge.rediacc.com/about": ("code", "410"),
-        "edge.rediacc.com/en": ("code", "200"),
-        "edge.rediacc.com/fonts/inter/Inter-Regular.woff2": ("code", "200"),
-        "edge.rediacc.com/en/": (
+        (EDGE_HOST + "/install.sh"): ("body", 'REDIACC_CHANNEL="${REDIACC_CHANNEL:-edge}"\n'),
+        (EDGE_HOST + "/install.ps1"): ("body", '$Channel = if ($e) { $e } else { "edge" }\n'),
+        (EDGE_HOST + "/about"): ("code", "410"),
+        (EDGE_HOST + "/en"): ("code", "200"),
+        (EDGE_HOST + "/fonts/inter/Inter-Regular.woff2"): ("code", "200"),
+        (EDGE_HOST + "/en/"): (
             "body",
             '<html><p class="footer-version">v<!-- -->%s</p></html>\n' % version,
         ),
-        "releases.rediacc.com/cli/edge/install.sh": (
+        (RELEASES_HOST + "/cli/edge/install.sh"): (
             "body",
             'REDIACC_CHANNEL="${REDIACC_CHANNEL:-edge}"\n',
         ),
-        "releases.rediacc.com/cli/edge/install.ps1": ("body", '} else { "edge" }\n'),
-        "releases.rediacc.com/cli/edge/latest.json": ("body", '{"version":"%s"}\n' % version),
+        (RELEASES_HOST + "/cli/edge/install.ps1"): ("body", '} else { "edge" }\n'),
+        (RELEASES_HOST + "/cli/edge/latest.json"): ("body", '{"version":"%s"}\n' % version),
     }
     for url, (ext, text) in write.items():
         (target / ("%s.%s" % (slug_for(url), ext))).write_text(text, encoding="utf-8")
@@ -244,6 +248,10 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     shutil.copy2(TWIN, tree / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(STABLE_TWIN, tree / ".ci" / "scripts" / "deploy" / STABLE_TWIN.name)
     shutil.copy2(COMMON_LIB, tree / ".ci" / "scripts" / "lib" / COMMON_LIB.name)
+    (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", tree / ".ci" / "config" / "well-known.env"
+    )
     if with_regions:
         shutil.copy2(REGIONS, tree / "regions.json")
     return tree
@@ -281,11 +289,11 @@ def _put(directory: pathlib.Path, url: str, ext: str, text: str) -> None:
 
 def test_install_sh_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/install.sh", "body", 'REDIACC_CHANNEL="${X:-stable}"\n')
+        _put(d, (EDGE_HOST + "/install.sh"), "body", 'REDIACC_CHANNEL="${X:-stable}"\n')
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
-    assert "::error::edge.rediacc.com/install.sh is not baked to channel=edge" in old.out
+    assert ("::error::" + EDGE_HOST + "/install.sh is not baked to channel=edge") in old.out
     # The diagnostic grep must print the offending line, not just the header.
     assert 'REDIACC_CHANNEL="${X:-stable}"' in old.out
     assert "  install.sh channel: still disagreeing after 2 attempts" in old.err
@@ -297,12 +305,12 @@ def test_install_sh_that_404s_leaves_the_diagnostic_grep_empty(tmp_path: pathlib
     greps an empty body rather than a stale one. A port that skipped the assignment on failure would print the previous attempt's body."""
 
     def mutate(d: pathlib.Path) -> None:
-        (d / ("%s.body" % slug_for("edge.rediacc.com/install.sh"))).unlink()
+        (d / ("%s.body" % slug_for(EDGE_HOST + "/install.sh"))).unlink()
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
     assert old.out.rstrip("\n").endswith(
-        "::error::edge.rediacc.com/install.sh is not baked to channel=edge"
+        "::error::" + EDGE_HOST + "/install.sh is not baked to channel=edge"
     )
     assert_same(old, new)
 
@@ -311,14 +319,14 @@ def test_install_ps1_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
         _put(
             d,
-            "edge.rediacc.com/install.ps1",
+            (EDGE_HOST + "/install.ps1"),
             "body",
             '} else { "stable" }\n$Channel = 1\n',
         )
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
-    assert "::error::edge.rediacc.com/install.ps1 is not baked to channel=edge" in old.out
+    assert ("::error::" + EDGE_HOST + "/install.ps1 is not baked to channel=edge") in old.out
     assert "$Channel = 1" in old.out
     assert_same(old, new)
 
@@ -327,7 +335,7 @@ def test_a_stale_worker_bundle_fails_the_redirect_table_fingerprint(
     tmp_path: pathlib.Path,
 ) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/about", "code", "200")
+        _put(d, (EDGE_HOST + "/about"), "code", "200")
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
@@ -340,7 +348,7 @@ def test_a_transport_failure_on_a_fingerprint_probe_is_a_000(tmp_path: pathlib.P
     """Inside `fetch_retry` the predicate runs in an `if`, so `set -e` is SUSPENDED and curl's non-zero status becomes a retryable "000" rather than an abort. The stable twin, whose identical probe is at top level, exits 7 instead; that asymmetry is asserted in the stable differential."""
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/en", "code", "000")
+        _put(d, (EDGE_HOST + "/en"), "code", "000")
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
@@ -350,7 +358,7 @@ def test_a_transport_failure_on_a_fingerprint_probe_is_a_000(tmp_path: pathlib.P
 
 def test_asset_path_guard_fingerprint(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/fonts/inter/Inter-Regular.woff2", "code", "404")
+        _put(d, (EDGE_HOST + "/fonts/inter/Inter-Regular.woff2"), "code", "404")
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
@@ -364,7 +372,7 @@ def test_footer_diagnostic_prints_at_most_three_matches(tmp_path: pathlib.Path) 
     def mutate(d: pathlib.Path) -> None:
         _put(
             d,
-            "edge.rediacc.com/en/",
+            (EDGE_HOST + "/en/"),
             "body",
             '<p class="footer-version">v<!-- -->9.9.9</p>\n'
             '<p class="footer-version">v<!-- -->8.8.8</p>'
@@ -374,7 +382,7 @@ def test_footer_diagnostic_prints_at_most_three_matches(tmp_path: pathlib.Path) 
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
-    assert "::error::edge.rediacc.com footer does not render v1.2.3" in old.out
+    assert ("::error::" + EDGE_HOST + " footer does not render v1.2.3") in old.out
     assert old.out.count("footer-version") == 3, old.out
     assert "6.6.6" not in old.out, "head -3 must have truncated the fourth"
     assert "7.7.7" in old.out, "the second match on line two must be reached"
@@ -387,7 +395,7 @@ def test_the_html_comment_stripper_is_load_bearing(tmp_path: pathlib.Path) -> No
     def mutate(d: pathlib.Path) -> None:
         _put(
             d,
-            "edge.rediacc.com/en/",
+            (EDGE_HOST + "/en/"),
             "body",
             '<p class="footer-version">v<!--x--><!--y-->1.2.3</p>\n',
         )
@@ -400,21 +408,25 @@ def test_the_html_comment_stripper_is_load_bearing(tmp_path: pathlib.Path) -> No
 
 def test_r2_backstop_not_rebaked(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "releases.rediacc.com/cli/edge/install.sh", "body", "REDIACC_CHANNEL=stable\n")
+        _put(d, (RELEASES_HOST + "/cli/edge/install.sh"), "body", "REDIACC_CHANNEL=stable\n")
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
-    assert "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge" in old.out
+    assert (
+        "::error::" + RELEASES_HOST + "/cli/edge/install.sh not baked to channel=edge"
+    ) in old.out
     assert_same(old, new)
 
 
 def test_r2_ps1_backstop_not_rebaked(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "releases.rediacc.com/cli/edge/install.ps1", "body", '} else { "stable" }\n')
+        _put(d, (RELEASES_HOST + "/cli/edge/install.ps1"), "body", '} else { "stable" }\n')
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 1
-    assert "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge" in old.out
+    assert (
+        "::error::" + RELEASES_HOST + "/cli/edge/install.ps1 not baked to channel=edge"
+    ) in old.out
     assert_same(old, new)
 
 
@@ -425,7 +437,7 @@ def test_latest_json_absent_empty_and_malformed_all_read_as_unreadable(
     for body in (None, "{}\n", "not json at all\n"):
 
         def mutate(d: pathlib.Path, body: str | None = body) -> None:
-            key = slug_for("releases.rediacc.com/cli/edge/latest.json")
+            key = slug_for(RELEASES_HOST + "/cli/edge/latest.json")
             if body is None:
                 (d / ("%s.body" % key)).unlink()
             else:
@@ -433,7 +445,7 @@ def test_latest_json_absent_empty_and_malformed_all_read_as_unreadable(
 
         old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
         assert old.rc == 1
-        assert "::error::releases.rediacc.com/cli/edge/latest.json is not readable" in old.out
+        assert ("::error::" + RELEASES_HOST + "/cli/edge/latest.json is not readable") in old.out
         assert_same(old, new)
     assert "jq: parse error" in new.err, "the malformed case must leak jq's own diagnostic"
 
@@ -442,7 +454,7 @@ def test_a_version_mismatch_is_tolerated_not_failed(tmp_path: pathlib.Path) -> N
     """The retry-mode carve-out. A port that treated this as an error would fail every legitimate re-run of the smoke test, and the happy path would not notice."""
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "releases.rediacc.com/cli/edge/latest.json", "body", '{"version":"9.9.9"}\n')
+        _put(d, (RELEASES_HOST + "/cli/edge/latest.json"), "body", '{"version":"9.9.9"}\n')
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3"})
     assert old.rc == 0
@@ -459,7 +471,7 @@ def test_a_surface_that_agrees_on_the_second_attempt_passes(tmp_path: pathlib.Pa
     """The 2026-08-08 incident in miniature: one unlucky sample must not fail a healthy deploy."""
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/about", "code@1", "500")
+        _put(d, (EDGE_HOST + "/about"), "code@1", "500")
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3", "EDGE_RETRIES": "3"})
     assert old.rc == 0
@@ -471,7 +483,7 @@ def test_the_retry_budget_is_load_bearing(tmp_path: pathlib.Path) -> None:
     """Anti-vacuity for the case above: with the budget cut to ONE attempt the same fixture must FAIL on both sides, or "agreed on attempt 2" proved nothing about retrying."""
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/about", "code@1", "500")
+        _put(d, (EDGE_HOST + "/about"), "code@1", "500")
 
     old, new = drive(tmp_path, mutate=mutate, env_extra={"VERSION": "1.2.3", "EDGE_RETRIES": "1"})
     assert old.rc == 1
@@ -500,7 +512,7 @@ def test_a_fractional_retry_sleep_makes_the_twin_pass_without_running(
     """
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/about", "code", "200")
+        _put(d, (EDGE_HOST + "/about"), "code", "200")
 
     old, new = drive(
         tmp_path,
@@ -526,7 +538,7 @@ def test_an_integer_retry_sleep_is_still_byte_identical(tmp_path: pathlib.Path) 
     """
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "edge.rediacc.com/about", "code", "200")
+        _put(d, (EDGE_HOST + "/about"), "code", "200")
 
     for retries, sleep_s, expect in (("2", "0", "0"), ("3", "1", "2"), ("2", "5", "5")):
         old, new = drive(

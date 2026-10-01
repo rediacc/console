@@ -62,9 +62,10 @@ import time
 
 from rediacc_ci import log
 from rediacc_ci.controls import Controls
+from rediacc_ci.well_known import CLAUDE_CODE_URL, GH_ORIGIN, GH_REPO
 
 # The default repository, matching the twin's `${GITHUB_REPOSITORY:-rediacc/console}`.
-DEFAULT_REPO = "rediacc/console"
+DEFAULT_REPO = GH_REPO
 
 # `[ \t\n\v\f\r]` is `[[:space:]]` spelled out; see the port notes for why Python's `\s` is not the same set.
 SPACE = "[ \t\n\v\f\r]"
@@ -354,7 +355,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print()
     print("Or edit directly on GitHub:")
-    print("  https://github.com/%s/pull/%s" % (repo, pr_number))
+    print(("  " + GH_ORIGIN + "/%s/pull/%s") % (repo, pr_number))
     print("------------------------------------------------------------")
     return 1
 
@@ -366,7 +367,7 @@ MUST_MATCH = (
     _TRAILER + ": Claude Opus 5 <noreply@anthropic.com>",
     _TRAILER.lower() + ":Claude",
     _TRAILER + " :  Claude",
-    "Generated with [Claude Code](https://claude.com/claude-code)",
+    ("Generated with [Claude Code](" + CLAUDE_CODE_URL + ")"),
     "Generated with Claude",
     "\U0001f916 Generated with something",
     "\U0001f916Generated",

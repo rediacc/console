@@ -45,6 +45,7 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.infra import ci_env
+from rediacc_ci.well_known import ADMIN_EMAIL_DEFAULT, IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
@@ -131,6 +132,10 @@ def _tree(base: pathlib.Path) -> pathlib.Path:
     (base / ".ci" / "docker" / "ci").mkdir(parents=True)
     shutil.copy2(TWIN, base / ".ci" / "scripts" / "infra" / "ci-env.sh")
     shutil.copy2(COMMON, base / ".ci" / "scripts" / "lib" / "common.sh")
+    (base / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", base / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT, base / ".ci" / "rediacc_ci" / "infra" / "ci_env.py")
     return base
 
@@ -159,7 +164,8 @@ def _split(stdout: bytes, environ_out: bool):
             continue
         if environ_out and NAME_VALUE.match(line):
             name, _, value = line.partition("=")
-            if name not in ci_env.SHELL_PRIVATE:
+            # `WK_*` is the well-known registry the twin sources under `set -a`; it is not part of what ci-env hands its caller.
+            if name not in ci_env.SHELL_PRIVATE and not name.startswith("WK_"):
                 found[name] = value
             continue
         chatter.append(line)
@@ -342,11 +348,11 @@ def test_the_supplied_everything_case_agrees_on_all_four_observables() -> None:
     assert calls == [], "a generator ran even though every secret was supplied"
     assert old.chatter == [
         "CI environment configured:",
-        "  Docker Registry: ghcr.io/rediacc",
+        ("  Docker Registry: " + IMAGE_REGISTRY),
         "  Web Tag: latest",
         "  Account Server: http://account-server:3000",
     ]
-    assert old.env["DOCKER_REGISTRY"] == "ghcr.io/rediacc"
+    assert old.env["DOCKER_REGISTRY"] == IMAGE_REGISTRY
     assert old.env["TAG"] == "latest"
     assert old.env["WEB_TAG"] == "latest"
     assert old.env["CI_MODE"] == "true"
@@ -559,7 +565,7 @@ def test_the_system_defaults_are_overridable_one_at_a_time() -> None:
     )
     assert old.env["SYSTEM_DOMAIN"] == "example.test"
     assert old.env["SYSTEM_ADMIN_PASSWORD"] == FIXTURE_ADMIN_WORD
-    assert old.env["SYSTEM_ADMIN_EMAIL"] == "admin@rediacc.io"
+    assert old.env["SYSTEM_ADMIN_EMAIL"] == ADMIN_EMAIL_DEFAULT
 
 
 def test_no_github_env_means_nothing_is_appended_anywhere() -> None:

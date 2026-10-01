@@ -44,6 +44,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.ci import scope_shadow
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -241,7 +242,7 @@ def _env(fixture: pathlib.Path, side: str, extra: dict[str, str]) -> dict[str, s
         "LANG": "C",
         "PYTHONDONTWRITEBYTECODE": "1",
         "FXCONF": str(fixture / "fx" / "config.json"),
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "GITHUB_RUN_ID": "12345",
         "SCOPE_SHADOW_OUT": str(fixture / "fx" / ("out-" + side)),
         "GITHUB_STEP_SUMMARY": str(fixture / "fx" / ("summary-" + side + ".md")),

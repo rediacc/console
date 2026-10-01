@@ -22,6 +22,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import assert_edge_tag_exists as port
+from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -390,7 +391,7 @@ def test_the_defaults_for_repo_and_bucket_are_used_when_unset(
         tmp_path, ["1.3.0"], drop_env=("GITHUB_REPOSITORY", "RELEASES_BUCKET")
     )
     assert old.returncode == 0
-    assert "gh\tapi\trepos/rediacc/console/git/ref/tags/v1.3.0" in old_calls
+    assert ("gh\tapi\trepos/" + GH_REPO + "/git/ref/tags/v1.3.0") in old_calls
     assert any("--bucket\trediacc-releases" in c for c in old_calls)
     _assert_agree(old, new, "defaults", old_calls, new_calls)
 
@@ -398,7 +399,7 @@ def test_the_defaults_for_repo_and_bucket_are_used_when_unset(
 def test_an_empty_repo_variable_falls_back_to_the_default(tmp_path: pathlib.Path) -> None:
     """`:-` fires on unset OR EMPTY, which is a different rule from `-` and the one an exported-but-blank workflow input actually hits."""
     old, new, old_calls, new_calls = run_both(tmp_path, ["1.3.0"], GITHUB_REPOSITORY="")
-    assert "gh\tapi\trepos/rediacc/console/git/ref/tags/v1.3.0" in old_calls
+    assert ("gh\tapi\trepos/" + GH_REPO + "/git/ref/tags/v1.3.0") in old_calls
     _assert_agree(old, new, "empty-repo", old_calls, new_calls)
 
 

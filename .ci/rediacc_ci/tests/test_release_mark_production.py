@@ -26,6 +26,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.release import mark_production as port
+from rediacc_ci.well_known import GH_API_BASE
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -475,7 +476,7 @@ def test_pure_helpers() -> None:
     assert not port.is_semver("v1.3.1-rc.1")
     assert not port.is_semver("v1.3")
     assert port.looks_missing("release not found")
-    assert port.looks_missing("HTTP 404: Not Found (https://api.github.com/...)")
+    assert port.looks_missing("HTTP 404: Not Found (" + GH_API_BASE + "/...)")
     assert not port.looks_missing("HTTP 403: Resource not accessible by integration")
     assert port.ref_path("a/b", "v1.0.0") == "repos/a/b/git/ref/tags/v1.0.0"
     assert port.tag_object_path("a/b", "abc") == "repos/a/b/git/tags/abc"

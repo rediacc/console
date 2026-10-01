@@ -50,6 +50,7 @@ import tempfile
 
 from rediacc_ci import runtmp
 from rediacc_ci.core.stubfarm import Farm
+from rediacc_ci.well_known import DOCKER_INSTALL_DOCS
 
 EXIT_CANNOT_RUN = 77
 FROZEN_NOW = 1700003725
@@ -307,7 +308,8 @@ def side_env(root: pathlib.Path, farm: Farm, case: Case) -> dict[str, str]:
 
 
 # What the deleted `.ci/legacy/run-legacy.sh` gave the twin before the function ran: the four libraries it sourced, `set -euo pipefail`, and the `check_docker` that `service.sh` calls by late binding. `$1` is the repository root; the prelude's own `shift` drops it so `"$@"` is the twin's function and its arguments.
-OLD_PRELUDE = r"""
+OLD_PRELUDE = (
+    r"""
 set -euo pipefail
 ROOT_DIR="$1"; shift
 source "$ROOT_DIR/.ci/config/constants.sh"
@@ -317,7 +319,9 @@ source "$ROOT_DIR/.ci/lib/service.sh"
 check_docker() {
     if ! command -v docker &>/dev/null; then
         log_error "Docker is not installed"
-        log_info "Install Docker from: https://docs.docker.com/get-docker/"
+        log_info "Install Docker from: """
+    + DOCKER_INSTALL_DOCS
+    + r"""/"
         exit 1
     fi
 
@@ -328,6 +332,7 @@ check_docker() {
     fi
 }
 """
+)
 
 
 def run_side(

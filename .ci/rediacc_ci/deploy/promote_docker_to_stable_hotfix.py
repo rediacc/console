@@ -37,6 +37,7 @@ import subprocess
 import sys
 
 from rediacc_ci.core import common
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # `for image in renet rdc` (twin :29). ORDER MATTERS to the call log, which is how this port is proved equivalent, and to which images survive a mid-run docker failure.
 LOOP_IMAGES = ("renet", "rdc")
@@ -46,7 +47,7 @@ STANDALONE_IMAGE = "server"
 
 # `ghcr.io/rediacc/${image}` (twin :31-33). A literal, because the registry and
 # the org are the twin's and a port that derived either from an env var would be answering a question the twin does not ask.
-REGISTRY_NAMESPACE = "ghcr.io/rediacc"
+REGISTRY_NAMESPACE = IMAGE_REGISTRY
 
 # The two tags, in the direction of promotion.
 SOURCE_TAG = "edge"

@@ -15,6 +15,7 @@ None, which is why `git_out` is called with `want_rc` set rather than with the d
 """
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 27
@@ -35,9 +36,9 @@ EDGE_CASES = [
     ("the verb at a command position", "gh pr merge 42"),
     # `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that documents this hook are all none of its business.
     ("a different pr subcommand", "gh pr view 42"),
-    ("a merge for another repository", "gh pr merge 42 --repo rediacc/renet"),
-    ("a merge for this repository, named", "gh pr merge 42 --repo rediacc/console"),
-    ("--repo with an equals sign", "gh pr merge 42 --repo=rediacc/renet"),
+    ("a merge for another repository", ("gh pr merge 42 --repo " + RENET_REPO)),
+    ("a merge for this repository, named", ("gh pr merge 42 --repo " + GH_REPO)),
+    ("--repo with an equals sign", ("gh pr merge 42 --repo=" + RENET_REPO)),
     ("the verb inside quoted prose", "echo 'run gh pr merge when green'"),
 ]
 

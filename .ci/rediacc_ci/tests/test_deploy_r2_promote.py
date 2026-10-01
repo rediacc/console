@@ -6,6 +6,7 @@ import datetime
 import json
 
 from rediacc_ci.deploy import r2_promote
+from rediacc_ci.well_known import RELEASES_BUCKET
 
 T = datetime.datetime(2026, 9, 25, 12, 0, tzinfo=datetime.UTC)
 
@@ -51,7 +52,7 @@ def test_parse_listing_keeps_exact_keys_and_tolerates_an_empty_reply() -> None:
 def test_copy_argv_is_a_server_side_copy_object_with_the_uploads_metadata() -> None:
     argv = r2_promote.copy_argv("cli/edge/manifest.json", "cli/stable/manifest.json", "https://x")
     assert argv[:3] == ["aws", "s3api", "copy-object"]
-    assert argv[argv.index("--copy-source") + 1] == "rediacc-releases/cli/edge/manifest.json"
+    assert argv[argv.index("--copy-source") + 1] == (RELEASES_BUCKET + "/cli/edge/manifest.json")
     assert argv[argv.index("--key") + 1] == "cli/stable/manifest.json"
     assert argv[argv.index("--metadata-directive") + 1] == "REPLACE"
     assert argv[argv.index("--cache-control") + 1] == "no-cache"

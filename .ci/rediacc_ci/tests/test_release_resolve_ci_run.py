@@ -14,6 +14,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -88,7 +89,7 @@ def run_both(
 def test_auto_derive_picks_the_latest_green_run_on_both_sides(tmp_path: pathlib.Path) -> None:
     bindir = _make_fake_gh(tmp_path)
     env = {
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "FAKE_GH_LIST_JSON": '{"workflow_runs":[{"id":555}]}',
         "FAKE_GH_RUN_JSON": '{"head_sha":"abc123"}',
     }
@@ -106,7 +107,7 @@ def test_auto_derive_picks_the_latest_green_run_on_both_sides(tmp_path: pathlib.
 def test_auto_derive_with_no_green_run_fails_on_both_sides(tmp_path: pathlib.Path) -> None:
     bindir = _make_fake_gh(tmp_path)
     env = {
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "FAKE_GH_LIST_JSON": '{"workflow_runs":[]}',
     }
     (old_exit, old_out, _old_err), (new_exit, new_out, _new_err), old_output, new_output = run_both(
@@ -124,7 +125,7 @@ def test_explicit_run_id_on_the_wrong_branch_is_refused_on_both_sides(
 ) -> None:
     bindir = _make_fake_gh(tmp_path)
     env = {
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "INPUT_CI_RUN_ID": "42",
         "FAKE_GH_RUN_JSON": (
             '{"head_branch":"feature-x","name":"Console CI","status":"completed",'
@@ -146,7 +147,7 @@ def test_explicit_run_id_completed_failure_allow_stale_proceeds_on_both_sides(
 ) -> None:
     bindir = _make_fake_gh(tmp_path)
     env = {
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "INPUT_CI_RUN_ID": "42",
         "ALLOW_STALE": "true",
         "FAKE_GH_RUN_JSON": (
@@ -172,7 +173,7 @@ def test_a_failed_run_lookup_falls_back_to_empty_object_on_both_sides(
     empty object, which then fails validation as an empty branch/workflow -- not a crash."""
     bindir = _make_fake_gh(tmp_path)
     env = {
-        "GITHUB_REPOSITORY": "rediacc/console",
+        "GITHUB_REPOSITORY": GH_REPO,
         "INPUT_CI_RUN_ID": "999",
         "FAKE_GH_RUN_RC": "1",
     }

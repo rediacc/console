@@ -18,6 +18,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import promote_docker_to_stable_hotfix as port
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -84,6 +85,10 @@ def fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "deploy").mkdir(parents=True, exist_ok=True)
     shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(PORT_FILE, root / ".ci" / "rediacc_ci" / "deploy" / PORT_FILE.name)
     return root
 
@@ -169,9 +174,9 @@ def test_happy_path_promotes_three_images_identically(tmp_path) -> None:
     # THE SHAPE, not just the verdict: three calls, in this order, each copying edge onto stable and never the reverse.
     head = "docker\tbuildx\timagetools\tcreate\t-t\t"
     assert old_calls.splitlines() == [
-        head + "ghcr.io/rediacc/renet:stable\tghcr.io/rediacc/renet:edge",
-        head + "ghcr.io/rediacc/rdc:stable\tghcr.io/rediacc/rdc:edge",
-        head + "ghcr.io/rediacc/server:stable\tghcr.io/rediacc/server:edge",
+        head + (IMAGE_REGISTRY + "/renet:stable\t" + IMAGE_REGISTRY + "/renet:edge"),
+        head + (IMAGE_REGISTRY + "/rdc:stable\t" + IMAGE_REGISTRY + "/rdc:edge"),
+        head + (IMAGE_REGISTRY + "/server:stable\t" + IMAGE_REGISTRY + "/server:edge"),
     ], old_calls
 
 
@@ -277,7 +282,7 @@ def test_planted_defect_is_caught_only_by_the_call_log(tmp_path) -> None:
     assert new.stdout == old.stdout, "the plant changed stdout; wrong plant"
     assert new.stderr == old.stderr, "the plant changed stderr; wrong plant"
     assert new_calls != old_calls, "THE CALL LOG DID NOT SEE THE SWAP: this gate cannot fail"
-    assert "ghcr.io/rediacc/renet:edge\tghcr.io/rediacc/renet:stable" in new_calls
+    assert (IMAGE_REGISTRY + "/renet:edge\t" + IMAGE_REGISTRY + "/renet:stable") in new_calls
 
 
 # --------------------------------------------------------------------------- The named vacuity fact ---------------------------------------------------------------------------
@@ -315,13 +320,13 @@ def test_promote_argv_puts_the_target_behind_t_and_the_source_last() -> None:
         "imagetools",
         "create",
         "-t",
-        "ghcr.io/rediacc/renet:stable",
-        "ghcr.io/rediacc/renet:edge",
+        (IMAGE_REGISTRY + "/renet:stable"),
+        (IMAGE_REGISTRY + "/renet:edge"),
     ]
     # The NEGATIVE half: the source must not be the stable tag, which is the exact shape the planted defect above produces.
     assert argv[-1].endswith(":edge")
 
 
 def test_image_ref_and_announce_carry_the_twins_bytes() -> None:
-    assert port.image_ref("server", "stable") == "ghcr.io/rediacc/server:stable"
+    assert port.image_ref("server", "stable") == (IMAGE_REGISTRY + "/server:stable")
     assert port.announce("rdc") == "Promoting rdc: edge -> stable"

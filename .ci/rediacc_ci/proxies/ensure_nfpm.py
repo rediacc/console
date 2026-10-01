@@ -48,6 +48,7 @@ import sys
 import tempfile
 
 from rediacc_ci.core import proxyx
+from rediacc_ci.well_known import GH_ORIGIN
 
 SUBJECT_REL = ".ci/scripts/build/ensure-nfpm.sh"
 
@@ -114,7 +115,7 @@ def run() -> int:
     p.need_cmd("sha256sum", "sudo apt-get install -y coreutils")
     p.need_cmd("tar", "sudo apt-get install -y tar")
     p.need_url(
-        "https://github.com",
+        GH_ORIGIN,
         "the subject fetches the pinned tarball from github releases",
     )
     p.preflight()
@@ -175,6 +176,9 @@ def _drive(p: proxyx.Proxy, root: pathlib.Path, fix: pathlib.Path, pinned: str) 
     shutil.copytree(root / ".ci" / "scripts" / "lib", fix / ".ci" / "scripts" / "lib")
     shutil.copyfile(
         root / ".ci" / "config" / "constants.sh", fix / ".ci" / "config" / "constants.sh"
+    )
+    shutil.copyfile(
+        root / ".ci" / "config" / "well-known.env", fix / ".ci" / "config" / "well-known.env"
     )
     shutil.copyfile(
         root / ".devcontainer" / "toolchain.env", fix / ".devcontainer" / "toolchain.env"

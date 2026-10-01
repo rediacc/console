@@ -95,22 +95,22 @@ echo "Verifying edge deployment for v${VERSION}..."
 
 # Marketing worker — also verify the channel default was rewritten.
 _install_sh_baked() {
-    INSTALL_SH=$(curl -fsSL https://edge.rediacc.com/install.sh 2>/dev/null) || return 1
+    INSTALL_SH=$(curl -fsSL "$WK_EDGE_ORIGIN/install.sh" 2>/dev/null) || return 1
     grep -q 'REDIACC_CHANNEL:-edge' <<<"$INSTALL_SH"
 }
 if ! fetch_retry "install.sh channel" _install_sh_baked; then
-    echo "::error::edge.rediacc.com/install.sh is not baked to channel=edge"
+    echo "::error::${WK_EDGE_ORIGIN#https://}/install.sh is not baked to channel=edge"
     echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
     exit 1
 fi
 echo "  marketing (install.sh): OK (channel=edge)"
 
 _install_ps1_baked() {
-    INSTALL_PS1=$(curl -fsSL https://edge.rediacc.com/install.ps1 2>/dev/null) || return 1
+    INSTALL_PS1=$(curl -fsSL "$WK_EDGE_ORIGIN/install.ps1" 2>/dev/null) || return 1
     grep -qF '} else { "edge" }' <<<"$INSTALL_PS1"
 }
 if ! fetch_retry "install.ps1 channel" _install_ps1_baked; then
-    echo "::error::edge.rediacc.com/install.ps1 is not baked to channel=edge"
+    echo "::error::${WK_EDGE_ORIGIN#https://}/install.ps1 is not baked to channel=edge"
     echo "$INSTALL_PS1" | grep -F '$Channel' || true
     exit 1
 fi
@@ -126,7 +126,7 @@ RNDA=$RANDOM$RANDOM
 RNDB=$RANDOM$RANDOM
 RNDC=$RANDOM$RANDOM
 _probe_about() {
-    S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/about?cb=$RNDA")
+    S=$(curl -sI -o /dev/null -w '%{http_code}' "$WK_EDGE_ORIGIN/about?cb=$RNDA")
     [[ "$S" == "410" ]]
 }
 fetch_retry "about 410" _probe_about || {
@@ -136,7 +136,7 @@ fetch_retry "about 410" _probe_about || {
 echo "  worker fingerprint (redirect table): OK (/about=410)"
 
 _probe_en() {
-    S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/en?cb=$RNDB")
+    S=$(curl -sI -o /dev/null -w '%{http_code}' "$WK_EDGE_ORIGIN/en?cb=$RNDB")
     [[ "$S" == "200" ]]
 }
 fetch_retry "en 200" _probe_en || {
@@ -146,7 +146,7 @@ fetch_retry "en 200" _probe_en || {
 echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
 
 _probe_font() {
-    S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
+    S=$(curl -sI -o /dev/null -w '%{http_code}' "$WK_EDGE_ORIGIN/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
     [[ "$S" == "200" ]]
 }
 fetch_retry "font 200" _probe_font || {
@@ -164,12 +164,12 @@ echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
 # the semver before matching.
 if [[ "$WORKERS_ONLY" != "true" ]]; then
     _footer_matches() {
-        FOOTER_HTML=$(curl -fsSL https://edge.rediacc.com/en/ 2>/dev/null) || return 1
+        FOOTER_HTML=$(curl -fsSL "$WK_EDGE_ORIGIN/en/" 2>/dev/null) || return 1
         echo "$FOOTER_HTML" | sed 's/<!--[^>]*-->//g' |
             grep -qE "footer-version[^<]*>v${VERSION}<"
     }
     if ! fetch_retry "marketing footer" _footer_matches; then
-        echo "::error::edge.rediacc.com footer does not render v${VERSION}"
+        echo "::error::${WK_EDGE_ORIGIN#https://} footer does not render v${VERSION}"
         echo "$FOOTER_HTML" | grep -oE 'footer-version[^<]*>[^<]*<[^>]*>[^<]*<' | head -3 || true
         exit 1
     fi
@@ -182,22 +182,22 @@ fi
 # cross-check catches R2 upload regressions.
 if [[ "$WORKERS_ONLY" != "true" ]]; then
     _r2_sh_baked() {
-        R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh 2>/dev/null) || return 1
+        R2_SH=$(curl -fsSL "$WK_RELEASES_ORIGIN/cli/edge/install.sh" 2>/dev/null) || return 1
         grep -q 'REDIACC_CHANNEL:-edge' <<<"$R2_SH"
     }
     if ! fetch_retry "R2 install.sh channel" _r2_sh_baked; then
-        echo "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge"
+        echo "::error::${WK_RELEASES_ORIGIN#https://}/cli/edge/install.sh not baked to channel=edge"
         echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
         exit 1
     fi
     echo "  R2 cli/edge/install.sh: OK (channel=edge)"
 
     _r2_ps1_baked() {
-        R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.ps1 2>/dev/null) || return 1
+        R2_PS1=$(curl -fsSL "$WK_RELEASES_ORIGIN/cli/edge/install.ps1" 2>/dev/null) || return 1
         grep -qF '} else { "edge" }' <<<"$R2_PS1"
     }
     if ! fetch_retry "R2 install.ps1 channel" _r2_ps1_baked; then
-        echo "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge"
+        echo "::error::${WK_RELEASES_ORIGIN#https://}/cli/edge/install.ps1 not baked to channel=edge"
         exit 1
     fi
     echo "  R2 cli/edge/install.ps1: OK (channel=edge)"
@@ -208,11 +208,11 @@ fi
 # R2 releases (skip in workers-only mode -- no new version was published)
 if [[ "$WORKERS_ONLY" != "true" ]]; then
     _latest_json_readable() {
-        EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json 2>/dev/null | jq -re '.version') || return 1
+        EDGE_VERSION=$(curl -fsSL "$WK_RELEASES_ORIGIN/cli/edge/latest.json" 2>/dev/null | jq -re '.version') || return 1
         [[ -n "$EDGE_VERSION" ]]
     }
     fetch_retry "R2 latest.json" _latest_json_readable || {
-        echo "::error::releases.rediacc.com/cli/edge/latest.json is not readable"
+        echo "::error::${WK_RELEASES_ORIGIN#https://}/cli/edge/latest.json is not readable"
         exit 1
     }
     echo "  edge latest.json: v${EDGE_VERSION}"

@@ -24,6 +24,7 @@ import pathlib
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.wellknown import RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 4
@@ -143,7 +144,7 @@ EDGE_CASES = [
         (
             "S=/tmp/pb; printf '%s\\n' 'prose' '' '\U0001f916 "
             "Generated with [Claude Code](u)' > $S/pr.md; "
-            "gh pr create --repo rediacc/renet --title t --body-file $S/pr.md"
+            "gh pr create --repo " + RENET_REPO + " --title t --body-file $S/pr.md"
         ),
     ),
     (
@@ -151,19 +152,23 @@ EDGE_CASES = [
         (
             "S=/tmp/pb; printf '%s\\n' 'prose' '' '\U0001f916 "
             "Generated with [Claude Code](u)' > $S/pr.md; "
-            "gh pr create --body-file $S/pr.md --repo rediacc/renet --title t"
+            "gh pr create --body-file $S/pr.md --repo " + RENET_REPO + " --title t"
         ),
     ),
     (
         "the same written body without the footer passes",
         (
             "S=/tmp/pb; printf '%s\\n' 'prose' '' 'Console PR: x.' > $S/pr.md; "
-            "gh pr create --repo rediacc/renet --title t --body-file $S/pr.md"
+            "gh pr create --repo " + RENET_REPO + " --title t --body-file $S/pr.md"
         ),
     ),
     (
         "a quoted phrase in an inline --body is prose, not a footer",
-        "gh pr create --repo rediacc/renet --title t --body 'refuses \"Generated with\" lines'",
+        (
+            "gh pr create --repo "
+            + RENET_REPO
+            + " --title t --body 'refuses \"Generated with\" lines'"
+        ),
     ),
     # #378c645c: a body file named through a variable the command never assigns. Refused under `home-bodies`, where the file carries the footer; admitted under `default`, where it does not exist.
     (

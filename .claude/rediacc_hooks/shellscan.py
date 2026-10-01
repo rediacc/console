@@ -68,6 +68,8 @@ import re
 import subprocess
 import typing
 
+from rediacc_hooks.wellknown import GH_REPO
+
 # `[[:space:]]` in the C locale, written out. Python's `\s` is Unicode-aware (it matches U+00A0 and friends), which would widen every anchor in this file against a command containing non-breaking space -- a silent behaviour change in the direction of matching MORE, which for a guard is the safe direction but is still not what the bash does.
 SPACE = r" \t\n\v\f\r"
 # The same class with the newline dropped, for the places where the tool works on one record at a time and a newline can therefore never be in the subject. Kept separate rather than reused so that a future edit to one is not silently a change to the other.
@@ -431,7 +433,7 @@ def target_repo(seg, scan, cwd):
             line = re.sub(r".*[:/]([^/]+/[^/]+)$", r"\1", line)
             out.append(line)
         repo = _command_substitution(_sed_out(out, terminated))
-    return repo if repo != "" else "rediacc/console"
+    return repo if repo != "" else GH_REPO
 
 
 # pr_selector <segment> <verb> The PR selector (number/url/branch) belongs to the same invocation as the verb -- read it from the segment, never from the line.

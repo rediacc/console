@@ -30,6 +30,7 @@ import stat
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import GH_REPO
 
 UNDER_TEST = paths.from_root(".ci", "scripts", "housekeeping", "cleanup-versions.sh")
 
@@ -389,7 +390,7 @@ def test_a_stale_branch_is_deleted(gate, tmp_path):
     gate.assert_exit(0, world, "a clean sweep exits 0")
     gate.assert_contains(
         world.gh_calls(),
-        "DELETE repos/rediacc/console/git/refs/heads/feature/old",
+        ("DELETE repos/" + GH_REPO + "/git/refs/heads/feature/old"),
         "a 40-day-old branch with no open PR is deleted",
     )
     gate.assert_contains(world.out, "Branches (console): deleted 1", "and counted as deleted")
@@ -422,7 +423,7 @@ def test_a_stale_branch_with_an_open_pr_is_kept(gate, tmp_path):
     world.run()
     gate.assert_contains(
         world.gh_calls(),
-        "DELETE repos/rediacc/console/git/refs/heads/feature/reviewing",
+        ("DELETE repos/" + GH_REPO + "/git/refs/heads/feature/reviewing"),
         "CONTROL: with no open PR the identical branch is deleted, so the open PR is what saved it",
     )
     gate.log_pass("an open PR protects a stale branch (control: zero open PRs deletes it)")
@@ -439,7 +440,7 @@ def test_main_is_never_deleted(gate, tmp_path):
     world.run()
     gate.assert_contains(
         world.gh_calls(),
-        "DELETE repos/rediacc/console/git/refs/heads/ancient/thing",
+        ("DELETE repos/" + GH_REPO + "/git/refs/heads/ancient/thing"),
         "CONTROL: 900 days is well past the threshold for any other branch",
     )
     gate.log_pass("main survives at 900 days (control: another 900d branch is deleted)")
@@ -459,7 +460,7 @@ def test_an_undatable_branch_is_kept(gate, tmp_path):
     world.run()
     gate.assert_contains(
         world.gh_calls(),
-        "DELETE repos/rediacc/console/git/refs/heads/mystery",
+        ("DELETE repos/" + GH_REPO + "/git/refs/heads/mystery"),
         "CONTROL: the same branch with a resolvable stale date IS deleted",
     )
     gate.log_pass(
@@ -492,7 +493,7 @@ def test_dry_run_deletes_nothing_and_says_so(gate, tmp_path):
     world.run()
     gate.assert_contains(
         world.gh_calls(),
-        "DELETE repos/rediacc/console/git/refs/heads/feature/old",
+        ("DELETE repos/" + GH_REPO + "/git/refs/heads/feature/old"),
         "CONTROL: the same fixture without --dry-run DOES delete",
     )
     gate.assert_contains(
@@ -509,11 +510,11 @@ def test_the_branch_listing_paginates(gate, tmp_path):
     calls = world.gh_calls()
     gate.assert_contains(
         calls,
-        "repos/rediacc/console/branches?per_page=100",
+        ("repos/" + GH_REPO + "/branches?per_page=100"),
         "the recorder captured the branch listing (so the next assertion is about a call that happened)",
     )
     listing = [
-        ln for ln in calls.splitlines() if "repos/rediacc/console/branches?per_page=100" in ln
+        ln for ln in calls.splitlines() if ("repos/" + GH_REPO + "/branches?per_page=100") in ln
     ]
     if not any("--paginate" in ln for ln in listing):
         gate.log_fail("the branch listing does not pass --paginate, so it stops at 100 branches")

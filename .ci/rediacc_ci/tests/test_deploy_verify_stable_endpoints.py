@@ -33,6 +33,10 @@ from rediacc_ci.tests.test_deploy_verify_edge_endpoints import (
     region_domains,
     slug_for,
 )
+from rediacc_ci.well_known import RELEASES_ORIGIN, SITE_ORIGIN
+
+RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
+SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -49,16 +53,16 @@ def healthy_fixture(target: pathlib.Path) -> None:
     """A fixture set on which every one of the stable twin's assertions passes."""
     target.mkdir(parents=True, exist_ok=True)
     write = {
-        "www.rediacc.com/install.sh": ("body", 'REDIACC_CHANNEL="${REDIACC_CHANNEL:-stable}"\n'),
-        "www.rediacc.com/install.ps1": ("body", '$Channel = if ($e) { $e } else { "stable" }\n'),
-        "www.rediacc.com/about": ("code", "410"),
-        "www.rediacc.com/en": ("code", "200"),
-        "www.rediacc.com/fonts/inter/Inter-Regular.woff2": ("code", "200"),
-        "releases.rediacc.com/cli/stable/install.sh": (
+        (SITE_HOST + "/install.sh"): ("body", 'REDIACC_CHANNEL="${REDIACC_CHANNEL:-stable}"\n'),
+        (SITE_HOST + "/install.ps1"): ("body", '$Channel = if ($e) { $e } else { "stable" }\n'),
+        (SITE_HOST + "/about"): ("code", "410"),
+        (SITE_HOST + "/en"): ("code", "200"),
+        (SITE_HOST + "/fonts/inter/Inter-Regular.woff2"): ("code", "200"),
+        (RELEASES_HOST + "/cli/stable/install.sh"): (
             "body",
             'REDIACC_CHANNEL="${REDIACC_CHANNEL:-stable}"\n',
         ),
-        "releases.rediacc.com/cli/stable/install.ps1": ("body", '} else { "stable" }\n'),
+        (RELEASES_HOST + "/cli/stable/install.ps1"): ("body", '} else { "stable" }\n'),
     }
     for url, (ext, text) in write.items():
         (target / ("%s.%s" % (slug_for(url), ext))).write_text(text, encoding="utf-8")
@@ -112,22 +116,22 @@ def test_the_region_field_is_domain_not_edgedomain(tmp_path: pathlib.Path) -> No
 
 def test_install_sh_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/install.sh", "body", 'REDIACC_CHANNEL="${X:-edge}"\n')
+        _put(d, (SITE_HOST + "/install.sh"), "body", 'REDIACC_CHANNEL="${X:-edge}"\n')
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
-    assert "::error::www.rediacc.com/install.sh is not baked to channel=stable" in old.out
+    assert ("::error::" + SITE_HOST + "/install.sh is not baked to channel=stable") in old.out
     assert 'REDIACC_CHANNEL="${X:-edge}"' in old.out
     assert_same(old, new)
 
 
 def test_install_ps1_baked_to_the_wrong_channel(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/install.ps1", "body", '} else { "edge" }\n$Channel = 1\n')
+        _put(d, (SITE_HOST + "/install.ps1"), "body", '} else { "edge" }\n$Channel = 1\n')
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
-    assert "::error::www.rediacc.com/install.ps1 is not baked to channel=stable" in old.out
+    assert ("::error::" + SITE_HOST + "/install.ps1 is not baked to channel=stable") in old.out
     assert "$Channel = 1" in old.out
     assert_same(old, new)
 
@@ -138,7 +142,7 @@ def test_r2_backstop_not_rebaked_to_stable(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
         _put(
             d,
-            "releases.rediacc.com/cli/stable/install.sh",
+            (RELEASES_HOST + "/cli/stable/install.sh"),
             "body",
             'REDIACC_CHANNEL="${REDIACC_CHANNEL:-edge}"\n',
         )
@@ -146,21 +150,20 @@ def test_r2_backstop_not_rebaked_to_stable(tmp_path: pathlib.Path) -> None:
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
     assert (
-        "::error::releases.rediacc.com/cli/stable/install.sh not baked to channel=stable" in old.out
-    )
+        "::error::" + RELEASES_HOST + "/cli/stable/install.sh not baked to channel=stable"
+    ) in old.out
     assert_same(old, new)
 
 
 def test_r2_ps1_backstop_not_rebaked_to_stable(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "releases.rediacc.com/cli/stable/install.ps1", "body", '} else { "edge" }\n')
+        _put(d, (RELEASES_HOST + "/cli/stable/install.ps1"), "body", '} else { "edge" }\n')
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
     assert (
-        "::error::releases.rediacc.com/cli/stable/install.ps1 not baked to channel=stable"
-        in old.out
-    )
+        "::error::" + RELEASES_HOST + "/cli/stable/install.ps1 not baked to channel=stable"
+    ) in old.out
     assert_same(old, new)
 
 
@@ -169,7 +172,7 @@ def test_r2_ps1_backstop_not_rebaked_to_stable(tmp_path: pathlib.Path) -> None:
 
 def test_redirect_table_fingerprint(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/about", "code", "200")
+        _put(d, (SITE_HOST + "/about"), "code", "200")
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
@@ -180,7 +183,7 @@ def test_redirect_table_fingerprint(tmp_path: pathlib.Path) -> None:
 
 def test_html_handling_fingerprint(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/en", "code", "307")
+        _put(d, (SITE_HOST + "/en"), "code", "307")
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
@@ -190,7 +193,7 @@ def test_html_handling_fingerprint(tmp_path: pathlib.Path) -> None:
 
 def test_asset_path_guard_fingerprint(tmp_path: pathlib.Path) -> None:
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/fonts/inter/Inter-Regular.woff2", "code", "404")
+        _put(d, (SITE_HOST + "/fonts/inter/Inter-Regular.woff2"), "code", "404")
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
@@ -211,7 +214,7 @@ def test_a_404_on_install_sh_exits_22_with_no_annotation(tmp_path: pathlib.Path)
     """
 
     def mutate(d: pathlib.Path) -> None:
-        (d / ("%s.body" % slug_for("www.rediacc.com/install.sh"))).unlink()
+        (d / ("%s.body" % slug_for(SITE_HOST + "/install.sh"))).unlink()
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 22, "curl's own status, not 1"
@@ -225,7 +228,7 @@ def test_a_transport_failure_on_a_fingerprint_probe_exits_7(tmp_path: pathlib.Pa
     """The same defect on the `-sI` probes, and the sharpest contrast with the edge twin: the identical fixture there yields `got 000` plus a real `::error::` and exit 1, because the probe runs inside a `fetch_retry` predicate where `set -e` is suspended."""
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/en", "code", "000")
+        _put(d, (SITE_HOST + "/en"), "code", "000")
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 7
@@ -242,12 +245,12 @@ def test_a_single_bad_sample_fails_here_though_it_would_retry_on_edge(
     """The SAME fixture the edge differential uses to prove retrying works. Here it must FAIL, on both sides. A port that copied `fetch_retry` across would pass this and nothing else in the file would notice."""
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/about", "code@1", "500")
+        _put(d, (SITE_HOST + "/about"), "code@1", "500")
 
     old, new = drive(tmp_path, mutate=mutate)
     assert old.rc == 1
     assert "got 500" in old.out
-    assert old.log.count("www.rediacc.com/about") == 1, "exactly one sample, no retry"
+    assert old.log.count(SITE_HOST + "/about") == 1, "exactly one sample, no retry"
     assert_same(old, new)
 
 
@@ -428,7 +431,7 @@ def test_a_port_that_retried_would_be_caught(tmp_path: pathlib.Path) -> None:
     )
 
     def mutate(d: pathlib.Path) -> None:
-        _put(d, "www.rediacc.com/about", "code@1", "500")
+        _put(d, (SITE_HOST + "/about"), "code@1", "500")
 
     old, new = drive(tmp_path, mutate=mutate, port_file=broken)
     assert old.rc == 1, "the twin must fail on the first bad sample"

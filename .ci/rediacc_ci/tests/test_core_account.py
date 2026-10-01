@@ -29,6 +29,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
 from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # The host port space, the same resource `test_core_ports.py` names. See the header.
 XDIST_GROUP = "ports"
@@ -296,7 +297,9 @@ def test_banner_row_pads_by_bytes_not_characters() -> None:
 
 def test_gateway_port_from_state_raises_where_the_twin_dies() -> None:
     """Defect 1: no match is not an empty answer, it is the end of the function."""
-    assert account.gateway_port_from_state("gateway_port=4800\n") == "4800"
+    assert account.gateway_port_from_state("gateway_port=%d\n" % ACCOUNT_DEV_PORT) == str(
+        ACCOUNT_DEV_PORT
+    )
     assert account.gateway_port_from_state("gateway_port=\n") == ""
     with pytest.raises(account.StateAbortedError, match="matched nothing"):
         account.gateway_port_from_state("started=1\n")
@@ -309,7 +312,7 @@ def test_gateway_port_from_state_truncates_a_value_containing_an_equals_sign() -
 
 def test_grep_cut_keeps_every_match_the_way_the_twin_captures_them() -> None:
     """`grep` prints EVERY matching line, so a key written twice reaches the twin as two lines. The port used to keep only the first."""
-    text = "gateway_port=4800\npids=1\ngateway_port=4801\n"
+    text = "gateway_port=%d\npids=1\ngateway_port=%d\n" % (ACCOUNT_DEV_PORT, ACCOUNT_DEV_PORT + 1)
     assert account.grep_cut(text, "gateway_port") == "4800\n4801"
     assert account.gateway_port_from_state(text) == "4800\n4801"
     assert account.state_pids("pids=1 2 3\n") == "1 2 3"
@@ -1197,7 +1200,7 @@ def test_the_lifecycle_transcripts_carry_what_the_comparison_needs() -> None:
     _, dev_out, _ = drive_lifecycle("old", "dev")
     for needle in (
         "obs previous-instance call#1| kill -9 4194303",
-        "obs reuse-rustfs side#9| env WEBAUTHN_ORIGIN=http://localhost:4800",
+        "obs reuse-rustfs side#9| env WEBAUTHN_ORIGIN=http://localhost:%d" % ACCOUNT_DEV_PORT,
         "obs no-docker-with-stripe side#16| state pids=N N N",
         "obs no-docker-with-stripe bg| npx astro dev --port 4802 --host 192.0.2.10",
         "obs gateway-fails rc=3",

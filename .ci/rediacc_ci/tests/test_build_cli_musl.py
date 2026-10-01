@@ -37,12 +37,15 @@ ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/build/build-cli-musl.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_cli_musl.py"
 COMMON_REL = ".ci/scripts/lib/common.sh"
+WELL_KNOWN_REL = ".ci/config/well-known.env"
 INJECT_REL = ".ci/scripts/version/inject-env.sh"
 
 VENDORED = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
+    ".ci/rediacc_ci/well_known.py",
+    ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/build/__init__.py",
@@ -120,9 +123,9 @@ def fixture(
     stale_output: bool = False,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, INJECT_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, INJECT_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, *VENDORED):
+    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)

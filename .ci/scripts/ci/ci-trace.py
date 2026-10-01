@@ -24,6 +24,7 @@ ONE IMPLEMENTATION. Every rule here already existed inside the Stop hook's wl_ci
 import argparse
 import contextlib
 import datetime
+import importlib.util
 import io
 import json
 import os
@@ -37,6 +38,17 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 # THE sys.path HOP, stated rather than hidden. wl_ci lives with the Stop hook because that is where it is consumed on every turn. Copying its ~200 lines of rollup/classify logic here would recreate exactly the duplication this script exists to end -- the nine divergent copies above. One import, one truth.
 sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks" / "stop"))
 import wl_ci  # noqa: E402
+
+# The registry reader is loaded by file: this script has no `.ci` hop and the canonical-hop ledger pins the one it has.
+_WK_SPEC = importlib.util.spec_from_file_location(
+    "well_known", REPO_ROOT / ".ci" / "rediacc_ci" / "well_known.py"
+)
+if _WK_SPEC is None or _WK_SPEC.loader is None:
+    raise ImportError("cannot load .ci/rediacc_ci/well_known.py")
+_WK = importlib.util.module_from_spec(_WK_SPEC)
+sys.modules["well_known"] = _WK
+_WK_SPEC.loader.exec_module(_WK)
+GH_REPO = _WK.GH_REPO
 
 POLL_SECONDS = int(os.environ.get("CI_TRACE_POLL_S", "25"))
 MAX_READ_FAILURES = int(os.environ.get("CI_TRACE_MAX_READ_FAILURES", "5"))
@@ -100,7 +112,7 @@ def _run_snapshot(root, run_id):
                 "view",
                 str(run_id),
                 "--repo",
-                "rediacc/console",
+                GH_REPO,
                 "--json",
                 "status,conclusion,jobs",
             ],

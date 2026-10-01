@@ -49,7 +49,7 @@ BRANCH_REPOS=("console" "renet" "account" "elite" "homebrew-tap" "sql")
 BRANCH_MAX_AGE_DAYS="${BRANCH_MAX_AGE_DAYS:-30}"
 
 # Release repo
-RELEASE_REPO="rediacc/console"
+RELEASE_REPO="$WK_GH_REPO"
 
 # Cloudflare Pages project for preview deployments
 CF_PAGES_PROJECT="rediacc"
@@ -194,7 +194,7 @@ cf_api() {
     local method="$1" endpoint="$2"
     shift 2
     curl -s -X "$method" \
-        "https://api.cloudflare.com/client/v4$endpoint" \
+        "$WK_CF_API_BASE$endpoint" \
         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
         -H "Content-Type: application/json" \
         "$@"

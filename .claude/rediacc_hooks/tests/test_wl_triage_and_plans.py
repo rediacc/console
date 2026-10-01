@@ -17,6 +17,7 @@ import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 
 def triage(fix, mode: str, *argv: str, as_peer: str = "") -> wlfix.Result:
@@ -233,7 +234,7 @@ def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):  # noqa:
     assert head, "FIXTURE BROKEN: the fixture repo has no HEAD"
     nid = added_id(wl.cli("--add", "deadbeef", "the retry loop swallows the exit code"))
 
-    bare = wl.cli("--tick", "deadbeef", nid, "filed as https://github.com/x/y/issues/560")
+    bare = wl.cli("--tick", "deadbeef", nid, ("filed as " + GH_ORIGIN + "/x/y/issues/560"))
     merged = bare.out + bare.err
     assert bare.rc != 0, "the bare-issue tick was accepted (rc=%d): %s" % (bare.rc, merged[:300])
     for door in ("door:operator-only", "door:operator-deferred", "door:no-write-access"):
@@ -246,7 +247,11 @@ def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):  # noqa:
         "--tick",
         "deadbeef",
         nid,
-        "filed as https://github.com/x/y/issues/560 door:no-write-access, that repo is not writable here",
+        (
+            "filed as "
+            + GH_ORIGIN
+            + "/x/y/issues/560 door:no-write-access, that repo is not writable here"
+        ),
     )
     assert doored.rc == 0, "a door-carrying tick was refused: %s" % (doored.out + doored.err)[:300]
     assert '"ev":"state"' in wl.wl_events(), "the door-carrying tick closed nothing"
@@ -258,7 +263,7 @@ def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):  # noqa:
         "--tick",
         "deadbeef",
         third,
-        "green on https://github.com/rediacc/console/actions/runs/123456789",
+        (("green on " + GH_ORIGIN + "/") + GH_REPO + "/actions/runs/123456789"),
     )
     fourth = added_id(wl.cli("--add", "deadbeef", "fourth finding"))
     verified_sha = wl.cli("--tick", "deadbeef", fourth, "fixed in %s" % head)

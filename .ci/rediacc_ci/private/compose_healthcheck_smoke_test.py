@@ -118,6 +118,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.well_known import RUNTIME_DIR
 
 # `VM_NET_BASE="${VM_NET_BASE:-192.168.111}"` and its five neighbours.
 DEFAULT_VM_NET_BASE = "192.168.111"
@@ -142,8 +143,11 @@ SSH_OPTIONS = ("-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=15")
 # asserts every one of them character for character against the twin's recorded argv.
 # ---------------------------------------------------------------------------
 
-POLL_REMOTE = """sudo bash -c '
-      for sock in /var/run/rediacc/docker-*.sock; do
+POLL_REMOTE = (
+    """sudo bash -c '
+      for sock in """
+    + RUNTIME_DIR
+    + """/docker-*.sock; do
         [ -S "$sock" ] || continue
         cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format "{{.ID}}" 2>/dev/null | head -1)
         if [ -n "$cid" ]; then
@@ -152,9 +156,13 @@ POLL_REMOTE = """sudo bash -c '
       done
       echo "missing|"
     '"""
+)
 
-DIAG_REMOTE = """sudo bash -c '
-      for sock in /var/run/rediacc/docker-*.sock; do
+DIAG_REMOTE = (
+    """sudo bash -c '
+      for sock in """
+    + RUNTIME_DIR
+    + """/docker-*.sock; do
         [ -S "$sock" ] || continue
         cid=$(docker -H unix://$sock ps -a --filter name=^db$ --format "{{.ID}}" 2>/dev/null | head -1)
         if [ -n "$cid" ]; then
@@ -167,11 +175,15 @@ DIAG_REMOTE = """sudo bash -c '
         fi
       done
     '"""
+)
 
 SS_REMOTE = "sudo ss -tlnp 'sport = :5432' 2>&1"
 
-APP_REMOTE = """sudo bash -c '
-  for sock in /var/run/rediacc/docker-*.sock; do
+APP_REMOTE = (
+    """sudo bash -c '
+  for sock in """
+    + RUNTIME_DIR
+    + """/docker-*.sock; do
     [ -S "$sock" ] || continue
     cid=$(docker -H unix://$sock ps -a --filter name=^app$ --format "{{.ID}}" 2>/dev/null | head -1)
     if [ -n "$cid" ]; then
@@ -180,6 +192,7 @@ APP_REMOTE = """sudo bash -c '
   done
   echo "missing"
 '"""
+)
 
 # The fallbacks the `||` arms of the two command substitutions supply. They differ by one character (`|`) and the difference matters: the poll reply is split on `|` and the app reply is compared whole.
 POLL_FALLBACK = "ssh-error|"

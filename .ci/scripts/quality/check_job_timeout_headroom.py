@@ -40,6 +40,9 @@ import re
 import subprocess
 import sys
 
+import _cipath  # noqa: F401
+from rediacc_ci.well_known import GH_REPO
+
 # A job must be allowed to take at least this multiple of its observed worst
 # case before the timeout fires. 1.5 is not arbitrary: Validate Promotion's
 # 28m35s worst case under a 30m ceiling was a ratio of 1.05, and it blew up twice. At 1.5 that ceiling would have had to be 43m, which would have carried both timeouts.
@@ -221,7 +224,7 @@ def refresh(root, lane_durations_path, limit):
             "run",
             "list",
             "--repo",
-            "rediacc/console",
+            GH_REPO,
             "--branch",
             "main",
             "--workflow",
@@ -257,7 +260,7 @@ def refresh(root, lane_durations_path, limit):
             [
                 "gh",
                 "api",
-                "repos/rediacc/console/actions/runs/%s/jobs?per_page=100" % run_id,
+                ("repos/" + GH_REPO + "/actions/runs/%s/jobs?per_page=100") % run_id,
                 "--jq",
                 '.jobs[]|select(.conclusion=="success")|"\\(.name)\\t\\(.started_at)\\t\\(.completed_at)"',
             ],

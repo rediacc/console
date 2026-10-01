@@ -20,6 +20,7 @@ import pytest
 
 from rediacc_ci.testrun import linux_packages as port
 from rediacc_ci.tests import testrun_support as ts
+from rediacc_ci.well_known import RELEASES_ORIGIN
 
 TWIN_REL = ".ci/scripts/test/test-linux-packages.sh"
 TWIN = ts.ROOT / TWIN_REL
@@ -154,7 +155,7 @@ class StubSuite(port.Suite):
             [list[str], dict[str, str] | None], subprocess.CompletedProcess[str]
         ],
     ) -> None:
-        super().__init__(False, root, root / "t", "https://releases.rediacc.com")
+        super().__init__(False, root, root / "t", RELEASES_ORIGIN)
         self.test_dir.mkdir(exist_ok=True)
         self.script = script
         self.seen: list[tuple[list[str], dict[str, str] | None]] = []

@@ -47,6 +47,7 @@ import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, Self
 
 from rediacc_ci.infra.vm_bake_image import REPOSITORY, BakeImageError, install_oras, tag_exists
+from rediacc_ci.well_known import ETC_DIR, GH_ORIGIN, GH_REPO
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -76,12 +77,12 @@ ARTIFACT_TYPE = "application/vnd.rediacc.obs-mirror.v1"
 LAYER_MEDIA_TYPE = "application/vnd.rediacc.obs-mirror.v1.tar"
 LAYER_NAME = "obs-mirror.tar"
 ANNOTATION = "com.rediacc.obs-mirror."
-SOURCE_ANNOTATION = "org.opencontainers.image.source=https://github.com/rediacc/console"
+SOURCE_ANNOTATION = ("org.opencontainers.image.source=" + GH_ORIGIN + "/") + GH_REPO
 
 MIRROR_MOUNT = "/srv/obs-mirror"
 MIRROR_URL = "dir:%s" % MIRROR_MOUNT
 # renet's channel (cephpkg.MirrorConfigPath): `sudo renet` over SSH drops the environment, so the file is what counts.
-MIRROR_CONFIG = "/etc/rediacc/ceph-zypper-mirror"
+MIRROR_CONFIG = ETC_DIR + "/ceph-zypper-mirror"
 BLOCKED_HOSTS = ("download.opensuse.org", "downloadcontent.opensuse.org")
 NEGATIVE_1_PACKAGE = "librados2"
 SETUP_MOUNT = "/obs-setup"

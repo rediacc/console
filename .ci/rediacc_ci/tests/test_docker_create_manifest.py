@@ -20,7 +20,6 @@ THE TWO STALENESS ALARMS THAT READ THE TWIN'S SOURCE ARE GONE, and the goldens r
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -31,6 +30,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.docker import create_manifest as port
 from rediacc_ci.tests import frozen
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -115,6 +115,10 @@ def fixture(tmp_path: pathlib.Path, *, port_source: str | None = None) -> pathli
     ):
         (root / rel).mkdir(parents=True, exist_ok=True)
     shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
+    )
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / CONSTANTS.name)
     shutil.copy2(TOOLCHAIN, root / ".devcontainer" / TOOLCHAIN.name)
     target = root / PORT_REL
@@ -353,11 +357,11 @@ def test_dry_run_prints_the_two_commands_and_calls_nothing() -> None:
     returncode, stdout, _, calls = recorded("a-dry-run-with-push-latest")
     assert returncode == 0
     assert calls == "", "a dry run reached docker"
-    srcs = "ghcr.io/rediacc/api:1.2.3-amd64 ghcr.io/rediacc/api:1.2.3-arm64"
+    srcs = IMAGE_REGISTRY + "/api:1.2.3-amd64 " + IMAGE_REGISTRY + "/api:1.2.3-arm64"
     # THE DOUBLE SPACE BEFORE `srcs` IS THE TWIN'S. See the module docstring.
     assert stdout.splitlines() == [
-        "  docker buildx imagetools create -t ghcr.io/rediacc/api:1.2.3  " + srcs,
-        "  docker buildx imagetools create -t ghcr.io/rediacc/api:latest  " + srcs,
+        ("  docker buildx imagetools create -t " + IMAGE_REGISTRY + "/api:1.2.3  ") + srcs,
+        ("  docker buildx imagetools create -t " + IMAGE_REGISTRY + "/api:latest  ") + srcs,
     ], stdout
 
 
@@ -367,7 +371,9 @@ def test_the_leading_space_in_the_sources_field_is_the_twins() -> None:
     bytes so nobody tidies it into a divergence.
     """
     stderr = recorded("a-dry-run-at-tag-nine")[2]
-    assert "✓   Sources:  ghcr.io/rediacc/api:9-amd64 ghcr.io/rediacc/api:9-arm64\n" in stderr
+    assert (
+        "✓   Sources:  " + IMAGE_REGISTRY + "/api:9-amd64 " + IMAGE_REGISTRY + "/api:9-arm64\n"
+    ) in stderr
     assert "Sources:   " not in stderr, "three spaces means the field grew another one"
 
 
@@ -383,13 +389,13 @@ def test_the_happy_path_creates_verifies_and_prints_platforms() -> None:
     assert returncode == 0
 
     head = "docker\tbuildx\timagetools\t"
-    src = "ghcr.io/rediacc/api:1.2.3-amd64\tghcr.io/rediacc/api:1.2.3-arm64"
+    src = IMAGE_REGISTRY + "/api:1.2.3-amd64\t" + IMAGE_REGISTRY + "/api:1.2.3-arm64"
     assert calls.splitlines() == [
-        head + "create\t-t\tghcr.io/rediacc/api:1.2.3\t" + src,
-        head + "create\t-t\tghcr.io/rediacc/api:latest\t" + src,
+        head + ("create\t-t\t" + IMAGE_REGISTRY + "/api:1.2.3\t") + src,
+        head + ("create\t-t\t" + IMAGE_REGISTRY + "/api:latest\t") + src,
         # TWO inspects, not one: the twin decided the verdict with the first and showed platforms with the second.
-        head + "inspect\tghcr.io/rediacc/api:1.2.3",
-        head + "inspect\tghcr.io/rediacc/api:1.2.3",
+        head + ("inspect\t" + IMAGE_REGISTRY + "/api:1.2.3"),
+        head + ("inspect\t" + IMAGE_REGISTRY + "/api:1.2.3"),
     ], calls
 
     assert stdout.splitlines() == [
@@ -404,7 +410,7 @@ def test_the_happy_path_creates_verifies_and_prints_platforms() -> None:
 def test_image_path_bypasses_the_registry() -> None:
     returncode, _, stderr, calls = recorded("an-image-path")
     assert returncode == 0
-    assert "ghcr.io/rediacc" not in calls, calls
+    assert IMAGE_REGISTRY not in calls, calls
     # And the step line uses the FULL PATH as the label, because IMAGE_NAME was
     # empty and the twin's `${IMAGE_NAME:-$IMAGE_PATH}` fell through.
     assert "→ Creating multi-arch manifest for ghcr.io/acme/server:0.5.0" in stderr
@@ -419,7 +425,7 @@ def test_a_failing_create_stops_before_the_latest_manifest() -> None:
     returncode, _, stderr, calls = recorded("a-failing-create")
     assert returncode == 1
     assert len(calls.splitlines()) == 1, calls
-    assert stderr.splitlines()[-1] == "✗ Failed to create manifest: ghcr.io/rediacc/api:1"
+    assert stderr.splitlines()[-1] == ("✗ Failed to create manifest: " + IMAGE_REGISTRY + "/api:1")
     assert "Manifest creation complete" not in stderr
 
 
@@ -516,9 +522,9 @@ def test_the_platform_filter_matches_grep_e_on_a_corpus() -> None:
 
 def test_the_registry_default_is_taken_on_unset_and_on_empty(monkeypatch) -> None:
     monkeypatch.delenv("PUBLISH_DOCKER_REGISTRY", raising=False)
-    assert port.registry() == "ghcr.io/rediacc"
+    assert port.registry() == IMAGE_REGISTRY
     monkeypatch.setenv("PUBLISH_DOCKER_REGISTRY", "")
-    assert port.registry() == "ghcr.io/rediacc"
+    assert port.registry() == IMAGE_REGISTRY
 
 
 def test_dry_run_is_the_string_true_and_nothing_else(monkeypatch) -> None:
@@ -535,17 +541,7 @@ def test_resolve_image_path_prefers_image_path_verbatim(monkeypatch) -> None:
     assert port.resolve_image_path(opts) == "ghcr.io/acme/server"
     bare = port.Options()
     bare.image_name = "api"
-    assert port.resolve_image_path(bare) == "ghcr.io/rediacc/api"
-
-
-def test_the_registry_constant_is_still_constants_shs() -> None:
-    """`constants.sh` is NOT a twin and is not going anywhere: it is the shared source of the registry default, so drift between it and the port's copy is still a live risk."""
-    text = CONSTANTS.read_text(encoding="utf-8")
-    registry = re.search(
-        r'^PUBLISH_DOCKER_REGISTRY="\$\{PUBLISH_DOCKER_REGISTRY:-([^}]*)\}"$', text, re.MULTILINE
-    )
-    assert registry is not None, "the registry default moved in constants.sh"
-    assert registry.group(1) == port.REGISTRY_DEFAULT
+    assert port.resolve_image_path(bare) == (IMAGE_REGISTRY + "/api")
 
 
 # --------------------------------------------------------------------------- The controls: these goldens can actually fail ---------------------------------------------------------------------------

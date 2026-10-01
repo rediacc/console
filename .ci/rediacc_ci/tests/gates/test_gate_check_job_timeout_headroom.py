@@ -66,6 +66,19 @@ exit 0
 """
 
 
+def _copy_imports(tmp: Path) -> None:
+    """What the script imports: the `.ci` hop, the package marker, the registry reader and the registry."""
+    for rel in (
+        ".ci/scripts/quality/_cipath.py",
+        ".ci/rediacc_ci/__init__.py",
+        ".ci/rediacc_ci/well_known.py",
+        ".ci/config/well-known.env",
+    ):
+        dst = tmp / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(paths.from_root(rel), dst)
+
+
 def _tree(
     tmp: Path,
     lane_durations: dict,
@@ -76,6 +89,7 @@ def _tree(
     script_dst = tmp / SCRIPT_REL
     script_dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(REAL_SCRIPT, script_dst)
+    _copy_imports(tmp)
     workflow_dst = tmp / WORKFLOW_REL
     workflow_dst.parent.mkdir(parents=True, exist_ok=True)
     workflow_dst.write_text(workflow_text, encoding="utf-8")
@@ -185,6 +199,7 @@ def test_vacuous_without_lane_durations_json():
         script_dst = tmp_path / SCRIPT_REL
         script_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REAL_SCRIPT, script_dst)
+        _copy_imports(tmp_path)
         workflow_dst = tmp_path / WORKFLOW_REL
         workflow_dst.parent.mkdir(parents=True, exist_ok=True)
         workflow_dst.write_text(FIXTURE_WORKFLOW, encoding="utf-8")
