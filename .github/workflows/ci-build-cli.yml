@@ -62,7 +62,7 @@ jobs:
             arch: arm64
             timeout: 15
           # Musl-linked Linux binaries (for Alpine/musl distros)
-          # Built inside node:22-alpine Docker container on Ubuntu runners
+          # Built inside node:24-alpine Docker container on Ubuntu runners
           - os: ubuntu-latest
             platform: linux-musl
             arch: x64

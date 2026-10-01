@@ -17,7 +17,7 @@
 #   3. Chrome needs system libs. `agent-browser install --with-deps` wants root for the
 #      libs; running the BROWSER download as root puts it under /root where the runtime
 #      user cannot reach it. So: libs as root, browser as the runtime user, separately.
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \

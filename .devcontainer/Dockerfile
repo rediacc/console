@@ -9,7 +9,7 @@
 
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
-ARG NODE_VERSION=22
+ARG NODE_VERSION=24
 ARG GO_VERSION=1.26.6
 
 # EVERY NETWORK FETCH RETRIES, because one upstream hiccup must not kill a ten-minute
@@ -304,7 +304,7 @@ RUN apt-get update && \
 
 COPY toolchain.env /etc/rediacc/toolchain.env
 
-# THE ONE npm, at the exact pin. Node 22 bundles npm 10, whose lockfile form
+# THE ONE npm, at the exact pin. Node bundles an npm other than the pin, whose lockfile form
 # check:ci-lockfile refuses; installing the pin here keeps every lockfile written in
 # the devbox byte-identical to what CI's npm would write. Still root, so the nvm
 # prefix is writable.

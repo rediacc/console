@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.build.build_cli_musl` against its twin `.ci/scripts/build/build-cli-musl.sh`.
 
-ONE REAL INVOCATION PULLS `node:22-alpine`, RUNS `npm ci` INSIDE IT AND WRITES INTO `dist/cli/` OF WHATEVER TREE IT IS POINTED AT. It also runs `sudo chown -R` over that directory. Nothing here goes near a real one: every
+ONE REAL INVOCATION PULLS `node:24-alpine`, RUNS `npm ci` INSIDE IT AND WRITES INTO `dist/cli/` OF WHATEVER TREE IT IS POINTED AT. It also runs `sudo chown -R` over that directory. Nothing here goes near a real one: every
 case runs with a PATH that REPLACES the caller's rather than prepending to it,
 and `test_the_scratch_path_cannot_reach_a_real_docker_or_sudo` asserts the real binaries are unreachable from it before anything is driven. A prepended PATH would still resolve whatever the developer has installed, which is how a previous wave nearly let a stub reach into the live checkout.
 

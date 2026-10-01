@@ -1,6 +1,6 @@
 [
   "golang:1.26-bookworm",
-  "node:22-slim",
+  "node:24-slim",
   "python:3.9-slim",
   "ubuntu:24.04"
 ]

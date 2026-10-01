@@ -14,7 +14,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^22.20.0",
+    "@types/node": "^24.19.0",
     "@vitest/utils": "^5.0.2",
     "rimraf": "^6.1.2",
     "typescript": "^6.0.3",

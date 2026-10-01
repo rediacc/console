@@ -92,7 +92,7 @@ archlinux:
 
 overrides:
   apk:
-    # The CLI APK is built from a musl-linked SEA binary (node:22-alpine).
+    # The CLI APK is built from a musl-linked SEA binary (node:24-alpine).
     # Only libstdc++ is needed — no glibc shim required.
     depends:
       - libstdc++

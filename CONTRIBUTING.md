@@ -39,7 +39,7 @@ Everything is reached through one port via hostnames named after the worktree:
 
 **On ChromeOS forward exactly one port — 8090 — in Settings → Linux → Port forwarding.** Chrome resolves `*.localhost` itself, so that single forward covers every worktree and every service. `./run.sh devbox proxy status` checks the proxy.
 
-Work **inside the devbox**. It carries the pinned toolchain (Node 22, Go, Playwright deps); the host does not. `node_modules` is not shared between the two — the glibc versions differ and native modules are built against whichever side installed them.
+Work **inside the devbox**. It carries the pinned toolchain (Node 24, Go, Playwright deps); the host does not. `node_modules` is not shared between the two — the glibc versions differ and native modules are built against whichever side installed them.
 
 ## Worktrees
 

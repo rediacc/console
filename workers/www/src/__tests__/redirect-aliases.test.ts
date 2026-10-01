@@ -12,10 +12,10 @@ type ManifestEntry = {
 };
 
 // READ, not imported. `packages/www/dist/route-manifest.json` is a BUILD ARTIFACT: it exists only after `npm run build:www`, which the job that typechecks this worker does not run. A static import puts it in the TYPE graph, so `tsc` failed with TS2307 on a clean checkout while passing on any machine that had once built the site -- and the
-// import bought nothing, because the value was cast to ManifestEntry[] on the very next
-// line. Resolved from import.meta.url rather than cwd so the vitest run is unaffected.
+// import bought nothing, because the value was cast to ManifestEntry[] on the very next line. Resolved from import.meta.url rather than cwd so the vitest run is unaffected.
+// `.href`, not the URL object: the global URL here is @cloudflare/workers-types', and @types/node 24's fileURLToPath wants node's own URL, whose searchParams iterator is disposable (TS2345 since the Node 24 floor). A string is what both sides agree on.
 const MANIFEST_PATH = fileURLToPath(
-  new URL('../../../../packages/www/dist/route-manifest.json', import.meta.url)
+  new URL('../../../../packages/www/dist/route-manifest.json', import.meta.url).href
 );
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8')) as ManifestEntry[];
 const manifestPaths = new Set(manifest.map((e) => e.path));

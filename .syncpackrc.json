@@ -41,7 +41,7 @@
       "dependencies": [
         "@types/node"
       ],
-      "pinVersion": "^22.20.0"
+      "pinVersion": "^24.19.0"
     },
     {
       "label": "Pin the OpenTelemetry 0.x line in lockstep",

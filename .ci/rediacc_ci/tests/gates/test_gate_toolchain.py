@@ -132,13 +132,13 @@ def test_toolchain_check_match_mismatch_absent(gate, tmp_path):
     gate.ok("CONTROL: an absent tool is rejected")
 
     # node compares MAJOR only; both directions.
-    fake(tmp_path, "node", "v22.99.0")
+    fake(tmp_path, "node", "v24.99.0")
     result = source_run("toolchain_check node >/dev/null 2>&1", env=with_path(tmp_path))
     if result.rc != 0:
         gate.log_fail("node: same major was rejected")
     gate.ok("node: a different patch inside the pinned major is accepted")
 
-    fake(tmp_path, "node", "v24.14.0")
+    fake(tmp_path, "node", "v22.23.2")
     result = source_run("toolchain_check node >/dev/null 2>&1", env=with_path(tmp_path))
     if result.rc == 0:
         gate.log_fail("CONTROL: a different node MAJOR was accepted")

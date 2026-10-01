@@ -26,11 +26,8 @@
 # ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
 @eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
 
-# glob is pinned by the root overrides entry (see package.json _overridesReasons.glob)
-glob  # BLOCKER: root overrides force glob ^11 tree-wide and npm EOVERRIDE requires the declared devDep range to equal the override, so the v13 major cannot be taken until the override family is re-evaluated
-
-# @types/node major must match Node engine version (22.x)
-@types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
+# @types/node major must match Node engine version (24.x)
+@types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 24
 
 # eslint-plugin-unicorn v66 — major release with new/renamed lint rules
 eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames lint rules which would surface new violations across the whole monorepo; adoption deferred to a dedicated lint-tooling PR that audits and fixes the rule-set changes

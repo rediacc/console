@@ -424,7 +424,7 @@
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^2.1.0",
     "@humanwhocodes/momoa": "^3.3.13",
-    "@types/node": "^22.20.0",
+    "@types/node": "^24.19.0",
     "@types/proper-lockfile": "^4.1.4",
     "@typescript-eslint/eslint-plugin": "^8.70.1",
     "@typescript-eslint/parser": "^8.70.1",
@@ -438,7 +438,7 @@
     "eslint-plugin-regexp": "^3.3.1",
     "eslint-plugin-sonarjs": "^4.2.1",
     "eslint-plugin-unicorn": "^65.0.1",
-    "glob": "^11.0.0",
+    "glob": "^13.0.6",
     "globals": "^17.12.0",
     "knip": "^6.38.0",
     "lockfile-lint": "^5.0.1",
@@ -450,11 +450,11 @@
     "typescript-eslint": "^8.70.1"
   },
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=24.11.0"
   },
   "overrides": {
     "body-parser": "2.3.0",
-    "glob": "^11.0.0",
+    "glob": "^13.0.6",
     "rimraf": "^6.0.0",
     "rollup": "^4.59.0",
     "fast-xml-parser": "5.11.2",
@@ -484,7 +484,7 @@
   },
   "_overridesReasons": {
     "body-parser": "BLOCKER: force 2.3.0 to clear GHSA-v422-hmwv-36x6 (DoS via an invalid limit value that silently disables body-size enforcement; vulnerable >=2.0.0 <2.3.0 and <1.20.6). express@5 pulls body-parser ^2.2.1 which froze the lockfile at 2.2.2; 2.3.0 is the patched 2.x line and satisfies express's range. Advisory published after 2.3.0 (2026-06-15) had already aged past minimum-release-age, so this is a straight patched-version bump, not a deferral.",
-    "glob": "BLOCKER: force glob ^11 everywhere to avoid the deprecated transitive glob <9 chain pulled in via older eslint tooling paths",
+    "glob": "BLOCKER: force glob ^13 everywhere to avoid the deprecated transitive glob <9 chain pulled in via older eslint tooling paths (^11 until 2026-10-01; 12 and 13 changed only the CLI, which moved to glob-bin and nothing here runs, so the API every consumer calls is unchanged)",
     "rimraf": "BLOCKER: force rimraf ^6 to avoid unmaintained v2/v3 transitive chains still referenced by older build/lint tooling",
     "rollup": "BLOCKER: pin rollup ^4.59 to ensure all workspaces resolve the same native binary set and avoid platform-specific optional-dep drift",
     "fast-xml-parser": "BLOCKER: pin 5.11.2 (raised from 5.8.0 for @astrojs/rss 4.0.19, then from 5.10.1 for deps freshness, then from 5.11.0 and 5.11.1 for the same reason; now 5.11.2) to carry the CDATA/comment injection fix (GHSA-gh4j-gqv2-49f6) plus the entity-expansion limit family; without the pin transitive consumers drift below the fixed range",
