@@ -11,6 +11,8 @@
  *
  * WHAT IS SCANNED, AND WHY LOCAL AND CI NOW AGREE. The private/ manifests scanned are the ones inside a git SUBMODULE declared in .gitmodules (plus the nested manifests in NESTED_PRIVATE_PACKAGE_DIRS), which is exactly the set the quality-content job checks out with `submodules: true`. A gitignored local-only directory such as private/growth is never scanned, because a verdict CI never reaches is not a gate. And every `current` version is read from the manifest's committed package-lock.json, because CI installs no node_modules under private/ and `npm outdated --package-lock-only` then reports NO `current` at all: until 2026-09-26 the gate dropped every such entry as "nothing to judge", so CI's private scan examined all of private/account and judged none of it, while a developer's installed node_modules made the same scan judge real packages locally.
  *
+ * A BLOCKLIST LINE HOLDS A MAJOR FOR 90 DAYS, NOT FOREVER (operator ruling 2026-10-01). A blocklisted breaking bump is aged from the first stable, non-deprecated release of the first line past `current` (not from `latest`, whose line restarts at every new major). At 60 days it warns; at 90 it fails unless .ci/policy/deps-major-exceptions.json excuses it with an owner, a reason and exactly one of a mechanical blocker re-checked against the registry on every run (peer-range, engine-floor) or an expiry at most 30 days out. An exception that has expired, whose blocker has lifted, or that excuses nothing fails the gate. Before this, a blocklist line excused a major with no time limit, the oldest for 477 days.
+ *
  * Usage:
  *   npx tsx scripts/gates/check-deps.ts           # Check for outdated packages
  *   npx tsx scripts/gates/check-deps.ts --upgrade # Upgrade every non-blocked, non-breaking package
@@ -18,7 +20,7 @@
  *
  * Exit codes:
  *   0 - All dependencies are up-to-date (or blocked, or too new), or upgrade succeeded with no major left undecided
- *   1 - Outdated dependencies found (check mode), a major awaits a decision, a version could not be determined, an allow entry is dead, or an upgrade failed
+ *   1 - Outdated dependencies found (check mode), a major awaits a decision, a blocklisted major is past 90 days and unexcused (or cannot be dated), a held-major exception is invalid, expired, stale or dead, a version could not be determined, an allow entry is dead, or an upgrade failed
  *
  * ---- gate ----
  * step: External dependency freshness
@@ -55,6 +57,20 @@ const BLOCKLIST_FILE = policyPath('.deps-upgrade-blocklist', CONSOLE_ROOT);
 const MAJOR_ALLOW_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'deps-major-allow.json');
 const MAJOR_ALLOW_REL = '.ci/config/deps-major-allow.json';
 const RELEASE_AGE_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'release-age.json');
+const MAJOR_EXCEPTIONS_FILE = policyPath('deps-major-exceptions.json', CONSOLE_ROOT);
+const MAJOR_EXCEPTIONS_REL = path
+  .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
+  .split(path.sep)
+  .join('/');
+// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it). Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
+const MUTANT = process.env.CHECK_DEPS_MUTANT;
+const DAY_MS = 86_400_000;
+/** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
+const HOLD_DEADLINE_DAYS = 90;
+/** ... and warns from this age. */
+const HOLD_WARN_DAYS = 60;
+/** An `expires` exception may reach at most this far ahead of the run judging it. */
+const EXCEPTION_MAX_DAYS = 30;
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -637,54 +653,608 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
 
 // getMinReleaseAgeMs / startOfNextUtcDay / isWithinFreshnessWindow now live in scripts/lib/release-age.ts, shared with the embed-asset freshness gate.
 
-// Cache for version publish timestamps to avoid duplicate registry fetches.
-const publishTimeCache = new Map<string, number | null>();
+/** The parts of a registry document (packument) this gate reads. */
+interface Packument {
+  'dist-tags'?: Record<string, string>;
+  versions?: Record<
+    string,
+    { deprecated?: unknown; peerDependencies?: Record<string, string> } | undefined
+  >;
+  time?: Record<string, string>;
+}
+
+// One registry document per package, cached as the PROMISE so parallel callers share one fetch.
+const packumentCache = new Map<string, Promise<Packument | null>>();
+
+/**
+ * The registry document of `name`, or null on any failure. Under CHECK_DEPS_ROOT it is read from `<root>/.fixture-registry/<encodeURIComponent(name)>.json` and the network is never touched; a missing fixture document is null, exactly like an unreachable registry. Callers decide what null means: the freshness window reads it as too new, the held-major clock as CANNOT DATE.
+ */
+function fetchPackument(name: string): Promise<Packument | null> {
+  const cached = packumentCache.get(name);
+  if (cached) return cached;
+  const loaded = FIXTURE_ROOT
+    ? Promise.resolve(readFixturePackument(name))
+    : new Promise<Packument | null>((resolve) => {
+        const url = `https://registry.npmjs.org/${encodeURIComponent(name)}`;
+        const req = https.get(url, { timeout: 5000 }, (res) => {
+          const chunks: Buffer[] = [];
+          res.on('data', (chunk: Buffer) => {
+            chunks.push(chunk);
+          });
+          res.on('end', () => {
+            try {
+              const json = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as unknown;
+              resolve(
+                typeof json === 'object' && json !== null && !Array.isArray(json)
+                  ? (json as Packument)
+                  : null
+              );
+            } catch {
+              resolve(null);
+            }
+          });
+        });
+        req.on('error', () => resolve(null));
+        req.on('timeout', () => {
+          req.destroy();
+          resolve(null);
+        });
+      });
+  packumentCache.set(name, loaded);
+  return loaded;
+}
+
+function readFixturePackument(name: string): Packument | null {
+  const p = path.join(CONSOLE_ROOT, '.fixture-registry', `${encodeURIComponent(name)}.json`);
+  if (!fs.existsSync(p)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf-8')) as Packument;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Fetch the publish timestamp (epoch ms) of a specific package version from the
- * npm registry's `time` map. Returns null on any failure (treated as installable
- * so a registry hiccup never silently suppresses a real upgrade).
+ * npm registry's `time` map. Returns null on any failure (the freshness window
+ * treats that as too new, so a hiccup never becomes a false "must upgrade").
  */
 async function fetchVersionPublishTime(
   packageName: string,
   version: string
 ): Promise<number | null> {
-  const cacheKey = `${packageName}@${version}`;
-  if (publishTimeCache.has(cacheKey)) {
-    return publishTimeCache.get(cacheKey) ?? null;
-  }
+  const doc = await fetchPackument(packageName);
+  const stamp = doc?.time?.[version];
+  const ms = stamp ? Date.parse(stamp) : Number.NaN;
+  return Number.isNaN(ms) ? null : ms;
+}
 
-  return new Promise((resolve) => {
-    const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
-    const req = https.get(url, { timeout: 5000 }, (res) => {
-      let data = '';
-      res.on('data', (chunk: Buffer) => {
-        data += chunk.toString();
-      });
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data) as { time?: Record<string, string> };
-          const stamp = json.time?.[version];
-          const ms = stamp ? Date.parse(stamp) : Number.NaN;
-          const val = Number.isNaN(ms) ? null : ms;
-          publishTimeCache.set(cacheKey, val);
-          resolve(val);
-        } catch {
-          publishTimeCache.set(cacheKey, null);
-          resolve(null);
+/** Every stable (no prerelease), non-deprecated version a registry document lists, ascending. */
+function stableVersions(doc: Packument): string[] {
+  return Object.entries(doc.versions ?? {})
+    .filter(([v, meta]) => {
+      const pv = parseVersion(v);
+      return pv !== null && !pv.prerelease && !meta?.deprecated;
+    })
+    .map(([v]) => v)
+    .sort(compareVersions);
+}
+
+/**
+ * The CLOCK LINE of a held major: the line of the lowest stable, non-deprecated version above `current` that leaves current's line (and is not above `latest`). Not latest's line: that would restart the clock at every new major, which is the "free forever" hole (eslint-plugin-unicorn reads 11 days on line 76 and 108 on line 66). A skipped line (@types/node 23 was never published) is skipped here too, and 0.x lines follow releaseLine, so lucide-react 0.575 clocks from 0.576.0. Null when no such version exists.
+ */
+function clockLine(doc: Packument, current: string, latest: string): string | null {
+  const lc = releaseLine(current);
+  for (const v of stableVersions(doc)) {
+    if (compareVersions(v, current) <= 0) continue;
+    if (parseVersion(latest) && compareVersions(v, latest) > 0) break;
+    const l = releaseLine(v);
+    if (l && l !== lc) return l;
+  }
+  return null;
+}
+
+/** The lowest stable, non-deprecated version on `line` and its publish time; null when there is none or it carries no time. @eslint/js 10.0.0 (2024, deprecated "This version should not be used") is skipped, so line 10 starts at 10.0.1. */
+function firstReleaseOfLine(doc: Packument, line: string): { version: string; ms: number } | null {
+  for (const v of stableVersions(doc)) {
+    if (releaseLine(v) !== line) continue;
+    const stamp = doc.time?.[v];
+    const ms = stamp ? Date.parse(stamp) : Number.NaN;
+    return Number.isNaN(ms) ? null : { version: v, ms };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Range evaluator, for peer-range blockers and engines.node. `satisfiesRange` above handles single shapes only and `semver` is not a direct dependency, so this is in-file. It understands `||` sets of space-separated comparators (`^ ~ >= > <= < =`, bare and x-range versions, partials such as `^9.7` and `>=10.4`) and REFUSES anything else (hyphen ranges, tags, URLs) by returning null: a range it cannot read is never passed.
+// ---------------------------------------------------------------------------
+
+type Triple = [number, number, number];
+interface Bound {
+  op: '>=' | '>' | '<' | '<=';
+  v: Triple;
+}
+/** One `||` alternative: every bound must hold. `[]` admits everything. */
+type RangeSet = Bound[];
+
+const NEVER: Bound = { op: '<', v: [0, 0, 0] };
+const COMPARATOR_RE =
+  /^(<=|>=|<|>|=|\^|~>?)?v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+
+function cmpTriple(a: Triple, b: Triple): number {
+  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+}
+
+function parseComparator(text: string): Bound[] | null {
+  const m = text.match(COMPARATOR_RE);
+  if (!m) return null;
+  const op = (m[1] ?? '').replace('~>', '~');
+  const parts: number[] = [];
+  for (const raw of [m[2], m[3], m[4]]) {
+    if (raw === undefined || /^[xX*]$/.test(raw)) break;
+    parts.push(Number.parseInt(raw, 10));
+  }
+  const n = parts.length;
+  const pre = Boolean(m[5]) && n === 3;
+  const [M = 0, mi = 0, p = 0] = parts;
+  const base: Triple = [M, mi, p];
+  const nextOf = (k: number): Triple =>
+    k === 1 ? [M + 1, 0, 0] : k === 2 ? [M, mi + 1, 0] : [M, mi, p + 1];
+  // A prerelease comparator is judged only against STABLE versions here, so `>=X-pre` is `>=X`, `<=X-pre` is `<X`, and an exact `X-pre` admits no stable version at all.
+  switch (op) {
+    case '':
+    case '=':
+      if (n === 0) return [];
+      if (n < 3)
+        return [
+          { op: '>=', v: base },
+          { op: '<', v: nextOf(n) },
+        ];
+      return pre
+        ? [NEVER]
+        : [
+            { op: '>=', v: base },
+            { op: '<=', v: base },
+          ];
+    case '>=':
+      return n === 0 ? [] : [{ op: '>=', v: base }];
+    case '>':
+      if (n === 0) return [NEVER];
+      if (n < 3) return [{ op: '>=', v: nextOf(n) }];
+      return [{ op: pre ? '>=' : '>', v: base }];
+    case '<':
+      return n === 0 ? [NEVER] : [{ op: '<', v: base }];
+    case '<=':
+      if (n === 0) return [];
+      if (n < 3) return [{ op: '<', v: nextOf(n) }];
+      return [{ op: pre ? '<' : '<=', v: base }];
+    case '~':
+      if (n === 0) return [];
+      return [
+        { op: '>=', v: base },
+        { op: '<', v: nextOf(n === 1 ? 1 : 2) },
+      ];
+    case '^': {
+      if (n === 0) return [];
+      const upper: Triple =
+        M > 0 || n === 1 ? [M + 1, 0, 0] : mi > 0 || n === 2 ? [0, mi + 1, 0] : [0, 0, p + 1];
+      return [
+        { op: '>=', v: base },
+        { op: '<', v: upper },
+      ];
+    }
+    default:
+      return null;
+  }
+}
+
+/** Parse a range into its `||` alternatives, or null when any part of it is not understood. */
+function parseRange(range: string): RangeSet[] | null {
+  const sets: RangeSet[] = [];
+  for (const alt of range.split('||')) {
+    const text = alt.trim().replace(/(<=|>=|<|>|=|\^|~>?)\s+/g, '$1');
+    if (/\s-\s/.test(alt)) return null;
+    const bounds: Bound[] = [];
+    if (text !== '') {
+      for (const tok of text.split(/\s+/)) {
+        const b = parseComparator(tok);
+        if (!b) return null;
+        bounds.push(...b);
+      }
+    }
+    sets.push(bounds);
+  }
+  return sets;
+}
+
+/** True when the STABLE `version` satisfies one of the parsed alternatives. */
+function rangeAdmits(sets: RangeSet[], version: string): boolean {
+  const pv = parseVersion(version);
+  if (!pv || pv.prerelease) return false;
+  const t: Triple = [pv.major, pv.minor, pv.patch];
+  return sets.some((set) =>
+    set.every((b) => {
+      const c = cmpTriple(t, b.v);
+      return b.op === '>=' ? c >= 0 : b.op === '>' ? c > 0 : b.op === '<' ? c < 0 : c <= 0;
+    })
+  );
+}
+
+/** The lowest major a parsed range admits at all, i.e. the major of its lowest lower bound (0 when an alternative has none). */
+function rangeFloorMajor(sets: RangeSet[]): number {
+  let floor = Number.POSITIVE_INFINITY;
+  for (const set of sets) {
+    let lo = 0;
+    for (const b of set) if (b.op === '>=' || b.op === '>') lo = Math.max(lo, b.v[0]);
+    floor = Math.min(floor, lo);
+  }
+  return floor === Number.POSITIVE_INFINITY ? 0 : floor;
+}
+
+// ---------------------------------------------------------------------------
+// Held-major exceptions (.ci/policy/deps-major-exceptions.json).
+// ---------------------------------------------------------------------------
+
+type MajorBlocker =
+  | { kind: 'peer-range'; package: string; peer: string; excludes: string }
+  | { kind: 'engine-floor'; engine: 'node' };
+
+interface MajorException {
+  key: string;
+  scope: string | null;
+  name: string;
+  owner: string;
+  reason: string;
+  blocker?: MajorBlocker;
+  /** YYYY-MM-DD, at most EXCEPTION_MAX_DAYS ahead of the run. */
+  expires?: string;
+}
+
+const EXCEPTION_KEY_RE = /^(?:([^:\s]+):)?((?:@[^@/\s:]+\/)?[^@/\s:]+)$/;
+const OWNER_RE = /^[A-Za-z0-9._@-]{3,}$/;
+const LINE_RE = /^\d+(?:\.\d+){0,2}$/;
+const ENTRY_FIELDS = new Set(['owner', 'reason', 'blocker', 'expires']);
+
+/** Start of the UTC day containing `ms`. */
+function utcDay(ms: number): number {
+  return Math.floor(ms / DAY_MS) * DAY_MS;
+}
+
+const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+/**
+ * Parse the exceptions file's JSON text, refusing every entry that is not a complete, current decision. Pure apart from `nowMs`, so the selftest drives it without a file. Reason QUALITY is checked by the loader (it goes through the canonical validator). Each problem is prefixed with the file and key, ready to print.
+ */
+function parseMajorExceptions(
+  text: string,
+  nowMs: number
+): { entries: MajorException[]; problems: string[] } {
+  const entries: MajorException[] = [];
+  const problems: string[] = [];
+  const say = (key: string, msg: string) =>
+    problems.push(`✗ ${MAJOR_EXCEPTIONS_REL} "${key}": ${msg}`);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    return {
+      entries,
+      problems: [`✗ ${MAJOR_EXCEPTIONS_REL}: not valid JSON: ${(e as Error).message}`],
+    };
+  }
+  const table = (parsed as { exceptions?: unknown } | null)?.exceptions;
+  if (typeof table !== 'object' || table === null || Array.isArray(table)) {
+    return {
+      entries,
+      problems: [`✗ ${MAJOR_EXCEPTIONS_REL}: has no "exceptions" object (an empty one is {})`],
+    };
+  }
+  const today = utcDay(nowMs);
+  for (const [key, raw] of Object.entries(table as Record<string, unknown>)) {
+    const km = key.match(EXCEPTION_KEY_RE);
+    if (!km) {
+      say(key, "key is not '<package>' or '<dir>:<package>' (blocklist grammar)");
+      continue;
+    }
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      say(key, 'entry is not an object');
+      continue;
+    }
+    const e = raw as Record<string, unknown>;
+    const before = problems.length;
+    for (const f of Object.keys(e)) {
+      if (!ENTRY_FIELDS.has(f))
+        say(key, `unknown field "${f}" (allowed: ${[...ENTRY_FIELDS].join(', ')})`);
+    }
+    const owner = typeof e.owner === 'string' ? e.owner.trim() : '';
+    if (owner === '') say(key, 'no owner');
+    else if (!OWNER_RE.test(owner)) say(key, `owner "${owner}" does not match ${OWNER_RE.source}`);
+    const reason = typeof e.reason === 'string' ? e.reason.trim() : '';
+    if (reason === '') say(key, 'no reason');
+    const hasBlocker = e.blocker !== undefined;
+    const hasExpires = e.expires !== undefined;
+    let blocker: MajorBlocker | undefined;
+    let expires: string | undefined;
+    if (hasBlocker === hasExpires) {
+      say(
+        key,
+        'free-text-only entries are refused; give exactly one of "blocker" (re-checked every run) or "expires" (YYYY-MM-DD, at most 30 days out)'
+      );
+    } else if (hasExpires) {
+      const d = typeof e.expires === 'string' ? e.expires : '';
+      const ms = /^\d{4}-\d{2}-\d{2}$/.test(d) ? Date.parse(`${d}T00:00:00Z`) : Number.NaN;
+      if (Number.isNaN(ms) || isoDate(ms) !== d) {
+        say(key, `expires "${String(e.expires)}" is not a YYYY-MM-DD date`);
+      } else if (ms < today) {
+        say(key, `expired on ${d}; the hold is unexcused again`);
+      } else {
+        const out = Math.round((ms - today) / DAY_MS);
+        if (out > EXCEPTION_MAX_DAYS)
+          say(key, `expires ${d} is ${out} days out; the limit is ${EXCEPTION_MAX_DAYS}`);
+        else expires = d;
+      }
+    } else {
+      const b = e.blocker as Record<string, unknown> | null;
+      const kind = typeof b === 'object' && b !== null ? b.kind : undefined;
+      if (kind === 'peer-range') {
+        const pkg = b?.package;
+        const peer = b?.peer;
+        const excl = b?.excludes;
+        if (
+          typeof pkg !== 'string' ||
+          !pkg ||
+          typeof peer !== 'string' ||
+          !peer ||
+          typeof excl !== 'string' ||
+          !LINE_RE.test(excl)
+        ) {
+          say(
+            key,
+            'a peer-range blocker needs "package", "peer" and "excludes" (a release line, e.g. "7")'
+          );
+        } else {
+          blocker = { kind: 'peer-range', package: pkg, peer, excludes: excl };
         }
-      });
-    });
-    req.on('error', () => {
-      publishTimeCache.set(cacheKey, null);
-      resolve(null);
-    });
-    req.on('timeout', () => {
-      req.destroy();
-      publishTimeCache.set(cacheKey, null);
-      resolve(null);
-    });
-  });
+      } else if (kind === 'engine-floor') {
+        if (b?.engine !== 'node') say(key, 'an engine-floor blocker needs "engine": "node"');
+        else blocker = { kind: 'engine-floor', engine: 'node' };
+      } else {
+        say(key, `unknown blocker.kind "${String(kind)}" (known: peer-range, engine-floor)`);
+      }
+    }
+    if (problems.length > before) continue;
+    entries.push({ key, scope: km[1] ?? null, name: km[2], owner, reason, blocker, expires });
+  }
+  return { entries, problems };
+}
+
+/**
+ * Load the exceptions file and refuse it whole on any problem, before anything is probed or installed. A MISSING file is a loud failure, as with the allow list: it is committed, so its absence means the gate is reading the wrong tree. A key must name a blocklist line: a scoped key its own scoped line or the bare one, a bare key the bare line.
+ */
+function loadMajorExceptions(
+  blocklist: Map<string, BlocklistEntry>,
+  nowMs: number
+): MajorException[] {
+  if (!fs.existsSync(MAJOR_EXCEPTIONS_FILE)) {
+    console.error(
+      `${RED}✗${NC} ${MAJOR_EXCEPTIONS_FILE} is missing. It is committed (with an empty "exceptions": {} object at the least); ` +
+        'its absence means this gate is not reading the tree it thinks it is.'
+    );
+    process.exit(1);
+  }
+  const { entries, problems } = parseMajorExceptions(
+    fs.readFileSync(MAJOR_EXCEPTIONS_FILE, 'utf-8'),
+    nowMs
+  );
+  for (const e of entries) {
+    const bad = validateBlockerQuality(e.key, e.reason, MAJOR_EXCEPTIONS_REL);
+    if (bad) problems.push(bad.message);
+    if (!blocklist.has(e.key) && !(e.scope && blocklist.has(e.name))) {
+      problems.push(
+        `✗ ${MAJOR_EXCEPTIONS_REL} "${e.key}": no matching line in .ci/policy/.deps-upgrade-blocklist, so there is no hold to excuse. Delete the entry.`
+      );
+    }
+  }
+  if (problems.length > 0) {
+    console.error(`${RED}✗${NC} ${MAJOR_EXCEPTIONS_REL} is invalid:`);
+    for (const p of problems) console.error(`  ${p}`);
+    process.exit(1);
+  }
+  return entries;
+}
+
+interface HeldBlocked {
+  pkg: PackageInfo;
+  /** '' for the root. */
+  manifest: string;
+  dir: string;
+}
+
+interface ClockResult {
+  warn: string[];
+  fail: string[];
+  excused: string[];
+  cannotDate: string[];
+}
+
+/** The engines.node range a manifest declares, or undefined. */
+function readEnginesNode(dir: string): string | undefined {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')) as {
+      engines?: { node?: unknown };
+    };
+    return typeof pkg.engines?.node === 'string' ? pkg.engines.node : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Is a mechanical blocker still true? `live` with the evidence for the excused line, or `lifted` with the stale message, or `cannot` when the registry or the range cannot answer (refused, never passed).
+ */
+async function evaluateBlocker(
+  b: MajorBlocker,
+  held: HeldBlocked,
+  line: string
+): Promise<{ state: 'live' | 'lifted' | 'cannot'; text: string }> {
+  if (b.kind === 'engine-floor') {
+    const where = `${held.manifest ? `${held.manifest}/` : ''}package.json`;
+    const r = readEnginesNode(held.dir);
+    if (r === undefined) {
+      return {
+        state: 'lifted',
+        text: `blocker lifted: ${where} declares no engines.node, so nothing holds ${line}.x. Delete the entry.`,
+      };
+    }
+    const sets = parseRange(r);
+    if (!sets) {
+      return {
+        state: 'cannot',
+        text: `cannot evaluate blocker: ${where} engines.node "${r}" is not a range this gate can read; refused rather than passed`,
+      };
+    }
+    const lineMajor = Number.parseInt(line.split('.')[0], 10);
+    if (rangeFloorMajor(sets) < lineMajor) {
+      return { state: 'live', text: `engine-floor: engines.node "${r}"` };
+    }
+    return {
+      state: 'lifted',
+      text: `blocker lifted: ${where} engines.node "${r}" now admits ${line}.x. Delete the entry.`,
+    };
+  }
+  const pDoc = await fetchPackument(b.package);
+  const qDoc = await fetchPackument(b.peer);
+  const pv = pDoc?.['dist-tags']?.latest;
+  if (!pDoc || !qDoc || !pv) {
+    return {
+      state: 'cannot',
+      text: `cannot evaluate blocker: no registry document for ${!pDoc || !pv ? b.package : b.peer}; refused rather than passed`,
+    };
+  }
+  const range = pDoc.versions?.[pv]?.peerDependencies?.[b.peer];
+  if (range === undefined) {
+    return {
+      state: 'lifted',
+      text: `blocker lifted: ${b.package}@${pv} no longer declares peer ${b.peer}. Delete the entry.`,
+    };
+  }
+  const sets = parseRange(range);
+  if (!sets) {
+    return {
+      state: 'cannot',
+      text: `cannot evaluate blocker: ${b.package}@${pv} declares peer ${b.peer} "${range}", which this gate cannot parse; refused rather than passed`,
+    };
+  }
+  const admitted = stableVersions(qDoc).find(
+    (w) => releaseLine(w) === b.excludes && rangeAdmits(sets, w)
+  );
+  if (admitted) {
+    return {
+      state: 'lifted',
+      text: `blocker lifted: ${b.package}@${pv} declares peer ${b.peer} "${range}", which admits ${b.peer}@${admitted}. Delete the entry.`,
+    };
+  }
+  return {
+    state: 'live',
+    text: `peer-range: ${b.package}@${pv} declares peer ${b.peer} "${range}"`,
+  };
+}
+
+/**
+ * THE HELD-MAJOR CLOCK. Every blocklisted breaking bump is aged from the first release of its clock line: silent under 60 days, a warning from 60, a failure from 90 unless an exception excuses it. Every exception is judged too, on every run: one whose mechanical blocker has lifted is stale, one that matches no blocklist-held major in this run is dead, and both fail. Unknown age is refused, never treated as young, which is the fail-closed contract of runNpmOutdated.
+ *
+ * `unjudged` names the declared submodules that are not checked out here: an exception that could only match there is reported as not judged rather than as dead (CI checks them out, and refuses an empty one).
+ */
+async function ageHeldMajors(
+  held: HeldBlocked[],
+  exceptions: MajorException[],
+  nowMs: number,
+  unjudged: string[]
+): Promise<ClockResult> {
+  const out: ClockResult = { warn: [], fail: [], excused: [], cannotDate: [] };
+  const used = new Set<string>();
+  const exPrefix = (key: string) => `✗ ${MAJOR_EXCEPTIONS_REL} "${key}": `;
+  const staleSeen = new Set<string>();
+  const results = await Promise.all(
+    held.map(async (h) => {
+      const doc = await fetchPackument(h.pkg.name);
+      return { h, doc };
+    })
+  );
+  for (const { h, doc } of results) {
+    const m = h.manifest || 'root';
+    const { name, current, latest } = h.pkg;
+    const exception =
+      (h.manifest
+        ? exceptions.find((e) => e.scope === h.manifest && e.name === name)
+        : undefined) ?? exceptions.find((e) => e.scope === null && e.name === name);
+    if (exception) used.add(exception.key);
+    const line = doc ? clockLine(doc, current, latest) : null;
+    const first = doc && line ? firstReleaseOfLine(doc, line) : null;
+    if (!doc || !line || !first) {
+      const lineText = line ?? `past ${releaseLine(current) ?? current}`;
+      out.cannotDate.push(
+        doc
+          ? `✗ cannot date held major ${name} (${m}): no stable, non-deprecated release on line ${lineText} in the registry document. Unknown age is unchecked, not young.`
+          : `✗ cannot date held major ${name} (${m}): no registry document for ${name}. Unknown age is unchecked, not young.`
+      );
+      continue;
+    }
+    const days = Math.floor((nowMs - first.ms) / DAY_MS);
+    const deadlineMs = first.ms + HOLD_DEADLINE_DAYS * DAY_MS;
+    const firstText = `line ${line} first released ${isoDate(first.ms)} (${first.version}), ${days} days ago`;
+
+    // Every exception that matches is re-checked whatever the age: a lifted blocker is stale on a young hold too.
+    let excuse: string | null = null;
+    if (exception?.blocker) {
+      const ev = await evaluateBlocker(exception.blocker, h, line);
+      if (ev.state === 'live') {
+        excuse = ev.text;
+      } else {
+        const msg = `${exPrefix(exception.key)}${ev.text}`;
+        if (!staleSeen.has(msg)) {
+          staleSeen.add(msg);
+          out.fail.push(msg);
+        }
+      }
+    } else if (exception?.expires) {
+      excuse = `expires ${exception.expires}`;
+    }
+
+    if (nowMs >= deadlineMs) {
+      if (excuse && exception) {
+        out.excused.push(
+          `  ${name} (${m}), ${days} days: excused by deps-major-exceptions.json "${exception.key}" (owner ${exception.owner}): ${excuse}`
+        );
+      } else {
+        out.fail.push(
+          `✗ Held major past ${HOLD_DEADLINE_DAYS} days: ${name} ${current} -> ${latest} (${m}): ${firstText}; deadline ${isoDate(deadlineMs)} passed. ` +
+            `A .ci/policy/.deps-upgrade-blocklist line alone no longer excuses it: take it (add "${suggestedAllowKey(h.pkg, h.manifest || undefined)}" to ${MAJOR_ALLOW_REL} and drop the blocklist line) ` +
+            `or add an entry to ${MAJOR_EXCEPTIONS_REL} with a mechanical blocker or an expiry at most ${EXCEPTION_MAX_DAYS} days out.`
+        );
+      }
+    } else if (days >= HOLD_WARN_DAYS) {
+      out.warn.push(
+        `Held major aging: ${name} ${current} -> ${latest} (${m}): ${firstText}. Deadline ${isoDate(deadlineMs)} (${HOLD_DEADLINE_DAYS} days); after it a blocklist line no longer excuses it.`
+      );
+    }
+  }
+  for (const e of exceptions) {
+    if (used.has(e.key)) continue;
+    const couldBeUnjudged =
+      unjudged.length > 0 &&
+      (e.scope === null || unjudged.some((u) => e.scope === u || e.scope?.startsWith(`${u}/`)));
+    if (couldBeUnjudged) {
+      out.warn.push(
+        `Not judged here: ${MAJOR_EXCEPTIONS_REL} "${e.key}" matched no hold, but ${unjudged.join(', ')} is not checked out (CI judges it).`
+      );
+      continue;
+    }
+    out.fail.push(
+      `${exPrefix(e.key)}excuses nothing in this run (no blocklist-held major matches). Delete the entry.`
+    );
+  }
+  return out;
 }
 
 /**
@@ -996,9 +1566,20 @@ ${YELLOW}DESCRIPTION${NC}
   Packages can be blocklisted in .ci/policy/.deps-upgrade-blocklist to hold them.
   A breaking upgrade (new major, or new minor on 0.x) is never applied by
   --upgrade unless ${MAJOR_ALLOW_REL} names it with a reason.
+  A blocklisted major is aged from the first release of the first line past
+  its current version: it warns at ${HOLD_WARN_DAYS} days and fails at ${HOLD_DEADLINE_DAYS} unless
+  ${MAJOR_EXCEPTIONS_REL} excuses it (owner, reason, and exactly
+  one of a re-checked peer-range/engine-floor blocker or an expiry at most
+  ${EXCEPTION_MAX_DAYS} days out).
 
 ${YELLOW}BLOCKLIST FORMAT${NC}
   package-name  # BLOCKER: reason for blocking
+
+${YELLOW}EXCEPTION FORMAT${NC} (${MAJOR_EXCEPTIONS_REL})
+  {"exceptions": {"<pkg>" or "<dir>:<pkg>": {"owner": "...", "reason": "...",
+    "blocker": {"kind": "peer-range", "package": P, "peer": Q, "excludes": "<line>"}
+             | {"kind": "engine-floor", "engine": "node"}
+    or "expires": "YYYY-MM-DD"}}}
 
 ${YELLOW}EXAMPLES${NC}
   npx tsx scripts/gates/check-deps.ts           # Check for outdated packages
@@ -1030,10 +1611,26 @@ async function checkDependencies(): Promise<void> {
     process.exit(0);
   }
 
+  if (MUTANT !== undefined && MUTANT !== '') {
+    if (!FIXTURE_ROOT || MUTANT !== 'ignore-clock') {
+      console.error(
+        `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the only mutant is "ignore-clock", and it is honoured only under ` +
+          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree it would switch the held-major clock off, so it is never honoured there.'
+      );
+      process.exit(1);
+    }
+    console.log(
+      `${YELLOW}MUTANT ignore-clock: the held-major clock is OFF for this fixture run${NC}\n`
+    );
+  }
+  const clockOff = MUTANT === 'ignore-clock';
+
   console.log('Checking dependency versions...\n');
 
+  const startMs = Date.now();
   const blocklist = loadBlocklist();
   const allow = loadMajorAllow();
+  const exceptions = loadMajorExceptions(blocklist, startMs);
 
   const scan = getPrivatePackageDirs();
   if (scan.uninitialized.length > 0) {
@@ -1069,11 +1666,17 @@ async function checkDependencies(): Promise<void> {
   const nowMs = Date.now();
   const groups: ManifestGroup[] = [];
   const allowUsed = new Set<string>();
+  const heldBlocked: HeldBlocked[] = [];
   let judged = 0;
   for (const m of manifests) {
     judged += Object.keys(m.entries).length;
     const cat = categorizePackages(m.entries, blocklist, m.name || undefined, allow);
     for (const k of cat.allowUsed) allowUsed.add(k);
+    // The blocked branch runs BEFORE the breaking-bump test in categorizePackages, so a blocklisted major lands here and never in heldMajor. The clock below is what stops that line excusing it forever; minor holds (playwright) are outside it.
+    for (const p of cat.blocked) {
+      if (isBreakingBump(p.current, p.latest))
+        heldBlocked.push({ pkg: p, manifest: m.name, dir: m.dir });
+    }
     // Defer versions still inside the freshness window (aged < 24h, rounded up to the next UTC day): too fresh to be a real "must upgrade" or a real decision. This auto-resolves as a daily batch once the version ages out.
     const must = await partitionByReleaseAge(cat.mustUpgrade, minReleaseAgeMs, nowMs);
     const held = await partitionByReleaseAge(cat.heldMajor, minReleaseAgeMs, nowMs);
@@ -1101,6 +1704,25 @@ async function checkDependencies(): Promise<void> {
     }
     process.exit(1);
   }
+
+  const clock: ClockResult = clockOff
+    ? { warn: [], fail: [], excused: [], cannotDate: [] }
+    : await ageHeldMajors(heldBlocked, exceptions, nowMs, scan.uninitialized);
+  const clockFailures = clock.fail.length + clock.cannotDate.length;
+  /** The clock's verdicts: warnings and excused lines on stdout every run (never silent), failures on stderr. */
+  const printClock = () => {
+    for (const w of clock.warn) console.log(`${YELLOW}${w}${NC}`);
+    if (clock.warn.length > 0) console.log();
+    if (clock.excused.length > 0) {
+      console.log(
+        `Held majors past ${HOLD_DEADLINE_DAYS} days, excused (${clock.excused.length}):`
+      );
+      for (const e of clock.excused) console.log(e);
+      console.log();
+    }
+    for (const f of [...clock.cannotDate, ...clock.fail]) console.error(`${RED}${f}${NC}`);
+    if (clockFailures > 0) console.error();
+  };
 
   const sum = (pick: (g: ManifestGroup) => PackageInfo[]) =>
     groups.reduce((s, g) => s + pick(g).length, 0);
@@ -1144,7 +1766,8 @@ async function checkDependencies(): Promise<void> {
       rootGroup.mustUpgrade,
       groups.slice(1).map((g) => ({ dir: g.dir, name: g.name, packages: g.mustUpgrade }))
     );
-    if (steps.length === 0 && totalHeld === 0) {
+    if (steps.length === 0 && totalHeld === 0 && clockFailures === 0) {
+      printClock();
       console.log(`${GREEN}All dependencies are up-to-date${NC}${deferredSummary()}; ${shape}`);
       for (const g of groups) {
         for (const pkg of g.blocked)
@@ -1158,9 +1781,16 @@ async function checkDependencies(): Promise<void> {
     }
     const success = executeInstalls(steps);
     printHeld();
+    printClock();
     if (totalHeld > 0) {
       console.log(
         `${RED}${totalHeld} major upgrade(s) held; check:deps stays red until each is taken or blocklisted.${NC}`
+      );
+      process.exit(1);
+    }
+    if (clockFailures > 0) {
+      console.log(
+        `${RED}${clockFailures} held-major clock failure(s); check:deps stays red until each is taken or excused.${NC}`
       );
       process.exit(1);
     }
@@ -1178,7 +1808,7 @@ async function checkDependencies(): Promise<void> {
     ? new Map<string, string | null>()
     : await fetchChangelogUrls(allPackages);
 
-  const hasFailure = totalMust > 0 || totalHeld > 0;
+  const hasFailure = totalMust > 0 || totalHeld > 0 || clockFailures > 0;
 
   for (const g of groups) {
     const header = g.name
@@ -1214,9 +1844,11 @@ async function checkDependencies(): Promise<void> {
     console.log();
   }
 
+  printClock();
+
   if (hasFailure) {
     console.log(
-      `${RED}Dependency check FAILED${NC}: ${totalMust} must upgrade, ${totalHeld} major(s) awaiting a decision; ${shape}`
+      `${RED}Dependency check FAILED${NC}: ${totalMust} must upgrade, ${totalHeld} major(s) awaiting a decision, ${clockFailures} held-major clock failure(s); ${shape}`
     );
     process.exit(1);
   }
@@ -1240,8 +1872,12 @@ interface FixtureSpec {
   manifests?: Record<string, object>;
   /** Lockfile `packages` map the stub `npm update` writes per manifest, same keys: what npm "resolved". */
   updateLocks?: Record<string, Record<string, { version: string }>>;
-  /** Extra environment for the gate process (the npm_config_loglevel control). */
+  /** Extra environment for the gate process (the npm_config_loglevel control, the clock mutant). */
   env?: NodeJS.ProcessEnv;
+  /** Registry documents by package name, served from `<root>/.fixture-registry/`. */
+  registry?: Record<string, Packument>;
+  /** The `exceptions` object of .ci/policy/deps-major-exceptions.json; `{}` when absent. */
+  exceptions?: Record<string, unknown>;
 }
 
 // The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
@@ -1268,6 +1904,13 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     path.relative(root, policyPath('.deps-upgrade-blocklist', root)),
     spec.blocklist ?? '# fixture blocklist\n'
   );
+  write(
+    path.relative(root, policyPath('deps-major-exceptions.json', root)),
+    JSON.stringify({ exceptions: spec.exceptions ?? {} })
+  );
+  for (const [name, doc] of Object.entries(spec.registry ?? {})) {
+    write(path.join('.fixture-registry', `${encodeURIComponent(name)}.json`), JSON.stringify(doc));
+  }
   // Local-only, NOT a submodule: must never be scanned, and its canned report would be a must-upgrade if it were. `GROWTH_DIR` (module scope, extension-less) plus a template literal here, rather than a whole quoted `private/growth/...` literal, keeps `check:ci-paths-exist` from reading this fixture path as a real one: on a machine where `private/growth` happens to be checked out (a separate, gitignored sibling repo -- see CLAUDE.md's worktree warning) the bare literal would otherwise resolve to Tier A and then dead-end at Tier B, since neither fixture file is real.
   write(`${GROWTH_DIR}/package.json`, '{}');
   write(
@@ -1308,6 +1951,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     PATH: `${path.join(root, 'bin')}${path.delimiter}${process.env.PATH ?? ''}`,
   };
   delete env.CHECK_DEPS_FORCE_PROBE_FAILURE;
+  if (spec.env?.CHECK_DEPS_MUTANT === undefined) delete env.CHECK_DEPS_MUTANT;
   return { root, log, env };
 }
 
@@ -1921,6 +2565,414 @@ function selftest(): void {
     tooNewRun.output
   );
 
+  // 11. THE HELD-MAJOR CLOCK (operator ruling 2026-10-01). A blocklisted major used to be excused forever; it now fails 90 days after the first release of its clock line unless an exception excuses it. Each case has its control, and the mutant proves the 91-day control depends on the clock rather than failing for another reason.
+  const ago = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString();
+  const dateIn = (days: number) => isoDate(utcDay(Date.now()) + days * DAY_MS);
+  const doc = (
+    latest: string,
+    versions: Record<
+      string,
+      { daysAgo: number; deprecated?: string; peer?: Record<string, string> }
+    >
+  ): Packument => ({
+    'dist-tags': { latest },
+    versions: Object.fromEntries(
+      Object.entries(versions).map(([v, o]) => [
+        v,
+        { ...(o.deprecated ? { deprecated: o.deprecated } : {}), peerDependencies: o.peer },
+      ])
+    ),
+    time: Object.fromEntries(Object.entries(versions).map(([v, o]) => [v, ago(o.daysAgo)])),
+  });
+  const widgetBlock =
+    'widget  # BLOCKER: widget 2 rewrites its plugin API, so it needs a coordinated migration of every plugin\n';
+  const widgetDoc = (firstDays: number) =>
+    doc('2.4.1', {
+      '1.2.0': { daysAgo: 400 },
+      '2.0.0': { daysAgo: firstDays },
+      '2.4.1': { daysAgo: 5 },
+    });
+  const clockCase = (over: Partial<FixtureSpec> = {}): FixtureSpec => ({
+    outdated: {
+      '': { widget: { current: '1.2.0', wanted: '1.2.0', latest: '2.4.1' } },
+      'private/account': {},
+    },
+    locks: { '': { 'node_modules/widget': { version: '1.2.0' } }, 'private/account': {} },
+    blocklist: widgetBlock,
+    registry: { widget: widgetDoc(91) },
+    ...over,
+  });
+  const goodReason =
+    'widget 2 needs the plugin API migration, which is scheduled with the lint-tooling change';
+  const run = (spec: FixtureSpec) => {
+    const r = runFixture(spec, 'check');
+    return { ...r, detail: r.output };
+  };
+
+  // Test 1: 89 days warns and passes; 91 days fails naming package and manifest.
+  const at89 = run(clockCase({ registry: { widget: widgetDoc(89) } }));
+  expect(
+    'clock: a blocklisted major at 89 days passes and warns with its deadline',
+    at89.status === 0 &&
+      at89.output.includes(
+        'Held major aging: widget 1.2.0 -> 2.4.1 (root): line 2 first released'
+      ) &&
+      at89.output.includes('(2.0.0), 89 days ago. Deadline'),
+    at89.detail
+  );
+  const at91 = run(clockCase());
+  expect(
+    'clock: CONTROL: the same hold at 91 days fails, naming package and manifest',
+    at91.status === 1 &&
+      at91.output.includes('✗ Held major past 90 days: widget 1.2.0 -> 2.4.1 (root)') &&
+      at91.output.includes('add "widget@2" to .ci/config/deps-major-allow.json'),
+    at91.detail
+  );
+
+  // Test 2: the age is the line's first release, not the latest patch, and a deprecated X.0.0 is skipped.
+  const fromX00 = run(clockCase({ registry: { widget: widgetDoc(120) } }));
+  expect(
+    'clock: X.0.0 at 120 days with X.4.1 at 5 days fails (age is from X.0.0)',
+    fromX00.status === 1 && fromX00.output.includes('(2.0.0), 120 days ago'),
+    fromX00.detail
+  );
+  const young = run(clockCase({ registry: { widget: widgetDoc(30) } }));
+  expect(
+    'clock: CONTROL: X.0.0 at 30 days is silent',
+    young.status === 0 && !young.output.includes('Held major'),
+    young.detail
+  );
+  const deprecatedFirst = run(
+    clockCase({
+      registry: {
+        widget: doc('2.4.1', {
+          '1.2.0': { daysAgo: 900 },
+          '2.0.0': { daysAgo: 800, deprecated: 'This version should not be used.' },
+          '2.0.1': { daysAgo: 30 },
+          '2.4.1': { daysAgo: 5 },
+        }),
+      },
+    })
+  );
+  expect(
+    'clock: a deprecated X.0.0 at 800 days is skipped; the line starts at X.0.1 (30 days, silent)',
+    deprecatedFirst.status === 0 && !deprecatedFirst.output.includes('Held major'),
+    deprecatedFirst.detail
+  );
+
+  // Test 3: peer-range and engine-floor blockers, live and lifted.
+  const peerEx = {
+    widget: {
+      owner: 'd778be9d',
+      reason: goodReason,
+      blocker: { kind: 'peer-range', package: 'widget-lint', peer: 'widget', excludes: '2' },
+    },
+  };
+  const peerLive = run(
+    clockCase({
+      exceptions: peerEx,
+      registry: {
+        widget: widgetDoc(91),
+        'widget-lint': doc('3.0.0', {
+          '3.0.0': { daysAgo: 50, peer: { widget: '>=1.0.0 <2.0.0' } },
+        }),
+      },
+    })
+  );
+  expect(
+    'clock: a live peer-range exception excuses the 91-day hold and prints the excused line',
+    peerLive.status === 0 &&
+      peerLive.output.includes(
+        '  widget (root), 91 days: excused by deps-major-exceptions.json "widget" (owner d778be9d): peer-range: widget-lint@3.0.0 declares peer widget ">=1.0.0 <2.0.0"'
+      ),
+    peerLive.detail
+  );
+  const peerLifted = run(
+    clockCase({
+      exceptions: peerEx,
+      registry: {
+        widget: widgetDoc(91),
+        'widget-lint': doc('3.1.0', {
+          '3.0.0': { daysAgo: 50, peer: { widget: '>=1.0.0 <2.0.0' } },
+          '3.1.0': { daysAgo: 3, peer: { widget: '^1 || ^2' } },
+        }),
+      },
+    })
+  );
+  expect(
+    'clock: CONTROL: once the newest peer admits the line, the exception is stale and fails',
+    peerLifted.status === 1 &&
+      peerLifted.output.includes(
+        '"widget": blocker lifted: widget-lint@3.1.0 declares peer widget "^1 || ^2", which admits widget@2.0.0. Delete the entry.'
+      ),
+    peerLifted.detail
+  );
+  const nodeCase = (engines: string): FixtureSpec =>
+    clockCase({
+      outdated: {
+        '': { '@types/node': { current: '22.20.0', wanted: '22.20.0', latest: '26.6.3' } },
+        'private/account': {},
+      },
+      locks: { '': { 'node_modules/@types/node': { version: '22.20.0' } }, 'private/account': {} },
+      blocklist:
+        '@types/node  # BLOCKER: the types must match the Node engine floor, which is Node 22 in this fixture\n',
+      manifests: { '': { engines: { node: engines } } },
+      registry: {
+        '@types/node': doc('26.6.3', {
+          '22.20.0': { daysAgo: 500 },
+          '24.0.0': { daysAgo: 477 },
+          '26.6.3': { daysAgo: 2 },
+        }),
+      },
+      exceptions: {
+        '@types/node': {
+          owner: 'd778be9d',
+          reason: 'the Node engine floor is 22, so the types for Node 24 APIs would lie',
+          blocker: { kind: 'engine-floor', engine: 'node' },
+        },
+      },
+    });
+  const engLive = run(nodeCase('>=22.13.0'));
+  expect(
+    'clock: a live engine-floor exception excuses a 477-day hold (line 24: 23 was never published)',
+    engLive.status === 0 &&
+      engLive.output.includes(
+        '  @types/node (root), 477 days: excused by deps-major-exceptions.json "@types/node" (owner d778be9d): engine-floor: engines.node ">=22.13.0"'
+      ),
+    engLive.detail
+  );
+  const engLifted = run(nodeCase('>=24'));
+  expect(
+    'clock: CONTROL: engines.node >=24 lifts the engine-floor blocker and the entry fails as stale',
+    engLifted.status === 1 &&
+      engLifted.output.includes(
+        'blocker lifted: package.json engines.node ">=24" now admits 24.x. Delete the entry.'
+      ),
+    engLifted.detail
+  );
+
+  // Test 4 and 5: expiry limits and incomplete entries.
+  const exCase = (entry: Record<string, unknown>) => clockCase({ exceptions: { widget: entry } });
+  const expired = run(exCase({ owner: 'd778be9d', reason: goodReason, expires: dateIn(-1) }));
+  expect(
+    'exceptions: one that expired yesterday fails',
+    expired.status === 1 && expired.output.includes(`expired on ${dateIn(-1)}`),
+    expired.detail
+  );
+  const plus10 = run(exCase({ owner: 'd778be9d', reason: goodReason, expires: dateIn(10) }));
+  expect(
+    'exceptions: CONTROL: a complete entry expiring in 10 days excuses the hold',
+    plus10.status === 0 && plus10.output.includes(`(owner d778be9d): expires ${dateIn(10)}`),
+    plus10.detail
+  );
+  const plus45 = run(exCase({ owner: 'd778be9d', reason: goodReason, expires: dateIn(45) }));
+  expect(
+    'exceptions: CONTROL: 45 days out is refused (the limit is 30)',
+    plus45.status === 1 && plus45.output.includes('is 45 days out; the limit is 30'),
+    plus45.detail
+  );
+  for (const [label, entry, want] of [
+    ['missing owner', { reason: goodReason, expires: dateIn(10) }, '"widget": no owner'],
+    ['missing reason', { owner: 'd778be9d', expires: dateIn(10) }, '"widget": no reason'],
+    [
+      'free-text-only',
+      { owner: 'd778be9d', reason: goodReason },
+      '"widget": free-text-only entries are refused',
+    ],
+  ] as const) {
+    const r = run(exCase(entry));
+    expect(
+      `exceptions: ${label} is refused with its own message`,
+      r.status === 1 && r.output.includes(want),
+      r.detail
+    );
+  }
+  expect(
+    'exceptions: a low-quality reason goes through the canonical validator and is refused',
+    parseMajorExceptions(
+      JSON.stringify({ exceptions: { widget: { owner: 'abc', reason: 'x', expires: dateIn(1) } } }),
+      Date.now()
+    ).problems.length === 0 && validateBlockerQuality('widget', 'x', MAJOR_EXCEPTIONS_REL) !== null
+  );
+  expect(
+    'exceptions: an entry with both blocker and expires is refused, and so is an unknown kind',
+    parseMajorExceptions(
+      JSON.stringify({
+        exceptions: {
+          a: {
+            owner: 'abc',
+            reason: goodReason,
+            expires: dateIn(1),
+            blocker: { kind: 'engine-floor', engine: 'node' },
+          },
+          b: { owner: 'abc', reason: goodReason, blocker: { kind: 'vibes' } },
+        },
+      }),
+      Date.now()
+    ).problems.length === 2
+  );
+
+  // Test 6: under 60 days, nothing is printed (case 1's 89-day run is the control that does print).
+  expect(
+    'clock: a 30-day hold prints no aging text',
+    young.status === 0 && !young.output.includes('aging'),
+    young.detail
+  );
+
+  // Test 7: the mutant. Ignoring the clock turns the 91-day control green, so that control depends on the clock; and the seam is refused on a real tree.
+  const mutant = run(clockCase({ env: { CHECK_DEPS_MUTANT: 'ignore-clock' } }));
+  expect(
+    'mutant: CHECK_DEPS_MUTANT=ignore-clock turns the 91-day control green (the control depends on the clock)',
+    mutant.status === 0 && !mutant.output.includes('Held major past'),
+    mutant.detail
+  );
+  const realEnv: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'ignore-clock' };
+  delete realEnv.CHECK_DEPS_ROOT;
+  delete realEnv.CHECK_DEPS_FORCE_PROBE_FAILURE;
+  const realMutant = spawnSync(process.execPath, [...process.execArgv, process.argv[1]], {
+    cwd: CONSOLE_ROOT,
+    encoding: 'utf-8',
+    env: realEnv,
+  });
+  expect(
+    'mutant: CONTROL: the same seam without CHECK_DEPS_ROOT is refused',
+    realMutant.status === 1 &&
+      `${realMutant.stdout}${realMutant.stderr}`.includes('CHECK_DEPS_MUTANT=ignore-clock refused'),
+    `${realMutant.stdout}${realMutant.stderr}`
+  );
+
+  // Test 8: scope. A scoped exception does not reach the root's hold of the same package; a bare one excuses both.
+  const viteDoc = doc('8.3.1', {
+    '6.4.2': { daysAgo: 600 },
+    '7.0.0': { daysAgo: 463 },
+    '8.3.1': { daysAgo: 4 },
+  });
+  const viteHold = { vite: { current: '6.4.2', wanted: '6.4.2', latest: '8.3.1' } };
+  const scopeCase = (key: string): FixtureSpec => ({
+    outdated: { '': viteHold, 'private/account': {}, 'private/account/web': viteHold },
+    locks: {
+      '': { 'node_modules/vite': { version: '6.4.2' } },
+      'private/account': {},
+      'private/account/web': { 'node_modules/vite': { version: '6.4.2' } },
+    },
+    blocklist:
+      'vite  # BLOCKER: vite 8 changes the bundler, so the build migrates as one dedicated change\n',
+    registry: { vite: viteDoc },
+    exceptions: { [key]: { owner: 'd778be9d', reason: goodReason, expires: dateIn(10) } },
+  });
+  const scoped = run(scopeCase('private/account/web:vite'));
+  expect(
+    'scope: a private/account/web:vite exception excuses only that manifest; the root hold still fails',
+    scoped.status === 1 &&
+      scoped.output.includes('✗ Held major past 90 days: vite 6.4.2 -> 8.3.1 (root)') &&
+      scoped.output.includes('  vite (private/account/web), 463 days: excused'),
+    scoped.detail
+  );
+  const bare = run(scopeCase('vite'));
+  expect(
+    'scope: CONTROL: a bare key excuses both',
+    bare.status === 0 &&
+      bare.output.includes('  vite (root), 463 days: excused') &&
+      bare.output.includes('  vite (private/account/web), 463 days: excused'),
+    bare.detail
+  );
+
+  // Test 9: cannot date, dead key, no blocklist line, and an allowed major never reaching the clock.
+  const noDoc = run(clockCase({ registry: {} }));
+  expect(
+    'clock: a held major with no registry document is CANNOT DATE and fails',
+    noDoc.status === 1 && noDoc.output.includes('✗ cannot date held major widget (root)'),
+    noDoc.detail
+  );
+  const noLine = run(
+    clockCase({
+      registry: {
+        widget: doc('2.4.1', {
+          '1.2.0': { daysAgo: 400 },
+          '2.4.1': { daysAgo: 300, deprecated: 'no' },
+        }),
+      },
+    })
+  );
+  expect(
+    'clock: a document with no stable, non-deprecated release past current is CANNOT DATE',
+    noLine.status === 1 &&
+      noLine.output.includes(
+        '✗ cannot date held major widget (root): no stable, non-deprecated release'
+      ),
+    noLine.detail
+  );
+  const dead = run(
+    clockCase({
+      blocklist: `${widgetBlock}gizmo  # BLOCKER: gizmo 3 drops the CommonJS build this fixture still loads\n`,
+      registry: { widget: widgetDoc(30) },
+      exceptions: { gizmo: { owner: 'd778be9d', reason: goodReason, expires: dateIn(10) } },
+    })
+  );
+  expect(
+    'exceptions: an entry that matches no blocklist-held major is dead and fails',
+    dead.status === 1 &&
+      dead.output.includes(
+        '"gizmo": excuses nothing in this run (no blocklist-held major matches). Delete the entry.'
+      ),
+    dead.detail
+  );
+  const orphan = run(
+    clockCase({
+      exceptions: { gizmo: { owner: 'd778be9d', reason: goodReason, expires: dateIn(10) } },
+    })
+  );
+  expect(
+    'exceptions: an entry with no blocklist line is refused',
+    orphan.status === 1 &&
+      orphan.output.includes('"gizmo": no matching line in .ci/policy/.deps-upgrade-blocklist'),
+    orphan.detail
+  );
+  const allowedMajor = run(
+    clockCase({ blocklist: '# none\n', registry: {}, allow: { 'widget@2': goodReason } })
+  );
+  expect(
+    'clock: an allowed major is must-upgrade and never reaches the clock (no CANNOT DATE without a document)',
+    allowedMajor.status === 1 &&
+      allowedMajor.output.includes('must upgrade') &&
+      !allowedMajor.output.includes('cannot date') &&
+      !allowedMajor.output.includes('Held major'),
+    allowedMajor.detail
+  );
+
+  // Test 10: the range evaluator, pure.
+  const admitsLine = (range: string, versions: string[], line: string) => {
+    const sets = parseRange(range);
+    return sets ? versions.some((v) => releaseLine(v) === line && rangeAdmits(sets, v)) : null;
+  };
+  const rangeCases: [string, string[], string, boolean][] = [
+    ['>=4.8.4 <6.1.0', ['6.0.3', '7.0.2'], '7', false],
+    ['>=4.8.4 <6.1.0', ['6.0.3', '7.0.2'], '6', true],
+    ['^3 || ^9', ['9.39.4', '10.0.1', '10.11.0'], '10', false],
+    ['^3 || ^9', ['9.39.4', '10.0.1'], '9', true],
+    ['^9.7', ['9.6.0', '10.0.0'], '9', false],
+    ['^9.7', ['9.8.0', '10.0.0'], '9', true],
+    ['^9.7', ['10.0.0'], '10', false],
+    ['>=10.4', ['10.3.0'], '10', false],
+    ['>=10.4', ['10.3.0', '10.4.0'], '10', true],
+    ['^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9', ['10.0.0', '10.11.0'], '10', false],
+    ['^0.3', ['0.3.9', '0.4.0'], '0.4', false],
+    ['~1.2', ['1.2.7', '1.3.0'], '1', true],
+    ['>= 1.x', ['1.0.0'], '1', true],
+  ];
+  for (const [r, vs, l, want] of rangeCases) {
+    expect(`range: "${r}" admits line ${l} of [${vs}] === ${want}`, admitsLine(r, vs, l) === want);
+  }
+  for (const bad of ['1.0.0 - 2.0.0', 'latest', 'git+https://x/y.git', '>=1.0.0 <foo']) {
+    expect(`range: "${bad}" is refused, not passed`, parseRange(bad) === null);
+  }
+  expect(
+    'range: the engine floor is the lowest lower bound across alternatives',
+    rangeFloorMajor(parseRange('>=22.13.0') ?? []) === 22 &&
+      rangeFloorMajor(parseRange('^20 || >=22') ?? []) === 20 &&
+      rangeFloorMajor(parseRange('<30') ?? []) === 0
+  );
+
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
@@ -1929,7 +2981,10 @@ function selftest(): void {
       'versions fail; the scan set is exactly the checked-out submodules; an in-range bump runs as npm update and ',
       'an out-of-range one as a pinned npm install, and an update that resolves anything but the judged version fails ',
       '(freshness-window guard); a failed step is named with its command and exit status, and the child npm never ',
-      'inherits a silent loglevel'
+      "inherits a silent loglevel; a blocklisted major warns at 60 days and fails at 90 from its clock line's first ",
+      'release (deprecated releases skipped), unless a live peer-range/engine-floor blocker or an expiry <=30 days ',
+      'excuses it; expired, stale, dead, ownerless, reasonless and free-text-only exceptions fail; an undatable hold ',
+      'fails; the ignore-clock mutant turns the 91-day control green and is refused on a real tree'
     )
   );
   process.exit(0);

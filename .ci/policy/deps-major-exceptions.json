@@ -1,0 +1,97 @@
+{
+  "$comment": [
+    "Held-major exceptions, read by scripts/gates/check-deps.ts (operator ruling 2026-10-01).",
+    "A blocklisted npm major (.ci/policy/.deps-upgrade-blocklist) is aged from the first stable, non-deprecated release of the first line past its current version. It warns at 60 days and FAILS at 90 unless an entry here excuses it.",
+    "Key: blocklist grammar, '<package>' or '<dir>:<package>'. A scoped key applies to its own manifest; a bare key applies to every manifest the bare blocklist line covers. The key must match a blocklist line.",
+    "Entry: owner (^[A-Za-z0-9._@-]{3,}$), reason (the BLOCKER quality rules: 30+ characters, no banned phrase), and EXACTLY ONE of:",
+    "  blocker: {kind: 'peer-range', package: P, peer: Q, excludes: L} -- live while P@latest declares a peer range for Q that no stable, non-deprecated Q on line L satisfies; or {kind: 'engine-floor', engine: 'node'} -- live while the judged manifest's engines.node floor major is below the clock line's major. Re-checked against the registry on every run.",
+    "  expires: 'YYYY-MM-DD', at most 30 days after the run judging it. Extending it takes a new commit.",
+    "The gate fails on an entry that is expired, whose blocker has lifted (stale), or that matches no blocklist-held major in the run (dead). Liveness is in-gate: the oracle is the registry, and check-suppression-liveness is offline by rule.",
+    "Seeded 2026-10-01; ages measured that day with the registry's time map."
+  ],
+  "exceptions": {
+    "typescript": {
+      "owner": "d778be9d",
+      "reason": "typescript-eslint 8.71.0 declares peer typescript \">=4.8.4 <6.1.0\", so no typescript 7 release can be linted; line 7 first released 2026-07-08 (7.0.2), 84 days on 2026-10-01",
+      "blocker": {
+        "kind": "peer-range",
+        "package": "typescript-eslint",
+        "peer": "typescript",
+        "excludes": "7"
+      }
+    },
+    "eslint": {
+      "owner": "d778be9d",
+      "reason": "eslint-plugin-import 2.32.0 declares peer eslint up to ^9 only, so eslint 10 breaks the import rules; line 10 first released 2026-02-06 (10.0.0), 236 days on 2026-10-01",
+      "blocker": {
+        "kind": "peer-range",
+        "package": "eslint-plugin-import",
+        "peer": "eslint",
+        "excludes": "10"
+      }
+    },
+    "@eslint/js": {
+      "owner": "d778be9d",
+      "reason": "@eslint/js 10 peers eslint ^10, which is held because eslint-plugin-import 2.32.0 peers eslint up to ^9; line 10 first released 2026-02-06 (10.0.1; 10.0.0 is deprecated), 236 days on 2026-10-01",
+      "blocker": {
+        "kind": "peer-range",
+        "package": "eslint-plugin-import",
+        "peer": "eslint",
+        "excludes": "10"
+      }
+    },
+    "eslint-plugin-unicorn": {
+      "owner": "d778be9d",
+      "reason": "unicorn 66 through 76 all peer eslint >=10.4, which is held because eslint-plugin-import 2.32.0 peers eslint up to ^9; line 66 first released 2026-06-14, 108 days on 2026-10-01",
+      "blocker": {
+        "kind": "peer-range",
+        "package": "eslint-plugin-import",
+        "peer": "eslint",
+        "excludes": "10"
+      }
+    },
+    "@types/node": {
+      "owner": "d778be9d",
+      "reason": "the engines.node floor is Node 22 (root >=22.13.0, private/account >=22.0.0), so types for Node 24+ APIs would describe a runtime this code does not require; line 24 first released 2025-06-10, 477 days on 2026-10-01",
+      "blocker": {
+        "kind": "engine-floor",
+        "engine": "node"
+      }
+    },
+    "glob": {
+      "owner": "d778be9d",
+      "reason": "self-imposed: the root overrides entry forces glob ^11 tree-wide (package.json _overridesReasons.glob) and npm EOVERRIDE needs the devDep range to equal it; line 12 first released 2025-11-17, 317 days on 2026-10-01",
+      "expires": "2026-10-15"
+    },
+    "private/account/web:vite": {
+      "owner": "d778be9d",
+      "reason": "vite 6 -> 8 is two majors for the account portal build (config API, plugins, Rolldown) and moves with plugin-react as one portal-build migration; line 7 first released 2025-06-24, 463 days on 2026-10-01",
+      "expires": "2026-10-22"
+    },
+    "private/account/web:@vitejs/plugin-react": {
+      "owner": "d778be9d",
+      "reason": "plugin-react 6.x peers vite ^8, so it moves only with the held account portal vite migration; line 5 first released 2025-08-07, 419 days on 2026-10-01",
+      "expires": "2026-10-22"
+    },
+    "private/account/web:lucide-react": {
+      "owner": "d778be9d",
+      "reason": "lucide-react 1.x renames and removes icon exports the account portal imports; adopt it in a portal change that updates every import; line 0.576 first released 2026-03-02, 212 days on 2026-10-01",
+      "expires": "2026-10-22"
+    },
+    "astro": {
+      "owner": "d778be9d",
+      "reason": "www is built on the astro 5 line and astro 6/7 are breaking majors covering the whole site build, taken with mdx and react as one migration; line 6 first released 2026-03-10, 204 days on 2026-10-01",
+      "expires": "2026-10-29"
+    },
+    "@astrojs/mdx": {
+      "owner": "d778be9d",
+      "reason": "@astrojs/mdx 8.x peers astro ^7.2.10, so it moves only with the held astro migration; line 5 first released 2026-03-10, 204 days on 2026-10-01",
+      "expires": "2026-10-29"
+    },
+    "@astrojs/react": {
+      "owner": "d778be9d",
+      "reason": "@astrojs/react 6+ is a major on the Astro integration stack and moves only with the held astro migration; line 6 first released 2026-06-22, 100 days on 2026-10-01",
+      "expires": "2026-10-29"
+    }
+  }
+}
