@@ -240,6 +240,12 @@ def extract(name: str, targets: list[pathlib.Path], *, texts: list[str] | None =
     out: list[str] = []
     line_re = spec.get("line")
     find_re = spec["find"]
+    # PATTERNS is typed `dict[str, object]` per spec, so the two compiled patterns are narrowed here once, by a check that also refuses a malformed table entry.
+    if not isinstance(find_re, re.Pattern) or not (
+        line_re is None or isinstance(line_re, re.Pattern)
+    ):
+        log.error("pattern %s: 'find' and 'line' must be compiled regexes" % name)
+        raise SystemExit(1)
     source = corpus_texts(targets) if texts is None else texts
     for text in source:
         if not find_re.search(text):
