@@ -71,12 +71,13 @@
 # Version Bump Labels
 #
 # Consumed by .ci/scripts/version/detect-bump-type.sh, which resolves the PRs a
-# release contains through the GitHub API. bump-major is HAND-APPLIED ONLY: a
-# per-commit review may recommend one, and the label applier
-# (.ci/rediacc_ci/review/pr_labels.py) deliberately cannot write it.
+# release contains through the GitHub API. The label applier
+# (.ci/rediacc_ci/review/pr_labels.py, Console CI's pr-labels job) sets at most
+# one of them once CI Complete is green, from the highest per-commit review
+# verdict; a patch carries none (operator rulings 2026-10-02).
 - name: bump-major
   color: "D93F0B"
-  description: "Triggers a major version bump (X+1.0.0) on merge to main; apply by hand"
+  description: "Triggers a major version bump (X+1.0.0) on merge to main"
 
 - name: bump-minor
   color: "FBCA04"

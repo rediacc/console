@@ -1,17 +1,17 @@
 """PR labels from the per-commit review records (agent/plans/PLAN-per-commit-review.md section 8; operator ruling 2026-10-02).
 
 WHY THIS MOVED. Labeling lived inside the PR-level Claude review job (`claude_review_gate.run_apply_labels`), and half its input was that job's model verdict. The operator retired the PR-level review on 2026-10-02 (the Claude GitHub app is uninstalled), so the verdict now comes from the per-commit reviewer: every review file under `agent/reviews/<branch>/` carries one `Labels:` line, and this
-module aggregates them for the PR. It runs from Console CI's `label-guide` job, on every PR push.
+module aggregates them for the PR. It runs ONCE PER GREEN HEAD, from Console CI's `pr-labels` job, which needs `ci-complete` and runs only when CI Complete succeeded (operator ruling 2026-10-02: the bump is decided at the end of the PR, not on every push, so a red head never carries a release decision).
 
 TWO INPUTS, IN THIS ORDER OF TRUST, the same as before:
 
   1. A MECHANICAL FLOOR from the PR's changed paths alone: all-docs earns `documentation`, all-CI earns `ci`. No model can talk it out of a fact about the file list.
-  2. The per-commit verdicts. Bump is the highest of `patch` and `minor` over the reviewed commits; `bump-none` only when EVERY reviewed commit said `none`, which keeps its "removed on release-worthy pushes" meaning; `major` is logged as a recommendation and never applied (operator ruling: a wrong major is a statement to every consumer of the version stream). Kind is the union.
+  2. The per-commit verdicts. Bump is the highest verdict over the reviewed commits: `major` applies `bump-major`, `minor` applies `bump-minor`, `patch` applies no bump label (a patch is the release default), and `bump-none` only when EVERY reviewed commit said `none`, so a docs/CI/agent-only PR lands without a release (operator rulings 2026-10-02: `bump-major` and `bump-none` are both applied automatically; the old applier only ever recommended a major). Kind is the union.
 
 RECONCILED AGAINST THE LEDGER, NEVER A BLIND SYNC. The ledger comment (`<!-- claude-labels: <sha> -->` / `applied: a,b`) records what this applier put on the PR last time; only those labels are ever removed, so a hand-applied label is never touched, and a tampered ledger line is re-filtered through the managed whitelist before it can delete anything. The prefix is the one the old applier wrote, so the first run after the move reconciles the old
 applier's labels instead of stranding them.
 
-ADVISORY END TO END. Every failure logs and returns 0: a label is never worth failing CI over, and a fork PR's read-only token must not red the job. Labels trail the newest commit's review by one push, because a review file lands after its commit; the merge path requires reviews to be committed, so the last push before merge carries the final labels.
+ADVISORY END TO END. Every failure logs and returns 0: a label is never worth failing CI over, and a fork PR's read-only token must not red the job. The verdicts are complete at a green head: block_push_with_unrecorded_reviews refuses a push until every commit's review file is committed, and a review-only commit is not reviewed again. The release reads the labels on the main-branch CI run that the merge starts (dispatch_release.py in finalize-release-sentinel), which runs long after this job finishes, so an auto-merge landing the moment CI Complete turns green does not race it.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.review.pr_labels      env: GH_TOKEN PR_NUMBER HEAD_REF HEAD_SHA GITHUB_REPOSITORY
 """
@@ -27,8 +27,16 @@ import sys
 from rediacc_ci import log, paths
 
 LEDGER_PREFIX = "<!-- claude-labels:"
-# THE HARD WHITELIST. Adding a label the repo does not carry CREATES it, so an unfiltered name would appear on the repo and fail check:ci-label-inventory. `bump-major` is deliberately absent.
-MANAGED_LABELS = ("bug", "enhancement", "documentation", "ci", "bump-minor", "bump-none")
+# THE HARD WHITELIST. Adding a label the repo does not carry CREATES it, so an unfiltered name would appear on the repo and fail check:ci-label-inventory.
+MANAGED_LABELS = (
+    "bug",
+    "enhancement",
+    "documentation",
+    "ci",
+    "bump-major",
+    "bump-minor",
+    "bump-none",
+)
 # "<name>|<color>|<description>", created on demand immediately before first use; each row equals its `.github/labels.yml` declaration.
 CREATE_ON_DEMAND_LABELS = (
     "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)",
@@ -94,23 +102,22 @@ def mechanical(changed: list[str]) -> list[str]:
     return out
 
 
+BUMP_LABEL = {"none": "bump-none", "patch": "", "minor": "bump-minor", "major": "bump-major"}
+
+
 def aggregate(found: list[dict]) -> tuple[list[str], str]:
-    """(labels, major_note) from the per-commit verdicts. `major_note` is non-empty when a commit recommended a major bump, which is never applied."""
+    """(labels, note) from the per-commit verdicts. At most one bump label: the highest verdict wins. `note` names the commit that earned a major, because a major release is the one decision a reader should be able to trace to its reason."""
     labels: list[str] = []
     if not found:
         return labels, ""
-    bumps = [v["bump"] for v in found]
-    top = max(BUMP_RANK[b] for b in bumps)
-    if all(b == "none" for b in bumps):
-        labels.append("bump-none")
-    elif top >= BUMP_RANK["minor"]:
-        labels.append("bump-minor")
+    top = max((v["bump"] for v in found), key=BUMP_RANK.__getitem__)
+    if BUMP_LABEL[top]:
+        labels.append(BUMP_LABEL[top])
     note = ""
-    majors = [v for v in found if v["bump"] == "major"]
-    if majors:
-        note = (
-            "a per-commit review RECOMMENDS a major bump (%s); bump-major is never applied automatically, apply it by hand if you agree"
-            % (majors[0].get("why") or "no reason given")
+    if top == "major":
+        why = next(v.get("why") for v in found if v["bump"] == "major")
+        note = "bump-major applied: a per-commit review judged a major bump (%s)" % (
+            why or "no reason given"
         )
     for v in found:
         for kind in v.get("kind") or []:

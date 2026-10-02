@@ -96,12 +96,22 @@ def test_one_release_worthy_commit_removes_a_ledgered_bump_none(tmp_path):
     assert "applied: bug" in gh.ledger_body()
 
 
-def test_major_is_never_applied(tmp_path):
-    plant(tmp_path, review(bump="major", kinds="feature"))
-    gh = run(tmp_path, FakeGh())
-    assert not [x for x in gh.applied() if x.startswith("bump-major")]
+def test_major_is_applied_and_is_the_only_bump_label(tmp_path):
+    """Operator ruling 2026-10-02: bump-major is applied automatically, and it replaces a ledgered bump-minor rather than joining it."""
+    plant(
+        tmp_path, review(bump="minor"), review(bump="major", kinds="feature"), review(bump="patch")
+    )
+    gh = run(tmp_path, FakeGh(ledger="bump-minor"))
+    assert [x for x in gh.applied() if x.startswith("bump-")] == ["bump-major"]
+    assert "bump-minor" in gh.removed()
     _labels, note = L.aggregate(L.verdicts(tmp_path, BRANCH))
-    assert "RECOMMENDS a major bump" in note
+    assert "bump-major applied" in note
+
+
+def test_patch_is_the_default_and_carries_no_bump_label(tmp_path):
+    plant(tmp_path, review(bump="none"), review(bump="patch"))
+    gh = run(tmp_path, FakeGh())
+    assert not [x for x in gh.applied() if x.startswith("bump-")]
 
 
 def test_a_hand_applied_or_unmanaged_label_is_never_removed(tmp_path):

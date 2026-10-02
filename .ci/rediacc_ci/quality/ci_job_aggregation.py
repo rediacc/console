@@ -53,7 +53,7 @@ THE FIVE AWK PROGRAMS ARE THE GATE, so each is ported as its own named function
 with the awk it replaces quoted above it. They are not YAML parsers and must not
 become ones: a real parser would see `needs:` under an `if:` expression, would resolve anchors, and would therefore change WHICH jobs the gate believes exist. That is a different gate. The line-oriented reading is the specification here, and `check:ci-gates-lock` is not its oracle -- the workflow file is.
 
-THE EXEMPT SET IS CARRIED VERBATIM, REASONS INCLUDED. It is a suppression list, so its five BLOCKER reasons are the part that must survive a port intact: each one records why `ci-complete` genuinely cannot aggregate that job, and one of them (build-renet) is an explicit note that the current safety is ACCIDENTAL and should be removed the next time the tier logic is touched.
+THE EXEMPT SET IS CARRIED VERBATIM, REASONS INCLUDED. It is a suppression list, so its BLOCKER reasons are the part that must survive a port intact: each one records why `ci-complete` genuinely cannot aggregate that job, and one of them (build-renet) is an explicit note that the current safety is ACCIDENTAL and should be removed the next time the tier logic is touched.
 Deleting that paragraph would delete the only record that the hole is known.
 
 `parse_blockered_list` AND `verify_all_blockers` COME FROM `rediacc_ci.core.allowlist`, which is the one implementation of this repository's BLOCKER contract and is proved byte-compatible with `.ci/scripts/lib/blocker-validator.sh` over a frozen corpus. The twin sources the bash copy; using a fourth hand-rolled reader here would be exactly the duplication that module exists to end.
@@ -101,6 +101,9 @@ finalize-release-sentinel
 
 # BLOCKER: transitively downstream of the aggregator (needs finalize-release-sentinel, which needs ci-complete), so aggregating it would close a cycle; it is the terminal assertion of the release DAG and has nothing above it to report to
 pipeline-sentinel
+
+# BLOCKER: runs downstream of the aggregator by design (needs: [initialize, ci-complete], if ci-complete succeeded), because it decides the PR's release labels only once CI is green (operator ruling 2026-10-02); aggregating it would close a cycle, and it is advisory (rediacc_ci.review.pr_labels always exits 0), so it has no verdict to report
+pr-labels
 
 # BLOCKER: designed to be force-cancelled by a newer run (its if: is !cancelled(), and cancel-older-runs.sh cancels peers), so a cancelled conclusion is the routine outcome; the soft tier accepts only success or skipped, so aggregating it would turn every superseded push red
 cancel-watchdog
