@@ -55,7 +55,7 @@ jobs:
       pull-requests: read
     outputs:
       promoted: ${{ steps.result.outputs.promoted }}
-      version: ${{ steps.edge.outputs.version }}
+      version: ${{ steps.soak.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -83,6 +83,39 @@ jobs:
         id: edge
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_edge_manifest
 
+      - name: Check stable manifest
+        if: steps.edge.outputs.skip != 'true'
+        id: stable
+        env:
+          EDGE_VERSION: ${{ steps.edge.outputs.version }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_stable_manifest
+
+      # The walk back's candidates (PLAN-plan-per-pr-loop R2): with a release on
+      # every merge the newest edge is almost always younger than the soak, so
+      # check_soak_period selects the NEWEST edge release that has soaked.
+      - name: List edge releases
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true'
+        id: releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.list_edge_releases
+
+      # SOAK_DAYS comes from the workflow-level env: above. Every step after this
+      # one promotes steps.soak.outputs.version, the SELECTED release, never
+      # whatever edge happens to be newest when the step runs.
+      - name: Check soak period
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true'
+        id: soak
+        env:
+          EDGE_DATE: ${{ steps.edge.outputs.date }}
+          FORCE: ${{ inputs.force }}
+          PROMOTE_TRIGGER: ${{ github.event_name }}
+          EDGE_VERSION: ${{ steps.edge.outputs.version }}
+          NIGHTLY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          STABLE_VERSION: ${{ steps.stable.outputs.version }}
+          EDGE_RELEASES: ${{ steps.releases.outputs.releases }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_soak_period
+
       # BEFORE ANY PROMOTION WRITE, and the position is the whole point.
       # Today the R2 and Docker promotions succeed first and only then does the
       # worker/account deploy check out `ref: v<version>` -- so an untagged
@@ -94,39 +127,20 @@ jobs:
       # aws cp, a partially-failed release) because its oracle -- git tags and
       # the Releases API -- is independent of the manifest it judges.
       - name: Assert the edge version is actually released
-        if: steps.edge.outputs.skip != 'true'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists "${{ steps.edge.outputs.version }}"
-
-      - name: Check stable manifest
-        if: steps.edge.outputs.skip != 'true'
-        id: stable
-        env:
-          EDGE_VERSION: ${{ steps.edge.outputs.version }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_stable_manifest
-
-      # SOAK_DAYS comes from the workflow-level env: above.
-      - name: Check soak period
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true'
-        id: soak
-        env:
-          EDGE_DATE: ${{ steps.edge.outputs.date }}
-          FORCE: ${{ inputs.force }}
-          PROMOTE_TRIGGER: ${{ github.event_name }}
-          EDGE_VERSION: ${{ steps.edge.outputs.version }}
-          NIGHTLY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_soak_period
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists "${{ steps.soak.outputs.version }}"
 
       - name: Check for rollback labels
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          EDGE_DATE="${{ steps.edge.outputs.date }}"
+          EDGE_DATE="${{ steps.soak.outputs.date }}"
           ROLLBACKS=$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged \
             --search "merged:>=${EDGE_DATE} label:rollback" --json number --jq 'length')
 
@@ -149,7 +163,7 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ env.BWS_CLOUDFLARE_ZONE_ID }}
-          EDGE_VERSION: ${{ steps.edge.outputs.version }}
+          EDGE_VERSION: ${{ steps.soak.outputs.version }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable
 
       - name: Login to GHCR
@@ -163,13 +177,17 @@ jobs:
       - name: Load well-known
         run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
 
-      - name: Promote Docker images (:edge -> :stable)
+      # The selected version's own tag (CD pushes <image>:<version> beside :edge),
+      # never the moving :edge, which a release landing mid-run would change.
+      - name: Promote Docker images (:<version> -> :stable)
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        env:
+          VERSION: ${{ steps.soak.outputs.version }}
         run: |
           for image in renet rdc; do
-            SRC="${{ env.WK_IMAGE_REGISTRY }}/${image}:edge"
+            SRC="${{ env.WK_IMAGE_REGISTRY }}/${image}:${VERSION}"
             DST="${{ env.WK_IMAGE_REGISTRY }}/${image}:stable"
-            echo "Promoting ${image}: edge -> stable"
+            echo "Promoting ${image}: ${VERSION} -> stable"
             docker buildx imagetools create -t "$DST" "$SRC"
           done
 
@@ -191,10 +209,10 @@ jobs:
         run: |
           {
             echo "## Stable Promotion"
-            echo "- Edge version: ${{ steps.edge.outputs.version }}"
+            echo "- Promoted version: ${{ steps.soak.outputs.version }} (newest edge: ${{ steps.edge.outputs.version }})"
             echo "- Previous stable: ${{ steps.stable.outputs.version }}"
             echo "- Trigger: ${{ github.event_name }}, decided by: ${{ steps.soak.outputs.path }} (soak days: ${{ env.SOAK_DAYS }})"
-            echo "- R2: CLI, APT, RPM, APK, Archlinux promoted; Docker: all images retagged :edge -> :stable"
+            echo "- R2: CLI, APT, RPM, APK, Archlinux promoted; Docker: all images retagged :${{ steps.soak.outputs.version }} -> :stable"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # Deploy stable Workers from the exact tagged version

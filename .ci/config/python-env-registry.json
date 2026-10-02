@@ -1029,10 +1029,12 @@
     ],
     ".ci/rediacc_ci/release/check_soak_period.py": [
       "*name",
+      "EDGE_RELEASES",
       "EDGE_VERSION",
       "FORCE",
       "NIGHTLY_HEAD_SHA",
-      "PROMOTE_TRIGGER"
+      "PROMOTE_TRIGGER",
+      "STABLE_VERSION"
     ],
     ".ci/rediacc_ci/release/check_stable_manifest.py": [
       "*name"
@@ -1049,6 +1051,10 @@
     ],
     ".ci/rediacc_ci/release/deployment_summary.py": [
       "*name"
+    ],
+    ".ci/rediacc_ci/release/list_edge_releases.py": [
+      "GITHUB_OUTPUT",
+      "GITHUB_REPOSITORY"
     ],
     ".ci/rediacc_ci/release/mark_production.py": [
       "GITHUB_REPOSITORY",
