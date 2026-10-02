@@ -28,11 +28,5 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": [
-    {
-      "gate": "check:ci-external-links",
-      "findings": "*",
-      "reason": "BLOCKER: this devbox's resolver (WSL proxy 10.255.255.254) answers nothing for support.sectigo.com (getent 0/3, 2026-10-02) while every hop of its CNAME chain and dns.google resolve it, so docs/code-signing-guide.md:139 reads as fetch failed only here; CI resolves it and still judges this gate. Remove once the local resolver answers (rule 2 refuses the entry then)."
-    }
-  ]
+  "carried": []
 }
