@@ -118,6 +118,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import release_state_validator as rsv
+from rediacc_ci.release import check_soak_period, check_stable_manifest
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
 
 # =============================================================================
@@ -150,6 +151,8 @@ R2_FORMAT_DIRS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
 R2_ORPHAN_VERSION_AGE_DAYS = 14
 R2_PR_MAX_AGE_DAYS = 3
 R2_PACKAGE_KEEP_VERSIONS = 20
+# The stable CLI manifest, whose version bounds 8f's edge retention (`edge_version_kept`).
+R2_STABLE_MANIFEST_KEY = "cli/stable/manifest.json"
 
 GH_RUNS_KEEP_PER_WORKFLOW = 100
 GH_RUNS_RETENTION_DAYS = 30
@@ -1052,6 +1055,9 @@ class Housekeeping:
         # :142 and :147.
         self.deletes_this_run = 0
         self.housekeeping_failed = 0
+        # 8f's edge retention bound; see `edge_version_kept`.
+        self._stable_version: str | None = None
+        self._kept_logged: set[tuple[str, str]] = set()
 
     # -- shared helpers -----------------------------------------------------
 
@@ -2570,6 +2576,8 @@ class Housekeeping:
                         continue
                     if semver in records(top_versions):
                         continue
+                    if channel == "edge" and self.edge_version_kept(channel_root, semver):
+                        continue
                     tag = "v%s, outside top-%d" % (semver, R2_PACKAGE_KEEP_VERSIONS)
                     self._r2_rm_object(key, tag)
                     pkg_deleted += 1
@@ -2656,6 +2664,46 @@ class Housekeeping:
                 "  8e: aborted %d of %s (held %d under 24h grace)"
                 % (mpu_aborted, mpu_count, arith(mpu_count) - mpu_aborted)
             )
+
+    def stable_version(self) -> str:
+        """The version `cli/stable/manifest.json` names, read from R2 once per run. "" when it cannot be read or parsed, which `check_soak_period.in_walk` reads as "stable is unknown"."""
+        if self._stable_version is None:
+            code, text = capture_quiet(
+                [
+                    "aws",
+                    "s3",
+                    "cp",
+                    "s3://%s/%s" % (self.r2_bucket, R2_STABLE_MANIFEST_KEY),
+                    "-",
+                    "--endpoint-url",
+                    os.environ.get("CLOUDFLARE_R2_ENDPOINT", ""),
+                ]
+            )
+            try:
+                version = check_stable_manifest.manifest_version(text) if code == 0 else ""
+            except (ValueError, AttributeError):
+                version = ""
+            self._stable_version = version
+        return self._stable_version
+
+    def edge_version_kept(self, channel_root: str, semver: str) -> bool:
+        """NOT IN THE TWIN (#62a2846b). An edge version outside the top-N window is kept while `check_soak_period` may still select it for promotion (`in_walk`: newer than stable, or stable unknown). Pruning it starved stable: the promote refuses a version whose channel snapshot names packages edge no longer holds. Logged once per tree and version. Read only when a deletion is in question, so a run that prunes nothing from edge makes the twin's calls."""
+        stable = self.stable_version()
+        if not check_soak_period.in_walk(semver, stable):
+            return False
+        if (channel_root, semver) not in self._kept_logged:
+            self._kept_logged.add((channel_root, semver))
+            why = (
+                "newer than stable v%s, a promotion candidate" % stable
+                if check_soak_period.semver(stable) is not None
+                else "the stable version is unknown (%s unreadable), so every edge version is a "
+                "promotion candidate" % R2_STABLE_MANIFEST_KEY
+            )
+            log.info(
+                "  8f: keeping %s v%s outside top-%d: %s"
+                % (channel_root, semver, R2_PACKAGE_KEEP_VERSIONS, why)
+            )
+        return True
 
     def _r2_rm_object(self, key: str, tag: str) -> None:
         """The single-object delete 8f uses twice, identically. Not a twin

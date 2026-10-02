@@ -29,6 +29,14 @@ def _require(name: str) -> str:
     return value
 
 
+def manifest_version(text: str) -> str:
+    """The `version` a stable manifest's text names: "" for empty text (no manifest yet), "null" for a manifest without one. Raises `json.JSONDecodeError` on text that is not JSON. `check_soak_period.in_walk` reads both non-versions as "stable is unknown"."""
+    if not text.strip():
+        return ""
+    value = json.loads(text).get("version")
+    return "null" if value is None else value
+
+
 def main(argv: list[str]) -> int:
     del argv
     output_path = _require("GITHUB_OUTPUT")
@@ -42,14 +50,10 @@ def main(argv: list[str]) -> int:
     )
     manifest_text = proc.stdout if proc.returncode == 0 else ""
 
-    stable_version = ""
-    if manifest_text.strip():
-        try:
-            data = json.loads(manifest_text)
-        except json.JSONDecodeError:
-            return 1  # silent abort, same reasoning as check_edge_manifest.py
-        value = data.get("version")
-        stable_version = "null" if value is None else value
+    try:
+        stable_version = manifest_version(manifest_text)
+    except json.JSONDecodeError:
+        return 1  # silent abort, same reasoning as check_edge_manifest.py
 
     with open(output_path, "a", encoding="utf-8") as fh:
         fh.write(f"version={stable_version}\n")

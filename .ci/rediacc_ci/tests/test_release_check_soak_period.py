@@ -14,7 +14,7 @@ import json
 import pathlib
 import subprocess
 
-from rediacc_ci.release import list_edge_releases
+from rediacc_ci.release import check_soak_period, list_edge_releases
 from rediacc_ci.tests import differential as diff
 
 MODULE = "check_soak_period"
@@ -524,3 +524,12 @@ def test_an_unreadable_snapshot_list_is_refused_not_read_as_none(tmp_path: pathl
     assert exit_code == 1
     assert "CHANNEL_SNAPSHOTS is not a version list" in err
     assert written == ""
+
+
+def test_in_walk_is_the_bound_edge_retention_reuses() -> None:
+    """`cleanup_versions` 8f and `upload_to_r2`'s tracker keep every version this answers True for (#62a2846b)."""
+    assert check_soak_period.in_walk("1.3.13", "1.3.12")
+    assert not check_soak_period.in_walk("1.3.12", "1.3.12")
+    assert not check_soak_period.in_walk("1.3.2", "1.3.12")
+    assert check_soak_period.in_walk("1.0.0", "")
+    assert check_soak_period.in_walk("1.0.0", "null")

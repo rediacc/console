@@ -2,7 +2,7 @@
 
 THE CONTRACT, asserted against a recording fake bucket (`r2_promote_fake.py`; nothing reaches R2 or Cloudflare):
   * the bulk never passes through the runner: the ONLY objects fetched are the edge channel pointers, and every other object is moved by a server-side `copy-object`;
-  * EVERY edge object lands in stable (one phase, no filters, as the twin's recursive copy);
+  * EVERY edge object lands in stable, as the twin's recursive copy did, but packages before the metadata that hashes them (the soak-gated lane's phases, then a catch-all);
   * the four channel pointers arrive stamped for stable, are never written unstamped even briefly (the twin's copy-then-rebake window, which put an edge installer on production on 2026-09-24), and are written after the rest of their tree;
   * the purge list comes from the stable listing after the copy, without the twin's four duplicates, and a promoted key missing from it refuses the run with nothing purged.
 Each clause has a MUTATION CONTROL: a planted `r2_promote.py` that breaks it, which must turn the clause's check red.
@@ -21,6 +21,7 @@ import typing
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.deploy import promote_r2_to_stable as soak
 from rediacc_ci.deploy import promote_r2_to_stable_hotfix as port
 from rediacc_ci.quality import python_env_registry
 from rediacc_ci.tests import r2_promote_fake as fake
@@ -165,7 +166,7 @@ def test_mutation_control_a_bulk_through_the_runner_is_caught(tmp_path) -> None:
 
 
 def test_every_edge_object_lands_in_stable_with_its_bytes(tmp_path) -> None:
-    """One phase, no filters: the files the soak-gated lane never promotes (`latest-linux.yml`, `comps.xml`) land here too."""
+    """The last catch-all phase: the files the soak-gated lane never promotes (`latest-linux.yml`, `comps.xml`) land here too."""
     root, proc, _records = run(tmp_path)
     assert proc.returncode == 0, proc.stderr
     stable = fake.bucket_keys(root, "")
@@ -174,6 +175,39 @@ def test_every_edge_object_lands_in_stable_with_its_bytes(tmp_path) -> None:
         if "%s/%s" % (fake.BUCKET, key) not in fake.EDGE_POINTERS:
             assert stable[stable_of(key)] == DEFAULT_BUCKET[key], key
     assert stable[(RELEASES_BUCKET + "/apt/stable/history-0.0.1.deb")] == "old release bytes\n"
+
+
+def _phase_order_problems(records) -> list[str]:
+    """Each chain is (package, metadata that hashes it[, signature over that metadata]); the copies must complete in chain order."""
+    order = [r["key"] for r in fake.ops(records, "COPY")]
+    at = {key: i for i, key in enumerate(order)}
+    stable = RELEASES_BUCKET + "/%s/stable/%s"
+    chains = (
+        [("apt", "rdc.deb"), ("apt", "dists/stable/Packages.gz"), ("apt", "InRelease")],
+        [("rpm", "rdc.rpm"), ("rpm", "repodata/repomd.xml")],
+        [("apk", "rdc.apk"), ("apk", "APKINDEX.tar.gz")],
+        [("archlinux", "rdc.pkg.tar.zst"), ("archlinux", "rediacc.db.tar.gz")],
+        [("cli", "rdc-linux-x64"), ("cli", "manifest.json")],
+        [("cli", "rdc-linux-x64"), ("cli", "latest.json")],
+    )
+    problems = []
+    for chain in chains:
+        keys = [stable % pair for pair in chain]
+        if any(k not in at for k in keys) or [at[k] for k in keys] != sorted(at[k] for k in keys):
+            problems.append("out of order: %s" % keys)
+    return problems
+
+
+def test_the_packages_land_before_the_metadata_that_hashes_them(tmp_path) -> None:
+    """THE SOAK-GATED LANE'S ORDER, ON THE EMERGENCY LANE TOO (#62a2846b). A one-phase copy let a client read `InRelease` or `APKINDEX.tar.gz` naming a package not copied yet (404s, "Mirror sync in progress?"). The phases are `promote_r2_to_stable.phases`, plus a last catch-all so every edge object still lands."""
+    _root, proc, records = run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert _phase_order_problems(records) == []
+
+
+def test_the_phases_are_the_soak_gated_lists_not_a_copy() -> None:
+    for dir_name in port.CHANNEL_DIRS:
+        assert port.phases(dir_name) == (*soak.phases(dir_name), ())
 
 
 # --------------------------------------------------------------------------- The channel pointers ---------------------------------------------------------------------------
@@ -422,7 +456,6 @@ def test_a_missing_aws_refuses_before_the_variable_guards(tmp_path) -> None:
 
 def test_the_directory_order_is_the_twins() -> None:
     assert port.CHANNEL_DIRS == ("cli", "apt", "rpm", "apk", "archlinux")
-    assert port.PHASES == ((),)
 
 
 def test_endpoint_args_reproduces_the_unquoted_word_split() -> None:

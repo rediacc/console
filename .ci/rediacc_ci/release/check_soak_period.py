@@ -85,6 +85,12 @@ def _snapshots(text: str) -> frozenset[str]:
     return frozenset(rows)
 
 
+def in_walk(version: str, stable_version: str) -> bool:
+    """The walk's stable bound: whether `version` can still be selected for promotion, because it is newer than `stable_version` or because either one is not a plain release version (no stable manifest yet, an unreadable one, a `null` version). Edge retention keeps every version this answers True for (`cleanup_versions` 8f, `upload_to_r2`'s tracker), so it can never prune what this module may select."""
+    key, stable_key = semver(version), semver(stable_version)
+    return key is None or stable_key is None or key > stable_key
+
+
 @dataclass(frozen=True)
 class Edge:
     version: str
@@ -143,7 +149,7 @@ def main(argv: list[str]) -> int:
         key = semver(version)
         if key is None or newest_key is None or key >= newest_key:
             continue
-        if stable_key is not None and key <= stable_key:
+        if not in_walk(version, stable_version):
             continue
         epoch = _epoch(date)
         if epoch is None:
@@ -154,7 +160,7 @@ def main(argv: list[str]) -> int:
             return 1
         older.append(Edge(version, date, int((now_epoch - epoch) / 86400)))
     older.sort(key=lambda e: semver(e.version) or (0, 0, 0), reverse=True)
-    newest_in_bounds = stable_key is None or newest_key is None or newest_key > stable_key
+    newest_in_bounds = in_walk(edge_version, stable_version)
     walk = ([newest] if newest_in_bounds else []) + older
 
     print(f"Edge release age: {newest.age_days} days (soak: {soak_days} days)")
