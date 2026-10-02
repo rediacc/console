@@ -9,6 +9,7 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 ## Promoted
 
 1. agent/plans/PLAN-plan-per-pr-loop.md -- PR #591 also carries PLAN-ci-verdict and PLAN-per-commit-review, so it merges with an Operational-Reason
+2. agent/plans/PLAN-plan-preflight.md -- operator /ask 2026-10-02: revalidate a plan against the tree before its first box is worked
 
 ## Generated
 
@@ -38,20 +39,17 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 23. agent/plans/PLAN-config-team-scoping.md -- P1, held, not started, dep-blocked
 24. agent/plans/PLAN-plan-dependencies.md -- P1, held, not started
 25. agent/plans/PLAN-plan-priority-concurrency.md -- P1, held, not started, dep-blocked
-26. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, not started
-27. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, held, not started
-28. agent/plans/PLAN-ci-watch-enforcement.md -- P3, held, not started
-29. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, held, not started
-30. agent/plans/PLAN-trap-enforcement.md -- P3, held, not started
-31. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, held, not started
-
-### Not queued
-
-- agent/plans/PLAN-breakpoint-secret-shape.md -- no boxes yet: add boxes
-- agent/plans/PLAN-cloudflare-proxy.md -- no boxes yet: add boxes
-- agent/plans/PLAN-locale-techdiff-resync.md -- no boxes yet: add boxes
-- agent/plans/PLAN-remove-cross-session-messaging.md -- no boxes yet: add boxes
-- agent/plans/PLAN-renet-fetch-hardening.md -- no boxes yet: add boxes
-- agent/plans/PLAN-retire-bash-oracles.A0.md -- no boxes yet: add boxes
-- agent/plans/PLAN-typecheck-orphan-packages.md -- no boxes yet: add boxes
+26. agent/plans/PLAN-locale-techdiff-resync.md -- P2, ready, not started
+27. agent/plans/PLAN-remove-cross-session-messaging.md -- P2, draft, not started
+28. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+29. agent/plans/PLAN-retire-bash-oracles.md -- P2, held, not started, dep-blocked
+30. agent/plans/PLAN-typecheck-orphan-packages.md -- P2, ready, not started
+31. agent/plans/PLAN-breakpoint-secret-shape.md -- P3, design, not started
+32. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, held, not started
+33. agent/plans/PLAN-ci-watch-enforcement.md -- P3, held, not started
+34. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+35. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+36. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, held, not started
+37. agent/plans/PLAN-trap-enforcement.md -- P3, held, not started
+38. agent/plans/PLAN-uncommitted-work-exposure-check.md -- P3, held, not started
 <!-- queue:generated:end -->
