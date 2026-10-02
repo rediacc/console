@@ -422,12 +422,19 @@ def _gh_merged_at(branch: str) -> float | None:
             "gh pr list failed for %s (rc %d): %s"
             % (branch, done.returncode, done.stderr.strip()[:200])
         )
-    stamps = [row.get("mergedAt") for row in json.loads(done.stdout or "[]") if row.get("mergedAt")]
-    if not stamps:
-        return None
     import datetime as dt  # noqa: PLC0415 -- one parse, at the edge
 
-    return max(dt.datetime.fromisoformat(s).timestamp() for s in stamps)
+    # An answer that is not a JSON list of objects, or a stamp that is not an ISO date (a rate-limit page, an API shape change), is an oracle that could not be read: CANNOT RUN, never a crash and never a guessed date (per-commit review ee607a00.1).
+    try:
+        stamps = [
+            row.get("mergedAt") for row in json.loads(done.stdout or "[]") if row.get("mergedAt")
+        ]
+        return max((dt.datetime.fromisoformat(s).timestamp() for s in stamps), default=None)
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise CannotRunError(
+            "gh pr list gave an unreadable merged-at answer for %s (%s: %s)"
+            % (branch, type(exc).__name__, str(exc)[:120])
+        ) from exc
 
 
 def _review_dirs(root: pathlib.Path, oracle=_gh_merged_at) -> list[ASA.ReviewDir] | None:
