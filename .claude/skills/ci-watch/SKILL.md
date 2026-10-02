@@ -52,21 +52,6 @@ A red or cancelled `--wait` exit already appends the `--why` render, so the firs
 
 **`cancelled` is never a pass, and it is never assumed superseded.** `--why` attributes a cancel with zero failed jobs from evidence, in this order: `watchdog-budget` (a Watchdog Monitor run recorded `CI BUDGET VIOLATION` for a job; run 36953549081 was this, a 20.1 m job against a 20 m budget), `watchdog-failure`, `superseded` (the PR head moved past the run, or a newer run exists on the same head), `timeout-kill`, `manual`, else `unknown`. Only `superseded` means trace the new head; every other cause is a red to diagnose.
 
-### Diagnosing a red
-
-**"It passed earlier" is NOT a classifier.** That shortcut lived here and was wrong: on 2026-09-01 a gate green on five earlier runs of the same branch went red five times and was a real mid-branch regression. Four re-runs bought that lesson.
-
-1. **Download the artifact first.** Where a gate uploads one, its `summary.json` names
-the failure mode in one command. Code-reading only guesses.
-2. **Find the last green at STEP level**, not run level -- a cancelled run hides passing
-steps, so the run list places the boundary wrong.
-3. **Read the window, including when it is empty:**
-
-       git log --oneline <last-green>..HEAD       # what could have done it
-       git log --oneline -- <the file that broke> # has it broken before, and why
-
-Only docs in the window is affirmative evidence for an environmental cause.
-4. **Reproduce with `CI=true` set.** That alone changes subprocess output (TRAPS.md, "a
-gate that fails ONLY in CI may be matching bytes that CI coloured"), so "it passes locally" is not evidence against a real bug.
+When `--why` is not enough (a gate red that its own artifact explains, a boundary between green and red to place, a CI-only failure): [diagnosing.md](diagnosing.md).
 
 **Re-check on every wake.** A watch that never fires is indistinguishable from a run that never finished; a `killed`/`failed` notification is a re-arm trigger, not a no-op. Each push restarts the pipeline, so batch fixes into one push.

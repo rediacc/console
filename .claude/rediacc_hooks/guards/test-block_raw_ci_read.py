@@ -23,6 +23,9 @@ GUARD_ARGV = [sys.executable, DISPATCH, STEM]
 T = ".ci/scripts/ci/ci-trace.py"
 G = "g" + "h"  # assembled so this file is not itself a raw read to a text scan
 REPO = "repos/o/r"
+# The API base comes from the literal registry (check:ci-literal-sources R1), through the hooks' reader.
+sys.path.insert(0, str(HERE.parents[2]))
+API_BASE = importlib.import_module("rediacc_hooks.wellknown").GH_API_BASE
 
 CASES = [
     # (name, command, expected tracer command in the refusal, or None when allowed)
@@ -77,7 +80,7 @@ CASES = [
     ),
     (
         "full URL endpoint",
-        G + " api https://api.github.com/%s/actions/jobs/3" % REPO,
+        G + " api %s/%s/actions/jobs/3" % (API_BASE, REPO),
         T + " --job 3 --steps",
     ),
     ("a variable run id", G + ' api "%s/actions/runs/$RUN/jobs"' % REPO, T + " --run <id> --jobs"),
