@@ -339,7 +339,21 @@ def test_stripe_listen_is_started_for_the_stripe_leg(
     assert any(c[1][:2] == ["tsx", "scripts/stripe-sync.ts"] for c in norm_calls(old)), (
         "the sandbox sync ran before listening"
     )
-    assert norm_calls(old) == norm_calls(new)
+    # Deliberate delta: the twin passed the key as `--api-key <key>`, visible to every user through `ps`; the port hands it to the Stripe CLI in STRIPE_API_KEY instead. Every other call is unchanged.
+    twin_calls = norm_calls(old)
+    port_calls = norm_calls(new)
+    twin_stripe = [c for c in twin_calls if c[0] == "stripe"]
+    assert all("--api-key" in c[1] for c in twin_stripe), (
+        "control: the twin really passed --api-key"
+    )
+    expected = [
+        (c[0], [a for a in c[1] if a not in ("--api-key", "sk_test_x")], *c[2:])
+        if c[0] == "stripe"
+        else c
+        for c in twin_calls
+    ]
+    assert port_calls == expected
+    assert not any("sk_test_x" in a for c in port_calls for a in c[1]), "the key reached an argv"
 
 
 def test_test_failure_is_exit_one(tmp_path: pathlib.Path, reap: list[int | None]) -> None:
