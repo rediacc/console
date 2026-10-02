@@ -186,6 +186,7 @@ def refresh(root, baseline_path):
         )
         scoped[name] = set((repos or "").split())
 
+    recorded: dict[str, dict] = {}
     data = {
         "_comment": [
             "Which secrets each repository can actually READ, not merely reference.",
@@ -194,7 +195,7 @@ def refresh(root, baseline_path):
             "both reference ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN, an org secret scoped to console alone.",
         ],
         "refreshed_at": dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "repos": {},
+        "repos": recorded,
     }
 
     for repo_name, repo_root in repo_roots(root):
@@ -217,17 +218,17 @@ def refresh(root, baseline_path):
                     entry[n] = {"reachable": ok, "via": "org:selected"}
             else:
                 entry[n] = {"reachable": False, "via": "absent"}
-        data["repos"][repo_name] = entry
+        recorded[repo_name] = entry
 
     # A CHECKED-OUT submodule with no workflows is recorded with an EMPTY entry, not dropped: the record still knows the repo, so a CI checkout without submodules (where the directory is empty) stays CANNOT SEE instead of silently scanning console alone. account and renet reached this state on 2026-10-02 when their only workflows (the Claude Review callers) were removed.
     for sub in sorted((root / "private").glob("*")):
-        if (sub / ".git").exists() and sub.name not in data["repos"]:
-            data["repos"][sub.name] = {}
+        if (sub / ".git").exists() and sub.name not in recorded:
+            recorded[sub.name] = {}
 
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    total = sum(len(v) for v in data["repos"].values())
-    bad = sum(1 for v in data["repos"].values() for r in v.values() if not r["reachable"])
-    print(f"refreshed {total} reference(s) across {len(data['repos'])} repo(s); {bad} unreachable")
+    total = sum(len(v) for v in recorded.values())
+    bad = sum(1 for v in recorded.values() for r in v.values() if not r["reachable"])
+    print(f"refreshed {total} reference(s) across {len(recorded)} repo(s); {bad} unreachable")
     return 0
 
 
