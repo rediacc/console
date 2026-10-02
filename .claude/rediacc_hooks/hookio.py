@@ -288,8 +288,11 @@ def grep_q(pattern, text, ignore_case=False, fixed=False):
 
 
 # `git` global options that may sit between `git` and its subcommand: `-C <dir>`, `-c <k=v>`, `--git-dir[=]<d>`, `--work-tree[=]<d>`, `--no-pager`.
+# An option's argument is a bare word or a quoted string (`git -C "/path with spaces" push`, per-commit review c0d7489b.1).
+_GIT_OPT_ARG = r"""(?:"[^"]*"|'[^']*'|\S+)"""
 _GIT_GLOBAL_OPTS = (
-    r"(?:\s+(?:-C\s+\S+|-c\s+\S+|--git-dir(?:=|\s+)\S+|--work-tree(?:=|\s+)\S+|--no-pager))*"
+    r"(?:\s+(?:-C\s+%(a)s|-c\s+%(a)s|--git-dir(?:=|\s+)%(a)s|--work-tree(?:=|\s+)%(a)s|--no-pager))*"
+    % {"a": _GIT_OPT_ARG}
 )
 _GIT_PUSH_RE = re.compile(r"\bgit" + _GIT_GLOBAL_OPTS + r"\s+push\b")
 

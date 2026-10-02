@@ -503,6 +503,8 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
         ("git push origin HEAD", True),
         ("git -c http.extraHeader=x --no-pager push", True),
         ("git -C x status && git push", True),
+        ('git -C "/path with spaces" push origin b', True),
+        ("git -C '/q d' push", True),
         ("git -C x pushd", False),
         ("echo git status", False),
     ],
