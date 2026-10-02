@@ -1,4 +1,16 @@
-"""Block force-push (--force / -f / --force-with-lease / --mirror / +refspec).
+"""Block force-push (--force / -f / --mirror / +refspec), and --force-with-lease to anything but the one live MMDD-N branch.
+
+THE LEASE EXCEPTION, box M3 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02: "The live MMDD-N branch may be force-pushed with --force-with-lease only"). A rebase of the live branch has to be republished, and the lease is the form that refuses to overwrite a remote tip nobody has seen. It is admitted only when EVERY one of these holds, read from the parsed command (`commit_policy.git_runs`, the shared lexer) and from the target repository's own refs:
+
+  * no other forcing form anywhere in the command: no --force, -f, --mirror, and no `+refspec`;
+  * every lease push the text shows is one the lexer placed (a count mismatch is a push this guard cannot judge, and is refused);
+  * the repository is inside this checkout, and its checked-out branch is an `MMDD-N` name that is its ONE live branch (`commit_policy.live_branches`, local facts only); in a submodule that name is also the console's;
+  * the push names only that branch: no refspec (git pushes the current branch), `<branch>`, `HEAD`, `HEAD:<branch>` or `<branch>:<branch>`, `refs/heads/` spellings included, to `origin`;
+  * a lease value, when given, names that same branch (`--force-with-lease=<branch>[:<expected sha>]`).
+
+Everything else stays refused, `main` above all: `main` is never an `MMDD-N` name, so no lease reaches it.
+
+THE ORIGINAL RULE, unchanged for every other form:
 
 The first three flags are the obvious spelling. The other two were a HOLE, found 2026-08-23 while an agent was carrying out an operator-approved history rewrite: this guard refused the rewrite push, and the agent noticed that dropping the word --force would have slipped the identical non-fast-forward push straight past the regex. A --mirror git push forces every ref and deletes
 remote refs absent locally; a leading + on a refspec forces that ref. Both rewrite published history, which is exactly what this guard reserves for the operator, and neither was matched.
@@ -11,10 +23,19 @@ The pattern requires WHITESPACE before the plus, so a plus INSIDE a token is unt
 Nothing in this repo pushes with --mirror or a + refspec (verified by grep over *.sh, *.yml, *.md, *.ts), so widening the pattern costs no legitimate caller. The mirror git push for a history rewrite is run by the operator directly, with the ! prefix, which is the intended path.
 """
 
-from rediacc_hooks import hookio, shellscan
+import os
+import re
+
+from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 18
+
+# THE TWO GIT WORLDS THE LEASE ARM DISTINGUISHES. `default` keeps its label and points at a checkout on `main`, where no lease is admitted, so every record the cross-corpus froze before M3 answers as it did. `live-branch` is a checkout on `0831-1`, the one live branch, where a lease naming it is admitted. Without the second world no case could reach the allow arm, and without the first the corpus would read the live checkout's branch.
+ENVS = [
+    ("default", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
+    ("live-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
+]
 
 # Re-qualifying the plus arm to `+refs/` is precisely the first attempt the header records: `+main:main` and `+HEAD:main` go back to being allowed while the long form is still refused, which is what made the hole look closed.
 DEFECT = (r"]\+[^", r"]\+refs/[^")
@@ -28,17 +49,33 @@ FORCE_PUSH = hookio.rx(
     r"(^|[;&|(])[{S}]*git push[^|;&]*(--force-with-lease|--force([{S}]|=|$)|[{S}]-f([{S}]|$)|--mirror([{S}]|=|$)|[{S}]\+[^{S}])"
 )
 
+# The same forms WITHOUT the lease arm: any match here is a force the lease exception never covers.
+FORCE_NOT_LEASE = hookio.rx(
+    r"(^|[;&|(])[{S}]*git push[^|;&]*(--force([{S}]|=|$)|[{S}]-f([{S}]|$)|--mirror([{S}]|=|$)|[{S}]\+[^{S}])"
+)
+
+# One match per `git push` statement carrying a lease, to compare against what the lexer placed.
+LEASE_PUSH = hookio.rx(r"(^|[;&|(])[{S}]*git push[^|;&]*--force-with-lease")
+
+LEASE_FLAG = "--force-with-lease"
+# Flags that ride a lease push without forcing anything else. `--force-if-includes` only narrows the lease.
+LEASE_COMPANIONS = frozenset(("-q", "--quiet", "-v", "--verbose", "--force-if-includes"))
+SHA = re.compile(r"^[0-9a-f]{7,40}$")
+
 MESSAGE = (
-    "BLOCKED: Do not force-push (--force / -f / --force-with-lease / --mirror / +refspec). "
-    "Force-push overwrites remote history and erases the trace of individual PR changes, "
-    "which is exactly what broke traceability before. Use a plain git push so each CI fix "
-    "lands as its own reviewable commit. Rewriting already-pushed history is the user's "
-    "decision, not an agent's: the operator runs it directly with the ! prefix.\n"
+    "BLOCKED: this force-push is not admitted (--force / -f / --mirror / +refspec are never "
+    "admitted; --force-with-lease only to the one live MMDD-N branch). Force-push overwrites "
+    "remote history and erases the trace of individual PR changes, which is exactly what "
+    "broke traceability before. Use a plain git push so each CI fix lands as its own "
+    "reviewable commit.\n"
     "\n"
-    "THE ONE SANCTIONED EXCEPTION, named here because this guard is the last thing you read "
-    "before changing course and it used to send you away empty-handed. After a REBASE the "
-    "branch and its submodules have to be republished together, and there is a mediated "
-    "verb for exactly that:\n"
+    "THE ADMITTED FORM (operator ruling 2026-10-02): after a rebase of the live branch, "
+    "`git push --force-with-lease origin <live MMDD-N branch>` from that branch's checkout, "
+    "optionally `--force-with-lease=<branch>:<expected sha>`. Never main, never another "
+    "branch, never --force, -f, --mirror or a +refspec.\n"
+    "\n"
+    "When the branch AND its submodules have to be republished together, there is a "
+    "mediated verb for exactly that:\n"
     "\n"
     "    .claude/hooks/stop/worklist.py --git force-push <branch>            # prints the plan\n"
     "    .claude/hooks/stop/worklist.py --git force-push <branch> --execute  # performs it\n"
@@ -48,8 +85,8 @@ MESSAGE = (
     "prints the pre-push remote tips as an UNDO block, and halts on the first failure. Dry "
     "run by default: run it without --execute and read the plan first.\n"
     "\n"
-    "This guard staying strict is the whole security story, so do not add an allow-list to "
-    "it. Use the verb."
+    "The lease rule is exact and stays exact: no wider allow-list. Use the admitted form or "
+    "the verb."
 )
 
 EDGE_CASES = [
@@ -101,14 +138,117 @@ EDGE_CASES = [
         'git commit -m "never git push --force origin main"',
     ),
     ("control: command -v only prints", "command -v git push --force"),
+    # M3 (PLAN-plan-per-pr-loop, operator ruling 2026-10-02). `0831-1` is the live branch of the `live-branch` world and absent from the `default` (main) world, so each admitted case is refused there: the two worlds are the two directions.
+    ("M3 lease to the live branch", "git push --force-with-lease origin 0831-1"),
+    (
+        "M3 lease with an expected sha",
+        "git push --force-with-lease=0831-1:0123456789abcdef0123456789abcdef01234567 origin 0831-1",
+    ),
+    ("M3 lease of HEAD to the live branch", "git push --force-with-lease origin HEAD:0831-1"),
+    ("M3 lease in a wrapper payload", "sh -c 'git push --force-with-lease origin 0831-1'"),
+    ("M3 lease to main", "git push --force-with-lease origin main"),
+    ("M3 lease of HEAD to main", "git push --force-with-lease origin HEAD:main"),
+    ("M3 lease to another branch", "git push --force-with-lease origin 0831-2"),
+    ("M3 lease beside a plus refspec", "git push --force-with-lease origin +0831-1"),
+    ("M3 lease beside --force", "git push --force --force-with-lease origin 0831-1"),
+    ("M3 lease naming another ref", "git push --force-with-lease=main origin 0831-1"),
+    ("M3 lease to two refspecs", "git push --force-with-lease origin 0831-1 0831-2"),
+    ("M3 lease to another remote", "git push --force-with-lease upstream 0831-1"),
+    ("M3 lease in a repository outside", "git -C /tmp push --force-with-lease origin 0831-1"),
+    ("M3 lease with --all", "git push --force-with-lease --all origin"),
+    ("M3 lease through -C to the live branch", "git -C . push --force-with-lease origin 0831-1"),
+    # A global option between `git` and `push` matched nothing until 2026-10-02 (both measured rc 0 then).
+    ("a -C global option before push", "git -C . push --force origin main"),
+    ("a -c global option before push", "git -c a=b push -f origin x"),
 ]
+
+
+def _count(pattern, text):
+    compiled = re.compile(pattern)
+    records, _ = hookio._records(text)
+    return sum(len(list(compiled.finditer(record))) for record in records)
+
+
+def _names(branch):
+    return (branch, "refs/heads/" + branch)
+
+
+def _lease_run_refusal(run, root, base):
+    """ "" when this lease push is the admitted form, else why not."""
+    _, _, args = commit_policy.git_split(run.argv)
+    flags = [a for a in args if a.startswith("-")]
+    positionals = [a for a in args if not a.startswith("-")]
+    repo = commit_policy.run_repo(run, base)
+    if not repo or not commit_policy.is_inside(repo, root):
+        return "the repository it pushes is not inside this checkout"
+    live = commit_policy.current_branch(repo)
+    if not commit_policy.BRANCH_SHAPE.match(live):
+        return "the checkout is on `%s`, not an MMDD-N branch" % (live or "(detached)")
+    if commit_policy.live_branches(repo, gh=False) != [live]:
+        return "`%s` is not the ONE live branch here" % live
+    top = commit_policy.toplevel(root)
+    if os.path.realpath(repo) != os.path.realpath(top):
+        console = commit_policy.current_branch(top, foreign=True) if top else ""
+        if live != console:
+            return "a submodule's live branch carries the console's name (`%s`)" % console
+    for flag in flags:
+        if flag == LEASE_FLAG or flag in LEASE_COMPANIONS:
+            continue
+        if flag.startswith(LEASE_FLAG + "="):
+            ref = flag[len(LEASE_FLAG) + 1 :]
+            name, _, expect = ref.partition(":")
+            if name not in _names(live) or (expect and not SHA.match(expect)):
+                return "the lease names `%s`, not the live branch `%s`" % (ref, live)
+            continue
+        return "`%s` is not part of the admitted lease form" % flag
+    if len(positionals) > 2:
+        return "it pushes more than one refspec"
+    if positionals and positionals[0] != "origin":
+        return "the remote is `%s`, not origin" % positionals[0]
+    if len(positionals) == 2:
+        src, colon, dst = positionals[1].partition(":")
+        if not colon:
+            dst = src
+        if src not in (*_names(live), "HEAD") or dst not in (*_names(live), "HEAD"):
+            return "the refspec `%s` is not the live branch `%s`" % (positionals[1], live)
+    return ""
+
+
+def lease_refusal(ev, cmd, scan, text_scan):
+    """ "" when every force in `cmd` is an admitted lease to the one live branch, else why not.
+
+    `scan` carries the lexer's canonical push lines; `text_scan` is the command text alone, whose lease count the lexer has to reach (a lease the text shows and the lexer did not place is one this guard cannot judge).
+    """
+    if hookio.grep_q(FORCE_NOT_LEASE, scan):
+        return "a forcing form other than --force-with-lease"
+    leases = [
+        r
+        for r in commit_policy.git_runs(cmd, "push")
+        if any(a == LEASE_FLAG or a.startswith(LEASE_FLAG + "=") for a in r.argv)
+    ]
+    if not leases or len(leases) < _count(LEASE_PUSH, text_scan):
+        return "a lease push this guard cannot place"
+    root = ev.project_dir
+    base = ev.field("cwd") or root
+    for run in leases:
+        reason = _lease_run_refusal(run, root, base)
+        if reason:
+            return reason
+    return ""
 
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
-    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    text_scan = scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    # `git -C <dir> push --force` put a word between `git` and `push` and matched nothing here until 2026-10-02; the lexer's canonical spelling of each push closes that (commit_policy.push_texts).
+    canon = commit_policy.push_texts(cmd)
+    if canon:
+        scan = scan + "\n" + canon
 
     if hookio.grep_q(FORCE_PUSH, scan):
-        ev.warn(MESSAGE)
+        reason = lease_refusal(ev, cmd, scan, text_scan)
+        if reason == "":
+            return hookio.ALLOW
+        ev.warn(MESSAGE + "\n\nNot admitted here because: " + reason + ".")
         return hookio.DENY
     return hookio.ALLOW

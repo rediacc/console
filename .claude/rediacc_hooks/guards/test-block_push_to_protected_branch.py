@@ -8,6 +8,10 @@ TWO REAL REPOS, ON DISK, BUILT ONCE. Half this guard's cases depend on which bra
 temp directory the first time this module runs, exactly the shape `test_guards_differential.py`'s own named git fixtures use (`git-main`, `git-ahead`) for the same reason, just not shared with that file: this guard's own suite owns its worlds.
 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, for the reason the P7 cutover exists: a suite driving anything else keeps passing while the thing that actually runs goes unchecked.
+
+THE FAST-FORWARD FALLBACK (box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) needs a third kind of world: a console-shaped checkout on its live branch with a real bare `origin` (so `origin/<branch>` and `origin/main` are real refs), and a `gh` stub on PATH that answers both reads the guard makes, `gh pr view` and the GraphQL rollup `.ci/scripts/ci/ci-trace.py` sends. The stub's answers come from `FX_*` variables per case: the PR head, the CI Complete conclusion, the PR body, no PR, gh down. ci-trace itself runs for real; only GitHub is faked.
+
+THE GIT-LEVEL TWIN is driven here too, with real `git push` into throwaway bare origins whose clones point `core.hooksPath` at `.claude/rediacc_hooks/git/`: the same fallback admitted, and every other push to `main` (a delete included) refused.
 """
 
 import importlib.util
@@ -61,6 +65,123 @@ def _make_repo(branch):
 
 MAIN_REPO = _make_repo("main")
 FEATURE_REPO = _make_repo("0914-1")
+
+HOOKS = pathlib.Path(__file__).resolve().parents[1] / "git"
+
+
+def _git(repo, *args, env=None, check=True):
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env or _FIXTURE_ENV,
+    )
+    if check and proc.returncode != 0:
+        raise SystemExit("fixture git %s failed in %s: %s" % (args, repo, proc.stderr))
+    return proc
+
+
+def _make_live(branch="0914-1", unpushed=False, main_moved=False, hooks=False):
+    """A console-shaped checkout on `branch`, pushed to a real bare origin, one commit ahead of main.
+
+    `unpushed` adds a local commit `origin/<branch>` never saw; `main_moved` lands a commit on origin's main that the branch does not contain (a fast-forward is then impossible); `hooks` points `core.hooksPath` at the git-level hooks AFTER the fixture is built.
+    """
+    bare = pathlib.Path(tempfile.mkdtemp(prefix="origin-", dir=RUN_TMP))
+    _git(bare, "init", "-q", "--bare", "--initial-branch=main")
+    d = pathlib.Path(tempfile.mkdtemp(prefix="live-", dir=RUN_TMP))
+    _git(d, "init", "-q", "--initial-branch=main")
+    _git(d, "remote", "add", "origin", str(bare))
+    _git(d, "commit", "-q", "--allow-empty", "-m", "seed")
+    _git(d, "push", "-q", "origin", "main")
+    _git(d, "checkout", "-q", "-b", branch)
+    _git(d, "commit", "-q", "--allow-empty", "-m", "work")
+    _git(d, "push", "-q", "origin", branch)
+    if main_moved:
+        other = pathlib.Path(tempfile.mkdtemp(prefix="other-", dir=RUN_TMP))
+        _git(other, "clone", "-q", str(bare), ".")
+        _git(other, "commit", "-q", "--allow-empty", "-m", "elsewhere")
+        _git(other, "push", "-q", "origin", "main")
+    _git(d, "fetch", "-q", "origin")
+    if unpushed:
+        _git(d, "commit", "-q", "--allow-empty", "-m", "local only")
+    if hooks:
+        _git(d, "config", "core.hooksPath", str(HOOKS))
+    return d
+
+
+def _tip(repo, ref):
+    return _git(repo, "rev-parse", ref).stdout.strip()
+
+
+LIVE = _make_live()
+LIVE_AHEAD = _make_live(unpushed=True)
+LIVE_BEHIND = _make_live(main_moved=True)
+LIVE_SHA = _tip(LIVE, "origin/0914-1")
+
+# `gh` for the fallback's two reads: `gh pr view <b> --json ...` and ci-trace's `gh api graphql` rollup (the PR query names `pullRequests(`, the branch fallback names `ref(`). Every answer comes from an FX_* variable the case sets.
+GH_STUB = r"""#!/usr/bin/env python3
+import json, os, sys
+a = sys.argv[1:]
+mode = os.environ.get("FX_GH", "ok")
+head = os.environ.get("FX_HEAD", "")
+ci = os.environ.get("FX_CI", "SUCCESS")
+body = os.environ.get("FX_BODY", "Operational-Reason: GitHub cannot rebase this PR")
+if mode == "down":
+    sys.stderr.write("gh: could not connect\n")
+    sys.exit(1)
+if a[:2] == ["pr", "view"]:
+    if mode == "nopr":
+        sys.stderr.write('no pull requests found for branch "%s"\n' % a[2])
+        sys.exit(1)
+    print(json.dumps({"number": 7, "state": "OPEN", "headRefOid": head, "body": body}))
+    sys.exit(0)
+if a[:2] == ["api", "graphql"]:
+    query = " ".join(a)
+    if "pullRequests(" in query:
+        if mode == "nopr":
+            print(json.dumps({"data": {"repository": {"pullRequests": {"nodes": []}}}}))
+            sys.exit(0)
+        done = ci != "IN_PROGRESS"
+        ctx = {
+            "__typename": "CheckRun",
+            "name": "CI Complete",
+            "status": "COMPLETED" if done else "IN_PROGRESS",
+            "conclusion": ci if done else None,
+            "databaseId": 1,
+            "detailsUrl": "",
+            "checkSuite": {"workflowRun": {"databaseId": 9}},
+        }
+        commit = {
+            "oid": head,
+            "statusCheckRollup": {
+                "state": "SUCCESS" if ci == "SUCCESS" else "PENDING",
+                "contexts": {
+                    "totalCount": 1,
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    "nodes": [ctx],
+                },
+            },
+        }
+        pr = {"number": 7, "url": "u", "isDraft": False, "commits": {"nodes": [{"commit": commit}]}}
+        print(json.dumps({"data": {"repository": {"pullRequests": {"nodes": [pr]}}}}))
+        sys.exit(0)
+    print(json.dumps({"data": {"repository": {"pushedAt": None, "ref": None}}}))
+    sys.exit(0)
+print("[]")
+"""
+STUB_DIR = pathlib.Path(tempfile.mkdtemp(prefix="stub-", dir=RUN_TMP))
+(STUB_DIR / "gh").write_text(GH_STUB, encoding="utf-8")
+(STUB_DIR / "gh").chmod(0o755)
+
+
+def fx(**over):
+    """The environment one fallback case runs in: the stub first on PATH, the PR head at the live tip."""
+    env = {"PATH": "%s:%s" % (STUB_DIR, os.environ["PATH"]), "FX_HEAD": LIVE_SHA}
+    env.update({"FX_" + k.upper(): v for k, v in over.items()})
+    return env
+
 
 # Assembled rather than written, so a mention of the destination this guard exists to protect never itself reads as a call site the prose-style scan has to reason about.
 MAIN = "m" + "ain"
@@ -116,13 +237,109 @@ CASES = [
     ),
     ("an empty command", "", None, False),
     ("git log mentioning push is not a push", "git log --grep push", None, False),
+    # ---- the global-option hole, measured 2026-10-02 at rc 0 ------------------------------
+    ("-C before push, destination main", "git -C . push origin HEAD:%s" % MAIN, None, True),
+    ("-c before push, destination main", "git -c a=b push origin %s" % MAIN, None, True),
+    (
+        "--no-pager before push, the delete form",
+        "git --no-pager push origin :%s" % MAIN,
+        None,
+        True,
+    ),
+    (
+        "a dry run beside a real push to main",
+        "git push --dry-run origin x; git push origin HEAD:%s" % MAIN,
+        None,
+        True,
+    ),
+    # ---- M2: the fast-forward fallback, admitted -----------------------------------------
+    ("M2 ff of the live branch", "git push origin 0914-1:%s" % MAIN, LIVE, False, fx()),
+    ("M2 ff of origin/<live>", "git push origin origin/0914-1:%s" % MAIN, LIVE, False, fx()),
+    ("M2 ff of the tip sha", "git push origin %s:%s" % (LIVE_SHA, MAIN), LIVE, False, fx()),
+    (
+        "M2 ff, refs spellings both sides",
+        "git push origin refs/remotes/origin/0914-1:refs/heads/%s" % MAIN,
+        LIVE,
+        False,
+        fx(),
+    ),
+    # ---- M2: refused, one condition at a time --------------------------------------------
+    ("M2 CI Complete failed", "git push origin 0914-1:%s" % MAIN, LIVE, True, fx(ci="FAILURE")),
+    (
+        "M2 CI Complete still running",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(ci="IN_PROGRESS"),
+    ),
+    (
+        "M2 the sha is not the PR head",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(head="f" * 40),
+    ),
+    ("M2 no PR for the branch", "git push origin 0914-1:%s" % MAIN, LIVE, True, fx(gh="nopr")),
+    ("M2 gh cannot answer", "git push origin 0914-1:%s" % MAIN, LIVE, True, fx(gh="down")),
+    (
+        "M2 no Operational-Reason line",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(body="Plan boxes: see the plan."),
+    ),
+    (
+        "M2 a local commit origin never saw",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE_AHEAD,
+        True,
+        fx(head=_tip(LIVE_AHEAD, "0914-1")),
+    ),
+    (
+        "M2 main moved: not a fast-forward",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE_BEHIND,
+        True,
+        fx(head=_tip(LIVE_BEHIND, "0914-1")),
+    ),
+    ("M2 HEAD as the source", "git push origin HEAD:%s" % MAIN, LIVE, True, fx()),
+    ("M2 --force", "git push --force origin 0914-1:%s" % MAIN, LIVE, True, fx()),
+    (
+        "M2 --force-with-lease",
+        "git push --force-with-lease origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(),
+    ),
+    ("M2 a plus refspec", "git push origin +0914-1:%s" % MAIN, LIVE, True, fx()),
+    ("M2 two refspecs", "git push origin 0914-1:%s 0914-1" % MAIN, LIVE, True, fx()),
+    ("M2 --follow-tags", "git push --follow-tags origin 0914-1:%s" % MAIN, LIVE, True, fx()),
+    ("M2 --tags beside it", "git push --tags origin 0914-1:%s" % MAIN, LIVE, True, fx()),
+    ("M2 another remote", "git push upstream 0914-1:%s" % MAIN, LIVE, True, fx()),
+    ("M2 another branch's tip", "git push origin %s:%s" % (MAIN, MAIN), LIVE, True, fx()),
+    ("M2 the delete form", "git push origin --delete %s" % MAIN, LIVE, True, fx()),
+    (
+        "M2 two pushes to main",
+        "git push origin 0914-1:%s && git push origin 0914-1:%s" % (MAIN, MAIN),
+        LIVE,
+        True,
+        fx(),
+    ),
+    (
+        "M2 from a checkout on main",
+        "git push origin %s:%s" % (MAIN, MAIN),
+        MAIN_REPO,
+        True,
+        fx(),
+    ),
 ]
 
 
-def run(command, cwd):
+def run(command, cwd, extra=None):
     env = dict(os.environ)
+    env.update(extra or {})
     if cwd is not None:
-        env["CLAUDE_PROJECT_DIR"] = cwd
+        env["CLAUDE_PROJECT_DIR"] = str(cwd)
     proc = subprocess.run(
         GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
@@ -136,8 +353,9 @@ def run(command, cwd):
 
 fails = 0
 blocked = 0
-for name, command, cwd, want in CASES:
-    got, err = run(command, cwd)
+for case in CASES:
+    name, command, cwd, want = case[:4]
+    got, err = run(command, cwd, case[4] if len(case) > 4 else None)
     blocked += got
     ok = got == want
     fails += not ok
@@ -152,6 +370,78 @@ for name, command, cwd, want in CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
+
+
+# ---- the git-level pre-push twin (.claude/rediacc_hooks/git/pre-push) ------------------------
+def pushed(repo, *args):
+    proc = _git(repo, "push", "-q", *args, check=False)
+    return proc.returncode != 0, proc.stderr
+
+
+GIT_CASES = [
+    # (name, fixture kwargs, push args, expect_refused)
+    ("git-level: ff of the live branch's pushed tip", {}, ("origin", "0914-1:%s" % MAIN), False),
+    ("git-level: ff of origin/<live>", {}, ("origin", "origin/0914-1:%s" % MAIN), False),
+    (
+        "git-level: a local commit origin never saw",
+        {"unpushed": True},
+        ("origin", "0914-1:%s" % MAIN),
+        True,
+    ),
+    (
+        "git-level: not a fast-forward, forced",
+        {"main_moved": True},
+        ("--force", "origin", "0914-1:%s" % MAIN),
+        True,
+    ),
+    ("git-level: the delete form", {}, ("origin", ":%s" % MAIN), True),
+    (
+        "git-level: main beside another ref",
+        {},
+        ("origin", "0914-1:%s" % MAIN, "0914-1:0914-9"),
+        True,
+    ),
+    ("git-level: from a checkout on main", {"branch": MAIN}, ("origin", "HEAD:%s" % MAIN), True),
+]
+
+print()
+for name, kwargs, args, want in GIT_CASES:
+    if kwargs.get("branch") == MAIN:
+        repo = _make_live(hooks=True)
+        _git(repo, "checkout", "-q", MAIN)
+        # The fixture's own commit on main, past the commit-msg twin with the override (fixture setup, not the push under test).
+        _git(
+            repo,
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "on main",
+            env=dict(_FIXTURE_ENV, COMMIT_POLICY_OK="1"),
+        )
+    else:
+        repo = _make_live(hooks=True, **kwargs)
+    # The bare origin's HEAD names the live branch, so git's own "refusing to delete the current branch" never answers for the hook.
+    bare = _git(repo, "remote", "get-url", "origin").stdout.strip()
+    _git(bare, "symbolic-ref", "HEAD", "refs/heads/0914-1")
+    got, err = pushed(repo, *args)
+    # A refusal counts only when it is the HOOK's: git refusing on its own (a non-fast-forward, a remote rule) proves nothing about pre-push.
+    got = got and "commit-policy:" in err
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-72s want=%-9s got=%-9s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+CASES = CASES + GIT_CASES
 
 print()
 # ANTI-VACUITY: see the sibling harness. This guard's only control is this file.

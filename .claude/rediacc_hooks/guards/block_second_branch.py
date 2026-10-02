@@ -10,7 +10,7 @@ THE SAME ACT IN EVERY FORM, all found by `commit_policy.branch_creations` on the
   push <remote> <src>:<new>, push -u <remote> <new>
   gh pr create --head <other>, gh api .../git/refs -X POST
 
-A LOCAL creation is allowed only when all of these hold: the checkout is on `main`; no live branch exists; the name is today's `MMDD-(MAX+1)`, MAX taken over consumed PR heads, local and remote-tracking names (the computation `block_nonstandard_branch_name`'s message teaches). In a SUBMODULE the name must instead equal the console's current branch (the coordinated rule `/pr-merge` matches on), and no other live branch may exist there.
+A LOCAL creation is allowed only when all of these hold: the checkout is on `main`; no live branch exists (a branch whose PR merged stays live until its remote branch is deleted, box M6 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02: one live branch around the clock, the next cut only after the previous merged AND was deleted); the name is today's `MMDD-(MAX+1)`, MAX taken over consumed PR heads, local and remote-tracking names (the computation `block_nonstandard_branch_name`'s message teaches). In a SUBMODULE the name must instead equal the console's current branch (the coordinated rule `/pr-merge` matches on), and no other live branch may exist there.
 
 A REMOTE name (push, `gh pr create --head`, a `git/refs` POST) is allowed only when it is the repository's current branch. `main` is `block_push_to_protected_branch`'s business, not this guard's.
 
@@ -97,8 +97,8 @@ def _refuse(ev, text):
         "\n"
         "Operator ruling, 2026-09-25: one branch and one PR per repository, and agents\n"
         "do not open new ones. Work lands on the one live MMDD-N branch; a new branch\n"
-        "is cut only from `main`, once the previous one's PR has merged or closed, under\n"
-        "today's next name. There is no agent path around this: when a second branch is\n"
+        "is cut only from `main`, once the previous one's PR has merged or closed AND its\n"
+        "branch is deleted (operator ruling 2026-10-02), under today's next name. There is no agent path around this: when a second branch is\n"
         "genuinely wanted, the operator runs it with the `!` prefix.\n" % text
     )
     return hookio.DENY
@@ -138,8 +138,10 @@ def _judge_local(ev, creation, console_top, console_branch, today):
     if live:
         return _refuse(
             ev,
-            "creating `%s` while `%s` is live. Continue on it: `git switch %s`."
-            % (creation.name, live[0], live[0]),
+            "creating `%s` while `%s` is live. Continue on it (`git switch %s`). When its PR "
+            "has merged, the branch is live until its remote branch is deleted too: delete it "
+            "(`git push origin --delete %s`) and prune (`git fetch --prune origin`), then cut "
+            "the next one." % (creation.name, live[0], live[0], live[0]),
         )
     current = commit_policy.current_branch(repo)
     if current != "main":

@@ -6,7 +6,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
-  pre-push                a push to `main`; a push creating a remote branch that is not the current one.
+  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02), a delete of `main` included; a push creating a remote branch that is not the current one.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -166,22 +166,47 @@ def reference_transaction(argv: list[str], stdin: str) -> int:
 # --------------------------------------------------------------------------- pre-push ---------------------------------------------------------------------------
 
 
-def pre_push(_argv: list[str], stdin: str) -> int:
+def _main_push_refusal(
+    repo: str, remote: str, current: str, lines: list[list[str]], line: list[str]
+) -> str:
+    """ "" when this update of `main` is the fast-forward fallback (box M2 of PLAN-plan-per-pr-loop), else why not.
+
+    LOCAL FACTS ONLY, like every hook here: one ref in the whole push, a real commit (not a delete), the live branch's pushed tip (`<remote>/<live>`), and the remote's current `main` its ancestor. Whether that tip is the open PR's head with CI Complete green is the pre-bash guard's question (it reads `gh`); this layer stops every other shape from every source.
+    """
+    _local_ref, local_oid, _remote_ref, remote_oid = line
+    if local_oid == cp.ZERO_OID:
+        return "this deletes `main`"
+    if len(lines) != 1:
+        return "this pushes %d refs; the fallback is one refspec" % len(lines)
+    if remote_oid == cp.ZERO_OID:
+        return "`main` does not exist on `%s`, so this is no fast-forward" % remote
+    return cp.ff_fallback_refusal(repo, remote, current, local_oid, remote_oid)
+
+
+def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
-    for line in stdin.split("\n"):
-        fields = line.split()
-        if len(fields) != 4:
-            continue
-        _local_ref, local_oid, remote_ref, remote_oid = fields
-        if not remote_ref.startswith("refs/heads/") or local_oid == cp.ZERO_OID:
+    remote = argv[0] if argv else "origin"
+    lines = [line.split() for line in stdin.split("\n") if len(line.split()) == 4]
+    for line in lines:
+        _local_ref, local_oid, remote_ref, remote_oid = line
+        if not remote_ref.startswith("refs/heads/"):
             continue
         name = remote_ref[len("refs/heads/") :]
         if name == "main":
-            return _refuse(
-                "this pushes to `main`. Landings go through a reviewed PR; the operator pushes a\n"
-                "[hotfix] with `!`, and that command carries the override."
-            )
+            reason = _main_push_refusal(repo, remote, current, lines, line)
+            if reason:
+                return _refuse(
+                    "this pushes to `main` and is not the fast-forward fallback (%s).\n"
+                    "Landings go through `gh pr merge <n> --rebase --auto`. The one direct push\n"
+                    "(operator ruling 2026-10-02) is a fast-forward of the live branch's pushed tip\n"
+                    "that is the open PR's head with CI Complete green:\n"
+                    "`git push origin origin/<live MMDD-N branch>:main`, one refspec, nothing forced."
+                    % reason
+                )
+            continue
+        if local_oid == cp.ZERO_OID:
+            continue
         if remote_oid == cp.ZERO_OID and name != current:
             return _refuse(
                 "this creates the remote branch `%s`, and the one live branch is `%s`."
