@@ -2319,27 +2319,6 @@
       "message": "Need type annotation for \"where\" (hint: \"where: dict[<type>, <type>] = ...\")"
     },
     {
-      "id": "3f0531cf7290ae9a",
-      "file": ".ci/scripts/quality/check_secret_reachability.py",
-      "code": "attr-defined",
-      "count": 2,
-      "message": "\"Collection[str]\" has no attribute \"values\""
-    },
-    {
-      "id": "aef8070105040846",
-      "file": ".ci/scripts/quality/check_secret_reachability.py",
-      "code": "index",
-      "count": 1,
-      "message": "Unsupported target for indexed assignment (\"Collection[str]\")"
-    },
-    {
-      "id": "aec49ada28e0aa36",
-      "file": ".ci/scripts/quality/check_secret_reachability.py",
-      "code": "misc",
-      "count": 2,
-      "message": "Generator has incompatible item type \"int\"; expected \"bool\""
-    },
-    {
       "id": "44bf5f24d368c264",
       "file": ".ci/scripts/quality/check_secret_reachability.py",
       "code": "var-annotated",
