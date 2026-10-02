@@ -661,3 +661,71 @@ def test_bash_and_python_read_the_same_default_name_list() -> None:
     assert len(names) > 10, "the real bws-secret-map.json lists only %d name(s)" % len(names)
     assert names == sorted(names)
     assert shutil.which("python3") is not None
+
+
+# #61c30df4, measured 2026-10-02: 8 concurrent `bws secret list` calls drew these two shapes on 3 of 8 (stderr masked; no value is in either).
+RATE_LIMITED = (
+    "Error: \n   0: Received error message from server: [429 Too Many Requests] "
+    '{"object":"error","message":"Slow down! Too many requests. Try again in 1s."}'
+)
+UPSTREAM_503 = (
+    "Error: \n   0: Received error message from server: [503 Service Unavailable] "
+    "upstream connect error or disconnect/reset before headers. reset reason: connection timeout"
+)
+
+
+def test_a_rate_limit_or_an_outage_is_transient_not_a_rotation() -> None:
+    assert bws_env.classify_failure(1, RATE_LIMITED) == bws_env.TRANSIENT
+    assert bws_env.classify_failure(1, UPSTREAM_503) == bws_env.TRANSIENT
+    assert bws_env.classify_failure(1, "error sending request: dns error") == bws_env.TRANSIENT
+    assert bws_env.failure_notice(1, RATE_LIMITED) == [], "a 429 must not send anyone to rotate"
+    # A credential status wins even when the text also mentions a timeout.
+    assert (
+        bws_env.classify_failure(1, "[401 Unauthorized] then a connection timeout")
+        == bws_env.ROTATION
+    )
+
+
+def _fake_bws(tmp_path, outcomes):
+    """A `bws` that answers from a script of (rc, stderr) and counts its calls."""
+    state = tmp_path / "calls"
+    state.write_text("0", encoding="utf-8")
+    script = tmp_path / "bws"
+    script.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, pathlib, sys\n"
+        "s = pathlib.Path(%r); n = int(s.read_text()); s.write_text(str(n + 1))\n"
+        "outcomes = json.loads(%r)\n"
+        "rc, err = outcomes[min(n, len(outcomes) - 1)]\n"
+        "sys.stderr.write(err)\n"
+        "print('[]' if rc == 0 else '')\n"
+        "sys.exit(rc)\n" % (str(state), json.dumps(outcomes)),
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+    return str(script), state
+
+
+def test_listing_rides_out_transient_failures_and_honours_try_again(tmp_path) -> None:
+    bws, state = _fake_bws(tmp_path, [(1, RATE_LIMITED), (1, UPSTREAM_503), (0, "")])
+    slept = []
+    assert bws_env.listing(bws, env={}, retry_delays=(0.5, 0.5, 0.5), sleep=slept.append) == []
+    assert state.read_text() == "3"
+    assert slept == [1.0, 0.5], "the server's 'Try again in 1s' outranks a shorter backoff"
+
+
+def test_listing_gives_up_on_transient_failures_without_a_rotation_notice(tmp_path) -> None:
+    bws, state = _fake_bws(tmp_path, [(1, UPSTREAM_503)])
+    with pytest.raises(bws_env.RefusalError) as refused:
+        bws_env.listing(bws, env={}, retry_delays=(0.0, 0.0), sleep=lambda _s: None)
+    assert state.read_text() == "3", "one attempt plus one per delay"
+    text = "\n".join(refused.value.lines)
+    assert "do NOT rotate" in text
+    assert "bws-rotate.py" not in text
+
+
+def test_listing_refuses_a_credential_failure_on_the_first_attempt(tmp_path) -> None:
+    bws, state = _fake_bws(tmp_path, [(1, "[401 Unauthorized] invalid token")])
+    with pytest.raises(bws_env.RefusalError):
+        bws_env.listing(bws, env={}, retry_delays=(0.0, 0.0), sleep=lambda _s: None)
+    assert state.read_text() == "1", "a credential failure is never retried"
