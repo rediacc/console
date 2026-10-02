@@ -333,24 +333,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-ci-verdict.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "08818f60",
-        "29999ab0",
-        "7ba344f2",
-        "8ac22713",
-        "a62a538e",
-        "c3967bf0",
-        "cbf7fd2f"
-      ]
-    },
     "agent/plans/PLAN-ci-watch-enforcement.md": {
       "status": "held",
       "owner": "unowned",
@@ -916,34 +898,6 @@
         "f818ed1e",
         "fe1334a2",
         "fe9599e6"
-      ]
-    },
-    "agent/plans/PLAN-per-commit-review.md": {
-      "status": "approved",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 17,
-      "open_sigs": [],
-      "done_sigs": [
-        "0020a00c",
-        "002fa00e",
-        "25852d98",
-        "298dca41",
-        "31c20e0b",
-        "506b630a",
-        "86abe2cd",
-        "94225721",
-        "adda6c0e",
-        "c146199e",
-        "ce21d5be",
-        "d401fcfa",
-        "dae6822c",
-        "dc2d53a3",
-        "e282d634",
-        "f37723cf",
-        "fbbcf759"
       ]
     },
     "agent/plans/PLAN-plan-dependencies.md": {
@@ -2362,6 +2316,24 @@
         "f6819ee3"
       ]
     },
+    "agent/plans/_done/PLAN-ci-verdict.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "08818f60",
+        "29999ab0",
+        "7ba344f2",
+        "8ac22713",
+        "a62a538e",
+        "c3967bf0",
+        "cbf7fd2f"
+      ]
+    },
     "agent/plans/_done/PLAN-cleanup-context-state-files.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -2904,6 +2876,34 @@
         "9a9b5fe2",
         "d83c6b3d",
         "daf83f5c"
+      ]
+    },
+    "agent/plans/_done/PLAN-per-commit-review.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-10-02",
+      "open": 0,
+      "done": 17,
+      "open_sigs": [],
+      "done_sigs": [
+        "0020a00c",
+        "002fa00e",
+        "25852d98",
+        "298dca41",
+        "31c20e0b",
+        "506b630a",
+        "86abe2cd",
+        "94225721",
+        "adda6c0e",
+        "c146199e",
+        "ce21d5be",
+        "d401fcfa",
+        "dae6822c",
+        "dc2d53a3",
+        "e282d634",
+        "f37723cf",
+        "fbbcf759"
       ]
     },
     "agent/plans/_done/PLAN-pid-fallback-liveness-check.md": {
