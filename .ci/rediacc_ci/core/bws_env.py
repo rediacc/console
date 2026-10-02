@@ -91,6 +91,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 from collections.abc import Mapping
 from typing import Any
 
@@ -136,6 +137,14 @@ LIST_FAILED = [
     "bws-env: bws secret list failed. If the token is expired this is what",
     "  that looks like; the rotation notice below says what to do about it.",
 ]
+LIST_TRANSIENT = [
+    "bws-env: bws secret list failed on every attempt with a transient Bitwarden",
+    "  error (HTTP 429 rate limit, a 5xx, or a network timeout). The credential is",
+    "  fine: do NOT rotate it. Run again in a minute, or with fewer parallel callers.",
+]
+
+#: Backoff between `bws secret list` attempts after a TRANSIENT failure, in seconds. Measured 2026-10-02 (#61c30df4): 8 concurrent calls drew `[429 Too Many Requests] ... Try again in 1s` and `[503 Service Unavailable] ... connection timeout` on 3 of 8; a pytest -n 8 run hit the same wall. The server's own "Try again in Ns" wins when it asks for longer.
+RETRY_DELAYS_S = (1.0, 2.0, 4.0, 8.0)
 
 # --------------------------------------------------------------------------
 # THE ROTATION NOTICE, AND THE ONE CLASSIFIER THAT DECIDES WHEN IT IS PRINTED
@@ -155,6 +164,18 @@ ROTATE_SCRIPT_REL = os.path.join("scripts", "dev", "bws-rotate.py")
 CLEAN = "clean"
 WIRING = "wiring"
 ROTATION = "rotation"
+TRANSIENT = "transient"
+
+#: The transient class, the SAME rule `.github/actions/bws-secrets/fetch.sh`'s `classify` applies (a 5xx or 429 status, or a connection or timeout error) so the CI action and this module never disagree on whether a failure is an outage. A 401/403/404 status is a credential problem first, whatever else the text says.
+CREDENTIAL_STATUS_RE = re.compile(r"\[(401|403|404)[] ]")
+TRANSIENT_STATUS_RE = re.compile(r"\[(5[0-9][0-9]|429)[] ]")
+TRANSIENT_NETWORK_RE = re.compile(
+    r"error sending request|timed out|timeout|connection (refused|reset|closed|aborted)"
+    r"|connection error|dns error|failed to lookup address|tcp connect|broken pipe"
+    r"|network is unreachable",
+    re.IGNORECASE,
+)
+RETRY_AFTER_RE = re.compile(r"Try again in ([0-9]{1,3})s")
 
 #: The ONE stderr shape that is a wiring fault rather than a rotation, measured 2026-09-06 with `env -u BWS_ACCESS_TOKEN`. The variable is simply absent; no credential has expired and rotating one would fix nothing.
 #:
@@ -327,7 +348,13 @@ def binary(env: dict | None = None) -> str:
     return found if found and os.access(found, os.X_OK) else ""
 
 
-def listing(bws: str, env: dict | None = None, timeout: float = LIST_TIMEOUT_S) -> list[dict]:
+def listing(
+    bws: str,
+    env: dict | None = None,
+    timeout: float = LIST_TIMEOUT_S,
+    retry_delays: tuple[float, ...] | None = None,
+    sleep=time.sleep,
+) -> list[dict]:
     """Run `bws secret list ...` and parse it. Raises `RefusalError` on any failure.
 
     EVERY FAILURE COLLAPSES TO THE SAME REFUSAL, matching the twin's single
@@ -337,24 +364,33 @@ def listing(bws: str, env: dict | None = None, timeout: float = LIST_TIMEOUT_S) 
     THE ONE THING THAT NOW DIFFERS BY CASE IS THE ROTATION NOTICE, and it differs on the EXIT CODE rather than on the refusal text. A non-zero `bws` carries the notice; a `bws` that exited 0 and printed unparseable bytes does not, because the credential demonstrably worked and the fault is in the output. That is the `--color no` failure mode, and answering it with "rotate the
     token" would send an operator to the web vault over an ANSI escape.
 
+    A TRANSIENT FAILURE IS RETRIED (#61c30df4), and only that class: a 429 or 5xx status or a network error waits through RETRY_DELAYS_S and runs again, and if every attempt is transient the refusal is LIST_TRANSIENT, which tells the reader NOT to rotate. A credential-shaped failure is refused on the first attempt, unchanged.
+
     A TIMEOUT COUNTS AS NON-ZERO. `bws` produced no exit code at all, the store was not read, and a hung fetch against a dead credential is indistinguishable from one against a slow network -- which is precisely what the notice's first section says out loud.
     """
     environ = os.environ if env is None else env
-    try:
-        proc = subprocess.run(
-            [bws, *LIST_ARGV],
-            capture_output=True,
-            text=True,
-            check=False,
-            env=dict(environ),
-            timeout=timeout,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise RefusalError(LIST_FAILED + failure_notice(-1, "", dict(environ))) from exc
-    if proc.returncode != 0:
-        raise RefusalError(
-            LIST_FAILED + failure_notice(proc.returncode, proc.stderr or "", dict(environ))
-        )
+    delays = list(RETRY_DELAYS_S) if retry_delays is None else list(retry_delays)
+    while True:
+        try:
+            proc = subprocess.run(
+                [bws, *LIST_ARGV],
+                capture_output=True,
+                text=True,
+                check=False,
+                env=dict(environ),
+                timeout=timeout,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise RefusalError(LIST_FAILED + failure_notice(-1, "", dict(environ))) from exc
+        if proc.returncode == 0:
+            break
+        stderr = proc.stderr or ""
+        if classify_failure(proc.returncode, stderr) != TRANSIENT:
+            raise RefusalError(LIST_FAILED + failure_notice(proc.returncode, stderr, dict(environ)))
+        if not delays:
+            raise RefusalError(LIST_TRANSIENT)
+        asked = RETRY_AFTER_RE.search(stderr)
+        sleep(max(delays.pop(0), float(asked.group(1)) if asked else 0.0))
     try:
         rows = json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
@@ -510,6 +546,10 @@ def classify_failure(returncode: int, stderr: str) -> str:
         return CLEAN
     if any(marker in stderr for marker in WIRING_MARKERS):
         return WIRING
+    if CREDENTIAL_STATUS_RE.search(stderr):
+        return ROTATION
+    if TRANSIENT_STATUS_RE.search(stderr) or TRANSIENT_NETWORK_RE.search(stderr):
+        return TRANSIENT
     return ROTATION
 
 
@@ -814,7 +854,7 @@ def _rotation_notice_verb(raw_rc: str) -> int:
 
     THE STDERR ARRIVES ON STDIN, deliberately. argv is visible in `ps`, in a shell history and in any process-accounting log, and `bws`'s stderr is the one stream a credential tool is most likely to echo something into. Reading it from a pipe keeps it between the two processes, and nothing this verb prints is derived from those bytes.
 
-    THE EXIT CODE CARRIES THE VERDICT so a caller that wants the decision without the text does not have to parse anything. 0 is a rotation and the notice is on stdout; 3 is a wiring fault; 4 is a run that did not fail at all. A caller passing a non-integer gets 2, the usage code, rather than a silent rotation.
+    THE EXIT CODE CARRIES THE VERDICT so a caller that wants the decision without the text does not have to parse anything. 0 is a rotation and the notice is on stdout; 3 is a wiring fault; 4 is a run that did not fail at all; 5 is a transient Bitwarden failure (rate limit, 5xx, network), which no rotation fixes. A caller passing a non-integer gets 2, the usage code, rather than a silent rotation.
     """
     try:
         rc = int(raw_rc)
@@ -829,6 +869,8 @@ def _rotation_notice_verb(raw_rc: str) -> int:
         return 3
     if verdict == CLEAN:
         return 4
+    if verdict == TRANSIENT:
+        return 5
     for line in notice_lines():
         print(line)
     return 0

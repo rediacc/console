@@ -84,7 +84,12 @@ def _rotation_notice(returncode: int, stderr: str) -> list[str]:
             f"!! the rotation classifier could not be run ({exc}), so this failure is",
             "   UNCLASSIFIED rather than fine. Read .ci/config/bws-rotation-notice.txt.",
         ]
-    # 3 is a wiring fault and 4 is a run that did not fail at all. Neither is a rotation.
+    # 3 is a wiring fault and 4 is a run that did not fail at all. Neither is a rotation. 5 is a transient Bitwarden failure (rate limit, 5xx, network): say so, because "no notice" would read as "nothing to say".
+    if done.returncode == 5:
+        return [
+            "!! a transient Bitwarden failure (HTTP 429 rate limit, a 5xx, or a network timeout):",
+            "   the credential is fine and rotating it fixes nothing. Run again in a minute.",
+        ]
     if done.returncode != 0:
         return []
     return done.stdout.rstrip("\n").split("\n")
