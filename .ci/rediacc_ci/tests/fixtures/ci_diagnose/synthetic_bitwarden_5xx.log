@@ -1,0 +1,4 @@
+2026-09-20T10:00:00.0000000Z ##[group]Run ./.github/actions/bws-secrets
+2026-09-20T10:00:00.5000000Z Parsing secrets input...
+2026-09-20T10:00:05.0000000Z ##[warning]bws-secrets: attempt 4 of 4 failed (Received error message from server: [502 Bad Gateway])
+2026-09-20T10:00:05.1000000Z ##[error]bws-secrets: giving up after 4 attempts

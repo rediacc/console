@@ -1,0 +1,564 @@
+2026-10-02T02:20:28.8798389Z Current runner version: '2.337.0'
+2026-10-02T02:20:28.8824342Z ##[group]Runner Image Provisioner
+2026-10-02T02:20:28.8825207Z Hosted Compute Agent
+2026-10-02T02:20:28.8825858Z Version: 20260901.588
+2026-10-02T02:20:28.8826924Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+2026-10-02T02:20:28.8827713Z Build Date: 2026-09-01T19:56:44Z
+2026-10-02T02:20:28.8828480Z Worker ID: {0c1779aa-de2e-4995-9154-6a6fd42950df}
+2026-10-02T02:20:28.8829242Z Azure Region: eastus2
+2026-10-02T02:20:28.8829845Z ##[endgroup]
+2026-10-02T02:20:28.8831354Z ##[group]Operating System
+2026-10-02T02:20:28.8832021Z Ubuntu
+2026-10-02T02:20:28.8832691Z 24.04.5
+2026-10-02T02:20:28.8833241Z LTS
+2026-10-02T02:20:28.8833788Z ##[endgroup]
+2026-10-02T02:20:28.8834390Z ##[group]Runner Image
+2026-10-02T02:20:39.0463311Z ##[group]Run ./.github/actions/bws-secrets
+2026-10-02T02:20:39.0888033Z   MAP: /home/runner/work/console/console/./.github/actions/bws-secrets/../../../.ci/config/bws-secret-map.json
+2026-10-02T02:20:39.1299363Z skip() { echo "::warning::bws-secrets prewarm skipped: $1"; exit 0; }
+2026-10-02T02:20:39.4474169Z ##[start-action display=Fetch from Bitwarden Secrets Manager (with retry);id=__self.fetch]
+2026-10-02T02:20:39.4589812Z   BWS_FETCH: /home/runner/work/console/console/./.github/actions/bws-secrets/fetch.sh
+2026-10-02T02:20:39.4894537Z Authenticating with Bitwarden...
+2026-10-02T02:20:44.7706344Z ##[warning]bws-secrets: attempt 1 of 4 failed transiently (Received error message from server: [503 Service Unavailable] upstream connect error or disconnect/reset before headers. reset reason: connection timeout); retrying in 5s
+2026-10-02T02:20:49.7864086Z Authenticating with Bitwarden...
+2026-10-02T02:20:50.0181634Z bws-secrets: fetch succeeded on attempt 2 of 4
+2026-10-02T02:20:50.0212500Z ##[start-action display=Fetch from Bitwarden Secrets Manager (sm-action fallback, no retry);id=__self.fetch-fallback]
+2026-10-02T02:21:22.0601924Z 
+2026-10-02T02:22:03.7455100Z 
+2026-10-02T02:22:33.0040054Z Get:28 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [361 kB]
+2026-10-02T02:22:52.3143182Z Installing Docker...
+2026-10-02T02:22:52.3144055Z Adding user to libvirt group...
+2026-10-02T02:22:52.3291362Z Starting libvirtd...
+2026-10-02T02:22:52.6296164Z Host setup complete!
+2026-10-02T02:22:52.6297445Z Note: Log out and back in for group changes to take effect.
+2026-10-02T02:22:52.6355905Z ##[group]Run PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
+2026-10-02T02:22:52.6357797Z PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
+2026-10-02T02:22:52.6421213Z shell: /usr/bin/bash -e {0}
+2026-10-02T02:22:52.6421618Z env:
+2026-10-02T02:22:52.6421938Z   CI: true
+2026-10-02T02:22:52.6422270Z   BRIDGE_TIMEOUT: 240000
+2026-10-02T02:22:52.6422643Z   VM_BRIDGE: 1
+2026-10-02T02:22:52.6422980Z   VM_WORKERS: 11 12
+2026-10-02T02:22:52.6423318Z   VM_BAKE: on
+2026-10-02T02:22:52.6423645Z   VM_CEPH_NODES: 
+2026-10-02T02:22:52.6423985Z   VM_IMAGE: fedora-43
+2026-10-02T02:22:52.6424342Z   FULL_INTEGRATION: 1
+2026-10-02T02:22:52.6424692Z   CRIU_EXPECTED: 1
+2026-10-02T02:22:52.6425025Z   CLI_SUITE: 
+2026-10-02T02:22:52.6425477Z   BWS_DOCKERHUB_TOKEN: ***
+2026-10-02T02:22:52.6433276Z   BWS_APP_PRIVATE_KEY: ***
+2026-10-02T02:22:52.6434023Z   BWS_DOCKERHUB_USERNAME: ***
+2026-10-02T02:22:52.6434490Z   BWS_APP_ID: ***
+2026-10-02T02:22:52.6434986Z   GOTOOLCHAIN: local
+2026-10-02T02:22:52.6435809Z   RENET_BINARY: /home/runner/work/console/console/private/renet/bin/renet
+2026-10-02T02:22:52.6436953Z ##[endgroup]
+2026-10-02T02:22:52.6930969Z ✓ VM RAM budget: bridge 1024 + 2x4096 (worker) + 0x4096 (ceph) = 9216 MB
+2026-10-02T02:22:52.6945779Z → Creating E2E test environment: packages/e2e-tests/.env
+2026-10-02T02:22:52.6947308Z ✓ Created E2E test environment: packages/e2e-tests/.env
+2026-10-02T02:22:52.7039963Z ##[group]Run ALSO=()
+2026-10-02T02:22:52.7040383Z ALSO=()
+2026-10-02T02:22:52.7040745Z if [[ "1" == '1' && "1" == '1' ]]; then
+2026-10-02T02:22:52.7041890Z   ALSO=(--also "12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts")
+2026-10-02T02:22:52.7042983Z fi
+2026-10-02T02:22:52.7043906Z PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip \
+2026-10-02T02:22:52.7044655Z   --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "1/8" \
+2026-10-02T02:22:52.7045250Z   "${ALSO[@]}"
+2026-10-02T02:22:52.7108169Z shell: /usr/bin/bash -e {0}
+2026-10-02T02:22:52.7108558Z env:
+2026-10-02T02:22:52.7108874Z   CI: true
+2026-10-02T02:22:52.7109203Z   BRIDGE_TIMEOUT: 240000
+2026-10-02T02:22:52.7109573Z   VM_BRIDGE: 1
+2026-10-02T02:22:52.7109906Z   VM_WORKERS: 11 12
+2026-10-02T02:22:52.7110276Z   VM_BAKE: on
+2026-10-02T02:22:52.7110603Z   VM_CEPH_NODES: 
+2026-10-02T02:22:52.7110948Z   VM_IMAGE: fedora-43
+2026-10-02T02:22:52.7111298Z   FULL_INTEGRATION: 1
+2026-10-02T02:22:52.7111640Z   CRIU_EXPECTED: 1
+2026-10-02T02:22:52.7111979Z   CLI_SUITE: 
+2026-10-02T02:22:52.7112430Z   BWS_DOCKERHUB_TOKEN: ***
+2026-10-02T02:22:52.7119884Z   BWS_APP_PRIVATE_KEY: ***
+2026-10-02T02:22:52.7120296Z   BWS_DOCKERHUB_USERNAME: ***
+2026-10-02T02:22:52.7120677Z   BWS_APP_ID: ***
+2026-10-02T02:22:52.7121022Z   GOTOOLCHAIN: local
+2026-10-02T02:22:52.7121493Z   RENET_BINARY: /home/runner/work/console/console/private/renet/bin/renet
+2026-10-02T02:22:52.7122027Z ##[endgroup]
+2026-10-02T02:22:52.7649981Z → Running E2E tests (workers: 1)...
+2026-10-02T02:22:56.2613196Z 
+2026-10-02T02:22:56.2615806Z ============================================================
+2026-10-02T02:22:56.2617568Z Bridge Test Setup (SSH Mode)
+2026-10-02T02:22:56.2618734Z ============================================================
+2026-10-02T02:22:56.2623925Z 
+2026-10-02T02:22:56.2624564Z Step 1: Performing VM soft reset...
+2026-10-02T02:22:56.2627960Z [OpsVMLifecycle] Performing soft reset (renet ops up --force --parallel)...
+2026-10-02T02:22:56.2629834Z [OpsCommandRunner] Running: /usr/bin/renet ops up --force --parallel
+2026-10-02T02:22:56.2942248Z [renet:err] level=info msg="SSH key paths configured" data_dir=/home/runner/work/_temp/renet private_key=/home/runner/work/_temp/renet/staging/.ssh/id_rsa ssh_folder=/home/runner/work/_temp/renet/staging/.ssh staging_folder=/home/runner/work/_temp/renet/staging
+2026-10-02T02:22:56.3931555Z [renet:err] level=info msg="Creating virtual network..."
+2026-10-02T02:22:56.5632454Z [renet:err] level=info msg="Network renet11 created and started successfully"
+2026-10-02T02:22:56.5633818Z [renet:err] level=info msg="Ensuring storage pool exists..."
+2026-10-02T02:22:56.5914203Z [renet:err] level=info msg="Pre-creating libvirt storage pool rediacc-vms -> /var/lib/libvirt/images/rediacc-vms..."
+2026-10-02T02:22:56.6461063Z [renet:err] level=info msg="Pre-downloading base image..."
+2026-10-02T02:22:56.6463793Z [renet:err] level=info msg="Base image cached: /home/runner/work/_temp/renet/disks/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 (556.3 MiB)"
+2026-10-02T02:22:56.6465876Z level=info msg="Creating VM 12 in parallel..."
+2026-10-02T02:22:56.6468981Z level=info msg="[VM 12] STEP 1/12: Checking network status..."
+2026-10-02T02:22:56.6470693Z level=info msg="Creating VM 11 in parallel..."
+2026-10-02T02:22:56.6472387Z level=info msg="[VM 11] STEP 1/12: Checking network status..."
+2026-10-02T02:22:56.6479773Z [renet:err] level=info msg="Creating VM 1 in parallel..."
+2026-10-02T02:22:56.6480996Z level=info msg="[VM 1] STEP 1/12: Checking network status..."
+2026-10-02T02:22:56.6713652Z [renet:err] level=info msg="[VM 1] STEP 1/12: Network OK"
+2026-10-02T02:22:56.6715218Z level=info msg="[VM 1] STEP 2/12: Checking if VM exists..."
+2026-10-02T02:22:56.6716880Z [renet:err] level=info msg="[VM 11] STEP 1/12: Network OK"
+2026-10-02T02:22:56.6720228Z level=info msg="[VM 11] STEP 2/12: Checking if VM exists..."
+2026-10-02T02:22:56.6745401Z [renet:err] level=info msg="[VM 12] STEP 1/12: Network OK"
+2026-10-02T02:22:56.6747725Z level=info msg="[VM 12] STEP 2/12: Checking if VM exists..."
+2026-10-02T02:22:56.6965079Z [renet:err] level=info msg="[VM 11] STEP 2/12: VM check OK"
+2026-10-02T02:22:56.6969349Z level=info msg="[VM 11] STEP 3/12: Determining image path..."
+2026-10-02T02:22:56.6970973Z level=info msg="[VM 11] STEP 3/12: Looking for image fedora-43..."
+2026-10-02T02:22:56.6972288Z level=info msg="Base image cached: /home/runner/work/_temp/renet/disks/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 (556.3 MiB)"
+2026-10-02T02:22:56.6973534Z level=info msg="[VM 11] STEP 3/12: Image path: Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+2026-10-02T02:22:56.6974367Z level=info msg="[VM 11] STEP 3/12: Image OK"
+2026-10-02T02:22:56.6975079Z level=info msg="[VM 11] STEP 4/12: Setting VM defaults..."
+2026-10-02T02:22:56.6975947Z level=info msg="[VM 11] STEP 4/12: Defaults OK (CPUs=2, RAM=4096MB, Disk=16GB)"
+2026-10-02T02:22:56.6977579Z level=info msg="[VM 11] STEP 5/12: Setting up temp files..."
+2026-10-02T02:22:56.6979070Z level=info msg="[VM 11] STEP 5/12: Temp files OK (tempDir=/var/lib/libvirt/images/rediacc-vms)"
+2026-10-02T02:22:56.6980472Z level=info msg="[VM 11] STEP 6/12: Getting SSH public key..."
+2026-10-02T02:22:56.6981525Z level=info msg="[VM 11] STEP 6/12: SSH key OK"
+2026-10-02T02:22:56.6982634Z level=info msg="[VM 11] STEP 7/12: Writing cloud-init user-data..."
+2026-10-02T02:22:56.6983723Z level=info msg="[VM 11] STEP 7/12: user-data OK"
+2026-10-02T02:22:56.6984928Z level=info msg="[VM 11] STEP 8/12: Writing cloud-init network config..."
+2026-10-02T02:22:56.6986133Z level=info msg="[VM 11] STEP 8/12: network config OK"
+2026-10-02T02:22:56.6987613Z level=info msg="[VM 11] STEP 9/12: Writing cloud-init meta-data..."
+2026-10-02T02:22:56.6988779Z level=info msg="[VM 11] STEP 9/12: meta-data OK"
+2026-10-02T02:22:56.6990078Z level=info msg="[VM 11] STEP 10/12: Creating cloud-init ISO with xorrisofs..."
+2026-10-02T02:22:56.6991320Z level=info msg="[VM 12] STEP 2/12: VM check OK"
+2026-10-02T02:22:56.6992462Z level=info msg="[VM 12] STEP 3/12: Determining image path..."
+2026-10-02T02:22:56.6993733Z level=info msg="[VM 12] STEP 3/12: Looking for image fedora-43..."
+2026-10-02T02:22:56.6995641Z level=info msg="Base image cached: /home/runner/work/_temp/renet/disks/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 (556.3 MiB)"
+2026-10-02T02:22:56.6998096Z level=info msg="[VM 12] STEP 3/12: Image path: Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+2026-10-02T02:22:56.6999212Z level=info msg="[VM 12] STEP 3/12: Image OK"
+2026-10-02T02:22:56.6999977Z level=info msg="[VM 12] STEP 4/12: Setting VM defaults..."
+2026-10-02T02:22:56.7000868Z level=info msg="[VM 12] STEP 4/12: Defaults OK (CPUs=2, RAM=4096MB, Disk=16GB)"
+2026-10-02T02:22:56.7001582Z level=info msg="[VM 12] STEP 5/12: Setting up temp files..."
+2026-10-02T02:22:56.7002537Z level=info msg="[VM 12] STEP 5/12: Temp files OK (tempDir=/var/lib/libvirt/images/rediacc-vms)"
+2026-10-02T02:22:56.7003539Z level=info msg="[VM 12] STEP 6/12: Getting SSH public key..."
+2026-10-02T02:22:56.7004268Z level=info msg="[VM 12] STEP 6/12: SSH key OK"
+2026-10-02T02:22:56.7004897Z level=info msg="[VM 12] STEP 7/12: Writing cloud-init user-data..."
+2026-10-02T02:22:56.7005722Z [renet:err] level=info msg="[VM 12] STEP 7/12: user-data OK"
+2026-10-02T02:22:56.7006715Z level=info msg="[VM 12] STEP 8/12: Writing cloud-init network config..."
+2026-10-02T02:22:56.7007768Z level=info msg="[VM 12] STEP 8/12: network config OK"
+2026-10-02T02:22:56.7008429Z level=info msg="[VM 12] STEP 9/12: Writing cloud-init meta-data..."
+2026-10-02T02:22:56.7009232Z level=info msg="[VM 12] STEP 9/12: meta-data OK"
+2026-10-02T02:22:56.7010103Z level=info msg="[VM 12] STEP 10/12: Creating cloud-init ISO with xorrisofs..."
+2026-10-02T02:22:56.7011261Z [renet:err] level=info msg="[VM 1] STEP 2/12: VM check OK"
+2026-10-02T02:22:56.7012158Z level=info msg="[VM 1] STEP 3/12: Determining image path..."
+2026-10-02T02:22:56.7012990Z level=info msg="[VM 1] STEP 3/12: Looking for image fedora-43..."
+2026-10-02T02:22:56.7014153Z level=info msg="Base image cached: /home/runner/work/_temp/renet/disks/Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2 (556.3 MiB)"
+2026-10-02T02:22:56.7015328Z level=info msg="[VM 1] STEP 3/12: Image path: Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2"
+2026-10-02T02:22:56.7016129Z level=info msg="[VM 1] STEP 3/12: Image OK"
+2026-10-02T02:22:56.7016956Z level=info msg="[VM 1] STEP 4/12: Setting VM defaults..."
+2026-10-02T02:22:56.7017750Z level=info msg="[VM 1] STEP 4/12: Defaults OK (CPUs=1, RAM=1024MB, Disk=8GB)"
+2026-10-02T02:22:56.7018592Z level=info msg="[VM 1] STEP 5/12: Setting up temp files..."
+2026-10-02T02:22:56.7019509Z level=info msg="[VM 1] STEP 5/12: Temp files OK (tempDir=/var/lib/libvirt/images/rediacc-vms)"
+2026-10-02T02:22:56.7020263Z level=info msg="[VM 1] STEP 6/12: Getting SSH public key..."
+2026-10-02T02:22:56.7020983Z level=info msg="[VM 1] STEP 6/12: SSH key OK"
+2026-10-02T02:22:56.7021632Z level=info msg="[VM 1] STEP 7/12: Writing cloud-init user-data..."
+2026-10-02T02:22:56.7022357Z level=info msg="[VM 1] STEP 7/12: user-data OK"
+2026-10-02T02:22:56.7023129Z level=info msg="[VM 1] STEP 8/12: Writing cloud-init network config..."
+2026-10-02T02:22:56.7023765Z level=info msg="[VM 1] STEP 8/12: network config OK"
+2026-10-02T02:22:56.7024554Z level=info msg="[VM 1] STEP 9/12: Writing cloud-init meta-data..."
+2026-10-02T02:22:56.7025191Z level=info msg="[VM 1] STEP 9/12: meta-data OK"
+2026-10-02T02:22:56.7025962Z level=info msg="[VM 1] STEP 10/12: Creating cloud-init ISO with xorrisofs..."
+2026-10-02T02:22:56.8006800Z [renet:err] level=info msg="[VM 11] STEP 10/12: cloud-init ISO OK"
+2026-10-02T02:22:56.8010916Z level=info msg="[VM 11] STEP 11/12: Creating system disk overlay on Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2..."
+2026-10-02T02:22:56.8012872Z [renet:err] level=info msg="[VM 1] STEP 10/12: cloud-init ISO OK"
+2026-10-02T02:22:56.8014820Z level=info msg="[VM 1] STEP 11/12: Creating system disk overlay on Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2..."
+2026-10-02T02:22:56.8016693Z level=info msg="[VM 12] STEP 10/12: cloud-init ISO OK"
+2026-10-02T02:22:56.8018557Z level=info msg="[VM 12] STEP 11/12: Creating system disk overlay on Fedora-Cloud-Base-Generic-43-1.6.x86_64.qcow2..."
+2026-10-02T02:22:58.1331601Z [renet:err] level=info msg="[VM 1] STEP 11/12: Overlay OK (backing /var/lib/libvirt/images/rediacc-vms/rediacc-base.Fedora-Cloud-Base-Generic-43-1.6.x86_64.583335936-1790838375.qcow2)"
+2026-10-02T02:22:58.1334035Z [renet:err] level=info msg="[VM 1] STEP 11b/12: Resizing system disk (+8G)..."
+2026-10-02T02:22:58.1336286Z [renet:err] level=info msg="[VM 11] STEP 11/12: Overlay OK (backing /var/lib/libvirt/images/rediacc-vms/rediacc-base.Fedora-Cloud-Base-Generic-43-1.6.x86_64.583335936-1790838375.qcow2)"
+2026-10-02T02:22:58.1340109Z [renet:err] level=info msg="[VM 11] STEP 11b/12: Resizing system disk (+16G)..."
+2026-10-02T02:22:58.1343512Z [renet:err] level=info msg="[VM 12] STEP 11/12: Overlay OK (backing /var/lib/libvirt/images/rediacc-vms/rediacc-base.Fedora-Cloud-Base-Generic-43-1.6.x86_64.583335936-1790838375.qcow2)"
+2026-10-02T02:22:58.1346193Z level=info msg="[VM 12] STEP 11b/12: Resizing system disk (+16G)..."
+2026-10-02T02:22:58.1441508Z [renet:err] level=info msg="[VM 12] STEP 11b/12: Image resize OK"
+2026-10-02T02:22:58.1447777Z level=info msg="[VM 12] STEP 12/12: Building disk options..."
+2026-10-02T02:22:58.1449050Z level=info msg="[VM 12] STEP 12/12: Creating virt-install cache dir..."
+2026-10-02T02:22:58.1450353Z [renet:err] level=info msg="[VM 1] STEP 11b/12: Image resize OK"
+2026-10-02T02:22:58.1451512Z level=info msg="[VM 1] STEP 12/12: Building disk options..."
+2026-10-02T02:22:58.1452713Z level=info msg="[VM 1] STEP 12/12: Creating virt-install cache dir..."
+2026-10-02T02:22:58.1469493Z [renet:err] level=info msg="[VM 11] STEP 11b/12: Image resize OK"
+2026-10-02T02:22:58.1470928Z level=info msg="[VM 11] STEP 12/12: Building disk options..."
+2026-10-02T02:22:58.1472625Z [renet:err] level=info msg="[VM 11] STEP 12/12: Creating virt-install cache dir..."
+2026-10-02T02:22:58.1552899Z [renet:err] level=info msg="[VM 12] STEP 12/12: Running virt-install (name=rediacc12, ram=4096MB, vcpus=2)..."
+2026-10-02T02:22:58.1560495Z [renet:err] level=info msg="[VM 12] STEP 12/12: virt-install args: [--name rediacc12 --ram 4096 --vcpus 2 --os-variant fedora-unknown --network network=renet11,model=virtio,mac=52:54:00:00:00:0c --memorybacking allocation.mode=ondemand --graphics none --console pty,target_type=serial,log.file=/var/log/libvirt/qemu/rediacc12-console.log,log.append=on --noautoconsole --check all=off --quiet --import --disk path=/var/lib/libvirt/images/rediacc-vms/rediacc-vm-sys.fedora-unknown.12.qcow2,format=qcow2 --disk path=/var/lib/libvirt/images/rediacc-vms/rediacc-vm-seed.fedora-unknown.12.img,format=raw,device=cdrom,bus=scsi]"
+2026-10-02T02:22:58.1580168Z [renet:err] level=info msg="[VM 11] STEP 12/12: Running virt-install (name=rediacc11, ram=4096MB, vcpus=2)..."
+2026-10-02T02:22:58.1587633Z level=info msg="[VM 11] STEP 12/12: virt-install args: [--name rediacc11 --ram 4096 --vcpus 2 --os-variant fedora-unknown --network network=renet11,model=virtio,mac=52:54:00:00:00:0b --memorybacking allocation.mode=ondemand --graphics none --console pty,target_type=serial,log.file=/var/log/libvirt/qemu/rediacc11-console.log,log.append=on --noautoconsole --check all=off --quiet --import --disk path=/var/lib/libvirt/images/rediacc-vms/rediacc-vm-sys.fedora-unknown.11.qcow2,format=qcow2 --disk path=/var/lib/libvirt/images/rediacc-vms/rediacc-vm-seed.fedora-unknown.11.img,format=raw,device=cdrom,bus=scsi]"
+2026-10-02T02:22:58.1593267Z level=info msg="[VM 1] STEP 12/12: Running virt-install (name=rediacc1, ram=1024MB, vcpus=1)..."
+2026-10-02T02:22:58.1600220Z level=info msg="[VM 1] STEP 12/12: virt-install args: [--name rediacc1 --ram 1024 --vcpus 1 --os-variant fedora-unknown --network network=renet11,model=virtio,mac=52:54:00:00:00:01 --memorybacking allocation.mode=ondemand --graphics none --console pty,target_type=serial,log.file=/var/log/libvirt/qemu/rediacc1-console.log,log.append=on --noautoconsole --check all=off --quiet --import --disk path=/var/lib/libvirt/images/rediacc-vms/rediacc-vm-sys.fedora-unknown.1.qcow2,format=qcow2 --disk path=/var/lib/libvirt/images/rediacc-vms/rediacc-vm-seed.fedora-unknown.1.img,format=raw,device=cdrom,bus=scsi]"
+2026-10-02T02:23:01.3437854Z [renet:err] level=info msg="[VM 1] STEP 12/12: virt-install COMPLETE"
+2026-10-02T02:23:01.3439278Z [renet:err] level=info msg="[VM 1] VM rediacc1 created with IP 192.168.111.1"
+2026-10-02T02:23:02.6435037Z [renet:err] level=info msg="[VM 12] STEP 12/12: virt-install COMPLETE"
+2026-10-02T02:23:02.6436903Z level=info msg="[VM 12] VM rediacc12 created with IP 192.168.111.12"
+2026-10-02T02:23:02.7459110Z [renet:err] level=info msg="[VM 11] STEP 12/12: virt-install COMPLETE"
+2026-10-02T02:23:02.7480367Z [renet:err] level=info msg="[VM 11] VM rediacc11 created with IP 192.168.111.11"
+2026-10-02T02:23:02.7528809Z [renet:err] level=info msg="Waiting for VMs to be ready..."
+2026-10-02T02:23:27.1328992Z [renet:err] level=info msg="VM 1 ready"
+2026-10-02T02:23:27.9124971Z [renet:err] level=info msg="VM 11 ready"
+2026-10-02T02:23:28.7146926Z [renet:err] level=info msg="VM 12 ready"
+2026-10-02T02:23:28.7148471Z level=info msg="[1/4] Setting up SSH keys..."
+2026-10-02T02:23:28.7151181Z level=info msg="SSH key paths configured" data_dir=/home/runner/work/_temp/renet private_key=/home/runner/work/_temp/renet/staging/.ssh/id_rsa ssh_folder=/home/runner/work/_temp/renet/staging/.ssh staging_folder=/home/runner/work/_temp/renet/staging
+2026-10-02T02:23:28.7154061Z [renet:err] level=info msg="SSH keys already exist in staging folder, reusing them"
+2026-10-02T02:23:28.7156102Z [renet:err] level=info msg="SSH config created at: /home/runner/work/_temp/renet/staging/.ssh/config"
+2026-10-02T02:23:28.7158034Z level=info msg="[2/4] Verifying bridge VM is ready..."
+2026-10-02T02:23:29.2235801Z [renet:err] level=info msg="[3/4] Distributing SSH keys for full mesh..."
+2026-10-02T02:23:29.2239733Z level=info msg="Step 1: Enabling host -> VM access for all cluster VMs..."
+2026-10-02T02:23:29.2241765Z level=info msg="Step 2: Enabling VM -> VM mesh connectivity for all cluster VMs..."
+2026-10-02T02:23:29.2243681Z [renet:err] level=info msg="Setting up SSH access to rediacc12 (192.168.111.12)..." vm=rediacc12
+2026-10-02T02:23:29.2245535Z level=info msg="Setting up SSH access to rediacc11 (192.168.111.11)..." vm=rediacc11
+2026-10-02T02:23:29.2247669Z level=info msg="Setting up SSH access to rediacc1 (192.168.111.1)..." vm=rediacc1
+2026-10-02T02:23:29.8178880Z [renet:err] level=info msg="Configuring SSH for rediacc1 (192.168.111.1)..." vm=rediacc1
+2026-10-02T02:23:29.8318238Z [renet:err] level=info msg="Configuring SSH for rediacc11 (192.168.111.11)..." vm=rediacc11
+2026-10-02T02:23:29.8360413Z [renet:err] level=info msg="Configuring SSH for rediacc12 (192.168.111.12)..." vm=rediacc12
+2026-10-02T02:23:31.2723279Z [renet:err] level=info
+2026-10-02T02:23:31.2750849Z level=info msg="=========================================="
+2026-10-02T02:23:31.2767641Z level=info msg="SSH key distribution completed successfully"
+2026-10-02T02:23:31.2769814Z level=info msg="All 3 VMs can now communicate in a full mesh topology"
+2026-10-02T02:23:31.2771304Z level=info msg="No host key verification prompts will appear"
+2026-10-02T02:23:31.2773653Z [renet:err] level=info msg="=========================================="
+2026-10-02T02:23:31.5585816Z [renet:err] level=info msg="[4/4] Setting up the bridge and the workers concurrently..."
+2026-10-02T02:23:31.5587464Z [renet:err] level=info msg="Setting up worker rediacc12 via SSH..." vm=rediacc12
+2026-10-02T02:23:31.5591715Z [renet:err] level=info msg="Found renet binary at /usr/bin/renet" vm=rediacc1
+2026-10-02T02:23:31.5593661Z level=info msg="Uploading renet binary to VM 1 via 192.168.111.1..." vm=rediacc1
+2026-10-02T02:23:31.5608824Z [renet:err] level=info msg="Setting up worker rediacc11 via SSH..." vm=rediacc11
+2026-10-02T02:23:31.7968911Z [renet:err] level=info msg="Installing renet on rediacc11..." vm=rediacc11
+2026-10-02T02:23:31.7989459Z [renet:err] level=info msg="Copying renet binary to 192.168.111.11..." vm=rediacc11
+2026-10-02T02:23:31.8061712Z [renet:err] level=info msg="Installing renet on rediacc12..." vm=rediacc12
+2026-10-02T02:23:31.8075196Z [renet:err] level=info msg="Copying renet binary to 192.168.111.12..." vm=rediacc12
+2026-10-02T02:23:34.1935839Z [renet:err] ln:
+2026-10-02T02:23:34.1950285Z [renet:err] '/usr/bin/renet' and '/usr/bin/renet' are the same file
+2026-10-02T02:23:34.1962913Z [renet:err] 
+2026-10-02T02:23:34.3327088Z [renet:err] level=info msg="Renet installed on VM 1" vm=rediacc1
+2026-10-02T02:23:34.3330736Z [renet:err] level=info msg="Installing Docker on bridge VM..." vm=rediacc1
+2026-10-02T02:23:34.3334293Z level=info msg="Installing Docker on VM 1 (192.168.111.1)..." vm=rediacc1
+2026-10-02T02:24:28.7009737Z [renet:err] level=info msg="[setup] total start 1790907814" vm=rediacc1
+2026-10-02T02:24:28.7011227Z level=info msg="[setup] essentials start 1790907814" vm=rediacc1
+2026-10-02T02:24:28.7012661Z level=info msg="[setup] essentials end 1790907838 (23s)" vm=rediacc1
+2026-10-02T02:24:28.7013952Z level=info msg="[setup] docker-repo start 1790907838" vm=rediacc1
+2026-10-02T02:24:28.7015243Z level=info msg="[setup] docker-repo end 1790907838 (0s)" vm=rediacc1
+2026-10-02T02:24:28.7017363Z level=info msg="[setup] kernel-modules start 1790907838" vm=rediacc1
+2026-10-02T02:24:28.7019225Z level=info msg="[setup] kernel-modules end 1790907838 (0s)" vm=rediacc1
+2026-10-02T02:24:28.7020599Z [renet:err] level=info msg="[setup] docker-install start 1790907838" vm=rediacc1
+2026-10-02T02:24:28.7021934Z level=info msg="[setup] docker-install end 1790907864 (26s)" vm=rediacc1
+2026-10-02T02:24:28.7022814Z level=info msg="[setup] gpu start 1790907867" vm=rediacc1
+2026-10-02T02:24:28.7023433Z level=info msg="[setup] gpu end 1790907867 (0s)" vm=rediacc1
+2026-10-02T02:24:28.7024405Z level=info msg="[setup] criu start 1790907867" vm=rediacc1
+2026-10-02T02:24:28.7025084Z level=info msg="[setup] criu end 1790907867 (0s)" vm=rediacc1
+2026-10-02T02:24:28.7025724Z level=info msg="[setup] total end 1790907867 (53s)" vm=rediacc1
+2026-10-02T02:24:28.7026318Z level=info msg="[setup] pkg-calls 2" vm=rediacc1
+2026-10-02T02:24:28.7027316Z level=info msg="Docker installed on VM 1" vm=rediacc1
+2026-10-02T02:24:28.7028027Z level=info msg="Starting Docker registry..." vm=rediacc1
+2026-10-02T02:24:28.7028788Z level=info msg="Starting Docker registry on 192.168.111.1..." vm=rediacc1
+2026-10-02T02:24:34.9516579Z [renet:err] level=info msg="Docker registry started" vm=rediacc1
+2026-10-02T02:30:58.0496927Z [renet:err] level=info msg="[setup] total start 1790907816" vm=rediacc12
+2026-10-02T02:30:58.0498387Z level=info msg="[setup] essentials start 1790907816" vm=rediacc12
+2026-10-02T02:30:58.0499609Z level=info msg="[setup] essentials end 1790908232 (416s)" vm=rediacc12
+2026-10-02T02:30:58.0500797Z level=info msg="[setup] docker-repo start 1790908232" vm=rediacc12
+2026-10-02T02:30:58.0502004Z level=info msg="[setup] docker-repo end 1790908232 (0s)" vm=rediacc12
+2026-10-02T02:30:58.0503296Z level=info msg="[setup] kernel-modules start 1790908232" vm=rediacc12
+2026-10-02T02:30:58.0504568Z level=info msg="[setup] kernel-modules end 1790908232 (0s)" vm=rediacc12
+2026-10-02T02:30:58.0505692Z level=info msg="[setup] docker-install start 1790908232" vm=rediacc12
+2026-10-02T02:30:58.0507151Z level=info msg="[setup] docker-install end 1790908255 (23s)" vm=rediacc12
+2026-10-02T02:30:58.0508237Z level=info msg="[setup] gpu start 1790908257" vm=rediacc12
+2026-10-02T02:30:58.0509230Z level=info msg="[setup] gpu end 1790908257 (0s)" vm=rediacc12
+2026-10-02T02:30:58.0510378Z [renet:err] level=info msg="[setup] criu start 1790908257" vm=rediacc12
+2026-10-02T02:30:58.0511579Z level=info msg="[setup] criu end 1790908258 (0s)" vm=rediacc12
+2026-10-02T02:30:58.0512921Z level=info msg="[setup] total end 1790908258 (442s)" vm=rediacc12
+2026-10-02T02:30:58.0513883Z level=info msg="[setup] pkg-calls 2" vm=rediacc12
+2026-10-02T02:30:58.0514616Z level=info msg="Installing CRIU on rediacc12..." vm=rediacc12
+2026-10-02T02:30:58.2667323Z [renet:err] level=info msg="CRIU installed on rediacc12" vm=rediacc12
+2026-10-02T02:30:58.2668455Z level=info msg="Worker rediacc12 setup complete" vm=rediacc12
+2026-10-02T02:39:18.3475090Z [renet:err] level=info msg="[setup] total start 1790907815" vm=rediacc11
+2026-10-02T02:39:18.3477684Z level=info msg="[setup] essentials start 1790907816" vm=rediacc11
+2026-10-02T02:39:18.3478924Z level=info msg="[setup] essentials end 1790908732 (916s)" vm=rediacc11
+2026-10-02T02:39:18.3480494Z level=info msg="[setup] docker-repo start 1790908732" vm=rediacc11
+2026-10-02T02:39:18.3481688Z level=info msg="[setup] docker-repo end 1790908732 (0s)" vm=rediacc11
+2026-10-02T02:39:18.3483245Z [renet:err] level=info msg="[setup] kernel-modules start 1790908732" vm=rediacc11
+2026-10-02T02:39:18.3484578Z level=info msg="[setup] kernel-modules end 1790908732 (0s)" vm=rediacc11
+2026-10-02T02:39:18.3485691Z level=info msg="[setup] docker-install start 1790908732" vm=rediacc11
+2026-10-02T02:39:18.3487161Z level=info msg="[setup] docker-install end 1790908755 (23s)" vm=rediacc11
+2026-10-02T02:39:18.3488228Z level=info msg="[setup] gpu start 1790908758" vm=rediacc11
+2026-10-02T02:39:18.3489358Z level=info msg="[setup] gpu end 1790908758 (0s)" vm=rediacc11
+2026-10-02T02:39:18.3490439Z level=info msg="[setup] criu start 1790908758" vm=rediacc11
+2026-10-02T02:39:18.3491470Z level=info msg="[setup] criu end 1790908758 (0s)" vm=rediacc11
+2026-10-02T02:39:18.3492638Z level=info msg="[setup] total end 1790908758 (942s)" vm=rediacc11
+2026-10-02T02:39:18.3493769Z level=info msg="[setup] pkg-calls 2" vm=rediacc11
+2026-10-02T02:39:18.3494719Z level=info msg="Installing CRIU on rediacc11..." vm=rediacc11
+2026-10-02T02:39:18.5823162Z [renet:err] level=info msg="CRIU installed on rediacc11" vm=rediacc11
+2026-10-02T02:39:18.5825894Z level=info msg="Worker rediacc11 setup complete" vm=rediacc11
+2026-10-02T02:39:18.5828246Z [renet:err] level=info msg="Cluster orchestration completed successfully!"
+2026-10-02T02:39:18.6517230Z [renet] Cluster started successfully
+2026-10-02T02:39:18.6529536Z [OpsVMLifecycle] Waiting for VMs to be ready after reset...
+2026-10-02T02:39:18.6530783Z [OpsVMLifecycle] Waiting for all VMs to be ready...
+2026-10-02T02:39:18.6531981Z [SSHExecutor] Waiting for host 192.168.111.1 to be ready...
+2026-10-02T02:39:18.6561128Z [SSHExecutor] Waiting for host 192.168.111.11 to be ready...
+2026-10-02T02:39:18.6589735Z [SSHExecutor] Waiting for host 192.168.111.12 to be ready...
+2026-10-02T02:39:18.6818984Z [SSHExecutor] Using SSH key: /home/runner/work/_temp/renet/staging/.ssh/id_rsa
+2026-10-02T02:39:18.9363029Z [SSHExecutor] Host 192.168.111.11 is ready
+2026-10-02T02:39:19.1930057Z [SSHExecutor] Host 192.168.111.12 is ready
+2026-10-02T02:39:19.2173983Z [SSHExecutor] Host 192.168.111.1 is ready
+2026-10-02T02:39:19.2177862Z [OpsVMLifecycle] VM reset completed in 983.0s
+2026-10-02T02:39:19.2200340Z   ✓ VM reset completed in 983.0s
+2026-10-02T02:39:19.2200820Z 
+2026-10-02T02:39:19.2201246Z Step 2: Building and deploying renet...
+2026-10-02T02:39:19.2201921Z Checking infrastructure status...
+2026-10-02T02:39:19.4504653Z 
+2026-10-02T02:39:19.4505445Z Initial Status:
+2026-10-02T02:39:19.4506184Z   Renet: OK (/usr/bin/renet)
+2026-10-02T02:39:19.4507144Z   Bridge VM: OK
+2026-10-02T02:39:19.4507708Z   Worker VM: OK
+2026-10-02T02:39:19.4510819Z 
+2026-10-02T02:39:19.4511317Z Verifying renet on all VMs...
+2026-10-02T02:39:23.1130419Z   ✓ 192.168.111.11: renet updated (renet version 0.0.0-dev, staged from the ops-up copy)
+2026-10-02T02:39:23.2292697Z   ✓ 192.168.111.12: renet updated (renet version 0.0.0-dev, staged from the ops-up copy)
+2026-10-02T02:39:23.2353996Z   ✓ 192.168.111.1: renet updated (renet version 0.0.0-dev, staged from the ops-up copy)
+2026-10-02T02:39:23.2356595Z   [timing] Step 2 renet deploy: 4.0s
+2026-10-02T02:39:23.2358079Z   ✓ Renet deployed to all VMs
+2026-10-02T02:39:23.2358861Z 
+2026-10-02T02:39:23.2359630Z Step 3: Running renet setup on ALL VMs (bridge + workers)...
+2026-10-02T02:39:23.5042471Z   ✓ Setup already completed by ops up on 192.168.111.11 (worker), skipped
+2026-10-02T02:39:23.5101373Z   ✓ Setup already completed by ops up on 192.168.111.1 (bridge), skipped
+2026-10-02T02:39:23.5111111Z   ✓ Setup already completed by ops up on 192.168.111.12 (worker), skipped
+2026-10-02T02:39:23.5113070Z   [timing] Step 3 renet setup: 0.3s
+2026-10-02T02:39:23.5121854Z 
+2026-10-02T02:39:23.5122545Z Step 4: Verifying all VMs are ready...
+2026-10-02T02:39:23.5125094Z [SSHExecutor] Waiting for host 192.168.111.1 to be ready...
+2026-10-02T02:39:23.5213372Z [SSHExecutor] Waiting for host 192.168.111.11 to be ready...
+2026-10-02T02:39:23.5307884Z [SSHExecutor] Waiting for host 192.168.111.12 to be ready...
+2026-10-02T02:39:23.7700289Z [SSHExecutor] Host 192.168.111.1 is ready
+2026-10-02T02:39:23.7702301Z [SSHExecutor] Host 192.168.111.11 is ready
+2026-10-02T02:39:23.7889515Z [SSHExecutor] Host 192.168.111.12 is ready
+2026-10-02T02:39:23.7891109Z [OpsManager] Verifying all VMs are ready...
+2026-10-02T02:39:24.4149052Z   ✓ 192.168.111.1: renet renet version 0.0.0-dev
+2026-10-02T02:39:25.0420496Z   ✓ 192.168.111.11: renet renet version 0.0.0-dev
+2026-10-02T02:39:25.6722035Z   ✓ 192.168.111.12: renet renet version 0.0.0-dev
+2026-10-02T02:39:25.6728353Z [OpsManager] All VMs verified and ready
+2026-10-02T02:39:25.6729248Z   [timing] Step 4 verify: 2.2s
+2026-10-02T02:39:25.6729687Z 
+2026-10-02T02:39:25.6730424Z Steps 5-8: RustFS (bridge), rclone then CRIU (workers), datastores (workers)...
+2026-10-02T02:39:25.6731820Z [OpsRustFSManager] Starting RustFS on bridge VM (192.168.111.1)...
+2026-10-02T02:39:25.6812361Z [OpsRustFSManager] Configuring RustFS access on worker VM 11...
+2026-10-02T02:39:25.6835554Z [OpsCommandRunner] Running: /usr/bin/renet ops rustfs configure-worker 11
+2026-10-02T02:39:25.6908325Z [OpsRustFSManager] Configuring RustFS access on worker VM 12...
+2026-10-02T02:39:25.6910079Z [OpsCommandRunner] Running: /usr/bin/renet ops rustfs configure-worker 12
+2026-10-02T02:39:25.7009378Z [OpsManager] Initializing datastores on all worker VMs...
+2026-10-02T02:39:25.7048017Z   Initializing datastore on 192.168.111.11...
+2026-10-02T02:39:25.7166635Z   Initializing datastore on 192.168.111.12...
+2026-10-02T02:39:25.7278774Z [renet:err] time="2026-10-02T02:39:25Z" level=info msg="Configuring rclone on VM 11 (192.168.111.11) for RustFS..."
+2026-10-02T02:39:25.7281091Z [renet:err] time="2026-10-02T02:39:25Z" level=info msg="Configuring rclone on VM 12 (192.168.111.12) for RustFS..."
+2026-10-02T02:39:26.2108545Z [OpsCommandRunner] Running: /usr/bin/renet ops rustfs start
+2026-10-02T02:39:26.2481597Z [renet:err] time="2026-10-02T02:39:26Z" level=info msg="Starting RustFS S3 storage on 192.168.111.1..."
+2026-10-02T02:39:26.7597844Z   ✓ Datastore initialized on 192.168.111.12
+2026-10-02T02:39:26.7650932Z   ✓ Datastore initialized on 192.168.111.11
+2026-10-02T02:39:26.7653882Z [OpsManager] All datastores initialized
+2026-10-02T02:39:26.7654992Z   [timing] Step 7 datastores: 1.1s
+2026-10-02T02:39:32.2409396Z [renet:err] time="2026-10-02T02:39:32Z" level=info msg="RustFS rclone configured on VM 12"
+2026-10-02T02:39:32.6545484Z [renet:err] time="2026-10-02T02:39:32Z" level=info msg="RustFS rclone configured on VM 11"
+2026-10-02T02:39:32.6588519Z   ✓ Step 6: Worker 11 configured for RustFS access
+2026-10-02T02:39:32.6607899Z   ✓ Step 6: Worker 12 configured for RustFS access
+2026-10-02T02:39:32.6615895Z   [timing] Step 6 rclone: 7.0s
+2026-10-02T02:39:32.6618180Z Checking CRIU deployment...
+2026-10-02T02:39:33.0359882Z   ✓ 192.168.111.11: CRIU already installed (/usr/sbin/criu)
+2026-10-02T02:39:33.0363811Z   ✓ 192.168.111.12: CRIU already installed (/usr/sbin/criu)
+2026-10-02T02:39:33.0365086Z   CRIU already installed on all workers
+2026-10-02T02:39:33.0366208Z   [timing] Step 8 CRIU: 0.4s
+2026-10-02T02:39:41.0364378Z [renet:err] time="2026-10-02T02:39:41Z" level=info msg="Waiting for RustFS to be ready..."
+2026-10-02T02:39:41.8248358Z [renet:err] time="2026-10-02T02:39:41Z" level=info msg="RustFS is ready!"
+2026-10-02T02:39:41.8251379Z [renet:err] time="2026-10-02T02:39:41Z" level=info msg="Creating bucket: rediacc-test"
+2026-10-02T02:39:43.1358130Z [OpsRustFSManager] Verifying RustFS S3 endpoint...
+2026-10-02T02:39:43.4138558Z [OpsRustFSManager] RustFS S3 endpoint is accessible
+2026-10-02T02:39:43.4140355Z   ✓ Step 5: RustFS started successfully
+2026-10-02T02:39:43.4141589Z   [timing] Step 5 RustFS: 17.7s
+2026-10-02T02:39:43.4155135Z   ✓ RustFS, rclone, datastores and CRIU ready
+2026-10-02T02:39:43.4156292Z   [timing] Steps 5-8 total: 17.7s
+2026-10-02T02:39:43.4156902Z 
+2026-10-02T02:39:43.4157217Z ============================================================
+2026-10-02T02:39:43.4157790Z All VMs ready for SSH-based test execution
+2026-10-02T02:39:43.4158347Z ============================================================
+2026-10-02T02:39:43.4158652Z 
+2026-10-02T02:39:44.0641590Z [TextFileReporter] Output directory: /home/runner/work/console/console/packages/e2e-tests/reports/bridge-logs
+2026-10-02T02:39:45.4017506Z [2026-10-02T02:39:44.503Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > ping should return pong (0.8s, passed)
+2026-10-02T02:39:45.8292123Z [2026-10-02T02:39:45.399Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > nop should succeed silently (0.4s, passed)
+2026-10-02T02:39:46.2847758Z [2026-10-02T02:39:45.827Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > hello should return version info (0.4s, passed)
+2026-10-02T02:39:46.7481678Z [2026-10-02T02:39:46.283Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > network_used lists every network-ID claimant as a JSON array (0.4s, passed)
+2026-10-02T02:39:47.1801797Z [2026-10-02T02:39:46.747Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > ssh_test should succeed (0.4s, passed)
+2026-10-02T02:39:47.6599931Z [2026-10-02T02:39:47.179Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_kernel_compatibility should pass (0.5s, passed)
+2026-10-02T02:39:48.1136851Z [2026-10-02T02:39:47.659Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_setup should report status (0.4s, passed)
+2026-10-02T02:39:48.5674327Z [2026-10-02T02:39:48.112Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_memory should report available memory (0.4s, passed)
+2026-10-02T02:39:49.0048617Z [2026-10-02T02:39:48.566Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_sudo should verify sudo access (0.4s, passed)
+2026-10-02T02:39:49.4564472Z [2026-10-02T02:39:49.003Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_tools should verify required tools (0.4s, passed)
+2026-10-02T02:39:49.9073715Z [2026-10-02T02:39:49.455Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_renet should verify installation (0.4s, passed)
+2026-10-02T02:39:50.3581409Z [2026-10-02T02:39:49.906Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_criu should verify CRIU availability (0.4s, passed)
+2026-10-02T02:39:50.8464729Z [2026-10-02T02:39:50.357Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_btrfs should verify btrfs availability (0.5s, passed)
+2026-10-02T02:39:51.3051392Z [2026-10-02T02:39:50.845Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_drivers should verify drivers (0.4s, passed)
+2026-10-02T02:39:51.7984278Z [2026-10-02T02:39:51.304Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_system should run all checks (0.5s, passed)
+2026-10-02T02:39:52.2763825Z [2026-10-02T02:39:51.797Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_users should verify user setup (0.5s, passed)
+2026-10-02T02:39:52.6968956Z [2026-10-02T02:39:52.274Z]  > test-01 > 01-system-checks.test.ts > System Functions @bridge @smoke > check_rediacc_cli should verify CLI (0.4s, passed)
+2026-10-02T02:39:53.3958442Z [2026-10-02T02:39:52.694Z]  > test-01 > 01-system-checks.test.ts > Parallel Execution @bridge > implemented functions should run in parallel (0.7s, passed)
+2026-10-02T02:39:53.8666099Z [2026-10-02T02:39:53.394Z]  > test-01 > 01-system-checks.test.ts > Error Handling @bridge > unknown function should fail with clear error (0.4s, passed)
+2026-10-02T02:39:55.2558126Z [2026-10-02T02:39:54.354Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 1.1 ping: verify system connectivity (0.4s, passed)
+2026-10-02T02:39:55.7454427Z [2026-10-02T02:39:55.254Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 1.2 check_system: verify system requirements (0.5s, passed)
+2026-10-02T02:39:56.2187080Z [2026-10-02T02:39:55.744Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 1.3 check_datastore: verify datastore available (0.4s, passed)
+2026-10-02T02:40:02.5992450Z [2026-10-02T02:39:56.217Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 2.1 new: create repository (6.4s, passed)
+2026-10-02T02:40:03.0970861Z [2026-10-02T02:40:02.598Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 2.2 list: verify repository created (0.5s, passed)
+2026-10-02T02:40:03.6574412Z [2026-10-02T02:40:03.096Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 2.3 info: get repository info (0.5s, passed)
+2026-10-02T02:40:04.2130106Z [2026-10-02T02:40:03.656Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 3.1 mount: mount repository (0.5s, passed)
+2026-10-02T02:40:04.7073033Z [2026-10-02T02:40:04.210Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 3.2 status: check mounted status (0.5s, passed)
+2026-10-02T02:40:05.2123726Z [2026-10-02T02:40:04.706Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 3.3 validate: validate mounted repository (0.5s, passed)
+2026-10-02T02:40:05.8808837Z [2026-10-02T02:40:05.211Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 4.1 up: start repository services (0.6s, passed)
+2026-10-02T02:40:06.3779722Z [2026-10-02T02:40:05.880Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 4.2 status: verify services running (0.5s, passed)
+2026-10-02T02:40:06.8876299Z [2026-10-02T02:40:06.377Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 4.3 down: stop repository services (0.5s, passed)
+2026-10-02T02:40:07.7699412Z [2026-10-02T02:40:06.886Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 5.1 unmount: unmount for resize (0.9s, passed)
+2026-10-02T02:40:08.4589219Z [2026-10-02T02:40:07.767Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 5.2 resize: expand repository (0.7s, passed)
+2026-10-02T02:40:12.3491813Z [2026-10-02T02:40:08.457Z]  > test-12 > 12a-full-integration-repository.test.ts > Full Repository Workflow @bridge @integration > 6.1 rm: delete repository (2.0s, passed)
+2026-10-02T02:40:15.7684965Z [2026-10-02T02:40:12.347Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 1. create repository (3.4s, passed)
+2026-10-02T02:40:16.3338727Z [2026-10-02T02:40:15.766Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 2. mount repository (0.6s, passed)
+2026-10-02T02:40:16.8024958Z [2026-10-02T02:40:16.332Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 2.1 write Rediaccfile (0.5s, passed)
+2026-10-02T02:40:17.2759365Z [2026-10-02T02:40:16.801Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 2.2 write docker-compose.yaml (0.5s, passed)
+2026-10-02T02:40:29.3314605Z [2026-10-02T02:40:17.275Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 3. up: start repository services (12.0s, passed)
+2026-10-02T02:40:29.8235178Z [2026-10-02T02:40:29.330Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 4. list containers (0.5s, passed)
+2026-10-02T02:40:30.3203574Z [2026-10-02T02:40:29.822Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 5. start container (0.5s, passed)
+2026-10-02T02:40:30.7938691Z [2026-10-02T02:40:30.318Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 6. inspect container (0.5s, passed)
+2026-10-02T02:40:31.2651029Z [2026-10-02T02:40:30.792Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 7. get container logs (0.5s, passed)
+2026-10-02T02:40:31.9313666Z [2026-10-02T02:40:31.264Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 8. stop container (0.7s, passed)
+2026-10-02T02:40:32.5580099Z [2026-10-02T02:40:31.931Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 9. down: stop repository services (0.6s, passed)
+2026-10-02T02:40:33.4908720Z [2026-10-02T02:40:32.556Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 10. unmount repository (0.9s, passed)
+2026-10-02T02:40:37.6653016Z [2026-10-02T02:40:33.490Z]  > test-12 > 12a-full-integration-repository.test.ts > Container Repository Integration @bridge @integration > 11. delete repository (1.8s, passed)
+2026-10-02T02:40:41.2583465Z ##[error]The operation was canceled.
+2026-10-02T02:40:41.2644791Z ##[group]Run PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-fedora-43-s1" --status cancelled
+2026-10-02T02:40:41.2645917Z PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-fedora-43-s1" --status cancelled
+2026-10-02T02:40:41.2769295Z shell: /usr/bin/bash -e {0}
+2026-10-02T02:40:41.2769760Z env:
+2026-10-02T02:40:41.2770099Z   CI: true
+2026-10-02T02:40:41.2770435Z   BRIDGE_TIMEOUT: 240000
+2026-10-02T02:40:41.2770817Z   VM_BRIDGE: 1
+2026-10-02T02:40:41.2771162Z   VM_WORKERS: 11 12
+2026-10-02T02:40:41.2771510Z   VM_BAKE: on
+2026-10-02T02:40:41.2771844Z   VM_CEPH_NODES: 
+2026-10-02T02:40:41.2772200Z   VM_IMAGE: fedora-43
+2026-10-02T02:40:41.2772565Z   FULL_INTEGRATION: 1
+2026-10-02T02:40:41.2772923Z   CRIU_EXPECTED: 1
+2026-10-02T02:40:41.2773265Z   CLI_SUITE: 
+2026-10-02T02:40:41.2773773Z   BWS_DOCKERHUB_TOKEN: ***
+2026-10-02T02:40:41.2781670Z   BWS_APP_PRIVATE_KEY: ***
+2026-10-02T02:40:41.2782177Z   BWS_DOCKERHUB_USERNAME: ***
+2026-10-02T02:40:41.2782587Z   BWS_APP_ID: ***
+2026-10-02T02:40:41.2782945Z   GOTOOLCHAIN: local
+2026-10-02T02:40:41.2783435Z   RENET_BINARY: /home/runner/work/console/console/private/renet/bin/renet
+2026-10-02T02:40:41.2783983Z ##[endgroup]
+2026-10-02T02:40:41.3689228Z ✓ Created completion signal: /home/runner/work/_temp/complete-e2e-workers-fedora-43-s1.txt (status: cancelled)
+2026-10-02T02:40:41.3767075Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+2026-10-02T02:40:41.3767698Z with:
+2026-10-02T02:40:41.3768216Z   name: test-e2e-workers-fedora-43-s1-6605136d3fbf8d5fea58bc5606939fb76ace0c95
+2026-10-02T02:40:41.3769217Z   path: /home/runner/work/_temp/complete.txt
+2026-10-02T02:40:41.3770059Z   retention-days: 3
+2026-10-02T02:40:41.3770413Z   if-no-files-found: ignore
+2026-10-02T02:40:41.3770790Z   compression-level: 6
+2026-10-02T02:40:41.3771148Z   overwrite: false
+2026-10-02T02:40:41.3771501Z   include-hidden-files: false
+2026-10-02T02:40:41.3771884Z   archive: true
+2026-10-02T02:40:41.3772208Z env:
+2026-10-02T02:40:41.3772511Z   CI: true
+2026-10-02T02:40:41.3772827Z   BRIDGE_TIMEOUT: 240000
+2026-10-02T02:40:41.3773185Z   VM_BRIDGE: 1
+2026-10-02T02:40:41.3773509Z   VM_WORKERS: 11 12
+2026-10-02T02:40:41.3774047Z   VM_BAKE: on
+2026-10-02T02:40:41.3774401Z   VM_CEPH_NODES: 
+2026-10-02T02:40:41.3774746Z   VM_IMAGE: fedora-43
+2026-10-02T02:40:41.3775093Z   FULL_INTEGRATION: 1
+2026-10-02T02:40:41.3775434Z   CRIU_EXPECTED: 1
+2026-10-02T02:40:41.3775775Z   CLI_SUITE: 
+2026-10-02T02:40:41.3776226Z   BWS_DOCKERHUB_TOKEN: ***
+2026-10-02T02:40:41.3783832Z   BWS_APP_PRIVATE_KEY: ***
+2026-10-02T02:40:41.3784399Z   BWS_DOCKERHUB_USERNAME: ***
+2026-10-02T02:40:41.3784823Z   BWS_APP_ID: ***
+2026-10-02T02:40:41.3785169Z   GOTOOLCHAIN: local
+2026-10-02T02:40:41.3785646Z   RENET_BINARY: /home/runner/work/console/console/private/renet/bin/renet
+2026-10-02T02:40:41.3786171Z ##[endgroup]
+2026-10-02T02:40:41.7041866Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2026-10-02T02:40:41.7047631Z The least common ancestor is /home/runner/work. This will be the root directory of the artifact
+2026-10-02T02:40:41.7049345Z With the provided path, there will be 49 files uploaded
+2026-10-02T02:40:41.7054558Z Artifact name is valid!
+2026-10-02T02:40:41.7055564Z Root directory input is valid!
+2026-10-02T02:40:41.9532394Z Uploading artifact: test-e2e-workers-fedora-43-s1-6605136d3fbf8d5fea58bc5606939fb76ace0c95.zip
+2026-10-02T02:40:41.9575039Z Beginning upload of artifact content to blob storage
+2026-10-02T02:40:42.1217800Z Uploaded bytes 69496
+2026-10-02T02:40:42.1400879Z Finished uploading artifact content to blob storage!
+2026-10-02T02:40:42.1402877Z SHA256 digest of uploaded artifact is cff9a1ba83a20b4813c83c771459fda8e242f1c8532e0fa23cb2aa467f9942ff
+2026-10-02T02:40:42.1404218Z Finalizing artifact upload
+2026-10-02T02:40:42.3782252Z Artifact test-e2e-workers-fedora-43-s1-6605136d3fbf8d5fea58bc5606939fb76ace0c95 successfully finalized. Artifact ID 11206475948
+2026-10-02T02:40:42.3785324Z Artifact test-e2e-workers-fedora-43-s1-6605136d3fbf8d5fea58bc5606939fb76ace0c95 has been successfully uploaded! Final size is 69496 bytes. Artifact ID is 11206475948
+2026-10-02T02:40:42.3788448Z Artifact download URL: https://github.com/rediacc/console/actions/runs/36953549081/artifacts/11206475948
+2026-10-02T02:40:42.3990294Z ##[group]Run actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+2026-10-02T02:40:42.3990883Z with:
+2026-10-02T02:40:42.3991935Z   name: unit-durations-test-e2e-workers-fedora-43-s1-6605136d3fbf8d5fea58bc5606939fb76ace0c95
+2026-10-02T02:40:42.3993163Z   path: packages/e2e-tests/reports/bridge-logs/unit-durations*.json
+2026-10-02T02:40:42.3993823Z   retention-days: 3
+2026-10-02T02:40:42.3994187Z   if-no-files-found: ignore
+2026-10-02T02:40:42.3994574Z   compression-level: 6
+2026-10-02T02:40:42.3994951Z   overwrite: false
+2026-10-02T02:40:42.3995320Z   include-hidden-files: false
+2026-10-02T02:40:42.3995882Z   archive: true
+2026-10-02T02:40:42.3996235Z env:
+2026-10-02T02:40:42.3997019Z   CI: true
+2026-10-02T02:40:42.3997555Z   BRIDGE_TIMEOUT: 240000
+2026-10-02T02:40:42.3997943Z   VM_BRIDGE: 1
+2026-10-02T02:40:42.3998357Z   VM_WORKERS: 11 12
+2026-10-02T02:40:42.3998970Z   VM_BAKE: on
+2026-10-02T02:40:42.3999531Z   VM_CEPH_NODES: 
+2026-10-02T02:40:42.4000215Z   VM_IMAGE: fedora-43
+2026-10-02T02:40:42.4000772Z   FULL_INTEGRATION: 1
+2026-10-02T02:40:42.4001412Z   CRIU_EXPECTED: 1
+2026-10-02T02:40:42.4001779Z   CLI_SUITE: 
+2026-10-02T02:40:42.4002249Z   BWS_DOCKERHUB_TOKEN: ***
+2026-10-02T02:40:42.4011381Z   BWS_APP_PRIVATE_KEY: ***
+2026-10-02T02:40:42.4011869Z   BWS_DOCKERHUB_USERNAME: ***
+2026-10-02T02:40:42.4012276Z   BWS_APP_ID: ***
+2026-10-02T02:40:42.4012627Z   GOTOOLCHAIN: local
+2026-10-02T02:40:42.4013133Z   RENET_BINARY: /home/runner/work/console/console/private/renet/bin/renet
+2026-10-02T02:40:42.4013679Z ##[endgroup]
+2026-10-02T02:40:42.5554298Z No files were found with the provided path: packages/e2e-tests/reports/bridge-logs/unit-durations*.json. No artifacts will be uploaded.
+2026-10-02T02:40:42.5754991Z ##[group]Run sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+2026-10-02T02:40:42.5755737Z sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+2026-10-02T02:40:42.5824650Z shell: /usr/bin/bash -e {0}
+2026-10-02T02:40:42.5825347Z env:
+2026-10-02T02:40:42.5825983Z   CI: true
+2026-10-02T02:40:42.5826911Z   BRIDGE_TIMEOUT: 240000
+2026-10-02T02:40:42.5827700Z   VM_BRIDGE: 1
+2026-10-02T02:40:42.5828404Z   VM_WORKERS: 11 12
+2026-10-02T02:40:42.5829126Z   VM_BAKE: on
+2026-10-02T02:40:42.5829737Z   VM_CEPH_NODES: 
+2026-10-02T02:40:42.5830357Z   VM_IMAGE: fedora-43
+2026-10-02T02:40:42.5830999Z   FULL_INTEGRATION: 1
+2026-10-02T02:40:42.5831665Z   CRIU_EXPECTED: 1
+2026-10-02T02:40:42.5832285Z   CLI_SUITE: 
+2026-10-02T02:40:42.5833140Z   BWS_DOCKERHUB_TOKEN: ***
+2026-10-02T02:40:42.5847530Z   BWS_APP_PRIVATE_KEY: ***
+2026-10-02T02:40:42.5848274Z   BWS_DOCKERHUB_USERNAME: ***
+2026-10-02T02:40:42.5848952Z   BWS_APP_ID: ***
+2026-10-02T02:40:42.5849625Z   GOTOOLCHAIN: local
+2026-10-02T02:40:42.5850488Z   RENET_BINARY: /home/runner/work/console/console/private/renet/bin/renet
+2026-10-02T02:40:42.5851430Z ##[endgroup]
+2026-10-02T02:40:42.6233932Z Post job cleanup.
+2026-10-02T02:40:42.8741091Z ##[group]Logout from ghcr.io
+2026-10-02T02:40:42.8811397Z [command]/usr/bin/docker logout ghcr.io
+2026-10-02T02:40:42.8990918Z Removing login credentials for ghcr.io
+2026-10-02T02:40:42.9025748Z ##[endgroup]
+2026-10-02T02:40:42.9027499Z ##[group]Post cache
+2026-10-02T02:40:42.9028492Z State not set
+2026-10-02T02:40:42.9030235Z ##[endgroup]
+2026-10-02T02:40:42.9354924Z Post job cleanup.
+2026-10-02T02:40:42.9367703Z ##[start-action display=Run actions/setup-node@820762786026740c76f36085b0efc47a31fe5020;id=__2e81c10b-7383-43be-99e7-c93fdae7636c.__actions_setup-node]
+2026-10-02T02:40:42.9373675Z ##[end-action id=__2e81c10b-7383-43be-99e7-c93fdae7636c.__actions_setup-node;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-10-02T02:40:42.9379551Z ##[start-action display=Run actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9;id=__2e81c10b-7383-43be-99e7-c93fdae7636c.cache-root]
+2026-10-02T02:40:42.9385596Z ##[end-action id=__2e81c10b-7383-43be-99e7-c93fdae7636c.cache-root;outcome=skipped;conclusion=skipped;duration_ms=0]
+2026-10-02T02:40:42.9390652Z ##[start-action display=Run ./.github/actions/profiler;id=__2e81c10b-7383-43be-99e7-c93fdae7636c.__self]
+2026-10-02T02:40:42.9454224Z Post job cleanup.
