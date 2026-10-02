@@ -2,14 +2,14 @@ r"""Port of `.ci/scripts/test/gates/test-toolchain.sh`, retired in W7 P5.
 
 Controls for `.ci/scripts/lib/toolchain.sh`.
 
-THE SUBJECT STAYS BASH. Nothing ported it: three real readers source the file directly (`bash`'s `set -a; . toolchain.env`, a Dockerfile `COPY` + `ARG`, and GitHub Actions' `cat >> $GITHUB_ENV`), so this port changes the harness language and not the subject, exactly as `test_gate_review_status.py` keeps driving bash `review-status.sh` for the same reason.
+THE SUBJECT STAYS BASH. Nothing ported it: three real readers source the file directly (`bash`'s `set -a; . toolchain.env`, a Dockerfile `COPY` + `ARG`, and GitHub Actions' `cat >> $GITHUB_ENV`), so this port changes the harness language and not the subject.
 
 The hazard this file exists for: every tool prints its version differently, so the normaliser is per-tool and fragile. A normaliser that silently returns "" would make `toolchain_check` compare "" against "" and PASS -- vacuity inside the check whose whole job is preventing it. So every probe assertion is paired with a garbage-output control, and every match assertion with a
 mismatch.
 
 Fake binaries are built by CONSTRUCTION in a per-test `tmp_path`, never by mutating a real tool, so a reworded real `--version` cannot void these.
 
-EACH CALL IS ITS OWN SUBPROCESS, sourcing the library fresh -- the same choice `test_gate_review_status.py`'s `source_common` makes, for the identical reason: a shell library cannot be sourced in-process from Python, and `toolchain_load`'s own idempotence guard (`REDIACC_TOOLCHAIN_LOADED`) means nothing is lost by not sharing one shell across calls.
+EACH CALL IS ITS OWN SUBPROCESS, sourcing the library fresh, because a shell library cannot be sourced in-process from Python, and `toolchain_load`'s own idempotence guard (`REDIACC_TOOLCHAIN_LOADED`) means nothing is lost by not sharing one shell across calls.
 
 A FLAT TWIN. The bash original declares no `test_*()` functions -- it is a straight-line script ending in `tally_finish "toolchain"` -- so `test_twin_parity.py`'s case-set comparison would have fallen back to its runtime `PASS:` line count anyway. This port keeps the same shape: one `gate.ok()`/`gate.log_pass()` per twin assertion, grouped into a handful of pytest functions rather
 than the twin's single run, which is a Python-side convenience and not a case the twin declared.

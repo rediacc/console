@@ -284,7 +284,7 @@ def test_plant_refuses_a_needle_that_is_not_there():
 def test_plant_refuses_replacing_a_string_with_itself():
     """ITS OWN REFUSAL, distinct from the missing-needle one, because it is a different author mistake: a typo, not a drifted fixture. This is the case that catches the real one found in the tree on 2026-09-08 --
     `_FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140")` in
-    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a live substitution inside the port of the very gate `control_vacuity` uses as its own control."""
+    `rediacc_ci/quality/review_turn_capacity.py`, a dead leg chained ahead of a live substitution inside the port of the very gate `control_vacuity` then used as its own control (retired 2026-10-02)."""
     with pytest.raises(VacuousPlantError) as exc:
         plant("max_turns=140 here", "max_turns=140", "max_turns=140")
     # ASSERT ON WHAT ONLY THIS BRANCH SAYS. `old == new` is also caught further

@@ -629,18 +629,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'check:ci-review-prompt-render',
-    run: 'npm run check:ci-review-prompt-render',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_review_prompt_render.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'Review prompt render',
-    },
-  },
-  {
     id: 'check:ci-git-history-depth',
     run: 'npm run check:ci-git-history-depth',
     gate: true,
@@ -986,7 +974,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // Every commit must name the epic it belongs to, because the review selects an epic's commits by trailer. An untagged commit is reviewed by nobody.
+    // Every commit must name the epic it belongs to, because the PR's epic block groups commits by trailer. An untagged commit belongs to no epic.
     id: 'check:ci-pr-task-trailers',
     env: {
       PR_BASE_REF: 'origin/${{ github.event.pull_request.base.ref }}',
@@ -2800,30 +2788,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // >>> gen-manifest: region 21
-  {
-    id: 'check:ci-review-turn-capacity',
-    run: 'npm run check:ci-review-turn-capacity',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_review_turn_capacity.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Review turn budget cannot starve a routed review',
-    },
-  },
-  {
-    id: 'check:ci-review-cap-coherence',
-    run: 'npm run check:ci-review-cap-coherence',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_review_cap_coherence.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Review cap is measured coherently',
-    },
-  },
   {
     id: 'check:ci-gate-reachability-coverage',
     run: 'npm run check:ci-gate-reachability-coverage',

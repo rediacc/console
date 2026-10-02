@@ -65,8 +65,9 @@ Two more things it deliberately does not do:
     readers do not share PR_HEAD_REF's one property that makes "empty here" a
     sound defect predicate -- every PR_HEAD_REF reader resolves the value the
     SAME way on every event (env, then `GITHUB_HEAD_REF`, then `git branch
-    --show-current`: `check-pr-epic-block.ts:134`, `check-pr-task-trailers.ts:439`,
-    `review_report_replies.py:392`, `discover_epics.py:149`), whereas PR_NUMBER's
+    --show-current`: `check-pr-epic-block.ts:134`, `check-pr-task-trailers.ts:439`;
+    the two Python readers `review_report_replies.py` and `discover_epics.py` were
+    retired with the PR-level Claude review on 2026-10-02), whereas PR_NUMBER's
     branch on the event, so judging them means statically reading a shell `case`.
     Adding it is a decision with its own acceptance and its own two live findings
     to fix first; it is deliberately not smuggled in here. The coverage table, the
@@ -120,9 +121,9 @@ LOUD_FAILURE = re.compile(r"PR_HEAD_REF[^\n]{0,80}(unset|refus|is required)", re
 
 # Vacuity floors. Both corpora are enumerated, and an enumerator that finds nothing prints a tick indistinguishable from a clean tree.
 MIN_READERS = 2
-# SIX setter steps exist today: ci.yml x1 (`:673`), ci-quality.yml x4 (`:538`, `:665`, `:1114`, `:1121`) and claude-review-reusable.yml x1 (`:139`). The floor sits ONE below, not AT, the live count: a floor equal to the corpus turns every legitimate retirement into a red, which is how a floor stops being a vacuity guard and starts being a freeze. `ci-quality.yml:2200` was the
-# seventh until its key was deleted as dead, and that retirement is exactly the shape this headroom is for.
-MIN_SETTER_STEPS = 5
+# FOUR setter steps exist today (2026-10-02), all in ci-quality.yml: "Check whether the branch is behind its base", "Validate submodule branches", "PR epic block matches the published worklist" and "Every commit names its epic". The floor sits ONE below, not AT, the live count: a floor equal to the corpus turns every legitimate retirement into a red, which is how a floor stops being a vacuity guard and starts
+# being a freeze. Retirements so far: `ci-quality.yml:2200` when its key was deleted as dead, then ci.yml's "Check unreplied review reports" and `claude-review-reusable.yml:139` when the PR-level Claude review was retired on 2026-10-02 (six became four, the floor five became three).
+MIN_SETTER_STEPS = 3
 
 SETTER_VARS = ("PR_HEAD_REF", "GITHUB_HEAD_REF")
 

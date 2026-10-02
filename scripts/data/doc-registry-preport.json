@@ -687,10 +687,15 @@
   },
   "retired": {
     "gates": {
-      "gate-test:claude-hooks": "retired with its subject when .claude/hooks/test-hooks.sh was ported to pytest under .claude/rediacc_hooks/tests/. The entry was a 40-line wrapper around the harness and carried no assertion of its own beyond translating its summary line; the ports are collected by check:ci-pytest, whose paths were widened in the same change to keep the harness's declared subjects selectable. This provider's other 131 dropped rows predate this change and are not explained here."
+      "gate-test:claude-hooks": "retired with its subject when .claude/hooks/test-hooks.sh was ported to pytest under .claude/rediacc_hooks/tests/. The entry was a 40-line wrapper around the harness and carried no assertion of its own beyond translating its summary line; the ports are collected by check:ci-pytest, whose paths were widened in the same change to keep the harness's declared subjects selectable. This provider's other 131 dropped rows predate this change and are not explained here.",
+      "check:ci-review-cap-coherence": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the review-pass budget in common.sh and core/review_budget.py, was deleted with claude-review-gate.sh and review-status.sh, so there is no cap left to keep coherent.",
+      "check:ci-review-prompt-render": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the prompt templates under .ci/scripts/review/prompts/, was deleted with the review job that rendered them.",
+      "check:ci-review-turn-capacity": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the diff-sized turn budget the review job routed through, was deleted with that job; control_vacuity's control moved to quality/renet_tier_map.py."
     },
     "ci-tree": {
-      ".ci/docker/tts": "removed in 8243c3a97 (registry spine, gate and hook ports, three lane cutovers); confirmed with `git log --diff-filter=D -- .ci/docker/tts`."
+      ".ci/docker/tts": "removed in 8243c3a97 (registry spine, gate and hook ports, three lane cutovers); confirmed with `git log --diff-filter=D -- .ci/docker/tts`.",
+      ".ci/scripts/review": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): claude-review-gate.sh, review-status.sh and epic-context.sh were deleted; labeling moved to .ci/rediacc_ci/review/pr_labels.py.",
+      ".ci/scripts/review/prompts": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): the initial and follow-up review prompts were deleted with the job that rendered them."
     },
     "hook-guards": {
       ".claude/hooks/stop/wl_requests.py": "removed with cross-session messaging on 2026-09-24 (operator ruling; agent/plans/PLAN-remove-cross-session-messaging.md): the request log, the --ask/--answer/--decline/--ack/--requests verbs and the --poll inbox went with it, and nothing replaces them.",

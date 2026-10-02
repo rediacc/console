@@ -337,11 +337,12 @@ for name, deleted, want in GIT_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
-CASES = CASES + GIT_CASES
+# A count, not a concatenation: the two case lists carry different tuple shapes.
+TOTAL = len(CASES) + len(GIT_CASES)
 
-if blocked == 0 or blocked == len(CASES):
+if blocked in (0, TOTAL):
     print("*** FAIL *** the guard answered the same way on every case")
     fails += 1
-print("%d case(s), %d blocked, %d allowed" % (len(CASES), blocked, len(CASES) - blocked))
+print("%d case(s), %d blocked, %d allowed" % (TOTAL, blocked, TOTAL - blocked))
 print("FAILURES: %d" % fails)
 sys.exit(1 if fails else 0)

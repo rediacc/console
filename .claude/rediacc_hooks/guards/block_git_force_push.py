@@ -32,7 +32,7 @@ CHAIN = "pre-bash"
 ORDER = 18
 
 # THE TWO GIT WORLDS THE LEASE ARM DISTINGUISHES. `default` keeps its label and points at a checkout on `main`, where no lease is admitted, so every record the cross-corpus froze before M3 answers as it did. `live-branch` is a checkout on `0831-1`, the one live branch, where a lease naming it is admitted. Without the second world no case could reach the allow arm, and without the first the corpus would read the live checkout's branch.
-ENVS = [
+ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
     ("live-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
 ]

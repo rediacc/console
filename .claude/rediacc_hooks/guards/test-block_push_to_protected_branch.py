@@ -21,6 +21,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import typing
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 
@@ -378,7 +379,7 @@ def pushed(repo, *args):
     return proc.returncode != 0, proc.stderr
 
 
-GIT_CASES = [
+GIT_CASES: list[tuple[str, dict[str, typing.Any], tuple[str, ...], bool]] = [
     # (name, fixture kwargs, push args, expect_refused)
     ("git-level: ff of the live branch's pushed tip", {}, ("origin", "0914-1:%s" % MAIN), False),
     ("git-level: ff of origin/<live>", {}, ("origin", "origin/0914-1:%s" % MAIN), False),
@@ -441,17 +442,18 @@ for name, kwargs, args, want in GIT_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
-CASES = CASES + GIT_CASES
+# A count, not a concatenation: the two case lists carry different tuple shapes.
+TOTAL = len(CASES) + len(GIT_CASES)
 
 print()
 # ANTI-VACUITY: see the sibling harness. This guard's only control is this file.
-if blocked == 0 or blocked == len(CASES):
+if blocked in (0, TOTAL):
     print(
         "*** FAIL *** %d of %d cases blocked: the guard answered the same way on every "
-        "input, so this suite compared it against a constant." % (blocked, len(CASES)),
+        "input, so this suite compared it against a constant." % (blocked, TOTAL),
         file=sys.stderr,
     )
     fails += 1
-print("%d case(s), %d blocked, %d allowed" % (len(CASES), blocked, len(CASES) - blocked))
+print("%d case(s), %d blocked, %d allowed" % (TOTAL, blocked, TOTAL - blocked))
 print("FAILURES: %d" % fails)
 sys.exit(1 if fails else 0)

@@ -6,8 +6,8 @@ WHY THIS EXISTS, and it is a defect this repo predicted and then could not see. 
 
 IT CHANGED, AND IT CHANGED SILENTLY. 21 became 50. The tripwire its author installed was a COUNT PRINTED INSIDE A SUCCESS MESSAGE, which `shadow-gate.ts` classifies as chatter rather than a finding, so nothing ever read the alarm. Measured 2026-09-08: 61 substitution-built plant sites across 11 Python gate modules, three proof assertions between them, and one already-vacuous mutant
 sitting in the tree (`review_turn_capacity.py`, `.replace("max_turns=140",
-"max_turns=140")`, inside the port of the very gate `control_vacuity` uses as its
-own control).
+"max_turns=140")`, inside the port of the very gate `control_vacuity` then used as its
+own control; retired 2026-10-02).
 
 THE CLASS IS: A DISCLOSURE IS NOT A CONTROL.
 

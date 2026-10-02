@@ -1,11 +1,10 @@
 """`rediacc_ci.quality.submodule_branches` against the shell and jq it replaces.
 
-WHAT THIS FILE COVERS AND WHAT IT MOSTLY CANNOT. Most gh call sites cannot be exercised locally, so the parts that DECIDE a merge -- the low-effort-reply normaliser, the PR-link matcher, and the two jq oracles -- are exercised as pure functions against the shapes the GitHub API actually returns. The branch/pointer logic is covered end to end by
+WHAT THIS FILE COVERS AND WHAT IT MOSTLY CANNOT. Most gh call sites cannot be exercised locally, so the parts that DECIDE a merge -- the low-effort-reply normaliser, the PR-link matcher, and the unreplied-comment jq oracle -- are exercised as pure functions against the shapes the GitHub API actually returns. The branch/pointer logic is covered end to end by
 `.ci/shadow/w7p2-submodule-branches.observations.jsonl` over five distinct trees. `console_pr_body` is the one exception: it takes a `gh` stub on `PATH` directly, added 2026-09-10 alongside the fix that made it distinguish a fetch failure from a genuinely empty description (they used to be indistinguishable, silently disabling the submodule-PR-link check on a transient API
 failure).
 """
 
-import json
 import os
 import pathlib
 import subprocess
@@ -65,65 +64,6 @@ LINK_CASES = [
 def test_pr_is_linked(body: str, linked: bool) -> None:
     url = (GH_ORIGIN + "/") + RENET_REPO + "/pull/123"
     assert mod.pr_is_linked(url, body) is linked
-
-
-def _issue(body: str, at: str, login: str) -> dict:
-    return {"body": body, "created_at": at, "user": {"login": login}}
-
-
-REPORT_CASES = [
-    ([_issue("hello", "2026-09-01T00:00:00Z", "human")], "none"),
-    ([_issue("**Claude finished", "2026-09-01T00:00:00Z", "bot")], "unanswered"),
-    (
-        [
-            _issue("**Claude finished", "2026-09-01T00:00:00Z", "bot"),
-            _issue("thanks", "2026-09-01T01:00:00Z", "human"),
-        ],
-        "answered",
-    ),
-    (
-        [
-            _issue("**Claude finished", "2026-09-01T00:00:00Z", "bot"),
-            _issue("still working", "2026-09-01T01:00:00Z", "bot"),
-        ],
-        "unanswered",
-    ),
-    (
-        [
-            _issue("**Claude finished one", "2026-09-01T00:00:00Z", "bot"),
-            _issue("replied", "2026-09-01T01:00:00Z", "human"),
-            _issue("**Claude finished two", "2026-09-01T02:00:00Z", "bot"),
-        ],
-        "unanswered",
-    ),
-    ([], "none"),
-]
-
-
-@pytest.mark.parametrize(("comments", "verdict"), REPORT_CASES)
-def test_report_oracle_matches_jq(comments: list[dict], verdict: str) -> None:
-    """The port's oracle and the twin's jq expression agree.
-
-    The jq is lifted from the twin unchanged, so a divergence here is a divergence in the port and not in a paraphrase of it.
-    """
-    program = (
-        '([.[] | select(.body | startswith("**Claude finished"))] '
-        "| sort_by(.created_at) | last) as $r "
-        '| if $r == null then "none" '
-        "elif ([.[] | select(.created_at > $r.created_at "
-        "and .user.login != $r.user.login)] | length) > 0 "
-        'then "answered" else "unanswered" end'
-    )
-    proc = subprocess.run(
-        ["jq", "-r", program],
-        input=json.dumps(comments),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.strip() == verdict
-    assert mod.judge_report(comments) == verdict
 
 
 def _review(cid: int, reply_to, body: str) -> dict:

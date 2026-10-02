@@ -36,8 +36,8 @@ DRIFT_STEPS: frozenset[tuple[str, str]] = frozenset(
 # Jobs whose verdict is a function of the other jobs, each of which is judged here on its own: `CI Complete` fails whenever any job fails, and the `ci-verdict.yml` observers can appear in a run's job list after the fact (see `rediacc_ci.ci.budget_report.CRITICAL_PATH_EXCLUDE`).
 DERIVED_JOBS: frozenset[str] = frozenset({"CI Complete", "CI Verdict", "Publish CI Verdict"})
 
-# Test lanes ci.yml SKIPS when the Quality job fails (`package-tests`' `if:` requires `needs.quality.result` success or skipped), so a drift failure in Quality means they never ran. Skipped is not passed: while one of these is skipped the waiver refuses.
-DRIFT_SKIPPED_TEST_LANES: frozenset[str] = frozenset({"Tests + Infra / Linux Packages"})
+# Test lanes that must have RUN on a scheduled nightly. ci.yml's `package-tests` used to skip whenever Quality failed, so a drift-only red never tested the Linux packages; it now runs on `schedule` regardless of Quality's result. A skip here therefore means the lane did not run for some other reason, and skipped is not passed: the waiver refuses.
+MUST_RUN_TEST_LANES: frozenset[str] = frozenset({"Tests + Infra / Linux Packages"})
 
 _PASSING_JOB = frozenset({"success", "skipped", "neutral"})
 _PASSING_STEP = frozenset({"success", "skipped", "neutral", None})
@@ -98,10 +98,10 @@ def nightly_failures_are_drift_only(jobs: Sequence[Mapping[str, Any]]) -> tuple[
         conclusion = job.get("conclusion")
         if status != "completed":
             return False, f"job {name!r} is {status}, not completed"
-        if conclusion == "skipped" and name in DRIFT_SKIPPED_TEST_LANES:
+        if conclusion == "skipped" and name in MUST_RUN_TEST_LANES:
             return (
                 False,
-                f"test lane {name!r} was skipped (ci.yml skips it when Quality fails), so it never ran",
+                f"test lane {name!r} was skipped on a scheduled nightly, so it never ran",
             )
         if conclusion in _PASSING_JOB:
             continue

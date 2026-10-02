@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2877,
- "files": 712,
+ "count": 2842,
+ "files": 697,
  "by_rule": {
-  "R1": 1568,
+  "R1": 1554,
   "R11": 150,
   "R14": 1,
   "R18": 13,
   "R19": 62,
-  "R2": 610,
-  "R7": 473
+  "R2": 608,
+  "R7": 454
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -336,11 +336,6 @@
     "c386daf5b08bed0b"
    ]
   },
-  ".ci/rediacc_ci/quality/drill_verdicts.py": {
-   "R7": [
-    "664eca2cfc5d37de"
-   ]
-  },
   ".ci/rediacc_ci/quality/env_manifest.py": {
    "R1": [
     "5da1c607aa4fdd30"
@@ -410,18 +405,6 @@
     "d6694358cf5ed822"
    ]
   },
-  ".ci/rediacc_ci/quality/review_cap_coherence.py": {
-   "R7": [
-    "858e92b6fb61757a",
-    "9891e369eee239d1"
-   ]
-  },
-  ".ci/rediacc_ci/quality/review_turn_capacity.py": {
-   "R7": [
-    "3e7c31b6695d997a",
-    "766932850859b725"
-   ]
-  },
   ".ci/rediacc_ci/quality/rubric_calibration.py": {
    "R7": [
     "fddd65ac95800c42"
@@ -465,11 +448,6 @@
   ".ci/rediacc_ci/quality/www_build_token.py": {
    "R7": [
     "51301c13b001b299"
-   ]
-  },
-  ".ci/rediacc_ci/review/review_status.py": {
-   "R7": [
-    "ce8a6f7b9c463dfa"
    ]
   },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
@@ -626,16 +604,6 @@
     "60602da684a982ca"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_review_labels.py": {
-   "R7": [
-    "dfd0f239345c058c"
-   ]
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_review_status.py": {
-   "R7": [
-    "cbe6e870af502123"
-   ]
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_run_all_parallel.py": {
    "R7": [
     "3242aef84384834c"
@@ -764,12 +732,6 @@
     "5ffe69923ea02c72"
    ]
   },
-  ".ci/rediacc_ci/tests/test_core_review_budget.py": {
-   "R7": [
-    "5990a3dad022e38c",
-    "9a1cfceb1c7d156a"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_core_toolchain.py": {
    "R2": [
     "00dd20f7b6b2f87d"
@@ -867,16 +829,6 @@
     "2509c48716035805"
    ]
   },
-  ".ci/rediacc_ci/tests/test_quality_review_report_replies.py": {
-   "R2": [
-    "8226d5b00ba991ad"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_quality_review_turn_capacity.py": {
-   "R2": [
-    "5a5613929cc01cf0"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_quality_swallowed_failures.py": {
    "R2": [
     "2923b4e84b7e2448",
@@ -896,11 +848,6 @@
   ".ci/rediacc_ci/tests/test_release_verify_release_assets.py": {
    "R7": [
     "b9ae5c4373d179ad"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_review_review_status.py": {
-   "R7": [
-    "e300e1d78f4323fc"
    ]
   },
   ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
@@ -935,9 +882,7 @@
   },
   ".ci/scripts/ci/ci-trace.py": {
    "R7": [
-    "9cfbb8b033e8bafb",
-    "de81c3027d345c4f",
-    "dfdf4381f7a9d2f3"
+    "de81c3027d345c4f"
    ]
   },
   ".ci/scripts/ci/greenlight.cjs": {
@@ -1106,11 +1051,6 @@
     "e80829255c304d8c"
    ]
   },
-  ".ci/scripts/quality/check_review_prompt_render.py": {
-   "R7": [
-    "fcc6d7b04340df8b"
-   ]
-  },
   ".ci/scripts/quality/check_runner_advice.py": {
    "R7": [
     "72007b7a553fc2fc"
@@ -1137,25 +1077,6 @@
   ".ci/scripts/quality/check_tutorial_no_skips.py": {
    "R7": [
     "56543cb26a02b689"
-   ]
-  },
-  ".ci/scripts/review/prompts/followup.md": {
-   "R1": [
-    "2cadaca9c824ec28",
-    "700f47c32094fe60",
-    "706ba5c103453f05",
-    "7edda5b25a12d0dc",
-    "eaf4230f4e32f314"
-   ]
-  },
-  ".ci/scripts/review/prompts/initial.md": {
-   "R1": [
-    "236efdcf8309e01d",
-    "2f148a78bc931b95",
-    "6bdd2c3f5d8ef573",
-    "80f3d5c59ab88eac",
-    "e3930135594c6bb5",
-    "e9ffda223928c3ab"
    ]
   },
   ".ci/tutorials/tutorial-topics-investigation.md": {
@@ -1331,7 +1252,6 @@
     "3ebad631f84c97fa",
     "40d8faa18dca3eb4",
     "42ff21c83765283a",
-    "47e1daf29af91119",
     "5bab28e5911064de",
     "5dea755e20393f00",
     "6960380d5ec37038",
@@ -1463,7 +1383,6 @@
     "5c71dcb3f1a209de",
     "abca684229274a70",
     "afdea05da4477b19",
-    "b806e7176bf7daff",
     "bec23196c6afbef7"
    ],
    "R11": [
@@ -1472,9 +1391,6 @@
    ],
    "R2": [
     "4c3ecd4fae5e593d"
-   ],
-   "R7": [
-    "0dc9f4831e1c0b88"
    ]
   },
   ".claude/commands/standing-orders.md": {
@@ -1643,17 +1559,11 @@
     "34235d150448d68a",
     "4824b2336549bd98",
     "7a99d09f2d6a94bf",
-    "8c3e3617c13cd73b",
     "9e3469c0fa5de048",
     "a0a43f06e2f04623",
     "b4e8a36d76f1c89c",
     "b686d99284010e1c",
     "d11a95bf7e0da060"
-   ]
-  },
-  ".claude/hooks/stop/wl_ci.py": {
-   "R7": [
-    "2677a60d451317db"
    ]
   },
   ".claude/hooks/stop/wl_classsweep.py": {
@@ -1971,11 +1881,6 @@
    ],
    "R7": [
     "0997bb94542f9bf7"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_premature_ready.py": {
-   "R7": [
-    "671eec4dff249573"
    ]
   },
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
@@ -3417,7 +3322,6 @@
     "57b583f8fa287f52",
     "6c8df2efd536a774",
     "76e02304c18f3e71",
-    "7c2506ee84269d43",
     "98f79223fb40c1e4",
     "a15b778b2e2bc31c",
     "ab18d3fda9fb6147",
@@ -3433,7 +3337,6 @@
     "11ae1f7889aeae0d",
     "4896cf7594d2f632",
     "4f08be5e40af8b37",
-    "4f13181b1270215d",
     "88319e3407f90d09",
     "8e4c9e1db2f0e52c",
     "a5500ece764bcd72",

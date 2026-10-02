@@ -19,8 +19,8 @@ THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files.
 THIS ENTRY POINT IS INVISIBLE TO THE GATE IT REGISTERS, checked rather than assumed, because this gate sweeps the very directory the entry point lands in. Its corpus loop is `for f in "$GATE_DIR"/check-*.sh` (twin) and the same glob in the port, so a file named `check_control_vacuity.py` is not enumerated: the glob requires a HYPHEN after `check` and a `.sh` suffix, and this file
 has neither. Verified twice over: structurally, by listing `check-*.sh` in the gate directory and confirming ZERO `.py` files match it, and behaviourally, by the shape line the gate prints (5 checked, 8 exempt) being the same on both sides of the cutover. That matters because a corpus that grew or shrank silently across the cutover would make the differential meaningless.
 
-ITS CONTROL SOURCE MOVED WITH THE CORPUS, 2026-09-21. The pin used to name `check-review-turn-capacity.sh` BY PATH, as the gate whose vacuity guard was stripped to prove the detector fires. That file was the last bash control in the tree and is now retired, so `CONTROL_GATE` names its Python port, `.ci/rediacc_ci/quality/review_turn_capacity.py`, and the strip removes the
-harness import instead of a guard line. The corpus moved the same way, and the green line counts both arms so an empty one is visible.
+ITS CONTROL SOURCE MOVED WITH THE CORPUS, 2026-09-21. The pin used to name `check-review-turn-capacity.sh` BY PATH, as the gate whose vacuity guard was stripped to prove the detector fires. That file was the last bash control in the tree and is now retired, so `CONTROL_GATE` named its Python port, `.ci/rediacc_ci/quality/review_turn_capacity.py`, and the strip removes the
+harness import instead of a guard line. That port was retired on 2026-10-02 with the PR-level Claude review, and `CONTROL_GATE` now names `.ci/rediacc_ci/quality/renet_tier_map.py`. The corpus moved the same way, and the green line counts both arms so an empty one is visible.
 
 DRIVEN, on this tree, both streams captured SEPARATELY, `CI=true` on both:
 

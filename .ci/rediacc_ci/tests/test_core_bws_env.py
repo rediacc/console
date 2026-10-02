@@ -708,7 +708,7 @@ def _fake_bws(tmp_path, outcomes):
 
 def test_listing_rides_out_transient_failures_and_honours_try_again(tmp_path) -> None:
     bws, state = _fake_bws(tmp_path, [(1, RATE_LIMITED), (1, UPSTREAM_503), (0, "")])
-    slept = []
+    slept: list[float] = []
     assert bws_env.listing(bws, env={}, retry_delays=(0.5, 0.5, 0.5), sleep=slept.append) == []
     assert state.read_text() == "3"
     assert slept == [1.0, 0.5], "the server's 'Try again in 1s' outranks a shorter backoff"

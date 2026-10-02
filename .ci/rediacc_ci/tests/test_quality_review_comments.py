@@ -28,7 +28,6 @@ import shutil
 import pytest
 
 from rediacc_ci.quality import review_comments as gate
-from rediacc_ci.quality import review_report_replies as sibling
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
 from rediacc_ci.well_known import GH_REPO
@@ -297,10 +296,10 @@ def test_the_two_floors_are_different_and_both_are_load_bearing():
     assert gate.is_low_effort_reply("x" * 10, gate.SUMMARY_MIN_CHARS) is True
 
 
-def test_the_two_shared_constants_match_the_sibling_gate():
-    """One reply must clear BOTH gates, so these cannot drift apart."""
-    assert gate.SUMMARY_MIN_CHARS == sibling.SUMMARY_MIN_CHARS == 30
-    assert gate.SUMMARY_LONGFORM_CHARS == sibling.SUMMARY_LONGFORM_CHARS == 200
+def test_the_summary_constants_keep_their_values():
+    """The sibling report-replies gate these once had to agree with was retired on 2026-10-02; the values stay pinned."""
+    assert gate.SUMMARY_MIN_CHARS == 30
+    assert gate.SUMMARY_LONGFORM_CHARS == 200
 
 
 def test_clip_cuts_bytes_like_head_c():

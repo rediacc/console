@@ -131,7 +131,7 @@ def test_strip_guard_matches_the_twins_sed(tmp_path: pathlib.Path) -> None:
 def test_stripping_the_real_control_source_keeps_its_plants() -> None:
     """The CONTROL's precondition, asserted directly.
 
-    The stripped copy must still PLANT, or the control proves nothing and the gate says CONTROL IS VACUOUS; and it must stop being PROVEN, or the control cannot fire. Both branches firing on the real tree would be a finding about `review_turn_capacity.py`, not about this module, which is why they are asserted here where the failure can name the file.
+    The stripped copy must still PLANT, or the control proves nothing and the gate says CONTROL IS VACUOUS; and it must stop being PROVEN, or the control cannot fire. Both branches firing on the real tree would be a finding about `CONTROL_GATE` (`renet_tier_map.py`), not about this module, which is why they are asserted here where the failure can name the file.
     """
     source = paths.repo_root() / cv.CONTROL_GATE
     assert source.is_file(), "%s moved; retarget CONTROL_GATE" % source

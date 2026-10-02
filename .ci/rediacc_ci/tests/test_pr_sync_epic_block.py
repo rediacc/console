@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.pr.sync_epic_block` against its twin `.ci/scripts/pr/sync-epic-block.sh`.
 
-A DISPOSABLE LOCAL GIT REPO (never GitHub), on the same strategy as `test_review_epic_context.py`: real commits, an `agent/pr/<branch>.md` snapshot the twin reads by convention, `git rev-parse --show-toplevel` resolving the fixture root rather than this checkout's.
+A DISPOSABLE LOCAL GIT REPO (never GitHub), on the strategy the retired `test_review_epic_context.py` used: real commits, an `agent/pr/<branch>.md` snapshot the twin reads by convention, `git rev-parse --show-toplevel` resolving the fixture root rather than this checkout's.
 
 A RECORDING FAKE `gh`, written as Python per ruling 7, seam is PATH. The seam matters here for a reason `ci-stop-elite`'s fake docker also proved: `gh pr edit` is NOT stdout/stderr-redirected by either subject, so a fake that stays silent on success would hide a port that swallowed that pass-through -- `test_gh_edit_stdout_is_not_swallowed` exists to catch exactly that class, after
 it was confirmed present in a first draft of the port (both `stdout`

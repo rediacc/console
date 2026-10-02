@@ -14,7 +14,7 @@ WHY THERE IS NO CLI TWIN HERE, AND WHY THAT IS NOT A GAP
 Checked again for this port rather than taken from the allowlist: the `source`/`.` call sites in the tree were `ci-start-account.sh:31` (retired under PLAN-retire-bash-oracles B3) and `ci-start-elite.sh:29`, and the two ports of THOSE scripts (`infra/ci_start_account.py`, `infra/ci_start_elite.py:123-158`) run the real bash file through `bash -c '. "$1"; env -0'` and read the exported set back. Nothing runs it as a
 program.
 
-So this module follows what the tree already does with a sourced-only twin: `.ci/scripts/test/proxies/proxy-lib.sh` is ported as the `core.proxyx` library, and `.ci/scripts/lib/common.sh` as `core.common` plus `core.review_budget` -- pure functions plus a small verb CLI whose only job is to give the shadow differential a surface to drive. `configure()` is the whole contract;
+So this module follows what the tree already does with a sourced-only twin: `.ci/scripts/test/proxies/proxy-lib.sh` is ported as the `core.proxyx` library, and `.ci/scripts/lib/common.sh` as `core.common` -- pure functions plus a small verb CLI whose only job is to give the shadow differential a surface to drive. `configure()` is the whole contract;
 `apply()` performs the two writes and the printing; the verbs below exist so a differential can compare the RESULT of sourcing the twin against the result of calling this.
 
 THE CUTOVER THIS ENABLES, stated so nobody mistakes the shape for a dead end: `ci_start_elite.py` and `ci_start_account.py` currently shell out to bash to get this environment. When the cutover box lands they can call `configure()` and drop the `bash -c` hop; that is not this box's call.

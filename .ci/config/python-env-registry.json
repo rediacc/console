@@ -251,10 +251,6 @@
       "AWS_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT"
     ],
-    ".ci/rediacc_ci/core/review_budget.py": [
-      "GITHUB_REPOSITORY",
-      "WORKLIST_PUBLISH_ROOT"
-    ],
     ".ci/rediacc_ci/core/run_verbs.py": [
       "SCRIPT_ENTRYPOINT"
     ],
@@ -911,28 +907,12 @@
       "GITHUB_REPOSITORY",
       "PR_NUMBER"
     ],
-    ".ci/rediacc_ci/quality/review_cap_coherence.py": [
-      "REDIACC_CI_ROOT"
-    ],
     ".ci/rediacc_ci/quality/review_comments.py": [
       "GH_TOKEN",
       "GITHUB_REPOSITORY",
       "GITHUB_TOKEN",
       "NO_COLOR",
       "PR_NUMBER"
-    ],
-    ".ci/rediacc_ci/quality/review_report_replies.py": [
-      "*name",
-      "GH_TOKEN",
-      "GITHUB_REPOSITORY",
-      "GITHUB_TOKEN",
-      "NO_COLOR",
-      "PR_NUMBER",
-      "REVIEW_EPIC_PREFIX",
-      "WORKLIST_PUBLISH_ROOT"
-    ],
-    ".ci/rediacc_ci/quality/review_turn_capacity.py": [
-      "MIN_TURNS_PER_KLOC"
     ],
     ".ci/rediacc_ci/quality/run_external_gate.py": [
       "EXTERNAL_QUALITY_MODE",
@@ -1033,7 +1013,10 @@
       "EDGE_RELEASES",
       "EDGE_VERSION",
       "FORCE",
+      "GITHUB_REPOSITORY",
+      "NIGHTLY_CONCLUSION",
       "NIGHTLY_HEAD_SHA",
+      "NIGHTLY_RUN_ID",
       "PROMOTE_TRIGGER",
       "STABLE_VERSION"
     ],
@@ -1092,35 +1075,6 @@
     ],
     ".ci/rediacc_ci/release/verify_release_assets.py": [
       "*name"
-    ],
-    ".ci/rediacc_ci/review/claude_review_gate.py": [
-      "CLAUDE_REVIEW_GATE_SCRIPT_DIR",
-      "EVENT_NAME",
-      "EXECUTION_FILE",
-      "GITHUB_REPOSITORY",
-      "PR_HEAD_SHA",
-      "REQUIRED_CHECK",
-      "REVIEW_EPIC",
-      "REVIEW_OUTCOME",
-      "WR_CONCLUSION",
-      "WR_EVENT",
-      "WR_HEAD_BRANCH",
-      "WR_HEAD_SHA"
-    ],
-    ".ci/rediacc_ci/review/discover_epics.py": [
-      "WORKLIST_PUBLISH_ROOT"
-    ],
-    ".ci/rediacc_ci/review/epic_context.py": [
-      "PR_BASE_REF"
-    ],
-    ".ci/rediacc_ci/review/review_status.py": [
-      "CHECK_NAME",
-      "EVENT_NAME",
-      "REVIEW_STATUS_GATE_SCRIPT",
-      "REVIEW_STATUS_HYGIENE_DIR",
-      "WR_CONCLUSION",
-      "WR_HTML_URL",
-      "WR_RUN_ID"
     ],
     ".ci/rediacc_ci/review/standing_orders_brief.py": [
       "CLAUDE_CODE_SESSION_ID",
@@ -1294,12 +1248,6 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/gates/test_gate_review_labels.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/gates/test_gate_review_status.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": [
@@ -1658,16 +1606,6 @@
     ".ci/rediacc_ci/tests/test_release_verify_release_assets.py": [
       "PATH"
     ],
-    ".ci/rediacc_ci/tests/test_review_claude_review_gate.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_review_discover_epics.py": [
-      "HOME",
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/test_review_review_status.py": [
-      "PATH"
-    ],
     ".ci/rediacc_ci/tests/test_security_check_commands.py": [
       "PATH"
     ],
@@ -1901,8 +1839,7 @@
       "WORKLIST_CI_QUEUE_DEPTH",
       "WORKLIST_CI_QUEUE_MIN",
       "WORKLIST_CI_RETRY_PATTERNS",
-      "WORKLIST_PUBLISH_REF",
-      "WORKLIST_REVIEW_MAX_BLOCKS"
+      "WORKLIST_PUBLISH_REF"
     ],
     ".claude/hooks/stop/wl_claimcheck.py": [
       "TMPDIR"
@@ -2082,6 +2019,9 @@
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-block_push_to_protected_branch.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py": [
       "TMPDIR"
     ],
@@ -2137,6 +2077,9 @@
     ],
     ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
       "TMPDIR"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_review_check.py": [
+      "PATH"
     ],
     "conftest.py": [
       "TREE_SNAPSHOT"
