@@ -15,7 +15,8 @@ from rediacc_ci.quality import shrink_only
 from rediacc_ci.quality import tree_shape as TS
 
 ROOT = paths.repo_root()
-RESERVED = {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
+# Derived from the policy, never copied: a hand-written copy went stale when `reviews` joined wl_store.AGENT_RESERVED_DIRS, and test_the_real_policy_and_the_real_hook_agree already pins the policy to the hook.
+RESERVED = set(TS.policy_agent_dirs(TS.load_policy(ROOT)))
 TOP_NAMES = {"agent", "docs", "scripts", ".ci", ".claude", "packages"}
 CALLEES = {"open", "os.listdir", "os.scandir"}
 FS_METHODS = {"glob", "is_dir", "read_text"}

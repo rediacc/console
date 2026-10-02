@@ -306,7 +306,10 @@ def test_the_real_repository_is_green_and_counts_what_it_read() -> None:
         timeout=300,
     )
     assert proc.returncode == 0, proc.stderr
-    assert "external caller call-site(s) verified" in proc.stdout
+    # Since 6566f46aa the registry is `callers: []`, so the count is of submodule trees scanned for a caller rather than of call sites verified.
+    assert re.search(
+        r"registry declares no external callers, and [1-9]\d* checked-out submodule", proc.stdout
+    )
     assert "sparse Bitwarden-fetching job(s) check out the map" in proc.stdout
 
 
@@ -708,9 +711,22 @@ def test_check4_a_missing_required_field(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
-def test_check4_an_empty_registry_is_blind(tmp_path: pathlib.Path) -> None:
+def test_check4_an_empty_registry_beside_a_live_caller_is_red(tmp_path: pathlib.Path) -> None:
+    """`callers: []` is a CLAIM since 6566f46aa ("no other repository calls a workflow here"); a submodule tree that still holds a caller refutes it."""
     fx = ec_fixture(tmp_path)
     (fx / ".github" / "external-callers.yml").write_text("callers: []\n", encoding="utf-8")
+    old, new = run_ec(fx)
+    assert old[0] == 1
+    assert_same(old, new)
+
+
+def test_check4_an_empty_registry_with_no_submodule_checked_out_is_blind(
+    tmp_path: pathlib.Path,
+) -> None:
+    """With nothing checked out under private/, nothing can prove the empty claim, so the check is blind, never green."""
+    fx = ec_fixture(tmp_path)
+    (fx / ".github" / "external-callers.yml").write_text("callers: []\n", encoding="utf-8")
+    shutil.rmtree(fx / "private")
     old, new = run_ec(fx)
     assert "declares no callers" in old[2]
     assert_same(old, new)

@@ -792,7 +792,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
 | .ci/rediacc_ci/tests | 325 | .py 325 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
-| .ci/rediacc_ci/tests/fixtures/ci_diagnose | 6 | .json 6 |
+| .ci/rediacc_ci/tests/fixtures/ci_diagnose | 11 | .json 6, .log 5 |
 | .ci/rediacc_ci/tests/gates | 174 | .py 173, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
