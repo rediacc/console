@@ -277,7 +277,7 @@ def test_119_a_submodule_pointer_moved_onto_a_feature_branch_is_caught(wl):  # n
 
 
 def test_120_control_it_fires_a_real_per_job_failure_blocks_with_job_step_and_log(wl):  # noqa: F811
-    """A real failure blocks and hands over the job, the failing step and a working log command."""
+    """A real failure blocks and hands over the job, the failing step and the tracer verb that reads it (PLAN-ci-verdict: tool output stops printing raw `gh api` recipes)."""
     ci_setup(wl)
     ci_rollup(
         wl,
@@ -290,7 +290,7 @@ def test_120_control_it_fires_a_real_per_job_failure_blocks_with_job_step_and_lo
         "CI IS RED ON PR #543",
         "Quality / Static",
         "failing step: Shell format",
-        "gh api repos/fake/repo/actions/jobs/90784763855/logs",
+        ".ci/scripts/ci/ci-trace.py --job 90784763855 --errors",
         "log-failed",
     ):
         assert needle in got.out, "red CI did not produce an actionable block, MISSING %r: %s" % (
@@ -474,3 +474,115 @@ def test_131b_an_unset_publish_ref_costs_no_network_call(wl):  # noqa: F811
     assert "GH-WAS-CALLED" in armed.out, (
         "CONTROL: with the ref set the dying gh must be reached and reported: %s" % armed.out[:400]
     )
+
+
+# ---- PLAN-ci-verdict box A: ci_trouble's "ok" is ci_gate's GREEN, and a cancel is attributed ----------
+#
+# Driven at the ci_trouble seam in a subprocess (as probe_moves is), because how the Stop hook RENDERS the new `cancelled` state belongs to wl_checks; what is asserted here is the verdict and the note text wl_ci hands over.
+
+DIAG_FIX = wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "tests" / "fixtures" / "ci_diagnose"
+
+TROUBLE_PY = """
+import json, pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import wl_ci
+state, detail = wl_ci.ci_trouble(pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3]), sys.argv[4], [], "", ref="pub", owned=True)
+print(state)
+if state == "cancelled":
+    print(wl_ci.ci_cancel_note(detail))
+"""
+
+ATTRIB_SHIM = """#!/bin/bash
+q="$*"
+F=%(fix)s
+case "$q" in
+    *lastEditedAt*) cat "%(base)s/ci-fresh.json" ;;
+    *query=*) cat "%(base)s/ci-rollup.json" ;;
+    *check-runs/110680194371/annotations*) cat "$F/annotations_110680194371.json" ;;
+    *check-runs/*/annotations*) echo '[]' ;;
+    *actions/runs/36956399799/jobs*) cat "$F/watchdog_jobs_36956399799.json" ;;
+    *actions/runs/36953549081/attempts/1/jobs*) cat "$F/jobs_36953549081_attempt1.json" ;;
+    *actions/runs/36953549081*) cat "$F/run_36953549081_attempt1.json" ;;
+    *actions/runs\\?head_sha*) cat "$F/runs_head_a7f30558.json" ;;
+    *) echo '{}' ;;
+esac
+"""
+
+
+def trouble(fix, module_dir=None) -> list[str]:
+    env = dict(fix.env)
+    env["PATH"] = "%s:%s" % (fix.base / "binonly", fix.env.get("PATH", ""))
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            TROUBLE_PY,
+            str(module_dir or wlfix.STOP_DIR),
+            str(fix.proj),
+            str(fix.wl),
+            fix.sid,
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return proc.stdout.splitlines()
+
+
+def run_ctx(name: str, conclusion: str, ident: int = 1) -> str:
+    return (
+        '{"__typename":"CheckRun","name":"%s","status":"COMPLETED","conclusion":"%s",'
+        '"databaseId":%d,"detailsUrl":"","checkSuite":{"workflowRun":{"databaseId":36953549081}}}'
+        % (name, conclusion, ident)
+    )
+
+
+def test_132_nothing_failed_is_not_green_until_ci_complete_reports(wl):  # noqa: F811
+    """THE 2026-10-02 FALSE GREEN at the Stop hook's seam: a head where nothing failed but CI Complete never reported is `pending`, not `ok`, so the pr-babysit finish line cannot tick its green box off it."""
+    ci_setup(wl)
+    ci_rollup(wl, "SUCCESS", "[%s]" % run_ctx("OBS Mirror (opensuse-16.0)", "SUCCESS"))
+    assert trouble(wl) == ["pending"]
+    # CONTROL: the same head once CI Complete succeeded is `ok`.
+    ci_rollup(
+        wl,
+        "SUCCESS",
+        "[%s, %s]"
+        % (run_ctx("OBS Mirror (opensuse-16.0)", "SUCCESS"), run_ctx("CI Complete", "SUCCESS", 2)),
+    )
+    assert trouble(wl) == ["ok"]
+
+
+def test_133_a_watchdog_budget_cancel_is_attributed_and_noted(wl):  # noqa: F811
+    """Run 36953549081's own shape: 104 success, 33 skipped, 29 cancelled, nothing failed, and the cause on Watchdog Monitor run 36956399799. The note names the cause; it never says "newer push"."""
+    ci_setup(wl)
+    jobs = json.loads((DIAG_FIX / "jobs_36953549081_attempt1.json").read_text(encoding="utf-8"))[
+        "jobs"
+    ]
+    ctxs = [run_ctx(j["name"], j["conclusion"].upper(), j["id"]) for j in jobs]
+    ci_rollup(wl, "FAILURE", "[%s]" % ",".join(ctxs))
+    write_exec(wl.base / "binonly" / "gh", ATTRIB_SHIM % {"fix": DIAG_FIX, "base": wl.base})
+    out = trouble(wl)
+    assert out[0] == "cancelled", out
+    note = "\n".join(out[1:])
+    for needle in (
+        "watchdog-budget",
+        "fedora-43, 1/8",
+        "ran 20.1m (budget 20m)",
+        "ci-trace.py --why",
+    ):
+        assert needle in note, (needle, note)
+    assert "newer push" not in note
+    # CACHED: a second stop on the same tip reads the cause from the cistate sidecar, so the attribution's gh reads are paid once.
+    write_exec(wl.base / "binonly" / "gh", '#!/bin/bash\necho "GH-WAS-CALLED" >&2\nexit 3\n')
+    assert trouble(wl)[0] == "cancelled"
+
+
+def test_133b_control_an_unattributed_cancel_stays_silent(wl):  # noqa: F811
+    """The pair for 133 and the reason test_122 stays green: with no evidence, the state is `cancelled` but the note is empty."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", "[%s]" % run_ctx("E2E / ubuntu", "CANCELLED"))
+    out = trouble(wl)
+    assert out[0] == "cancelled", out
+    assert not "".join(out[1:]).strip(), out

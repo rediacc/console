@@ -145,7 +145,13 @@ CI_LIVE_ROLLUP = {"PENDING", "EXPECTED"}
 # NEVER A FAILURE, regardless of conclusion. "Review Complete" is a check-run posted directly by .ci/scripts/review/review-status.sh from a workflow no CI job references -- its own `output.summary` says outright "this check ... can never block Console CI". It reports the review-currency state (has this head been reviewed yet), not a CI result, and its `conclusion` is `failure`
 # whenever a head is unreviewed, which is the common case right after a push. Documented as a trap (docs/agent-reference/TRAPS.md, "gh pr checks half is uncovered") since 2026-08-06 and never fixed here until a session actually walked into it on 2026-08-30: the remedy on file was "go read .output.summary by hand", which is a workaround repeated indefinitely rather than a fix.
 # Unlike CI_RETRY_PATTERNS this is not a name SUBSTRING match against a shifting set of flaky suites -- it is one fixed, permanently-non-blocking check name, so an exact match is correct and a substring match would risk swallowing a real job that merely contains "Review" in its name.
-CI_NONBLOCKING_CONTEXTS = {"Review Complete"}
+CI_NONBLOCKING_CONTEXTS = {"Review Complete", "CI Verdict", "Publish CI Verdict"}
+# The two names beside it (PLAN-ci-verdict box D): "CI Verdict" is the neutral check-run .github/workflows/ci-verdict.yml posts on the head SHA AFTER Console CI completes, carrying the diagnosis (rediacc_ci.ci.ci_diagnose), and "Publish CI Verdict" is the job that posts it. Both arrive after the verdict they describe, so counting either as in flight would hold a finished head at RUNNING, and counting a crashed publisher as a failure would paint a green head red.
+# THE ONE CONTEXT review_gate_row() reads. It used to iterate CI_NONBLOCKING_CONTEXTS, which was the same set while the set had one member; with three members a "CI Verdict" row would have been read as the review gate.
+REVIEW_CONTEXT = "Review Complete"
+# THE REQUIRED CHECK. Console CI's last job (`ci-complete` in .github/workflows/ci.yml, `if: always() && !cancelled()`), and the only context that proves the whole run reported. See ci_gate().
+CI_COMPLETE_CONTEXT = "CI Complete"
+CONSOLE_CI_WORKFLOW = "Console CI"
 # Cost control (this hook runs on EVERY stop, including a 5-minute poll cron). Keyed on the published tip SHA, so any push invalidates it immediately.
 CI_CACHE_LIVE_S = int(os.environ.get("WORKLIST_CI_CACHE_LIVE_S", "180"))
 CI_CACHE_FINAL_S = int(os.environ.get("WORKLIST_CI_CACHE_FINAL_S", "900"))
@@ -266,7 +272,7 @@ CI_ROLLUP_BLIND_EVENTS = {"workflow_dispatch", "workflow_run", "repository_dispa
 def commit_ci_runs(root, owner, name, sha):
     """(runs, error) -- the Actions runs on `sha` that CAN report into its rollup.
 
-    Each run is (id, workflow name, event, status). An empty list with no error is the [skip ci] / path-filtered answer: nothing is coming.
+    Each run is (id, workflow name, event, status, attempt, created_at). An empty list with no error is the [skip ci] / path-filtered answer: nothing is coming.
     """
     data, err = _gh_json(
         root,
@@ -278,7 +284,14 @@ def commit_ci_runs(root, owner, name, sha):
     if not isinstance(runs, list):
         return None, "actions/runs response had no workflow_runs list"
     return [
-        (r.get("id"), r.get("name") or "?", r.get("event") or "?", r.get("status") or "?")
+        (
+            r.get("id"),
+            r.get("name") or "?",
+            r.get("event") or "?",
+            r.get("status") or "?",
+            r.get("run_attempt") or 1,
+            r.get("created_at") or "",
+        )
         for r in runs
         if (r.get("event") or "") not in CI_ROLLUP_BLIND_EVENTS
     ], ""
@@ -482,13 +495,14 @@ def ci_classify(info):
 
     A completed failing job whose name matches the watchdog's retry allowlist is SOFT while the head is live, because a retry may be inbound. Once the head is final and it is STILL failing, the watchdog is done with it and it is hard, which is the difference between "wait" and "go read the log".
     """
-    rows, pending = [], 0
+    rows, pending, blocking_seen = [], 0, 0
     for c in info.get("contexts") or []:
         # Skipped BEFORE branching on shape, and before the pending count too: this context can be a StatusContext OR a CheckRun depending on how it was posted, and it must never contribute to "live" either -- it can
         # sit at conclusion=failure indefinitely (an unreviewed head is the
         # NORMAL state right after a push), which would otherwise wedge the rollup as perpetually in-flight rather than genuinely final.
         if (c.get("context") or c.get("name") or "?") in CI_NONBLOCKING_CONTEXTS:
             continue
+        blocking_seen += 1
         if c.get("__typename") == "StatusContext":
             state = (c.get("state") or "").upper()
             if state in ("PENDING", "EXPECTED"):
@@ -522,12 +536,176 @@ def ci_classify(info):
                 "conclusion": concl,
             }
         )
-    live = pending > 0 or str(info.get("rollup") or "").upper() in CI_LIVE_ROLLUP
+    # LIVENESS OVER THE BLOCKING CONTEXTS ONLY. GitHub's aggregate `state` counts every context, so a non-blocking one still in flight ("CI Verdict" is posted AFTER Console CI completes) held a finished head at PENDING. The aggregate is consulted only when no blocking context exists at all, where it is the one signal that something is expected.
+    live = pending > 0 or (
+        not blocking_seen and str(info.get("rollup") or "").upper() in CI_LIVE_ROLLUP
+    )
     hard, soft = [], []
     for row in rows:
         retryable = any(p.lower() in row["name"].lower() for p in CI_RETRY_PATTERNS)
         (soft if (live and retryable) else hard).append(row)
     return live, hard, soft
+
+
+def _ctx_run(c):
+    return ((c.get("checkSuite") or {}).get("workflowRun") or {}).get("databaseId")
+
+
+def ci_gate(info, require_complete=True):
+    """THE GREEN RULE, shared by ci-trace's branch/PR read, its --run read and ci_trouble below. Pure: no network.
+
+    Returns {"verdict": green|running|red|no-verdict, "reason", "live", "hard", "soft", "cancelled", "waiting", "ci_complete", "run"}.
+
+    WHY A CHECK-RUN AND NOT "NOTHING FAILED". On 2026-10-02 at 02:01Z `ci-trace.py --wait --until-final` printed GREEN for PR #591 head a7f30558 about a minute after Console CI run 36953549081 was created: the only contexts registered were from `CI - OBS Mirror`, all green, so nothing had failed and nothing was in flight. That run later ended cancelled with 29 jobs that never reported. "No failure among the contexts that exist" says nothing about the contexts that do not exist yet. `CI Complete` is the one context that exists only once every job has reported, so GREEN requires it present, completed and successful (`require_complete=False` only for a run of another workflow, which has no such job).
+
+    In order: a failure is red (failures are irrevocable, even off a partial read); anything blocking in flight is running; a cancelled blocking context is red (the caller attributes the cause); a truncated read is no-verdict (a partial page proves nothing about the contexts it never reached); then `CI Complete` decides.
+    """
+    live, hard, soft = ci_classify(info)
+    contexts = info.get("contexts") or []
+    blocking = [
+        c
+        for c in contexts
+        if (c.get("context") or c.get("name") or "?") not in CI_NONBLOCKING_CONTEXTS
+    ]
+    waiting = 0
+    cancelled: list[dict] = []
+    runs: dict[int, int] = {}
+    complete = None
+    for c in blocking:
+        if c.get("__typename") == "StatusContext":
+            if (c.get("state") or "").upper() in CI_LIVE_ROLLUP:
+                waiting += 1
+            continue
+        if (c.get("status") or "").upper() != "COMPLETED":
+            waiting += 1
+        if (c.get("conclusion") or "").upper() == "CANCELLED":
+            cancelled.append(
+                {"name": c.get("name") or "?", "run": _ctx_run(c), "job": c.get("databaseId")}
+            )
+        rid = _ctx_run(c)
+        if rid:
+            runs[rid] = runs.get(rid, 0) + 1
+        if c.get("name") == CI_COMPLETE_CONTEXT:
+            complete = c
+    if complete is None:
+        ci_complete = "absent"
+    elif (complete.get("status") or "").upper() != "COMPLETED":
+        ci_complete = "pending"
+    else:
+        ci_complete = (complete.get("conclusion") or "").lower() or "pending"
+    # The Console CI run: the one carrying CI Complete, else the run with the most contexts (Console CI's ~170 against a side workflow's one or two).
+    run = _ctx_run(complete) if complete else (max(runs, key=lambda r: runs[r]) if runs else None)
+    gate = {
+        "live": live,
+        "hard": hard,
+        "soft": soft,
+        "cancelled": cancelled,
+        "waiting": waiting,
+        "ci_complete": ci_complete,
+        "run": run,
+    }
+    if hard:
+        gate.update(verdict="red", reason="%d job(s) failed" % len(hard))
+    elif live:
+        gate.update(verdict="running", reason="%d context(s) still in flight" % waiting)
+    elif cancelled:
+        gate.update(
+            verdict="red",
+            reason="%d context(s) CANCELLED with nothing failing -- each is a gate that did NOT report"
+            % len(cancelled),
+        )
+    elif info.get("truncated"):
+        gate.update(
+            verdict="no-verdict",
+            reason="the read stopped at %d of %s contexts, so nothing can be called green"
+            % (len(contexts), info.get("total", "?")),
+        )
+    elif not require_complete:
+        gate.update(verdict="green", reason="every job succeeded or was skipped")
+    elif ci_complete == "absent":
+        gate.update(
+            verdict="running",
+            reason="%s has not reported on this head yet (%d blocking context(s) registered)"
+            % (CI_COMPLETE_CONTEXT, len(blocking)),
+        )
+    elif ci_complete == "pending":
+        gate.update(verdict="running", reason="%s is still running" % CI_COMPLETE_CONTEXT)
+    elif ci_complete != "success":
+        gate.update(verdict="red", reason="%s concluded %s" % (CI_COMPLETE_CONTEXT, ci_complete))
+    else:
+        gate.update(
+            verdict="green",
+            reason="%s succeeded and every blocking context succeeded or was skipped"
+            % CI_COMPLETE_CONTEXT,
+        )
+    return gate
+
+
+def _load_diagnose():
+    """rediacc_ci.ci.ci_diagnose loaded by file path, or None. Lazy and defensive like _sanctioned_match: a missing module must not take the Stop hook down."""
+    try:
+        path = (
+            pathlib.Path(__file__).resolve().parents[3]
+            / ".ci"
+            / "rediacc_ci"
+            / "ci"
+            / "ci_diagnose.py"
+        )
+        spec = importlib.util.spec_from_file_location("ci_diagnose", path)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception:  # noqa: BLE001 -- a broken diagnoser is not a verdict
+        return None
+
+
+def ci_cancel_cause(root, info, gate):
+    """The ci_diagnose.cancel_cause dict for the run behind `gate["cancelled"]`, or an `unknown` one. Three to five `gh` reads, so callers cache it."""
+    unknown = {
+        "kind": "unknown",
+        "detail": "cause unknown; not proven superseded",
+        "job": None,
+        "minutes": None,
+        "budget_min": None,
+        "watchdog_run": None,
+    }
+    run_id = next(
+        (c["run"] for c in gate.get("cancelled") or [] if c.get("run")), None
+    ) or gate.get("run")
+    diag = _load_diagnose()
+    if diag is None or not run_id or not info.get("owner"):
+        return unknown
+    fetch = diag.GhFetcher("%s/%s" % (info["owner"], info["name"]), cwd=root, timeout=20)
+    run, _err = diag.run_info(fetch, run_id)
+    if run is None:
+        return unknown
+    jobs, _err = diag.run_jobs(fetch, run_id, run.get("run_attempt"))
+    try:
+        return diag.cancel_cause(fetch, run, pr_head=info.get("sha") or None, jobs=jobs)
+    except Exception:  # noqa: BLE001
+        return unknown
+
+
+def ci_cancel_note(detail):
+    """The Stop-hook note for a `cancelled` ci_trouble state, or "" when the cause is not proven (unknown / superseded stay silent: test_122)."""
+    cause = (detail or {}).get("cause") or {}
+    if cause.get("kind") in (None, "unknown", "superseded"):
+        return ""
+    info = (detail or {}).get("info") or {}
+    run = next((c.get("run") for c in ci_gate(info).get("cancelled") or [] if c.get("run")), None)
+    return (
+        "CI on PR #%s was CANCELLED with nothing failing: %s: %s%s.\n"
+        "  Read it: .ci/scripts/ci/ci-trace.py --why%s"
+        % (
+            info.get("pr", "?"),
+            cause.get("kind"),
+            cause.get("detail"),
+            " [watchdog run %s]" % cause["watchdog_run"] if cause.get("watchdog_run") else "",
+            " (run %s)" % run if run else "",
+        )
+    )
 
 
 def review_gate_row(info):
@@ -544,7 +722,7 @@ def review_gate_row(info):
         return "absent", None
     for c in info.get("contexts") or []:
         name = c.get("context") or c.get("name") or ""
-        if name not in CI_NONBLOCKING_CONTEXTS:
+        if name != REVIEW_CONTEXT:
             continue
         concl = (c.get("conclusion") or c.get("state") or "").upper()
         if concl in CI_FAIL_CONCLUSIONS:
@@ -860,8 +1038,10 @@ def ci_queue_state(root, worklist, session_id):
 def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=False):
     """(state, detail) -- is the open PR in trouble nobody is on?
 
-    state: unset | multi-session | no-pr | ok | watched | soft | trouble |
-           downgraded | unreadable
+    state: unset | multi-session | no-pr | ok | pending | cancelled | watched | soft |
+           trouble | downgraded | unreadable
+
+    `ok` is ci_gate's GREEN (CI Complete present and successful), not merely "nothing failed". `pending` is a head with no failure that is not green yet; it carries the info dict and blocks nothing. `cancelled` is a head whose blocking contexts were cancelled with nothing failing; its detail carries the attributed `cause` (ci_cancel_note renders it).
 
     THE ESCAPE, and why this one. A check that demands what a session cannot produce deadlocks it: one did exactly that for a whole night here, blocking every stop until morning. So there are TWO exits, and the second is unconditional:
 
@@ -911,8 +1091,26 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
         return state, info
     live, hard, soft = ci_classify(info)
     if not hard and not soft:
-        _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
-        return "ok", info
+        # "Nothing failed" is not "green": ci_gate() requires CI Complete (the 2026-10-02 false green). A head that is not green yet is `pending`, which the caller reports as nothing, and a cancel with nothing failing is attributed once (cached on this tip) and handed over as `cancelled`.
+        gate = ci_gate(info)
+        if gate["verdict"] == "green":
+            _ci_cache_write(cache_p, tip, state, info, steps, final=True)
+            return "ok", info
+        if gate["verdict"] == "red" and gate["cancelled"]:
+            cause = steps.get("_cause") if isinstance(steps.get("_cause"), dict) else None
+            if cause is None:
+                cause = ci_cancel_cause(root, info, gate)
+                steps["_cause"] = cause
+            _ci_cache_write(cache_p, tip, state, info, steps, final=True)
+            return "cancelled", {
+                "info": info,
+                "hard": [],
+                "soft": [],
+                "live": False,
+                "cause": cause,
+            }
+        _ci_cache_write(cache_p, tip, state, info, steps, final=False)
+        return "pending", info
     watcher = ci_watch_armed(live_bg, hard + soft, info.get("sha") or tip)
     if watcher:
         # The operator's own condition, and deliberately NOT gated on the run still being live. A watch keyed to this run is a wake-up whether the run is finishing or already finished; the window where a RUNNING watch coexists with a final run is the seconds before its last iteration prints, and firing into that window is a false alarm, not diligence.
@@ -1019,8 +1217,8 @@ def _ci_cache_write(path, sha, state, info, steps, final):
         )
 
 
-def ci_rows_text(rows, info):
-    """One line per failing job, plus the log incantation that actually works on a completed job inside a live run."""
+def ci_rows_text(rows, _info):
+    """One line per failing job, plus the tracer command that reads its failing step (it fetches the log with the ANSI flag `gh` needs and caches it once the job is complete)."""
     out = []
     for r in rows[:6]:
         bits = ["    %s  %s" % (r["name"], r["conclusion"])]
@@ -1032,10 +1230,7 @@ def ci_rows_text(rows, info):
             )
         out.append("  ".join(bits))
         if r.get("job"):
-            out.append(
-                "        gh api repos/%s/%s/actions/jobs/%s/logs"
-                % (info["owner"], info["name"], r["job"])
-            )
+            out.append("        .ci/scripts/ci/ci-trace.py --job %s --errors" % r["job"])
         elif r.get("url"):
             out.append("        %s" % r["url"])
     return "\n".join(out)
@@ -1262,6 +1457,84 @@ def _selftest():
     check(
         "CONTROL: an unrelated job merely containing 'Review' is not read as the review-gate row",
         review_gate_row(review_gate_unrelated)[0] == "absent",
+    )
+
+    # ---- ci_gate: the GREEN rule (PLAN-ci-verdict box A).
+    def run_ctx(name, status="COMPLETED", conclusion="SUCCESS", run=36953549081):
+        return {
+            "__typename": "CheckRun",
+            "name": name,
+            "status": status,
+            "conclusion": conclusion,
+            "databaseId": abs(hash(name)) % 10**9,
+            "checkSuite": {"workflowRun": {"databaseId": run}},
+        }
+
+    false_green = {
+        "rollup": "SUCCESS",
+        "truncated": False,
+        "contexts": [run_ctx("OBS Mirror (opensuse-16.0)", run=36953548680)],
+    }
+    g = ci_gate(false_green)
+    check(
+        "THE 2026-10-02 FALSE GREEN: only a side workflow's contexts registered, all green -> "
+        "running, never green, and the reason names CI Complete",
+        g["verdict"] == "running" and "CI Complete" in g["reason"] and g["ci_complete"] == "absent",
+        "gate=%r" % (g,),
+    )
+    full_ctx = [run_ctx("Quality / Code"), run_ctx("CI Complete")]
+    full = {"rollup": "SUCCESS", "truncated": False, "contexts": full_ctx}
+    check(
+        "CONTROL: CI Complete present and successful -> green", ci_gate(full)["verdict"] == "green"
+    )
+    check(
+        "CONTROL: a truncated read is no-verdict, never green",
+        ci_gate(dict(full, truncated=True, total=400))["verdict"] == "no-verdict",
+    )
+    verdict_live = dict(
+        full,
+        rollup="PENDING",
+        contexts=[
+            *full_ctx,
+            run_ctx("Review Complete", conclusion="FAILURE", run=1),
+            run_ctx("CI Verdict", status="IN_PROGRESS", conclusion=None, run=2),
+        ],
+    )
+    g = ci_gate(verdict_live)
+    check(
+        "CONTROL: Review Complete failing and CI Verdict in flight (GitHub rollup PENDING) is "
+        "still green -- neither is live, neither is hard",
+        g["verdict"] == "green" and not g["live"] and not g["hard"],
+        "gate=%r" % (g,),
+    )
+    check(
+        "CONTROL: a CI Verdict row is never read as the review gate",
+        review_gate_row(
+            {"truncated": False, "contexts": [run_ctx("CI Verdict", conclusion="FAILURE")]}
+        )[0]
+        == "absent",
+    )
+    cancelled = dict(
+        full,
+        contexts=[run_ctx("Quality / Code"), run_ctx("E2E / x", conclusion="CANCELLED")],
+    )
+    g = ci_gate(cancelled)
+    check(
+        "a cancelled blocking context with nothing failing is red and names its run",
+        g["verdict"] == "red" and g["cancelled"][0]["run"] == 36953549081,
+        "gate=%r" % (g,),
+    )
+    check(
+        "CONTROL: require_complete=False (a Release run) is green without CI Complete",
+        ci_gate(false_green, require_complete=False)["verdict"] == "green",
+    )
+    check(
+        "ci_cancel_note stays SILENT on an unattributed cancel (test_122) and speaks on a budget one",
+        ci_cancel_note({"info": cancelled, "cause": {"kind": "unknown"}}) == ""
+        and "watchdog-budget"
+        in ci_cancel_note(
+            {"info": cancelled, "cause": {"kind": "watchdog-budget", "detail": "'x' ran 21m"}}
+        ),
     )
 
     # review_red's ceiling/ack: needs a real worklist path for its marker file, so a temp dir stands in (same pattern other marker-file controls in this suite use).

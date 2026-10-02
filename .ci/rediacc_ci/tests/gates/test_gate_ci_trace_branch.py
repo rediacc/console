@@ -714,3 +714,347 @@ def test_ci_nonblocking_contexts_selftest(gate):
     if result.rc != 0:
         gate.log_fail("ci-trace.py --selftest failed (rc=%d)" % result.rc, result)
     gate.log_pass("ci-trace.py --selftest: every control passed")
+
+
+# ---- PLAN-ci-verdict box A: GREEN needs CI Complete, and a cancel names its cause ----------
+#
+# THE 2026-10-02 FALSE GREEN. `ci-trace.py --wait --until-final` printed GREEN for PR #591 head a7f30558 about a minute after Console CI run 36953549081 was created: the only contexts registered came from `CI - OBS Mirror`, all green, nothing in flight. The run later ended cancelled by the watchdog's job budget. These cases drive the REAL script against a shimmed `gh`.
+
+DIAG_FIX = paths.from_root(".ci", "rediacc_ci", "tests", "fixtures", "ci_diagnose")
+PR_HEAD = "a7f305585530b61da88faf297b9d5805e5eb2b98"
+# An EXPLICIT ref, never the checkout's branch: a CI checkout of a PR is a detached HEAD, where the implicit default answers "could not determine the current branch" before any of this is read.
+PR_BRANCH = "0930-1"
+CONSOLE_RUN = '[{"id":36953549081,"name":"Console CI","event":"pull_request","status":"queued","run_attempt":1}]'
+
+
+def _pr_nodes(contexts_json, state="SUCCESS"):
+    return (
+        '[{"number":591,"url":"u","isDraft":true,"commits":{"nodes":[{"commit":{"oid":"%s",'
+        '"statusCheckRollup":{"state":"%s","contexts":{"totalCount":%d,'
+        '"pageInfo":{"hasNextPage":false,"endCursor":null},"nodes":%s}}}}]}}]'
+        % (PR_HEAD, state, contexts_json.count('"__typename"'), contexts_json)
+    )
+
+
+def _ctx(name, conclusion="SUCCESS", status="COMPLETED", run=36953549081, ident=1):
+    return (
+        '{"__typename":"CheckRun","name":"%s","status":"%s","conclusion":%s,"databaseId":%d,'
+        '"detailsUrl":"","checkSuite":{"workflowRun":{"databaseId":%d}}}'
+        % (name, status, ('"%s"' % conclusion) if conclusion else "null", ident, run)
+    )
+
+
+GATE_PY = """
+import sys, pathlib
+sys.path.insert(0, sys.argv[1])
+import wl_ci
+state, info = wl_ci.ci_rollup(pathlib.Path("."), sys.argv[2])
+print(state, wl_ci.ci_gate(info)["verdict"])
+"""
+
+
+def test_pr_head_with_only_a_side_workflow_is_running_not_green(gate, tmp_path):
+    gate.log_test(
+        "THE 2026-10-02 FALSE GREEN: only OBS Mirror contexts registered -> RUNNING, exit 2"
+    )
+    require_subjects(gate)
+    nodes = _pr_nodes("[%s]" % _ctx("OBS Mirror (opensuse-16.0)", run=36953548680))
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(2, result, "a head whose CI Complete has not reported must not be green")
+    if "GREEN" in result.out or "CI Complete" not in result.out or "36953549081" not in result.out:
+        gate.log_fail(
+            "RUNNING must name CI Complete and the queued Console CI run: %r" % result.out
+        )
+    gate.log_pass("RUNNING, naming CI Complete and Console CI run 36953549081")
+
+
+def test_control_without_the_ci_complete_rule_the_same_head_reads_green(gate, tmp_path):
+    gate.log_test("CONTROL: a ci_gate that ignores CI Complete reads the same fixture GREEN")
+    # By CONSTRUCTION, like the controls above: a copied module with an APPENDED override. If this stops reading green, the fixture no longer reproduces the defect.
+    require_subjects(gate)
+    moddir = tmp_path / "mutant"
+    moddir.mkdir(parents=True)
+    for module in sorted(HOOKS_DIR.glob("*.py")):
+        (moddir / module.name).write_text(module.read_text(encoding="utf-8"), encoding="utf-8")
+    with open(moddir / "wl_ci.py", "a", encoding="utf-8") as handle:
+        handle.write(
+            "\n\n_orig_ci_gate = ci_gate\n\n\n"
+            "def ci_gate(info, require_complete=True):  # noqa: F811\n"
+            "    return _orig_ci_gate(info, require_complete=False)\n"
+        )
+    nodes = _pr_nodes("[%s]" % _ctx("OBS Mirror (opensuse-16.0)", run=36953548680))
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    fixed = harness.run(
+        [sys.executable, "-c", GATE_PY, str(HOOKS_DIR), PR_BRANCH], env=with_path(bindir)
+    )
+    old = harness.run(
+        [sys.executable, "-c", GATE_PY, str(moddir), PR_BRANCH], env=with_path(bindir)
+    )
+    gate.assert_eq("ok running", fixed.out.strip(), "fixed: %s %s" % (fixed.out, fixed.err))
+    gate.assert_eq("ok green", old.out.strip(), "old rule: %s %s" % (old.out, old.err))
+    gate.log_pass("control fires: without CI Complete the fixture reads green")
+
+
+def test_ci_complete_green_with_review_red_and_verdict_in_flight_is_green(gate, tmp_path):
+    gate.log_test(
+        "CI Complete success + Review Complete red + CI Verdict in flight -> GREEN, exit 0"
+    )
+    require_subjects(gate)
+    nodes = _pr_nodes(
+        "[%s]"
+        % ",".join(
+            [
+                _ctx("Quality / Code"),
+                _ctx("CI Complete", ident=2),
+                _ctx("Review Complete", "FAILURE", run=1, ident=3),
+                _ctx("CI Verdict", None, "IN_PROGRESS", run=2, ident=4),
+            ]
+        ),
+        state="PENDING",
+    )
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(0, result, "neither non-blocking context may hold or redden the head")
+    if "review: red" not in result.out:
+        gate.log_fail("the review gate must be named on its own line: %r" % result.out)
+    gate.log_pass("GREEN; the review gate is reported separately")
+
+
+ATTRIB_GH = """#!/bin/bash
+q="$*"
+F=%(fix)s
+case "$q" in
+  *pullRequests*) cat %(rollup)s ;;
+  *check-runs/110680194371/annotations*) cat %(wd_ann)s ;;
+  *check-runs/*/annotations*) echo '[]' ;;
+  *actions/runs/36956399799/jobs*) cat %(wd_jobs)s ;;
+  *actions/runs/36953549081/attempts/1/jobs*) cat "$F/jobs_36953549081_attempt1.json" ;;
+  *actions/runs/36953549081*) cat "$F/run_36953549081_attempt1.json" ;;
+  *actions/runs\\?head_sha*) cat %(runs)s ;;
+  *) echo '{"data":{}}' ;;
+esac
+"""
+
+
+def _attrib_gh(tmp_path, with_watchdog):
+    import json  # noqa: PLC0415
+
+    jobs = json.loads((DIAG_FIX / "jobs_36953549081_attempt1.json").read_text(encoding="utf-8"))[
+        "jobs"
+    ]
+    ctxs = [
+        _ctx(j["name"], (j["conclusion"] or "").upper(), ident=j["id"])
+        for j in jobs
+        if j["conclusion"] in ("success", "skipped", "cancelled")
+    ]
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    rollup = tmp_path / "rollup.json"
+    rollup.write_text(
+        '{"data":{"repository":{"pullRequests":{"nodes":%s}}}}'
+        % _pr_nodes("[%s]" % ",".join(ctxs), "FAILURE"),
+        encoding="utf-8",
+    )
+    empty_runs = tmp_path / "runs-empty.json"
+    empty_runs.write_text('{"workflow_runs":[]}', encoding="utf-8")
+    shim_dir = tmp_path / "bin"
+    shim_dir.mkdir(parents=True, exist_ok=True)
+    shim = shim_dir / "gh"
+    shim.write_text(
+        ATTRIB_GH
+        % {
+            "fix": DIAG_FIX,
+            "rollup": rollup,
+            "wd_ann": DIAG_FIX / "annotations_110680194371.json",
+            "wd_jobs": DIAG_FIX / "watchdog_jobs_36956399799.json",
+            "runs": (DIAG_FIX / "runs_head_a7f30558.json") if with_watchdog else empty_runs,
+        },
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+    return shim_dir, len(ctxs)
+
+
+def test_a_watchdog_budget_cancel_is_attributed_end_to_end(gate, tmp_path):
+    gate.log_test(
+        "104 success / 33 skipped / 29 cancelled + the watchdog's annotation -> RED naming the budget"
+    )
+    require_subjects(gate)
+    bindir, n = _attrib_gh(tmp_path, with_watchdog=True)
+    if n != 166:
+        gate.log_fail("the fixture should carry the run's 166 jobs, got %d" % n)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(1, result, "a cancelled head is red")
+    for needle in (
+        "29 context(s) CANCELLED",
+        "watchdog-budget",
+        "fedora-43, 1/8",
+        "ran 20.1m (budget 20m)",
+        "36956399799",
+    ):
+        if needle not in result.out:
+            gate.log_fail("missing %r in: %r" % (needle, result.out))
+    if "newer push" in result.out:
+        gate.log_fail("the cancel was blamed on a newer push: %r" % result.out)
+    gate.log_pass("RED; watchdog-budget, the job, its minutes and the watchdog run are named")
+
+
+def test_control_an_unproven_cancel_says_unknown(gate, tmp_path):
+    gate.log_test(
+        "CONTROL: the same cancel with no watchdog run on record -> cause unknown, not a guess"
+    )
+    require_subjects(gate)
+    bindir, _n = _attrib_gh(tmp_path, with_watchdog=False)
+    result = harness.run([sys.executable, str(TRACE), "--ref", PR_BRANCH], env=with_path(bindir))
+    gate.assert_exit(1, result, "a cancelled head is red")
+    if "cause: unknown" not in result.out or "not proven superseded" not in result.out:
+        gate.log_fail("an unattributed cancel must say so: %r" % result.out)
+    if "watchdog-budget" in result.out or "newer push" in result.out:
+        gate.log_fail("an unattributed cancel was given a cause: %r" % result.out)
+    gate.log_pass("unknown, said out loud")
+
+
+# ---- PLAN-ci-verdict box G: a --wait that ends on a final verdict leaves it where the next turn finds it ----------
+
+FAKE_WORKLIST = """#!/usr/bin/env python3
+import json, os, sys
+with open(os.environ["FAKE_WORKLIST_LOG"], "a", encoding="utf-8") as fh:
+    fh.write(json.dumps(sys.argv[1:]) + "\\n")
+"""
+
+
+def _wait_env(tmp_path, bindir):
+    import json  # noqa: PLC0415
+
+    fake = tmp_path / "worklist.py"
+    fake.write_text(FAKE_WORKLIST, encoding="utf-8")
+    (tmp_path / "t").mkdir(parents=True, exist_ok=True)
+    env = {
+        **with_path(bindir),
+        "TMPDIR": str(tmp_path / "t"),
+        "XDG_CACHE_HOME": str(tmp_path / "xdg"),
+        "FAKE_WORKLIST_LOG": str(tmp_path / "calls.jsonl"),
+        "CI_TRACE_POLL_S": "1",
+    }
+    return env, json
+
+
+def _cache_doc(tmp_path, json):
+    import hashlib  # noqa: PLC0415
+
+    tag = hashlib.sha1(PR_BRANCH.encode("utf-8")).hexdigest()[:8]
+    hits = sorted((tmp_path / "t" / "claude-worklist").glob("*.md.civerdict-%s" % tag))
+    return json.loads(hits[0].read_text(encoding="utf-8")) if hits else None
+
+
+def test_a_final_green_lands_in_the_branch_cache_and_the_worklist_item(gate, tmp_path):
+    gate.log_test(
+        "--wait green: the verdict is written to the branch cache and the leased worklist item"
+    )
+    require_subjects(gate)
+    nodes = _pr_nodes("[%s]" % ",".join([_ctx("Quality / Code"), _ctx("CI Complete", ident=2)]))
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    env, json = _wait_env(tmp_path, bindir)
+    result = harness.run(
+        [
+            sys.executable,
+            str(TRACE),
+            "--wait",
+            "--timeout",
+            "60s",
+            "--ref",
+            PR_BRANCH,
+            "--worklist-item",
+            "abc12345",
+            "--session",
+            "d778be9d",
+            "--worklist-script",
+            str(tmp_path / "worklist.py"),
+        ],
+        env=env,
+    )
+    gate.assert_exit(0, result, "a green head under --wait exits 0")
+    doc = _cache_doc(tmp_path, json)
+    if not doc or (doc.get("verdict") or {}).get("verdict") != "green" or doc.get("sha") != PR_HEAD:
+        gate.log_fail(
+            "the branch cache did not record the green verdict: %r (stderr %r)" % (doc, result.err)
+        )
+    calls = (
+        (tmp_path / "calls.jsonl").read_text(encoding="utf-8").splitlines()
+        if (tmp_path / "calls.jsonl").exists()
+        else []
+    )
+    if len(calls) != 1:
+        gate.log_fail("expected exactly one worklist --update, got %r" % calls)
+    argv = json.loads(calls[0])
+    if argv[:3] != ["--update", "d778be9d", "abc12345"] or not argv[3].startswith(
+        "CI GREEN @ a7f30558"
+    ):
+        gate.log_fail("the --update call was not the verdict line: %r" % argv)
+    gate.log_pass("green recorded in the cache and in one worklist --update")
+
+
+def test_a_final_cancel_carries_its_cause_into_cache_and_item(gate, tmp_path):
+    gate.log_test(
+        "--wait on the budget cancel: cache and item carry `cancelled` and the watchdog cause"
+    )
+    require_subjects(gate)
+    bindir, _n = _attrib_gh(tmp_path / "g", with_watchdog=True)
+    env, json = _wait_env(tmp_path, bindir)
+    result = harness.run(
+        [
+            sys.executable,
+            str(TRACE),
+            "--wait",
+            "--timeout",
+            "60s",
+            "--ref",
+            PR_BRANCH,
+            "--worklist-item",
+            "abc12345",
+            "--session",
+            "d778be9d",
+            "--worklist-script",
+            str(tmp_path / "worklist.py"),
+        ],
+        env=env,
+    )
+    gate.assert_exit(1, result, "a cancelled head is red")
+    doc = _cache_doc(tmp_path, json)
+    verdict = (doc or {}).get("verdict") or {}
+    if (
+        verdict.get("verdict") != "cancelled"
+        or (verdict.get("cause") or {}).get("kind") != "watchdog-budget"
+    ):
+        gate.log_fail("the cache did not carry the cancel and its cause: %r" % doc)
+    argv = json.loads((tmp_path / "calls.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    if "CI CANCELLED" not in argv[3] or "watchdog-budget" not in argv[3]:
+        gate.log_fail("the --update line did not carry the cause: %r" % argv)
+    gate.log_pass("cancelled + watchdog-budget in the cache and the item")
+
+
+def test_control_a_one_shot_read_records_nothing(gate, tmp_path):
+    gate.log_test("CONTROL: without --wait nothing is written and worklist.py is never called")
+    require_subjects(gate)
+    nodes = _pr_nodes("[%s]" % ",".join([_ctx("Quality / Code"), _ctx("CI Complete", ident=2)]))
+    bindir = make_fake_gh(tmp_path / "bin", nodes, "null", runs_json=CONSOLE_RUN)
+    env, json = _wait_env(tmp_path, bindir)
+    result = harness.run(
+        [
+            sys.executable,
+            str(TRACE),
+            "--ref",
+            PR_BRANCH,
+            "--worklist-item",
+            "abc12345",
+            "--session",
+            "d778be9d",
+            "--worklist-script",
+            str(tmp_path / "worklist.py"),
+        ],
+        env=env,
+    )
+    gate.assert_exit(0, result, "a one-shot green read exits 0")
+    if _cache_doc(tmp_path, json) is not None or (tmp_path / "calls.jsonl").exists():
+        gate.log_fail("a one-shot read wrote the cache or called the worklist")
+    gate.log_pass("one-shot reads stay read-only")

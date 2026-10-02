@@ -23,6 +23,7 @@ import wl_backlog
 import wl_bgsweep
 import wl_checklist
 import wl_ci
+import wl_civerdict
 import wl_claimcheck
 import wl_common
 import wl_core as C
@@ -1753,6 +1754,11 @@ def handle_session_start(event):
     if cl_listing:
         blocks.append(M.CTX_CHECKLISTS % cl_listing)
         summary.append("%d live handoff checklist(s)" % cl_n)
+    # A FOURTH independent block: the last CI verdict for this branch, from the branch cache the push hook's watcher and the Stop hook write (PLAN-ci-verdict box G). Cache only, never the network, so it works with the Stop hook disabled and costs a SessionStart nothing.
+    cv_line = wl_civerdict.session_start_line(C.worklist_for(root), C.git_branch(root))
+    if cv_line:
+        blocks.append(cv_line)
+        summary.append("a cached CI verdict")
     if not blocks:
         return
     C.emit(
@@ -3684,6 +3690,14 @@ def run_stop(event, event_ok, worklist, hook_file):
     if _adhoc_id:
         vadd("adhoc-watch", True, M.V_ADHOC_WATCH % (_adhoc_id, _adhoc_blob))
 
+    # The CI-published verdict (PLAN-ci-verdict box D). ABOVE ci_trouble and outside its multi-session skip on purpose: that skip keeps one session from being BLOCKED over a peer's red, and this blocks nothing -- it is the one diagnosis CI already made, shown once per session per (sha, run, attempt) so no session re-derives it by hand.
+    # Sticky: wl_civerdict marks the key seen when it builds the note, so the queue must hold the note until it is shown.
+    _cv_note = wl_civerdict.note(
+        root, worklist, session_id, ref=_focus_ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
+    )
+    if _cv_note:
+        outq_add(worklist, session_id, state_doc, "ci-verdict", _cv_note, 1, sticky=True)
+
     ci_report = ""
     try:
         cistate, cidetail = wl_ci.ci_trouble(
@@ -3716,6 +3730,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _focus = dict(_focus, pr=int(_ci_pr))
     if cistate == "unreadable":
         vadd("ci-unreadable", True, M.V_CI_UNREADABLE % cidetail)
+    elif cistate == "cancelled":
+        # Blocking contexts cancelled with nothing failing. wl_ci renders the attributed cause and returns "" for superseded/unknown, which stay silent (test_122).
+        ci_report = wl_ci.ci_cancel_note(cidetail)
     elif cistate in ("trouble", "downgraded", "soft"):
         _rows = cidetail["hard"] or cidetail["soft"]
         _txt = wl_ci.ci_rows_text(_rows, cidetail["info"])
@@ -3834,9 +3851,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     # `pr:<n>/reviewed` / `pr:<n>/threads` -- the same `cl:<slug>/<wN>` linkage agent/programs/<slug>/CHECKLIST.md already uses, and the same evidence discipline every other tick carries.
     try:
         _prf_info = None
-        if cistate == "ok":
+        if cistate in ("ok", "pending"):
             _prf_info = cidetail
-        elif cistate in ("trouble", "downgraded", "soft", "watched") and isinstance(cidetail, dict):
+        elif cistate in ("trouble", "downgraded", "soft", "watched", "cancelled") and isinstance(
+            cidetail, dict
+        ):
             _prf_info = cidetail.get("info")
         _prf_num = (_prf_info or {}).get("pr")
         # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case. That is the arm working; it is not a reason to leave it reachable.

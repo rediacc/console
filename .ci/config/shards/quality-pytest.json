@@ -188,7 +188,9 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_install_methods.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_seed_smoke.py",
-        "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py"
+        "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_publish_verdict.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py"
       ]
     },
     {
@@ -376,7 +378,8 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_account_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_linux_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_start_account.py",
-        "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py"
+        "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
+        "pytest:.ci/rediacc_ci/tests/test_ci_diagnose.py"
       ]
     },
     {

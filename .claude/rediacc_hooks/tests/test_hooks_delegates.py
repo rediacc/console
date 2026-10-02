@@ -71,7 +71,7 @@ COUNTED = [
         "stop/wl_planfid.py --selftest",
         "control",
     ),
-    ("stop/wl_ci.py", ["--selftest"], PASS_2SP, 15, "stop/wl_ci.py --selftest", "control"),
+    ("stop/wl_ci.py", ["--selftest"], PASS_2SP, 23, "stop/wl_ci.py --selftest", "control"),
     ("stop/test-teammate-idle.py", [], PASS_COLON, 1, "stop/test-teammate-idle.py", "control"),
     ("stop/test-adhoc-watch.py", [], SUMMARY_N, 1, "stop/test-adhoc-watch.py", "control"),
     (

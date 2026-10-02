@@ -153,7 +153,10 @@ jobs:
           # (deadlock, seen live 2026-07-31 on run 30660765759 after the
           # check became ruleset-required). review-status.yml's own header
           # demands acyclicity: nothing in CI may observe that check back.
-          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete,Review Complete'
+          # "CI Verdict" is the same kind of observer, posted by ci-verdict.yml
+          # once Console CI completes; the substring match also covers its
+          # "Publish CI Verdict" job.
+          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete,CI Verdict,Review Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
           # Per-platform legs only. The aggregator ("Install Methods Complete")
           # downloads no binary, and it reports skipped/cancelled when its needs

@@ -1,0 +1,32 @@
+[
+ {
+  "annotation_level": "failure",
+  "message": "The job has exceeded the maximum execution time of 20m0s",
+  "title": ""
+ },
+ {
+  "annotation_level": "notice",
+  "message": "keep this github-hosted VM (label unknown): 19m 28s leaves less than 2m 0s of margin under slim's 15m 0s hard cap. (measured from /proc on this github-hosted VM (label unknown); RUNNER_ENVIRONMENT reports github-hosted and the PID 1 fingerprint is not a container, so this machine is the job's own and its /proc ceilings are the job's ceilings) | PROFILER_BASELINE_V1 job=test-e2e-workers runner_label=unknown tier=PROC_HOST env=github-hosted cpu_peak_milli=3384 mem_peak_bytes=8148115456 wall_s=1168 cpu_ceil_milli=4000 mem_ceil_bytes=16766414848 samples=116 findings=0 verdict=KEEP",
+  "title": "Runner sizing (profiler)"
+ },
+ {
+  "annotation_level": "failure",
+  "message": "The operation was canceled.",
+  "title": ""
+ },
+ {
+  "annotation_level": "notice",
+  "message": "no baked image published for vm-bake-v1-fedora-43-2026-10-05137ccb7d7074d9; using the stock image",
+  "title": ""
+ },
+ {
+  "annotation_level": "warning",
+  "message": "bws-secrets: attempt 1 of 4 failed transiently (Received error message from server: [503 Service Unavailable] upstream connect error or disconnect/reset before headers. reset reason: connection timeout); retrying in 5s",
+  "title": ""
+ },
+ {
+  "annotation_level": "notice",
+  "message": "\"The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748\"",
+  "title": ""
+ }
+]
