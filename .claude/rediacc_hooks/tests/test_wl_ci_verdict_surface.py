@@ -15,6 +15,7 @@ import pytest
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 CV = wlfix.import_wl("wl_civerdict")
 CI = wlfix.import_wl("wl_ci")
@@ -92,7 +93,7 @@ def repo(tmp_path):
     git("init", "-q", "-b", BRANCH)
     git("config", "user.email", "t@t")
     git("config", "user.name", "t")
-    git("remote", "add", "origin", "https://github.com/rediacc/console.git")
+    git("remote", "add", "origin", GH_ORIGIN + "/" + GH_REPO + ".git")
     (root / "a").write_text("a\n", encoding="utf-8")
     git("add", "-A")
     git("commit", "-qm", "base")

@@ -17,8 +17,12 @@ from rediacc_ci import paths
 from rediacc_ci.ci import budget_report
 from rediacc_ci.ci import publish_ci_verdict as pub
 from rediacc_ci.core import ghx
+from rediacc_ci.well_known import GH_REPO
 
-REPO = "rediacc/console"
+# Built at runtime so the file itself holds no token-shaped string (check:ci-tracked-credentials scans tracked text).
+FAKE_TOKEN = "ghp" + "_" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+REPO = GH_REPO
 SHA = "a7f305585530b61da88faf297b9d5805e5eb2b98"
 RUN = "36953549081"
 JOB = "Tests + Infra / E2E Workers (fedora-43, 1/8)"
@@ -256,7 +260,7 @@ def test_excerpts_are_sanitised_before_they_leave():
         "category": "code-likely",
         "signature": "Error:",
         "excerpt": [
-            "\x1b[31mError:\x1b[0m token ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 leaked\x07",
+            "\x1b[31mError:\x1b[0m token " + FAKE_TOKEN + " leaked\x07",
             "Authorization: Bearer abc.def.ghi",
             "password=hunter2hunter2",
         ],
@@ -265,7 +269,7 @@ def test_excerpts_are_sanitised_before_they_leave():
     gh = FakeGh()
     run_main(["--run-id", RUN, "--attempt", "1", "--head-sha", SHA, "--repo", REPO], gh, loader)
     text = gh.writes[0][2]["output"]["text"]
-    assert "ghp_ABCDEF" not in text
+    assert FAKE_TOKEN[:10] not in text
     assert "abc.def.ghi" not in text
     assert "hunter2" not in text
     assert "\\u001b" not in text

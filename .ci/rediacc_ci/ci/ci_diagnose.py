@@ -205,13 +205,26 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def _gh_api_base():
+    """WK_GH_API_BASE from the literal registry. Loaded by file because this module is itself loaded by path from ci-trace, which puts no `.ci` on sys.path."""
+    import importlib.util  # noqa: PLC0415 - only this lookup needs it
+
+    path = pathlib.Path(__file__).resolve().parents[1] / "well_known.py"
+    spec = importlib.util.spec_from_file_location("rediacc_ci_ci_diagnose_well_known", path)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.GH_API_BASE
+
+
 class HttpFetcher:
     """Reads the REST API with a token, for a runner where `gh` is absent or unauthenticated."""
 
-    def __init__(self, repo, token, api="https://api.github.com", timeout=60):
+    def __init__(self, repo, token, api=None, timeout=60):
         self.repo = repo
         self.token = token
-        self.api = api.rstrip("/")
+        self.api = (api or _gh_api_base()).rstrip("/")
         self.timeout = timeout
 
     def _open(self, url, auth, follow):
