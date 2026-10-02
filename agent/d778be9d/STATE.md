@@ -1,15 +1,14 @@
-## SESSION d778be9d 2026-10-02T06:32:42Z
+## SESSION d778be9d 2026-10-02T06:42:34Z
 
-# STATE d778be9d -- 2026-10-02T06:40Z
+# STATE d778be9d -- 2026-10-02T07:10Z
 ## Where
-- Branch 0930-1, PR #591. Pushed head a7f305585 (account 964b38b, renet 98782a4). Local unpushed: c41632e4b (PLAN-ci-verdict), 61e501765 (renet pointer to 9cd9645: renet 2be6f4b box E + 9cd9645 systemctl retry).
-- CI on a7f305585 is RED (verified CI Complete failure directly): attempt 1 cancelled by watchdog job budget (fedora-43 1/8 at 20.1m, renet essentials 416s/916s on slow mirror); attempt 2 failed E2E K8s Multinode on `systemctl restart rediacc-csi-provisioner: Transport endpoint is not connected` (fixed in renet 9cd9645). My earlier "GREEN" report was a ci-trace FALSE GREEN (judged before Console CI contexts registered) -- operator caught it.
-- PLAN: agent/plans/PLAN-ci-verdict.md (A tracer correctness, B diagnosis verbs + ci_diagnose.py, C raw-gh-read guard, D CI Verdict check-run + session surfacing, E renet setup visibility [DONE 2be6f4b], F [?] #e8ba95b3 pre-bake fedora essentials, DEFAULT no).
-- Writers running: W1 ad564202d2c0c7d3c (A+B, #148ac9f9; writes contract to scratchpad/ci-verdict-contract.md), W3 a48e7c6edc747248a (D, #1367b17f). W2 (C, #a53d074d) starts after W1 reports; W2 must also fix renet CLAUDE.md run-watch recipe (#2afe735d).
-- Until the guard lands: DO NOT trust ci-trace GREEN; confirm `CI Complete` conclusion directly.
-- Other open: #657d7199 renet TestThinPoolGrowFits fails on clean HEAD; #2ec4c835 stripe 23 not before 2026-10-03T00:00Z (steps + policy edits on its worklist item); W plan leftovers B1 rest/B2/G1/G2/G3/A5 (PLAN-retire-bash-oracles; its boxes are stale: A0-A4, B3, B4 done).
-- Foreign uncommitted: .ci/policy/.host-toolchain-exceptions, agent/plans/PLAN-ci-quick-cpu-scheduling.md. Docs regen only in /home/developer/pushclone-0923 after pytest.
+- Branch 0930-1, PR #591. Pushed d026bd123 (renet 9cd9645). Local since: 08e40d631 + 4bd1ae165 (PLAN-ci-verdict box G + ledger), a7bce08cb + c9b1fb397 (PLAN-plan-per-pr-loop + ledger). CI watch on d026bd123: #b548e919 (bzvk85pm1). NEVER trust ci-trace GREEN until PLAN-ci-verdict A lands: confirm CI Complete directly.
+- Operator 2026-10-02 rulings captured in agent/plans/PLAN-plan-per-pr-loop.md (R releases, M merge auth + main protection + rulesets, L plan-per-PR loop, V per-commit review) and PLAN-ci-verdict box G (CI ping without Stop hook; operator disabled the Stop hook).
+- Key evidence: nightly Console CI on main red every night since 2026-09-25 (waiver never fires); stable last promoted 2026-09-14; soak starves under release-per-merge; console ruleset 12344707 protects main (PR + CI Complete + Review Complete required, no deletion/non-FF, no linear history; bypass admin + integration 2772000); private submodules 403 (GitHub Free); Review Complete depends on the uninstalled Claude app's marker -> no PR can merge today; PLAN-per-commit-review.md exists (held).
+- Writers running: W1 ad564202d2c0c7d3c (ci-verdict A+B + G tracer half, #148ac9f9), W3 a48e7c6edc747248a (ci-verdict D + G hook half, #1367b17f), R-writer af3535e673b4a9e72 (loop R1+R2, #f2677b82). Next spawns: W2 guard (#a53d074d) after W1; loop M2/M3/M6 guards after W2's regolden; V1 after W3; L after A.
+- Parked [?]: #e8ba95b3 (fedora prebake, DEFAULT no), #7b9e13f4 (submodule rulesets on GitHub Free, DEFAULT hook-only). Ruleset diff (M4) must be SHOWN to operator once before applying.
+- Foreign uncommitted: .ci/policy/.host-toolchain-exceptions, agent/plans/PLAN-ci-quick-cpu-scheduling.md. Ledger/docs regen only in /home/developer/pushclone-0923.
 ## Next action
-1. On W1/W3 reports: spot-check, run tests, commit by path (proof line if >20 files); spawn W2 when W1 lands.
-2. Receipt in clean clone, push renet 9cd9645 then console, watch CI; verify CI Complete directly.
-3. #657d7199 thin pool test; then W plan G1/G3/B2 etc.
+1. On each writer report: spot-check, test, commit by path, tick; spawn the next writer per the order above.
+2. Draft the M4 ruleset diff (console: add required_linear_history, drop Review Complete, narrow bypass) and show it to the operator.
+3. Push batches with clean-clone receipt; verify CI Complete directly.
