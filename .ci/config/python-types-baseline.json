@@ -44,13 +44,6 @@
       "message": "Incompatible types in assignment (expression has type \"int | None\", variable has type \"int\")"
     },
     {
-      "id": "3719d5df17028973",
-      "file": ".ci/rediacc_ci/core/review_budget.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
       "id": "e00c83950e60327b",
       "file": ".ci/rediacc_ci/housekeeping/cleanup_versions.py",
       "code": "arg-type",
@@ -436,13 +429,6 @@
       "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
     },
     {
-      "id": "3de99c72fb1a8d5b",
-      "file": ".ci/rediacc_ci/quality/review_report_replies.py",
-      "code": "index",
-      "count": 1,
-      "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
-    },
-    {
       "id": "d18113b4606a22a6",
       "file": ".ci/rediacc_ci/quality/script_exec_bit.py",
       "code": "assignment",
@@ -537,7 +523,7 @@
       "id": "1c4725e5fcdd1b66",
       "file": ".ci/rediacc_ci/security/workflow_gates.py",
       "code": "attr-defined",
-      "count": 4,
+      "count": 2,
       "message": "\"object\" has no attribute \"get\""
     },
     {
@@ -791,13 +777,6 @@
       "code": "union-attr",
       "count": 1,
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
-      "id": "e8dca2994bde322e",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_review_status.py",
-      "code": "operator",
-      "count": 1,
-      "message": "Unsupported operand types for + (\"None\" and \"int\")"
     },
     {
       "id": "2c4506fb4982ded7",
@@ -1766,20 +1745,6 @@
       "message": "Need type annotation for \"body\""
     },
     {
-      "id": "ec82a1a0327575fa",
-      "file": ".ci/rediacc_ci/tests/test_quality_review_report_replies.py",
-      "code": "index",
-      "count": 2,
-      "message": "Value of type \"dict[Any, Any] | None\" is not indexable"
-    },
-    {
-      "id": "e646ac9c3aa4cbfc",
-      "file": ".ci/rediacc_ci/tests/test_quality_review_turn_capacity.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"messages\" (hint: \"messages: set[<type>] = ...\")"
-    },
-    {
       "id": "35f9ccd5731a8a17",
       "file": ".ci/rediacc_ci/tests/test_quality_run_external_gate.py",
       "code": "arg-type",
@@ -1834,55 +1799,6 @@
       "code": "arg-type",
       "count": 3,
       "message": "Argument 4 to \"_run\" has incompatible type \"**dict[str, str]\"; expected \"bool\""
-    },
-    {
-      "id": "36cae4f00786880d",
-      "file": ".ci/rediacc_ci/tests/test_review_claude_review_gate.py",
-      "code": "dict-item",
-      "count": 1,
-      "message": "Dict entry 1 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
-    },
-    {
-      "id": "6f2ac930601594b3",
-      "file": ".ci/rediacc_ci/tests/test_review_claude_review_gate.py",
-      "code": "return-value",
-      "count": 1,
-      "message": "No return value expected"
-    },
-    {
-      "id": "154db9828531d0e4",
-      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
-      "code": "dict-item",
-      "count": 1,
-      "message": "Dict entry 0 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
-    },
-    {
-      "id": "4eb603b5eb901b0e",
-      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
-      "code": "dict-item",
-      "count": 1,
-      "message": "Dict entry 1 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
-    },
-    {
-      "id": "fa73c3bc55b34daa",
-      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
-      "code": "dict-item",
-      "count": 2,
-      "message": "Dict entry 2 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
-    },
-    {
-      "id": "78a8ca127c051ea1",
-      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
-      "code": "dict-item",
-      "count": 2,
-      "message": "Dict entry 3 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
-    },
-    {
-      "id": "489bd975d8772253",
-      "file": ".ci/rediacc_ci/tests/test_review_review_status.py",
-      "code": "dict-item",
-      "count": 1,
-      "message": "Dict entry 4 has incompatible type \"str\": \"None\"; expected \"str\": \"str\""
     },
     {
       "id": "e7c3bf2970dff6da",
@@ -3603,7 +3519,7 @@
       "id": "e3f33fbc3373c14f",
       "file": ".claude/rediacc_hooks/tests/test_wl_priority_ladder.py",
       "code": "union-attr",
-      "count": 2,
+      "count": 1,
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {

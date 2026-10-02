@@ -108,7 +108,6 @@
   ".ci/scripts/private/renet-ebpf-e2e.sh:069f223f15e6",
   ".ci/scripts/private/renet-ebpf-e2e.sh:ca2803625ec4",
   ".ci/scripts/release/update-homebrew-tap.sh:84dabfa576a6",
-  ".ci/scripts/review/claude-review-gate.sh:4d31940f78bf",
   ".ci/scripts/setup/install-deps.sh:fd4a9dc08fd5",
   ".ci/scripts/test/lib/test-helpers.sh:2d23f7d59ece",
   ".ci/scripts/test/lib/test-helpers.sh:a7fe37565d44",

@@ -13,9 +13,12 @@ THE THREE CASES THIS FILE OWES, and they are one design and not three:
   2. The HISTORICAL identity mutation reds. `review_turn_capacity.py` really did
      carry `_FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140")` at line
      480 of commit f8af6d092, chained ahead of a live `.replace`, inside the port
-     of the very gate `control_vacuity` uses as its own control. It moved no
-     verdict then and it is the founding defect now, so it is driven as a plant
-     rather than remembered as a paragraph.
+     of the very gate `control_vacuity` used as its own control. It moved no
+     verdict then and it is the founding defect now, so its SHAPE (an identity
+     substitution chained ahead of a live one) is driven as a plant rather than
+     remembered as a paragraph. That module was retired with the PR-level
+     Claude review on 2026-10-02, so the shape is planted into the current
+     subject instead.
   3. The UNMODIFIED copy exits 0. Without it the first two are satisfied by a
      gate that reds on everything, which is why it is a case here and not an
      assumption.
@@ -38,21 +41,23 @@ GATE = paths.from_root(".ci", "scripts", "quality", "check_python_control_plants
 # The gate resolves its own root at CALL time from this variable, which is what makes a starved tree drivable from outside. Named here rather than typed at four call sites.
 ROOT_ENV = "PY_CONTROL_PLANTS_ROOT"
 
-# The subject of both plants. It is the module the founding defect lived in, and it carries five real `plant()` sites inside one `selftest()`, so a finding here is a finding among neighbours rather than in an empty file.
-SUBJECT = ".ci/rediacc_ci/quality/review_turn_capacity.py"
+# The subject of both plants. It is also `control_vacuity`'s control source, and it carries seven real `plant()` sites inside one `selftest()`, one of them nested, so a finding here is a finding among neighbours rather than in an empty file. It replaced `review_turn_capacity.py`, the module the founding defect lived in, when that gate was retired on 2026-10-02.
+SUBJECT = ".ci/rediacc_ci/quality/renet_tier_map.py"
+SUBJECT_NAME = "renet_tier_map.py"
 
 # CASE 1. A genuine converted plant, put back the way it was written before the harness existed.
-REAL_PLANT = 'plant(_FIXTURE_HEALTHY, "per_kloc=25", "per_kloc=8"),'
-REAL_PLANT_RAW = '_FIXTURE_HEALTHY.replace("per_kloc=25", "per_kloc=8"),'
+REAL_PLANT = 'listed_from(plant(_LISTING, "TestTierProbeMatchesTheMap\\n", ""))'
+REAL_PLANT_RAW = 'listed_from(_LISTING.replace("TestTierProbeMatchesTheMap\\n", ""))'
+REAL_PLANT_LINE = "line 271"
 
-# CASE 2. Lifted VERBATIM from f8af6d092:.ci/rediacc_ci/quality/review_turn_capacity.py:480, which is why the indentation and the trailing argument line are carried with it: the historical shape is a chain, and the chain is the point.
+# CASE 2. The shape of f8af6d092:.ci/rediacc_ci/quality/review_turn_capacity.py:480, an identity `.replace` chained ahead of a live one, planted over the subject's nested plant. The indentation and the trailing argument line are carried with it: the historical shape is a chain, and the chain is the point.
 HISTORICAL_PLANT = """            plant(
-                _FIXTURE_HEALTHY,
-                '[[ "$turns" -gt "$max_turns" ]] && turns="$max_turns"',
+                plant(_PASSING_RUN, "--- PASS: TestTierMapHasNoOrphans", "x"),
+                "--- PASS: TestTierMapCoversRegistry",
 """
 
-HISTORICAL_IDENTITY = """            _FIXTURE_HEALTHY.replace("max_turns=140", "max_turns=140").replace(
-                '[[ "$turns" -gt "$max_turns" ]] && turns="$max_turns"',
+HISTORICAL_IDENTITY = """            _PASSING_RUN.replace("--- PASS: TestTierMapHasNoOrphans", "--- PASS: TestTierMapHasNoOrphans").replace(
+                "--- PASS: TestTierMapCoversRegistry",
 """
 
 _COUNTS = re.compile(r"(\d+) Python gate module\(s\) scanned, (\d+) plant\(\) call site\(s\)")
@@ -191,11 +196,11 @@ def test_rewriting_a_real_plant_back_to_a_raw_substitution_reds(gate):
         _edit(root, SUBJECT, REAL_PLANT, REAL_PLANT_RAW)
         result = _run(root)
         gate.assert_exit(1, result, "a raw substitution in a control region is a finding")
-        gate.assert_contains(result.combined, "review_turn_capacity.py", "names the file")
-        gate.assert_contains(result.combined, "line 406", "and the line")
+        gate.assert_contains(result.combined, SUBJECT_NAME, "names the file")
+        gate.assert_contains(result.combined, REAL_PLANT_LINE, "and the line")
         gate.assert_contains(result.combined, "raw substitution", "says what is wrong")
         gate.assert_contains(result.combined, "plant() from rediacc_ci.controls", "and the fix")
-        # ONE finding and not five. The other four sites in the same `selftest()` are untouched plants, so a gate that reported them too would be flagging the harness it is asking for.
+        # ONE finding and not seven. The other six sites in the same `selftest()` are untouched plants, so a gate that reported them too would be flagging the harness it is asking for.
         gate.assert_contains(result.combined, "1 control plant(s)", "and only the planted site")
     gate.log_pass("the real-tree plant reds, names the file and line, and hands over the fix")
 
@@ -213,8 +218,8 @@ def test_the_historical_max_turns_identity_reds(gate):
         _edit(root, SUBJECT, HISTORICAL_PLANT, HISTORICAL_IDENTITY)
         result = _run(root)
         gate.assert_exit(1, result, "the identity mutation is a finding")
-        gate.assert_contains(result.combined, "review_turn_capacity.py", "names the file")
-        gate.assert_contains(result.combined, "_FIXTURE_HEALTHY.replace", "and the receiver")
+        gate.assert_contains(result.combined, SUBJECT_NAME, "names the file")
+        gate.assert_contains(result.combined, "_PASSING_RUN.replace", "and the receiver")
         # ONE finding, from a chain of TWO substitutions. The second one's receiver is the first call's result, not a bare name, and a parsing receiver is deliberately invisible here. Asserting the count is what pins that: a gate that flagged both would be flagging the shape its own exemption exists to allow.
         gate.assert_contains(result.combined, "1 control plant(s)", "once, not once per link")
     gate.log_pass("the founding defect reds on its shape, chain and all")

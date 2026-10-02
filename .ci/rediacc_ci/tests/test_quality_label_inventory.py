@@ -51,7 +51,7 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     for rel in (
         ".ci/scripts/quality",
         ".ci/scripts/ci",
-        ".ci/scripts/review",
+        ".ci/rediacc_ci/review",
         ".ci/rediacc_ci/quality",
         ".github",
         "fx",
@@ -75,8 +75,8 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     (root / ".ci" / "scripts" / "ci" / "report-nightly-status.cjs").write_text(
         'issues.createLabel({name: "nightly-red"})\n', encoding="utf-8"
     )
-    (root / ".ci" / "scripts" / "review" / "claude-review-gate.sh").write_text(
-        "gh label create ci\ngh label create bump-none\n", encoding="utf-8"
+    (root / ".ci" / "rediacc_ci" / "review" / "pr_labels.py").write_text(
+        'MANAGED = ("ci", "bump-none")\n', encoding="utf-8"
     )
     for rel, text in files.items():
         target = root / rel

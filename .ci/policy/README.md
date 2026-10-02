@@ -80,7 +80,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.actions-upgrade-blocklist` | name per line | 0 | 0 | both |
 | `.audit-allowlist` | name per line | 0 | 1 | both |
 | `.audit-prod-allowlist` | name per line | 0 | 1 | both |
-| `.ci-parity-exempt` | name per line | 9 | 10 | both |
+| `.ci-parity-exempt` | name per line | 8 | 9 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
 | `.dead-bash-allowlist` | name per line | 8 | 9 | both |
 | `.deps-upgrade-blocklist` | name per line | 7 | 8 | both |
@@ -91,7 +91,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
 | `.language-policy-allowlist` | name per line | 18 | 19 | both |
 | `.plan-housekeeping-allowlist` | name per line | 0 | 1 | both |
-| `.profiler-coverage-allowlist` | name per line | 66 | 4 | both |
+| `.profiler-coverage-allowlist` | name per line | 64 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
 | `.unverified-download-allowlist` | name per line | 4 | 4 | both |
 | `.w7p5a-real-run-blocklist` | name per line | 6 | 6 | both |
@@ -340,7 +340,6 @@ git blame --line-porcelain -- <file> \
 | 91 | `ci.yml:stripe-sandbox` | 2026-08-05 | 31 |
 | 92 | `ci.yml:validate-promote` | 2026-08-05 | 31 |
 | 95 | `claude-mention.yml:claude` | 2026-08-05 | 31 |
-| 98 | `claude-review-reusable.yml:review` | 2026-08-05 | 31 |
 | 101 | `cleanup-preview.yml:cleanup` | 2026-08-05 | 31 |
 | 104 | `cleanup-r2-staging.yml:cleanup` | 2026-08-05 | 31 |
 | 107 | `ct-install-methods.yml:install-methods-complete` | 2026-08-05 | 31 |
@@ -357,7 +356,6 @@ git blame --line-porcelain -- <file> \
 | 128 | `nightly-status.yml:report` | 2026-08-05 | 31 |
 | 131 | `promote-stable.yml:promote` | 2026-08-05 | 31 |
 | 132 | `promote-stable.yml:verify-stable` | 2026-08-05 | 31 |
-| 135 | `review-status.yml:review-status` | 2026-08-05 | 31 |
 | 138 | `watchdog-monitor.yml:monitor` | 2026-08-05 | 31 |
 
 #### `.unverified-download-allowlist`

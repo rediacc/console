@@ -110,7 +110,7 @@ deliberately and says why: "Bash slice rather than `| head -c`: a summary is tho
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE TWO SHARED CONSTANTS MUST MATCH `review_report_replies.py`, and the bash pair duplicates them for the same reason: "That is what makes one reply clear both gates; test-review-status.sh parses both files and fails if they drift apart." So they are duplicated here rather than imported, and both ports assert the agreement.
+THE TWO SUMMARY CONSTANTS once had to match `review_report_replies.py` ("That is what makes one reply clear both gates"). That sibling was retired with the PR-level Claude review on 2026-10-02, so they are plain values here now.
 
 `is_low_effort_reply` DEFAULTS TO 10 HERE AND TO 30 IN THE SIBLING. Same name, different default, on purpose: "min_chars defaults to 10, the floor a single inline thread has always used. A reply to the whole review summary answers many findings at once, so that caller passes a higher floor." A port that unified them would silently tighten one gate or loosen the other.
 

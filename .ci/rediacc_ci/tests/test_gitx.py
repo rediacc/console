@@ -323,7 +323,7 @@ def test_count_commits_is_none_rather_than_zero_when_the_probe_fails(repo):
 def test_submodules_match_the_git_config_enumeration_on_the_real_repo():
     """Differential against `git config -f .gitmodules --get-regexp`.
 
-    That is the spelling used by `detect-pointer-bump.sh:170`, `claude-review-gate.sh:882` and `review-status.sh:321`.
+    That is the spelling used by `detect-pointer-bump.sh:170`.
     """
     root = diff.repo()
     _, out, _ = diff.bash_streams(

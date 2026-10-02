@@ -39,9 +39,6 @@ fail-open arm intact and named -- `platform.os_name()` RAISES where this returns
 
   * `r2_count_objects` WAS a gap here until 2026-09-24: there is still no `aws` on this machine, so it is proved the way W7P5-b proved every other function that shells out, against a STUB `aws` on PATH that logs its argv and answers from a script (`core/stubfarm.py`, driven by `core/common_stub_shadow_driver.py`). It is `r2_count_objects` below.
   * `wait_for` (common.sh:245) has NO CALLER anywhere in the tree (2026-09-24; `.ci/breakpoint/lib/breakpoint-common.sh:239` names it only to explain why it does not use it), and the 2026-09-10 table above attributed it to `rediacc_ci.proc`, which never defined it. It is ported below, `wait_for`, on the same stub technique (`sleep` scripted), so the claim the table makes is now true.
-  * The review-budget half (common.sh:516-772, thirteen functions). It is its
-    own concern, it is bigger than everything above put together, and it is in
-    `core.review_budget` beside this file.
 
 --------------------------------------------------------------------------
 THE ERROR MODEL, AND WHY IT IS NOT `sys.exit`

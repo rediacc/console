@@ -2,7 +2,7 @@
 
 WHY A REAL COPY OF THE SCRIPT AND NOT AN IMPORT. `main()` resolves its root as `pathlib.Path(__file__).resolve().parents[3]`, so a test that imports the module in-process cannot hand it a fake tree: the path is derived from where the FILE lives on disk, not from an argument or the cwd. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`'s own `run_against_empty_tree` solves the identical problem by copying the real trees into a temp directory at the same relative depth and running the copy; `_tree()` below does the same, scoped to exactly the two things this script reads (its own file, one workflow file, and `.ci/config/lane-durations.json`).
 
-`gh` IS FAKED ON PATH, never called for real: `refresh()` shells out to `gh run list` then `gh api .../jobs?...`, and the fake below routes on argv[0:2] rather than reimplementing `--jq`, the same shortcut `test_gate_review_status.py`'s own fixture-serving fakes take -- it returns exactly what `gh ... --jq EXPR` would have printed for the fixture data, not a real jq evaluation.
+`gh` IS FAKED ON PATH, never called for real: `refresh()` shells out to `gh run list` then `gh api .../jobs?...`, and the fake below routes on argv[0:2] rather than reimplementing `--jq` -- it returns exactly what `gh ... --jq EXPR` would have printed for the fixture data, not a real jq evaluation.
 """
 
 from __future__ import annotations

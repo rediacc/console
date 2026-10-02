@@ -9,7 +9,7 @@ WHAT IT POSTS. One check-run named `CI Verdict` on the run's head SHA, always `c
 
 WHY NEUTRAL, ALWAYS. The verdict OBSERVES Console CI; it never gates it. A red `CI Verdict` would be a second, confusing red on a head that already has one, and a green one could read as a pass for a run that never finished. Every reader treats the context as non-blocking (`wl_ci.CI_NONBLOCKING_CONTEXTS`, the watchdog and nightly exclude lists, `budget_report.CRITICAL_PATH_EXCLUDE`).
 
-UPSERT, NEWEST WINS. The check-run is PATCHed when one already exists on the SHA and POSTed otherwise, the `review_status.post_check` shape. A green attempt therefore overwrites a stale red one. An OLDER (run, attempt) never overwrites a newer one: a late-finishing publish for attempt 1 must not bury attempt 2's answer, and the existing check-run's own JSON says which attempt it describes.
+UPSERT, NEWEST WINS. The check-run is PATCHed when one already exists on the SHA and POSTed otherwise. A green attempt therefore overwrites a stale red one. An OLDER (run, attempt) never overwrites a newer one: a late-finishing publish for attempt 1 must not bury attempt 2's answer, and the existing check-run's own JSON says which attempt it describes.
 
 A FAILED DIAGNOSIS STILL POSTS. `diagnose()` reads logs and job lists over the network; when it raises, the publisher posts `verdict: unknown` naming the error rather than crashing, because a missing check-run is indistinguishable from one that has not run yet, and a session would wait on it.
 
@@ -329,7 +329,7 @@ def resolve_run(
 
 
 def make_fetch(mod: Any, repo: str) -> Any:
-    """`GhFetcher` everywhere. `gh` is on every runner (review_status runs it on ubuntu-slim) and reads `GH_TOKEN` itself, so the publisher never holds the token and the local dry-run and the CI run read through the same client."""
+    """`GhFetcher` everywhere. `gh` is on every runner, ubuntu-slim included, and reads `GH_TOKEN` itself, so the publisher never holds the token and the local dry-run and the CI run read through the same client."""
     return mod.GhFetcher(repo)
 
 

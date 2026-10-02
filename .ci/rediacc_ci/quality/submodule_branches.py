@@ -81,8 +81,7 @@ THE THREE INCIDENTS THE TWIN'S INLINE COMMENTS RECORD.
 THE MAIN-BRANCH HOLE, hit for real on 2026-07-28. console#541 merged while rediacc/account#69 was still open, so main's gitlink pointed at b0ea51f, a commit that existed ONLY on that PR's branch. Had the branch been deleted (which merging normally does), every `submodule update` on main would have failed with "reference is not a tree", and nothing would have warned. The PR-side
 rules cannot catch this: they legitimately ALLOW a pointer at an unmerged branch commit, because submodule-first means the submodule PR is still open while the console PR runs. So on main, assert the thing that must be true once everything has landed: every gitlink is reachable from the submodule's own origin/main.
 
-THE REPORT HOLE, hit live on 2026-08-09 while landing console#561: rediacc/account#78's automated review posted a top-level REPORT (no inline threads), and nothing console-side checked it. The thread check sees only pulls/comments, and the report landed AFTER the last console run, so no per-commit check ever re-evaluated. Only the local block-admin-merge hook caught it, which a
-web-UI merge would bypass. Rule (same oracle as check-review-report-replies.sh): the NEWEST "**Claude finished" report on the sub-PR must have a LATER comment by someone other than the bot that posted it.
+THE REPORT HOLE, hit live on 2026-08-09 while landing console#561: rediacc/account#78's automated review posted a top-level REPORT that nothing console-side checked. The arm that closed it (the newest "Claude finished" report needed a later reply) was retired on 2026-10-02 with the PR-level Claude review it judged; no such report is posted any more.
 
 THE DETACHED-HEAD TRAP, twice. `rev-parse --abbrev-ref HEAD` SUCCEEDS on a detached checkout and prints the literal string "HEAD", so a `|| echo "main"` or `|| echo "detached"` fallback never fires for that case, since git did not fail. Downstream the console value is compared against a submodule's own (possibly ALSO detached) branch name; two coincidentally-detached checkouts
 would both read "HEAD" and compare EQUAL, reporting a branch match that is not real. Both functions catch the literal string explicitly rather than leaning on the fallback.
@@ -181,9 +180,6 @@ LOW_EFFORT_PATTERNS = (
 # Anything shorter than this, after normalisation, is low-effort whatever it says. The twin's number, kept as a name so the two uses of it agree.
 MIN_SUBSTANTIVE_LENGTH = 10
 
-# The prefix the automated reviewer's top-level report starts with.
-REPORT_PREFIX = "**Claude finished"
-
 
 def _run(args: list[str], **kwargs) -> subprocess.CompletedProcess:
     """`subprocess.run` with text output and no exception on a non-zero exit.
@@ -275,8 +271,7 @@ def current_branch(root: pathlib.Path, env: dict[str, str] | None = None) -> str
 
     See the detached-head trap in the module docstring for why the literal string is caught rather than left to the `|| echo "main"` fallback.
     """
-    environ = os.environ if env is None else env
-    from_ci = gitx.branch_from_ci(environ)
+    from_ci = gitx.branch_from_ci(dict(os.environ) if env is None else env)
     if from_ci:
         return from_ci
     proc = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=str(root))
@@ -433,29 +428,8 @@ def pr_is_linked(pr_url: str, text: str) -> bool:
     return False
 
 
-def judge_report(comments: list[dict]) -> str:
-    """ "none" | "answered" | "unanswered" for a list of issue comments.
-
-    SPLIT FROM THE FETCH ON PURPOSE. The `gh` call cannot run in a test and the JUDGEMENT is the part that decides a merge, so the judgement is a pure
-    function the selftest drives directly and `report_answered` is a thin
-    wrapper over a fetch. There is exactly one implementation; a second copy written "for the test" is a copy that drifts and then tests nothing.
-    """
-    reports = [c for c in comments if str(c.get("body") or "").startswith(REPORT_PREFIX)]
-    if not reports:
-        return "none"
-    newest = max(reports, key=lambda c: str(c.get("created_at") or ""))
-    newest_at = str(newest.get("created_at") or "")
-    newest_login = str((newest.get("user") or {}).get("login") or "")
-    for comment in comments:
-        later = str(comment.get("created_at") or "") > newest_at
-        other = str((comment.get("user") or {}).get("login") or "") != newest_login
-        if later and other:
-            return "answered"
-    return "unanswered"
-
-
 def count_unreplied(comments: list[dict]) -> int:
-    """Original comments with no SUBSTANTIVE reply. Pure; see `judge_report`.
+    """Original comments with no SUBSTANTIVE reply. Pure, so the selftest drives it directly and `unreplied_review_comments` is a thin wrapper over the fetch.
 
     jq: `[.[] | select(.in_reply_to_id != null)]` are the replies and
     `[.[] | select(.in_reply_to_id == null)]` the originals. Keys are the TEXT
@@ -501,38 +475,6 @@ def unreplied_review_comments(repo: str, pr_number: str) -> tuple[bool, int]:
         return False, 0
 
     return True, count_unreplied(comments)
-
-
-def report_answered(repo: str, pr_number: str) -> tuple[bool, str]:
-    """(could-read, "none" | "answered" | "unanswered").
-
-    The jq the twin uses does the whole judgement so bash never parses comment bodies: pick the newest report by created_at, then ask whether ANY comment
-    from a different login was created after it.
-
-        ([.[] | select(.body | startswith("**Claude finished"))]
-           | sort_by(.created_at) | last) as $r
-        | if $r == null then "none"
-          elif ([.[] | select(.created_at > $r.created_at
-                              and .user.login != $r.user.login)] | length) > 0
-          then "answered"
-          else "unanswered" end
-
-    The comparison is on the ISO-8601 STRING, not on a parsed timestamp, which is correct for the `Z`-suffixed form GitHub returns and would be wrong for mixed offsets. Carried as a string comparison for that reason.
-    """
-    if not have_gh():
-        return True, "none"
-    ok, body = gh_probe(
-        True,
-        "issue comments for %s#%s" % (repo, pr_number),
-        ["api", "repos/%s/issues/%s/comments" % (repo, pr_number), "--paginate"],
-    )
-    if not ok:
-        return False, ""
-    try:
-        comments = json.loads(body)
-    except ValueError:
-        return False, ""
-    return True, judge_report(comments)
 
 
 def submodule_initialised(root: pathlib.Path, sm_path: str) -> bool:
@@ -585,7 +527,7 @@ def check_on_main(root: pathlib.Path) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Validate every submodule against the console branch. 0 valid, 1 not.
 
-    The branching here is the twin's, arm for arm. It is long because the subject is: four submodules crossed with pointer-changed or not, branch present or not, PR open or merged or missing, linked or not, comments readable or not, report answered or not. Collapsing arms would lose the distinct message each one prints, and those messages are the gate's whole value (see the AI
+    The branching here is the twin's, arm for arm. It is long because the subject is: four submodules crossed with pointer-changed or not, branch present or not, PR open or merged or missing, linked or not, comments readable or not. Collapsing arms would lose the distinct message each one prints, and those messages are the gate's whole value (see the AI
     TROUBLESHOOTING GUIDE above).
     """
     args = list(argv or [])
@@ -704,23 +646,6 @@ def main(argv: list[str] | None = None) -> int:
             errors += 1
         else:
             log.info("✓ %s: all review comments addressed" % sm_path)
-
-        can_read, state = report_answered(repo, sub_pr_number)
-        if not can_read:
-            log.error("✗ %s: could not read issue comments for %s" % (sm_path, sub_pr_url))
-            log.error("  This gate cannot certify the report state, so it counts as an error.")
-            errors += 1
-        elif state == "unanswered":
-            log.error(
-                "✗ %s: the newest automated review REPORT on %s has no reply"
-                % (sm_path, sub_pr_url)
-            )
-            log.error(
-                "  AI FIX: answer the report substantively (a top-level PR comment posted after it)"
-            )
-            errors += 1
-        else:
-            log.info("✓ %s: review report answered (%s)" % (sm_path, state))
 
     # A bare `echo ""` in the twin: one blank line before the verdict.
     print()
@@ -875,55 +800,6 @@ def selftest() -> int:
             submodule_branch(root, "private/renet"),
             "detached",
         )
-
-    # -- the report oracle, over the shape the API returns ------------------
-    bot = {"login": "claude[bot]"}
-    human = {"login": "muhammed"}
-
-    def issue(body: str, at: str, user: dict) -> dict:
-        return {"body": body, "created_at": at, "user": user}
-
-    ctl.check(
-        "CONTROL: no report at all is 'none'",
-        judge_report([issue("hello", "2026-09-01T00:00:00Z", human)]),
-        "none",
-    )
-    ctl.check(
-        "PLANT: a report with nothing after it is 'unanswered' (the 2026-08-09 hole)",
-        judge_report([issue("**Claude finished the review", "2026-09-01T00:00:00Z", bot)]),
-        "unanswered",
-    )
-    ctl.check(
-        "CONTROL: a later comment by SOMEONE ELSE answers it",
-        judge_report(
-            [
-                issue("**Claude finished the review", "2026-09-01T00:00:00Z", bot),
-                issue("thanks, fixed in abc123", "2026-09-01T01:00:00Z", human),
-            ]
-        ),
-        "answered",
-    )
-    ctl.check(
-        "PLANT: a later comment by the SAME bot does not answer it",
-        judge_report(
-            [
-                issue("**Claude finished the review", "2026-09-01T00:00:00Z", bot),
-                issue("still working", "2026-09-01T01:00:00Z", bot),
-            ]
-        ),
-        "unanswered",
-    )
-    ctl.check(
-        "PLANT: only the NEWEST report counts, so an answered old one does not carry a new one",
-        judge_report(
-            [
-                issue("**Claude finished one", "2026-09-01T00:00:00Z", bot),
-                issue("replied", "2026-09-01T01:00:00Z", human),
-                issue("**Claude finished two", "2026-09-01T02:00:00Z", bot),
-            ]
-        ),
-        "unanswered",
-    )
 
     # -- the unreplied-comment oracle --------------------------------------
     def review(cid: int, reply_to, body: str) -> dict:

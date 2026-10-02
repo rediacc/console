@@ -19,16 +19,10 @@ NO `id:` IS CORRECT HERE: `derivedId` (`gate-header.ts:260`) maps this basename 
 
 THE RESOLVED NEED SET DOES NOT MOVE, verified by calling `bind()` on both files. Both infer `[]` and both resolve to the empty set `needs: none` declares.
 
-PINNED BY PATH IN THREE PLACES, AND THE ROWS SPLIT ACROSS ALL THREE ARMS:
+PINNED BY PATH IN TWO PLACES (a third, `test_gate_review_labels.py`, was retired with the PR-level review on 2026-10-02):
 
   - RUN-IN-PLACE, so ENTRY POINT if repointed:
     `.ci/rediacc_ci/tests/gates/test_gate_label_inventory.py:48` (`GATE_REL`)
-  - GREPS A BEHAVIOURAL NEEDLE, so MODULE if repointed.
-    `.ci/rediacc_ci/tests/gates/test_gate_review_labels.py:691,792` reads the
-    gate as TEXT and asserts the literal
-    `"ci|.ci/scripts/review/claude-review-gate.sh"` and its `bump-none` sibling
-    are present in its CREATE_ON_DEMAND table. That needle is not in this
-    three-line shim; it is in `.ci/rediacc_ci/quality/label_inventory.py`.
   - DIFFERENTIAL, so it MUST KEEP NAMING THE TWIN:
     `.ci/rediacc_ci/tests/test_quality_label_inventory.py:40`
 

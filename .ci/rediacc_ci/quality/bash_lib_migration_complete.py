@@ -2,7 +2,7 @@
 
 WHY. W7P5-b ported the bash libraries one function at a time, and "account.sh 22 of 22" was a count a writer made by hand on 2026-09-24. Nothing held it: a bash function added the next day, or a Python def renamed away, would leave the twin incomplete while every differential stayed green, because a differential only compares the functions it already drives.
 
-WHY THERE IS NO BASELINE ANY MORE (2026-10-01, PLAN-retire-bash-oracles G2). The shrink-only baseline once held 59 "unported" functions. Every one of them had a twin all along; the gate could not see it. 39 were class methods (fixed 2026-09-27), 5 were log functions in `rediacc_ci/log.py`, which no module list named, and the last 15 were twins under a different name, each of whose docstrings cites the bash function it ports (`compose_argv` says "`_service_compose`", `class_is_infra` says "`review_attempt_class_is_infra`"). An empty baseline is a door: the next `--write-baseline` would re-absorb a genuinely unported function without anyone reading it. So the door is gone, and a gap is a red until it is ported or named in `ALIASES`.
+WHY THERE IS NO BASELINE ANY MORE (2026-10-01, PLAN-retire-bash-oracles G2). The shrink-only baseline once held 59 "unported" functions. Every one of them had a twin all along; the gate could not see it. 39 were class methods (fixed 2026-09-27), 5 were log functions in `rediacc_ci/log.py`, which no module list named, and the last 15 were twins under a different name, each of whose docstrings cites the bash function it ports (`compose_argv` says "`_service_compose`", `load_pins` says "`toolchain_load`"). An empty baseline is a door: the next `--write-baseline` would re-absorb a genuinely unported function without anyone reading it. So the door is gone, and a gap is a red until it is ported or named in `ALIASES`.
 
 WHAT IT CHECKS, per library in `LIBS`:
   - each bash function maps to a `def` (module level OR a class method) in the library's Python modules, through `ALIASES` or by the naming rule (the name itself, the name minus the library prefix, and either one without leading underscores);
@@ -40,7 +40,6 @@ LIBS: dict[str, tuple[str, ...]] = {
     # ../log.py because common.sh's log_* functions are ported there and nowhere else; it was missing from this list until 2026-10-01, which left 5 ported functions baselined as unported.
     ".ci/scripts/lib/common.sh": (
         "common.py",
-        "review_budget.py",
         "ghx.py",
         "../proc.py",
         "../log.py",
@@ -54,7 +53,6 @@ LIBS: dict[str, tuple[str, ...]] = {
 PREFIXES: dict[str, tuple[str, ...]] = {
     ".ci/scripts/lib/release-state-validator.sh": ("rsv_",),
     ".ci/scripts/lib/blocker-validator.sh": ("blocker_",),
-    ".ci/scripts/lib/common.sh": ("review_",),
 }
 
 # Library -> bash name -> "<module>:<def>", where the naming rule does not reach. The module must be one of the library's LIBS modules and must define the def; each target's docstring or comment names the bash function it ports, which is how every row below was checked (2026-10-01).
@@ -75,8 +73,6 @@ ALIASES: dict[str, dict[str, str]] = {
         "gh_retry": "ghx.py:gh",
         "gh_json": "ghx.py:json",
         "get_repo_root": "common.py:repo_root",
-        "pr_diff_loc": "review_budget.py:diff_loc",
-        "review_attempt_class_is_infra": "review_budget.py:class_is_infra",
         "log_info": "../log.py:info",
         "log_warn": "../log.py:warn",
         "log_error": "../log.py:error",

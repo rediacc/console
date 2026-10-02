@@ -149,8 +149,8 @@ PY_PLANT = re.compile(r"(?<![\w.])plant(?:_re)?\(")
 PY_HARNESS_IMPORT = re.compile(r"^%s*from rediacc_ci\.controls import [^#]*\bplant\b" % SPACE)
 PY_LOCAL_PLANT = re.compile(r"^%s*def plant(?:_re)?%s*\(" % (SPACE, SPACE))
 
-# The gate the CONTROL mutilates, relative to the repository root. The SUCCESSOR of the bash file this control used to name: `check-review-turn-capacity.sh` was retired in the same change, and its Python port carries the same seven plants through the harness.
-CONTROL_GATE = os.path.join(".ci", "rediacc_ci", "quality", "review_turn_capacity.py")
+# The gate the CONTROL mutilates, relative to the repository root. It named `review_turn_capacity.py` (the port of the retired bash control) until that gate was retired with the PR-level Claude review on 2026-10-02; `renet_tier_map.py` imports `plant` from the harness and calls it from its selftest, which is all the control needs.
+CONTROL_GATE = os.path.join(".ci", "rediacc_ci", "quality", "renet_tier_map.py")
 
 BANNER = "check-control-vacuity: every pattern-substitution control proves its plant landed"
 
@@ -417,7 +417,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # ----------------------------------------------------------------------- CONTROL: strip a real gate's proof and require this check to catch it. Without this, a green above could mean "every gate complies" OR "the detector stopped recognising the proof shape", and those look identical.
     #
-    # THE CONTROL MOVED TO PYTHON WITH THE CORPUS. It used to strip the `[[ "$MUTANT" == "$FN" ]]` guard out of `check-review-turn-capacity.sh`; that file is retired and its port is the subject now. Removing the harness import leaves every `plant()` call standing while making none of them resolve to the thing that refuses a no-op, which is exactly the defect being detected.
+    # THE CONTROL MOVED TO PYTHON WITH THE CORPUS. It used to strip the `[[ "$MUTANT" == "$FN" ]]` guard out of `check-review-turn-capacity.sh`; that file and its Python port are both retired, and `CONTROL_GATE` names a surviving harness user. Removing the harness import leaves every `plant()` call standing while making none of them resolve to the thing that refuses a no-op, which is exactly the defect being detected.
     # -----------------------------------------------------------------------
     control_src = root / CONTROL_GATE
     if control_src.is_file():

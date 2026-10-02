@@ -76,9 +76,6 @@
     ".ci/scripts/release/update-homebrew-tap.sh",
     ".ci/scripts/release/verify-artifact-attestation.sh",
     ".ci/scripts/release/verify-release-assets.sh",
-    ".ci/scripts/review/claude-review-gate.sh",
-    ".ci/scripts/review/epic-context.sh",
-    ".ci/scripts/review/review-status.sh",
     ".ci/scripts/setup/build-packages.sh",
     ".ci/scripts/setup/install-deps.sh",
     ".ci/scripts/test/assert-r2-sentinel.sh",
@@ -103,11 +100,6 @@
     ".ci/scripts/test/test-rdc-update.sh",
     ".ci/scripts/version/detect-bump-type.sh",
     ".ci/scripts/version/resolve-version.sh",
-    "scripts/dev/worktree.sh",
-    "scripts/drills/lib.sh",
-    "scripts/ops/deploy-bench.sh",
-    "scripts/ops/lib/cf-auth.sh",
-    "scripts/ops/r2-oneshot-scrub.sh",
-    "scripts/ops/scrub-sentinel.sh"
+    "scripts/dev/worktree.sh"
   ]
 }

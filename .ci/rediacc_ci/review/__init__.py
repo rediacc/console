@@ -1,6 +1,6 @@
-"""Ported review-support tooling (`.ci/scripts/review/`).
+"""Review-support tooling that is not a quality gate.
 
-Not quality gates: these are read-only tools a review action runs to hand a reviewer context it would otherwise spend turns rediscovering. See `epic_context`'s own module docstring for why that budget argument matters enough to justify a dedicated script rather than an agent call.
+`pr_labels` derives a PR's labels from the per-commit review records under `agent/reviews/<branch>/`, and `standing_orders_brief` prints the `/standing-orders` live-state brief. The PR-level Claude review tooling that used to live here was retired on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6).
 """
 
 __all__: list[str] = []

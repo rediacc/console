@@ -68,7 +68,6 @@ TS_CLIENT = "scripts/lib/blocker-validator.ts"
 # BLOCKER: `is_low_effort_reply` is a DIFFERENT rule with a deliberately different punctuation class (it strips only `.!?`, this one strips `.!?,;:`). The two lists were written separately, the difference is real, and unifying them would change one gate's verdicts to fix nothing. The bash validator's own header has cross-referenced this sibling since it was written.
 SIBLING_LOW_EFFORT_REPLY_RULE: dict[str, str] = {
     ".ci/rediacc_ci/quality/review_comments.py": "port of check-review-comments.sh",
-    ".ci/rediacc_ci/quality/review_report_replies.py": "port of check-review-report-replies.sh",
     ".ci/rediacc_ci/quality/submodule_branches.py": "port of check-submodule-branches.sh",
 }
 
@@ -193,8 +192,8 @@ def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
         "delete its row here; a stale expectation makes this test assert less "
         "than it says. Full inventory: %s" % (gone, shape)
     )
-    # 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries.
-    assert len(found) == 6, "inventory shape changed: %s" % shape
+    # 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries; 5 since review_report_replies.py was retired with the PR-level Claude review (2026-10-02).
+    assert len(found) == 5, "inventory shape changed: %s" % shape
 
 
 def test_the_inventory_detector_would_find_a_planted_table():

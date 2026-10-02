@@ -204,8 +204,8 @@ DESC_CAP = 100
 # "<label>|<script that creates it>". Absence is forgiven for these and ONLY these. Keep it this short. Each entry's BLOCKER reason is in the module docstring, where a reviewer reads it.
 CREATE_ON_DEMAND = (
     "nightly-red|.ci/scripts/ci/report-nightly-status.cjs",
-    "ci|.ci/scripts/review/claude-review-gate.sh",
-    "bump-none|.ci/scripts/review/claude-review-gate.sh",
+    "ci|.ci/rediacc_ci/review/pr_labels.py",
+    "bump-none|.ci/rediacc_ci/review/pr_labels.py",
 )
 
 # The declaration reader, as four sequential `sed`s. The ORDER is observable; see the port notes.

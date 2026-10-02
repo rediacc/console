@@ -148,7 +148,7 @@ def test_a_failed_job_with_no_failed_step_is_refused() -> None:
 
 
 def test_a_test_lane_skipped_by_the_quality_failure_is_refused() -> None:
-    """ci.yml skips `Tests + Infra / Linux Packages` when Quality fails; skipped is not passed."""
+    """`Tests + Infra / Linux Packages` must run on a scheduled nightly; skipped is not passed."""
     jobs = with_job(audit_failed(green_jobs()), job("Tests + Infra / Linux Packages", "skipped"))
     accepted, reason = nightly_failures_are_drift_only(jobs)
     assert not accepted

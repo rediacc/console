@@ -566,16 +566,14 @@ jobs:
   # Dependencies: [initialize, quality]
   # Must pass before Build jobs can start
   #
-  # Reviews themselves come from the Claude Review workflow
-  # (claude-review.yml), which fires only when CI is green AND the PR is
-  # non-draft. This gate enforces that the threads any review leaves are
-  # resolved and substantively replied to.
+  # Enforces that the threads any reviewer leaves on the PR are resolved and
+  # substantively replied to.
   # ============================================================================
   review-gate:
     name: Review Gate
-    # Reads review threads, review comments and report replies - but every one
-    # of those runs on the pr-read-preset App token, NOT github.token. This job
-    # looks like it needs pull-requests: read and does not.
+    # Reads review threads and review comments - but both of those run on the
+    # pr-read-preset App token, NOT github.token. This job looks like it needs
+    # pull-requests: read and does not.
     permissions:
       contents: read
     needs: [initialize, quality]
@@ -630,10 +628,9 @@ jobs:
         with:
           client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
-          # pr-read, not cd: the three scripts below only READ review state.
-          # check-resolved-threads.sh / check-review-comments.sh /
-          # check-review-report-replies.sh merely print the resolve/reply
-          # commands for a human to run; they never call them.
+          # pr-read, not cd: the two scripts below only READ review state.
+          # check_resolved_threads.py / check_review_comments.py merely print
+          # the resolve/reply commands for a human to run; they never call them.
           preset: pr-read
           repositories: console
       - name: Check resolved threads
@@ -648,22 +645,6 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-      # Inline comments and review threads are covered above; the review's
-      # SUMMARY REPORT is an issue comment (flat, no resolve mechanism) and
-      # would otherwise be ignorable. Requires a substantive reply that
-      # references the newest finished report by comment id.
-      - name: Check unreplied review reports
-        run: .ci/scripts/quality/check_review_report_replies.py
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          # Same class as ci-quality.yml's epic-block and trailer steps: the
-          # script already prefers PR_HEAD_REF for the per-epic lookup
-          # (check-review-report-replies.sh:85), but without it on this
-          # detached checkout it degrades to the flat, non-per-epic path
-          # (still enforced, just coarser than intended for a PR with epics).
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
   # ============================================================================
   # STRIPE SANDBOX: Deploy per-PR account server with sandbox Stripe keys
@@ -911,7 +892,12 @@ jobs:
     needs: [initialize, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.run_package_tests != 'false'
+    # On the nightly schedule this lane runs whatever Quality concluded: a
+    # drift-only Quality red (dependency freshness) must not skip it, because
+    # the nightly soak waiver (release/nightly_tested_edge.py) refuses a night
+    # whose Linux Packages lane was skipped. PR and push runs still wait on a
+    # green or skipped Quality.
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true' && (github.event_name == 'schedule' || needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.run_package_tests != 'false'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

@@ -27,7 +27,7 @@ from rediacc_ci.well_known import GH_REPO
 UNDER_TEST = paths.from_root(".ci", "scripts", "ci", "dispatch-release.sh")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
 LABELS_FILE = paths.from_root(".github", "labels.yml")
-REVIEW_APPLIER = paths.from_root(".ci", "scripts", "review", "claude-review-gate.sh")
+LABEL_APPLIER = paths.from_root(".ci", "rediacc_ci", "review", "pr_labels.py")
 
 SHA = "abc1234def5678901234567890123456789abcde"
 
@@ -279,12 +279,12 @@ def test_the_label_is_declared_and_managed(gate):
         gate.log_fail(
             "the script skips on '%s', which .github/labels.yml does not declare" % skip_label
         )
-    if skip_label not in REVIEW_APPLIER.read_text(encoding="utf-8"):
+    if skip_label not in LABEL_APPLIER.read_text(encoding="utf-8"):
         gate.log_fail(
-            "nothing in the review applier can apply '%s', so the skip could never fire"
+            "nothing in the PR label applier can apply '%s', so the skip could never fire"
             % skip_label
         )
-    gate.log_pass("the skip label is declared in labels.yml and appliable by the review")
+    gate.log_pass("the skip label is declared in labels.yml and appliable by the PR label applier")
 
 
 # --- modes -----------------------------------------------------------------

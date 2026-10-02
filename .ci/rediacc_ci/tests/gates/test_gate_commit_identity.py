@@ -3,7 +3,7 @@ r"""Port of `.ci/scripts/test/gates/test-commit-identity.sh`, retired in W7 P5.
 Drives the REAL `.ci/scripts/quality/check_commit_identity.py` against a fake `gh`. The bash gate script this test used to drive (`check-commit-identity.sh`) is retired in the same change: `.github/workflows/ci-quality.yml` already invokes the Python entry point directly, and the K=5 shadow ledger under `.ci/shadow/w7p2-commit-identity.observations.jsonl` licenses the equivalence
 this port checks once more, case for case, before the twin leaves.
 
-THAT GATE'S VERDICT IS AN API ANSWER, so the only way to test it without a live PR is to control what the API says. A fake `gh` on PATH serves fixture JSON and applies the caller's own `--jq` to it, which is the pattern `test_gate_review_status.py` already uses.
+THAT GATE'S VERDICT IS AN API ANSWER, so the only way to test it without a live PR is to control what the API says. A fake `gh` on PATH serves fixture JSON and applies the caller's own `--jq` to it.
 
 WHAT IT GUARDS. 30 of 42 commits on branch 0903-1 carried an email GitHub does not link to the operator's account -- same display name as the good ones, so `git log` looked clean, while GitHub rendered them with no avatar and no contribution credit. Fixing it cost a history rewrite across four repositories.
 
