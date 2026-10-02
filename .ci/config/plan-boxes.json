@@ -919,7 +919,7 @@
       ]
     },
     "agent/plans/PLAN-per-commit-review.md": {
-      "status": "held",
+      "status": "approved",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -977,7 +977,7 @@
       "open": 16,
       "done": 0,
       "open_sigs": [
-        "0dc239cd",
+        "1feb206a",
         "2dd2429a",
         "4b8321e0",
         "4d91dd68",
