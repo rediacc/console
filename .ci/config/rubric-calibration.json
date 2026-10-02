@@ -1,9 +1,9 @@
 {
   "rubrics": {
     "BRAVE_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24 after the wording drift catalogued in agent/plans/PLAN-calibrate-judge-rules-live.md. The first live run missed 'hold until CI green' and 'hold and report the numbers': with the publish example removed by 3f4198745 the model filed both under cost-on-others. The rubric now defines cost-on-others narrowly and says that waiting for an event the session itself observes is continuing, not a reason. Six of six brave fixtures matched on the rerun and in the final full run (.ci/cache/calibrate-final-20260924.log).",
-      "sha": "528be3d9f2dc9b6d"
+      "calibrated": "2026-10-02",
+      "note": "Re-calibrated 2026-10-02 after the M5 wording (4e22d6014: merging and pushing main have their own guarded path, operator ruling 2026-10-02) and the COMMITTING sentence rewritten to the commit-as-you-go standing order. The first full run matched 15/17; the two brave misses ('leave it on its branch', 'hold until CI green') matched 4/4 on two --only reruns, so they were sampling noise. The final full run over the current text matched 17/17 (.ci/cache/calibrate-final-20261002.log).",
+      "sha": "c477771292a2d767"
     },
     "REGGATE_PROMPT": {
       "calibrated": "2026-09-24",

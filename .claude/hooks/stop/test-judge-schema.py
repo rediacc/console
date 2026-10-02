@@ -1025,8 +1025,8 @@ for braver, want in [
     control("a DEFAULT that would commit still fires: %s" % want, kind, "fire")
     control("  and its suggestion is dropped, naming %s" % want, want in out["next_action"], True)
     control(
-        "  and the order says the work stays UNCOMMITTED",
-        "UNCOMMITTED" in out["next_action"],
+        "  and the order says a judge never orders it",
+        "never a judge's order" in out["next_action"],
         True,
     )
     control("  and the order still fits the 200-char cap", len(out["next_action"]) < 200, True)

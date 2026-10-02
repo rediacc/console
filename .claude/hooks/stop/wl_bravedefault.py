@@ -114,13 +114,14 @@ continuing: "hold", "keep carrying", "leave it", "wait for", "do not touch",
 FOUR ACTS ARE NEVER A BRAVE DEFAULT, because this gate is forbidden to order
 them: merging a PR, pushing to main (main moves only through /pr-merge's
 guarded path, never on a judge's order), cutting or publishing a release, and COMMITTING -- which includes
-creating a branch, pushing, or opening a PR. That fourth one is this
-project's first standing order: the deliverable is an uncommitted working
-tree unless the operator asked otherwise in that task, and approving a plan
-is not that ask. A deferral about one of these is a legitimate hold -- answer
-`irreversible` or `outward`, not `preference`. The braver form for such an
-item is the work that stands ready underneath it ("finish it and leave it in
-the tree, ready to commit"), never the act itself.
+creating a branch, pushing, or opening a PR. That fourth one follows the
+project's first standing order: a verified unit is committed by the session's
+own cadence, a push waits for its receipt, and a second branch or PR is the
+operator's own command, so none of them is a judge's order. A deferral about
+one of these is a legitimate hold -- answer `irreversible` or `outward`, not
+`preference`. The braver form for such an item is the work that stands ready
+underneath it ("finish it and verify it, so the cadence commits it"), never the
+act itself.
 
 BUT READ THE DEFAULT, NOT THE NOUNS IN IT. This rule applies only when the
 DEFAULT would PERFORM one of those four acts. A deferral that merely mentions a
@@ -235,8 +236,8 @@ V_ACTION_GENERIC = (
 )
 # SHORT, and the WHY leads: apply_order caps next_action at 200 characters, and the first draft of this string put the rewrite instruction first, where the cap ate the reason -- the same failure the sibling rule records above its own V_ACTION_DROPPED. Caught by the test, not by reading it.
 V_ACTION_RESERVED = (
-    "Suggestion DROPPED: it named `%s`, which needs the operator's ask (standing order 1). "
-    "Rewrite that DEFAULT as the action you would take alone, leaving the work UNCOMMITTED."
+    "Suggestion DROPPED: `%s` is never a judge's order (standing order 1). "
+    "Rewrite that DEFAULT as the work to do alone; the commit cadence does the rest."
 )
 V_ACTION_UNSAFE = (
     "Rewrite that deferral's DEFAULT as the action you would take alone. This rule's own "
