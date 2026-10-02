@@ -1,16 +1,12 @@
-## SESSION d778be9d 2026-10-02T08:06:56Z
+## SESSION d778be9d 2026-10-02T12:29:10Z
 
-# STATE d778be9d -- 2026-10-02T08:20Z
+# STATE d778be9d -- 2026-10-02T12:50Z
 ## Where
-- Branch 0930-1, PR #591. Pushed 7fa42eebd (renet dad571b). Local unpushed: c0d7489b6 (git -C push hooks), ae4c395da (PLAN-ci-verdict backfill ticks), INDEX fix commit. UNCOMMITTED mine: .claude/rediacc_hooks/hookio.py + test_wl_ci_verdict_surface.py (quoted -C args, review finding c0d7489b.1; tests pass) -> commit with agent/reviews/0930-1/c0d7489b...md and ae4c395d review when landed.
-- PLAN-ci-verdict: ALL 7 boxes done and backfilled (ledger rows). ALWAYS tick boxes via `worklist.py --plan-tick` (Edit-tool ticks fail P-A2).
-- CI on 7fa42eebd RED: P-A1 (PLAN-plan-per-pr-loop 16 open boxes; operator ruled strict) + P-A2 (fixed by ae4c395da).
-- Per-commit haiku review is LIVE (V1 writer a89914563a47b2b1a running, #17a2e92b; its files uncommitted: review_commit.py, wl_review.py, review guards, commit-review.json, PLAN-per-commit-review.md, lifecycle.py, CLAUDE.md?, ci.yml?, labels.yml?). Every code commit -> review file in agent/reviews/0930-1/ (~1 min); commit review files BEFORE receipt+push; review-only commits are not reviewed. Findings must be fixed (resolution workflow from V1).
-- Push recipe now: commit reviews -> clean-clone receipt (/home/developer/pushclone-0923) -> push renet, then `git -C /home/developer/console push` (auto-arms ci-trace after c0d7489b6 lands; else arm by hand).
-- Raw gh CI reads are refused: use ci-trace --why / --job <id> --errors / --runs. `--job --log` streams the whole log (skill says path only: check).
-- Rulesets applied: 24351140 (no bypass), 12344707 (PR rebase + CI Complete). Operator rulings recorded in worklist.
-- Foreign uncommitted: .ci/policy/.host-toolchain-exceptions, agent/plans/PLAN-ci-quick-cpu-scheduling.md, and possibly another session's edits (agent_session_archival, tree-shape, CLAUDE.md, ci.yml, labels.yml): verify owner before committing.
+- Branch 0930-1, PR #591. Receipt 304/304 at 4caaeb913 (clean clone). Pushing now: account 654d186, renet 7bf8dab, console; the bulk-proof guard needed a follow-up proof commit for 9708168ce, 045ce8437, 6566f46aa.
+- All writers landed today: per-commit review V1, bump labels at CI green, review teardown WP-1..3, M2/M3/M6 + L2 plan gate (4e22d6014), loop docs (d7fa7f51b), findings clusters (045ce8437, 53f46c46f), release snapshots and retention (9134c8d17, d99774c83), OBS mirror pin 2.98 + Q5 (9708168ce, renet 7bf8dab), judge rubric recalibrated 17/17 (87bb33443).
+- PLAN-plan-per-pr-loop open: R1 (closes when the nightly on main is green after merge), R3 (dispatch_release verified on the real merge), M7 (real merge). PLAN-per-commit-review open: the claude-mention [?] only. #591 needs `Operational-Reason:` in its body (carries 3 plans) to pass the plan gate.
+- Foreign uncommitted: .ci/policy/.host-toolchain-exceptions (+ the README.md row drift it causes), agent/plans/PLAN-ci-quick-cpu-scheduling.md.
 ## Next action
-1. Commit hookio quoted-arg fix + pending review records; receipt; push; watch CI.
-2. On V1 report: spot-check, ask operator for any settings.json timeout delta, commit, then V3 (retire PR review requirements) and M-guards (M2/M3/M6), L loop.
-3. Open: #ac65ada7, #c0c336e6, #657d7199, #4d46981a, #51ea3682, #2ec4c835 (stripe after 2026-10-03T00:00Z).
+1. After push: watch CI with ci-trace (arm_ci_watch arms it); P-A1 should now only see PLAN-plan-per-pr-loop's R1/R3/M7 boxes, so CI stays red on P-A1 by design until M7. Diagnose anything else with ci-trace --why.
+2. P4 OBS rehearsal dispatch (OBS blocked) after CI on this head; record in the round log.
+3. Stripe 23 (#2ec4c835) not before 2026-10-03T00:00Z; then M7 merge via /pr-merge with an Operational-Reason line.
