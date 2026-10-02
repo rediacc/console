@@ -87,7 +87,7 @@ def strip_block(body):
 def main():
     payload = sys.stdin.read()
     event = hookio.Event(payload)
-    cmd = event.raw("tool_input", "command")
+    cmd = hookio.normalize_git_push(event.raw("tool_input", "command"))
     # Word-boundary, or `echo git pushed` matches. It only stayed harmless before because no PR happened to exist for that branch, which is luck, not a guard.
     if not hookio.grep_q_line(hookio.rx(r"git +push([{S}]|$)"), cmd):
         return 0

@@ -287,6 +287,21 @@ def grep_q(pattern, text, ignore_case=False, fixed=False):
     return any(compiled.search(record) for record in records)
 
 
+# `git` global options that may sit between `git` and its subcommand: `-C <dir>`, `-c <k=v>`, `--git-dir[=]<d>`, `--work-tree[=]<d>`, `--no-pager`.
+_GIT_GLOBAL_OPTS = (
+    r"(?:\s+(?:-C\s+\S+|-c\s+\S+|--git-dir(?:=|\s+)\S+|--work-tree(?:=|\s+)\S+|--no-pager))*"
+)
+_GIT_PUSH_RE = re.compile(r"\bgit" + _GIT_GLOBAL_OPTS + r"\s+push\b")
+
+
+def normalize_git_push(cmd):
+    """`git -C <dir> push ...` (and the other global-option spellings) rewritten to `git push ...`.
+
+    The post-bash push hooks look for the literal `git push`, so `git -C /home/x/console push -q origin b` never matched: on 2026-10-02 a push spelled that way armed no CI watcher (arm_ci_watch.py) and cancelled no older run (cancel_old_ci.py). The `-C` directory does not need to survive: each hook judges the session's own checkout (arm_ci_watch then checks `origin/<branch> == HEAD`, so a push of another repo still arms nothing).
+    """
+    return _GIT_PUSH_RE.sub("git push", cmd or "")
+
+
 def grep_q_line(pattern, text, ignore_case=False, fixed=False):
     """`grep -qE <pattern> <<<"$text"` / `echo "$text" | grep -qE <pattern>`."""
     return grep_q(pattern, _here_string(text), ignore_case=ignore_case, fixed=fixed)

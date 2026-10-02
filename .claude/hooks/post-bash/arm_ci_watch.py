@@ -206,7 +206,9 @@ def _kill(pid):
 def main():
     payload = sys.stdin.read()
     ev = hookio.Event(payload)
-    if not hookio.grep_q_line("git push", ev.raw("tool_input", "command")):
+    if not hookio.grep_q_line(
+        "git push", hookio.normalize_git_push(ev.raw("tool_input", "command"))
+    ):
         return 0
     try:
         line = arm(ev.project_dir, ev.field("session_id"))

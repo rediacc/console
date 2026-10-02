@@ -13,6 +13,7 @@ import sys
 
 import pytest
 
+from rediacc_hooks import hookio
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
@@ -493,3 +494,19 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
     assert rc == 0, out
     assert "#%s" % spawned[0] in out, out[-800:]
     assert "worker:999999" in out, out[-800:]
+
+
+@pytest.mark.parametrize(
+    ("cmd", "is_push"),
+    [
+        ("git -C /home/developer/console push -q origin 0930-1", True),
+        ("git push origin HEAD", True),
+        ("git -c http.extraHeader=x --no-pager push", True),
+        ("git -C x status && git push", True),
+        ("git -C x pushd", False),
+        ("echo git status", False),
+    ],
+)
+def test_a_push_spelled_with_git_global_options_still_counts(cmd, is_push):
+    """2026-10-02: `git -C /home/developer/console push ...` armed no watcher and cancelled no older run, because the post-bash hooks looked for the literal `git push`; they normalize first now."""
+    assert hookio.grep_q_line("git push", hookio.normalize_git_push(cmd)) is is_push
