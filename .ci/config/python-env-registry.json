@@ -953,8 +953,6 @@
       "STAGING_GUARD_TARGET"
     ],
     ".ci/rediacc_ci/quality/submodule_branches.py": [
-      "GITHUB_HEAD_REF",
-      "GITHUB_REF_NAME",
       "PR_NUMBER"
     ],
     ".ci/rediacc_ci/quality/subscription_schema.py": [
