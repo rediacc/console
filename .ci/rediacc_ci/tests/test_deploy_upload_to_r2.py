@@ -581,10 +581,15 @@ def test_the_guard_refuses_loudly_when_the_twins_text_is_gone(tmp_path: pathlib.
 
 
 def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None:
-    """22 known versions plus a new one: three fall out of the 20-entry window, and each pruned prefix gets one `aws s3 rm --recursive`. The tracker written back is jq's bytes, asserted in full because a `json.dumps` port would upload a different file while printing the same lines."""
+    """22 known versions plus a new one: three fall out of the 20-entry window, and each pruned prefix gets one `aws s3 rm --recursive`. The tracker written back is jq's bytes, asserted in full because a `json.dumps` port would upload a different file while printing the same lines.
+
+    ONE DECLARED DELTA (#32c67de3): before pruning, the port reads `cli/stable/manifest.json` once to apply the keep rule (`test_delta_the_tracker_keep_rule_holds_without_a_snapshot`). With stable at the newest pruned version nothing is kept, so the twin and the port agree on every byte except that one read, which `r2_get` sends to the call log and never to a stream."""
     tracker = "[%s]" % ",".join('"9.9.%d"' % index for index in range(22))
     old, new, old_calls, new_calls = run_both(
-        tmp_path, argv=("--version", "1.2.3", "--channel", "stable"), FAKE_TRACKER=tracker
+        tmp_path,
+        argv=("--version", "1.2.3", "--channel", "stable"),
+        FAKE_TRACKER=tracker,
+        FAKE_STABLE_MANIFEST='{"version":"9.9.21"}',
     )
     assert old.returncode == 0
     kept = '[\n  "1.2.3",\n' + "".join('  "9.9.%d",\n' % index for index in range(18))
@@ -597,7 +602,13 @@ def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None
         + WK_RELEASES_BUCKET
         + "/cli/v9.9.19/\t--recursive\t--endpoint-url\t%s\n"
     ) % ENDPOINT in old_calls
-    _assert_agree(old, new, "prune", old_calls, new_calls)
+    stable_read = "aws\ts3\tcp\ts3://%s/cli/stable/manifest.json\t-\t--endpoint-url\t%s\n" % (
+        WK_RELEASES_BUCKET,
+        ENDPOINT,
+    )
+    assert stable_read not in old_calls, "the twin's control moved"
+    assert new_calls.count(stable_read) == 1, new_calls
+    _assert_agree(old, new, "prune", old_calls, new_calls.replace(stable_read, "", 1))
 
 
 # Newest first, as the tracker holds them: 1.0.21 .. 1.0.0. Uploading 1.0.22 pushes 1.0.2, 1.0.1 and 1.0.0 out of the 20-entry window.
@@ -606,7 +617,7 @@ EDGE_RELEASE = ("--version", "1.0.22", "--channel", "edge")
 
 
 def test_delta_the_edge_tracker_keeps_a_version_newer_than_stable(tmp_path: pathlib.Path) -> None:
-    """NOT IN THE TWIN (#62a2846b), and only with `SNAPSHOT_VERSION` (every edge release): a version out of the window but newer than stable may still be selected by `check_soak_period` (`in_walk`), so its `cli/v<V>/` and snapshot stay and it stays in the tracker, appended after the window. Only versions at or below stable are pruned."""
+    """NOT IN THE TWIN (#62a2846b). With `SNAPSHOT_VERSION` (every edge release; the rule holds without one too, see `test_delta_the_tracker_keep_rule_holds_without_a_snapshot`): a version out of the window but newer than stable may still be selected by `check_soak_period` (`in_walk`), so its `cli/v<V>/` and snapshot stay and it stays in the tracker, appended after the window. Only versions at or below stable are pruned."""
     root = fixture(tmp_path)
     new, calls = _run(
         root,
@@ -639,6 +650,31 @@ def test_delta_the_edge_tracker_prunes_nothing_when_stable_is_unknown(
     assert "aws\ts3\trm" not in calls
     assert '  "1.0.0"\n]\n>>>' in calls
     assert "the stable version is unknown" in new.stderr
+
+
+@pytest.mark.parametrize("channel", ["edge", "stable"])
+def test_delta_the_tracker_keep_rule_holds_without_a_snapshot(
+    tmp_path: pathlib.Path, channel: str
+) -> None:
+    """NOT IN THE TWIN (#32c67de3). The keep rule is the tracker's, not the snapshot's: `cli/versions.json` is one file for both release channels, and pruning a version newer than stable deletes the `cli/v<V>/` that `check_soak_period` may still select, whether or not this run writes a snapshot. So a release-channel run with no `SNAPSHOT_VERSION` keeps those versions too, and removes no snapshot. The twin is the control: it prunes all three."""
+    root = fixture(tmp_path)
+    argv = ("--version", "1.0.22", "--channel", channel)
+    _old, old_calls = _run(
+        root, "old", argv, FAKE_TRACKER=EDGE_TRACKER, FAKE_STABLE_MANIFEST='{"version":"1.0.0"}'
+    )
+    assert old_calls.count("aws\ts3\trm") == 3, "the twin's control moved"
+    new, calls = _run(
+        root, "new", argv, FAKE_TRACKER=EDGE_TRACKER, FAKE_STABLE_MANIFEST='{"version":"1.0.0"}'
+    )
+    assert new.returncode == 0, new.stderr
+    assert calls.count("aws\ts3\trm") == 1, calls
+    assert "aws\ts3\trm\ts3://" + WK_RELEASES_BUCKET + "/cli/v1.0.0/\t--recursive" in calls
+    assert "/snapshots/" not in calls
+    window = "".join('  "1.0.%d",\n' % index for index in range(22, 3, -1))
+    assert "STDIN<<<[\n" + window + '  "1.0.3",\n  "1.0.2",\n  "1.0.1"\n]\n>>>' in calls
+    assert (
+        "keeping cli/v1.0.2/ outside the 20-version window: newer than stable v1.0.0" in new.stderr
+    )
 
 
 def test_a_version_already_in_the_tracker_is_not_added_twice(tmp_path: pathlib.Path) -> None:

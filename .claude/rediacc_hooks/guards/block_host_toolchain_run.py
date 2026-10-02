@@ -229,6 +229,23 @@ EDGE_CASES = [
     ("a python -m port", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.0.5"),
     ("a python -m port by script path", "python3 .ci/rediacc_ci/deploy/upload_to_r2.py"),
     ("a port named to pytest", "python3 -m pytest -k rediacc_ci.ops.scrub_sentinel"),
+    # Parse-only shells and text bash never runs (2026-10-02): judged by run, not by text.
+    ("a parse-only bash -n", "bash -n .ci/scripts/deploy/promote-r2-to-stable.sh"),
+    ("a parse-only -o noexec", "sh -o noexec .ci/scripts/deploy/upload-to-r2.sh"),
+    ("a noexec shell's -c payload", "bash -n -c 'aws s3 ls'"),
+    ("a tool named in a comment", "echo hi # then; aws s3 ls"),
+    (
+        "a heredoc comment, then a syntax check",
+        (
+            "python3 - <<'EOF'\n# aws matches the whole key\nEOF\n"
+            "bash -n .ci/scripts/deploy/promote-r2-to-stable.sh"
+        ),
+    ),
+    (
+        "a script run after a parse-only one",
+        "bash -n x.sh && bash .ci/scripts/deploy/upload-to-r2.sh",
+    ),
+    ("a tool in a -c payload", "bash -c 'aws s3 ls'"),
 ]
 
 
@@ -261,41 +278,93 @@ def _split_glob(text):
     return out
 
 
-def _npx_pattern(tool):
-    return (
-        hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*npx([{S}]+(-y|--yes))?[{S}]+")
-        + tool
-        + hookio.rx(r"([{S}]|$)")
-    )
+def _runs(cmd):
+    """Every command bash would run in `cmd`, minus the ones a parse-only shell only reads.
+
+    `shellscan._analyse(cmd).runs`, the walk `block_raw_ci_read` and `block_long_sleep` judge by: it descends `$(...)`, `sh -c` payloads, `eval` and a heredoc fed to a shell, while a comment, a quoted argument, a `for` word list and a heredoc body read as data stay data. Measured 2026-10-02 against the text scan this replaced: `echo hi # then; aws s3 ls` and a `for f in a \\` list naming
+    `upload-to-r2.sh` on a continuation line were both refused, because the scan kept comments and split on newlines.
+
+    A PARSE-ONLY SHELL RUNS NOTHING. `bash -n` (also `sh`/`zsh`/`dash`/`ksh`, a `-n` inside a bundle such as `-nv`, or `-o noexec`) reads its script and executes none of it. On 2026-10-02 `bash -n .ci/scripts/deploy/promote-r2-to-stable.sh`, a syntax check after an edit, was refused as an aws run twice, once at the tail of a python heredoc whose comment the writer then blamed. The walk
+    still lists the commands of a noexec shell's `-c` payload after it, so those are dropped here too. A noexec shell fed a heredoc keeps its body's commands: the walk does not tie a body to its reader, and judging them is the fail-closed direction.
+    """
+    out = []
+    skip = 0
+    for run_ in shellscan._analyse(cmd).runs:
+        if skip:
+            skip -= 1
+            continue
+        if _noexec_shell(run_):
+            mode, payload = shellscan._shell_payload(list(run_.argv))
+            if mode == "c" and payload:
+                skip = len(shellscan._analyse(payload).runs)
+            continue
+        out.append(run_)
+    return out
 
 
-def _bare_pattern(tool):
-    return hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*") + tool + hookio.rx(r"([{S}]|$)")
+_SHELLS = ("bash", "sh", "zsh", "dash", "ksh")
 
 
-def _is_invoked(key, scan):
+def _noexec_shell(run_):
+    """Is this a shell started with `-n` (noexec), so it parses its input and runs none of it?"""
+    if run_.name.rsplit("/", 1)[-1] not in _SHELLS:
+        return False
+    args = list(run_.argv)
+    k = 0
+    while k < len(args):
+        arg = args[k]
+        if arg in ("--", "-") or not arg.startswith(("-", "+")) or len(arg) < 2:
+            return False
+        if arg.startswith("--"):
+            k += 2 if arg in ("--rcfile", "--init-file") else 1
+            continue
+        letters = arg[1:]
+        if arg[0] == "-" and "n" in letters:
+            return True
+        if "o" in letters or "O" in letters:
+            if arg[0] == "-" and k + 1 < len(args) and args[k + 1] == "noexec":
+                return True
+            k += 1
+        k += 1
+    return False
+
+
+def _npx_runs(tool, runs):
+    """Does a judged run start `npx [-y|--yes] <tool>`?"""
+    for run_ in runs:
+        if run_.name != "npx":
+            continue
+        args = list(run_.argv)
+        if args[:1] in (["-y"], ["--yes"]):
+            args = args[1:]
+        if args[:1] == [tool]:
+            return True
+    return False
+
+
+def _bare_runs(tool, runs):
+    """Does a judged run open with the bare tool name?"""
+    return any(run_.name == tool for run_ in runs)
+
+
+def _is_invoked(key, cmd, runs=None):
     """Is `key` being RUN here, or merely NAMED?
 
     A plain `grep_q(key, scan, fixed=True)` was the rule, and it blocked reading the
     script as well as running it. Measured 2026-09-09: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` was refused with a message about credentials that a grep does not need, and `sed -n 1,5p <same path>` likewise. Only `echo '<path>'` escaped, and for the wrong reason -- `scan_target` strips QUOTED spans, so the guard was anchored on quoting rather than on
     invocation.
 
-    The rule is command position: the token holding the key opens the command, follows a separator, or is the argument of an interpreter (`bash`, `sh`, `zsh`, `source`, `.`). Anything else -- a path handed to grep, sed, cat, head, wc, an editor -- is a mention. `npm run <script>` and `./path/to/it` both still read as invocations.
+    The rule is command position: the command's own name holds the key, or the command is an interpreter (`bash`, `sh`, `zsh`, `source`, `.`, `npx`), `npm run`, or a script path (`./x`, `/x`, `*.sh`) and one of its arguments holds it. Anything else -- a path handed to grep, sed, cat, head, wc, an editor -- is a mention. A shell's `-c` string is not a script path: the commands inside it are judged as runs of their own.
 
     DELIBERATELY NOT A READER BLOCKLIST. Enumerating grep/sed/cat/head/less/awk means the next reader command is a fresh false positive, and false positives are what teach a session to route around a guard: this one cost a writer a workaround before it cost me a command.
+
+    BY RUN, NOT BY TEXT. The first cut split the flat scan on separators and newlines and judged each piece's first word, which is how a comment, a `for` word list on a continuation line and a parse-only `bash -n` each read as invocations. `_runs` lists only what bash would execute.
     """
-    # BY (SUB)COMMAND, NOT BY REGEX BOUNDARY. The first cut was one pattern whose `sh` alternative had no left boundary, so it matched as the SUFFIX of any `.sh` path: `grep x a.sh sync-media-to-r2.sh` read `a.sh`'s tail as an interpreter and refused a grep. Bounding the token broke `./run.sh --publish-www`, which that same suffix match was the only thing catching
-    # (agent/plans/PLAN-fix-is-invoked-sh-alternation.md). Both cases are decided by WHICH WORD OPENS THE COMMAND, which a regex over the flat string cannot see, so the scan is split into (sub)commands and each is judged on its first word.
-    for segment in _COMMAND_SPLIT.split(scan):
-        words = segment.split()
-        while words and (_ASSIGNMENT.match(words[0]) or words[0] in _PREFIX_WORDS):
-            words = words[1:]
-        if not words:
-            continue
-        if key in words[0]:
+    for run_ in _runs(cmd) if runs is None else runs:
+        opener = run_.name
+        args = list(run_.argv)
+        if key in opener:
             return True
-        opener = words[0]
-        args = words[1:]
         if _PYTHON.match(opener.rsplit("/", 1)[-1]):
             # A PYTHON INTERPRETER RUNS ONE TARGET: the module after `-m`, or the first non-option word (a script path). Every later word is that target's argument, so `python3 -m pytest -k <key>` is a mention.
             target = _python_target(args) or ""
@@ -303,6 +372,8 @@ def _is_invoked(key, scan):
             dotted = target[: -len(".py")].replace("/", ".") if target.endswith(".py") else ""
             if target and (key in target or key in dotted):
                 return True
+            continue
+        if opener.rsplit("/", 1)[-1] in _SHELLS and shellscan._shell_payload(args)[0] == "c":
             continue
         if opener == "npm" and args[:1] == ["run"]:
             args = args[1:]
@@ -315,11 +386,7 @@ def _is_invoked(key, scan):
     return False
 
 
-# Where a (sub)command starts: a separator, a subshell or command substitution opener, a backtick, or a new line.
-_COMMAND_SPLIT = re.compile(r"[;&|()`\n]|\$\(")
-# `FOO=1 ./run.sh` and `sudo ./run.sh` still open with the script.
-_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
-_PREFIX_WORDS = ("sudo", "env", "exec", "command", "time", "nohup")
+# The commands whose ARGUMENTS can name what they run.
 _INTERPRETERS = ("bash", "sh", "zsh", "source", ".", "npx")
 # `python`, `python3`, `python3.14`, by basename.
 _PYTHON = re.compile(r"^python[0-9.]*$")
@@ -430,8 +497,11 @@ def run(ev):
     if hookio.grep_q(hookio.rx(r"devbox|docker[{S}]+exec"), cmd):
         return hookio.ALLOW
 
+    # Judged on the commands bash would run, never on the text: see `_runs`.
+    runs = _runs(cmd)
+
     for tool in NPX_TOOLS:
-        if not hookio.grep_q(_npx_pattern(tool), scan):
+        if not _npx_runs(tool, runs):
             continue
         ev.warn_raw(
             "BLOCKED: npx cannot run '%s'. npx resolves its argument as an NPM PACKAGE NAME, and\n"
@@ -452,7 +522,7 @@ def run(ev):
     # Only where the account submodule is checked out: a checkout without it has no store access either, and the publish verbs have nothing to upload with.
     if pathlib.Path("%s/private/account/package.json" % repo_root).is_file():
         for key, var in NEEDS_ENV:
-            if not _is_invoked(key, scan):
+            if not _is_invoked(key, cmd, runs):
                 continue
             # Already running under the profile, or setting the credential inline: fine.
             if hookio.grep_q("--profile publish-media", cmd, fixed=True):
@@ -489,7 +559,8 @@ def run(ev):
     need = ""
     bare = False
     for key, tool in NEEDS:
-        if not hookio.grep_q(key, scan, fixed=True):
+        # `_is_invoked`, like the two other tables: `grep -n check:ci-renet package.json` names the gate and runs nothing.
+        if not _is_invoked(key, cmd, runs):
             continue
         # THE HOST IS ASKED, NOT ASSUMED. A developer who has installed ruff should not be pushed into a container for it; the point is to stop a MISSING tool being recorded as a property of the repo. `command -v` resolves a name on PATH and says NOTHING about whether it can be executed: on bash 5.3.9 it returns 0 for a mode-0600 file. A half-installed ruff/go/shfmt would therefore
         # read as "the host is fine" and this guard would decline to route the gate, which is the exact outcome it exists to prevent wearing the face of a guard that simply did not fire. `test -x` asks the real question.
@@ -502,7 +573,7 @@ def run(ev):
 
     if hit == "":
         for tool in BARE_TOOLS:
-            if not hookio.grep_q(_bare_pattern(tool), scan):
+            if not _bare_runs(tool, runs):
                 continue
             if _have_executable(tool):
                 continue
@@ -513,7 +584,7 @@ def run(ev):
     if hit == "":
         # `bare = True` HERE TOO, and it is not a detail. The label branch below turns a non-bare hit into "npm run <hit>", and `npm run assert-edge-tag-exists.sh` is not a command that exists -- the same reading error that made the bare-tool arm need its own label in the first place. What the reader needs is "this command needs 'aws'", followed by the command they typed.
         for key, tool in NEEDS_SCRIPT:
-            if not _is_invoked(key, scan):
+            if not _is_invoked(key, cmd, runs):
                 continue
             if _have_executable(tool):
                 continue
