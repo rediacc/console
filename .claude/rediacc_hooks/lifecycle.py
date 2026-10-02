@@ -135,6 +135,8 @@ PATTERNS = {
         "members": _members(
             "python3 " + _P % "hooks/post-bash/cancel_old_ci.py",
             "python3 " + _P % "hooks/post-bash/refresh_pr_body.py",
+            # PLAN-ci-verdict box G: a push of the live branch arms one detached ci-trace watcher per head, so the verdict reaches the session with the Stop hook disabled. Spawns and returns; never exits 2.
+            {"command": "python3 " + _P % "hooks/post-bash/arm_ci_watch.py", "timeout": 30},
             "python3 " + _P % "hooks/trapguard/dispatch.py" + " --posttool",
         ),
     },

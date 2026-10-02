@@ -510,6 +510,35 @@ function evaluateBudget({
 }
 
 /**
+ * Where a budget-violating job is stuck: ` -- in step '<name>' for <m>m`, or ''.
+ *
+ * WHY THE STEP AND NOT THE LAST LOG LINE. agent/plans/PLAN-ci-verdict.md asked
+ * for the job's last log line and its age, but the job-logs endpoint answers
+ * 404 BlobNotFound until a job completes (measured 2026-10-02 on the live job
+ * 110725009608 of run 36953549081), and an enforced budget violation is by
+ * definition a LIVE job. The step list arrives with the job list already
+ * fetched, costs no API call, and names the phase that went silent: run
+ * 36953549081's `E2E Workers (fedora-43, 1/8)` sat in renet's essentials setup
+ * for 916 s with nothing logged.
+ *
+ * Appended AFTER the T4.2 text, so `CI BUDGET VIOLATION: '<job>' ran <m>m
+ * (budget <b>m)` still parses with the same regex. Pure.
+ */
+function budgetStepNote(job, nowMs) {
+  const steps = Array.isArray(job?.steps) ? job.steps : [];
+  const step =
+    steps.find((s) => s.status === 'in_progress') || [...steps].reverse().find((s) => s.started_at);
+  if (!step?.started_at) return '';
+  const startMs = new Date(step.started_at).getTime();
+  const endMs =
+    step.status === 'completed' && step.completed_at
+      ? new Date(step.completed_at).getTime()
+      : nowMs;
+  if (Number.isNaN(startMs) || Number.isNaN(endMs)) return '';
+  return ` -- in step '${step.name}' for ${((endMs - startMs) / 60000).toFixed(1)}m`;
+}
+
+/**
  * Which no-retry jobs are still in flight?
  *
  * WHY THIS EXISTS. A failed `Quality / *` job used to force-cancel the run the
@@ -783,8 +812,9 @@ const monitor = async ({ github, context, core }) => {
   }
 
   // Record and surface newly-seen violations from one evaluateBudget() call. An ENFORCED violation (a live job over its budget under jobMode 'enforce', or the run under runMode 'enforce') is recorded with the T4.2 text and returned, for the caller to hand to forceCancel; everything else is a report-only warning. Returns the enforced messages, empty when nothing is to be cancelled.
-  function reportBudget(budget) {
+  function reportBudget(budget, jobs = []) {
     const enforcedNames = new Set(budget.enforcedJobViolations.map((v) => v.name));
+    const jobByName = new Map(jobs.map((j) => [j.name, j]));
     const enforcedMessages = [];
     const logLengthBefore = budgetViolationLog.length;
     for (const v of budget.jobViolations) {
@@ -792,7 +822,8 @@ const monitor = async ({ github, context, core }) => {
       warnedBudgetJobs.add(v.name);
       const enforced = enforcedNames.has(v.name);
       const text = enforced
-        ? budgetEnforcedText(v.name, v.minutes, v.budgetMin)
+        ? budgetEnforcedText(v.name, v.minutes, v.budgetMin) +
+          budgetStepNote(jobByName.get(v.name), Date.now())
         : budgetReportText(v.name, v.minutes, v.budgetMin);
       if (enforced) {
         core.error(text);
@@ -1489,7 +1520,8 @@ const monitor = async ({ github, context, core }) => {
           excludePatterns,
           jobMode: budgetJobMode,
           runMode: budgetRunMode,
-        })
+        }),
+        allJobs
       );
       if (budgetMessages.length > 0 && !pendingRerun) {
         const budgetMsg = budgetMessages.join('; ');
@@ -1882,3 +1914,4 @@ module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
 module.exports.evaluateSupersession = evaluateSupersession;
 module.exports.evaluatePendingRerun = evaluatePendingRerun;
 module.exports.evaluateBudget = evaluateBudget;
+module.exports.budgetStepNote = budgetStepNote;

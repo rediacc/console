@@ -89,6 +89,9 @@
       "GITHUB_ENV",
       "MAX_ATTEMPTS"
     ],
+    ".ci/rediacc_ci/ci/ci_diagnose.py": [
+      "XDG_CACHE_HOME"
+    ],
     ".ci/rediacc_ci/ci/derive_image_tag.py": [
       "GITHUB_ENV",
       "GITHUB_OUTPUT",
@@ -1871,6 +1874,7 @@
       "WORKLIST_PROFILE",
       "WORKLIST_PROGRAM_SURFACE",
       "WORKLIST_PROJECTS_DIR",
+      "WORKLIST_PUBLISH_REF",
       "WORKLIST_REPORT_REFRESH_MIN",
       "WORKLIST_SOLO_MIN",
       "WORKLIST_STUCK_ROUNDS",

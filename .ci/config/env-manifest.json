@@ -465,6 +465,7 @@
       "WR_HEAD_BRANCH",
       "WR_HEAD_SHA",
       "WR_HTML_URL",
+      "WR_RUN_ATTEMPT",
       "WR_RUN_ID"
     ],
     "gate-seam": [

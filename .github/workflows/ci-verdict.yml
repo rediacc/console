@@ -1,0 +1,92 @@
+name: CI Verdict
+
+run-name: "CI verdict: run ${{ github.event.workflow_run.id || inputs.run_id }}"
+
+# Posts the neutral `CI Verdict` check-run on a Console CI run's head SHA: one
+# title line naming the cause, the rendered diagnosis as the summary, and the
+# `ci-verdict/v1` JSON as the text (agent/plans/PLAN-ci-verdict.md, box D).
+#
+# WHY. A red or cancelled Console CI run used to cost every agent session that
+# looked at it dozens of raw API reads to learn the same thing: which job, which
+# step, infra or code, and whether the watchdog cancelled it. Diagnosed once
+# here, the answer sits on the head SHA, where the tracer and the Stop hook read
+# it for one call instead of re-deriving it per session.
+#
+# ACYCLIC BY CONSTRUCTION, as review-status.yml is. No job in ci.yml may
+# `needs:` this workflow or wait on the `CI Verdict` context, and every reader
+# treats it as non-blocking (wl_ci.CI_NONBLOCKING_CONTEXTS, the watchdog and
+# nightly exclude lists, budget_report). The conclusion is always `neutral`.
+#
+# DEFAULT-BRANCH CODE ONLY. `workflow_run` and `workflow_dispatch` both run the
+# default-branch copy of this file, and the checkout below is pinned to the
+# default branch, so a PR can never edit the logic that writes onto its head
+# while this job holds checks:write. The wiring is therefore first exercised
+# after merge: `workflow_dispatch` with run_id=36953549081 is the proof run.
+on:
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Console CI run id to (re)publish the verdict for'
+        required: true
+        type: string
+
+# Every job declares its own permissions; a job added without a block gets
+# nothing and fails loudly.
+permissions: {}
+
+# One publisher per run id. A newer attempt's completion supersedes an older
+# one's in-flight publish, and every publish recomputes from live API state, so
+# cancelling loses nothing.
+concurrency:
+  group: ci-verdict-${{ github.event.workflow_run.id || inputs.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # NOT named "CI Verdict": this job's own check-run must never share a name
+  # with the check-run it posts.
+  publish:
+    name: Publish CI Verdict
+    runs-on: ubuntu-slim
+    timeout-minutes: 10 # CHECK 3: slim jobs must declare <= 14
+    permissions:
+      contents: read
+      actions: read # the run, its jobs, their logs, and the watchdog runs
+      checks: write # POST/PATCH the `CI Verdict` check-run on the head SHA
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          persist-credentials: false
+          # .ci/rediacc_ci for `python3 -m rediacc_ci.*`, .ci/scripts for the
+          # shared CI libraries, .ci/config for lane-durations.json (the p90
+          # the diagnosis compares a slow step against), .github/actions for
+          # the profiler below.
+          sparse-checkout: |
+            .ci/scripts
+            .ci/rediacc_ci
+            .ci/config
+            .github/actions
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      - name: Publish CI Verdict check-run
+        # gh reads GH_TOKEN itself; the publisher never touches the token.
+        # Empty attempt / head SHA (the workflow_dispatch path) are read from
+        # the run by the publisher.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          WR_RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+          WR_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.publish_ci_verdict
+          --repo "$GITHUB_REPOSITORY"
+          --run-id "$WR_RUN_ID"
+          --attempt "$WR_RUN_ATTEMPT"
+          --head-sha "$WR_HEAD_SHA"

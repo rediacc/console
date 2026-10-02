@@ -141,7 +141,8 @@ const budgetSectionFor = ({ context, usable, runId }) => {
       jobBudgetMin: Number(process.env.NIGHTLY_JOB_BUDGET_MIN || '15'),
       runBudgetMin: Number(process.env.NIGHTLY_RUN_BUDGET_MIN || '20'),
       excludePatterns: (
-        process.env.NIGHTLY_BUDGET_EXCLUDE_PATTERNS || 'Watchdog,CI Complete,Review Complete'
+        process.env.NIGHTLY_BUDGET_EXCLUDE_PATTERNS ||
+        'Watchdog,CI Complete,Review Complete,CI Verdict'
       )
         .split(',')
         .map((s) => s.trim()),

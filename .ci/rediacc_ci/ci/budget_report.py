@@ -466,7 +466,8 @@ def _alias_set(name: str) -> set[str]:
 
 
 # `Review Complete` is not a job of `ci.yml` at all -- it is posted by the SEPARATE `review-status.yml` workflow (watchdog-monitor.yml:140 documents the same fact for the watchdog's own exclusion) -- yet `actions/runs/{id}/jobs` returns it alongside ci.yml's own jobs, timestamped by whenever the human review actually finished, hours after the pipeline itself. MEASURED live: run 35128695736 reports `Review Complete` completing at 2026-09-17T07:11:28Z against a run created 2026-09-16T17:31:16Z, 13+ hours later, which critical_path's plain "latest completed_at wins" sink rule mistook for the run's true finish line before this exclusion existed. `CI Complete` is NOT excluded here: unlike `Review Complete` it is a genuine ci.yml job and the plan's own section 1b ends its sample critical path there.
-CRITICAL_PATH_EXCLUDE = ("Review Complete",)
+# `CI Verdict` (posted by `ci-verdict.yml` once the run completes) and its `Publish CI Verdict` job are the same kind of after-the-fact observer.
+CRITICAL_PATH_EXCLUDE = ("Review Complete", "CI Verdict", "Publish CI Verdict")
 
 
 def critical_path(graph: dict[str, set[str]], jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -1,0 +1,15 @@
+{
+ "conclusion": "cancelled",
+ "created_at": "2026-10-02T01:59:55Z",
+ "display_title": "fixture: PR #591 head a7f30558",
+ "event": "pull_request",
+ "head_branch": "0930-1",
+ "head_sha": "a7f305585530b61da88faf297b9d5805e5eb2b98",
+ "id": 36953549081,
+ "name": "Console CI",
+ "path": ".github/workflows/ci.yml",
+ "run_attempt": 1,
+ "run_started_at": "2026-10-02T01:59:55Z",
+ "status": "completed",
+ "updated_at": "2026-10-02T02:40:51Z"
+}

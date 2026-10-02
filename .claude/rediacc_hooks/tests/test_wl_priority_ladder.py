@@ -214,7 +214,13 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     ci_setup(wl)
     (wl.base / "projects" / "reports").mkdir(parents=True, exist_ok=True)
     prf_log(wl, 3)
-    ci_status_rollup(wl, "SUCCESS", "[%s]" % ci_job("Quality / Static", "SUCCESS"))
+    # A green head includes the terminal gate: since PLAN-ci-verdict box A, `ci_gate` reads green only when `CI Complete` reported SUCCESS.
+    ci_status_rollup(
+        wl,
+        "SUCCESS",
+        "[%s,%s]"
+        % (ci_job("Quality / Static", "SUCCESS"), ci_job("CI Complete", "SUCCESS", 90784763856)),
+    )
     got = prf_run(wl)
     unfinished = "233: the finish line did not hold a green-but-unfinished wave: %s" % got.out[:500]
     assert "THE WAVE IS NOT FINISHED" in got.out, unfinished

@@ -1,5 +1,6 @@
 [
   ".claude/hooks/chain-head.sh",
+  ".claude/hooks/post-bash/arm_ci_watch.py",
   ".claude/hooks/post-bash/cancel_old_ci.py",
   ".claude/hooks/post-bash/refresh_pr_body.py",
   ".claude/hooks/trapguard/dispatch.py",
