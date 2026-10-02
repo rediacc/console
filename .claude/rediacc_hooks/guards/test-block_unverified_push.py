@@ -283,6 +283,17 @@ put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 carry(keyed(K1), keyed(K1, gate="check:lint"))
 cases.append((2, run(PUSH), "a STALE carried entry (its gate now green) refuses"))
 
+# The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of afe0503db unremarked.
+put(exitCode=0)
+carry(keyed(K1))
+cases.append(
+    (2, run(PUSH), "a GREEN receipt with a carried entry refuses: the excuse outlived its failure")
+)
+uncarry()
+_rekey()
+put(exitCode=0)
+cases.append((0, run(PUSH), "CONTROL: a GREEN receipt with nothing carried is honoured"))
+
 # A bare excuse is not a justification -- the bar .dead-bash-allowlist applies.
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 carry(keyed(K1, reason="known issue"))
