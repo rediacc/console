@@ -110,7 +110,7 @@ jobs:
         run: npm ci && npm run install:natives
 
       - name: Install account dependencies
-        run: npm install && cd ../.. && npm run install:natives
+        run: npm install && npm run install:natives && cd ../.. && npm run install:natives
         working-directory: private/account
 
       - name: Build shared packages
@@ -244,7 +244,7 @@ jobs:
         run: npm ci && npm run install:natives
 
       - name: Install account dependencies
-        run: npm install && cd ../.. && npm run install:natives
+        run: npm install && npm run install:natives && cd ../.. && npm run install:natives
         working-directory: private/account
 
       - name: Build shared packages

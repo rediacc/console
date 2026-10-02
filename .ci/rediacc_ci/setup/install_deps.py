@@ -39,7 +39,12 @@ Reported to the driver rather than repaired here: fixing a twin is a cutover-box
      esbuild)". `run_account_ci` is `(cd "$1" && npm ci)` with no flag at all,
      so on Windows -- the exact platform the flag was added for -- the three
      account trees still run their lifecycle scripts. `NPM_ARGS` is a global in
-     scope at that point; it is simply not used. Reproduced exactly: this port
+     scope at that point; it is simply not used. SINCE 2026-10-02 the call is
+     hardened anyway: each account tree carries its own `.npmrc` with
+     `ignore-scripts=true` (npm reads the project config from the nearest
+     package.json, so the root file never reached them), enforced by
+     `check:ci-npmrc`. The argv below stays flagless on purpose; the esbuild and
+     workerd binaries are finished by `npm run install:natives` in private/account. Reproduced exactly: this port
      passes `["npm", "ci"]` for the account trees under every combination of
      flags and platform, and the differential asserts the resulting call log.
 

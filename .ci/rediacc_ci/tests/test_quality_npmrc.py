@@ -154,6 +154,77 @@ def test_main_refuses_a_missing_or_weakened_window(
     assert npmrc.main([]) == 1
 
 
+def _seed_submodule_project(root: pathlib.Path, rel: str, npmrc_body: str | None) -> None:
+    """A fixture submodule `private/sub` (declared in `.gitmodules`) holding one npm project at `rel`."""
+    (root / ".gitmodules").write_text(
+        '[submodule "sub"]\n\tpath = private/sub\n\turl = x\n', encoding="utf-8"
+    )
+    project = root / "private" / "sub" / rel
+    project.mkdir(parents=True, exist_ok=True)
+    (project / "package-lock.json").write_text("{}\n", encoding="utf-8")
+    (project / "package.json").write_text("{}\n", encoding="utf-8")
+    if npmrc_body is not None:
+        (project / ".npmrc").write_text(npmrc_body, encoding="utf-8")
+
+
+def _hardened_root(root: pathlib.Path) -> None:
+    (root / ".npmrc").write_text("ignore-scripts=true\nallow-git=none\n", encoding="utf-8")
+    _seed_release_age(root)
+
+
+@pytest.mark.parametrize("rel", ["", "web", "e2e", "deep/nested"])
+def test_main_refuses_a_submodule_project_without_npmrc(
+    tmp_path: pathlib.Path, monkeypatch, rel: str
+) -> None:
+    """RED FIRST: the defect this check exists for. `private/account` carried three lockfiles and no `.npmrc`, so every install there ran lifecycle scripts while the gate stayed green on the root file alone."""
+    _hardened_root(tmp_path)
+    _seed_submodule_project(tmp_path, rel, None)
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+@pytest.mark.parametrize(
+    "body", ["allow-git=none\n", "ignore-scripts=false\nallow-git=none\n", "registry=x\n"]
+)
+def test_main_refuses_a_weak_submodule_project_npmrc(
+    tmp_path: pathlib.Path, monkeypatch, body: str
+) -> None:
+    _hardened_root(tmp_path)
+    _seed_submodule_project(tmp_path, "web", body)
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+def test_main_passes_a_hardened_submodule_project(tmp_path: pathlib.Path, monkeypatch) -> None:
+    """Its mirror, so the refusals above are not just 'a submodule is present'."""
+    _hardened_root(tmp_path)
+    _seed_submodule_project(tmp_path, "web", "ignore-scripts=true\nallow-git=none\n")
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 0
+
+
+def test_private_projects_are_derived_from_lockfiles(tmp_path: pathlib.Path) -> None:
+    """The list comes from `.gitmodules` plus a lockfile walk, never from a literal: a manifest without a lockfile and a directory outside any submodule are not projects."""
+    _seed_submodule_project(tmp_path, "web", None)
+    _seed_submodule_project(tmp_path, "", None)
+    (tmp_path / "private" / "sub" / "docs").mkdir()
+    (tmp_path / "private" / "sub" / "docs" / "package.json").write_text("{}\n", encoding="utf-8")
+    (tmp_path / "private" / "loose").mkdir()
+    (tmp_path / "private" / "loose" / "package-lock.json").write_text("{}\n", encoding="utf-8")
+    (tmp_path / "private" / "loose" / "package.json").write_text("{}\n", encoding="utf-8")
+    assert npmrc.private_project_dirs(tmp_path) == ["private/sub", "private/sub/web"]
+
+
+def test_the_real_private_projects_are_found_when_checked_out() -> None:
+    """ANTI-VACUITY against the real tree: with the account submodule checked out, its three projects must be derived, so a walk that silently found none cannot pass."""
+    root = paths.repo_root()
+    if not (root / "private" / "account" / "package-lock.json").is_file():
+        pytest.skip("private/account is not checked out")
+    found = npmrc.private_project_dirs(root)
+    assert "private/account" in found
+    assert "private/account/web" in found
+
+
 def test_selftest_is_green() -> None:
     """The gate's own plants, driven from pytest as well as from the flag."""
     assert npmrc.selftest() == 0
