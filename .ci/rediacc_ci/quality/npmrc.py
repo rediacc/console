@@ -68,10 +68,11 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import sys
 import tempfile
 
-from rediacc_ci import log, paths
+from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls, plant
 
 # The file, relative to the repository root. The twin `cd`s to the root and writes a bare `.npmrc`; this is the same fact with the cd removed.
@@ -184,6 +185,48 @@ def release_age_findings(root: pathlib.Path) -> list[str]:
     return []
 
 
+# The lockfile name that makes a directory an npm project, and the file beside it that npm resolves the project `.npmrc` from.
+LOCK_NAME = "package-lock.json"
+PROJECT_MANIFEST = "package.json"
+
+
+def private_project_dirs(root: pathlib.Path) -> list[str]:
+    """Every npm project inside a checked-out submodule, as sorted repo-relative directories.
+
+    A PROJECT IS A DIRECTORY HOLDING BOTH `package-lock.json` AND `package.json`, and the list is DERIVED: submodule paths come from `.gitmodules` (`gitx.submodules`) and the lockfiles from a walk, so a project added tomorrow (the account submodule already has three: root, `web`, `e2e`) is covered without anyone remembering to list it. Nothing here is hardcoded.
+
+    WHY EACH PROJECT NEEDS ITS OWN `.npmrc`. npm resolves the project config from the nearest directory that holds a `package.json`, so the repo-root `.npmrc` never reaches a submodule project, and a nested project (`private/account/web`) does not inherit its parent's either. Until 2026-10-02 `private/account` had none and every `npm install` there ran dependency lifecycle scripts.
+
+    A SUBMODULE THAT IS NOT CHECKED OUT contributes nothing (quality jobs without `submodules: true`), and `main` says so rather than staying silent. A gitignored `private/` directory that is not a submodule is out of scope, the same boundary `scripts/gates/check-deps.ts` draws.
+    """
+    out: list[str] = []
+    for sub in gitx.submodules(root):
+        base = root / sub.path
+        if not base.is_dir():
+            continue
+        for dirpath, _dirnames, filenames in paths.walk_tree(base):
+            if LOCK_NAME in filenames and PROJECT_MANIFEST in filenames:
+                out.append(pathlib.Path(dirpath).relative_to(root).as_posix())
+    return sorted(out)
+
+
+def project_findings(root: pathlib.Path, project: str) -> list[str]:
+    """The findings for one submodule project's `.npmrc`: absent, forbidden, missing or wrong required keys, or the relocated key."""
+    target = root / project / NPMRC
+    label = "%s/%s" % (project, NPMRC)
+    if not target.is_file():
+        return [
+            "%s is missing: this project has a %s, npm never reads the repo-root %s for it, "
+            "and every install here would run dependency lifecycle scripts. Copy the root %s "
+            "(ignore-scripts=true, allow-git=none)" % (label, LOCK_NAME, NPMRC, NPMRC)
+        ]
+    text = target.read_text(encoding="utf-8", errors="replace")
+    findings = ["%s sets %s" % (label, line.strip()) for _n, line in forbidden_matches(text)]
+    findings += [f.replace(NPMRC, label, 1) for f in audit(text)]
+    findings += [f.replace(NPMRC, label, 1) for f in relocated_matches(text)]
+    return findings
+
+
 def audit(text: str) -> list[str]:
     """The required-settings findings for `.npmrc` content. Empty means clean.
 
@@ -235,6 +278,14 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     findings = audit(text) + relocated_matches(text) + release_age_findings(root)
+    projects = private_project_dirs(root)
+    for project in projects:
+        findings += project_findings(root, project)
+    if not projects:
+        log.warn(
+            "no checked-out private/ submodule project has a lockfile; only the root %s was checked"
+            % NPMRC
+        )
     if findings:
         for finding in findings:
             log.error(finding)
@@ -243,8 +294,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     log.info(
-        ".npmrc is clean and hardened; %s sets %s=%d"
-        % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES)
+        ".npmrc is clean and hardened; %s sets %s=%d; %d private/ project(s) carry their own"
+        % (RELEASE_AGE_CONFIG, RELEASE_AGE_KEY, RELEASE_AGE_MINUTES, len(projects))
     )
     return 0
 
@@ -261,13 +312,34 @@ def selftest() -> int:
 
     BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct file, and the mirrors below (a trailing comment, a later line overriding an earlier one, exactly the three required keys) are the half that proves it does not.
     """
-    ctl = Controls("npmrc", floor=26, verbose=True)
+    ctl = Controls("npmrc", floor=38, verbose=True)
 
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
 
-        def run(content: str | None, release_age: str | None = _CLEAN_RELEASE_AGE) -> int:
-            """Point the gate at a fixture root holding `content` and `release_age`, or nothing for either."""
+        def run(
+            content: str | None,
+            release_age: str | None = _CLEAN_RELEASE_AGE,
+            projects: dict[str, str | None] | None = None,
+        ) -> int:
+            """Point the gate at a fixture root holding `content` and `release_age`, or nothing for either.
+
+            `projects` maps a project directory under the fixture submodule `private/sub` to the content of its `.npmrc`, or None for a project with no `.npmrc`; each gets a lockfile and a manifest. None here means the fixture has no submodule at all.
+            """
+            shutil.rmtree(root / "private", ignore_errors=True)
+            gitmodules = root / ".gitmodules"
+            gitmodules.unlink(missing_ok=True)
+            if projects is not None:
+                gitmodules.write_text(
+                    '[submodule "sub"]\n\tpath = private/sub\n\turl = x\n', encoding="utf-8"
+                )
+                for rel, body in projects.items():
+                    project = root / "private" / "sub" / rel
+                    project.mkdir(parents=True, exist_ok=True)
+                    (project / LOCK_NAME).write_text("{}\n", encoding="utf-8")
+                    (project / PROJECT_MANIFEST).write_text("{}\n", encoding="utf-8")
+                    if body is not None:
+                        (project / NPMRC).write_text(body, encoding="utf-8")
             for rel, body in ((NPMRC, content), (RELEASE_AGE_CONFIG, release_age)):
                 target = root / rel
                 if body is None:
@@ -395,6 +467,70 @@ def selftest() -> int:
             "MIRROR: spaces around the = still parse",
             run("  ignore-scripts = true \nallow-git=none\n"),
             0,
+        )
+
+        # PRIVATE SUBMODULE PROJECTS. Each project with a lockfile must carry its own hardened .npmrc, because npm never reads the root file for it.
+        ctl.check(
+            "CONTROL: a submodule with hardened projects passes",
+            run(_CLEAN, projects={"": _CLEAN, "web": _CLEAN}),
+            0,
+        )
+        ctl.check(
+            "PLANT: a submodule project with no .npmrc is refused",
+            run(_CLEAN, projects={"": _CLEAN, "web": None}),
+            1,
+        )
+        ctl.check(
+            "PLANT: the root of a submodule project with no .npmrc is refused",
+            run(_CLEAN, projects={"": None}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a project missing ignore-scripts is refused",
+            run(_CLEAN, projects={"e2e": "allow-git=none\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a project with a wrong allow-git is refused",
+            run(_CLEAN, projects={"e2e": plant(_CLEAN, "allow-git=none", "allow-git=all")}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a project with force=true is refused",
+            run(_CLEAN, projects={"e2e": _CLEAN + "force=true\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a project with the relocated key is refused",
+            run(_CLEAN, projects={"e2e": _CLEAN + "minimum-release-age=1440\n"}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a nested project deep in the tree is found and refused",
+            run(_CLEAN, projects={"a/b/c": None}),
+            1,
+        )
+        ctl.check(
+            "PLANT: a hardened root does not excuse an unhardened project",
+            run(_CLEAN, projects={"": _CLEAN, "web": "registry=x\n"}),
+            1,
+        )
+        # ITS MIRRORS: a directory with a lockfile but no manifest is not an npm project (npm resolves the config from the manifest), and a submodule with no lockfile has nothing to harden.
+        ctl.check("MIRROR: a submodule with no projects passes", run(_CLEAN, projects={}), 0)
+        lockless = root / "private" / "sub" / "docs"
+        lockless.mkdir(parents=True, exist_ok=True)
+        (lockless / PROJECT_MANIFEST).write_text("{}\n", encoding="utf-8")
+        ctl.check(
+            "MIRROR: a manifest with no lockfile is not a project",
+            private_project_dirs(root),
+            [],
+        )
+        # THE DERIVATION IS ASSERTED, NOT ASSUMED: the three account-shaped projects come back sorted and complete.
+        run(_CLEAN, projects={"web": _CLEAN, "": _CLEAN, "e2e": _CLEAN})
+        ctl.check(
+            "DERIVE: every project with a lockfile is listed, sorted",
+            private_project_dirs(root),
+            ["private/sub", "private/sub/e2e", "private/sub/web"],
         )
 
     return 0 if ctl.report() else 1
