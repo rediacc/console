@@ -240,11 +240,10 @@ class Run:
         listen_log = pathlib.Path(self.tmp) / "stripe-listen.log"
         with open(listen_log, "wb") as sink:
             self.stripe = subprocess.Popen(
+                # The key goes in STRIPE_API_KEY, which the Stripe CLI reads, not `--api-key`: an argument is visible to every user through `ps` for as long as `stripe listen` runs.
                 [
                     "stripe",
                     "listen",
-                    "--api-key",
-                    secret_key,
                     "--forward-to",
                     f"http://localhost:{self.api_port}/account/api/v1/webhooks/stripe",
                     "--all-snapshot",
@@ -253,6 +252,7 @@ class Run:
                 stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL,
                 start_new_session=True,
+                env={**os.environ, "STRIPE_API_KEY": secret_key},
             )
         secret = ""
         for _ in range(LISTEN_TIMEOUT):
