@@ -96,14 +96,14 @@ FOUR DIVERGENCES, EACH ASSERTED IN BOTH DIRECTIONS BY THE DIFFERENTIAL
 --------------------------------------------------------------------------
 ONE DELTA THE TWIN DOES NOT HAVE: THE CHANNEL SNAPSHOT (PLAN-plan-per-pr-loop R2 follow-up)
 --------------------------------------------------------------------------
-With `SNAPSHOT_VERSION` set (to `--version`, on the `edge` channel only; anything else is refused before any write), the run also writes the cli part of the version's channel snapshot (`channel_snapshot`): the same `manifest.json` file and the same `latest.json` string it has just written to `cli/edge/`, to `snapshots/v<V>/cli/`. And when the tracker prunes a version, its `snapshots/v<V>/` is removed with its `cli/v<V>/`. Unset, the run is the twin's, byte for byte, which is what keeps the differential comparable.
+With `SNAPSHOT_VERSION` set (to `--version`, on the `edge` channel only; anything else is refused before any write), the run also writes the cli part of the version's channel snapshot (`channel_snapshot`): the same `manifest.json` file and the same `latest.json` string it has just written to `cli/edge/`, to `snapshots/v<V>/cli/`. And when the tracker prunes a version, its `snapshots/v<V>/` is removed with its `cli/v<V>/`. Unset, the run is the twin's apart from the tracker's keep rule below.
 
 --------------------------------------------------------------------------
 TWO MORE DELTAS THE TWIN DOES NOT HAVE (#62a2846b)
 --------------------------------------------------------------------------
 A SEALED RERUN PUBLISHES THE SEALED CHECKSUMS. When the guard answers 10, `cli/v<V>/` keeps the FIRST build's binaries (write-once), and this build's `manifest.json` names sha256s of bytes that were never uploaded, so `rdc update` would refuse every download. `sealed_manifest` reads each sealed `cli/v<V>/<binary>.sha256` before any channel write and publishes the manifest (channel and snapshot) with those values; a binary whose sealed checksum cannot be read refuses the run, with nothing written to the channel. When every checksum already agrees (a reproducible build), the file is uploaded unchanged, as the twin does.
 
-THE EDGE TRACKER NEVER PRUNES A PROMOTION CANDIDATE. With `SNAPSHOT_VERSION` set (every edge release), a version that falls out of the 20-version window but is newer than stable (`check_soak_period.in_walk`, so `check_soak_period` may still select it) keeps its `cli/v<V>/` and its snapshot and stays in `cli/versions.json` after the window; with the stable manifest unreadable, nothing is pruned. Pruning such a version starved stable: its snapshot was gone, so the promote could not select it.
+THE TRACKER NEVER PRUNES A PROMOTION CANDIDATE. On either release channel, a version that falls out of the 20-version window but is newer than stable (`check_soak_period.in_walk`, so `check_soak_period` may still select it) keeps its `cli/v<V>/` (and its snapshot) and stays in `cli/versions.json` after the window; with the stable manifest unreadable, nothing is pruned. Pruning such a version starved stable: its versioned prefix and snapshot were gone, so the promote could not select it. The rule first ran only with `SNAPSHOT_VERSION` set, which kept the twin comparison byte-identical on a run without one; that was the only reason, and `cli/versions.json` is shared by both channels, so a stable or snapshot-less edge run pruned the same candidates (#32c67de3). It is unconditional now, and the one call the twin comparison gains, a read of `cli/stable/manifest.json` before pruning, is declared in `test_the_retention_window_prunes_and_deletes`.
 
 K=5 LEDGER: `.ci/shadow/w7p6-upload-to-r2.observations.jsonl`.
 """
@@ -514,7 +514,8 @@ class Uploader:
         )
         pruned = _jq(["jq", "-r", ".[%d:][]" % max_versions], updated + "\n")
         kept = _jq(["jq", ".[:%d]" % max_versions], updated + "\n")
-        if self.snapshot and pruned.strip():
+        # Every run that reaches here is a release channel's, and `cli/versions.json` is one file for both of them; the keep rule therefore does not wait for a snapshot (#32c67de3).
+        if pruned.strip():
             pruned, kept = self._keep_candidates(prefix, pruned, kept, max_versions)
         # THE LAST COMMAND IS THE ONE THAT CAN STILL ABORT THE SCRIPT. A command substitution takes the status of its final command, so a failing `r2_put` here DOES become the assignment's status and errexit fires in the caller, while every jq above it is swallowed. That asymmetry is bash's, not this port's, and it is defect 4's other half.
         self.r2_put(kept, tracker_path, quiet=True)

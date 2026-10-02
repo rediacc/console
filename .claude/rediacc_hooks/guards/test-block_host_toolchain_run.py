@@ -610,6 +610,65 @@ if aws_in_box:
         )
     )
 
+# A PARSE-ONLY SHELL AND TEXT BASH NEVER RUNS ARE NOT INVOCATIONS. Measured 2026-10-02: `bash -n .ci/scripts/deploy/promote-r2-to-stable.sh`, a syntax check after an edit, was refused as an aws run, once at the tail of a python heredoc whose comment named aws, which is where the writer laid the blame. The guard judged a flat text scan that kept comments and split on newlines; it now
+# judges `shellscan._analyse(cmd).runs`, minus what a noexec shell only reads. Function-level first, so neither the host's aws nor the devbox decides these.
+PROMOTE = "promote-r2-to-stable.sh"
+cases.extend(
+    (want, GUARD._is_invoked(PROMOTE, cmd), f"parse-only: {label}")
+    for want, cmd, label in (
+        (False, "bash -n .ci/scripts/deploy/%s" % PROMOTE, "bash -n parses and runs nothing"),
+        (False, "sh -n .ci/scripts/deploy/%s" % PROMOTE, "sh -n likewise"),
+        (False, "bash -nv .ci/scripts/deploy/%s" % PROMOTE, "-n inside a bundle"),
+        (False, "bash -o noexec .ci/scripts/deploy/%s" % PROMOTE, "-o noexec"),
+        (False, "bash -n -c 'bash %s'" % PROMOTE, "a noexec shell's -c payload runs nothing"),
+        (
+            False,
+            "python3 - <<'EOF'\n# aws and %s, in a comment\nprint(1)\nEOF" % PROMOTE,
+            "a heredoc body read by python is data",
+        ),
+        (False, "true # bash %s" % PROMOTE, "a comment is not a command"),
+        (
+            False,
+            'for f in a \\\n  .ci/scripts/deploy/%s; do wc -l "$f"; done' % PROMOTE,
+            "a for word list on a continuation line",
+        ),
+        (False, "bash -c 'grep -n aws %s'" % PROMOTE, "a -c string is not a script path"),
+        (True, "bash .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: bash runs the script"),
+        (True, "bash -x .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: -x still executes"),
+        (True, "bash .ci/scripts/deploy/%s -n" % PROMOTE, "TRUE POSITIVE: -n is the script's"),
+        (True, "bash +n .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: +n turns noexec off"),
+        (True, "bash -c 'bash %s'" % PROMOTE, "TRUE POSITIVE: a -c payload that runs it"),
+        (True, "bash <<'EOF'\nbash %s\nEOF" % PROMOTE, "TRUE POSITIVE: a heredoc fed to bash"),
+        (
+            True,
+            "bash -n x.sh && .ci/scripts/deploy/%s" % PROMOTE,
+            "TRUE POSITIVE: a run after a parse-only one",
+        ),
+        (True, "x=$(.ci/scripts/deploy/%s)" % PROMOTE, "TRUE POSITIVE: a substitution runs it"),
+    )
+)
+
+if aws_in_box:
+    # End to end, with aws off the host and in the devbox, so the toolchain arm is what would refuse.
+    cases.extend(
+        (want, run(cmd, AWS_ABSENT), f"parse-only end-to-end: {label}")
+        for want, cmd, label in (
+            (0, "bash -n .ci/scripts/deploy/%s" % PROMOTE, "the 2026-10-02 syntax check"),
+            (
+                0,
+                "python3 - <<'EOF'\n# aws matches the whole key\nprint(1)\nEOF\n"
+                "bash -n .ci/scripts/deploy/%s && echo syntax-ok" % PROMOTE,
+                "the heredoc-then-syntax-check shape",
+            ),
+            (0, "echo hi # then; aws s3 ls", "aws named in a comment after a separator"),
+            (0, "bash -n -c 'aws s3 ls'", "aws in a noexec shell's -c payload"),
+            (2, "bash .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: running the script"),
+            (2, "bash -c 'aws s3 ls'", "TRUE POSITIVE: aws in a -c payload"),
+            (2, "bash -n x.sh; aws s3 ls", "TRUE POSITIVE: aws after a parse-only shell"),
+            (2, "x=$(aws s3 ls)", "TRUE POSITIVE: aws in a substitution"),
+        )
+    )
+
 fixture_root = tempfile.mkdtemp(dir=RUN_TMP)
 os.makedirs(os.path.join(fixture_root, ".ci", "policy"))
 fixture_list = os.path.join(fixture_root, ".ci", "policy", ".host-toolchain-exceptions")
