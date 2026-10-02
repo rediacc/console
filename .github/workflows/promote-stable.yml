@@ -11,9 +11,13 @@ on:
         default: false
   # Operator ruling 2026-09-30: a green NIGHTLY also releases edge to stable, in
   # addition to the 06:00 soak run above. Every Console CI completion on main
-  # fires this; the promote job's `if:` keeps only the scheduled, successful
-  # ones, and check_soak_period waives the soak only when that nightly's head
-  # provably contains the edge tag's commit (rediacc_ci.release.nightly_tested_edge).
+  # fires this; the promote job's `if:` keeps only the scheduled ones that
+  # concluded success or failure, and check_soak_period waives the soak only
+  # when that nightly's head provably contains the edge tag's commit
+  # (rediacc_ci.release.nightly_tested_edge). A FAILED nightly counts as tested
+  # only when every failed step is a drift gate (upstream advisories, dependency
+  # freshness: nightly_tested_edge.DRIFT_STEPS, PLAN-plan-per-pr-loop R1); any
+  # other failure decides ready=false, as before.
   workflow_run:
     workflows: ["Console CI"]
     types: [completed]
@@ -39,17 +43,23 @@ jobs:
     name: Release to Production
     runs-on: ubuntu-latest
     # workflow_run fires on EVERY Console CI completion on main (push, rehearsal,
-    # red or green); only a successful scheduled nightly may proceed. The
-    # schedule and workflow_dispatch triggers pass unconditionally, as before.
+    # red or green); only a scheduled nightly that concluded success or failure
+    # may proceed (cancelled is never a pass), and check_soak_period refuses a
+    # failure whose failed steps are not all drift gates. The schedule and
+    # workflow_dispatch triggers pass unconditionally, as before.
     if: >-
       github.event_name != 'workflow_run'
       || (github.event.workflow_run.event == 'schedule'
-          && github.event.workflow_run.conclusion == 'success')
-    # pull-requests: read for the `gh pr list --search label:rollback` guard,
+          && (github.event.workflow_run.conclusion == 'success'
+              || github.event.workflow_run.conclusion == 'failure'))
+    # actions: read for check_soak_period's read of a failed nightly's jobs and
+    # steps (actions/runs/<id>/jobs), pull-requests: read for the
+    # `gh pr list --search label:rollback` guard,
     # packages: write because the stable retag does `buildx imagetools create`
     # (a push). This job only READS tags and releases, so contents stays read -
     # the contents: write it used to inherit belongs to verify-stable alone.
     permissions:
+      actions: read
       contents: read
       packages: write
       pull-requests: read
@@ -112,6 +122,9 @@ jobs:
           PROMOTE_TRIGGER: ${{ github.event_name }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
           NIGHTLY_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          NIGHTLY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          NIGHTLY_RUN_ID: ${{ github.event.workflow_run.id }}
+          GH_TOKEN: ${{ github.token }}
           STABLE_VERSION: ${{ steps.stable.outputs.version }}
           EDGE_RELEASES: ${{ steps.releases.outputs.releases }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_soak_period
