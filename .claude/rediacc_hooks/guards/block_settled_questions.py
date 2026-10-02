@@ -52,7 +52,8 @@ DEFECT = (
 )
 
 PERMISSION = (
-    r"(should|shall|may|can) (i|we)|do you want|would you like|want me to|"
+    # The pronoun ends at a word boundary. Without it "what should ITS merge do?" read as "should i ... merge" and a release-policy question was refused (2026-10-02, #09e8d9bc); "may INclude" and "can WEb" were the same hole.
+    r"(should|shall|may|can) (i|we)(?![a-z])|do you want|would you like|want me to|"
     r"is it (ok|okay|fine)|are you happy for|should it be|"
     r"where should|new worktree or|worktree or (the )?current|"
     r"should (a |the )?(new )?worktree|"
@@ -206,6 +207,12 @@ EDGE_CASES = [
         },
     ),
     ("which branching strategy should", "Which branching strategy should this repo use?"),
+    # 2026-10-02 (#09e8d9bc), MEASURED: "should its" matched "should i", so a release-policy question about a merge was refused. The pronoun ends at a word boundary now.
+    (
+        "should ITS merge is not should I (measured)",
+        "A PR whose every commit is docs-only turns green. What should its merge do?",
+    ),
+    ("may include is not may I", "The release may include a merge commit, is that a problem?"),
     # CONTROL: mentioning worktrees is not itself permission-seeking.
     ("a design question about worktrees", "How are worktrees organized across the repos?"),
     # A payload shaped as the single-question form rather than the array.
