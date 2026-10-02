@@ -234,19 +234,19 @@ Review files exist only because a commit happened, and a commit happens only whe
 
 ## 8. Keeping the PR labeling
 
-- **Port.** `run_apply_labels` moves to `.ci/rediacc_ci/review/pr_labels.py` together with `MANAGED_LABELS`, `DOCS_ONLY_RE`/`CI_ONLY_RE`, the ledger reconciliation (`LEDGER_PREFIX`, `APPLIED_RE`) and the "bump-major is never applied automatically" rule.
+- **Port.** `run_apply_labels` moves to `.ci/rediacc_ci/review/pr_labels.py` together with `MANAGED_LABELS`, `DOCS_ONLY_RE`/`CI_ONLY_RE`, and the ledger reconciliation (`LEDGER_PREFIX`, `APPLIED_RE`). The old "bump-major is never applied automatically" rule is retired (operator ruling 2026-10-02).
 - **Verdict source.** The `Labels:` lines of `agent/reviews/<head-branch>/*.md` at the PR head. It no longer reads `EXECUTION_FILE` or the comment fence (the `.ci/rediacc_ci/review/claude_review_gate.py:1190-1226` arms are deleted).
-- **Aggregation:**
-  - bump is the highest of `patch` and `minor` over all commits;
-  - `bump-none` only when every reviewed commit says `none`, which keeps its "removed on release-worthy pushes" semantics (.github/labels.yml:81-83);
-  - `major` is logged as a recommendation only;
+- **Aggregation (operator rulings 2026-10-02):**
+  - at most one bump label, from the highest verdict over all commits: `major` gives `bump-major`, `minor` gives `bump-minor`, `patch` gives none (a patch is the release default);
+  - `bump-none` when every reviewed commit says `none`, so a docs/CI/agent-only PR lands without a release;
   - kind is the union.
-- **Wiring.** A step in ci.yml's `label-guide` job (`.github/workflows/ci.yml:466-487`):
-  - add `issues: write` next to `pull-requests: write`, because create-on-demand labels need it;
-  - add `.ci/rediacc_ci` and `agent/reviews` to its sparse checkout;
-  - `env: GH_TOKEN: github.token, PR_NUMBER, HEAD_REF`.
+- **Wiring.** Its own job, `pr-labels` in ci.yml, with `needs: [initialize, ci-complete]` and `if: needs.ci-complete.result == 'success'` on pull requests: the release decision is made once, at a green head, never on a red one.
+  - `issues: write` next to `pull-requests: write`, because create-on-demand labels need it;
+  - sparse checkout of `.ci/rediacc_ci` and `agent/reviews`;
+  - `env: GH_TOKEN: github.token, PR_NUMBER, HEAD_REF, HEAD_SHA`;
+  - EXEMPT in `ci_job_aggregation` (downstream of the aggregator, like `finalize-release-sentinel`).
   The module logs and returns 0 on every failure, so a fork PR's read-only token cannot fail the job.
-- **Lag.** Labels trail the newest commit's review by one push. The merge path requires reviews to be committed, so the last push before merge carries the final labels.
+- **No lag, no race.** The push guard refuses a push until every commit's review is committed, so the verdicts are complete at a green head. The release reads the labels on the main-branch run the merge starts, which ends long after `pr-labels`, so an auto-merge at green does not race it.
 - **Housekeeping.** Update label_inventory's `CREATE_ON_DEMAND` comment, `.github/labels.yml:65-99` (which references `claude-review-gate.sh --apply-labels`), and turn `test_gate_review_labels.py` into `test_review_pr_labels.py`.
 
 ## 9. Collisions with existing gates

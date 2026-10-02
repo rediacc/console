@@ -54,7 +54,7 @@ THE THREE ALLOWLIST ENTRIES CARRY THEIR OWN BLOCKER REASONS, verbatim:
     therefore does not exist until the first red night, and demanding it up front
     would fail this gate on a repo whose nightly has never gone red.
 
-    ci: claude-review-gate.sh --apply-labels creates `ci` immediately before its
+    ci: the PR label applier (rediacc_ci.review.pr_labels) creates `ci` immediately before its
     first use, the same pattern and for the same reason: the label is brand new,
     and declaring it here without creating it would fail direction (a) until some
     human ran `gh label create`. Creating it up front instead is the ordering trap
