@@ -528,7 +528,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-parallel-writer-roster.md` | ready | 304 | 0 | 28 | 40420 |
 | `agent/plans/PLAN-per-commit-review.md` | approved | 356 | 17 | 0 | 41326 |
 | `agent/plans/PLAN-plan-dependencies.md` | held | 373 | 12 | 0 | 33868 |
-| `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 56 | 16 | 0 | 11154 |
+| `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 57 | 15 | 1 | 11358 |
 | `agent/plans/PLAN-plan-priority-concurrency.md` | held | 460 | 12 | 0 | 38802 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
