@@ -123,7 +123,7 @@ import sys
 import tempfile
 import time
 
-from rediacc_ci import log, paths
+from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
 
@@ -276,10 +276,9 @@ def current_branch(root: pathlib.Path, env: dict[str, str] | None = None) -> str
     See the detached-head trap in the module docstring for why the literal string is caught rather than left to the `|| echo "main"` fallback.
     """
     environ = os.environ if env is None else env
-    if environ.get("GITHUB_HEAD_REF"):
-        return environ["GITHUB_HEAD_REF"]
-    if environ.get("GITHUB_REF_NAME"):
-        return environ["GITHUB_REF_NAME"]
+    from_ci = gitx.branch_from_ci(environ)
+    if from_ci:
+        return from_ci
     proc = _run(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=str(root))
     name = proc.stdout.strip() if proc.returncode == 0 else ""
     if name in ("", "HEAD"):
@@ -796,6 +795,11 @@ def selftest() -> int:
         "CONTROL: GITHUB_REF_NAME is the fallback",
         current_branch(pathlib.Path("."), env={"GITHUB_REF_NAME": "main"}),
         "main",
+    )
+    ctl.check(
+        "a pull_request run's `<n>/merge` GITHUB_REF_NAME is never the branch (#c0c336e6)",
+        current_branch(pathlib.Path("."), env={"GITHUB_REF_NAME": "591/merge"}) != "591/merge",
+        True,
     )
 
     with tempfile.TemporaryDirectory() as tmp:

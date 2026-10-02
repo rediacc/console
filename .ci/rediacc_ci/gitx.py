@@ -165,6 +165,10 @@ def branch(root: os.PathLike[str] | str | None = None) -> str | None:
     return result.stdout.strip() or None
 
 
+# GITHUB_REF_NAME on a pull_request run: `<pr-number>/merge`, a ref GitHub synthesises, never a branch.
+_PR_MERGE_REF = re.compile(r"^[0-9]+/merge$")
+
+
 def branch_from_ci(env: dict[str, str] | None = None) -> str | None:
     """The branch CI thinks we are on, from the environment, or None.
 
@@ -176,7 +180,8 @@ def branch_from_ci(env: dict[str, str] | None = None) -> str | None:
     environ = os.environ if env is None else env
     for name in ("PR_HEAD_REF", "GITHUB_HEAD_REF", "GITHUB_REF_NAME"):
         value = environ.get(name)
-        if value:
+        # The synthetic `<n>/merge` is skipped rather than returned (#c0c336e6): a pull_request job whose GITHUB_HEAD_REF did not survive a `workflow_call` used to judge a branch named `591/merge`.
+        if value and not _PR_MERGE_REF.match(value):
             return value
     return None
 
