@@ -148,7 +148,7 @@ def test_a_job_that_already_completed_over_budget_still_fires(gate):
 
 
 def test_excluded_job_never_fires(gate):
-    """WATCHDOG_EXCLUDE_PATTERNS (Watchdog, CI Complete, Review Complete): aggregators and observers are not budgeted work, and without this exclusion the watchdog's own chain generations would budget-flag themselves."""
+    """WATCHDOG_EXCLUDE_PATTERNS (Watchdog, CI Complete, CI Verdict): aggregators and observers are not budgeted work, and without this exclusion the watchdog's own chain generations would budget-flag themselves."""
     verdict = evaluate(
         gate,
         jobs=[{"name": "CI Watchdog", "status": "in_progress", "started_at": T0}],
@@ -156,7 +156,7 @@ def test_excluded_job_never_fires(gate):
         nowMs=int(_ms(45, 0)),
         jobBudgetMin=15,
         runBudgetMin=None,
-        excludePatterns=["Watchdog", "CI Complete", "Review Complete"],
+        excludePatterns=["Watchdog", "CI Complete", "CI Verdict"],
     )
     gate.assert_eq(
         verdict["jobViolations"], [], "an excluded job never fires, however long it runs"
@@ -570,7 +570,7 @@ monitor({ github, context, core })
 
 MONITOR_ENV = {
     "WATCHDOG_TARGET_RUN_ID": "999",
-    "WATCHDOG_EXCLUDE_PATTERNS": "Watchdog,CI Complete,Review Complete",
+    "WATCHDOG_EXCLUDE_PATTERNS": "Watchdog,CI Complete,CI Verdict",
     "WATCHDOG_NO_RETRY_PATTERNS": "Quality,Review Gate",
     "WATCHDOG_INSTALL_VALIDATION_PATTERNS": "Validate Install Methods / Linux",
     "WATCHDOG_RETRY_ALLOWLIST_PATTERNS": "E2E,OPS,Fork Isolation,Migration Test",

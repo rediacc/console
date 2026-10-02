@@ -12,10 +12,10 @@ run-name: "CI verdict: run ${{ github.event.workflow_run.id || inputs.run_id }}"
 # here, the answer sits on the head SHA, where the tracer and the Stop hook read
 # it for one call instead of re-deriving it per session.
 #
-# ACYCLIC BY CONSTRUCTION, as review-status.yml is. No job in ci.yml may
-# `needs:` this workflow or wait on the `CI Verdict` context, and every reader
-# treats it as non-blocking (wl_ci.CI_NONBLOCKING_CONTEXTS, the watchdog and
-# nightly exclude lists, budget_report). The conclusion is always `neutral`.
+# ACYCLIC BY CONSTRUCTION. No job in ci.yml may `needs:` this workflow or wait
+# on the `CI Verdict` context, and every reader treats it as non-blocking
+# (wl_ci.CI_NONBLOCKING_CONTEXTS, the watchdog and nightly exclude lists,
+# budget_report). The conclusion is always `neutral`.
 #
 # DEFAULT-BRANCH CODE ONLY. `workflow_run` and `workflow_dispatch` both run the
 # default-branch copy of this file, and the checkout below is pinned to the

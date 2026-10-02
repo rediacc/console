@@ -23,9 +23,8 @@ variables behind and how a GitLab move would have had to rediscover twenty-two n
      rather than restated) or `GITHUB_TOKEN`, which the runner mints per job and
      stores nowhere. A workflow that starts reading a new GitHub secret reds at
      the commit that adds it.
-  5. COMMENTS ARE NOT READS. `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` sits in
-     two comments of `.github/workflows/claude-review-reusable.yml` explaining a
-     fallback that was removed, and `set-account-worker-secrets.sh` in a comment
+  5. COMMENTS ARE NOT READS. A `secrets.NAME` in a comment explaining a removed
+     fallback is no read, and `set-account-worker-secrets.sh` in a comment
      is `secrets.sh` to a careless pattern. A gate that counts either reds on a
      correct tree, which is the shape that gets suppressed. The commented
      mentions skipped are COUNTED and printed, so the blind spot has a number.

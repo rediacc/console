@@ -239,7 +239,7 @@ def test_a_failed_job_is_red_and_never_a_nonblocking_one():
     jobs = [
         {
             "id": 1,
-            "name": "Review Complete",
+            "name": "Publish CI Verdict",
             "conclusion": "failure",
             "completed_at": "2026-01-01T00:00:00Z",
         },

@@ -264,7 +264,6 @@ _DECLARED_UNUSED_OK: list[tuple[str, str]] = [
     # DRAINED 2026-09-08, and the premise this entry rested on was FALSE. It said the consumer "fetches this from Bitwarden now, so the passed value IS
     # unused". Measured: the fetch step is guarded on `github.repository ==
     # 'rediacc/console'`, and in a REUSABLE workflow `github.repository` is the CALLER's repo -- so for rediacc/account and rediacc/renet that step never ran and the token was EMPTY. The passed secret was unread not because their half of the migration had landed but because it had never been written, and deleting the declaration would have made a live outage permanent.
-    # `claude-review-reusable.yml` now reads `env.BWS_... || secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, which restores the read for both callers, and that is what makes this exemption genuinely removable.
 ]
 
 
@@ -403,15 +402,17 @@ def check2(
                 "cannot be justified against a registry that will not parse" % (registry_file, exc)
             )
             registry = None
-        reg_entries = (registry or {}).get("callers") or []
-        if not reg_offenders and (not isinstance(reg_entries, list) or not reg_entries):
-            # Zero inputs is a failure, never a pass.
+        reg_entries = registry.get("callers") if isinstance(registry, dict) else None
+        if not reg_offenders and not isinstance(reg_entries, list):
+            # A registry with no `callers:` list is unreadable as a claim, never a pass.
             reg_offenders.append(
-                "arm (a3): %s declares no callers -- "
+                "arm (a3): %s has no `callers:` list -- "
                 "nothing can pin an exemption alive, so this arm is blind"
                 % os.path.basename(registry_file)
             )
+        if not isinstance(reg_entries, list):
             reg_entries = []
+        # An EMPTY list is a claim ("no other repository calls a workflow here") that CHECK 4's completeness scan proves or refutes. Here it pins nothing alive, so every exemption left is reported below as unjustified: the arm still has teeth.
 
         pinned_unused: set[tuple[str, str]] = set()
         for entry in reg_entries:
@@ -649,9 +650,10 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
         print("%s: unreadable (%s)" % (registry_file, exc), file=sys.stderr, flush=True)
         return 1
 
-    entries = (registry or {}).get("callers") or []
-    if not isinstance(entries, list) or not entries:
-        raise _BlindError("%s: declares no callers" % registry_file)
+    entries = registry.get("callers") if isinstance(registry, dict) else None
+    if not isinstance(entries, list):
+        raise _BlindError("%s: has no `callers:` list" % registry_file)
+    # `callers: []` is the real state since 2026-10-02 (the last cross-repo callers, the submodules' Claude review callers, were deleted). Empty is a CLAIM, and leg (c) below is what proves it: it passes only when a checked-out submodule was scanned and held no `uses: <console>/...`, and stays blind when no submodule is checked out.
 
     # --- (a) the declared contract must hold against the callee's real signature
     registered: set[tuple[str, str]] = set()
@@ -799,7 +801,16 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
     # entry as a missing submodule.
     blind: list[str] = []
     trees = sorted(glob.glob(os.path.join(scan_root, "private", "*", ".github", "workflows")))
-    if not trees:
+    # A checked-out submodule carries a `.git` (a gitlink FILE, or a directory); an uninitialised one is an empty directory. A checked-out submodule with no workflows tree at all is a scanned negative, which is exactly what an empty registry claims.
+    checked_out = sorted(glob.glob(os.path.join(scan_root, "private", "*", ".git")))
+    if not entries:
+        if not checked_out:
+            blind.append(
+                "%s declares no callers and no private/*/.git is checked out under %s: "
+                "the completeness scan cannot see whether an external caller exists"
+                % (os.path.basename(registry_file), scan_root)
+            )
+    elif not trees:
         blind.append(
             "no private/*/.github/workflows tree under %s: the completeness "
             "scan cannot see whether an unregistered external caller exists" % scan_root
@@ -829,7 +840,7 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
                         % (rel, jid, calls, os.path.basename(registry_file))
                     )
 
-    if not verified:
+    if entries and not verified:
         blind.append(
             "no registered external caller could be checked against its real file "
             "(no submodule containing one is checked out)"
@@ -842,6 +853,14 @@ def _check4(yaml: ModuleType, workflows_dir: str, registry_file: str, scan_root:
 
     if blind:
         raise _BlindError("; ".join(blind))
+
+    if not entries:
+        print(
+            "info: registry declares no external callers, and %d checked-out submodule(s) "
+            "hold none (%d workflow tree(s) scanned)" % (len(checked_out), len(trees)),
+            flush=True,
+        )
+        return 0
 
     print(
         "info: %d external caller call-site(s) verified against their real files" % verified,
@@ -1234,9 +1253,10 @@ def main(argv: list[str]) -> int:
                 "External-caller contracts hold and every external caller is registered"
             )
         elif rc == 3:
-            palette.error("Fix: either .github/external-callers.yml declares no callers, or no")
-            palette.error("     submodule holding one is checked out (git submodule update --init")
-            palette.error("     private/account private/renet). A check with no input cannot pass.")
+            palette.error("Fix: .github/external-callers.yml needs a `callers:` list, and at least")
+            palette.error("     one submodule must be checked out for the completeness scan (git")
+            palette.error("     submodule update --init private/account private/renet). A check")
+            palette.error("     with no input cannot pass.")
             failed = 1
         else:
             palette.error("External-caller contract violations (see above).")

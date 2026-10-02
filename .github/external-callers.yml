@@ -8,33 +8,16 @@
 # it exists to prevent, because a same-repo caller moves with its callee in one commit and
 # a cross-repo one resolves `@main` at run time.
 #
-# The blindness already cost something: `claude-review-reusable.yml` once declared
-# BWS_ACCESS_TOKEN `required: false` and guarded its shadow steps on the repository name,
-# solely because these two callers would break on a required secret they did not pass. That
-# workaround was reasoned out by hand. This file is so the next one is caught by a gate.
-#
 # Declaring a caller here does NOT make it testable pre-merge. It turns breaking it into a
 # red gate on the console PR instead of a red run in the other repo an hour later.
 #
 # Each entry is checked against the callee's real `workflow_call` block, and -- when the
 # submodule is checked out -- against the caller's real file, so an entry cannot rot into a
 # comfortable fiction.
-callers:
-  - caller: private/account/.github/workflows/claude-review.yml
-    repo: rediacc/account
-    pinned_at: main
-    calls: .github/workflows/claude-review-reusable.yml
-    passes_inputs: [required_check, pr_number]
-    passes_secrets: [BWS_ACCESS_TOKEN]
-  # BWS_ACCESS_TOKEN is `required: true` in the callee since 2026-09-24. The earlier
-  # workaround -- the secret declared `required: false` plus a
-  # `github.repository == 'rediacc/console'` guard on the Bitwarden fetch -- skipped the
-  # fetch and reviewed with a blank credential, so the guard was removed on 2026-09-09
-  # and the fetch runs in every caller. renet passes the token (rediacc/renet#111) and
-  # account passes it (rediacc/account#87), so the callee can require it.
-  - caller: private/renet/.github/workflows/claude-review.yml
-    repo: rediacc/renet
-    pinned_at: main
-    calls: .github/workflows/claude-review-reusable.yml
-    passes_inputs: [required_check, pr_number]
-    passes_secrets: [BWS_ACCESS_TOKEN]
+#
+# EMPTY SINCE 2026-10-02. The last two callers (the Claude review callers in rediacc/account
+# and rediacc/renet) were deleted when reviews moved to per-commit local records. An empty
+# list is a claim that no other repository calls a workflow here, and CHECK 4 proves it: the
+# completeness scan must find no `uses: rediacc/console/...` in any checked-out submodule,
+# and with no submodule checked out the check is blind, never green.
+callers: []

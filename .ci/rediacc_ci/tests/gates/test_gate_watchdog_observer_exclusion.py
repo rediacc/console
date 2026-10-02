@@ -2,8 +2,8 @@
 
 The watchdog must never read an OBSERVER check as a failed CI job.
 
-WHY: minutes after "Review Complete" became a ruleset-required check (2026-07-31, run 30660765759), a push deadlocked. The not-yet-re-reviewed head's Review Complete check-run FAILED, correctly; it lands in the same github-actions check suite as the CI jobs; the watchdog's failure scan counted it and force-cancelled the run; and the re-review that would flip the check green only
-starts on a GREEN run. The fix is one config line (`WATCHDOG_EXCLUDE_PATTERNS` in watchdog-monitor.yml), and this gate is what stops that line from quietly losing an entry and reintroducing the cycle.
+WHY: on 2026-07-31 (run 30660765759) a push deadlocked on an observer check (the since-retired review status check). Its check-run FAILED, correctly; it landed in the same github-actions check suite as the CI jobs; the watchdog's failure scan counted it and force-cancelled the run whose green the observer was waiting for. `CI Verdict` (ci-verdict.yml) is an
+observer of the same kind. The fix is one config line (`WATCHDOG_EXCLUDE_PATTERNS` in watchdog-monitor.yml), and this gate is what stops that line from quietly losing an entry and reintroducing the cycle.
 
 CONTROL-FIRST, per the house rule: the checker is proven to FIRE on a planted copy missing one exclusion BEFORE it is run against the real workflow.
 
@@ -18,7 +18,7 @@ from rediacc_ci import paths
 WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
 
 # The names an observer check can carry. Each is a check that lands in the same check suite as the CI jobs and is NOT one of them.
-REQUIRED = ("Watchdog", "CI Complete", "Review Complete")
+REQUIRED = ("Watchdog", "CI Complete", "CI Verdict")
 
 EXCLUSIONS_RE = re.compile(r"WATCHDOG_EXCLUDE_PATTERNS: '(.*)'")
 
@@ -44,14 +44,14 @@ def workflow_text(gate) -> str:
 
 
 def planted(gate) -> str:
-    """The real workflow with 'Review Complete' cut out of the exclusion list."""
-    return workflow_text(gate).replace(",Review Complete'", "'")
+    """The real workflow with 'CI Verdict' cut out of the exclusion list."""
+    return workflow_text(gate).replace(",CI Verdict'", "'")
 
 
 def test_control_the_checker_fires_on_a_planted_copy(gate):
-    if excludes(planted(gate), "Review Complete"):
+    if excludes(planted(gate), "CI Verdict"):
         gate.log_fail("CONTROL failed: the checker passed a copy missing the exclusion")
-    gate.log_pass("CONTROL: the checker fires on a planted copy missing 'Review Complete'")
+    gate.log_pass("CONTROL: the checker fires on a planted copy missing 'CI Verdict'")
 
 
 def test_control_is_not_vacuous(gate):
@@ -76,8 +76,8 @@ def test_ci_complete_is_excluded(gate):
     require_member(gate, "CI Complete")
 
 
-def test_review_complete_is_excluded(gate):
-    require_member(gate, "Review Complete")
+def test_ci_verdict_is_excluded(gate):
+    require_member(gate, "CI Verdict")
 
 
 def require_member(gate, name: str) -> None:
