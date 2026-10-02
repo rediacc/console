@@ -47,6 +47,13 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       SCOPED TO EVERY PLAN, not to records: both real subjects in this tree carry
       `Status: draft`, so records-only would be a rule with no subject.
 
+  RB  A STARTED PLAN CARRIES BOXES (operator ruling 2026-10-02, worklist
+      #e81e8320). A live plan whose Status `plan_lifecycle.classify` reads as
+      started (approved, ready, executing, active, held, or no Status line at
+      all) with zero checkbox lines is REFUSED; a not-started one (draft,
+      proposed, design, a `parked` record) only WARNS. Counted by the real
+      parser, so a fenced sample is not a box. Scoped to every plan, like R9.
+
 THE ADVISORY CENSUS (W12 P3.5), AND WHY IT REFUSES NOTHING. R1..R9 are the rules this gate ENFORCES; the file's docstring has promised R1..R10 since it was written, and the missing rungs are named in "WHAT IS DELIBERATELY NOT ASSERTED" below rather than in the list above -- they are rules that were considered and declined. Turning one on is a one-way door: the day it blocks, it
 blocks every open branch at once, and nobody knows today how many records it would refuse.
 
@@ -144,6 +151,7 @@ paths.on_sys_path(pathlib.Path(__file__).resolve().parent)
 
 try:
     import wl_checks as CK
+    import wl_planfile as PF
     import wl_planindex as PI
     import wl_planqueue as PQ
     import wl_planrec as R
@@ -192,6 +200,48 @@ CANDIDATES = {
 def _git(root, *args):
     r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=False)
     return r.stdout.strip() if r.returncode == 0 else ""
+
+
+# --------------------------------------------------------------------------- RB: a STARTED plan carries boxes (operator ruling 2026-10-02, worklist #e81e8320).
+
+
+#
+# THE GAP. Seven live plans carried no checkbox at all (measured 2026-10-02), two of them `Status: ready`. A plan with nothing to tick has no finish line: `wl_planqueue` files it under `### Not queued` because there is no box to work, check_plan_implementation's P-A1 never sees it because it has no open box, and the Stop hook's plan-fidelity check reads it as empty. So a STARTED plan
+# could sit forever looking like work in hand while every reader that counts boxes skipped it.
+#
+# THE CLASSIFIER IS BORROWED, NOT RESTATED. "Started" is `plan_lifecycle.classify` returning STATE_ACTIVE, the same answer check:ci-plan-folders gives: approved, ready, executing, active, held, in-progress, and a plan with no Status line at all (UNKNOWN), which is exactly how an unannotated appendix reads as live work. NOT_STARTED words (draft, proposed, design, ...) and a `parked` record WARN instead: a
+# proposal may still be prose, and the warning names the boxes it owes before its Status moves. Finished words, `compacted` records, stubs and the terminal folders are out of scope.
+#
+# THE BOXES ARE COUNTED BY THE REAL PARSER (`wl_planfile.plan_boxes`, open and done together, `[?]` and `[>]` included), so a box inside a fenced code sample does not count, by the same rule check:ci-plan-boxes applies.
+
+RB_REMEDY = (
+    "add a `## Tasks` list of `- [ ] <deliverable> -- acceptance: <named test, gate or command>` "
+    "boxes derived from the plan's own text, or set a not-started Status (draft, proposed, design) "
+    "while it is still a proposal"
+)
+
+
+def boxless_verdict(rel, text):
+    """("refuse" | "warn" | "", message) for one plan. Pure: no filesystem, no git."""
+    if PL.folder_of(rel) in PL.TERMINAL_DIRS:
+        return "", ""
+    plan = PL.parse_plan(rel, text or "")
+    state = PL.classify(plan)
+    if state not in (PL.STATE_ACTIVE, PL.STATE_BACKLOG) and plan.status != "parked":
+        return "", ""
+    open_t, done_t = PF.plan_boxes(text or "")
+    if open_t or done_t:
+        return "", ""
+    if state == PL.STATE_ACTIVE:
+        return "refuse", (
+            f"{rel}: RB `Status: {plan.status}` reads as STARTED and the plan carries no "
+            f"checkbox, so it has no finish line and every box-counting reader skips it "
+            f"(operator ruling 2026-10-02). Fix: {RB_REMEDY}."
+        )
+    return "warn", (
+        f"{rel}: RB `Status: {plan.status}` is not started and carries no checkbox; it "
+        f"needs boxes before its Status moves to a started word. Fix: {RB_REMEDY}."
+    )
 
 
 # --------------------------------------------------------------------------- W12 P3.4b. R9: the three cross-reference header keys RESOLVE.
@@ -1634,6 +1684,75 @@ def selftest():
             header_xref_block("# t\n%sExtends: `%s`\n" % ("f\n" * 12, real_plan), "Extends") == "",
         )
 
+    # -- RB: a started plan carries boxes. Pure over (rel, text), so every direction is a planted string. --
+    live = "agent/plans/PLAN-rb-fixture.md"
+    box = "- [ ] build the thing -- acceptance: `npm run check:thing` exits 0\n"
+
+    def rb(label, text, want, rel=live):
+        kind, msg = boxless_verdict(rel, text)
+        ck(label, kind == want, f"got {kind!r}: {msg}")
+
+    rb(
+        "RB: `Status: approved` with no box is REFUSED",
+        "# t\nStatus: approved\n\nprose\n",
+        "refuse",
+    )
+    rb(
+        "RB: `Status: ready ...` with no box is REFUSED",
+        "# t\nStatus: ready to run, after #1\n",
+        "refuse",
+    )
+    rb("RB: `Status: executing` with no box is REFUSED", "# t\nStatus: executing\n", "refuse")
+    rb("RB: `Status: active` with no box is REFUSED", "# t\nStatus: active\n", "refuse")
+    rb("RB: no Status line at all reads as started and is REFUSED", "# t\nOwner: x\n", "refuse")
+    rb(
+        "RB: a box only inside a fenced sample does not count, so it is still REFUSED",
+        "# t\nStatus: approved\n\n```\n" + box + "```\n",
+        "refuse",
+    )
+    rb(
+        "RB CONTROL: `Status: approved` with one open box is silent",
+        "# t\nStatus: approved\n\n## Tasks\n\n" + box,
+        "",
+    )
+    rb(
+        "RB CONTROL: a ticked box counts as a box",
+        "# t\nStatus: executing\n\n" + box.replace("[ ]", "[x]"),
+        "",
+    )
+    rb(
+        "RB CONTROL: a `- [?]` box counts as a box",
+        "# t\nStatus: ready\n\n" + box.replace("[ ]", "[?]"),
+        "",
+    )
+    rb("RB: `Status: draft` with no box WARNS and does not refuse", "# t\nStatus: draft\n", "warn")
+    rb("RB: `Status: proposed` with no box WARNS", "# t\nStatus: proposed\n", "warn")
+    rb(
+        "RB: `Status: DESIGN, ...` with no box WARNS",
+        "# t\nStatus: DESIGN, not implemented\n",
+        "warn",
+    )
+    rb(
+        "RB: a `parked` record with no box WARNS",
+        "# t\nStatus: parked\nFull-Text-Blob: %s\n" % ("0" * 40),
+        "warn",
+    )
+    rb("RB CONTROL: `Status: draft` with a box is silent", "# t\nStatus: draft\n\n" + box, "")
+    rb("RB CONTROL: a finished plan with no box is silent", "# t\nStatus: done\n", "")
+    rb("RB CONTROL: a `compacted` record with no box is silent", "# t\nStatus: compacted\n", "")
+    rb(
+        "RB CONTROL: a stub is silent",
+        "# t\nStatus: moved\nMoved-To: agent/plans/PLAN-x.md\n",
+        "",
+        rel="agent/PLAN-rb-fixture.md",
+    )
+    rb(
+        "RB CONTROL: a plan under `_done/` is not live, so it is silent",
+        "# t\nStatus: approved\n",
+        "",
+        rel="agent/plans/_done/PLAN-rb-fixture.md",
+    )
+
     return bad
 
 
@@ -1692,11 +1811,19 @@ def main(argv):
     # ---- R9, OVER EVERY PLAN AND NOT ONLY THE RECORDS ---------------------- The loop above filters to RECORD_STATES because R1..R8 are statements about a compaction record. R9 is not: both `Supersedes:` users in this tree carry `Status: draft`, so scoping R9 to records would give it zero subjects and a permanent green. The count is printed below, because a rule whose subject
     # count silently reaches zero is a rule that has stopped asserting anything.
     n_xref = 0
+    # RB rides the same every-plan read: a refusal is a problem, a warning is printed on both paths and never changes the exit code.
+    rb_warnings, n_rb_judged = [], 0
     for rel, _status, _n in recs:
         try:
             text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue  # already reported above for a record; a plain plan is not R9's business
+        n_rb_judged += 1
+        rb_kind, rb_msg = boxless_verdict(rel, text)
+        if rb_kind == "refuse":
+            problems.append(rb_msg)
+        elif rb_kind == "warn":
+            rb_warnings.append(rb_msg)
         if not any(header_xref_block(text, k) for k in HEADER_XREF_KEYS):
             continue
         n_xref += 1
@@ -1716,6 +1843,9 @@ def main(argv):
     #
     # `census_row` is computed from its OWN re-read of every plan; the two counts handed to `census_append` come from the verdict loop above. That is the two-readings floor, and it is why the counts are passed rather than shared.
     census_ok, census_msg = census_append(ROOT, census_row(ROOT, recs), len(recs), n_records)
+
+    for w in rb_warnings:
+        print(f"  WARNING {w}")
 
     if problems:
         print(
@@ -1742,7 +1872,9 @@ def main(argv):
         f"{R.INDEX_REL} matches, census section included "
         f"({len(PI.parse_census(census))} plan row(s) SessionStart reads instead of "
         f"opening the plans). R9: {n_xref} plan(s) carry a "
-        f"{'/'.join(HEADER_XREF_KEYS)} header and every pointer in one resolves."
+        f"{'/'.join(HEADER_XREF_KEYS)} header and every pointer in one resolves. "
+        f"RB: {n_rb_judged} plan(s) judged, no started plan without a box, "
+        f"{len(rb_warnings)} not-started plan(s) warned."
     )
     if n_records == 0:
         print(

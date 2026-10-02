@@ -8,6 +8,13 @@ Priority: P3 -- seed: Status design, 0 open box(es)
 Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: .github/workflows/breakpoint.yml
 
+## Tasks
+
+- [ ] Option 1: drop the three empty reads (`secrets.APP_PRIVATE_KEY`, `secrets.AWS_SES_ACCESS_KEY_ID_EU`, `secrets.AWS_SES_SECRET_ACCESS_KEY_EU`) from `.github/workflows/breakpoint.yml`, so neither the app-token checkout nor the email pretends to work -- acceptance: `npm run check:ci-secret-scope` exits 0 with no breakpoint read left frozen
+- [?] Restore part of what option 1 removes: option 2 (a `mint` job handing `session` a 1-hour installation token) or option 3 (an out-of-band notify with no long-lived credential on the box)? DEFAULT: neither; option 1 stands alone, the cheapest and honest option, since nothing is broken by leaving the capability gap
+- [ ] Before building option 2, verify on a scratch branch whether a masked `actions/create-github-app-token` token survives as a job output or arrives EMPTY -- acceptance: a scratch-branch run whose downstream job prints a non-zero token length
+- [ ] Option 2, only when the question above picks it: a separate `mint` job with no shell holds the private key and passes `session` a short-lived installation token -- acceptance: a breakpoint run with `services` set checks out `private/elite` with the minted token
+
 ## The problem, precisely
 
 `.github/workflows/breakpoint.yml` has three reads that resolve to the EMPTY STRING since the org secrets were deleted on 2026-09-05:

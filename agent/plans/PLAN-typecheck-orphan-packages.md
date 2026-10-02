@@ -9,6 +9,14 @@ Priority: P2 -- seed: Status ready, 0 open box(es)
 Concurrency: exclusive -- operator ruling 2026-09-26: every plan runs alone while the token budget is limited for the next few days
 Owns: packages/cli, packages/shared, packages/provisioning, packages/e2e-tests, workers/www, packages/www, scripts/tsconfig.json, packages/www/tsconfig.json, workers/mta-sts, workers/proxy, workers/account, packages/cli/src/remote/sync/__tests__/sftp-fallback.test.ts
 
+## Tasks
+
+- [ ] Wire `packages/e2e-tests` (0 errors) into both `check:types` and `typecheck` in the root `package.json` -- acceptance: `npx tsc --noEmit -p packages/e2e-tests/tsconfig.json` exits 0, and `npm run check:ci-parity` and `npm run check:ci-gate-manifest` both agree
+- [ ] Put the `packages/provisioning` test into a project (a `tsconfig.test.json` beside the build config), fix its 2 errors, and wire it into both scripts -- acceptance: `npx tsc --noEmit -p packages/provisioning/tsconfig.test.json` exits 0
+- [ ] Declare `Window.plausible` and `Window.openRegionPicker` once in a `.d.ts` for `packages/www`, clearing its 32 TS2339 errors, and wire its typecheck into both scripts -- acceptance: `npm run typecheck --workspace packages/www` exits 0
+- [ ] Fix the `workers/www` module setting behind the 13 TS2823 errors from `private/account` i18n, then the worker's own errors, and wire its typecheck -- acceptance: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers` exits 0 over `workers/www`
+- [ ] Give `workers/mta-sts` and `workers/proxy` a tsconfig and typecheck them with the other workers -- acceptance: the same `typecheck_workers` run discovers both and exits 0
+
 ## The two shapes, which need different fixes
 
 `packages/cli` and `packages/shared` are covered. The rest split in two:
