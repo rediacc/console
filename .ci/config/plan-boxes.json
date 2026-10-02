@@ -969,6 +969,33 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-plan-per-pr-loop.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 16,
+      "done": 0,
+      "open_sigs": [
+        "0dc239cd",
+        "2dd2429a",
+        "4b8321e0",
+        "4d91dd68",
+        "5157363b",
+        "6f4a1a63",
+        "7a6762cd",
+        "7fb23a48",
+        "9660fb2f",
+        "97dc855e",
+        "aa8ad1d6",
+        "b4445450",
+        "c27e410c",
+        "cf7a2303",
+        "eeb654e8",
+        "ff593758"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-plan-priority-concurrency.md": {
       "status": "held",
       "owner": "d778be9d",
