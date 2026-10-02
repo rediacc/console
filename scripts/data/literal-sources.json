@@ -100,7 +100,6 @@
     {"path": ".ci/tutorials/apps/secrets-demo/docker-compose.yml", "keys": ["WK_RUNTIME_DIR"], "reason": "deployed to and run on a remote machine as a repository payload, where this tree does not exist"},
     {"path": ".github/ISSUE_TEMPLATE/config.yml", "keys": ["WK_GH_REPO", "WK_SITE_ORIGIN"], "reason": "read statically by GitHub's issue chooser; no workflow step runs before it"},
     {"path": ".github/external-callers.yml", "keys": ["WK_ACCOUNT_REPO", "WK_RENET_REPO"], "reason": "a static inventory of the other repositories that call this one's workflows, read as data"},
-    {"path": ".github/workflows/claude-review-reusable.yml", "keys": ["WK_GH_REPO"], "reason": "a reusable workflow called from other repositories, where .ci/config/well-known.env does not exist; its repository guards compare against the literal"},
     {"path": "scripts/ci-runner/manifest.ts", "keys": ["WK_MEDIA_ORIGIN"], "lines": "^\\s*PUBLIC_VIDEO_CDN_BASE_URL:", "reason": "gate harnesses (test_gate_gate_anti_vacuity.py:167) copy scripts/ alone into a bare tree and import this manifest; an import from packages/ made check-ci-parity crash there (Cannot find module), so the one env value is written out and value-checked"}
   ],
   "symbols": {

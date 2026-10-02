@@ -26,10 +26,10 @@ SCHEMA = "ci-verdict/v1"
 GENERATOR = "rediacc_ci.ci.ci_diagnose"
 CHECK_NAME = "CI Verdict"
 PUBLISH_JOB_NAME = "Publish CI Verdict"
-# Never a CI result, whatever their conclusion. "Review Complete" reports review currency, "CI Verdict" is this module's own published diagnosis, and "Publish CI Verdict" is the job that posts it. Exact names, never substrings.
-NONBLOCKING_CONTEXTS = frozenset({"Review Complete", CHECK_NAME, PUBLISH_JOB_NAME})
+# Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, and "Publish CI Verdict" is the job that posts it. Exact names, never substrings.
+NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME})
 # The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure.
-WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", "Review Complete")
+WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete")
 CAUSE_KINDS = (
     "watchdog-budget",
     "watchdog-failure",

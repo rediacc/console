@@ -465,9 +465,8 @@ def _alias_set(name: str) -> set[str]:
     return {name, parts[0], parts[-1]}
 
 
-# `Review Complete` is not a job of `ci.yml` at all -- it is posted by the SEPARATE `review-status.yml` workflow (watchdog-monitor.yml:140 documents the same fact for the watchdog's own exclusion) -- yet `actions/runs/{id}/jobs` returns it alongside ci.yml's own jobs, timestamped by whenever the human review actually finished, hours after the pipeline itself. MEASURED live: run 35128695736 reports `Review Complete` completing at 2026-09-17T07:11:28Z against a run created 2026-09-16T17:31:16Z, 13+ hours later, which critical_path's plain "latest completed_at wins" sink rule mistook for the run's true finish line before this exclusion existed. `CI Complete` is NOT excluded here: unlike `Review Complete` it is a genuine ci.yml job and the plan's own section 1b ends its sample critical path there.
-# `CI Verdict` (posted by `ci-verdict.yml` once the run completes) and its `Publish CI Verdict` job are the same kind of after-the-fact observer.
-CRITICAL_PATH_EXCLUDE = ("Review Complete", "CI Verdict", "Publish CI Verdict")
+# `CI Verdict` is not a job of `ci.yml` at all -- it is posted by the SEPARATE `ci-verdict.yml` workflow once the run completes, together with its `Publish CI Verdict` job -- yet `actions/runs/{id}/jobs` can return such an after-the-fact observer alongside ci.yml's own jobs, timestamped after the pipeline itself, and critical_path's plain "latest completed_at wins" sink rule would mistake it for the run's true finish line (measured on run 35128695736 with an earlier observer, 13+ hours late). `CI Complete` is NOT excluded here: it is a genuine ci.yml job and the plan's own section 1b ends its sample critical path there.
+CRITICAL_PATH_EXCLUDE = ("CI Verdict", "Publish CI Verdict")
 
 
 def critical_path(graph: dict[str, set[str]], jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -822,7 +821,7 @@ def parse_unit_duration_artifact(
     return totals
 
 
-# T3.2: the artifact API. `fetch_artifacts` goes through `ghx` like every other read here; the zip DOWNLOAD cannot, because `ghx.gh()` is text-only (TRAP-safe `.stdout` is a `str`) and a zip is binary -- the same reason `rediacc_ci.review.review_status.artifact_pr` shells out to `gh api .../zip` directly rather than through `ghx`.
+# T3.2: the artifact API. `fetch_artifacts` goes through `ghx` like every other read here; the zip DOWNLOAD cannot, because `ghx.gh()` is text-only (TRAP-safe `.stdout` is a `str`) and a zip is binary -- so the download shells out to `gh api .../zip` directly rather than through `ghx`.
 
 
 def fetch_artifacts(repo: str, run_id: int) -> list[dict[str, Any]]:

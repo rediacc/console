@@ -90,9 +90,6 @@ ci.yml:validate-promote
 # claude-mention.yml
 claude-mention.yml:claude
 #
-# claude-review-reusable.yml
-claude-review-reusable.yml:review
-#
 # cleanup-preview.yml
 cleanup-preview.yml:cleanup
 #
@@ -121,9 +118,6 @@ nightly-status.yml:report
 # promote-stable.yml
 promote-stable.yml:promote
 promote-stable.yml:verify-stable
-#
-# review-status.yml
-review-status.yml:review-status
 #
 # watchdog-monitor.yml
 watchdog-monitor.yml:monitor

@@ -14,7 +14,7 @@ real tree's exemption list (nightly 34014201256). `test_liveness_stands_down_on_
 WHAT THE PORT KEEPS. Every fixture is written into pytest's own `tmp_path`, and the subject is driven with `WORKFLOWS_DIR` / `EXTERNAL_CALLERS_FILE` / `EXTERNAL_CALLERS_ROOT` as an env OVERLAY per invocation, exactly as the twin does. The twin's three `sed -i` edits become Python string replacement on the same bytes, and its inline `python3 - <<PYX` heredoc becomes an ordinary
 function, which is the only place the port is shorter rather than merely different.
 
-ONE CASE READS THE REAL TREE, and it is the case that makes the other 28 worth having: `test_ec_real_registry_is_wired` drives the subject with no override at all, so a fixture-only suite cannot pass while CI checks nothing. It is READ-ONLY, which is why this twin is not in the lock's real-tree set and needs no `xdist_group`.
+ONE CASE READS THE REAL TREE, and it is the case that makes every other case worth having: `test_ec_real_registry_is_wired` drives the subject with no override at all, so a fixture-only suite cannot pass while CI checks nothing. It is READ-ONLY, which is why this twin is not in the lock's real-tree set and needs no `xdist_group`.
 """
 
 import pathlib
@@ -93,8 +93,8 @@ def write_exempt(d: pathlib.Path, reads: bool) -> None:
         if reads
         else "- run: echo hi"
     )
-    (d / "claude-review-reusable.yml").write_text(
-        "name: claude-review-reusable\n"
+    (d / "exempt-reusable.yml").write_text(
+        "name: exempt-reusable\n"
         "on:\n"
         "  workflow_call:\n"
         "    secrets:\n"
@@ -110,7 +110,7 @@ def write_exempt(d: pathlib.Path, reads: bool) -> None:
 
 
 # `DECLARED_UNUSED_OK` is drained to empty on the real tree (W8 P1b's "declared endgame"), so the differential injects this synthetic pair through the subject's own test-only seam to give the liveness sweep and arm (a3) a positive case at all. `write_exempt` builds the fixture file this pair names.
-EXTRA_EXEMPTION = "claude-review-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
+EXTRA_EXEMPTION = "exempt-reusable.yml:ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN"
 
 
 def run_check_live(directory) -> harness.RunResult:
@@ -513,13 +513,59 @@ def test_ec_absent_submodule_is_blind_not_pass(gate, tmp_path):
     gate.log_pass("an absent submodule tree fails rather than passing vacuously")
 
 
-def test_ec_empty_registry_is_blind_not_pass(gate, tmp_path):
-    root = ec_fixture(tmp_path)
+# An EMPTY registry is the real state since 2026-10-02, when the last cross-repo caller (the submodules' Claude review callers) was deleted. Empty is a claim, "no other repository calls a workflow here", and the completeness scan is what proves it: so empty passes only when a checked-out submodule was scanned and held no `uses: <console>/...`, and stays blind when no submodule is checked out.
+
+
+def empty_registry_fixture(d: pathlib.Path) -> pathlib.Path:
+    """`ec_fixture` with `callers: []` and the submodule marked checked out (`private/acct/.git`)."""
+    root = ec_fixture(d)
     (root / "registry.yml").write_text("callers: []\n", encoding="utf-8")
+    (root / "private" / "acct" / ".git").write_text(
+        "gitdir: ../../.git/modules/acct\n", encoding="utf-8"
+    )
+    return root
+
+
+def test_ec_empty_registry_reports_an_unregistered_caller(gate, tmp_path):
+    """RED: an emptied registry must not hide a caller that still exists on disk."""
+    root = empty_registry_fixture(tmp_path)
     result = run_ec(root)
-    gate.assert_exit(1, result, "an emptied registry must fail rather than assert nothing")
-    gate.assert_contains(result.combined, "declares no callers", "names the empty registry")
-    gate.log_pass("emptying the registry fails (anti-vacuity)")
+    gate.assert_exit(1, result, "an empty registry with a live external caller must fail")
+    gate.assert_contains(
+        result.combined,
+        "private/acct/.github/workflows/review.yml",
+        "names the unregistered caller",
+    )
+    gate.assert_contains(result.combined, "not declared in registry.yml", "says what is missing")
+    gate.assert_not_contains(result.combined, "this check is blind", "a finding, not a stand-down")
+    gate.log_pass("an empty registry still reports a planted unregistered caller")
+
+
+def test_ec_empty_registry_passes_when_a_scanned_submodule_has_no_caller(gate, tmp_path):
+    """GREEN: a checked-out submodule with no workflows at all is the post-teardown tree."""
+    root = empty_registry_fixture(tmp_path)
+    shutil.rmtree(root / "private" / "acct" / ".github")
+    result = run_ec(root)
+    gate.assert_exit(0, result, "an empty registry proven by a scanned submodule must pass")
+    gate.assert_contains(
+        result.combined,
+        "registry declares no external callers, and 1 checked-out submodule(s) hold none",
+        "reports what the scan covered",
+    )
+    gate.log_pass("an empty registry passes when a checked-out submodule holds no caller")
+
+
+def test_ec_empty_registry_without_a_submodule_is_blind(gate, tmp_path):
+    """BLIND: with no submodule checked out, "no external caller" is unverified, not true."""
+    root = empty_registry_fixture(tmp_path)
+    shutil.rmtree(root / "private")
+    result = run_ec(root)
+    gate.assert_exit(1, result, "an empty registry with nothing scanned must fail")
+    gate.assert_contains(result.combined, "this check is blind", "says it asserted nothing")
+    gate.assert_contains(
+        result.combined, "no private/*/.git is checked out", "names the missing scan input"
+    )
+    gate.log_pass("an empty registry with no checked-out submodule is blind (anti-vacuity)")
 
 
 def test_ec_fixture_tree_skips_cleanly(gate, tmp_path):
@@ -542,7 +588,9 @@ def test_ec_real_registry_is_wired(gate):
     result = run_check(None)
     gate.assert_exit(0, result, "the real tree must satisfy its own external-caller registry")
     gate.assert_contains(
-        result.combined, "external caller call-site(s) verified", "the real run reached CHECK 4"
+        result.combined,
+        "registry declares no external callers, and",
+        "the real run reached CHECK 4 and scanned the checked-out submodules",
     )
     gate.log_pass("the real .github/external-callers.yml is enforced, not just fixtures")
 
@@ -558,8 +606,8 @@ def a3_fixture(d: pathlib.Path) -> pathlib.Path:
     root = d / "tree"
     (root / ".github" / "workflows").mkdir(parents=True)
     (root / "private" / "acct" / ".github" / "workflows").mkdir(parents=True)
-    (root / ".github" / "workflows" / "claude-review-reusable.yml").write_text(
-        "name: claude-review-reusable\n"
+    (root / ".github" / "workflows" / "exempt-reusable.yml").write_text(
+        "name: exempt-reusable\n"
         "on:\n"
         "  workflow_call:\n"
         "    secrets:\n"
@@ -580,7 +628,7 @@ def a3_fixture(d: pathlib.Path) -> pathlib.Path:
             "  c:\n"
             "    uses: "
             + GH_REPO
-            + "/.github/workflows/claude-review-reusable.yml@main\n"
+            + "/.github/workflows/exempt-reusable.yml@main\n"
             + "    secrets:\n"
             + "      ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN: "
             + "${{ secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN }}\n"
@@ -592,7 +640,7 @@ def a3_fixture(d: pathlib.Path) -> pathlib.Path:
         "  - caller: private/acct/.github/workflows/review.yml\n"
         "    repo: rediacc/acct\n"
         "    pinned_at: main\n"
-        "    calls: .github/workflows/claude-review-reusable.yml\n"
+        "    calls: .github/workflows/exempt-reusable.yml\n"
         "    passes_inputs: []\n"
         "    passes_secrets: [ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN]\n",
         encoding="utf-8",
@@ -701,15 +749,44 @@ def test_a3_pinned_but_unexempted_is_reported(gate, tmp_path):
     gate.log_pass("a registry-pinned pair the exemption list omits is reported")
 
 
-def test_a3_empty_registry_is_blind_not_pass(gate, tmp_path):
-    """Zero inputs is a failure: with no entries the arm asserts nothing either way."""
+def test_a3_empty_registry_reports_any_exemption(gate, tmp_path):
+    """An empty registry pins nothing alive, so every exemption left is unjustified."""
     root = a3_fixture(tmp_path)
     (root / "registry.yml").write_text("callers: []\n", encoding="utf-8")
+    shutil.rmtree(root / "private" / "acct" / ".github")
+    (root / "private" / "acct" / ".git").write_text("gitdir: x\n", encoding="utf-8")
     result = run_ec_live(root)
-    gate.assert_exit(1, result, "an emptied registry must fail rather than assert nothing")
-    gate.assert_contains(result.combined, "arm (a3)", "a3 says it is blind, not just CHECK 4")
-    gate.assert_contains(result.combined, "this arm is blind", "names the vacuity")
-    gate.log_pass("a3 refuses an empty registry (anti-vacuity)")
+    gate.assert_exit(1, result, "an exemption an empty registry cannot pin must fail")
+    gate.assert_contains(
+        result.combined,
+        "no entry in registry.yml pins it alive",
+        "says the justification is gone",
+    )
+    gate.log_pass("a3 reports an exemption once the registry is empty")
+
+
+def test_a3_empty_registry_and_empty_exemptions_pass(gate, tmp_path):
+    """The post-teardown real tree: no external caller and nothing exempted, both proven."""
+    root = tmp_path / "tree"
+    (root / ".github" / "workflows").mkdir(parents=True)
+    (root / "private" / "acct").mkdir(parents=True)
+    (root / "private" / "acct" / ".git").write_text("gitdir: x\n", encoding="utf-8")
+    write_callee(root / ".github" / "workflows")
+    (root / "registry.yml").write_text("callers: []\n", encoding="utf-8")
+    result = run_check(
+        root / ".github" / "workflows",
+        EXTERNAL_CALLERS_FILE=str(root / "registry.yml"),
+        EXTERNAL_CALLERS_ROOT=str(root),
+        REAL_WORKFLOW_TREE="true",
+        SLIM_TIMEOUT_REQUIRE_COVERAGE="false",
+    )
+    gate.assert_exit(0, result, "an empty registry with an empty exemption list must pass")
+    gate.assert_contains(
+        result.combined,
+        "arm (a3): 0 declared-unused exemption(s) == 0 pinned alive by 0",
+        "prints the shape it compared",
+    )
+    gate.log_pass("a3 and CHECK 4 accept the empty registry the real tree now carries")
 
 
 def test_a3_stands_down_without_a_registry(gate, tmp_path):

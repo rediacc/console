@@ -78,11 +78,8 @@ def test_the_gate_is_green_on_the_real_tree(gate):
 def test_the_real_commented_mentions_do_not_fire(gate):
     gate.log_test("FALSE POSITIVE, real fixtures: the comments the sibling sweep recorded")
     # Each of these sits in the real corpus inside a comment. If one stops being there the fixture is gone and this test says so rather than passing on nothing.
+    # The commented `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` fixture left with the reusable review workflow (deleted 2026-10-02); no other commented secret read remains, so the filename case carries the secrets side.
     for rel, needle in (
-        (
-            ".github/workflows/claude-review-reusable.yml",
-            "secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN",
-        ),
         (".github/workflows/cd-deploy-account.yml", "set-account-worker-secrets.sh"),
         (".github/workflows/ci.yml", "vars.TURNSTILE_SITE_KEY"),
     ):
@@ -94,7 +91,7 @@ def test_the_real_commented_mentions_do_not_fire(gate):
     result = _run()
     gate.assert_exit(0, result, "the real tree stays green with them present")
     gate.assert_not_contains(
-        result.combined, "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN", "the commented secret is not reported"
+        result.combined, "reads secrets.sh", "the commented script name is not reported"
     )
     gate.assert_not_contains(
         result.combined, "TURNSTILE_SITE_KEY", "the commented variable is not reported"

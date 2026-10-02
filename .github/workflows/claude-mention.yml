@@ -53,7 +53,7 @@ jobs:
             ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN > BWS_ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN
 
       # No `prompt:` input -> interactive/tag mode; default trigger_phrase is
-      # @claude. Same token strategy as claude-review.yml.
+      # @claude. The OAuth token comes from Bitwarden (the fetch above).
       - name: Run Claude
         uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
         with:
