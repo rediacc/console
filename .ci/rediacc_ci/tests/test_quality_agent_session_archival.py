@@ -182,7 +182,7 @@ def test_stamp_text_round_trips_the_heading_format_the_sections_carry():
 # --------------------------------------------------------------------------- move_refusal.
 
 RESERVED = frozenset(
-    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
+    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
 )
 
 CLEAN_MOVE = {
