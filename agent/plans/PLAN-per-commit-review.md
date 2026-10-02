@@ -24,7 +24,8 @@ At most three writers, each owning its own files: A owns the reviewer core, B th
 - [x] T4 [A] Handle the agent/ collisions: add `"reviews"` to `wl_store.AGENT_RESERVED_DIRS` and a `reviews` class to `.ci/policy/tree-shape.json`, add a prose-style `exempt_paths` entry, and update agent/README.md (section 9).
     (ticked) 2026-10-02T09:36:59Z by d778be9d: commit:ee607a003 reviews reserved (wl_store AGENT_RESERVED_DIRS, tree-shape class, prose exempt_paths, agent/README)
 - [ ] T5 [B] Add the worklist verbs `--review-mark`, `--review-commit`, `--review-run` and `--prune-reviews` (the last is a thin arm over C's function) to `.claude/hooks/stop/worklist.py`. Add their usage text to worklist_messages.py and CLAUDE.md's verb block (sections 5 and 6).
-- [ ] T6 [B] Wire the stop hook (section 7): new keys `commit-review` and `commit-review-malformed`, advisories through `outq_add`, a rewritten pr-finish box, retire `review-red`/`review-unreadable`, and add the new keys to the ladder, `test-always-tier.py`, `wl_roster.CAP_WAIT_KEEPS` and Y's focus keep-list.
+- [x] T6 [B] Wire the stop hook (section 7): new keys `commit-review` and `commit-review-malformed`, advisories through `outq_add`, a rewritten pr-finish box, retire `review-red`/`review-unreadable`, and add the new keys to the ladder, `test-always-tier.py`, `wl_roster.CAP_WAIT_KEEPS` and Y's focus keep-list.
+    (ticked) 2026-10-02T10:37:21Z by d778be9d: commit:ee607a003 commit-review keys; commit:ab9939513 review-red/review-unreadable retired, pr-finish box 3 live
 - [x] T7 [B] Add the guards `block_review_file_edit.py` (pre-edit plus pre-bash write shapes) and `block_push_with_unrecorded_reviews.py` (pre-bash), each with EDGE_CASES, a DEFECT tuple and its own suite, and add both to `scripts/data/hook-inventory-baseline.json`.
     (ticked) 2026-10-02T09:37:01Z by d778be9d: commit:ee607a003 block_review_file_edit, block_review_file_shell_write, block_push_with_unrecorded_reviews with suites; modes fixed d000fd7a0
 - [x] T8 [C] Move labeling to `.ci/rediacc_ci/review/pr_labels.py`, which reads verdicts from the review files, and run it from ci.yml's `label-guide` job (section 8).
@@ -33,7 +34,8 @@ At most three writers, each owning its own files: A owns the reviewer core, B th
     (ticked) 2026-10-02T09:37:39Z by d778be9d: commit:ee607a003 S2 + prune_reviews, quality-branch token; oracle hardening d000fd7a0; manifest env 86e660901
 - [x] T10 [operator] Remove `Review Complete` from main's required status checks (section 11, step 3). This is the precondition for T11.
     (ticked) 2026-10-02T09:38:17Z by d778be9d: operator ruleset split applied 2026-10-02, recorded at agent/worklist/d778be9d.jsonl:5552; ruleset 12344707 required checks now [CI Complete] only (live gh api read)
-- [ ] T11 [C] Tear down the review system (section 11), submodule PRs first. It closes only when the grep in 11.5 returns nothing.
+- [x] T11 [C] Tear down the review system (section 11), submodule PRs first. It closes only when the grep in 11.5 returns nothing.
+    (ticked) 2026-10-02T10:37:22Z by d778be9d: commit:6566f46aa WP-1, commit:ab9939513 WP-2, commit:eb932d04d WP-3; exit grep residue = the 11.6 KEEP list only (secret-reachability history, review_comments dormant half, check_pr_head_ref_completeness receipts, profiler frozen corpus)
 - [x] T12 [A,B,C] Tests and mutation controls (section 12). Each writer owns the tests for its own files.
     (ticked) 2026-10-02T09:37:04Z by d778be9d: commit:ee607a003 test_review_commit_hook (23), test_review_pr_labels (11), guard suites, archival S2 cases
 - [x] T13 [lead] Run one live smoke: a real haiku review of a real commit on this branch. Record cost and wall time in the tick evidence and in commit-review.json's `$comment`.
