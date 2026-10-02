@@ -526,7 +526,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-parallel-writer-roster.md` | ready | 304 | 0 | 28 | 40420 |
-| `agent/plans/PLAN-per-commit-review.md` | approved | 399 | 1 | 16 | 52053 |
+| `agent/plans/PLAN-per-commit-review.md` | approved | 400 | 0 | 17 | 52219 |
 | `agent/plans/PLAN-plan-dependencies.md` | held | 373 | 12 | 0 | 33868 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 69 | 3 | 13 | 13872 |
 | `agent/plans/PLAN-plan-priority-concurrency.md` | held | 460 | 12 | 0 | 38802 |
