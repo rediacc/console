@@ -6,9 +6,9 @@ The nightly reaper. It deletes GitHub releases, git tags, GHCR package versions,
 Usage: cleanup_versions.py [--days N] [--versions N] [--dry-run]
 
 -----------------------------------------------------------------------------
-THE TWIN IS THE LIVE GATE. THIS IS THE VERIFIED-EQUIVALENT ALTERNATIVE.
+THIS PORT IS WHAT RUNS NIGHTLY; THE BASH TWIN IS THE PARITY REFERENCE.
 -----------------------------------------------------------------------------
-Nothing here is wired into `npm run ci`, the manifest, or any workflow. The bash twin stays registered and stays the thing that runs nightly; this file exists so the cutover, when a driver makes it, is a one-line change against a port whose equivalence is already on the record.
+`.github/workflows/housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
     K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`

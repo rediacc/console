@@ -175,7 +175,7 @@ def test_result_var_for_matches_tr() -> None:
 
 
 def test_the_exempt_set_matches_the_twins_block_entry_for_entry() -> None:
-    """The five exempt job names, and their reasons, pinned against the twin's frozen text.
+    """The exempt job names and their reasons: the twin's five pinned against its frozen text, plus the one declared addition (pr-labels).
 
     A port that dropped one would silently widen the gate by one job. A port that ADDED one would silently narrow it, which is worse, so the comparison is a set equality against the twin rather than a floor.
     """
