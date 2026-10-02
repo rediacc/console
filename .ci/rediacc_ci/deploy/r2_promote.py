@@ -14,6 +14,9 @@ THE PLAN PER TREE (`promote_tree`):
   3. Copy the rest, phase by phase, server-side. The pointers are EXCLUDED from every phase whatever its filters say, so an edge-defaulted installer never reaches `stable/`, not even for the seconds between a copy and a rewrite. Each phase finishes before the next starts. A key whose stable copy already has the same size and is not older is skipped (the rule `aws s3 sync` applied to the old upload).
   4. Upload the stamped pointers LAST. See `POINTERS_GO_LAST`.
   5. List `<dir>/stable/` again. Every promoted key must be there, or the run refuses (`INCOMPLETE:`) and purges nothing. The purge URLs are the promoted keys confirmed by that listing, in listing order.
+
+TWO SOURCES, FOR A CHANNEL SNAPSHOT (PLAN-plan-per-pr-loop R2 follow-up). By default one tree, `<dir>/edge/`, feeds every phase. `Sources` splits it: phase 1 (the bytes) reads `bytes_prefix`, every later phase and the pointers read `metadata_prefix`, which is `channel_snapshot`'s per-version copy of the signed metadata. A snapshot promote ALWAYS copies its metadata and, with `copy_bytes_always`, its bytes too, never applying the skip rule of step 3: a channel name such as `dists/stable/InRelease` or `rdc-linux-x64`
+is reused by every version, and a stable copy promoted LATER from an OLDER release can have the same size and a newer LastModified than the snapshot object, so the skip rule would keep the wrong version's file.
 """
 
 from __future__ import annotations
@@ -62,6 +65,16 @@ class Obj:
     rel: str
     size: int
     modified: datetime.datetime
+
+
+@dataclass(frozen=True)
+class Sources:
+    """Where a snapshot promote reads from; see TWO SOURCES in the module docstring. `ignore` names rels of the bytes tree that are never promoted (the `.released` sentinel of `cli/v<ver>/`)."""
+
+    bytes_prefix: str
+    metadata_prefix: str
+    ignore: frozenset[str] = frozenset()
+    copy_bytes_always: bool = False
 
 
 def endpoint_args(endpoint: str) -> list[str]:
@@ -253,7 +266,7 @@ class Transfers:
             raise PromoteError(failed[0])
 
 
-def check_sizes(dir_name: str, objs: list[Obj], self_name: str) -> None:
+def check_sizes(prefix: str, objs: list[Obj], self_name: str) -> None:
     """Refuse a tree holding an object one CopyObject cannot copy, before anything is copied."""
     big = [obj for obj in objs if obj.size > COPY_OBJECT_MAX_BYTES]
     if big:
@@ -261,19 +274,22 @@ def check_sizes(dir_name: str, objs: list[Obj], self_name: str) -> None:
             print(
                 "%s: %s%s is %d bytes, over the %d-byte single CopyObject limit; a multipart UploadPartCopy "
                 "is not implemented, so nothing was promoted"
-                % (self_name, tree(dir_name, "edge"), obj.rel, obj.size, COPY_OBJECT_MAX_BYTES),
+                % (self_name, prefix, obj.rel, obj.size, COPY_OBJECT_MAX_BYTES),
                 file=sys.stderr,
             )
         raise PromoteError(1)
 
 
-def stage_pointers(dir_name: str, edge: list[Obj], stage: str, run: Transfers) -> list[str]:
-    """Fetch the tree's pointers from edge into `stage` and stamp them for stable. Returns the ones present. An absent pointer is skipped, as both bash twins skip it (`[[ -f "$f" ]]`)."""
+def stage_pointers(
+    dir_name: str, edge: list[Obj], stage: str, run: Transfers, prefix: str | None = None
+) -> list[str]:
+    """Fetch the tree's pointers from `prefix` (default `<dir>/edge/`) into `stage` and stamp them for stable. Returns the ones present. An absent pointer is skipped, as both bash twins skip it (`[[ -f "$f" ]]`)."""
+    source = tree(dir_name, "edge") if prefix is None else prefix
     present = {obj.rel for obj in edge}
     names = [name for name in pointers(dir_name) if name in present]
     os.makedirs(stage, exist_ok=True)
     for name in names:
-        run.get(tree(dir_name, "edge") + name, os.path.join(stage, name))
+        run.get(source + name, os.path.join(stage, name))
     try:
         channel_stamp.stamp_stable(dir_name, stage)
     except channel_stamp.StampError as exc:
@@ -282,37 +298,59 @@ def stage_pointers(dir_name: str, edge: list[Obj], stage: str, run: Transfers) -
     return names
 
 
-def promote_tree(
-    dir_name: str, phases: tuple[tuple[str, ...], ...], stage_root: str, run: Transfers
-) -> list[str]:
-    """Promote one `<dir>/edge/` to `<dir>/stable/` per the module docstring's plan. Returns the purge URLs. `phases` are aws-style filter tails; `((),)` is one phase of everything."""
-    edge = run.list_tree(tree(dir_name, "edge"))
-    if not edge:
+def _listed(prefix: str, run: Transfers, ignore: frozenset[str] = frozenset()) -> list[Obj]:
+    """One tree's listing, refused as `VACUOUS:` when it is empty."""
+    objs = [obj for obj in run.list_tree(prefix) if obj.rel not in ignore]
+    if not objs:
         print(
-            "VACUOUS: %s/edge/ lists 0 object(s) for promotion; refusing to report a promotion that "
-            "moved nothing" % dir_name,
+            "VACUOUS: %s lists 0 object(s) for promotion; refusing to report a promotion that "
+            "moved nothing" % prefix,
             file=sys.stderr,
         )
         raise PromoteError(1)
-    check_sizes(dir_name, edge, run.self_name)
+    return objs
+
+
+def promote_tree(
+    dir_name: str,
+    phases: tuple[tuple[str, ...], ...],
+    stage_root: str,
+    run: Transfers,
+    sources: Sources | None = None,
+) -> list[str]:
+    """Promote one `<dir>/edge/` to `<dir>/stable/` per the module docstring's plan. Returns the purge URLs. `phases` are aws-style filter tails; `((),)` is one phase of everything. `sources` splits the bytes and the metadata between two trees (TWO SOURCES in the module docstring)."""
+    split = sources is not None
+    bytes_prefix = sources.bytes_prefix if sources is not None else tree(dir_name, "edge")
+    meta_prefix = sources.metadata_prefix if sources is not None else bytes_prefix
+    edge = _listed(bytes_prefix, run, sources.ignore if sources is not None else frozenset())
+    meta = _listed(meta_prefix, run) if split else edge
+    check_sizes(bytes_prefix, edge, run.self_name)
+    if split:
+        check_sizes(meta_prefix, meta, run.self_name)
     stage = os.path.join(stage_root, dir_name)
-    staged = stage_pointers(dir_name, edge, stage, run)
+    staged = stage_pointers(dir_name, meta, stage, run, meta_prefix)
     before = {obj.rel: obj for obj in run.list_tree(tree(dir_name, "stable"))}
 
     excluded = set(pointers(dir_name))
     selected: set[str] = set()
-    for filters in phases:
+    for index, filters in enumerate(phases):
+        is_bytes = index == 0
+        source, prefix = (edge, bytes_prefix) if is_bytes else (meta, meta_prefix)
+        # A snapshot promote never skips its metadata, nor (cli) its bytes; see TWO SOURCES.
+        skippable = not split or (
+            is_bytes and sources is not None and not sources.copy_bytes_always
+        )
         batch = [
             obj
-            for obj in edge
+            for obj in source
             if obj.rel not in excluded and obj.rel not in selected and keep(obj.rel, filters)
         ]
         selected.update(obj.rel for obj in batch)
         run.copy_all(
             [
-                (tree(dir_name, "edge") + obj.rel, tree(dir_name, "stable") + obj.rel)
+                (prefix + obj.rel, tree(dir_name, "stable") + obj.rel)
                 for obj in batch
-                if not unchanged(obj, before.get(obj.rel))
+                if not (skippable and unchanged(obj, before.get(obj.rel)))
             ]
         )
 
@@ -320,7 +358,9 @@ def promote_tree(
     for name in staged:
         run.put(os.path.join(stage, name), tree(dir_name, "stable") + name)
 
-    promoted = [obj.rel for obj in edge if obj.rel in selected or obj.rel in staged]
+    in_edge = {obj.rel for obj in edge}
+    order = edge if not split else edge + [obj for obj in meta if obj.rel not in in_edge]
+    promoted = [obj.rel for obj in order if obj.rel in selected or obj.rel in staged]
     landed = {obj.rel for obj in run.list_tree(tree(dir_name, "stable"))}
     missing = [rel for rel in promoted if rel not in landed]
     if missing:

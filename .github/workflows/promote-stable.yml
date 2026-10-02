@@ -110,6 +110,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.list_edge_releases
 
+      # The edge versions with a complete channel snapshot (snapshots/v<ver>/):
+      # an OLDER selection is promotable only from its own snapshot.
+      - name: List channel snapshots
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true'
+        id: snapshots
+        env:
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.list_channel_snapshots
+
       # SOAK_DAYS comes from the workflow-level env: above. Every step after this
       # one promotes steps.soak.outputs.version, the SELECTED release, never
       # whatever edge happens to be newest when the step runs.
@@ -127,6 +139,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           STABLE_VERSION: ${{ steps.stable.outputs.version }}
           EDGE_RELEASES: ${{ steps.releases.outputs.releases }}
+          CHANNEL_SNAPSHOTS: ${{ steps.snapshots.outputs.snapshots }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.check_soak_period
 
       # BEFORE ANY PROMOTION WRITE, and the position is the whole point.

@@ -322,6 +322,10 @@ jobs:
       # would rot into a vacuous branch. Letting the script decide keeps the
       # thing under test on the live path. See
       # agent/plans/PLAN-skip-release-gates-r2-manifest.md section 3.
+      # SNAPSHOT_VERSION (edge only): both upload steps also write the version's
+      # channel snapshot, snapshots/v<version>/, the signed channel metadata
+      # promote-stable reads when it promotes an edge release older than the
+      # newest one (rediacc_ci.deploy.channel_snapshot).
       - name: Upload artifacts to R2 channel
         if: inputs.channel != ''
         run: |
@@ -330,6 +334,7 @@ jobs:
             --channel "${{ inputs.channel }}"
         env:
           SKIP_RELEASE: ${{ inputs.skip_release }}
+          SNAPSHOT_VERSION: ${{ inputs.channel == 'edge' && inputs.next_version || '' }}
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
@@ -338,6 +343,7 @@ jobs:
         if: inputs.channel != ''
         env:
           SKIP_RELEASE: ${{ inputs.skip_release }}
+          SNAPSHOT_VERSION: ${{ inputs.channel == 'edge' && inputs.next_version || '' }}
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
