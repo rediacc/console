@@ -17,6 +17,7 @@ The file log is still kept, and it holds the one thing the stream cannot: the CO
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -30,6 +31,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import upload_to_r2 as port
 from rediacc_ci.deploy import write_once_guard_check as harness
 from rediacc_ci.well_known import RELEASES_BUCKET as WK_RELEASES_BUCKET
+from rediacc_ci.well_known import RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -97,7 +99,13 @@ if sub == "s3 cp" and len(argv) > 3 and argv[3] == "-":
     if os.environ.get("FAKE_GET_RC", "0") != "0":
         sys.stderr.write("fatal error: An error occurred (ExpiredToken)\\n")
         sys.exit(int(os.environ["FAKE_GET_RC"]))
-    body = os.environ.get("FAKE_TRACKER", "")
+    # The two reads only the port makes (#62a2846b): the stable manifest that bounds the tracker's pruning, and a sealed release's checksums.
+    if argv[2].endswith("/cli/stable/manifest.json"):
+        body = os.environ.get("FAKE_STABLE_MANIFEST", "")
+    elif argv[2].endswith(".sha256"):
+        body = os.environ.get("FAKE_SEALED_SHA256", "")
+    else:
+        body = os.environ.get("FAKE_TRACKER", "")
     if body:
         sys.stdout.write(body)
         sys.exit(0)
@@ -444,6 +452,87 @@ def test_sealed_with_binaries_skips_the_prefix_but_still_moves_the_pointer(
     _assert_agree(old, new, "sealed-skip", old_calls, new_calls)
 
 
+SHA_FIRST = "a" * 64
+SHA_RERUN = "b" * 64
+SEALED_TREE = {
+    **DEFAULT_TREE,
+    "dist/cli/manifest.json": json.dumps(
+        {
+            "version": "1.2.3",
+            "binaries": {
+                "linux-x64": {
+                    "url": RELEASES_ORIGIN + "/cli/v1.2.3/rdc-linux-x64",
+                    "sha256": SHA_RERUN,
+                }
+            },
+        },
+        indent=2,
+    )
+    + "\n",
+}
+
+
+def test_delta_a_sealed_rerun_publishes_the_sealed_checksums(tmp_path: pathlib.Path) -> None:
+    """NOT IN THE TWIN (#62a2846b). A sealed rerun keeps the first build's `cli/v<V>/` binaries (write-once), but the twin still published THIS build's `manifest.json`, whose sha256s name bytes that were never uploaded, so `rdc update` fails verification. The port reads each sealed `cli/v<V>/<binary>.sha256` and publishes the manifest with those. The twin is the control: its channel manifest is this build's file."""
+    root = fixture(tmp_path, SEALED_TREE)
+    sealed = "%s  rdc-linux-x64\n" % SHA_FIRST
+    _old, old_calls = _run(
+        root, "old", SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="16", FAKE_SEALED_SHA256=sealed
+    )
+    new, new_calls = _run(
+        root,
+        "new",
+        SNAPSHOT_VERSION="1.2.3",
+        SENTINEL_EXISTS="true",
+        PREFIX_KEYCOUNT="16",
+        FAKE_SEALED_SHA256=sealed,
+    )
+    manifest = str(root / "dist" / "cli" / "manifest.json")
+    assert _cp(manifest, "cli/edge/manifest.json", "no-cache") in old_calls, (
+        "the twin's control moved"
+    )
+    assert new.returncode == 0, new.stderr
+    assert _cp(manifest, "cli/edge/manifest.json", "no-cache") not in new_calls
+    get = "aws\ts3\tcp\ts3://" + WK_RELEASES_BUCKET + "/cli/v1.2.3/rdc-linux-x64.sha256\t-"
+    assert get in new_calls
+    for dest in ("cli/edge/manifest.json", "snapshots/v1.2.3/cli/manifest.json"):
+        put = "aws\ts3\tcp\t-\ts3://" + WK_RELEASES_BUCKET + "/" + dest + "\t"
+        at = new_calls.index(put)
+        body = new_calls[at:].split(">>>")[0]
+        assert SHA_FIRST in body, body
+        assert SHA_RERUN not in body, body
+    assert new_calls.index(get) < new_calls.index("/cli/edge/rdc-"), (
+        "checked before any channel write"
+    )
+    assert "sha256 from the sealed cli/v1.2.3/rdc-linux-x64.sha256" in new.stderr
+
+
+def test_a_sealed_rerun_whose_checksums_agree_uploads_the_file_unchanged(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = fixture(tmp_path, SEALED_TREE)
+    new, calls = _run(
+        root,
+        "new",
+        SENTINEL_EXISTS="true",
+        PREFIX_KEYCOUNT="16",
+        FAKE_SEALED_SHA256="%s  rdc-linux-x64\n" % SHA_RERUN,
+    )
+    assert new.returncode == 0, new.stderr
+    manifest = str(root / "dist" / "cli" / "manifest.json")
+    assert _cp(manifest, "cli/edge/manifest.json", "no-cache") in calls
+
+
+def test_a_sealed_rerun_without_a_sealed_checksum_is_refused_before_any_channel_write(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = fixture(tmp_path, SEALED_TREE)
+    new, calls = _run(root, "new", SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="16")
+    assert new.returncode == 1
+    assert "cli/v1.2.3/rdc-linux-x64.sha256" in new.stderr
+    assert "/cli/edge/" not in calls
+
+
 def test_sealed_but_empty_refuses_loudly_and_stops_the_run(tmp_path: pathlib.Path) -> None:
     """GUARD ANSWER `exit 1`. The guard's `exit` ends the SCRIPT, so nothing after it runs: no channel upload, no pointer, no npm, no summary."""
     old, new, old_calls, new_calls = run_both(tmp_path, SENTINEL_EXISTS="true", PREFIX_KEYCOUNT="0")
@@ -509,6 +598,47 @@ def test_the_retention_window_prunes_and_deletes(tmp_path: pathlib.Path) -> None
         + "/cli/v9.9.19/\t--recursive\t--endpoint-url\t%s\n"
     ) % ENDPOINT in old_calls
     _assert_agree(old, new, "prune", old_calls, new_calls)
+
+
+# Newest first, as the tracker holds them: 1.0.21 .. 1.0.0. Uploading 1.0.22 pushes 1.0.2, 1.0.1 and 1.0.0 out of the 20-entry window.
+EDGE_TRACKER = "[%s]" % ",".join('"1.0.%d"' % index for index in range(21, -1, -1))
+EDGE_RELEASE = ("--version", "1.0.22", "--channel", "edge")
+
+
+def test_delta_the_edge_tracker_keeps_a_version_newer_than_stable(tmp_path: pathlib.Path) -> None:
+    """NOT IN THE TWIN (#62a2846b), and only with `SNAPSHOT_VERSION` (every edge release): a version out of the window but newer than stable may still be selected by `check_soak_period` (`in_walk`), so its `cli/v<V>/` and snapshot stay and it stays in the tracker, appended after the window. Only versions at or below stable are pruned."""
+    root = fixture(tmp_path)
+    new, calls = _run(
+        root,
+        "new",
+        EDGE_RELEASE,
+        SNAPSHOT_VERSION="1.0.22",
+        FAKE_TRACKER=EDGE_TRACKER,
+        FAKE_STABLE_MANIFEST='{"version":"1.0.0"}',
+    )
+    assert new.returncode == 0, new.stderr
+    assert calls.count("aws\ts3\trm") == 2
+    assert "aws\ts3\trm\ts3://" + WK_RELEASES_BUCKET + "/cli/v1.0.0/\t--recursive" in calls
+    assert "aws\ts3\trm\ts3://" + WK_RELEASES_BUCKET + "/snapshots/v1.0.0/\t--recursive" in calls
+    window = "".join('  "1.0.%d",\n' % index for index in range(22, 3, -1))
+    assert "STDIN<<<[\n" + window + '  "1.0.3",\n  "1.0.2",\n  "1.0.1"\n]\n>>>' in calls
+    assert (
+        "keeping cli/v1.0.2/ outside the 20-version window: newer than stable v1.0.0" in new.stderr
+    )
+
+
+def test_delta_the_edge_tracker_prunes_nothing_when_stable_is_unknown(
+    tmp_path: pathlib.Path,
+) -> None:
+    """No readable stable manifest: every version is a candidate, so nothing is pruned and the tracker keeps all of them."""
+    root = fixture(tmp_path)
+    new, calls = _run(
+        root, "new", EDGE_RELEASE, SNAPSHOT_VERSION="1.0.22", FAKE_TRACKER=EDGE_TRACKER
+    )
+    assert new.returncode == 0, new.stderr
+    assert "aws\ts3\trm" not in calls
+    assert '  "1.0.0"\n]\n>>>' in calls
+    assert "the stable version is unknown" in new.stderr
 
 
 def test_a_version_already_in_the_tracker_is_not_added_twice(tmp_path: pathlib.Path) -> None:

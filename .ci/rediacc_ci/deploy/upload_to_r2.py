@@ -98,11 +98,19 @@ ONE DELTA THE TWIN DOES NOT HAVE: THE CHANNEL SNAPSHOT (PLAN-plan-per-pr-loop R2
 --------------------------------------------------------------------------
 With `SNAPSHOT_VERSION` set (to `--version`, on the `edge` channel only; anything else is refused before any write), the run also writes the cli part of the version's channel snapshot (`channel_snapshot`): the same `manifest.json` file and the same `latest.json` string it has just written to `cli/edge/`, to `snapshots/v<V>/cli/`. And when the tracker prunes a version, its `snapshots/v<V>/` is removed with its `cli/v<V>/`. Unset, the run is the twin's, byte for byte, which is what keeps the differential comparable.
 
+--------------------------------------------------------------------------
+TWO MORE DELTAS THE TWIN DOES NOT HAVE (#62a2846b)
+--------------------------------------------------------------------------
+A SEALED RERUN PUBLISHES THE SEALED CHECKSUMS. When the guard answers 10, `cli/v<V>/` keeps the FIRST build's binaries (write-once), and this build's `manifest.json` names sha256s of bytes that were never uploaded, so `rdc update` would refuse every download. `sealed_manifest` reads each sealed `cli/v<V>/<binary>.sha256` before any channel write and publishes the manifest (channel and snapshot) with those values; a binary whose sealed checksum cannot be read refuses the run, with nothing written to the channel. When every checksum already agrees (a reproducible build), the file is uploaded unchanged, as the twin does.
+
+THE EDGE TRACKER NEVER PRUNES A PROMOTION CANDIDATE. With `SNAPSHOT_VERSION` set (every edge release), a version that falls out of the 20-version window but is newer than stable (`check_soak_period.in_walk`, so `check_soak_period` may still select it) keeps its `cli/v<V>/` and its snapshot and stays in `cli/versions.json` after the window; with the stable manifest unreadable, nothing is pruned. Pruning such a version starved stable: its snapshot was gone, so the promote could not select it.
+
 K=5 LEDGER: `.ci/shadow/w7p6-upload-to-r2.observations.jsonl`.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -111,6 +119,7 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.deploy import channel_snapshot
+from rediacc_ci.release import check_soak_period, check_stable_manifest
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The twin's own name. Used for nothing the twin prints (it prints `$0`), only
@@ -505,10 +514,79 @@ class Uploader:
         )
         pruned = _jq(["jq", "-r", ".[%d:][]" % max_versions], updated + "\n")
         kept = _jq(["jq", ".[:%d]" % max_versions], updated + "\n")
+        if self.snapshot and pruned.strip():
+            pruned, kept = self._keep_candidates(prefix, pruned, kept, max_versions)
         # THE LAST COMMAND IS THE ONE THAT CAN STILL ABORT THE SCRIPT. A command substitution takes the status of its final command, so a failing `r2_put` here DOES become the assignment's status and errexit fires in the caller, while every jq above it is swallowed. That asymmetry is bash's, not this port's, and it is defect 4's other half.
         self.r2_put(kept, tracker_path, quiet=True)
         # `$( )` strips the trailing newlines of the whole function's stdout.
         return pruned.rstrip("\n")
+
+    def _keep_candidates(
+        self, prefix: str, pruned: str, kept: str, max_versions: int
+    ) -> tuple[str, str]:
+        """Move every pruned version `check_soak_period` may still select back into the tracker (the module docstring's tracker delta). Returns the new (pruned, kept)."""
+        try:
+            stable = check_stable_manifest.manifest_version(self.r2_get("cli/stable/manifest.json"))
+        except (ValueError, AttributeError):
+            stable = ""
+        candidates: list[str] = []
+        rest: list[str] = []
+        for ver in pruned.split("\n"):
+            if not ver:
+                continue
+            if not check_soak_period.in_walk(ver, stable):
+                rest.append(ver)
+                continue
+            candidates.append(ver)
+            why = (
+                "newer than stable v%s, a promotion candidate" % stable
+                if check_soak_period.semver(stable) is not None
+                else "the stable version is unknown (cli/stable/manifest.json unreadable)"
+            )
+            log.info(
+                "keeping %s/v%s/ outside the %d-version window: %s"
+                % (prefix, ver, max_versions, why)
+            )
+        if candidates:
+            kept = _jq(
+                ["jq", "--argjson", "extra", json.dumps(candidates), ". + $extra"], kept + "\n"
+            )
+        return "\n".join(rest), kept
+
+    def sealed_manifest(self, manifest: str) -> str | None:
+        """The manifest text to publish for a SEALED version (the module docstring's sealed-rerun delta), or None when `manifest` already names the sealed checksums. Raises `BashExitError(1)` when a sealed checksum cannot be read."""
+        try:
+            with open(manifest, encoding="utf-8") as handle:
+                data = json.load(handle)
+        except ValueError as exc:
+            log.error("cli v%s is sealed, and %s is not JSON (%s)" % (self.version, manifest, exc))
+            raise BashExitError(1) from exc
+        binaries = data.get("binaries") if isinstance(data, dict) else None
+        if not isinstance(binaries, dict):
+            return None
+        versioned = "/cli/v%s/" % self.version
+        changed = False
+        for entry in binaries.values():
+            url = entry.get("url", "") if isinstance(entry, dict) else ""
+            if versioned not in url:
+                continue
+            key = "cli/v%s/%s.sha256" % (self.version, url.rsplit("/", 1)[1])
+            fields = self.r2_get(key).split()
+            sealed = fields[0] if fields else ""
+            if not re.fullmatch(r"[0-9a-f]{64}", sealed):
+                log.error(
+                    "cli v%s is sealed, and its manifest cannot be matched to the sealed binaries: "
+                    "%s is missing or not a sha256 (got %r). Not publishing a manifest whose checksums "
+                    "name bytes that were never uploaded." % (self.version, key, sealed)
+                )
+                raise BashExitError(1)
+            if entry.get("sha256") != sealed:
+                log.info(
+                    "manifest: %s sha256 from the sealed %s (this build's differs)" % (url, key)
+                )
+                entry["sha256"] = sealed
+                changed = True
+        return json.dumps(data, indent=2) if changed else None
 
     def cleanup_old_versions(self, prefix: str, pruned_versions: str) -> None:
         """`cleanup_old_versions` (:354-366).
@@ -621,6 +699,8 @@ def parse_args(argv: list[str], argv0: str) -> dict[str, str]:
 def _upload_cli(run: Uploader, cli_dir: str) -> None:
     """The CLI section (:373-421)."""
     log.step("Uploading CLI binaries")
+    # The manifest text a sealed rerun publishes instead of this build's file; see the module docstring.
+    sealed: str | None = None
 
     if run.channel in RELEASE_CHANNELS:
         # 0 proceed, 10 skip (sealed with binaries, an idempotent rerun),
@@ -629,6 +709,9 @@ def _upload_cli(run: Uploader, cli_dir: str) -> None:
         if guard_rc == 1:
             # The twin's guard calls `exit 1`, which ends the SCRIPT there.
             raise BashExitError(1)
+        manifest = os.path.join(cli_dir, "manifest.json")
+        if guard_rc == 10 and os.path.isfile(manifest):
+            sealed = run.sealed_manifest(manifest)
         if guard_rc == 0:
             for binary in bash_glob(cli_dir, "rdc-*"):
                 if not os.path.isfile(binary):
@@ -646,7 +729,9 @@ def _upload_cli(run: Uploader, cli_dir: str) -> None:
         run.r2_cp(binary, r2_path("cli", run.channel, os.path.basename(binary)))
 
     manifest = os.path.join(cli_dir, "manifest.json")
-    if os.path.isfile(manifest):
+    if sealed is not None:
+        run.r2_put(sealed, r2_path("cli", run.channel, "manifest.json"))
+    elif os.path.isfile(manifest):
         run.r2_cp(manifest, r2_path("cli", run.channel, "manifest.json"))
 
     # `latest.json` LAST, to avoid pointing the channel at bytes not yet there. DEFECT 1 LIVES ON THIS LINE: it is unconditional, so an empty `dist/cli` publishes a pointer to a version with no binaries.
@@ -656,7 +741,9 @@ def _upload_cli(run: Uploader, cli_dir: str) -> None:
     if run.snapshot:
         # The SAME file and the SAME string as the two channel writes above, so the snapshot holds the bytes `cli/edge/` holds.
         snapshot = channel_snapshot.tree(run.version, "cli")
-        if os.path.isfile(manifest):
+        if sealed is not None:
+            run.r2_put(sealed, snapshot + "manifest.json")
+        elif os.path.isfile(manifest):
             run.r2_cp(manifest, snapshot + "manifest.json")
         run.r2_put(latest, snapshot + "latest.json")
         log.info("CLI: channel snapshot written to %s" % snapshot)

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import ast
 import os
+import re
 import shutil
 import subprocess
 import typing
@@ -500,7 +501,7 @@ def test_every_channel_directory_has_a_phase_two_arm() -> None:
 
 
 def test_the_phase_one_excludes_are_the_twins_list_in_the_twins_order() -> None:
-    """A REORDERED LIST IS A DIFFERENT FILTER, because the last matching rule wins. The `*/` twins are this port's (#51ea3682): the twin's bare names matched nothing nested."""
+    """A REORDERED LIST IS A DIFFERENT FILTER, because the last matching rule wins. The `*/` forms fix the twin's bare names, which matched nothing nested (#51ea3682); the twin's arrays carry them too (#62a2846b)."""
     excludes = [port.META_EXCLUDES[i + 1] for i in range(0, len(port.META_EXCLUDES), 2)]
     assert excludes == [
         "Packages*",
@@ -529,6 +530,15 @@ def test_the_phase_one_excludes_are_the_twins_list_in_the_twins_order() -> None:
         "versions.json",
     ]
     assert set(port.META_EXCLUDES[0::2]) == {"--exclude"}
+
+
+def test_the_twins_phase_one_array_is_the_ports_list() -> None:
+    """The twin still runs for the refusal-parity cases, so its array must not keep the bare patterns the port fixed (#62a2846b)."""
+    text = TWIN.read_text(encoding="utf-8")
+    body = text.split("META_EXCLUDES=(", 1)[1].split("\n    )", 1)[0]
+    lines = [line.split("#", 1)[0] for line in body.splitlines()]
+    words = re.findall(r"(--exclude) '([^']*)'", "\n".join(lines))
+    assert tuple(w for pair in words for w in pair) == port.META_EXCLUDES
 
 
 def test_the_rewrite_table_names_the_four_pointers() -> None:

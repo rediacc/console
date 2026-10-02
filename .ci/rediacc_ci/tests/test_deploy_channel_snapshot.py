@@ -406,7 +406,13 @@ def test_the_cli_upload_refuses_a_snapshot_of_another_version(tmp_path) -> None:
 def test_pruning_a_version_prunes_its_snapshot(tmp_path) -> None:
     tracker = "[%s]" % ",".join('"9.9.%d"' % index for index in range(22))
     root = cli_t.fixture(tmp_path)
-    proc, calls = cli_t._run(root, "new", SNAPSHOT_VERSION="1.2.3", FAKE_TRACKER=tracker)
+    proc, calls = cli_t._run(
+        root,
+        "new",
+        SNAPSHOT_VERSION="1.2.3",
+        FAKE_TRACKER=tracker,
+        FAKE_STABLE_MANIFEST='{"version":"9.9.21"}',
+    )
     assert proc.returncode == 0, proc.stderr
     for ver in ("9.9.19", "9.9.20", "9.9.21"):
         assert "aws\ts3\trm\ts3://%ssnapshots/v%s/\t--recursive" % (B, ver) in calls

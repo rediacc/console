@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh`, with the transfer made server-side (operator ruling 2026-09-26).
 
-Copies every R2 release channel from `edge/` to `stable/` inline with the release, skipping the normal 7-day soak. This is the emergency lane `Release` takes with `publish_stable=true`. The soak-gated sibling is `rediacc_ci.deploy.promote_r2_to_stable`, which copies in two phases, metadata last; this lane copies each tree in one phase, as the twin's straight recursive copy did.
+Copies every R2 release channel from `edge/` to `stable/` inline with the release, skipping the normal 7-day soak. This is the emergency lane `Release` takes with `publish_stable=true`. The soak-gated sibling is `rediacc_ci.deploy.promote_r2_to_stable`, which copies in two phases, packages first and metadata last. This lane uses the same phases (`phases`), then one catch-all phase, so it still promotes every edge object as the twin's straight recursive copy did, and a client never reads metadata naming a package that is not in stable yet.
 
 -----------------------------------------------------------------------------
 THE BYTES NEVER LEAVE R2
@@ -45,7 +45,7 @@ import sys
 import tempfile
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import channel_stamp, r2_promote
+from rediacc_ci.deploy import channel_stamp, promote_r2_to_stable, r2_promote
 
 # The twin's own name, carried in its three guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable-hotfix.sh"
@@ -57,8 +57,8 @@ BUCKET = r2_promote.BUCKET
 PUBLIC_HOST = r2_promote.PUBLIC_HOST
 CC_MUTABLE = r2_promote.CC_MUTABLE
 
-# One phase of everything: no filters, as the twin's recursive copy had none.
-PHASES: tuple[tuple[str, ...], ...] = ((),)
+# The catch-all that ends every tree's copy: no filters, as the twin's recursive copy had none. `r2_promote.promote_tree` never copies a key twice, so it moves only what the soak-gated phases leave out (`latest-linux.yml`, `repodata/comps.xml`).
+CATCH_ALL: tuple[str, ...] = ()
 
 # The stamps, shared with the soak-gated sibling through `channel_stamp`.
 CONFIG_SED = channel_stamp.CHANNEL_SED
@@ -160,6 +160,11 @@ def purge_argv(zone: str) -> list[str]:
     return [os.path.join(script_dir(), os.path.basename(PURGE_SCRIPT_RELATIVE)), "--zone", zone]
 
 
+def phases(dir_name: str) -> tuple[tuple[str, ...], ...]:
+    """The soak-gated lane's phases for `dir_name` (packages, then metadata, then signatures), then `CATCH_ALL`. The patterns live in `promote_r2_to_stable` only."""
+    return (*promote_r2_to_stable.phases(dir_name), CATCH_ALL)
+
+
 def channel_url(dir_name: str, relative: str) -> str:
     """`https://releases.rediacc.com/<dir>/stable/<relative>` (twin :81)."""
     return r2_promote.channel_url(dir_name, relative)
@@ -190,7 +195,7 @@ def _promote_dirs(endpoint: str) -> list[str]:
         for dir_name in CHANNEL_DIRS:
             print("Promoting %s/edge/ -> %s/stable/" % (dir_name, dir_name))
             _flush()
-            urls += r2_promote.promote_tree(dir_name, PHASES, stage_root, run)
+            urls += r2_promote.promote_tree(dir_name, phases(dir_name), stage_root, run)
     except r2_promote.PromoteError as exc:
         raise BashExitError(exc.status) from exc
     finally:

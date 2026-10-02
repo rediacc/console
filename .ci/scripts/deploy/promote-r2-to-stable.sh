@@ -90,12 +90,19 @@ for dir in cli apt rpm apk archlinux; do
             ;;
     esac
 
+    # Each bare metadata name has a '*/<name>' form: the filter matches the whole
+    # key relative to the tree, and the real keys are nested (dists/stable/InRelease,
+    # <arch>/APKINDEX.tar.gz, <arch>/rediacc.db). Same list, same order, as
+    # rediacc_ci.deploy.promote_r2_to_stable.META_EXCLUDES (#51ea3682, #62a2846b).
     META_EXCLUDES=(
-        --exclude 'Packages*' --exclude 'Release*' --exclude 'InRelease'
+        --exclude 'Packages*' --exclude '*/Packages*'
+        --exclude 'Release*' --exclude '*/Release*'
+        --exclude 'InRelease' --exclude '*/InRelease'
         --exclude 'repodata/*'
-        --exclude 'APKINDEX.tar.gz'
+        --exclude 'APKINDEX.tar.gz' --exclude '*/APKINDEX.tar.gz'
         --exclude '*.db.tar.gz' --exclude '*.files.tar.gz'
-        --exclude 'rediacc.db' --exclude 'rediacc.files'
+        --exclude 'rediacc.db' --exclude '*/rediacc.db'
+        --exclude 'rediacc.files' --exclude '*/rediacc.files'
         --exclude 'latest*.yml' --exclude 'latest.json' --exclude 'manifest.json'
         --exclude 'install.sh' --exclude 'install.ps1'
         --exclude '*.repo' --exclude '*.conf'
@@ -113,11 +120,12 @@ for dir in cli apt rpm apk archlinux; do
             # 2a: Packages / Packages.gz (hashes of .deb files in phase 1).
             aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
-                --exclude '*' --include 'Packages*'
+                --exclude '*' --include 'Packages*' --include '*/Packages*'
             # 2b: Release / InRelease / Release.gpg (hash of phase 2a).
             aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
-                --exclude '*' --include 'Release*' --include 'InRelease'
+                --exclude '*' --include 'Release*' --include '*/Release*' \
+                --include 'InRelease' --include '*/InRelease'
             ;;
         rpm)
             # 2a: primary / filelists / other (hashed in 2b repomd).
@@ -135,14 +143,15 @@ for dir in cli apt rpm apk archlinux; do
             # APKINDEX references .apk files in same dir (phase 1).
             aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
-                --exclude '*' --include 'APKINDEX.tar.gz'
+                --exclude '*' --include 'APKINDEX.tar.gz' --include '*/APKINDEX.tar.gz'
             ;;
         archlinux)
             # .db/.files reference .pkg.tar.zst in same dir (phase 1).
             aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --only-show-errors \
                 --cache-control "$CC_MUTABLE" \
                 --exclude '*' --include '*.db.tar.gz' --include '*.files.tar.gz' \
-                --include 'rediacc.db' --include 'rediacc.files' \
+                --include 'rediacc.db' --include '*/rediacc.db' \
+                --include 'rediacc.files' --include '*/rediacc.files' \
                 --include '*.conf'
             ;;
         cli)

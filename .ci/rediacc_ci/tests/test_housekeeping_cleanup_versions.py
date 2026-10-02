@@ -1928,6 +1928,57 @@ def test_phase_8f_leaves_channel_metadata_alone() -> None:
     assert "8f: deleted 0 stale artifact(s)" in err, "one semver is inside top-20"
 
 
+def _edge_listing(count: int) -> str:
+    return "".join(
+        "%s       12 apt/edge/rediacc-cli_%s_amd64.deb\n" % (s3_ago(10.5), v)
+        for v in ("1.0.%d" % i for i in range(count))
+    ) + "%s       12 apt/edge/rediacc-cli-0.0.0-dev-abc.deb\n" % s3_ago(10.5)
+
+
+def _edge_fixture(listing: str, *stable: dict) -> dict:
+    return r2_fixture(
+        *stable,
+        rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ --recursive"), raw=listing),
+        rule(("ls s3://" + RELEASES_BUCKET + "/apt/edge/ "), raw=listing),
+    )
+
+
+def test_delta_phase_8f_never_prunes_an_edge_version_newer_than_stable() -> None:
+    """INTENTIONAL DELTA (#62a2846b). Edge retention kept the top 20 semvers, so with a release on every merge it pruned the packages of a version still waiting out its soak, and the promote refused it (its channel snapshot names packages edge no longer holds): stable starved. An edge version newer than stable is one `check_soak_period` may still select (`in_walk`), so it is kept outside the top 20. The twin is the control: it deletes v1.0.3 and v1.0.4."""
+    manifest = rule("cli/stable/manifest.json", raw='{"version":"1.0.2"}\n')
+    old, new = _twin_and_port(
+        "cleanup_r2", ("--dry-run",), _edge_fixture(_edge_listing(25), manifest), R2_ENV
+    )
+    old_err, new_err = old[2].decode(), new[2].decode()
+    assert "apt/edge/rediacc-cli_1.0.4_amd64.deb (v1.0.4, outside top-20)" in old_err
+    assert "apt/edge/rediacc-cli_1.0.2_amd64.deb (v1.0.2, outside top-20)" in new_err
+    assert "apt/edge/rediacc-cli_1.0.0_amd64.deb (v1.0.0, outside top-20)" in new_err
+    assert "rediacc-cli_1.0.3_amd64.deb (v1.0.3" not in new_err
+    assert "rediacc-cli_1.0.4_amd64.deb (v1.0.4" not in new_err
+    assert "8f: keeping apt/edge/ v1.0.3 outside top-20: newer than stable v1.0.2" in new_err
+    assert "0.0.0-dev pollution" in new_err, "the dev pollution still goes"
+    reads = [c for c in calls_of(new[3], "aws") if "cli/stable/manifest.json" in " ".join(c)]
+    assert len(reads) == 1, "the stable manifest is read once per run, not per key"
+    assert new[0] == 0
+
+
+def test_delta_phase_8f_keeps_every_edge_version_when_stable_is_unreadable() -> None:
+    """No stable version means every edge version is a candidate (`in_walk`), so nothing outside the top 20 is pruned from edge, and the run says why."""
+    _old, new = _twin_and_port(
+        "cleanup_r2", ("--dry-run",), _edge_fixture(_edge_listing(25)), R2_ENV
+    )
+    new_err = new[2].decode()
+    assert "outside top-20)" not in new_err
+    assert "8f: keeping apt/edge/ v1.0.0 outside top-20: the stable version is unknown" in new_err
+    assert "0.0.0-dev pollution" in new_err
+    assert new[0] == 0
+
+
+def test_phase_8f_reads_no_stable_manifest_when_edge_is_inside_the_window() -> None:
+    """The delta costs nothing on a run that prunes nothing from edge: both sides make the same calls."""
+    sides("cleanup_r2", argv=("--dry-run",), fixture=_edge_fixture(_edge_listing(20)), env=R2_ENV)
+
+
 def test_phase_8e_reads_a_null_upload_query_as_no_uploads() -> None:
     """`aws --query 'Uploads[]...'` prints `null` for an idle bucket, and `null | length` is a jq ERROR. Inside the twin's `set +e` region that leaves `mpu_count` EMPTY, which `-eq 0` reads as zero. A port that raised here would be louder than the twin on the ordinary case."""
     result = sides("cleanup_r2", fixture=r2_fixture(), env=R2_ENV)
