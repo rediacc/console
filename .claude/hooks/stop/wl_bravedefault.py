@@ -16,7 +16,7 @@ Four for four, all inaction.
 THE PROMPT INVITES IT. The catalogue asks for `DEFAULT: <what you do if unanswered>` in four places, which reads perfectly well as "nothing". Rewording those is worth doing and is not enough on its own, which is why this is a judged rule: telling a no-op apart from an action is a reading of what the sentence COMMITS TO, and a regex cannot do it. "hold until CI green" and "land the
 work when CI is green" differ by one verb and by everything.
 
-(Merging, pushing main and releasing are excluded from the braver form on purpose. They are the operator's, this judge is already forbidden to order them -- sanitize_next_action rewrites any next_action that does -- and an example list that offered "merge it into the open PR" as the brave default would have generated orders the sanitiser then blanked. That is not hypothetical: it
+(Merging, pushing main and releasing are excluded from the braver form on purpose. They have their own guarded path (/pr-merge: `gh pr merge --rebase --auto` or the fast-forward fallback, operator ruling 2026-10-02), this judge is already forbidden to order them -- sanitize_next_action rewrites any next_action that does -- and an example list that offered "merge it into the open PR" as the brave default would have generated orders the sanitiser then blanked. That is not hypothetical: it
 was in the first draft of this rubric.)
 
 THE BOUNDARY, drawn explicitly, because "never hold" would be wrong. A hold is legitimate when the act it declines is IRREVERSIBLE or lands on someone else: publishing, releasing, deleting, pushing to a second repo, spending money, mailing a human. So the rule does not ask "does it hold?" -- it asks WHY it holds, as one of five reasons, and rejects exactly two of them:
@@ -111,9 +111,9 @@ default ever needs a commit to count. It does NOT change state when it describes
 continuing: "hold", "keep carrying", "leave it", "wait for", "do not touch",
 "report the numbers", "revisit later", "ask again". Reporting is not acting.
 
-FOUR ACTS ARE NEVER A BRAVE DEFAULT, because they are reserved to the
-operator and this gate is forbidden to order them: merging a PR, pushing to
-main, cutting or publishing a release, and COMMITTING -- which includes
+FOUR ACTS ARE NEVER A BRAVE DEFAULT, because this gate is forbidden to order
+them: merging a PR, pushing to main (main moves only through /pr-merge's
+guarded path, never on a judge's order), cutting or publishing a release, and COMMITTING -- which includes
 creating a branch, pushing, or opening a PR. That fourth one is this
 project's first standing order: the deliverable is an uncommitted working
 tree unless the operator asked otherwise in that task, and approving a plan

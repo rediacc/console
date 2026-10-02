@@ -22,7 +22,7 @@ THE ONE ADMITTED DIRECT PUSH, box M2 of PLAN-plan-per-pr-loop (operator ruling 2
   (b) `<src>` is the live branch (`<b>`, `origin/<b>`, their `refs/` spellings) or a commit sha, never `HEAD` (the incident's shape), and the checkout is the console's own, on its `MMDD-N` branch;
   (c) the commit is exactly `origin/<b>`, the branch's pushed tip, and `origin/main` is its ancestor (`commit_policy.ff_fallback_refusal`, shared with the git-level `pre-push` hook);
   (d) it is the head of the OPEN PR for `<b>` (`gh pr view`), and CI Complete is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <b>`, the sanctioned tracer, never a raw check read;
-  (e) the PR body carries an `Operational-Reason:` line. The plan's box ledger is not machine-linked to a PR yet (box L2 builds the queue), so this line is the only accepted proof today.
+  (e) the plan gate (box L2, `plan_gate.plan_merge_refusal`, shared with `block_admin_merge`): the PR body's one `Plan: agent/plans/PLAN-<slug>.md` line names a plan whose boxes are all ticked in the commit being pushed, or the body carries an `Operational-Reason:` line. A body that cannot be read, or that names no plan and gives no reason, is refused.
 
 The receipt rule (`block_unverified_push`, later in this chain) still applies to the push. GitHub's own rulesets (24351140: deletion, non_fast_forward, required_linear_history; 12344707: required CI Complete) back the same shape server-side.
 
@@ -56,7 +56,7 @@ import re
 import subprocess
 import sys
 
-from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
@@ -106,14 +106,15 @@ CI_TRACE = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "ci
 FF_QUIET = frozenset(("-q", "--quiet", "-v", "--verbose"))
 MAIN_NAMES = ("main", "refs/heads/main")
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
-OPERATIONAL_REASON = re.compile(r"(?m)^[ \t>*-]*Operational-Reason:[ \t]*\S")
+# Every field of the `gh pr view` answer the fallback reads. A missing one is refused by name (65f2a27e.2: it used to read "PR #None").
+PR_FIELDS = ("number", "state", "headRefOid", "body")
 
 MESSAGE = (
     "BLOCKED: this pushes straight to a PROTECTED branch (main). Direct pushes bypass code review and required status checks -- which is exactly what happened on 2026-09-22, when a script run through this tool's own Bash access (update-homebrew-tap.sh's update_submodule_pointer()) ran `git push origin HEAD:main` from the real working checkout, GitHub let it through as an admin bypass, and the branch's open PR auto-flipped to MERGED with red CI on its last several runs.\n"
     "\n"
     "Refused in every spelling: explicit (`git push origin main`, `HEAD:main`, `refs/heads/main`, `:main`, `--delete main`, `--all`, with or without `-C`/`-c` before `push`) or implicit (a bare `git push` / `git push origin` / `git push origin HEAD` while this checkout is ON main).\n"
     "\n"
-    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The ONE admitted direct push (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<live MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout on that branch, where the commit is the branch's pushed tip AND the open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body carries an `Operational-Reason:` line."
+    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The ONE admitted direct push (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<live MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout on that branch, where the commit is the branch's pushed tip AND the open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its one plan (`Plan: agent/plans/PLAN-<slug>.md`) with every box ticked, or carries an `Operational-Reason:` line."
 )
 
 EDGE_CASES = [
@@ -200,11 +201,20 @@ def _gh_pr(live):
         return None, "`gh pr view %s` returned no JSON" % live
     if not isinstance(pr, dict):
         return None, "`gh pr view %s` returned no PR" % live
+    missing = [f for f in PR_FIELDS if f not in pr or pr[f] is None]
+    if missing:
+        return None, "`gh pr view %s` answered without %s" % (
+            live,
+            ", ".join("`%s`" % f for f in missing),
+        )
     return pr, ""
 
 
 def _ci_green(live, number, sha):
     """ "" when ci-trace reads CI Complete SUCCESS on `sha` as the head of PR `number`, else why not."""
+    # 65f2a27e.4: the tracer's path is fixed relative to this file; its absence is named, never searched for elsewhere.
+    if not CI_TRACE.is_file():
+        return "the CI tracer is missing at %s, so CI Complete cannot be read" % CI_TRACE
     try:
         proc = subprocess.run(
             [sys.executable, str(CI_TRACE), "--json", "--ref", live],
@@ -283,8 +293,9 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
             pr.get("number"),
             str(pr.get("headRefOid"))[:12],
         )
-    if not OPERATIONAL_REASON.search(pr.get("body") or ""):
-        return "PR #%s's body carries no `Operational-Reason:` line" % pr.get("number")
+    plan = plan_gate.plan_merge_refusal(repo, pr.get("body"), rev=sha)
+    if plan:
+        return "PR #%s fails the plan gate: %s" % (pr.get("number"), plan)
     return _ci_green(live, pr.get("number"), sha)
 
 

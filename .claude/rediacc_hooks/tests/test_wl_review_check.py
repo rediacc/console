@@ -18,6 +18,7 @@ import pytest
 
 from rediacc_hooks.guards import block_admin_merge as merge_guard
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.wellknown import GH_REPO
 
 R = wlfix.import_wl("wl_review")
 
@@ -143,32 +144,32 @@ def test_check_refuses_a_branch_that_is_not_checked_out(tmp_path):
 
 def test_merge_arm_refuses_the_open_finding_and_passes_the_clean_branch(tmp_path):
     reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "a", "open"), BRANCH, "rediacc/console"
+        _world(tmp_path / "a", "open"), BRANCH, GH_REPO
     )
     assert reasons == ["blocking"], (reasons, lines)
     assert any("OPEN [high]" in line for line in lines), lines
     reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "b", "resolved"), BRANCH, "rediacc/console"
+        _world(tmp_path / "b", "resolved"), BRANCH, GH_REPO
     )
     assert reasons == [], (reasons, lines)
 
 
 def test_merge_arm_fails_closed_when_the_reviewer_does_not_import(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "wl_review", None)
-    reasons, lines = merge_guard.review_refusals(tmp_path, BRANCH, "rediacc/console")
+    reasons, lines = merge_guard.review_refusals(tmp_path, BRANCH, GH_REPO)
     assert reasons == ["unverifiable"], (reasons, lines)
 
 
 def test_merge_arm_fails_closed_on_an_unreadable_head_branch(tmp_path):
     reasons, _lines = merge_guard.review_refusals(
-        _world(tmp_path, "resolved"), "", "rediacc/console"
+        _world(tmp_path, "resolved"), "", GH_REPO
     )
     assert reasons, "an empty headRefName must refuse, never pass"
 
 
 GH_STUB = """#!/bin/sh
 case "$1 $2" in
-  "pr view") printf '%s\\n' '{"number":7,"headRefName":"0930-1","statusCheckRollup":[{"name":"CI Complete","conclusion":"SUCCESS"}]}' ;;
+  "pr view") printf '%s\\n' '{"number":7,"headRefName":"0930-1","statusCheckRollup":[{"name":"CI Complete","conclusion":"SUCCESS"}],"body":"Operational-Reason: the plan gate is a separate suite"}' ;;
   "api graphql") echo 0 ;;
   "auth token") echo token ;;
   *) exit 1 ;;
@@ -187,7 +188,7 @@ def test_the_guard_end_to_end_reads_the_head_branch(tmp_path, record, denied):
     payload = json.dumps(
         {
             "tool_name": "Bash",
-            "tool_input": {"command": "gh pr merge 7 --repo rediacc/console --rebase --auto"},
+            "tool_input": {"command": "gh pr merge 7 --repo %s --rebase --auto" % GH_REPO},
             "cwd": str(repo),
         }
     )

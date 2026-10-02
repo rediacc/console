@@ -8,7 +8,7 @@ WHAT A HOTFIX CARRIES (the commit-policy plan in agent/plans, section 4.1, check
   * a `Hotfix-Evidence:` trailer naming the red main run (id or actions/runs URL) or `ASKED:<ISO minute>`;
   * at most `hotfix_max_files` paths (5, decision 4), counted from the pathspec or, without one, from the index.
 
-It needs no `PR-TASK:` trailer (`block_untagged_commit` stops asking on `main`), it is always reviewed (Z, operator ruling 1), and it is PUSHED only by the operator with `!`: `block_push_to_protected_branch` is unconditional and stays that way.
+It needs no `PR-TASK:` trailer (`block_untagged_commit` stops asking on `main`), it is always reviewed (Z, operator ruling 1). Under the 2026-10-02 ruling `main` moves only through `gh pr merge --rebase --auto` or the guarded fast-forward fallback of the live branch (`block_push_to_protected_branch`); a commit made on `main` itself is neither, so that guard refuses its push from this tool, and it leaves the machine by a push outside it.
 
 OFF `main` THE TAG IS REFUSED, so the audit stays clean: a `[hotfix]` on a feature branch would read as a reviewed-on-main commit to anyone scanning the log for them.
 
@@ -76,7 +76,10 @@ def _message(branch, main_hint):
             "\n"
             "  Hotfix-Evidence: <red main run id or URL>   (or ASKED:<YYYY-MM-DDTHH:MMZ>)\n"
             "\n"
-            "at most 5 files, no PR-TASK trailer. The operator pushes it with `!`.\n" % main_hint
+            "at most 5 files, no PR-TASK trailer. `main` moves only through `gh pr merge\n"
+            "--rebase --auto` or the guarded fast-forward fallback of the live branch, so\n"
+            "this tool's push of a commit made on `main` is refused; it goes out by a push\n"
+            "outside this tool.\n" % main_hint
         )
     return (
         "BLOCKED: `[hotfix]` is for commits on `main`, and this branch is `%s`.\n"
