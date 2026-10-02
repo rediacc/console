@@ -57,6 +57,9 @@ CORE = frozenset(
         "roster-concurrency",
         "ladder-gone",
         "ladder-idle",
+        # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7): an open high finding or a hand-edited record protects the PR, and waiting on writers resolves neither, so both profiles keep them.
+        "commit-review",
+        "commit-review-malformed",
     }
 )
 # Kept whatever their suffix: `agent-pushback:<id>`, `giveup-claim:<id>` (one-shot latches, as above).

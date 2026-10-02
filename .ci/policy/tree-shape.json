@@ -141,6 +141,10 @@
       {
         "name": "legacy",
         "why": "Pre-per-session notes kept as a record. Frozen."
+      },
+      {
+        "name": "reviews",
+        "why": "Per-commit review records, agent/reviews/<branch>/<sha40>.md, written by the haiku reviewer and closed only through worklist.py --review-mark. Keyed by branch on purpose: a finding is about the branch's diff, not about a session."
       }
     ]
   },

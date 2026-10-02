@@ -1759,6 +1759,16 @@ def handle_session_start(event):
     if cv_line:
         blocks.append(cv_line)
         summary.append("a cached CI verdict")
+    # A FIFTH: the branch's per-commit review state (agent/plans/PLAN-per-commit-review.md). Disk and local git only, so it works with the Stop hook disabled; empty when every commit is reviewed, recorded and clear.
+    try:
+        import wl_review  # noqa: PLC0415 -- optional; the briefing must not need it
+
+        rv_line = wl_review.session_start_line(root, wl_review.current_branch(root))
+    except Exception as exc:  # noqa: BLE001 -- a SessionStart must never fail on the review reader
+        rv_line = "Per-commit reviews could not be read (%s: %s)." % (type(exc).__name__, exc)
+    if rv_line:
+        blocks.append(rv_line)
+        summary.append("per-commit review state")
     if not blocks:
         return
     C.emit(
@@ -2131,6 +2141,8 @@ PRIORITY_LADDER = (
                 "ci-red",
                 # Not a genuine CI failure (CI_NONBLOCKING_CONTEXTS keeps it out of "ci-red" on purpose) but the local session has context a remote job does not, so it joins ci-red's tier rather than sitting in hygiene where it could be starved by real work.
                 "review-red",
+                # An open per-commit review finding at or above `block_at` (agent/plans/PLAN-per-commit-review.md section 7): the review that replaced review-red, and the same tier for the same reason.
+                "commit-review",
             }
         ),
     ),
@@ -2165,6 +2177,8 @@ PRIORITY_LADDER = (
                 "ci-unreadable",
                 "ci-waiting",
                 "review-unreadable",
+                # A review file that does not parse or whose Body-Sig no longer matches: the reviewer's record cannot be trusted, which is an integrity question before it is a review question.
+                "commit-review-malformed",
                 "pr-unreadable",
                 "cl-shape",
                 "plan-fidelity",
@@ -3697,6 +3711,32 @@ def run_stop(event, event_ok, worklist, hook_file):
     )
     if _cv_note:
         outq_add(worklist, session_id, state_doc, "ci-verdict", _cv_note, 1, sticky=True)
+
+    # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7). Computed once from agent/reviews/<branch>/ and local git, no network. An open finding at or above `block_at` blocks (`commit-review`), a file that fails to parse or whose Body-Sig no longer matches blocks (`commit-review-malformed`); everything else is one advisory. The push guard enforces the same
+    # state when this hook is disabled, so nothing here is the only line of defence.
+    try:
+        import wl_review  # noqa: PLC0415 -- only the stop path needs it
+
+        _rv_items = {r["id"]: r.get("state", " ") for r in fold.items}
+        _rv = wl_review.branch_state(root, wl_review.current_branch(root), items=_rv_items)
+    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+        _rv = None
+        vadd(
+            "commit-review-malformed",
+            True,
+            "THIS IS A HOOK BUG: wl_review.branch_state failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+        )
+    if _rv is not None:
+        _rv_block, _rv_bad, _rv_note = wl_review.stop_texts(_rv)
+        if _rv_bad:
+            vadd("commit-review-malformed", True, _rv_bad)
+        if _rv_block:
+            vadd("commit-review", True, _rv_block)
+        if _rv_note:
+            outq_add(
+                worklist, session_id, state_doc, "commit-review-note", _rv_note, 2, refresh_min=60
+            )
 
     ci_report = ""
     try:

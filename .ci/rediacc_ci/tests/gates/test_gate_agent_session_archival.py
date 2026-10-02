@@ -36,7 +36,17 @@ LABEL = "test-label"
 #: The reserved names the move rail reads as a SET. Mirrored from
 #: `wl_store.AGENT_RESERVED_DIRS`; the subject reads the real set at run time, and
 #: this copy exists so the loop below names each one in its own assertion message.
-RESERVED = ("archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy")
+RESERVED = (
+    "archive",
+    "programs",
+    "worklist",
+    "reggate",
+    "plans",
+    "ledgers",
+    "pr",
+    "legacy",
+    "reviews",
+)
 
 
 def _ago(seconds: float) -> str:
@@ -369,3 +379,105 @@ def test_a_missing_oracle_refuses_rather_than_inventing_one(gate, tmp_path):
     gate.log_pass(
         "an unreachable wl_store is CANNOT RUN (77), so no verdict is ever invented locally"
     )
+
+
+# --------------------------------------------------------------------------- S2: per-commit review directories (agent/plans/PLAN-per-commit-review.md section 10).
+#
+# The merged-at oracle is GitHub's, so a FAKE `gh` on PATH answers it: `--head <branch>` prints the merge stamp the case planted for that branch, and nothing for an unmerged one. Every case pins GITHUB_ACTIONS and GH_TOKEN so the verdict is the same on a laptop and on a runner.
+
+REVIEW_CONFIG = paths.from_root(".ci", "config", "commit-review.json")
+
+FAKE_GH = """#!/usr/bin/env python3
+import json, os, sys
+head = sys.argv[sys.argv.index("--head") + 1]
+stamps = json.loads(os.environ.get("FAKE_MERGED", "{}"))
+print(json.dumps([{"mergedAt": stamps[head]}] if head in stamps else []))
+"""
+
+
+def seed_reviews(tmp_path: pathlib.Path, branches) -> tuple[pathlib.Path, pathlib.Path]:
+    root = seed(tmp_path)
+    # S1's own abandoned directory goes, so the verdict below is S2's alone.
+    shutil.rmtree(root / "agent" / "deadbeef")
+    shutil.copy(REVIEW_CONFIG, root / ".ci" / "config" / "commit-review.json")
+    for branch in branches:
+        _write(root, "agent/reviews/%s/%s.md" % (branch, "a" * 40), "# Review aaaaaaaa: x\n")
+    _git(root, "add", "-A", "--", ".")
+    _git(root, "commit", "-qm", "reviews")
+    _git(root, "checkout", "-qb", "1002-1")
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    (bindir / "gh").write_text(FAKE_GH, encoding="utf-8")
+    (bindir / "gh").chmod(0o755)
+    return root, bindir
+
+
+def _s2_gate(root, bindir, merged, *argv, ci=False, with_gh=True):
+    import json as _json  # noqa: PLC0415
+
+    path = "%s:%s" % (bindir, "/usr/bin:/bin") if with_gh else "/usr/bin:/bin"
+    return harness.run(
+        [sys.executable, str(GATE), *argv],
+        cwd=paths.repo_root(),
+        env={
+            "AGENT_SESSION_ARCHIVAL_ROOT": str(root),
+            "PATH": path,
+            "FAKE_MERGED": _json.dumps(merged),
+            "GITHUB_ACTIONS": "true" if ci else "",
+            "GITHUB_HEAD_REF": "",
+            "GH_TOKEN": "fixture",
+        },
+    )
+
+
+def test_s2_reds_on_a_review_dir_merged_past_retention_and_clears_after_the_prune(gate, tmp_path):
+    root, bindir = seed_reviews(tmp_path, ["0901-1", "0920-1", "0925-1"])
+    merged = {"0901-1": _ago(15 * 86400), "0920-1": _ago(13 * 86400)}
+    result = _s2_gate(root, bindir, merged)
+    gate.assert_exit(1, result, "a review directory merged 15 days ago is not a finding")
+    gate.assert_contains(result.combined, "agent/reviews/0901-1/", "S2 named the wrong directory")
+    gate.assert_contains(result.combined, "--prune-reviews --write", "S2 does not name its remedy")
+    if "agent/reviews/0920-1/" in result.combined or "agent/reviews/0925-1/" in result.combined:
+        gate.log_fail("S2 accused a branch merged 13 days ago or an unmerged one", result)
+    pruned = _s2_gate(root, bindir, merged, "--prune-reviews", "--write")
+    gate.assert_exit(0, pruned, "--prune-reviews --write refused a clean prune")
+    if (root / "agent/reviews/0901-1").exists():
+        gate.log_fail("the due directory survived --write")
+    if not (root / "agent/reviews/0920-1").exists():
+        gate.log_fail("--write deleted a directory that was not due")
+    _git(root, "add", "-A", "--", "agent/reviews")
+    _git(root, "commit", "-qm", "prune")
+    after = _s2_gate(root, bindir, merged)
+    gate.assert_exit(
+        0, after, "the gate still reds after the due directory was pruned and committed"
+    )
+    gate.log_pass(
+        "S2 reds on a review directory past retention, spares 13 days and unmerged, and clears after the prune"
+    )
+
+
+def test_s2_never_accuses_the_current_branch(gate, tmp_path):
+    root, bindir = seed_reviews(tmp_path, ["1002-1"])
+    result = _s2_gate(root, bindir, {"1002-1": _ago(40 * 86400)})
+    gate.assert_exit(0, result, "the branch under test was accused of its own review directory")
+    gate.log_pass("the current branch is never an S2 finding")
+
+
+def test_s2_without_an_oracle_in_ci_cannot_run(gate, tmp_path):
+    root, bindir = seed_reviews(tmp_path, ["0901-1"])
+    result = _s2_gate(root, bindir, {}, ci=True, with_gh=False)
+    gate.assert_exit(77, result, "S2 reached a verdict in CI with no merged-at oracle")
+    gate.log_pass("no gh in CI is CANNOT RUN (77), never a green")
+
+
+def test_a_citation_blocks_the_prune(gate, tmp_path):
+    root, bindir = seed_reviews(tmp_path, ["0901-1"])
+    _write(root, "docs/notes.md", "see agent/reviews/0901-1/ for the history\n")
+    _git(root, "add", "-A", "--", "docs")
+    _git(root, "commit", "-qm", "cite")
+    result = _s2_gate(root, bindir, {"0901-1": _ago(20 * 86400)}, "--prune-reviews", "--write")
+    gate.assert_exit(1, result, "a prune that would leave a dangling citation was allowed")
+    gate.assert_contains(result.combined, "docs/notes.md", "the refusal does not name the citer")
+    if not (root / "agent/reviews/0901-1").exists():
+        gate.log_fail("the refused prune deleted the directory anyway")
+    gate.log_pass("a tracked citation of a due review directory blocks --prune-reviews --write")

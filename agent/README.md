@@ -31,7 +31,9 @@ hook quietly started writing somewhere else. The compact-recovery document is th
 A plan moves exactly ONCE, at close, from `plans/` into `plans/_done/` or `plans/_removed/`, and leaves a one-line stub at its old path. The stub is what keeps every existing citation of `agent/PLAN-<slug>.md` resolving without re-pointing one of them, which is the mechanism plan compaction already relies on. `check:ci-plan-folders` enforces the layout and both retention clocks,
 and its `--move` verb performs the move, the stub and the `First-Seen:` stamp in one step. A not-started plan nobody has touched for 90 days expires the same way.
 
-`archive/<label>/` is frozen and nothing in the hooks reads it. `archive`, `programs`, `plans`, `ledgers`, `pr`, `legacy`, `worklist` and `reggate` are the reserved names under `agent/`; every other directory there is a session (`wl_store.AGENT_RESERVED_DIRS`).
+`archive/<label>/` is frozen and nothing in the hooks reads it. `archive`, `programs`, `plans`, `ledgers`, `pr`, `legacy`, `worklist`, `reggate` and `reviews` are the reserved names under `agent/`; every other directory there is a session (`wl_store.AGENT_RESERVED_DIRS`).
+
+`reviews/<branch>/<sha40>.md` is the one deliberate exception to "no branch in the path" (agent/plans/PLAN-per-commit-review.md, operator ruling 2026-10-02): a per-commit review is about the branch's diff, not about a session, so it is keyed by branch like `reggate/<branch>.jsonl` and `pr/<branch>.md`. The reviewer writes each file, `worklist.py --review-mark` is the only hand that changes one, and the files ride the branch's next commit (`worklist.py --review-commit`).
 
 `TRAPS.md` is NOT here. The standing lookup material -- TRAPS.md, ci-gates.md, suppressions.md -- lives in `docs/agent-reference/`, because it is reference prose that outlives every session, while everything under `agent/` is per-session state or a durable design record.
 

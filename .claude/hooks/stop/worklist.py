@@ -705,6 +705,35 @@ def _retro_brief_cli(argv):
     print(RT.brief(worklist, root, me8, band, item))
 
 
+def _review_cli(argv):
+    """--review-mark / --review-commit / --review-run <me> ...: the per-commit review verbs (agent/plans/PLAN-per-commit-review.md sections 5 and 6).
+
+    The logic is wl_review's; this arm parses and checks `<me>` like every other verb and supplies the worklist fold, which a `deferred #<item>` resolution is checked against. A bare verb prints the usage and exits 2 rather than falling through to the Stop path.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    import wl_review as RV  # noqa: PLC0415 -- sibling, loaded only for these verbs
+
+    if len(argv) < 2:
+        die(RV.VERB_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    start = C.project_start()
+
+    def items():
+        fold = S.load(C.worklist_for(start), sync=False)
+        return {r["id"]: (r.get("state", " "), r.get("text", "")) for r in fold.items}
+
+    rc, text = RV.verb(argv[0], me, argv[2:], pathlib.Path(C.project_root(start)), items)
+    print(text, file=sys.stderr if rc else sys.stdout)
+    sys.exit(rc)
+
+
 def _plantick_cli(argv):
     """--plan-tick <me> <path> <box> <evidence...> [--write].
 
@@ -2452,6 +2481,9 @@ def main():
         return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] and sys.argv[1] in ("--review-mark", "--review-commit", "--review-run"):
+        _review_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--retro-brief"]:
         _retro_brief_cli(sys.argv[1:])

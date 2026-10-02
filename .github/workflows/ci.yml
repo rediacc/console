@@ -475,19 +475,35 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # The label applier creates `ci` and `bump-none` on demand, which is a
+      # repo-labels write the pull-requests grant does not carry.
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # `.github` in full, not `.github/labels.yml`: actions/checkout runs
           # sparse-checkout in CONE mode, where entries are directory prefixes
-          # and a bare file path matches nothing.
+          # and a bare file path matches nothing. `.ci/rediacc_ci` and
+          # `agent/reviews` feed the label applier below.
           sparse-checkout: |
             .ci/scripts
+            .ci/rediacc_ci
             .github
+            agent/reviews
       - name: Post the label guide
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           script: return await require('./.ci/scripts/ci/label-guide-comment.cjs')({github, context, core})
+      # PR labels from the per-commit review records (agent/plans/PLAN-per-commit-review.md
+      # section 8), which replaced the PR-level Claude review's labels. Advisory:
+      # every failure logs and exits 0.
+      - name: Apply PR labels from the per-commit reviews
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.review.pr_labels
 
   # ============================================================================
   # COLUMN 2: QUALITY

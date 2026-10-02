@@ -534,10 +534,11 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 12
     # Confirmed NOT a pusher: the old `push` app-token preset was deleted and
-    # this job now only REPORTS that a rebase is needed. Its one remote
-    # operation is a read-only `git fetch origin`.
+    # this job now only REPORTS that a rebase is needed. Its remote operations are
+    # a read-only `git fetch origin` and the archival gate's read of merged PRs.
     permissions:
       contents: read
+      pull-requests: read
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -626,9 +627,13 @@ jobs:
       # GITHUB_BASE_REF for the same reason too: this one reads the working tree and one
       # heading stamp per session directory, never a merge-base, so a push and a PR get
       # the same verdict. Whether a directory is overdue is a fact about the calendar
-      # rather than about the diff.
+      # rather than about the diff. Its S2 half (agent/plans/PLAN-per-commit-review.md
+      # section 10) asks GitHub when each agent/reviews/<branch>/ branch merged, so it
+      # needs the job token; without one in CI it is CANNOT RUN, never a green.
       - name: Agent session archival
         if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: npm run check:ci-agent-session-archival
 
       # HAND-WRITTEN, like its neighbours, and the reason is invariant 11:

@@ -296,3 +296,82 @@ def load_config(root: pathlib.Path) -> dict:
     No default for `grace_days` here. A default would put the retention in two places, and the one that a reader edits would be the one that is not consulted.
     """
     return json.loads((root / DEFAULT_CONFIG_REL).read_text(encoding="utf-8"))
+
+
+# --------------------------------------------------------------------------- S2: per-commit review directories (agent/plans/PLAN-per-commit-review.md section 10).
+#
+# `agent/reviews/<branch>/` holds one branch's per-commit review records. They ride the branch's PR, and once the branch has merged they are history the git log already keeps. The retention is `retention_days` in `.ci/config/commit-review.json`, the one home of that number. The MERGED-AT oracle is GitHub's (`gh pr list --state merged --head <b>`): this repository rebase-merges, which keeps
+# committer dates equal to author dates, so a git-date age would be a gate that cannot fail. The oracle is passed in, which keeps this half as pure as the S1 half.
+
+REVIEWS_DIR = "agent/reviews"
+REVIEW_CONFIG_REL = ".ci/config/commit-review.json"
+
+
+@dataclasses.dataclass(frozen=True)
+class ReviewDir:
+    """One tracked `agent/reviews/<branch>/` directory and when its branch merged (None: not merged, or unknown)."""
+
+    branch: str
+    merged_at: float | None
+
+
+def review_branches(tracked: list[str]) -> list[str]:
+    """The branch directories named by `git ls-files agent/reviews/` output, sorted, each once."""
+    out = set()
+    prefix = REVIEWS_DIR + "/"
+    for rel in tracked:
+        if rel.startswith(prefix) and rel.count("/") >= 3:
+            out.add(rel[len(prefix) :].split("/", 1)[0])
+    return sorted(out)
+
+
+def due_reviews(
+    dirs: list[ReviewDir], *, retention_days: float, now: float, current: str
+) -> list[ReviewDir]:
+    """Every review directory whose branch merged more than `retention_days` ago. The current branch and an unmerged branch never are."""
+    limit = float(retention_days) * SECONDS_PER_DAY
+    return [
+        d
+        for d in dirs
+        if d.branch != current and d.merged_at is not None and now - d.merged_at > limit
+    ]
+
+
+def finding_s2(
+    dirs: list[ReviewDir], *, retention_days: float, now: float, current: str
+) -> list[Finding]:
+    """S2: a per-commit review directory whose branch merged longer ago than the retention."""
+    return [
+        Finding(
+            "S2",
+            "%s/%s/ belongs to a branch merged %.1f days ago (> %s); prune it: "
+            "`.ci/scripts/quality/check_agent_session_archival.py --prune-reviews --write`"
+            % (
+                REVIEWS_DIR,
+                d.branch,
+                (now - float(d.merged_at or 0)) / SECONDS_PER_DAY,
+                retention_days,
+            ),
+        )
+        for d in due_reviews(dirs, retention_days=retention_days, now=now, current=current)
+    ]
+
+
+def citers_of(texts: dict[str, str], branches: list[str]) -> dict[str, list[str]]:
+    """{citing file: [cited review directory]} for tracked text outside `agent/reviews/` that names a due directory; such a citation would dangle after the prune."""
+    out: dict[str, list[str]] = {}
+    for rel, text in texts.items():
+        if rel.startswith(REVIEWS_DIR + "/"):
+            continue
+        hits = [
+            "%s/%s/" % (REVIEWS_DIR, b) for b in branches if "%s/%s/" % (REVIEWS_DIR, b) in text
+        ]
+        if hits:
+            out[rel] = hits
+    return out
+
+
+def retention_days(root: pathlib.Path) -> float:
+    """`retention_days` from `.ci/config/commit-review.json`; required, no default here (one home for the number)."""
+    doc = json.loads((root / REVIEW_CONFIG_REL).read_text(encoding="utf-8"))
+    return float(doc["retention_days"])

@@ -26,6 +26,12 @@ THE VERBS.
     --status   every session directory, its age and its verdict, with no verdict
                of its own
     --move S   git mv agent/S into agent/archive/<label>/S, leaving NOTHING behind
+    --prune-reviews [--write]
+               S2's remedy (agent/plans/PLAN-per-commit-review.md section 10): list the
+               agent/reviews/<branch>/ directories whose branch merged more than
+               retention_days ago, and with --write delete them from the WORKTREE only
+               (never the index), printing the `git commit` that records it. Refuses
+               while tracked text outside agent/reviews/ cites a due directory.
     --selftest the controls, and nothing else
 
 `--check` NEVER WRITES, under any argument, and it is wired into `.ci/` only -- never under `.claude/hooks/`. `--move` is the one verb that touches the tree and a human names its target. That separation is the hard constraint the per-session STATE.md split exists to defend: no session may destroy another's document by naming its path, so nothing automatic may move a peer's
@@ -50,7 +56,11 @@ why: agent/<session>/ directories accumulate for ever. The Stop hook already
 ---- end gate ----
 """
 
+import json
+import os
 import pathlib
+import shutil
+import subprocess
 import sys
 import time
 
@@ -93,7 +103,7 @@ CLEAN_ROSTER = "live0001 0.5 live\nabandon1 400 dead\nrecent01 100 dead\n"
 #: in a checkout with no `.claude/`, and `test_quality_agent_session_archival.py`
 #: compares the two in both directions. A mirror nobody compares is a second set.
 RESERVED_MIRROR = frozenset(
-    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
+    {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
 )
 
 
@@ -253,6 +263,49 @@ def selftest() -> int:
         "race a live writer" in refusal(dirty=True),
     )
 
+    # S2, per-commit review directories (agent/plans/PLAN-per-commit-review.md section 10), from both sides of the retention.
+    day = ASA.SECONDS_PER_DAY
+    dirs = [
+        ASA.ReviewDir("old-merged", NOW - 15 * day),
+        ASA.ReviewDir("young-merged", NOW - 13 * day),
+        ASA.ReviewDir("unmerged", None),
+        ASA.ReviewDir("current", NOW - 99 * day),
+    ]
+
+    def s2(rows, retention=14.0):
+        return [
+            f.message.split("/")[2]
+            for f in ASA.finding_s2(rows, retention_days=retention, now=NOW, current="current")
+        ]
+
+    tally.check("S2 accuses only the branch merged past the retention", s2(dirs), ["old-merged"])
+    tally.check("S2 spares the same branch with a longer retention", s2(dirs, retention=30.0), [])
+    tally.check("an unmerged branch is never an S2 finding", s2([ASA.ReviewDir("x", None)]), [])
+    tally.check(
+        "the current branch is never an S2 finding",
+        s2([ASA.ReviewDir("current", NOW - 99 * day)]),
+        [],
+    )
+    tally.truthy(
+        "the S2 finding names the prune verb",
+        "--prune-reviews --write"
+        in ASA.finding_s2(dirs, retention_days=14.0, now=NOW, current="current")[0].message,
+    )
+    tally.check(
+        "review branches come from tracked paths only",
+        ASA.review_branches(
+            ["agent/reviews/a/1.md", "agent/reviews/a/2.md", "agent/reviews/b/3.md", "agent/x.md"]
+        ),
+        ["a", "b"],
+    )
+    tally.check(
+        "a citation outside agent/reviews/ blocks the prune",
+        ASA.citers_of(
+            {"docs/x.md": "see agent/reviews/a/", "agent/reviews/a/1.md": "agent/reviews/a/"}, ["a"]
+        ),
+        {"docs/x.md": ["agent/reviews/a/"]},
+    )
+
     return 0 if tally.report() else 1
 
 
@@ -324,12 +377,143 @@ def _archive_labels(root: pathlib.Path) -> int:
         return 0
 
 
+# --------------------------------------------------------------------------- S2: the merged-at oracle and the prune verb.
+
+
+def _current_branch(root: pathlib.Path) -> str:
+    """The branch under test: the PR's head in CI, else the checked-out branch."""
+    head = os.environ.get("GITHUB_HEAD_REF", "")
+    if head:
+        return head
+    got = gitx.git(["branch", "--show-current"], root=root)
+    return got.stdout.strip() if got.ok else ""
+
+
+def _gh_merged_at(branch: str) -> float | None:
+    """When `branch`'s PR merged (the newest, when there are several), or None when none did. Raises CannotRunError when GitHub cannot be asked."""
+    repo = os.environ.get("GITHUB_REPOSITORY") or "rediacc/console"
+    try:
+        done = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                repo,
+                "--state",
+                "merged",
+                "--head",
+                branch,
+                "--json",
+                "mergedAt",
+            ],
+            capture_output=True,
+            text=True,
+            stdin=subprocess.DEVNULL,
+            check=False,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise CannotRunError(
+            "gh could not be run to read when %s merged (%s)" % (branch, exc)
+        ) from exc
+    if done.returncode != 0:
+        raise CannotRunError(
+            "gh pr list failed for %s (rc %d): %s"
+            % (branch, done.returncode, done.stderr.strip()[:200])
+        )
+    stamps = [row.get("mergedAt") for row in json.loads(done.stdout or "[]") if row.get("mergedAt")]
+    if not stamps:
+        return None
+    import datetime as dt  # noqa: PLC0415 -- one parse, at the edge
+
+    return max(dt.datetime.fromisoformat(s).timestamp() for s in stamps)
+
+
+def _review_dirs(root: pathlib.Path, oracle=_gh_merged_at) -> list[ASA.ReviewDir] | None:
+    """Every tracked review directory with its merged-at, or None when S2 is SKIPPED (locally, with no gh on PATH). In CI a missing oracle is CANNOT RUN, never a skip."""
+    branches = ASA.review_branches(gitx.ls_files(ASA.REVIEWS_DIR, root=root))
+    if not branches:
+        return []
+    if shutil.which("gh") is None:
+        if os.environ.get("GITHUB_ACTIONS"):
+            raise CannotRunError(
+                "gh is not on PATH, so no review directory's merge date can be read"
+            )
+        print(
+            "⚠ S2 SKIPPED: gh is not on PATH, so no merge date can be read here (CI runs it)",
+            file=sys.stderr,
+        )
+        return None
+    if os.environ.get("GITHUB_ACTIONS") and not (
+        os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    ):
+        raise CannotRunError("no GH_TOKEN in CI, so the merged-at oracle cannot be asked")
+    return [ASA.ReviewDir(b, oracle(b)) for b in branches]
+
+
+def _s2(root: pathlib.Path, now: float) -> list[ASA.Finding]:
+    dirs = _review_dirs(root)
+    if not dirs:
+        return []
+    return ASA.finding_s2(
+        dirs, retention_days=ASA.retention_days(root), now=now, current=_current_branch(root)
+    )
+
+
+def prune_reviews(root: pathlib.Path, *, write: bool) -> int:
+    """List, and with `write` delete from the worktree, the review directories S2 names. Refuses while something outside cites one."""
+    dirs = _review_dirs(root)
+    if dirs is None:
+        return 77
+    now = time.time()
+    due = ASA.due_reviews(
+        dirs, retention_days=ASA.retention_days(root), now=now, current=_current_branch(root)
+    )
+    if not due:
+        print("✓ no agent/reviews/<branch>/ directory is past its retention")
+        return 0
+    names = [d.branch for d in due]
+    texts = {}
+    for rel in gitx.ls_files(root=root, existing=True):
+        if rel.startswith(ASA.REVIEWS_DIR + "/") or not rel.endswith(
+            (".md", ".py", ".json", ".ts", ".yml", ".yaml", ".txt")
+        ):
+            continue
+        try:
+            texts[rel] = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+    citers = ASA.citers_of(texts, names)
+    for d in due:
+        print("due: %s/%s/" % (ASA.REVIEWS_DIR, d.branch))
+    if citers:
+        print(
+            "✗ refusing to prune: these tracked files cite a due review directory:", file=sys.stderr
+        )
+        for rel, hits in sorted(citers.items()):
+            print("  %s -> %s" % (rel, ", ".join(hits)), file=sys.stderr)
+        return 1
+    if not write:
+        print("(report only; pass --write to delete them from the worktree)")
+        return 0
+    rels = []
+    for name in names:
+        target = root / ASA.REVIEWS_DIR / name
+        shutil.rmtree(target, ignore_errors=True)
+        rels.append("%s/%s/" % (ASA.REVIEWS_DIR, name))
+    print("deleted %d director(ies) from the worktree; record it with:" % len(rels))
+    print("  git commit -F <msg> -- %s" % " ".join(rels))
+    return 0
+
+
 def run(root: pathlib.Path, grace_days: float) -> int:
     sessions, silent = _gather(root)
     _refuse_vacuity(root, sessions)
     now = time.time()
     hours = ASA.dead_hours()
     found = ASA.findings(sessions, grace_days=grace_days, dead_hours=hours, now=now)
+    found += _s2(root, now)
     if found:
         print(
             "✗ agent session archival: %d director(ies) overdue, of %d enumerated"
@@ -470,6 +654,8 @@ def main(argv: list[str]) -> int:
 
         if "--status" in argv:
             return status(root, grace_days)
+        if "--prune-reviews" in argv:
+            return prune_reviews(root, write="--write" in argv)
         if "--move" in argv:
             i = argv.index("--move")
             target = argv[i + 1] if len(argv) > i + 1 else ""

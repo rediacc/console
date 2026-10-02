@@ -90,7 +90,17 @@ CLEAN_SOURCE = (
     '    return paths.from_root("agent")\n'
 )
 
-RESERVED = {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy"}
+RESERVED = {
+    "archive",
+    "programs",
+    "worklist",
+    "reggate",
+    "plans",
+    "ledgers",
+    "pr",
+    "legacy",
+    "reviews",
+}
 TOP_NAMES = {"agent", "docs", "scripts", ".ci", ".claude", "packages"}
 CALLEES = {"open", "os.listdir", "os.scandir"}
 FS_METHODS = {"glob", "is_dir", "read_text"}

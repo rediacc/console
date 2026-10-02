@@ -93,6 +93,7 @@ SNAPSHOT_ENV = "TREE_SNAPSHOT"
 
 #: The three trees a stray is both likely and invisible in. `:(glob)*` matches depth-1 files at the root only, because a bare `*` in a git pathspec crosses `/` and would pull in the whole repository.
 SCOPE = (":(glob)*", "agent", ".claude/hooks/stop")
+REVIEWS = "agent/reviews/"
 
 
 def _untracked() -> set[str]:
@@ -122,7 +123,8 @@ def _untracked() -> set[str]:
         return set()
     if result.returncode != 0:
         return set()
-    return {path for path in result.stdout.split("\0") if path}
+    # `agent/reviews/` is written ASYNCHRONOUSLY by the per-commit reviewer (agent/plans/PLAN-per-commit-review.md), a detached process any commit in this checkout starts; a review that lands while a suite runs is that process's file, not a test's, and was measured failing an unrelated suite on 2026-10-02.
+    return {path for path in result.stdout.split("\0") if path and not path.startswith(REVIEWS)}
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -526,6 +526,10 @@ def drive_l1(fix) -> L1Drive:
             "[verdict: present]",
         ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
+        ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
+        ("--review-commit", "--review-commit @WHO@", "no finished review file"),
+        ("--review-run", "--review-run @WHO@", "unreviewed commits"),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
         # RETROACTIVE ONLY, so CONTROL A is driven for real against plant_backfill_target's fixture -- a genuine two-commit repo, the one row in this table where `fix.proj/.git` stops being a plain directory. Dry (no `--write`): the identity rule is the whole surface this table is about, and a dry run proves the CLI reached the SAME resolve-and-render path a --write run

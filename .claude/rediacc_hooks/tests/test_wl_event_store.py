@@ -590,7 +590,11 @@ def test_142_the_judge_caches_an_identical_world_and_message(wl):  # noqa: F811
 DEADCODE_REFS = wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "quality"
 DEADCODE_GUARDS = wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "guards"
 # `.ci/scripts/ci/ci-trace.py` is the CI watcher, and it reads CI through wl_ci on purpose so it and the Stop hook agree on one verdict; `nearest_checked_ancestor`, `ci_commit_rollup` and `commit_ci_runs` are called only from it (its NO-CI verdict, 2026-09-30).
-DEADCODE_CONSUMERS = (wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "ci" / "ci-trace.py",)
+# `.claude/hooks/post-bash/review_commit.py` is the per-commit review trigger (agent/plans/PLAN-per-commit-review.md); `wl_review.surface_new` is called only from it, because the post-bash member is the channel that reports a finished review while the Stop hook is disabled.
+DEADCODE_CONSUMERS = (
+    wlfix.STOP_DIR.parents[2] / ".ci" / "scripts" / "ci" / "ci-trace.py",
+    wlfix.STOP_DIR.parent / "post-bash" / "review_commit.py",
+)
 
 
 def orphan_defs(directory, refs) -> list[str]:

@@ -68,6 +68,9 @@ event log, and the hook prints a `WORKLIST GUIDE` on every full stop naming the 
   worklist.py --update <me> <id> <text...>      progress; resets the liveness ladder
   worklist.py --list --open [<me>]              the actionable slice (~2 KB)
   worklist.py --list                            FULL history dump (~550 KB, avoid)
+  worklist.py --review-mark <me> <id> fixed|not-a-bug|deferred <arg...>   close a per-commit review finding
+  worklist.py --review-commit <me>              commit the finished per-commit review files
+  worklist.py --review-run <me> [<sha>]         list unreviewed commits, or review one now
   ```
 
 Item ids are hex but NOT fixed width: items migrated from the old markdown carry 12 characters, newly added ones 8. Never parse them assuming a length.

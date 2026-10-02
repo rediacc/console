@@ -2043,6 +2043,13 @@ Plan records (W12):
   --plan-revive <me> <agent/plans/PLAN-x.md> [--write]
                                 restore a record's full text from its blob
 
+Per-commit reviews (agent/reviews/<branch>/<sha40>.md):
+  --review-mark <me> [<finding-id> fixed <sha> | not-a-bug <evidence...> | deferred #<item>]
+                                close one finding after checking the fix, the
+                                evidence or the item; bare, list the open ones
+  --review-commit <me>          commit the finished, unrecorded review files
+  --review-run <me> [<sha>]     list unreviewed commits, or review one now
+
 Maintenance:
   --compact                     drop tombstones and fold the event log
   --reassign <me> <phantom>     take over the OPEN items of an
