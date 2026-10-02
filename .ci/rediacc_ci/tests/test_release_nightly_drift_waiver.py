@@ -11,6 +11,7 @@ import pytest
 
 from rediacc_ci.release import check_soak_period, nightly_tested_edge
 from rediacc_ci.release.nightly_tested_edge import nightly_failures_are_drift_only
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     import pathlib
@@ -202,7 +203,7 @@ def soak_env(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib
     monkeypatch.setenv("NIGHTLY_HEAD_SHA", "a" * 40)
     monkeypatch.setenv("NIGHTLY_CONCLUSION", "failure")
     monkeypatch.setenv("NIGHTLY_RUN_ID", "36827121342")
-    monkeypatch.setenv("GITHUB_REPOSITORY", "rediacc/console")
+    monkeypatch.setenv("GITHUB_REPOSITORY", GH_REPO)
     monkeypatch.setattr(
         check_soak_period,
         "edge_tested_by_nightly",
