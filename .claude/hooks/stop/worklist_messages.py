@@ -204,8 +204,9 @@ V_CI_RED = """CI IS RED ON PR #%s AND NOTHING IS WATCHING IT. %d job(s) failed f
 
 READ THE LOG BEFORE YOU GUESS. `gh run view --log-failed` is RUN-scoped even with
 --job: it refuses while the run is in progress, exits 1, and writes the reason to
-stderr, so a 2>/dev/null capture looks like an empty log. Use the per-job endpoint
-above, which works on a completed job inside a live run.
+stderr, so a 2>/dev/null capture looks like an empty log. Run the
+`ci-trace.py --job <id> --errors` line printed under each job above, which works on
+a completed job inside a live run.
 
 Then brief a sub-agent with the job name, the failing step and the log excerpt
 (Agent tool, subagent_type general-purpose) and have it come back with a fix
