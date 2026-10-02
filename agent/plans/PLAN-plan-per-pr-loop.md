@@ -1,0 +1,56 @@
+# PLAN-plan-per-pr-loop: releases on every merge, AI-driven merges behind server-side protection, one live branch around the clock, one plan per PR, per-commit review
+
+Status: approved -- operator rulings 2026-10-02 (PR #591), worklist #f2677b82 #7c70e8b9 #8306113e #aefc44a6 #17a2e92b
+Depends-On: PLAN-ci-verdict.md#A -- merge decisions need a trustworthy green; boxes R1-R3, M6, B1 and V1 can start before it
+Owner: d778be9d
+Priority: P1 -- the operator's operating model for every PR after #591
+Concurrency: parallel -- writers with disjoint file ownership per box group
+Owns: .claude/rediacc_hooks/guards/block_push_to_protected_branch.py, .claude/rediacc_hooks/guards/block_git_force_push.py, .claude/rediacc_hooks/guards/block_second_branch.py, .claude/rediacc_hooks/guards/block_second_open_pr.py, .claude/rediacc_hooks/git/githooks.py, .claude/commands/pr-merge.md, .claude/agents/pr-babysitter.md, .github/workflows/promote-stable.yml, .ci/rediacc_ci/release/check_soak_period.py
+
+## Operator rulings (2026-10-02), condensed
+
+1. Every merge to main may release; `bump-none` is not a default. Investigate the nightly edge->stable promotion and fix it in-session if missing or broken.
+2. /pr-merge and /pr-babysit are AI-invokable. main moves through `gh pr merge <n> --rebase --auto`. A direct push to main is allowed to the AI only for the "branch can't be rebased" fallback, and only as a single-refspec, no-force fast-forward of the live branch tip that is the open PR's head with CI Complete SUCCESS on that sha (read through ci-trace), with the plan's boxes all ticked or an operational reason in the PR body. Server-side rulesets back this up (no force push, no deletion, linear history, CI Complete required; the bot bypasses only the PR requirement), shown to the operator as an exact diff once before applying. The live MMDD-N branch may be force-pushed with --force-with-lease only. "Operator-only main push" wording goes.
+3. One live branch, 24/7: after a merge and branch deletion, the loop cuts the next MMDD-N from main; a genuine second branch stays refused.
+4. One plan per PR (exceptions recorded in the PR body); implement boxes, commit and tick with sha, push verified batches with a receipt and ci-trace --wait, babysit in parallel, merge when every box is ticked and CI Complete is SUCCESS, then cut the next branch and start the next queued plan. #591 finishes as-is, stripe 23 included.
+5. Per-commit haiku review through a Claude hook replaces PR-level Claude review (the Claude GitHub app is uninstalled); retire the PR-review dependencies that would stall the loop.
+
+## Evidence (2026-10-02)
+
+- Promotion exists: `.github/workflows/promote-stable.yml` (cron `0 6 * * *`, `workflow_dispatch force`, `workflow_run` on Console CI main). 57 of the last 60 runs are `schedule`, 3 `workflow_dispatch`, 0 `workflow_run`. Every run since 2026-09-15 skipped the deploy jobs: run 36863680473 printed "Edge version: 1.4.0 (released: 2026-09-30T05:28:45Z) / Edge release age: 1 days (soak: 7 days) / Edge needs 6 more day(s) of soak". Last real promotions: 2026-09-14 (schedule, run 34842203116) and 2026-09-05 (dispatch).
+- The nightly waiver (`rediacc_ci.release.nightly_tested_edge`: a green scheduled Console CI on main whose head contains the edge commit skips the soak) never fires: the scheduled Console CI on main has FAILED every day from 2026-09-25 to 2026-10-01 (the last green on main is the 2026-09-30T04:44Z push run).
+- Soak starvation: `check_soak_period` judges only the newest edge; with a release on every merge, the newest edge is almost always under 7 days old, so stable never promotes.
+- Release decision: `.ci/rediacc_ci/ci/dispatch_release.py` (`SKIP_LABEL = "bump-none"` :73, `STABLE_LABEL = "release"` :75, fail-open doctrine :7); `ci.yml` initialize `--decide-only` gates the sentinel and the cd-v2 dispatch.
+- Console ruleset 12344707 "Branch Protection": target `~DEFAULT_BRANCH` (main), rules `pull_request`, `required_status_checks` (strict; `CI Complete`, `Review Complete`, integration 15368 = GitHub Actions), `deletion`, `non_fast_forward`; no `required_linear_history`; bypass: RepositoryRole 5 (admin) always, Integration 2772000 always. renet, account and elite are private on GitHub Free: rulesets and branch protection return 403 (not available on the plan); homebrew-tap: none (404).
+- `Review Complete` is posted by `review-status.yml` from the `<!-- claude-reviewed: <sha> -->` marker that `claude-review.yml` (Claude app) wrote; with the app gone no PR can satisfy it. `.claude/commands/pr-merge.md:108` and `.claude/agents/pr-babysitter.md:16,110` require the marker and resolved threads. `agent/plans/PLAN-per-commit-review.md` (13 tasks) exists, held 2026-09-26, not implemented.
+- Guards: `block_push_to_protected_branch` refuses every push to main (`!` only); git pre-push (`githooks.py:169-190`) refuses main (COMMIT_POLICY_OK override); `block_git_force_push` refuses `--force-with-lease` too (mediated verb `worklist.py --git force-push <branch>`); `block_second_branch` decides consumed names from `gh pr list --state all` heads (:96); `block_second_open_pr` fails closed on gh errors; `block_admin_merge` bans `--admin`; `block_premature_ready` gates `gh pr ready` on CI Complete.
+
+## Boxes
+
+### Releases
+- [ ] R1 Find and fix the root cause of the scheduled Console CI on main failing every night since 2026-09-25 (trace each night's first real failure with ci-trace once PLAN-ci-verdict B lands; raw reads until then), so the nightly waiver can fire.
+- [ ] R2 Soak starvation: `check_soak_period` promotes the NEWEST edge release that is at least SOAK_DAYS old (walking back from the newest), not only the newest one; red-first test with three edges (1, 4, 9 days old -> the 9-day one promotes; 1 and 4 alone -> nothing).
+- [ ] R3 Release on every merge: skill and doc text stops suggesting `bump-none` as a default (pr-merge, pr-babysitter, release-process.md, ci-gates.md); `bump-none` stays available for an explicit reason only. Verify dispatch_release's fail-open path on a real merge (M7).
+
+### Merge authorization and main protection
+- [ ] M1 /pr-merge and /pr-babysit AI-invokable: remove "only when the user asked" / "Only run when the user has asked" from `.claude/commands/pr-merge.md` and the pr-babysit skill, any frontmatter that disables model invocation, and every guard or hook message that enforces it.
+- [ ] M2 `block_push_to_protected_branch` + git pre-push allow exactly the fast-forward fallback: single refspec `<live branch tip sha>:main` or `<live branch>:main`, no `--force`/`--force-with-lease`/`+`/`--delete`/tags/`--all`/`--mirror`; `git merge-base --is-ancestor origin/main <sha>` true; `<sha>` is the head of the open PR for the live branch; CI Complete SUCCESS on that sha read through `ci-trace.py` (never a raw read); the plan's boxes all ticked or the PR body has an `Operational-Reason:` line. Everything else to main stays refused; `block_commit_on_main` [hotfix] rule unchanged. Red-first EDGE_CASES for each condition, golden regen.
+- [ ] M3 `block_git_force_push`: `--force-with-lease` (only that form, with or without an expected sha) is allowed to the single live MMDD-N branch, never main, never another branch, never `--force`/`+refspec`; red-first.
+- [ ] M4 Server-side rulesets: console ruleset 12344707 gains `required_linear_history`; keeps `deletion`, `non_fast_forward`, required `CI Complete`; `Review Complete` leaves the required list (V3); bypass narrowed so the bot/AI identity bypasses only `pull_request` (rulesets cannot scope a bypass per rule: if they cannot, record the exact limit and the nearest safe shape). Submodules: GitHub Free blocks rulesets on private repos (403); OPERATOR DECISION (worklist [?]): upgrade the org plan or accept hook-only protection there. Show ruleset JSON before/after; present the exact diff to the operator once before applying.
+- [ ] M5 Record the ruling and remove "only the operator pushes it" / "operator-only main push" from CLAUDE.md Session Defaults rule 1, docs/agent-reference/ci-gates.md "Commit policy", pr-merge.md and every hook message, in the same change as M2-M3.
+- [ ] M6 `block_second_branch` / `block_second_open_pr` / git reference-transaction: the merged-and-deleted transition. Red-first tests: previous PR MERGED + its branch deleted -> new `MMDD-(MAX+1)` from main allowed; previous PR open -> refused; previous PR merged but branch still present -> allowed only after deletion; same-day MAX over merged names (the 0826-1 double-take). Real run on the next transition (M7).
+- [ ] M7 Real run: merge #591 through the loop (after its boxes, stripe 23 and green), confirm the release dispatch, delete-on-merge, the next branch cut from main, and the guards' behaviour live.
+
+### Plan-per-PR loop
+- [ ] L1 Loop definition in `.claude/agents/pr-babysitter.md` and the pr-babysit/pr-merge skills: implement boxes with writers, commit each verified unit and tick its box with the sha, push verified batches with a clean-clone ci:quick receipt, arm ci-trace --wait (automatic after PLAN-ci-verdict G), babysit reds in parallel, merge when every box is ticked AND CI Complete SUCCESS on the head (ci-trace), then cut the next branch and start the next queued plan.
+- [ ] L2 Plan queue: an ordered queue of approved plans (a `Queue:` header or a queue file under agent/plans) the loop pulls from; one plan per PR by default; a multi-plan PR records `Operational-Reason:` in its body. A gate refuses /pr-merge when the PR's plan has an unticked box and no `Operational-Reason:`.
+- [ ] L3 Finish condition evidence: the merge step prints the plan's box ledger, the CI Complete verdict and sha from ci-trace, and the release decision.
+
+### Reviews
+- [ ] V1 Activate PLAN-per-commit-review (lift its hold for this ruling); implement its tasks T1-T13 with haiku as the reviewer model; the hook reviews each commit, records `agent/reviews/<branch>/<sha40>.md`.
+- [ ] V2 Retire PR-level Claude review: `claude-review.yml`/`claude-review-reusable.yml` disabled or removed (the app is uninstalled); `review-status.yml` either removed or repointed to the per-commit review records.
+- [ ] V3 Stall removal: `Review Complete` leaves the ruleset's required checks (part of M4's single diff); pr-merge.md:108 and pr-babysitter.md:16,110 drop the claude-reviewed marker and thread preconditions in favour of "every commit since the base has a per-commit review record with no open blocker"; `block_premature_ready` and `block_admin_merge` reviewed for review-only conditions. Show before/after of what each blocked.
+
+## Open operator decisions
+- M4 submodules: GitHub Free cannot hold rulesets for private repos (403). Upgrade, or hook-only protection for renet/account/elite? DEFAULT: hook-only; console gets the ruleset.
+- M4 diff approval: the exact ruleset JSON diff is shown once before applying (the operator's own requirement).
