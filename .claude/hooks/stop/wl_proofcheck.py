@@ -274,7 +274,9 @@ def enforce(out, payload, fixset_files=None, displaced=None):
     reserved = wl_rules.names_operator_reserved(payload["instruction"]) if ok else ""
     verb = CS.names_destructive(payload["instruction"]) if ok else ""
     if ok and reserved:
-        action = V_ACTION_DROPPED % {"why": "named `%s`, which needs the operator's ask" % reserved}
+        action = V_ACTION_DROPPED % {
+            "why": "named `%s`, which a judge never orders (standing order 1)" % reserved
+        }
     elif ok and verb:
         action = V_ACTION_DROPPED % {"why": "named `%s`, and a proof step only reads" % verb}
     elif ok:
@@ -286,7 +288,7 @@ def enforce(out, payload, fixset_files=None, displaced=None):
             action = V_ACTION_DROPPED % {"why": "named `%s`, and a proof step only reads" % verb}
         elif reserved:
             action = V_ACTION_DROPPED % {
-                "why": "named `%s`, which needs the operator's ask" % reserved
+                "why": "named `%s`, which a judge never orders (standing order 1)" % reserved
             }
         else:
             action = V_ACTION_DROPPED % {"why": why[:70] or "did not parse"}

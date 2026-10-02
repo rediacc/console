@@ -768,7 +768,7 @@ def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
     search_verb = names_destructive(payload["search"]) if ok else ""
     if ok and search_reserved:
         action = V_ACTION_DROPPED % {
-            "why": "it names `%s`, which needs the operator's ask" % search_reserved
+            "why": "it names `%s`, which a judge never orders (standing order 1)" % search_reserved
         }
     elif ok and search_verb:
         action = V_ACTION_DROPPED % {"why": "it names `%s`, and a sweep only reads" % search_verb}
@@ -792,7 +792,8 @@ def enforce(out, payload, fixset_files=None, displaced=None, instance=None):
             }
         elif reserved:
             action = V_ACTION_DROPPED % {
-                "why": "its instruction named `%s`, which needs the operator's ask" % reserved
+                "why": "its instruction named `%s`, which a judge never orders (standing order 1)"
+                % reserved
             }
         else:
             action = V_ACTION_NOSEARCH % payload["instruction"]
