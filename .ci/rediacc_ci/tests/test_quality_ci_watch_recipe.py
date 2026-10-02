@@ -8,6 +8,7 @@ So each detector is re-run as the twin's own bash, over the twin's own fixtures,
 
 import pathlib
 import subprocess
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.quality import ci_watch_recipe as cw
@@ -144,3 +145,60 @@ def test_assert_skill_passes_the_real_skill() -> None:
 def test_selftest_runs_and_meets_its_floor() -> None:
     """The gate's own both-direction controls, over fixtures written by construction."""
     assert cw.selftest() == 0
+
+
+# --------------------------------------------------------------------------- Check C's raw-CI-read arm (PLAN-ci-verdict box C) ---------------------------------------------------------------------------
+
+
+def _registry():
+    module = cw.load_registry(paths.from_root(*cw.REGISTRY_REL.split("/")))
+    assert module is not None, "the sanctioned registry did not load"
+    return module
+
+
+def test_raw_reads_finds_every_registry_example() -> None:
+    """Each CI_READ_VERBS row's own example, written into a doc as a code span, is found as THAT row."""
+    registry = _registry()
+    for row in registry.CI_READ_VERBS:
+        assert cw.raw_reads("Run `%s` to see it.\n" % row["example"], registry) == [row["name"]], (
+            row["name"]
+        )
+
+
+def test_raw_reads_spares_counters_markers_and_the_tracer() -> None:
+    """Both directions: every row's counter, a marked history line, and the tracer verb are not raw reads."""
+    registry = _registry()
+    for row in registry.CI_READ_VERBS:
+        assert cw.raw_reads("Run `%s` instead.\n" % row["counter"], registry) == [], row["name"]
+    marked = (
+        "On 2026-10-02 `gh run view 1 --log` ran dozens of times. <!-- %s: history -->\n"
+        % cw.RAW_READ_OK
+    )
+    assert cw.raw_reads(marked, registry) == []
+    assert cw.raw_reads(marked.replace(cw.RAW_READ_OK, "x"), registry) == ["gh-run-view-log"]
+    assert cw.raw_reads("Use `.ci/scripts/ci/ci-trace.py --run 1 --why`.\n", registry) == []
+
+
+def test_registry_checker_refuses_a_planted_bad_read_verb(tmp_path: pathlib.Path) -> None:
+    """check_sanctioned_registry.py fails on a counter that is refused and on a `use` flag the tracer lacks."""
+    root = paths.repo_root()
+    src = (root / cw.REGISTRY_REL).read_text(encoding="utf-8")
+    good = '"use": "%s --runs" % CI_TRACE,'
+    assert good in src
+    bad = src.replace(good, '"use": "%s --run-list" % CI_TRACE,', 1)
+    planted = tmp_path / "sanctioned.py"
+    planted.write_text(bad, encoding="utf-8")
+    checker = [sys.executable, str(root / cw.REGISTRY_CHECKER_REL)]
+    proc = subprocess.run(
+        [*checker, str(planted), str(root)], capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 1, proc.stdout
+    assert "--run-list, which .ci/scripts/ci/ci-trace.py --help does not list" in proc.stdout
+    clean = subprocess.run(
+        [*checker, str(root / cw.REGISTRY_REL), str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert clean.returncode == 0, clean.stdout
+    assert "CI read verb(s) self-consistent" in clean.stdout

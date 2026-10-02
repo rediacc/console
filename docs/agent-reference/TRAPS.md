@@ -136,7 +136,7 @@ The trap is not the error. The trap is concluding from it that the package's lin
 ## A cancelled run is not a passed run, and it is not a failed one either
 Trap-Id: cancelled-run-not-passed
 Enforced-By: hook:cancelled-run-not-passed
-Residue: The `gh pr checks` half is uncovered: `Review Complete` appears there as a failing job with a /runs/ URL, and only `.output.summary` on the commit's check-runs says what it actually reports.
+Residue: The flat checks-listing half was uncovered until 2026-10-02 and is now refused by `block_raw_ci_read`; `ci-trace.py` reads `Review Complete` as non-blocking and prints it on its own `review:` line. A check-runs read through a client other than `gh` (`curl`) is not judged.
 
 The watchdog force-cancels a CI run on the first job failure. So a run that died on an unrelated red looks, through the usual filter, exactly like a run where everything you cared about passed:
 
@@ -157,7 +157,7 @@ gh api .../jobs --paginate --jq '.jobs[]|select(.name=="<your job>")|"job: \(.co
 
 Report the job's OWN conclusion, never the run's. Within one round of adding it, a run that read `cancelled` at run level reported `battery: success` — a real data point that would otherwise have been discarded.
 
-The same shape hides in `gh pr checks`: `Review Complete` appears there as a failing job with a `/runs/` URL, but it is a check-run posted by a separate workflow. Read `.output.summary` on the commit's check-runs to see what it actually says.
+The same shape hid in the CLI's flat checks listing, refused since 2026-10-02: `Review Complete` appeared there as a failing job with a `/runs/` URL, but it is a check-run posted by a separate workflow. `.ci/scripts/ci/ci-trace.py` treats it (and `CI Verdict`, `Publish CI Verdict`) as non-blocking and prints the review gate on its own `review:` line.
 
 
 ## `git diff <branch>` reads as DELETED for a file the worktree never tracked
@@ -543,10 +543,9 @@ Trap-Id: read-stdout-and-stderr-separately
 Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
 Residue: The gate covers `2>/dev/null` and discarded exit statuses in TRACKED scripts. A one-off command typed into a tool call is in no file, and that is where three rounds went.
 
-Cost: at least three rounds this program. `gh run view --log-failed` is
-run-scoped even with `--job` and says so on stderr; a plan writer wrapped in `2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and `grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation probe look inconclusive.
+Cost: at least three rounds this program. `gh run view --log-failed` is run-scoped even with `--job` and says so on stderr; a plan writer wrapped in `2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and `grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation probe look inconclusive. <!-- raw-ci-read-ok: history -->
 
-Use `gh api repos/OWNER/REPO/actions/jobs/<id>/logs` for a single job's log.
+Use `.ci/scripts/ci/ci-trace.py --job <id> --log` for a single job's whole log, or `--job <id> --errors` for the failing step's slice. The raw job-log endpoint this line used to recommend is refused by `block_raw_ci_read` since 2026-10-02.
 
 ## A helper defined below its first use is a SILENT no-op
 Trap-Id: helper-defined-below-its-first-use
@@ -562,7 +561,7 @@ Trap-Id: a-watch-verdict-is-not-evidence
 Enforced-By: gate:check:ci-pytest
 Residue: The guard refuses ad-hoc watch loops. It cannot make a session RE-READ the Jobs API before acting on a verdict it already holds, nor notice a run that grew from 42 to 48 jobs while being read.
 
-This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch commands are now refused by `block-adhoc-sanctioned.sh`: the script keys on the PR head and reads `statusCheckRollup`, so a superseded run and a watchdog rerun are not mishandled, they are unrepresentable.
+This whole class is why `.ci/scripts/ci/ci-trace.py` exists and why ad-hoc watch commands are now refused by `block_adhoc_sanctioned` (and raw CI reads by `block_raw_ci_read`): the script keys on the PR head and reads `statusCheckRollup`, so a superseded run and a watchdog rerun are not mishandled, they are unrepresentable.
 
 Hand-rolled terminal-state watches have understated failures (reporting one failed job when the API showed the run cancelled with more), and `gh run watch` has dropped silently on terminal runs 4 times out of 4. Always re-read the Jobs API before acting on a verdict, and never treat a still-growing run as final -- one went 42 -> 48 jobs while being read.
 

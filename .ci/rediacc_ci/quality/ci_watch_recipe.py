@@ -20,6 +20,12 @@ The twin's header, carried whole:
       A. The skill hands out the SCRIPT, not a loop.
       B. Every surface that instructs watching names the script.
       C. No doc or hook hands out a hand-rolled loop or a banned invocation.
+         Since 2026-10-02 (PLAN-ci-verdict box C) C also refuses a doc that
+         hands out a raw CI READ from the registry's `CI_READ_VERBS` table
+         (`gh pr checks`, `gh run list/view`, `gh api` GETs on actions runs,
+         jobs, logs, check-runs and annotations, GraphQL rollup queries): the
+         pre-bash guard `block_raw_ci_read` refuses each one, so a doc teaching
+         it hands the reader a refusal instead of the tracer verb.
       D. The sanctioned registry is self-consistent and its tools exist.
       E. The script's own --help works.
       F. The skill teaches --run for a DISPATCHED run, not --ref.
@@ -76,6 +82,7 @@ THE `${actors:-none}`-STYLE DETAIL IN CHECK D: the twin interpolates the helper'
 stdout into the pass line through `$(cat ...)`, which strips the trailing newline. Carried, because `ok D. registry: 3 row(s) self-consistent` is the line a reader recognises.
 """
 
+import importlib.util
 import os
 import pathlib
 import re
@@ -111,6 +118,12 @@ BANNED_INVOCATION = re.compile(r"gh run watch[^|;&]*--(exit-status|interval)")
 STATUS_FIELD = re.compile(r"\.status")
 COMPLETED = re.compile(r'"completed"')
 RUN_ATTEMPT = re.compile(r"run_attempt")
+
+# A raw CI read named in a doc: `gh` then one of the subcommands the `CI_READ_VERBS` rows cover, up to the end of the code span or shell statement. Each candidate is then judged by the registry's own classifier (`ci_read_match`), the one `block_raw_ci_read` uses, so this scan and the guard cannot disagree about what a raw read IS.
+RAW_READ_CANDIDATE = re.compile(r"\bgh\s+(?:pr|run|api)\b[^`|;&\n]*")
+
+# A line that NAMES a raw read without handing it out: a dated history entry, or a sentence saying the read is refused. It carries this marker in an HTML comment, so the exemption is visible in the source and greppable, never inferred from wording.
+RAW_READ_OK = "raw-ci-read-ok"
 
 # Check A's third test: a `until`/`while` loop driving `gh` inside the canonical block. `[^\n]*` in the twin's ERE is per-line, which is what this is.
 CANONICAL_LOOP = re.compile(r"(until|while).*gh ")
@@ -169,6 +182,35 @@ def hands_out_banned(text: str) -> bool:
     return any(BANNED_INVOCATION.search(line) for line in advice_only(text).split("\n"))
 
 
+def load_registry(path: pathlib.Path):
+    """The sanctioned registry module, loaded by path; None when it cannot be."""
+    try:
+        spec = importlib.util.spec_from_file_location("sanctioned", str(path))
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except Exception:  # noqa: BLE001 -- reported by the caller as a failure, never silently passed
+        return None
+    return module if hasattr(module, "ci_read_match") else None
+
+
+def raw_reads(text: str, registry) -> list[str]:
+    """The `CI_READ_VERBS` row names of every raw CI read this file hands out, in order.
+
+    Advice only (the same `advice_only` filter as the other detectors), and a line carrying `RAW_READ_OK` is skipped.
+    """
+    found: list[str] = []
+    for line in advice_only(text).split("\n"):
+        if RAW_READ_OK in line:
+            continue
+        for candidate in RAW_READ_CANDIDATE.findall(line):
+            row, _ident = registry.ci_read_match(candidate)
+            if row is not None:
+                found.append(row["name"])
+    return found
+
+
 def instructs_watching(text: str) -> bool:
     """Does this surface tell an agent to watch CI at all?"""
     return bool(INSTRUCTS_WATCHING.search(text))
@@ -219,6 +261,14 @@ FIXTURE_BAD = (
 )
 
 FIXTURE_GOOD = "Trace it with `.ci/scripts/ci/ci-trace.py --wait`.\n"
+
+FIXTURE_RAW_READ = "Read the failure with `gh run view 123 --log-failed` and grep it.\n"
+
+FIXTURE_RAW_CARVE_OUTS = (
+    "Rerun with `gh run rerun 123 --failed`, fetch artifacts with `gh run download 123 -n x`,\n"
+    "read the head with `gh api repos/o/r/pulls/5 --jq .head.sha`.\n"
+    "On 2026-10-02 the lead ran `gh run view 123 --log` dozens of times. <!-- raw-ci-read-ok: history -->\n"
+)
 
 FIXTURE_DATA = (
     'BG=[{"command":"gh run watch 1 --exit-status"}]\n'
@@ -307,7 +357,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         fail("B CONTROL DID NOT FIRE: the detector missed a fixture that instructs watching")
 
-    # ---- C. nobody hands out a loop or a banned invocation ----------------
+    # ---- C. nobody hands out a loop, a banned invocation or a raw CI read ---
+    registry_module = load_registry(registry)
+    if registry_module is None:
+        fail(
+            "C. the sanctioned registry could not be loaded, so no doc was scanned for raw CI reads"
+        )
     offenders = []
     for rel in files:
         path = root / rel
@@ -318,6 +373,11 @@ def main(argv: list[str] | None = None) -> int:
             offenders.append("%s (hand-rolled loop)" % rel)
         if hands_out_banned(text):
             offenders.append("%s (banned invocation)" % rel)
+        if registry_module is not None:
+            offenders.extend(
+                "%s (raw CI read: %s)" % (rel, name)
+                for name in sorted(set(raw_reads(text, registry_module)))
+            )
 
     scanned = len(files)
     if scanned == 0:
@@ -325,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
     elif not offenders:
         ok("C. no hand-rolled watch in %d scanned file(s)" % scanned)
     else:
-        fail("C. these hand out a broken wake-up: %s" % " ".join(offenders))
+        fail("C. these hand out a broken wake-up or a refused CI read: %s" % " ".join(offenders))
 
     if hands_out_loop(FIXTURE_BAD):
         ok("C control: a hand-rolled loop is detected")
@@ -341,6 +401,18 @@ def main(argv: list[str] | None = None) -> int:
         fail("C IS OVER-BROAD: a JSON value and a test assertion were read as advice")
     else:
         ok("C control: data and test assertions are not advice")
+
+    if registry_module is not None:
+        if raw_reads(FIXTURE_RAW_READ, registry_module):
+            ok("C control: a raw CI read handed out in a doc is detected")
+        else:
+            fail("C CONTROL DID NOT FIRE: a raw `gh run view --log-failed` went undetected")
+        if raw_reads(FIXTURE_RAW_CARVE_OUTS, registry_module):
+            fail(
+                "C IS OVER-BROAD: a write, an artifact download, pulls/<n> or a marked history line was flagged"
+            )
+        else:
+            ok("C control: writes, downloads, pulls/<n> and a marked history line are not flagged")
 
     if hands_out_banned(fixture_big()):
         ok("C control: an early hit in a LARGE file is still detected (no SIGPIPE race)")
@@ -422,7 +494,7 @@ def selftest() -> int:
 
     The over-broad direction carries as much weight as the detection direction: three of the twin's own controls exist only to prove the detectors do NOT fire on the sanctioned invocation, on JSON data, or on a test assertion.
     """
-    ctl = Controls("ci-watch-recipe", floor=22, verbose=True)
+    ctl = Controls("ci-watch-recipe", floor=27, verbose=True)
 
     # -- bash_block ---------------------------------------------------------
     ctl.check(
@@ -533,6 +605,33 @@ def selftest() -> int:
         "CONTROL: and it really is large enough to have raced a pipe (>64 KB)",
         len(fixture_big()) > 64 * 1024,
     )
+
+    # -- raw_reads, both directions -----------------------------------------
+    registry = load_registry(paths.repo_root() / REGISTRY_REL)
+    ctl.truthy(
+        "CONTROL: the sanctioned registry loads and carries ci_read_match", registry is not None
+    )
+    if registry is not None:
+        ctl.check(
+            "PLANT: a raw `gh run view --log-failed` is a raw read",
+            raw_reads(FIXTURE_RAW_READ, registry),
+            ["gh-run-view-log"],
+        )
+        ctl.check(
+            "PLANT: a raw read in a substitution inside prose is found",
+            raw_reads("check it: `x=$(gh pr checks 591)`\n", registry),
+            ["gh-pr-checks"],
+        )
+        ctl.check(
+            "MIRROR: writes, downloads, pulls/<n> and a marked history line are not raw reads",
+            raw_reads(FIXTURE_RAW_CARVE_OUTS, registry),
+            [],
+        )
+        ctl.check(
+            "MIRROR: the tracer verb is not a raw read",
+            raw_reads("Use `.ci/scripts/ci/ci-trace.py --run 123 --why`.\n", registry),
+            [],
+        )
 
     # -- instructs_watching, both directions --------------------------------
     ctl.check("PLANT: the mute fixture instructs watching", instructs_watching(FIXTURE_MUTE), True)

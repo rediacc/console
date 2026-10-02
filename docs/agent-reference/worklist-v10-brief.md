@@ -40,7 +40,7 @@ reported on every stop, which buries the two or three that are real.
 - **Porcelain output is not a contract.** `submodule_pointer_moves()` parsed
 `git submodule status --cached` for a leading `+`; it works on git 2.43 and returned nothing on CI's 2.54, so the suite passed locally and failed in CI. Prefer plumbing: `git ls-files -s <path>` against `git -C <path> rev-parse HEAD`.
 - **Swallowing output hides the cause.** That test fixture wrapped every git
-command in `>/dev/null 2>&1`, so CI could only print `got: ` with no reason. The same mistake cost a separate round earlier the same night when `gh run view --log-failed` wrote its refusal to stderr.
+command in `>/dev/null 2>&1`, so CI could only print `got: ` with no reason. The same mistake cost a separate round earlier the same night when `gh run view --log-failed` wrote its refusal to stderr. <!-- raw-ci-read-ok: history -->
 - **The suite CI runs is `check:ci-pytest`**, which collects
 `.claude/rediacc_hooks/tests/` whole: the ported worklist cases in `test_wl_*.py` and the guard, wiring and delegate modules beside them. Running only the worklist modules is how a broken case reached CI while the session reported 172/0. Run the directory, with `GITHUB_ACTIONS` set AND unset, because the hook no-ops on runners.
 

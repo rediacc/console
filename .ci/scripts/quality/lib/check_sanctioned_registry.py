@@ -11,12 +11,89 @@ A registry row is a rule agents are held to, so a row that has quietly stopped m
   * any tool named in `use` must exist on disk -- pointing an agent at a
     replacement that is not there turns a block into a dead end.
 
+The `CI_READ_VERBS` rows (raw CI reads, refused by `block_raw_ci_read`) get the same three checks through the same classifier the guard uses (`ci_read_match`), held one notch tighter: the example must be refused by THAT row rather than by any row, since rows are ordered and a broader row above it would otherwise shadow it unnoticed; the counter must be refused by NO row; and every
+`--flag` in `use` must appear in `ci-trace.py --help`, because a refusal that names a flag the tracer does not have sends the reader to an argparse error instead of an answer.
+
 Called by `rediacc_ci.quality.ci_watch_recipe` as `python3 <path> <registry> <root>`; kept as its own file, which is how the retired bash twin invoked it too.
 """
 
 import importlib.util
 import pathlib
+import re
+import subprocess
 import sys
+
+TRACE_REL = ".ci/scripts/ci/ci-trace.py"
+FLAG = re.compile(r"(?<![\w-])--[a-z][a-z-]*")
+
+
+def _trace_flags(root):
+    """Every `--flag` the tracer's own --help prints, or None when the help cannot be read."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(root / TRACE_REL), "--help"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    return set(FLAG.findall(proc.stdout))
+
+
+def check_read_verbs(mod, root, flags):
+    """The problems with the `CI_READ_VERBS` rows; empty when every row is honest."""
+    bad: list[str] = []
+    rows = getattr(mod, "CI_READ_VERBS", None)
+    if not rows:
+        return ["CI_READ_VERBS: missing or empty, so block_raw_ci_read refuses nothing"]
+    names = [row["name"] for row in rows]
+    bad.extend(
+        "%s: the name is used by more than one row" % n
+        for n in sorted(set(names))
+        if names.count(n) > 1
+    )
+    for row in rows:
+        name = row["name"]
+        try:
+            re.compile(row["match"])
+        except re.error as err:
+            bad.append("%s: the match pattern does not compile: %s" % (name, err))
+            continue
+        hit, _ident = mod.ci_read_match(row["example"])
+        if hit is None:
+            bad.append(
+                "%s: its own example is not refused -- a dead rule reading as a live one" % name
+            )
+        elif hit["name"] != name:
+            bad.append("%s: its example is refused by %s, which shadows it" % (name, hit["name"]))
+        miss, _ident = mod.ci_read_match(row["counter"])
+        if miss is not None:
+            bad.append(
+                "%s: its counter-example is refused (by %s), so the carve-out is gone"
+                % (name, miss["name"])
+            )
+        if "ci-trace.py" not in row["use"]:
+            bad.append("%s: its use line does not name %s" % (name, TRACE_REL))
+        bad.extend(
+            "%s: names a replacement that does not exist: %s" % (name, tok)
+            for tok in row["use"].split()
+            if tok.endswith((".py", ".sh")) and not (root / tok).exists()
+        )
+        if flags is None:
+            continue
+        bad.extend(
+            "%s: its use line names %s, which %s --help does not list" % (name, flag, TRACE_REL)
+            for flag in FLAG.findall(row["use"])
+            if flag not in flags
+        )
+    if flags is None:
+        bad.append("%s --help could not be read, so no use flag was verified" % TRACE_REL)
+    return bad
 
 
 def main(argv):
@@ -46,10 +123,14 @@ def main(argv):
             for tok in row["use"].split()
             if tok.endswith((".py", ".sh")) and not (root / tok).exists()
         )
+    bad.extend(check_read_verbs(mod, root, _trace_flags(root)))
     if bad:
         print("\n".join(bad))
         return 1
-    print("%d row(s) self-consistent" % len(mod.REGISTRY))
+    print(
+        "%d row(s) self-consistent, %d CI read verb(s) self-consistent"
+        % (len(mod.REGISTRY), len(mod.CI_READ_VERBS))
+    )
     return 0
 
 
