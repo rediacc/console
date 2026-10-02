@@ -22,6 +22,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import promote_r2_to_stable as port
+from rediacc_ci.deploy import r2_promote
 from rediacc_ci.quality import python_env_registry
 from rediacc_ci.tests import r2_promote_fake as fake
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
@@ -194,11 +195,13 @@ def test_the_phase_order_is_bytes_then_metadata_then_signatures(tmp_path) -> Non
 def test_mutation_control_a_reordered_phase_two_is_caught(tmp_path) -> None:
     """PROVE THE ORDER TEST CAN FAIL: swap `apt`'s two phase-2 arms in a planted copy of the port."""
     source = PORT_FILE.read_text(encoding="utf-8")
-    swapped = source.replace(
-        '        ("--exclude", "*", "--include", "Packages*"),\n'
-        '        ("--exclude", "*", "--include", "Release*", "--include", "InRelease"),\n',
-        '        ("--exclude", "*", "--include", "Release*", "--include", "InRelease"),\n'
-        '        ("--exclude", "*", "--include", "Packages*"),\n',
+    packages_arm = (
+        '        ("--exclude", "*", "--include", "Packages*", "--include", "*/Packages*"),\n'
+    )
+    swapped = source.replace(packages_arm, "", 1).replace(
+        '            "*/InRelease",\n        ),\n',
+        '            "*/InRelease",\n        ),\n' + packages_arm,
+        1,
     )
     assert swapped != source, "the plant did not apply; the control is broken, not the test"
     planted = tmp_path / "planted_port.py"
@@ -376,7 +379,9 @@ def test_an_empty_edge_tree_is_refused_before_anything_moves(tmp_path) -> None:
     assert proc.returncode == 1
     assert proc.stderr.startswith("VACUOUS: cli/edge/ lists 0 object(s)"), proc.stderr
     assert proc.stdout == "Promoting cli/edge/ -> cli/stable/ (2-phase)\n"
-    assert len(fake.aws_calls(records)) == 1
+    # Two listings and nothing else: the channel-snapshot probe for the selected version (none here), then cli/edge/.
+    assert [argv[5] for argv in fake.aws_calls(records)] == ["snapshots/v1.2.3/", "cli/edge/"]
+    assert [argv[:2] for argv in fake.aws_calls(records)] == [["s3api", "list-objects-v2"]] * 2
 
 
 # --------------------------------------------------------------------------- Retries and refusals ---------------------------------------------------------------------------
@@ -495,18 +500,24 @@ def test_every_channel_directory_has_a_phase_two_arm() -> None:
 
 
 def test_the_phase_one_excludes_are_the_twins_list_in_the_twins_order() -> None:
-    """A REORDERED LIST IS A DIFFERENT FILTER, because the last matching rule wins."""
+    """A REORDERED LIST IS A DIFFERENT FILTER, because the last matching rule wins. The `*/` twins are this port's (#51ea3682): the twin's bare names matched nothing nested."""
     excludes = [port.META_EXCLUDES[i + 1] for i in range(0, len(port.META_EXCLUDES), 2)]
     assert excludes == [
         "Packages*",
+        "*/Packages*",
         "Release*",
+        "*/Release*",
         "InRelease",
+        "*/InRelease",
         "repodata/*",
         "APKINDEX.tar.gz",
+        "*/APKINDEX.tar.gz",
         "*.db.tar.gz",
         "*.files.tar.gz",
         "rediacc.db",
+        "*/rediacc.db",
         "rediacc.files",
+        "*/rediacc.files",
         "latest*.yml",
         "latest.json",
         "manifest.json",
@@ -558,3 +569,35 @@ def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
         {},
     )
     assert derived == names, f"the gate would derive {sorted(derived)}, not {sorted(names)}"
+
+
+def test_the_metadata_filters_reach_the_real_nested_layout() -> None:
+    """THE KEYS R2 REALLY HOLDS (listed 2026-10-02): apt's signed metadata under `dists/`, APKINDEX and the pacman db under `<arch>/`. Each must be kept out of phase 1 and picked up by a phase-2 arm; the twin's bare names missed all of them, so they rode phase 1 beside the packages they hash."""
+    nested = {
+        "apt": (
+            "dists/stable/InRelease",
+            "dists/stable/Release.gpg",
+            "dists/stable/main/binary-amd64/Packages.gz",
+        ),
+        "apk": ("aarch64/APKINDEX.tar.gz",),
+        "archlinux": ("x86_64/rediacc.db", "x86_64/rediacc.files", "x86_64/rediacc.db.tar.gz"),
+        "rpm": ("repodata/repomd.xml.asc",),
+    }
+    for dir_name, rels in nested.items():
+        for rel in rels:
+            assert not r2_promote.keep(rel, port.META_EXCLUDES), (dir_name, rel)
+            assert any(r2_promote.keep(rel, arm) for arm in port.PHASE_TWO[dir_name]), (
+                dir_name,
+                rel,
+            )
+    for rel in (
+        "pool/main/r/rediacc-cli/rediacc-cli_1.4.0_amd64.deb",
+        "aarch64/rediacc-cli-1.4.0.apk",
+        "gpg.key",
+    ):
+        assert r2_promote.keep(rel, port.META_EXCLUDES), rel
+    # apt's order inside phase 2: every Packages before any Release.
+    packages_arm, release_arm = port.PHASE_TWO["apt"]
+    assert r2_promote.keep("dists/stable/main/binary-amd64/Packages", packages_arm)
+    assert not r2_promote.keep("dists/stable/InRelease", packages_arm)
+    assert r2_promote.keep("dists/stable/InRelease", release_arm)

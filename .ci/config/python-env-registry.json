@@ -377,13 +377,17 @@
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
       "TURNSTILE_SITE_KEY"
     ],
+    ".ci/rediacc_ci/deploy/upload_repos_to_r2.py": [
+      "SNAPSHOT_VERSION"
+    ],
     ".ci/rediacc_ci/deploy/upload_to_r2.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "NPM_DIR",
       "RELEASES_BUCKET",
-      "SKIP_RELEASE"
+      "SKIP_RELEASE",
+      "SNAPSHOT_VERSION"
     ],
     ".ci/rediacc_ci/deploy/verify_edge_endpoints.py": [
       "EDGE_RETRIES",
@@ -1010,6 +1014,7 @@
     ],
     ".ci/rediacc_ci/release/check_soak_period.py": [
       "*name",
+      "CHANNEL_SNAPSHOTS",
       "EDGE_RELEASES",
       "EDGE_VERSION",
       "FORCE",
@@ -1035,6 +1040,10 @@
     ],
     ".ci/rediacc_ci/release/deployment_summary.py": [
       "*name"
+    ],
+    ".ci/rediacc_ci/release/list_channel_snapshots.py": [
+      "CLOUDFLARE_R2_ENDPOINT",
+      "GITHUB_OUTPUT"
     ],
     ".ci/rediacc_ci/release/list_edge_releases.py": [
       "GITHUB_OUTPUT",
@@ -1376,6 +1385,10 @@
     ],
     ".ci/rediacc_ci/tests/test_deploy_cf_purge_urls.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_deploy_channel_snapshot.py": [
+      "HOME",
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_deploy_clone_d1.py": [
       "HOME"

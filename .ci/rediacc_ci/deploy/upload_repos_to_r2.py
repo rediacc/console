@@ -70,6 +70,17 @@ RULE T DELTA: A TRANSIENT R2 FAILURE IS RETRIED (#4175e786)
 The twin ran each `aws s3 sync` and `aws s3 cp` once under `set -e`, so one transient R2 `IncompleteRead` (measured on 2026-09-24 on a large package) ended a release upload half-way. The port retries the two transfers up to three times, `RETRY_DELAY_S` apart, and only when aws's stderr names a failure a retry can change (`transfer_retry.is_transient`: a broken read, a timeout, a 5xx, a throttle). A refusal (`AccessDenied`, `NoSuchBucket`, an expired key) and anything unrecognised fails on the
 first try exactly as the twin did, with byte-identical output. A retried transfer replays aws's own stderr each time, says `retrying (n/3)`, and a transfer that never succeeds ends with a line naming the cause and then aws's own status. `sync` and `cp` of one object are idempotent, which is what makes the repeat safe. Pinned by the `test_delta_*` cases at the end of the differential, each a fake `aws` that fails once and then succeeds, or always.
 
+-----------------------------------------------------------------------------
+DELTA: THE CHANNEL SNAPSHOT (PLAN-plan-per-pr-loop R2 follow-up)
+-----------------------------------------------------------------------------
+With `SNAPSHOT_VERSION` set (on the `edge` channel only; another channel is refused before any write), the run also writes the version's channel snapshot (`channel_snapshot`) after the channel upload and before the purge:
+
+  1. every METADATA file of each `dist/repos/<fmt>` (what `promote_r2_to_stable.META_EXCLUDES` keeps out of phase 1) to `snapshots/v<V>/<fmt>/`, one `aws s3 sync` per format with the include filter that selects exactly those files: the same local files the channel sync has just uploaded;
+  2. each stamped install script, the same temporary the channel upload used, to `snapshots/v<V>/cli/`;
+  3. a listing of `snapshots/v<V>/`, which must show the cli part `upload_to_r2` wrote in the step before (`channel_snapshot.CLI_REQUIRED`), then the `.complete` marker LAST, naming every metadata key and every package file (with its size) of `dist/repos`.
+
+A snapshot that cannot be completed fails the run with the reason. Unset, the run is the twin's, byte for byte.
+
 K=5 LEDGER: `.ci/shadow/w7p6-upload-repos-to-r2.observations.jsonl`.
 """
 
@@ -78,9 +89,11 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import transfer_retry
+from rediacc_ci.deploy import channel_snapshot, r2_promote, transfer_retry
+from rediacc_ci.deploy.promote_r2_to_stable import META_EXCLUDES
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 # The twin's own name, printed in its five guard messages and its one non-release-channel notice. A literal, because the bytes must survive the port.
@@ -255,6 +268,107 @@ def sed_argv(channel: str, source: str) -> list[str]:
     ]
 
 
+def snapshot_sync_argv(fmt: str, version: str, endpoint: str) -> list[str]:
+    """Delta step 1: `aws s3 sync dist/repos/<fmt> s3://.../snapshots/v<V>/<fmt>/` restricted to the metadata files."""
+    return [
+        "aws",
+        "s3",
+        "sync",
+        "dist/repos/%s" % fmt,
+        "s3://%s/%s" % (BUCKET, channel_snapshot.tree(version, fmt)),
+        *channel_snapshot.include_filters(META_EXCLUDES),
+        "--cache-control",
+        CC_MUTABLE,
+        "--endpoint-url",
+        endpoint,
+        "--only-show-errors",
+    ]
+
+
+def snapshot_cp_argv(source: str, key: str, endpoint: str) -> list[str]:
+    """One `aws s3 cp <file> s3://.../<key>` into a snapshot."""
+    return [
+        "aws",
+        "s3",
+        "cp",
+        source,
+        "s3://%s/%s" % (BUCKET, key),
+        "--cache-control",
+        CC_MUTABLE,
+        "--endpoint-url",
+        endpoint,
+        "--only-show-errors",
+    ]
+
+
+def dist_inventory(fmts: tuple[str, ...] = FORMATS) -> tuple[list[str], dict[str, int]]:
+    """`(metadata, packages)` of `dist/repos`: metadata as snapshot-relative keys (`apt/dists/stable/InRelease`), packages as channel-relative keys with their sizes (`apt/pool/x.deb`: 123). A format that was not built is absent."""
+    metadata: list[str] = []
+    packages: dict[str, int] = {}
+    for fmt in fmts:
+        directory = "dist/repos/%s" % fmt
+        if not os.path.isdir(directory):
+            continue
+        for dirpath, _dirs, files in os.walk(directory):
+            for name in files:
+                full = os.path.join(dirpath, name)
+                rel = os.path.relpath(full, directory).replace(os.sep, "/")
+                if channel_snapshot.is_metadata(rel, META_EXCLUDES):
+                    metadata.append("%s/%s" % (fmt, rel))
+                else:
+                    packages["%s/%s" % (fmt, rel)] = os.path.getsize(full)
+    return sorted(metadata), packages
+
+
+def _snapshot_repos(version: str, endpoint: str) -> None:
+    """Delta step 1."""
+    for fmt in FORMATS:
+        if not os.path.isdir("dist/repos/%s" % fmt):
+            continue
+        status = _transfer(
+            snapshot_sync_argv(fmt, version, endpoint), "snapshot of dist/repos/%s" % fmt
+        )
+        if status:
+            raise BashExitError(status)
+
+
+def _seal_snapshot(version: str, endpoint: str) -> None:
+    """Delta step 3: verify the snapshot by listing it, then write the marker LAST."""
+    root = channel_snapshot.prefix(version)
+    _flush()
+    proc = subprocess.run(
+        r2_promote.list_argv(root, endpoint), check=False, capture_output=True, text=True
+    )
+    if proc.returncode:
+        sys.stderr.write(proc.stderr)
+        print("%s: listing %s failed (exit %d)" % (SELF, root, proc.returncode), file=sys.stderr)
+        raise BashExitError(proc.returncode)
+    listed = {obj.rel for obj in r2_promote.parse_listing(proc.stdout, root)}
+    metadata, packages = dist_inventory()
+    metadata += sorted(rel for rel in listed if rel.startswith("cli/") and rel not in metadata)
+    absent = [key for key in [*channel_snapshot.CLI_REQUIRED, *metadata] if key not in listed]
+    if absent:
+        print(
+            "%s: the channel snapshot %s is incomplete, so no %s marker is written: %s"
+            % (SELF, root, channel_snapshot.MARKER, ", ".join(sorted(set(absent))[:10])),
+            file=sys.stderr,
+        )
+        raise BashExitError(1)
+    handle, path = tempfile.mkstemp(prefix="snapshot-marker-", suffix=".json")
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as out:
+            out.write(channel_snapshot.marker_body(version, metadata, packages))
+        status = _transfer(
+            snapshot_cp_argv(path, channel_snapshot.marker_key(version), endpoint),
+            "upload of %s" % channel_snapshot.marker_key(version),
+        )
+    finally:
+        os.remove(path)
+    if status:
+        raise BashExitError(status)
+    print("Channel snapshot sealed: %s (%d metadata object(s))" % (root, len(metadata)))
+
+
 def purge_argv(zone: str) -> list[str]:
     """`.ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"` (:162)."""
     return [PURGE_SCRIPT, "--zone", zone]
@@ -394,8 +508,8 @@ def _upload_repos(channel: str, endpoint: str) -> list[str]:
     return urls
 
 
-def _upload_install_scripts(channel: str, endpoint: str) -> list[str]:
-    """The install-script loop (:142-153). Returns the URLs."""
+def _upload_install_scripts(channel: str, endpoint: str, snapshot_version: str = "") -> list[str]:
+    """The install-script loop (:142-153). Returns the URLs. With `snapshot_version`, each stamped script is also uploaded to the version's channel snapshot."""
     urls: list[str] = []
     for source in INSTALL_SCRIPTS:
         if not os.path.isfile(source):
@@ -414,6 +528,12 @@ def _upload_install_scripts(channel: str, endpoint: str) -> list[str]:
         status = _transfer(cp_argv(tmp, channel, name, endpoint), "upload of %s" % name)
         if status:
             raise BashExitError(status)
+        if snapshot_version:
+            # The SAME stamped temporary the channel upload just sent.
+            key = channel_snapshot.tree(snapshot_version, "cli") + name
+            status = _transfer(snapshot_cp_argv(tmp, key, endpoint), "snapshot of %s" % name)
+            if status:
+                raise BashExitError(status)
 
         # `rm -f "$tmp"`: -f, so a temporary that has already gone is not an error.
         if os.path.exists(tmp):
@@ -459,6 +579,7 @@ def main(argv: list[str]) -> int:
 
     channel = values["CHANNEL"]
     endpoint = values["CLOUDFLARE_R2_ENDPOINT"]
+    snapshot_version = os.environ.get("SNAPSHOT_VERSION", "")
 
     if skip_release_requested(dict(os.environ)):
         if channel in RELEASE_CHANNELS:
@@ -470,6 +591,14 @@ def main(argv: list[str]) -> int:
             "uploading as usual" % (SELF, channel)
         )
 
+    if snapshot_version and channel != "edge":
+        print(
+            "%s: %s=%s asks for a channel snapshot, which only an edge upload writes (CHANNEL=%s)"
+            % (SELF, channel_snapshot.VERSION_ENV, snapshot_version, channel),
+            file=sys.stderr,
+        )
+        return 1
+
     # The dist/ paths and the purge call below are repo-relative, exactly as they were in the workflow step this came from.
     os.chdir(repo_root())
 
@@ -480,7 +609,11 @@ def main(argv: list[str]) -> int:
 
     try:
         purge_urls = _upload_repos(channel, endpoint)
-        purge_urls += _upload_install_scripts(channel, endpoint)
+        if snapshot_version:
+            _snapshot_repos(snapshot_version, endpoint)
+        purge_urls += _upload_install_scripts(channel, endpoint, snapshot_version)
+        if snapshot_version:
+            _seal_snapshot(snapshot_version, endpoint)
     except BashExitError as exc:
         return exc.code
 

@@ -6,7 +6,7 @@ THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newe
 
 A NIGHTLY THAT CONCLUDED `failure` (`NIGHTLY_CONCLUSION`) reaches the waiver only when `nightly_tested_edge.nightly_failures_are_drift_only` accepts its jobs (read for `NIGHTLY_RUN_ID` in `GITHUB_REPOSITORY`); otherwise it decides `ready=false` with no soak fallback, exactly as the workflow's `if:` refused every red nightly before. Any other non-success conclusion is refused the same way.
 
-An older selection is NOT promotable today, and says so (`blocked=`): R2's `<dir>/edge/` channel trees carry the newest edge's signed metadata only, and the bucket holds no per-version snapshot of it. See the R2 note in `main`.
+An older selection is promotable only from its CHANNEL SNAPSHOT (`rediacc_ci.deploy.channel_snapshot`): R2's `<dir>/edge/` channel trees carry the newest edge's signed metadata only, and every edge release also writes its own to `snapshots/v<ver>/`. `CHANNEL_SNAPSHOTS` (`list_channel_snapshots`' JSON list of versions with a complete snapshot) says which exist; an older selection without one is named and reported `blocked=` (releases cut before snapshots existed have none). See the R2 note in `main`.
 
 DATE PARSING IS SHELLED OUT, NOT REIMPLEMENTED. The twin tries GNU `date -d` first, then BSD `date -j -f "%Y-%m-%dT%H:%M:%S"`, so it accepts a wider set of `EDGE_DATE` spellings than a hand-rolled `datetime.fromisoformat` would (GNU `date -d` parses far more than ISO-8601). Re-deriving that parser would be a second implementation of a contract the system `date` binary already owns,
 and would drift from it silently on some future EDGE_DATE this port never saw during review. Running the *exact* twin expression through `bash -c` keeps the two sides looking at the same parse, byte for byte.
@@ -35,7 +35,7 @@ from rediacc_ci.release.nightly_tested_edge import edge_tested_by_nightly
 
 SELF = "check-soak-period.py"
 
-# The `blocked=` value written when the selected version is older than the edge R2 carries; see the R2 note in `main`.
+# The `blocked=` value written when the selected version is older than the edge R2 carries and has no channel snapshot; see the R2 note in `main`.
 R2_SNAPSHOT_BLOCK = "r2-channel-snapshot"
 
 # The exact twin expression, run verbatim so both sides parse EDGE_DATE through the identical `date` invocation chain. `$1` is the edge date, substituted positionally rather than interpolated into the script text so a value containing shell metacharacters cannot change what runs.
@@ -75,6 +75,16 @@ def _candidates(text: str) -> list[tuple[str, str]]:
     return pairs
 
 
+def _snapshots(text: str) -> frozenset[str]:
+    """`CHANNEL_SNAPSHOTS` (`list_channel_snapshots`' JSON list of versions) as a set. Empty text is no snapshots. Raises ValueError or TypeError on anything else."""
+    if not text.strip():
+        return frozenset()
+    rows = json.loads(text)
+    if not isinstance(rows, list) or not all(isinstance(v, str) and v for v in rows):
+        raise TypeError("expected a JSON list of version strings")
+    return frozenset(rows)
+
+
 @dataclass(frozen=True)
 class Edge:
     version: str
@@ -102,6 +112,11 @@ def main(argv: list[str]) -> int:
     force = os.environ.get("FORCE", "")
     stable_version = os.environ.get("STABLE_VERSION", "")
     releases_text = os.environ.get("EDGE_RELEASES", "")
+    try:
+        snapshots = _snapshots(os.environ.get("CHANNEL_SNAPSHOTS", ""))
+    except (ValueError, TypeError) as exc:
+        print(f"{SELF}: CHANNEL_SNAPSHOTS is not a version list ({exc})", file=sys.stderr)
+        return 1
 
     edge_epoch = _epoch(edge_date)
     now_proc = subprocess.run(["date", "+%s"], capture_output=True, text=True, check=False)
@@ -187,12 +202,18 @@ def main(argv: list[str]) -> int:
                         f"No edge release newer than stable v{stable_version} has soaked {soak_days} days"
                     )
 
-    # R2 CARRIES ONLY THE NEWEST EDGE. `promote_r2_to_stable` copies each `<dir>/edge/` tree, whose signed channel metadata (apt Release/InRelease, rpm repomd.xml, APKINDEX, the pacman db, cli/edge/manifest.json) describes `EDGE_VERSION` alone; no per-version snapshot of that metadata exists in the bucket (listed 2026-10-02: `cli/v<ver>/` keeps binaries only). Promoting an older selection from edge/ would ship the newest edge's packages under the older version's name while Docker and the Workers got the older one, a split release, so the older selection is named and not promoted.
-    blocked = selected is not None and selected.version != edge_version
+    # R2's CHANNEL TREES CARRY ONLY THE NEWEST EDGE. Each `<dir>/edge/` tree's signed channel metadata (apt Release/InRelease, rpm repomd.xml, APKINDEX, the pacman db, cli/edge/manifest.json) describes `EDGE_VERSION` alone. An older selection is promoted from its own channel snapshot (`snapshots/v<ver>/`, written by every edge release since channel snapshots were introduced), which `promote_r2_to_stable` reads and verifies. Without one, promoting it from edge/ would ship the newest edge's packages under the older version's name while Docker and the Workers got the older one, a split release, so it is named and not promoted.
+    older_selected = selected is not None and selected.version != edge_version
+    blocked = older_selected and selected is not None and selected.version not in snapshots
     if blocked and selected is not None:
         print(
             f"Not promoting v{selected.version}: R2's <dir>/edge/ channel trees carry only v{edge_version}, "
-            f"and no per-version channel snapshot of v{selected.version} exists"
+            f"and no channel snapshot snapshots/v{selected.version}/ exists "
+            f"(releases cut before channel snapshots were introduced have none)"
+        )
+    elif older_selected and selected is not None:
+        print(
+            f"Promoting v{selected.version} from its channel snapshot snapshots/v{selected.version}/"
         )
 
     _write(output_path, selected, path, blocked=blocked)

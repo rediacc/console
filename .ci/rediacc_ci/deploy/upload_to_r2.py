@@ -93,6 +93,11 @@ FOUR DIVERGENCES, EACH ASSERTED IN BOTH DIRECTIONS BY THE DIFFERENTIAL
    disagrees with ITSELF, because the guard subprocess sources common.sh and
    emits colour while the Python half does not.
 
+--------------------------------------------------------------------------
+ONE DELTA THE TWIN DOES NOT HAVE: THE CHANNEL SNAPSHOT (PLAN-plan-per-pr-loop R2 follow-up)
+--------------------------------------------------------------------------
+With `SNAPSHOT_VERSION` set (to `--version`, on the `edge` channel only; anything else is refused before any write), the run also writes the cli part of the version's channel snapshot (`channel_snapshot`): the same `manifest.json` file and the same `latest.json` string it has just written to `cli/edge/`, to `snapshots/v<V>/cli/`. And when the tracker prunes a version, its `snapshots/v<V>/` is removed with its `cli/v<V>/`. Unset, the run is the twin's, byte for byte, which is what keeps the differential comparable.
+
 K=5 LEDGER: `.ci/shadow/w7p6-upload-to-r2.observations.jsonl`.
 """
 
@@ -105,6 +110,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.deploy import channel_snapshot
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The twin's own name. Used for nothing the twin prints (it prints `$0`), only
@@ -328,8 +334,10 @@ def _flush() -> None:
 class Uploader:
     """One run. Holds the six values every helper in the twin reads as a global."""
 
-    def __init__(self, version: str, channel: str, dry_run: bool) -> None:
+    def __init__(self, version: str, channel: str, dry_run: bool, snapshot: bool = False) -> None:
         self.version = version
+        # Whether this run also writes the version's channel snapshot; see the delta in the module docstring.
+        self.snapshot = snapshot
         self.channel = channel
         self.dry_run = dry_run
         self.bucket = releases_bucket()
@@ -515,6 +523,9 @@ class Uploader:
                 continue
             log.info("  Deleting %s/v%s/" % (prefix, ver))
             self.r2_rm("%s/v%s/" % (prefix, ver))
+            if self.snapshot:
+                log.info("  Deleting %s" % channel_snapshot.prefix(ver))
+                self.r2_rm(channel_snapshot.prefix(ver))
 
 
 def _read(path: str) -> str:
@@ -639,7 +650,16 @@ def _upload_cli(run: Uploader, cli_dir: str) -> None:
         run.r2_cp(manifest, r2_path("cli", run.channel, "manifest.json"))
 
     # `latest.json` LAST, to avoid pointing the channel at bytes not yet there. DEFECT 1 LIVES ON THIS LINE: it is unconditional, so an empty `dist/cli` publishes a pointer to a version with no binaries.
-    run.r2_put('{"version":"%s"}' % run.version, r2_path("cli", run.channel, "latest.json"))
+    latest = '{"version":"%s"}' % run.version
+    run.r2_put(latest, r2_path("cli", run.channel, "latest.json"))
+
+    if run.snapshot:
+        # The SAME file and the SAME string as the two channel writes above, so the snapshot holds the bytes `cli/edge/` holds.
+        snapshot = channel_snapshot.tree(run.version, "cli")
+        if os.path.isfile(manifest):
+            run.r2_cp(manifest, snapshot + "manifest.json")
+        run.r2_put(latest, snapshot + "latest.json")
+        log.info("CLI: channel snapshot written to %s" % snapshot)
 
     if run.channel in RELEASE_CHANNELS:
         log.info("CLI: uploaded to cli/v%s/ + cli/%s/" % (run.version, run.channel))
@@ -731,7 +751,16 @@ def main(argv: list[str]) -> int:
         os.environ["AWS_SECRET_ACCESS_KEY"] = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "")
         os.environ["AWS_DEFAULT_REGION"] = "auto"
 
-    run = Uploader(version, channel, dry_run)
+    snapshot_version = os.environ.get("SNAPSHOT_VERSION", "")
+    if snapshot_version and (snapshot_version != version or channel != "edge"):
+        log.error(
+            "%s=%s asks for a channel snapshot, which only an edge upload of that same version writes "
+            "(this run: --version %s --channel %s)"
+            % (channel_snapshot.VERSION_ENV, snapshot_version, version, channel)
+        )
+        return 1
+
+    run = Uploader(version, channel, dry_run, snapshot=bool(snapshot_version))
     cli_pruned = ""
 
     try:

@@ -475,3 +475,52 @@ def test_list_edge_releases_fails_loudly_when_gh_fails(tmp_path: pathlib.Path) -
     assert exit_code == 1
     assert "HTTP 503" in err
     assert not out.exists()
+
+
+# --- Channel snapshots (PLAN-plan-per-pr-loop R2 follow-up, #51ea3682) ------------
+#
+# Every edge release now writes its signed channel metadata to `snapshots/v<ver>/`, and `promote_r2_to_stable` promotes an older selection from it. `CHANNEL_SNAPSHOTS` (`list_channel_snapshots`' output) names the versions that have one.
+
+
+def test_an_older_soaked_selection_with_a_channel_snapshot_is_ready(tmp_path: pathlib.Path) -> None:
+    env = walk_env(CHANNEL_SNAPSHOTS=json.dumps(["1.0.3", "1.0.1"]))
+    (exit_code, out, err), written = run_port(tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    got = outputs(written)
+    assert got["ready"] == "true"
+    assert got["version"] == "1.0.1"
+    assert "blocked" not in got
+    assert "Promoting v1.0.1 from its channel snapshot snapshots/v1.0.1/" in out
+
+
+def test_an_older_selection_without_a_snapshot_is_blocked_and_says_why(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A snapshot of ANOTHER version does not count, and the reason names the missing prefix and why such a release has none."""
+    env = walk_env(CHANNEL_SNAPSHOTS=json.dumps(["1.0.3", "1.0.2"]))
+    (exit_code, out, err), written = run_port(tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    got = outputs(written)
+    assert got["ready"] == "false"
+    assert got["version"] == "1.0.1"
+    assert got["blocked"] == "r2-channel-snapshot"
+    assert "no channel snapshot snapshots/v1.0.1/ exists" in out
+    assert "releases cut before channel snapshots were introduced have none" in out
+
+
+def test_the_newest_edge_needs_no_snapshot(tmp_path: pathlib.Path) -> None:
+    """The newest edge is what the live `<dir>/edge/` trees carry, so it promotes with or without a snapshot."""
+    env = walk_env(EDGE_DATE=edge_date(8), CHANNEL_SNAPSHOTS="[]")
+    (exit_code, _out, err), written = run_port(tmp_path, env)
+    assert (exit_code, err) == (0, "")
+    got = outputs(written)
+    assert (got["ready"], got["version"]) == ("true", "1.0.3")
+    assert "blocked" not in got
+
+
+def test_an_unreadable_snapshot_list_is_refused_not_read_as_none(tmp_path: pathlib.Path) -> None:
+    env = walk_env(CHANNEL_SNAPSHOTS='{"1.0.1": true}')
+    (exit_code, _out, err), written = run_port(tmp_path, env)
+    assert exit_code == 1
+    assert "CHANNEL_SNAPSHOTS is not a version list" in err
+    assert written == ""

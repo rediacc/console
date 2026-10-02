@@ -36,7 +36,13 @@ FOUR `${VAR:?msg}` GUARDS, ONE DIVERGENCE
 -----------------------------------------------------------------------------
 bash's own refusal names the bash FILE and a bash LINE NUMBER and then the twin's message, which already begins with the script name. This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. The ORDER is kept, and `require_cmd aws` runs BEFORE all four.
 
-`EDGE_VERSION` IS THE ODD ONE OUT: it is used only in the closing log line. A port that treated it as optional would print `edge v -> stable` on a run the twin refuses outright.
+`EDGE_VERSION` names the selected version: the closing log line, and the channel snapshot the promote reads (see above). A port that treated it as optional would print `edge v -> stable` on a run the twin refuses outright.
+
+-----------------------------------------------------------------------------
+THE SELECTED VERSION'S CHANNEL SNAPSHOT (PLAN-plan-per-pr-loop R2 follow-up)
+-----------------------------------------------------------------------------
+`EDGE_VERSION` is the version `check_soak_period` SELECTED, which is usually older than the newest edge. When `snapshots/v<EDGE_VERSION>/` holds a complete snapshot (`channel_snapshot`), every tree's metadata and pointers are copied from it instead of from `<dir>/edge/`, `cli`'s binaries from `cli/v<EDGE_VERSION>/`, and the package bytes still from `<dir>/edge/`. Before any write the snapshot is verified: its `.complete` marker exists,
+every metadata key the marker names is listed, and every package the marker names is still in its `<dir>/edge/` tree with the size it had at release time (retention may have pruned it). Any failure refuses with the reason and writes nothing. A version with NO snapshot (released before snapshots existed) is promoted from the live edge trees as before; `check_soak_period` only lets that happen for the newest edge, whose metadata those trees carry.
 
 NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST: `.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py` puts recording fakes for `aws` and `curl` on a scratch PATH over an on-disk bucket fixture.
 """
@@ -50,7 +56,7 @@ import sys
 import tempfile
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import channel_stamp, r2_promote
+from rediacc_ci.deploy import channel_snapshot, channel_stamp, r2_promote
 
 # The twin's own name, carried in its four guard messages. A literal, because the bytes must survive the port.
 SELF = "promote-r2-to-stable.sh"
@@ -63,17 +69,28 @@ PUBLIC_HOST = r2_promote.PUBLIC_HOST
 CC_MUTABLE = r2_promote.CC_MUTABLE
 
 # `META_EXCLUDES` (twin :95-105), flattened to the argv order the twin expands it into. EVERY PAIR AND ITS POSITION MATTERS: `r2_promote.keep` applies include and exclude rules in order with the last match winning, as aws-cli does, so a reordered list is a different filter even when the set is identical.
+#
+# THE `*/` TWINS ARE NOT THE TWIN'S, AND THEY FIX IT (#51ea3682). aws-cli matches a pattern against the WHOLE key relative to the tree, so the twin's bare `Packages*`, `Release*`, `InRelease`, `APKINDEX.tar.gz`, `rediacc.db` and `rediacc.files` matched only a file at the TOP of a tree, and none of them sits there: R2 holds `apt/edge/dists/stable/InRelease`, `apt/edge/dists/stable/main/binary-amd64/Packages`, `apk/edge/<arch>/APKINDEX.tar.gz` and `archlinux/edge/<arch>/rediacc.db` (listed 2026-10-02).
+# So apt's signed metadata, APKINDEX and the bare pacman db were copied in phase 1, beside the packages they hash, and the "bytes before metadata" order held only for rpm, cli and the `*.db.tar.gz` names. Each bare name now has a `*/<name>` twin (`*` crosses `/`), here and in `PHASE_TWO`, and the channel snapshot's definition of metadata is this list.
 META_EXCLUDES: tuple[str, ...] = (
     "--exclude",
     "Packages*",
     "--exclude",
+    "*/Packages*",
+    "--exclude",
     "Release*",
     "--exclude",
+    "*/Release*",
+    "--exclude",
     "InRelease",
+    "--exclude",
+    "*/InRelease",
     "--exclude",
     "repodata/*",
     "--exclude",
     "APKINDEX.tar.gz",
+    "--exclude",
+    "*/APKINDEX.tar.gz",
     "--exclude",
     "*.db.tar.gz",
     "--exclude",
@@ -81,7 +98,11 @@ META_EXCLUDES: tuple[str, ...] = (
     "--exclude",
     "rediacc.db",
     "--exclude",
+    "*/rediacc.db",
+    "--exclude",
     "rediacc.files",
+    "--exclude",
+    "*/rediacc.files",
     "--exclude",
     "latest*.yml",
     "--exclude",
@@ -107,8 +128,19 @@ META_EXCLUDES: tuple[str, ...] = (
 PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
     # 2a: Packages / Packages.gz (hashes of the .deb files phase 1 uploaded). 2b: Release / InRelease / Release.gpg (hashes of phase 2a).
     "apt": (
-        ("--exclude", "*", "--include", "Packages*"),
-        ("--exclude", "*", "--include", "Release*", "--include", "InRelease"),
+        ("--exclude", "*", "--include", "Packages*", "--include", "*/Packages*"),
+        (
+            "--exclude",
+            "*",
+            "--include",
+            "Release*",
+            "--include",
+            "*/Release*",
+            "--include",
+            "InRelease",
+            "--include",
+            "*/InRelease",
+        ),
     ),
     # 2a: primary / filelists / other (hashed by 2b's repomd). 2b: repomd.xml + signatures + rediacc.repo (the channel pointer).
     "rpm": (
@@ -125,7 +157,7 @@ PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
         ("--exclude", "*", "--include", "repodata/repomd.xml*", "--include", "*.repo"),
     ),
     # APKINDEX references the .apk files in the same directory (phase 1).
-    "apk": (("--exclude", "*", "--include", "APKINDEX.tar.gz"),),
+    "apk": (("--exclude", "*", "--include", "APKINDEX.tar.gz", "--include", "*/APKINDEX.tar.gz"),),
     # .db/.files reference the .pkg.tar.zst in the same directory (phase 1).
     "archlinux": (
         (
@@ -138,7 +170,11 @@ PHASE_TWO: dict[str, tuple[tuple[str, ...], ...]] = {
             "--include",
             "rediacc.db",
             "--include",
+            "*/rediacc.db",
+            "--include",
             "rediacc.files",
+            "--include",
+            "*/rediacc.files",
             "--include",
             "*.conf",
         ),
@@ -268,16 +304,74 @@ def _run(argv: list[str], **kwargs) -> int:
     return subprocess.run(argv, check=False, **kwargs).returncode
 
 
-def _promote_dirs(endpoint: str) -> list[str]:
-    """The `for dir in cli apt rpm apk archlinux` loop. Returns the purge URLs."""
+def verify_snapshot(version: str, run: r2_promote.Transfers, stage_root: str) -> int | None:
+    """The snapshot of `version`, verified per the module docstring. Returns its metadata count, or None when the version has no snapshot at all. Raises `channel_snapshot.SnapshotError` for a partial or stale one."""
+    root = channel_snapshot.prefix(version)
+    listed = {obj.rel for obj in run.list_tree(root)}
+    if not listed:
+        return None
+    if channel_snapshot.MARKER not in listed:
+        raise channel_snapshot.SnapshotError(
+            "%s holds %d object(s) but no %s marker: a partial snapshot, not promoted"
+            % (root, len(listed), channel_snapshot.MARKER)
+        )
+    target = os.path.join(stage_root, "snapshot-marker.json")
+    run.get(channel_snapshot.marker_key(version), target)
+    with open(target, encoding="utf-8") as handle:
+        metadata, packages = channel_snapshot.parse_marker(handle.read(), version)
+    absent = [key for key in metadata if key not in listed]
+    if absent:
+        raise channel_snapshot.SnapshotError(
+            "%s names %d metadata object(s) the snapshot does not hold: %s"
+            % (channel_snapshot.marker_key(version), len(absent), ", ".join(absent[:10]))
+        )
+    for dir_name in CHANNEL_DIRS:
+        wanted = {
+            key[len(dir_name) + 1 :]: size
+            for key, size in packages.items()
+            if key.startswith(dir_name + "/")
+        }
+        if not wanted:
+            continue
+        edge = {obj.rel: obj.size for obj in run.list_tree(r2_promote.tree(dir_name, "edge"))}
+        gone = [rel for rel, size in wanted.items() if edge.get(rel) != size]
+        if gone:
+            raise channel_snapshot.SnapshotError(
+                "%d package(s) the v%s snapshot hashes are not in %s with their release-time size "
+                "(pruned by retention, or rewritten since): %s"
+                % (len(gone), version, r2_promote.tree(dir_name, "edge"), ", ".join(gone[:10]))
+            )
+    return len(metadata)
+
+
+def _promote_dirs(endpoint: str, version: str = "") -> list[str]:
+    """The `for dir in cli apt rpm apk archlinux` loop. Returns the purge URLs. With `version` set, each tree's metadata comes from that version's channel snapshot when one exists."""
     run = r2_promote.Transfers(SELF, endpoint, float(environment()["PROMOTE_RETRY_DELAY_S"] or "0"))
     stage_root = tempfile.mkdtemp(prefix="promote-pointers-")
     urls: list[str] = []
     try:
+        count = verify_snapshot(version, run, stage_root) if version else None
+        if count is not None:
+            print(
+                "Channel snapshot: %s (%d metadata object(s), packages verified in the edge trees)"
+                % (channel_snapshot.prefix(version), count)
+            )
         for dir_name in CHANNEL_DIRS:
-            print("Promoting %s/edge/ -> %s/stable/ (2-phase)" % (dir_name, dir_name))
+            if count is None:
+                print("Promoting %s/edge/ -> %s/stable/ (2-phase)" % (dir_name, dir_name))
+                _flush()
+                urls += r2_promote.promote_tree(dir_name, phases(dir_name), stage_root, run)
+                continue
+            sources = channel_snapshot.sources(version, dir_name)
+            print(
+                "Promoting %s v%s (bytes %s, metadata %s) -> %s/stable/ (2-phase)"
+                % (dir_name, version, sources.bytes_prefix, sources.metadata_prefix, dir_name)
+            )
             _flush()
-            urls += r2_promote.promote_tree(dir_name, phases(dir_name), stage_root, run)
+            urls += r2_promote.promote_tree(dir_name, phases(dir_name), stage_root, run, sources)
+    except channel_snapshot.SnapshotError as exc:
+        print("%s: %s" % (SELF, exc), file=sys.stderr)
+        raise BashExitError(1) from exc
     except r2_promote.PromoteError as exc:
         raise BashExitError(exc.status) from exc
     finally:
@@ -318,7 +412,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     try:
-        purge_urls = _promote_dirs(values["CLOUDFLARE_R2_ENDPOINT"])
+        purge_urls = _promote_dirs(values["CLOUDFLARE_R2_ENDPOINT"], values["EDGE_VERSION"])
     except BashExitError as exc:
         return exc.code
 
