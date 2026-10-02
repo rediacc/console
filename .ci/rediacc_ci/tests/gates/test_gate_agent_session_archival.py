@@ -390,6 +390,9 @@ REVIEW_CONFIG = paths.from_root(".ci", "config", "commit-review.json")
 FAKE_GH = """#!/usr/bin/env python3
 import json, os, sys
 head = sys.argv[sys.argv.index("--head") + 1]
+if os.environ.get("FAKE_RAW"):
+    print(os.environ["FAKE_RAW"])
+    sys.exit(0)
 stamps = json.loads(os.environ.get("FAKE_MERGED", "{}"))
 print(json.dumps([{"mergedAt": stamps[head]}] if head in stamps else []))
 """
@@ -412,7 +415,7 @@ def seed_reviews(tmp_path: pathlib.Path, branches) -> tuple[pathlib.Path, pathli
     return root, bindir
 
 
-def _s2_gate(root, bindir, merged, *argv, ci=False, with_gh=True):
+def _s2_gate(root, bindir, merged, *argv, ci=False, with_gh=True, raw=""):
     import json as _json  # noqa: PLC0415
 
     path = "%s:%s" % (bindir, "/usr/bin:/bin") if with_gh else "/usr/bin:/bin"
@@ -426,6 +429,7 @@ def _s2_gate(root, bindir, merged, *argv, ci=False, with_gh=True):
             "GITHUB_ACTIONS": "true" if ci else "",
             "GITHUB_HEAD_REF": "",
             "GH_TOKEN": "fixture",
+            "FAKE_RAW": raw,
         },
     )
 
@@ -468,6 +472,18 @@ def test_s2_without_an_oracle_in_ci_cannot_run(gate, tmp_path):
     result = _s2_gate(root, bindir, {}, ci=True, with_gh=False)
     gate.assert_exit(77, result, "S2 reached a verdict in CI with no merged-at oracle")
     gate.log_pass("no gh in CI is CANNOT RUN (77), never a green")
+
+
+def test_s2_an_unreadable_oracle_answer_cannot_run(gate, tmp_path):
+    """Per-commit review ee607a00.1: a gh answer that is not JSON, or a stamp that is not a date, was an uncaught exception rather than CANNOT RUN."""
+    root, bindir = seed_reviews(tmp_path, ["0901-1"])
+    for raw, merged in (("<html>rate limited</html>", {}), ("", {"0901-1": "yesterday"})):
+        result = _s2_gate(root, bindir, merged, raw=raw)
+        gate.assert_exit(
+            77, result, "S2 crashed or reached a verdict on an unreadable oracle answer"
+        )
+        gate.assert_contains(result.combined, "0901-1", "the refusal does not name the branch")
+    gate.log_pass("an unparseable merged-at answer is CANNOT RUN (77), never a crash")
 
 
 def test_a_citation_blocks_the_prune(gate, tmp_path):
