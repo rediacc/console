@@ -51,6 +51,20 @@ def check_read_verbs(mod, root, flags):
     rows = getattr(mod, "CI_READ_VERBS", None)
     if not rows:
         return ["CI_READ_VERBS: missing or empty, so block_raw_ci_read refuses nothing"]
+    # A malformed row is a finding that names it, not a KeyError that crashes the gate (per-commit review d7ccc9d7.1).
+    required = ("name", "match", "use", "why", "example", "counter")
+    malformed = [
+        "CI_READ_VERBS row %d (%s): missing %s"
+        % (
+            i,
+            row.get("name", "?") if isinstance(row, dict) else "?",
+            ", ".join(k for k in required if not isinstance(row, dict) or k not in row),
+        )
+        for i, row in enumerate(rows)
+        if not isinstance(row, dict) or any(k not in row for k in required)
+    ]
+    if malformed:
+        return malformed
     names = [row["name"] for row in rows]
     bad.extend(
         "%s: the name is used by more than one row" % n
