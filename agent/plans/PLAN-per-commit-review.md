@@ -15,19 +15,29 @@ Worklist: (lead adds this with `worklist.py --add`)
 
 At most three writers, each owning its own files: A owns the reviewer core, B the stop hook, verbs and guards, C the CI side. T1 freezes the API that everything else calls.
 
-- [ ] T1 [A] Build `.claude/hooks/stop/wl_review.py` (section 2): `Finding`, `Review`, `parse(text)`, `render(review)`, `body_sig()`, `branch_dir(root, branch)`, `branch_state(root, branch, fold)`, `uncovered(root, branch)`, `spawn_detached(...)`, `run_review(...)`. Add `.ci/config/commit-review.json` (section 3.4). This API is frozen before T2 to T9 start.
-- [ ] T2 [A] Add the post-bash member `.claude/hooks/post-bash/review_commit.py` and register it in `lifecycle.PATTERNS["post-bash"]` (section 3.1). Regenerate the post-bash `timeout` in `.claude/settings.json` from `lifecycle.py --hooks`.
-- [ ] T3 [A] Build the reviewer runner, prompt, schema validation and anchor checks (sections 3.2 and 3.3).
-- [ ] T4 [A] Handle the agent/ collisions: add `"reviews"` to `wl_store.AGENT_RESERVED_DIRS` and a `reviews` class to `.ci/policy/tree-shape.json`, add a prose-style `exempt_paths` entry, and update agent/README.md (section 9).
+- [x] T1 [A] Build `.claude/hooks/stop/wl_review.py` (section 2): `Finding`, `Review`, `parse(text)`, `render(review)`, `body_sig()`, `branch_dir(root, branch)`, `branch_state(root, branch, fold)`, `uncovered(root, branch)`, `spawn_detached(...)`, `run_review(...)`. Add `.ci/config/commit-review.json` (section 3.4). This API is frozen before T2 to T9 start.
+    (ticked) 2026-10-02T09:37:37Z by d778be9d: commit:ee607a003 wl_review.py (Finding, Review, parse, render, branch_state, uncovered); fixes d000fd7a0 86e660901
+- [x] T2 [A] Add the post-bash member `.claude/hooks/post-bash/review_commit.py` and register it in `lifecycle.PATTERNS["post-bash"]` (section 3.1). Regenerate the post-bash `timeout` in `.claude/settings.json` from `lifecycle.py --hooks`.
+    (ticked) 2026-10-02T09:37:38Z by d778be9d: commit:ee607a003 post-bash review_commit.py registered (lifecycle 30s, settings.json post-bash 360, operator approved)
+- [x] T3 [A] Build the reviewer runner, prompt, schema validation and anchor checks (sections 3.2 and 3.3).
+    (ticked) 2026-10-02T09:36:58Z by d778be9d: commit:ee607a003 reviewer runner, prompt, schema validation, anchor checks; schema retry routed in 86e660901
+- [x] T4 [A] Handle the agent/ collisions: add `"reviews"` to `wl_store.AGENT_RESERVED_DIRS` and a `reviews` class to `.ci/policy/tree-shape.json`, add a prose-style `exempt_paths` entry, and update agent/README.md (section 9).
+    (ticked) 2026-10-02T09:36:59Z by d778be9d: commit:ee607a003 reviews reserved (wl_store AGENT_RESERVED_DIRS, tree-shape class, prose exempt_paths, agent/README)
 - [ ] T5 [B] Add the worklist verbs `--review-mark`, `--review-commit`, `--review-run` and `--prune-reviews` (the last is a thin arm over C's function) to `.claude/hooks/stop/worklist.py`. Add their usage text to worklist_messages.py and CLAUDE.md's verb block (sections 5 and 6).
 - [ ] T6 [B] Wire the stop hook (section 7): new keys `commit-review` and `commit-review-malformed`, advisories through `outq_add`, a rewritten pr-finish box, retire `review-red`/`review-unreadable`, and add the new keys to the ladder, `test-always-tier.py`, `wl_roster.CAP_WAIT_KEEPS` and Y's focus keep-list.
-- [ ] T7 [B] Add the guards `block_review_file_edit.py` (pre-edit plus pre-bash write shapes) and `block_push_with_unrecorded_reviews.py` (pre-bash), each with EDGE_CASES, a DEFECT tuple and its own suite, and add both to `scripts/data/hook-inventory-baseline.json`.
-- [ ] T8 [C] Move labeling to `.ci/rediacc_ci/review/pr_labels.py`, which reads verdicts from the review files, and run it from ci.yml's `label-guide` job (section 8).
-- [ ] T9 [C] Extend the housekeeper `agent_session_archival` with finding S2 and the prune function; give quality-branch a token (section 10).
-- [ ] T10 [operator] Remove `Review Complete` from main's required status checks (section 11, step 3). This is the precondition for T11.
+- [x] T7 [B] Add the guards `block_review_file_edit.py` (pre-edit plus pre-bash write shapes) and `block_push_with_unrecorded_reviews.py` (pre-bash), each with EDGE_CASES, a DEFECT tuple and its own suite, and add both to `scripts/data/hook-inventory-baseline.json`.
+    (ticked) 2026-10-02T09:37:01Z by d778be9d: commit:ee607a003 block_review_file_edit, block_review_file_shell_write, block_push_with_unrecorded_reviews with suites; modes fixed d000fd7a0
+- [x] T8 [C] Move labeling to `.ci/rediacc_ci/review/pr_labels.py`, which reads verdicts from the review files, and run it from ci.yml's `label-guide` job (section 8).
+    (ticked) 2026-10-02T09:37:02Z by d778be9d: commit:83a41dbc9 pr_labels from review records in the pr-labels job at CI-green (operator ruling #e1e9edf7 moved it off label-guide)
+- [x] T9 [C] Extend the housekeeper `agent_session_archival` with finding S2 and the prune function; give quality-branch a token (section 10).
+    (ticked) 2026-10-02T09:37:39Z by d778be9d: commit:ee607a003 S2 + prune_reviews, quality-branch token; oracle hardening d000fd7a0; manifest env 86e660901
+- [x] T10 [operator] Remove `Review Complete` from main's required status checks (section 11, step 3). This is the precondition for T11.
+    (ticked) 2026-10-02T09:38:17Z by d778be9d: operator ruleset split applied 2026-10-02, recorded at agent/worklist/d778be9d.jsonl:5552; ruleset 12344707 required checks now [CI Complete] only (live gh api read)
 - [ ] T11 [C] Tear down the review system (section 11), submodule PRs first. It closes only when the grep in 11.5 returns nothing.
-- [ ] T12 [A,B,C] Tests and mutation controls (section 12). Each writer owns the tests for its own files.
-- [ ] T13 [lead] Run one live smoke: a real haiku review of a real commit on this branch. Record cost and wall time in the tick evidence and in commit-review.json's `$comment`.
+- [x] T12 [A,B,C] Tests and mutation controls (section 12). Each writer owns the tests for its own files.
+    (ticked) 2026-10-02T09:37:04Z by d778be9d: commit:ee607a003 test_review_commit_hook (23), test_review_pr_labels (11), guard suites, archival S2 cases
+- [x] T13 [lead] Run one live smoke: a real haiku review of a real commit on this branch. Record cost and wall time in the tick evidence and in commit-review.json's `$comment`.
+    (ticked) 2026-10-02T09:37:05Z by d778be9d: commit:ee607a003 live smoke: hook 0.06s, haiku 18.3s, $0.029, planted bug found [high]; recorded in commit-review.json $measured
 
 ## 0. What exists now, and the findings that shape the design (all high severity)
 
@@ -370,10 +380,13 @@ Every suite runs its controls before its real cases. A control that cannot fail 
 
 ## 13. Operator decisions (to go through /ask)
 
-- [?] CLAUDE.md rule 1 carve-out for review records (section 5). DEFAULT: add the sentence.
-- [?] T10: remove `Review Complete` from the main ruleset. This is operator-only (repo admin). DEFAULT: the operator runs it once Phase 2 is green.
+- [x] CLAUDE.md rule 1 carve-out for review records (section 5). DEFAULT: add the sentence.
+    (ticked) 2026-10-02T09:37:40Z by d778be9d: commit:44ee5e0b1 DEFAULT executed: rule 1 Cadence carries the review-records sentence
+- [x] T10: remove `Review Complete` from the main ruleset. This is operator-only (repo admin). DEFAULT: the operator runs it once Phase 2 is green.
+    (ticked) 2026-10-02T09:38:18Z by d778be9d: operator ruleset split applied 2026-10-02, recorded at agent/worklist/d778be9d.jsonl:5552; ruleset 12344707 required checks now [CI Complete] only (live gh api read)
 - [?] Keep `claude-mention.yml`. DEFAULT: keep; it is not the review job.
-- [?] `review_epoch`. DEFAULT: the day T2 lands, so older commits on open branches are not back-reviewed.
+- [x] `review_epoch`. DEFAULT: the day T2 lands, so older commits on open branches are not back-reviewed.
+    (ticked) 2026-10-02T09:37:41Z by d778be9d: commit:ee607a003 DEFAULT executed: review_epoch 2026-10-02T07:09:03Z
 
 ### Critical Files for Implementation
 - /home/developer/console/.claude/rediacc_hooks/lifecycle.py
