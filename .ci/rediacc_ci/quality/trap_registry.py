@@ -143,7 +143,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 
-# The package rediacc_hooks/dispatch.py loads guards from by glob (see Registry.dispatched_guards).
+# The package whose guards rediacc_hooks/dispatch.py loads by glob (see Registry.dispatched_guards).
 GUARDS_PACKAGE_REL = ".claude/rediacc_hooks/guards"
 
 # The corpus and the artifacts pointers resolve against. Every one is a seam so the controls can drive the whole gate against fixtures instead of the real tree. The environment variable names are the twin's.
