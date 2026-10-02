@@ -61,7 +61,8 @@ apk:
     # defaulted means changing PKG_MAINTAINER silently invalidates every
     # /etc/apk/keys/<name>.rsa.pub already deployed on user machines, and the
     # failure is a trust error nobody would trace back to a maintainer edit.
-    key_name: "${WK_PKG_SIGNING_KEY_NAME}"
+    # A LITERAL, NOT "${WK_PKG_SIGNING_KEY_NAME}": nfpm expands env vars in name, version, maintainer and the like, but NOT here, so the placeholder shipped verbatim as the signature member `.SIGN.RSA.${WK_PKG_SIGNING_KEY_NAME}.rsa.pub` (PR #591 CI, Linux Packages, 2026-10-02). This file is a declared carrier of the value in scripts/data/literal-sources.json, which holds it equal to .ci/config/well-known.env.
+    key_name: "releases@rediacc.com"
 
 archlinux:
   # NO `signature:` BLOCK, AND ONE CANNOT BE ADDED. Every other format here has one;
