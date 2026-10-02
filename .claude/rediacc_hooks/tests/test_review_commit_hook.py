@@ -376,6 +376,28 @@ def test_a_commit_in_a_nested_repo_records_its_repo(world):
     assert R.parse(path.read_text()).repo == "sub"
 
 
+def test_check_without_a_repo_judges_the_submodule_reviews_too(world):
+    """`wl_review.py --check` passes no repo and must judge every repository a review names: scoped to the console it printed "clean" while a submodule commit's review was unsettled, which the push guard then refused (renet 3ca4821f, 2026-10-02)."""
+    world.answer([])  # a clean review, so only coverage can make the branch unclean
+    sub = world.repo / "sub"
+    sub.mkdir()
+    world.init_repo(sub)
+    sha = world.commit("f.py", repo=sub)
+    rc, _out, err, _t = world.hook("git -C sub commit -m x -- f.py")
+    assert rc == 0, err
+    assert world.wait_for(world.review_file(sha))
+    rc, text = R.commit_reviews(world.repo, BRANCH)
+    assert rc == 0, text
+    world.commit("g.py", repo=sub)  # a second submodule commit, never reviewed
+    reasons, lines = R.check_state(world.repo, BRANCH, label=None)
+    assert reasons, "an unreviewed submodule commit read as clean: %r" % (lines,)
+    assert any("sub" in line for line in lines), lines
+    scoped, _l = R.check_state(world.repo, BRANCH, label="console")
+    assert scoped == [], "CONTROL: scoped to the console the submodule is not walked: %r" % (
+        scoped,
+    )
+
+
 def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
     """#51e1c0cf: `git -C <dir>/$r commit` (a loop variable) is a path the lexer cannot expand; the commit's repository must still be reviewed, not skipped."""
     sub = world.repo / "sub"
