@@ -219,6 +219,11 @@ def refresh(root, baseline_path):
                 entry[n] = {"reachable": False, "via": "absent"}
         data["repos"][repo_name] = entry
 
+    # A CHECKED-OUT submodule with no workflows is recorded with an EMPTY entry, not dropped: the record still knows the repo, so a CI checkout without submodules (where the directory is empty) stays CANNOT SEE instead of silently scanning console alone. account and renet reached this state on 2026-10-02 when their only workflows (the Claude Review callers) were removed.
+    for sub in sorted((root / "private").glob("*")):
+        if (sub / ".git").exists() and sub.name not in data["repos"]:
+            data["repos"][sub.name] = {}
+
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     total = sum(len(v) for v in data["repos"].values())
     bad = sum(1 for v in data["repos"].values() for r in v.values() if not r["reachable"])
@@ -400,7 +405,12 @@ def main(argv=None):
     # Measured before this guard existed: hiding both submodules' .github produced "40 secret reference(s) across 1 repo(s) are all reachable", exit 0. The gate had the exact defect it was written to catch.
     recorded = set(record.get("repos", {}))
     scanned = set(refs_by_repo)
-    missing = sorted(recorded - scanned)
+    # A repo recorded with NO references is accepted unscanned only when it is visibly checked out (a .git entry): then its missing workflows are a fact, not a blind checkout.
+    missing = sorted(
+        r
+        for r in recorded - scanned
+        if record["repos"][r] or not (root / "private" / r / ".git").exists()
+    )
     if missing:
         print(
             "CANNOT SEE %d repo(s) the record covers: %s\n"

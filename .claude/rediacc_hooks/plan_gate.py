@@ -143,9 +143,12 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     if not plans:
         return "the PR body names no plan (`Plan: agent/plans/PLAN-<slug>.md`) and carries no `Operational-Reason:` line"
     if len(plans) > 1:
-        return "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line" % (
-            len(plans),
-            ", ".join(plans),
+        return (
+            "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line"
+            % (
+                len(plans),
+                ", ".join(plans),
+            )
         )
     rel = plans[0]
     if not PLAN_PATH.match(rel) or os.path.isabs(rel) or ".." in rel.split("/"):
@@ -154,10 +157,13 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     if why:
         return why
     if opened:
-        return "`%s` has %d open box(es) of %d, and the PR body carries no `Operational-Reason:` line" % (
-            rel,
-            opened,
-            opened + done,
+        return (
+            "`%s` has %d open box(es) of %d, and the PR body carries no `Operational-Reason:` line"
+            % (
+                rel,
+                opened,
+                opened + done,
+            )
         )
     return ""
 

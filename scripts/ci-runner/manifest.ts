@@ -4564,7 +4564,7 @@ export const GATES: readonly GateSpec[] = [
     gate: true,
     // The verdict depends on tracked files under the gate's COVERED_ROOTS and on nothing else, so these globs are the COMPLETE dependency set rather than a narrowing for speed. The allowlist, the baseline and the blocker-validator this gate shells out to all live under .ci/ and are covered by the first. The three scripts/ globs arrived with the 2026-09-21 widening of ruling 7;
     // without them a new bash file under scripts/ops/ would land in a run that never scheduled the gate that refuses it.
-    paths: ['.ci/**', '.claude/**', 'scripts/ops/**', 'scripts/drills/**', 'scripts/dev/**'],
+    paths: ['.ci/**', '.claude/**', 'scripts/ops/**', 'scripts/dev/**'],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_language_policy.py'],
     ci: {

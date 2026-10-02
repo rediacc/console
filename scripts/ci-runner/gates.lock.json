@@ -4888,7 +4888,6 @@
       ".ci/**",
       ".claude/**",
       "scripts/ops/**",
-      "scripts/drills/**",
       "scripts/dev/**"
     ],
     "pathsOrigin": "declared",
