@@ -133,6 +133,7 @@ as non-blank. Carried unchanged, because narrowing it would re-decide which `fil
 STREAMS. `err()` is `log_error` (stderr, `✗ <msg>`) plus a counter; the shape line and the ratchet advisory are `log_info` (stderr, `✓ <msg>`). `rediacc_ci.log` reproduces both.
 """
 
+import importlib.util
 import os
 import pathlib
 import re
@@ -141,6 +142,9 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+
+# The package rediacc_hooks/dispatch.py loads guards from by glob (see Registry.dispatched_guards).
+GUARDS_PACKAGE_REL = ".claude/rediacc_hooks/guards"
 
 # The corpus and the artifacts pointers resolve against. Every one is a seam so the controls can drive the whole gate against fixtures instead of the real tree. The environment variable names are the twin's.
 SEAMS = {
@@ -413,7 +417,26 @@ class Registry:
                 continue
             if base in read_text(candidate):
                 return True
-        return False
+        return path.endswith(".py") and pathlib.PurePosixPath(path).stem in self.dispatched_guards(
+            path
+        )
+
+    def dispatched_guards(self, path: str) -> list[str]:
+        """Guard stems the pre-tool dispatcher loads by GLOB, for a `file:` inside its guards package.
+
+        #ac65ada7: settings.json names chain-head.sh, which runs rediacc_hooks/dispatch.py, which imports every module `guards.stems()` admits. No file names a guard, so the two-hop text search rejected `file:.claude/rediacc_hooks/guards/<guard>.py` for a guard that runs on every tool call. The admission rule is asked of the package itself (loaded by file, as the git-level hooks load commit_policy), never copied here, so a prefix added there is honoured with no edit here.
+        """
+        if pathlib.PurePosixPath(path).parent != pathlib.PurePosixPath(GUARDS_PACKAGE_REL):
+            return []
+        init = self.file_root / GUARDS_PACKAGE_REL / "__init__.py"
+        if not init.is_file():
+            return []
+        spec = importlib.util.spec_from_file_location("trap_registry_guards", init)
+        if spec is None or spec.loader is None:
+            return []
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return list(module.stems())
 
 
 class Shape:

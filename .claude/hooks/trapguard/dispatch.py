@@ -121,9 +121,11 @@ def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
         "summary the two look identical. Distinguish the two shapes before "
         "concluding anything: cancelled siblings WITH a failed job means the "
         "watchdog killed the run for that failure, while cancelled with ZERO "
-        "failures and a newer commit means the run was superseded. Read the "
-        "JOB's own conclusion rather than the run's, and treat a job that was "
-        "cancelled as a gate that did not report."
+        "failures is NOT proof of supersession: `.ci/scripts/ci/ci-trace.py "
+        "--run <id> --why` attributes the cancel (watchdog, newer push, or by "
+        "hand) from the run's own record. Read the JOB's own conclusion rather "
+        "than the run's, and treat a job that was cancelled as a gate that did "
+        "not report."
     )
 
 
