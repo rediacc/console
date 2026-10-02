@@ -487,7 +487,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
 | `agent/plans/PLAN-ci-gate-write-taint-scanners.md` | active | 338 | 0 | 19 | 51100 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
-| `agent/plans/PLAN-ci-verdict.md` | approved | 75 | 0 | 7 | 16678 |
 | `agent/plans/PLAN-ci-watch-enforcement.md` | held | 214 | 6 | 0 | 19704 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
@@ -526,7 +525,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-parallel-writer-roster.md` | ready | 304 | 0 | 28 | 40420 |
-| `agent/plans/PLAN-per-commit-review.md` | approved | 400 | 0 | 17 | 52219 |
 | `agent/plans/PLAN-plan-dependencies.md` | held | 373 | 12 | 0 | 33868 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 69 | 3 | 13 | 13872 |
 | `agent/plans/PLAN-plan-priority-concurrency.md` | held | 460 | 12 | 0 | 38802 |
@@ -596,6 +594,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-ci-stale-plan-citations-repair.md` | done | 60 | 0 | 8 | 8026 |
 | `agent/plans/_done/PLAN-ci-time-budget.md` | closed | 381 | 2 | 30 | 48071 |
 | `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` | done | 187 | 0 | 15 | 21605 |
+| `agent/plans/_done/PLAN-ci-verdict.md` | done | 76 | 0 | 7 | 16700 |
 | `agent/plans/_done/PLAN-cleanup-context-state-files.md` | done | 35 | 0 | 4 | 6016 |
 | `agent/plans/_done/PLAN-commit-author-identity.md` | done | 196 | 0 | 13 | 22007 |
 | `agent/plans/_done/PLAN-consolidate-test-scaffolding.md` | done | 66 | 0 | 4 | 4475 |
@@ -620,6 +619,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` | done | 368 | 0 | 23 | 34960 |
 | `agent/plans/_done/PLAN-npm-global-install-release-age.md` | done | 37 | 0 | 4 | 4840 |
 | `agent/plans/_done/PLAN-npm11-everywhere.md` | done | 84 | 0 | 11 | 11405 |
+| `agent/plans/_done/PLAN-per-commit-review.md` | done | 400 | 0 | 17 | 52066 |
 | `agent/plans/_done/PLAN-pid-fallback-liveness-check.md` | done | 272 | 0 | 6 | 24222 |
 | `agent/plans/_done/PLAN-pipefail-grep-q-renet-gate.md` | done | 278 | 0 | 16 | 28334 |
 | `agent/plans/_done/PLAN-plan-file-lifecycle.md` | done | 360 | 1 | 12 | 33486 |
