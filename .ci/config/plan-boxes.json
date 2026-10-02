@@ -333,6 +333,23 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ci-verdict.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 6,
+      "done": 0,
+      "open_sigs": [
+        "08818f60",
+        "7ba344f2",
+        "8ac22713",
+        "a62a538e",
+        "c3967bf0",
+        "cbf7fd2f"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ci-watch-enforcement.md": {
       "status": "held",
       "owner": "unowned",

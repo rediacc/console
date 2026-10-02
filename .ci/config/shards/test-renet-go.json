@@ -47,7 +47,8 @@
         "github.com/rediacc/renet/pkg/testutil",
         "github.com/rediacc/renet/pkg/toolexec",
         "github.com/rediacc/renet/pkg/toolexec/devicemapper",
-        "github.com/rediacc/renet/pkg/vaultcrypto"
+        "github.com/rediacc/renet/pkg/vaultcrypto",
+        "github.com/rediacc/renet/pkg/systemctl"
       ]
     },
     {
