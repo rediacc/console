@@ -63,8 +63,9 @@ const MAJOR_EXCEPTIONS_REL = path
   .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
   .split(path.sep)
   .join('/');
-// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it). Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
+// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
 const MUTANT = process.env.CHECK_DEPS_MUTANT;
+const MUTANTS = ['ignore-clock', 'split-update'];
 const DAY_MS = 86_400_000;
 /** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
 const HOLD_DEADLINE_DAYS = 90;
@@ -1476,8 +1477,8 @@ interface InstallStep {
   args: string[];
   label: string;
   packages: PackageInfo[];
-  /** The workspace path (`packages/<ws>`) for a `-w` step, where npm may resolve a nested copy. */
-  workspace?: string;
+  /** For an `(update)` step: every (package, declaring workspace) pair the freshness guard checks, `workspace` being the `packages/<ws>` path where npm may have nested a copy, absent for the root manifest. Defaults to `packages`, hoisted. */
+  checks?: Array<{ pkg: PackageInfo; workspace?: string }>;
   /** An exact-pin `overrides` entry that would hold the package where it is: executeInstalls moves it to the judged version before npm runs. */
   overrideBump?: { file: string; name: string; from: string; to: string };
   /** Set when an override makes the step unsafe to apply: executeInstalls reports this and runs nothing. */
@@ -1589,18 +1590,28 @@ function satisfiesRange(range: string | undefined, version: string): boolean {
 }
 
 /**
+ * The newest publish time a release can have and still be actionable at `nowMs`: the inverse of scripts/lib/release-age.ts's rule (a release published at P is actionable from startOfNextUtcDay(P + window)), so P qualifies exactly when P < startOfUtcDay(now) - window. Every planned npm step passes it as `--before`, because the gate judges only the packages it names: `npm update vitest` re-resolves vitest's whole subtree, and on 2026-10-02 it pulled vite 8.3.2 (published 2026-10-01T10:17Z, 14 h old) into private/account/package-lock.json as a transitive dependency the freshness window never saw. The selftest proves this agrees with isWithinFreshnessWindow on both sides of the boundary. Null when the window is off.
+ */
+function freshnessCutoffMs(nowMs: number, minReleaseAgeMs: number): number | null {
+  if (minReleaseAgeMs <= 0) return null;
+  return utcDay(nowMs) - minReleaseAgeMs - 1;
+}
+
+/**
  * Build the npm invocations for the packages cleared to upgrade. Pure apart from reading manifests, so the selftest can assert what WOULD run.
  *
  * TWO VERBS, chosen per manifest by the range it already declares. A target the declared range already allows (`^8.70.1` -> 8.71.0) is planned as `npm update <names>`: that is the only verb npm resolves a pinned sibling family with (typescript-eslint pins its @typescript-eslint/* siblings exactly, so on 2026-09-30 `npm install typescript-eslint@8.71.0 @typescript-eslint/parser@8.71.0 ...` failed ERESOLVE against the installed 8.70.1 family, while `npm update` of the same names succeeded). `npm update` takes the highest version the range allows, which is the judged `latest` unless a newer in-range version was published after this run's freshness check; executeInstalls therefore verifies every `(update)` step against the lockfile and fails it when npm resolved anything but the exact version judged (see verifyUpdatedVersions). A target outside the declared range (an allow-listed major, an exact pin) still installs as `name@<the exact latest judged>`, never `name@latest`, for the same freshness reason. The input is only ever `mustUpgrade`, which categorizePackages never lets a held major into.
  *
- * Root packages found in child package.json files upgrade per workspace (`-w=packages/<ws>`), judged against that workspace's own range, so they do not pollute the others; packages only the root declares run without `-w`, so child manifests are not rewritten.
+ * ONE `npm update` PER LOCKFILE (2026-10-02). Each manifest's packages are still judged against that manifest's own range, but every in-range bump of one npm project (the console root and its workspaces, or one private/ manifest) runs as a SINGLE `npm update -w=<every workspace holding one> [--include-workspace-root] <every name>`. The per-workspace split this replaced (`npm update -w=packages/cli vitest @vitest/ui ...`, then `-w=packages/www ...`, one call each) could never move a family that moves in lockstep: @vitest/coverage-v8@5.0.2 and @vitest/ui@5.0.2 declare an EXACT peer `vitest@"5.0.2"`, npm had nested a coverage-v8 copy in four workspaces, and a `-w` call does not touch another workspace's nested copy, so each per-workspace call met the other workspaces' pins and failed ERESOLVE (6 of 9 steps on 2026-10-02, while the one combined call resolved in 7 s on npm 11.20.0). A lockfile is one ideal tree, so the coupling is decided by npm's resolver over the whole of it, not re-derived here from peer ranges: any grouping finer than the lockfile would have to reproduce that resolver (transitive peers, nesting, hoisting), and one call per lockfile is a superset of every such group. An `-w` scope does not stop a named update moving a HOISTED copy anyway (measured on npm 11.20.0: `npm update -w=packages/a picomatch` moved a picomatch only packages/b declares), so the split never isolated the workspaces it claimed to. Out-of-range targets stay per manifest (`npm install -w=packages/<ws> name@exact`), because `install` adds the package to every workspace it is given.
  *
  * AN OVERRIDE DECIDES WHAT NPM RESOLVES (worklist #d8fef08a). A package the project's `overrides` pins to a range that excludes the judged version cannot move by `npm update` or `npm install`: on 2026-10-01 the root pinned fast-xml-parser to 5.11.1, `npm update -w=packages/www fast-xml-parser` stayed on 5.11.1, and the freshness guard failed the step. Such a package leaves the ordinary steps. When the override is an exact version and every declaring manifest's range admits the target, the step moves the override to the judged version (applyOverrideBump) and runs `npm update <name>` in the project root, which re-resolves every copy the override governs (measured on npm 11.20.0: `npm update` honours a changed override, while `npm install --package-lock-only` exits 0 without applying it). Any other override that excludes the target (a bounded range, a range this gate cannot read, a declared range that excludes the target too) is a refused step: moving it is a decision about the bound, not a freshness bump. An override that admits the target, or a `$name` reference to the root's own range, changes nothing here.
  */
 function planInstalls(
   root: string,
   rootPackages: PackageInfo[],
-  privateGroups: Array<{ dir: string; name: string; packages: PackageInfo[] }>
+  privateGroups: Array<{ dir: string; name: string; packages: PackageInfo[] }>,
+  /** `freshnessCutoffMs` for this run: every step gets `--before=<it>` so npm resolves no transitive release the window has not cleared. */
+  beforeMs: number | null = null
 ): InstallStep[] {
   const steps: InstallStep[] = [];
   const spec = (p: PackageInfo) => `${p.name}@${p.latest}`;
@@ -1609,7 +1620,20 @@ function planInstalls(
     string,
     { cwd: string; label: string; pkg: PackageInfo; value: string; problems: string[] }
   >();
-  /** One manifest's packages as up to two steps: `update` for in-range targets, then `install` for the rest. */
+  /** In-range bumps by project (keyed by `cwd`), collected across its manifests and run as one `npm update` per project. */
+  const updates = new Map<
+    string,
+    {
+      cwd: string;
+      label: string;
+      workspaces: string[];
+      root: boolean;
+      checks: Array<{ pkg: PackageInfo; workspace?: string }>;
+    }
+  >();
+  /** Out-of-range bumps, one `install` step per manifest, emitted after the project's update. */
+  const installs: InstallStep[] = [];
+  /** One manifest's packages: in-range targets join the project's single `update`, the rest become an `install` step. */
   const plan = (
     cwd: string,
     manifestDir: string,
@@ -1649,21 +1673,26 @@ function planInstalls(
     const inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
     const outOfRange = pkgs.filter((p) => !inRange.includes(p));
     if (inRange.length > 0) {
-      steps.push({
+      // The split-update mutant (fixture runs only, see MUTANTS) keys the group per manifest, which is the planner this replaced.
+      const key = MUTANT === 'split-update' && FIXTURE_ROOT ? `${cwd}\0${workspace ?? ''}` : cwd;
+      const group = updates.get(key) ?? {
         cwd,
-        args: ['update', ...flags, ...inRange.map((p) => p.name)],
-        label: `${label} (update)`,
-        packages: inRange,
-        workspace,
-      });
+        label: cwd === root && !(MUTANT === 'split-update' && FIXTURE_ROOT) ? 'root' : label,
+        workspaces: [],
+        root: false,
+        checks: [],
+      };
+      if (workspace) group.workspaces.push(workspace);
+      else group.root = true;
+      for (const pkg of inRange) group.checks.push({ pkg, workspace });
+      updates.set(key, group);
     }
     if (outOfRange.length > 0) {
-      steps.push({
+      installs.push({
         cwd,
         args: ['install', ...flags, ...outOfRange.map(spec)],
         label: `${label} (install)`,
         packages: outOfRange,
-        workspace,
       });
     }
   };
@@ -1696,6 +1725,28 @@ function planInstalls(
     if (packages.length === 0) continue;
     plan(dir, dir, [], name, packages);
   }
+  for (const { cwd, label, workspaces, root: withRoot, checks } of updates.values()) {
+    const wsFlags = [...new Set(workspaces)].sort().map((ws) => `-w=${ws}`);
+    const names = [...new Set(checks.map((c) => c.pkg.name))];
+    steps.push({
+      cwd,
+      args: [
+        'update',
+        ...wsFlags,
+        ...(wsFlags.length > 0 && withRoot ? ['--include-workspace-root'] : []),
+        ...names,
+      ],
+      label: `${label} (update)`,
+      packages: names.map((n) => checks.find((c) => c.pkg.name === n)!.pkg),
+      checks,
+    });
+  }
+  steps.push(...installs);
+  const finish = (all: InstallStep[]): InstallStep[] => {
+    if (beforeMs === null) return all;
+    const flag = `--before=${new Date(beforeMs).toISOString()}`;
+    return all.map((st) => (st.refused ? st : { ...st, args: [...st.args, flag] }));
+  };
   for (const { cwd, label, pkg, value, problems } of overridden.values()) {
     const file = path.join(cwd, 'package.json');
     if (problems.length > 0) {
@@ -1717,7 +1768,7 @@ function planInstalls(
       overrideBump: { file, name: pkg.name, from: value, to: pkg.latest },
     });
   }
-  return steps;
+  return finish(steps);
 }
 
 /**
@@ -1732,25 +1783,25 @@ function upgradeChildEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessE
 }
 
 /**
- * FRESHNESS-WINDOW GUARD for `npm update`. That verb takes the highest version the declared range allows, so a version published after this run's release-age check (.ci/config/release-age.json) could land without ever being judged, which is exactly the smash-and-grab release the window exists to stop. After an `(update)` step, every package in it must resolve in the step's lockfile to the EXACT version the gate judged: the workspace's nested copy (`packages/<ws>/node_modules/<name>`) when npm placed one there, else the hoisted `node_modules/<name>`. Returns one line per package that does not, empty when all match. Pure, so the selftest drives it directly.
+ * FRESHNESS-WINDOW GUARD for `npm update`. That verb takes the highest version the declared range allows, so a version published after this run's release-age check (.ci/config/release-age.json) could land without ever being judged, which is exactly the smash-and-grab release the window exists to stop. After an `(update)` step, every (package, declaring workspace) pair in it must resolve in the step's lockfile to the EXACT version the gate judged: the workspace's nested copy (`packages/<ws>/node_modules/<name>`) when npm placed one there, else the hoisted `node_modules/<name>`. Returns one line per package that does not, empty when all match. Pure, so the selftest drives it directly.
  */
 function verifyUpdatedVersions(
   step: InstallStep,
   lock: Record<string, { version?: string }> | null
 ): string[] {
   const problems: string[] = [];
-  for (const pkg of step.packages) {
-    const nested = step.workspace
-      ? lock?.[`${step.workspace}/node_modules/${pkg.name}`]
-      : undefined;
+  const checks: Array<{ pkg: PackageInfo; workspace?: string }> =
+    step.checks ?? step.packages.map((p) => ({ pkg: p }));
+  for (const { pkg, workspace } of checks) {
+    const nested = workspace ? lock?.[`${workspace}/node_modules/${pkg.name}`] : undefined;
     const resolved = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
     if (resolved !== pkg.latest) {
       problems.push(
-        `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}`
+        `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}`
       );
     }
   }
-  return problems;
+  return [...new Set(problems)];
 }
 
 /** Run the planned steps, printing what each one takes, and name every step that failed with its exact command and exit status. An `(update)` step that exits 0 still fails when verifyUpdatedVersions finds a version the gate did not judge. */
@@ -1769,7 +1820,8 @@ function executeInstalls(steps: InstallStep[]): boolean {
       );
       continue;
     }
-    console.log(`${BLUE}Upgrading ${step.packages.length} package(s) in ${step.label}...${NC}\n`);
+    console.log(`${BLUE}Upgrading ${step.packages.length} package(s) in ${step.label}...${NC}`);
+    console.log(`  \`npm ${step.args.join(' ')}\`\n`);
     for (const pkg of step.packages) printPackage(pkg);
     console.log();
     if (step.overrideBump) {
@@ -1894,15 +1946,17 @@ async function checkDependencies(): Promise<void> {
   }
 
   if (MUTANT !== undefined && MUTANT !== '') {
-    if (!FIXTURE_ROOT || MUTANT !== 'ignore-clock') {
+    if (!FIXTURE_ROOT || !MUTANTS.includes(MUTANT)) {
       console.error(
-        `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the only mutant is "ignore-clock", and it is honoured only under ` +
-          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree it would switch the held-major clock off, so it is never honoured there.'
+        `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the mutants are ${MUTANTS.map((m) => `"${m}"`).join(' and ')}, honoured only under ` +
+          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off or split a lockstep update, so they are never honoured there.'
       );
       process.exit(1);
     }
     console.log(
-      `${YELLOW}MUTANT ignore-clock: the held-major clock is OFF for this fixture run${NC}\n`
+      MUTANT === 'ignore-clock'
+        ? `${YELLOW}MUTANT ignore-clock: the held-major clock is OFF for this fixture run${NC}\n`
+        : `${YELLOW}MUTANT split-update: one npm update per manifest for this fixture run${NC}\n`
     );
   }
   const clockOff = MUTANT === 'ignore-clock';
@@ -2074,7 +2128,8 @@ async function checkDependencies(): Promise<void> {
     const steps = planInstalls(
       CONSOLE_ROOT,
       rootGroup.mustUpgrade,
-      groups.slice(1).map((g) => ({ dir: g.dir, name: g.name, packages: g.mustUpgrade }))
+      groups.slice(1).map((g) => ({ dir: g.dir, name: g.name, packages: g.mustUpgrade })),
+      freshnessCutoffMs(nowMs, minReleaseAgeMs)
     );
     if (steps.length === 0 && totalHeld === 0 && clockFailures === 0) {
       printClock();
@@ -2190,6 +2245,8 @@ interface FixtureSpec {
   exceptions?: Record<string, unknown>;
   /** Extra files by path from the fixture root, e.g. an installed `node_modules/<name>/package.json`. */
   files?: Record<string, string>;
+  /** Lockstep families per manifest, same keys: the stub `npm update` fails ERESOLVE when it names any package of a family without naming all of them AND passing `-w=` for every workspace listed (each holds a nested copy pinned to the others), as real npm did for vitest + @vitest/* on 2026-10-02. */
+  lockstep?: Record<string, Array<{ names: string[]; workspaces: string[] }>>;
 }
 
 // The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
@@ -2245,6 +2302,8 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     write(path.join(rel, '.fixture-outdated.json'), JSON.stringify(spec.outdated[rel] ?? {}));
     if (spec.locks[rel])
       write(path.join(rel, 'package-lock.json'), JSON.stringify({ packages: spec.locks[rel] }));
+    if (spec.lockstep?.[rel])
+      write(path.join(rel, '.fixture-lockstep.json'), JSON.stringify(spec.lockstep[rel]));
     if (spec.updateLocks?.[rel])
       write(
         path.join(rel, '.fixture-update-lock.json'),
@@ -2268,6 +2327,21 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       '',
     ].join('\n')
   );
+  // The ERESOLVE an exact peer pin produces when a lockstep family is updated piecemeal: npm leaves the copies outside the call on the old version, and their exact peer refuses the new one.
+  write(
+    'bin/check-lockstep.cjs',
+    [
+      "const fs = require('node:fs');",
+      "if (!fs.existsSync('.fixture-lockstep.json')) process.exit(0);",
+      'const args = process.argv.slice(2);',
+      "for (const fam of JSON.parse(fs.readFileSync('.fixture-lockstep.json', 'utf8'))) {",
+      '  if (!fam.names.some((n) => args.includes(n))) continue;',
+      '  const missing = [...fam.names.filter((n) => !args.includes(n)), ...fam.workspaces.filter((w) => !args.includes(`-w=${w}`)).map((w) => `-w=${w}`)];',
+      "  if (missing.length > 0) { console.error(`npm error code ERESOLVE (fixture): exact peer pin, the call lacks ${missing.join(' ')}`); process.exit(1); }",
+      '}',
+      '',
+    ].join('\n')
+  );
   write(
     'bin/npm',
     [
@@ -2275,7 +2349,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       'case "$1" in',
       '  outdated) if [ -f .fixture-outdated.json ]; then cat .fixture-outdated.json; else echo "{}"; fi; exit 1 ;;',
       // Every install/update is recorded with the loglevel the child inherited, and a spec naming `fail-me` exits 7, so the selftest can see both the verb chosen and the failure report.
-      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
+      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
       '  *) echo "fixture npm stub: unexpected: $*" >&2; exit 2 ;;',
       'esac',
       '',
@@ -2776,20 +2850,55 @@ function selftest(): void {
     );
     const shown = steps.map((s) => `${s.label} :: ${s.args.join(' ')}`).sort();
     const want = [
-      'packages/cli (update) :: update -w=packages/cli tsx',
       'packages/www (install) :: install -w=packages/www tsx@4.23.15',
       'private/account (update) :: update react-hook-form',
       'root (install) :: install pinned@1.0.1 vite@8.0.1',
-      'root (update) :: update typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs tsx',
+      'root (update) :: update -w=packages/cli --include-workspace-root tsx typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs',
     ];
     expect(
-      'planner: an in-range bump is `npm update <names>`, an out-of-range one `npm install name@exact`, per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces)',
+      'planner: an in-range bump is `npm update <names>`, ONE call per lockfile covering every workspace and the root, an out-of-range one `npm install name@exact` per manifest, judged per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces)',
       JSON.stringify(shown) === JSON.stringify(want),
       `got:\n${shown.join('\n')}\nwant:\n${want.join('\n')}`
+    );
+    // TRANSITIVE FRESHNESS (2026-10-02): every step carries `--before=<cutoff>`, so npm cannot resolve a transitive release the window has not cleared.
+    const cutoff = Date.UTC(2026, 9, 1) - 1;
+    const dated = planInstalls(
+      planRoot,
+      [pk('typescript-eslint', '8.70.1', '8.71.0'), pk('pinned', '1.0.0', '1.0.1')],
+      [],
+      cutoff
+    );
+    expect(
+      'planner: with a release-age window, every npm step ends in --before=<the cutoff>',
+      dated.length === 2 &&
+        dated.every((st) => st.args[st.args.length - 1] === '--before=2026-09-30T23:59:59.999Z'),
+      dated.map((st) => st.args.join(' ')).join('\n')
+    );
+    expect(
+      'planner: CONTROL: without a window no --before is added',
+      steps.every((st) => !st.args.some((a) => a.startsWith('--before'))),
+      steps.map((st) => st.args.join(' ')).join('\n')
     );
   } finally {
     fs.rmSync(planRoot, { recursive: true, force: true });
   }
+  const W = 1440 * 60_000;
+  for (const now of [
+    Date.UTC(2026, 9, 2, 0, 41),
+    Date.UTC(2026, 9, 2, 0, 0),
+    Date.UTC(2026, 9, 2, 23, 59, 59, 999),
+  ]) {
+    const cut = freshnessCutoffMs(now, W) as number;
+    expect(
+      `freshnessCutoffMs(${new Date(now).toISOString()}) is the newest publish isWithinFreshnessWindow clears, and 1 ms later is deferred`,
+      !isWithinFreshnessWindow(cut, now, W) && isWithinFreshnessWindow(cut + 1, now, W),
+      `cutoff ${new Date(cut).toISOString()}`
+    );
+  }
+  expect(
+    'freshnessCutoffMs: a zero window adds no cutoff',
+    freshnessCutoffMs(Date.now(), 0) === null
+  );
 
   const childEnv = upgradeChildEnv({
     npm_config_loglevel: 'silent',
@@ -2851,16 +2960,19 @@ function selftest(): void {
   );
 
   // 10. FRESHNESS-WINDOW GUARD on `npm update`. It takes the highest in-range version, so one published after the release-age check could land unjudged; the step must fail naming it.
-  const upStep = (workspace?: string): InstallStep => ({
-    cwd: '/x',
-    args: ['update', 'a', 'b'],
-    label: 'root (update)',
-    packages: [
+  const upStep = (workspace?: string): InstallStep => {
+    const packages = [
       { name: 'a', current: '1.0.0', latest: '1.1.0' },
       { name: 'b', current: '2.0.0', latest: '2.0.1' },
-    ],
-    workspace,
-  });
+    ];
+    return {
+      cwd: '/x',
+      args: ['update', 'a', 'b'],
+      label: 'root (update)',
+      packages,
+      checks: workspace ? packages.map((pkg) => ({ pkg, workspace })) : undefined,
+    };
+  };
   expect(
     'guard: every package at its judged version passes',
     verifyUpdatedVersions(upStep(), {
@@ -2891,7 +3003,7 @@ function selftest(): void {
   expect(
     'guard: a workspace step judges the copy npm nested in that workspace, not the hoisted one',
     verifyUpdatedVersions(upStep('packages/cli'), wsLock).join() ===
-      'a: judged 1.1.0, installed 1.2.0',
+      'a: judged 1.1.0, installed 1.2.0 (nested in packages/cli)',
     verifyUpdatedVersions(upStep('packages/cli'), wsLock).join()
   );
 
@@ -2910,6 +3022,69 @@ function selftest(): void {
       tooNewRun.output.includes('freshness-window guard') &&
       tooNewRun.output.includes('typescript-eslint: judged 8.71.0, installed 8.72.0'),
     tooNewRun.output
+  );
+
+  // 10b. A LOCKSTEP FAMILY MOVES IN ONE CALL PER LOCKFILE (2026-10-02). @vitest/coverage-v8 and @vitest/ui pin an EXACT peer vitest, npm nested copies in several workspaces, and the per-workspace planner ran `npm update -w=packages/cli vitest @vitest/ui`, then `-w=packages/www ...`: each call met the other workspace's pinned copy and failed ERESOLVE. The stub npm refuses exactly that; the split-update mutant restores the old planner and must go red.
+  const familyLock = {
+    'node_modules/vitest': { version: '5.0.2' },
+    'packages/cli/node_modules/@vitest/ui': { version: '5.0.2' },
+    'packages/www/node_modules/@vitest/ui': { version: '5.0.2' },
+    'node_modules/dotenv': { version: '18.0.4' },
+  };
+  const familyCase = (env?: NodeJS.ProcessEnv): FixtureSpec => ({
+    outdated: {
+      '': {
+        vitest: { current: '5.0.2', wanted: '5.0.3', latest: '5.0.3' },
+        '@vitest/ui': { current: '5.0.2', wanted: '5.0.3', latest: '5.0.3' },
+        dotenv: { current: '18.0.4', wanted: '18.0.5', latest: '18.0.5' },
+      },
+      'private/account': {},
+    },
+    locks: { '': familyLock, 'private/account': {} },
+    updateLocks: {
+      '': {
+        'node_modules/vitest': { version: '5.0.3' },
+        'packages/cli/node_modules/@vitest/ui': { version: '5.0.3' },
+        'packages/www/node_modules/@vitest/ui': { version: '5.0.3' },
+        'node_modules/dotenv': { version: '18.0.5' },
+      },
+    },
+    manifests: {
+      '': {
+        workspaces: ['packages/cli', 'packages/www'],
+        devDependencies: { dotenv: '^18.0.4' },
+      },
+      'packages/cli': { devDependencies: { vitest: '^5.0.2', '@vitest/ui': '^5.0.2' } },
+      'packages/www': { devDependencies: { vitest: '^5.0.2', '@vitest/ui': '^5.0.2' } },
+    },
+    lockstep: {
+      '': [{ names: ['vitest', '@vitest/ui'], workspaces: ['packages/cli', 'packages/www'] }],
+    },
+    env,
+  });
+  const family = runFixture(familyCase(), 'upgrade');
+  const familyDetail = `installs:\n${family.installs.join('\n')}\noutput:\n${family.output}`;
+  expect(
+    'e2e --upgrade: a lockstep family held by two workspaces and the root moves in ONE npm update covering every workspace',
+    family.status === 0 &&
+      family.installs.length === 1 &&
+      family.installs[0].startsWith(
+        '<root> :: update -w=packages/cli -w=packages/www --include-workspace-root vitest @vitest/ui dotenv ::'
+      ) &&
+      family.output.includes('Upgrades completed'),
+    familyDetail
+  );
+  const split = runFixture(familyCase({ CHECK_DEPS_MUTANT: 'split-update' }), 'upgrade');
+  const splitDetail = `installs:\n${split.installs.join('\n')}\noutput:\n${split.output}`;
+  expect(
+    'e2e --upgrade: CONTROL: the split-update mutant (one npm update per workspace) fails ERESOLVE on the same tree',
+    split.status === 1 &&
+      split.installs.length === 3 &&
+      split.output.includes(
+        'packages/cli (update): `npm update -w=packages/cli vitest @vitest/ui` in . (exit status 1)'
+      ) &&
+      split.output.includes('ERESOLVE'),
+    splitDetail
   );
 
   // 11. THE HELD-MAJOR CLOCK (operator ruling 2026-10-01). A blocklisted major used to be excused forever; it now fails 90 days after the first release of its clock line unless an exception excuses it. Each case has its control, and the mutant proves the 91-day control depends on the clock rather than failing for another reason.
@@ -3509,7 +3684,8 @@ function selftest(): void {
       'fails; the ignore-clock mutant turns the 91-day control green and is refused on a real tree; an uninstalled ',
       'private devDependency is judged from lockfile and registry (and refused when they cannot answer) while an ',
       'installed one is left to npm, and an uninstalled root refuses the run; an exact-pin override is moved to the ',
-      'judged version before a root npm update, while an admitting override is left alone and a bounding one is refused'
+      'judged version before a root npm update, while an admitting override is left alone and a bounding one is refused; ',
+      'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary'
     )
   );
   process.exit(0);
