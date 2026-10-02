@@ -200,6 +200,19 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
         )
         pending += 1
 
+    if ctx.which("npm"):
+        npm = ctx.run(["npm", "-v"], timeout=30).out.strip()
+        try:
+            want = host.npm_pin(ctx)
+        except host.toolchain.PinError:
+            want = ""
+        # JUDGED AGAINST THE PIN, the exact version `host.node_toolchain` installs; any other npm rewrites lockfiles the pinned one would not.
+        if want and npm != want:
+            ctx.say("  npm         %s (pinned %s) STALE" % (npm, want))
+            pending += 1
+        else:
+            ctx.say("  npm         %s" % npm)
+
     # NOT COUNTED. Go is only installed when docker is missing, so a machine without it is not a machine with work pending.
     if ctx.which("go"):
         raw = ctx.run(["go", "version"], timeout=30).out.split()
