@@ -7,6 +7,7 @@ This file runs the Edit half; `test-block_review_file_shell_write.py` beside it 
 """
 
 import importlib
+import importlib.util
 import json
 import pathlib
 import subprocess
@@ -14,6 +15,14 @@ import sys
 import typing
 
 HERE = pathlib.Path(__file__).resolve()
+# The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
+_SYSPATH = importlib.util.spec_from_file_location(
+    "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
 
@@ -126,7 +135,7 @@ def via_dispatch(stem, payload):
 
 def defect_runner(stem):
     """The guard with its declared DEFECT planted, run in-process."""
-    sys.path.insert(0, str(HERE.parents[2]))
+    _syspath.on_sys_path(str(HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards.%s" % stem)
     old, new = good.DEFECT

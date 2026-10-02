@@ -10,6 +10,7 @@ Then the guard's DEFECT is planted in-process and the refusal cases MUST fail, w
 """
 
 import importlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -23,6 +24,14 @@ HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 STEM = "block_push_with_unrecorded_reviews"
 STOP_DIR = HERE.parents[2] / "hooks" / "stop"
+# The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
+_SYSPATH = importlib.util.spec_from_file_location(
+    "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
 BRANCH = "0930-1"
 
 GIT_ENV = {
@@ -36,7 +45,7 @@ GIT_ENV = {
 
 
 def _load_reviewer():
-    sys.path.insert(0, str(STOP_DIR))
+    _syspath.on_sys_path(str(STOP_DIR))
     return importlib.import_module("wl_review")
 
 
@@ -200,7 +209,7 @@ def via_dispatch(repo, cmd):
 
 
 def defect_runner():
-    sys.path.insert(0, str(HERE.parents[2]))
+    _syspath.on_sys_path(str(HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards." + STEM)
     old, new = good.DEFECT

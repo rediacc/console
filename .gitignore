@@ -70,6 +70,8 @@ secrets.env
 
 # Logs
 *.log
+# Recorded CI job logs are test fixtures, read by .ci/rediacc_ci/tests/test_ci_diagnose.py.
+!.ci/rediacc_ci/tests/fixtures/**/*.log
 
 # OS files
 .DS_Store

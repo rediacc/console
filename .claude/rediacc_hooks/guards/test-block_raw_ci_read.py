@@ -9,6 +9,7 @@ Both directions, because a one-sided control is satisfiable by a broken hook: on
 """
 
 import importlib
+import importlib.util
 import json
 import pathlib
 import subprocess
@@ -16,6 +17,14 @@ import sys
 import typing
 
 HERE = pathlib.Path(__file__).resolve()
+# The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_commit_on_main.py uses).
+_SYSPATH = importlib.util.spec_from_file_location(
+    "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
 # Derived from THIS file, never hard-coded: the guard lives beside the harness, and the dispatcher is what actually runs it.
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 STEM = "block_raw_ci_read"
@@ -24,7 +33,7 @@ T = ".ci/scripts/ci/ci-trace.py"
 G = "g" + "h"  # assembled so this file is not itself a raw read to a text scan
 REPO = "repos/o/r"
 # The API base comes from the literal registry (check:ci-literal-sources R1), through the hooks' reader.
-sys.path.insert(0, str(HERE.parents[2]))
+_syspath.on_sys_path(str(HERE.parents[2]))
 API_BASE = importlib.import_module("rediacc_hooks.wellknown").GH_API_BASE
 
 CASES = [
@@ -141,7 +150,7 @@ def via_dispatch(cmd):
 
 def defect_runner():
     """The guard with its declared DEFECT planted, run in-process."""
-    sys.path.insert(0, str(HERE.parents[2]))
+    _syspath.on_sys_path(str(HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards." + STEM)
 

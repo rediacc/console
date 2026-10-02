@@ -9,7 +9,8 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
     same-package files they call into (literals.go, system_commands.go for getOSInfo,
     ceph_root.go for DefaultFilesystem, pkg_install_procgroup_unix.go, gpu_drivers.go for
     the GPU driver installs of setup, kernel_modules.go for the kernel swap the AMD install
-    runs on zypper, ceph_host_runner.go for the runner those installs use);
+    runs on zypper, ceph_host_runner.go for the runner those installs use, setup_phase.go
+    for the phase markers and download bound pkg_install_retry.go uses);
   * pkg/config, pkg/infra/pkgset (the package registry), pkg/embed (its Go files only,
     so pkg/embed/proxy/** and the staged assets are out), pkg/infra/image;
   * pkg/infra/cephpkg/fingerprint.go, the OpenPGP fingerprint check gpu_drivers.go runs on
@@ -51,6 +52,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     "cmd/renet": {
         "setup_command.go": HASH,
         "pkg_install_retry.go": HASH,
+        # Setup phase markers, heartbeats and the dnf/zypper download bound that pkg_install_retry.go calls (renet 2be6f4b).
+        "setup_phase.go": HASH,
         "image_build_command.go": HASH,
         "literals.go": HASH,
         "system_commands.go": HASH,

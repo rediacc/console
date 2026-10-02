@@ -1,0 +1,4 @@
+2026-09-20T10:00:00.0000000Z ##[group]Run docker pull docker.io/library/ubuntu:24.04
+2026-09-20T10:00:01.0000000Z 24.04: Pulling from library/ubuntu
+2026-09-20T10:00:03.0000000Z Error response from daemon: unexpected status code 403 Forbidden for https://production.cloudflare.docker.com/registry-v2/docker/registry/v2/blobs/sha256/aa/aa00/data
+2026-09-20T10:00:03.1000000Z ##[error]Process completed with exit code 1.
