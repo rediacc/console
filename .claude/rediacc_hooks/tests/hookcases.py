@@ -111,12 +111,12 @@ def path_json(file_path: str) -> str:
 EMPTY_INPUT = _j({"tool_input": {}})
 
 
-def inject_json(command: str, stdout: str) -> str:
-    """A PostToolUse payload: the trapguard rules judge what a command SAID."""
+def inject_json(command: str, stdout: str, cwd: str | None = None) -> str:
+    """A PostToolUse payload: the trapguard rules judge what a command SAID. `cwd` defaults to this checkout; a case that needs a planted file passes a scratch repository instead of writing this one."""
     return _j(
         {
             "tool_name": "Bash",
-            "cwd": TEST_REPO_ROOT,
+            "cwd": cwd or TEST_REPO_ROOT,
             "tool_input": {"command": command},
             "tool_response": {"stdout": stdout, "stderr": ""},
         }

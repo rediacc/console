@@ -4,8 +4,11 @@ The product is stdout, not the exit code. A rule that exits 0 silently and a rul
 """
 
 import os
+import pathlib
 import re
+import shutil
 import subprocess
+import tempfile
 
 import pytest
 
@@ -53,6 +56,8 @@ def assert_inject(block, want: str, payload: str, label: str, needle: str | None
 # from a real deletion. The name carries this process's pid so the case holds in any
 # checkout and a crashed earlier run cannot satisfy it.
 PHANTOM_NAME = "tg_phantom_probe_%d.txt" % os.getpid()
+# THE PROBE LIVES IN A SCRATCH REPOSITORY, never this checkout (2026-10-02): planted at the real root, it was an untracked file any OTHER test finishing under pytest -n saw appear, and the root conftest's tree snapshot errored that test (the nightly's test_housekeeping_cleanup_versions). The rule reads its root from the payload's `cwd`, so the case points there.
+PHANTOM_ROOT = pathlib.Path(tempfile.gettempdir()) / ("tg-phantom-%d" % os.getpid())
 CASES = [
     inject(
         ("check_inject fires", "cancelled-run-not-passed"),
@@ -116,6 +121,7 @@ CASES = [
         inject_json(
             "git diff somebranch -- " + PHANTOM_NAME,
             " %s | 462 ------\n 1 file changed, 462 deletions(-)" % PHANTOM_NAME,
+            cwd=str(PHANTOM_ROOT),
         ),
         "trapguard: all-deletions diff for an UNTRACKED file still on disk is warned about",
     ),
@@ -358,11 +364,13 @@ CASES = [
 
 @pytest.fixture(scope="module")
 def _phantom():
-    """The untracked-but-present file the phantom case needs, removed afterwards."""
-    path = hookcases.ROOT / PHANTOM_NAME
+    """The untracked-but-present file the phantom case needs, in a scratch git repository removed afterwards."""
+    PHANTOM_ROOT.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q", str(PHANTOM_ROOT)], check=True)
+    path = PHANTOM_ROOT / PHANTOM_NAME
     path.write_text("x\n", encoding="utf-8")
     yield path
-    path.unlink(missing_ok=True)
+    shutil.rmtree(PHANTOM_ROOT, ignore_errors=True)
 
 
 @pytest.mark.xdist_group("hooks-trapguard")
