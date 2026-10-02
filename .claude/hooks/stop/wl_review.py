@@ -1281,7 +1281,7 @@ def check_state(root, branch, label="console", cfg=None):
         return ["no-branch"], [
             "no branch to judge: pass --branch, or check out the PR's head branch"
         ]
-    if label == "console" and current_branch(root) != branch:
+    if label in ("console", None) and current_branch(root) != branch:
         return (
             ["not-checked-out"],
             [
@@ -1289,7 +1289,10 @@ def check_state(root, branch, label="console", cfg=None):
                 % (branch, root, CHECK_COMMAND, branch)
             ],
         )
-    st = branch_state(root, branch, cfg, repos={label})
+    # label None judges every repository branch_state walks by default (the console plus each one a review names). The CLI's --check
+    # passes it: with `{"console"}` it printed "clean" while a submodule commit's review was still in flight (2026-10-02, renet
+    # 3ca4821f), which block_unverified_push then refused.
+    st = branch_state(root, branch, cfg, repos=None if label is None else {label})
     return push_refusals(st), describe(st, limit=8)
 
 
@@ -1724,7 +1727,7 @@ def main(argv):
         return 0
     if argv[0] == "--check":
         branch = _opt(argv, "--branch") or current_branch(root)
-        reasons, lines = check_state(root, branch)
+        reasons, lines = check_state(root, branch, label=_opt(argv, "--repo"))
         print(
             "per-commit reviews for %s: %s"
             % (
