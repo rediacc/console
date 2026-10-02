@@ -464,7 +464,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         print("  on real paths is meaningless. Refusing to report a result.", file=sys.stderr)
         return 1
-    control_full = classify_mode(root, "scripts/drills/lib.sh")
+    control_full = classify_mode(root, "scripts/ci/write-shard-receipt.cjs")
     if control_full != "full":
         print(
             "%s✗ CONTROL FAILED%s: a known carve-out classified '%s', not 'full'."

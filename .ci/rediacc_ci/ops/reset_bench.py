@@ -51,7 +51,7 @@ Usage:
   --r2-only   skip the D1 wipe
 
 Resources: D1 account-db-bench, R2 rediacc-configs-bench. The worker code and
-DNS are not touched; scripts/ops/deploy-bench.sh redeploys them.
+DNS are not touched; rediacc_ci.ops.deploy_bench redeploys them.
 """
 
 
@@ -316,7 +316,10 @@ def main(argv: list[str]) -> int:
             return 1
         print()
         log.info("bench has been reset")
-        print("  Worker code is unchanged. To redeploy fresh code: scripts/ops/deploy-bench.sh")
+        print(
+            "  Worker code is unchanged. To redeploy fresh code: "
+            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"
+        )
         return 0
     finally:
         cf_auth.self_destruct(auth)

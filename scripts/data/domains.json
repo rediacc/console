@@ -76,21 +76,6 @@
       "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3). This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob eslint.config/typescript.js:138 was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
     },
     {
-      "id": "drills",
-      "paths": ["scripts/drills/**"],
-      "home": "scripts/drills",
-      "stays": true,
-      "why": "The live VM drill batteries. This prefix is load-bearing in five places and two of them fail SILENTLY GREEN rather than red, which is why the directory is pinned rather than merely inconvenient to move.",
-      "breaksIfMoved": [
-        ".ci/scripts/ci/scope-map.cjs:233 matchPrefix('scripts/drills/') with full: 'harness'. A missed prefix downgrades CI scope, so a drill edit would classify reduced and skip the whole VM matrix.",
-        ".ci/scripts/ci/greenlight.cjs:421 lists 'scripts/drills' in the cache-key closure. A missed prefix reuses a stale green.",
-        ".ci/rediacc_ci/quality/probe_parity.py:92 PROBE = \"scripts/drills/transfer.sh\", hard fail at :176.",
-        ".ci/rediacc_ci/quality/drill_verdicts.py:70 DRILL_LIB=\"scripts/drills/lib.sh\", hard fail at :236.",
-        ".ci/rediacc_ci/quality/scope_scripts_reachability.py:443 uses scripts/drills/lib.sh as its positive control.",
-        ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py golden expectation, and the anti-vacuity harness fixture subject."
-      ]
-    },
-    {
       "id": "devbox-bash",
       "paths": ["scripts/dev/worktree.sh"],
       "home": "scripts/dev",
@@ -134,17 +119,15 @@
       "paths": ["scripts/ops/**"],
       "home": "scripts/ops",
       "stays": true,
-      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten are unambiguously operator-only (apply-cf-redirect-rules.sh, backup-d1.sh, bws-map-refresh.py, deploy-bench.sh, .ci/rediacc_ci/ops/derive_shadow_pass_list.py, linode-cluster-validation.sh, r2-oneshot-scrub.sh, reset-bench.sh, backup-cutover-preflight.sh, .ci/rediacc_ci/ops/build_server.py) and four more are operator-run with a CI-side reader or test.",
+      "why": "Operator-only tools: a human runs them by hand and no workflow, npm key, run.sh verb or gate invokes them. Surveyed 2026-09-06, ten were unambiguously operator-only and four more operator-run with a CI-side reader or test. By 2026-10-02 every bash tool here was ported under .ci/rediacc_ci/ops/ (PLAN-retire-bash-oracles B3) or retired (the one-shot R2 scrub), leaving bws-map-refresh.py and secret-rename.py.",
       "blockedOn": "CLEARED 2026-09-20: the move landed. Fourteen files arrived from scripts/dev/, scripts/docker/ and the scripts/ root as git renames, after W8 P1a-P6 and W0.1 had made their edits at the old path and were all ticked. scripts/docker no longer exists; scripts/dev keeps worktree.sh alone under the devbox-bash rule above.",
       "exceptions": [
-        "scripts/ops/lib/cf-auth.sh is sourced by three siblings and moved with them.",
         "scripts/dev/worktree.sh is NOT operator-only and did NOT move; it has its own rule, devbox-bash, immediately above this one."
       ],
       "breaksIfMoved": [
         "REPOINTED 2026-09-20, all six, in the change that moved the files. The list is kept because it names the shape of the damage a FUTURE move would do, not because any entry is still outstanding.",
         ".ci/rediacc_ci/quality/silent_failure_patterns.py:80 carries scripts/ops, as the retired bash twin did at its own line 73. A missing directory makes find return nothing and the gate reports success over half its corpus. SILENTLY GREEN.",
         ".ci/scripts/security/shfmt.sh:121 loops over `scripts/dev scripts/ops` guarded by [[ -d ]], as does its twin's OPTIONAL_SCOPES at .ci/rediacc_ci/security/shfmt.py:92, so a scope that stops existing silently stops being format-checked. SILENTLY GREEN. A third sweep of the same shape lives at .ci/legacy/run-legacy.sh:488.",
-        "scripts/gates/check-worker-secret-names.ts:66 parses scripts/ops/deploy-bench.sh with a floor of 20.",
         ".ci/scripts/quality/check_bws_map.py:100 reads scripts/ops/secret-rename.py as its rename oracle, built as ROOT / \"scripts\" / \"ops\" / ... so a path-literal grep cannot see it.",
         "test-bws-map.sh:40 and :58 and test-vacuity-floors.sh:115 name paths under scripts/ops (a third, .ci/scripts/test/gates/test-scrub-sentinel-empty.sh:40 and :56, was retired in W7 P5 census batch A8), and three Python gate tests build the same paths out of pathlib parts.",
         "Dockerfile:12 and :32 named scripts/ops/build-server.sh in comments only, which was also the only thing keeping it out of check-dead-bash's findings. The twin was ported to .ci/rediacc_ci/ops/build_server.py and deleted on 2026-09-22 under ruling 7; those same two comments now name the module, and they are what admits it through check-dead-python's mentioned route, an operator tool having no wiring to be reached by."

@@ -585,7 +585,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # person's vault, unlocked with BW_SESSION); `bws` is the Secrets Manager CLI
 # (a machine account, authenticated with BWS_ACCESS_TOKEN). CI reads its
 # credentials from Secrets Manager, and the consumers that run OUTSIDE GitHub
-# Actions -- deploy-bench.sh, run.sh's preview builder, the drills,
+# Actions -- rediacc_ci.ops.deploy_bench, run.sh's preview builder, the drills,
 # license-e2e.sh -- cannot use the sm-action, so they need this binary.
 #
 # Same discipline as bw: the native release zip, hash-pinned, never npm. Unlike

@@ -49,7 +49,7 @@ HEALTHY = "s3://%s/%s contains %d binary object(s)"
 SEALED_BUT_EMPTY = (
     "SEALED-BUT-EMPTY: s3://%s/%s has a .released sentinel but NO binaries.",
     "  A prior orphan-scrub deleted the bytes; every versioned install of this product will 404.",
-    "  Remediation: scrub the sentinel then re-run CI: scripts/ops/scrub-sentinel.sh v%s --execute",
+    "  Remediation: scrub the sentinel then re-run CI: PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v%s --execute",
 )
 NOTHING_UPLOADED = (
     "R2 versioned prefix s3://%s/%s is empty after upload (no binaries, no sentinel).",

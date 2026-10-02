@@ -1,4 +1,4 @@
-"""rediacc_ci.ops.bench_preflight: the two checks deploy-bench.sh runs before its first remote write.
+"""rediacc_ci.ops.bench_preflight: the two checks rediacc_ci.ops.deploy_bench runs before its first remote write.
 
 Both were paid for on 2026-09-24: a deploy applied 21 D1 migrations and then died on an R2 bucket nothing had created, and the retry bundled from a drifted node_modules that Cloudflare refused at startup. `npm` and `npx` are stubs on PATH, so nothing here reaches the network.
 """

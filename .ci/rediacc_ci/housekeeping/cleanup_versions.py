@@ -2493,7 +2493,8 @@ class Housekeeping:
                 )
                 log.error(
                     "  remediation: re-run CD to tag/release %s, or scrub via "
-                    "scripts/ops/scrub-sentinel.sh %s --execute" % (ver, ver)
+                    "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel %s --execute"
+                    % (ver, ver)
                 )
             else:
                 log.error(

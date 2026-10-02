@@ -270,7 +270,13 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     rc_p, out_p, err_p = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
-    assert out_b == out_p
+    # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
+    redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
+    redeploy_port = (
+        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench\n"
+    )
+    assert redeploy_bash in out_b, out_b
+    assert out_b.replace(redeploy_bash, redeploy_port) == out_p
 
     def shape(calls: list[dict]) -> list:
         norm = [c for c in h.normalise_calls(calls) if c["tool"] != "sleep"]

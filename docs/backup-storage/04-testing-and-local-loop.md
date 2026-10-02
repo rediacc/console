@@ -17,8 +17,8 @@ the grant abstraction needs a memory/local implementation designed in), DTO plan
 2. Byte-verify battery (minutes, ops VMs): new numbered suite in packages/e2e-tests
 under the default config (runs inside `test-e2e-workers`). Registration: the playwright project list, the README table, LIVE_CONFIG_REGISTRY only if a new config, skip-hygiene testIgnore if a new subdir. Zero-skip contract: any `test.skip()` firing in CI is a job failure, select by config instead. Delete `.e2e-coverage-allowlist` lines (`backup_delete`, `backup_list`) as coverage
 arrives (a covered entry fails the gate as stale). New corruption-injection helper (does not exist anywhere): flip a byte in a stored chunk, delete another, assert verify/scrub fire; a verification-disabled twin MUST fail it (prove the instrument). Restore assertions prefer image-sha over mounted-content reads (post-swap remounts over two-hop SSH are flaky; suite 17 documents it).
-3. Live drill: `scripts/drills/backup.sh` reusing `scripts/drills/lib.sh` verbatim
-(separate stdout/stderr capture, numbered assertions, `drill_setup_run` vs assertion split, `--selftest` that must fire, `--keep-work`, SKIPPED-not-PASSED, the check-drill-verdicts meta-gate). Dispatch: about 10 lines in `run.sh:1982+`. The offline battery is the drill's NAMED CONTROL (the license precedent: "if a leg fails here but its twin passes there, the difference is the
+3. Live drill: `rediacc_ci.drills.backup` on the shared `rediacc_ci.drills.lib` harness
+(separate stdout/stderr capture, numbered assertions, `setup_run` vs assertion split, `--selftest` that must fire, `--keep-work`, SKIPPED-not-PASSED, the check-drill-verdicts meta-gate). Dispatch: about 10 lines in `run.sh:1982+`. The offline battery is the drill's NAMED CONTROL (the license precedent: "if a leg fails here but its twin passes there, the difference is the
 machine"). Preflight refuses unsupported legs BY NAME and reports both missing operator overrides at once.
 
 ## Local end-to-end topology

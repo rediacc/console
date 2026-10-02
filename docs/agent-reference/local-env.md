@@ -176,14 +176,14 @@ rdc run -f container_exec -m <machine> --param repository=<repo> --param contain
 rdc run -f container_restart -m <machine> --param repository=<repo> --param container=<name>
 ```
 
-## Operator Scripts (`scripts/ops/`)
+## Operator Scripts (`rediacc_ci.ops`)
 
 | Script | Purpose |
 |--------|---------|
-| `deploy-bench.sh` | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
+| `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
 | `python3 -m rediacc_ci.ops.reset_bench` (run with `PYTHONPATH=.ci`) | Wipe bench D1 + R2 + worker secrets |
 | `python3 -m rediacc_ci.ops.backup_d1` (run with `PYTHONPATH=.ci`) | Export production/edge D1 databases to `.backups/` |
-| `lib/cf-auth.sh` | Shared Cloudflare + AWS auth helpers (legacy; only `deploy-bench` still uses it) |
+| `rediacc_ci.ops.cf_auth` | Shared Cloudflare auth helpers for the bench and backup operator scripts |
 
 ## Secret Rotation (`./run.sh rotation`)
 
@@ -213,4 +213,4 @@ the key to all three regions, smoke-tests propagation, and updates the manifest 
 
 Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
 
-`scripts/ops/deploy-bench.sh` runs under the `deploy-bench` Bitwarden profile and runs `rotation check --for=bench` as a preflight, so a stale bench credential cannot ship a dead key.
+`rediacc_ci.ops.deploy_bench` runs under the `deploy-bench` Bitwarden profile and runs `rotation check --for=bench` as a preflight, so a stale bench credential cannot ship a dead key.

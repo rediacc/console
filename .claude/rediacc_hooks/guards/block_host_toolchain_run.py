@@ -68,7 +68,7 @@ NEEDS = (
 # A session ran `.ci/scripts/release/assert-edge-tag-exists.sh` on the HOST, read `Required command 'aws' is not available`, and began evaluating an `awscli` install on the host. The devbox has carried aws-cli 2.36.40 the whole time (`.devcontainer/Dockerfile:467-490`). Neither table above could see the command: it names no gate key, and the tool it needs appears nowhere in the
 # command line -- the script reaches `aws` from inside itself. So the SCRIPT is what has to be matched.
 #
-# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two -- `upload-to-r2.sh`, `r2-oneshot-scrub.sh` -- call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated.
+# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated. Two rows left on 2026-10-02 with their scripts (PLAN-retire-bash-oracles B3): the sentinel scrub, now the Python module `rediacc_ci.ops.scrub_sentinel`, and the one-shot R2 scrub, retired. `upload-to-r2.sh` is the one direct caller left.
 #
 # `.ci/breakpoint/scripts/publish-endpoints.sh:96` is DELIBERATELY ABSENT, on the same precedent as `check:ci-actionlint` above: it degrades to skipping a notification rather than failing, so routing it would send a working path into the fix-the-image branch for nothing.
 #
@@ -83,11 +83,9 @@ NEEDS_SCRIPT = (
     ("upload-repos-to-r2.sh", "aws"),
     ("cleanup-versions.sh", "aws"),
     ("upload-r2.sh", "aws"),
-    ("scrub-sentinel.sh", "aws"),
     ("sync-media-to-r2.sh", "aws"),
     ("sync-media-from-r2.sh", "aws"),
     ("upload-to-r2.sh", "aws"),
-    ("r2-oneshot-scrub.sh", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.

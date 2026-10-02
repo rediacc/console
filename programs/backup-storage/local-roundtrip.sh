@@ -4,7 +4,7 @@
 # What this proves that nothing else did: a MACHINE uploaded a real repository
 # image to a real S3 endpoint and a DIFFERENT repository was reconstructed from
 # it byte for byte. Suite 26's RESTORE tier automates the same claim but drives
-# `rdc`; the drill (`scripts/drills/backup.sh`) never creates a repo on a VM at
+# `rdc`; the drill (`rediacc_ci.drills.backup`) never creates a repo on a VM at
 # all -- its leg `i` is not in the default LEGS list and needs a repo it did not
 # make. So before this script the machine-level round trip had never run.
 #

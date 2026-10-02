@@ -3,7 +3,7 @@
 Gathers the logs a failed drill needs but does not print itself: the account server's RustFS compose output (`.account-logs/rustfs.log`, produced by a `... || true` in `account.sh` and therefore invisible anywhere else on a compose failure) and each kept drill work directory's `gateway.log`. See the twin's own header for the 2026-08 incident that made this necessary.
 
 REQUIRES `--keep-work`: without it `drill_teardown` removes the work directory on exit before this ever runs, and no environment variable substitutes for
-that (`scripts/drills/lib.sh` sets `DRILL_KEEP_WORK=0` at script level).
+that (`rediacc_ci.drills.lib.Drill` keeps its work directory only under `--keep-work` or `DRILL_KEEP_WORK=1`).
 
 ALWAYS EXITS 0. This runs in an `if: always()` diagnostics step attached to an ALREADY-FAILED job; a non-zero exit here would bury the real failure under a complaint about collecting diagnostics for it. An empty collection is reported as a message, never as a failure -- see `main()`.
 

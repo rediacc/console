@@ -30,7 +30,7 @@ A presigned URL signs the headers it carries, so the two halves are welded:
 
 So an OLDER renet talking to the UPDATED account fails **every** chunk PUT with a signature error, and the message names signatures rather than versions, which is the kind of error that costs an hour at 3am. Ship the account worker and the renet binary in the same window, and prove the machine's renet is the new one before the first scheduled run.
 
-There is a third client of this wire that is easy to forget: the drill (`scripts/drills/backup.sh`) PUTs cells and the manifest with bare `curl`. It went from 86/86 to 14 failures the moment the server started signing the condition, and needed `-H 'If-None-Match: *'` on both PUTs. Anything else that speaks this protocol directly needs the same.
+There is a third client of this wire that is easy to forget: the drill (`rediacc_ci.drills.backup`) PUTs cells and the manifest with plain HTTP, outside the CLI. It went from 86/86 to 14 failures the moment the server started signing the condition, and needed `-H 'If-None-Match: *'` on both PUTs. Anything else that speaks this protocol directly needs the same.
 
 ## 1. Preflight, and it fails closed
 
