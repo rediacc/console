@@ -1731,6 +1731,9 @@
     ".ci/scripts/quality/check_plan_deps.py": [
       "GITHUB_BASE_REF"
     ],
+    ".ci/scripts/quality/check_plan_implementation.py": [
+      "GITHUB_EVENT_PATH"
+    ],
     ".ci/scripts/quality/check_plan_record.py": [
       "PLAN_RECORD_CENSUS_DAYS",
       "PLAN_RECORD_CENSUS_EVERY_RUN",
