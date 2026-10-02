@@ -104,7 +104,9 @@ def test_branch_from_ci_prefers_pr_head_ref_then_github_head_ref():
     """The order matters: GITHUB_REF_NAME is `<n>/merge` on a pull_request."""
     assert gitx.branch_from_ci({"PR_HEAD_REF": "a", "GITHUB_HEAD_REF": "b"}) == "a"
     assert gitx.branch_from_ci({"GITHUB_HEAD_REF": "b", "GITHUB_REF_NAME": "9/merge"}) == "b"
-    assert gitx.branch_from_ci({"GITHUB_REF_NAME": "9/merge"}) == "9/merge"
+    # #c0c336e6: on a pull_request run GITHUB_REF_NAME is the synthetic `<n>/merge` ref, never a branch; a real branch name still falls back.
+    assert gitx.branch_from_ci({"GITHUB_REF_NAME": "9/merge"}) is None
+    assert gitx.branch_from_ci({"GITHUB_REF_NAME": "0930-1"}) == "0930-1"
     assert gitx.branch_from_ci({}) is None
     assert gitx.branch_from_ci({"PR_HEAD_REF": ""}) is None
 
