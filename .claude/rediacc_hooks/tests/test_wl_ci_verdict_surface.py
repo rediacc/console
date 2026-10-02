@@ -506,6 +506,13 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
         ('git -C "/path with spaces" push origin b', True),
         ("git -C '/q d' push", True),
         ("git -C x pushd", False),
+        # #00ea15c1: text bash does not run as a command is not a push.
+        ("git commit -q -F - -- a <<'EOF'\nfix: then git push origin 0930-1\nEOF\n", False),
+        ('git commit -m "run git push after the receipt" -- a', False),
+        ("cat > notes.md <<EOF\ngit -C /x push\nEOF\ngit status", False),
+        # Controls: a real push after a heredoc, and a push a shell is told to run, still count.
+        ("cat > m <<EOF\nx\nEOF\ngit push origin b", True),
+        ('sh -c "git push origin b"', True),
         ("echo git status", False),
     ],
 )
