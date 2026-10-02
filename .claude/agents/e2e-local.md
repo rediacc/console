@@ -72,7 +72,7 @@ swallows the verb's stdout and re-emits it inside `msg="[verb] {\"...\"}"` with 
 
 Distro-specific failures (a package manager path, a missing module) may need the real matrix cell. `VM_IMAGE=<ubuntu-24.04|debian-13|fedora-43|opensuse-16.0|oracle-10>` reproduces one locally; rocky-10 is excluded on purpose (no btrfs).
 
-To read a CI failure without waiting for the run to finish: **artifacts upload per job and are downloadable before the run completes**, while `gh run view --log` refuses until every job is terminal.
+To read a CI failure without waiting for the run to finish: **artifacts upload per job and are downloadable before the run completes**, while the whole-run log is unavailable until every job is terminal. A finished job's own log reads at any time with `.ci/scripts/ci/ci-trace.py --job <id> --log` (`--errors` for the failing step only).
 
 ```bash
 gh api repos/rediacc/console/actions/runs/<id>/artifacts -q '.artifacts[].name'

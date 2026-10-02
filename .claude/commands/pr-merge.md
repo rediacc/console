@@ -105,7 +105,7 @@ If the dirty path **does** overlap what `main` moved, `git checkout main` aborts
 the content is even still needed, e.g. a semver range bump the lockfile already satisfies), the running session may commit it itself (never stash/discard) to unblock the checkout, with a message stating plainly that it was found orphaned and why it's safe to land. This is committing to preserve, not deciding the change was wanted; if genuinely unsure whose work it is or why it
 exists, stop and ask instead.
 - A `rediacc/console` PR exists for this branch. Note its number.
-- The console PR should arrive at the babysitter's finish line: **flipped ready, Claude-reviewed (a `<!-- claude-reviewed: <sha> -->` marker matching the current head), and zero unresolved review threads**, with the latest console CI run green (`gh run list --repo rediacc/console --branch <branch> --workflow "Console CI" --limit 1`, then confirm `conclusion=success`). If it is still a draft, flip it ready (`gh pr ready`; the `block-premature-ready` hook verifies `CI Complete` is green), wait for the Claude review to complete, and resolve its threads before proceeding. Never merge over red or over unresolved threads.
+- The console PR should arrive at the babysitter's finish line: **flipped ready, Claude-reviewed (a `<!-- claude-reviewed: <sha> -->` marker matching the current head), and zero unresolved review threads**, with the PR head green (`.ci/scripts/ci/ci-trace.py` exits 0 only when `CI Complete` succeeded on the head). If it is still a draft, flip it ready (`gh pr ready`; the `block-premature-ready` hook verifies `CI Complete` is green), wait for the Claude review to complete, and resolve its threads before proceeding. Never merge over red or over unresolved threads.
 - `/code-review ultra` is available as an optional deep pre-land review for a big wave (operator-invoked; it does not replace the automated Claude review).
 - **Switch focus mode on** once the preconditions hold: `.claude/hooks/stop/worklist.py --focus <me> merge --pr <console-pr>`. The Stop hook then parks plan, queue and hygiene pushes and keeps what protects the land (CI red, dead watches, unread reports, STATE.md near compaction, hook integrity); a new writer spawn is refused unless it declares `focus-fix:#<id>` for an open item carrying `pr:<console-pr>`. Focus is not a precondition to skip: without it the full battery pushes unrelated work into the middle of a merge.
 
@@ -174,9 +174,10 @@ If the label set contains `bump-none`, the automated review has declared this me
 Release run will ever appear**. Confirm the decision from the run rather than inferring it from an absence:
 
 ```bash
-gh run view <main-ci-run> --repo rediacc/console --json jobs \
-  -q '.jobs[] | select(.name=="Finalize Release Sentinel") | .databaseId'
-# then read that job's log; it prints the verdict verbatim, e.g.
+.ci/scripts/ci/ci-trace.py --run <main-ci-run> --jobs --json \
+  | jq -r '.[] | select(.name=="Finalize Release Sentinel") | .job_id'
+.ci/scripts/ci/ci-trace.py --job <that-id> --log
+# the log prints the verdict verbatim, e.g.
 #   release SKIPPED: #567 carries 'bump-none'
 ```
 
@@ -189,7 +190,7 @@ For a release-worthy merge, everything below applies as written.
 
 The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the **real** Docker build+push, not the PR dry-run). When Console CI goes green, its finalize step **dispatches the Release workflow** (`cd-v2.yml`): git tag → GitHub Release → R2 upload → **deploy edge**. Both do main-only work that PR CI only dry-ran, so they can fail where every PR check was green. The
 land is not done until this is green.
-- Find the **Console CI** run for the merged commit: `gh run list --repo rediacc/console --branch main --workflow "Console CI" --limit 3` (event `push`, matching the merged SHA), then trace it with `.ci/scripts/ci/ci-trace.py --wait` (run_in_background: true). On `main` the watchdog auto-retries transient failures; the script reads the head's check rollup, so a rerun replaces the old attempt rather than fooling it.
+- Find the **Console CI** run for the merged commit: `.ci/scripts/ci/ci-trace.py --runs --ref main` (event `push`, matching the merged SHA), then trace it with `.ci/scripts/ci/ci-trace.py --wait` (run_in_background: true). On `main` the watchdog auto-retries transient failures; the script reads the head's check rollup, so a rerun replaces the old attempt rather than fooling it.
 - Console CI on `main` is green **before** the Release run exists. Once it is, find the **Release to Edge** run (`gh run list --repo rediacc/console --workflow "Release to Edge" --limit 3`, event `workflow_dispatch`, matching the merged SHA) and watch it **by id**: `.ci/scripts/ci/ci-trace.py --run <id> --wait` (run_in_background: true). That is the run that actually tags and deploys edge.
 
 **NOT "the same way" as the branch watch above, and this cost a false green.** A branch's GraphQL `statusCheckRollup` does NOT contain a `workflow_dispatch` run's check runs. Measured 2026-08-26 on Release run 32968110599 (head `1c006e53`): the REST check-runs API for that exact commit showed `in_progress Tag & Release`, while the rollup for `refs/heads/main` returned 81 contexts,
@@ -200,9 +201,11 @@ completed-success → 0, unreadable → 2).
 - **First, classify: transient, or main-only?** The PR was green, so a failure appearing now is one of exactly two things, and they need opposite responses. The test is one command: **did this job run and pass on the PR run?**
 
   ```bash
-  gh run view <pr-run-id> --repo rediacc/console --json jobs \
-    --jq '.jobs[]|select(.name=="<failed job>")|"\(.conclusion) \(.name)"'
+  .ci/scripts/ci/ci-trace.py --run <pr-run-id> --jobs --json \
+    | jq -r '.[]|select(.name=="<failed job>")|"\(.conclusion) \(.name)"'
   ```
+
+  `.ci/scripts/ci/ci-trace.py --history "<failed job>"` answers the same question across the job's last 5 completed runs.
 
   - **It ran and passed on the PR → transient.** Same code, same job, different outcome. Do NOT fix it. The watchdog auto-retries these itself. (Real case: `Migration Test` passed on PR run 29844923209, then died on `main` with wrangler `Network connection lost.` mid `d1 export`, was classified `transient (0.8)` and cleared on the auto-retry. A "fix" would have been a change to working code.)
   - **It never ran on the PR, or runs differently there → main-only.** Then it is genuinely untestable by a PR, and that is what licenses the next bullet.
