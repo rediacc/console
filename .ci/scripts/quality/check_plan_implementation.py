@@ -39,6 +39,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 import _cipath  # noqa: F401
@@ -192,6 +193,35 @@ def load_plan_gate():
     except Exception as exc:  # noqa: BLE001
         return None, "cannot import rediacc_hooks.plan_gate from %s (%s)" % (HOOK_PKG_PARENT, exc)
     return plan_gate, ""
+
+
+def pr_event_body(event_path=None):
+    """The pull request body from the Actions event payload, or None outside a pull_request run.
+
+    The payload is the event that started THIS run, so a `synchronize` run reads the body as it stood at the push. A body edited later reaches the gate with the next push.
+    """
+    path = event_path if event_path is not None else os.environ.get("GITHUB_EVENT_PATH", "")
+    if not path:
+        return None
+    try:
+        with open(path, encoding="utf-8") as fh:
+            event = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    pr = event.get("pull_request") if isinstance(event, dict) else None
+    body = pr.get("body") if isinstance(pr, dict) else None
+    return body if isinstance(body, str) else None
+
+
+def pr_admits_open_boxes(gate, body):
+    """True when the PR body carries an `Operational-Reason:` line, read by plan_gate's own parser.
+
+    OPERATOR RULING 2026-10-02 (#591 "merges as one PR, with an Operational-Reason line"): the merge gate (`plan_gate.plan_merge_refusal`) admits a PR whose plan still has open boxes when its body says why. Without the same admission here a plan whose last box IS the merge (PLAN-plan-per-pr-loop M7: "merge #591 through the loop") keeps CI red forever, and a red CI is the one thing the merge cannot pass. One parser for both, so the two can never disagree about what counts as a reason.
+    """
+    if gate is None or not body:
+        return False
+    check = getattr(gate, "has_operational_reason", None)
+    return bool(check(body)) if callable(check) else False
 
 
 def clock_scope(gate, root, base_plans, head_plans):
@@ -661,6 +691,43 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "C12h: with no base, a plan was put on the clock as ticked, or the reduced scope was not said",
         not got and any("no base" in n for n in notes),
+    )
+
+    # C13 -- THE OPERATIONAL-REASON ADMISSION (#591): plan_gate's own parser, fed through a real event payload file. A reason admits; a body without one, a reason inside a machine-written block, no payload, and no gate do not.
+    real_gate, _gate_problem = load_plan_gate()
+    with tempfile.TemporaryDirectory() as tmp:
+        event = os.path.join(tmp, "event.json")
+        reason_body = (
+            "Plan: agent/plans/PLAN-x.md\nOperational-Reason: the plan's last box is this merge\n"
+        )
+        with open(event, "w", encoding="utf-8") as fh:
+            json.dump({"pull_request": {"body": reason_body}}, fh)
+        caught(
+            "C13a: a PR body with an Operational-Reason line did not admit the open boxes",
+            pr_admits_open_boxes(real_gate, pr_event_body(event)),
+        )
+        with open(event, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "pull_request": {
+                        "body": plant(reason_body, "Operational-Reason:", "Operational note:")
+                    }
+                },
+                fh,
+            )
+        caught(
+            "C13b: a PR body without an Operational-Reason line admitted the open boxes",
+            not pr_admits_open_boxes(real_gate, pr_event_body(event)),
+        )
+    caught(
+        "C13c: no event payload (a local run, a push or cron event) admitted the open boxes",
+        not pr_admits_open_boxes(
+            real_gate, pr_event_body(os.path.join("/nonexistent", "event.json"))
+        ),
+    )
+    caught(
+        "C13d: an unloadable plan_gate admitted the open boxes",
+        not pr_admits_open_boxes(None, reason_body),
     )
 
     # C1 -- THE INVESTIGATION-LESS TICK, the CI third of it. A box that moved open -> done carrying evidence but NO row must red on P-A2.
@@ -1140,6 +1207,12 @@ def main(argv=None) -> int:
             "P-A1 NO SCOPE: %s. Refusing to judge nothing: restore .claude/rediacc_hooks/plan_gate.py "
             "(queue_head) or agent/plans/QUEUE.md's reader before this gate can tell the PR's plan "
             "from the queued ones." % scope_problem
+        )
+    elif on_clock and pr_admits_open_boxes(gate, pr_event_body()):
+        print(
+            "  INFO: P-A1 admitted by the PR body's `Operational-Reason:` line, the same admission "
+            "plan_gate.plan_merge_refusal grants the merge: %s"
+            % ", ".join("%s (%d)" % (rel, n) for rel, n in on_clock)
         )
     else:
         findings.extend(clock_findings(on_clock))
