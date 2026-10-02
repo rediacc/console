@@ -319,6 +319,39 @@ if os.path.exists(os.path.join(REPO, "private/account/package.json")):
             "an interpreter after a separator still runs the key",
         )
     )
+    # THE PYTHON PORT OF THE SAME UPLOAD, by module. aws is put on PATH so the toolchain arm cannot be what refuses: the refusal has to be the credential one, and the control has to clear both.
+    _aws_dir = tempfile.mkdtemp(dir=RUN_TMP)
+    with open(os.path.join(_aws_dir, "aws"), "w", encoding="utf-8") as fh:
+        fh.write("#!/bin/sh\nexit 0\n")
+    os.chmod(os.path.join(_aws_dir, "aws"), 0o700)
+    _port = run_full(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2", f"{_aws_dir}:{REAL}"
+    )
+    cases.append(
+        (
+            2,
+            _port.returncode,
+            "python -m: the sync-media-to-r2 port without the publish-media profile is refused",
+        )
+    )
+    cases.append(
+        (
+            True,
+            "--profile publish-media" in _port.stderr,
+            "python -m: the port's refusal is the credential one",
+        )
+    )
+    cases.append(
+        (
+            0,
+            run(
+                "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x PYTHONPATH=.ci python3 -m"
+                " rediacc_ci.deploy.sync_media_from_r2",
+                f"{_aws_dir}:{REAL}",
+            ),
+            "CONTROL: python -m: the sync-media-from-r2 port with the credential inline is accepted",
+        )
+    )
 
 # --------------------------------------------------------------------------- EVERY TOOL IN THE ARRAY, NOT JUST TWO OF FIVE. check-host-toolchain-coverage.sh proves NPX_TOOLS/BARE_TOOLS LIST the same tools GATED_TOOLS pins; it says nothing about whether the ROUTING REGEX actually FIRES for each of them at runtime. A tool could sit in the array and still be unreachable -- a name
 # containing a regex metacharacter, a word-boundary edge case on a two-letter name like `go` -- and list-membership coverage would not catch it. Before this, npx-misuse was exercised for ruff and shfmt only, and bare-tool routing
@@ -519,6 +552,63 @@ _syspath.on_sys_path(os.path.join(REPO, ".claude"))
 from rediacc_hooks import guards  # noqa: E402 - the path hop above is what makes it importable
 
 GUARD = guards.load("block_host_toolchain_run")
+
+# `python3 -m <module>` RUNS THE MODULE. The aws-needing scripts have Python ports under .ci/rediacc_ci, and `_is_invoked` judged a command by its first word, so `PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.0.5` opened with `python3`, which was neither an interpreter it knew nor the key, and the port never got the devbox routing hint its bash original did.
+# Function-level, so neither the devbox nor the shipped exception list decides these.
+SCRUB = "rediacc_ci.ops.scrub_sentinel"
+cases.extend(
+    (want, GUARD._is_invoked(SCRUB, cmd), f"python -m: {label}")
+    for want, cmd, label in (
+        (True, "PYTHONPATH=.ci python3 -m %s v1.0.5" % SCRUB, "python3 -m <module> invokes it"),
+        (True, "cd .ci && python -m %s v1.0.5" % SCRUB, "after a separator, bare `python`"),
+        (True, "/usr/bin/python3.14 -u -m %s v1.0.5" % SCRUB, "an absolute, versioned interpreter"),
+        (True, "python3 -m%s v1.0.5" % SCRUB, "the attached -m<module> spelling"),
+        (True, "python3 .ci/rediacc_ci/ops/scrub_sentinel.py", "a script path is the target too"),
+        (False, "python3 -m pytest -k %s" % SCRUB, "CONTROL: the key as an argument to pytest"),
+        (False, "python3 -c pass %s" % SCRUB, "CONTROL: -c runs a string, not the key"),
+        (False, "echo python3 -m %s" % SCRUB, "CONTROL: echoing the command is not running it"),
+        (False, "grep -n aws .ci/rediacc_ci/ops/scrub_sentinel.py", "CONTROL: reading the port"),
+    )
+)
+
+# EVERY aws-needing SCRIPT WHOSE PORT EXISTS HAS ITS MODULE IN THE TABLE, so a port cannot ship without the routing its bash original carried.
+for key, tool in GUARD.NEEDS_SCRIPT:
+    if not key.endswith(".sh"):
+        continue
+    stem = key[: -len(".sh")].replace("-", "_")
+    for port in sorted(pathlib.Path(REPO, ".ci", "rediacc_ci").glob("*/%s.py" % stem)):
+        module = "rediacc_ci.%s.%s" % (port.parent.name, stem)
+        cases.append(
+            (
+                True,
+                (module, tool) in GUARD.NEEDS_SCRIPT,
+                f"python -m: {key}'s port {module} is in NEEDS_SCRIPT",
+            )
+        )
+cases.append(
+    (
+        True,
+        (SCRUB, "aws") in GUARD.NEEDS_SCRIPT,
+        "python -m: the scrub_sentinel port is in NEEDS_SCRIPT",
+    )
+)
+
+if aws_in_box:
+    # The python -m spelling of the incident command, end to end. The module key is not what the shipped exception list names, so this case holds whatever that list says.
+    r = run_full(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists --version 1.3.0",
+        AWS_ABSENT,
+    )
+    cases.append(
+        (2, r.returncode, "NEEDS_SCRIPT: the python -m port of the incident command is REFUSED")
+    )
+    cases.append(
+        (
+            True,
+            "this command needs 'aws'" in r.stderr,
+            "NEEDS_SCRIPT: the python -m refusal reads 'this command needs'",
+        )
+    )
 
 fixture_root = tempfile.mkdtemp(dir=RUN_TMP)
 os.makedirs(os.path.join(fixture_root, ".ci", "policy"))

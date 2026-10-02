@@ -539,7 +539,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         print("it. Add a carve-out rule in .ci/scripts/ci/scope-map.cjs ABOVE the", file=sys.stderr)
         print(
-            "'scripts-gates' rule (first match wins), mirroring 'scripts-drills'.", file=sys.stderr
+            "'scripts-gates' rule (first match wins), mirroring 'scripts-license-gen'.",
+            file=sys.stderr,
         )
         return 1
 

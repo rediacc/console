@@ -69,7 +69,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, plant
+from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
 from rediacc_ci.policy_paths import policy_path
 
 REGISTRY_NAME = "worklist-env-registry.json"
@@ -657,6 +657,7 @@ def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE
     return root
 
 
+@git_isolated
 def selftest():
     """True when a control failed, which is what `controls_first` expects."""
     import tempfile  # noqa: PLC0415

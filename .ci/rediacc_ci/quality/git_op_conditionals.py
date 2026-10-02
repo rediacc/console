@@ -110,7 +110,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Controls, plant
+from rediacc_ci.controls import Controls, git_isolated, plant
 
 # POSIX [[:space:]], written out. grep works line by line, so the `\n` member can never participate in a match; it is present so the class is the same set.
 SPACE = r"[ \t\n\v\f\r]"
@@ -753,6 +753,7 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
+@git_isolated
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 

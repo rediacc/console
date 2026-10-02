@@ -54,7 +54,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 
 # The directory the sidecars live in, relative to the repository root. The twin `cd`s to the root and uses this bare relative string as the pathspec prefix, which is the same fact with the cd removed.
 HOOK_DIR = ".claude/hooks/stop"
@@ -201,6 +201,7 @@ keep their v5-v9 formats and names.
 '''
 
 
+@git_isolated
 def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 

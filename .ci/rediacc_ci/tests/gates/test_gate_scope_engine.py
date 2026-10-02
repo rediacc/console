@@ -845,7 +845,6 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
         (".ci-trigger", "root-manifest:.ci-trigger"),
         (".ci/policy/.audit-allowlist", "harness:.ci/policy/.audit-allowlist"),
         (".ci/lib/common.sh", "harness:.ci/lib/common.sh"),
-        ("scripts/drills/lib.sh", "harness:scripts/drills/lib.sh"),
         (
             "scripts/gen/generate-third-party-licenses.ts",
             "harness:scripts/gen/generate-third-party-licenses.ts",

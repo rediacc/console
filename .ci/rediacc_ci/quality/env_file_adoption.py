@@ -57,7 +57,7 @@ import subprocess
 import tempfile
 
 from rediacc_ci import log, paths, runtmp
-from rediacc_ci.controls import Controls, controls_first
+from rediacc_ci.controls import Controls, controls_first, git_isolated
 
 SHIM_REL = "scripts/lib/env-file.sh"
 
@@ -268,6 +268,7 @@ def _write_fixture(d):
     return p
 
 
+@git_isolated
 def selftest():
     """Both directions on fixtures, before the real tree is touched."""
     c = Controls("env file adoption", 8)

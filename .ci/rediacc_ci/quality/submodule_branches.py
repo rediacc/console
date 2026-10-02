@@ -123,7 +123,7 @@ import tempfile
 import time
 
 from rediacc_ci import gitx, log, paths
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
 
 GH_HOST = GH_ORIGIN.removeprefix("https://")
@@ -660,12 +660,14 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+@git_isolated
 def selftest() -> int:
     """Both directions on every decision this gate makes without the network.
 
     THE GH PATHS ARE COVERED BY PURE FUNCTIONS, not by mocks: `pr_is_linked`, `is_low_effort_reply` and the two jq translations are the parts that decide a verdict, and each is exercised against the shape GitHub actually returns. What no local suite can prove is the `gh` invocation itself, which is stated rather than faked.
     """
-    ctl = Controls("submodule-branches", floor=39, verbose=True)
+    # 35, not 39: eb932d04d retired the report arm with its four `judge_report` controls and left the floor behind, so every run failed on the floor alone.
+    ctl = Controls("submodule-branches", floor=35, verbose=True)
     # -- is_low_effort_reply ------------------------------------------------
     for word in ("ok", "Done", "  fixed.  ", "THANKS!!", "will do"):
         ctl.truthy("PLANT: %r is a low-effort reply" % word, is_low_effort_reply(word))

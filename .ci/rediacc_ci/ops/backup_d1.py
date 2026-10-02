@@ -28,7 +28,7 @@ ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 REGIONS = ("eu", "us", "asia")
 PROD_DB_PREFIX = "account-db"
 EDGE_DB_PREFIX = "edge-account-db"
-USAGE = "Usage: backup-d1.sh [--dry-run] [--self-destruct] [production|edge]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [production|edge]"
 FILTERED = ("r2.cloudflarestorage.com", "valid for one hour")
 
 

@@ -2020,6 +2020,48 @@ _PLANT_PRE = (
     "\n\nclass Holder:\n    pass\n\n\ndef plant_c(zz_rows):\n    assert zz_rows is not None\n",
 )
 _PLANT_POST = ("\n\nprint(os.sep)\n", "\n\nY = sys.argv\n", "\n\nH = Holder()\n")
+
+
+def _copy_tracked(src_root, dst_root, rels):
+    """Copy each tracked path into the scratch tree; a path the index lists but the disk lacks is skipped and named.
+
+    `git ls-files` reads the index, so an uncommitted deletion in the shared tree still lists the path. Copying it raised FileNotFoundError and took the whole suite down over a file the corpus no longer has.
+    """
+    skipped = []
+    for rel in rels:
+        src = pathlib.Path(src_root) / rel
+        if not src.exists():
+            skipped.append(rel)
+            continue
+        (pathlib.Path(dst_root) / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, pathlib.Path(dst_root) / rel)
+    if skipped:
+        print(
+            "  note: skipped %d tracked path(s) absent from disk: %s"
+            % (len(skipped), ", ".join(skipped))
+        )
+    return skipped
+
+
+# CONTROL for _copy_tracked: a listed path missing from disk is skipped and reported, and the present one still lands.
+_ct_src = pathlib.Path(tempfile.mkdtemp(prefix="copy-tracked-src-"))
+_ct_dst = pathlib.Path(tempfile.mkdtemp(prefix="copy-tracked-dst-"))
+try:
+    (_ct_src / "keep.py").write_text("x = 1\n")
+    control(
+        "copy_tracked: a tracked path deleted on disk is skipped, not a crash",
+        _copy_tracked(_ct_src, _ct_dst, ["keep.py", "gone.py"]),
+        ["gone.py"],
+    )
+    control(
+        "copy_tracked: the present path is still copied",
+        (_ct_dst / "keep.py").read_text(),
+        "x = 1\n",
+    )
+finally:
+    shutil.rmtree(_ct_src, ignore_errors=True)
+    shutil.rmtree(_ct_dst, ignore_errors=True)
+
 _hx = pathlib.Path(tempfile.mkdtemp(prefix="wide-settle-"))
 _hx_env = os.environ.get("REDIACC_CI_ROOT")
 try:
@@ -2035,9 +2077,7 @@ try:
         text=True,
         check=True,
     ).stdout.split()
-    for _rel in _corpus:
-        (_hx / _rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(pathlib.Path(REPO) / _rel, _hx / _rel)
+    _copy_tracked(REPO, _hx, _corpus)
     for _i, _tag in enumerate("abc"):
         (_hx / ".claude" / "hooks" / "stop" / ("wl_zzplant_%s.py" % _tag)).write_text(
             _PLANT_PRE[_i] + _PLANT_BODY + _PLANT_POST[_i]

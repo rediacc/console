@@ -20,7 +20,7 @@ pair stays stale, is re-listed, and re-validated as fast as the loop turns — t
 - **Non-atomic mp4 write — the serious one.** `generate-tutorial-video.ts:352` calls
 `addEdgePad(concatOut, outPath, …)`, writing straight to the final path, and the vtt/chapters/words/poster sidecars are written *after*. A killed render therefore leaves a truncated mp4 with a **fresh mtime**, which an mtime-based staleness predicate reads as "done" — permanently. Verified in the source.
 - **`ready_pairs` mutates while predicating** (`mkdir -p` inside the query).
-- **Dropped precondition:** `run.sh:702` requires the audio directory to exist; the
+- **Dropped precondition:** the readiness predicate (`packages/www/scripts/list-tutorial-render-pairs.js`, wrapped by `_tutorial_render_pairs` in `.ci/media/pool.sh`) requires the audio directory to exist; the
 prototype omitted that check.
 
 ## Where it lives: three functions in `run.sh`, as `./run.sh www tutorials watch`
@@ -42,8 +42,8 @@ Consequence that cuts both ways: deleting `_tutorial_video_pairs` and `_tutorial
 
 | prototype piece | disposition |
 |---|---|
-| `render_pair()` flock+nice+failure file | **Delete** — `_tutorial_video_render_one` (`run.sh:713-737`) is byte-identical, including the lock path |
-| the `& / wait -n / wait` pool | **Delete** — `_tutorial_video_pool` (`run.sh:812-832`) already reads a pipe *specifically* so a streaming producer can feed it |
+| `render_pair()` flock+nice+failure file | **Delete** — `_tutorial_video_render_one` (`.ci/media/pool.sh`) is byte-identical, including the lock path |
+| the `& / wait -n / wait` pool | **Delete** — `_tutorial_video_pool` (`.ci/media/pool.sh`) already reads a pipe *specifically* so a streaming producer can feed it |
 | `FAILDIR` + never-retry | **Delete** — the pool's per-pair failure files do it; never-retry becomes a producer property |
 | `ready_pairs()` | **Promote out of bash** → `packages/www/scripts/list-tutorial-render-pairs.js` |
 | per-pair validation | **Move into the producer**, before emission |
@@ -119,7 +119,7 @@ concurrently with it.
 | S1 | **done** | `packages/www/scripts/list-tutorial-render-pairs.js`, `--selftest` green with 3 control cases, gated as `check:ci-tutorial-render-queue` in the `ci` chain |
 | S2 | **done** | `_tutorial_render_pairs` wraps the predicate; `_tutorial_video_pairs` deleted; `check:ci-dead-bash` exit 0 |
 | S3 | **done** | `generate-tutorial-video.ts` renders to `stagePath` (`:142`), one `renameSync` (`:465`), cleanup (`:471`) |
-| S4 | **done** | `_tutorial_watch_producer` (`run.sh:975`), `www_tutorials_watch` (`:1056`), dispatch (`:1919`), help (`:1727`); second instance exits non-zero naming the holder's pid |
+| S4 | **done** | `_tutorial_watch_producer` and `www_tutorials_watch` (`.ci/media/tutorials.sh`), plus its dispatch and help entries; second instance exits non-zero naming the holder's pid |
 | S5 | **done** | one real pair rendered through the watch, see below |
 | S6 | **BLOCKED on a measurement that costs GPU time** | see below |
 | S7 | **done** | the four shell gates + `check:ci-tutorial-render-queue` all exit 0; `shfmt -i 4 -ci -d run.sh` empty while `shfmt -i 4 -d run.sh` is 819 lines, which is the proof `-ci` was used |
@@ -137,7 +137,7 @@ The plan's S5 proof was "`--stale-only` reaches zero against 234 mp4s", which th
 S6's acceptance criterion is "log timestamps show the first render starting before the last cast finishes narrating". Nothing in the tree can produce that observation now: all 13 locales are fully narrated, so there is no narration for a render to overlap WITH. Producing it means re-narrating at least one locale — real GPU time on the card, and the VoxCPM lease would block any
 other narration work while it ran.
 
-The convergence itself is also smaller than it looks now: the delegate that built S4 extracted `_tutorial_auto_jobs()` (`run.sh:670`) so `www_tutorials_media` and `www_tutorials_watch` already share the job-count arithmetic instead of keeping two copies 400 lines apart. What remains is `media` narrating everything before rendering anything, rather than feeding the producer.
+The convergence itself is also smaller than it looks now: the delegate that built S4 extracted `_tutorial_auto_jobs()` (`.ci/media/pool.sh`) so `www_tutorials_media` and `www_tutorials_watch` already share the job-count arithmetic instead of keeping two copies 400 lines apart. What remains is `media` narrating everything before rendering anything, rather than feeding the producer.
 
 **Do not fake this one.** A convergence justified by an unmeasured overlap claim is exactly the `~45%` mistake recorded in `docs/media-pipeline-parallelism.md` §10. Either pay for one locale's re-narration and measure it, or leave `media` alone — it works.
 

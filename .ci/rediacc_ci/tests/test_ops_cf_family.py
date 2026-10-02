@@ -174,7 +174,11 @@ def test_backup_d1_unknown_argument_matches_bash(world: h.World) -> None:
     rc_b, _, err_b = world.twin_run("scripts/ops/backup-d1.sh", ["--bogus"], env)
     rc_p, _, err_p = world.port("rediacc_ci.ops.backup_d1", ["--bogus"], env)
     assert rc_b == rc_p == 1
-    assert h.strip(err_b) == h.strip(err_p)
+    # ONE DECLARED DELTA: the usage line names the module the way it is run now. The bash script it named was deleted (882658c69), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
+    usage_bash = "Usage: backup-d1.sh "
+    usage_port = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 "
+    assert usage_bash in h.strip(err_b), err_b
+    assert h.strip(err_b).replace(usage_bash, usage_port) == h.strip(err_p)
 
 
 def test_delta_a_minted_token_is_always_destroyed(world: h.World) -> None:

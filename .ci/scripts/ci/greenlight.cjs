@@ -353,9 +353,8 @@ const CLOSURES = {
       'packages/shared',
       'packages/provisioning',
       'packages/locales',
-      // The drills' own source, and the entry points that reach it. `./run.sh drill` routes to `python3 -m rediacc_ci` (the VERBS table in .ci/rediacc_ci/__main__.py, entry functions in core/run_verbs.py, drills in rediacc_ci/drills/), all inside the `.ci/rediacc_ci` entry above; .ci/legacy/run-legacy.sh, the bash dispatcher that used to sit between them, is deleted.
+      // The entry points that reach the drills, whose own source sits inside the `.ci/rediacc_ci` entry above. `./run.sh drill` routes to `python3 -m rediacc_ci` (the VERBS table in .ci/rediacc_ci/__main__.py, entry functions in core/run_verbs.py, drills in rediacc_ci/drills/), all inside the `.ci/rediacc_ci` entry above; .ci/legacy/run-legacy.sh, the bash dispatcher that used to sit between them, is deleted.
       // run.sh is listed because a change to the router can change which drill runs. Naming the files rather than their line numbers is what stops this going stale again.
-      'scripts/drills',
       'run.sh',
       'rdc.sh',
       // The Python ports still source constants.sh and the .ci/lib shell helpers (local-common.sh, service.sh, account.sh, which pulls in find-port.sh) through their bash bridges. Named by FILE rather than by address, because line numbers went stale twice here. The whole

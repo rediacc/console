@@ -897,6 +897,7 @@
       "FULL_INTEGRATION",
       "GATEWAY_PORT",
       "GIT_DIR",
+      "GIT_INDEX_FILE",
       "GROUP_B_BRIDGE",
       "GROUP_B_NET",
       "GROUP_B_NET_BASE",

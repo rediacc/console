@@ -60,7 +60,7 @@ import sys
 import tempfile
 
 import _cipath  # noqa: F401
-from rediacc_ci.controls import Controls
+from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.core import allowlist
 from rediacc_ci.policy_paths import policy_path
 
@@ -473,6 +473,7 @@ def write_baseline(current: list[str], *, first_seed: bool) -> int:
 # --------------------------------------------------------------------------- Controls ---------------------------------------------------------------------------
 
 
+@git_isolated
 def selftest() -> int:
     """Both directions on every rule. A gate proven only to fire will flag the tree.
 

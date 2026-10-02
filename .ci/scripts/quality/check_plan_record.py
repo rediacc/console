@@ -121,7 +121,7 @@ import tempfile
 
 import _cipath  # noqa: F401
 from rediacc_ci import paths
-from rediacc_ci.controls import plant
+from rediacc_ci.controls import git_isolated, plant
 from rediacc_ci.quality import plan_lifecycle as PL
 
 ROOT = pathlib.Path(
@@ -1039,6 +1039,7 @@ def build_fixture(td):
     return root, rel, text, before
 
 
+@git_isolated
 def selftest():
     """Plant ONE defect per rule, require the matching finding, and require the clean record to stay SILENT. The silent case is not a formality: "every fixture reds" is a check that cannot pass, and it is the shape a gate takes on when a refactor breaks its parser."""
     bad = 0

@@ -133,6 +133,24 @@ const trackedSubjects = (): { present: string[]; missing: string[] } => {
   return { present, missing };
 };
 
+/**
+ * The refusal for tracked subjects missing from the worktree, as lines for stderr.
+ *
+ * A CORRECT REFUSAL, kept: the index says these files ship and the worktree says they do not, so the verdict depends on which of the two the next commit takes, and this gate cannot know. Reading the worktree alone would pass a commit that still carries the files; reading the index alone would crash on readFileSync. What it owes the reader is EVERY path (the first cut printed ten of them) and the two ways to make the trees agree.
+ */
+export function absentRefusal(missing: string[]): string[] {
+  return [
+    `✗ CANNOT VERIFY: ${missing.length} tracked file(s) are absent from the worktree:`,
+    ...missing.map((f) => `    ${f}`),
+    '',
+    '  The index still lists them and the worktree does not, so there is no single tree to',
+    '  judge. Make the two agree, then re-run:',
+    '    - the deletion is intended: stage it, `git rm --cached -- <path>...` for the paths',
+    '      above, or commit it;',
+    '    - another session is mid-change in this checkout: wait for it to land.',
+  ];
+}
+
 /** One extraction attempt: every guard, no I/O decision. `next` is null when refused. */
 export function planExtract(
   manifestText: string,
@@ -2196,6 +2214,19 @@ function selftest(endToEnd = false): number {
   }
 
   selftestNeedsNot(ck);
+  // THE ABSENT-FILE REFUSAL names every path and the remedy. Eleven paths, because the first cut printed ten and dropped the rest.
+  const ghosts = Array.from({ length: 11 }, (_, i) => `scripts/gates/ghost-${i}.ts`);
+  const refusal = absentRefusal(ghosts).join('\n');
+  ck(
+    'the absent-file refusal lists every missing path, not the first ten',
+    ghosts.every((g) => refusal.includes(g)),
+    refusal
+  );
+  ck(
+    'the absent-file refusal names the remedy',
+    refusal.includes('git rm --cached --') && refusal.includes('commit it'),
+    refusal
+  );
   // END TO END ONLY UNDER `--selftest`. Every mode of main runs selftest() as its instrument control, and the freshness check spawns the binder, so running it from that preamble recursed: each child ran the preamble and spawned the next (2026-09-30, 291 scratch dirs before it was killed). `npm run check:ci-gate-bind` runs `--selftest` first, so the gate still exercises it once per run.
   if (endToEnd) selftestFreshness(ck);
   return bad;
@@ -2509,14 +2540,7 @@ function main(argv: string[]): void {
 
   const { present, missing } = trackedSubjects();
   if (missing.length > 0) {
-    console.error(
-      `✗ CANNOT VERIFY: ${missing.length} tracked file(s) are absent from the worktree:`
-    );
-    for (const f of missing.slice(0, 10)) console.error(`    ${f}`);
-    console.error('');
-    console.error('  The index and the worktree disagree, which in a shared checkout');
-    console.error('  usually means another session is mid-change. Refusing a verdict');
-    console.error('  rather than reading a tree that is moving.');
+    for (const line of absentRefusal(missing)) console.error(line);
     process.exit(1);
   }
 

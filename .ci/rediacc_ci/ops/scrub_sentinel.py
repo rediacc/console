@@ -125,7 +125,9 @@ def main(argv: list[str]) -> int:
             log.error("unknown argument: %s" % arg)
             return 2
     if not version:
-        log.error("usage: scrub-sentinel.sh v<MAJOR>.<MINOR>.<PATCH> [--execute] [--yes]")
+        log.error(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v<MAJOR>.<MINOR>.<PATCH> [--execute] [--yes]"
+        )
         return 2
     if not STRICT_VERSION.match(version):
         log.error("invalid version '%s' (expected strict semver, e.g. v1.0.5)" % version)
