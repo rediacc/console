@@ -387,7 +387,8 @@ Every suite runs its controls before its real cases. A control that cannot fail 
     (ticked) 2026-10-02T09:37:40Z by d778be9d: commit:44ee5e0b1 DEFAULT executed: rule 1 Cadence carries the review-records sentence
 - [x] T10: remove `Review Complete` from the main ruleset. This is operator-only (repo admin). DEFAULT: the operator runs it once Phase 2 is green.
     (ticked) 2026-10-02T09:38:18Z by d778be9d: operator ruleset split applied 2026-10-02, recorded at agent/worklist/d778be9d.jsonl:5552; ruleset 12344707 required checks now [CI Complete] only (live gh api read)
-- [?] Keep `claude-mention.yml`. DEFAULT: keep; it is not the review job.
+- [x] Keep `claude-mention.yml`. DEFAULT: keep; it is not the review job.
+    (ticked) 2026-10-02T13:19:58Z by d778be9d: ASKED:2026-10-02T12:40Z operator chose 'Remove it'; commit:f9a2fa7a8 deletes claude-mention.yml and its allowlist rows
 - [x] `review_epoch`. DEFAULT: the day T2 lands, so older commits on open branches are not back-reviewed.
     (ticked) 2026-10-02T09:37:41Z by d778be9d: commit:ee607a003 DEFAULT executed: review_epoch 2026-10-02T07:09:03Z
 
