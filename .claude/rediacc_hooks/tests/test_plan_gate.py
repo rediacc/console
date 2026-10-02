@@ -267,12 +267,13 @@ def test_regenerate_preserves_promoted_byte_for_byte(qroot):
     assert (qroot / pq.QUEUE_REL).read_text(encoding="utf-8") == edited
 
 
-def test_generated_order_open_then_held_without_promoted_finished_or_untracked(qroot):
+def test_generated_order_by_priority_without_promoted_finished_or_untracked(qroot):
+    """Every fixture plan is not started, so Priority decides; `held` moves nothing (operator ruling 2026-10-02)."""
     _pq().refresh(qroot)
     assert _generated(qroot) == [
+        "agent/plans/PLAN-held-urgent.md",
         "agent/plans/PLAN-open-early.md",
         "agent/plans/PLAN-open-late.md",
-        "agent/plans/PLAN-held-urgent.md",
     ]
 
 
@@ -280,8 +281,8 @@ def test_generated_lines_carry_priority_and_status(qroot):
     pq = _pq()
     pq.refresh(qroot)
     text = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
-    assert "1. agent/plans/PLAN-open-early.md -- P1, approved\n" in text
-    assert "3. agent/plans/PLAN-held-urgent.md -- P0, held\n" in text
+    assert "2. agent/plans/PLAN-open-early.md -- P1, approved, not started\n" in text
+    assert "1. agent/plans/PLAN-held-urgent.md -- P0, held, not started\n" in text
 
 
 def test_stale_generated_section_is_refused_by_the_freshness_check(qroot):
@@ -316,3 +317,163 @@ def test_refresh_index_also_refreshes_the_queue(qroot):
     wl_planrec.refresh_index(str(qroot), wl_checks.plan_records, wl_checks.plan_box_census)
     assert pq.problems(qroot) == []
     assert (qroot / pq.QUEUE_REL).read_text(encoding="utf-8").startswith(PROMOTED)
+
+
+# ---------------------------------------------------------------- the progress order (operator rulings 2026-10-02)
+
+
+def _box_plan(status="approved", priority="P2", opened=1, done=0, depends=""):
+    """A plan with `done` ticked and `opened` open boxes. `depends` is a Depends-On value; "" declares no-dep."""
+    dep = depends or "no-dep -- a standalone plan in the queue fixture"
+    boxes = "".join("- [x] D%d a ticked box sits here\n" % i for i in range(done))
+    boxes += "".join("- [ ] O%d an open box sits here\n" % i for i in range(opened))
+    return "# PLAN\nStatus: %s\nDepends-On: %s\nPriority: %s -- seed\n\n## Boxes\n%s" % (
+        status,
+        dep,
+        priority,
+        boxes,
+    )
+
+
+def _queue_root(tmp_path, plans: dict[str, str]):
+    """A git checkout holding `plans` (every one tracked) and a queue with an empty Promoted list, regenerated once."""
+    folder = tmp_path / "agent" / "plans"
+    folder.mkdir(parents=True)
+    for name, text in plans.items():
+        (folder / name).write_text(text, encoding="utf-8")
+    (folder / "QUEUE.md").write_text("# Plan queue\n\n## Promoted\n\n", encoding="utf-8")
+    env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path), "GIT_CONFIG_NOSYSTEM": "1"}
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, env=env)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", "--", *(str(folder / n) for n in plans)],
+        check=True,
+        env=env,
+    )
+    _pq().refresh(tmp_path)
+    return tmp_path
+
+
+def _names(root):
+    return [rel.rsplit("/", 1)[-1] for rel in _generated(root)]
+
+
+def _not_queued(root):
+    """The text after `### Not queued` inside the generated block, "" when there is none."""
+    pq = _pq()
+    block = pq.generated_text((root / pq.QUEUE_REL).read_text(encoding="utf-8"))
+    assert block is not None
+    _head, sep, tail = block.partition("### Not queued\n")
+    return tail if sep else ""
+
+
+def test_in_progress_precedes_not_started_regardless_of_priority(tmp_path):
+    root = _queue_root(
+        tmp_path,
+        {
+            "PLAN-urgent-fresh.md": _box_plan(priority="P0 (operator)"),
+            "PLAN-late-started.md": _box_plan(priority="P3", opened=2, done=1),
+        },
+    )
+    assert _names(root) == ["PLAN-late-started.md", "PLAN-urgent-fresh.md"]
+
+
+def test_held_is_ignored_for_order_and_kept_in_the_note(tmp_path):
+    root = _queue_root(
+        tmp_path,
+        {
+            "PLAN-held.md": _box_plan(status="held", priority="P0"),
+            "PLAN-open.md": _box_plan(priority="P1"),
+        },
+    )
+    assert _names(root) == ["PLAN-held.md", "PLAN-open.md"]
+    text = (root / _pq().QUEUE_REL).read_text(encoding="utf-8")
+    assert "1. agent/plans/PLAN-held.md -- P0, held, not started\n" in text, text
+
+
+def test_a_plan_with_no_open_box_is_not_queued_and_is_named(tmp_path):
+    root = _queue_root(
+        tmp_path,
+        {
+            "PLAN-all-ticked.md": _box_plan(opened=0, done=2),
+            "PLAN-no-boxes.md": _box_plan(opened=0, done=0),
+            "PLAN-work.md": _box_plan(),
+        },
+    )
+    assert _names(root) == ["PLAN-work.md"]
+    note = _not_queued(root)
+    assert "- agent/plans/PLAN-all-ticked.md -- all boxes ticked: close it\n" in note, note
+    assert "- agent/plans/PLAN-no-boxes.md -- no boxes yet: add boxes\n" in note, note
+    queued = plan_gate.queue(str(root))
+    assert queued == ["agent/plans/PLAN-work.md"], queued
+
+
+@pytest.mark.parametrize(
+    ("plans", "before"),
+    [
+        pytest.param(
+            {
+                "PLAN-dep.md": _box_plan(priority="P0", depends="PLAN-pre.md"),
+                "PLAN-pre.md": _box_plan(status="held", priority="P3"),
+            },
+            [("PLAN-pre.md", "PLAN-dep.md")],
+            id="direct",
+        ),
+        pytest.param(
+            {
+                "PLAN-top.md": _box_plan(priority="P0", opened=1, done=1, depends="PLAN-mid.md"),
+                "PLAN-mid.md": _box_plan(priority="P1", depends="PLAN-low.md"),
+                "PLAN-low.md": _box_plan(status="held", priority="P3"),
+            },
+            [("PLAN-low.md", "PLAN-mid.md"), ("PLAN-mid.md", "PLAN-top.md")],
+            id="transitive",
+        ),
+        pytest.param(
+            {
+                "PLAN-dep.md": _box_plan(priority="P0", depends="PLAN-pre.md#T3"),
+                "PLAN-pre.md": _box_plan(status="held", priority="P3"),
+            },
+            [("PLAN-pre.md", "PLAN-dep.md")],
+            id="task-ref",
+        ),
+        pytest.param(
+            {
+                "PLAN-parent.md": _box_plan(priority="P0", opened=1, done=1),
+                "PLAN-parent.S1.md": _box_plan(status="held", priority="P3"),
+            },
+            [("PLAN-parent.S1.md", "PLAN-parent.md")],
+            id="sub-plan",
+        ),
+    ],
+)
+def test_a_dependent_never_precedes_its_prerequisite(tmp_path, plans, before):
+    names = _names(_queue_root(tmp_path, plans))
+    assert sorted(names) == sorted(plans), names
+    for first, then in before:
+        assert names.index(first) < names.index(then), names
+
+
+def test_a_prerequisite_of_an_in_progress_plan_is_pulled_ahead(tmp_path):
+    root = _queue_root(
+        tmp_path,
+        {
+            "PLAN-started.md": _box_plan(priority="P3", opened=1, done=1, depends="PLAN-needed.md"),
+            "PLAN-needed.md": _box_plan(priority="P3"),
+            "PLAN-unrelated.md": _box_plan(priority="P0"),
+        },
+    )
+    assert _names(root) == ["PLAN-needed.md", "PLAN-started.md", "PLAN-unrelated.md"]
+
+
+def test_a_dependency_cycle_is_broken_and_reported(tmp_path):
+    root = _queue_root(
+        tmp_path,
+        {
+            "PLAN-a.md": _box_plan(depends="PLAN-b.md"),
+            "PLAN-b.md": _box_plan(depends="PLAN-a.md"),
+            "PLAN-c.md": _box_plan(priority="P3"),
+        },
+    )
+    assert _names(root) == ["PLAN-a.md", "PLAN-b.md", "PLAN-c.md"]
+    note = _not_queued(root)
+    assert "dependency cycle PLAN-a.md -> PLAN-b.md -> PLAN-a.md" in note, note
+    assert _pq().problems(root) == []
