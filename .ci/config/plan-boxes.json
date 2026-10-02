@@ -923,28 +923,29 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 17,
-      "done": 0,
+      "open": 4,
+      "done": 13,
       "open_sigs": [
+        "86abe2cd",
+        "d401fcfa",
+        "dc2d53a3",
+        "f37723cf"
+      ],
+      "done_sigs": [
         "0020a00c",
         "002fa00e",
         "25852d98",
         "298dca41",
         "31c20e0b",
         "506b630a",
-        "86abe2cd",
         "94225721",
         "adda6c0e",
         "c146199e",
         "ce21d5be",
-        "d401fcfa",
         "dae6822c",
-        "dc2d53a3",
         "e282d634",
-        "f37723cf",
         "fbbcf759"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-plan-dependencies.md": {
       "status": "held",
@@ -974,8 +975,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 1,
+      "open": 14,
+      "done": 2,
       "open_sigs": [
         "1feb206a",
         "2dd2429a",
@@ -987,13 +988,13 @@
         "7fb23a48",
         "9660fb2f",
         "97dc855e",
-        "aa8ad1d6",
         "b4445450",
         "c27e410c",
         "cf7a2303",
         "ff593758"
       ],
       "done_sigs": [
+        "aa8ad1d6",
         "eeb654e8"
       ]
     },
