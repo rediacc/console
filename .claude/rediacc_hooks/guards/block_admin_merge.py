@@ -15,7 +15,13 @@
      with no network call, and it fails CLOSED when the reviewer module does
      not import. Threads are human review threads; nothing posts bot threads
      since the PR-level review was retired on 2026-10-02.
-  4. An immediate merge (no --auto) must additionally prove CI green NOW.
+  4. The plan gate, console PR only (box L2 of PLAN-plan-per-pr-loop,
+     `plan_gate.plan_merge_refusal`, shared with the fast-forward fallback in
+     block_push_to_protected_branch): the body's one `Plan:` line names a plan
+     whose boxes are all ticked at `origin/<head>`, or the body carries an
+     `Operational-Reason:` line. Both --auto and immediate merges; a body that
+     cannot be read is refused.
+  5. An immediate merge (no --auto) must additionally prove CI green NOW.
      Console gets all checks; other rediacc repos get the hygiene checks
      (their thread state feeds console's Submodule Branches gate).
      Network paths are NOT covered by test-hooks.sh; verification
@@ -28,7 +34,7 @@ arm needs a live `gh` answer and stays uncovered here.
 import json
 import pathlib
 
-from rediacc_hooks import hookio, shellscan, syspath
+from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 from rediacc_hooks.wellknown import ACCOUNT_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
@@ -62,6 +68,15 @@ REVIEWS_MESSAGE = (
     "commit since the base has a per-commit review record in agent/reviews/<branch>/ with no "
     "open finding at or above block_at, and every record is committed. Refused: %s. Settle "
     "each line below, then re-check with 'python3 .claude/hooks/stop/wl_review.py --check'."
+)
+
+PLAN_MESSAGE = (
+    "❌ BLOCKED: console PR #%s fails the plan gate (box L2 of agent/plans/PLAN-plan-per-pr-loop.md): "
+    "%s. A console PR merges when its body names its one plan (`Plan: agent/plans/PLAN-<slug>.md`, "
+    "written by the post-push PR-body refresh from agent/plans/QUEUE.md) and every box of that plan is "
+    "ticked, or when the body carries an `Operational-Reason:` line saying why it merges otherwise "
+    "(a multi-plan PR included). Tick the boxes with their commits, or add the reason with "
+    "`gh api repos/%s/pulls/%s -X PATCH -F body=@<file>`."
 )
 
 THREADS_MESSAGE = (
@@ -172,6 +187,16 @@ def _jq_head_ref(text):
     return value if isinstance(value, str) else ""
 
 
+def _jq_body(text):
+    """`.body` over PRDATA as a string, None when it is absent or not a string (an unreadable body)."""
+    try:
+        doc = json.loads(text) if text else None
+    except ValueError:
+        return None
+    value = doc.get("body") if isinstance(doc, dict) else None
+    return value if isinstance(value, str) else None
+
+
 def _jq_conclusion(text):
     """`[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"`.
 
@@ -252,7 +277,7 @@ def run(ev):
         view = ["timeout", "20", "gh", "pr", "view"]
         if sel != "":
             view.append(sel)
-        view += ["--repo", repo, "--json", "number,statusCheckRollup,headRefName"]
+        view += ["--repo", repo, "--json", "number,statusCheckRollup,headRefName,body"]
         prdata = hookio.run_out(view)
         num = _jq_number(prdata)
         if num == "":
@@ -268,8 +293,20 @@ def run(ev):
                 )
                 return hookio.DENY
 
-        # The per-commit review precondition (both --auto and immediate), judged on the PR's head branch from the local tree. An unreadable head branch or a reviewer module that does not import refuses: the precondition is unverifiable, and unverifiable never merges.
+        # The plan gate (box L2), console only: the PR's plan read at the PR head's remote-tracking ref when this checkout has it, else the working tree. An absent or unreadable body refuses.
         head = _jq_head_ref(prdata)
+        if repo == GH_REPO:
+            rev = ""
+            if head and commit_policy.git(
+                ["rev-parse", "--verify", "-q", "refs/remotes/origin/%s^{commit}" % head], cwd=root
+            ):
+                rev = "refs/remotes/origin/%s" % head
+            refusal = plan_gate.plan_merge_refusal(root, _jq_body(prdata), rev=rev)
+            if refusal:
+                ev.warn(PLAN_MESSAGE % (num, refusal, repo, num))
+                return hookio.DENY
+
+        # The per-commit review precondition (both --auto and immediate), judged on the PR's head branch from the local tree. An unreadable head branch or a reviewer module that does not import refuses: the precondition is unverifiable, and unverifiable never merges.
         reasons, lines = review_refusals(root, head, repo)
         if reasons:
             ev.warn(REVIEWS_MESSAGE % (repo, num, head or "unknown", ", ".join(reasons)))

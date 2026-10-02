@@ -912,7 +912,7 @@ def run_judge(
     return sanitize_next_action(out), None
 
 
-# The judge advises; it does not get to order the three things reserved to the operator. On 2026-08-09 it read a session sitting on four green stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session declined, which is the right outcome but the wrong MECHANISM: it survived on the model's judgment at the moment of reading, and the whole point of this program is
+# The judge advises; it does not get to order the three acts with their own guarded paths (merging and moving main go through /pr-merge at a plan's finish line, operator ruling 2026-10-02; releasing goes through CD). On 2026-08-09 it read a session sitting on four green stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session declined, which is the right outcome but the wrong MECHANISM: it survived on the model's judgment at the moment of reading, and the whole point of this program is
 # that judgment at the moment of reading is the faculty that fails. A later session, or a more tired one, reads an authoritative-sounding instruction from its own stop gate and complies.
 #
 # WHY SANITISE RATHER THAN RE-ASK. The deferral's default said reject and re-ask once. Re-asking buys a second sample from the same model that just produced the offending text, at another call's latency and cost, and it needs a loop bound to stay safe. Rewriting the field is deterministic, cannot loop, and is strictly safer than any second sample. The VERDICT is deliberately left

@@ -84,6 +84,17 @@ def _git(repo, *args, env=None, check=True):
     return proc
 
 
+# The plan gate's worlds (box L2): plans committed on the live branch, so the gate reads them at the pushed sha. `PLAN_WT` is ticked only in the working tree, never committed, which the gate must not count.
+PLAN_DONE = "agent/plans/PLAN-fx-done.md"
+PLAN_OPEN = "agent/plans/PLAN-fx-open.md"
+PLAN_NOBOX = "agent/plans/PLAN-fx-nobox.md"
+PLANS = {
+    PLAN_DONE: "# PLAN-fx-done\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [x] B the second box is finished and ticked\n",
+    PLAN_OPEN: "# PLAN-fx-open\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [ ] B the second box is still open on this branch\n",
+    PLAN_NOBOX: "# PLAN-fx-nobox\nStatus: approved\n\nProse only, no boxes at all.\n",
+}
+
+
 def _make_live(branch="0914-1", unpushed=False, main_moved=False, hooks=False):
     """A console-shaped checkout on `branch`, pushed to a real bare origin, one commit ahead of main.
 
@@ -97,7 +108,11 @@ def _make_live(branch="0914-1", unpushed=False, main_moved=False, hooks=False):
     _git(d, "commit", "-q", "--allow-empty", "-m", "seed")
     _git(d, "push", "-q", "origin", "main")
     _git(d, "checkout", "-q", "-b", branch)
-    _git(d, "commit", "-q", "--allow-empty", "-m", "work")
+    for rel, text in PLANS.items():
+        (d / rel).parent.mkdir(parents=True, exist_ok=True)
+        (d / rel).write_text(text, encoding="utf-8")
+    _git(d, "add", "--", *PLANS)
+    _git(d, "commit", "-q", "-m", "work")
     _git(d, "push", "-q", "origin", branch)
     if main_moved:
         other = pathlib.Path(tempfile.mkdtemp(prefix="other-", dir=RUN_TMP))
@@ -136,7 +151,12 @@ if a[:2] == ["pr", "view"]:
     if mode == "nopr":
         sys.stderr.write('no pull requests found for branch "%s"\n' % a[2])
         sys.exit(1)
-    print(json.dumps({"number": 7, "state": "OPEN", "headRefOid": head, "body": body}))
+    pr = {"number": 7, "state": "OPEN", "headRefOid": head, "body": body}
+    if mode == "nobody":
+        del pr["body"]
+    if mode == "nonumber":
+        del pr["number"]
+    print(json.dumps(pr))
     sys.exit(0)
 if a[:2] == ["api", "graphql"]:
     query = " ".join(a)
@@ -289,6 +309,82 @@ CASES = [
         True,
         fx(body="Plan boxes: see the plan."),
     ),
+    # ---- L2: the plan gate, the fallback's last condition ----------------------------------
+    (
+        "L2 open boxes and no Operational-Reason",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(body="Plan: %s" % PLAN_OPEN),
+    ),
+    (
+        "L2 open boxes with an Operational-Reason",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        False,
+        fx(body="Plan: %s\nOperational-Reason: the remaining box is M7's live run" % PLAN_OPEN),
+    ),
+    (
+        "L2 every box ticked",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        False,
+        fx(body="Some prose.\n\nPlan: `%s`\n" % PLAN_DONE),
+    ),
+    (
+        "L2 no Plan line and no Operational-Reason",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(body="Some prose about the work."),
+    ),
+    (
+        "L2 the body cannot be read",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(gh="nobody"),
+    ),
+    (
+        "L2 two plans and no Operational-Reason",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(body="Plan: %s\nPlan: %s" % (PLAN_DONE, PLAN_DONE.replace("done", "done2"))),
+    ),
+    (
+        "L2 the named plan does not exist at the pushed sha",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(body="Plan: agent/plans/PLAN-fx-missing.md"),
+    ),
+    (
+        "L2 a plan with no boxes proves nothing",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(body="Plan: %s" % PLAN_NOBOX),
+    ),
+    (
+        "L2 an Operational-Reason inside a generated block does not count",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(
+            body="Plan: %s\n<!-- pushed-head:begin -->\nOperational-Reason: x\n<!-- pushed-head:end -->"
+            % PLAN_OPEN
+        ),
+    ),
+    # 65f2a27e.2: a PR answer missing a field is refused by that field's name, not as "PR #None".
+    (
+        "M2 the PR answer has no number",
+        "git push origin 0914-1:%s" % MAIN,
+        LIVE,
+        True,
+        fx(gh="nonumber"),
+        "`number`",
+    ),
     (
         "M2 a local commit origin never saw",
         "git push origin 0914-1:%s" % MAIN,
@@ -359,6 +455,10 @@ for case in CASES:
     got, err = run(command, cwd, case[4] if len(case) > 4 else None)
     blocked += got
     ok = got == want
+    # A sixth element is text the refusal must carry, for a case whose point is the message.
+    if ok and len(case) > 5 and case[5] not in err:
+        ok = False
+        err = "missing %r in: %s" % (case[5], err)
     fails += not ok
     print(
         "%-72s want=%-9s got=%-9s %s"

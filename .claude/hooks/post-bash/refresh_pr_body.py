@@ -8,6 +8,9 @@ The Stop hook already blocks on the same condition, but blocking is the wrong mo
 WHAT IT WRITES, and why it is not gaming the gate. It maintains a delimited block at the end of the body listing the pushed head and the last few commit subjects. That is genuinely useful description content -- a reviewer opening the PR sees what most recently landed -- and it happens to make the body newer than the tip, which is exactly what the gate is asking for. A no-op edit
 that only moved a timestamp would satisfy the gate while telling the reader nothing; this tells them something.
 
+THE PLAN LINK (box L2 of agent/plans/PLAN-plan-per-pr-loop.md). On the console PR, a body that names no plan gets `Plan: <head of agent/plans/QUEUE.md>` as its first line, which is what `rediacc_hooks.plan_gate.plan_merge_refusal` reads before a merge. The queue head is the source because it is the one place that already says which plan the live branch works; the PR-epic block
+names worklist epics, not plans. The line is written ONCE: a body that already names a plan keeps it, so a queue edit mid-PR never re-points a PR, and a multi-plan PR's hand-written lines and its `Operational-Reason:` survive every later push.
+
 PORTED FROM `.claude/hooks/post-bash/refresh-pr-body.sh` BY W7 P6. The bash original was kept as `.claude/oracles/post-bash/refresh-pr-body.sh` until PLAN-retire-bash-oracles A3 deleted it; `.claude/rediacc_hooks/tests/test_post_bash_differential.py` compared the two over the same scripted `git` and `gh` stubs, byte for byte, and froze the result as `tests/goldens/post-bash.jsonl` before the deletion. The same suite now runs this port against that golden.
 
 THE 10-SECOND STDIN DEADLINE HAS NO COUNTERPART HERE, for the reason its sibling `cancel_old_ci.py` records: since the 2026-09-21 collapse the member is spawned with the payload already on a closed pipe, so neither side's deadline can fire.
@@ -23,7 +26,8 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
-from rediacc_hooks import hookio
+from rediacc_hooks import hookio, plan_gate
+from rediacc_hooks.wellknown import GH_REPO
 
 BEGIN = "<!-- pushed-head:begin -->"
 END = "<!-- pushed-head:end -->"
@@ -147,6 +151,8 @@ def main():
             continue
         # Strip any previous block, then append the current one. Whole-body rewrite is safe here: this is one PR description with one writer, not the shared worklist.
         stripped = strip_block(body)
+        if gh_repo == GH_REPO:
+            stripped = plan_gate.with_plan_line(stripped, plan_gate.queue_head(root))
         # mktemp, NOT "$ROOT/.git/...". This repo uses git WORKTREES, where `.git` is a FILE containing a gitdir pointer, so writing under it fails with "Not a directory" -- which is exactly how the first version of this hook silently did nothing while still exiting 0.
         try:
             handle, tmp = tempfile.mkstemp()
